@@ -387,6 +387,21 @@
                 console.error('Gagal mengambil kode otomatis:', err);
             }
         }
+
+        // Debounce helper untuk meng-generate kode dari nama saat user selesai mengetik
+        let debounceTimers = {};
+        function debounceCodeFromName(type, nameInputId, codeInputId, extraParams = {}) {
+            clearTimeout(debounceTimers[codeInputId]);
+            debounceTimers[codeInputId] = setTimeout(() => {
+                const nameInput = document.getElementById(nameInputId);
+                const codeInput = document.getElementById(codeInputId);
+                const nameVal = nameInput ? nameInput.value.trim() : '';
+
+                if (nameVal && nameVal.length >= 3 && codeInput) {
+                    fetchNextCode(type, codeInputId, { ...extraParams, name: nameVal });
+                }
+            }, 500);
+        }
     </script>
 </body>
 </html>

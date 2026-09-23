@@ -105,16 +105,21 @@
                 <div class="form-group">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.375rem;">
                         <label for="create_supplier_cd" class="form-label" style="margin-bottom: 0;">Kode Supplier <span style="color:#ef4444;">*</span></label>
-                        <button type="button" class="btn btn-secondary btn-sm" data-target="create_supplier_cd" onclick="fetchNextCode('supplier', 'create_supplier_cd')" style="padding: 0.2rem 0.6rem; font-size: 0.75rem;" title="Generate Ulang Nomor Urut Otomatis">
-                            ↺ Auto Generate
-                        </button>
+                        <div style="display: flex; gap: 0.35rem;">
+                            <button type="button" class="btn btn-secondary btn-sm" data-target="create_supplier_cd" onclick="fetchNextCode('supplier', 'create_supplier_cd', {name: document.getElementById('create_supplier_nm').value})" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;" title="Buat kode dari singkatan nama">
+                                ✨ Dari Singkatan
+                            </button>
+                            <button type="button" class="btn btn-secondary btn-sm" data-target="create_supplier_cd" onclick="fetchNextCode('supplier', 'create_supplier_cd')" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;" title="Reset ke nomor urut standar">
+                                ↺ Reset
+                            </button>
+                        </div>
                     </div>
-                    <input type="text" id="create_supplier_cd" name="supplier_cd" value="{{ $nextSupplierCode ?? '' }}" class="form-control" placeholder="Contoh: SUP-0001" style="text-transform: uppercase;" required>
-                    <small style="color: #64748b; font-size: 0.75rem; display: block; margin-top: 0.25rem;">Kode otomatis terisi nomor urut berikutnya, namun tetap bisa Anda ubah manual.</small>
+                    <input type="text" id="create_supplier_cd" name="supplier_cd" value="{{ $nextSupplierCode ?? '' }}" class="form-control" placeholder="Contoh: SUP-SMN-01" style="text-transform: uppercase;" required>
+                    <small style="color: #64748b; font-size: 0.75rem; display: block; margin-top: 0.25rem;">Otomatis mengikuti singkatan nama (misal: PT Sawit Murni → SUP-SMN-01) atau nomor urut.</small>
                 </div>
                 <div class="form-group">
                     <label for="create_supplier_nm" class="form-label">Nama Supplier / Mitra <span style="color:#ef4444;">*</span></label>
-                    <input type="text" id="create_supplier_nm" name="supplier_nm" class="form-control" placeholder="Contoh: Kelompok Tani Singkong Makmur" required>
+                    <input type="text" id="create_supplier_nm" name="supplier_nm" class="form-control" placeholder="Contoh: PT Sawit Murni Nusantara" oninput="debounceCodeFromName('supplier', 'create_supplier_nm', 'create_supplier_cd')" required>
                 </div>
                 <div class="form-group">
                     <label for="create_jenis_supplier_id" class="form-label">Jenis Supplier</label>

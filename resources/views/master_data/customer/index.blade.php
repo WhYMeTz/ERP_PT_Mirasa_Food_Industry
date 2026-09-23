@@ -97,16 +97,21 @@
                 <div class="form-group">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.375rem;">
                         <label for="create_customer_cd" class="form-label" style="margin-bottom: 0;">Kode Customer <span style="color:#ef4444;">*</span></label>
-                        <button type="button" class="btn btn-secondary btn-sm" data-target="create_customer_cd" onclick="fetchNextCode('customer', 'create_customer_cd')" style="padding: 0.2rem 0.6rem; font-size: 0.75rem;" title="Generate Ulang Nomor Urut Otomatis">
-                            ↺ Auto Generate
-                        </button>
+                        <div style="display: flex; gap: 0.35rem;">
+                            <button type="button" class="btn btn-secondary btn-sm" data-target="create_customer_cd" onclick="fetchNextCode('customer', 'create_customer_cd', {name: document.getElementById('create_customer_nm').value})" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;" title="Buat kode dari singkatan nama">
+                                ✨ Dari Singkatan
+                            </button>
+                            <button type="button" class="btn btn-secondary btn-sm" data-target="create_customer_cd" onclick="fetchNextCode('customer', 'create_customer_cd')" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;" title="Reset ke nomor urut standar">
+                                ↺ Reset
+                            </button>
+                        </div>
                     </div>
-                    <input type="text" id="create_customer_cd" name="customer_cd" value="{{ $nextCustomerCode ?? '' }}" class="form-control" placeholder="Contoh: CUST-0001" style="text-transform: uppercase;" required>
-                    <small style="color: #64748b; font-size: 0.75rem; display: block; margin-top: 0.25rem;">Kode otomatis terisi nomor urut berikutnya, namun tetap bisa Anda ubah manual.</small>
+                    <input type="text" id="create_customer_cd" name="customer_cd" value="{{ $nextCustomerCode ?? '' }}" class="form-control" placeholder="Contoh: CUST-ICBP-01" style="text-transform: uppercase;" required>
+                    <small style="color: #64748b; font-size: 0.75rem; display: block; margin-top: 0.25rem;">Otomatis mengikuti singkatan nama (misal: Sumber Rezeki → CUST-SR-01) atau nomor urut.</small>
                 </div>
                 <div class="form-group">
                     <label for="create_customer_nm" class="form-label">Nama Perusahaan / Customer <span style="color:#ef4444;">*</span></label>
-                    <input type="text" id="create_customer_nm" name="customer_nm" class="form-control" placeholder="Contoh: PT Indofood CBP Sukses Makmur Tbk" required>
+                    <input type="text" id="create_customer_nm" name="customer_nm" class="form-control" placeholder="Contoh: PT Indofood CBP Sukses Makmur Tbk" oninput="debounceCodeFromName('customer', 'create_customer_nm', 'create_customer_cd')" required>
                 </div>
                 <div class="form-group">
                     <label for="create_customer_kontak" class="form-label">Kontak PIC / No Telepon</label>

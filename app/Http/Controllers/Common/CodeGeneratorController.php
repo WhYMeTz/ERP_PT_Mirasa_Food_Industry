@@ -16,18 +16,19 @@ class CodeGeneratorController extends Controller
     public function generate(Request $request): JsonResponse
     {
         $type = $request->query('type');
+        $name = $request->query('name');
         $code = '';
 
         switch ($type) {
             case 'supplier':
-                $code = $this->codeGeneratorService->generateSupplierCode();
+                $code = $this->codeGeneratorService->generateSupplierCode($name);
                 break;
             case 'customer':
-                $code = $this->codeGeneratorService->generateCustomerCode();
+                $code = $this->codeGeneratorService->generateCustomerCode($name);
                 break;
             case 'gudang':
                 $tipe = $request->query('tipe');
-                $code = $this->codeGeneratorService->generateGudangCode($tipe);
+                $code = $this->codeGeneratorService->generateGudangCode($tipe, $name);
                 break;
             case 'barang':
                 $jenis = $request->query('jenis');

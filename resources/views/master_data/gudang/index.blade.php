@@ -99,16 +99,21 @@
                 <div class="form-group">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.375rem;">
                         <label for="create_gudang_cd" class="form-label" style="margin-bottom: 0;">Kode Gudang <span style="color:#ef4444;">*</span></label>
-                        <button type="button" class="btn btn-secondary btn-sm" data-target="create_gudang_cd" onclick="fetchNextCode('gudang', 'create_gudang_cd', {tipe: document.getElementById('create_tipe_gudang_cd').value})" style="padding: 0.2rem 0.6rem; font-size: 0.75rem;" title="Generate Ulang Nomor Urut Otomatis">
-                            ↺ Auto Generate
-                        </button>
+                        <div style="display: flex; gap: 0.35rem;">
+                            <button type="button" class="btn btn-secondary btn-sm" data-target="create_gudang_cd" onclick="fetchNextCode('gudang', 'create_gudang_cd', {name: document.getElementById('create_gudang_nm').value, tipe: document.getElementById('create_tipe_gudang_cd').value})" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;" title="Buat kode dari singkatan nama">
+                                ✨ Dari Singkatan
+                            </button>
+                            <button type="button" class="btn btn-secondary btn-sm" data-target="create_gudang_cd" onclick="fetchNextCode('gudang', 'create_gudang_cd', {tipe: document.getElementById('create_tipe_gudang_cd').value})" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;" title="Reset ke kode tipe gudang">
+                                ↺ Reset
+                            </button>
+                        </div>
                     </div>
-                    <input type="text" id="create_gudang_cd" name="gudang_cd" value="{{ $nextGudangCode ?? '' }}" class="form-control" placeholder="Contoh: GDG-001" style="text-transform: uppercase;" required>
-                    <small style="color: #64748b; font-size: 0.75rem; display: block; margin-top: 0.25rem;">Kode otomatis terisi nomor urut berikutnya, namun tetap bisa Anda ubah manual.</small>
+                    <input type="text" id="create_gudang_cd" name="gudang_cd" value="{{ $nextGudangCode ?? '' }}" class="form-control" placeholder="Contoh: GDG-BB-01" style="text-transform: uppercase;" required>
+                    <small style="color: #64748b; font-size: 0.75rem; display: block; margin-top: 0.25rem;">Otomatis mengikuti singkatan nama (Gudang Bahan Baku → GDG-BB-01) atau tipe gudang.</small>
                 </div>
                 <div class="form-group">
                     <label for="create_gudang_nm" class="form-label">Nama Gudang <span style="color:#ef4444;">*</span></label>
-                    <input type="text" id="create_gudang_nm" name="gudang_nm" class="form-control" placeholder="Contoh: Gudang Bahan Baku Singkong" required>
+                    <input type="text" id="create_gudang_nm" name="gudang_nm" class="form-control" placeholder="Contoh: Gudang Bahan Baku Singkong" oninput="debounceCodeFromName('gudang', 'create_gudang_nm', 'create_gudang_cd', {tipe: document.getElementById('create_tipe_gudang_cd').value})" required>
                 </div>
                 <div class="form-group">
                     <label for="create_tipe_gudang_cd" class="form-label">Tipe Gudang</label>

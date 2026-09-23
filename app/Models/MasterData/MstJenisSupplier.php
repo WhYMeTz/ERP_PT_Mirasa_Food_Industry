@@ -5,22 +5,18 @@ namespace App\Models\MasterData;
 use App\Traits\AuditableTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-
-class MstSupplier extends Model
+class MstJenisSupplier extends Model
 {
     use HasFactory, AuditableTrait;
 
-    protected $table = 'mst_supplier';
-    protected $primaryKey = 'supplier_id';
+    protected $table = 'mst_jenis_supplier';
+    protected $primaryKey = 'jenis_supplier_id';
 
     protected $fillable = [
-        'supplier_cd',
-        'supplier_nm',
-        'jenis_supplier_id',
-        'kontak_no',
-        'alamat_txt',
+        'jenis_supplier_cd',
+        'jenis_supplier_nm',
         'created_by',
         'updated_by',
         'deleted_by',
@@ -34,10 +30,10 @@ class MstSupplier extends Model
     ];
 
     /**
-     * Relasi ke master jenis supplier
+     * Relasi ke master supplier
      */
-    public function jenisSupplier(): BelongsTo
+    public function supplier(): HasMany
     {
-        return $this->belongsTo(MstJenisSupplier::class, 'jenis_supplier_id', 'jenis_supplier_id');
+        return $this->hasMany(MstSupplier::class, 'jenis_supplier_id', 'jenis_supplier_id');
     }
 }

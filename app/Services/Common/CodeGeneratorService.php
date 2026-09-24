@@ -167,4 +167,41 @@ class CodeGeneratorService
 
         return $this->generate('mst_barang', 'barang_cd', 'BRG-', 4);
     }
+
+    /**
+     * Generate Nomor Purchase Order (format: PO-YYYYMM-0001)
+     */
+    public function generatePoNo(): string
+    {
+        $prefix = 'PO-' . date('Ym') . '-';
+        return $this->generate('dat_po_hdr', 'po_no', $prefix, 4);
+    }
+
+    /**
+     * Generate Nomor Penerimaan Barang (Good Receipt) (format: GR-YYYYMM-0001)
+     */
+    public function generateTerimaNo(): string
+    {
+        $prefix = 'GR-' . date('Ym') . '-';
+        return $this->generate('dat_terima_hdr', 'terima_no', $prefix, 4);
+    }
+
+    /**
+     * Generate Nomor Batch Otomatis (format: BATCH-YYYYMMDD-001)
+     */
+     public function generateBatchNo(?string $prefixKey = null): string
+     {
+         $cleanPrefix = $prefixKey ? strtoupper(preg_replace('/[^a-zA-Z0-9]/', '', $prefixKey)) . '-' : '';
+         $prefix = 'BATCH-' . $cleanPrefix . date('ymd') . '-';
+         return $this->generate('dat_terima_dtl', 'batch_no', $prefix, 3);
+     }
+
+    /**
+     * Generate Nomor Pengeluaran / Pemakaian Barang (format: OUT-YYYYMM-0001)
+     */
+    public function generatePakaiNo(): string
+    {
+        $prefix = 'OUT-' . date('Ym') . '-';
+        return $this->generate('dat_pakai_hdr', 'pakai_no', $prefix, 4);
+    }
 }

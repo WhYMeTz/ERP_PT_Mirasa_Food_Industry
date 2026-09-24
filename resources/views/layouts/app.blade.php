@@ -294,14 +294,77 @@
             <span class="brand-badge">ERP</span>
             PT Mirasa Food Industry
         </a>
-        <nav style="display: flex; gap: 0.35rem; flex-wrap: wrap;">
+        <nav style="display: flex; gap: 0.35rem; align-items: center; flex-wrap: wrap;">
+            {{-- Navigasi Master Data --}}
             <a href="{{ route('master.barang.index') }}" class="{{ request()->routeIs('master.barang.*') ? 'active' : '' }}">Barang</a>
             <a href="{{ route('master.satuan.index') }}" class="{{ request()->routeIs('master.satuan.*') ? 'active' : '' }}">Satuan</a>
-            <a href="{{ route('master.jenis.index') }}" class="{{ request()->routeIs('master.jenis.*') ? 'active' : '' }}">Jenis Barang</a>
+            <a href="{{ route('master.jenis.index') }}" class="{{ request()->routeIs('master.jenis.*') ? 'active' : '' }}">Jenis</a>
             <a href="{{ route('master.gudang.index') }}" class="{{ request()->routeIs('master.gudang.*') ? 'active' : '' }}">Gudang</a>
-            <a href="{{ route('master.jenis_supplier.index') }}" class="{{ request()->routeIs('master.jenis_supplier.*') ? 'active' : '' }}">Jenis Supplier</a>
-            <a href="{{ route('master.supplier.index') }}" class="{{ request()->routeIs('master.supplier.*') ? 'active' : '' }}">Supplier</a>
+            <a href="{{ route('master.supplier.index') }}" class="{{ request()->routeIs('master.supplier.*') || request()->routeIs('master.jenis_supplier.*') ? 'active' : '' }}">Supplier</a>
             <a href="{{ route('master.customer.index') }}" class="{{ request()->routeIs('master.customer.*') ? 'active' : '' }}">Customer</a>
+            <a href="{{ route('master.karyawan.index') }}" class="{{ request()->routeIs('master.karyawan.*') ? 'active' : '' }}">Karyawan</a>
+
+            <span style="color: #cbd5e1; margin: 0 0.35rem;">|</span>
+
+            {{-- Navigasi Transaksi Gudang & Inventory (Sesuai 4 Sheet Operasional Mirasa) --}}
+            <a href="{{ route('gudang.po.index') }}" class="{{ request()->routeIs('gudang.po.*') ? 'active' : '' }}" style="display: inline-flex; align-items: center; gap: 0.25rem;">
+                <span style="font-size: 0.75rem; background: #e0f2fe; color: #0369a1; padding: 0.1rem 0.35rem; border-radius: 4px; font-weight: 700;">PO</span>
+                Purchase Order
+            </a>
+            <a href="{{ route('gudang.terima.index') }}" class="{{ request()->routeIs('gudang.terima.*') ? 'active' : '' }}" style="display: inline-flex; align-items: center; gap: 0.25rem;">
+                <span style="font-size: 0.75rem; background: #ecfdf5; color: #065f46; padding: 0.1rem 0.35rem; border-radius: 4px; font-weight: 700;">GR</span>
+                Barang Masuk
+            </a>
+            <a href="{{ route('gudang.pemakaian.index') }}" class="{{ request()->routeIs('gudang.pemakaian.*') ? 'active' : '' }}" style="display: inline-flex; align-items: center; gap: 0.25rem;">
+                <span style="font-size: 0.75rem; background: #fee2e2; color: #991b1b; padding: 0.1rem 0.35rem; border-radius: 4px; font-weight: 700;">OUT</span>
+                Barang Keluar
+            </a>
+            <a href="{{ route('gudang.stok.index') }}" class="{{ request()->routeIs('gudang.stok.index') ? 'active' : '' }}">Lacak Stok</a>
+            <a href="{{ route('gudang.stok.ledger') }}" class="{{ request()->routeIs('gudang.stok.ledger') ? 'active' : '' }}">Kartu Stok</a>
+
+            <span style="color: #cbd5e1; margin: 0 0.35rem;">|</span>
+
+            {{-- Navigasi Hak Akses & Pengguna --}}
+            <a href="{{ route('admin.users.index') }}" class="{{ request()->routeIs('admin.users.*') ? 'active' : '' }}" style="display: inline-flex; align-items: center; gap: 0.3rem;">
+                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                Hak Akses User
+            </a>
+
+            <span style="color: #cbd5e1; margin: 0 0.35rem;">|</span>
+
+            {{-- Info Pengguna yang Sedang Login --}}
+            @auth
+                <div style="display: inline-flex; align-items: center; gap: 0.5rem; background: #f8fafc; border: 1px solid #e2e8f0; padding: 0.25rem 0.65rem; border-radius: 8px;">
+                    <div style="text-align: left;">
+                        <span style="font-size: 0.8125rem; font-weight: 700; color: #0f172a; display: block; line-height: 1.2;">
+                            {{ Auth::user()->name }}
+                        </span>
+                        <span style="font-size: 0.7rem; color: #64748b; display: block;">
+                            {{ Auth::user()->role_cd }}
+                            @if (Auth::user()->gudang)
+                                • <strong style="color: #059669;">🔒 {{ Auth::user()->gudang->gudang_nm }}</strong>
+                            @else
+                                • <strong style="color: #0284c7;">🌐 Pusat</strong>
+                            @endif
+                        </span>
+                    </div>
+
+                    <a href="{{ route('login') }}" class="btn btn-secondary btn-sm" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;" title="Beralih ke akun lain">
+                        Ganti Akun
+                    </a>
+
+                    <form action="{{ route('logout') }}" method="POST" style="display: inline;">
+                        @csrf
+                        <button type="submit" class="btn btn-secondary btn-sm" style="padding: 0.2rem 0.4rem; color: #ef4444;" title="Keluar">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                        </button>
+                    </form>
+                </div>
+            @else
+                <a href="{{ route('login') }}" class="btn btn-primary btn-sm" style="padding: 0.35rem 0.75rem;">
+                    Masuk / Login &rarr;
+                </a>
+            @endauth
         </nav>
     </header>
 

@@ -32,39 +32,33 @@
         <table>
             <thead>
                 <tr>
-                    <th style="width: 60px;">No</th>
+                    <th style="width: 50px;">No</th>
                     <th>Kode Barang</th>
                     <th>Nama Barang</th>
-                    <th>Jenis Barang</th>
+                    <th>Jenis</th>
                     <th>Satuan Dasar</th>
-                    <th>Satuan Besar</th>
-                    <th>Konversi Qty</th>
-                    <th style="width: 150px; text-align: right;">Aksi</th>
+                    <th style="text-align: right;">Batas Minimum</th>
+                    <th style="text-align: right;">Harga Standar</th>
+                    <th style="width: 130px; text-align: right;">Aksi</th>
                 </tr>
             </thead>
             <tbody>
                 @forelse ($barangs as $index => $item)
                     <tr>
                         <td>{{ $barangs->firstItem() + $index }}</td>
-                        <td><strong style="color: #0284c7;">{{ $item->barang_cd }}</strong></td>
-                        <td style="font-weight: 600;">{{ $item->barang_nm }}</td>
+                        <td><strong style="color: #0284c7; font-family: monospace;">{{ $item->barang_cd }}</strong></td>
+                        <td style="font-weight: 600; color: #0f172a;">{{ $item->barang_nm }}</td>
                         <td>
-                            <span class="badge badge-info">{{ $item->jenisBarang->jenis_barang_nm ?? '-' }}</span>
+                            <span class="badge" style="background: #f1f5f9; color: #475569; font-weight: 600;">
+                                {{ $item->jenisBarang->jenis_barang_nm ?? ($item->jenisBarang->jenis_barang_cd ?? '-') }}
+                            </span>
                         </td>
                         <td>{{ $item->satuanDasar->satuan_nm ?? '-' }} ({{ $item->satuanDasar->satuan_cd ?? '-' }})</td>
-                        <td>
-                            @if($item->satuanBesar)
-                                {{ $item->satuanBesar->satuan_nm }} ({{ $item->satuanBesar->satuan_cd }})
-                            @else
-                                <span style="color: #94a3b8;">-</span>
-                            @endif
+                        <td style="text-align: right; font-weight: 600; color: {{ (float) $item->batas_minimum_qty > 0 ? '#b45309' : '#94a3b8' }};">
+                            {{ number_format((float) $item->batas_minimum_qty, 2, ',', '.') }}
                         </td>
-                        <td>
-                            @if($item->satuanBesar)
-                                1 {{ $item->satuanBesar->satuan_cd }} = {{ number_format($item->konversi_qty, 2) }} {{ $item->satuanDasar->satuan_cd }}
-                            @else
-                                1.00 {{ $item->satuanDasar->satuan_cd ?? '' }}
-                            @endif
+                        <td style="text-align: right; font-weight: 600; color: #0f172a;">
+                            Rp {{ number_format((float) $item->harga_beli_standar, 2, ',', '.') }}
                         </td>
                         <td style="text-align: right;">
                             <div style="display: inline-flex; gap: 0.35rem;">
@@ -77,7 +71,9 @@
                                         {{ $item->jenis_barang_id }},
                                         {{ $item->satuan_dasar_id }},
                                         '{{ $item->satuan_besar_id ?? '' }}',
-                                        '{{ number_format($item->konversi_qty, 4, '.', '') }}'
+                                        '{{ number_format($item->konversi_qty, 4, '.', '') }}',
+                                        '{{ number_format($item->batas_minimum_qty ?? 0, 4, '.', '') }}',
+                                        '{{ number_format($item->harga_beli_standar ?? 0, 2, '.', '') }}'
                                     )"
                                     title="Edit">
                                     Edit
@@ -168,6 +164,20 @@
                     </div>
                 </div>
 
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group">
+                        <label for="create_batas_minimum_qty" class="form-label">Batas Minimum (Safety Stock)</label>
+                        <input type="number" step="0.0001" min="0" id="create_batas_minimum_qty" name="batas_minimum_qty" value="0.0000" class="form-control">
+                        <small style="color: #64748b; font-size: 0.725rem;">Peringatan jika stok fisik berada di bawah batas ini.</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="create_harga_beli_standar" class="form-label">Harga Beli Standar (Rp)</label>
+                        <input type="number" step="0.01" min="0" id="create_harga_beli_standar" name="harga_beli_standar" value="0" class="form-control">
+                        <small style="color: #64748b; font-size: 0.725rem;">Otomatis mengisi harga pada form PO / Penerimaan.</small>
+                    </div>
+                </div>
+
                 <div class="form-group" style="margin-bottom: 0;">
                     <label for="create_konversi_qty" class="form-label">Nilai Konversi Qty <span style="color:#ef4444;">*</span></label>
                     <input type="number" step="0.0001" min="1" id="create_konversi_qty" name="konversi_qty" value="1.0000" class="form-control" required>
@@ -235,6 +245,18 @@
                     </div>
                 </div>
 
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group">
+                        <label for="edit_batas_minimum_qty" class="form-label">Batas Minimum (Safety Stock)</label>
+                        <input type="number" step="0.0001" min="0" id="edit_batas_minimum_qty" name="batas_minimum_qty" class="form-control">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="edit_harga_beli_standar" class="form-label">Harga Beli Standar (Rp)</label>
+                        <input type="number" step="0.01" min="0" id="edit_harga_beli_standar" name="harga_beli_standar" class="form-control">
+                    </div>
+                </div>
+
                 <div class="form-group" style="margin-bottom: 0;">
                     <label for="edit_konversi_qty" class="form-label">Nilai Konversi Qty <span style="color:#ef4444;">*</span></label>
                     <input type="number" step="0.0001" min="1" id="edit_konversi_qty" name="konversi_qty" class="form-control" required>
@@ -249,13 +271,15 @@
 </div>
 
 <script>
-    function editBarang(id, kode, nama, jenisId, satuanDasarId, satuanBesarId, konversi) {
+    function editBarang(id, kode, nama, jenisId, satuanDasarId, satuanBesarId, konversi, batasMin, hargaStandar) {
         document.getElementById('edit_barang_cd').value = kode;
         document.getElementById('edit_barang_nm').value = nama;
         document.getElementById('edit_jenis_barang_id').value = jenisId;
         document.getElementById('edit_satuan_dasar_id').value = satuanDasarId;
         document.getElementById('edit_satuan_besar_id').value = satuanBesarId || '';
         document.getElementById('edit_konversi_qty').value = konversi;
+        document.getElementById('edit_batas_minimum_qty').value = batasMin || 0;
+        document.getElementById('edit_harga_beli_standar').value = hargaStandar || 0;
         document.getElementById('formEditBarang').action = '{{ url("master-barang") }}/' + id;
         openModal('modalEditBarang');
     }

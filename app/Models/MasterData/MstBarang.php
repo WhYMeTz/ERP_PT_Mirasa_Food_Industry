@@ -21,6 +21,8 @@ class MstBarang extends Model
         'satuan_dasar_id',
         'satuan_besar_id',
         'konversi_qty',
+        'batas_minimum_qty',
+        'harga_beli_standar',
         'created_by',
         'updated_by',
         'deleted_by',
@@ -29,10 +31,22 @@ class MstBarang extends Model
     ];
 
     protected $casts = [
-        'konversi_qty' => 'decimal:4',
-        'deleted_st' => 'boolean',
-        'active_st' => 'boolean',
+        'konversi_qty'       => 'decimal:4',
+        'batas_minimum_qty'  => 'decimal:4',
+        'harga_beli_standar' => 'decimal:4',
+        'deleted_st'         => 'boolean',
+        'active_st'          => 'boolean',
     ];
+
+    /**
+     * Scope barang khusus Bahan Baku & Bahan Penolong (bukan barang jadi atau WIP)
+     */
+    public function scopeBahanBaku($query)
+    {
+        return $query->whereHas('jenisBarang', function ($q) {
+            $q->whereIn('jenis_barang_cd', ['RAW', 'SUPP', 'PACK', 'BUMBU']);
+        });
+    }
 
     /**
      * Relasi ke Jenis Barang

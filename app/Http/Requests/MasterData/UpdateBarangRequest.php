@@ -58,6 +58,16 @@ class UpdateBarangRequest extends FormRequest
                 'numeric',
                 'min:1',
             ],
+            'batas_minimum_qty' => [
+                'nullable',
+                'numeric',
+                'min:0',
+            ],
+            'harga_beli_standar' => [
+                'nullable',
+                'numeric',
+                'min:0',
+            ],
         ];
     }
 

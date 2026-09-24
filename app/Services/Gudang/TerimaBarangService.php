@@ -177,6 +177,15 @@ class TerimaBarangService
                         $poDtl->save();
                     }
                 }
+
+                // Update harga beli acuan di Master Barang dengan harga terbaru dari invoice / surat jalan masuk
+                if ($hargaNominal > 0) {
+                    $barang = MstBarang::find($barangId);
+                    if ($barang && (float) $barang->harga_beli_standar != $hargaNominal) {
+                        $barang->harga_beli_standar = $hargaNominal;
+                        $barang->save();
+                    }
+                }
             }
 
             // 3. Update status PO jika terkait

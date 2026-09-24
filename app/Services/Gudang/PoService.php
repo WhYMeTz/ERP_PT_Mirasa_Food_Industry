@@ -133,6 +133,15 @@ class PoService
                     'terima_qty'       => 0,
                     'catatan_txt'      => $item['catatan_txt'] ?? null,
                 ]);
+
+                // Update harga beli acuan di Master Barang dengan harga terbaru
+                if ($harga > 0) {
+                    $barang = MstBarang::find($item['barang_id']);
+                    if ($barang && (float) $barang->harga_beli_standar != $harga) {
+                        $barang->harga_beli_standar = $harga;
+                        $barang->save();
+                    }
+                }
             }
 
             return $header->fresh(['details.barang']);

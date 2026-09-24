@@ -65,10 +65,19 @@
         }
         main {
             flex: 1;
-            max-width: 1200px;
+            max-width: 1400px;
             width: 100%;
-            margin: 2rem auto;
+            margin: 1.5rem auto;
             padding: 0 1.5rem;
+        }
+        .table-compact th, .table-compact td {
+            padding: 0.5rem 0.45rem !important;
+            vertical-align: middle;
+        }
+        .table-compact .form-control {
+            padding: 0.4rem 0.5rem !important;
+            font-size: 0.825rem !important;
+            border-radius: 6px !important;
         }
         .alert {
             padding: 1rem 1.25rem;

@@ -95,20 +95,35 @@
             </button>
         </div>
 
+        <style>
+            #tableTerimaItems th, #tableTerimaItems td {
+                padding: 0.5rem 0.35rem !important;
+                vertical-align: middle;
+                font-size: 0.825rem;
+            }
+            #tableTerimaItems .form-control {
+                padding: 0.35rem 0.45rem !important;
+                font-size: 0.825rem !important;
+                height: 34px;
+                border-radius: 6px;
+                box-sizing: border-box;
+            }
+        </style>
+
         <div style="overflow-x: auto;">
-            <table id="tableTerimaItems">
+            <table id="tableTerimaItems" style="width: 100%; min-width: 960px;">
                 <thead>
-                    <tr>
-                        <th style="width: 40px;">No</th>
-                        <th style="min-width: 220px;">Nama Barang / Komoditas <span style="color:#ef4444;">*</span></th>
-                        <th style="min-width: 160px;">Nomor Batch / Lot <span style="color:#ef4444;">*</span></th>
-                        <th style="width: 130px;">Tgl Expired</th>
-                        <th style="width: 110px;">Grade Mutu</th>
-                        <th style="width: 130px;">Qty Diterima <span style="color:#ef4444;">*</span></th>
-                        <th style="width: 110px;">Qty Reject</th>
-                        <th style="width: 90px;">Satuan</th>
-                        <th style="width: 130px;">Harga (Rp)</th>
-                        <th style="width: 50px; text-align: center;">Hapus</th>
+                    <tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0; color: #475569;">
+                        <th style="width: 32px; text-align: center;">No</th>
+                        <th style="min-width: 180px;">Nama Barang / Komoditas <span style="color:#ef4444;">*</span></th>
+                        <th style="width: 140px;">Nomor Batch / Lot <span style="color:#ef4444;">*</span></th>
+                        <th style="width: 120px;">Tgl Expired</th>
+                        <th style="width: 95px;">Grade</th>
+                        <th style="width: 90px; text-align: right;">Qty Masuk <span style="color:#ef4444;">*</span></th>
+                        <th style="width: 75px; text-align: right;">Reject</th>
+                        <th style="width: 50px; text-align: center;">Satuan</th>
+                        <th style="width: 105px; text-align: right;">Harga (Rp)</th>
+                        <th style="width: 35px; text-align: center;">Hapus</th>
                     </tr>
                 </thead>
                 <tbody id="terimaItemsContainer">
@@ -121,36 +136,36 @@
                                     <td>
                                         <input type="hidden" name="items[{{ $idx }}][podtl_id]" value="{{ $pdtl->podtl_id }}">
                                         <input type="hidden" name="items[{{ $idx }}][barang_id]" value="{{ $pdtl->barang_id }}">
-                                        <strong style="color: #0f172a; display: block;">{{ $pdtl->barang?->barang_nm }}</strong>
-                                        <span style="font-size: 0.75rem; color: #64748b;">Kode: {{ $pdtl->barang?->barang_cd }} &bull; Sisa PO: <strong>{{ number_format((float) $pdtl->sisa_qty, 2) }}</strong></span>
+                                        <strong style="color: #0f172a; display: block; font-size: 0.85rem;">{{ $pdtl->barang?->barang_nm }}</strong>
+                                        <span style="font-size: 0.725rem; color: #64748b;">Kode: {{ $pdtl->barang?->barang_cd }} &bull; Sisa: <strong>{{ number_format((float) $pdtl->sisa_qty, 2) }}</strong></span>
                                     </td>
                                     <td>
-                                        <input type="text" name="items[{{ $idx }}][batch_no]" value="BATCH-{{ preg_replace('/[^A-Za-z0-9]/', '', $pdtl->barang?->barang_cd ?? 'ITEM') }}-{{ date('ymd') }}-{{ str_pad($idx+1, 2, '0', STR_PAD_LEFT) }}" class="form-control" style="font-size: 0.85rem;" required>
+                                        <input type="text" name="items[{{ $idx }}][batch_no]" value="BATCH-{{ preg_replace('/[^A-Za-z0-9]/', '', $pdtl->barang?->barang_cd ?? 'ITEM') }}-{{ date('ymd') }}-{{ str_pad($idx+1, 2, '0', STR_PAD_LEFT) }}" class="form-control" required>
                                     </td>
                                     <td>
-                                        <input type="date" name="items[{{ $idx }}][expired_tgl]" class="form-control" style="font-size: 0.85rem;">
+                                        <input type="date" name="items[{{ $idx }}][expired_tgl]" class="form-control">
                                     </td>
                                     <td>
-                                        <select name="items[{{ $idx }}][grade_cd]" class="form-control" style="font-size: 0.85rem;">
-                                            <option value="A" selected>Grade A (Super)</option>
-                                            <option value="B">Grade B (Standar)</option>
+                                        <select name="items[{{ $idx }}][grade_cd]" class="form-control">
+                                            <option value="A" selected>Grade A</option>
+                                            <option value="B">Grade B</option>
                                             <option value="REJECT">Reject</option>
                                         </select>
                                     </td>
                                     <td>
-                                        <input type="number" step="0.0001" min="0.0001" max="{{ $pdtl->sisa_qty }}" name="items[{{ $idx }}][terima_qty]" value="{{ (float) $pdtl->sisa_qty }}" class="form-control item-terima-qty" oninput="calculateTotalTerima()" required>
+                                        <input type="number" step="0.0001" min="0.0001" max="{{ $pdtl->sisa_qty }}" name="items[{{ $idx }}][terima_qty]" value="{{ (float) $pdtl->sisa_qty }}" class="form-control item-terima-qty" style="text-align: right; font-weight: 700;" oninput="calculateTotalTerima()" required>
                                     </td>
                                     <td>
-                                        <input type="number" step="0.0001" min="0" name="items[{{ $idx }}][reject_qty]" value="0" class="form-control" placeholder="0" style="font-size: 0.85rem;">
-                                    </td>
-                                    <td>
-                                        <span style="font-weight: 600; color: #475569;">{{ $pdtl->barang?->satuanDasar?->satuan_nm ?? '-' }}</span>
-                                    </td>
-                                    <td>
-                                        <input type="number" step="0.01" min="0" name="items[{{ $idx }}][harga_nominal]" value="{{ (float) $pdtl->harga_nominal }}" class="form-control" placeholder="0">
+                                        <input type="number" step="0.0001" min="0" name="items[{{ $idx }}][reject_qty]" value="0" class="form-control" placeholder="0" style="text-align: right;">
                                     </td>
                                     <td style="text-align: center;">
-                                        <button type="button" onclick="removeTerimaRow(this)" class="btn btn-danger btn-sm" style="padding: 0.25rem 0.5rem;" title="Hapus Baris">&times;</button>
+                                        <span style="font-weight: 600; color: #475569; font-size: 0.8rem;">{{ $pdtl->barang?->satuanDasar?->satuan_nm ?? '-' }}</span>
+                                    </td>
+                                    <td>
+                                        <input type="number" step="0.01" min="0" name="items[{{ $idx }}][harga_nominal]" value="{{ (float) $pdtl->harga_nominal }}" class="form-control" placeholder="0" style="text-align: right;">
+                                    </td>
+                                    <td style="text-align: center;">
+                                        <button type="button" onclick="removeTerimaRow(this)" class="btn btn-danger btn-sm" style="padding: 0.2rem 0.45rem;" title="Hapus Baris">&times;</button>
                                     </td>
                                 </tr>
                             @endif
@@ -170,40 +185,40 @@
                                 </select>
                             </td>
                             <td>
-                                <input type="text" name="items[0][batch_no]" id="batch_0" value="BATCH-{{ date('ymd') }}-01" class="form-control item-batch" style="font-size: 0.85rem;" required>
+                                <input type="text" name="items[0][batch_no]" id="batch_0" value="BATCH-{{ date('ymd') }}-01" class="form-control item-batch" required>
                             </td>
                             <td>
-                                <input type="date" name="items[0][expired_tgl]" class="form-control" style="font-size: 0.85rem;">
+                                <input type="date" name="items[0][expired_tgl]" class="form-control">
                             </td>
                             <td>
-                                <select name="items[0][grade_cd]" class="form-control" style="font-size: 0.85rem;">
-                                    <option value="A" selected>Grade A (Super)</option>
-                                    <option value="B">Grade B (Standar)</option>
+                                <select name="items[0][grade_cd]" class="form-control">
+                                    <option value="A" selected>Grade A</option>
+                                    <option value="B">Grade B</option>
                                     <option value="REJECT">Reject</option>
                                 </select>
                             </td>
                             <td>
-                                <input type="number" step="0.0001" min="0.0001" name="items[0][terima_qty]" value="1" class="form-control item-terima-qty" oninput="calculateTotalTerima()" required>
+                                <input type="number" step="0.0001" min="0.0001" name="items[0][terima_qty]" value="1" class="form-control item-terima-qty" style="text-align: right; font-weight: 700;" oninput="calculateTotalTerima()" required>
                             </td>
                             <td>
-                                <input type="number" step="0.0001" min="0" name="items[0][reject_qty]" value="0" class="form-control" placeholder="0" style="font-size: 0.85rem;">
-                            </td>
-                            <td>
-                                <span class="row-satuan" style="font-weight: 600; color: #475569;">-</span>
-                            </td>
-                            <td>
-                                <input type="number" step="0.01" min="0" name="items[0][harga_nominal]" value="0" class="form-control" placeholder="0">
+                                <input type="number" step="0.0001" min="0" name="items[0][reject_qty]" value="0" class="form-control" placeholder="0" style="text-align: right;">
                             </td>
                             <td style="text-align: center;">
-                                <button type="button" onclick="removeTerimaRow(this)" class="btn btn-danger btn-sm" style="padding: 0.25rem 0.5rem;" title="Hapus Baris">&times;</button>
+                                <span class="row-satuan" style="font-weight: 600; color: #475569; font-size: 0.8rem;">-</span>
+                            </td>
+                            <td>
+                                <input type="number" step="0.01" min="0" name="items[0][harga_nominal]" value="0" class="form-control item-harga" placeholder="0" style="text-align: right;">
+                            </td>
+                            <td style="text-align: center;">
+                                <button type="button" onclick="removeTerimaRow(this)" class="btn btn-danger btn-sm" style="padding: 0.2rem 0.45rem;" title="Hapus Baris">&times;</button>
                             </td>
                         </tr>
                     @endif
                 </tbody>
                 <tfoot>
                     <tr style="background: #f8fafc; font-weight: 700;">
-                        <td colspan="5" style="text-align: right; padding: 1rem 1.25rem;">Total Kuantitas Masuk Fisik:</td>
-                        <td id="totalTerimaQtyDisplay" style="padding: 1rem 1.25rem; color: #059669; font-size: 1.1rem;">1.00</td>
+                        <td colspan="5" style="text-align: right; padding: 0.75rem 1rem;">Total Kuantitas Masuk Fisik:</td>
+                        <td id="totalTerimaQtyDisplay" style="padding: 0.75rem 0.5rem; color: #059669; font-size: 1.05rem; text-align: right;">1.00</td>
                         <td colspan="4"></td>
                     </tr>
                 </tfoot>
@@ -214,7 +229,7 @@
     {{-- TOMBOL AKSI FORM --}}
     <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
         <a href="{{ route('gudang.terima.index') }}" class="btn btn-secondary">Batal</a>
-        <button type="submit" class="btn btn-primary" style="background:#059669; padding: 0.75rem 1.75rem; font-size: 1rem;">
+        <button type="submit" class="btn btn-primary" style="background:#059669; padding: 0.65rem 1.75rem; font-size: 0.95rem;">
             Simpan & Tambahkan ke Stok Gudang
         </button>
     </div>
@@ -253,32 +268,32 @@
                 </select>
             </td>
             <td>
-                <input type="text" name="items[${terimaRowIndex}][batch_no]" value="BATCH-${dateStr}-${padNum}" class="form-control item-batch" style="font-size: 0.85rem;" required>
+                <input type="text" name="items[${terimaRowIndex}][batch_no]" value="BATCH-${dateStr}-${padNum}" class="form-control item-batch" required>
             </td>
             <td>
-                <input type="date" name="items[${terimaRowIndex}][expired_tgl]" class="form-control" style="font-size: 0.85rem;">
+                <input type="date" name="items[${terimaRowIndex}][expired_tgl]" class="form-control">
             </td>
             <td>
-                <select name="items[${terimaRowIndex}][grade_cd]" class="form-control" style="font-size: 0.85rem;">
-                    <option value="A" selected>Grade A (Super)</option>
-                    <option value="B">Grade B (Standar)</option>
+                <select name="items[${terimaRowIndex}][grade_cd]" class="form-control">
+                    <option value="A" selected>Grade A</option>
+                    <option value="B">Grade B</option>
                     <option value="REJECT">Reject</option>
                 </select>
             </td>
             <td>
-                <input type="number" step="0.0001" min="0.0001" name="items[${terimaRowIndex}][terima_qty]" value="1" class="form-control item-terima-qty" oninput="calculateTotalTerima()" required>
+                <input type="number" step="0.0001" min="0.0001" name="items[${terimaRowIndex}][terima_qty]" value="1" class="form-control item-terima-qty" style="text-align: right; font-weight: 700;" oninput="calculateTotalTerima()" required>
             </td>
             <td>
-                <input type="number" step="0.0001" min="0" name="items[${terimaRowIndex}][reject_qty]" value="0" class="form-control" placeholder="0" style="font-size: 0.85rem;">
-            </td>
-            <td>
-                <span class="row-satuan" style="font-weight: 600; color: #475569;">-</span>
-            </td>
-            <td>
-                <input type="number" step="0.01" min="0" name="items[${terimaRowIndex}][harga_nominal]" value="0" class="form-control item-harga" placeholder="0">
+                <input type="number" step="0.0001" min="0" name="items[${terimaRowIndex}][reject_qty]" value="0" class="form-control" placeholder="0" style="text-align: right;">
             </td>
             <td style="text-align: center;">
-                <button type="button" onclick="removeTerimaRow(this)" class="btn btn-danger btn-sm" style="padding: 0.25rem 0.5rem;" title="Hapus Baris">&times;</button>
+                <span class="row-satuan" style="font-weight: 600; color: #475569; font-size: 0.8rem;">-</span>
+            </td>
+            <td>
+                <input type="number" step="0.01" min="0" name="items[${terimaRowIndex}][harga_nominal]" value="0" class="form-control item-harga" placeholder="0" style="text-align: right;">
+            </td>
+            <td style="text-align: center;">
+                <button type="button" onclick="removeTerimaRow(this)" class="btn btn-danger btn-sm" style="padding: 0.2rem 0.45rem;" title="Hapus Baris">&times;</button>
             </td>
         `;
 

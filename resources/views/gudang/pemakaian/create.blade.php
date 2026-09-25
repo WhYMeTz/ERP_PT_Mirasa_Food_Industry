@@ -236,58 +236,71 @@
         const batchInfo = row.querySelector('.batch-info');
 
         if (!gudangId) {
-            batchSelect.innerHTML = '<option value="">-- Pilih Gudang di Atas --</option>';
-            batchInfo.textContent = 'Gudang belum dipilih!';
-            batchInfo.style.color = '#dc2626';
+            batchSelect.innerHTML = '<option value="">-- Pilih Gudang di Atas Dulu --</option>';
+            batchInfo.innerHTML = '<span style="color: #dc2626; font-weight: 600;">⚠️ Gudang belum dipilih di bagian atas!</span>';
             return;
         }
 
-        batchSelect.innerHTML = '<option value="">Memuat data batch...</option>';
-        batchInfo.textContent = '';
+        batchSelect.innerHTML = '<option value="">Memuat data batch FIFO...</option>';
+        batchInfo.innerHTML = '<span style="color: #64748b;">Memeriksa stok fisik & urutan batch...</span>';
 
         fetch(`{{ route('gudang.pemakaian.batches') }}?gudang_id=${gudangId}&barang_id=${barangId}`)
             .then(res => res.json())
             .then(res => {
                 if (res.status === 'success') {
-                    if (res.batches.length === 0) {
-                        batchSelect.innerHTML = '<option value="">(Stok Habis di Gudang ini)</option>';
-                        batchInfo.textContent = '⚠️ Tidak ada batch dengan stok tersedia di gudang ini.';
-                        batchInfo.style.color = '#dc2626';
+                    if (!res.batches || res.batches.length === 0) {
+                        batchSelect.innerHTML = '<option value="">(Stok Fisik Habis di Gudang ini)</option>';
+                        batchInfo.innerHTML = '<span style="color: #dc2626; font-weight: 700; background: #fee2e2; padding: 0.2rem 0.5rem; border-radius: 4px;">⚠️ Stok fisik habis total di gudang ini.</span>';
+                        row.querySelector('.harga-input').value = 0;
                     } else {
-                        let html = '<option value="">-- Pilih Batch --</option>';
-                        res.batches.forEach(b => {
-                            const exp = b.expired_tgl ? `Exp: ${b.expired_tgl}` : '';
-                            html += `<option value="${b.batch_no}" data-sisa="${b.sisa_qty}" data-harga="${b.harga_satuan || 0}">
-                                ${b.batch_no} (Sisa: ${parseFloat(b.sisa_qty).toLocaleString('id-ID')}) ${exp}
+                        let html = '';
+                        res.batches.forEach((b, idx) => {
+                            const isTop = (idx === 0);
+                            const prefix = isTop ? '⭐ [FIFO PRIORITAS] ' : '• ';
+                            const expInfo = b.expired_tgl ? ` | Exp: ${b.expired_tgl}` : '';
+                            const tglTerima = b.tgl_terima ? ` | Masuk: ${b.tgl_terima}` : '';
+                            html += `<option value="${b.batch_no}" data-sisa="${b.sisa_qty}" data-harga="${b.harga_satuan || 0}" data-masuk="${b.tgl_terima}" data-exp="${b.expired_tgl || '-'}" ${isTop ? 'selected' : ''}>
+                                ${prefix}${b.batch_no} (Sisa: ${parseFloat(b.sisa_qty).toLocaleString('id-ID')})${tglTerima}${expInfo}
                             </option>`;
                         });
                         batchSelect.innerHTML = html;
-                        batchInfo.textContent = `${res.batches.length} batch tersedia.`;
-                        batchInfo.style.color = '#059669';
+
+                        // Otomatis pilih batch pertama (FIFO Prioritas) & isi harga beli riil
+                        onBatchSelect(batchSelect);
                     }
                 }
             })
             .catch(err => {
                 console.error(err);
                 batchSelect.innerHTML = '<option value="">Gagal memuat batch</option>';
+                batchInfo.innerHTML = '<span style="color: #dc2626;">Koneksi gagal saat mengambil batch.</span>';
             });
     }
 
     function onBatchSelect(selectEl) {
         const row = selectEl.closest('tr');
         const selectedOpt = selectEl.selectedOptions[0];
-        const sisa = selectedOpt ? parseFloat(selectedOpt.getAttribute('data-sisa') || 0) : 0;
-        const harga = selectedOpt ? parseFloat(selectedOpt.getAttribute('data-harga') || 0) : 0;
+        if (!selectedOpt || !selectedOpt.value) return;
 
+        const sisa = parseFloat(selectedOpt.getAttribute('data-sisa') || 0);
+        const harga = parseFloat(selectedOpt.getAttribute('data-harga') || 0);
+        const tglMasuk = selectedOpt.getAttribute('data-masuk') || '-';
         const batchInfo = row.querySelector('.batch-info');
-        if (selectedOpt && selectedOpt.value) {
-            batchInfo.textContent = `Maksimal keluar: ${sisa.toLocaleString('id-ID')} unit`;
-            batchInfo.style.color = '#0284c7';
-            
-            const hargaInput = row.querySelector('.harga-input');
-            if (harga > 0 && (!hargaInput.value || parseFloat(hargaInput.value) === 0)) {
-                hargaInput.value = harga;
-            }
+        const isFirstBatch = (selectEl.selectedIndex === 0);
+
+        if (isFirstBatch) {
+            batchInfo.innerHTML = `<span style="color: #065f46; font-weight: 700; background: #ecfdf5; padding: 0.15rem 0.5rem; border-radius: 4px; border: 1px solid #a7f3d0; display: inline-flex; align-items: center; gap: 0.25rem;">
+                ⭐ Rekomendasi FIFO: Batch masuk paling awal (${tglMasuk}) • Maks: ${sisa.toLocaleString('id-ID')} unit
+            </span>`;
+        } else {
+            batchInfo.innerHTML = `<span style="color: #0369a1; font-weight: 600; background: #f0f9ff; padding: 0.15rem 0.5rem; border-radius: 4px; border: 1px solid #bae6fd;">
+                Pilihan Manual: Masuk ${tglMasuk} • Maks: ${sisa.toLocaleString('id-ID')} unit
+            </span>`;
+        }
+
+        const hargaInput = row.querySelector('.harga-input');
+        if (harga > 0) {
+            hargaInput.value = harga;
         }
 
         calcRow(selectEl);
@@ -298,19 +311,34 @@
         const qtyInput = row.querySelector('.qty-input');
         const hargaInput = row.querySelector('.harga-input');
         const batchSelect = row.querySelector('.batch-select');
+        const batchInfo = row.querySelector('.batch-info');
         const selectedBatchOpt = batchSelect ? batchSelect.selectedOptions[0] : null;
 
         const qty = parseFloat(qtyInput.value) || 0;
         const harga = parseFloat(hargaInput.value) || 0;
         const sisa = selectedBatchOpt ? parseFloat(selectedBatchOpt.getAttribute('data-sisa') || 0) : Infinity;
 
-        // Warning jika qty > sisa
+        // Warning tegas jika qty yang diminta melebihi sisa fisik batch
         if (selectedBatchOpt && selectedBatchOpt.value && qty > sisa) {
             qtyInput.style.borderColor = '#dc2626';
             qtyInput.style.backgroundColor = '#fef2f2';
-        } else {
+            batchInfo.innerHTML = `<span style="color: #dc2626; font-weight: 700; background: #fee2e2; padding: 0.2rem 0.5rem; border-radius: 4px; border: 1px solid #fecaca; display: inline-block;">
+                ⚠️ Melebihi sisa batch (${sisa.toLocaleString('id-ID')}). Ambil ${sisa.toLocaleString('id-ID')} di baris ini, lalu klik "+ Tambah Baris" untuk sisa ${(qty - sisa).toLocaleString('id-ID')} dari batch berikutnya.
+            </span>`;
+        } else if (selectedBatchOpt && selectedBatchOpt.value) {
             qtyInput.style.borderColor = '#cbd5e1';
             qtyInput.style.backgroundColor = '#ffffff';
+            const tglMasuk = selectedBatchOpt.getAttribute('data-masuk') || '-';
+            const isFirstBatch = (batchSelect.selectedIndex === 0);
+            if (isFirstBatch) {
+                batchInfo.innerHTML = `<span style="color: #065f46; font-weight: 700; background: #ecfdf5; padding: 0.15rem 0.5rem; border-radius: 4px; border: 1px solid #a7f3d0;">
+                    ⭐ Rekomendasi FIFO: Batch masuk paling awal (${tglMasuk}) • Maks: ${sisa.toLocaleString('id-ID')} unit
+                </span>`;
+            } else {
+                batchInfo.innerHTML = `<span style="color: #0369a1; font-weight: 600; background: #f0f9ff; padding: 0.15rem 0.5rem; border-radius: 4px; border: 1px solid #bae6fd;">
+                    Pilihan Manual: Masuk ${tglMasuk} • Maks: ${sisa.toLocaleString('id-ID')} unit
+                </span>`;
+            }
         }
 
         const subtotal = qty * harga;
@@ -318,6 +346,7 @@
 
         calculateGrandTotal();
     }
+
 
     function calculateGrandTotal() {
         let totalQty = 0;

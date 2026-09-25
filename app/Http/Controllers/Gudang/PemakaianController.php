@@ -79,6 +79,7 @@ class PemakaianController extends Controller
         // Opsi tujuan pemakaian standar operasional pabrik Mirasa
         $tujuanOptions = [
             'PRODUKSI IFM',
+            'PRODUKSI PING-PING',
             'PRODUKSI BWF',
             'PRODUKSI ASIN BARCO',
             'PACKING EKSPOR',
@@ -141,7 +142,8 @@ class PemakaianController extends Controller
     }
 
     /**
-     * Endpoint AJAX untuk mengambil daftar batch yang tersedia di suatu gudang untuk barang tertentu.
+     * Endpoint AJAX untuk mengambil daftar batch aktif (sisa > 0) diurutkan FIFO (paling lama dibeli).
+     * Batch yang sudah habis (sisa_qty = 0) dieliminasi total dari dropdown.
      */
     public function getBatches(Request $request): JsonResponse
     {
@@ -151,13 +153,28 @@ class PemakaianController extends Controller
         $batches = DatStokBatch::where('gudang_id', $gudangId)
             ->where('barang_id', $barangId)
             ->where('sisa_qty', '>', 0)
+            ->where('deleted_st', false)
             ->orderByRaw('expired_tgl ASC NULLS LAST')
             ->orderBy('created_at', 'asc')
-            ->get(['stok_id', 'batch_no', 'sisa_qty', 'harga_satuan', 'expired_tgl']);
+            ->orderBy('stok_id', 'asc')
+            ->get(['stok_id', 'batch_no', 'sisa_qty', 'harga_satuan', 'expired_tgl', 'created_at']);
+
+        $formattedBatches = $batches->values()->map(function ($b, $index) {
+            return [
+                'stok_id'      => $b->stok_id,
+                'batch_no'     => $b->batch_no,
+                'sisa_qty'     => (float) $b->sisa_qty,
+                'harga_satuan' => (float) $b->harga_satuan,
+                'expired_tgl'  => $b->expired_tgl ? \Carbon\Carbon::parse($b->expired_tgl)->format('d/m/Y') : null,
+                'tgl_terima'   => $b->created_at ? $b->created_at->format('d/m/Y') : '-',
+                'is_fifo_top'  => $index === 0,
+            ];
+        });
 
         return response()->json([
             'status'  => 'success',
-            'batches' => $batches,
+            'batches' => $formattedBatches,
         ]);
     }
 }
+

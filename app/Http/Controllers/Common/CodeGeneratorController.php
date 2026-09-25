@@ -35,6 +35,20 @@ class CodeGeneratorController extends Controller
                 $jenis = $request->query('jenis');
                 $code = $this->codeGeneratorService->generateBarangCode($jenis, $name);
                 break;
+            case 'batch':
+                $barangId = $request->query('barang_id');
+                $date = $request->query('date', date('Y-m-d'));
+                $exclude = $request->query('exclude', '');
+                $excludeArray = array_filter(array_map('trim', explode(',', (string) $exclude)));
+
+                $barang = $barangId ? \App\Models\MasterData\MstBarang::find($barangId) : null;
+                $code = $this->codeGeneratorService->generateBatchNo(
+                    $barang?->barang_cd ?? $request->query('code'),
+                    $date,
+                    $barang?->barang_nm ?? $name,
+                    $excludeArray
+                );
+                break;
             default:
                 return response()->json([
                     'status'  => 'error',

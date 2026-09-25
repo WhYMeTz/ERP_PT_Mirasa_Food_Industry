@@ -207,10 +207,20 @@
         }
         main {
             flex: 1;
-            max-width: 1400px;
             width: 100%;
-            margin: 1.5rem auto;
-            padding: 0 1.5rem;
+            max-width: 100%;
+            margin: 1.25rem 0;
+            padding: 0 1.75rem;
+        }
+
+        @media (max-width: 768px) {
+            header {
+                padding: 0.65rem 1rem;
+            }
+            main {
+                padding: 0 1rem;
+                margin: 1rem 0;
+            }
         }
         .table-compact th, .table-compact td {
             padding: 0.5rem 0.45rem !important;

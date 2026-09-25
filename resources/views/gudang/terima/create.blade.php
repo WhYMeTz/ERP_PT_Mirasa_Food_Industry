@@ -186,20 +186,30 @@
                 <tbody id="terimaItemsContainer">
                     @if ($selectedPo && $selectedPo->details->isNotEmpty())
                         {{-- Prefilled items from selected PO --}}
+                        @php $prefilledBatches = []; @endphp
                         @foreach ($selectedPo->details as $idx => $pdtl)
                             @if ((float) $pdtl->sisa_qty > 0)
+                                @php
+                                    $batchVal = app(\App\Services\Common\CodeGeneratorService::class)->generateBatchNo(
+                                        $pdtl->barang?->barang_cd, 
+                                        old('terima_tgl', date('Y-m-d')), 
+                                        $pdtl->barang?->barang_nm,
+                                        $prefilledBatches
+                                    );
+                                    $prefilledBatches[] = $batchVal;
+                                @endphp
                                 <tr class="terima-row" data-index="{{ $idx }}" data-sisa="{{ (float) $pdtl->sisa_qty }}">
                                     <td class="row-num" style="font-weight: 700; text-align: center; color: #475569; background: #f1f5f9;">{{ $idx + 1 }}</td>
                                     <td>
                                         <input type="hidden" name="items[{{ $idx }}][podtl_id]" value="{{ $pdtl->podtl_id }}">
-                                        <input type="hidden" name="items[{{ $idx }}][barang_id]" value="{{ $pdtl->barang_id }}">
+                                        <input type="hidden" name="items[{{ $idx }}][barang_id]" value="{{ $pdtl->barang_id }}" class="item-barang-id">
                                         <strong style="color: #0f172a; display: block; font-size: 0.85rem;">{{ $pdtl->barang?->barang_nm }}</strong>
                                         <span style="font-size: 0.725rem; color: #64748b;">
                                             Pesanan: {{ number_format((float) $pdtl->pesan_qty, 2) }} | <strong>Sisa: {{ number_format((float) $pdtl->sisa_qty, 2) }}</strong>
                                         </span>
                                     </td>
                                     <td>
-                                        <input type="text" name="items[{{ $idx }}][batch_no]" value="{{ app(\App\Services\Common\CodeGeneratorService::class)->generateBatchNo($pdtl->barang?->barang_cd, date('Y-m-d'), $pdtl->barang?->barang_nm) }}" class="form-control item-batch" style="font-family: monospace; font-weight: 700; color: #0284c7;" required>
+                                        <input type="text" name="items[{{ $idx }}][batch_no]" value="{{ old("items.{$idx}.batch_no", $batchVal) }}" class="form-control item-batch" style="font-family: monospace; font-weight: 700; color: #0284c7;" required>
                                     </td>
                                     <td>
                                         <input type="date" name="items[{{ $idx }}][expired_tgl]" class="form-control">
@@ -443,48 +453,61 @@
         });
     }
 
-    function updateTerimaSatuanAndBatch(selectElem) {
+    async function updateTerimaSatuanAndBatch(selectElem) {
         const row = selectElem.closest('tr');
-        const selectedOption = selectElem.options[selectElem.selectedIndex];
-        if (!selectedOption || !selectedOption.value) return;
+        const selectedOption = selectElem.options ? selectElem.options[selectElem.selectedIndex] : null;
+        const barangId = selectElem.value;
+        if (!barangId) {
+            const batchInput = row.querySelector('.item-batch');
+            if (batchInput) {
+                batchInput.value = '';
+                batchInput.placeholder = 'Otomatis saat barang dipilih';
+            }
+            const satuanSpan = row.querySelector('.row-satuan');
+            if (satuanSpan) satuanSpan.innerText = '-';
+            const hargaInput = row.querySelector('.item-harga') || row.querySelector('input[name*="[harga_nominal]"]');
+            if (hargaInput) hargaInput.value = 0;
+            calculateTotalTerima();
+            return;
+        }
 
-        const satuan = selectedOption.dataset.satuan || '-';
-        const acronym = selectedOption.dataset.acronym || 'BRG';
-        const defaultHarga = parseFloat(selectedOption.dataset.harga || 0);
+        const satuan = selectedOption?.dataset?.satuan || '-';
+        const defaultHarga = parseFloat(selectedOption?.dataset?.harga || 0);
 
         const satuanSpan = row.querySelector('.row-satuan');
-        if (satuanSpan) satuanSpan.innerText = satuan;
+        if (satuanSpan && satuan !== '-') satuanSpan.innerText = satuan;
 
-        // Ambil tanggal dari input terima_tgl (format DDMMYYYY)
-        const tglInput = document.getElementById('terima_tgl')?.value;
-        let dateFormatted = '';
-        if (tglInput) {
-            const parts = tglInput.split('-');
-            if (parts.length === 3) {
-                dateFormatted = parts[2] + parts[1] + parts[0];
-            }
-        }
-        if (!dateFormatted) {
-            const today = new Date();
-            dateFormatted = String(today.getDate()).padStart(2, '0') + String(today.getMonth() + 1).padStart(2, '0') + today.getFullYear();
-        }
+        // Ambil tanggal dari input terima_tgl
+        const tglInput = document.getElementById('terima_tgl')?.value || '{{ date("Y-m-d") }}';
 
-        // Hitung urutan khusus untuk barang ini di form agar mandiri per barang & reset ke 01
-        const prefix = `${acronym}-${dateFormatted}-`;
-        let seq = 1;
+        // Kumpulkan batch yang saat ini sudah terisi di baris lain pada form ini agar tidak bentrok
+        const excludeBatches = [];
         document.querySelectorAll('.terima-row').forEach(r => {
             if (r !== row) {
-                const otherBatch = r.querySelector('.item-batch')?.value || '';
-                if (otherBatch.startsWith(prefix)) {
-                    seq++;
-                }
+                const bVal = r.querySelector('.item-batch')?.value?.trim();
+                if (bVal) excludeBatches.push(bVal);
             }
         });
 
-        const seqStr = String(seq).padStart(2, '0');
         const batchInput = row.querySelector('.item-batch');
         if (batchInput) {
-            batchInput.value = `${prefix}${seqStr}`;
+            batchInput.placeholder = 'Memuat kode batch...';
+            try {
+                // Gunakan relative path agar 100% same-origin tanpa kendala port/host CORS
+                const url = `/ajax/generate-code?type=batch&barang_id=${encodeURIComponent(barangId)}&date=${encodeURIComponent(tglInput)}&exclude=${encodeURIComponent(excludeBatches.join(','))}`;
+                const resp = await fetch(url, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+                const data = await resp.json();
+                if (data.status === 'success' && data.code) {
+                    batchInput.value = data.code;
+                }
+            } catch (err) {
+                console.error('Gagal mengambil nomor batch berikutnya:', err);
+            }
         }
 
         const hargaInput = row.querySelector('.item-harga') || row.querySelector('input[name*="[harga_nominal]"]');
@@ -493,6 +516,27 @@
         }
         calculateTotalTerima();
     }
+
+    // Ketika tanggal penerimaan diubah, sinkronkan otomatis seluruh nomor batch di tabel
+    document.getElementById('terima_tgl')?.addEventListener('change', async function() {
+        const rows = document.querySelectorAll('.terima-row');
+        for (const row of rows) {
+            const selectElem = row.querySelector('.item-barang') || row.querySelector('.item-barang-id');
+            if (selectElem && selectElem.value) {
+                await updateTerimaSatuanAndBatch(selectElem);
+            }
+        }
+    });
+
+    // Inisialisasi awal saat halaman selesai dimuat: jika ada baris yang sudah terpilih barangnya, ambil batch berikutnya
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('.terima-row').forEach(row => {
+            const selectElem = row.querySelector('.item-barang');
+            if (selectElem && selectElem.value) {
+                updateTerimaSatuanAndBatch(selectElem);
+            }
+        });
+    });
 
     // Kalkulasi Lengkap Timbangan Pabrik: Bruto, Reject/Afkir, Netto Bersih, dan Nilai Fisik
     function calculateTotalTerima() {

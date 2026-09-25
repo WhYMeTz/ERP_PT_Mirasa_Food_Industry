@@ -67,7 +67,7 @@
                 <label style="display: block; font-weight: 600; font-size: 0.875rem; color: #334155; margin-bottom: 0.35rem;">
                     Tujuan Pemakaian / SPK <span style="color: #ef4444;">*</span>
                 </label>
-                <input type="text" name="tujuan_pemakaian" id="tujuan_pemakaian" list="tujuanList" value="{{ old('tujuan_pemakaian', 'PRODUKSI IFM') }}" class="form-control" placeholder="Contoh: PRODUKSI IFM, PACKING EKSPOR" required>
+                <input type="text" name="tujuan_pemakaian" id="tujuan_pemakaian" list="tujuanList" value="{{ old('tujuan_pemakaian', 'PRODUKSI IFM') }}" class="form-control" placeholder="Contoh: PRODUKSI IFM, PRODUKSI BWF, PACKING EKSPOR" required>
                 <datalist id="tujuanList">
                     @foreach ($tujuanOptions as $opt)
                         <option value="{{ $opt }}"></option>

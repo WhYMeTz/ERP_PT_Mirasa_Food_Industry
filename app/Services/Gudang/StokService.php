@@ -4,9 +4,12 @@ namespace App\Services\Gudang;
 
 use App\Models\Gudang\DatStokBatch;
 use App\Models\Gudang\DatStokLedger;
+use App\Models\MasterData\MstBarang;
 use Exception;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\DB;
+
 
 class StokService
 {
@@ -202,9 +205,126 @@ class StokService
     }
 
     /**
+     * Mengambil ringkasan metrik KPI inventaris gudang (Aset Nilai, Total Batch, Status SKU).
+     */
+     public function getStokKpiMetrics(?int $gudangId = null): array
+     {
+         $batchQuery = DatStokBatch::where('deleted_st', false);
+         if ($gudangId) {
+             $batchQuery->where('gudang_id', $gudangId);
+         }
+
+         $totalNilaiPersediaan = (float) (clone $batchQuery)
+             ->where('sisa_qty', '>', 0)
+             ->selectRaw('COALESCE(SUM(sisa_qty * harga_satuan), 0) as total')
+             ->value('total');
+
+         $totalBatchAktif = (int) (clone $batchQuery)
+             ->where('sisa_qty', '>', 0)
+             ->count();
+
+         // Hitung status SKU barang
+         $sub = (clone $batchQuery)->selectRaw('barang_id, SUM(sisa_qty) as total_sisa')->groupBy('barang_id');
+
+         $barangStats = MstBarang::active()
+             ->leftJoinSub($sub, 's', 'mst_barang.barang_id', '=', 's.barang_id')
+             ->selectRaw('
+                 COUNT(*) as total_sku,
+                 COUNT(CASE WHEN COALESCE(s.total_sisa, 0) > 0 THEN 1 END) as sku_tersedia,
+                 COUNT(CASE WHEN COALESCE(s.total_sisa, 0) > 0 AND COALESCE(s.total_sisa, 0) <= mst_barang.batas_minimum_qty THEN 1 END) as sku_menipis,
+                 COUNT(CASE WHEN COALESCE(s.total_sisa, 0) <= 0 THEN 1 END) as sku_habis
+             ')
+             ->first();
+
+         return [
+             'total_nilai'   => $totalNilaiPersediaan,
+             'batch_aktif'   => $totalBatchAktif,
+             'total_sku'     => (int) ($barangStats->total_sku ?? 0),
+             'sku_tersedia'  => (int) ($barangStats->sku_tersedia ?? 0),
+             'sku_menipis'   => (int) ($barangStats->sku_menipis ?? 0),
+             'sku_habis'     => (int) ($barangStats->sku_habis ?? 0),
+         ];
+     }
+
+    /**
+     * Mengambil ringkasan stok teragregasi per-barang (Level 1) beserta relasi sub-batch FIFO (Level 2).
+     */
+    public function getStokSummaryByBarang(
+        int $perPage = 15,
+        ?int $gudangId = null,
+        ?string $search = null,
+        ?string $status = null
+    ): LengthAwarePaginator {
+        $subquery = DatStokBatch::selectRaw('
+            barang_id,
+            COALESCE(SUM(qty_awal), 0) as total_qty_awal,
+            COALESCE(SUM(sisa_qty), 0) as total_sisa_qty,
+            COALESCE(SUM(sisa_qty * harga_satuan), 0) as total_sisa_nilai,
+            COUNT(CASE WHEN sisa_qty > 0 THEN 1 END) as active_batch_count,
+            COUNT(*) as total_batch_count
+        ')
+        ->where('deleted_st', false);
+
+        if ($gudangId) {
+            $subquery->where('gudang_id', $gudangId);
+        }
+        $subquery->groupBy('barang_id');
+
+        $query = MstBarang::active()
+            ->leftJoinSub($subquery, 'stok_agg', 'mst_barang.barang_id', '=', 'stok_agg.barang_id')
+            ->select(
+                'mst_barang.*',
+                DB::raw('COALESCE(stok_agg.total_qty_awal, 0) as total_qty_awal'),
+                DB::raw('COALESCE(stok_agg.total_sisa_qty, 0) as total_sisa_qty'),
+                DB::raw('COALESCE(stok_agg.total_sisa_nilai, 0) as total_sisa_nilai'),
+                DB::raw('COALESCE(stok_agg.active_batch_count, 0) as active_batch_count'),
+                DB::raw('COALESCE(stok_agg.total_batch_count, 0) as total_batch_count')
+            )
+            ->with([
+                'jenisBarang',
+                'satuanDasar',
+                'stokBatches' => function ($q) use ($gudangId) {
+                    if ($gudangId) {
+                        $q->where('gudang_id', $gudangId);
+                    }
+                    $q->with('gudang')
+                      ->where('deleted_st', false)
+                      ->orderByRaw('CASE WHEN sisa_qty > 0 THEN 1 ELSE 0 END DESC')
+                      ->orderByRaw('expired_tgl ASC NULLS LAST')
+                      ->orderBy('created_at', 'asc');
+                }
+            ]);
+
+        if (!empty($search)) {
+            $query->where(function ($q) use ($search) {
+                $q->where('barang_nm', 'ILIKE', "%{$search}%")
+                  ->orWhere('barang_cd', 'ILIKE', "%{$search}%")
+                  ->orWhereHas('jenisBarang', function ($jq) use ($search) {
+                      $jq->where('jenis_barang_nm', 'ILIKE', "%{$search}%");
+                  });
+            });
+        }
+
+        if ($status === 'tersedia') {
+            $query->whereRaw('COALESCE(stok_agg.total_sisa_qty, 0) > 0');
+        } elseif ($status === 'menipis') {
+            $query->whereRaw('COALESCE(stok_agg.total_sisa_qty, 0) > 0 AND COALESCE(stok_agg.total_sisa_qty, 0) <= mst_barang.batas_minimum_qty');
+        } elseif ($status === 'habis') {
+            $query->whereRaw('COALESCE(stok_agg.total_sisa_qty, 0) <= 0');
+        } elseif ($status === 'aman') {
+            $query->whereRaw('COALESCE(stok_agg.total_sisa_qty, 0) > mst_barang.batas_minimum_qty');
+        }
+
+        return $query->orderByRaw('CASE WHEN COALESCE(stok_agg.total_sisa_qty, 0) > 0 THEN 1 ELSE 0 END DESC')
+            ->orderBy('mst_barang.barang_nm', 'asc')
+            ->paginate($perPage);
+    }
+
+    /**
      * Mengambil data monitoring stok per batch & gudang untuk tampilan dashboard gudang / Lacak Stok.
      */
     public function getMonitoringStok(int $perPage = 15, ?int $gudangId = null, ?string $search = null, ?string $status = null): LengthAwarePaginator
+
     {
         $query = DatStokBatch::with(['barang.satuanDasar', 'barang.jenisBarang', 'gudang']);
 

@@ -71,4 +71,13 @@ class MstBarang extends Model
     {
         return $this->belongsTo(MstSatuan::class, 'satuan_besar_id', 'satuan_id');
     }
+
+    /**
+     * Relasi ke Batch Stok Gudang
+     */
+    public function stokBatches(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(\App\Models\Gudang\DatStokBatch::class, 'barang_id', 'barang_id');
+    }
 }
+

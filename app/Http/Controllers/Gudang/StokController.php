@@ -17,28 +17,50 @@ class StokController extends Controller
     ) {}
 
     /**
-     * Tampilan dashboard monitoring stok gudang per nomor batch & tanggal kadaluarsa.
+     * Tampilan dashboard monitoring stok gudang (Ringkasan per-Barang 2-Level & Detail per-Batch).
      */
     public function index(Request $request): View|JsonResponse
     {
         $perPage = (int) $request->input('per_page', 20);
         $search = $request->input('search');
-        $status = $request->input('status'); // 'tersedia', 'habis', or null for all
+        $status = $request->input('status'); // 'tersedia', 'menipis', 'habis', 'aman', or null for all
         $gudangId = $request->input('gudang_id') ? (int) $request->input('gudang_id') : null;
+        $viewType = $request->input('view', 'summary'); // 'summary' (Ringkasan Barang) atau 'batch' (Detail Sheet)
 
-        $stokList = $this->stokService->getMonitoringStok($perPage, $gudangId, $search, $status);
+        $kpiMetrics = $this->stokService->getStokKpiMetrics($gudangId);
         $gudangList = MstGudang::active()->orderBy('gudang_nm')->get();
+
+        if ($viewType === 'batch') {
+            $stokList = $this->stokService->getMonitoringStok($perPage, $gudangId, $search, $status);
+            $summaryList = null;
+            $dataForJson = $stokList;
+        } else {
+            $summaryList = $this->stokService->getStokSummaryByBarang($perPage, $gudangId, $search, $status);
+            $stokList = null;
+            $dataForJson = $summaryList;
+        }
 
         if ($request->wantsJson()) {
             return response()->json([
-                'status'  => 'success',
-                'message' => 'Data monitoring stok berhasil diambil.',
-                'data'    => $stokList,
+                'status'      => 'success',
+                'view'        => $viewType,
+                'kpi_metrics' => $kpiMetrics,
+                'data'        => $dataForJson,
             ]);
         }
 
-        return view('gudang.stok.index', compact('stokList', 'gudangList', 'search', 'gudangId', 'status'));
+        return view('gudang.stok.index', compact(
+            'summaryList',
+            'stokList',
+            'gudangList',
+            'search',
+            'gudangId',
+            'status',
+            'viewType',
+            'kpiMetrics'
+        ));
     }
+
 
     /**
      * Tampilan audit kartu stok (Stock Ledger) per barang dan mutasi IN / OUT.

@@ -79,6 +79,7 @@ class PemakaianController extends Controller
         // Opsi tujuan pemakaian standar operasional pabrik Mirasa
         $tujuanOptions = [
             'PRODUKSI IFM',
+            'PRODUKSI BWF',
             'PRODUKSI ASIN BARCO',
             'PACKING EKSPOR',
             'PACKING JUMBO',

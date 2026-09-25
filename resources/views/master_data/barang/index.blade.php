@@ -9,10 +9,12 @@
         <p style="color: #64748b; font-size: 0.875rem; margin-top: 0.25rem;">Kelola data katalog bahan baku, barang dalam proses, dan produk jadi.</p>
     </div>
     <div>
-        <button type="button" onclick="openModal('modalTambahBarang')" class="btn btn-primary">
-            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-            Tambah Barang Baru
-        </button>
+        @if (Auth::user()?->canManageMasterData())
+            <button type="button" onclick="openModal('modalTambahBarang')" class="btn btn-primary">
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                Tambah Barang Baru
+            </button>
+        @endif
     </div>
 </div>
 
@@ -61,31 +63,35 @@
                             Rp {{ number_format((float) $item->harga_beli_standar, 2, ',', '.') }}
                         </td>
                         <td style="text-align: right;">
-                            <div style="display: inline-flex; gap: 0.35rem;">
-                                <button type="button" 
-                                    class="btn btn-secondary btn-sm" 
-                                    onclick="editBarang(
-                                        {{ $item->barang_id }},
-                                        '{{ addslashes($item->barang_cd) }}',
-                                        '{{ addslashes($item->barang_nm) }}',
-                                        {{ $item->jenis_barang_id }},
-                                        {{ $item->satuan_dasar_id }},
-                                        '{{ $item->satuan_besar_id ?? '' }}',
-                                        '{{ number_format($item->konversi_qty, 4, '.', '') }}',
-                                        '{{ number_format($item->batas_minimum_qty ?? 0, 4, '.', '') }}',
-                                        '{{ number_format($item->harga_beli_standar ?? 0, 2, '.', '') }}'
-                                    )"
-                                    title="Edit">
-                                    Edit
-                                </button>
-                                <form action="{{ route('master.barang.destroy', $item->barang_id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menonaktifkan barang ini?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn btn-danger btn-sm" title="Hapus">
-                                        Hapus
+                            @if (Auth::user()?->canManageMasterData())
+                                <div style="display: inline-flex; gap: 0.35rem;">
+                                    <button type="button" 
+                                        class="btn btn-secondary btn-sm" 
+                                        onclick="editBarang(
+                                            {{ $item->barang_id }},
+                                            '{{ addslashes($item->barang_cd) }}',
+                                            '{{ addslashes($item->barang_nm) }}',
+                                            {{ $item->jenis_barang_id }},
+                                            {{ $item->satuan_dasar_id }},
+                                            '{{ $item->satuan_besar_id ?? '' }}',
+                                            '{{ number_format($item->konversi_qty, 4, '.', '') }}',
+                                            '{{ number_format($item->batas_minimum_qty ?? 0, 4, '.', '') }}',
+                                            '{{ number_format($item->harga_beli_standar ?? 0, 2, '.', '') }}'
+                                        )"
+                                        title="Edit">
+                                        Edit
                                     </button>
-                                </form>
-                            </div>
+                                    <form action="{{ route('master.barang.destroy', $item->barang_id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menonaktifkan barang ini?')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-danger btn-sm" title="Hapus">
+                                            Hapus
+                                        </button>
+                                    </form>
+                                </div>
+                            @else
+                                <span style="color: #94a3b8; font-size: 0.8rem;">Lihat Saja</span>
+                            @endif
                         </td>
                     </tr>
                 @empty

@@ -9,10 +9,12 @@
         <p style="color: #64748b; font-size: 0.875rem; margin-top: 0.25rem;">Kelola dokumen pemesanan bahan baku singkong, minyak, bumbu, dan kemasan ke mitra supplier.</p>
     </div>
     <div>
-        <a href="{{ route('gudang.po.create') }}" class="btn btn-primary">
-            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-            Buat PO Baru
-        </a>
+        @if (Auth::user()?->canCreatePo())
+            <a href="{{ route('gudang.po.create') }}" class="btn btn-primary">
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                Buat PO Baru
+            </a>
+        @endif
     </div>
 </div>
 
@@ -93,7 +95,7 @@
                                 <a href="{{ route('gudang.po.show', $po->po_id) }}" class="btn btn-secondary btn-sm" title="Lihat Detail">
                                     Detail
                                 </a>
-                                @if (in_array($po->status_cd, ['APPROVED', 'PARTIAL']))
+                                @if (in_array($po->status_cd, ['APPROVED', 'PARTIAL']) && Auth::user()?->canCreateTerima())
                                     <a href="{{ route('gudang.terima.create', ['po_id' => $po->po_id]) }}" class="btn btn-primary btn-sm" style="background:#059669;" title="Terima Barang Fisik">
                                         Terima
                                     </a>

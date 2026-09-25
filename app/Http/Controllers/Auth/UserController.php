@@ -20,7 +20,7 @@ class UserController extends Controller
         protected KaryawanService $karyawanService
     ) {}
 
-    public function index(Request $request): View|JsonResponse
+    public function index(Request $request, \App\Services\Auth\PermissionService $permissionService): View|JsonResponse
     {
         $perPage = (int) $request->input('per_page', 15);
         $search = $request->input('search');
@@ -30,6 +30,8 @@ class UserController extends Controller
         $karyawanList = $this->karyawanService->getAllActive();
         $gudangList = MstGudang::active()->orderBy('gudang_nm')->get();
         $roleList = $this->userService->getAvailableRoles();
+        $matrix = $permissionService->getPermissionMatrix();
+        $modules = \App\Services\Auth\PermissionService::MODULES;
 
         if ($request->wantsJson()) {
             return response()->json([
@@ -39,7 +41,10 @@ class UserController extends Controller
             ]);
         }
 
-        return view('master_data.user.index', compact('userList', 'karyawanList', 'gudangList', 'roleList', 'search', 'role'));
+        return view('master_data.user.index', compact(
+            'userList', 'karyawanList', 'gudangList', 'roleList', 'search', 'role',
+            'matrix', 'modules'
+        ));
     }
 
     public function store(StoreUserRequest $request): RedirectResponse|JsonResponse
@@ -90,5 +95,45 @@ class UserController extends Controller
         return redirect()
             ->route('admin.users.index')
             ->with('success', 'Akun pengguna berhasil dinonaktifkan.');
+    }
+
+    /**
+     * Tampilkan antarmuka pengaturan matriks hak akses per role
+     */
+    public function permissions(\App\Services\Auth\PermissionService $permissionService): View
+    {
+        $matrix = $permissionService->getPermissionMatrix();
+        $modules = \App\Services\Auth\PermissionService::MODULES;
+
+        return view('master_data.user.permissions', compact('matrix', 'modules'));
+    }
+
+    /**
+     * Simpan perubahan hak akses per role yang diatur Superadmin
+     */
+    public function updatePermissions(Request $request, \App\Services\Auth\PermissionService $permissionService): RedirectResponse
+    {
+        $singleRole = $request->input('single_role');
+        $updatedBy = auth()->user()?->name ?? 'SUPERADMIN';
+
+        if (!empty($singleRole)) {
+            $allowedForRole = $request->input('permissions', []);
+            $permissionService->updateRolePermissions($singleRole, $allowedForRole, $updatedBy);
+
+            return redirect()
+                ->route('admin.users.index')
+                ->with('success', "Hak akses untuk peran '{$singleRole}' berhasil diperbarui dan langsung aktif!");
+        }
+
+        $permissionsData = $request->input('permissions', []);
+
+        foreach (array_keys($permissionService->getPermissionMatrix()) as $roleCd) {
+            $allowedForRole = $permissionsData[$roleCd] ?? [];
+            $permissionService->updateRolePermissions($roleCd, $allowedForRole, $updatedBy);
+        }
+
+        return redirect()
+            ->route('admin.users.index')
+            ->with('success', 'Pengaturan hak akses peran berhasil diperbarui dan langsung aktif!');
     }
 }

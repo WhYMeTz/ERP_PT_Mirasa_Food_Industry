@@ -17,7 +17,7 @@ class AuthController extends Controller
     public function showLogin(): View|RedirectResponse
     {
         if (Auth::check()) {
-            return redirect()->route('master.barang.index');
+            return redirect()->route(Auth::user()->getDashboardRoute());
         }
 
         $demoUsers = User::with(['karyawan', 'gudang'])
@@ -44,7 +44,7 @@ class AuthController extends Controller
             $request->session()->regenerate();
 
             $user = Auth::user();
-            return redirect()->intended(route('master.barang.index'))
+            return redirect()->intended(route($user->getDashboardRoute()))
                 ->with('success', "Selamat datang, {$user->name}! Login berhasil sebagai {$user->role_cd}.");
         }
 
@@ -63,7 +63,7 @@ class AuthController extends Controller
         Auth::login($user);
         $request->session()->regenerate();
 
-        return redirect()->back()
+        return redirect()->route($user->getDashboardRoute())
             ->with('success', "Beralih akun berhasil! Anda sekarang masuk sebagai {$user->name} ({$user->role_cd}).");
     }
 

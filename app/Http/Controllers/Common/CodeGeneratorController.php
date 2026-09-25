@@ -21,7 +21,8 @@ class CodeGeneratorController extends Controller
 
         switch ($type) {
             case 'supplier':
-                $code = $this->codeGeneratorService->generateSupplierCode($name);
+                $jenis = $request->query('jenis');
+                $code = $this->codeGeneratorService->generateSupplierCode($name, $jenis);
                 break;
             case 'customer':
                 $code = $this->codeGeneratorService->generateCustomerCode($name);

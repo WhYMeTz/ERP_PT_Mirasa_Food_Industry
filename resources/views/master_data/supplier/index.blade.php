@@ -105,30 +105,25 @@
                 <div class="form-group">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.375rem;">
                         <label for="create_supplier_cd" class="form-label" style="margin-bottom: 0;">Kode Supplier <span style="color:#ef4444;">*</span></label>
-                        <div style="display: flex; gap: 0.35rem;">
-                            <button type="button" class="btn btn-secondary btn-sm" data-target="create_supplier_cd" onclick="fetchNextCode('supplier', 'create_supplier_cd', {name: document.getElementById('create_supplier_nm').value})" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;" title="Buat kode dari singkatan nama">
-                                ✨ Dari Singkatan
-                            </button>
-                            <button type="button" class="btn btn-secondary btn-sm" data-target="create_supplier_cd" onclick="fetchNextCode('supplier', 'create_supplier_cd')" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;" title="Reset ke nomor urut standar">
-                                ↺ Reset
-                            </button>
-                        </div>
+                        <button type="button" class="btn btn-secondary btn-sm" data-target="create_supplier_cd" onclick="const opt = document.getElementById('create_jenis_supplier_id').options[document.getElementById('create_jenis_supplier_id').selectedIndex]; fetchNextCode('supplier', 'create_supplier_cd', {name: document.getElementById('create_supplier_nm').value, jenis: opt?.dataset?.cd || ''})" style="padding: 0.2rem 0.6rem; font-size: 0.75rem;" title="Generate Kode Otomatis">
+                            ↺ Auto Generate
+                        </button>
                     </div>
-                    <input type="text" id="create_supplier_cd" name="supplier_cd" value="{{ $nextSupplierCode ?? '' }}" class="form-control" placeholder="Contoh: SUP-SMN-01" style="text-transform: uppercase;" required>
-                    <small style="color: #64748b; font-size: 0.75rem; display: block; margin-top: 0.25rem;">Otomatis mengikuti singkatan nama (misal: PT Sawit Murni → SUP-SMN-01) atau nomor urut.</small>
+                    <input type="text" id="create_supplier_cd" name="supplier_cd" value="{{ $nextSupplierCode ?? '' }}" class="form-control" placeholder="Contoh: SKG-UNT atau SUP-SMT" style="text-transform: uppercase;" required>
+                    <small style="color: #64748b; font-size: 0.75rem; display: block; margin-top: 0.25rem;">Petani Singkong otomatis berawalan SKG- (misal: SKG-UNT), Vendor Industri berawalan SUP- (misal: SUP-SMT).</small>
+                </div>
+                <div class="form-group">
+                    <label for="create_jenis_supplier_id" class="form-label">Jenis Supplier <span style="color:#ef4444;">*</span></label>
+                    <select id="create_jenis_supplier_id" name="jenis_supplier_id" class="form-control" onchange="const opt = this.options[this.selectedIndex]; fetchNextCode('supplier', 'create_supplier_cd', {name: document.getElementById('create_supplier_nm')?.value || '', jenis: opt?.dataset?.cd || ''})" required>
+                        <option value="">-- Pilih Jenis Supplier --</option>
+                        @foreach ($jenisSupplierList as $js)
+                            <option value="{{ $js->jenis_supplier_id }}" data-cd="{{ $js->jenis_supplier_cd }}">{{ $js->jenis_supplier_nm }} ({{ $js->jenis_supplier_cd }})</option>
+                        @endforeach
+                    </select>
                 </div>
                 <div class="form-group">
                     <label for="create_supplier_nm" class="form-label">Nama Supplier / Mitra <span style="color:#ef4444;">*</span></label>
-                    <input type="text" id="create_supplier_nm" name="supplier_nm" class="form-control" placeholder="Contoh: PT Sawit Murni Nusantara" oninput="debounceCodeFromName('supplier', 'create_supplier_nm', 'create_supplier_cd')" required>
-                </div>
-                <div class="form-group">
-                    <label for="create_jenis_supplier_id" class="form-label">Jenis Supplier</label>
-                    <select id="create_jenis_supplier_id" name="jenis_supplier_id" class="form-control">
-                        <option value="">-- Pilih Jenis Supplier (Opsional) --</option>
-                        @foreach ($jenisSupplierList as $js)
-                            <option value="{{ $js->jenis_supplier_id }}">{{ $js->jenis_supplier_nm }} ({{ $js->jenis_supplier_cd }})</option>
-                        @endforeach
-                    </select>
+                    <input type="text" id="create_supplier_nm" name="supplier_nm" class="form-control" placeholder="Contoh: UNTUNG atau PT. SMART TBK" oninput="const opt = document.getElementById('create_jenis_supplier_id').options[document.getElementById('create_jenis_supplier_id').selectedIndex]; debounceCodeFromName('supplier', 'create_supplier_nm', 'create_supplier_cd', {jenis: opt?.dataset?.cd || ''})" required>
                 </div>
                 <div class="form-group">
                     <label for="create_kontak_no" class="form-label">Kontak / No Telepon (WhatsApp)</label>

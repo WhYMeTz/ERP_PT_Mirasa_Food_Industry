@@ -99,20 +99,81 @@ class CodeGeneratorService
     }
 
     /**
-     * Generate kode untuk Master Supplier:
-     * - Jika ada $name: format "SUP-{AKRONIM}-01" (contoh: SUP-SMN-01)
-     * - Jika tanpa $name: format "SUP-0001"
+     * Generate kode untuk Master Supplier sesuai standar PT Mirasa Food:
+     * - Petani Singkong (Jenis RAW/SKG): SKG-[INISIAL] (contoh: SKG-STR untuk Sutrisno)
+     * - Vendor Bahan Penolong (Jenis BP/BUMBU/KEMASAN): SUP-[AKRONIM] (contoh: SUP-SMT untuk PT Smart)
      */
-    public function generateSupplierCode(?string $name = null): string
+    public function generateSupplierCode(?string $name = null, ?string $jenisSupplierCd = null): string
     {
-        if (!empty($name)) {
-            $acronym = $this->extractAcronym($name);
-            if (!empty($acronym)) {
-                return $this->generate('mst_supplier', 'supplier_cd', 'SUP-' . $acronym . '-', 2);
+        $jenisClean = strtoupper(trim((string) $jenisSupplierCd));
+        $nameClean = strtoupper(trim((string) $name));
+
+        // 1. Supplier Bahan Baku / Petani Singkong (Prefix: SKG-)
+        if (in_array($jenisClean, ['RAW', 'SKG', 'BB']) || (!empty($nameClean) && $this->isPetaniSingkong($nameClean))) {
+            return $this->generatePetaniCode($nameClean);
+        }
+
+        // 2. Supplier Bahan Penolong / Vendor Perusahaan (Prefix: SUP-)
+        return $this->generateVendorCode($nameClean);
+    }
+
+    protected function isPetaniSingkong(string $name): bool
+    {
+        if (str_contains($name, 'PT') || str_contains($name, 'CV') || str_contains($name, 'UD') || str_contains($name, 'TBK')) {
+            return false;
+        }
+        return true;
+    }
+
+    protected function generatePetaniCode(string $name): string
+    {
+        if (empty($name)) {
+            return $this->generate('mst_supplier', 'supplier_cd', 'SKG-', 3);
+        }
+
+        $words = array_values(array_filter(explode(' ', preg_replace('/[^A-Z0-9\s]/', '', $name))));
+        $firstWord = $words[0] ?? $name;
+
+        if (strlen($firstWord) <= 4) {
+            $code = $firstWord;
+        } else {
+            $firstChar = substr($firstWord, 0, 1);
+            $rest = substr($firstWord, 1);
+            $consonants = preg_replace('/[AEIOU]/', '', $rest);
+            $code = substr($firstChar . $consonants, 0, 4);
+            if (strlen($code) < 3) {
+                $code = substr($firstWord, 0, 3);
             }
         }
 
-        return $this->generate('mst_supplier', 'supplier_cd', 'SUP-', 4);
+        $candidate = 'SKG-' . $code;
+        $exists = DB::table('mst_supplier')->where('supplier_cd', $candidate)->exists();
+        if (!$exists) {
+            return $candidate;
+        }
+
+        return $this->generate('mst_supplier', 'supplier_cd', 'SKG-' . $code . '-', 2);
+    }
+
+    protected function generateVendorCode(string $name): string
+    {
+        if (empty($name)) {
+            return $this->generate('mst_supplier', 'supplier_cd', 'SUP-', 4);
+        }
+
+        $acronym = $this->extractAcronym($name);
+        if (empty($acronym)) {
+            $words = array_values(array_filter(explode(' ', preg_replace('/[^A-Z0-9\s]/', '', $name))));
+            $acronym = substr($words[0] ?? 'VND', 0, 4);
+        }
+
+        $candidate = 'SUP-' . $acronym;
+        $exists = DB::table('mst_supplier')->where('supplier_cd', $candidate)->exists();
+        if (!$exists) {
+            return $candidate;
+        }
+
+        return $this->generate('mst_supplier', 'supplier_cd', 'SUP-' . $acronym . '-', 2);
     }
 
     /**

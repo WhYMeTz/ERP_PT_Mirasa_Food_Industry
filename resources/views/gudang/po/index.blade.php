@@ -89,16 +89,9 @@
                             Rp {{ number_format((float) $po->total_nominal, 0, ',', '.') }}
                         </td>
                         <td style="text-align: right;">
-                            <div style="display: inline-flex; gap: 0.35rem;">
-                                <a href="{{ route('gudang.po.show', $po->po_id) }}" class="btn btn-secondary btn-sm" title="Lihat Detail">
-                                    Detail
-                                </a>
-                                @if (in_array($po->status_cd, ['APPROVED', 'PARTIAL']))
-                                    <a href="{{ route('gudang.terima.create', ['po_id' => $po->po_id]) }}" class="btn btn-primary btn-sm" style="background:#059669;" title="Terima Barang Fisik">
-                                        Terima
-                                    </a>
-                                @endif
-                            </div>
+                            <a href="{{ route('gudang.po.show', $po->po_id) }}" class="btn btn-secondary btn-sm">
+                                Detail PO
+                            </a>
                         </td>
                     </tr>
                 @empty

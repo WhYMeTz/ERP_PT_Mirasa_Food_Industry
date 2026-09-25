@@ -13,6 +13,9 @@
 
 <form action="{{ route('gudang.terima.store') }}" method="POST" id="formTerima">
     @csrf
+    @if ($selectedPo)
+        <input type="hidden" name="redirect_to" value="po">
+    @endif
 
     {{-- KARTU 1: INFORMASI HEADER PENERIMAAN --}}
     <div class="card" style="margin-bottom: 1.5rem;">
@@ -106,9 +109,19 @@
                 <strong style="color: #0f172a; font-size: 1rem;">2. Fisik Barang Diterima & Alokasi Batch</strong>
                 <p style="color: #64748b; font-size: 0.8rem; margin-top: 0.15rem;">Setiap baris akan menghasilkan nomor batch unik untuk pelacakan FIFO & kadaluarsa di gudang.</p>
             </div>
-            <button type="button" onclick="addTerimaRow()" class="btn btn-secondary btn-sm" style="font-weight: 600;">
-                + Tambah Baris Barang
-            </button>
+            <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                @if ($selectedPo)
+                    <button type="button" onclick="fillAllSisaCreate()" class="btn btn-secondary btn-sm">
+                        Terima Semua Sisa
+                    </button>
+                    <button type="button" onclick="clearAllInputsCreate()" class="btn btn-secondary btn-sm">
+                        Kosongkan Semua (0)
+                    </button>
+                @endif
+                <button type="button" onclick="addTerimaRow()" class="btn btn-secondary btn-sm" style="font-weight: 600;">
+                    + Tambah Baris Barang
+                </button>
+            </div>
         </div>
 
         <style>
@@ -171,7 +184,7 @@
                                         </select>
                                     </td>
                                     <td>
-                                        <input type="number" step="0.0001" min="0.0001" max="{{ $pdtl->sisa_qty }}" name="items[{{ $idx }}][terima_qty]" value="{{ (float) $pdtl->sisa_qty }}" class="form-control item-terima-qty" style="text-align: right; font-weight: 700;" oninput="calculateTotalTerima()" required>
+                                        <input type="number" step="0.0001" min="0" max="{{ $pdtl->sisa_qty }}" name="items[{{ $idx }}][terima_qty]" value="{{ (float) $pdtl->sisa_qty }}" class="form-control item-terima-qty" style="text-align: right; font-weight: 700;" oninput="calculateTotalTerima()" required>
                                     </td>
                                     <td>
                                         <input type="number" step="0.0001" min="0" name="items[{{ $idx }}][reject_qty]" value="0" class="form-control" placeholder="0" style="text-align: right;">
@@ -367,5 +380,19 @@
 
     // Run initial calculate
     calculateTotalTerima();
+
+    function fillAllSisaCreate() {
+        document.querySelectorAll('#tableTerimaItems .item-terima-qty').forEach(input => {
+            if (input.max) input.value = input.max;
+        });
+        calculateTotalTerima();
+    }
+
+    function clearAllInputsCreate() {
+        document.querySelectorAll('#tableTerimaItems .item-terima-qty').forEach(input => {
+            input.value = 0;
+        });
+        calculateTotalTerima();
+    }
 </script>
 @endsection

@@ -262,7 +262,7 @@ class CodeGeneratorService
      * 2. Beda barang = nomor urut me-reset kembali ke 01.
      * 3. Ganti tanggal = nomor urut me-reset kembali ke 01.
      */
-    public function generateBatchNo(?string $prefixKey = null, ?string $date = null, ?string $barangNm = null): string
+    public function generateBatchNo(?string $prefixKey = null, ?string $date = null, ?string $barangNm = null, array $excludeBatches = []): string
     {
         $acronym = $this->extractBarangAcronym($barangNm, $prefixKey);
         $dateFormatted = date('dmY', strtotime($date ?? date('Y-m-d')));
@@ -279,7 +279,7 @@ class CodeGeneratorService
             ->pluck('batch_no')
             ->toArray();
 
-        $existingCodes = array_unique(array_merge($existingCodesDtl, $existingCodesStok));
+        $existingCodes = array_unique(array_merge($existingCodesDtl, $existingCodesStok, $excludeBatches));
 
         $maxNumber = 0;
         $prefixLen = strlen($prefix);
@@ -299,7 +299,8 @@ class CodeGeneratorService
             $generated = $prefix . str_pad((string) $maxNumber, 2, '0', STR_PAD_LEFT);
             $existsInDtl = DB::table('dat_terima_dtl')->where('batch_no', $generated)->exists();
             $existsInStok = DB::table('dat_stok_batch')->where('batch_no', $generated)->exists();
-        } while ($existsInDtl || $existsInStok);
+            $existsInExclude = in_array($generated, $excludeBatches);
+        } while ($existsInDtl || $existsInStok || $existsInExclude);
 
         return $generated;
     }

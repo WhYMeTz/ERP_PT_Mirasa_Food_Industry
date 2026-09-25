@@ -32,11 +32,11 @@ Route::get('/', function () {
     return redirect()->route('login');
 });
 
+// Utility Routes (Bebas diakses oleh formulir web untuk live generator kode/batch)
+Route::get('/ajax/generate-code', [CodeGeneratorController::class, 'generate'])->name('ajax.generate_code');
+
 // Authenticated Routes (Harus Login)
 Route::middleware('auth')->group(function () {
-    // Utility Routes
-    Route::get('/ajax/generate-code', [CodeGeneratorController::class, 'generate'])->name('ajax.generate_code');
-
     // Manajemen Pengguna & Pengaturan Hak Akses Sistem (Khusus Superadmin)
     Route::get('pengguna-sistem/hak-akses', [UserController::class, 'permissions'])
         ->name('admin.users.permissions')

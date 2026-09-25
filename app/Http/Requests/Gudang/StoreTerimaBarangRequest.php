@@ -29,10 +29,24 @@ class StoreTerimaBarangRequest extends FormRequest
             'items.*.expired_tgl'   => 'nullable|date',
             'items.*.grade_cd'      => 'nullable|string|max:20',
             'items.*.reject_qty'    => 'nullable|numeric|min:0',
-            'items.*.terima_qty'    => 'required|numeric|min:0.0001',
+            'items.*.terima_qty'    => 'nullable|numeric|min:0',
             'items.*.harga_nominal' => 'nullable|numeric|min:0',
             'items.*.catatan_txt'   => 'nullable|string',
         ];
+    }
+
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator) {
+            $items = $this->input('items', []);
+            $totalTerima = 0;
+            foreach ($items as $item) {
+                $totalTerima += (float) ($item['terima_qty'] ?? 0);
+            }
+            if ($totalTerima <= 0) {
+                $validator->errors()->add('items', 'Minimal harus ada 1 barang dengan kuantitas terima lebih dari 0.');
+            }
+        });
     }
 
     public function messages(): array
@@ -47,8 +61,7 @@ class StoreTerimaBarangRequest extends FormRequest
             'items.min'                  => 'Minimal harus ada 1 item barang yang diterima.',
             'items.*.barang_id.required' => 'Barang wajib dipilih pada setiap baris item.',
             'items.*.barang_id.exists'   => 'Barang yang dipilih tidak valid.',
-            'items.*.terima_qty.required'=> 'Kuantitas penerimaan wajib diisi.',
-            'items.*.terima_qty.min'     => 'Kuantitas penerimaan minimal 0.0001.',
+            'items.*.terima_qty.min'     => 'Kuantitas penerimaan tidak boleh negatif.',
         ];
     }
 }

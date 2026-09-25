@@ -9,12 +9,10 @@
         <p style="color: #64748b; font-size: 0.875rem; margin-top: 0.25rem;">Kelola dokumen pemesanan bahan baku singkong, minyak, bumbu, dan kemasan ke mitra supplier.</p>
     </div>
     <div>
-        @if (Auth::user()?->canCreatePo())
-            <a href="{{ route('gudang.po.create') }}" class="btn btn-primary">
-                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                Buat PO Baru
-            </a>
-        @endif
+        <a href="{{ route('gudang.po.create') }}" class="btn btn-primary">
+            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            Buat PO Baru
+        </a>
     </div>
 </div>
 
@@ -92,10 +90,10 @@
                         </td>
                         <td style="text-align: right;">
                             <div style="display: inline-flex; gap: 0.35rem;">
-                                <a href="{{ route('gudang.po.show', $po->po_id) }}" class="btn btn-secondary btn-sm" title="Lihat Detail">
+                                <a href="{{ route('gudang.po.show', $po->po_id) }}" class="btn btn-secondary btn-sm" title="Lihat Detail PO">
                                     Detail
                                 </a>
-                                @if (in_array($po->status_cd, ['APPROVED', 'PARTIAL']) && Auth::user()?->canCreateTerima())
+                                @if (in_array($po->status_cd, ['APPROVED', 'PARTIAL']))
                                     <a href="{{ route('gudang.terima.create', ['po_id' => $po->po_id]) }}" class="btn btn-primary btn-sm" style="background:#059669;" title="Terima Barang Fisik">
                                         Terima
                                     </a>

@@ -13,6 +13,9 @@
 
 <form action="{{ route('gudang.terima.store') }}" method="POST" id="formTerima">
     @csrf
+    @if ($selectedPo)
+        <input type="hidden" name="redirect_to" value="po">
+    @endif
 
     {{-- KARTU 1: INFORMASI HEADER PENERIMAAN --}}
     <div class="card" style="margin-bottom: 1.5rem;">
@@ -525,5 +528,13 @@
 
     // Run initial calculate on page load
     calculateTotalTerima();
+
+    function fillAllSisaCreate() {
+        copyAllRemainingPoQty();
+    }
+
+    function clearAllInputsCreate() {
+        clearAllTerimaQty();
+    }
 </script>
 @endsection

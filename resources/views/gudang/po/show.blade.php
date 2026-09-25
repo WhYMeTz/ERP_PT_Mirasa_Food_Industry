@@ -26,11 +26,11 @@
         </div>
     </div>
     <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-        @if (in_array($po->status_cd, ['APPROVED', 'PARTIAL']))
-            <a href="{{ route('gudang.terima.create', ['po_id' => $po->po_id]) }}" class="btn btn-primary" style="background:#059669;">
+        @if (in_array($po->status_cd, ['APPROVED', 'PARTIAL']) && $po->total_sisa_qty > 0)
+            <button type="button" onclick="openQuickReceiveModal()" class="btn btn-primary" style="background:#059669;">
                 <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 Terima Barang
-            </a>
+            </button>
         @endif
 
         @if ($po->status_cd == 'PARTIAL')
@@ -248,6 +248,124 @@
     </div>
 @endif
 
+{{-- MODAL CEPAT CATAT BARANG MASUK --}}
+@if (in_array($po->status_cd, ['APPROVED', 'PARTIAL']) && $po->total_sisa_qty > 0)
+<div id="modalQuickReceive" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.5); z-index: 9999; align-items: center; justify-content: center; padding: 1rem;">
+    <div style="background: white; border-radius: 10px; width: 100%; max-width: 640px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); overflow: hidden; max-height: 90vh; display: flex; flex-direction: column;">
+        <div style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 1rem 1.25rem; display: flex; align-items: center; justify-content: space-between;">
+            <div>
+                <strong style="color: #0f172a; font-size: 1.05rem;">Catat Barang Masuk</strong>
+                <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.15rem;">
+                    {{ $po->po_no }} &bull; {{ $po->supplier?->supplier_nm }}
+                </div>
+            </div>
+            <button type="button" onclick="closeQuickReceiveModal()" style="background: transparent; border: none; font-size: 1.35rem; color: #64748b; cursor: pointer;">&times;</button>
+        </div>
+
+        <form action="{{ route('gudang.terima.store') }}" method="POST" style="padding: 1.25rem; overflow-y: auto; flex: 1;">
+            @csrf
+            <input type="hidden" name="po_id" value="{{ $po->po_id }}">
+            <input type="hidden" name="supplier_id" value="{{ $po->supplier_id }}">
+            <input type="hidden" name="gudang_id" value="{{ $po->gudang_id }}">
+            <input type="hidden" name="redirect_to" value="po">
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem;">
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label for="terima_tgl" class="form-label" style="font-weight: 600; font-size: 0.85rem;">Tanggal Masuk <span style="color:#ef4444;">*</span></label>
+                    <input type="date" id="terima_tgl" name="terima_tgl" value="{{ date('Y-m-d') }}" class="form-control" required>
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label for="suratjalan_no" class="form-label" style="font-weight: 600; font-size: 0.85rem;">No. Surat Jalan Supplier</label>
+                    <input type="text" id="suratjalan_no" name="suratjalan_no" placeholder="Contoh: SJ-2026/09/88" class="form-control">
+                </div>
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                    <label class="form-label" style="font-weight: 600; font-size: 0.85rem; margin-bottom: 0;">
+                        Barang yang Diterima Hari Ini:
+                    </label>
+                    <div style="display: flex; gap: 0.35rem;">
+                        <button type="button" onclick="fillAllSisa()" class="btn btn-secondary btn-sm" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;">
+                            Terima Semua Sisa
+                        </button>
+                        <button type="button" onclick="clearAllInputs()" class="btn btn-secondary btn-sm" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;">
+                            Kosongkan (0)
+                        </button>
+                    </div>
+                </div>
+
+                <div style="border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+                    <table style="width: 100%; font-size: 0.85rem;">
+                        <thead style="background: #f8fafc; font-size: 0.8rem;">
+                            <tr>
+                                <th style="padding: 0.6rem 0.75rem;">Nama Barang</th>
+                                <th style="padding: 0.6rem 0.75rem; text-align: right; width: 85px;">Sisa PO</th>
+                                <th style="padding: 0.6rem 0.75rem; text-align: right; width: 145px;">Masuk Hari Ini</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @php $rowIdx = 0; @endphp
+                            @foreach ($po->details as $pdtl)
+                                @if ((float) $pdtl->sisa_qty > 0)
+                                    <tr style="border-top: 1px solid #f1f5f9;">
+                                        <td style="padding: 0.6rem 0.75rem;">
+                                            <input type="hidden" name="items[{{ $rowIdx }}][podtl_id]" value="{{ $pdtl->podtl_id }}">
+                                            <input type="hidden" name="items[{{ $rowIdx }}][barang_id]" value="{{ $pdtl->barang_id }}">
+                                            <input type="hidden" name="items[{{ $rowIdx }}][harga_nominal]" value="{{ (float) $pdtl->harga_nominal }}">
+                                            <strong style="color: #0f172a; display: block;">{{ $pdtl->barang?->barang_nm }}</strong>
+                                            <span style="font-size: 0.75rem; color: #64748b;">
+                                                Satuan: {{ $pdtl->barang?->satuanDasar?->satuan_nm ?? '-' }}
+                                            </span>
+                                        </td>
+                                        <td style="padding: 0.6rem 0.75rem; text-align: right; font-weight: 600; color: #b45309;">
+                                            {{ number_format((float) $pdtl->sisa_qty, 2) }}
+                                        </td>
+                                        <td style="padding: 0.6rem 0.75rem; text-align: right;">
+                                            <input type="number" 
+                                                   step="0.0001" 
+                                                   min="0" 
+                                                   max="{{ $pdtl->sisa_qty }}" 
+                                                   name="items[{{ $rowIdx }}][terima_qty]" 
+                                                   value="{{ (float) $pdtl->sisa_qty }}" 
+                                                   data-sisa="{{ (float) $pdtl->sisa_qty }}"
+                                                   class="form-control quick-terima-input" 
+                                                   style="text-align: right; font-weight: 700; width: 130px; display: inline-block; padding: 0.35rem 0.5rem; font-size: 0.85rem;" 
+                                                   required>
+                                        </td>
+                                    </tr>
+                                    @php $rowIdx++; @endphp
+                                @endif
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+                <small style="color: #64748b; font-size: 0.75rem; margin-top: 0.35rem; display: block;">
+                    * Masukkan kuantitas yang benar-benar tiba saat ini. Jika sebagian, sisa kuota akan tetap disimpan untuk kedatangan berikutnya.
+                </small>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 1.25rem;">
+                <label for="catatan_txt" class="form-label" style="font-weight: 600; font-size: 0.85rem;">Catatan Penerimaan (Opsional)</label>
+                <input type="text" id="catatan_txt" name="catatan_txt" placeholder="Contoh: Pengiriman termin 1, kondisi fisik baik" class="form-control">
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; pt: 0.5rem; border-top: 1px solid #f1f5f9; padding-top: 1rem;">
+                <a href="{{ route('gudang.terima.create', ['po_id' => $po->po_id]) }}" style="color: #0284c7; text-decoration: none; font-size: 0.825rem;">
+                    Formulir Lengkap (Batch Manual & Grade QC) &rarr;
+                </a>
+                <div style="display: flex; gap: 0.5rem;">
+                    <button type="button" onclick="closeQuickReceiveModal()" class="btn btn-secondary">Batal</button>
+                    <button type="submit" class="btn btn-primary" style="background:#059669;">
+                        Simpan Penerimaan
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+@endif
+
 {{-- MODAL KONFIRMASI TUTUP PO --}}
 <div id="modalForceClose" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.5); z-index: 9999; align-items: center; justify-content: center; padding: 1rem;">
     <div style="background: white; border-radius: 8px; width: 100%; max-width: 480px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); overflow: hidden;">
@@ -279,6 +397,27 @@
 </div>
 
 <script>
+    function openQuickReceiveModal() {
+        const modal = document.getElementById('modalQuickReceive');
+        if (modal) modal.style.display = 'flex';
+    }
+    function closeQuickReceiveModal() {
+        const modal = document.getElementById('modalQuickReceive');
+        if (modal) modal.style.display = 'none';
+    }
+
+    function fillAllSisa() {
+        document.querySelectorAll('.quick-terima-input').forEach(input => {
+            input.value = input.dataset.sisa || 0;
+        });
+    }
+
+    function clearAllInputs() {
+        document.querySelectorAll('.quick-terima-input').forEach(input => {
+            input.value = 0;
+        });
+    }
+
     function openForceCloseModal() {
         document.getElementById('modalForceClose').style.display = 'flex';
     }

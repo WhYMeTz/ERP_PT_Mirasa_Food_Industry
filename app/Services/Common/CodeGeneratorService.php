@@ -187,14 +187,122 @@ class CodeGeneratorService
     }
 
     /**
-     * Generate Nomor Batch Otomatis (format: BATCH-YYYYMMDD-001)
+     * Mengekstrak inisial akronim barang sesuai standar Excel PT Mirasa Food:
+     * Contoh:
+     * - "MINYAK SAWIT"  -> "MS"
+     * - "MINYAK KELAPA" -> "MK"
+     * - "PERENYAH"      -> "PR"
+     * - "PLASTIK HD"    -> "HD"
+     * - "LAKBAN KECIL"  -> "LK"
+     * - "LAKBAN SEDANG" -> "LS"
+     * - "SINGKONG"      -> "SK"
+     * - "UBI UNGU"      -> "UU"
      */
-     public function generateBatchNo(?string $prefixKey = null): string
-     {
-         $cleanPrefix = $prefixKey ? strtoupper(preg_replace('/[^a-zA-Z0-9]/', '', $prefixKey)) . '-' : '';
-         $prefix = 'BATCH-' . $cleanPrefix . date('ymd') . '-';
-         return $this->generate('dat_terima_dtl', 'batch_no', $prefix, 3);
-     }
+    public function extractBarangAcronym(?string $name = null, ?string $code = null): string
+    {
+        $nameUpper = strtoupper(trim((string) $name));
+        $codeUpper = strtoupper(trim((string) $code));
+
+        // 1. Kamus Khusus untuk Komoditas Utama PT Mirasa
+        $dictionary = [
+            'MINYAK SAWIT'  => 'MS',
+            'MINYAK KELAPA' => 'MK',
+            'PERENYAH'      => 'PR',
+            'PLASTIK HD'    => 'HD',
+            'LAKBAN KECIL'  => 'LK',
+            'LAKBAN SEDANG' => 'LS',
+            'SINGKONG'      => 'SK',
+            'UBI UNGU'      => 'UU',
+        ];
+
+        foreach ($dictionary as $key => $acronym) {
+            if (str_contains($nameUpper, $key)) {
+                return $acronym;
+            }
+        }
+
+        // 2. Jika kode barang Mirasa berformat seperti "MSW00G-BP2", ambil 2 huruf depan jika bukan "BRG"
+        if (!empty($codeUpper) && !str_starts_with($codeUpper, 'BRG-')) {
+            $codeClean = preg_replace('/[^A-Z]/', '', $codeUpper);
+            if (strlen($codeClean) >= 2) {
+                return substr($codeClean, 0, 2);
+            }
+        }
+
+        // 3. Jika nama memiliki 2 kata atau lebih, ambil huruf pertama dari 2 kata pertama
+        if (!empty($nameUpper)) {
+            $words = array_values(array_filter(explode(' ', preg_replace('/[^A-Z0-9\s]/', '', $nameUpper))));
+            if (count($words) >= 2) {
+                return substr($words[0], 0, 1) . substr($words[1], 0, 1);
+            } elseif (count($words) === 1) {
+                $w = $words[0];
+                if (strlen($w) >= 2) {
+                    return substr($w, 0, 2);
+                }
+                return $w;
+            }
+        }
+
+        // 4. Fallback dari kode barang
+        if (!empty($codeUpper)) {
+            $clean = preg_replace('/[^A-Z0-9]/', '', str_replace('BRG-', '', $codeUpper));
+            return substr($clean, 0, 3) ?: 'BRG';
+        }
+
+        return 'BRG';
+    }
+
+    /**
+     * Generate Nomor Batch Otomatis sesuai standar PT Mirasa Food:
+     * Format: [INISIAL_BARANG]-[DDMMYYYY]-[NO_URUT]
+     * Contoh: MS-25082026-01
+     *
+     * Fitur Utama:
+     * 1. Nomor urut (-01, -02, dst) mandiri per barang dan per tanggal fisik.
+     * 2. Beda barang = nomor urut me-reset kembali ke 01.
+     * 3. Ganti tanggal = nomor urut me-reset kembali ke 01.
+     */
+    public function generateBatchNo(?string $prefixKey = null, ?string $date = null, ?string $barangNm = null): string
+    {
+        $acronym = $this->extractBarangAcronym($barangNm, $prefixKey);
+        $dateFormatted = date('dmY', strtotime($date ?? date('Y-m-d')));
+        $prefix = $acronym . '-' . $dateFormatted . '-';
+
+        // Cari nomor urut terakhir khusus untuk prefix barang & tanggal ini
+        $existingCodesDtl = DB::table('dat_terima_dtl')
+            ->where('batch_no', 'LIKE', $prefix . '%')
+            ->pluck('batch_no')
+            ->toArray();
+
+        $existingCodesStok = DB::table('dat_stok_batch')
+            ->where('batch_no', 'LIKE', $prefix . '%')
+            ->pluck('batch_no')
+            ->toArray();
+
+        $existingCodes = array_unique(array_merge($existingCodesDtl, $existingCodesStok));
+
+        $maxNumber = 0;
+        $prefixLen = strlen($prefix);
+
+        foreach ($existingCodes as $code) {
+            $suffix = substr($code, $prefixLen);
+            if (preg_match('/^(\d+)/', $suffix, $matches)) {
+                $num = (int) $matches[1];
+                if ($num > $maxNumber) {
+                    $maxNumber = $num;
+                }
+            }
+        }
+
+        do {
+            $maxNumber++;
+            $generated = $prefix . str_pad((string) $maxNumber, 2, '0', STR_PAD_LEFT);
+            $existsInDtl = DB::table('dat_terima_dtl')->where('batch_no', $generated)->exists();
+            $existsInStok = DB::table('dat_stok_batch')->where('batch_no', $generated)->exists();
+        } while ($existsInDtl || $existsInStok);
+
+        return $generated;
+    }
 
     /**
      * Generate Nomor Pengeluaran / Pemakaian Barang (format: OUT-YYYYMM-0001)

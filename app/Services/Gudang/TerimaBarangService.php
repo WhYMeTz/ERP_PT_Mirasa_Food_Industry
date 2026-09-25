@@ -132,11 +132,15 @@ class TerimaBarangService
                     continue; // Skip jika qty 0
                 }
 
-                // Ambil atau generate nomor batch
+                // Ambil atau generate nomor batch sesuai format PT Mirasa ([INISIAL]-[DDMMYYYY]-[01])
                 $batchNo = !empty($item['batch_no']) ? trim($item['batch_no']) : null;
                 if (empty($batchNo)) {
                     $barang = MstBarang::find($barangId);
-                    $batchNo = $this->codeGenerator->generateBatchNo($barang?->barang_cd ?? 'ITEM');
+                    $batchNo = $this->codeGenerator->generateBatchNo(
+                        $barang?->barang_cd ?? 'ITEM',
+                        $data['terima_tgl'] ?? date('Y-m-d'),
+                        $barang?->barang_nm
+                    );
                 }
 
                 // Ambil data grading dan reject jika ada

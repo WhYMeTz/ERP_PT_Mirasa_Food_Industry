@@ -199,7 +199,7 @@
                                         </span>
                                     </td>
                                     <td>
-                                        <input type="text" name="items[{{ $idx }}][batch_no]" value="BATCH-{{ preg_replace('/[^A-Za-z0-9]/', '', $pdtl->barang?->barang_cd ?? 'ITEM') }}-{{ date('ymd') }}-{{ str_pad($idx+1, 2, '0', STR_PAD_LEFT) }}" class="form-control item-batch" style="font-family: monospace; font-weight: 700; color: #0284c7;" required>
+                                        <input type="text" name="items[{{ $idx }}][batch_no]" value="{{ app(\App\Services\Common\CodeGeneratorService::class)->generateBatchNo($pdtl->barang?->barang_cd, date('Y-m-d'), $pdtl->barang?->barang_nm) }}" class="form-control item-batch" style="font-family: monospace; font-weight: 700; color: #0284c7;" required>
                                     </td>
                                     <td>
                                         <input type="date" name="items[{{ $idx }}][expired_tgl]" class="form-control">
@@ -240,14 +240,19 @@
                                 <select name="items[0][barang_id]" class="form-control item-barang" onchange="updateTerimaSatuanAndBatch(this)" required>
                                     <option value="">-- Pilih Barang --</option>
                                     @foreach($barangList as $b)
-                                        <option value="{{ $b->barang_id }}" data-cd="{{ $b->barang_cd }}" data-satuan="{{ $b->satuanDasar?->satuan_nm ?? '-' }}" data-harga="{{ (float) ($b->harga_beli_standar ?? 0) }}">
+                                        <option value="{{ $b->barang_id }}" 
+                                                data-cd="{{ $b->barang_cd }}" 
+                                                data-nm="{{ $b->barang_nm }}"
+                                                data-acronym="{{ app(\App\Services\Common\CodeGeneratorService::class)->extractBarangAcronym($b->barang_nm, $b->barang_cd) }}"
+                                                data-satuan="{{ $b->satuanDasar?->satuan_nm ?? '-' }}" 
+                                                data-harga="{{ (float) ($b->harga_beli_standar ?? 0) }}">
                                             {{ $b->barang_nm }} ({{ $b->barang_cd }})
                                         </option>
                                     @endforeach
                                 </select>
                             </td>
                             <td>
-                                <input type="text" name="items[0][batch_no]" id="batch_0" value="BATCH-{{ date('ymd') }}-01" class="form-control item-batch" style="font-family: monospace; font-weight: 700; color: #0284c7;" required>
+                                <input type="text" name="items[0][batch_no]" id="batch_0" value="" placeholder="Otomatis saat barang dipilih" class="form-control item-batch" style="font-family: monospace; font-weight: 700; color: #0284c7;" required>
                             </td>
                             <td>
                                 <input type="date" name="items[0][expired_tgl]" class="form-control">
@@ -366,14 +371,19 @@
                 <select name="items[${terimaRowIndex}][barang_id]" class="form-control item-barang" onchange="updateTerimaSatuanAndBatch(this)" required>
                     <option value="">-- Pilih Barang --</option>
                     @foreach($barangList as $b)
-                        <option value="{{ $b->barang_id }}" data-cd="{{ $b->barang_cd }}" data-satuan="{{ $b->satuanDasar?->satuan_nm ?? '-' }}" data-harga="{{ (float) ($b->harga_beli_standar ?? 0) }}">
+                        <option value="{{ $b->barang_id }}" 
+                                data-cd="{{ $b->barang_cd }}" 
+                                data-nm="{{ $b->barang_nm }}"
+                                data-acronym="{{ app(\App\Services\Common\CodeGeneratorService::class)->extractBarangAcronym($b->barang_nm, $b->barang_cd) }}"
+                                data-satuan="{{ $b->satuanDasar?->satuan_nm ?? '-' }}" 
+                                data-harga="{{ (float) ($b->harga_beli_standar ?? 0) }}">
                             {{ $b->barang_nm }} ({{ $b->barang_cd }})
                         </option>
                     @endforeach
                 </select>
             </td>
             <td>
-                <input type="text" name="items[${terimaRowIndex}][batch_no]" value="BATCH-${dateStr}-${padNum}" class="form-control item-batch" style="font-family: monospace; font-weight: 700; color: #0284c7;" required>
+                <input type="text" name="items[${terimaRowIndex}][batch_no]" value="" placeholder="Otomatis saat barang dipilih" class="form-control item-batch" style="font-family: monospace; font-weight: 700; color: #0284c7;" required>
             </td>
             <td>
                 <input type="date" name="items[${terimaRowIndex}][expired_tgl]" class="form-control">
@@ -436,16 +446,46 @@
     function updateTerimaSatuanAndBatch(selectElem) {
         const row = selectElem.closest('tr');
         const selectedOption = selectElem.options[selectElem.selectedIndex];
+        if (!selectedOption || !selectedOption.value) return;
+
         const satuan = selectedOption.dataset.satuan || '-';
-        const cd = selectedOption.dataset.cd || 'ITEM';
-        const cleanCd = cd.replace(/[^A-Za-z0-9]/g, '');
+        const acronym = selectedOption.dataset.acronym || 'BRG';
         const defaultHarga = parseFloat(selectedOption.dataset.harga || 0);
 
-        row.querySelector('.row-satuan').innerText = satuan;
+        const satuanSpan = row.querySelector('.row-satuan');
+        if (satuanSpan) satuanSpan.innerText = satuan;
 
-        const dateStr = "{{ date('ymd') }}";
-        const idx = row.dataset.index || '01';
-        row.querySelector('.item-batch').value = `BATCH-${cleanCd}-${dateStr}-${idx}`;
+        // Ambil tanggal dari input terima_tgl (format DDMMYYYY)
+        const tglInput = document.getElementById('terima_tgl')?.value;
+        let dateFormatted = '';
+        if (tglInput) {
+            const parts = tglInput.split('-');
+            if (parts.length === 3) {
+                dateFormatted = parts[2] + parts[1] + parts[0];
+            }
+        }
+        if (!dateFormatted) {
+            const today = new Date();
+            dateFormatted = String(today.getDate()).padStart(2, '0') + String(today.getMonth() + 1).padStart(2, '0') + today.getFullYear();
+        }
+
+        // Hitung urutan khusus untuk barang ini di form agar mandiri per barang & reset ke 01
+        const prefix = `${acronym}-${dateFormatted}-`;
+        let seq = 1;
+        document.querySelectorAll('.terima-row').forEach(r => {
+            if (r !== row) {
+                const otherBatch = r.querySelector('.item-batch')?.value || '';
+                if (otherBatch.startsWith(prefix)) {
+                    seq++;
+                }
+            }
+        });
+
+        const seqStr = String(seq).padStart(2, '0');
+        const batchInput = row.querySelector('.item-batch');
+        if (batchInput) {
+            batchInput.value = `${prefix}${seqStr}`;
+        }
 
         const hargaInput = row.querySelector('.item-harga') || row.querySelector('input[name*="[harga_nominal]"]');
         if (hargaInput && defaultHarga > 0 && (!hargaInput.value || parseFloat(hargaInput.value) === 0)) {

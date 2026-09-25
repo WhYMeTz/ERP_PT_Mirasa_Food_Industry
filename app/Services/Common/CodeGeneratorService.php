@@ -156,16 +156,209 @@ class CodeGeneratorService
     }
 
     /**
-     * Generate kode untuk Master Barang (format: BRG-RAW-0001 atau BRG-0001)
+     * Generate kode untuk Master Barang sesuai rumpun dan standar PT Mirasa Food:
+     * - Bahan Penolong (BP):
+     *   * Bumbu (nama mengandung BUMBU): B[inisial]00G-BP{max+1} (contoh: BJB00G-BP6)
+     *   * Karton (nama mengandung KARTON): K[inisial]00G-BP{max+1} (contoh: KEB00G-BP10)
+     *   * Lakban (nama mengandung LAKBAN): L[inisial]00G-BP{max+1} (contoh: LKB00G-BP4)
+     *   * Plastik (nama mengandung PLASTIK): P[inisial]00G-BP{max+1} (contoh: PKT00G-BP5)
+     *   * Roll (nama mengandung ROLL): R[inisial]00G-BP{max+1}
+     *   * Minyak (nama mengandung MINYAK): M[inisial]00G-BP{max+1}
+     *   * Sarung Tangan: ST[inisial]00G-BP{max+1}
+     * - Bahan Baku (BB):
+     *   * BB-[INISIAL][001] (contoh: BB-SK003, BB-UU007)
+     * - WIP:
+     *   * WIP-[AKRONIM] (contoh: WIP-KSS)
+     * - Finish Good (FG):
+     *   * FG-[AKRONIM][001] (contoh: FG-JB006)
      */
-    public function generateBarangCode(?string $jenisCd = null): string
+    public function generateBarangCode(?string $jenisCd = null, ?string $name = null): string
     {
-        if (!empty($jenisCd)) {
-            $prefix = 'BRG-' . strtoupper(trim($jenisCd)) . '-';
+        $jenisClean = strtoupper(trim((string) $jenisCd));
+        $nameClean = strtoupper(trim((string) $name));
+
+        // 1. Rumpun Bahan Penolong (BP, PACK, SUPP, atau jika nama barang mengindikasikan bahan penolong)
+        if (in_array($jenisClean, ['BP', 'PACK', 'SUPP']) || (!empty($nameClean) && $this->isBahanPenolongName($nameClean))) {
+            return $this->generateBahanPenolongCode($nameClean);
+        }
+
+        // 2. Rumpun Bahan Baku (BB atau RAW)
+        if (in_array($jenisClean, ['BB', 'RAW']) || (!empty($nameClean) && $this->isBahanBakuName($nameClean))) {
+            return $this->generateBahanBakuCode($nameClean);
+        }
+
+        // 3. Rumpun WIP (Work In Process)
+        if ($jenisClean === 'WIP') {
+            return $this->generateWipCode($nameClean);
+        }
+
+        // 4. Rumpun Finish Good (FG)
+        if ($jenisClean === 'FG') {
+            return $this->generateFgCode($nameClean);
+        }
+
+        // Fallback default jika nama kosong
+        if (!empty($jenisClean)) {
+            $prefix = 'BRG-' . $jenisClean . '-';
             return $this->generate('mst_barang', 'barang_cd', $prefix, 4);
         }
 
         return $this->generate('mst_barang', 'barang_cd', 'BRG-', 4);
+    }
+
+    protected function isBahanPenolongName(string $name): bool
+    {
+        $keywords = ['BUMBU', 'KARTON', 'LAKBAN', 'PLASTIK', 'ROLL', 'MINYAK', 'SARUNG TANGAN', 'RAFIA', 'PERENYAH'];
+        foreach ($keywords as $k) {
+            if (str_contains($name, $k)) return true;
+        }
+        return false;
+    }
+
+    protected function isBahanBakuName(string $name): bool
+    {
+        $keywords = ['SINGKONG', 'UBI', 'OPAK', 'PUYUR'];
+        foreach ($keywords as $k) {
+            if (str_contains($name, $k)) return true;
+        }
+        return false;
+    }
+
+    protected function generateBahanPenolongCode(string $name): string
+    {
+        $firstLetter = 'B';
+        $prefixPattern = '%00G-BP%';
+
+        if (str_contains($name, 'BUMBU')) {
+            $firstLetter = 'B';
+            $prefixPattern = 'B%00G-BP%';
+        } elseif (str_contains($name, 'KARTON')) {
+            $firstLetter = 'K';
+            $prefixPattern = 'K%00G-BP%';
+        } elseif (str_contains($name, 'LAKBAN')) {
+            $firstLetter = 'L';
+            $prefixPattern = 'L%00G-BP%';
+        } elseif (str_contains($name, 'PLASTIK')) {
+            $firstLetter = 'P';
+            $prefixPattern = 'P%00G-BP%';
+        } elseif (str_contains($name, 'ROLL')) {
+            $firstLetter = 'R';
+            $prefixPattern = 'R%00G-BP%';
+        } elseif (str_contains($name, 'MINYAK')) {
+            $firstLetter = 'M';
+            $prefixPattern = 'M%00G-BP%';
+        } elseif (str_contains($name, 'SARUNG TANGAN')) {
+            $firstLetter = 'ST';
+            $prefixPattern = 'ST%00G-BP%';
+        } elseif (str_contains($name, 'RAFIA')) {
+            $firstLetter = 'TR';
+            $prefixPattern = 'TR%00G-BP%';
+        } elseif (str_contains($name, 'PERENYAH')) {
+            $firstLetter = 'PR';
+            $prefixPattern = 'PR%00G-BP%';
+        }
+
+        // Buat 3 huruf depan inisial (contoh: BUMBU JAGUNG BAKAR -> BJB)
+        $words = array_values(array_filter(explode(' ', preg_replace('/[^A-Z0-9\s]/', '', $name))));
+        $initial = '';
+        if (count($words) >= 3) {
+            $initial = substr($words[0], 0, 1) . substr($words[1], 0, 1) . substr($words[2], 0, 1);
+        } elseif (count($words) === 2) {
+            $initial = substr($words[0], 0, 1) . substr($words[1], 0, 2);
+        } elseif (count($words) === 1 && !empty($words[0])) {
+            $initial = substr($words[0], 0, 3);
+        } else {
+            $initial = $firstLetter . 'XX';
+        }
+
+        // Pastikan huruf pertama cocok dengan rumpun jika bukan multi-huruf (seperti ST)
+        if (strlen($firstLetter) === 1 && !str_starts_with($initial, $firstLetter)) {
+            $initial = $firstLetter . substr($initial, 1);
+        }
+
+        // Cari nomor urut BP terakhir untuk rumpun ini
+        $existingCodes = DB::table('mst_barang')
+            ->where('barang_cd', 'LIKE', $prefixPattern)
+            ->pluck('barang_cd');
+
+        $maxNumber = 0;
+        foreach ($existingCodes as $cd) {
+            if (preg_match('/-BP(\d+)$/i', $cd, $matches)) {
+                $num = (int) $matches[1];
+                if ($num > $maxNumber) {
+                    $maxNumber = $num;
+                }
+            }
+        }
+
+        do {
+            $maxNumber++;
+            $candidate = $initial . '00G-BP' . $maxNumber;
+            $exists = DB::table('mst_barang')->where('barang_cd', $candidate)->exists();
+        } while ($exists);
+
+        return $candidate;
+    }
+
+    protected function generateBahanBakuCode(string $name): string
+    {
+        $sub = 'SK';
+        if (str_contains($name, 'SINGKONG')) {
+            $sub = 'SK';
+        } elseif (str_contains($name, 'OPAK')) {
+            $sub = 'OP';
+        } elseif (str_contains($name, 'PUYUR')) {
+            $sub = 'PY';
+        } elseif (str_contains($name, 'UBI UNGU')) {
+            $sub = 'UU';
+        } elseif (str_contains($name, 'UBI')) {
+            $sub = 'UB';
+        } else {
+            $words = array_values(array_filter(explode(' ', preg_replace('/[^A-Z0-9\s]/', '', $name))));
+            $sub = count($words) >= 2 ? substr($words[0], 0, 1) . substr($words[1], 0, 1) : (substr($name, 0, 2) ?: 'BB');
+        }
+
+        $prefix = 'BB-' . $sub;
+        return $this->generate('mst_barang', 'barang_cd', $prefix, 3);
+    }
+
+    protected function generateWipCode(string $name): string
+    {
+        $words = array_values(array_filter(explode(' ', preg_replace('/[^A-Z0-9\s]/', '', $name))));
+        $acronym = '';
+        if (count($words) >= 3) {
+            $acronym = substr($words[0], 0, 1) . substr($words[1], 0, 1) . substr($words[2], 0, 1);
+        } elseif (count($words) === 2) {
+            $acronym = substr($words[0], 0, 1) . substr($words[1], 0, 2);
+        } elseif (count($words) === 1 && !empty($words[0])) {
+            $acronym = substr($words[0], 0, 3);
+        } else {
+            $acronym = 'WIP';
+        }
+
+        $candidate = 'WIP-' . $acronym;
+        $exists = DB::table('mst_barang')->where('barang_cd', $candidate)->exists();
+        if (!$exists) {
+            return $candidate;
+        }
+
+        return $this->generate('mst_barang', 'barang_cd', 'WIP-' . $acronym . '-', 2);
+    }
+
+    protected function generateFgCode(string $name): string
+    {
+        $words = array_values(array_filter(explode(' ', preg_replace('/[^A-Z0-9\s]/', '', $name))));
+        $acronym = '';
+        if (count($words) >= 2) {
+            $acronym = substr($words[0], 0, 1) . substr($words[1], 0, 1);
+        } elseif (count($words) === 1 && !empty($words[0])) {
+            $acronym = substr($words[0], 0, 2);
+        } else {
+            $acronym = 'FG';
+        }
+
+        $prefix = 'FG-' . $acronym;
+        return $this->generate('mst_barang', 'barang_cd', $prefix, 3);
     }
 
     /**

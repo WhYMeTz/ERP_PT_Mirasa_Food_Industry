@@ -32,7 +32,7 @@ class CodeGeneratorController extends Controller
                 break;
             case 'barang':
                 $jenis = $request->query('jenis');
-                $code = $this->codeGeneratorService->generateBarangCode($jenis);
+                $code = $this->codeGeneratorService->generateBarangCode($jenis, $name);
                 break;
             default:
                 return response()->json([

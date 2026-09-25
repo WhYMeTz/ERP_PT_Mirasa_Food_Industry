@@ -125,22 +125,22 @@
                 <div class="form-group">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.375rem;">
                         <label for="create_barang_cd" class="form-label" style="margin-bottom: 0;">Kode Barang <span style="color:#ef4444;">*</span></label>
-                        <button type="button" class="btn btn-secondary btn-sm" data-target="create_barang_cd" onclick="const sel = document.getElementById('create_jenis_barang_id'); const opt = sel.options[sel.selectedIndex]; fetchNextCode('barang', 'create_barang_cd', {jenis: opt?.dataset?.cd || ''})" style="padding: 0.2rem 0.6rem; font-size: 0.75rem;" title="Generate Ulang Nomor Urut Otomatis">
+                        <button type="button" class="btn btn-secondary btn-sm" data-target="create_barang_cd" onclick="const sel = document.getElementById('create_jenis_barang_id'); const opt = sel.options[sel.selectedIndex]; fetchNextCode('barang', 'create_barang_cd', {jenis: opt?.dataset?.cd || '', name: document.getElementById('create_barang_nm')?.value || ''})" style="padding: 0.2rem 0.6rem; font-size: 0.75rem;" title="Generate Ulang Nomor Urut Otomatis">
                             ↺ Auto Generate
                         </button>
                     </div>
-                    <input type="text" id="create_barang_cd" name="barang_cd" value="{{ $nextBarangCode ?? '' }}" class="form-control" placeholder="Contoh: BRG-RAW-0001" required>
-                    <small style="color: #64748b; font-size: 0.75rem; display: block; margin-top: 0.25rem;">Kode otomatis terisi nomor urut berikutnya, namun tetap bisa Anda ubah manual.</small>
+                    <input type="text" id="create_barang_cd" name="barang_cd" value="{{ $nextBarangCode ?? '' }}" class="form-control" placeholder="Contoh: BBL00G-BP1 atau BB-SK001" required>
+                    <small style="color: #64748b; font-size: 0.75rem; display: block; margin-top: 0.25rem;">Kode otomatis terisi nomor urut rumpun berikutnya (Bumbu, Karton, Lakban, dll), dan tetap bisa diubah manual.</small>
                 </div>
 
                 <div class="form-group">
                     <label for="create_barang_nm" class="form-label">Nama Barang <span style="color:#ef4444;">*</span></label>
-                    <input type="text" id="create_barang_nm" name="barang_nm" class="form-control" placeholder="Contoh: Singkong Manis Grade A" required>
+                    <input type="text" id="create_barang_nm" name="barang_nm" class="form-control" placeholder="Contoh: Bumbu Jagung Bakar" oninput="const opt = document.getElementById('create_jenis_barang_id').options[document.getElementById('create_jenis_barang_id').selectedIndex]; debounceCodeFromName('barang', 'create_barang_nm', 'create_barang_cd', {jenis: opt?.dataset?.cd || ''})" required>
                 </div>
 
                 <div class="form-group">
                     <label for="create_jenis_barang_id" class="form-label">Jenis Barang <span style="color:#ef4444;">*</span></label>
-                    <select id="create_jenis_barang_id" name="jenis_barang_id" class="form-control" onchange="const opt = this.options[this.selectedIndex]; fetchNextCode('barang', 'create_barang_cd', {jenis: opt.dataset.cd || ''})" required>
+                    <select id="create_jenis_barang_id" name="jenis_barang_id" class="form-control" onchange="const opt = this.options[this.selectedIndex]; fetchNextCode('barang', 'create_barang_cd', {jenis: opt.dataset.cd || '', name: document.getElementById('create_barang_nm')?.value || ''})" required>
                         <option value="">-- Pilih Jenis Barang --</option>
                         @foreach($jenisBarangList as $jenis)
                             <option value="{{ $jenis->jenis_barang_id }}" data-cd="{{ $jenis->jenis_barang_cd }}">{{ $jenis->jenis_barang_nm }} ({{ $jenis->jenis_barang_cd }})</option>

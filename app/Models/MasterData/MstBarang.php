@@ -44,7 +44,7 @@ class MstBarang extends Model
     public function scopeBahanBaku($query)
     {
         return $query->whereHas('jenisBarang', function ($q) {
-            $q->whereIn('jenis_barang_cd', ['RAW', 'SUPP', 'PACK', 'BUMBU']);
+            $q->whereIn('jenis_barang_cd', ['RAW', 'SUPP', 'PACK', 'BUMBU', 'BB', 'BP']);
         });
     }
 

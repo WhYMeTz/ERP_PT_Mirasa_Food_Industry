@@ -27,6 +27,8 @@ class StoreTerimaBarangRequest extends FormRequest
             'items.*.podtl_id'      => 'nullable|integer|exists:dat_po_dtl,podtl_id',
             'items.*.batch_no'      => 'nullable|string|max:100',
             'items.*.expired_tgl'   => 'nullable|date',
+            'items.*.grade_cd'      => 'nullable|string|max:20',
+            'items.*.reject_qty'    => 'nullable|numeric|min:0',
             'items.*.terima_qty'    => 'required|numeric|min:0.0001',
             'items.*.harga_nominal' => 'nullable|numeric|min:0',
             'items.*.catatan_txt'   => 'nullable|string',

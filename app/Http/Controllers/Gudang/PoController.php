@@ -132,4 +132,34 @@ class PoController extends Controller
             return back()->withErrors(['error' => $e->getMessage()]);
         }
     }
+
+    public function forceClose(Request $request, int $id): RedirectResponse|JsonResponse
+    {
+        $request->validate([
+            'closed_reason' => 'required|string|min:5|max:500',
+        ], [
+            'closed_reason.required' => 'Alasan penutupan PO wajib diisi.',
+            'closed_reason.min'      => 'Alasan penutupan minimal 5 karakter.',
+        ]);
+
+        try {
+            $user = Auth::user();
+            $userName = $user ? ($user->name ?? $user->username) : 'Petugas';
+            $po = $this->poService->forceClose($id, $request->input('closed_reason'), $userName);
+
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'status'  => 'success',
+                    'message' => "Purchase Order {$po->po_no} berhasil ditutup.",
+                    'data'    => $po,
+                ]);
+            }
+
+            return redirect()
+                ->route('gudang.po.show', $po->po_id)
+                ->with('success', "Purchase Order {$po->po_no} berhasil ditutup.");
+        } catch (\Exception $e) {
+            return back()->withErrors(['error' => $e->getMessage()]);
+        }
+    }
 }

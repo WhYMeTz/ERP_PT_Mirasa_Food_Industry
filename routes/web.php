@@ -46,6 +46,7 @@ use App\Http\Controllers\Gudang\PemakaianController;
 // Modul Transaksi Gudang (Inbound & Inventory Engine)
 Route::prefix('gudang')->name('gudang.')->group(function () {
     Route::post('po/{id}/cancel', [PoController::class, 'cancel'])->name('po.cancel');
+    Route::post('po/{id}/force-close', [PoController::class, 'forceClose'])->name('po.force_close');
     Route::resource('po', PoController::class);
 
     Route::resource('terima', TerimaBarangController::class);

@@ -50,6 +50,12 @@
             </div>
 
             <div class="form-group" style="margin-bottom: 0;">
+                <label for="tgl_estimasi_datang" class="form-label">Estimasi Tanggal Tiba</label>
+                <input type="date" id="tgl_estimasi_datang" name="tgl_estimasi_datang" value="{{ old('tgl_estimasi_datang') }}" class="form-control">
+                <small style="color: #64748b; font-size: 0.75rem;">Perkiraan tanggal pengiriman barang tiba di pabrik.</small>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
                 <label for="supplier_id" class="form-label">Supplier Mitra <span style="color:#ef4444;">*</span></label>
                 <select id="supplier_id" name="supplier_id" class="form-control" required>
                     <option value="">-- Pilih Supplier Mitra --</option>

@@ -15,11 +15,12 @@ class StorePoRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'po_no'       => 'nullable|string|max:50|unique:dat_po_hdr,po_no',
-            'po_tgl'      => 'required|date',
-            'supplier_id' => 'required|integer|exists:mst_supplier,supplier_id',
-            'gudang_id'   => 'required|integer|exists:mst_gudang,gudang_id',
-            'catatan_txt' => 'nullable|string',
+            'po_no'               => 'nullable|string|max:50|unique:dat_po_hdr,po_no',
+            'po_tgl'              => 'required|date',
+            'tgl_estimasi_datang' => 'nullable|date',
+            'supplier_id'         => 'required|integer|exists:mst_supplier,supplier_id',
+            'gudang_id'           => 'required|integer|exists:mst_gudang,gudang_id',
+            'catatan_txt'         => 'nullable|string',
 
             'items'                     => 'required|array|min:1',
             'items.*.barang_id'         => [

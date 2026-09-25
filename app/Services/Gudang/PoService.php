@@ -110,13 +110,14 @@ class PoService
             }
 
             $header = DatPoHdr::create([
-                'po_no'         => $poNo,
-                'po_tgl'        => $data['po_tgl'] ?? date('Y-m-d'),
-                'supplier_id'   => $data['supplier_id'],
-                'gudang_id'     => $data['gudang_id'],
-                'status_cd'     => $data['status_cd'] ?? 'APPROVED', // Langsung siap diterima
-                'total_nominal' => $totalNominal,
-                'catatan_txt'   => $data['catatan_txt'] ?? null,
+                'po_no'               => $poNo,
+                'po_tgl'              => $data['po_tgl'] ?? date('Y-m-d'),
+                'tgl_estimasi_datang' => $data['tgl_estimasi_datang'] ?? null,
+                'supplier_id'         => $data['supplier_id'],
+                'gudang_id'           => $data['gudang_id'],
+                'status_cd'           => $data['status_cd'] ?? 'APPROVED', // Langsung siap diterima
+                'total_nominal'       => $totalNominal,
+                'catatan_txt'         => $data['catatan_txt'] ?? null,
             ]);
 
             foreach ($items as $item) {
@@ -175,11 +176,12 @@ class PoService
             }
 
             $po->update([
-                'po_tgl'        => $data['po_tgl'] ?? $po->po_tgl,
-                'supplier_id'   => $data['supplier_id'] ?? $po->supplier_id,
-                'gudang_id'     => $data['gudang_id'] ?? $po->gudang_id,
-                'total_nominal' => $totalNominal,
-                'catatan_txt'   => $data['catatan_txt'] ?? $po->catatan_txt,
+                'po_tgl'              => $data['po_tgl'] ?? $po->po_tgl,
+                'tgl_estimasi_datang' => $data['tgl_estimasi_datang'] ?? $po->tgl_estimasi_datang,
+                'supplier_id'         => $data['supplier_id'] ?? $po->supplier_id,
+                'gudang_id'           => $data['gudang_id'] ?? $po->gudang_id,
+                'total_nominal'       => $totalNominal,
+                'catatan_txt'         => $data['catatan_txt'] ?? $po->catatan_txt,
             ]);
 
             // Hapus detail lama dan ganti dengan yang baru
@@ -224,6 +226,39 @@ class PoService
             ]);
 
             return $po;
+        });
+    }
+
+    /**
+     * Menutup paksa PO yang statusnya masih PARTIAL jika sisa kuota barang
+     * tidak dapat/tidak akan dikirim lagi oleh supplier.
+     */
+    public function forceClose(int $id, string $reason, ?string $userName = null): DatPoHdr
+    {
+        return DB::transaction(function () use ($id, $reason, $userName) {
+            $po = DatPoHdr::with('details')->findOrFail($id);
+
+            if ($po->status_cd !== 'PARTIAL') {
+                throw new Exception("Hanya Purchase Order dengan status 'PARTIAL' (sebagian diterima) yang dapat ditutup paksa.");
+            }
+
+            if ($po->total_sisa_qty <= 0) {
+                throw new Exception("Semua kuantitas barang pada PO ini sudah diterima penuh.");
+            }
+
+            $dateStr = date('d/m/Y H:i');
+            $userStr = $userName ?: 'Petugas Gudang / Purchasing';
+            $catatanTambahan = "[FORCE CLOSE - {$dateStr}] Ditutup oleh {$userStr}. Alasan: {$reason}. Sisa kuota pesanan resmi dibatalkan.";
+
+            $po->update([
+                'status_cd'     => 'CLOSED',
+                'closed_at'     => now(),
+                'closed_by'     => $userStr,
+                'closed_reason' => $reason,
+                'catatan_txt'   => trim(($po->catatan_txt ? $po->catatan_txt . "\n" : "") . $catatanTambahan),
+            ]);
+
+            return $po->fresh(['details.barang']);
         });
     }
 

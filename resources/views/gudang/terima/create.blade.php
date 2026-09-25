@@ -83,6 +83,22 @@
         </div>
     </div>
 
+    @if ($selectedPo)
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.875rem 1.25rem; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+            <div style="font-size: 0.875rem; color: #334155;">
+                <strong>Referensi Dokumen:</strong> {{ $selectedPo->po_no }} &bull; Supplier: {{ $selectedPo->supplier?->supplier_nm }}
+                @if ($selectedPo->status_cd == 'PARTIAL')
+                    <span class="badge badge-info" style="margin-left: 0.35rem; font-size: 0.75rem;">Sebagian Diterima</span>
+                @endif
+            </div>
+            @if ($selectedPo->tgl_estimasi_datang)
+                <span style="font-size: 0.8rem; color: #64748b;">
+                    Estimasi Tiba: {{ \Carbon\Carbon::parse($selectedPo->tgl_estimasi_datang)->format('d/m/Y') }}
+                </span>
+            @endif
+        </div>
+    @endif
+
     {{-- KARTU 2: DETAIL BARANG & NOMOR BATCH (INVENTORY ENGINE) --}}
     <div class="card" style="margin-bottom: 1.5rem;">
         <div class="card-header" style="background: #f8fafc; display: flex; justify-content: space-between; align-items: center;">
@@ -137,7 +153,9 @@
                                         <input type="hidden" name="items[{{ $idx }}][podtl_id]" value="{{ $pdtl->podtl_id }}">
                                         <input type="hidden" name="items[{{ $idx }}][barang_id]" value="{{ $pdtl->barang_id }}">
                                         <strong style="color: #0f172a; display: block; font-size: 0.85rem;">{{ $pdtl->barang?->barang_nm }}</strong>
-                                        <span style="font-size: 0.725rem; color: #64748b;">Kode: {{ $pdtl->barang?->barang_cd }} &bull; Sisa: <strong>{{ number_format((float) $pdtl->sisa_qty, 2) }}</strong></span>
+                                        <span style="font-size: 0.75rem; color: #64748b;">
+                                            Pesan: {{ number_format((float) $pdtl->pesan_qty, 2) }} | Sisa: {{ number_format((float) $pdtl->sisa_qty, 2) }}
+                                        </span>
                                     </td>
                                     <td>
                                         <input type="text" name="items[{{ $idx }}][batch_no]" value="BATCH-{{ preg_replace('/[^A-Za-z0-9]/', '', $pdtl->barang?->barang_cd ?? 'ITEM') }}-{{ date('ymd') }}-{{ str_pad($idx+1, 2, '0', STR_PAD_LEFT) }}" class="form-control" required>

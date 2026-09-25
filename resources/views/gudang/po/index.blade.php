@@ -22,9 +22,10 @@
             <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Cari nomor PO atau nama supplier..." class="form-control" style="padding: 0.5rem 0.75rem; max-width: 280px;">
             <select name="status" class="form-control" style="padding: 0.5rem 0.75rem; max-width: 160px;" onchange="this.form.submit()">
                 <option value="">-- Semua Status --</option>
-                <option value="APPROVED" {{ ($status ?? '') == 'APPROVED' ? 'selected' : '' }}>Siap Diterima (Approved)</option>
+                <option value="APPROVED" {{ ($status ?? '') == 'APPROVED' ? 'selected' : '' }}>Disetujui</option>
                 <option value="PARTIAL" {{ ($status ?? '') == 'PARTIAL' ? 'selected' : '' }}>Sebagian Diterima</option>
-                <option value="COMPLETED" {{ ($status ?? '') == 'COMPLETED' ? 'selected' : '' }}>Selesai (Completed)</option>
+                <option value="COMPLETED" {{ ($status ?? '') == 'COMPLETED' ? 'selected' : '' }}>Selesai</option>
+                <option value="CLOSED" {{ ($status ?? '') == 'CLOSED' ? 'selected' : '' }}>Ditutup</option>
                 <option value="DRAFT" {{ ($status ?? '') == 'DRAFT' ? 'selected' : '' }}>Draft</option>
                 <option value="CANCELLED" {{ ($status ?? '') == 'CANCELLED' ? 'selected' : '' }}>Dibatalkan</option>
             </select>
@@ -59,18 +60,27 @@
                                 {{ $po->po_no }}
                             </a>
                         </td>
-                        <td>{{ \Carbon\Carbon::parse($po->po_tgl)->format('d/m/Y') }}</td>
+                        <td>
+                            {{ \Carbon\Carbon::parse($po->po_tgl)->format('d/m/Y') }}
+                            @if ($po->tgl_estimasi_datang)
+                                <small style="display: block; font-size: 0.725rem; color: #64748b;">
+                                    Tiba: {{ \Carbon\Carbon::parse($po->tgl_estimasi_datang)->format('d/m/Y') }}
+                                </small>
+                            @endif
+                        </td>
                         <td style="font-weight: 600;">{{ $po->supplier?->supplier_nm ?? '-' }}</td>
                         <td>{{ $po->gudang?->gudang_nm ?? '-' }}</td>
                         <td>
                             @if ($po->status_cd == 'COMPLETED')
                                 <span class="badge badge-success">Selesai</span>
                             @elseif ($po->status_cd == 'PARTIAL')
-                                <span class="badge badge-info">Sebagian Diterima</span>
+                                <span class="badge badge-info">Sebagian Diterima ({{ $po->persentase_terima }}%)</span>
+                            @elseif ($po->status_cd == 'CLOSED')
+                                <span class="badge" style="background:#f1f5f9; color:#475569; border: 1px solid #cbd5e1;">Ditutup ({{ $po->persentase_terima }}%)</span>
                             @elseif ($po->status_cd == 'APPROVED')
-                                <span class="badge" style="background:#e0f2fe; color:#0369a1;">Siap Diterima</span>
+                                <span class="badge" style="background:#e0f2fe; color:#0369a1;">Disetujui</span>
                             @elseif ($po->status_cd == 'DRAFT')
-                                <span class="badge" style="background:#fef3c7; color:#92400e;">Draft</span>
+                                <span class="badge" style="background:#f1f5f9; color:#475569;">Draft</span>
                             @else
                                 <span class="badge" style="background:#fee2e2; color:#b91c1c;">Dibatalkan</span>
                             @endif

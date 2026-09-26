@@ -87,6 +87,12 @@ class TerimaBarangController extends Controller
                 ], 201);
             }
 
+            if ($request->input('redirect_to') === 'po_index') {
+                return redirect()
+                    ->route('gudang.po.index')
+                    ->with('success', "Penerimaan barang {$terima->terima_no} berhasil dicatat. Status dan progres PO telah diperbarui.");
+            }
+
             if ($request->input('redirect_to') === 'po' && $terima->po_id) {
                 return redirect()
                     ->route('gudang.po.show', $terima->po_id)

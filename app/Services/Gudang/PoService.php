@@ -52,11 +52,15 @@ class PoService
      */
     public function getAllPaginated(int $perPage = 15, ?string $search = null, ?string $status = null): LengthAwarePaginator
     {
-        $query = DatPoHdr::with(['supplier', 'gudang', 'details.barang'])
+        $query = DatPoHdr::with(['supplier', 'gudang', 'details.barang.satuanDasar'])
             ->where('deleted_st', false);
 
         if (!empty($status)) {
-            $query->where('status_cd', $status);
+            if ($status === 'COMPLETED_CLOSED') {
+                $query->whereIn('status_cd', ['COMPLETED', 'CLOSED']);
+            } else {
+                $query->where('status_cd', $status);
+            }
         }
 
         if (!empty($search)) {

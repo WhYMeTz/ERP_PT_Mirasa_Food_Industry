@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Gudang;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Gudang\StorePoRequest;
+use App\Models\Gudang\DatPoHdr;
 use App\Models\MasterData\MstBarang;
 use App\Models\MasterData\MstGudang;
 use App\Models\MasterData\MstSupplier;
@@ -30,15 +31,32 @@ class PoController extends Controller
 
         $poList = $this->poService->getAllPaginated($perPage, $search, $status);
 
+        $rawCounts = DatPoHdr::where('deleted_st', false)
+            ->selectRaw("
+                COUNT(*) as all_count,
+                COUNT(CASE WHEN status_cd = 'APPROVED' THEN 1 END) as approved_count,
+                COUNT(CASE WHEN status_cd = 'PARTIAL' THEN 1 END) as partial_count,
+                COUNT(CASE WHEN status_cd IN ('COMPLETED', 'CLOSED') THEN 1 END) as completed_count
+            ")
+            ->first();
+
+        $statusCounts = [
+            'all'       => (int) ($rawCounts->all_count ?? 0),
+            'approved'  => (int) ($rawCounts->approved_count ?? 0),
+            'partial'   => (int) ($rawCounts->partial_count ?? 0),
+            'completed' => (int) ($rawCounts->completed_count ?? 0),
+        ];
+
         if ($request->wantsJson()) {
             return response()->json([
-                'status'  => 'success',
-                'message' => 'Data Purchase Order berhasil diambil.',
-                'data'    => $poList,
+                'status'       => 'success',
+                'message'      => 'Data Purchase Order berhasil diambil.',
+                'status_counts'=> $statusCounts,
+                'data'         => $poList,
             ]);
         }
 
-        return view('gudang.po.index', compact('poList', 'search', 'status'));
+        return view('gudang.po.index', compact('poList', 'search', 'status', 'statusCounts'));
     }
 
     public function create(): View

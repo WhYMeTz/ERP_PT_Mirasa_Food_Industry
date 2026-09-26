@@ -3,7 +3,51 @@
 @section('title', 'Detail Dokumen Pengeluaran ' . $pakai->pakai_no . ' - ERP PT Mirasa')
 
 @section('content')
-<div style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+<style>
+    @media print {
+        header, nav, .btn, .no-print, .alert, footer {
+            display: none !important;
+        }
+        body, main {
+            padding: 0 !important;
+            margin: 0 !important;
+            background: #ffffff !important;
+        }
+        .card {
+            box-shadow: none !important;
+            border: 1px solid #000000 !important;
+            break-inside: avoid;
+        }
+        .print-only {
+            display: block !important;
+        }
+        table th, table td {
+            border: 1px solid #cbd5e1 !important;
+            color: #000000 !important;
+        }
+    }
+    .print-only {
+        display: none;
+    }
+</style>
+
+{{-- PRINT-ONLY HEADER --}}
+<div class="print-only" style="margin-bottom: 1.5rem; border-bottom: 2px solid #0f172a; padding-bottom: 0.75rem;">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+        <div>
+            <h2 style="font-size: 1.25rem; font-weight: 800; color: #0f172a; margin: 0;">PT. MIRASA FOOD INDUSTRY</h2>
+            <p style="font-size: 0.75rem; color: #475569; margin: 0.2rem 0 0 0;">
+                Pabrik Pengolahan F&B Singkong &bull; Jl. Munggur No. 2 Ambartawang, Magelang
+            </p>
+        </div>
+        <div style="text-align: right;">
+            <strong style="font-size: 1.1rem; color: #b91c1c; display: block;">BUKTI PENGELUARAN BARANG (BPPB)</strong>
+            <span style="font-family: monospace; font-size: 0.9rem; font-weight: 700;">{{ $pakai->pakai_no }}</span>
+        </div>
+    </div>
+</div>
+
+<div class="no-print" style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
     <div>
         <a href="{{ route('gudang.pemakaian.index') }}" style="color: #64748b; text-decoration: none; font-size: 0.875rem; display: inline-flex; align-items: center; gap: 0.25rem;">
             &larr; Kembali ke Daftar Barang Keluar
@@ -108,6 +152,33 @@
                 </tr>
             </tfoot>
         </table>
+    </div>
+</div>
+
+{{-- TANDA TANGAN BUKTI PENGELUARAN (BPPB) --}}
+<div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.5rem; margin-top: 2rem; text-align: center; font-size: 0.875rem;">
+    <div style="border: 1px dashed #cbd5e1; border-radius: 8px; padding: 1rem; background: #ffffff;">
+        <span style="color: #64748b; font-size: 0.8rem; display: block;">Diserahkan Oleh:</span>
+        <strong style="color: #0f172a; display: block; margin-top: 0.2rem;">Petugas Gudang</strong>
+        <div style="height: 55px;"></div>
+        <div style="border-bottom: 1px solid #94a3b8; width: 80%; margin: 0 auto;"></div>
+        <span style="color: #64748b; font-size: 0.75rem; margin-top: 0.25rem; display: block;">Nama & Tanggal</span>
+    </div>
+
+    <div style="border: 1px dashed #cbd5e1; border-radius: 8px; padding: 1rem; background: #ffffff;">
+        <span style="color: #64748b; font-size: 0.8rem; display: block;">Diterima Oleh:</span>
+        <strong style="color: #0f172a; display: block; margin-top: 0.2rem;">Mandor / Staf Produksi</strong>
+        <div style="height: 55px;"></div>
+        <div style="border-bottom: 1px solid #94a3b8; width: 80%; margin: 0 auto;"></div>
+        <span style="color: #64748b; font-size: 0.75rem; margin-top: 0.25rem; display: block;">Nama & Tanggal</span>
+    </div>
+
+    <div style="border: 1px dashed #cbd5e1; border-radius: 8px; padding: 1rem; background: #ffffff;">
+        <span style="color: #64748b; font-size: 0.8rem; display: block;">Mengetahui:</span>
+        <strong style="color: #0f172a; display: block; margin-top: 0.2rem;">Kepala Pabrik / Gudang</strong>
+        <div style="height: 55px;"></div>
+        <div style="border-bottom: 1px solid #94a3b8; width: 80%; margin: 0 auto;"></div>
+        <span style="color: #64748b; font-size: 0.75rem; margin-top: 0.25rem; display: block;">Nama & Tanda Tangan</span>
     </div>
 </div>
 @endsection

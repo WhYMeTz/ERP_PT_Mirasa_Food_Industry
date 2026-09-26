@@ -21,8 +21,14 @@ class PemakaianService
     /**
      * Mengambil daftar header pemakaian / pengeluaran barang.
      */
-    public function getAllPaginated(int $perPage = 15, ?string $search = null, int|array|null $gudangId = null): LengthAwarePaginator
-    {
+    public function getAllPaginated(
+        int $perPage = 15,
+        ?string $search = null,
+        int|array|null $gudangId = null,
+        ?string $tujuan = null,
+        ?string $startDate = null,
+        ?string $endDate = null
+    ): LengthAwarePaginator {
         $query = DatPakaiHdr::with(['gudang', 'details.barang.satuanDasar', 'details.barang.jenisBarang'])
             ->where('deleted_st', false);
 
@@ -30,6 +36,18 @@ class PemakaianService
             $query->whereIn('gudang_id', $gudangId);
         } elseif ($gudangId !== null) {
             $query->where('gudang_id', $gudangId);
+        }
+
+        if (!empty($tujuan)) {
+            $query->where('tujuan_pemakaian', $tujuan);
+        }
+
+        if (!empty($startDate)) {
+            $query->whereDate('pakai_tgl', '>=', $startDate);
+        }
+
+        if (!empty($endDate)) {
+            $query->whereDate('pakai_tgl', '<=', $endDate);
         }
 
         if (!empty($search)) {
@@ -49,15 +67,30 @@ class PemakaianService
      * Mengambil daftar per-item barang keluar sesuai Sheet "Barang Keluar" di Excel operasional:
      * Kolom: Tanggal | Kode Batch | Kode Barang | Nama Barang | Jenis | Keterangan | Qty Keluar | Harga Satuan | Total Harga
      */
-    public function getBarangKeluarListPaginated(int $perPage = 25, ?string $search = null, int|array|null $gudangId = null): LengthAwarePaginator
-    {
+    public function getBarangKeluarListPaginated(
+        int $perPage = 25,
+        ?string $search = null,
+        int|array|null $gudangId = null,
+        ?string $tujuan = null,
+        ?string $startDate = null,
+        ?string $endDate = null
+    ): LengthAwarePaginator {
         $query = DatPakaiDtl::with(['header.gudang', 'barang.jenisBarang', 'barang.satuanDasar'])
-            ->whereHas('header', function ($q) use ($gudangId) {
+            ->whereHas('header', function ($q) use ($gudangId, $tujuan, $startDate, $endDate) {
                 $q->where('deleted_st', false);
                 if (is_array($gudangId)) {
                     $q->whereIn('gudang_id', $gudangId);
                 } elseif ($gudangId !== null) {
                     $q->where('gudang_id', $gudangId);
+                }
+                if (!empty($tujuan)) {
+                    $q->where('tujuan_pemakaian', $tujuan);
+                }
+                if (!empty($startDate)) {
+                    $q->whereDate('pakai_tgl', '>=', $startDate);
+                }
+                if (!empty($endDate)) {
+                    $q->whereDate('pakai_tgl', '<=', $endDate);
                 }
             });
 
@@ -87,6 +120,90 @@ class PemakaianService
         return DatPakaiHdr::with(['gudang', 'details.barang.satuanDasar', 'details.barang.jenisBarang'])
             ->where('pakai_id', $id)
             ->firstOrFail();
+    }
+
+    /**
+     * Menghitung ringkasan metrik pengeluaran bahan (Singkong, Minyak, Bumbu, Kemasan)
+     * untuk sinkronisasi akuntansi biaya produksi / HPP
+     */
+    public function getRingkasanPengeluaran(
+        int|array|null $gudangId = null,
+        ?string $tujuan = null,
+        ?string $startDate = null,
+        ?string $endDate = null
+    ): array {
+        $query = DatPakaiDtl::with(['barang.satuanDasar', 'barang.jenisBarang'])
+            ->whereHas('header', function ($q) use ($gudangId, $tujuan, $startDate, $endDate) {
+                $q->where('deleted_st', false);
+                if (is_array($gudangId)) {
+                    $q->whereIn('gudang_id', $gudangId);
+                } elseif ($gudangId !== null) {
+                    $q->where('gudang_id', $gudangId);
+                }
+                if (!empty($tujuan)) {
+                    $q->where('tujuan_pemakaian', $tujuan);
+                }
+                if (!empty($startDate)) {
+                    $q->whereDate('pakai_tgl', '>=', $startDate);
+                }
+                if (!empty($endDate)) {
+                    $q->whereDate('pakai_tgl', '<=', $endDate);
+                }
+            });
+
+        $items = $query->get();
+
+        $singkongQty = 0;
+        $singkongNilai = 0;
+        $minyakQty = 0;
+        $minyakNilai = 0;
+        $bumbuQty = 0;
+        $bumbuNilai = 0;
+        $kemasanQty = 0;
+        $kemasanNilai = 0;
+        $lainnyaQty = 0;
+        $lainnyaNilai = 0;
+        $grandTotalNilai = 0;
+
+        foreach ($items as $item) {
+            $nama = strtoupper((string) ($item->barang?->barang_nm ?? ''));
+            $kode = strtoupper((string) ($item->barang?->barang_cd ?? ''));
+            $qty = (float) $item->qty_keluar;
+            $nilai = (float) $item->total_harga;
+            $grandTotalNilai += $nilai;
+
+            if (str_contains($nama, 'SINGKONG') || str_contains($nama, 'UBI') || str_starts_with($kode, 'BB-SK')) {
+                $singkongQty += $qty;
+                $singkongNilai += $nilai;
+            } elseif (str_contains($nama, 'MINYAK') || str_contains($nama, 'SAWIT') || str_contains($nama, 'KELAPA') || str_contains($kode, 'MYK')) {
+                $minyakQty += $qty;
+                $minyakNilai += $nilai;
+            } elseif (str_contains($nama, 'BUMBU') || str_contains($nama, 'PERENYAH') || str_contains($nama, 'GARAM') || str_contains($nama, 'SEASONING') || str_starts_with($kode, 'BJB')) {
+                $bumbuQty += $qty;
+                $bumbuNilai += $nilai;
+            } elseif (str_contains($nama, 'KARTON') || str_contains($nama, 'KARDUS') || str_contains($nama, 'PLASTIK') || str_contains($nama, 'LAKBAN') || str_contains($nama, 'TALI') || str_starts_with($kode, 'KEB') || str_starts_with($kode, 'LKB')) {
+                $kemasanQty += $qty;
+                $kemasanNilai += $nilai;
+            } else {
+                $lainnyaQty += $qty;
+                $lainnyaNilai += $nilai;
+            }
+        }
+
+        return [
+            'singkong_qty'      => $singkongQty,
+            'singkong_nilai'    => $singkongNilai,
+            'minyak_qty'        => $minyakQty,
+            'minyak_nilai'      => $minyakNilai,
+            'bumbu_qty'         => $bumbuQty,
+            'bumbu_nilai'       => $bumbuNilai,
+            'kemasan_qty'       => $kemasanQty,
+            'kemasan_nilai'     => $kemasanNilai,
+            'lainnya_qty'       => $lainnyaQty,
+            'lainnya_nilai'     => $lainnyaNilai,
+            'grand_total_nilai' => $grandTotalNilai,
+            'total_item_count'  => $items->count(),
+        ];
     }
 
     /**

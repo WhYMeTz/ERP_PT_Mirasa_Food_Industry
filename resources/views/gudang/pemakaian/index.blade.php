@@ -23,8 +23,76 @@
     </div>
 </div>
 
+{{-- WIDGET REKAPITULASI BIAYA BAHAN KELUAR (SINKRON DENGAN HPP PRODUKSI) --}}
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+    {{-- SINGKONG --}}
+    <div class="card" style="padding: 1rem 1.15rem; border-left: 4px solid #b45309; background: #fffbeb;">
+        <span style="font-size: 0.75rem; font-weight: 700; color: #92400e; text-transform: uppercase; letter-spacing: 0.05em;">
+            🥔 Singkong (Bahan Baku)
+        </span>
+        <div style="font-size: 1.35rem; font-weight: 800; color: #78350f; margin-top: 0.35rem;">
+            {{ number_format($ringkasan['singkong_qty'] ?? 0, 2, ',', '.') }} <span style="font-size: 0.85rem; font-weight: 600;">kg</span>
+        </div>
+        <div style="font-size: 0.8rem; font-weight: 700; color: #b45309; margin-top: 0.2rem;">
+            Rp {{ number_format($ringkasan['singkong_nilai'] ?? 0, 0, ',', '.') }}
+        </div>
+    </div>
+
+    {{-- MINYAK GORENG --}}
+    <div class="card" style="padding: 1rem 1.15rem; border-left: 4px solid #d97706; background: #fefce8;">
+        <span style="font-size: 0.75rem; font-weight: 700; color: #854d0e; text-transform: uppercase; letter-spacing: 0.05em;">
+            🛢️ Minyak (Sawit / Kelapa)
+        </span>
+        <div style="font-size: 1.35rem; font-weight: 800; color: #713f12; margin-top: 0.35rem;">
+            {{ number_format($ringkasan['minyak_qty'] ?? 0, 2, ',', '.') }} <span style="font-size: 0.85rem; font-weight: 600;">kg</span>
+        </div>
+        <div style="font-size: 0.8rem; font-weight: 700; color: #a16207; margin-top: 0.2rem;">
+            Rp {{ number_format($ringkasan['minyak_nilai'] ?? 0, 0, ',', '.') }}
+        </div>
+    </div>
+
+    {{-- BUMBU & PERENYAH --}}
+    <div class="card" style="padding: 1rem 1.15rem; border-left: 4px solid #0284c7; background: #f0f9ff;">
+        <span style="font-size: 0.75rem; font-weight: 700; color: #075985; text-transform: uppercase; letter-spacing: 0.05em;">
+            🧂 Bumbu & Perenyah
+        </span>
+        <div style="font-size: 1.35rem; font-weight: 800; color: #0c4a6e; margin-top: 0.35rem;">
+            {{ number_format($ringkasan['bumbu_qty'] ?? 0, 2, ',', '.') }} <span style="font-size: 0.85rem; font-weight: 600;">kg</span>
+        </div>
+        <div style="font-size: 0.8rem; font-weight: 700; color: #0284c7; margin-top: 0.2rem;">
+            Rp {{ number_format($ringkasan['bumbu_nilai'] ?? 0, 0, ',', '.') }}
+        </div>
+    </div>
+
+    {{-- KEMASAN --}}
+    <div class="card" style="padding: 1rem 1.15rem; border-left: 4px solid #059669; background: #f0fdf4;">
+        <span style="font-size: 0.75rem; font-weight: 700; color: #065f46; text-transform: uppercase; letter-spacing: 0.05em;">
+            📦 Karton IFL & Plastik
+        </span>
+        <div style="font-size: 1.35rem; font-weight: 800; color: #064e3b; margin-top: 0.35rem;">
+            {{ number_format($ringkasan['kemasan_qty'] ?? 0, 0, ',', '.') }} <span style="font-size: 0.85rem; font-weight: 600;">unit</span>
+        </div>
+        <div style="font-size: 0.8rem; font-weight: 700; color: #059669; margin-top: 0.2rem;">
+            Rp {{ number_format($ringkasan['kemasan_nilai'] ?? 0, 0, ',', '.') }}
+        </div>
+    </div>
+
+    {{-- TOTAL BIAYA BAHAN --}}
+    <div class="card" style="padding: 1rem 1.15rem; border-left: 4px solid #dc2626; background: #fef2f2;">
+        <span style="font-size: 0.75rem; font-weight: 700; color: #991b1b; text-transform: uppercase; letter-spacing: 0.05em;">
+            💰 Total Biaya Bahan
+        </span>
+        <div style="font-size: 1.35rem; font-weight: 800; color: #7f1d1d; margin-top: 0.35rem;">
+            Rp {{ number_format($ringkasan['grand_total_nilai'] ?? 0, 0, ',', '.') }}
+        </div>
+        <div style="font-size: 0.75rem; color: #dc2626; margin-top: 0.2rem;">
+            Terhitung dari {{ $ringkasan['total_item_count'] ?? 0 }} rincian item keluar
+        </div>
+    </div>
+</div>
+
 <div class="card" style="margin-bottom: 1.5rem;">
-    <div style="padding: 0.75rem 1.25rem; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+    <div style="padding: 0.85rem 1.25rem; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
         {{-- View Switcher Tab --}}
         <div style="display: inline-flex; background: #e2e8f0; padding: 0.25rem; border-radius: 8px; gap: 0.25rem;">
             <a href="{{ route('gudang.pemakaian.index', array_merge(request()->query(), ['view' => 'item'])) }}" 
@@ -40,12 +108,22 @@
         </div>
 
         {{-- Filter & Search Form --}}
-        <form action="{{ route('gudang.pemakaian.index') }}" method="GET" style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+        <form action="{{ route('gudang.pemakaian.index') }}" method="GET" style="display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap;">
             <input type="hidden" name="view" value="{{ $viewType }}">
-            <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Cari batch, barang, keterangan..." class="form-control" style="padding: 0.45rem 0.75rem; width: 220px; font-size: 0.85rem;">
             
-            <select name="gudang_id" class="form-control" style="padding: 0.45rem 0.75rem; width: 180px; font-size: 0.85rem;" onchange="this.form.submit()">
-                <option value="">-- Semua Gudang --</option>
+            {{-- Filter Lini Tujuan --}}
+            <select name="tujuan" class="form-control" style="padding: 0.45rem 0.65rem; width: 175px; font-size: 0.8125rem;" onchange="this.form.submit()">
+                <option value="">-- Semua Lini Tujuan --</option>
+                @foreach ($tujuanOptions as $opt)
+                    <option value="{{ $opt }}" {{ ($tujuan === $opt) ? 'selected' : '' }}>
+                        {{ $opt }}
+                    </option>
+                @endforeach
+            </select>
+
+            {{-- Filter Gudang --}}
+            <select name="gudang_id" class="form-control" style="padding: 0.45rem 0.65rem; width: 165px; font-size: 0.8125rem;" onchange="this.form.submit()">
+                <option value="">-- Semua Entitas --</option>
                 @foreach ($gudangList as $gdg)
                     <option value="{{ $gdg->gudang_id }}" {{ ($gudangId == $gdg->gudang_id) ? 'selected' : '' }}>
                         {{ $gdg->display_name }}
@@ -53,9 +131,17 @@
                 @endforeach
             </select>
 
-            <button type="submit" class="btn btn-secondary btn-sm" style="padding: 0.45rem 0.85rem;">Filter</button>
-            @if(!empty($search) || !empty($gudangId))
-                <a href="{{ route('gudang.pemakaian.index', ['view' => $viewType]) }}" class="btn btn-secondary btn-sm" title="Reset Filter">&times;</a>
+            {{-- Rentang Tanggal --}}
+            <input type="date" name="start_date" value="{{ $startDate ?? '' }}" title="Dari Tanggal" class="form-control" style="padding: 0.45rem 0.5rem; font-size: 0.8125rem; width: 130px;">
+            <span style="font-size: 0.8rem; color: #64748b;">s/d</span>
+            <input type="date" name="end_date" value="{{ $endDate ?? '' }}" title="Sampai Tanggal" class="form-control" style="padding: 0.45rem 0.5rem; font-size: 0.8125rem; width: 130px;">
+
+            {{-- Search Teks --}}
+            <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Cari batch/barang..." class="form-control" style="padding: 0.45rem 0.65rem; width: 150px; font-size: 0.8125rem;">
+
+            <button type="submit" class="btn btn-secondary btn-sm" style="padding: 0.45rem 0.75rem;">Filter</button>
+            @if(!empty($search) || !empty($gudangId) || !empty($tujuan) || !empty($startDate) || !empty($endDate))
+                <a href="{{ route('gudang.pemakaian.index', ['view' => $viewType]) }}" class="btn btn-secondary btn-sm" title="Reset Filter">&times; Reset</a>
             @endif
         </form>
     </div>

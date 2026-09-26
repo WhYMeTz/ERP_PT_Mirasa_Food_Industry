@@ -584,6 +584,12 @@
                                         <span class="dropdown-item-desc">Singkong, Bumbu, Minyak, Kemasan</span>
                                     </div>
                                 </a>
+                                <a href="{{ route('master.resep.index') }}" style="{{ request()->routeIs('master.resep.*') ? 'background:#f0f9ff; font-weight:700;' : '' }}">
+                                    <div>
+                                        <span class="dropdown-item-title">🥣 Formula Resep (BOM)</span>
+                                        <span class="dropdown-item-desc">Standar Resep Indofood, Ping-Ping, dll</span>
+                                    </div>
+                                </a>
                                 @if (Auth::user()->isSuperAdmin() || Auth::user()->isGudang())
                                     <a href="{{ route('master.satuan.index') }}">
                                         <div>

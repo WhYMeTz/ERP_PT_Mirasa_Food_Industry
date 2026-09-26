@@ -10,6 +10,7 @@ use App\Models\MasterData\MstGudang;
 use App\Services\Common\CodeGeneratorService;
 use App\Services\Gudang\PemakaianService;
 use App\Services\Gudang\StokService;
+use App\Services\Produksi\BomService;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -22,7 +23,8 @@ class PemakaianController extends Controller
     public function __construct(
         protected PemakaianService $pemakaianService,
         protected StokService $stokService,
-        protected CodeGeneratorService $codeGenerator
+        protected CodeGeneratorService $codeGenerator,
+        protected BomService $bomService
     ) {}
 
     /**
@@ -34,6 +36,9 @@ class PemakaianController extends Controller
         $perPage = (int) $request->input('per_page', 20);
         $search = $request->input('search');
         $viewType = $request->input('view', 'item'); // 'item' (Excel view) atau 'header'
+        $tujuan = $request->input('tujuan');
+        $startDate = $request->input('start_date');
+        $endDate = $request->input('end_date');
 
         $user = Auth::user();
         $allowedGudangIds = $user ? $user->getAllowedGudangIds() : [];
@@ -55,20 +60,40 @@ class PemakaianController extends Controller
         }
 
         if ($viewType === 'header') {
-            $dataList = $this->pemakaianService->getAllPaginated($perPage, $search, $effectiveGudang);
+            $dataList = $this->pemakaianService->getAllPaginated($perPage, $search, $effectiveGudang, $tujuan, $startDate, $endDate);
         } else {
-            $dataList = $this->pemakaianService->getBarangKeluarListPaginated($perPage, $search, $effectiveGudang);
+            $dataList = $this->pemakaianService->getBarangKeluarListPaginated($perPage, $search, $effectiveGudang, $tujuan, $startDate, $endDate);
         }
+
+        $ringkasan = $this->pemakaianService->getRingkasanPengeluaran($effectiveGudang, $tujuan, $startDate, $endDate);
+
+        $tujuanOptions = [
+            'PRODUKSI IFM',
+            'PRODUKSI PING-PING',
+            'PRODUKSI BWF',
+            'PRODUKSI ASIN BARCO',
+            'PACKING EKSPOR',
+            'PACKING JUMBO',
+            'PACKING XX 500',
+            'PACKING XX2000',
+            'SEASONING XX 2000',
+            'AFKIR ULANG',
+            'SAMPLE LAB / QC',
+        ];
 
         if ($request->wantsJson()) {
             return response()->json([
-                'status'  => 'success',
-                'message' => 'Data barang keluar berhasil diambil.',
-                'data'    => $dataList,
+                'status'    => 'success',
+                'message'   => 'Data barang keluar berhasil diambil.',
+                'ringkasan' => $ringkasan,
+                'data'      => $dataList,
             ]);
         }
 
-        return view('gudang.pemakaian.index', compact('dataList', 'gudangList', 'search', 'gudangId', 'viewType'));
+        return view('gudang.pemakaian.index', compact(
+            'dataList', 'gudangList', 'search', 'gudangId', 'viewType',
+            'tujuan', 'startDate', 'endDate', 'ringkasan', 'tujuanOptions'
+        ));
     }
 
     /**
@@ -104,12 +129,15 @@ class PemakaianController extends Controller
             'SAMPLE LAB / QC',
         ];
 
+        $bomList = $this->bomService->getAllActive();
+
         return view('gudang.pemakaian.create', compact(
             'gudangList',
             'barangList',
             'userGudangId',
             'autoNo',
-            'tujuanOptions'
+            'tujuanOptions',
+            'bomList'
         ));
     }
 
@@ -195,6 +223,47 @@ class PemakaianController extends Controller
             'status'  => 'success',
             'batches' => $formattedBatches,
         ]);
+    }
+
+    /**
+     * Endpoint AJAX untuk kalkulasi dan alokasi kebutuhan bahan baku resep produksi (BOM)
+     * secara otomatis ke Batch Stok Fisik Gudang berdasarkan prinsip FIFO / FEFO.
+     */
+    public function alokasiResepFifo(Request $request): JsonResponse
+    {
+        $gudangId = (int) $request->input('gudang_id');
+        $bomId = (int) $request->input('bom_id');
+        $targetQty = (float) $request->input('target_qty', 100);
+
+        if (!$gudangId || !$bomId || $targetQty <= 0) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Parameter gudang_id, bom_id, dan target_qty (> 0) wajib diisi.',
+            ], 422);
+        }
+
+        $user = Auth::user();
+        if ($user && !$user->canAccessGudang($gudangId)) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Anda tidak memiliki hak akses ke gudang ini.',
+            ], 403);
+        }
+
+        try {
+            $alokasi = $this->bomService->alokasiBahanResepFifo($gudangId, $bomId, $targetQty);
+
+            return response()->json([
+                'status'  => 'success',
+                'message' => "Kebutuhan resep {$alokasi['bom_nm']} berhasil dihitung & dialokasikan ke batch FIFO.",
+                'data'    => $alokasi,
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => $e->getMessage(),
+            ], 422);
+        }
     }
 }
 

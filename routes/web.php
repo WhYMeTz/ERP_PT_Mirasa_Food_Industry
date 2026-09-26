@@ -15,6 +15,7 @@ use App\Http\Controllers\MasterData\JenisSupplierController;
 use App\Http\Controllers\MasterData\KaryawanController;
 use App\Http\Controllers\MasterData\SatuanController;
 use App\Http\Controllers\MasterData\SupplierController;
+use App\Http\Controllers\Produksi\BomController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -53,6 +54,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('master-satuan', SatuanController::class)->names('master.satuan');
     Route::resource('master-jenis', JenisBarangController::class)->names('master.jenis');
     Route::resource('master-gudang', GudangController::class)->names('master.gudang');
+    Route::resource('master-resep', BomController::class)->names('master.resep');
 
     // Master Supplier (Superadmin & Purchasing)
     Route::resource('master-jenis-supplier', JenisSupplierController::class)
@@ -117,6 +119,7 @@ Route::middleware('auth')->group(function () {
 
         // Barang Keluar (Pemakaian Bahan Baku / Outbound): (Berdasarkan izin 'pemakaian_create')
         Route::get('pemakaian/batches', [PemakaianController::class, 'getBatches'])->name('pemakaian.batches');
+        Route::get('pemakaian/alokasi-resep', [PemakaianController::class, 'alokasiResepFifo'])->name('pemakaian.alokasi-resep');
         Route::get('pemakaian/create', [PemakaianController::class, 'create'])
             ->name('pemakaian.create')
             ->middleware('role:pemakaian_create');

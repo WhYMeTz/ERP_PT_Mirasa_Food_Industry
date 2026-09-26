@@ -23,7 +23,7 @@ class UpdateBarangRequest extends FormRequest
      */
     public function rules(): array
     {
-        $barangParam = $this->route('barang') ?? $this->route('id') ?? $this->input('barang_id');
+        $barangParam = $this->route('master_barang') ?? $this->route('barang') ?? $this->route('id') ?? $this->input('barang_id');
         $barangId = $barangParam instanceof MstBarang ? $barangParam->barang_id : $barangParam;
 
         return [

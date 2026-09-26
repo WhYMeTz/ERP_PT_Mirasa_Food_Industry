@@ -114,9 +114,10 @@ class BarangController extends Controller
     /**
      * Memperbarui data barang menggunakan UpdateBarangRequest.
      */
-    public function update(UpdateBarangRequest $request, int $id): RedirectResponse|JsonResponse
+    public function update(UpdateBarangRequest $request, $id = null): RedirectResponse|JsonResponse
     {
-        $barang = $this->barangService->update($id, $request->validated());
+        $barangId = (int) ($request->route('master_barang') ?? $id ?? $request->input('barang_id'));
+        $barang = $this->barangService->update($barangId, $request->validated());
 
         if ($request->wantsJson()) {
             return response()->json([

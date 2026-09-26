@@ -46,6 +46,14 @@ class StoreUserRequest extends FormRequest
                 'integer',
                 'exists:mst_gudang,gudang_id',
             ],
+            'gudang_ids' => [
+                'nullable',
+                'array',
+            ],
+            'gudang_ids.*' => [
+                'integer',
+                'exists:mst_gudang,gudang_id',
+            ],
         ];
     }
 

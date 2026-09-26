@@ -26,7 +26,7 @@ class UserService
      */
     public function getAllPaginated(int $perPage = 15, ?string $search = null, ?string $role = null): LengthAwarePaginator
     {
-        $query = User::with(['karyawan', 'gudang'])->active();
+        $query = User::with(['karyawan', 'gudang', 'assignedGudangs'])->active();
 
         if (!empty($search)) {
             $query->where(function ($q) use ($search) {
@@ -52,30 +52,44 @@ class UserService
      */
     public function getById(int $id): User
     {
-        return User::with(['karyawan', 'gudang'])->where('id', $id)->firstOrFail();
+        return User::with(['karyawan', 'gudang', 'assignedGudangs'])->where('id', $id)->firstOrFail();
     }
 
     /**
-     * Menyimpan akun pengguna baru
+     * Menyimpan akun pengguna baru beserta penugasan multi-gudang
      */
     public function store(array $data): User
     {
         return DB::transaction(function () use ($data) {
+            $gudangIds = $data['gudang_ids'] ?? null;
+            unset($data['gudang_ids']);
+
             $data['password'] = Hash::make($data['password']);
             $data['active_st'] = true;
             $data['deleted_st'] = false;
 
-            return User::create($data);
+            $user = User::create($data);
+
+            if ($gudangIds !== null) {
+                $this->syncUserGudangs($user, ['gudang_ids' => $gudangIds]);
+            } elseif (!empty($user->gudang_id)) {
+                $this->syncUserGudangs($user, ['gudang_id' => $user->gudang_id]);
+            }
+
+            return $user->fresh(['karyawan', 'gudang', 'assignedGudangs']);
         });
     }
 
     /**
-     * Memperbarui akun pengguna
+     * Memperbarui akun pengguna dan sinkronisasi hak gudang
      */
     public function update(int $id, array $data): User
     {
         return DB::transaction(function () use ($id, $data) {
             $user = User::findOrFail($id);
+
+            $gudangIds = $data['gudang_ids'] ?? null;
+            unset($data['gudang_ids']);
 
             // Update password hanya jika diisi
             if (!empty($data['password'])) {
@@ -85,8 +99,60 @@ class UserService
             }
 
             $user->update($data);
-            return $user->fresh(['karyawan', 'gudang']);
+
+            if ($gudangIds !== null) {
+                $this->syncUserGudangs($user, ['gudang_ids' => $gudangIds]);
+            } elseif (array_key_exists('gudang_id', $data)) {
+                $this->syncUserGudangs($user, ['gudang_id' => $data['gudang_id']]);
+            }
+
+            return $user->fresh(['karyawan', 'gudang', 'assignedGudangs']);
         });
+    }
+
+    /**
+     * Sinkronisasi relasi multi-gudang (sys_user_gudang)
+     */
+    protected function syncUserGudangs(User $user, array $data): void
+    {
+        if (isset($data['gudang_ids'])) {
+            $gudangIds = array_values(array_filter(array_map('intval', (array) $data['gudang_ids'])));
+            $syncData = [];
+            $first = true;
+            foreach ($gudangIds as $gid) {
+                $syncData[$gid] = [
+                    'is_primary' => $first,
+                    'active_st'  => true,
+                    'deleted_st' => false,
+                ];
+                $first = false;
+            }
+            $user->assignedGudangs()->sync($syncData);
+
+            // Perbarui users.gudang_id untuk kompatibilitas legacy
+            if (!empty($gudangIds)) {
+                if (!in_array($user->gudang_id, $gudangIds)) {
+                    $user->gudang_id = $gudangIds[0];
+                    $user->save();
+                }
+            } else {
+                $user->gudang_id = null;
+                $user->save();
+            }
+        } elseif (isset($data['gudang_id'])) {
+            $gudangId = !empty($data['gudang_id']) ? (int) $data['gudang_id'] : null;
+            if ($gudangId) {
+                $user->assignedGudangs()->sync([
+                    $gudangId => [
+                        'is_primary' => true,
+                        'active_st'  => true,
+                        'deleted_st' => false,
+                    ]
+                ]);
+            } else {
+                $user->assignedGudangs()->detach();
+            }
+        }
     }
 
     /**

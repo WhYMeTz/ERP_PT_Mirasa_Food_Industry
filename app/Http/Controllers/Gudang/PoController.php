@@ -29,10 +29,19 @@ class PoController extends Controller
         $search = $request->input('search');
         $status = $request->input('status');
 
-        $poList = $this->poService->getAllPaginated($perPage, $search, $status);
+        $user = Auth::user();
+        $allowedGudangIds = ($user && $user->isSuperAdmin()) ? null : ($user ? $user->getAllowedGudangIds() : []);
 
-        $rawCounts = DatPoHdr::where('deleted_st', false)
-            ->selectRaw("
+        $poList = $this->poService->getAllPaginated($perPage, $search, $status, $allowedGudangIds);
+
+        $rawCountsQuery = DatPoHdr::where('deleted_st', false);
+        if (is_array($allowedGudangIds)) {
+            $rawCountsQuery->whereIn('gudang_id', $allowedGudangIds);
+        } elseif ($allowedGudangIds !== null) {
+            $rawCountsQuery->where('gudang_id', $allowedGudangIds);
+        }
+
+        $rawCounts = $rawCountsQuery->selectRaw("
                 COUNT(*) as all_count,
                 COUNT(CASE WHEN status_cd = 'APPROVED' THEN 1 END) as approved_count,
                 COUNT(CASE WHEN status_cd = 'PARTIAL' THEN 1 END) as partial_count,
@@ -61,19 +70,22 @@ class PoController extends Controller
 
     public function create(): View
     {
+        $user = Auth::user();
         $supplierList = MstSupplier::active()->orderBy('supplier_nm')->get();
-        $gudangList = MstGudang::active()->orderBy('gudang_nm')->get();
+        $gudangList = $user ? $user->getAllowedGudangList() : collect();
+        $allowedGudangIds = $user ? $user->getAllowedGudangIds() : [];
+
         // Aturan Global PROSES_GUDANG: PO hanya boleh memuat Bahan Baku & Bahan Penolong
         $barangList = MstBarang::active()->bahanBaku()->with(['satuanDasar', 'jenisBarang'])->orderBy('barang_nm')->get();
         $nextPoNo = $this->codeGenerator->generatePoNo();
 
-        // Cek penugasan lokasi gudang/pabrik akun user yang login
-        $user = Auth::user();
-        $assignedGudangId = $user?->gudang_id ?? null;
-        $isGudangLocked = !empty($assignedGudangId) && !$user?->isSuperAdmin();
+        // Cek penugasan lokasi gudang akun user yang login
+        $assignedGudangId = count($allowedGudangIds) === 1 ? $allowedGudangIds[0] : null;
+        $isGudangLocked = count($allowedGudangIds) === 1 && !$user?->isSuperAdmin();
 
         // Peringatan Stok Minimum (Reorder Point Alert)
-        $belowMinimumList = $this->poService->getBarangBelowMinimum($assignedGudangId);
+        $effectiveGudangForMin = ($user && $user->isSuperAdmin()) ? null : $allowedGudangIds;
+        $belowMinimumList = $this->poService->getBarangBelowMinimum($effectiveGudangForMin);
 
         return view('gudang.po.create', compact(
             'supplierList',

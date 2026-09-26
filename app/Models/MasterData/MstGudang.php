@@ -18,6 +18,7 @@ class MstGudang extends Model
         'gudang_nm',
         'tipe_gudang_cd',
         'alamat_txt',
+        'telepon',
         'created_by',
         'updated_by',
         'deleted_by',
@@ -29,4 +30,15 @@ class MstGudang extends Model
         'deleted_st' => 'boolean',
         'active_st' => 'boolean',
     ];
+
+    /**
+     * Nama tampilan lengkap dengan status/jenis entitas (Pusat / Cabang / Anak Perusahaan)
+     */
+    public function getDisplayNameAttribute(): string
+    {
+        if (!empty($this->tipe_gudang_cd)) {
+            return "{$this->gudang_nm} ({$this->tipe_gudang_cd})";
+        }
+        return $this->gudang_nm;
+    }
 }

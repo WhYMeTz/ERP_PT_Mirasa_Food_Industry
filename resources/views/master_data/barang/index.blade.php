@@ -208,6 +208,7 @@
         <form id="formEditBarang" method="POST">
             @csrf
             @method('PUT')
+            <input type="hidden" name="barang_id" id="edit_barang_id">
             <div class="modal-body">
                 <div class="form-group">
                     <label for="edit_barang_cd" class="form-label">Kode Barang <span style="color:#ef4444;">*</span></label>
@@ -286,6 +287,7 @@
         document.getElementById('edit_konversi_qty').value = konversi;
         document.getElementById('edit_batas_minimum_qty').value = batasMin || 0;
         document.getElementById('edit_harga_beli_standar').value = hargaStandar || 0;
+        document.getElementById('edit_barang_id').value = id;
         document.getElementById('formEditBarang').action = '{{ url("master-barang") }}/' + id;
         openModal('modalEditBarang');
     }

@@ -81,50 +81,6 @@
         {{-- ========================================================================= --}}
         <div style="display: flex; flex-direction: column; gap: 1.5rem;">
             
-            {{-- PERINGATAN SAFETY STOCK (REORDER POINT ALERT) --}}
-            @if (!empty($belowMinimumList) && $belowMinimumList->count() > 0)
-                <div style="background: #fffbeb; border: 1px solid #fef3c7; border-left: 4px solid #f59e0b; border-radius: 8px; padding: 1rem 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
-                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
-                        <div style="display: flex; align-items: center; gap: 0.5rem;">
-                            <div style="width: 26px; height: 26px; border-radius: 6px; background: #fde68a; display: flex; align-items: center; justify-content: center; color: #b45309; flex-shrink: 0;">
-                                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-                            </div>
-                            <strong style="color: #b45309; font-size: 0.9rem;">
-                                Peringatan Safety Stock Pabrik (Bahan Menipis):
-                            </strong>
-                        </div>
-                        <button type="button" onclick="addAllBelowMinimumItems()" class="btn btn-sm" style="background: #d97706; color: #ffffff; font-weight: 700; font-size: 0.75rem; padding: 0.3rem 0.75rem; border-radius: 5px; display: inline-flex; align-items: center; gap: 0.35rem;">
-                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                            Masukkan Semua Bahan Kritis ke PO
-                        </button>
-                    </div>
-                    <p style="color: #92400e; font-size: 0.8125rem; margin-top: 0.5rem; margin-bottom: 0.65rem;">
-                        Terdapat <strong>{{ $belowMinimumList->count() }}</strong> komoditas yang stok fisiknya di bawah batas safety stock gudang. Klik tombol pada bahan terkait untuk otomatis memasukkan ke tabel pesanan:
-                    </p>
-                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                        @foreach ($belowMinimumList as $bm)
-                            @php
-                                $deficit = max(1, (float)($bm->batas_minimum_qty - $bm->current_stock));
-                            @endphp
-                            <div style="display: inline-flex; align-items: center; background: #ffffff; border: 1px solid #fde68a; border-radius: 6px; padding: 0.3rem 0.55rem; gap: 0.5rem; box-shadow: 0 1px 2px rgba(0,0,0,0.04);">
-                                <span style="font-weight: 700; color: #92400e; font-size: 0.8rem;">
-                                    {{ $bm->barang_nm }}
-                                </span>
-                                <span style="font-size: 0.725rem; color: #b45309; background: #fef3c7; padding: 0.15rem 0.4rem; border-radius: 4px;">
-                                    Sisa: {{ number_format($bm->current_stock, 0) }} / Min: {{ number_format($bm->batas_minimum_qty, 0) }} {{ $bm->satuanDasar?->satuan_cd }}
-                                </span>
-                                <button type="button" 
-                                        onclick="addBelowMinimumItem({{ $bm->barang_id }}, '{{ addslashes($bm->barang_nm) }}', '{{ $bm->satuanDasar?->satuan_nm ?? '-' }}', {{ (float)($bm->harga_beli_standar ?? 0) }}, {{ $deficit }})"
-                                        style="background: #d97706; color: #ffffff; border: none; padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 700; font-size: 0.725rem; cursor: pointer;"
-                                        title="Klik untuk langsung tambah ke tabel pesanan">
-                                    + Tambah ({{ number_format($deficit, 0) }})
-                                </button>
-                            </div>
-                        @endforeach
-                    </div>
-                </div>
-            @endif
-
             {{-- KARTU 1: INFORMASI UTAMA DOKUMEN --}}
             <div class="card" style="border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
                 <div class="card-header" style="background: #ffffff; padding: 0.875rem 1.25rem; border-bottom: 1px solid #e2e8f0;">
@@ -206,19 +162,94 @@
             </div>
 
             {{-- KARTU 2: RINCIAN ITEM BARANG (DETAIL TABLE - EXCEL STYLE ELEGAN) --}}
-            <div class="card" style="border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
-                <div class="card-header" style="background: #ffffff; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding: 0.875rem 1.25rem;">
+            <div class="card" style="border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); overflow: hidden;">
+                <div class="card-header" style="background: #ffffff; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding: 0.875rem 1.25rem; flex-wrap: wrap; gap: 0.5rem;">
                     <div>
                         <strong style="color: #0f172a; font-size: 0.95rem;">2. Rincian Barang yang Dipesan</strong>
                         <span style="font-size: 0.75rem; color: #64748b; margin-left: 0.5rem;">
-                            Tekan <kbd style="background:#e2e8f0; padding:2px 5px; border-radius:3px; font-weight:700;">Enter</kbd> pada kuantitas/harga untuk tambah baris baru
+                            Tekan <kbd style="background:#e2e8f0; padding:2px 5px; border-radius:3px; font-weight:700;">Enter</kbd> pada kuantitas/harga untuk tambah baris
                         </span>
                     </div>
-                    <button type="button" onclick="addRow(true)" class="btn btn-primary btn-sm" style="font-weight: 600; background: #0284c7; padding: 0.35rem 0.85rem; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 0.25rem;">
-                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                        Tambah Baris (Enter)
-                    </button>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        @if (!empty($belowMinimumList) && $belowMinimumList->count() > 0)
+                            <button type="button" onclick="toggleSafetyStockDrawer()" id="btnToggleSafetyStock" class="btn btn-sm" style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a; font-weight: 700; font-size: 0.775rem; display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.35rem 0.65rem; border-radius: 5px; cursor: pointer;">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                                <span>Peringatan Stok Kritis ({{ $belowMinimumList->count() }})</span>
+                                <svg id="chevronSafetyStock" width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="transition: transform 0.2s;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                            </button>
+                        @endif
+                        <button type="button" onclick="addRow(true)" class="btn btn-primary btn-sm" style="font-weight: 600; background: #0284c7; padding: 0.35rem 0.85rem; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 0.25rem;">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                            Tambah Baris
+                        </button>
+                    </div>
                 </div>
+
+                {{-- COLLAPSIBLE DRAWER: REKOMENDASI SAFETY STOCK --}}
+                @if (!empty($belowMinimumList) && $belowMinimumList->count() > 0)
+                    <div id="drawerSafetyStock" style="display: none; background: #fffdf5; border-bottom: 2px dashed #fde68a; padding: 0.85rem 1.25rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.65rem; flex-wrap: wrap; gap: 0.5rem;">
+                            <div>
+                                <strong style="font-size: 0.825rem; color: #92400e; display: flex; align-items: center; gap: 0.35rem;">
+                                    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                    Daftar Komoditas Menipis di Bawah Batas Safety Stock Pabrik
+                                </strong>
+                                <span style="font-size: 0.75rem; color: #b45309;">
+                                    Klik tombol <span style="font-weight: 700;">+ Masukkan</span> untuk langsung menambahkan barang &amp; defisit kuantitas ke tabel pesanan:
+                                </span>
+                            </div>
+                            <button type="button" onclick="addAllBelowMinimumItems()" class="btn btn-sm" style="background: #d97706; color: #ffffff; font-weight: 700; font-size: 0.725rem; padding: 0.25rem 0.65rem; border-radius: 4px; display: inline-flex; align-items: center; gap: 0.25rem; cursor: pointer;">
+                                <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                                Masukkan Semua ({{ $belowMinimumList->count() }} Bahan)
+                            </button>
+                        </div>
+
+                        <div style="background: #ffffff; border: 1px solid #fed7aa; border-radius: 6px; overflow-x: auto;">
+                            <table style="width: 100%; border-collapse: collapse; font-size: 0.8rem;">
+                                <thead>
+                                    <tr style="background: #fff7ed; border-bottom: 1px solid #fed7aa; color: #9a3412; font-weight: 700; font-size: 0.75rem;">
+                                        <th style="padding: 0.45rem 0.75rem; text-align: left;">Nama Komoditas / Bahan Baku</th>
+                                        <th style="padding: 0.45rem 0.75rem; text-align: right;">Stok Fisik Gudang</th>
+                                        <th style="padding: 0.45rem 0.75rem; text-align: right;">Batas Safety Stock</th>
+                                        <th style="padding: 0.45rem 0.75rem; text-align: right; color: #c2410c;">Defisit Kebutuhan</th>
+                                        <th style="padding: 0.45rem 0.75rem; text-align: center; width: 120px;">Aksi Cepat</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach ($belowMinimumList as $bm)
+                                        @php
+                                            $deficit = max(1, (float)($bm->batas_minimum_qty - $bm->current_stock));
+                                        @endphp
+                                        <tr style="border-bottom: 1px solid #ffedd5;">
+                                            <td style="padding: 0.45rem 0.75rem; font-weight: 600; color: #1e293b;">
+                                                {{ $bm->barang_nm }}
+                                                <span style="color: #64748b; font-size: 0.725rem; font-weight: normal;">({{ $bm->barang_cd }})</span>
+                                            </td>
+                                            <td style="padding: 0.45rem 0.75rem; text-align: right; color: #64748b;">
+                                                {{ number_format($bm->current_stock, 0) }} {{ $bm->satuanDasar?->satuan_cd }}
+                                            </td>
+                                            <td style="padding: 0.45rem 0.75rem; text-align: right; color: #64748b;">
+                                                {{ number_format($bm->batas_minimum_qty, 0) }} {{ $bm->satuanDasar?->satuan_cd }}
+                                            </td>
+                                            <td style="padding: 0.45rem 0.75rem; text-align: right; font-weight: 700; color: #b45309;">
+                                                {{ number_format($deficit, 0) }} {{ $bm->satuanDasar?->satuan_cd }}
+                                            </td>
+                                            <td style="padding: 0.45rem 0.75rem; text-align: center;">
+                                                <button type="button" 
+                                                        onclick="addBelowMinimumItem({{ $bm->barang_id }}, '{{ addslashes($bm->barang_nm) }}', '{{ $bm->satuanDasar?->satuan_nm ?? '-' }}', {{ (float)($bm->harga_beli_standar ?? 0) }}, {{ $deficit }})"
+                                                        class="btn btn-sm"
+                                                        style="background: #f59e0b; color: #ffffff; border: none; padding: 0.2rem 0.55rem; font-size: 0.725rem; font-weight: 700; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem;">
+                                                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                                                    + Masukkan
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                @endif
 
                 <div style="overflow-x: auto;">
                     <table class="excel-grid-table" id="tableItems">
@@ -462,6 +493,21 @@
         // Update di sticky sidebar kanan
         document.getElementById('sideGrandTotal').innerText = formattedGrandTotal;
         document.getElementById('sideTotalQty').innerText = totalQty.toFixed(2);
+    }
+
+    // Toggle Collapsible Drawer Safety Stock
+    function toggleSafetyStockDrawer() {
+        const drawer = document.getElementById('drawerSafetyStock');
+        const chevron = document.getElementById('chevronSafetyStock');
+        if (!drawer) return;
+
+        if (drawer.style.display === 'none' || drawer.style.display === '') {
+            drawer.style.display = 'block';
+            if (chevron) chevron.style.transform = 'rotate(180deg)';
+        } else {
+            drawer.style.display = 'none';
+            if (chevron) chevron.style.transform = 'rotate(0deg)';
+        }
     }
 
     // 1-Click Reorder untuk bahan baku yang menipis

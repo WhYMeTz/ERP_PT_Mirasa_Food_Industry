@@ -36,17 +36,28 @@ class PemakaianController extends Controller
         $viewType = $request->input('view', 'item'); // 'item' (Excel view) atau 'header'
 
         $user = Auth::user();
-        $userGudangId = $user?->gudang_id;
-        $gudangId = $request->has('gudang_id') && !empty($request->input('gudang_id'))
-            ? (int) $request->input('gudang_id')
-            : $userGudangId;
+        $allowedGudangIds = $user ? $user->getAllowedGudangIds() : [];
+        $gudangList = $user ? $user->getAllowedGudangList() : collect();
 
-        $gudangList = MstGudang::active()->orderBy('gudang_nm')->get();
+        $requestedGudangId = $request->input('gudang_id') ? (int) $request->input('gudang_id') : null;
+
+        if ($requestedGudangId !== null) {
+            if ($user && !$user->canAccessGudang($requestedGudangId)) {
+                $effectiveGudang = $allowedGudangIds;
+                $gudangId = null;
+            } else {
+                $effectiveGudang = $requestedGudangId;
+                $gudangId = $requestedGudangId;
+            }
+        } else {
+            $effectiveGudang = ($user && $user->isSuperAdmin()) ? null : $allowedGudangIds;
+            $gudangId = null;
+        }
 
         if ($viewType === 'header') {
-            $dataList = $this->pemakaianService->getAllPaginated($perPage, $search, $gudangId);
+            $dataList = $this->pemakaianService->getAllPaginated($perPage, $search, $effectiveGudang);
         } else {
-            $dataList = $this->pemakaianService->getBarangKeluarListPaginated($perPage, $search, $gudangId);
+            $dataList = $this->pemakaianService->getBarangKeluarListPaginated($perPage, $search, $effectiveGudang);
         }
 
         if ($request->wantsJson()) {
@@ -66,9 +77,9 @@ class PemakaianController extends Controller
     public function create(Request $request): View
     {
         $user = Auth::user();
-        $userGudangId = $user?->gudang_id;
+        $gudangList = $user ? $user->getAllowedGudangList() : collect();
+        $userGudangId = ($gudangList->count() === 1 && !$user?->isSuperAdmin()) ? $gudangList->first()->gudang_id : null;
 
-        $gudangList = MstGudang::active()->orderBy('gudang_nm')->get();
         $barangList = MstBarang::active()
             ->with(['satuanDasar', 'jenisBarang'])
             ->orderBy('barang_nm')
@@ -149,6 +160,15 @@ class PemakaianController extends Controller
     {
         $gudangId = (int) $request->input('gudang_id');
         $barangId = (int) $request->input('barang_id');
+
+        $user = Auth::user();
+        if ($user && !$user->canAccessGudang($gudangId)) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Anda tidak memiliki hak akses ke gudang ini.',
+                'batches' => [],
+            ], 403);
+        }
 
         $batches = DatStokBatch::where('gudang_id', $gudangId)
             ->where('barang_id', $barangId)

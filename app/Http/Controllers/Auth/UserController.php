@@ -64,9 +64,10 @@ class UserController extends Controller
             ->with('success', "Akun pengguna {$user->name} berhasil dibuat dengan role {$user->role_cd}.");
     }
 
-    public function update(UpdateUserRequest $request, int $id): RedirectResponse|JsonResponse
+    public function update(UpdateUserRequest $request, $id = null): RedirectResponse|JsonResponse
     {
-        $user = $this->userService->update($id, $request->validated());
+        $userId = (int) ($request->route('pengguna_sistem') ?? $id ?? $request->input('id'));
+        $user = $this->userService->update($userId, $request->validated());
 
         if ($request->wantsJson()) {
             return response()->json([

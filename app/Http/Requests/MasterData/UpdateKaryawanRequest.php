@@ -14,7 +14,7 @@ class UpdateKaryawanRequest extends FormRequest
 
     public function rules(): array
     {
-        $id = $this->route('karyawan') ?? $this->route('id') ?? $this->input('karyawan_id');
+        $id = $this->route('master_karyawan') ?? $this->route('karyawan') ?? $this->route('id') ?? $this->input('karyawan_id') ?? $this->input('id');
 
         return [
             'nik' => [

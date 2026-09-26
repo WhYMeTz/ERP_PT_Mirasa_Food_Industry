@@ -28,14 +28,30 @@ class TerimaBarangController extends Controller
         $perPage = (int) $request->input('per_page', 20);
         $search = $request->input('search');
         $viewType = $request->input('view', 'item'); // 'item' (Excel format) atau 'header'
-        $gudangId = $request->input('gudang_id') ? (int) $request->input('gudang_id') : null;
 
-        $gudangList = MstGudang::active()->orderBy('gudang_nm')->get();
+        $user = auth()->user();
+        $allowedGudangIds = $user ? $user->getAllowedGudangIds() : [];
+        $gudangList = $user ? $user->getAllowedGudangList() : collect();
+
+        $requestedGudangId = $request->input('gudang_id') ? (int) $request->input('gudang_id') : null;
+
+        if ($requestedGudangId !== null) {
+            if ($user && !$user->canAccessGudang($requestedGudangId)) {
+                $effectiveGudang = $allowedGudangIds;
+                $gudangId = null;
+            } else {
+                $effectiveGudang = $requestedGudangId;
+                $gudangId = $requestedGudangId;
+            }
+        } else {
+            $effectiveGudang = ($user && $user->isSuperAdmin()) ? null : $allowedGudangIds;
+            $gudangId = null;
+        }
 
         if ($viewType === 'header') {
-            $dataList = $this->terimaService->getAllPaginated($perPage, $search);
+            $dataList = $this->terimaService->getAllPaginated($perPage, $search, $effectiveGudang);
         } else {
-            $dataList = $this->terimaService->getBarangMasukListPaginated($perPage, $search, $gudangId);
+            $dataList = $this->terimaService->getBarangMasukListPaginated($perPage, $search, $effectiveGudang);
         }
 
         if ($request->wantsJson()) {
@@ -59,9 +75,11 @@ class TerimaBarangController extends Controller
         }
 
         $supplierList = MstSupplier::active()->orderBy('supplier_nm')->get();
-        $gudangList = MstGudang::active()->orderBy('gudang_nm')->get();
+        $user = auth()->user();
+        $gudangList = $user ? $user->getAllowedGudangList() : collect();
+        $allowedGudangIds = ($user && $user->isSuperAdmin()) ? null : ($user ? $user->getAllowedGudangIds() : []);
         $barangList = MstBarang::active()->with(['satuanDasar', 'jenisBarang'])->orderBy('barang_nm')->get();
-        $openPoList = $this->poService->getOpenPoList();
+        $openPoList = $this->poService->getOpenPoList(null, $allowedGudangIds);
         $nextTerimaNo = $this->codeGenerator->generateTerimaNo();
 
         return view('gudang.terima.create', compact(

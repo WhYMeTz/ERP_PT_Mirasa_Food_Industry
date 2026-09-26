@@ -192,14 +192,24 @@ class StokService
     }
 
     /**
-     * Mengambil total stok suatu barang di seluruh gudang atau satu gudang tertentu.
+     * Helper untuk memfilter query berdasarkan satu gudang atau kumpulan gudang (multi-warehouse)
      */
-    public function getTotalStock(int $barangId, ?int $gudangId = null): float
+    protected function applyGudangFilter($query, int|array|null $gudangId, string $column = 'gudang_id'): void
     {
-        $query = DatStokBatch::where('barang_id', $barangId);
-        if ($gudangId) {
-            $query->where('gudang_id', $gudangId);
+        if (is_array($gudangId)) {
+            $query->whereIn($column, $gudangId);
+        } elseif ($gudangId !== null) {
+            $query->where($column, $gudangId);
         }
+    }
+
+    /**
+     * Mengambil total stok suatu barang di seluruh gudang atau satu/kumpulan gudang tertentu.
+     */
+    public function getTotalStock(int $barangId, int|array|null $gudangId = null): float
+    {
+        $query = DatStokBatch::where('barang_id', $barangId)->where('deleted_st', false);
+        $this->applyGudangFilter($query, $gudangId);
 
         return (float) $query->sum('sisa_qty');
     }
@@ -207,12 +217,10 @@ class StokService
     /**
      * Mengambil ringkasan metrik KPI inventaris gudang (Aset Nilai, Total Batch, Status SKU).
      */
-     public function getStokKpiMetrics(?int $gudangId = null): array
+     public function getStokKpiMetrics(int|array|null $gudangId = null): array
      {
          $batchQuery = DatStokBatch::where('deleted_st', false);
-         if ($gudangId) {
-             $batchQuery->where('gudang_id', $gudangId);
-         }
+         $this->applyGudangFilter($batchQuery, $gudangId);
 
          $totalNilaiPersediaan = (float) (clone $batchQuery)
              ->where('sisa_qty', '>', 0)
@@ -251,7 +259,7 @@ class StokService
      */
     public function getStokSummaryByBarang(
         int $perPage = 15,
-        ?int $gudangId = null,
+        int|array|null $gudangId = null,
         ?string $search = null,
         ?string $status = null
     ): LengthAwarePaginator {
@@ -265,9 +273,7 @@ class StokService
         ')
         ->where('deleted_st', false);
 
-        if ($gudangId) {
-            $subquery->where('gudang_id', $gudangId);
-        }
+        $this->applyGudangFilter($subquery, $gudangId);
         $subquery->groupBy('barang_id');
 
         $query = MstBarang::active()
@@ -284,9 +290,7 @@ class StokService
                 'jenisBarang',
                 'satuanDasar',
                 'stokBatches' => function ($q) use ($gudangId) {
-                    if ($gudangId) {
-                        $q->where('gudang_id', $gudangId);
-                    }
+                    $this->applyGudangFilter($q, $gudangId);
                     $q->with('gudang')
                       ->where('deleted_st', false)
                       ->orderByRaw('CASE WHEN sisa_qty > 0 THEN 1 ELSE 0 END DESC')
@@ -323,10 +327,10 @@ class StokService
     /**
      * Mengambil data monitoring stok per batch & gudang untuk tampilan dashboard gudang / Lacak Stok.
      */
-    public function getMonitoringStok(int $perPage = 15, ?int $gudangId = null, ?string $search = null, ?string $status = null): LengthAwarePaginator
-
+    public function getMonitoringStok(int $perPage = 15, int|array|null $gudangId = null, ?string $search = null, ?string $status = null): LengthAwarePaginator
     {
-        $query = DatStokBatch::with(['barang.satuanDasar', 'barang.jenisBarang', 'gudang']);
+        $query = DatStokBatch::with(['barang.satuanDasar', 'barang.jenisBarang', 'gudang'])
+            ->where('deleted_st', false);
 
         // Filter status stok (Tersedia / Habis / Semua)
         if ($status === 'tersedia') {
@@ -335,9 +339,7 @@ class StokService
             $query->where('sisa_qty', '<=', 0);
         }
 
-        if ($gudangId) {
-            $query->where('gudang_id', $gudangId);
-        }
+        $this->applyGudangFilter($query, $gudangId);
 
         if (!empty($search)) {
             $query->where(function ($q) use ($search) {
@@ -358,14 +360,12 @@ class StokService
     /**
      * Mengambil riwayat kartu stok (Ledger) per barang untuk audit mutasi.
      */
-    public function getKartuStok(int $barangId, ?int $gudangId = null, ?string $startDate = null, ?string $endDate = null, int $perPage = 25): LengthAwarePaginator
+    public function getKartuStok(int $barangId, int|array|null $gudangId = null, ?string $startDate = null, ?string $endDate = null, int $perPage = 25): LengthAwarePaginator
     {
         $query = DatStokLedger::with(['gudang', 'barang.satuanDasar'])
             ->where('barang_id', $barangId);
 
-        if ($gudangId) {
-            $query->where('gudang_id', $gudangId);
-        }
+        $this->applyGudangFilter($query, $gudangId);
 
         if ($startDate) {
             $query->whereDate('transaksi_tgl', '>=', $startDate);

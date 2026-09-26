@@ -21,21 +21,45 @@ class StokController extends Controller
      */
     public function index(Request $request): View|JsonResponse
     {
-        $perPage = (int) $request->input('per_page', 20);
+        $viewType = $request->input('view', 'split'); // 'split' (Master-Detail), 'summary' (Tabel Ringkas), 'batch' (Sheet)
+        $defaultPerPage = ($viewType === 'split') ? 100 : 20;
+        $perPage = (int) $request->input('per_page', $defaultPerPage);
+
         $search = $request->input('search');
         $status = $request->input('status'); // 'tersedia', 'menipis', 'habis', 'aman', or null for all
-        $gudangId = $request->input('gudang_id') ? (int) $request->input('gudang_id') : null;
-        $viewType = $request->input('view', 'summary'); // 'summary' (Ringkasan Barang) atau 'batch' (Detail Sheet)
 
-        $kpiMetrics = $this->stokService->getStokKpiMetrics($gudangId);
-        $gudangList = MstGudang::active()->orderBy('gudang_nm')->get();
+        $user = auth()->user();
+        $allowedGudangIds = $user ? $user->getAllowedGudangIds() : [];
+        $gudangList = $user ? $user->getAllowedGudangList() : collect();
+
+        $requestedGudangId = $request->input('gudang_id') ? (int) $request->input('gudang_id') : null;
+
+        // Validasi hak akses gudang:
+        if ($requestedGudangId !== null) {
+            if ($user && !$user->canAccessGudang($requestedGudangId)) {
+                // Jika tidak punya akses ke gudang yang diminta, fallback ke daftar gudang yang diizinkan
+                $effectiveGudang = $allowedGudangIds;
+                $gudangId = null;
+            } else {
+                $effectiveGudang = $requestedGudangId;
+                $gudangId = $requestedGudangId;
+            }
+        } else {
+            // Pilihan "Semua Gudang":
+            // Superadmin dapat melihat keseluruhan gudang.
+            // Admin Gudang HANYA melihat gudang-gudang yang di-assign padanya ($allowedGudangIds).
+            $effectiveGudang = ($user && $user->isSuperAdmin()) ? null : $allowedGudangIds;
+            $gudangId = null;
+        }
+
+        $kpiMetrics = $this->stokService->getStokKpiMetrics($effectiveGudang);
 
         if ($viewType === 'batch') {
-            $stokList = $this->stokService->getMonitoringStok($perPage, $gudangId, $search, $status);
+            $stokList = $this->stokService->getMonitoringStok($perPage, $effectiveGudang, $search, $status);
             $summaryList = null;
             $dataForJson = $stokList;
         } else {
-            $summaryList = $this->stokService->getStokSummaryByBarang($perPage, $gudangId, $search, $status);
+            $summaryList = $this->stokService->getStokSummaryByBarang($perPage, $effectiveGudang, $search, $status);
             $stokList = null;
             $dataForJson = $summaryList;
         }
@@ -68,23 +92,40 @@ class StokController extends Controller
     public function ledger(Request $request): View|JsonResponse
     {
         $barangId = (int) $request->input('barang_id', 1);
-        $gudangId = $request->input('gudang_id') ? (int) $request->input('gudang_id') : null;
         $startDate = $request->input('start_date');
         $endDate = $request->input('end_date');
         $perPage = (int) $request->input('per_page', 25);
+
+        $user = auth()->user();
+        $allowedGudangIds = $user ? $user->getAllowedGudangIds() : [];
+        $gudangList = $user ? $user->getAllowedGudangList() : collect();
+
+        $requestedGudangId = $request->input('gudang_id') ? (int) $request->input('gudang_id') : null;
+
+        if ($requestedGudangId !== null) {
+            if ($user && !$user->canAccessGudang($requestedGudangId)) {
+                $effectiveGudang = $allowedGudangIds;
+                $gudangId = null;
+            } else {
+                $effectiveGudang = $requestedGudangId;
+                $gudangId = $requestedGudangId;
+            }
+        } else {
+            $effectiveGudang = ($user && $user->isSuperAdmin()) ? null : $allowedGudangIds;
+            $gudangId = null;
+        }
 
         $selectedBarang = MstBarang::with(['satuanDasar', 'jenisBarang'])->find($barangId)
             ?? MstBarang::with(['satuanDasar', 'jenisBarang'])->first();
 
         $barangList = MstBarang::active()->orderBy('barang_nm')->get();
-        $gudangList = MstGudang::active()->orderBy('gudang_nm')->get();
 
         $ledgerList = $selectedBarang
-            ? $this->stokService->getKartuStok($selectedBarang->barang_id, $gudangId, $startDate, $endDate, $perPage)
+            ? $this->stokService->getKartuStok($selectedBarang->barang_id, $effectiveGudang, $startDate, $endDate, $perPage)
             : null;
 
         $totalStok = $selectedBarang
-            ? $this->stokService->getTotalStock($selectedBarang->barang_id, $gudangId)
+            ? $this->stokService->getTotalStock($selectedBarang->barang_id, $effectiveGudang)
             : 0;
 
         if ($request->wantsJson()) {

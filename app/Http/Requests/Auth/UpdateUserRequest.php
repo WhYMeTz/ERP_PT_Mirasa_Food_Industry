@@ -14,7 +14,7 @@ class UpdateUserRequest extends FormRequest
 
     public function rules(): array
     {
-        $id = $this->route('user') ?? $this->route('id') ?? $this->input('id');
+        $id = $this->route('pengguna_sistem') ?? $this->route('user') ?? $this->route('id') ?? $this->input('id');
 
         return [
             'name' => [
@@ -46,6 +46,14 @@ class UpdateUserRequest extends FormRequest
             ],
             'gudang_id' => [
                 'nullable',
+                'integer',
+                'exists:mst_gudang,gudang_id',
+            ],
+            'gudang_ids' => [
+                'nullable',
+                'array',
+            ],
+            'gudang_ids.*' => [
                 'integer',
                 'exists:mst_gudang,gudang_id',
             ],

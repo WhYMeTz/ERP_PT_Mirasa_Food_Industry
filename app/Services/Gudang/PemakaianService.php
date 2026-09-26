@@ -21,12 +21,14 @@ class PemakaianService
     /**
      * Mengambil daftar header pemakaian / pengeluaran barang.
      */
-    public function getAllPaginated(int $perPage = 15, ?string $search = null, ?int $gudangId = null): LengthAwarePaginator
+    public function getAllPaginated(int $perPage = 15, ?string $search = null, int|array|null $gudangId = null): LengthAwarePaginator
     {
         $query = DatPakaiHdr::with(['gudang', 'details.barang.satuanDasar', 'details.barang.jenisBarang'])
             ->where('deleted_st', false);
 
-        if ($gudangId) {
+        if (is_array($gudangId)) {
+            $query->whereIn('gudang_id', $gudangId);
+        } elseif ($gudangId !== null) {
             $query->where('gudang_id', $gudangId);
         }
 
@@ -47,12 +49,14 @@ class PemakaianService
      * Mengambil daftar per-item barang keluar sesuai Sheet "Barang Keluar" di Excel operasional:
      * Kolom: Tanggal | Kode Batch | Kode Barang | Nama Barang | Jenis | Keterangan | Qty Keluar | Harga Satuan | Total Harga
      */
-    public function getBarangKeluarListPaginated(int $perPage = 25, ?string $search = null, ?int $gudangId = null): LengthAwarePaginator
+    public function getBarangKeluarListPaginated(int $perPage = 25, ?string $search = null, int|array|null $gudangId = null): LengthAwarePaginator
     {
         $query = DatPakaiDtl::with(['header.gudang', 'barang.jenisBarang', 'barang.satuanDasar'])
             ->whereHas('header', function ($q) use ($gudangId) {
                 $q->where('deleted_st', false);
-                if ($gudangId) {
+                if (is_array($gudangId)) {
+                    $q->whereIn('gudang_id', $gudangId);
+                } elseif ($gudangId !== null) {
                     $q->where('gudang_id', $gudangId);
                 }
             });

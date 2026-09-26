@@ -100,16 +100,16 @@
                     <select id="gudang_id" class="form-control" disabled style="background: #f8fafc; color: #1e293b; font-weight: 600; cursor: not-allowed;">
                         @foreach ($gudangList as $gdg)
                             <option value="{{ $gdg->gudang_id }}" {{ $assignedGudangId == $gdg->gudang_id ? 'selected' : '' }}>
-                                {{ $gdg->gudang_nm }} ({{ $gdg->gudang_cd }})
+                                {{ $gdg->display_name }} ({{ $gdg->gudang_cd }})
                             </option>
                         @endforeach
                     </select>
                 @else
                     <select id="gudang_id" name="gudang_id" class="form-control" required>
-                        <option value="">-- Pilih Gudang Masuk --</option>
+                        <option value="">-- Pilih Lokasi / Perusahaan Masuk --</option>
                         @foreach ($gudangList as $gdg)
                             <option value="{{ $gdg->gudang_id }}" {{ old('gudang_id', $assignedGudangId ?? '') == $gdg->gudang_id ? 'selected' : '' }}>
-                                {{ $gdg->gudang_nm }} ({{ $gdg->gudang_cd }})
+                                {{ $gdg->display_name }} ({{ $gdg->gudang_cd }})
                             </option>
                         @endforeach
                     </select>

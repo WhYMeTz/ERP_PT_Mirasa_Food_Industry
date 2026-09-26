@@ -47,16 +47,16 @@
                 @if ($userGudangId)
                     @php $lockedGdg = $gudangList->firstWhere('gudang_id', $userGudangId); @endphp
                     <div style="display: flex; align-items: center; gap: 0.5rem;">
-                        <input type="text" class="form-control" value="{{ $lockedGdg?->gudang_nm }} ({{ $lockedGdg?->gudang_cd }})" disabled style="background: #f1f5f9; font-weight: 600;">
+                        <input type="text" class="form-control" value="{{ $lockedGdg?->display_name }} ({{ $lockedGdg?->gudang_cd }})" disabled style="background: #f1f5f9; font-weight: 600;">
                         <input type="hidden" name="gudang_id" id="gudang_id" value="{{ $userGudangId }}">
                         <span class="badge badge-success" style="white-space: nowrap;">🔒 Terkunci</span>
                     </div>
                 @else
                     <select name="gudang_id" id="gudang_id" class="form-control" required onchange="onGudangChanged()">
-                        <option value="">-- Pilih Gudang Asal --</option>
+                        <option value="">-- Pilih Lokasi Asal --</option>
                         @foreach ($gudangList as $gdg)
                             <option value="{{ $gdg->gudang_id }}" {{ old('gudang_id') == $gdg->gudang_id ? 'selected' : '' }}>
-                                {{ $gdg->gudang_nm }} ({{ $gdg->gudang_cd }})
+                                {{ $gdg->display_name }} ({{ $gdg->gudang_cd }})
                             </option>
                         @endforeach
                     </select>
@@ -228,6 +228,20 @@
         }
 
         calcRow(selectEl);
+    }
+
+    function getSelectedGudangId() {
+        const el = document.getElementById('gudang_id');
+        return el ? el.value : '';
+    }
+
+    function onGudangChanged() {
+        document.querySelectorAll('#itemsBody tr').forEach(row => {
+            const barangSelect = row.querySelector('.barang-select');
+            if (barangSelect && barangSelect.value) {
+                fetchBatchesForRow(row, barangSelect.value);
+            }
+        });
     }
 
     function fetchBatchesForRow(row, barangId) {

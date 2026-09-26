@@ -34,6 +34,11 @@ class StoreGudangRequest extends FormRequest
                 'nullable',
                 'string',
             ],
+            'telepon' => [
+                'nullable',
+                'string',
+                'max:50',
+            ],
         ];
     }
 

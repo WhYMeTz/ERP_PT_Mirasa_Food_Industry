@@ -8,8 +8,11 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+
 
 class User extends Authenticatable
 {
@@ -66,9 +69,87 @@ class User extends Authenticatable
     /**
      * Relasi ke Gudang tugas default pengguna (contoh: Gudang Magelang)
      */
-    public function gudang(): BelongsTo
+     public function gudang(): BelongsTo
+     {
+         return $this->belongsTo(MstGudang::class, 'gudang_id', 'gudang_id');
+     }
+
+    /**
+     * Relasi ke daftar Gudang yang ditugaskan ke pengguna (Multi-Gudang)
+     */
+    public function assignedGudangs(): BelongsToMany
     {
-        return $this->belongsTo(MstGudang::class, 'gudang_id', 'gudang_id');
+        return $this->belongsToMany(
+            MstGudang::class,
+            'sys_user_gudang',
+            'user_id',
+            'gudang_id'
+        )->withPivot(['is_primary', 'active_st', 'deleted_st'])->withTimestamps();
+    }
+
+    /**
+     * Relasi pivot tabel penugasan gudang
+     */
+    public function userGudangPivots(): HasMany
+    {
+        return $this->hasMany(\App\Models\Auth\SysUserGudang::class, 'user_id', 'id');
+    }
+
+    /**
+     * Dapatkan daftar ID Gudang yang diizinkan untuk pengguna ini.
+     * Jika Superadmin -> seluruh gudang aktif diizinkan.
+     * Jika Admin Gudang -> HANYA gudang yang di-assign padanya.
+     */
+    public function getAllowedGudangIds(): array
+    {
+        if ($this->isSuperAdmin()) {
+            return MstGudang::active()->pluck('gudang_id')->toArray();
+        }
+
+        $ids = $this->assignedGudangs()
+            ->where('mst_gudang.active_st', true)
+            ->where('mst_gudang.deleted_st', false)
+            ->pluck('mst_gudang.gudang_id')
+            ->toArray();
+
+        if (empty($ids) && !empty($this->gudang_id)) {
+            $ids = [(int) $this->gudang_id];
+        }
+
+        return array_map('intval', $ids);
+    }
+
+    /**
+     * Dapatkan koleksi Gudang yang diizinkan untuk pengguna ini.
+     */
+    public function getAllowedGudangList(): \Illuminate\Database\Eloquent\Collection
+    {
+        if ($this->isSuperAdmin()) {
+            return MstGudang::active()->orderBy('gudang_nm')->get();
+        }
+
+        $gudangs = $this->assignedGudangs()
+            ->where('mst_gudang.active_st', true)
+            ->where('mst_gudang.deleted_st', false)
+            ->orderBy('gudang_nm')
+            ->get();
+
+        if ($gudangs->isEmpty() && !empty($this->gudang_id)) {
+            $gudangs = MstGudang::where('gudang_id', $this->gudang_id)->get();
+        }
+
+        return $gudangs;
+    }
+
+    /**
+     * Cek apakah pengguna memiliki wewenang mengelola gudang tertentu
+     */
+    public function canAccessGudang(?int $gudangId): bool
+    {
+        if (empty($gudangId)) {
+            return $this->isSuperAdmin();
+        }
+        return in_array((int) $gudangId, $this->getAllowedGudangIds(), true);
     }
 
     /**
@@ -78,6 +159,7 @@ class User extends Authenticatable
     {
         return strtoupper((string) $this->role_cd) === 'SUPERADMIN';
     }
+
 
     /**
      * Cek apakah pengguna adalah Staf / Kepala Bagian Produksi

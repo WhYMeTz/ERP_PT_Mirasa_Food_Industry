@@ -369,7 +369,64 @@
             margin-top: 0.25rem;
         }
 
+        /* Laravel & Bootstrap Pagination Controls Styling */
+        nav[role="navigation"] {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        nav[role="navigation"] svg,
+        .pagination svg,
+        nav svg {
+            width: 1.15rem !important;
+            height: 1.15rem !important;
+            max-width: 1.15rem !important;
+            max-height: 1.15rem !important;
+            display: inline-block !important;
+            vertical-align: middle !important;
+        }
+        nav[role="navigation"] div, nav[role="navigation"] span, nav[role="navigation"] a {
+            font-size: 0.825rem !important;
+        }
+        .pagination {
+            display: flex;
+            list-style: none;
+            gap: 0.25rem;
+            align-items: center;
+            padding: 0;
+            margin: 0;
+        }
+        .page-item .page-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.35rem 0.65rem;
+            border-radius: 6px;
+            border: 1px solid #cbd5e1;
+            background: #ffffff;
+            color: #334155;
+            text-decoration: none;
+            font-size: 0.8rem;
+            font-weight: 600;
+            min-width: 2rem;
+            height: 2rem;
+        }
+        .page-item.active .page-link {
+            background: #0284c7;
+            color: #ffffff;
+            border-color: #0284c7;
+        }
+        .page-item.disabled .page-link {
+            color: #94a3b8;
+            background: #f8fafc;
+            border-color: #e2e8f0;
+            cursor: not-allowed;
+        }
+
         /* Modal Popup Styling */
+
         .modal-backdrop {
             display: none;
             position: fixed;
@@ -658,9 +715,16 @@
         @endif
 
         @if (isset($errors) && $errors->any())
-            <div class="alert alert-error">
-                <span>Silakan periksa kembali input formulir Anda.</span>
-                <button onclick="this.parentElement.remove()" style="background:none;border:none;cursor:pointer;color:#991b1b;font-size:1.1rem;">&times;</button>
+            <div class="alert alert-error" style="display: flex; flex-direction: column; align-items: flex-start; gap: 0.35rem;">
+                <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
+                    <strong>Silakan periksa kembali input formulir Anda:</strong>
+                    <button onclick="this.closest('.alert').remove()" style="background:none;border:none;cursor:pointer;color:#991b1b;font-size:1.1rem;">&times;</button>
+                </div>
+                <ul style="margin: 0; padding-left: 1.25rem; font-size: 0.85rem;">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
             </div>
         @endif
 

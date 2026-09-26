@@ -22,7 +22,7 @@ class PoService
      * Mengambil daftar bahan baku & bahan penolong yang stok fisiknya di bawah batas minimum (Safety Stock).
      * Digunakan untuk memicu alert atau rekomendasi pembuatan PO otomatis.
      */
-    public function getBarangBelowMinimum(?int $gudangId = null): Collection
+    public function getBarangBelowMinimum(int|array|null $gudangId = null): Collection
     {
         $barangList = MstBarang::with(['satuanDasar', 'jenisBarang'])
             ->bahanBaku()
@@ -30,8 +30,10 @@ class PoService
             ->where('batas_minimum_qty', '>', 0)
             ->get();
 
-        $stokQuery = DatStokBatch::query()->where('sisa_qty', '>', 0);
-        if ($gudangId) {
+        $stokQuery = DatStokBatch::query()->where('deleted_st', false)->where('sisa_qty', '>', 0);
+        if (is_array($gudangId)) {
+            $stokQuery->whereIn('gudang_id', $gudangId);
+        } elseif ($gudangId !== null) {
             $stokQuery->where('gudang_id', $gudangId);
         }
 
@@ -50,10 +52,16 @@ class PoService
     /**
      * Mengambil daftar PO dengan pagination dan filter pencarian.
      */
-    public function getAllPaginated(int $perPage = 15, ?string $search = null, ?string $status = null): LengthAwarePaginator
+    public function getAllPaginated(int $perPage = 15, ?string $search = null, ?string $status = null, int|array|null $gudangId = null): LengthAwarePaginator
     {
         $query = DatPoHdr::with(['supplier', 'gudang', 'details.barang'])
             ->where('deleted_st', false);
+
+        if (is_array($gudangId)) {
+            $query->whereIn('gudang_id', $gudangId);
+        } elseif ($gudangId !== null) {
+            $query->where('gudang_id', $gudangId);
+        }
 
         if (!empty($status)) {
             $query->where('status_cd', $status);
@@ -265,11 +273,17 @@ class PoService
     /**
      * Mengambil daftar PO yang statusnya aktif (APPROVED atau PARTIAL) untuk dropdown Penerimaan Barang.
      */
-    public function getOpenPoList(?int $supplierId = null): Collection
+    public function getOpenPoList(?int $supplierId = null, int|array|null $gudangId = null): Collection
     {
         $query = DatPoHdr::with(['supplier', 'gudang', 'details.barang.satuanDasar'])
             ->whereIn('status_cd', ['APPROVED', 'PARTIAL'])
             ->where('deleted_st', false);
+
+        if (is_array($gudangId)) {
+            $query->whereIn('gudang_id', $gudangId);
+        } elseif ($gudangId !== null) {
+            $query->where('gudang_id', $gudangId);
+        }
 
         if ($supplierId) {
             $query->where('supplier_id', $supplierId);

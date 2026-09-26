@@ -39,6 +39,11 @@ class UpdateGudangRequest extends FormRequest
                 'nullable',
                 'string',
             ],
+            'telepon' => [
+                'nullable',
+                'string',
+                'max:50',
+            ],
         ];
     }
 

@@ -36,7 +36,7 @@
                     <option value="">-- Semua Lokasi Gudang --</option>
                     @foreach ($gudangList as $gdg)
                         <option value="{{ $gdg->gudang_id }}" {{ ($gudangId == $gdg->gudang_id) ? 'selected' : '' }}>
-                            {{ $gdg->gudang_nm }} ({{ $gdg->gudang_cd }})
+                            {{ $gdg->display_name }} ({{ $gdg->gudang_cd }})
                         </option>
                     @endforeach
                 </select>

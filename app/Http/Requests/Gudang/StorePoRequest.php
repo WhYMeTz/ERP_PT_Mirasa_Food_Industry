@@ -31,7 +31,8 @@ class StorePoRequest extends FormRequest
                           ->whereIn('jenis_barang_id', function ($sub) {
                               $sub->select('jenis_barang_id')
                                   ->from('mst_jenis_barang')
-                                  ->whereIn('jenis_barang_cd', ['RAW', 'SUPP', 'PACK', 'BUMBU']);
+                                  ->whereIn('jenis_barang_cd', ['RAW', 'SUPP', 'PACK', 'BUMBU', 'BB', 'BP'])
+                                  ->whereNotIn('jenis_barang_cd', ['WIP', 'FG']);
                           });
                 }),
             ],

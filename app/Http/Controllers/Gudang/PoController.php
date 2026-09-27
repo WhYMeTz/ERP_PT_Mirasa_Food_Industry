@@ -7,6 +7,7 @@ use App\Http\Requests\Gudang\StorePoRequest;
 use App\Models\Gudang\DatPoHdr;
 use App\Models\MasterData\MstBarang;
 use App\Models\MasterData\MstGudang;
+use App\Models\MasterData\MstJenisSupplier;
 use App\Models\MasterData\MstSupplier;
 use App\Services\Common\CodeGeneratorService;
 use App\Services\Gudang\PoService;
@@ -71,12 +72,22 @@ class PoController extends Controller
     public function create(): View
     {
         $user = Auth::user();
-        $supplierList = MstSupplier::active()->orderBy('supplier_nm')->get();
+        $supplierList = MstSupplier::active()
+            ->with('jenisSupplier')
+            ->orderBy('supplier_nm')
+            ->get();
+        $jenisSupplierList = MstJenisSupplier::active()
+            ->orderBy('jenis_supplier_nm')
+            ->get();
         $gudangList = $user ? $user->getAllowedGudangList() : collect();
         $allowedGudangIds = $user ? $user->getAllowedGudangIds() : [];
 
-        // Aturan Global PROSES_GUDANG: PO hanya boleh memuat Bahan Baku & Bahan Penolong
-        $barangList = MstBarang::active()->bahanBaku()->with(['satuanDasar', 'jenisBarang'])->orderBy('barang_nm')->get();
+        // Aturan Global PROSES_GUDANG: PO hanya boleh memuat Bahan Baku & Bahan Penolong (bukan WIP atau FG)
+        $barangList = MstBarang::active()
+            ->bahanBaku()
+            ->with(['satuanDasar', 'jenisBarang'])
+            ->orderBy('barang_nm')
+            ->get();
         $nextPoNo = $this->codeGenerator->generatePoNo();
 
         // Cek penugasan lokasi gudang akun user yang login
@@ -89,6 +100,7 @@ class PoController extends Controller
 
         return view('gudang.po.create', compact(
             'supplierList',
+            'jenisSupplierList',
             'gudangList',
             'barangList',
             'nextPoNo',

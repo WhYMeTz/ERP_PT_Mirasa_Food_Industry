@@ -39,12 +39,13 @@ class MstBarang extends Model
     ];
 
     /**
-     * Scope barang khusus Bahan Baku & Bahan Penolong (bukan barang jadi atau WIP)
+     * Scope barang khusus Bahan Baku & Bahan Penolong (bukan barang jadi FG atau setengah jadi WIP)
      */
     public function scopeBahanBaku($query)
     {
         return $query->whereHas('jenisBarang', function ($q) {
-            $q->whereIn('jenis_barang_cd', ['RAW', 'SUPP', 'PACK', 'BUMBU', 'BB', 'BP']);
+            $q->whereIn('jenis_barang_cd', ['RAW', 'SUPP', 'PACK', 'BUMBU', 'BB', 'BP'])
+              ->whereNotIn('jenis_barang_cd', ['WIP', 'FG']);
         });
     }
 

@@ -78,7 +78,7 @@ class TerimaBarangController extends Controller
         $user = auth()->user();
         $gudangList = $user ? $user->getAllowedGudangList() : collect();
         $allowedGudangIds = ($user && $user->isSuperAdmin()) ? null : ($user ? $user->getAllowedGudangIds() : []);
-        $barangList = MstBarang::active()->with(['satuanDasar', 'jenisBarang'])->orderBy('barang_nm')->get();
+        $barangList = MstBarang::active()->bahanBaku()->with(['satuanDasar', 'jenisBarang'])->orderBy('barang_nm')->get();
         $openPoList = $this->poService->getOpenPoList(null, $allowedGudangIds);
         $nextTerimaNo = $this->codeGenerator->generateTerimaNo();
 

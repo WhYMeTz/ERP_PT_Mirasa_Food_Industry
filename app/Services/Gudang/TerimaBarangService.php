@@ -54,7 +54,7 @@ class TerimaBarangService
      */
     public function getBarangMasukListPaginated(int $perPage = 25, ?string $search = null, int|array|null $gudangId = null): LengthAwarePaginator
     {
-        $query = DatTerimaDtl::with(['header.supplier', 'header.gudang', 'barang.jenisBarang', 'barang.satuanDasar'])
+        $query = DatTerimaDtl::with(['header.supplier', 'header.gudang', 'header.po', 'barang.jenisBarang', 'barang.satuanDasar'])
             ->whereHas('header', function ($q) use ($gudangId) {
                 $q->where('deleted_st', false);
                 if (is_array($gudangId)) {

@@ -924,7 +924,16 @@
         if (batchInput) {
             batchInput.value = 'Membuat batch...';
             try {
-                const url = `{{ route('ajax.generate_code') }}?type=batch_no&barang_id=${barangId}&date=${tglMasuk}`;
+                // Kumpulkan batch_no yang sudah ada di baris-baris lain agar tidak kembar nomor urutnya
+                const existingBatches = [];
+                document.querySelectorAll('.item-batch').forEach(inp => {
+                    if (inp !== batchInput && inp.value && !inp.value.includes('...')) {
+                        existingBatches.push(inp.value.trim());
+                    }
+                });
+
+                const excludeParam = existingBatches.length > 0 ? `&exclude=${encodeURIComponent(existingBatches.join(','))}` : '';
+                const url = `{{ route('ajax.generate_code') }}?type=batch_no&barang_id=${barangId}&date=${tglMasuk}${excludeParam}`;
                 const resp = await fetch(url, {
                     headers: {
                         'Accept': 'application/json',
@@ -934,9 +943,19 @@
                 const data = await resp.json();
                 if (data.status === 'success' && data.code) {
                     batchInput.value = data.code;
+                } else {
+                    // Fallback generator client-side
+                    const acronym = selectedOption?.dataset?.acronym || 'BRG';
+                    const dateParts = tglMasuk ? tglMasuk.split('-') : [];
+                    const formattedDate = dateParts.length === 3 ? `${dateParts[2]}${dateParts[1]}${dateParts[0]}` : '01012026';
+                    batchInput.value = `${acronym}-${formattedDate}-01`;
                 }
             } catch (err) {
                 console.error('Gagal mengambil nomor batch berikutnya:', err);
+                const acronym = selectedOption?.dataset?.acronym || 'BRG';
+                const dateParts = tglMasuk ? tglMasuk.split('-') : [];
+                const formattedDate = dateParts.length === 3 ? `${dateParts[2]}${dateParts[1]}${dateParts[0]}` : '01012026';
+                batchInput.value = `${acronym}-${formattedDate}-01`;
             }
         }
 

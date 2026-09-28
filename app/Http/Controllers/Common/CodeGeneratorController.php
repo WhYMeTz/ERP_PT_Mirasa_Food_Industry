@@ -36,6 +36,7 @@ class CodeGeneratorController extends Controller
                 $code = $this->codeGeneratorService->generateBarangCode($jenis, $name);
                 break;
             case 'batch':
+            case 'batch_no':
                 $barangId = $request->query('barang_id');
                 $date = $request->query('date', date('Y-m-d'));
                 $exclude = $request->query('exclude', '');

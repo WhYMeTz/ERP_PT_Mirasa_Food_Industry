@@ -702,11 +702,8 @@
                 <button type="button" class="sup-modal-tab" data-tab="RAW" onclick="filterSupplierModalTab('RAW', this)">
                     Bahan Baku ({{ $supplierList->filter(fn($s) => $s->jenisSupplier?->jenis_supplier_cd === 'RAW')->count() }})
                 </button>
-                <button type="button" class="sup-modal-tab" data-tab="BP" onclick="filterSupplierModalTab('BP', this)">
-                    Penolong Industri ({{ $supplierList->filter(fn($s) => $s->jenisSupplier?->jenis_supplier_cd === 'BP')->count() }})
-                </button>
                 <button type="button" class="sup-modal-tab" data-tab="BUMBU" onclick="filterSupplierModalTab('BUMBU', this)">
-                    Bumbu &amp; Perasa ({{ $supplierList->filter(fn($s) => $s->jenisSupplier?->jenis_supplier_cd === 'BUMBU')->count() }})
+                    Bumbu &amp; Penolong ({{ $supplierList->filter(fn($s) => $s->jenisSupplier?->jenis_supplier_cd === 'BUMBU')->count() }})
                 </button>
                 <button type="button" class="sup-modal-tab" data-tab="KEMASAN" onclick="filterSupplierModalTab('KEMASAN', this)">
                     Kemasan &amp; Karton ({{ $supplierList->filter(fn($s) => $s->jenisSupplier?->jenis_supplier_cd === 'KEMASAN')->count() }})
@@ -800,14 +797,10 @@
             catBg = '#dcfce7';
             catColor = '#166534';
             label = 'Bahan Baku';
-        } else if (category === 'BP') {
-            catBg = '#e0e7ff';
-            catColor = '#3730a3';
-            label = 'Penolong Industri';
         } else if (category === 'BUMBU') {
             catBg = '#fef3c7';
             catColor = '#92400e';
-            label = 'Bumbu & Perasa';
+            label = 'Bumbu & Penolong';
         } else if (category === 'KEMASAN') {
             catBg = '#f3e8ff';
             catColor = '#6b21a8';

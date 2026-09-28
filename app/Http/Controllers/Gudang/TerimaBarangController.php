@@ -74,7 +74,7 @@ class TerimaBarangController extends Controller
             $selectedPo = $this->poService->getById((int) $selectedPoId);
         }
 
-        $supplierList = MstSupplier::active()->orderBy('supplier_nm')->get();
+        $supplierList = MstSupplier::active()->with('jenisSupplier')->orderBy('supplier_nm')->get();
         $user = auth()->user();
         $gudangList = $user ? $user->getAllowedGudangList() : collect();
         $allowedGudangIds = ($user && $user->isSuperAdmin()) ? null : ($user ? $user->getAllowedGudangIds() : []);

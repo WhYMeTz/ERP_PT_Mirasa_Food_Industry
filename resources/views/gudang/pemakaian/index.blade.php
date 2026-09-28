@@ -20,84 +20,104 @@
     </div>
 </div>
 
-{{-- 4 KARTU METRIK OPERASIONAL (INFORMATIF, BERSIH, SERAGAM DENGAN PO & BARANG MASUK) --}}
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
-    {{-- SEMUA TRANSAKSI KELUAR --}}
-    <div style="background: #ffffff; border-radius: 8px; border: 1px solid #e2e8f0; padding: 1rem 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+{{-- 5 KARTU METRIK OPERASIONAL (REKAPITULASI BIAYA & KUANTITAS BAHAN KELUAR PABRIK) --}}
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+    {{-- 1. BAHAN BAKU SINGKONG --}}
+    <div style="background: #ffffff; border-radius: 8px; border: 1px solid #e2e8f0; padding: 1rem 1.15rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
         <div style="display: flex; justify-content: space-between; align-items: flex-start;">
             <div>
-                <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b;">
-                    Semua Dokumen Keluar
-                </span>
-                <div style="font-size: 1.5rem; font-weight: 700; color: #0f172a; margin-top: 0.25rem;">
-                    {{ number_format($kpiCounts['total'] ?? 0) }}
-                </div>
-            </div>
-            <div style="width: 32px; height: 32px; border-radius: 6px; background: #f1f5f9; display: flex; align-items: center; justify-content: center; color: #475569;">
-                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-            </div>
-        </div>
-        <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.4rem;">
-            Total transaksi pengeluaran fisik
-        </div>
-    </div>
-
-    {{-- PENGELUARAN HARI INI --}}
-    <div style="background: #ffffff; border-radius: 8px; border: 1px solid #e2e8f0; padding: 1rem 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-            <div>
-                <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #0284c7;">
-                    Pengeluaran Hari Ini
-                </span>
-                <div style="font-size: 1.5rem; font-weight: 700; color: #0f172a; margin-top: 0.25rem;">
-                    {{ number_format($kpiCounts['today'] ?? 0) }}
-                </div>
-            </div>
-            <div style="width: 32px; height: 32px; border-radius: 6px; background: #e0f2fe; display: flex; align-items: center; justify-content: center; color: #0284c7;">
-                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            </div>
-        </div>
-        <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.4rem;">
-            Pemrosesan bahan hari ini
-        </div>
-    </div>
-
-    {{-- BAHAN BAKU SINGKONG --}}
-    <div style="background: #ffffff; border-radius: 8px; border: 1px solid #e2e8f0; padding: 1rem 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-            <div>
-                <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #d97706;">
+                <span style="font-size: 0.725rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #92400e;">
                     Singkong (Bahan Baku)
                 </span>
-                <div style="font-size: 1.5rem; font-weight: 700; color: #0f172a; margin-top: 0.25rem;">
-                    {{ number_format($ringkasan['singkong_qty'] ?? 0, 2, ',', '.') }} <span style="font-size: 0.85rem; font-weight: 600; color: #64748b;">kg</span>
+                <div style="font-size: 1.35rem; font-weight: 800; color: #78350f; margin-top: 0.25rem;">
+                    {{ number_format($ringkasan['singkong_qty'] ?? 0, 2, ',', '.') }} <span style="font-size: 0.8rem; font-weight: 600; color: #64748b;">kg</span>
                 </div>
             </div>
-            <div style="width: 32px; height: 32px; border-radius: 6px; background: #fef3c7; display: flex; align-items: center; justify-content: center; color: #d97706;">
+            <div style="width: 32px; height: 32px; border-radius: 6px; background: #fef3c7; display: flex; align-items: center; justify-content: center; color: #b45309; flex-shrink: 0;">
                 <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
             </div>
         </div>
-        <div style="font-size: 0.75rem; color: #b45309; font-weight: 600; margin-top: 0.4rem;">
-            Nilai: Rp {{ number_format($ringkasan['singkong_nilai'] ?? 0, 0, ',', '.') }}
+        <div style="font-size: 0.75rem; color: #b45309; font-weight: 600; margin-top: 0.35rem;">
+            Rp {{ number_format($ringkasan['singkong_nilai'] ?? 0, 0, ',', '.') }}
         </div>
     </div>
 
-    {{-- TOTAL BIAYA PEMAKAIAN (HPP) --}}
-    <div style="background: #ffffff; border-radius: 8px; border: 1px solid #e2e8f0; padding: 1rem 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+    {{-- 2. MINYAK GORENG (SAWIT / KELAPA) --}}
+    <div style="background: #ffffff; border-radius: 8px; border: 1px solid #e2e8f0; padding: 1rem 1.15rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
         <div style="display: flex; justify-content: space-between; align-items: flex-start;">
             <div>
-                <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #dc2626;">
+                <span style="font-size: 0.725rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #854d0e;">
+                    Minyak (Sawit / Kelapa)
+                </span>
+                <div style="font-size: 1.35rem; font-weight: 800; color: #713f12; margin-top: 0.25rem;">
+                    {{ number_format($ringkasan['minyak_qty'] ?? 0, 2, ',', '.') }} <span style="font-size: 0.8rem; font-weight: 600; color: #64748b;">kg</span>
+                </div>
+            </div>
+            <div style="width: 32px; height: 32px; border-radius: 6px; background: #fef9c3; display: flex; align-items: center; justify-content: center; color: #ca8a04; flex-shrink: 0;">
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+            </div>
+        </div>
+        <div style="font-size: 0.75rem; color: #a16207; font-weight: 600; margin-top: 0.35rem;">
+            Rp {{ number_format($ringkasan['minyak_nilai'] ?? 0, 0, ',', '.') }}
+        </div>
+    </div>
+
+    {{-- 3. BUMBU & PERENYAH --}}
+    <div style="background: #ffffff; border-radius: 8px; border: 1px solid #e2e8f0; padding: 1rem 1.15rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div>
+                <span style="font-size: 0.725rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #0369a1;">
+                    Bumbu &amp; Perenyah
+                </span>
+                <div style="font-size: 1.35rem; font-weight: 800; color: #0c4a6e; margin-top: 0.25rem;">
+                    {{ number_format($ringkasan['bumbu_qty'] ?? 0, 2, ',', '.') }} <span style="font-size: 0.8rem; font-weight: 600; color: #64748b;">kg</span>
+                </div>
+            </div>
+            <div style="width: 32px; height: 32px; border-radius: 6px; background: #e0f2fe; display: flex; align-items: center; justify-content: center; color: #0284c7; flex-shrink: 0;">
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
+            </div>
+        </div>
+        <div style="font-size: 0.75rem; color: #0284c7; font-weight: 600; margin-top: 0.35rem;">
+            Rp {{ number_format($ringkasan['bumbu_nilai'] ?? 0, 0, ',', '.') }}
+        </div>
+    </div>
+
+    {{-- 4. KARTON & PLASTIK KEMASAN --}}
+    <div style="background: #ffffff; border-radius: 8px; border: 1px solid #e2e8f0; padding: 1rem 1.15rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div>
+                <span style="font-size: 0.725rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #047857;">
+                    Karton &amp; Kemasan
+                </span>
+                <div style="font-size: 1.35rem; font-weight: 800; color: #064e3b; margin-top: 0.25rem;">
+                    {{ number_format($ringkasan['kemasan_qty'] ?? 0, 0, ',', '.') }} <span style="font-size: 0.8rem; font-weight: 600; color: #64748b;">unit</span>
+                </div>
+            </div>
+            <div style="width: 32px; height: 32px; border-radius: 6px; background: #d1fae5; display: flex; align-items: center; justify-content: center; color: #059669; flex-shrink: 0;">
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg>
+            </div>
+        </div>
+        <div style="font-size: 0.75rem; color: #059669; font-weight: 600; margin-top: 0.35rem;">
+            Rp {{ number_format($ringkasan['kemasan_nilai'] ?? 0, 0, ',', '.') }}
+        </div>
+    </div>
+
+    {{-- 5. TOTAL BIAYA PEMAKAIAN (HPP) --}}
+    <div style="background: #ffffff; border-radius: 8px; border: 1px solid #e2e8f0; padding: 1rem 1.15rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div>
+                <span style="font-size: 0.725rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #dc2626;">
                     Total Biaya Bahan (HPP)
                 </span>
-                <div style="font-size: 1.5rem; font-weight: 700; color: #0f172a; margin-top: 0.25rem;">
+                <div style="font-size: 1.35rem; font-weight: 800; color: #7f1d1d; margin-top: 0.25rem;">
                     Rp {{ number_format($ringkasan['grand_total_nilai'] ?? 0, 0, ',', '.') }}
                 </div>
             </div>
-            <div style="width: 32px; height: 32px; border-radius: 6px; background: #fee2e2; display: flex; align-items: center; justify-content: center; color: #dc2626;">
+            <div style="width: 32px; height: 32px; border-radius: 6px; background: #fee2e2; display: flex; align-items: center; justify-content: center; color: #dc2626; flex-shrink: 0;">
                 <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
             </div>
         </div>
-        <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.4rem;">
+        <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.35rem;">
             Dari {{ number_format($ringkasan['total_item_count'] ?? 0) }} rincian item keluar
         </div>
     </div>

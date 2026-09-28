@@ -44,38 +44,86 @@
     </div>
 </div>
 
-{{-- Mini KPI Strip (Ringkas 1-Baris, Tidak Memakan Tinggi Layar) --}}
-<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin-bottom: 0.75rem;">
-    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.6rem 0.85rem; display: flex; align-items: center; justify-content: space-between;">
-        <div>
-            <div style="font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase;">Valuasi Persediaan</div>
-            <div style="font-size: 1.05rem; font-weight: 800; color: #0f172a;">Rp {{ number_format($kpiMetrics['total_nilai'], 0, ',', '.') }}</div>
+{{-- 4 KARTU METRIK OPERASIONAL (SERAGAM DENGAN PO & BARANG MASUK) --}}
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1.25rem;">
+    {{-- 1. VALUASI PERSEDIAAN GUDANG --}}
+    <div style="background: #ffffff; border-radius: 8px; border: 1px solid #e2e8f0; padding: 1rem 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div>
+                <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b;">
+                    Valuasi Persediaan Fisik
+                </span>
+                <div style="font-size: 1.45rem; font-weight: 800; color: #0f172a; margin-top: 0.25rem; font-family: monospace;">
+                    Rp {{ number_format($kpiMetrics['total_nilai'], 0, ',', '.') }}
+                </div>
+            </div>
+            <div style="width: 32px; height: 32px; border-radius: 6px; background: #f1f5f9; display: flex; align-items: center; justify-content: center; color: #475569; flex-shrink: 0;">
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+            </div>
         </div>
-        <div style="font-size: 1.3rem;">💰</div>
+        <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.4rem;">
+            Total estimasi aset bahan di gudang
+        </div>
     </div>
 
-    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.6rem 0.85rem; display: flex; align-items: center; justify-content: space-between;">
-        <div>
-            <div style="font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase;">Total Item (SKU)</div>
-            <div style="font-size: 1.05rem; font-weight: 800; color: #0f172a;">{{ $kpiMetrics['total_sku'] }} <span style="font-size: 0.75rem; font-weight: 600; color: #2563eb;">({{ $kpiMetrics['sku_tersedia'] }} Ada Stok)</span></div>
+    {{-- 2. TOTAL ITEM (SKU) --}}
+    <div style="background: #ffffff; border-radius: 8px; border: 1px solid #e2e8f0; padding: 1rem 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div>
+                <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #0284c7;">
+                    Total Komoditas (SKU)
+                </span>
+                <div style="font-size: 1.45rem; font-weight: 800; color: #0f172a; margin-top: 0.25rem;">
+                    {{ $kpiMetrics['total_sku'] }} <span style="font-size: 0.8rem; font-weight: 600; color: #0284c7;">({{ $kpiMetrics['sku_tersedia'] }} Ada Stok)</span>
+                </div>
+            </div>
+            <div style="width: 32px; height: 32px; border-radius: 6px; background: #e0f2fe; display: flex; align-items: center; justify-content: center; color: #0284c7; flex-shrink: 0;">
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+            </div>
         </div>
-        <div style="font-size: 1.3rem;">📦</div>
+        <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.4rem;">
+            Bahan baku &amp; penolong terdaftar
+        </div>
     </div>
 
-    <div style="background: {{ $kpiMetrics['sku_menipis'] > 0 ? '#fffbeb' : '#ffffff' }}; border: 1px solid {{ $kpiMetrics['sku_menipis'] > 0 ? '#fde68a' : '#e2e8f0' }}; border-radius: 8px; padding: 0.6rem 0.85rem; display: flex; align-items: center; justify-content: space-between;">
-        <div>
-            <div style="font-size: 0.7rem; font-weight: 700; color: {{ $kpiMetrics['sku_menipis'] > 0 ? '#b45309' : '#64748b' }}; text-transform: uppercase;">Stok Menipis / Kritis</div>
-            <div style="font-size: 1.05rem; font-weight: 800; color: {{ $kpiMetrics['sku_menipis'] > 0 ? '#b45309' : '#0f172a' }};">{{ $kpiMetrics['sku_menipis'] }} <span style="font-size: 0.75rem; font-weight: 500;">Item $\le$ Safety</span></div>
+    {{-- 3. STOK MENIPIS / DEFISIT --}}
+    <div style="background: {{ $kpiMetrics['sku_menipis'] > 0 ? '#fffbeb' : '#ffffff' }}; border-radius: 8px; border: 1px solid {{ $kpiMetrics['sku_menipis'] > 0 ? '#fde68a' : '#e2e8f0' }}; padding: 1rem 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div>
+                <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: {{ $kpiMetrics['sku_menipis'] > 0 ? '#b45309' : '#64748b' }};">
+                    Stok Menipis (Kritis)
+                </span>
+                <div style="font-size: 1.45rem; font-weight: 800; color: {{ $kpiMetrics['sku_menipis'] > 0 ? '#b45309' : '#0f172a' }}; margin-top: 0.25rem;">
+                    {{ $kpiMetrics['sku_menipis'] }} <span style="font-size: 0.8rem; font-weight: 600; color: {{ $kpiMetrics['sku_menipis'] > 0 ? '#b45309' : '#64748b' }};">Komoditas</span>
+                </div>
+            </div>
+            <div style="width: 32px; height: 32px; border-radius: 6px; background: {{ $kpiMetrics['sku_menipis'] > 0 ? '#fef3c7' : '#f1f5f9' }}; display: flex; align-items: center; justify-content: center; color: {{ $kpiMetrics['sku_menipis'] > 0 ? '#d97706' : '#64748b' }}; flex-shrink: 0;">
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+            </div>
         </div>
-        <div style="font-size: 1.3rem;">⚠️</div>
+        <div style="font-size: 0.75rem; color: {{ $kpiMetrics['sku_menipis'] > 0 ? '#b45309' : '#64748b' }}; margin-top: 0.4rem;">
+            {{ $kpiMetrics['sku_menipis'] > 0 ? 'Perlu diterbitkan Purchase Order (PO)' : 'Semua bahan di atas safety stock' }}
+        </div>
     </div>
 
-    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.6rem 0.85rem; display: flex; align-items: center; justify-content: space-between;">
-        <div>
-            <div style="font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase;">Batch Aktif (FIFO)</div>
-            <div style="font-size: 1.05rem; font-weight: 800; color: #0f172a;">{{ $kpiMetrics['batch_aktif'] }} <span style="font-size: 0.75rem; font-weight: 600; color: #7c3aed;">Batch Tersedia</span></div>
+    {{-- 4. BATCH AKTIF (FIFO) --}}
+    <div style="background: #ffffff; border-radius: 8px; border: 1px solid #e2e8f0; padding: 1rem 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div>
+                <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #059669;">
+                    Batch Aktif (Inbound FIFO)
+                </span>
+                <div style="font-size: 1.45rem; font-weight: 800; color: #0f172a; margin-top: 0.25rem;">
+                    {{ $kpiMetrics['batch_aktif'] }} <span style="font-size: 0.8rem; font-weight: 600; color: #059669;">Batch</span>
+                </div>
+            </div>
+            <div style="width: 32px; height: 32px; border-radius: 6px; background: #d1fae5; display: flex; align-items: center; justify-content: center; color: #059669; flex-shrink: 0;">
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+            </div>
         </div>
-        <div style="font-size: 1.3rem;">🏷️</div>
+        <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.4rem;">
+            Lot nomor batch siap alokasi produksi
+        </div>
     </div>
 </div>
 
@@ -83,7 +131,7 @@
 {{-- KONSEP 1: SPLIT-SCREEN MASTER-DETAIL (ANTI-SCROLL)      --}}
 {{-- ======================================================== --}}
 @if ($viewType === 'split')
-<div style="display: flex; gap: 0.85rem; height: calc(100vh - 215px); min-height: 540px; box-sizing: border-box;">
+<div style="display: flex; gap: 0.85rem; height: calc(100vh - 250px); min-height: 520px; box-sizing: border-box;">
     
     {{-- PANEL KIRI: DAFTAR BARANG (MASTER LIST - LEBAR 38%) --}}
     <div style="flex: 0 0 38%; display: flex; flex-direction: column; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">

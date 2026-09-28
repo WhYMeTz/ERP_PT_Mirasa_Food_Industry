@@ -512,37 +512,77 @@
 {{-- KONTEN MODE 2: TABEL RINGKASAN PER BARANG (2-LEVEL)     --}}
 {{-- ======================================================== --}}
 @elseif ($viewType === 'summary')
-<div class="card" style="border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden;">
-    <div class="card-header" style="background: #f8fafc; padding: 0.75rem 1.25rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0;">
-        <span style="font-size: 0.85rem; color: #475569;">
-            Menampilkan <strong>{{ $summaryList->total() }}</strong> barang. Klik baris untuk membuka rincian sub-batch.
-        </span>
-        <div style="display: flex; gap: 0.4rem;">
-            <button type="button" class="btn btn-sm btn-secondary" onclick="toggleAllBatches(true)" style="font-size: 0.75rem; padding: 0.2rem 0.5rem;">
-                Buka Semua Batch
-            </button>
-            <button type="button" class="btn btn-sm btn-secondary" onclick="toggleAllBatches(false)" style="font-size: 0.75rem; padding: 0.2rem 0.5rem;">
-                Tutup Semua Batch
-            </button>
+<div class="card" style="border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
+    {{-- Filter Toolbar Mode Ringkas --}}
+    <div class="card-header" style="background: #ffffff; padding: 0.875rem 1.25rem; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+        <form action="{{ route('gudang.stok.index') }}" method="GET" style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; max-width: 860px; width: 100%;">
+            <input type="hidden" name="view" value="summary">
+            
+            <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Cari nama, kode komoditas..." class="form-control" style="padding: 0.45rem 0.75rem; max-width: 220px; font-size: 0.85rem;">
+
+            <select name="gudang_id" class="form-control" style="padding: 0.45rem 0.75rem; max-width: 170px; font-size: 0.85rem;" onchange="this.form.submit()">
+                <option value="">-- Semua Gudang --</option>
+                @foreach ($gudangList as $gdg)
+                    <option value="{{ $gdg->gudang_id }}" {{ $gudangId == $gdg->gudang_id ? 'selected' : '' }}>
+                        {{ $gdg->display_name }}
+                    </option>
+                @endforeach
+            </select>
+
+            <select name="jenis_barang_id" class="form-control" style="padding: 0.45rem 0.75rem; max-width: 160px; font-size: 0.85rem;" onchange="this.form.submit()">
+                <option value="">-- Semua Kategori --</option>
+                @foreach ($jenisBarangList as $jb)
+                    <option value="{{ $jb->jenis_barang_id }}" {{ ($jenisBarangId == $jb->jenis_barang_id) ? 'selected' : '' }}>
+                        {{ $jb->jenis_barang_nm }}
+                    </option>
+                @endforeach
+            </select>
+
+            <select name="status" class="form-control" style="padding: 0.45rem 0.75rem; max-width: 150px; font-size: 0.85rem;" onchange="this.form.submit()">
+                <option value="">-- Semua Status --</option>
+                <option value="tersedia" {{ ($status == 'tersedia') ? 'selected' : '' }}>🟢 Tersedia</option>
+                <option value="menipis" {{ ($status == 'menipis') ? 'selected' : '' }}>⚠️ Menipis</option>
+                <option value="habis" {{ ($status == 'habis') ? 'selected' : '' }}>🔴 Habis</option>
+                <option value="aman" {{ ($status == 'aman') ? 'selected' : '' }}>🛡️ Aman (> Min)</option>
+            </select>
+
+            <button type="submit" class="btn btn-secondary btn-sm" style="padding: 0.45rem 0.85rem;">Filter</button>
+            @if(!empty($search) || !empty($gudangId) || !empty($jenisBarangId) || !empty($status))
+                <a href="{{ route('gudang.stok.index', ['view' => 'summary']) }}" class="btn btn-secondary btn-sm" title="Reset Filter" style="padding: 0.45rem 0.65rem;">Reset</a>
+            @endif
+        </form>
+
+        <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+            <span style="color: #64748b; font-size: 0.85rem;">
+                Total: <strong style="color: #0f172a;">{{ $summaryList->total() }}</strong> Komoditas
+            </span>
+            <div style="display: flex; gap: 0.35rem;">
+                <button type="button" class="btn btn-sm btn-secondary" onclick="toggleAllBatches(true)" style="font-size: 0.75rem; padding: 0.3rem 0.6rem;">
+                    Buka Semua Batch
+                </button>
+                <button type="button" class="btn btn-sm btn-secondary" onclick="toggleAllBatches(false)" style="font-size: 0.75rem; padding: 0.3rem 0.6rem;">
+                    Tutup Semua
+                </button>
+            </div>
         </div>
     </div>
 
     <div style="overflow-x: auto;">
         <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
             <thead>
-                <tr style="background: #0f394c; color: #ffffff;">
-                    <th style="padding: 0.65rem 0.5rem; width: 35px; text-align: center;"></th>
-                    <th style="padding: 0.65rem 0.75rem; text-align: left; color: #e2e8f0;">Kode</th>
-                    <th style="padding: 0.65rem 0.75rem; text-align: left; color: #e2e8f0;">Nama Barang & Kategori</th>
-                    <th style="padding: 0.65rem 0.75rem; text-align: center; color: #e2e8f0;">Satuan</th>
-                    <th style="padding: 0.65rem 0.75rem; text-align: right; color: #e2e8f0;">Min. Stok</th>
-                    <th style="padding: 0.65rem 0.75rem; text-align: right; color: #e2e8f0;">Masuk</th>
-                    <th style="padding: 0.65rem 0.75rem; text-align: right; color: #e2e8f0;">Keluar</th>
-                    <th style="padding: 0.65rem 0.75rem; text-align: right; color: #e2e8f0; font-weight: 800;">Sisa Fisik</th>
-                    <th style="padding: 0.65rem 0.75rem; text-align: right; color: #e2e8f0;">Nilai Persediaan</th>
-                    <th style="padding: 0.65rem 0.75rem; text-align: center; color: #e2e8f0;">Status</th>
-                    <th style="padding: 0.65rem 0.75rem; text-align: center; color: #e2e8f0;">Batch</th>
-                    <th style="padding: 0.65rem 1rem; text-align: right; color: #e2e8f0;">Aksi</th>
+                <tr style="border-bottom: 2px solid #cbd5e1;">
+                    <th style="background: #f8fafc !important; color: #1e293b !important; font-weight: 700; font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.75rem 0.5rem; width: 35px; text-align: center;"></th>
+                    <th style="background: #f8fafc !important; color: #1e293b !important; font-weight: 700; font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.75rem 0.75rem; text-align: left;">Kode</th>
+                    <th style="background: #f8fafc !important; color: #1e293b !important; font-weight: 700; font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.75rem 0.75rem; text-align: left;">Nama Komoditas &amp; Kategori</th>
+                    <th style="background: #f8fafc !important; color: #1e293b !important; font-weight: 700; font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.75rem 0.75rem; text-align: center;">Satuan</th>
+                    <th style="background: #f8fafc !important; color: #1e293b !important; font-weight: 700; font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.75rem 0.75rem; text-align: right;">Min. Stok</th>
+                    <th style="background: #f8fafc !important; color: #1e293b !important; font-weight: 700; font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.75rem 0.75rem; text-align: right;">Masuk</th>
+                    <th style="background: #f8fafc !important; color: #1e293b !important; font-weight: 700; font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.75rem 0.75rem; text-align: right;">Keluar</th>
+                    <th style="background: #f8fafc !important; color: #1e293b !important; font-weight: 800; font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.75rem 0.75rem; text-align: right;">Sisa Fisik</th>
+                    <th style="background: #f8fafc !important; color: #1e293b !important; font-weight: 700; font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.75rem 0.75rem; text-align: right;">Nilai Persediaan</th>
+                    <th style="background: #f8fafc !important; color: #1e293b !important; font-weight: 700; font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.75rem 0.75rem; text-align: center;">Status</th>
+                    <th style="background: #f8fafc !important; color: #1e293b !important; font-weight: 700; font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.75rem 0.75rem; text-align: center;">Batch</th>
+                    <th style="background: #f8fafc !important; color: #1e293b !important; font-weight: 700; font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.75rem 1rem; text-align: right;">Aksi</th>
                 </tr>
             </thead>
             <tbody>
@@ -555,12 +595,17 @@
                         $isHabis = $sisaQty <= 0;
                         $isMenipis = !$isHabis && $minStok > 0 && $sisaQty <= $minStok;
                     @endphp
-                    <tr style="border-bottom: 1px solid #f1f5f9; cursor: pointer;" onclick="toggleBatchRow({{ $item->barang_id }})">
+                    <tr style="border-bottom: 1px solid #f1f5f9; cursor: pointer; transition: background 0.15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'" onclick="toggleBatchRow({{ $item->barang_id }})">
                         <td style="text-align: center; padding: 0.65rem 0.25rem;">
-                            <span id="icon-chevron-{{ $item->barang_id }}" style="display: inline-block; font-size: 0.75rem; color: #64748b;">▶</span>
+                            <span id="icon-chevron-{{ $item->barang_id }}" style="display: inline-block; font-size: 0.75rem; color: #64748b; transition: transform 0.2s;">▶</span>
                         </td>
-                        <td style="padding: 0.65rem 0.75rem; font-family: monospace; font-weight: 700;">{{ $item->barang_cd }}</td>
-                        <td style="padding: 0.65rem 0.75rem; font-weight: 700; color: #0f172a;">{{ $item->barang_nm }}</td>
+                        <td style="padding: 0.65rem 0.75rem; font-family: monospace; font-weight: 700; color: #0284c7;">{{ $item->barang_cd }}</td>
+                        <td style="padding: 0.65rem 0.75rem;">
+                            <strong style="color: #0f172a;">{{ $item->barang_nm }}</strong>
+                            <span style="display: block; font-size: 0.725rem; color: #64748b; font-weight: 500;">
+                                {{ $item->jenisBarang?->jenis_barang_nm ?? 'Komoditas Umum' }}
+                            </span>
+                        </td>
                         <td style="padding: 0.65rem 0.75rem; text-align: center;">{{ $item->satuanDasar?->satuan_nm }}</td>
                         <td style="padding: 0.65rem 0.75rem; text-align: right; color: #64748b;">{{ $minStok > 0 ? number_format($minStok, 0, ',', '.') : '-' }}</td>
                         <td style="padding: 0.65rem 0.75rem; text-align: right;">{{ number_format($qtyAwal, 2, ',', '.') }}</td>
@@ -568,14 +613,14 @@
                         <td style="padding: 0.65rem 0.75rem; text-align: right; font-weight: 800; color: {{ $isHabis ? '#94a3b8' : ($isMenipis ? '#d97706' : '#059669') }};">
                             {{ number_format($sisaQty, 2, ',', '.') }}
                         </td>
-                        <td style="padding: 0.65rem 0.75rem; text-align: right; font-weight: 700;">Rp {{ number_format((float) $item->total_sisa_nilai, 0, ',', '.') }}</td>
+                        <td style="padding: 0.65rem 0.75rem; text-align: right; font-weight: 700; color: #0f172a;">Rp {{ number_format((float) $item->total_sisa_nilai, 0, ',', '.') }}</td>
                         <td style="padding: 0.65rem 0.75rem; text-align: center;">
                             @if ($isHabis)
-                                <span style="background: #fee2e2; color: #991b1b; padding: 0.15rem 0.4rem; border-radius: 3px; font-size: 0.675rem; font-weight: 700;">HABIS</span>
+                                <span style="background: #fee2e2; color: #991b1b; padding: 0.15rem 0.45rem; border-radius: 4px; font-size: 0.675rem; font-weight: 700;">HABIS</span>
                             @elseif ($isMenipis)
-                                <span style="background: #fef3c7; color: #b45309; padding: 0.15rem 0.4rem; border-radius: 3px; font-size: 0.675rem; font-weight: 700;">⚠️ MENIPIS</span>
+                                <span style="background: #fef3c7; color: #b45309; padding: 0.15rem 0.45rem; border-radius: 4px; font-size: 0.675rem; font-weight: 700;">⚠️ MENIPIS</span>
                             @else
-                                <span style="background: #dcfce7; color: #166534; padding: 0.15rem 0.4rem; border-radius: 3px; font-size: 0.675rem; font-weight: 700;">🟢 AMAN</span>
+                                <span style="background: #dcfce7; color: #166534; padding: 0.15rem 0.45rem; border-radius: 4px; font-size: 0.675rem; font-weight: 700;">🟢 AMAN</span>
                             @endif
                         </td>
                         <td style="padding: 0.65rem 0.75rem; text-align: center;">
@@ -593,46 +638,56 @@
                     {{-- Drawer Sub-tabel Batch --}}
                     <tr id="drawer-batch-{{ $item->barang_id }}" style="display: none; background: #f8fafc;">
                         <td colspan="12" style="padding: 0.75rem 1.25rem;">
-                            <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden;">
+                            <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden; box-shadow: inset 0 1px 2px rgba(0,0,0,0.03);">
                                 <table style="width: 100%; border-collapse: collapse; font-size: 0.775rem;">
                                     <thead>
-                                        <tr style="background: #f1f5f9; color: #475569;">
-                                            <th style="padding: 0.4rem 0.6rem; text-align: left;">No. Batch</th>
-                                            <th style="padding: 0.4rem 0.6rem; text-align: left;">Gudang</th>
-                                            <th style="padding: 0.4rem 0.6rem; text-align: left;">Tgl Terima</th>
-                                            <th style="padding: 0.4rem 0.6rem; text-align: right; font-weight: 800;">Sisa Qty</th>
-                                            <th style="padding: 0.4rem 0.6rem; text-align: right;">Harga Satuan</th>
-                                            <th style="padding: 0.4rem 0.6rem; text-align: right;">Total Nilai</th>
-                                            <th style="padding: 0.4rem 0.6rem; text-align: center;">Status</th>
+                                        <tr style="border-bottom: 1px solid #cbd5e1;">
+                                            <th style="background: #f1f5f9 !important; color: #334155 !important; font-weight: 700; padding: 0.45rem 0.65rem; text-align: left;">No. Batch</th>
+                                            <th style="background: #f1f5f9 !important; color: #334155 !important; font-weight: 700; padding: 0.45rem 0.65rem; text-align: left;">Gudang Simpan</th>
+                                            <th style="background: #f1f5f9 !important; color: #334155 !important; font-weight: 700; padding: 0.45rem 0.65rem; text-align: left;">Tgl Terima</th>
+                                            <th style="background: #f1f5f9 !important; color: #334155 !important; font-weight: 700; padding: 0.45rem 0.65rem; text-align: right;">Sisa Qty</th>
+                                            <th style="background: #f1f5f9 !important; color: #334155 !important; font-weight: 700; padding: 0.45rem 0.65rem; text-align: right;">Harga Satuan</th>
+                                            <th style="background: #f1f5f9 !important; color: #334155 !important; font-weight: 700; padding: 0.45rem 0.65rem; text-align: right;">Total Nilai</th>
+                                            <th style="background: #f1f5f9 !important; color: #334155 !important; font-weight: 700; padding: 0.45rem 0.65rem; text-align: center;">Status</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        @foreach ($item->stokBatches as $b)
+                                        @forelse ($item->stokBatches as $b)
                                             <tr style="border-bottom: 1px solid #f1f5f9;">
-                                                <td style="padding: 0.4rem 0.6rem; font-family: monospace; font-weight: 700;">{{ $b->batch_no }}</td>
-                                                <td style="padding: 0.4rem 0.6rem;">{{ $b->gudang?->gudang_nm }}</td>
-                                                <td style="padding: 0.4rem 0.6rem; color: #64748b;">{{ $b->created_at ? $b->created_at->format('d/m/Y') : '-' }}</td>
-                                                <td style="padding: 0.4rem 0.6rem; text-align: right; font-weight: 800; color: {{ (float)$b->sisa_qty <= 0 ? '#94a3b8' : '#059669' }};">
+                                                <td style="padding: 0.45rem 0.65rem; font-family: monospace; font-weight: 700; color: #0284c7;">{{ $b->batch_no }}</td>
+                                                <td style="padding: 0.45rem 0.65rem;">{{ $b->gudang?->gudang_nm ?? '-' }}</td>
+                                                <td style="padding: 0.45rem 0.65rem; color: #64748b;">{{ $b->created_at ? $b->created_at->format('d/m/Y') : '-' }}</td>
+                                                <td style="padding: 0.45rem 0.65rem; text-align: right; font-weight: 800; color: {{ (float)$b->sisa_qty <= 0 ? '#94a3b8' : '#059669' }};">
                                                     {{ number_format((float)$b->sisa_qty, 2, ',', '.') }}
                                                 </td>
-                                                <td style="padding: 0.4rem 0.6rem; text-align: right;">Rp {{ number_format((float)$b->harga_satuan, 0, ',', '.') }}</td>
-                                                <td style="padding: 0.4rem 0.6rem; text-align: right; font-weight: 700;">Rp {{ number_format((float)$b->sisa_qty * (float)$b->harga_satuan, 0, ',', '.') }}</td>
-                                                <td style="padding: 0.4rem 0.6rem; text-align: center;">
-                                                    {{ (float)$b->sisa_qty <= 0 ? 'HABIS' : 'TERSEDIA' }}
+                                                <td style="padding: 0.45rem 0.65rem; text-align: right;">Rp {{ number_format((float)$b->harga_satuan, 0, ',', '.') }}</td>
+                                                <td style="padding: 0.45rem 0.65rem; text-align: right; font-weight: 700;">Rp {{ number_format((float)$b->sisa_qty * (float)$b->harga_satuan, 0, ',', '.') }}</td>
+                                                <td style="padding: 0.45rem 0.65rem; text-align: center;">
+                                                    <span style="font-size: 0.675rem; font-weight: 700; color: {{ (float)$b->sisa_qty <= 0 ? '#991b1b' : '#166534' }};">
+                                                        {{ (float)$b->sisa_qty <= 0 ? 'HABIS' : 'TERSEDIA' }}
+                                                    </span>
                                                 </td>
                                             </tr>
-                                        @endforeach
+                                        @empty
+                                            <tr><td colspan="7" style="text-align: center; padding: 1rem; color: #94a3b8;">Belum ada riwayat batch untuk barang ini.</td></tr>
+                                        @endforelse
                                     </tbody>
                                 </table>
                             </div>
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="12" style="text-align: center; padding: 2rem;">Tidak ada barang.</td></tr>
+                    <tr><td colspan="12" style="text-align: center; padding: 2.5rem; color: #64748b;">Tidak ada data komoditas stok ditemukan.</td></tr>
                 @endforelse
             </tbody>
         </table>
     </div>
+
+    @if ($summaryList->hasPages())
+        <div style="padding: 0.75rem 1.25rem; border-top: 1px solid #e2e8f0; background: #ffffff;">
+            {{ $summaryList->withQueryString()->links() }}
+        </div>
+    @endif
 </div>
 
 <script>
@@ -654,21 +709,63 @@ function toggleAllBatches(show) {
 {{-- KONTEN MODE 3: DETAIL SHEET PER-BATCH (FLAT FORMAT EXCEL)--}}
 {{-- ======================================================== --}}
 @else
-<div class="card" style="border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden;">
+<div class="card" style="border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
+    {{-- Filter Toolbar Mode Flat Sheet --}}
+    <div class="card-header" style="background: #ffffff; padding: 0.875rem 1.25rem; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+        <form action="{{ route('gudang.stok.index') }}" method="GET" style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; max-width: 860px; width: 100%;">
+            <input type="hidden" name="view" value="batch">
+            
+            <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Cari nomor batch, kode atau nama..." class="form-control" style="padding: 0.45rem 0.75rem; max-width: 240px; font-size: 0.85rem;">
+
+            <select name="gudang_id" class="form-control" style="padding: 0.45rem 0.75rem; max-width: 170px; font-size: 0.85rem;" onchange="this.form.submit()">
+                <option value="">-- Semua Gudang --</option>
+                @foreach ($gudangList as $gdg)
+                    <option value="{{ $gdg->gudang_id }}" {{ $gudangId == $gdg->gudang_id ? 'selected' : '' }}>
+                        {{ $gdg->display_name }}
+                    </option>
+                @endforeach
+            </select>
+
+            <select name="jenis_barang_id" class="form-control" style="padding: 0.45rem 0.75rem; max-width: 160px; font-size: 0.85rem;" onchange="this.form.submit()">
+                <option value="">-- Semua Kategori --</option>
+                @foreach ($jenisBarangList as $jb)
+                    <option value="{{ $jb->jenis_barang_id }}" {{ ($jenisBarangId == $jb->jenis_barang_id) ? 'selected' : '' }}>
+                        {{ $jb->jenis_barang_nm }}
+                    </option>
+                @endforeach
+            </select>
+
+            <select name="status" class="form-control" style="padding: 0.45rem 0.75rem; max-width: 150px; font-size: 0.85rem;" onchange="this.form.submit()">
+                <option value="">-- Semua Status --</option>
+                <option value="tersedia" {{ ($status == 'tersedia') ? 'selected' : '' }}>🟢 Tersedia</option>
+                <option value="habis" {{ ($status == 'habis') ? 'selected' : '' }}>🔴 Habis</option>
+            </select>
+
+            <button type="submit" class="btn btn-secondary btn-sm" style="padding: 0.45rem 0.85rem;">Filter</button>
+            @if(!empty($search) || !empty($gudangId) || !empty($jenisBarangId) || !empty($status))
+                <a href="{{ route('gudang.stok.index', ['view' => 'batch']) }}" class="btn btn-secondary btn-sm" title="Reset Filter" style="padding: 0.45rem 0.65rem;">Reset</a>
+            @endif
+        </form>
+
+        <span style="color: #64748b; font-size: 0.85rem;">
+            Total: <strong style="color: #0f172a;">{{ $stokList->total() }}</strong> Baris Lot Batch
+        </span>
+    </div>
+
     <div style="overflow-x: auto;">
         <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
             <thead>
-                <tr style="background: #0f394c; color: #ffffff;">
-                    <th style="padding: 0.65rem 0.75rem; text-align: left;">Kode Batch</th>
-                    <th style="padding: 0.65rem 0.75rem; text-align: left;">Kode Barang</th>
-                    <th style="padding: 0.65rem 0.75rem; text-align: left;">Nama Barang & Gudang</th>
-                    <th style="padding: 0.65rem 0.75rem; text-align: right;">Qty Awal</th>
-                    <th style="padding: 0.65rem 0.75rem; text-align: right;">Harga Satuan</th>
-                    <th style="padding: 0.65rem 0.75rem; text-align: right;">Qty Keluar</th>
-                    <th style="padding: 0.65rem 0.75rem; text-align: right; font-weight: 800;">Sisa Qty</th>
-                    <th style="padding: 0.65rem 0.75rem; text-align: right; font-weight: 700;">Sisa Nilai</th>
-                    <th style="padding: 0.65rem 0.75rem; text-align: center;">Status</th>
-                    <th style="padding: 0.65rem 1rem; text-align: right;">Aksi</th>
+                <tr style="border-bottom: 2px solid #cbd5e1;">
+                    <th style="background: #f8fafc !important; color: #1e293b !important; font-weight: 700; font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.75rem 0.75rem; text-align: left;">Kode Batch</th>
+                    <th style="background: #f8fafc !important; color: #1e293b !important; font-weight: 700; font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.75rem 0.75rem; text-align: left;">Kode Komoditas</th>
+                    <th style="background: #f8fafc !important; color: #1e293b !important; font-weight: 700; font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.75rem 0.75rem; text-align: left;">Nama Komoditas &amp; Gudang</th>
+                    <th style="background: #f8fafc !important; color: #1e293b !important; font-weight: 700; font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.75rem 0.75rem; text-align: right;">Qty Awal</th>
+                    <th style="background: #f8fafc !important; color: #1e293b !important; font-weight: 700; font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.75rem 0.75rem; text-align: right;">Harga Satuan</th>
+                    <th style="background: #f8fafc !important; color: #1e293b !important; font-weight: 700; font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.75rem 0.75rem; text-align: right;">Qty Keluar</th>
+                    <th style="background: #f8fafc !important; color: #1e293b !important; font-weight: 800; font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.75rem 0.75rem; text-align: right;">Sisa Qty</th>
+                    <th style="background: #f8fafc !important; color: #1e293b !important; font-weight: 700; font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.75rem 0.75rem; text-align: right;">Sisa Nilai</th>
+                    <th style="background: #f8fafc !important; color: #1e293b !important; font-weight: 700; font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.75rem 0.75rem; text-align: center;">Status</th>
+                    <th style="background: #f8fafc !important; color: #1e293b !important; font-weight: 700; font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.75rem 1rem; text-align: right;">Aksi</th>
                 </tr>
             </thead>
             <tbody>
@@ -678,12 +775,17 @@ function toggleAllBatches(show) {
                         $qtyAwal = (float) ($b->qty_awal > 0 ? $b->qty_awal : $b->sisa_qty);
                         $qtyKeluar = max(0, $qtyAwal - (float) $b->sisa_qty);
                     @endphp
-                    <tr style="border-bottom: 1px solid #f1f5f9; background: {{ $isHabis ? '#fafafa' : '#ffffff' }};">
-                        <td style="padding: 0.65rem 0.75rem; font-family: monospace; font-weight: 700;">{{ $b->batch_no }}</td>
+                    <tr style="border-bottom: 1px solid #f1f5f9; background: {{ $isHabis ? '#fafafa' : '#ffffff' }}; transition: background 0.15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='{{ $isHabis ? '#fafafa' : '#ffffff' }}'">
+                        <td style="padding: 0.65rem 0.75rem; font-family: monospace; font-weight: 700; color: #0284c7;">{{ $b->batch_no }}</td>
                         <td style="padding: 0.65rem 0.75rem; font-family: monospace;">{{ $b->barang?->barang_cd }}</td>
                         <td style="padding: 0.65rem 0.75rem;">
-                            <strong>{{ $b->barang?->barang_nm }}</strong>
-                            <span style="display: block; font-size: 0.75rem; color: #64748b;">{{ $b->gudang?->gudang_nm }}</span>
+                            <strong style="color: #0f172a;">{{ $b->barang?->barang_nm }}</strong>
+                            <div style="font-size: 0.725rem; color: #64748b; margin-top: 0.1rem;">
+                                <span>{{ $b->gudang?->gudang_nm }}</span>
+                                @if($b->barang?->jenisBarang)
+                                    &bull; <span>{{ $b->barang->jenisBarang->jenis_barang_nm }}</span>
+                                @endif
+                            </div>
                         </td>
                         <td style="padding: 0.65rem 0.75rem; text-align: right;">{{ number_format($qtyAwal, 2, ',', '.') }}</td>
                         <td style="padding: 0.65rem 0.75rem; text-align: right;">Rp {{ number_format((float)$b->harga_satuan, 0, ',', '.') }}</td>
@@ -691,11 +793,15 @@ function toggleAllBatches(show) {
                         <td style="padding: 0.65rem 0.75rem; text-align: right; font-weight: 800; color: {{ $isHabis ? '#94a3b8' : '#059669' }};">
                             {{ number_format((float)$b->sisa_qty, 2, ',', '.') }}
                         </td>
-                        <td style="padding: 0.65rem 0.75rem; text-align: right; font-weight: 700;">
+                        <td style="padding: 0.65rem 0.75rem; text-align: right; font-weight: 700; color: #0f172a;">
                             Rp {{ number_format((float)$b->sisa_qty * (float)$b->harga_satuan, 0, ',', '.') }}
                         </td>
                         <td style="padding: 0.65rem 0.75rem; text-align: center;">
-                            {{ $isHabis ? 'HABIS' : 'TERSEDIA' }}
+                            @if ($isHabis)
+                                <span style="background: #fee2e2; color: #991b1b; padding: 0.15rem 0.45rem; border-radius: 4px; font-size: 0.675rem; font-weight: 700;">HABIS</span>
+                            @else
+                                <span style="background: #dcfce7; color: #166534; padding: 0.15rem 0.45rem; border-radius: 4px; font-size: 0.675rem; font-weight: 700;">TERSEDIA</span>
+                            @endif
                         </td>
                         <td style="padding: 0.65rem 1rem; text-align: right;">
                             <a href="{{ route('gudang.stok.ledger', ['barang_id' => $b->barang_id, 'gudang_id' => $b->gudang_id]) }}" class="btn btn-secondary btn-sm" style="font-size: 0.725rem; padding: 0.2rem 0.45rem;">
@@ -704,14 +810,14 @@ function toggleAllBatches(show) {
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="10" style="text-align: center; padding: 2rem;">Tidak ada data batch.</td></tr>
+                    <tr><td colspan="10" style="text-align: center; padding: 2.5rem; color: #64748b;">Tidak ada data batch ditemukan.</td></tr>
                 @endforelse
             </tbody>
         </table>
     </div>
 
     @if ($stokList->hasPages())
-        <div style="padding: 0.75rem 1.25rem; border-top: 1px solid #e2e8f0;">
+        <div style="padding: 0.75rem 1.25rem; border-top: 1px solid #e2e8f0; background: #ffffff;">
             {{ $stokList->withQueryString()->links() }}
         </div>
     @endif

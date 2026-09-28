@@ -261,7 +261,8 @@ class StokService
         int $perPage = 15,
         int|array|null $gudangId = null,
         ?string $search = null,
-        ?string $status = null
+        ?string $status = null,
+        ?int $jenisBarangId = null
     ): LengthAwarePaginator {
         $subquery = DatStokBatch::selectRaw('
             barang_id,
@@ -309,6 +310,10 @@ class StokService
             });
         }
 
+        if (!empty($jenisBarangId)) {
+            $query->where('mst_barang.jenis_barang_id', $jenisBarangId);
+        }
+
         if ($status === 'tersedia') {
             $query->whereRaw('COALESCE(stok_agg.total_sisa_qty, 0) > 0');
         } elseif ($status === 'menipis') {
@@ -327,8 +332,13 @@ class StokService
     /**
      * Mengambil data monitoring stok per batch & gudang untuk tampilan dashboard gudang / Lacak Stok.
      */
-    public function getMonitoringStok(int $perPage = 15, int|array|null $gudangId = null, ?string $search = null, ?string $status = null): LengthAwarePaginator
-    {
+    public function getMonitoringStok(
+        int $perPage = 15,
+        int|array|null $gudangId = null,
+        ?string $search = null,
+        ?string $status = null,
+        ?int $jenisBarangId = null
+    ): LengthAwarePaginator {
         $query = DatStokBatch::with(['barang.satuanDasar', 'barang.jenisBarang', 'gudang'])
             ->where('deleted_st', false);
 
@@ -348,6 +358,12 @@ class StokService
                       $bq->where('barang_nm', 'ILIKE', "%{$search}%")
                          ->orWhere('barang_cd', 'ILIKE', "%{$search}%");
                   });
+            });
+        }
+
+        if (!empty($jenisBarangId)) {
+            $query->whereHas('barang', function ($bq) use ($jenisBarangId) {
+                $bq->where('jenis_barang_id', $jenisBarangId);
             });
         }
 

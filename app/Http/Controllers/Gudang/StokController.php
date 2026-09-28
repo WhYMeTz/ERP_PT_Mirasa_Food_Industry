@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Gudang;
 use App\Http\Controllers\Controller;
 use App\Models\MasterData\MstBarang;
 use App\Models\MasterData\MstGudang;
+use App\Models\MasterData\MstJenisBarang;
 use App\Services\Gudang\StokService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -27,10 +28,12 @@ class StokController extends Controller
 
         $search = $request->input('search');
         $status = $request->input('status'); // 'tersedia', 'menipis', 'habis', 'aman', or null for all
+        $jenisBarangId = $request->input('jenis_barang_id') ? (int) $request->input('jenis_barang_id') : null;
 
         $user = auth()->user();
         $allowedGudangIds = $user ? $user->getAllowedGudangIds() : [];
         $gudangList = $user ? $user->getAllowedGudangList() : collect();
+        $jenisBarangList = MstJenisBarang::active()->orderBy('jenis_barang_nm')->get();
 
         $requestedGudangId = $request->input('gudang_id') ? (int) $request->input('gudang_id') : null;
 
@@ -55,11 +58,11 @@ class StokController extends Controller
         $kpiMetrics = $this->stokService->getStokKpiMetrics($effectiveGudang);
 
         if ($viewType === 'batch') {
-            $stokList = $this->stokService->getMonitoringStok($perPage, $effectiveGudang, $search, $status);
+            $stokList = $this->stokService->getMonitoringStok($perPage, $effectiveGudang, $search, $status, $jenisBarangId);
             $summaryList = null;
             $dataForJson = $stokList;
         } else {
-            $summaryList = $this->stokService->getStokSummaryByBarang($perPage, $effectiveGudang, $search, $status);
+            $summaryList = $this->stokService->getStokSummaryByBarang($perPage, $effectiveGudang, $search, $status, $jenisBarangId);
             $stokList = null;
             $dataForJson = $summaryList;
         }
@@ -77,6 +80,8 @@ class StokController extends Controller
             'summaryList',
             'stokList',
             'gudangList',
+            'jenisBarangList',
+            'jenisBarangId',
             'search',
             'gudangId',
             'status',

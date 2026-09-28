@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Gudang;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Gudang\StorePemakaianRequest;
+use App\Models\Gudang\DatPakaiHdr;
 use App\Models\Gudang\DatStokBatch;
 use App\Models\MasterData\MstBarang;
 use App\Models\MasterData\MstGudang;
@@ -67,6 +68,27 @@ class PemakaianController extends Controller
 
         $ringkasan = $this->pemakaianService->getRingkasanPengeluaran($effectiveGudang, $tujuan, $startDate, $endDate);
 
+        // 4 Metrik Operasional Harian
+        $today = now()->toDateString();
+        $rawCountsQuery = DatPakaiHdr::where('deleted_st', false);
+        if (is_array($effectiveGudang)) {
+            $rawCountsQuery->whereIn('gudang_id', $effectiveGudang);
+        } elseif ($effectiveGudang !== null) {
+            $rawCountsQuery->where('gudang_id', $effectiveGudang);
+        }
+
+        $rawCounts = $rawCountsQuery->selectRaw("
+            COUNT(*) as total_dokumen,
+            COUNT(CASE WHEN pakai_tgl = ? THEN 1 END) as today_dokumen
+        ", [$today])->first();
+
+        $kpiCounts = [
+            'total'        => (int) ($rawCounts->total_dokumen ?? 0),
+            'today'        => (int) ($rawCounts->today_dokumen ?? 0),
+            'singkong_qty' => (float) ($ringkasan['singkong_qty'] ?? 0),
+            'total_biaya'  => (float) ($ringkasan['grand_total_nilai'] ?? 0),
+        ];
+
         $tujuanOptions = [
             'PRODUKSI IFM',
             'PRODUKSI PING-PING',
@@ -86,13 +108,14 @@ class PemakaianController extends Controller
                 'status'    => 'success',
                 'message'   => 'Data barang keluar berhasil diambil.',
                 'ringkasan' => $ringkasan,
+                'kpis'      => $kpiCounts,
                 'data'      => $dataList,
             ]);
         }
 
         return view('gudang.pemakaian.index', compact(
             'dataList', 'gudangList', 'search', 'gudangId', 'viewType',
-            'tujuan', 'startDate', 'endDate', 'ringkasan', 'tujuanOptions'
+            'tujuan', 'startDate', 'endDate', 'ringkasan', 'tujuanOptions', 'kpiCounts'
         ));
     }
 

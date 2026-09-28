@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Gudang;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Gudang\StoreTerimaBarangRequest;
+use App\Models\Gudang\DatTerimaHdr;
 use App\Models\MasterData\MstBarang;
 use App\Models\MasterData\MstGudang;
 use App\Models\MasterData\MstSupplier;
@@ -54,15 +55,39 @@ class TerimaBarangController extends Controller
             $dataList = $this->terimaService->getBarangMasukListPaginated($perPage, $search, $effectiveGudang);
         }
 
+        // Hitung 4 Metrik Operasional Harian
+        $today = now()->toDateString();
+        $rawCountsQuery = DatTerimaHdr::where('deleted_st', false);
+        if (is_array($effectiveGudang)) {
+            $rawCountsQuery->whereIn('gudang_id', $effectiveGudang);
+        } elseif ($effectiveGudang !== null) {
+            $rawCountsQuery->where('gudang_id', $effectiveGudang);
+        }
+
+        $rawCounts = $rawCountsQuery->selectRaw("
+            COUNT(*) as total_grn,
+            COUNT(CASE WHEN terima_tgl = ? THEN 1 END) as today_grn,
+            COUNT(CASE WHEN po_id IS NOT NULL THEN 1 END) as po_grn,
+            COUNT(CASE WHEN po_id IS NULL THEN 1 END) as direct_grn
+        ", [$today])->first();
+
+        $kpiCounts = [
+            'total'  => (int) ($rawCounts->total_grn ?? 0),
+            'today'  => (int) ($rawCounts->today_grn ?? 0),
+            'po'     => (int) ($rawCounts->po_grn ?? 0),
+            'direct' => (int) ($rawCounts->direct_grn ?? 0),
+        ];
+
         if ($request->wantsJson()) {
             return response()->json([
                 'status'  => 'success',
                 'message' => 'Data penerimaan barang berhasil diambil.',
                 'data'    => $dataList,
+                'kpis'    => $kpiCounts,
             ]);
         }
 
-        return view('gudang.terima.index', compact('dataList', 'gudangList', 'search', 'gudangId', 'viewType'));
+        return view('gudang.terima.index', compact('dataList', 'gudangList', 'search', 'gudangId', 'viewType', 'kpiCounts'));
     }
 
     public function create(Request $request): View

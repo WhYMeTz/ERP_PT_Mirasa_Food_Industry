@@ -79,17 +79,17 @@
     <div style="overflow-x: auto;">
         <table>
             <thead>
-                <tr style="background: #0f394c; color: #ffffff;">
-                    <th style="width: 40px; color: #e2e8f0;">No</th>
-                    <th style="color: #e2e8f0;">Kode Batch</th>
-                    <th style="color: #e2e8f0;">Kode Barang</th>
-                    <th style="color: #e2e8f0;">Nama Barang</th>
-                    <th style="color: #e2e8f0;">Jenis</th>
-                    <th style="color: #e2e8f0;">Keterangan / SPK</th>
-                    <th style="text-align: right; color: #e2e8f0;">Qty Keluar</th>
-                    <th style="color: #e2e8f0;">Satuan</th>
-                    <th style="text-align: right; color: #e2e8f0;">Harga Satuan</th>
-                    <th style="text-align: right; color: #e2e8f0;">Total Harga</th>
+                <tr>
+                    <th style="width: 45px; text-align: center;">No</th>
+                    <th style="min-width: 140px;">Kode Batch</th>
+                    <th style="min-width: 110px;">Kode Barang</th>
+                    <th style="min-width: 180px;">Nama Barang</th>
+                    <th style="min-width: 80px;">Jenis</th>
+                    <th style="min-width: 150px;">Keterangan / SPK</th>
+                    <th style="min-width: 110px; text-align: right;">Qty Keluar</th>
+                    <th style="min-width: 90px;">Satuan</th>
+                    <th style="min-width: 120px; text-align: right;">Harga Satuan</th>
+                    <th style="min-width: 130px; text-align: right;">Total Harga</th>
                 </tr>
             </thead>
             <tbody>

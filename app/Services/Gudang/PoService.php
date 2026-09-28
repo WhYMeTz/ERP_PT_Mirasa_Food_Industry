@@ -10,6 +10,7 @@ use App\Services\Common\CodeGeneratorService;
 use Exception;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Collection as SupportCollection;
 use Illuminate\Support\Facades\DB;
 
 class PoService
@@ -102,62 +103,95 @@ class PoService
     /**
      * Menyimpan transaksi pembuatan PO baru beserta rincian itemnya via DB Transaction.
      */
-    public function store(array $data): DatPoHdr
+    /**
+     * Menyimpan transaksi pembuatan PO baru beserta rincian itemnya via DB Transaction.
+     * Mendukung Konsep 1 (Auto-Split PO): Jika dalam 1 formulir terdapat item dari supplier berbeda,
+     * sistem secara otomatis memecah menjadi beberapa dokumen PO resmi terpisah per-supplier.
+     *
+     * @return DatPoHdr|SupportCollection
+     */
+    public function store(array $data): DatPoHdr|SupportCollection
     {
         return DB::transaction(function () use ($data) {
-            $poNo = !empty($data['po_no']) ? trim($data['po_no']) : $this->codeGenerator->generatePoNo();
-
-            // Hitung total nominal dari item-item PO
-            $totalNominal = 0;
             $items = $data['items'] ?? [];
-
             if (empty($items)) {
                 throw new Exception("Minimal harus ada 1 item barang dalam Purchase Order.");
             }
 
+            $headerSupplierId = !empty($data['supplier_id']) ? (int) $data['supplier_id'] : null;
+            $itemsBySupplier = [];
+
             foreach ($items as $item) {
-                $qty = (float) ($item['pesan_qty'] ?? 0);
-                $harga = (float) ($item['harga_nominal'] ?? 0);
-                $totalNominal += ($qty * $harga);
+                $supId = !empty($item['supplier_id']) ? (int) $item['supplier_id'] : $headerSupplierId;
+                if (!$supId) {
+                    throw new Exception("Supplier mitra wajib dipilih untuk setiap item barang pesanan.");
+                }
+                $itemsBySupplier[$supId][] = $item;
             }
 
-            $header = DatPoHdr::create([
-                'po_no'               => $poNo,
-                'po_tgl'              => $data['po_tgl'] ?? date('Y-m-d'),
-                'tgl_estimasi_datang' => $data['tgl_estimasi_datang'] ?? null,
-                'supplier_id'         => $data['supplier_id'],
-                'gudang_id'           => $data['gudang_id'],
-                'status_cd'           => $data['status_cd'] ?? 'APPROVED', // Langsung siap diterima
-                'total_nominal'       => $totalNominal,
-                'catatan_txt'         => $data['catatan_txt'] ?? null,
-            ]);
+            $createdPOs = collect();
+            $isMultiSupplier = count($itemsBySupplier) > 1;
 
-            foreach ($items as $item) {
-                $qty = (float) ($item['pesan_qty'] ?? 0);
-                $harga = (float) ($item['harga_nominal'] ?? 0);
-                $subtotal = $qty * $harga;
+            foreach ($itemsBySupplier as $supplierId => $supplierItems) {
+                // Jika single supplier dan user mengetikkan po_no manual, gunakan itu.
+                // Jika multi-supplier, generate nomor PO unik otomatis per supplier.
+                if (!$isMultiSupplier && !empty($data['po_no'])) {
+                    $poNo = trim($data['po_no']);
+                } else {
+                    $poNo = $this->codeGenerator->generatePoNo();
+                }
 
-                DatPoDtl::create([
-                    'po_id'            => $header->po_id,
-                    'barang_id'        => $item['barang_id'],
-                    'pesan_qty'        => $qty,
-                    'harga_nominal'    => $harga,
-                    'subtotal_nominal' => $subtotal,
-                    'terima_qty'       => 0,
-                    'catatan_txt'      => $item['catatan_txt'] ?? null,
+                $totalNominal = 0;
+                foreach ($supplierItems as $item) {
+                    $qty = (float) ($item['pesan_qty'] ?? 0);
+                    $harga = (float) ($item['harga_nominal'] ?? 0);
+                    $totalNominal += ($qty * $harga);
+                }
+
+                $header = DatPoHdr::create([
+                    'po_no'               => $poNo,
+                    'po_tgl'              => $data['po_tgl'] ?? date('Y-m-d'),
+                    'tgl_estimasi_datang' => $data['tgl_estimasi_datang'] ?? null,
+                    'supplier_id'         => $supplierId,
+                    'gudang_id'           => $data['gudang_id'],
+                    'status_cd'           => $data['status_cd'] ?? 'APPROVED', // Langsung siap diterima
+                    'total_nominal'       => $totalNominal,
+                    'catatan_txt'         => $data['catatan_txt'] ?? null,
                 ]);
 
-                // Update harga beli acuan di Master Barang dengan harga terbaru
-                if ($harga > 0) {
-                    $barang = MstBarang::find($item['barang_id']);
-                    if ($barang && (float) $barang->harga_beli_standar != $harga) {
-                        $barang->harga_beli_standar = $harga;
-                        $barang->save();
+                foreach ($supplierItems as $item) {
+                    $qty = (float) ($item['pesan_qty'] ?? 0);
+                    $harga = (float) ($item['harga_nominal'] ?? 0);
+                    $subtotal = $qty * $harga;
+
+                    DatPoDtl::create([
+                        'po_id'            => $header->po_id,
+                        'barang_id'        => $item['barang_id'],
+                        'pesan_qty'        => $qty,
+                        'harga_nominal'    => $harga,
+                        'subtotal_nominal' => $subtotal,
+                        'terima_qty'       => 0,
+                        'catatan_txt'      => $item['catatan_txt'] ?? null,
+                    ]);
+
+                    // Update harga beli acuan di Master Barang dengan harga terbaru
+                    if ($harga > 0) {
+                        $barang = MstBarang::find($item['barang_id']);
+                        if ($barang && (float) $barang->harga_beli_standar != $harga) {
+                            $barang->harga_beli_standar = $harga;
+                            $barang->save();
+                        }
                     }
                 }
+
+                $createdPOs->push($header->fresh(['supplier', 'details.barang']));
             }
 
-            return $header->fresh(['details.barang']);
+            if ($createdPOs->count() === 1) {
+                return $createdPOs->first();
+            }
+
+            return $createdPOs;
         });
     }
 

@@ -121,7 +121,26 @@ class PoController extends Controller
                 $data['gudang_id'] = $user->gudang_id;
             }
 
-            $po = $this->poService->store($data);
+            $result = $this->poService->store($data);
+
+            if ($result instanceof \Illuminate\Support\Collection) {
+                $count = $result->count();
+                $poListStr = $result->map(fn($p) => "{$p->po_no} (" . ($p->supplier?->supplier_nm ?? 'Supplier') . ")")->implode(', ');
+
+                if ($request->wantsJson()) {
+                    return response()->json([
+                        'status'  => 'success',
+                        'message' => "⚡ Auto-Split Berhasil! Menerbitkan {$count} Purchase Order secara otomatis per supplier: {$poListStr}.",
+                        'data'    => $result,
+                    ], 201);
+                }
+
+                return redirect()
+                    ->route('gudang.po.index')
+                    ->with('success', "⚡ Auto-Split Berhasil! Menerbitkan {$count} Purchase Order secara otomatis per supplier: {$poListStr}.");
+            }
+
+            $po = $result;
 
             if ($request->wantsJson()) {
                 return response()->json([

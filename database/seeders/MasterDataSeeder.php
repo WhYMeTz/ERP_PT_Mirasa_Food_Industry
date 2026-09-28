@@ -36,8 +36,7 @@ class MasterDataSeeder extends Seeder
         // 2. Master Jenis Supplier
         $jenisSupplierData = [
             ['jenis_supplier_cd' => 'RAW',       'jenis_supplier_nm' => 'Bahan Baku Mentah (Singkong, Minyak)'],
-            ['jenis_supplier_cd' => 'BP',        'jenis_supplier_nm' => 'Bahan Penolong & Industri'],
-            ['jenis_supplier_cd' => 'BUMBU',     'jenis_supplier_nm' => 'Bumbu, Perasa & Kimia Pangan'],
+            ['jenis_supplier_cd' => 'BUMBU',     'jenis_supplier_nm' => 'Bumbu, Perasa & Bahan Penolong'],
             ['jenis_supplier_cd' => 'KEMASAN',   'jenis_supplier_nm' => 'Kemasan, Plastik & Karton'],
             ['jenis_supplier_cd' => 'SPAREPART', 'jenis_supplier_nm' => 'Suku Cadang Mesin & Peralatan'],
             ['jenis_supplier_cd' => 'UMUM',      'jenis_supplier_nm' => 'Jasa Angkut, Bahan Bakar & Umum'],

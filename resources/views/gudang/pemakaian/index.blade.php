@@ -74,7 +74,10 @@
                 </div>
             </div>
             <div style="width: 32px; height: 32px; border-radius: 6px; background: #e0f2fe; display: flex; align-items: center; justify-content: center; color: #0284c7; flex-shrink: 0;">
-                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 3h4m-5 4h6a1 1 0 011 1v1H8V8a1 1 0 011-1zm-1 4h8l-1 9a2 2 0 01-2 2H10a2 2 0 01-2-2L7 11z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 14h2m-3 3h4"/>
+                </svg>
             </div>
         </div>
         <div style="font-size: 0.75rem; color: #0284c7; font-weight: 600; margin-top: 0.35rem;">

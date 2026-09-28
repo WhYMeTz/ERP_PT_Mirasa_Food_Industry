@@ -948,14 +948,30 @@
                     const acronym = selectedOption?.dataset?.acronym || 'BRG';
                     const dateParts = tglMasuk ? tglMasuk.split('-') : [];
                     const formattedDate = dateParts.length === 3 ? `${dateParts[2]}${dateParts[1]}${dateParts[0]}` : '01012026';
-                    batchInput.value = `${acronym}-${formattedDate}-01`;
+                    const prefix = `${acronym}-${formattedDate}-`;
+                    let maxNum = 0;
+                    existingBatches.forEach(b => {
+                        if (b.startsWith(prefix)) {
+                            const n = parseInt(b.substring(prefix.length), 10);
+                            if (!isNaN(n) && n > maxNum) maxNum = n;
+                        }
+                    });
+                    batchInput.value = `${prefix}${String(maxNum + 1).padStart(2, '0')}`;
                 }
             } catch (err) {
                 console.error('Gagal mengambil nomor batch berikutnya:', err);
                 const acronym = selectedOption?.dataset?.acronym || 'BRG';
                 const dateParts = tglMasuk ? tglMasuk.split('-') : [];
                 const formattedDate = dateParts.length === 3 ? `${dateParts[2]}${dateParts[1]}${dateParts[0]}` : '01012026';
-                batchInput.value = `${acronym}-${formattedDate}-01`;
+                const prefix = `${acronym}-${formattedDate}-`;
+                let maxNum = 0;
+                existingBatches.forEach(b => {
+                    if (b.startsWith(prefix)) {
+                        const n = parseInt(b.substring(prefix.length), 10);
+                        if (!isNaN(n) && n > maxNum) maxNum = n;
+                    }
+                });
+                batchInput.value = `${prefix}${String(maxNum + 1).padStart(2, '0')}`;
             }
         }
 

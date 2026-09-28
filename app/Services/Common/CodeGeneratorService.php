@@ -533,12 +533,19 @@ class CodeGeneratorService
             ->pluck('batch_no')
             ->toArray();
 
-        $existingCodes = array_unique(array_merge($existingCodesDtl, $existingCodesStok, $excludeBatches));
+        // PENTING: Hanya filter excludeBatches yang memiliki prefix barang & tanggal yang SAMA
+        // agar barang berbeda tidak menaikkan nomor urut barang lainnya
+        $relevantExclude = array_filter($excludeBatches, fn($b) => str_starts_with((string)$b, $prefix));
+
+        $existingCodes = array_unique(array_merge($existingCodesDtl, $existingCodesStok, $relevantExclude));
 
         $maxNumber = 0;
         $prefixLen = strlen($prefix);
 
         foreach ($existingCodes as $code) {
+            if (!str_starts_with((string)$code, $prefix)) {
+                continue;
+            }
             $suffix = substr($code, $prefixLen);
             if (preg_match('/^(\d+)/', $suffix, $matches)) {
                 $num = (int) $matches[1];
@@ -553,7 +560,7 @@ class CodeGeneratorService
             $generated = $prefix . str_pad((string) $maxNumber, 2, '0', STR_PAD_LEFT);
             $existsInDtl = DB::table('dat_terima_dtl')->where('batch_no', $generated)->exists();
             $existsInStok = DB::table('dat_stok_batch')->where('batch_no', $generated)->exists();
-            $existsInExclude = in_array($generated, $excludeBatches);
+            $existsInExclude = in_array($generated, $relevantExclude);
         } while ($existsInDtl || $existsInStok || $existsInExclude);
 
         return $generated;

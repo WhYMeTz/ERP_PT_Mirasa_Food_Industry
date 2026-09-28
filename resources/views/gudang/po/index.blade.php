@@ -18,66 +18,63 @@
     </div>
 </div>
 
-{{-- 4 KARTU METRIK OPERASIONAL (QUICK FILTER 1-KLIK) --}}
+{{-- 4 KARTU METRIK OPERASIONAL (INFORMATIF) --}}
 @php
     $currentStatus = $status ?? '';
 @endphp
 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
     {{-- SEMUA PO --}}
-    <a href="{{ route('gudang.po.index') }}" 
-       style="display: block; text-decoration: none; background: #ffffff; border-radius: 8px; border: 1.5px solid {{ empty($currentStatus) ? '#0284c7' : '#e2e8f0' }}; padding: 1rem 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04); transition: all 0.15s ease;">
+    <div style="background: #ffffff; border-radius: 8px; border: 1px solid #e2e8f0; padding: 1rem 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
         <div style="display: flex; justify-content: space-between; align-items: flex-start;">
             <div>
-                <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: {{ empty($currentStatus) ? '#0284c7' : '#64748b' }};">
+                <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b;">
                     Semua Dokumen PO
                 </span>
                 <div style="font-size: 1.5rem; font-weight: 700; color: #0f172a; margin-top: 0.25rem;">
                     {{ number_format($statusCounts['all'] ?? 0) }}
                 </div>
             </div>
-            <div style="width: 32px; height: 32px; border-radius: 6px; background: {{ empty($currentStatus) ? '#e0f2fe' : '#f1f5f9' }}; display: flex; align-items: center; justify-content: center; color: {{ empty($currentStatus) ? '#0284c7' : '#64748b' }};">
+            <div style="width: 32px; height: 32px; border-radius: 6px; background: #f1f5f9; display: flex; align-items: center; justify-content: center; color: #475569;">
                 <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
             </div>
         </div>
         <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.4rem;">
             Total transaksi pengadaan aktif
         </div>
-    </a>
+    </div>
 
     {{-- MENUNGGU PENGIRIMAN (APPROVED) --}}
-    <a href="{{ route('gudang.po.index', ['status' => 'APPROVED']) }}" 
-       style="display: block; text-decoration: none; background: #ffffff; border-radius: 8px; border: 1.5px solid {{ $currentStatus === 'APPROVED' ? '#0284c7' : '#e2e8f0' }}; padding: 1rem 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04); transition: all 0.15s ease;">
+    <div style="background: #ffffff; border-radius: 8px; border: 1px solid #e2e8f0; padding: 1rem 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
         <div style="display: flex; justify-content: space-between; align-items: flex-start;">
             <div>
-                <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: {{ $currentStatus === 'APPROVED' ? '#0284c7' : '#64748b' }};">
+                <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #0284c7;">
                     Menunggu Pengiriman
                 </span>
                 <div style="font-size: 1.5rem; font-weight: 700; color: #0f172a; margin-top: 0.25rem;">
                     {{ number_format($statusCounts['approved'] ?? 0) }}
                 </div>
             </div>
-            <div style="width: 32px; height: 32px; border-radius: 6px; background: {{ $currentStatus === 'APPROVED' ? '#e0f2fe' : '#f1f5f9' }}; display: flex; align-items: center; justify-content: center; color: {{ $currentStatus === 'APPROVED' ? '#0284c7' : '#64748b' }};">
+            <div style="width: 32px; height: 32px; border-radius: 6px; background: #e0f2fe; display: flex; align-items: center; justify-content: center; color: #0284c7;">
                 <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
             </div>
         </div>
         <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.4rem;">
             PO disetujui &bull; Supplier siap kirim
         </div>
-    </a>
+    </div>
 
     {{-- MASUK SEBAGIAN (PARTIAL) --}}
-    <a href="{{ route('gudang.po.index', ['status' => 'PARTIAL']) }}" 
-       style="display: block; text-decoration: none; background: #ffffff; border-radius: 8px; border: 1.5px solid {{ $currentStatus === 'PARTIAL' ? '#d97706' : '#e2e8f0' }}; padding: 1rem 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04); transition: all 0.15s ease;">
+    <div style="background: #ffffff; border-radius: 8px; border: 1px solid #e2e8f0; padding: 1rem 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
         <div style="display: flex; justify-content: space-between; align-items: flex-start;">
             <div>
-                <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: {{ $currentStatus === 'PARTIAL' ? '#d97706' : '#64748b' }};">
+                <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #d97706;">
                     Masuk Sebagian (Parsial)
                 </span>
                 <div style="font-size: 1.5rem; font-weight: 700; color: #0f172a; margin-top: 0.25rem;">
                     {{ number_format($statusCounts['partial'] ?? 0) }}
                 </div>
             </div>
-            <div style="width: 32px; height: 32px; border-radius: 6px; background: {{ $currentStatus === 'PARTIAL' ? '#fef3c7' : '#f1f5f9' }}; display: flex; align-items: center; justify-content: center; color: {{ $currentStatus === 'PARTIAL' ? '#d97706' : '#64748b' }};">
+            <div style="width: 32px; height: 32px; border-radius: 6px; background: #fef3c7; display: flex; align-items: center; justify-content: center; color: #d97706;">
                 <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 17a2 2 0 100-4 2 2 0 000 4zm10 0a2 2 0 100-4 2 2 0 000 4zM4 17h1m4 0h6m4 0h1m-1-4V6a1 1 0 00-1-1H4a1 1 0 00-1 1v7m14 0h3l2 3v1a1 1 0 01-1 1h-1m-17 0H3a1 1 0 01-1-1v-1l2-3h12"/>
                 </svg>
@@ -86,28 +83,27 @@
         <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.4rem;">
             Truk sudah tiba &bull; Masih ada sisa
         </div>
-    </a>
+    </div>
 
     {{-- SELESAI / DITUTUP --}}
-    <a href="{{ route('gudang.po.index', ['status' => 'COMPLETED_CLOSED']) }}" 
-       style="display: block; text-decoration: none; background: #ffffff; border-radius: 8px; border: 1.5px solid {{ in_array($currentStatus, ['COMPLETED_CLOSED', 'COMPLETED', 'CLOSED']) ? '#059669' : '#e2e8f0' }}; padding: 1rem 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04); transition: all 0.15s ease;">
+    <div style="background: #ffffff; border-radius: 8px; border: 1px solid #e2e8f0; padding: 1rem 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
         <div style="display: flex; justify-content: space-between; align-items: flex-start;">
             <div>
-                <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: {{ in_array($currentStatus, ['COMPLETED_CLOSED', 'COMPLETED', 'CLOSED']) ? '#059669' : '#64748b' }};">
+                <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #059669;">
                     Selesai &amp; Ditutup
                 </span>
                 <div style="font-size: 1.5rem; font-weight: 700; color: #0f172a; margin-top: 0.25rem;">
                     {{ number_format($statusCounts['completed'] ?? 0) }}
                 </div>
             </div>
-            <div style="width: 32px; height: 32px; border-radius: 6px; background: {{ in_array($currentStatus, ['COMPLETED_CLOSED', 'COMPLETED', 'CLOSED']) ? '#d1fae5' : '#f1f5f9' }}; display: flex; align-items: center; justify-content: center; color: {{ in_array($currentStatus, ['COMPLETED_CLOSED', 'COMPLETED', 'CLOSED']) ? '#059669' : '#64748b' }};">
+            <div style="width: 32px; height: 32px; border-radius: 6px; background: #d1fae5; display: flex; align-items: center; justify-content: center; color: #059669;">
                 <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
             </div>
         </div>
         <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.4rem;">
             Pengadaan selesai &bull; Arsip tuntas
         </div>
-    </a>
+    </div>
 </div>
 
 {{-- KARTU TABEL UTAMA --}}

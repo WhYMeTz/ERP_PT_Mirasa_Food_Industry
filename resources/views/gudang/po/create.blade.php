@@ -105,7 +105,64 @@
     .sup-option-item:last-child {
         border-bottom: none;
     }
+
+    /* PO Mode Switcher (Konsep 1: Auto-Split PO) */
+    .po-mode-btn {
+        background: transparent;
+        border: none;
+        padding: 0.4rem 0.95rem;
+        font-size: 0.8rem;
+        font-weight: 600;
+        border-radius: 5px;
+        color: #64748b;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+    .po-mode-btn.active {
+        background: #ffffff;
+        color: #0f172a;
+        font-weight: 700;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    .po-mode-btn:hover:not(.active) {
+        color: #1e293b;
+    }
 </style>
+
+@php
+    // Siapkan daftar option supplier untuk digunakan di baris tabel (Mode Multi-Supplier / Auto-Split)
+    $supplierOptionsHtml = '<option value="">-- Pilih Supplier Mitra --</option>';
+    if (isset($jenisSupplierList) && $jenisSupplierList->count() > 0) {
+        foreach ($jenisSupplierList as $js) {
+            $subs = $supplierList->filter(fn($s) => $s->jenis_supplier_id == $js->jenis_supplier_id);
+            if ($subs->count() > 0) {
+                $icon = match($js->jenis_supplier_cd) {
+                    'RAW', 'BB' => '🌾 ',
+                    'BUMBU'     => '🧂 ',
+                    'KEMASAN', 'PACK' => '📦 ',
+                    'BP'        => '🏭 ',
+                    default     => ''
+                };
+                $supplierOptionsHtml .= '<optgroup label="' . htmlspecialchars($icon . $js->jenis_supplier_nm) . '">';
+                foreach ($subs as $s) {
+                    $supplierOptionsHtml .= '<option value="' . $s->supplier_id . '" data-category="' . ($js->jenis_supplier_cd ?? 'OTHER') . '">' . htmlspecialchars($s->supplier_nm . ' (' . $s->supplier_cd . ')') . '</option>';
+                }
+                $supplierOptionsHtml .= '</optgroup>';
+            }
+        }
+    }
+    $others = $supplierList->whereNull('jenis_supplier_id');
+    if ($others->count() > 0) {
+        $supplierOptionsHtml .= '<optgroup label="Lainnya">';
+        foreach ($others as $s) {
+            $supplierOptionsHtml .= '<option value="' . $s->supplier_id . '" data-category="OTHER">' . htmlspecialchars($s->supplier_nm . ' (' . $s->supplier_cd . ')') . '</option>';
+        }
+        $supplierOptionsHtml .= '</optgroup>';
+    }
+@endphp
 
 <div style="margin-bottom: 1.25rem;">
     <a href="{{ route('gudang.po.index') }}" style="color: #64748b; text-decoration: none; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.35rem; margin-bottom: 0.35rem;">
@@ -130,6 +187,27 @@
                 <div class="card-header" style="background: #ffffff; padding: 0.875rem 1.25rem; border-bottom: 1px solid #e2e8f0;">
                     <strong style="color: #0f172a; font-size: 0.95rem;">1. Informasi Dokumen &amp; Rekanan</strong>
                 </div>
+
+                {{-- SEGMENTED MODE SWITCHER: KONSEP 1 (AUTO-SPLIT PO) --}}
+                <div style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0.75rem 1.25rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem;">
+                    <div>
+                        <div style="font-size: 0.725rem; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.35rem;">
+                            Mode Alur Pemesanan:
+                        </div>
+                        <div style="display: inline-flex; background: #e2e8f0; padding: 3px; border-radius: 6px; gap: 3px;">
+                            <button type="button" id="btnModeSingle" onclick="setPoMode('single')" class="po-mode-btn active">
+                                🏢 Satu Supplier (Standar 1 PO)
+                            </button>
+                            <button type="button" id="btnModeMulti" onclick="setPoMode('multi')" class="po-mode-btn">
+                                ⚡ Multi-Supplier (Auto-Split PO)
+                            </button>
+                        </div>
+                    </div>
+                    <div id="modeDescription" style="font-size: 0.8rem; color: #64748b; max-width: 480px; line-height: 1.4;">
+                        Mode standar: Seluruh barang dalam formulir ini dipesan ke 1 supplier utama di bawah (diterbitkan sebagai 1 dokumen PO resmi).
+                    </div>
+                </div>
+
                 <div style="padding: 1.25rem; display: flex; flex-direction: column; gap: 1.25rem;">
                     
                     {{-- BARIS 1: NOMOR PO, TANGGAL PO, ESTIMASI TIBA --}}
@@ -137,7 +215,7 @@
                         <div class="form-group" style="margin-bottom: 0;">
                             <label for="po_no" class="form-label" style="font-weight: 600; font-size: 0.85rem;">Nomor PO <span style="color:#ef4444;">*</span></label>
                             <input type="text" id="po_no" name="po_no" value="{{ old('po_no', $nextPoNo ?? '') }}" class="form-control" style="background: #f8fafc; font-weight: 600;" required>
-                            <small style="color: #64748b; font-size: 0.725rem;">Nomor urut otomatis sistem pengadaan.</small>
+                            <small id="po_no_help" style="color: #64748b; font-size: 0.725rem;">Nomor urut otomatis sistem pengadaan.</small>
                         </div>
 
                         <div class="form-group" style="margin-bottom: 0;">
@@ -156,8 +234,8 @@
                     <div style="display: grid; grid-template-columns: 1.25fr 1fr; gap: 1.25rem;">
                         <div class="form-group" style="margin-bottom: 0;">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
-                                <label class="form-label" style="font-weight: 600; font-size: 0.85rem; margin-bottom: 0;">
-                                    Supplier Mitra <span style="color:#ef4444;">*</span>
+                                <label id="lblSupplierHeader" class="form-label" style="font-weight: 600; font-size: 0.85rem; margin-bottom: 0;">
+                                    Supplier Mitra <span id="reqSupplierHeader" style="color:#ef4444;">*</span>
                                 </label>
                                 <span id="supplier_count_badge" style="font-size: 0.725rem; color: #64748b;">
                                     Total: {{ $supplierList->count() }} supplier
@@ -299,28 +377,42 @@
                     </div>
                 </div>
 
-                {{-- FILTER BAR CEPAT UNTUK KATEGORI BARANG --}}
-                <div style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0.6rem 1.25rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
+                {{-- FILTER BAR CEPAT UNTUK KATEGORI BARANG & REKANAN SUPPLIER --}}
+                <div style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0.6rem 1.25rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.65rem;">
                     <div style="display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;">
                         <span style="font-size: 0.75rem; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.03em; margin-right: 0.25rem;">
-                            Filter Kategori Barang:
+                            Filter Kategori:
                         </span>
                         <button type="button" class="barang-filter-chip active" data-category="ALL" onclick="filterBarangCategory('ALL', this)">
-                            Semua Bahan ({{ $barangList->count() }})
+                            Semua (36 Bahan / 60 Rekanan)
                         </button>
                         <button type="button" class="barang-filter-chip" data-category="BB" onclick="filterBarangCategory('BB', this)">
-                            🌾 Bahan Baku Mentah ({{ $barangList->filter(fn($b) => in_array($b->jenisBarang?->jenis_barang_cd, ['RAW', 'BB']))->count() }})
+                            🌾 Bahan Baku Mentah (37 Petani)
                         </button>
                         <button type="button" class="barang-filter-chip" data-category="BUMBU" onclick="filterBarangCategory('BUMBU', this)">
-                            🧂 Bumbu &amp; Penolong ({{ $barangList->filter(fn($b) => in_array($b->jenisBarang?->jenis_barang_cd, ['SUPP', 'BUMBU', 'BP']) && !preg_match('/(PLASTIK|KARTON|ROLL|LAKBAN|SARUNG|RAFIA)/i', $b->barang_nm))->count() }})
+                            🧂 Bumbu &amp; Penolong (16 Rekanan)
                         </button>
                         <button type="button" class="barang-filter-chip" data-category="PACK" onclick="filterBarangCategory('PACK', this)">
-                            📦 Kemasan &amp; Packaging ({{ $barangList->filter(fn($b) => in_array($b->jenisBarang?->jenis_barang_cd, ['PACK']) || (in_array($b->jenisBarang?->jenis_barang_cd, ['BP']) && preg_match('/(PLASTIK|KARTON|ROLL|LAKBAN|SARUNG|RAFIA)/i', $b->barang_nm)))->count() }})
+                            📦 Kemasan &amp; Packaging (7 Vendor)
                         </button>
                     </div>
-                    <div style="font-size: 0.725rem; color: #0284c7; font-weight: 600; display: flex; align-items: center; gap: 0.25rem;">
-                        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                        <span>Barang Jadi (FG) &amp; Setengah Jadi (WIP) otomatis dikecualikan dari PO</span>
+
+                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                        {{-- Quick Search Supplier Khusus Tabel (Aktif pada mode multi-supplier) --}}
+                        <div id="table_supplier_search_box" style="display: none; align-items: center; gap: 0.35rem;">
+                            <div style="position: relative;">
+                                <input type="text" id="table_sup_search_input" oninput="filterTableSuppliersBySearch(this.value)" placeholder="🔍 Filter supplier di tabel..." class="form-control" style="height: 28px; font-size: 0.75rem; padding: 0.2rem 0.5rem 0.2rem 1.6rem !important; width: 190px; border-radius: 4px; border: 1px solid #cbd5e1;">
+                                <span style="position: absolute; left: 0.45rem; top: 50%; transform: translateY(-50%); color: #94a3b8; pointer-events: none; font-size: 0.725rem;">🔍</span>
+                            </div>
+                            <button type="button" onclick="clearTableSupSearch()" class="btn btn-sm" style="padding: 0.15rem 0.5rem; font-size: 0.7rem; background: #e2e8f0; color: #475569; border: none; border-radius: 4px; height: 28px; cursor: pointer; font-weight: 600;">
+                                Reset
+                            </button>
+                        </div>
+
+                        <div style="font-size: 0.725rem; color: #0284c7; font-weight: 600; display: flex; align-items: center; gap: 0.25rem;">
+                            <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            <span>Barang &amp; Supplier otomatis tersaring sesuai kategori</span>
+                        </div>
                     </div>
                 </div>
 
@@ -395,11 +487,14 @@
                         <thead>
                             <tr>
                                 <th style="width: 35px; text-align: center;">No</th>
-                                <th style="min-width: 280px; text-align: left;">Nama Komoditas / Bahan Baku <span style="color:#ef4444;">*</span></th>
-                                <th style="width: 100px; text-align: center;">Satuan</th>
-                                <th style="width: 130px; text-align: right;">Kuantitas <span style="color:#ef4444;">*</span></th>
-                                <th style="width: 160px; text-align: right;">Harga Satuan (Rp)</th>
-                                <th style="width: 160px; text-align: right;">Subtotal (Rp)</th>
+                                <th style="min-width: 260px; text-align: left;">Nama Komoditas / Bahan Baku <span style="color:#ef4444;">*</span></th>
+                                <th class="col-supplier" style="display: none; min-width: 220px; text-align: left;">
+                                    Supplier Mitra <span style="color:#ef4444;">*</span>
+                                </th>
+                                <th style="width: 90px; text-align: center;">Satuan</th>
+                                <th style="width: 120px; text-align: right;">Kuantitas <span style="color:#ef4444;">*</span></th>
+                                <th style="width: 150px; text-align: right;">Harga Satuan (Rp)</th>
+                                <th style="width: 150px; text-align: right;">Subtotal (Rp)</th>
                                 <th style="width: 45px; text-align: center;">Hapus</th>
                             </tr>
                         </thead>
@@ -436,6 +531,12 @@
                                         </optgroup>
                                     </select>
                                 </td>
+                                <td class="col-supplier" style="display: none;">
+                                    <select name="items[0][supplier_id]" class="form-control item-supplier" onchange="calculateGrandTotal()">
+                                        {!! $supplierOptionsHtml !!}
+                                    </select>
+                                    <div class="row-supplier-hint" style="font-size: 0.68rem; margin-top: 2px; display: none;"></div>
+                                </td>
                                 <td style="text-align: center;">
                                     <span class="row-satuan" style="font-weight: 600; color: #475569;">-</span>
                                 </td>
@@ -455,7 +556,7 @@
                         </tbody>
                         <tfoot>
                             <tr style="background: #f8fafc; font-weight: 700; border-top: 2px solid #cbd5e1;">
-                                <td colspan="3" style="text-align: right; padding: 0.75rem 1rem; color: #334155; font-size: 0.85rem;">Total Kuantitas:</td>
+                                <td id="tfootQtyColspan" colspan="3" style="text-align: right; padding: 0.75rem 1rem; color: #334155; font-size: 0.85rem;">Total Kuantitas:</td>
                                 <td id="totalQtyDisplay" style="padding: 0.75rem 0.5rem; text-align: right; color: #0284c7; font-size: 0.95rem;">1.00</td>
                                 <td style="text-align: right; padding: 0.75rem 1rem; color: #334155; font-size: 0.85rem;">Grand Total Pesanan:</td>
                                 <td id="grandTotalDisplay" style="text-align: right; padding: 0.75rem 0.5rem; font-size: 1.05rem; color: #0284c7;">Rp 0</td>
@@ -501,12 +602,20 @@
                             <span style="color: #64748b;">Total Volume Kuantitas:</span>
                             <strong style="color: #0284c7;"><span id="sideTotalQty">1.00</span> Unit</strong>
                         </div>
+                        <div id="sideAutoSplitBox" style="display: none; padding-top: 0.5rem; border-top: 1px dashed #cbd5e1;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                                <span style="color: #64748b; font-size: 0.75rem;">Estimasi Penerbitan:</span>
+                                <span id="sidePoCountBadge" class="badge" style="background: #e0f2fe; color: #0284c7; font-weight: 700; font-size: 0.725rem;">1 Dokumen PO</span>
+                            </div>
+                            <div id="sidePoSupplierList" style="font-size: 0.725rem; color: #334155; line-height: 1.4; max-height: 120px; overflow-y: auto;">
+                            </div>
+                        </div>
                     </div>
 
                     {{-- TOMBOL UTAMA: SIMPAN & TERBITKAN PO (TIDAK PERNAH TENGGELAM) --}}
-                    <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.75rem 1rem; font-size: 0.95rem; font-weight: 700; background: #059669; justify-content: center; box-shadow: 0 4px 6px -1px rgba(5, 150, 105, 0.25); display: flex; align-items: center; gap: 0.5rem;">
+                    <button type="submit" id="btnSubmitPo" class="btn btn-primary" style="width: 100%; padding: 0.75rem 1rem; font-size: 0.95rem; font-weight: 700; background: #059669; justify-content: center; box-shadow: 0 4px 6px -1px rgba(5, 150, 105, 0.25); display: flex; align-items: center; gap: 0.5rem;">
                         <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                        Simpan &amp; Terbitkan PO
+                        <span id="btnSubmitPoText">Simpan &amp; Terbitkan PO</span>
                     </button>
 
                     <a href="{{ route('gudang.po.index') }}" class="btn btn-secondary" style="width: 100%; justify-content: center; margin-top: 0.65rem; font-size: 0.85rem; padding: 0.5rem;">
@@ -644,6 +753,16 @@
         supSearchWrapper.style.display = 'none';
         supDropdownList.style.display = 'none';
 
+        // Jika dalam mode multi-supplier, otomatis isi baris item yang suppliernya masih kosong
+        if (typeof currentPoMode !== 'undefined' && currentPoMode === 'multi') {
+            document.querySelectorAll('.item-supplier').forEach(sel => {
+                if (!sel.value) {
+                    sel.value = sup.id;
+                }
+            });
+        }
+        calculateGrandTotal();
+
         // Auto filter barang kategori sesuai supplier jika relevan
         if (sup.category === 'RAW') {
             const bbChip = document.querySelector('.barang-filter-chip[data-category="BB"]');
@@ -665,6 +784,7 @@
         renderSupplierDropdown('');
         supDropdownList.style.display = 'block';
         supSearchInput.focus();
+        calculateGrandTotal();
     }
 
     // Event listener search input
@@ -733,22 +853,125 @@
 
 
     // =========================================================================
-    // 2. FILTER KATEGORI BARANG PADA TABEL PO
+    // 2. FILTER KATEGORI BARANG & SUPPLIER PADA TABEL PO
     // =========================================================================
     let activeBarangCategory = 'ALL';
+    let currentTableSupSearch = '';
+
+    /**
+     * Menghasilkan string HTML <option> dan <optgroup> supplier berdasarkan kategori & kata kunci pencarian.
+     */
+    function generateSupplierOptionsHtml(category = 'ALL', selectedId = '', searchQuery = '') {
+        const q = (searchQuery || '').trim().toLowerCase();
+
+        const groups = [
+            { key: 'RAW', label: '🌾 BAHAN BAKU / PETANI SINGKONG' },
+            { key: 'BUMBU', label: '🧂 BUMBU & BAHAN PENOLONG' },
+            { key: 'KEMASAN', label: '📦 KEMASAN & PACKAGING' },
+            { key: 'BP', label: '🏭 PENOLONG INDUSTRI' },
+            { key: 'OTHER', label: 'LAINNYA' }
+        ];
+
+        let html = '<option value="">-- Pilih Supplier Mitra --</option>';
+        let totalCount = 0;
+
+        groups.forEach(grp => {
+            let isAllowed = false;
+            if (category === 'ALL') {
+                isAllowed = true;
+            } else if (category === 'BB' || category === 'RAW') {
+                isAllowed = (grp.key === 'RAW');
+            } else if (category === 'BUMBU') {
+                isAllowed = (grp.key === 'BUMBU' || grp.key === 'BP');
+            } else if (category === 'PACK' || category === 'KEMASAN') {
+                isAllowed = (grp.key === 'KEMASAN');
+            }
+
+            if (isAllowed) {
+                const list = suppliersData.filter(s => {
+                    const matchCat = (s.category === grp.key);
+                    const matchText = !q || s.name.toLowerCase().includes(q) || s.code.toLowerCase().includes(q);
+                    return matchCat && matchText;
+                });
+
+                if (list.length > 0) {
+                    totalCount += list.length;
+                    html += `<optgroup label="${grp.label} (${list.length})">`;
+                    list.forEach(s => {
+                        const isSelected = (s.id == selectedId) ? 'selected' : '';
+                        html += `<option value="${s.id}" data-category="${s.category}" ${isSelected}>${escapeHtml(s.name)} (${escapeHtml(s.code)})</option>`;
+                    });
+                    html += `</optgroup>`;
+                }
+            }
+        });
+
+        if (totalCount === 0) {
+            html = `<option value="">-- Tidak ada supplier yang cocok (${escapeHtml(searchQuery || category)}) --</option>`;
+        }
+
+        return { html, totalCount };
+    }
+
+    /**
+     * Merender dropdown supplier dan badge keterangan filter pada baris tabel tertentu.
+     */
+    function renderSupplierSelectOptions(selectElem, category = 'ALL', searchQuery = '') {
+        if (!selectElem) return;
+        const currentVal = selectElem.value;
+        const { html, totalCount } = generateSupplierOptionsHtml(category, currentVal, searchQuery);
+        selectElem.innerHTML = html;
+
+        // Pertahankan nilai supplier yang terpilih jika masih tersedia di hasil filter
+        if (currentVal) {
+            selectElem.value = currentVal;
+        }
+
+        // Tampilkan badge indikator di bawah select
+        const row = selectElem.closest('tr');
+        if (row) {
+            const hint = row.querySelector('.row-supplier-hint');
+            if (hint) {
+                if (category === 'BB' || category === 'RAW') {
+                    hint.innerHTML = `<span style="color:#15803d; font-weight:600;">🌾 ${totalCount} Petani Bahan Baku</span>`;
+                    hint.style.display = 'block';
+                } else if (category === 'BUMBU') {
+                    hint.innerHTML = `<span style="color:#b45309; font-weight:600;">🧂 ${totalCount} Supplier Bumbu &amp; Penolong</span>`;
+                    hint.style.display = 'block';
+                } else if (category === 'PACK') {
+                    hint.innerHTML = `<span style="color:#7c3aed; font-weight:600;">📦 ${totalCount} Vendor Kemasan</span>`;
+                    hint.style.display = 'block';
+                } else if (searchQuery) {
+                    hint.innerHTML = `<span style="color:#0284c7; font-weight:600;">🔍 ${totalCount} Supplier Cocok</span>`;
+                    hint.style.display = 'block';
+                } else {
+                    hint.style.display = 'none';
+                }
+            }
+        }
+    }
 
     function filterBarangCategory(category, btn) {
         activeBarangCategory = category;
         document.querySelectorAll('.barang-filter-chip').forEach(c => c.classList.remove('active'));
         if (btn) btn.classList.add('active');
 
-        // Update semua dropdown item-barang yang ada di tabel
-        document.querySelectorAll('.item-barang').forEach(select => {
-            applyBarangCategoryFilterToSelect(select, category);
+        // Update semua baris di tabel: filter barang dan filter supplier
+        document.querySelectorAll('.item-row').forEach(row => {
+            const barangSelect = row.querySelector('.item-barang');
+            applyBarangCategoryFilterToSelect(barangSelect, category);
+
+            const supSelect = row.querySelector('.item-supplier');
+            if (supSelect) {
+                const selectedBarangOpt = barangSelect ? barangSelect.options[barangSelect.selectedIndex] : null;
+                const targetCat = (selectedBarangOpt && selectedBarangOpt.value) ? selectedBarangOpt.dataset.category : category;
+                renderSupplierSelectOptions(supSelect, targetCat, currentTableSupSearch);
+            }
         });
     }
 
     function applyBarangCategoryFilterToSelect(selectElem, category) {
+        if (!selectElem) return;
         const grpBb = selectElem.querySelector('.grp-bb');
         const grpBumbu = selectElem.querySelector('.grp-bumbu');
         const grpPack = selectElem.querySelector('.grp-pack');
@@ -772,9 +995,114 @@
         }
     }
 
+    /**
+     * Pencarian cepat supplier di tabel (saat mode multi-supplier aktif).
+     */
+    function filterTableSuppliersBySearch(query) {
+        currentTableSupSearch = query;
+        document.querySelectorAll('.item-row').forEach(row => {
+            const barangSelect = row.querySelector('.item-barang');
+            const selectedBarangOpt = barangSelect ? barangSelect.options[barangSelect.selectedIndex] : null;
+            const targetCat = (selectedBarangOpt && selectedBarangOpt.value) ? selectedBarangOpt.dataset.category : activeBarangCategory;
+
+            const supSelect = row.querySelector('.item-supplier');
+            if (supSelect) {
+                renderSupplierSelectOptions(supSelect, targetCat, query);
+            }
+        });
+    }
+
+    function clearTableSupSearch() {
+        const inp = document.getElementById('table_sup_search_input');
+        if (inp) inp.value = '';
+        filterTableSuppliersBySearch('');
+    }
 
     // =========================================================================
-    // 3. LOGIKA BARIS TABEL PO, KALKULASI & KEYBOARD EXCEL
+    // 3. LOGIKA MODE PEMESANAN (KONSEP 1: AUTO-SPLIT PO VS SINGLE SUPPLIER)
+    // =========================================================================
+    let currentPoMode = 'single'; // 'single' atau 'multi'
+
+    function setPoMode(mode) {
+        currentPoMode = mode;
+        const btnSingle = document.getElementById('btnModeSingle');
+        const btnMulti = document.getElementById('btnModeMulti');
+        const modeDesc = document.getElementById('modeDescription');
+        const colSuppliers = document.querySelectorAll('.col-supplier');
+        const tfootQty = document.getElementById('tfootQtyColspan');
+        const supHeaderLabel = document.getElementById('lblSupplierHeader');
+        const supHeaderRequired = document.getElementById('reqSupplierHeader');
+        const supHeaderSelect = document.getElementById('supplier_id');
+        const sideAutoSplitBox = document.getElementById('sideAutoSplitBox');
+        const poNoHelp = document.getElementById('po_no_help');
+        const tblSupSearchBox = document.getElementById('table_supplier_search_box');
+
+        if (mode === 'multi') {
+            btnSingle.classList.remove('active');
+            btnMulti.classList.add('active');
+            modeDesc.innerHTML = `<span style="color:#0284c7; font-weight:700;">⚡ Konsep 1 Aktif:</span> Anda dapat menentukan supplier mitra berbeda pada setiap baris barang. Sistem akan memecah secara otomatis menjadi beberapa dokumen PO resmi terpisah (1 PO per supplier).`;
+
+            if (poNoHelp) {
+                poNoHelp.innerText = 'Prefix / nomor urut dasar untuk pemecahan PO otomatis per-supplier.';
+            }
+
+            if (supHeaderRequired) supHeaderRequired.style.display = 'none';
+            if (supHeaderLabel) {
+                supHeaderLabel.innerHTML = 'Supplier Utama <span style="font-size:0.75rem; color:#64748b; font-weight:normal;">(Opsional / Default Baris)</span>';
+            }
+            if (supHeaderSelect) supHeaderSelect.removeAttribute('required');
+
+            colSuppliers.forEach(el => el.style.display = '');
+            if (tfootQty) tfootQty.setAttribute('colspan', '4');
+            if (tblSupSearchBox) tblSupSearchBox.style.display = 'flex';
+
+            document.querySelectorAll('.item-row').forEach(row => {
+                const barangSelect = row.querySelector('.item-barang');
+                const selectedBarangOpt = barangSelect ? barangSelect.options[barangSelect.selectedIndex] : null;
+                const targetCat = (selectedBarangOpt && selectedBarangOpt.value) ? selectedBarangOpt.dataset.category : activeBarangCategory;
+
+                const supSelect = row.querySelector('.item-supplier');
+                if (supSelect) {
+                    supSelect.setAttribute('required', 'required');
+                    renderSupplierSelectOptions(supSelect, targetCat, currentTableSupSearch);
+                    if (!supSelect.value && supHiddenSelect.value) {
+                        supSelect.value = supHiddenSelect.value;
+                    }
+                }
+            });
+
+            if (sideAutoSplitBox) sideAutoSplitBox.style.display = 'block';
+        } else {
+            btnSingle.classList.add('active');
+            btnMulti.classList.remove('active');
+            modeDesc.innerHTML = `Mode standar: Seluruh barang dalam formulir ini dipesan ke 1 supplier utama di bawah (diterbitkan sebagai 1 dokumen PO resmi).`;
+
+            if (poNoHelp) {
+                poNoHelp.innerText = 'Nomor urut otomatis sistem pengadaan.';
+            }
+
+            if (supHeaderRequired) supHeaderRequired.style.display = 'inline';
+            if (supHeaderLabel) {
+                supHeaderLabel.innerHTML = 'Supplier Mitra <span style="color:#ef4444;">*</span>';
+            }
+            if (supHeaderSelect) supHeaderSelect.setAttribute('required', 'required');
+
+            colSuppliers.forEach(el => el.style.display = 'none');
+            if (tfootQty) tfootQty.setAttribute('colspan', '3');
+            if (tblSupSearchBox) tblSupSearchBox.style.display = 'none';
+
+            document.querySelectorAll('.item-supplier').forEach(sel => {
+                sel.removeAttribute('required');
+            });
+
+            if (sideAutoSplitBox) sideAutoSplitBox.style.display = 'none';
+        }
+
+        calculateGrandTotal();
+    }
+
+    // =========================================================================
+    // 4. LOGIKA BARIS TABEL PO, KALKULASI & KEYBOARD EXCEL
     // =========================================================================
     let rowIndex = 1;
 
@@ -815,6 +1143,12 @@
                     </optgroup>
                 </select>
             </td>
+            <td class="col-supplier" style="${currentPoMode === 'multi' ? '' : 'display: none;'}">
+                <select name="items[${rowIndex}][supplier_id]" class="form-control item-supplier" onchange="calculateGrandTotal()" ${currentPoMode === 'multi' ? 'required' : ''}>
+                    ${generateSupplierOptionsHtml(activeBarangCategory, '', currentTableSupSearch).html}
+                </select>
+                <div class="row-supplier-hint" style="font-size: 0.68rem; margin-top: 2px; display: none;"></div>
+            </td>
             <td style="text-align: center;">
                 <span class="row-satuan" style="font-weight: 600; color: #475569;">-</span>
             </td>
@@ -837,6 +1171,15 @@
         updateRowNumbers();
         attachExcelKeyboardEvents(tr);
 
+        // Jika dalam mode multi dan sudah ada supplier default header terpilih, isikan ke baris baru
+        const supSelect = tr.querySelector('.item-supplier');
+        if (supSelect) {
+            renderSupplierSelectOptions(supSelect, activeBarangCategory, currentTableSupSearch);
+            if (currentPoMode === 'multi' && supHiddenSelect.value) {
+                supSelect.value = supHiddenSelect.value;
+            }
+        }
+
         // Terapkan filter kategori yang sedang aktif ke select baris baru
         const select = tr.querySelector('.item-barang');
         applyBarangCategoryFilterToSelect(select, activeBarangCategory);
@@ -844,6 +1187,7 @@
         if (focusNew) {
             select.focus();
         }
+        calculateGrandTotal();
         return tr;
     }
 
@@ -871,6 +1215,7 @@
         const selectedOption = selectElem.options[selectElem.selectedIndex];
         const satuan = selectedOption ? (selectedOption.dataset.satuan || '-') : '-';
         const defaultHarga = parseFloat(selectedOption ? (selectedOption.dataset.harga || 0) : 0);
+        const barangCategory = selectedOption ? (selectedOption.dataset.category || 'ALL') : 'ALL';
 
         row.querySelector('.row-satuan').innerText = satuan;
 
@@ -878,6 +1223,13 @@
         if (defaultHarga > 0 && (!hargaInput.value || parseFloat(hargaInput.value) === 0)) {
             hargaInput.value = defaultHarga;
             calculateSubtotal(hargaInput);
+        }
+
+        // Auto-filter supplier di baris ini sesuai kategori barang terpilih!
+        const supSelect = row.querySelector('.item-supplier');
+        if (supSelect) {
+            renderSupplierSelectOptions(supSelect, barangCategory, currentTableSupSearch);
+            calculateGrandTotal();
         }
     }
 
@@ -894,12 +1246,24 @@
     function calculateGrandTotal() {
         let totalQty = 0;
         let grandTotal = 0;
+        const supplierItemCount = {};
 
         document.querySelectorAll('.item-row').forEach(row => {
             const qty = parseFloat(row.querySelector('.item-qty').value) || 0;
             const harga = parseFloat(row.querySelector('.item-harga').value) || 0;
             totalQty += qty;
             grandTotal += (qty * harga);
+
+            if (currentPoMode === 'multi') {
+                const supSelect = row.querySelector('.item-supplier');
+                let supId = supSelect ? supSelect.value : '';
+                if (!supId && supHiddenSelect.value) {
+                    supId = supHiddenSelect.value;
+                }
+                if (supId) {
+                    supplierItemCount[supId] = (supplierItemCount[supId] || 0) + 1;
+                }
+            }
         });
 
         const formattedGrandTotal = 'Rp ' + grandTotal.toLocaleString('id-ID');
@@ -909,6 +1273,49 @@
         // Update di sticky sidebar kanan
         document.getElementById('sideGrandTotal').innerText = formattedGrandTotal;
         document.getElementById('sideTotalQty').innerText = totalQty.toFixed(2);
+
+        const submitBtnText = document.getElementById('btnSubmitPoText');
+        const sidePoCountBadge = document.getElementById('sidePoCountBadge');
+        const sidePoSupplierList = document.getElementById('sidePoSupplierList');
+
+        if (currentPoMode === 'multi') {
+            const uniqueSupIds = Object.keys(supplierItemCount);
+            const splitCount = Math.max(1, uniqueSupIds.length);
+
+            if (sidePoCountBadge) {
+                sidePoCountBadge.innerText = `${splitCount} Dokumen PO`;
+                sidePoCountBadge.style.background = splitCount > 1 ? '#dcfce7' : '#e0f2fe';
+                sidePoCountBadge.style.color = splitCount > 1 ? '#15803d' : '#0284c7';
+            }
+
+            if (submitBtnText) {
+                if (splitCount > 1) {
+                    submitBtnText.innerText = `⚡ Simpan & Pecah Jadi ${splitCount} PO`;
+                } else {
+                    submitBtnText.innerText = `Simpan & Terbitkan PO`;
+                }
+            }
+
+            if (sidePoSupplierList) {
+                if (uniqueSupIds.length === 0) {
+                    sidePoSupplierList.innerHTML = `<span style="color:#94a3b8; font-style:italic;">Pilih supplier pada setiap baris item...</span>`;
+                } else {
+                    let listHtml = '<ul style="margin: 0; padding-left: 1.15rem; list-style-type: disc;">';
+                    uniqueSupIds.forEach(id => {
+                        const sup = suppliersData.find(s => s.id == id);
+                        const supName = sup ? sup.name : `Supplier #${id}`;
+                        const count = supplierItemCount[id];
+                        listHtml += `<li style="margin-bottom: 0.2rem;"><strong>${escapeHtml(supName)}</strong>: ${count} item</li>`;
+                    });
+                    listHtml += '</ul>';
+                    sidePoSupplierList.innerHTML = listHtml;
+                }
+            }
+        } else {
+            if (submitBtnText) {
+                submitBtnText.innerText = 'Simpan & Terbitkan PO';
+            }
+        }
     }
 
     // Toggle Collapsible Drawer Safety Stock
@@ -953,6 +1360,12 @@
         targetRow.querySelector('.row-satuan').innerText = satuanNm;
         targetRow.querySelector('.item-qty').value = deficitQty;
         targetRow.querySelector('.item-harga').value = defaultHarga;
+
+        if (currentPoMode === 'multi' && supHiddenSelect.value) {
+            const rowSup = targetRow.querySelector('.item-supplier');
+            if (rowSup && !rowSup.value) rowSup.value = supHiddenSelect.value;
+        }
+
         calculateSubtotal(targetRow.querySelector('.item-qty'));
     }
 
@@ -1000,5 +1413,10 @@
     document.querySelectorAll('.item-row').forEach(r => attachExcelKeyboardEvents(r));
     updateRowNumbers();
     calculateGrandTotal();
+
+    // Auto-detect jika ada old items dengan supplier_id
+    @if(old('items.0.supplier_id') || old('items.1.supplier_id'))
+        setPoMode('multi');
+    @endif
 </script>
 @endsection

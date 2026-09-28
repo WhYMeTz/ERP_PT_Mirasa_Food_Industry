@@ -18,7 +18,7 @@ class StorePoRequest extends FormRequest
             'po_no'               => 'nullable|string|max:50|unique:dat_po_hdr,po_no',
             'po_tgl'              => 'required|date',
             'tgl_estimasi_datang' => 'nullable|date',
-            'supplier_id'         => 'required|integer|exists:mst_supplier,supplier_id',
+            'supplier_id'         => 'nullable|integer|exists:mst_supplier,supplier_id',
             'gudang_id'           => 'required|integer|exists:mst_gudang,gudang_id',
             'catatan_txt'         => 'nullable|string',
 
@@ -36,10 +36,26 @@ class StorePoRequest extends FormRequest
                           });
                 }),
             ],
+            'items.*.supplier_id'       => 'nullable|integer|exists:mst_supplier,supplier_id',
             'items.*.pesan_qty'         => 'required|numeric|min:0.0001',
             'items.*.harga_nominal'     => 'nullable|numeric|min:0',
             'items.*.catatan_txt'       => 'nullable|string',
         ];
+    }
+
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator) {
+            $headerSupplier = $this->input('supplier_id');
+            $items = $this->input('items', []);
+
+            foreach ($items as $idx => $item) {
+                $itemSupplier = $item['supplier_id'] ?? $headerSupplier;
+                if (empty($itemSupplier)) {
+                    $validator->errors()->add("items.{$idx}.supplier_id", "Supplier mitra wajib dipilih pada baris ke-" . ($idx + 1) . " atau pilih Supplier Utama di header.");
+                }
+            }
+        });
     }
 
     public function messages(): array

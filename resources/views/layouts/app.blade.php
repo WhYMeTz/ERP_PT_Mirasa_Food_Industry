@@ -611,6 +611,12 @@
                                             <span class="dropdown-item-desc">Petani Singkong, Supplier Bahan</span>
                                         </div>
                                     </a>
+                                    <a href="{{ route('master.jenis_supplier.index') }}">
+                                        <div>
+                                            <span class="dropdown-item-title">Jenis Supplier</span>
+                                            <span class="dropdown-item-desc">Klasifikasi Bahan Baku, Kemasan, dll</span>
+                                        </div>
+                                    </a>
                                 @endif
                                 @if (Auth::user()->isSuperAdmin())
                                     <a href="{{ route('master.jenis.index') }}">

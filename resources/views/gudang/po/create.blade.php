@@ -62,8 +62,8 @@
         background: #ffffff !important;
     }
 
-    /* Chips Filter */
-    .sup-filter-chip, .barang-filter-chip {
+    /* Filter Chips Barang */
+    .barang-filter-chip {
         background: #f1f5f9;
         border: 1px solid #cbd5e1;
         color: #475569;
@@ -78,20 +78,48 @@
         gap: 0.25rem;
         line-height: 1.2;
     }
-    .sup-filter-chip:hover, .barang-filter-chip:hover {
+    .barang-filter-chip:hover {
         background: #e2e8f0;
         color: #1e293b;
     }
-    .sup-filter-chip.active, .barang-filter-chip.active {
+    .barang-filter-chip.active {
         background: #0284c7;
         border-color: #0284c7;
         color: #ffffff;
         box-shadow: 0 1px 3px rgba(2, 132, 199, 0.3);
     }
 
+    /* Supplier Modal Tabs (Clean Enterprise Style) */
+    .sup-modal-tab {
+        background: #ffffff;
+        border: 1px solid #cbd5e1;
+        color: #475569;
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 0.3rem 0.65rem;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.12s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        white-space: nowrap;
+    }
+    .sup-modal-tab:hover {
+        background: #f1f5f9;
+        color: #0f172a;
+        border-color: #94a3b8;
+    }
+    .sup-modal-tab.active {
+        background: #0284c7;
+        border-color: #0284c7;
+        color: #ffffff;
+        box-shadow: 0 1px 2px rgba(2, 132, 199, 0.2);
+    }
+
     /* Supplier Dropdown Items */
     .sup-option-item {
-        padding: 0.6rem 0.85rem;
+        padding: 0.65rem 0.95rem;
         border-bottom: 1px solid #f1f5f9;
         cursor: pointer;
         transition: background 0.1s ease;
@@ -104,6 +132,15 @@
     }
     .sup-option-item:last-child {
         border-bottom: none;
+    }
+
+    /* Supplier Modal Table Row (Excel Table Standard) */
+    .sup-modal-row {
+        cursor: pointer;
+        transition: background 0.08s ease;
+    }
+    .sup-modal-row:hover td {
+        background: #f0f9ff !important;
     }
 </style>
 
@@ -120,15 +157,12 @@
     @csrf
 
     <div class="order-station-grid">
-        {{-- ========================================================================= --}}
-        {{-- KOLOM KIRI (70%): FORM DOKUMEN & TABEL INPUT BARANG PESANAN             --}}
-        {{-- ========================================================================= --}}
         <div style="display: flex; flex-direction: column; gap: 1.5rem;">
             
             {{-- KARTU 1: INFORMASI UTAMA DOKUMEN --}}
             <div class="card" style="border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
                 <div class="card-header" style="background: #ffffff; padding: 0.875rem 1.25rem; border-bottom: 1px solid #e2e8f0;">
-                    <strong style="color: #0f172a; font-size: 0.95rem;">1. Informasi Dokumen &amp; Rekanan</strong>
+                    <strong style="color: #0f172a; font-size: 0.95rem;">1. Informasi Dokumen &amp; Supplier</strong>
                 </div>
                 <div style="padding: 1.25rem; display: flex; flex-direction: column; gap: 1.25rem;">
                     
@@ -152,101 +186,80 @@
                         </div>
                     </div>
 
-                    {{-- BARIS 2: SUPPLIER MITRA (DENGAN FILTER CEPAT & INSTANT SEARCH) & GUDANG TUJUAN --}}
-                    <div style="display: grid; grid-template-columns: 1.25fr 1fr; gap: 1.25rem;">
+                    {{-- BARIS 2: SUPPLIER MITRA (AUTOCOMPLETE CEPAT) & GUDANG TUJUAN MASUK --}}
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem; align-items: start;">
                         <div class="form-group" style="margin-bottom: 0;">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
                                 <label class="form-label" style="font-weight: 600; font-size: 0.85rem; margin-bottom: 0;">
                                     Supplier Mitra <span style="color:#ef4444;">*</span>
                                 </label>
-                                <span id="supplier_count_badge" style="font-size: 0.725rem; color: #64748b;">
-                                    Total: {{ $supplierList->count() }} supplier
-                                </span>
-                            </div>
-
-                            {{-- Filter Chips Kategori Supplier (Mengatasi lelah scroll) --}}
-                            <div style="display: flex; gap: 0.35rem; margin-bottom: 0.5rem; flex-wrap: wrap;">
-                                <button type="button" class="sup-filter-chip active" data-filter="ALL" onclick="filterSupplierCategory('ALL', this)">
-                                    Semua ({{ $supplierList->count() }})
-                                </button>
-                                <button type="button" class="sup-filter-chip" data-filter="RAW" onclick="filterSupplierCategory('RAW', this)">
-                                    🌾 Bahan Baku ({{ $supplierList->filter(fn($s) => $s->jenisSupplier?->jenis_supplier_cd === 'RAW')->count() }})
-                                </button>
-                                <button type="button" class="sup-filter-chip" data-filter="BUMBU" onclick="filterSupplierCategory('BUMBU', this)">
-                                    🧂 Bumbu &amp; Rasa ({{ $supplierList->filter(fn($s) => $s->jenisSupplier?->jenis_supplier_cd === 'BUMBU')->count() }})
-                                </button>
-                                <button type="button" class="sup-filter-chip" data-filter="KEMASAN" onclick="filterSupplierCategory('KEMASAN', this)">
-                                    📦 Kemasan &amp; Karton ({{ $supplierList->filter(fn($s) => $s->jenisSupplier?->jenis_supplier_cd === 'KEMASAN')->count() }})
-                                </button>
-                                <button type="button" class="sup-filter-chip" data-filter="BP" onclick="filterSupplierCategory('BP', this)">
-                                    🏭 Penolong Industri ({{ $supplierList->filter(fn($s) => $s->jenisSupplier?->jenis_supplier_cd === 'BP')->count() }})
-                                </button>
+                                <a href="javascript:void(0)" onclick="openSupplierModal()" style="font-size: 0.75rem; color: #0284c7; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 0.3rem;" title="Buka Daftar Supplier Lengkap (Tabel Excel Grid)">
+                                    <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                    Daftar Supplier ({{ $supplierList->count() }})
+                                </a>
                             </div>
 
                             {{-- Card Tampilan Supplier Terpilih --}}
-                            <div id="selected_supplier_card" style="display: none; background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 6px; padding: 0.6rem 0.85rem; margin-bottom: 0.4rem; justify-content: space-between; align-items: center; gap: 0.75rem;">
-                                <div style="display: flex; align-items: center; gap: 0.65rem;">
-                                    <div style="background: #22c55e; color: #fff; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; flex-shrink: 0; font-weight: 700;">✓</div>
-                                    <div>
-                                        <div style="display: flex; align-items: center; gap: 0.45rem; flex-wrap: wrap;">
-                                            <strong id="disp_sup_name" style="color: #14532d; font-size: 0.875rem;"></strong>
-                                            <span id="disp_sup_code" class="badge" style="background: #dcfce7; color: #166534; font-size: 0.7rem; font-weight: 700;"></span>
-                                            <span id="disp_sup_cat" class="badge" style="background: #e0f2fe; color: #0369a1; font-size: 0.7rem;"></span>
+                            <div id="selected_supplier_card" style="display: none; background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 6px; padding: 0.45rem 0.75rem; justify-content: space-between; align-items: center; gap: 0.75rem; min-height: 38px; box-sizing: border-box;">
+                                <div style="display: flex; align-items: center; gap: 0.55rem; min-width: 0;">
+                                    <div style="background: #22c55e; color: #fff; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; flex-shrink: 0; font-weight: 700;">✓</div>
+                                    <div style="min-width: 0;">
+                                        <div style="display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;">
+                                            <strong id="disp_sup_name" style="color: #14532d; font-size: 0.85rem;"></strong>
+                                            <span id="disp_sup_code" class="badge" style="background: #dcfce7; color: #166534; font-size: 0.7rem; font-weight: 700; font-family: monospace;"></span>
+                                            <span id="disp_sup_cat_badge"></span>
                                         </div>
-                                        <div id="disp_sup_contact" style="font-size: 0.75rem; color: #15803d; margin-top: 0.15rem;"></div>
+                                        <div id="disp_sup_contact" style="font-size: 0.7rem; color: #15803d; margin-top: 0.1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></div>
                                     </div>
                                 </div>
-                                <button type="button" onclick="clearSelectedSupplier()" class="btn btn-sm" style="background: #ffffff; border: 1px solid #86efac; color: #15803d; font-size: 0.75rem; font-weight: 600; padding: 0.25rem 0.55rem; border-radius: 4px; cursor: pointer; white-space: nowrap;">
-                                    Ganti Supplier
+                                <button type="button" onclick="clearSelectedSupplier()" class="btn btn-sm" style="background: #ffffff; border: 1px solid #86efac; color: #15803d; font-size: 0.725rem; font-weight: 600; padding: 0.2rem 0.55rem; border-radius: 4px; cursor: pointer; white-space: nowrap; flex-shrink: 0;">
+                                    Ganti
                                 </button>
                             </div>
 
-                            {{-- Search Box Interaktif --}}
+                            {{-- Search Box Tunggal Bersih (Smart Autocomplete) --}}
                             <div id="supplier_search_wrapper" style="position: relative;">
-                                <div style="position: relative;">
-                                    <input type="text" id="supplier_search_input" class="form-control" placeholder="🔍 Cari nama supplier atau kode (misal: Sawit, Singkong, SUP-001)..." autocomplete="off" style="padding-left: 2.1rem !important; height: 36px; font-size: 0.85rem;">
-                                    <span style="position: absolute; left: 0.65rem; top: 50%; transform: translateY(-50%); color: #94a3b8; pointer-events: none;">
+                                <div style="position: relative; width: 100%;">
+                                    <input type="text" id="supplier_search_input" class="form-control" placeholder="Cari nama atau kode supplier (misal: Sawit, Tani, SUP-01)..." autocomplete="off" style="padding-left: 2.2rem !important; padding-right: 2rem !important; height: 38px; font-size: 0.85rem; border-radius: 6px; width: 100%; box-sizing: border-box;">
+                                    <span style="position: absolute; left: 0.7rem; top: 50%; transform: translateY(-50%); color: #94a3b8; pointer-events: none;">
                                         <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                                    </span>
+                                    <span style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); color: #94a3b8; pointer-events: none; font-size: 0.65rem;">
+                                        ▼
                                     </span>
                                 </div>
 
-                                {{-- Dropdown Container --}}
-                                <div id="supplier_dropdown_list" style="display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05); max-height: 250px; overflow-y: auto; z-index: 1050;">
+                                {{-- Dropdown Container Autocomplete --}}
+                                <div id="supplier_dropdown_list" style="display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.15), 0 8px 10px -6px rgba(0,0,0,0.06); max-height: 320px; overflow-y: auto; z-index: 1050;">
                                     {{-- Diisi dinamis via JS --}}
                                 </div>
                             </div>
 
-                            {{-- Hidden select yang tetap disinkronkan untuk form POST --}}
+                            {{-- Hidden select yang disinkronkan untuk form POST --}}
                             <select id="supplier_id" name="supplier_id" style="display: none;" required>
                                 <option value="">-- Pilih Supplier Mitra --</option>
                                 @foreach ($supplierList as $sup)
                                     <option value="{{ $sup->supplier_id }}"
-                                        data-code="{{ $sup->supplier_cd }}"
-                                        data-name="{{ $sup->supplier_nm }}"
-                                        data-category="{{ $sup->jenisSupplier?->jenis_supplier_cd ?? 'OTHER' }}"
-                                        data-category-name="{{ $sup->jenisSupplier?->jenis_supplier_nm ?? 'Lainnya' }}"
-                                        data-contact="{{ $sup->kontak_no ?? '' }}"
-                                        data-address="{{ $sup->alamat_txt ?? '' }}"
                                         {{ old('supplier_id') == $sup->supplier_id ? 'selected' : '' }}>
                                         {{ $sup->supplier_nm }} ({{ $sup->supplier_cd }})
                                     </option>
                                 @endforeach
                             </select>
-                            <small style="color: #64748b; font-size: 0.725rem;">Klik filter kategori atau ketik nama rekanan untuk memilih cepat.</small>
+                            <small style="color: #64748b; font-size: 0.725rem; display: block; margin-top: 0.25rem;">Ketik untuk memilih cepat, atau klik <strong>Daftar Supplier</strong> di atas untuk melihat tabel lengkap.</small>
                         </div>
 
                         <div class="form-group" style="margin-bottom: 0;">
-                            <label for="gudang_id" class="form-label" style="font-weight: 600; font-size: 0.85rem;">
-                                Gudang Tujuan Masuk <span style="color:#ef4444;">*</span>
+                            <label for="gudang_id" class="form-label" style="font-weight: 600; font-size: 0.85rem; margin-bottom: 0.35rem; display: flex; align-items: center; justify-content: space-between;">
+                                <span>Gudang Tujuan Masuk <span style="color:#ef4444;">*</span></span>
                                 @if (!empty($isGudangLocked))
-                                    <span class="badge" style="background:#dcfce7; color:#15803d; font-size:0.7rem; margin-left:0.25rem;">
-                                        Terkunci (Lokasi Akun Anda)
+                                    <span class="badge" style="background:#dcfce7; color:#15803d; font-size:0.7rem;">
+                                        Terkunci (Lokasi Anda)
                                     </span>
                                 @endif
                             </label>
                             @if (!empty($isGudangLocked))
                                 <input type="hidden" name="gudang_id" value="{{ $assignedGudangId }}">
-                                <select id="gudang_id" class="form-control" disabled style="background: #f8fafc; color: #1e293b; font-weight: 600; cursor: not-allowed; height: 36px;">
+                                <select id="gudang_id" class="form-control" disabled style="background: #f8fafc; color: #1e293b; font-weight: 600; cursor: not-allowed; height: 38px; border-radius: 6px; font-size: 0.85rem;">
                                     @foreach ($gudangList as $gdg)
                                         <option value="{{ $gdg->gudang_id }}" {{ $assignedGudangId == $gdg->gudang_id ? 'selected' : '' }}>
                                             {{ $gdg->display_name ?? $gdg->gudang_nm }} ({{ $gdg->gudang_cd }})
@@ -254,8 +267,8 @@
                                     @endforeach
                                 </select>
                             @else
-                                <select id="gudang_id" name="gudang_id" class="form-control" required style="height: 36px;">
-                                    <option value="">-- Pilih Lokasi / Perusahaan Masuk --</option>
+                                <select id="gudang_id" name="gudang_id" class="form-control" required style="height: 38px; border-radius: 6px; font-size: 0.85rem; padding-right: 2rem;">
+                                    <option value="">-- Pilih Gudang Tujuan Masuk --</option>
                                     @foreach ($gudangList as $gdg)
                                         <option value="{{ $gdg->gudang_id }}" {{ old('gudang_id', $assignedGudangId ?? '') == $gdg->gudang_id ? 'selected' : '' }}>
                                             {{ $gdg->display_name ?? $gdg->gudang_nm }} ({{ $gdg->gudang_cd }})
@@ -263,7 +276,7 @@
                                     @endforeach
                                 </select>
                             @endif
-                            <small style="color: #64748b; font-size: 0.725rem;">Lokasi gudang fisik tempat komoditas akan dibongkar.</small>
+                            <small style="color: #64748b; font-size: 0.725rem; display: block; margin-top: 0.25rem;">Lokasi gudang fisik tempat komoditas akan dibongkar.</small>
                         </div>
                     </div>
 
@@ -288,7 +301,7 @@
                         @if (!empty($belowMinimumList) && $belowMinimumList->count() > 0)
                             <button type="button" onclick="toggleSafetyStockDrawer()" id="btnToggleSafetyStock" class="btn btn-sm" style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a; font-weight: 700; font-size: 0.775rem; display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.35rem 0.65rem; border-radius: 5px; cursor: pointer;">
                                 <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-                                <span>Peringatan Stok Kritis ({{ $belowMinimumList->count() }})</span>
+                                <span id="safetyStockCountText">Peringatan Stok Kritis ({{ $belowMinimumList->count() }})</span>
                                 <svg id="chevronSafetyStock" width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="transition: transform 0.2s;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                             </button>
                         @endif
@@ -309,13 +322,13 @@
                             Semua Bahan ({{ $barangList->count() }})
                         </button>
                         <button type="button" class="barang-filter-chip" data-category="BB" onclick="filterBarangCategory('BB', this)">
-                            🌾 Bahan Baku Mentah ({{ $barangList->filter(fn($b) => in_array($b->jenisBarang?->jenis_barang_cd, ['RAW', 'BB']))->count() }})
+                            Bahan Baku Mentah ({{ $barangList->filter(fn($b) => in_array($b->jenisBarang?->jenis_barang_cd, ['RAW', 'BB']))->count() }})
                         </button>
                         <button type="button" class="barang-filter-chip" data-category="BUMBU" onclick="filterBarangCategory('BUMBU', this)">
-                            🧂 Bumbu &amp; Penolong ({{ $barangList->filter(fn($b) => in_array($b->jenisBarang?->jenis_barang_cd, ['SUPP', 'BUMBU', 'BP']) && !preg_match('/(PLASTIK|KARTON|ROLL|LAKBAN|SARUNG|RAFIA)/i', $b->barang_nm))->count() }})
+                            Bumbu &amp; Penolong ({{ $barangList->filter(fn($b) => in_array($b->jenisBarang?->jenis_barang_cd, ['SUPP', 'BUMBU', 'BP']) && !preg_match('/(PLASTIK|KARTON|ROLL|LAKBAN|SARUNG|RAFIA)/i', $b->barang_nm))->count() }})
                         </button>
                         <button type="button" class="barang-filter-chip" data-category="PACK" onclick="filterBarangCategory('PACK', this)">
-                            📦 Kemasan &amp; Packaging ({{ $barangList->filter(fn($b) => in_array($b->jenisBarang?->jenis_barang_cd, ['PACK']) || (in_array($b->jenisBarang?->jenis_barang_cd, ['BP']) && preg_match('/(PLASTIK|KARTON|ROLL|LAKBAN|SARUNG|RAFIA)/i', $b->barang_nm)))->count() }})
+                            Kemasan &amp; Packaging ({{ $barangList->filter(fn($b) => in_array($b->jenisBarang?->jenis_barang_cd, ['PACK']) || (in_array($b->jenisBarang?->jenis_barang_cd, ['BP']) && preg_match('/(PLASTIK|KARTON|ROLL|LAKBAN|SARUNG|RAFIA)/i', $b->barang_nm)))->count() }})
                         </button>
                     </div>
                     <div style="font-size: 0.725rem; color: #0284c7; font-weight: 600; display: flex; align-items: center; gap: 0.25rem;">
@@ -337,9 +350,9 @@
                                     Klik tombol <span style="font-weight: 700;">+ Masukkan</span> untuk langsung menambahkan barang &amp; defisit kuantitas ke tabel pesanan:
                                 </span>
                             </div>
-                            <button type="button" onclick="addAllBelowMinimumItems()" class="btn btn-sm" style="background: #d97706; color: #ffffff; font-weight: 700; font-size: 0.725rem; padding: 0.25rem 0.65rem; border-radius: 4px; display: inline-flex; align-items: center; gap: 0.25rem; cursor: pointer;">
+                            <button type="button" id="btnAddAllBelowMinimum" onclick="addAllBelowMinimumItems()" class="btn btn-sm" style="background: #d97706; color: #ffffff; font-weight: 700; font-size: 0.725rem; padding: 0.25rem 0.65rem; border-radius: 4px; display: inline-flex; align-items: center; gap: 0.25rem; cursor: pointer;">
                                 <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                                Masukkan Semua ({{ $belowMinimumList->count() }} Bahan)
+                                <span>Masukkan Semua (<span id="safetyStockAddAllCount">{{ $belowMinimumList->count() }}</span> Bahan)</span>
                             </button>
                         </div>
 
@@ -357,12 +370,28 @@
                                 <tbody>
                                     @foreach ($belowMinimumList as $bm)
                                         @php
+                                            $cat = 'OTHER';
+                                            $jenisCd = $bm->jenisBarang?->jenis_barang_cd ?? '';
+                                            if (in_array($jenisCd, ['RAW', 'BB'])) {
+                                                $cat = 'BB';
+                                            } elseif (in_array($jenisCd, ['PACK']) || (in_array($jenisCd, ['BP']) && preg_match('/(PLASTIK|KARTON|ROLL|LAKBAN|SARUNG|RAFIA)/i', $bm->barang_nm))) {
+                                                $cat = 'PACK';
+                                            } elseif (in_array($jenisCd, ['SUPP', 'BUMBU', 'BP'])) {
+                                                $cat = 'BUMBU';
+                                            }
                                             $deficit = max(1, (float)($bm->batas_minimum_qty - $bm->current_stock));
                                         @endphp
-                                        <tr style="border-bottom: 1px solid #ffedd5;">
+                                        <tr class="safety-stock-row" data-category="{{ $cat }}" style="border-bottom: 1px solid #ffedd5;">
                                             <td style="padding: 0.45rem 0.75rem; font-weight: 600; color: #1e293b;">
                                                 {{ $bm->barang_nm }}
                                                 <span style="color: #64748b; font-size: 0.725rem; font-weight: normal;">({{ $bm->barang_cd }})</span>
+                                                @if($cat === 'BB')
+                                                    <span class="badge" style="background:#dcfce7; color:#166534; font-size:0.65rem; margin-left:0.25rem;">Bahan Baku</span>
+                                                @elseif($cat === 'BUMBU')
+                                                    <span class="badge" style="background:#fef3c7; color:#92400e; font-size:0.65rem; margin-left:0.25rem;">Bumbu &amp; Penolong</span>
+                                                @elseif($cat === 'PACK')
+                                                    <span class="badge" style="background:#f1f5f9; color:#475569; font-size:0.65rem; margin-left:0.25rem;">Kemasan</span>
+                                                @endif
                                             </td>
                                             <td style="padding: 0.45rem 0.75rem; text-align: right; color: #64748b;">
                                                 {{ number_format($bm->current_stock, 0) }} {{ $bm->satuanDasar?->satuan_cd }}
@@ -376,7 +405,7 @@
                                             <td style="padding: 0.45rem 0.75rem; text-align: center;">
                                                 <button type="button" 
                                                         onclick="addBelowMinimumItem({{ $bm->barang_id }}, '{{ addslashes($bm->barang_nm) }}', '{{ $bm->satuanDasar?->satuan_nm ?? '-' }}', {{ (float)($bm->harga_beli_standar ?? 0) }}, {{ $deficit }})"
-                                                        class="btn btn-sm"
+                                                        class="btn btn-sm btn-add-safety"
                                                         style="background: #f59e0b; color: #ffffff; border: none; padding: 0.2rem 0.55rem; font-size: 0.725rem; font-weight: 700; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem;">
                                                     <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                                                     + Masukkan
@@ -468,9 +497,6 @@
 
         </div>
 
-        {{-- ========================================================================= --}}
-        {{-- KOLOM KANAN (30%): STICKY ORDER COCKPIT & TOMBOL SIMPAN SELALU MELAYANG   --}}
-        {{-- ========================================================================= --}}
         <div class="sticky-action-sidebar" style="position: sticky; top: 1.25rem; display: flex; flex-direction: column; gap: 1.25rem;">
             
             {{-- KARTU SUMMARY & ACTION UTAMA --}}
@@ -523,7 +549,7 @@
                 <div style="padding: 1rem 1.25rem; font-size: 0.8rem; color: #475569; line-height: 1.5;">
                     <div style="margin-bottom: 0.5rem; display: flex; gap: 0.5rem;">
                         <span style="color: #0284c7; font-weight: 700;">&bull;</span>
-                        <span><strong>Cari Supplier Cepat:</strong> Ketik nama/kode rekanan atau klik tombol kategori supplier di atas untuk memfilter 60 mitra tanpa scroll.</span>
+                        <span><strong>Cari Supplier Cepat:</strong> Ketik nama/kode supplier atau klik tombol <em>Daftar Supplier</em> untuk membuka tabel Excel master supplier.</span>
                     </div>
                     <div style="margin-bottom: 0.5rem; display: flex; gap: 0.5rem;">
                         <span style="color: #0284c7; font-weight: 700;">&bull;</span>
@@ -537,8 +563,94 @@
             </div>
 
         </div>
+{{-- ========================================================================= --}}
+{{-- MODAL PILIH MASTER SUPPLIER (STANDAR TABEL EXCEL ERP)                     --}}
+{{-- ========================================================================= --}}
+<div id="modalPilihSupplier" class="modal-backdrop">
+    <div class="modal-dialog" style="max-width: 960px; max-height: 90vh; display: flex; flex-direction: column;">
+        <div class="modal-header" style="background: #ffffff; border-bottom: 1px solid #e2e8f0; padding: 0.85rem 1.25rem;">
+            <div>
+                <h2 class="modal-title" style="font-size: 1.1rem; font-weight: 700; color: #0f172a; margin: 0;">Daftar Supplier</h2>
+                <p style="color: #64748b; font-size: 0.8rem; margin: 0.2rem 0 0 0;">Pilih supplier rekanan untuk dokumen pesanan pembelian (PO).</p>
+            </div>
+            <button type="button" class="modal-close" onclick="closeModal('modalPilihSupplier')">&times;</button>
+        </div>
+
+        {{-- Toolbar Pencarian & Filter Tab Kategori --}}
+        <div style="padding: 0.75rem 1.25rem; border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
+            <div style="position: relative; margin-bottom: 0.6rem;">
+                <input type="text" id="modal_supplier_search" class="form-control" placeholder="Cari berdasarkan nama supplier, kode, no telepon, atau alamat..." style="padding-left: 2.1rem !important; height: 36px; font-size: 0.85rem;" oninput="modalCurrentPage = 1; renderSupplierModalTable();">
+                <span style="position: absolute; left: 0.65rem; top: 50%; transform: translateY(-50%); color: #94a3b8; pointer-events: none;">
+                    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                </span>
+            </div>
+
+            {{-- Tabs Filter Kategori (Standar ERP Bersih) --}}
+            <div style="display: flex; gap: 0.35rem; overflow-x: auto; padding-bottom: 0.15rem;">
+                <button type="button" class="sup-modal-tab active" data-tab="ALL" onclick="filterSupplierModalTab('ALL', this)">
+                    Semua Supplier ({{ $supplierList->count() }})
+                </button>
+                <button type="button" class="sup-modal-tab" data-tab="RAW" onclick="filterSupplierModalTab('RAW', this)">
+                    Bahan Baku ({{ $supplierList->filter(fn($s) => $s->jenisSupplier?->jenis_supplier_cd === 'RAW')->count() }})
+                </button>
+                <button type="button" class="sup-modal-tab" data-tab="BP" onclick="filterSupplierModalTab('BP', this)">
+                    Penolong Industri ({{ $supplierList->filter(fn($s) => $s->jenisSupplier?->jenis_supplier_cd === 'BP')->count() }})
+                </button>
+                <button type="button" class="sup-modal-tab" data-tab="BUMBU" onclick="filterSupplierModalTab('BUMBU', this)">
+                    Bumbu &amp; Perasa ({{ $supplierList->filter(fn($s) => $s->jenisSupplier?->jenis_supplier_cd === 'BUMBU')->count() }})
+                </button>
+                <button type="button" class="sup-modal-tab" data-tab="KEMASAN" onclick="filterSupplierModalTab('KEMASAN', this)">
+                    Kemasan &amp; Karton ({{ $supplierList->filter(fn($s) => $s->jenisSupplier?->jenis_supplier_cd === 'KEMASAN')->count() }})
+                </button>
+                <button type="button" class="sup-modal-tab" data-tab="SPAREPART" onclick="filterSupplierModalTab('SPAREPART', this)">
+                    Suku Cadang ({{ $supplierList->filter(fn($s) => $s->jenisSupplier?->jenis_supplier_cd === 'SPAREPART')->count() }})
+                </button>
+                <button type="button" class="sup-modal-tab" data-tab="UMUM" onclick="filterSupplierModalTab('UMUM', this)">
+                    Umum &amp; Ekspedisi ({{ $supplierList->filter(fn($s) => $s->jenisSupplier?->jenis_supplier_cd === 'UMUM')->count() }})
+                </button>
+            </div>
+        </div>
+
+        {{-- Tabel Standar Excel Grid --}}
+        <div style="flex: 1; overflow-y: auto; padding: 0.75rem 1.25rem; min-height: 250px; max-height: 52vh;">
+            <table class="excel-grid-table" style="width: 100%;">
+                <thead>
+                    <tr>
+                        <th style="width: 35px; text-align: center; position: sticky; top: 0; z-index: 5;">No</th>
+                        <th style="width: 110px; text-align: left; position: sticky; top: 0; z-index: 5;">Kode Supplier</th>
+                        <th style="text-align: left; position: sticky; top: 0; z-index: 5;">Nama Supplier</th>
+                        <th style="width: 140px; text-align: left; position: sticky; top: 0; z-index: 5;">Jenis Kategori</th>
+                        <th style="width: 130px; text-align: left; position: sticky; top: 0; z-index: 5;">No. Kontak / Telp</th>
+                        <th style="text-align: left; position: sticky; top: 0; z-index: 5;">Alamat / Lokasi</th>
+                        <th style="width: 75px; text-align: center; position: sticky; top: 0; z-index: 5;">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="supplier_modal_tbody">
+                    {{-- Diisi secara dinamis via JS --}}
+                </tbody>
+            </table>
+        </div>
+
+        {{-- Footer Modal dengan Navigasi Halaman (Pagination) --}}
+        <div class="modal-footer" style="background: #f8fafc; border-top: 1px solid #e2e8f0; padding: 0.65rem 1.25rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap;">
+            <span id="modal_supplier_count_text" style="font-size: 0.8rem; color: #64748b;">Menampilkan 0 supplier</span>
+            
+            <div id="modal_supplier_pagination" style="display: flex; align-items: center; gap: 0.35rem;">
+                <button type="button" id="modal_prev_btn" class="btn btn-secondary btn-sm" onclick="changeSupplierModalPage(-1)" style="padding: 0.25rem 0.6rem; font-size: 0.75rem;">
+                    &larr; Sebelumnya
+                </button>
+                <span id="modal_page_info" style="font-size: 0.75rem; font-weight: 600; color: #334155; padding: 0 0.35rem;">
+                    Hal 1 dari 1
+                </span>
+                <button type="button" id="modal_next_btn" class="btn btn-secondary btn-sm" onclick="changeSupplierModalPage(1)" style="padding: 0.25rem 0.6rem; font-size: 0.75rem;">
+                    Selanjutnya &rarr;
+                </button>
+            </div>
+
+            <button type="button" class="btn btn-secondary btn-sm" onclick="closeModal('modalPilihSupplier')">Tutup</button>
+        </div>
     </div>
-</form>
+</div>
 
 <script>
     // =========================================================================
@@ -548,17 +660,17 @@
         @foreach ($supplierList as $sup)
             {
                 id: {{ $sup->supplier_id }},
-                code: '{{ addslashes($sup->supplier_cd) }}',
-                name: '{{ addslashes($sup->supplier_nm) }}',
-                category: '{{ $sup->jenisSupplier?->jenis_supplier_cd ?? "OTHER" }}',
-                categoryName: '{{ addslashes($sup->jenisSupplier?->jenis_supplier_nm ?? "Lainnya") }}',
-                contact: '{{ addslashes($sup->kontak_no ?? "-") }}',
-                address: '{{ addslashes($sup->alamat_txt ?? "") }}'
+                code: {!! json_encode($sup->supplier_cd) !!},
+                name: {!! json_encode($sup->supplier_nm) !!},
+                category: {!! json_encode($sup->jenisSupplier?->jenis_supplier_cd ?? 'OTHER') !!},
+                categoryName: {!! json_encode($sup->jenisSupplier?->jenis_supplier_nm ?? 'Lainnya') !!},
+                contact: {!! json_encode($sup->kontak_no ?? '-') !!},
+                address: {!! json_encode($sup->alamat_txt ?? '') !!}
             },
         @endforeach
     ];
 
-    let activeSupplierCategory = 'ALL';
+    let activeModalSupplierTab = 'ALL';
     let highlightedSupIndex = -1;
 
     const supSearchInput = document.getElementById('supplier_search_input');
@@ -566,59 +678,214 @@
     const supHiddenSelect = document.getElementById('supplier_id');
     const selectedSupCard = document.getElementById('selected_supplier_card');
     const supSearchWrapper = document.getElementById('supplier_search_wrapper');
+    const modalSearchInput = document.getElementById('modal_supplier_search');
+    const modalTbody = document.getElementById('supplier_modal_tbody');
+    const modalCountText = document.getElementById('modal_supplier_count_text');
 
-    function filterSupplierCategory(cat, btn) {
-        activeSupplierCategory = cat;
-        document.querySelectorAll('.sup-filter-chip').forEach(c => c.classList.remove('active'));
-        if (btn) btn.classList.add('active');
+    function getCategoryBadge(category, categoryName) {
+        let catBg = '#f1f5f9';
+        let catColor = '#334155';
+        let label = categoryName || 'Lainnya';
 
-        // Render hasil dropdown yang sesuai
-        renderSupplierDropdown(supSearchInput.value);
-        supDropdownList.style.display = 'block';
-        supSearchInput.focus();
+        if (category === 'RAW') {
+            catBg = '#dcfce7';
+            catColor = '#166534';
+            label = 'Bahan Baku';
+        } else if (category === 'BP') {
+            catBg = '#e0e7ff';
+            catColor = '#3730a3';
+            label = 'Penolong Industri';
+        } else if (category === 'BUMBU') {
+            catBg = '#fef3c7';
+            catColor = '#92400e';
+            label = 'Bumbu & Perasa';
+        } else if (category === 'KEMASAN') {
+            catBg = '#f3e8ff';
+            catColor = '#6b21a8';
+            label = 'Kemasan & Karton';
+        } else if (category === 'SPAREPART') {
+            catBg = '#ffedd5';
+            catColor = '#9a3412';
+            label = 'Suku Cadang';
+        } else if (category === 'UMUM') {
+            catBg = '#f1f5f9';
+            catColor = '#334155';
+            label = 'Umum & Jasa';
+        }
+
+        return {
+            bg: catBg,
+            color: catColor,
+            label: label,
+            html: `<span class="badge" style="background:${catBg}; color:${catColor}; font-size:0.725rem; font-weight:600; padding: 0.15rem 0.45rem; border-radius: 4px; border: 1px solid rgba(0,0,0,0.06); white-space:nowrap;">${escapeHtml(label)}</span>`
+        };
     }
 
-    function renderSupplierDropdown(query = '') {
-        const q = query.trim().toLowerCase();
-        let filtered = suppliersData.filter(s => {
-            const matchesCat = (activeSupplierCategory === 'ALL' || s.category === activeSupplierCategory);
-            const matchesText = !q || s.name.toLowerCase().includes(q) || s.code.toLowerCase().includes(q);
-            return matchesCat && matchesText;
+    let modalCurrentPage = 1;
+    const modalPerPage = 8;
+
+    function changeSupplierModalPage(delta) {
+        modalCurrentPage += delta;
+        renderSupplierModalTable();
+    }
+
+    // Modal Handlers
+    function openSupplierModal() {
+        if (supDropdownList) supDropdownList.style.display = 'none';
+        openModal('modalPilihSupplier');
+        // Teruskan teks yang sudah diketik ke modal agar sinkron
+        const currentTyped = supSearchInput ? supSearchInput.value.trim() : '';
+        modalSearchInput.value = currentTyped;
+        modalCurrentPage = 1;
+        renderSupplierModalTable();
+        setTimeout(() => {
+            modalSearchInput.focus();
+            modalSearchInput.select();
+        }, 100);
+    }
+
+    function closeSupplierModal() {
+        closeModal('modalPilihSupplier');
+    }
+
+    function filterSupplierModalTab(tab, btn) {
+        activeModalSupplierTab = tab;
+        modalCurrentPage = 1;
+        document.querySelectorAll('.sup-modal-tab').forEach(b => b.classList.remove('active'));
+        if (btn) btn.classList.add('active');
+        renderSupplierModalTable();
+    }
+
+    function renderSupplierModalTable() {
+        const query = modalSearchInput.value.trim().toLowerCase();
+        const filtered = suppliersData.filter(s => {
+            const matchesTab = (activeModalSupplierTab === 'ALL' || s.category === activeModalSupplierTab);
+            const matchesText = !query || 
+                (s.name && s.name.toLowerCase().includes(query)) || 
+                (s.code && s.code.toLowerCase().includes(query)) || 
+                (s.contact && s.contact.toLowerCase().includes(query)) || 
+                (s.address && s.address.toLowerCase().includes(query)) ||
+                (s.categoryName && s.categoryName.toLowerCase().includes(query));
+            return matchesTab && matchesText;
         });
 
-        document.getElementById('supplier_count_badge').innerText = `Menampilkan ${filtered.length} supplier`;
+        const totalItems = filtered.length;
+        const totalPages = Math.max(1, Math.ceil(totalItems / modalPerPage));
+        if (modalCurrentPage > totalPages) modalCurrentPage = totalPages;
+        if (modalCurrentPage < 1) modalCurrentPage = 1;
 
-        if (filtered.length === 0) {
-            supDropdownList.innerHTML = `
-                <div style="padding: 1rem; text-align: center; color: #64748b; font-size: 0.8rem;">
-                    Tidak ditemukan supplier yang sesuai dengan pencarian "<strong>${query}</strong>".
-                </div>
+        const startIdx = (modalCurrentPage - 1) * modalPerPage;
+        const endIdx = Math.min(startIdx + modalPerPage, totalItems);
+        const pageItems = filtered.slice(startIdx, endIdx);
+
+        modalCountText.innerText = totalItems > 0 
+            ? `Menampilkan ${startIdx + 1}–${endIdx} dari ${totalItems} supplier`
+            : `Menampilkan 0 supplier`;
+
+        const paginationDiv = document.getElementById('modal_supplier_pagination');
+        if (paginationDiv) {
+            paginationDiv.style.display = totalPages > 1 ? 'flex' : 'none';
+            document.getElementById('modal_page_info').innerText = `Hal ${modalCurrentPage} dari ${totalPages}`;
+            const prevBtn = document.getElementById('modal_prev_btn');
+            const nextBtn = document.getElementById('modal_next_btn');
+            prevBtn.disabled = (modalCurrentPage <= 1);
+            nextBtn.disabled = (modalCurrentPage >= totalPages);
+            prevBtn.style.opacity = (modalCurrentPage <= 1) ? '0.4' : '1';
+            prevBtn.style.cursor = (modalCurrentPage <= 1) ? 'not-allowed' : 'pointer';
+            nextBtn.style.opacity = (modalCurrentPage >= totalPages) ? '0.4' : '1';
+            nextBtn.style.cursor = (modalCurrentPage >= totalPages) ? 'not-allowed' : 'pointer';
+        }
+
+        if (totalItems === 0) {
+            modalTbody.innerHTML = `
+                <tr>
+                    <td colspan="7" style="text-align: center; padding: 2.5rem 1rem; color: #94a3b8;">
+                        Tidak ditemukan data supplier dengan kata kunci "<strong>${escapeHtml(query)}</strong>".
+                    </td>
+                </tr>
             `;
             return;
         }
 
         let html = '';
-        filtered.forEach((s, idx) => {
-            let catColor = '#0284c7';
-            let catBg = '#e0f2fe';
-            if (s.category === 'RAW') { catColor = '#15803d'; catBg = '#dcfce7'; }
-            else if (s.category === 'BUMBU') { catColor = '#b45309'; catBg = '#fef3c7'; }
-            else if (s.category === 'KEMASAN') { catColor = '#6b21a8'; catBg = '#f3e8ff'; }
+        pageItems.forEach((s, idx) => {
+            const rowNo = startIdx + idx + 1;
+            const badge = getCategoryBadge(s.category, s.categoryName);
+            html += `
+                <tr class="sup-modal-row" onclick="selectSupplier(${s.id}); closeSupplierModal();">
+                    <td style="text-align: center; color: #64748b; font-size: 0.775rem;">${rowNo}</td>
+                    <td>
+                        <strong style="color: #0284c7; font-family: monospace; font-size: 0.8rem;">${escapeHtml(s.code)}</strong>
+                    </td>
+                    <td>
+                        <strong style="color: #0f172a; font-size: 0.825rem;">${escapeHtml(s.name)}</strong>
+                    </td>
+                    <td>${badge.html}</td>
+                    <td style="font-size: 0.8rem; color: #334155;">
+                        ${s.contact && s.contact !== '-' ? escapeHtml(s.contact) : '-'}
+                    </td>
+                    <td style="font-size: 0.8rem; color: #475569;">
+                        ${s.address ? escapeHtml(s.address) : '-'}
+                    </td>
+                    <td style="text-align: center;">
+                        <button type="button" class="btn btn-primary btn-sm" style="padding: 0.2rem 0.6rem; font-size: 0.75rem; font-weight: 600;" onclick="event.stopPropagation(); selectSupplier(${s.id}); closeSupplierModal();">
+                            Pilih
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
 
+        modalTbody.innerHTML = html;
+    }
+
+    // Autocomplete Dropdown Popover
+    function renderSupplierDropdown(query = '') {
+        const q = query.trim().toLowerCase();
+        let filtered = suppliersData.filter(s => {
+            if (!q) return true;
+            return (s.name && s.name.toLowerCase().includes(q)) || 
+                   (s.code && s.code.toLowerCase().includes(q)) ||
+                   (s.contact && s.contact.toLowerCase().includes(q)) ||
+                   (s.address && s.address.toLowerCase().includes(q)) ||
+                   (s.categoryName && s.categoryName.toLowerCase().includes(q));
+        });
+
+        if (filtered.length === 0) {
+            supDropdownList.innerHTML = `
+                <div style="padding: 1rem; text-align: center; color: #64748b; font-size: 0.8rem;">
+                    Tidak ditemukan supplier untuk "<strong>${escapeHtml(query)}</strong>"
+                </div>
+            `;
+            return;
+        }
+
+        const displayLimit = 7;
+        const visibleItems = filtered.slice(0, displayLimit);
+
+        let html = `
+            <div style="padding: 0.4rem 0.85rem; background: #f8fafc; border-bottom: 1px solid #f1f5f9; font-size: 0.7rem; color: #64748b; font-weight: 600;">
+                <span>${filtered.length} supplier ditemukan</span>
+            </div>
+        `;
+
+        visibleItems.forEach((s, idx) => {
+            const badge = getCategoryBadge(s.category, s.categoryName);
             html += `
                 <div class="sup-option-item" data-id="${s.id}" data-idx="${idx}" onclick="selectSupplier(${s.id})">
-                    <div>
-                        <div style="font-weight: 700; color: #0f172a; font-size: 0.85rem;">
+                    <div style="min-width: 0;">
+                        <div style="font-weight: 700; color: #0f172a; font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                             ${escapeHtml(s.name)}
                         </div>
                         <div style="display: flex; align-items: center; gap: 0.35rem; margin-top: 0.15rem; font-size: 0.725rem; color: #64748b;">
-                            <span style="font-family: monospace; font-weight: 600;">${s.code}</span>
+                            <span style="font-family: monospace; font-weight: 700; color: #0284c7;">${escapeHtml(s.code)}</span>
                             ${s.contact && s.contact !== '-' ? `<span>&bull; Telp: ${escapeHtml(s.contact)}</span>` : ''}
+                            ${s.address ? `<span>&bull; ${escapeHtml(s.address)}</span>` : ''}
                         </div>
                     </div>
-                    <span class="badge" style="background: ${catBg}; color: ${catColor}; font-size: 0.7rem; font-weight: 600; white-space: nowrap; margin-left: 0.5rem;">
-                        ${escapeHtml(s.categoryName)}
-                    </span>
+                    <div style="flex-shrink: 0; margin-left: 0.5rem;">
+                        ${badge.html}
+                    </div>
                 </div>
             `;
         });
@@ -635,10 +902,13 @@
         supHiddenSelect.value = sup.id;
 
         // Tampilkan info kartu supplier terpilih
+        const badge = getCategoryBadge(sup.category, sup.categoryName);
         document.getElementById('disp_sup_name').innerText = sup.name;
         document.getElementById('disp_sup_code').innerText = sup.code;
-        document.getElementById('disp_sup_cat').innerText = sup.categoryName;
-        document.getElementById('disp_sup_contact').innerText = (sup.contact && sup.contact !== '-' ? 'Telp: ' + sup.contact : '') + (sup.address ? ' | ' + sup.address : '');
+        document.getElementById('disp_sup_cat_badge').innerHTML = badge.html;
+        document.getElementById('disp_sup_contact').innerText = 
+            (sup.contact && sup.contact !== '-' ? 'Telp: ' + sup.contact : '') + 
+            (sup.address ? (sup.contact && sup.contact !== '-' ? ' | ' : '') + 'Alamat: ' + sup.address : '');
 
         selectedSupCard.style.display = 'flex';
         supSearchWrapper.style.display = 'none';
@@ -663,7 +933,7 @@
         supSearchWrapper.style.display = 'block';
         supSearchInput.value = '';
         renderSupplierDropdown('');
-        supDropdownList.style.display = 'block';
+        supDropdownList.style.display = 'none';
         supSearchInput.focus();
     }
 
@@ -696,6 +966,10 @@
             if (highlightedSupIndex >= 0 && items[highlightedSupIndex]) {
                 const id = items[highlightedSupIndex].dataset.id;
                 selectSupplier(id);
+            } else if (items.length > 0) {
+                // Pilih item pertama jika belum di-highlight
+                const id = items[0].dataset.id;
+                selectSupplier(id);
             }
         } else if (e.key === 'Escape') {
             supDropdownList.style.display = 'none';
@@ -715,7 +989,7 @@
 
     // Tutup dropdown jika klik di luar
     document.addEventListener('click', function(e) {
-        if (!supSearchWrapper.contains(e.target) && !e.target.classList.contains('sup-filter-chip')) {
+        if (!supSearchWrapper.contains(e.target)) {
             supDropdownList.style.display = 'none';
         }
     });
@@ -742,7 +1016,7 @@
         document.querySelectorAll('.barang-filter-chip').forEach(c => c.classList.remove('active'));
         if (btn) btn.classList.add('active');
 
-        // Update semua dropdown item-barang yang ada di tabel
+        // Update semua dropdown item-barang yang ada di tabel PO
         document.querySelectorAll('.item-barang').forEach(select => {
             applyBarangCategoryFilterToSelect(select, category);
         });
@@ -957,17 +1231,12 @@
     }
 
     function addAllBelowMinimumItems() {
-        @if (!empty($belowMinimumList) && $belowMinimumList->count() > 0)
-            @foreach ($belowMinimumList as $bm)
-                addBelowMinimumItem(
-                    {{ $bm->barang_id }}, 
-                    '{{ addslashes($bm->barang_nm) }}', 
-                    '{{ $bm->satuanDasar?->satuan_nm ?? '-' }}', 
-                    {{ (float)($bm->harga_beli_standar ?? 0) }}, 
-                    {{ max(1, (float)($bm->batas_minimum_qty - $bm->current_stock)) }}
-                );
-            @endforeach
-        @endif
+        document.querySelectorAll('.safety-stock-row').forEach(row => {
+            if (row.style.display !== 'none') {
+                const btn = row.querySelector('.btn-add-safety');
+                if (btn) btn.click();
+            }
+        });
     }
 
     // Excel Keyboard Navigation (Enter to move or create new row)

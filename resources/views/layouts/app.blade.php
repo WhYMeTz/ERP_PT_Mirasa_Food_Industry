@@ -587,10 +587,10 @@
                         </a>
                     @endif
 
-                    {{-- BARANG KELUAR (OUT) --}}
+                    {{-- PEMAKAIAN BAHAN (OUTBOUND) --}}
                     @if (Auth::user()->canAccessPemakaian())
                         <a href="{{ route('gudang.pemakaian.index') }}" class="pill-item {{ request()->routeIs('gudang.pemakaian.*') ? 'active' : '' }}">
-                            <span>Barang Keluar</span>
+                            <span>Pemakaian Bahan</span>
                         </a>
                     @endif
 

@@ -1,11 +1,11 @@
 @extends('layouts.app')
 
-@section('title', 'Barang Keluar & Pemakaian Bahan - ERP PT Mirasa')
+@section('title', 'Pemakaian Bahan (Outbound) - ERP PT Mirasa')
 
 @section('content')
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 1rem;">
     <div>
-        <h1 style="font-size: 1.5rem; font-weight: 700; color: #0f172a; margin: 0;">Barang Keluar &amp; Pemakaian Bahan (Outbound)</h1>
+        <h1 style="font-size: 1.5rem; font-weight: 700; color: #0f172a; margin: 0;">Pemakaian Bahan (Outbound)</h1>
         <p style="color: #64748b; font-size: 0.875rem; margin-top: 0.25rem; margin-bottom: 0;">
             Buku catatan fisik pengeluaran bahan baku &amp; bahan penolong ke proses produksi, packing, seasoning, atau afkir ulang (FIFO per Batch).
         </p>
@@ -14,7 +14,7 @@
         @if (Auth::user()?->canCreatePemakaian())
             <a href="{{ route('gudang.pemakaian.create') }}" class="btn btn-primary" style="background: #dc2626;">
                 <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                Catat Barang Keluar
+                Catat Pemakaian Bahan
             </a>
         @endif
     </div>
@@ -103,49 +103,52 @@
     </div>
 </div>
 
-{{-- RINCIAN REKAPITULASI BAHAN KELUAR PABRIK --}}
-<div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.65rem 1rem; margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.65rem; font-size: 0.8rem;">
-    <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
-        <span style="font-weight: 700; color: #475569; text-transform: uppercase; font-size: 0.725rem; letter-spacing: 0.04em;">
-            Rincian Kategori:
+{{-- TAB FILTER KATEGORI BAHAN (CLICKABLE TABS PERSIS STATUS PO & BARANG MASUK) --}}
+<div style="display: flex; gap: 0.65rem; flex-wrap: wrap; margin-bottom: 1.25rem; align-items: center;">
+    <a href="{{ route('gudang.pemakaian.index', array_merge(request()->except('kategori', 'page'), ['kategori' => null])) }}" 
+       style="text-decoration: none; padding: 0.55rem 1.1rem; border-radius: 8px; font-size: 0.85rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.5rem; transition: all 0.15s; background: {{ empty($kategori) ? '#0284c7' : '#ffffff' }}; color: {{ empty($kategori) ? '#ffffff' : '#475569' }}; border: 1.5px solid {{ empty($kategori) ? '#0284c7' : '#e2e8f0' }}; box-shadow: {{ empty($kategori) ? '0 2px 4px rgba(2, 132, 199, 0.25)' : '0 1px 2px rgba(0,0,0,0.03)' }};">
+        <span>📁 Semua Bahan</span>
+        <span style="background: {{ empty($kategori) ? 'rgba(255,255,255,0.25)' : '#f1f5f9' }}; color: {{ empty($kategori) ? '#ffffff' : '#64748b' }}; padding: 0.15rem 0.55rem; border-radius: 9999px; font-size: 0.725rem; font-weight: 800;">
+            {{ number_format($ringkasan['total_item_count'] ?? 0) }}
         </span>
-        <span class="badge" style="background: #fef3c7; color: #92400e; font-weight: 600; padding: 0.25rem 0.6rem; border-radius: 4px; border: 1px solid #fde68a;">
-            🌾 Singkong: {{ number_format($ringkasan['singkong_qty'] ?? 0, 0, ',', '.') }} kg (Rp {{ number_format($ringkasan['singkong_nilai'] ?? 0, 0, ',', '.') }})
+    </a>
+
+    <a href="{{ route('gudang.pemakaian.index', array_merge(request()->except('kategori', 'page'), ['kategori' => 'BAHAN_BAKU'])) }}" 
+       style="text-decoration: none; padding: 0.55rem 1.1rem; border-radius: 8px; font-size: 0.85rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.5rem; transition: all 0.15s; background: {{ $kategori === 'BAHAN_BAKU' ? '#d97706' : '#ffffff' }}; color: {{ $kategori === 'BAHAN_BAKU' ? '#ffffff' : '#78350f' }}; border: 1.5px solid {{ $kategori === 'BAHAN_BAKU' ? '#d97706' : '#fde68a' }}; box-shadow: {{ $kategori === 'BAHAN_BAKU' ? '0 2px 4px rgba(217, 119, 6, 0.25)' : '0 1px 2px rgba(0,0,0,0.03)' }};">
+        <span>🌾 Bahan Baku (Singkong)</span>
+        <span style="background: {{ $kategori === 'BAHAN_BAKU' ? 'rgba(255,255,255,0.25)' : '#fef3c7' }}; color: {{ $kategori === 'BAHAN_BAKU' ? '#ffffff' : '#92400e' }}; padding: 0.15rem 0.55rem; border-radius: 9999px; font-size: 0.725rem; font-weight: 800;">
+            {{ number_format($ringkasan['singkong_qty'] ?? 0, 0, ',', '.') }} kg
         </span>
-        <span class="badge" style="background: #fef9c3; color: #854d0e; font-weight: 600; padding: 0.25rem 0.6rem; border-radius: 4px; border: 1px solid #fef08a;">
-            🛢️ Minyak: {{ number_format($ringkasan['minyak_qty'] ?? 0, 0, ',', '.') }} kg (Rp {{ number_format($ringkasan['minyak_nilai'] ?? 0, 0, ',', '.') }})
+    </a>
+
+    <a href="{{ route('gudang.pemakaian.index', array_merge(request()->except('kategori', 'page'), ['kategori' => 'BAHAN_PENOLONG'])) }}" 
+       style="text-decoration: none; padding: 0.55rem 1.1rem; border-radius: 8px; font-size: 0.85rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.5rem; transition: all 0.15s; background: {{ $kategori === 'BAHAN_PENOLONG' ? '#059669' : '#ffffff' }}; color: {{ $kategori === 'BAHAN_PENOLONG' ? '#ffffff' : '#064e3b' }}; border: 1.5px solid {{ $kategori === 'BAHAN_PENOLONG' ? '#059669' : '#a7f3d0' }}; box-shadow: {{ $kategori === 'BAHAN_PENOLONG' ? '0 2px 4px rgba(5, 150, 105, 0.25)' : '0 1px 2px rgba(0,0,0,0.03)' }};">
+        <span>🧂 Bumbu, Minyak &amp; Penolong</span>
+        <span style="background: {{ $kategori === 'BAHAN_PENOLONG' ? 'rgba(255,255,255,0.25)' : '#ecfdf5' }}; color: {{ $kategori === 'BAHAN_PENOLONG' ? '#ffffff' : '#047857' }}; padding: 0.15rem 0.55rem; border-radius: 9999px; font-size: 0.725rem; font-weight: 800;">
+            {{ number_format(($ringkasan['bumbu_qty'] ?? 0) + ($ringkasan['minyak_qty'] ?? 0), 0, ',', '.') }} kg
         </span>
-        <span class="badge" style="background: #e0f2fe; color: #0369a1; font-weight: 600; padding: 0.25rem 0.6rem; border-radius: 4px; border: 1px solid #bae6fd;">
-            🧂 Bumbu &amp; Penolong: {{ number_format($ringkasan['bumbu_qty'] ?? 0, 0, ',', '.') }} kg (Rp {{ number_format($ringkasan['bumbu_nilai'] ?? 0, 0, ',', '.') }})
+    </a>
+
+    <a href="{{ route('gudang.pemakaian.index', array_merge(request()->except('kategori', 'page'), ['kategori' => 'KEMASAN'])) }}" 
+       style="text-decoration: none; padding: 0.55rem 1.1rem; border-radius: 8px; font-size: 0.85rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.5rem; transition: all 0.15s; background: {{ $kategori === 'KEMASAN' ? '#6366f1' : '#ffffff' }}; color: {{ $kategori === 'KEMASAN' ? '#ffffff' : '#312e81' }}; border: 1.5px solid {{ $kategori === 'KEMASAN' ? '#6366f1' : '#c7d2fe' }}; box-shadow: {{ $kategori === 'KEMASAN' ? '0 2px 4px rgba(99, 102, 241, 0.25)' : '0 1px 2px rgba(0,0,0,0.03)' }};">
+        <span>📦 Kemasan &amp; Packaging</span>
+        <span style="background: {{ $kategori === 'KEMASAN' ? 'rgba(255,255,255,0.25)' : '#eef2ff' }}; color: {{ $kategori === 'KEMASAN' ? '#ffffff' : '#4338ca' }}; padding: 0.15rem 0.55rem; border-radius: 9999px; font-size: 0.725rem; font-weight: 800;">
+            {{ number_format($ringkasan['kemasan_qty'] ?? 0, 0, ',', '.') }} unit
         </span>
-        <span class="badge" style="background: #d1fae5; color: #065f46; font-weight: 600; padding: 0.25rem 0.6rem; border-radius: 4px; border: 1px solid #a7f3d0;">
-            📦 Kemasan: {{ number_format($ringkasan['kemasan_qty'] ?? 0, 0, ',', '.') }} unit (Rp {{ number_format($ringkasan['kemasan_nilai'] ?? 0, 0, ',', '.') }})
-        </span>
-    </div>
-    <div style="font-size: 0.75rem; color: #64748b;">
-        Biaya Bahan Terakumulasi Otomatis
-    </div>
+    </a>
 </div>
 
 {{-- WADAH TABEL UTAMA (PERSIS FORMAT CARD PO & BARANG MASUK) --}}
 <div class="card">
     <div class="card-header" style="background: #ffffff; padding: 0.875rem 1.25rem; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
-        {{-- Form Filter & Pencarian Fleksibel --}}
-        <form action="{{ route('gudang.pemakaian.index') }}" method="GET" style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
+        {{-- Form Filter & Pencarian Fleksibel (Ringkas, Proporsional & Rapi Persis Barang Masuk) --}}
+        <form action="{{ route('gudang.pemakaian.index') }}" method="GET" style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; max-width: 650px; width: 100%;">
             <input type="hidden" name="view" value="{{ $viewType }}">
+            <input type="hidden" name="kategori" value="{{ $kategori ?? '' }}">
             
-            <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Cari No Outbound, batch, barang, SPK..." class="form-control" style="padding: 0.45rem 0.75rem; width: 220px; font-size: 0.85rem;">
+            <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Cari No Dokumen, batch, SPK, atau bahan..." class="form-control" style="padding: 0.45rem 0.75rem; max-width: 300px; font-size: 0.85rem;">
 
-            <select name="tujuan" class="form-control" style="padding: 0.45rem 0.75rem; width: 175px; font-size: 0.85rem;" onchange="this.form.submit()">
-                <option value="">-- Semua Lini Tujuan --</option>
-                @foreach ($tujuanOptions as $opt)
-                    <option value="{{ $opt }}" {{ ($tujuan === $opt) ? 'selected' : '' }}>
-                        {{ $opt }}
-                    </option>
-                @endforeach
-            </select>
-            
-            <select name="gudang_id" class="form-control" style="padding: 0.45rem 0.75rem; width: 165px; font-size: 0.85rem;" onchange="this.form.submit()">
+            <select name="gudang_id" class="form-control" style="padding: 0.45rem 0.75rem; max-width: 175px; font-size: 0.85rem;" onchange="this.form.submit()">
                 <option value="">-- Semua Gudang --</option>
                 @foreach ($gudangList as $gdg)
                     <option value="{{ $gdg->gudang_id }}" {{ ($gudangId == $gdg->gudang_id) ? 'selected' : '' }}>
@@ -154,24 +157,43 @@
                 @endforeach
             </select>
 
-            <div style="display: flex; align-items: center; gap: 0.25rem;">
-                <input type="date" name="start_date" value="{{ $startDate ?? '' }}" title="Dari Tanggal" class="form-control" style="padding: 0.45rem 0.5rem; font-size: 0.825rem; width: 130px;">
-                <span style="font-size: 0.75rem; color: #64748b;">s/d</span>
-                <input type="date" name="end_date" value="{{ $endDate ?? '' }}" title="Sampai Tanggal" class="form-control" style="padding: 0.45rem 0.5rem; font-size: 0.825rem; width: 130px;">
-            </div>
-
             <button type="submit" class="btn btn-secondary btn-sm" style="padding: 0.45rem 0.85rem;">Filter</button>
-            @if(!empty($search) || !empty($gudangId) || !empty($tujuan) || !empty($startDate) || !empty($endDate))
+            @if(!empty($search) || !empty($gudangId) || !empty($tujuan) || !empty($kategori) || !empty($startDate) || !empty($endDate))
                 <a href="{{ route('gudang.pemakaian.index', ['view' => $viewType]) }}" class="btn btn-secondary btn-sm" title="Reset Filter" style="padding: 0.45rem 0.65rem;">Reset</a>
             @endif
+
+            {{-- Toggle Filter Tambahan --}}
+            <button type="button" class="btn btn-secondary btn-sm" onclick="toggleExtraFilters()" style="padding: 0.45rem 0.65rem; font-size: 0.8rem; background: {{ (!empty($tujuan) || !empty($startDate) || !empty($endDate)) ? '#e0f2fe; color: #0284c7; border-color: #7dd3fc;' : '#f8fafc;' }}" title="Filter Periode Tanggal & Lini Tujuan">
+                <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
+                <span>{{ (!empty($tujuan) || !empty($startDate) || !empty($endDate)) ? 'Periode Aktif' : '+ Periode' }}</span>
+            </button>
+
+            {{-- Panel Tambahan Periode & SPK --}}
+            <div id="extraFiltersRow" style="display: {{ (!empty($tujuan) || !empty($startDate) || !empty($endDate)) ? 'flex' : 'none' }}; gap: 0.5rem; align-items: center; width: 100%; margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px dashed #e2e8f0; flex-wrap: wrap;">
+                <select name="tujuan" class="form-control" style="padding: 0.4rem 0.65rem; max-width: 190px; font-size: 0.825rem;" onchange="this.form.submit()">
+                    <option value="">-- Semua Lini Tujuan --</option>
+                    @foreach ($tujuanOptions as $opt)
+                        <option value="{{ $opt }}" {{ ($tujuan === $opt) ? 'selected' : '' }}>
+                            {{ $opt }}
+                        </option>
+                    @endforeach
+                </select>
+                <div style="display: flex; align-items: center; gap: 0.25rem;">
+                    <span style="font-size: 0.775rem; color: #64748b; font-weight: 600;">Periode:</span>
+                    <input type="date" name="start_date" value="{{ $startDate ?? '' }}" title="Dari Tanggal" class="form-control" style="padding: 0.35rem 0.5rem; font-size: 0.8rem; width: 130px;">
+                    <span style="font-size: 0.75rem; color: #64748b;">s/d</span>
+                    <input type="date" name="end_date" value="{{ $endDate ?? '' }}" title="Sampai Tanggal" class="form-control" style="padding: 0.35rem 0.5rem; font-size: 0.8rem; width: 130px;">
+                </div>
+                <button type="submit" class="btn btn-primary btn-sm" style="padding: 0.35rem 0.65rem; font-size: 0.8rem;">Terapkan</button>
+            </div>
         </form>
 
         <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
-            {{-- Switcher Bersih & Halus (Tanpa Emoji) --}}
+            {{-- Switcher Bersih & Halus (Persis Barang Masuk) --}}
             <div style="display: inline-flex; background: #f1f5f9; padding: 0.2rem; border-radius: 6px; border: 1px solid #e2e8f0;">
                 <a href="{{ route('gudang.pemakaian.index', array_merge(request()->query(), ['view' => 'item'])) }}" 
                    style="text-decoration: none; padding: 0.35rem 0.75rem; border-radius: 4px; font-size: 0.8rem; font-weight: 600; background: {{ $viewType === 'item' ? '#ffffff' : 'transparent' }}; color: {{ $viewType === 'item' ? '#0f172a' : '#64748b' }}; box-shadow: {{ $viewType === 'item' ? '0 1px 2px rgba(0,0,0,0.06)' : 'none' }};">
-                    Buku Rekap Bahan (Excel Grid)
+                    Buku Rekap Pemakaian (Excel Grid)
                 </a>
                 <a href="{{ route('gudang.pemakaian.index', array_merge(request()->query(), ['view' => 'header'])) }}" 
                    style="text-decoration: none; padding: 0.35rem 0.75rem; border-radius: 4px; font-size: 0.8rem; font-weight: 600; background: {{ $viewType === 'header' ? '#ffffff' : 'transparent' }}; color: {{ $viewType === 'header' ? '#0f172a' : '#64748b' }}; box-shadow: {{ $viewType === 'header' ? '0 1px 2px rgba(0,0,0,0.06)' : 'none' }};">
@@ -337,10 +359,20 @@
         </div>
     @endif
 
-    @if ($dataList->hasPages())
+@if ($dataList->hasPages())
         <div style="padding: 1rem 1.5rem; border-top: 1px solid #f1f5f9;">
             {{ $dataList->withQueryString()->links() }}
         </div>
     @endif
 </div>
+
+<script>
+function toggleExtraFilters() {
+    const el = document.getElementById('extraFiltersRow');
+    if (el) {
+        const isHidden = (el.style.display === 'none' || el.style.display === '');
+        el.style.display = isHidden ? 'flex' : 'none';
+    }
+}
+</script>
 @endsection

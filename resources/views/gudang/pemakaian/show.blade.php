@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Detail Dokumen Pengeluaran ' . $pakai->pakai_no . ' - ERP PT Mirasa')
+@section('title', 'Detail Dokumen Pemakaian Bahan ' . $pakai->pakai_no . ' - ERP PT Mirasa')
 
 @section('content')
 <style>
@@ -41,7 +41,7 @@
             </p>
         </div>
         <div style="text-align: right;">
-            <strong style="font-size: 1.1rem; color: #b91c1c; display: block;">BUKTI PENGELUARAN BARANG (BPPB)</strong>
+            <strong style="font-size: 1.1rem; color: #b91c1c; display: block;">BUKTI PEMAKAIAN BAHAN (OUTBOUND)</strong>
             <span style="font-family: monospace; font-size: 0.9rem; font-weight: 700;">{{ $pakai->pakai_no }}</span>
         </div>
     </div>
@@ -50,14 +50,14 @@
 <div class="no-print" style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
     <div>
         <a href="{{ route('gudang.pemakaian.index') }}" style="color: #64748b; text-decoration: none; font-size: 0.875rem; display: inline-flex; align-items: center; gap: 0.25rem;">
-            &larr; Kembali ke Daftar Barang Keluar
+            &larr; Kembali ke Daftar Pemakaian Bahan
         </a>
         <h1 style="font-size: 1.5rem; font-weight: 700; color: #0f172a; margin-top: 0.5rem; display: flex; align-items: center; gap: 0.75rem;">
             <span>{{ $pakai->pakai_no }}</span>
             <span class="badge" style="background: #fee2e2; color: #991b1b; font-size: 0.85rem;">{{ $pakai->tujuan_pemakaian }}</span>
         </h1>
         <p style="color: #64748b; font-size: 0.875rem;">
-            Dokumen pengeluaran fisik barang dari {{ $pakai->gudang?->gudang_nm }} pada {{ \Carbon\Carbon::parse($pakai->pakai_tgl)->format('d F Y') }}.
+            Dokumen pengeluaran bahan dari {{ $pakai->gudang?->gudang_nm }} pada {{ \Carbon\Carbon::parse($pakai->pakai_tgl)->format('d F Y') }}.
         </p>
     </div>
     <div style="display: flex; gap: 0.5rem;">

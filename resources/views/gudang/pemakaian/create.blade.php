@@ -1,17 +1,17 @@
 @extends('layouts.app')
 
-@section('title', 'Catat Barang Keluar / Pemakaian Bahan - ERP PT Mirasa')
+@section('title', 'Catat Pemakaian Bahan - ERP PT Mirasa')
 
 @section('content')
 <div style="margin-bottom: 1.5rem;">
     <a href="{{ route('gudang.pemakaian.index') }}" style="color: #64748b; text-decoration: none; font-size: 0.875rem; display: inline-flex; align-items: center; gap: 0.25rem;">
-        &larr; Kembali ke Daftar Barang Keluar
+        &larr; Kembali ke Daftar Pemakaian Bahan
     </a>
     <h1 style="font-size: 1.5rem; font-weight: 700; color: #0f172a; margin-top: 0.5rem;">
-        Form Pengeluaran / Pemakaian Bahan
+        Form Pemakaian Bahan
     </h1>
     <p style="color: #64748b; font-size: 0.875rem;">
-        Pencatatan pemakaian bahan baku/penolong ke lini produksi atau packing dengan pemotongan stok otomatis (FIFO).
+        Pencatatan pemakaian bahan baku &amp; penolong ke lini produksi atau packing dengan pemotongan stok otomatis (FIFO).
     </p>
 </div>
 
@@ -146,22 +146,37 @@
 
     {{-- KARTU RINCIAN BARANG --}}
     <div class="card" style="margin-bottom: 1.5rem;">
-        <div class="card-header">
-            <h2 style="font-size: 1.1rem; font-weight: 700; color: #0f172a;">Rincian Bahan yang Dikeluarkan</h2>
-            <button type="button" class="btn btn-secondary btn-sm" onclick="addRow()">
-                + Tambah Baris Barang
-            </button>
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+            <div>
+                <h2 style="font-size: 1.1rem; font-weight: 700; color: #0f172a; margin: 0;">Rincian Bahan yang Dikeluarkan</h2>
+                <small style="color: #64748b; font-size: 0.775rem;">Gunakan filter kategori per-baris untuk menyortir Bahan Baku, Penolong/Bumbu, atau Kemasan.</small>
+            </div>
+            <div style="display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center;">
+                <span style="font-size: 0.75rem; font-weight: 600; color: #64748b; margin-right: 0.25rem;">+ Tambah Cepat:</span>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="addRow('BAHAN_BAKU')" style="font-weight: 600; font-size: 0.775rem; background: #fef3c7; color: #92400e; border: 1px solid #fde68a;">
+                    🌾 Bahan Baku
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="addRow('BAHAN_PENOLONG')" style="font-weight: 600; font-size: 0.775rem; background: #fef9c3; color: #854d0e; border: 1px solid #fef08a;">
+                    🧂 Bumbu / Penolong
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="addRow('KEMASAN')" style="font-weight: 600; font-size: 0.775rem; background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0;">
+                    📦 Kemasan
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="addRow('')" style="font-weight: 600; font-size: 0.775rem;">
+                    + Baris Umum
+                </button>
+            </div>
         </div>
 
         <div style="overflow-x: auto; padding: 1rem;">
             <table style="width: 100%;" id="itemsTable">
                 <thead>
                     <tr style="border-bottom: 2px solid #e2e8f0; text-align: left; font-size: 0.85rem; color: #475569;">
-                        <th style="padding: 0.5rem; width: 28%;">Nama Barang</th>
+                        <th style="padding: 0.5rem; width: 30%;">Kategori &amp; Nama Bahan Produksi</th>
                         <th style="padding: 0.5rem; width: 25%;">Pilih Batch (Sisa Stok)</th>
                         <th style="padding: 0.5rem; width: 13%;">Qty Keluar</th>
-                        <th style="padding: 0.5rem; width: 14%;">Harga Satuan (Rp)</th>
-                        <th style="padding: 0.5rem; width: 15%; text-align: right;">Total (Rp)</th>
+                        <th style="padding: 0.5rem; width: 13%;">Harga Satuan (Rp)</th>
+                        <th style="padding: 0.5rem; width: 14%; text-align: right;">Total (Rp)</th>
                         <th style="padding: 0.5rem; width: 5%; text-align: center;">Hapus</th>
                     </tr>
                 </thead>
@@ -190,6 +205,31 @@
     </div>
 </form>
 
+<style>
+.btn-chip {
+    padding: 0.15rem 0.45rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    border-radius: 4px;
+    border: 1px solid #cbd5e1;
+    background: #f8fafc;
+    color: #475569;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    line-height: 1.2;
+}
+.btn-chip:hover {
+    background: #e2e8f0;
+    color: #0f172a;
+}
+.btn-chip.active {
+    background: #0284c7;
+    color: #ffffff;
+    border-color: #0284c7;
+    box-shadow: 0 1px 2px rgba(2, 132, 199, 0.2);
+}
+</style>
+
 {{-- Data Barang Cache untuk Client-side JS --}}
 <script>
     const BARANG_LIST = @json($barangList);
@@ -211,21 +251,86 @@
         });
     }
 
-    function addRow() {
+    function renderBarangOptions(selectedBarangId = '', categoryFilter = '') {
+        const filtered = categoryFilter 
+            ? BARANG_LIST.filter(b => b.kategori_kelompok === categoryFilter)
+            : BARANG_LIST;
+
+        let html = '<option value="">-- Pilih Bahan Produksi --</option>';
+
+        if (categoryFilter) {
+            filtered.forEach(b => {
+                const jenis = b.jenis_barang ? b.jenis_barang.jenis_barang_cd : '';
+                const harga = b.harga_beli_standar || 0;
+                const isSelected = (parseInt(b.barang_id) === parseInt(selectedBarangId)) ? 'selected' : '';
+                html += `<option value="${b.barang_id}" data-harga="${harga}" data-satuan="${b.satuan_dasar?.satuan_nm || ''}" data-kategori="${b.kategori_kelompok}" ${isSelected}>[${b.barang_cd}] ${b.barang_nm} (${jenis})</option>`;
+            });
+        } else {
+            const groups = {
+                'BAHAN_BAKU': { label: '🌾 Bahan Baku (Singkong, Ubi, Opak, Puyur)', items: [] },
+                'BAHAN_PENOLONG': { label: '🧂 Bahan Penolong & Bumbu (Minyak, Bumbu, dll)', items: [] },
+                'KEMASAN': { label: '📦 Kemasan & Packaging (Karton, Plastik, Lakban)', items: [] },
+            };
+
+            filtered.forEach(b => {
+                const grp = b.kategori_kelompok || 'BAHAN_PENOLONG';
+                if (groups[grp]) {
+                    groups[grp].items.push(b);
+                } else {
+                    groups['BAHAN_PENOLONG'].items.push(b);
+                }
+            });
+
+            for (const [key, grp] of Object.entries(groups)) {
+                if (grp.items.length > 0) {
+                    html += `<optgroup label="${grp.label}">`;
+                    grp.items.forEach(b => {
+                        const jenis = b.jenis_barang ? b.jenis_barang.jenis_barang_cd : '';
+                        const harga = b.harga_beli_standar || 0;
+                        const isSelected = (parseInt(b.barang_id) === parseInt(selectedBarangId)) ? 'selected' : '';
+                        html += `<option value="${b.barang_id}" data-harga="${harga}" data-satuan="${b.satuan_dasar?.satuan_nm || ''}" data-kategori="${b.kategori_kelompok}" ${isSelected}>[${b.barang_cd}] ${b.barang_nm} (${jenis})</option>`;
+                    });
+                    html += `</optgroup>`;
+                }
+            }
+        }
+
+        return html;
+    }
+
+    function setRowCategory(btn, cat) {
+        const group = btn.closest('.cat-pill-group');
+        if (group) {
+            group.querySelectorAll('.btn-chip').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }
+
+        const row = btn.closest('tr');
+        const barangSelect = row.querySelector('.barang-select');
+        const currentVal = barangSelect.value;
+        barangSelect.innerHTML = renderBarangOptions(currentVal, cat);
+        // Jika barang yang terpilih sebelumnya tidak ada di kategori baru, reset
+        if (currentVal && !barangSelect.value) {
+            onBarangSelect(barangSelect);
+        }
+    }
+
+    function addRow(initialCategory = '') {
         const tbody = document.getElementById('itemsBody');
         const tr = document.createElement('tr');
         tr.id = `row-${rowIndex}`;
         tr.style.borderBottom = '1px solid #f1f5f9';
 
-        let barangOptions = '<option value="">-- Pilih Barang --</option>';
-        BARANG_LIST.forEach(b => {
-            const jenis = b.jenis_barang ? b.jenis_barang.jenis_barang_cd : '';
-            const harga = b.harga_beli_standar || 0;
-            barangOptions += `<option value="${b.barang_id}" data-harga="${harga}" data-satuan="${b.satuan_dasar?.satuan_nm || ''}">[${b.barang_cd}] ${b.barang_nm} (${jenis})</option>`;
-        });
+        const barangOptions = renderBarangOptions('', initialCategory);
 
         tr.innerHTML = `
             <td style="padding: 0.5rem;">
+                <div class="cat-pill-group" style="display: flex; gap: 0.25rem; margin-bottom: 0.35rem; align-items: center; flex-wrap: wrap;">
+                    <button type="button" class="btn-chip ${initialCategory === '' ? 'active' : ''}" onclick="setRowCategory(this, '')">Semua</button>
+                    <button type="button" class="btn-chip ${initialCategory === 'BAHAN_BAKU' ? 'active' : ''}" onclick="setRowCategory(this, 'BAHAN_BAKU')">🌾 Baku</button>
+                    <button type="button" class="btn-chip ${initialCategory === 'BAHAN_PENOLONG' ? 'active' : ''}" onclick="setRowCategory(this, 'BAHAN_PENOLONG')">🧂 Bumbu</button>
+                    <button type="button" class="btn-chip ${initialCategory === 'KEMASAN' ? 'active' : ''}" onclick="setRowCategory(this, 'KEMASAN')">📦 Kemasan</button>
+                </div>
                 <select name="items[${rowIndex}][barang_id]" class="form-control barang-select" style="font-size: 0.85rem;" required onchange="onBarangSelect(this)">
                     ${barangOptions}
                 </select>
@@ -281,18 +386,9 @@
         tr.id = `row-${rowIndex}`;
         tr.style.borderBottom = '1px solid #f1f5f9';
 
-        let foundInList = false;
-        let barangOptions = '<option value="">-- Pilih Barang --</option>';
-        BARANG_LIST.forEach(b => {
-            const jenis = b.jenis_barang ? b.jenis_barang.jenis_barang_cd : '';
-            const harga = b.harga_beli_standar || 0;
-            const isSelected = (parseInt(b.barang_id) === parseInt(item.barang_id)) ? 'selected' : '';
-            if (isSelected) foundInList = true;
-            barangOptions += `<option value="${b.barang_id}" data-harga="${harga}" data-satuan="${b.satuan_dasar?.satuan_nm || ''}" ${isSelected}>[${b.barang_cd}] ${b.barang_nm} (${jenis})</option>`;
-        });
-        if (!foundInList && item.barang_id) {
-            barangOptions += `<option value="${item.barang_id}" selected>[${item.barang_cd}] ${item.barang_nm}</option>`;
-        }
+        const itemObj = BARANG_LIST.find(b => parseInt(b.barang_id) === parseInt(item.barang_id));
+        const itemCat = itemObj?.kategori_kelompok || '';
+        const barangOptions = renderBarangOptions(item.barang_id, itemCat);
 
         let batchOptions = '';
         if (!item.all_batches || item.all_batches.length === 0) {
@@ -327,6 +423,12 @@
 
         tr.innerHTML = `
             <td style="padding: 0.5rem;">
+                <div class="cat-pill-group" style="display: flex; gap: 0.25rem; margin-bottom: 0.35rem; align-items: center; flex-wrap: wrap;">
+                    <button type="button" class="btn-chip ${itemCat === '' ? 'active' : ''}" onclick="setRowCategory(this, '')">Semua</button>
+                    <button type="button" class="btn-chip ${itemCat === 'BAHAN_BAKU' ? 'active' : ''}" onclick="setRowCategory(this, 'BAHAN_BAKU')">🌾 Baku</button>
+                    <button type="button" class="btn-chip ${itemCat === 'BAHAN_PENOLONG' ? 'active' : ''}" onclick="setRowCategory(this, 'BAHAN_PENOLONG')">🧂 Bumbu</button>
+                    <button type="button" class="btn-chip ${itemCat === 'KEMASAN' ? 'active' : ''}" onclick="setRowCategory(this, 'KEMASAN')">📦 Kemasan</button>
+                </div>
                 <select name="items[${rowIndex}][barang_id]" class="form-control barang-select" style="font-size: 0.85rem;" required onchange="onBarangSelect(this)">
                     ${barangOptions}
                 </select>

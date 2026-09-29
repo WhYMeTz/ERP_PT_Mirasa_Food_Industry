@@ -73,7 +73,8 @@ class PemakaianService
         int|array|null $gudangId = null,
         ?string $tujuan = null,
         ?string $startDate = null,
-        ?string $endDate = null
+        ?string $endDate = null,
+        ?string $kategori = null
     ): LengthAwarePaginator {
         $query = DatPakaiDtl::with(['header.gudang', 'barang.jenisBarang', 'barang.satuanDasar'])
             ->whereHas('header', function ($q) use ($gudangId, $tujuan, $startDate, $endDate) {
@@ -106,6 +107,45 @@ class PemakaianService
                       $hq->where('tujuan_pemakaian', 'ILIKE', "%{$search}%")
                          ->orWhere('pakai_no', 'ILIKE', "%{$search}%");
                   });
+            });
+        }
+
+        if (!empty($kategori)) {
+            $query->whereHas('barang', function ($bq) use ($kategori) {
+                if ($kategori === 'BAHAN_BAKU') {
+                    $bq->where(function ($sq) {
+                        $sq->whereHas('jenisBarang', fn($jq) => $jq->whereIn('jenis_barang_cd', ['BB', 'RAW']))
+                           ->orWhereRaw("UPPER(barang_nm) LIKE '%SINGKONG%'")
+                           ->orWhereRaw("UPPER(barang_nm) LIKE '%UBI%'")
+                           ->orWhereRaw("UPPER(barang_nm) LIKE '%OPAK%'")
+                           ->orWhereRaw("UPPER(barang_nm) LIKE '%PUYUR%'");
+                    });
+                } elseif ($kategori === 'KEMASAN') {
+                    $bq->where(function ($sq) {
+                        $sq->whereHas('jenisBarang', fn($jq) => $jq->where('jenis_barang_cd', 'PACK'))
+                           ->orWhereRaw("UPPER(barang_nm) LIKE '%KARTON%'")
+                           ->orWhereRaw("UPPER(barang_nm) LIKE '%PLASTIK%'")
+                           ->orWhereRaw("UPPER(barang_nm) LIKE '%ROLL%'")
+                           ->orWhereRaw("UPPER(barang_nm) LIKE '%LAKBAN%'")
+                           ->orWhereRaw("UPPER(barang_nm) LIKE '%RAFIA%'")
+                           ->orWhereRaw("UPPER(barang_nm) LIKE '%SARUNG TANGAN%'");
+                    });
+                } elseif ($kategori === 'BAHAN_PENOLONG') {
+                    $bq->where(function ($sq) {
+                        $sq->whereRaw("UPPER(barang_nm) LIKE '%BUMBU%'")
+                           ->orWhereRaw("UPPER(barang_nm) LIKE '%MINYAK%'")
+                           ->orWhereRaw("UPPER(barang_nm) LIKE '%PERENYAH%'")
+                           ->orWhereRaw("UPPER(barang_nm) LIKE '%GARAM%'")
+                           ->orWhere(function ($sub) {
+                               $sub->whereHas('jenisBarang', fn($jq) => $jq->whereIn('jenis_barang_cd', ['BP', 'SUPP']))
+                                   ->whereRaw("UPPER(barang_nm) NOT LIKE '%KARTON%'")
+                                   ->whereRaw("UPPER(barang_nm) NOT LIKE '%PLASTIK%'")
+                                   ->whereRaw("UPPER(barang_nm) NOT LIKE '%LAKBAN%'")
+                                   ->whereRaw("UPPER(barang_nm) NOT LIKE '%ROLL%'")
+                                   ->whereRaw("UPPER(barang_nm) NOT LIKE '%RAFIA%'");
+                           });
+                    });
+                }
             });
         }
 

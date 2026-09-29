@@ -38,6 +38,7 @@ class PemakaianController extends Controller
         $search = $request->input('search');
         $viewType = $request->input('view', 'item'); // 'item' (Excel view) atau 'header'
         $tujuan = $request->input('tujuan');
+        $kategori = $request->input('kategori');
         $startDate = $request->input('start_date');
         $endDate = $request->input('end_date');
 
@@ -63,7 +64,7 @@ class PemakaianController extends Controller
         if ($viewType === 'header') {
             $dataList = $this->pemakaianService->getAllPaginated($perPage, $search, $effectiveGudang, $tujuan, $startDate, $endDate);
         } else {
-            $dataList = $this->pemakaianService->getBarangKeluarListPaginated($perPage, $search, $effectiveGudang, $tujuan, $startDate, $endDate);
+            $dataList = $this->pemakaianService->getBarangKeluarListPaginated($perPage, $search, $effectiveGudang, $tujuan, $startDate, $endDate, $kategori);
         }
 
         $ringkasan = $this->pemakaianService->getRingkasanPengeluaran($effectiveGudang, $tujuan, $startDate, $endDate);
@@ -115,7 +116,7 @@ class PemakaianController extends Controller
 
         return view('gudang.pemakaian.index', compact(
             'dataList', 'gudangList', 'search', 'gudangId', 'viewType',
-            'tujuan', 'startDate', 'endDate', 'ringkasan', 'tujuanOptions', 'kpiCounts'
+            'tujuan', 'kategori', 'startDate', 'endDate', 'ringkasan', 'tujuanOptions', 'kpiCounts'
         ));
     }
 
@@ -128,10 +129,29 @@ class PemakaianController extends Controller
         $gudangList = $user ? $user->getAllowedGudangList() : collect();
         $userGudangId = ($gudangList->count() === 1 && !$user?->isSuperAdmin()) ? $gudangList->first()->gudang_id : null;
 
+        // Hanya ambil barang peruntukan produksi (Bahan Baku, Penolong, Kemasan; bukan Barang Jadi FG / WIP)
         $barangList = MstBarang::active()
+            ->bahanProduksi()
             ->with(['satuanDasar', 'jenisBarang'])
             ->orderBy('barang_nm')
-            ->get();
+            ->get()
+            ->map(function ($b) {
+                $cd = strtoupper($b->jenisBarang->jenis_barang_cd ?? '');
+                $nm = strtoupper($b->barang_nm ?? '');
+
+                if ($cd === 'BB' || $cd === 'RAW' || str_contains($nm, 'SINGKONG') || str_contains($nm, 'UBI') || str_contains($nm, 'OPAK') || str_contains($nm, 'PUYUR')) {
+                    $b->kategori_kelompok = 'BAHAN_BAKU';
+                    $b->kategori_label = '🌾 Bahan Baku';
+                } elseif (str_contains($nm, 'KARTON') || str_contains($nm, 'PLASTIK') || str_contains($nm, 'ROLL') || str_contains($nm, 'LAKBAN') || str_contains($nm, 'RAFIA') || str_contains($nm, 'SARUNG TANGAN') || $cd === 'PACK') {
+                    $b->kategori_kelompok = 'KEMASAN';
+                    $b->kategori_label = '📦 Kemasan & Packaging';
+                } else {
+                    $b->kategori_kelompok = 'BAHAN_PENOLONG';
+                    $b->kategori_label = '🧂 Bahan Penolong & Bumbu';
+                }
+
+                return $b;
+            });
 
         $autoNo = $this->codeGenerator->generatePakaiNo();
 

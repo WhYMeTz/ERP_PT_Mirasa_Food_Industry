@@ -50,6 +50,16 @@ class MstBarang extends Model
     }
 
     /**
+     * Scope barang input untuk bahan produksi (Bahan Baku, Bahan Penolong, Kemasan; mengecualikan Produk Jadi FG dan Hasil Setengah Jadi WIP).
+     */
+    public function scopeBahanProduksi($query)
+    {
+        return $query->whereDoesntHave('jenisBarang', function ($q) {
+            $q->whereIn('jenis_barang_cd', ['FG', 'WIP']);
+        });
+    }
+
+    /**
      * Relasi ke Jenis Barang
      */
     public function jenisBarang(): BelongsTo

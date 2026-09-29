@@ -2,15 +2,97 @@
 
 @section('title', 'Catat Pemakaian Bahan - ERP PT Mirasa')
 
+<style>
+    .order-station-grid {
+        display: grid;
+        grid-template-columns: 2.3fr 1fr;
+        gap: 1.5rem;
+        align-items: start;
+        margin-bottom: 2rem;
+    }
+    @media (max-width: 1100px) {
+        .order-station-grid { grid-template-columns: 1fr; }
+        .sticky-action-sidebar { position: static !important; top: auto !important; }
+    }
+
+    /* Excel Table Styling */
+    .excel-grid-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.825rem;
+    }
+    .excel-grid-table th {
+        background: #0f172a;
+        color: #f8fafc;
+        font-weight: 600;
+        padding: 0.55rem 0.45rem;
+        border: 1px solid #334155;
+        font-size: 0.775rem;
+        letter-spacing: 0.02em;
+        text-align: left;
+    }
+    .excel-grid-table td {
+        padding: 0.35rem 0.45rem;
+        border: 1px solid #cbd5e1;
+        background: #ffffff;
+        vertical-align: middle;
+    }
+    .excel-grid-table tr:nth-child(even) td {
+        background: #fafafa;
+    }
+    .excel-grid-table tr:hover td {
+        background: #fff1f2;
+    }
+    .excel-grid-table .form-control {
+        border: 1px solid #cbd5e1;
+        border-radius: 4px;
+        padding: 0.35rem 0.45rem !important;
+        font-size: 0.825rem !important;
+        height: 32px;
+        box-sizing: border-box;
+        width: 100%;
+        transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .excel-grid-table .form-control:focus {
+        border-color: #dc2626 !important;
+        box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.2) !important;
+        background: #ffffff !important;
+    }
+
+    .btn-chip {
+        padding: 0.2rem 0.5rem;
+        font-size: 0.725rem;
+        font-weight: 600;
+        border-radius: 4px;
+        border: 1px solid #cbd5e1;
+        background: #f8fafc;
+        color: #475569;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        line-height: 1.2;
+    }
+    .btn-chip:hover {
+        background: #e2e8f0;
+        color: #0f172a;
+    }
+    .btn-chip.active {
+        background: #0284c7;
+        color: #ffffff;
+        border-color: #0284c7;
+        box-shadow: 0 1px 2px rgba(2, 132, 199, 0.2);
+    }
+</style>
+
 @section('content')
-<div style="margin-bottom: 1.5rem;">
-    <a href="{{ route('gudang.pemakaian.index') }}" style="color: #64748b; text-decoration: none; font-size: 0.875rem; display: inline-flex; align-items: center; gap: 0.25rem;">
-        &larr; Kembali ke Daftar Pemakaian Bahan
+<div style="margin-bottom: 1.25rem;">
+    <a href="{{ route('gudang.pemakaian.index') }}" style="color: #64748b; text-decoration: none; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.35rem; margin-bottom: 0.35rem;">
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+        Kembali ke Daftar Pemakaian Bahan
     </a>
-    <h1 style="font-size: 1.5rem; font-weight: 700; color: #0f172a; margin-top: 0.5rem;">
-        Form Pemakaian Bahan
+    <h1 style="font-size: 1.5rem; font-weight: 700; color: #0f172a; margin: 0;">
+        Form Pemakaian Bahan (Outbound)
     </h1>
-    <p style="color: #64748b; font-size: 0.875rem;">
+    <p style="color: #64748b; font-size: 0.875rem; margin-top: 0.25rem; margin-bottom: 0;">
         Pencatatan pemakaian bahan baku &amp; penolong ke lini produksi atau packing dengan pemotongan stok otomatis (FIFO).
     </p>
 </div>
@@ -18,217 +100,309 @@
 <form action="{{ route('gudang.pemakaian.store') }}" method="POST" id="pemakaianForm">
     @csrf
 
-    {{-- KARTU HEADER --}}
-    <div class="card" style="margin-bottom: 1.5rem;">
-        <div class="card-header">
-            <h2 style="font-size: 1.1rem; font-weight: 700; color: #0f172a;">Informasi Pengeluaran</h2>
-            <span class="badge" style="background: #fee2e2; color: #991b1b; font-weight: 600;">Transaksi Outbound</span>
-        </div>
-        <div style="padding: 1.5rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.25rem;">
-            <div>
-                <label style="display: block; font-weight: 600; font-size: 0.875rem; color: #334155; margin-bottom: 0.35rem;">
-                    Nomor Dokumen
-                </label>
-                <input type="text" name="pakai_no" value="{{ old('pakai_no', $autoNo) }}" class="form-control" style="font-family: monospace; font-weight: 600;" required>
-                <small style="color: #64748b; font-size: 0.75rem;">Otomatis dibuat oleh sistem (bisa disesuaikan).</small>
-            </div>
+    <div class="order-station-grid">
+        {{-- KOLOM KIRI: FORMULIR UTAMA & TABEL (2.3fr) --}}
+        <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+            
+            {{-- KARTU 1: INFORMASI DOKUMEN & PENGELUARAN --}}
+            <div class="card" style="border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+                <div class="card-header" style="background: #ffffff; padding: 0.875rem 1.25rem; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+                    <strong style="color: #0f172a; font-size: 0.95rem;">1. Informasi Dokumen &amp; Tujuan Pengeluaran</strong>
+                    <span class="badge" style="background: #fee2e2; color: #991b1b; font-weight: 700; font-size: 0.725rem;">Transaksi Outbound</span>
+                </div>
+                <div style="padding: 1.25rem; display: flex; flex-direction: column; gap: 1.25rem;">
+                    
+                    {{-- BARIS 1: NO DOKUMEN, TANGGAL, GUDANG ASAL, TUJUAN / SPK --}}
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem;">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="pakai_no" class="form-label" style="font-weight: 600; font-size: 0.85rem; color: #334155; margin-bottom: 0.35rem;">
+                                Nomor Dokumen Pengeluaran <span style="color: #ef4444;">*</span>
+                            </label>
+                            <input type="text" id="pakai_no" name="pakai_no" value="{{ old('pakai_no', $autoNo) }}" class="form-control" style="font-family: monospace; font-weight: 600; height: 38px; border-radius: 6px; font-size: 0.85rem;" required>
+                            <small style="color: #64748b; font-size: 0.725rem;">Nomor urut Bukti Pengeluaran Barang (BPPB).</small>
+                        </div>
 
-            <div>
-                <label style="display: block; font-weight: 600; font-size: 0.875rem; color: #334155; margin-bottom: 0.35rem;">
-                    Tanggal Pengeluaran <span style="color: #ef4444;">*</span>
-                </label>
-                <input type="date" name="pakai_tgl" value="{{ old('pakai_tgl', date('Y-m-d')) }}" class="form-control" required>
-            </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="pakai_tgl" class="form-label" style="font-weight: 600; font-size: 0.85rem; color: #334155; margin-bottom: 0.35rem;">
+                                Tanggal Pengeluaran Fisik <span style="color: #ef4444;">*</span>
+                            </label>
+                            <input type="date" id="pakai_tgl" name="pakai_tgl" value="{{ old('pakai_tgl', date('Y-m-d')) }}" class="form-control" style="height: 38px; border-radius: 6px; font-size: 0.85rem;" required>
+                            <small style="color: #64748b; font-size: 0.725rem;">Waktu pengeluaran bahan dari gudang ke lantai pabrik.</small>
+                        </div>
 
-            <div>
-                <label style="display: block; font-weight: 600; font-size: 0.875rem; color: #334155; margin-bottom: 0.35rem;">
-                    Gudang Asal Barang <span style="color: #ef4444;">*</span>
-                </label>
-                @if ($userGudangId)
-                    @php $lockedGdg = $gudangList->firstWhere('gudang_id', $userGudangId); @endphp
-                    <div style="display: flex; align-items: center; gap: 0.5rem;">
-                        <input type="text" class="form-control" value="{{ $lockedGdg?->display_name }} ({{ $lockedGdg?->gudang_cd }})" disabled style="background: #f1f5f9; font-weight: 600;">
-                        <input type="hidden" name="gudang_id" id="gudang_id" value="{{ $userGudangId }}">
-                        <span class="badge badge-success" style="white-space: nowrap;">🔒 Terkunci</span>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="gudang_id" class="form-label" style="font-weight: 600; font-size: 0.85rem; color: #334155; margin-bottom: 0.35rem;">
+                                Gudang Asal Barang <span style="color: #ef4444;">*</span>
+                            </label>
+                            @if ($userGudangId)
+                                @php $lockedGdg = $gudangList->firstWhere('gudang_id', $userGudangId); @endphp
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <input type="text" class="form-control" value="{{ $lockedGdg?->display_name }} ({{ $lockedGdg?->gudang_cd }})" disabled style="background: #f1f5f9; font-weight: 600; height: 38px; border-radius: 6px; font-size: 0.85rem;">
+                                    <input type="hidden" name="gudang_id" id="gudang_id" value="{{ $userGudangId }}">
+                                    <span class="badge" style="background: #e2e8f0; color: #475569; display: inline-flex; align-items: center; gap: 0.35rem; font-weight: 600; white-space: nowrap;">
+                                        <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                                        Terkunci
+                                    </span>
+                                </div>
+                            @else
+                                <select name="gudang_id" id="gudang_id" class="form-control" style="height: 38px; border-radius: 6px; font-size: 0.85rem;" required onchange="onGudangChanged()">
+                                    <option value="">-- Pilih Lokasi Asal --</option>
+                                    @foreach ($gudangList as $gdg)
+                                        <option value="{{ $gdg->gudang_id }}" {{ old('gudang_id') == $gdg->gudang_id ? 'selected' : '' }}>
+                                            {{ $gdg->display_name }} ({{ $gdg->gudang_cd }})
+                                        </option>
+                                    @endforeach
+                                </select>
+                            @endif
+                            <small style="color: #64748b; font-size: 0.725rem;">Lokasi gudang fisik tempat stok dipotong.</small>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="tujuan_pemakaian" class="form-label" style="font-weight: 600; font-size: 0.85rem; color: #334155; margin-bottom: 0.35rem;">
+                                Tujuan Pemakaian / SPK <span style="color: #ef4444;">*</span>
+                            </label>
+                            <input type="text" name="tujuan_pemakaian" id="tujuan_pemakaian" list="tujuanList" value="{{ old('tujuan_pemakaian', 'PRODUKSI IFM') }}" class="form-control" placeholder="Contoh: PRODUKSI IFM, PRODUKSI BWF, PACKING EKSPOR" style="height: 38px; border-radius: 6px; font-size: 0.85rem;" required oninput="updateSidebarInfo()">
+                            <datalist id="tujuanList">
+                                @foreach ($tujuanOptions as $opt)
+                                    <option value="{{ $opt }}"></option>
+                                @endforeach
+                            </datalist>
+                            <small style="color: #64748b; font-size: 0.725rem;">Pilih lini produksi atau ketik no SPK.</small>
+                        </div>
                     </div>
-                @else
-                    <select name="gudang_id" id="gudang_id" class="form-control" required onchange="onGudangChanged()">
-                        <option value="">-- Pilih Lokasi Asal --</option>
-                        @foreach ($gudangList as $gdg)
-                            <option value="{{ $gdg->gudang_id }}" {{ old('gudang_id') == $gdg->gudang_id ? 'selected' : '' }}>
-                                {{ $gdg->display_name }} ({{ $gdg->gudang_cd }})
-                            </option>
-                        @endforeach
-                    </select>
-                @endif
-            </div>
 
-            <div>
-                <label style="display: block; font-weight: 600; font-size: 0.875rem; color: #334155; margin-bottom: 0.35rem;">
-                    Tujuan Pemakaian / SPK <span style="color: #ef4444;">*</span>
-                </label>
-                <input type="text" name="tujuan_pemakaian" id="tujuan_pemakaian" list="tujuanList" value="{{ old('tujuan_pemakaian', 'PRODUKSI IFM') }}" class="form-control" placeholder="Contoh: PRODUKSI IFM, PRODUKSI BWF, PACKING EKSPOR" required>
-                <datalist id="tujuanList">
-                    @foreach ($tujuanOptions as $opt)
-                        <option value="{{ $opt }}"></option>
-                    @endforeach
-                </datalist>
-                <small style="color: #64748b; font-size: 0.75rem;">Pilih saran atau ketik no SPK / Work Order.</small>
-            </div>
-
-            <div style="grid-column: 1 / -1;">
-                <label style="display: block; font-weight: 600; font-size: 0.875rem; color: #334155; margin-bottom: 0.35rem;">
-                    Catatan Tambahan (Opsional)
-                </label>
-                <input type="text" name="catatan_txt" value="{{ old('catatan_txt') }}" placeholder="Keterangan shift kerja, operator penerima, dll." class="form-control">
-            </div>
-        </div>
-    </div>
-
-    {{-- KARTU REKOMENDASI RESEP PRODUKSI (AUTO-FIFO) --}}
-    <div class="card" style="margin-bottom: 1.5rem; border: 1.5px solid #93c5fd; background: linear-gradient(180deg, #f8fafc 0%, #eff6ff 100%); box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.08);">
-        <div class="card-header" style="background: transparent; border-bottom: 1px solid #bfdbfe; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
-            <div style="display: flex; align-items: center; gap: 0.5rem;">
-                <span style="font-size: 1.35rem;">⚡</span>
-                <div>
-                    <h2 style="font-size: 1.05rem; font-weight: 700; color: #1e3a8a; margin: 0;">
-                        Tarik Kebutuhan Bahan Berdasarkan Resep Produksi (Auto-FIFO)
-                    </h2>
-                    <p style="color: #2563eb; font-size: 0.8rem; margin: 0.15rem 0 0 0;">
-                        Kalkulasi otomatis proporsi bahan baku & alokasi nomor batch terlama yang dibeli (FIFO/FEFO).
-                    </p>
-                </div>
-            </div>
-            <span class="badge" style="background: #dbeafe; color: #1e40af; font-weight: 700; font-size: 0.75rem; padding: 0.35rem 0.65rem; border: 1px solid #93c5fd;">
-                🛡️ Auto-Draft Pick List (Bukan Potong Buta)
-            </span>
-        </div>
-        <div style="padding: 1.25rem;">
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; align-items: flex-end;">
-                <div>
-                    <label style="display: block; font-weight: 700; font-size: 0.85rem; color: #1e3a8a; margin-bottom: 0.35rem;">
-                        Pilih Formula Resep Produk (BOM)
-                    </label>
-                    <select id="bom_select" class="form-control" style="font-weight: 600; border-color: #93c5fd; font-size: 0.875rem;">
-                        <option value="">-- Pilih Formula Resep Standar --</option>
-                        @foreach ($bomList as $bom)
-                            <option value="{{ $bom->bom_id }}" data-nomor="{{ $bom->bom_no }}" data-nama="{{ $bom->bom_nm }}" data-batch="{{ (float) $bom->batch_ukuran_qty }}">
-                                [{{ $bom->bom_no }}] {{ $bom->bom_nm }} (Basis: {{ number_format($bom->batch_ukuran_qty, 0, ',', '.') }} Karton)
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div style="max-width: 220px;">
-                    <label style="display: block; font-weight: 700; font-size: 0.85rem; color: #1e3a8a; margin-bottom: 0.35rem;">
-                        Target Rencana Produksi
-                    </label>
-                    <div style="display: flex; align-items: center; gap: 0.4rem;">
-                        <input type="number" id="target_produksi_qty" value="100" min="1" step="1" class="form-control" style="font-weight: 700; font-size: 1rem; text-align: right; border-color: #93c5fd;">
-                        <span style="font-size: 0.85rem; font-weight: 600; color: #475569;">Karton</span>
+                    {{-- BARIS 2: CATATAN TAMBAHAN --}}
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="catatan_txt" class="form-label" style="font-weight: 600; font-size: 0.85rem; color: #334155; margin-bottom: 0.35rem;">
+                            Catatan Tambahan Pengeluaran (Opsional)
+                        </label>
+                        <input type="text" id="catatan_txt" name="catatan_txt" value="{{ old('catatan_txt') }}" placeholder="Keterangan shift kerja, operator penerima lini pabrik, memo internal, dll." class="form-control" style="height: 38px; border-radius: 6px; font-size: 0.85rem;">
                     </div>
                 </div>
+            </div>
 
-                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                    <button type="button" id="btnTarikResep" class="btn btn-primary" onclick="tarikBahanResepFifo()" style="background: #2563eb; border-color: #1d4ed8; font-weight: 700; padding: 0.6rem 1.25rem; font-size: 0.875rem; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);">
-                        <span id="btnTarikText">⚡ Muat Batch FIFO Tertua</span>
-                    </button>
-                    <button type="button" class="btn btn-secondary btn-sm" onclick="resetItemsTable()" style="background: #ffffff; border-color: #cbd5e1; color: #64748b;" title="Kosongkan Baris">
-                        Reset Baris
-                    </button>
+            {{-- KARTU 2: REKOMENDASI RESEP PRODUKSI (AUTO-FIFO) --}}
+            <div class="card" style="border: 1px solid #cbd5e1; background: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
+                <div class="card-header" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; padding: 0.85rem 1.25rem;">
+                    <div style="display: flex; align-items: center; gap: 0.65rem;">
+                        <div style="width: 28px; height: 28px; border-radius: 6px; background: #e0f2fe; color: #0284c7; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+                        </div>
+                        <div>
+                            <strong style="font-size: 0.95rem; color: #0f172a; margin: 0; display: block;">
+                                2. Tarik Kebutuhan Bahan Berdasarkan Resep Produksi (Auto-FIFO)
+                            </strong>
+                            <p style="color: #64748b; font-size: 0.775rem; margin: 0.15rem 0 0 0;">
+                                Kalkulasi otomatis proporsi bahan baku &amp; alokasi nomor batch terlama yang dibeli (FIFO/FEFO).
+                            </p>
+                        </div>
+                    </div>
+                    <span class="badge" style="background: #f1f5f9; color: #334155; font-weight: 600; font-size: 0.725rem; padding: 0.3rem 0.6rem; border: 1px solid #cbd5e1;">
+                        Kalkulasi Formula Otomatis
+                    </span>
+                </div>
+                <div style="padding: 1.25rem;">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; align-items: flex-end;">
+                        <div>
+                            <label style="display: block; font-weight: 600; font-size: 0.85rem; color: #334155; margin-bottom: 0.35rem;">
+                                Pilih Formula Resep Produk (BOM)
+                            </label>
+                            <select id="bom_select" class="form-control" style="font-weight: 600; border-color: #cbd5e1; font-size: 0.85rem; height: 38px; border-radius: 6px;">
+                                <option value="">-- Pilih Formula Resep Standar --</option>
+                                @foreach ($bomList as $bom)
+                                    <option value="{{ $bom->bom_id }}" data-nomor="{{ $bom->bom_no }}" data-nama="{{ $bom->bom_nm }}" data-batch="{{ (float) $bom->batch_ukuran_qty }}">
+                                        [{{ $bom->bom_no }}] {{ $bom->bom_nm }} (Basis: {{ number_format($bom->batch_ukuran_qty, 0, ',', '.') }} Karton)
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div style="max-width: 200px;">
+                            <label style="display: block; font-weight: 600; font-size: 0.85rem; color: #334155; margin-bottom: 0.35rem;">
+                                Target Rencana Produksi
+                            </label>
+                            <div style="display: flex; align-items: center; gap: 0.4rem;">
+                                <input type="number" id="target_produksi_qty" value="100" min="1" step="1" class="form-control" style="font-weight: 700; font-size: 0.95rem; text-align: right; border-color: #cbd5e1; height: 38px; border-radius: 6px;">
+                                <span style="font-size: 0.85rem; font-weight: 600; color: #475569;">Karton</span>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                            <button type="button" id="btnTarikResep" class="btn btn-primary" onclick="tarikBahanResepFifo()" style="background: #0284c7; border: 1px solid #0284c7; font-weight: 600; padding: 0.55rem 1.15rem; font-size: 0.85rem; border-radius: 6px; box-shadow: 0 1px 2px rgba(2, 132, 199, 0.2);">
+                                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                <span id="btnTarikText">Muat Batch FIFO Tertua</span>
+                            </button>
+                            <button type="button" class="btn btn-secondary btn-sm" onclick="resetItemsTable()" style="background: #ffffff; border: 1px solid #cbd5e1; color: #64748b; border-radius: 6px; padding: 0.55rem 0.85rem;" title="Kosongkan Baris">
+                                Reset Baris
+                            </button>
+                        </div>
+                    </div>
+
+                    {{-- Container Notifikasi / Status Alokasi --}}
+                    <div id="resepFeedback" style="margin-top: 1rem; display: none;"></div>
                 </div>
             </div>
 
-            {{-- Container Notifikasi / Status Alokasi --}}
-            <div id="resepFeedback" style="margin-top: 1rem; display: none;"></div>
-        </div>
-    </div>
+            {{-- KARTU 3: RINCIAN BAHAN YANG DIKELUARKAN --}}
+            <div class="card" style="border: 1px solid #cbd5e1; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+                <div class="card-header" style="background: #ffffff; padding: 0.875rem 1.25rem; border-bottom: 1px solid #cbd5e1; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                    <div>
+                        <strong style="color: #0f172a; font-size: 0.95rem;">3. Rincian Fisik Bahan Dikeluarkan &amp; Alokasi Batch</strong>
+                        <span style="font-size: 0.75rem; color: #64748b; margin-left: 0.5rem;">
+                            💡 Tekan <kbd style="background:#e2e8f0; padding:2px 5px; border-radius:3px; font-weight:700;">Enter</kbd> untuk berpindah baris layaknya Excel
+                        </span>
+                    </div>
+                    <div style="display: flex; gap: 0.35rem; flex-wrap: wrap; align-items: center;">
+                        <span style="font-size: 0.75rem; font-weight: 600; color: #64748b; margin-right: 0.25rem;">+ Tambah Cepat:</span>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="addRow('BAHAN_BAKU')" style="font-weight: 600; font-size: 0.775rem; border-radius: 6px; border: 1px solid #cbd5e1; background: #ffffff; padding: 0.3rem 0.65rem;">
+                            <span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #d97706; margin-right: 4px;"></span>Bahan Baku
+                        </button>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="addRow('BAHAN_PENOLONG')" style="font-weight: 600; font-size: 0.775rem; border-radius: 6px; border: 1px solid #cbd5e1; background: #ffffff; padding: 0.3rem 0.65rem;">
+                            <span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #0284c7; margin-right: 4px;"></span>Bumbu / Penolong
+                        </button>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="addRow('KEMASAN')" style="font-weight: 600; font-size: 0.775rem; border-radius: 6px; border: 1px solid #cbd5e1; background: #ffffff; padding: 0.3rem 0.65rem;">
+                            <span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #059669; margin-right: 4px;"></span>Kemasan
+                        </button>
+                        <button type="button" class="btn btn-primary btn-sm" onclick="addRow('')" style="font-weight: 600; font-size: 0.775rem; border-radius: 6px; background: #dc2626; border: none; padding: 0.3rem 0.75rem;">
+                            + Baris Umum
+                        </button>
+                    </div>
+                </div>
 
-    {{-- KARTU RINCIAN BARANG --}}
-    <div class="card" style="margin-bottom: 1.5rem;">
-        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
-            <div>
-                <h2 style="font-size: 1.1rem; font-weight: 700; color: #0f172a; margin: 0;">Rincian Bahan yang Dikeluarkan</h2>
-                <small style="color: #64748b; font-size: 0.775rem;">Gunakan filter kategori per-baris untuk menyortir Bahan Baku, Penolong/Bumbu, atau Kemasan.</small>
+                <div style="overflow-x: auto;">
+                    <table class="excel-grid-table" id="itemsTable" style="width: 100%; min-width: 980px;">
+                        <thead>
+                            <tr>
+                                <th style="width: 35px; text-align: center;">No</th>
+                                <th style="min-width: 240px;">Kategori &amp; Nama Bahan Produksi <span style="color:#ef4444;">*</span></th>
+                                <th style="min-width: 220px;">Pilih Batch (Sisa Stok FIFO) <span style="color:#ef4444;">*</span></th>
+                                <th style="width: 115px; text-align: right;">Qty Keluar <span style="color:#ef4444;">*</span></th>
+                                <th style="width: 65px; text-align: center;">Satuan</th>
+                                <th style="width: 125px; text-align: right;">Harga Satuan (Rp)</th>
+                                <th style="width: 135px; text-align: right;">Total Biaya (HPP)</th>
+                                <th style="width: 40px; text-align: center;">Hapus</th>
+                            </tr>
+                        </thead>
+                        <tbody id="itemsBody">
+                            {{-- Row Template rendered via JS --}}
+                        </tbody>
+                        <tfoot>
+                            <tr style="border-top: 2px solid #cbd5e1; font-weight: 700; background: #f8fafc;">
+                                <td colspan="3" style="padding: 0.65rem 0.75rem; text-align: right; color: #475569; font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                                    Total Akumulasi Fisik &amp; HPP:
+                                </td>
+                                <td style="padding: 0.65rem 0.5rem; text-align: right; color: #dc2626; font-family: monospace; font-size: 0.95rem; font-weight: 700;" id="grandTotalQty">
+                                    0,00
+                                </td>
+                                <td style="text-align: center; color: #64748b; font-size: 0.725rem;">Subtotal:</td>
+                                <td></td>
+                                <td style="padding: 0.65rem 0.5rem; text-align: right; color: #0f172a; font-family: monospace; font-size: 1.05rem; font-weight: 800;" id="grandTotalNilai">
+                                    Rp 0
+                                </td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
             </div>
-            <div style="display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center;">
-                <span style="font-size: 0.75rem; font-weight: 600; color: #64748b; margin-right: 0.25rem;">+ Tambah Cepat:</span>
-                <button type="button" class="btn btn-secondary btn-sm" onclick="addRow('BAHAN_BAKU')" style="font-weight: 600; font-size: 0.775rem; background: #fef3c7; color: #92400e; border: 1px solid #fde68a;">
-                    🌾 Bahan Baku
-                </button>
-                <button type="button" class="btn btn-secondary btn-sm" onclick="addRow('BAHAN_PENOLONG')" style="font-weight: 600; font-size: 0.775rem; background: #fef9c3; color: #854d0e; border: 1px solid #fef08a;">
-                    🧂 Bumbu / Penolong
-                </button>
-                <button type="button" class="btn btn-secondary btn-sm" onclick="addRow('KEMASAN')" style="font-weight: 600; font-size: 0.775rem; background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0;">
-                    📦 Kemasan
-                </button>
-                <button type="button" class="btn btn-secondary btn-sm" onclick="addRow('')" style="font-weight: 600; font-size: 0.775rem;">
-                    + Baris Umum
-                </button>
+
+        </div> {{-- End Kolom Kiri (.order-station-grid left) --}}
+
+        {{-- KOLOM KANAN: STICKY ACTION SIDEBAR (1fr) --}}
+        <div class="sticky-action-sidebar" style="position: sticky; top: 1.25rem; display: flex; flex-direction: column; gap: 1.25rem;">
+            
+            {{-- KARTU SUMMARY & ACTION UTAMA --}}
+            <div class="card" style="border: 1px solid #cbd5e1; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.06); overflow: hidden;">
+                <div class="card-header" style="background: #0f172a; color: #ffffff; padding: 0.875rem 1.25rem;">
+                    <div style="font-size: 0.725rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em; color: #94a3b8;">
+                        Ringkasan Pengeluaran
+                    </div>
+                    <strong style="color: #ffffff; font-size: 1.05rem;">Estimasi Nilai HPP Bahan Keluar</strong>
+                </div>
+
+                <div style="padding: 1.25rem;">
+                    {{-- TOTAL NOMINAL DISPLAY BESAR --}}
+                    <div style="margin-bottom: 1.25rem;">
+                        <span style="font-size: 0.725rem; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; display: block;">Total Biaya Bahan (HPP):</span>
+                        <div id="sideGrandTotal" style="font-size: 1.65rem; font-weight: 800; color: #0f172a; margin-top: 0.2rem; font-family: monospace; letter-spacing: -0.02em;">
+                            Rp 0
+                        </div>
+                    </div>
+
+                    {{-- STATISTIK DAMPAK KARTU STOK --}}
+                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.75rem 1rem; margin-bottom: 1.25rem; display: flex; flex-direction: column; gap: 0.55rem; font-size: 0.85rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="color: #64748b;">Jumlah Bahan:</span>
+                            <strong style="color: #0f172a;"><span id="sideTotalItems">0</span> Baris Item</strong>
+                        </div>
+
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 0.4rem; border-top: 1px dashed #e2e8f0;">
+                            <span style="color: #64748b;">Gudang Asal:</span>
+                            <strong id="sideGudangName" style="color: #0f172a; font-size: 0.8rem; max-width: 150px; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">-</strong>
+                        </div>
+
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 0.4rem; border-top: 1px dashed #e2e8f0;">
+                            <span style="color: #64748b;">Tujuan / SPK:</span>
+                            <strong id="sideTujuanName" style="color: #0f172a; font-size: 0.8rem; max-width: 150px; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">-</strong>
+                        </div>
+
+                        {{-- HIGHLIGHT TOTAL QTY KELUAR --}}
+                        <div style="padding: 0.55rem 0.65rem; background: #fee2e2; border: 1px solid #fca5a5; border-radius: 5px; margin-top: 0.2rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="color: #991b1b; font-size: 0.775rem; font-weight: 700; text-transform: uppercase;">Total Qty Keluar:</span>
+                                <strong style="color: #dc2626; font-size: 1.05rem; font-family: monospace;"><span id="sideTotalQty">0,00</span></strong>
+                            </div>
+                            <div style="font-size: 0.7rem; color: #991b1b; margin-top: 0.2rem;">
+                                Dampak: Mengurangi Saldo Stok (FIFO)
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 1.25rem; font-size: 0.75rem; color: #64748b; line-height: 1.4; display: flex; gap: 0.35rem;">
+                        <svg width="15" height="15" fill="none" stroke="#dc2626" viewBox="0 0 24 24" style="flex-shrink: 0; margin-top: 1px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        <span>Stok fisik gudang berkurang otomatis (FIFO) dan tercatat pada Kartu Stok saat disimpan.</span>
+                    </div>
+
+                    {{-- TOMBOL UTAMA: SIMPAN & POTONG STOK SEKARANG --}}
+                    <button type="submit" id="btnSubmitPemakaian" class="btn btn-primary" style="width: 100%; padding: 0.75rem 1rem; font-size: 0.95rem; font-weight: 700; background: #dc2626; border: none; justify-content: center; box-shadow: 0 4px 6px -1px rgba(220, 38, 38, 0.25); display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                        <span>Simpan &amp; Potong Stok</span>
+                    </button>
+
+                    <a href="{{ route('gudang.pemakaian.index') }}" class="btn btn-secondary" style="width: 100%; justify-content: center; margin-top: 0.65rem; font-size: 0.85rem; padding: 0.5rem;">
+                        Batal &amp; Kembali ke Daftar
+                    </a>
+                </div>
             </div>
-        </div>
 
-        <div style="overflow-x: auto; padding: 1rem;">
-            <table style="width: 100%;" id="itemsTable">
-                <thead>
-                    <tr style="border-bottom: 2px solid #e2e8f0; text-align: left; font-size: 0.85rem; color: #475569;">
-                        <th style="padding: 0.5rem; width: 30%;">Kategori &amp; Nama Bahan Produksi</th>
-                        <th style="padding: 0.5rem; width: 25%;">Pilih Batch (Sisa Stok)</th>
-                        <th style="padding: 0.5rem; width: 13%;">Qty Keluar</th>
-                        <th style="padding: 0.5rem; width: 13%;">Harga Satuan (Rp)</th>
-                        <th style="padding: 0.5rem; width: 14%; text-align: right;">Total (Rp)</th>
-                        <th style="padding: 0.5rem; width: 5%; text-align: center;">Hapus</th>
-                    </tr>
-                </thead>
-                <tbody id="itemsBody">
-                    {{-- Row Template rendered via JS --}}
-                </tbody>
-                <tfoot>
-                    <tr style="border-top: 2px solid #e2e8f0; font-weight: 700; background: #f8fafc;">
-                        <td colspan="2" style="padding: 0.75rem 0.5rem; text-align: right;">Total Keseluruhan:</td>
-                        <td style="padding: 0.75rem 0.5rem; color: #dc2626;" id="grandTotalQty">0,00</td>
-                        <td></td>
-                        <td style="padding: 0.75rem 0.5rem; text-align: right; color: #0f172a; font-size: 1.05rem;" id="grandTotalNilai">Rp 0</td>
-                        <td></td>
-                    </tr>
-                </tfoot>
-            </table>
-        </div>
-    </div>
+            {{-- KARTU PANDUAN CEPAT OPERATOR --}}
+            <div class="card" style="border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.03); background: #ffffff;">
+                <div class="card-header" style="background: #ffffff; padding: 0.75rem 1.25rem; border-bottom: 1px solid #e2e8f0;">
+                    <strong style="color: #0f172a; font-size: 0.85rem;">Panduan Pemakaian Bahan</strong>
+                </div>
+                <div style="padding: 1rem 1.25rem; font-size: 0.8rem; color: #475569; line-height: 1.5;">
+                    <div style="margin-bottom: 0.5rem; display: flex; gap: 0.5rem;">
+                        <span style="color: #dc2626; font-weight: 700;">&bull;</span>
+                        <span><strong>Alokasi Batch FIFO:</strong> Sistem otomatis memilih batch tertua yang masih memiliki saldo fisik di gudang.</span>
+                    </div>
+                    <div style="margin-bottom: 0.5rem; display: flex; gap: 0.5rem;">
+                        <span style="color: #dc2626; font-weight: 700;">&bull;</span>
+                        <span><strong>Resep Produksi (BOM):</strong> Tarik formula produk untuk otomatis membagi proporsi singkong, bumbu, dan kemasan.</span>
+                    </div>
+                    <div style="margin-bottom: 0.5rem; display: flex; gap: 0.5rem;">
+                        <span style="color: #dc2626; font-weight: 700;">&bull;</span>
+                        <span><strong>Cek Sisa Fisik:</strong> Baris akan berwarna merah jika kuantitas keluar melebihi stok batch yang tersedia.</span>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <span style="color: #dc2626; font-weight: 700;">&bull;</span>
+                        <span>Gunakan tombol chip kategori untuk memfilter opsi pilihan bahan baku, bumbu, atau kemasan.</span>
+                    </div>
+                </div>
+            </div>
 
-    <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-bottom: 3rem;">
-        <a href="{{ route('gudang.pemakaian.index') }}" class="btn btn-secondary">Batal</a>
-        <button type="submit" class="btn btn-primary" style="background: #dc2626; padding: 0.65rem 1.75rem; font-size: 0.95rem;">
-            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-            Simpan & Potong Stok Sekarang
-        </button>
-    </div>
+        </div> {{-- End Kolom Kanan (.sticky-action-sidebar) --}}
+    </div> {{-- End .order-station-grid --}}
 </form>
-
-<style>
-.btn-chip {
-    padding: 0.15rem 0.45rem;
-    font-size: 0.72rem;
-    font-weight: 600;
-    border-radius: 4px;
-    border: 1px solid #cbd5e1;
-    background: #f8fafc;
-    color: #475569;
-    cursor: pointer;
-    transition: all 0.15s ease;
-    line-height: 1.2;
-}
-.btn-chip:hover {
-    background: #e2e8f0;
-    color: #0f172a;
-}
-.btn-chip.active {
-    background: #0284c7;
-    color: #ffffff;
-    border-color: #0284c7;
-    box-shadow: 0 1px 2px rgba(2, 132, 199, 0.2);
-}
-</style>
 
 {{-- Data Barang Cache untuk Client-side JS --}}
 <script>
@@ -240,10 +414,29 @@
         return el ? el.value : '';
     }
 
+    function updateSidebarInfo() {
+        const gdgSelect = document.getElementById('gudang_id');
+        const sideGdg = document.getElementById('sideGudangName');
+        if (sideGdg && gdgSelect) {
+            if (gdgSelect.tagName === 'SELECT') {
+                const opt = gdgSelect.options[gdgSelect.selectedIndex];
+                sideGdg.innerText = (opt && opt.value) ? opt.text : '- Belum Dipilih -';
+            } else {
+                sideGdg.innerText = gdgSelect.value ? gdgSelect.value : '- Belum Dipilih -';
+            }
+        }
+
+        const tujuanInput = document.getElementById('tujuan_pemakaian');
+        const sideTujuan = document.getElementById('sideTujuanName');
+        if (sideTujuan && tujuanInput) {
+            sideTujuan.innerText = tujuanInput.value ? tujuanInput.value : '- Belum Diisi -';
+        }
+    }
+
     function onGudangChanged() {
+        updateSidebarInfo();
         // Reset all batch selections when warehouse changes
-        document.querySelectorAll('.batch-select').forEach(select => {
-            const row = select.closest('tr');
+        document.querySelectorAll('#itemsBody tr').forEach(row => {
             const barangSelect = row.querySelector('.barang-select');
             if (barangSelect && barangSelect.value) {
                 fetchBatchesForRow(row, barangSelect.value);
@@ -267,9 +460,9 @@
             });
         } else {
             const groups = {
-                'BAHAN_BAKU': { label: '🌾 Bahan Baku (Singkong, Ubi, Opak, Puyur)', items: [] },
-                'BAHAN_PENOLONG': { label: '🧂 Bahan Penolong & Bumbu (Minyak, Bumbu, dll)', items: [] },
-                'KEMASAN': { label: '📦 Kemasan & Packaging (Karton, Plastik, Lakban)', items: [] },
+                'BAHAN_BAKU': { label: 'Bahan Baku (Singkong, Ubi, Opak, Puyur)', items: [] },
+                'BAHAN_PENOLONG': { label: 'Bahan Penolong & Bumbu (Minyak, Bumbu, dll)', items: [] },
+                'KEMASAN': { label: 'Kemasan & Packaging (Karton, Plastik, Lakban)', items: [] },
             };
 
             filtered.forEach(b => {
@@ -315,55 +508,97 @@
         }
     }
 
+    function updateRowNumbers() {
+        document.querySelectorAll('#itemsBody tr').forEach((row, idx) => {
+            const numEl = row.querySelector('.row-num');
+            if (numEl) numEl.innerText = idx + 1;
+        });
+    }
+
+    function attachExcelKeyboardEvents(rowElement) {
+        const inputs = rowElement.querySelectorAll('input, select');
+        inputs.forEach(input => {
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const allRows = Array.from(document.querySelectorAll('#itemsBody tr'));
+                    const currentRowIdx = allRows.indexOf(rowElement);
+
+                    if (input.classList.contains('qty-input') || input.classList.contains('harga-input')) {
+                        if (currentRowIdx === allRows.length - 1) {
+                            addRow();
+                            const newRows = document.querySelectorAll('#itemsBody tr');
+                            const lastRow = newRows[newRows.length - 1];
+                            lastRow.querySelector('.barang-select')?.focus();
+                        } else {
+                            const nextRow = allRows[currentRowIdx + 1];
+                            const targetClass = input.classList.contains('qty-input') ? '.qty-input' : '.harga-input';
+                            const target = nextRow.querySelector(targetClass);
+                            if (target) target.focus();
+                        }
+                    }
+                }
+            });
+        });
+    }
+
     function addRow(initialCategory = '') {
         const tbody = document.getElementById('itemsBody');
         const tr = document.createElement('tr');
         tr.id = `row-${rowIndex}`;
-        tr.style.borderBottom = '1px solid #f1f5f9';
 
         const barangOptions = renderBarangOptions('', initialCategory);
 
         tr.innerHTML = `
-            <td style="padding: 0.5rem;">
+            <td class="row-num" style="font-weight: 700; text-align: center; color: #475569; background: #f1f5f9; font-size: 0.8rem;">
+                ${tbody.children.length + 1}
+            </td>
+            <td style="padding: 0.45rem 0.5rem;">
                 <div class="cat-pill-group" style="display: flex; gap: 0.25rem; margin-bottom: 0.35rem; align-items: center; flex-wrap: wrap;">
                     <button type="button" class="btn-chip ${initialCategory === '' ? 'active' : ''}" onclick="setRowCategory(this, '')">Semua</button>
-                    <button type="button" class="btn-chip ${initialCategory === 'BAHAN_BAKU' ? 'active' : ''}" onclick="setRowCategory(this, 'BAHAN_BAKU')">🌾 Baku</button>
-                    <button type="button" class="btn-chip ${initialCategory === 'BAHAN_PENOLONG' ? 'active' : ''}" onclick="setRowCategory(this, 'BAHAN_PENOLONG')">🧂 Bumbu</button>
-                    <button type="button" class="btn-chip ${initialCategory === 'KEMASAN' ? 'active' : ''}" onclick="setRowCategory(this, 'KEMASAN')">📦 Kemasan</button>
+                    <button type="button" class="btn-chip ${initialCategory === 'BAHAN_BAKU' ? 'active' : ''}" onclick="setRowCategory(this, 'BAHAN_BAKU')">Bahan Baku</button>
+                    <button type="button" class="btn-chip ${initialCategory === 'BAHAN_PENOLONG' ? 'active' : ''}" onclick="setRowCategory(this, 'BAHAN_PENOLONG')">Bumbu / Penolong</button>
+                    <button type="button" class="btn-chip ${initialCategory === 'KEMASAN' ? 'active' : ''}" onclick="setRowCategory(this, 'KEMASAN')">Kemasan</button>
                 </div>
                 <select name="items[${rowIndex}][barang_id]" class="form-control barang-select" style="font-size: 0.85rem;" required onchange="onBarangSelect(this)">
                     ${barangOptions}
                 </select>
-                <div class="satuan-label" style="font-size: 0.75rem; color: #64748b; margin-top: 0.2rem;"></div>
             </td>
-            <td style="padding: 0.5rem;">
+            <td style="padding: 0.45rem 0.5rem;">
                 <select name="items[${rowIndex}][batch_no]" class="form-control batch-select" style="font-size: 0.85rem;" required onchange="onBatchSelect(this)">
                     <option value="">-- Pilih Barang Dulu --</option>
                 </select>
-                <div class="batch-info" style="font-size: 0.75rem; color: #059669; font-weight: 600; margin-top: 0.2rem;"></div>
+                <div class="batch-info" style="font-size: 0.725rem; color: #059669; font-weight: 600; margin-top: 0.2rem;"></div>
             </td>
-            <td style="padding: 0.5rem;">
-                <input type="number" step="0.0001" min="0.0001" name="items[${rowIndex}][qty_keluar]" class="form-control qty-input" placeholder="0" style="font-weight: 700; text-align: right; font-size: 0.9rem;" required oninput="calcRow(this)">
+            <td style="padding: 0.45rem 0.5rem;">
+                <input type="number" step="0.0001" min="0.0001" name="items[${rowIndex}][qty_keluar]" class="form-control qty-input" placeholder="0" style="font-weight: 700; text-align: right; font-size: 0.875rem;" required oninput="calcRow(this)">
             </td>
-            <td style="padding: 0.5rem;">
+            <td style="text-align: center; padding: 0.45rem 0.5rem;">
+                <span class="row-satuan" style="font-weight: 700; color: #475569; font-size: 0.8rem;">-</span>
+            </td>
+            <td style="padding: 0.45rem 0.5rem;">
                 <input type="number" step="0.01" min="0" name="items[${rowIndex}][harga_satuan]" class="form-control harga-input" placeholder="0" style="text-align: right; font-size: 0.85rem;" oninput="calcRow(this)">
             </td>
-            <td style="padding: 0.5rem; text-align: right; font-weight: 700; color: #0f172a; font-size: 0.9rem;" class="subtotal-cell">
+            <td style="padding: 0.45rem 0.5rem; text-align: right; font-weight: 700; color: #0f172a; font-size: 0.875rem; font-family: monospace;" class="subtotal-cell">
                 Rp 0
             </td>
-            <td style="padding: 0.5rem; text-align: center;">
-                <button type="button" class="btn btn-secondary btn-sm" onclick="removeRow(this)" style="color: #ef4444; padding: 0.25rem 0.5rem;" title="Hapus Baris">&times;</button>
+            <td style="padding: 0.45rem 0.5rem; text-align: center;">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="removeRow(this)" style="color: #ef4444; padding: 0.2rem 0.5rem; border-radius: 4px;" title="Hapus Baris">&times;</button>
             </td>
         `;
 
         tbody.appendChild(tr);
+        attachExcelKeyboardEvents(tr);
         rowIndex++;
+        updateRowNumbers();
+        calculateGrandTotal();
     }
 
     function removeRow(btn) {
         const tbody = document.getElementById('itemsBody');
         if (tbody.children.length > 1) {
             btn.closest('tr').remove();
+            updateRowNumbers();
             calculateGrandTotal();
         } else {
             alert('Minimal harus ada 1 item barang yang dikeluarkan.');
@@ -384,7 +619,6 @@
         const tbody = document.getElementById('itemsBody');
         const tr = document.createElement('tr');
         tr.id = `row-${rowIndex}`;
-        tr.style.borderBottom = '1px solid #f1f5f9';
 
         const itemObj = BARANG_LIST.find(b => parseInt(b.barang_id) === parseInt(item.barang_id));
         const itemCat = itemObj?.kategori_kelompok || '';
@@ -396,7 +630,7 @@
         } else {
             item.all_batches.forEach(b => {
                 const isSelected = (b.batch_no === item.batch_no) ? 'selected' : '';
-                const prefix = b.is_fifo_top ? '⭐ [FIFO PRIORITAS] ' : '• ';
+                const prefix = b.is_fifo_top ? '[FIFO Prioritas] ' : '• ';
                 const expInfo = b.expired_tgl ? ` | Exp: ${b.expired_tgl}` : '';
                 const tglTerima = b.tgl_terima ? ` | Masuk: ${b.tgl_terima}` : '';
                 batchOptions += `<option value="${b.batch_no}" data-sisa="${b.sisa_qty}" data-harga="${b.harga_satuan || 0}" data-masuk="${b.tgl_terima}" data-exp="${b.expired_tgl || '-'}" ${isSelected}>
@@ -422,48 +656,55 @@
         const subtotal = (parseFloat(item.qty_keluar) || 0) * (parseFloat(item.harga_satuan) || 0);
 
         tr.innerHTML = `
-            <td style="padding: 0.5rem;">
+            <td class="row-num" style="font-weight: 700; text-align: center; color: #475569; background: #f1f5f9; font-size: 0.8rem;">
+                ${tbody.children.length + 1}
+            </td>
+            <td style="padding: 0.45rem 0.5rem;">
                 <div class="cat-pill-group" style="display: flex; gap: 0.25rem; margin-bottom: 0.35rem; align-items: center; flex-wrap: wrap;">
                     <button type="button" class="btn-chip ${itemCat === '' ? 'active' : ''}" onclick="setRowCategory(this, '')">Semua</button>
-                    <button type="button" class="btn-chip ${itemCat === 'BAHAN_BAKU' ? 'active' : ''}" onclick="setRowCategory(this, 'BAHAN_BAKU')">🌾 Baku</button>
-                    <button type="button" class="btn-chip ${itemCat === 'BAHAN_PENOLONG' ? 'active' : ''}" onclick="setRowCategory(this, 'BAHAN_PENOLONG')">🧂 Bumbu</button>
-                    <button type="button" class="btn-chip ${itemCat === 'KEMASAN' ? 'active' : ''}" onclick="setRowCategory(this, 'KEMASAN')">📦 Kemasan</button>
+                    <button type="button" class="btn-chip ${itemCat === 'BAHAN_BAKU' ? 'active' : ''}" onclick="setRowCategory(this, 'BAHAN_BAKU')">Bahan Baku</button>
+                    <button type="button" class="btn-chip ${itemCat === 'BAHAN_PENOLONG' ? 'active' : ''}" onclick="setRowCategory(this, 'BAHAN_PENOLONG')">Bumbu / Penolong</button>
+                    <button type="button" class="btn-chip ${itemCat === 'KEMASAN' ? 'active' : ''}" onclick="setRowCategory(this, 'KEMASAN')">Kemasan</button>
                 </div>
                 <select name="items[${rowIndex}][barang_id]" class="form-control barang-select" style="font-size: 0.85rem;" required onchange="onBarangSelect(this)">
                     ${barangOptions}
                 </select>
-                <div class="satuan-label" style="font-size: 0.75rem; color: #64748b; margin-top: 0.2rem;">Satuan: ${item.satuan_nm}</div>
             </td>
-            <td style="padding: 0.5rem;">
+            <td style="padding: 0.45rem 0.5rem;">
                 <select name="items[${rowIndex}][batch_no]" class="form-control batch-select" style="font-size: 0.85rem;" required onchange="onBatchSelect(this)">
                     ${batchOptions}
                 </select>
-                <div class="batch-info" style="font-size: 0.75rem; margin-top: 0.2rem;">
+                <div class="batch-info" style="font-size: 0.725rem; margin-top: 0.2rem;">
                     ${badgeHtml}
                 </div>
             </td>
-            <td style="padding: 0.5rem;">
-                <input type="number" step="0.0001" min="0.0001" name="items[${rowIndex}][qty_keluar]" value="${item.qty_keluar}" class="form-control qty-input" placeholder="0" style="font-weight: 700; text-align: right; font-size: 0.9rem;" required oninput="calcRow(this)">
+            <td style="padding: 0.45rem 0.5rem;">
+                <input type="number" step="0.0001" min="0.0001" name="items[${rowIndex}][qty_keluar]" value="${item.qty_keluar}" class="form-control qty-input" placeholder="0" style="font-weight: 700; text-align: right; font-size: 0.875rem;" required oninput="calcRow(this)">
             </td>
-            <td style="padding: 0.5rem;">
+            <td style="text-align: center; padding: 0.45rem 0.5rem;">
+                <span class="row-satuan" style="font-weight: 700; color: #475569; font-size: 0.8rem;">${item.satuan_nm || '-'}</span>
+            </td>
+            <td style="padding: 0.45rem 0.5rem;">
                 <input type="number" step="0.01" min="0" name="items[${rowIndex}][harga_satuan]" value="${item.harga_satuan}" class="form-control harga-input" placeholder="0" style="text-align: right; font-size: 0.85rem;" oninput="calcRow(this)">
             </td>
-            <td style="padding: 0.5rem; text-align: right; font-weight: 700; color: #0f172a; font-size: 0.9rem;" class="subtotal-cell">
-                Rp ${subtotal.toLocaleString('id-ID', { minimumFractionDigits: 2 })}
+            <td style="padding: 0.45rem 0.5rem; text-align: right; font-weight: 700; color: #0f172a; font-size: 0.875rem; font-family: monospace;" class="subtotal-cell">
+                Rp ${subtotal.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </td>
-            <td style="padding: 0.5rem; text-align: center;">
-                <button type="button" class="btn btn-secondary btn-sm" onclick="removeRow(this)" style="color: #ef4444; padding: 0.25rem 0.5rem;" title="Hapus Baris">&times;</button>
+            <td style="padding: 0.45rem 0.5rem; text-align: center;">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="removeRow(this)" style="color: #ef4444; padding: 0.2rem 0.5rem; border-radius: 4px;" title="Hapus Baris">&times;</button>
             </td>
         `;
 
         tbody.appendChild(tr);
+        attachExcelKeyboardEvents(tr);
         rowIndex++;
+        updateRowNumbers();
     }
 
     function tarikBahanResepFifo() {
         const gudangId = getSelectedGudangId();
         if (!gudangId) {
-            alert('⚠️ Harap pilih Gudang Asal Barang terlebih dahulu di formulir bagian atas!');
+            alert('Harap pilih Gudang Asal Barang terlebih dahulu di formulir bagian atas!');
             document.getElementById('gudang_id')?.focus();
             return;
         }
@@ -471,14 +712,14 @@
         const bomSelect = document.getElementById('bom_select');
         const bomId = bomSelect ? bomSelect.value : '';
         if (!bomId) {
-            alert('⚠️ Harap pilih Formula Resep Produk (BOM) terlebih dahulu!');
+            alert('Harap pilih Formula Resep Produk (BOM) terlebih dahulu!');
             bomSelect?.focus();
             return;
         }
 
         const targetQty = parseFloat(document.getElementById('target_produksi_qty').value) || 0;
         if (targetQty <= 0) {
-            alert('⚠️ Target Rencana Produksi harus lebih dari 0 karton!');
+            alert('Target Rencana Produksi harus lebih dari 0 karton!');
             document.getElementById('target_produksi_qty')?.focus();
             return;
         }
@@ -488,14 +729,14 @@
         const feedback = document.getElementById('resepFeedback');
 
         btn.disabled = true;
-        btnText.innerHTML = '⏳ Menghitung Alokasi Batch FIFO...';
+        btnText.innerHTML = 'Menghitung Alokasi Batch FIFO...';
         feedback.style.display = 'none';
 
         fetch(`{{ route('gudang.pemakaian.alokasi-resep') }}?gudang_id=${gudangId}&bom_id=${bomId}&target_qty=${targetQty}`)
             .then(res => res.json())
             .then(res => {
                 btn.disabled = false;
-                btnText.innerHTML = '⚡ Muat Batch FIFO Tertua';
+                btnText.innerHTML = 'Muat Batch FIFO Tertua';
 
                 if (res.status === 'success') {
                     const data = res.data;
@@ -519,6 +760,7 @@
                         } else {
                             tujuanInput.value = `PRODUKSI ${data.bom_no}`;
                         }
+                        updateSidebarInfo();
                     }
 
                     // Kosongkan baris tabel dan render baris alokasi FIFO
@@ -536,8 +778,8 @@
                     feedback.style.display = 'block';
                     if (data.is_lengkap) {
                         feedback.innerHTML = `
-                            <div style="background: #ecfdf5; border: 1.5px solid #a7f3d0; border-radius: 6px; padding: 0.75rem 1rem; color: #065f46; display: flex; align-items: flex-start; gap: 0.65rem;">
-                                <span style="font-size: 1.25rem;">✅</span>
+                            <div style="background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 6px; padding: 0.75rem 1rem; color: #065f46; display: flex; align-items: flex-start; gap: 0.65rem;">
+                                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink: 0; color: #059669; margin-top: 2px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                                 <div>
                                     <strong style="display: block; font-size: 0.875rem;">Alokasi Batch Tertua (FIFO) Berhasil Dimuat:</strong>
                                     <span style="font-size: 0.8rem; line-height: 1.4;">
@@ -550,9 +792,9 @@
                     } else {
                         const peringatanItems = (data.peringatan || []).map(p => `<li>${p}</li>`).join('');
                         feedback.innerHTML = `
-                            <div style="background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 6px; padding: 0.75rem 1rem; color: #92400e;">
+                            <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 6px; padding: 0.75rem 1rem; color: #92400e;">
                                 <div style="display: flex; align-items: flex-start; gap: 0.65rem; margin-bottom: 0.35rem;">
-                                    <span style="font-size: 1.25rem;">⚠️</span>
+                                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink: 0; color: #d97706; margin-top: 2px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
                                     <div>
                                         <strong style="display: block; font-size: 0.875rem;">Perhatian: Ada Bahan Fisik yang Kurang di Gudang Ini</strong>
                                         <span style="font-size: 0.8rem;">
@@ -576,7 +818,7 @@
             .catch(err => {
                 console.error(err);
                 btn.disabled = false;
-                btnText.innerHTML = '⚡ Muat Batch FIFO Tertua';
+                btnText.innerHTML = 'Muat Batch FIFO Tertua';
                 alert('Terjadi kesalahan koneksi saat menghitung alokasi resep.');
             });
     }
@@ -588,7 +830,9 @@
         const satuan = selectedOpt ? selectedOpt.getAttribute('data-satuan') : '';
         const defaultHarga = selectedOpt ? parseFloat(selectedOpt.getAttribute('data-harga') || 0) : 0;
 
-        row.querySelector('.satuan-label').textContent = satuan ? `Satuan: ${satuan}` : '';
+        const satuanEl = row.querySelector('.row-satuan');
+        if (satuanEl) satuanEl.textContent = satuan || '-';
+
         const hargaInput = row.querySelector('.harga-input');
         if (defaultHarga > 0) {
             hargaInput.value = defaultHarga;
@@ -600,23 +844,10 @@
             const batchSelect = row.querySelector('.batch-select');
             batchSelect.innerHTML = '<option value="">-- Pilih Barang Dulu --</option>';
             row.querySelector('.batch-info').textContent = '';
+            if (satuanEl) satuanEl.textContent = '-';
         }
 
         calcRow(selectEl);
-    }
-
-    function getSelectedGudangId() {
-        const el = document.getElementById('gudang_id');
-        return el ? el.value : '';
-    }
-
-    function onGudangChanged() {
-        document.querySelectorAll('#itemsBody tr').forEach(row => {
-            const barangSelect = row.querySelector('.barang-select');
-            if (barangSelect && barangSelect.value) {
-                fetchBatchesForRow(row, barangSelect.value);
-            }
-        });
     }
 
     function fetchBatchesForRow(row, barangId) {
@@ -731,30 +962,49 @@
         }
 
         const subtotal = qty * harga;
-        row.querySelector('.subtotal-cell').textContent = 'Rp ' + subtotal.toLocaleString('id-ID', { minimumFractionDigits: 2 });
+        row.querySelector('.subtotal-cell').textContent = 'Rp ' + subtotal.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
         calculateGrandTotal();
     }
 
-
     function calculateGrandTotal() {
         let totalQty = 0;
         let totalNilai = 0;
+        let activeItems = 0;
 
         document.querySelectorAll('#itemsBody tr').forEach(row => {
+            const barangSelect = row.querySelector('.barang-select');
+            if (barangSelect && barangSelect.value) {
+                activeItems++;
+            }
             const qty = parseFloat(row.querySelector('.qty-input')?.value) || 0;
             const harga = parseFloat(row.querySelector('.harga-input')?.value) || 0;
             totalQty += qty;
             totalNilai += (qty * harga);
         });
 
-        document.getElementById('grandTotalQty').textContent = totalQty.toLocaleString('id-ID', { minimumFractionDigits: 2 });
-        document.getElementById('grandTotalNilai').textContent = 'Rp ' + totalNilai.toLocaleString('id-ID', { minimumFractionDigits: 2 });
+        const grandTotalQty = document.getElementById('grandTotalQty');
+        const grandTotalNilai = document.getElementById('grandTotalNilai');
+        if (grandTotalQty) grandTotalQty.textContent = totalQty.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        if (grandTotalNilai) grandTotalNilai.textContent = 'Rp ' + totalNilai.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+        const sideGrandTotal = document.getElementById('sideGrandTotal');
+        const sideTotalQty = document.getElementById('sideTotalQty');
+        const sideTotalItems = document.getElementById('sideTotalItems');
+        if (sideGrandTotal) sideGrandTotal.textContent = 'Rp ' + totalNilai.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        if (sideTotalQty) sideTotalQty.textContent = totalQty.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        if (sideTotalItems) sideTotalItems.textContent = activeItems;
     }
 
-    // Inisialisasi baris pertama saat form dibuka
+    // Inisialisasi awal saat halaman selesai dimuat
     document.addEventListener('DOMContentLoaded', () => {
         addRow();
+        updateSidebarInfo();
+        document.getElementById('tujuan_pemakaian')?.addEventListener('input', updateSidebarInfo);
+        document.getElementById('gudang_id')?.addEventListener('change', () => {
+            updateSidebarInfo();
+            onGudangChanged();
+        });
     });
 </script>
 @endsection

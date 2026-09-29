@@ -26,11 +26,11 @@
         font-size: 0.825rem;
     }
     .excel-grid-table th {
-        background: #f8fafc;
-        color: #334155;
-        font-weight: 700;
-        padding: 0.6rem 0.5rem;
-        border: 1px solid #cbd5e1;
+        background: #0f172a;
+        color: #f8fafc;
+        font-weight: 600;
+        padding: 0.55rem 0.45rem;
+        border: 1px solid #334155;
         font-size: 0.775rem;
         letter-spacing: 0.02em;
     }
@@ -62,31 +62,52 @@
         background: #ffffff !important;
     }
 
-    /* Filter Chips Barang */
-    .barang-filter-chip {
+    /* Category Segmented Control (Enterprise Design) */
+    .category-segmented-control {
+        display: inline-flex;
         background: #f1f5f9;
+        padding: 3px;
+        border-radius: 6px;
+        gap: 2px;
         border: 1px solid #cbd5e1;
-        color: #475569;
-        font-size: 0.725rem;
+    }
+    .category-segment-btn {
+        background: transparent;
+        border: none;
+        padding: 0.32rem 0.75rem;
+        font-size: 0.75rem;
         font-weight: 600;
-        padding: 0.25rem 0.65rem;
-        border-radius: 9999px;
+        color: #475569;
+        border-radius: 4px;
         cursor: pointer;
-        transition: all 0.15s ease;
         display: inline-flex;
         align-items: center;
-        gap: 0.25rem;
-        line-height: 1.2;
+        gap: 0.45rem;
+        transition: all 0.15s ease;
+        line-height: 1.25;
     }
-    .barang-filter-chip:hover {
+    .category-segment-btn:hover:not(.active) {
+        color: #0f172a;
+        background: rgba(255, 255, 255, 0.7);
+    }
+    .category-segment-btn.active {
+        background: #ffffff;
+        color: #0284c7;
+        font-weight: 700;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+    .category-segment-count {
+        font-size: 0.675rem;
+        padding: 0.1rem 0.45rem;
+        border-radius: 9999px;
         background: #e2e8f0;
-        color: #1e293b;
+        color: #475569;
+        font-weight: 700;
+        transition: all 0.15s ease;
     }
-    .barang-filter-chip.active {
-        background: #0284c7;
-        border-color: #0284c7;
-        color: #ffffff;
-        box-shadow: 0 1px 3px rgba(2, 132, 199, 0.3);
+    .category-segment-btn.active .category-segment-count {
+        background: #e0f2fe;
+        color: #0284c7;
     }
 
     /* Supplier Modal Tabs (Clean Enterprise Style) */
@@ -391,31 +412,37 @@
                 </div>
 
                 {{-- FILTER BAR CEPAT UNTUK KATEGORI BARANG & REKANAN SUPPLIER --}}
-                <div style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0.6rem 1.25rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.65rem;">
-                    <div style="display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;">
-                        <span style="font-size: 0.75rem; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.03em; margin-right: 0.25rem;">
-                            Filter Kategori:
+                <div style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0.55rem 1.25rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.65rem;">
+                    <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
+                        <span style="font-size: 0.725rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em;">
+                            Kategori:
                         </span>
-                        <button type="button" class="barang-filter-chip active" data-category="ALL" onclick="filterBarangCategory('ALL', this)">
-                            Semua (36 Bahan / 60 Rekanan)
-                        </button>
-                        <button type="button" class="barang-filter-chip" data-category="BB" onclick="filterBarangCategory('BB', this)">
-                            🌾 Bahan Baku ({{ $barangList->filter(fn($b) => in_array($b->jenisBarang?->jenis_barang_cd, ['RAW', 'BB']))->count() }})
-                        </button>
-                        <button type="button" class="barang-filter-chip" data-category="BUMBU" onclick="filterBarangCategory('BUMBU', this)">
-                            🧂 Bumbu &amp; Penolong ({{ $barangList->filter(fn($b) => in_array($b->jenisBarang?->jenis_barang_cd, ['SUPP', 'BUMBU', 'BP']) && !preg_match('/(PLASTIK|KARTON|ROLL|LAKBAN|SARUNG|RAFIA)/i', $b->barang_nm))->count() }})
-                        </button>
-                        <button type="button" class="barang-filter-chip" data-category="PACK" onclick="filterBarangCategory('PACK', this)">
-                            📦 Kemasan &amp; Packaging ({{ $barangList->filter(fn($b) => in_array($b->jenisBarang?->jenis_barang_cd, ['PACK']) || (in_array($b->jenisBarang?->jenis_barang_cd, ['BP']) && preg_match('/(PLASTIK|KARTON|ROLL|LAKBAN|SARUNG|RAFIA)/i', $b->barang_nm)))->count() }})
-                        </button>
+                        <div class="category-segmented-control" role="group" aria-label="Filter Kategori Barang">
+                            <button type="button" class="category-segment-btn active" data-category="ALL" onclick="filterBarangCategory('ALL', this)">
+                                <span>Semua</span>
+                                <span class="category-segment-count">{{ $barangList->count() }}</span>
+                            </button>
+                            <button type="button" class="category-segment-btn" data-category="BB" onclick="filterBarangCategory('BB', this)">
+                                <span>Bahan Baku</span>
+                                <span class="category-segment-count">{{ $barangList->filter(fn($b) => in_array($b->jenisBarang?->jenis_barang_cd, ['RAW', 'BB']))->count() }}</span>
+                            </button>
+                            <button type="button" class="category-segment-btn" data-category="BUMBU" onclick="filterBarangCategory('BUMBU', this)">
+                                <span>Bumbu &amp; Penolong</span>
+                                <span class="category-segment-count">{{ $barangList->filter(fn($b) => in_array($b->jenisBarang?->jenis_barang_cd, ['SUPP', 'BUMBU', 'BP']) && !preg_match('/(PLASTIK|KARTON|ROLL|LAKBAN|SARUNG|RAFIA)/i', $b->barang_nm))->count() }}</span>
+                            </button>
+                            <button type="button" class="category-segment-btn" data-category="PACK" onclick="filterBarangCategory('PACK', this)">
+                                <span>Kemasan</span>
+                                <span class="category-segment-count">{{ $barangList->filter(fn($b) => in_array($b->jenisBarang?->jenis_barang_cd, ['PACK']) || (in_array($b->jenisBarang?->jenis_barang_cd, ['BP']) && preg_match('/(PLASTIK|KARTON|ROLL|LAKBAN|SARUNG|RAFIA)/i', $b->barang_nm)))->count() }}</span>
+                            </button>
+                        </div>
                     </div>
 
                     <div style="display: flex; align-items: center; gap: 0.75rem;">
                         {{-- Quick Search Supplier Khusus Tabel (Aktif pada mode multi-supplier) --}}
                         <div id="table_supplier_search_box" style="display: none; align-items: center; gap: 0.35rem;">
                             <div style="position: relative;">
-                                <input type="text" id="table_sup_search_input" oninput="filterTableSuppliersBySearch(this.value)" placeholder="🔍 Filter supplier di tabel..." class="form-control" style="height: 28px; font-size: 0.75rem; padding: 0.2rem 0.5rem 0.2rem 1.6rem !important; width: 190px; border-radius: 4px; border: 1px solid #cbd5e1;">
-                                <span style="position: absolute; left: 0.45rem; top: 50%; transform: translateY(-50%); color: #94a3b8; pointer-events: none; font-size: 0.725rem;">🔍</span>
+                                <input type="text" id="table_sup_search_input" oninput="filterTableSuppliersBySearch(this.value)" placeholder="Cari supplier di tabel..." class="form-control" style="height: 28px; font-size: 0.75rem; padding: 0.2rem 0.5rem 0.2rem 1.6rem !important; width: 190px; border-radius: 4px; border: 1px solid #cbd5e1;">
+                                <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="position: absolute; left: 0.45rem; top: 50%; transform: translateY(-50%); color: #94a3b8; pointer-events: none;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                             </div>
                             <button type="button" onclick="clearTableSupSearch()" class="btn btn-sm" style="padding: 0.15rem 0.5rem; font-size: 0.7rem; background: #e2e8f0; color: #475569; border: none; border-radius: 4px; height: 28px; cursor: pointer; font-weight: 600;">
                                 Reset
@@ -424,7 +451,7 @@
 
                         <div style="font-size: 0.725rem; color: #0284c7; font-weight: 600; display: flex; align-items: center; gap: 0.25rem;">
                             <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                            <span>Barang &amp; Supplier otomatis tersaring sesuai kategori</span>
+                            <span>Barang &amp; Supplier tersaring otomatis</span>
                         </div>
                     </div>
                 </div>
@@ -516,12 +543,12 @@
                         <thead>
                             <tr>
                                 <th style="width: 35px; text-align: center;">No</th>
-                                <th style="min-width: 260px; text-align: left;">Nama Komoditas / Bahan Baku <span style="color:#ef4444;">*</span></th>
+                                <th style="min-width: 260px; text-align: left;">Nama Komoditas / Bahan Baku <span style="color:#f87171;">*</span></th>
                                 <th class="col-supplier" style="display: none; min-width: 220px; text-align: left;">
-                                    Supplier Mitra <span style="color:#ef4444;">*</span>
+                                    Supplier Mitra <span style="color:#f87171;">*</span>
                                 </th>
                                 <th style="width: 90px; text-align: center;">Satuan</th>
-                                <th style="width: 120px; text-align: right;">Kuantitas <span style="color:#ef4444;">*</span></th>
+                                <th style="width: 120px; text-align: right;">Kuantitas <span style="color:#f87171;">*</span></th>
                                 <th style="width: 150px; text-align: right;">Harga Satuan (Rp)</th>
                                 <th style="width: 150px; text-align: right;">Subtotal (Rp)</th>
                                 <th style="width: 45px; text-align: center;">Hapus</th>
@@ -535,7 +562,7 @@
                                     <select name="items[0][barang_id]" class="form-control item-barang" onchange="updateRowSatuan(this)" required>
                                         <option value="">-- Pilih Barang (Bahan Baku / Penolong) --</option>
                                         
-                                        <optgroup label="🌾 BAHAN BAKU (KOMODITAS UTAMA)" class="grp-bb">
+                                        <optgroup label="BAHAN BAKU (RAW MATERIAL)" class="grp-bb">
                                             @foreach($barangList->filter(fn($b) => in_array($b->jenisBarang?->jenis_barang_cd, ['RAW', 'BB'])) as $b)
                                                 <option value="{{ $b->barang_id }}" data-category="BB" data-satuan="{{ $b->satuanDasar?->satuan_nm ?? '-' }}" data-harga="{{ (float) ($b->harga_beli_standar ?? 0) }}">
                                                     {{ $b->barang_nm }} ({{ $b->barang_cd }}) - Std: Rp {{ number_format((float) ($b->harga_beli_standar ?? 0), 0, ',', '.') }}/{{ $b->satuanDasar?->satuan_cd }}
@@ -543,7 +570,7 @@
                                             @endforeach
                                         </optgroup>
 
-                                        <optgroup label="🧂 BUMBU &amp; BAHAN PENOLONG" class="grp-bumbu">
+                                        <optgroup label="BUMBU &amp; BAHAN PENOLONG" class="grp-bumbu">
                                             @foreach($barangList->filter(fn($b) => in_array($b->jenisBarang?->jenis_barang_cd, ['SUPP', 'BUMBU', 'BP']) && !preg_match('/(PLASTIK|KARTON|ROLL|LAKBAN|SARUNG|RAFIA)/i', $b->barang_nm)) as $b)
                                                 <option value="{{ $b->barang_id }}" data-category="BUMBU" data-satuan="{{ $b->satuanDasar?->satuan_nm ?? '-' }}" data-harga="{{ (float) ($b->harga_beli_standar ?? 0) }}">
                                                     {{ $b->barang_nm }} ({{ $b->barang_cd }}) - Std: Rp {{ number_format((float) ($b->harga_beli_standar ?? 0), 0, ',', '.') }}/{{ $b->satuanDasar?->satuan_cd }}
@@ -551,7 +578,7 @@
                                             @endforeach
                                         </optgroup>
 
-                                        <optgroup label="📦 BAHAN KEMASAN &amp; PACKAGING" class="grp-pack">
+                                        <optgroup label="BAHAN KEMASAN &amp; PACKAGING" class="grp-pack">
                                             @foreach($barangList->filter(fn($b) => in_array($b->jenisBarang?->jenis_barang_cd, ['PACK']) || (in_array($b->jenisBarang?->jenis_barang_cd, ['BP']) && preg_match('/(PLASTIK|KARTON|ROLL|LAKBAN|SARUNG|RAFIA)/i', $b->barang_nm))) as $b)
                                                 <option value="{{ $b->barang_id }}" data-category="PACK" data-satuan="{{ $b->satuanDasar?->satuan_nm ?? '-' }}" data-harga="{{ (float) ($b->harga_beli_standar ?? 0) }}">
                                                     {{ $b->barang_nm }} ({{ $b->barang_cd }}) - Std: Rp {{ number_format((float) ($b->harga_beli_standar ?? 0), 0, ',', '.') }}/{{ $b->satuanDasar?->satuan_cd }}
@@ -672,6 +699,8 @@
             </div>
 
         </div>
+    </div>
+</form>
 {{-- ========================================================================= --}}
 {{-- MODAL PILIH MASTER SUPPLIER (STANDAR TABEL EXCEL ERP)                     --}}
 {{-- ========================================================================= --}}
@@ -1200,16 +1229,16 @@
             const hint = row.querySelector('.row-supplier-hint');
             if (hint) {
                 if (category === 'BB' || category === 'RAW') {
-                    hint.innerHTML = `<span style="color:#15803d; font-weight:600;">🌾 ${totalCount} Petani Bahan Baku</span>`;
+                    hint.innerHTML = `<span style="color:#15803d; font-weight:600;">Rekanan Bahan Baku (${totalCount})</span>`;
                     hint.style.display = 'block';
                 } else if (category === 'BUMBU') {
-                    hint.innerHTML = `<span style="color:#b45309; font-weight:600;">🧂 ${totalCount} Supplier Bumbu &amp; Penolong</span>`;
+                    hint.innerHTML = `<span style="color:#b45309; font-weight:600;">Rekanan Bumbu &amp; Penolong (${totalCount})</span>`;
                     hint.style.display = 'block';
                 } else if (category === 'PACK') {
-                    hint.innerHTML = `<span style="color:#7c3aed; font-weight:600;">📦 ${totalCount} Vendor Kemasan</span>`;
+                    hint.innerHTML = `<span style="color:#7c3aed; font-weight:600;">Rekanan Kemasan (${totalCount})</span>`;
                     hint.style.display = 'block';
                 } else if (searchQuery) {
-                    hint.innerHTML = `<span style="color:#0284c7; font-weight:600;">🔍 ${totalCount} Supplier Cocok</span>`;
+                    hint.innerHTML = `<span style="color:#0284c7; font-weight:600;">Supplier Terfilter (${totalCount})</span>`;
                     hint.style.display = 'block';
                 } else {
                     hint.style.display = 'none';
@@ -1220,7 +1249,7 @@
 
     function filterBarangCategory(category, btn) {
         activeBarangCategory = category;
-        document.querySelectorAll('.barang-filter-chip').forEach(c => c.classList.remove('active'));
+        document.querySelectorAll('.category-segment-btn, .barang-filter-chip').forEach(c => c.classList.remove('active'));
         if (btn) btn.classList.add('active');
 
         // Update semua baris di tabel: filter barang dan filter supplier
@@ -1395,7 +1424,7 @@
                 <select name="items[${rowIndex}][barang_id]" class="form-control item-barang" onchange="updateRowSatuan(this)" required>
                     <option value="">-- Pilih Barang (Bahan Baku / Penolong) --</option>
                     
-                    <optgroup label="🌾 BAHAN BAKU (KOMODITAS UTAMA)" class="grp-bb">
+                    <optgroup label="BAHAN BAKU (RAW MATERIAL)" class="grp-bb">
                         @foreach($barangList->filter(fn($b) => in_array($b->jenisBarang?->jenis_barang_cd, ['RAW', 'BB'])) as $b)
                             <option value="{{ $b->barang_id }}" data-category="BB" data-satuan="{{ $b->satuanDasar?->satuan_nm ?? '-' }}" data-harga="{{ (float) ($b->harga_beli_standar ?? 0) }}">
                                 {{ $b->barang_nm }} ({{ $b->barang_cd }}) - Std: Rp {{ number_format((float) ($b->harga_beli_standar ?? 0), 0, ',', '.') }}/{{ $b->satuanDasar?->satuan_cd }}
@@ -1403,7 +1432,7 @@
                         @endforeach
                     </optgroup>
 
-                    <optgroup label="🧂 BUMBU &amp; BAHAN PENOLONG" class="grp-bumbu">
+                    <optgroup label="BUMBU &amp; BAHAN PENOLONG" class="grp-bumbu">
                         @foreach($barangList->filter(fn($b) => in_array($b->jenisBarang?->jenis_barang_cd, ['SUPP', 'BUMBU', 'BP']) && !preg_match('/(PLASTIK|KARTON|ROLL|LAKBAN|SARUNG|RAFIA)/i', $b->barang_nm)) as $b)
                             <option value="{{ $b->barang_id }}" data-category="BUMBU" data-satuan="{{ $b->satuanDasar?->satuan_nm ?? '-' }}" data-harga="{{ (float) ($b->harga_beli_standar ?? 0) }}">
                                 {{ $b->barang_nm }} ({{ $b->barang_cd }}) - Std: Rp {{ number_format((float) ($b->harga_beli_standar ?? 0), 0, ',', '.') }}/{{ $b->satuanDasar?->satuan_cd }}
@@ -1411,7 +1440,7 @@
                         @endforeach
                     </optgroup>
 
-                    <optgroup label="📦 BAHAN KEMASAN &amp; PACKAGING" class="grp-pack">
+                    <optgroup label="BAHAN KEMASAN &amp; PACKAGING" class="grp-pack">
                         @foreach($barangList->filter(fn($b) => in_array($b->jenisBarang?->jenis_barang_cd, ['PACK']) || (in_array($b->jenisBarang?->jenis_barang_cd, ['BP']) && preg_match('/(PLASTIK|KARTON|ROLL|LAKBAN|SARUNG|RAFIA)/i', $b->barang_nm))) as $b)
                             <option value="{{ $b->barang_id }}" data-category="PACK" data-satuan="{{ $b->satuanDasar?->satuan_nm ?? '-' }}" data-harga="{{ (float) ($b->harga_beli_standar ?? 0) }}">
                                 {{ $b->barang_nm }} ({{ $b->barang_cd }}) - Std: Rp {{ number_format((float) ($b->harga_beli_standar ?? 0), 0, ',', '.') }}/{{ $b->satuanDasar?->satuan_cd }}

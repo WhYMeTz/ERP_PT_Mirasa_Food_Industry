@@ -26,6 +26,13 @@ class DatTerimaHdr extends Model
         'suratjalan_no',
         'status_cd',
         'catatan_txt',
+        'subtotal_nominal',
+        'potongan_nominal',
+        'dpp_nominal',
+        'ppn_tipe',
+        'ppn_persen',
+        'ppn_nominal',
+        'total_tagihan',
         'created_by',
         'updated_by',
         'deleted_by',
@@ -34,9 +41,15 @@ class DatTerimaHdr extends Model
     ];
 
     protected $casts = [
-        'terima_tgl' => 'date',
-        'deleted_st' => 'boolean',
-        'active_st'  => 'boolean',
+        'terima_tgl'       => 'date',
+        'subtotal_nominal' => 'decimal:4',
+        'potongan_nominal' => 'decimal:4',
+        'dpp_nominal'      => 'decimal:4',
+        'ppn_persen'       => 'decimal:2',
+        'ppn_nominal'      => 'decimal:4',
+        'total_tagihan'    => 'decimal:4',
+        'deleted_st'       => 'boolean',
+        'active_st'        => 'boolean',
     ];
 
     /**

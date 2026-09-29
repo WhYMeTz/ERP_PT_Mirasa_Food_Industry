@@ -385,14 +385,10 @@
             <input type="hidden" name="gudang_id" id="quick_gudang_id">
             <input type="hidden" name="redirect_to" value="po_index">
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem;">
+            <div style="margin-bottom: 1.25rem;">
                 <div class="form-group" style="margin-bottom: 0;">
                     <label for="quick_terima_tgl" class="form-label" style="font-weight: 600; font-size: 0.85rem;">Tanggal Masuk <span style="color:#ef4444;">*</span></label>
                     <input type="date" id="quick_terima_tgl" name="terima_tgl" value="{{ date('Y-m-d') }}" class="form-control" required>
-                </div>
-                <div class="form-group" style="margin-bottom: 0;">
-                    <label for="quick_suratjalan_no" class="form-label" style="font-weight: 600; font-size: 0.85rem;">No. Surat Jalan Supplier</label>
-                    <input type="text" id="quick_suratjalan_no" name="suratjalan_no" placeholder="Contoh: SJ-2026/09/88" class="form-control">
                 </div>
             </div>
 

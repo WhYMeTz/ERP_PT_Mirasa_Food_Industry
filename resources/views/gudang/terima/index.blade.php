@@ -153,7 +153,7 @@
                     <tr>
                         <th style="width: 45px; text-align: center;">No</th>
                         <th style="min-width: 140px;">Tgl &amp; No. GRN</th>
-                        <th style="min-width: 170px;">Surat Jalan &amp; Supplier</th>
+                        <th style="min-width: 170px;">Supplier &amp; PO</th>
                         <th style="min-width: 190px;">Bahan Masuk</th>
                         <th style="min-width: 140px;">No. Batch &amp; Exp</th>
                         <th style="min-width: 110px; text-align: right;">Qty Masuk</th>
@@ -165,7 +165,7 @@
                 <tbody>
                     @forelse ($dataList as $index => $row)
                         @php
-                            $subtotal = (float) $row->terima_qty * (float) $row->harga_nominal;
+                            $subtotal = (float) ($row->subtotal_netto ?: ((float) $row->terima_qty * (float) $row->harga_nominal));
                         @endphp
                         <tr style="border-bottom: 1px solid #f1f5f9;">
                             <td style="text-align: center; color: #64748b; font-size: 0.85rem;">
@@ -181,9 +181,6 @@
                             </td>
                             <td>
                                 <div style="font-weight: 700; color: #0f172a; font-size: 0.85rem;">
-                                    SJ: {{ $row->header?->suratjalan_no ?? '-' }}
-                                </div>
-                                <div style="font-size: 0.8rem; color: #475569;">
                                     {{ $row->header?->supplier?->supplier_nm ?? '-' }}
                                 </div>
                                 @if ($row->header?->po)
@@ -237,7 +234,10 @@
                                     Rp {{ number_format($subtotal, 0, ',', '.') }}
                                 </div>
                                 <small style="color: #64748b; font-size: 0.725rem;">
-                                    @ Rp {{ number_format((float) $row->harga_nominal, 0, ',', '.') }}
+                                    @ Rp {{ number_format((float) ($row->harga_netto ?: $row->harga_nominal), 0, ',', '.') }}
+                                    @if((float) ($row->diskon_persen ?? 0) > 0)
+                                        <span style="color: #d97706; font-weight: 600;">(Disc {{ number_format((float)$row->diskon_persen, 1) }}%)</span>
+                                    @endif
                                 </small>
                             </td>
                             <td style="text-align: right;">
@@ -265,11 +265,11 @@
                         <th style="width: 45px; text-align: center;">No</th>
                         <th style="min-width: 160px;">Nomor Penerimaan</th>
                         <th style="min-width: 120px;">Tanggal Masuk</th>
-                        <th style="min-width: 150px;">No Surat Jalan</th>
                         <th style="min-width: 130px;">Ref. PO</th>
                         <th style="min-width: 180px;">Supplier Pengirim</th>
                         <th style="min-width: 140px;">Gudang Simpan</th>
                         <th style="min-width: 110px; text-align: center;">Total Item</th>
+                        <th style="min-width: 130px; text-align: right;">Total Tagihan</th>
                         <th style="width: 100px; text-align: right;">Aksi</th>
                     </tr>
                 </thead>
@@ -288,9 +288,6 @@
                                 <span style="font-size: 0.85rem; color: #334155; font-weight: 600;">
                                     {{ \Carbon\Carbon::parse($item->terima_tgl)->format('d/m/Y') }}
                                 </span>
-                            </td>
-                            <td style="font-weight: 700; color: #0f172a; font-size: 0.85rem;">
-                                {{ $item->suratjalan_no ?? '-' }}
                             </td>
                             <td>
                                 @if ($item->po)
@@ -311,6 +308,14 @@
                                 <span class="badge" style="background: #ecfdf5; color: #065f46; font-weight: 700;">
                                     {{ $item->details->count() }} Bahan
                                 </span>
+                            </td>
+                            <td style="text-align: right;">
+                                <strong style="color: #0f172a; font-size: 0.9rem; font-family: monospace;">
+                                    Rp {{ number_format((float) ($item->total_tagihan ?: $item->total_nominal), 0, ',', '.') }}
+                                </strong>
+                                @if($item->ppn_tipe === 'PPN_11')
+                                    <small style="display: block; font-size: 0.7rem; color: #0284c7; font-weight: 600;">+ PPN 11%</small>
+                                @endif
                             </td>
                             <td style="text-align: right;">
                                 <a href="{{ route('gudang.terima.show', $item->terima_id) }}" class="btn btn-secondary btn-sm" title="Lihat Dokumen Lengkap">

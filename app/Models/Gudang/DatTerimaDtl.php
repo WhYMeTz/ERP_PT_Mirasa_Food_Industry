@@ -25,6 +25,15 @@ class DatTerimaDtl extends Model
         'reject_qty',
         'grade_cd',
         'harga_nominal',
+        'diskon_persen',
+        'diskon_nominal',
+        'potongan_nominal',
+        'harga_netto',
+        'subtotal_netto',
+        'ppn_tipe',
+        'ppn_persen',
+        'ppn_nominal',
+        'subtotal_tagihan',
         'catatan_txt',
         'created_by',
         'updated_by',
@@ -34,12 +43,20 @@ class DatTerimaDtl extends Model
     ];
 
     protected $casts = [
-        'expired_tgl'   => 'date',
-        'terima_qty'    => 'decimal:4',
-        'reject_qty'    => 'decimal:4',
-        'harga_nominal' => 'decimal:4',
-        'deleted_st'    => 'boolean',
-        'active_st'     => 'boolean',
+        'expired_tgl'      => 'date',
+        'terima_qty'       => 'decimal:4',
+        'reject_qty'       => 'decimal:4',
+        'harga_nominal'    => 'decimal:4',
+        'diskon_persen'    => 'decimal:2',
+        'diskon_nominal'   => 'decimal:4',
+        'potongan_nominal' => 'decimal:4',
+        'harga_netto'      => 'decimal:4',
+        'subtotal_netto'   => 'decimal:4',
+        'ppn_persen'       => 'decimal:2',
+        'ppn_nominal'      => 'decimal:4',
+        'subtotal_tagihan' => 'decimal:4',
+        'deleted_st'       => 'boolean',
+        'active_st'        => 'boolean',
     ];
 
     /**

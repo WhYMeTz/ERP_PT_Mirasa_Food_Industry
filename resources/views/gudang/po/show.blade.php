@@ -272,7 +272,6 @@
                             <tr style="border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
                                 <th>No Penerimaan</th>
                                 <th>Tanggal Tiba</th>
-                                <th>No. Surat Jalan</th>
                                 <th>Ketepatan Jadwal</th>
                                 <th>Gudang Masuk</th>
                                 <th>Status</th>
@@ -292,7 +291,6 @@
                                         </a>
                                     </td>
                                     <td style="font-size: 0.85rem; color: #334155;">{{ $tglTerima->format('d/m/Y') }}</td>
-                                    <td style="font-weight: 600; color: #0f172a; font-size: 0.85rem;">{{ $terima->suratjalan_no ?? '-' }}</td>
                                     <td>
                                         @if ($eta)
                                             @if ($tglTerima->lt($eta))
@@ -417,14 +415,10 @@
             <input type="hidden" name="gudang_id" value="{{ $po->gudang_id }}">
             <input type="hidden" name="redirect_to" value="po">
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem;">
+            <div style="margin-bottom: 1.25rem;">
                 <div class="form-group" style="margin-bottom: 0;">
                     <label for="terima_tgl" class="form-label" style="font-weight: 600; font-size: 0.85rem;">Tanggal Masuk <span style="color:#ef4444;">*</span></label>
                     <input type="date" id="terima_tgl" name="terima_tgl" value="{{ date('Y-m-d') }}" class="form-control" required>
-                </div>
-                <div class="form-group" style="margin-bottom: 0;">
-                    <label for="suratjalan_no" class="form-label" style="font-weight: 600; font-size: 0.85rem;">No. Surat Jalan Supplier</label>
-                    <input type="text" id="suratjalan_no" name="suratjalan_no" placeholder="Contoh: SJ-2026/09/88" class="form-control">
                 </div>
             </div>
 

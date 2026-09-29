@@ -4,16 +4,56 @@
 
 @section('content')
 <style>
-    .order-station-grid {
-        display: grid;
-        grid-template-columns: 2.3fr 1fr;
-        gap: 1.5rem;
-        align-items: start;
-        margin-bottom: 2rem;
+    .excel-grid-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.825rem;
     }
-    @media (max-width: 1100px) {
-        .order-station-grid { grid-template-columns: 1fr; }
-        .sticky-action-sidebar { position: static !important; top: auto !important; }
+    .excel-grid-table th {
+        background: #0f172a;
+        color: #f8fafc;
+        font-weight: 600;
+        padding: 0.6rem 0.5rem;
+        border: 1px solid #334155;
+        font-size: 0.8rem;
+        letter-spacing: 0.02em;
+    }
+    .excel-grid-table td {
+        padding: 0.35rem 0.45rem;
+        border: 1px solid #cbd5e1;
+        background: #ffffff;
+        vertical-align: middle;
+    }
+    .excel-grid-table tr:nth-child(even) td {
+        background: #f8fafc;
+    }
+    .excel-grid-table tr:hover td {
+        background: #f0fdf4;
+    }
+    .excel-grid-table .form-control {
+        border: 1px solid #cbd5e1;
+        border-radius: 4px;
+        padding: 0.35rem 0.5rem !important;
+        font-size: 0.825rem !important;
+        height: 32px;
+        box-sizing: border-box;
+        width: 100%;
+        transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .excel-grid-table .form-control:focus {
+        border-color: #059669 !important;
+        box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.25) !important;
+        background: #ffffff !important;
+    }
+    .excel-table-scroll::-webkit-scrollbar-track {
+        background: #f1f5f9;
+    }
+    .excel-table-scroll::-webkit-scrollbar-thumb {
+        background: #94a3b8;
+        border-radius: 4px;
+    }
+    .excel-table-scroll::-webkit-scrollbar-thumb:hover {
+        background: #64748b;
     }
 
     .sup-filter-chip, .barang-filter-chip {
@@ -138,49 +178,6 @@
     .sup-modal-row:hover td {
         background: #f0fdf4 !important;
     }
-
-    /* Excel Table Styling */
-    .excel-grid-table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 0.825rem;
-    }
-    .excel-grid-table th {
-        background: #0f172a;
-        color: #f8fafc;
-        font-weight: 600;
-        padding: 0.55rem 0.45rem;
-        border: 1px solid #334155;
-        font-size: 0.775rem;
-        letter-spacing: 0.02em;
-    }
-    .excel-grid-table td {
-        padding: 0.3rem 0.4rem;
-        border: 1px solid #cbd5e1;
-        background: #ffffff;
-        vertical-align: middle;
-    }
-    .excel-grid-table tr:nth-child(even) td {
-        background: #f8fafc;
-    }
-    .excel-grid-table tr:hover td {
-        background: #f0fdf4;
-    }
-    .excel-grid-table .form-control {
-        border: 1px solid #cbd5e1;
-        border-radius: 4px;
-        padding: 0.35rem 0.45rem !important;
-        font-size: 0.825rem !important;
-        height: 32px;
-        box-sizing: border-box;
-        width: 100%;
-        transition: border-color 0.15s, box-shadow 0.15s;
-    }
-    .excel-grid-table .form-control:focus {
-        border-color: #059669 !important;
-        box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.25) !important;
-        background: #ffffff !important;
-    }
 </style>
 
 <div style="margin-bottom: 1.25rem;">
@@ -198,9 +195,8 @@
         <input type="hidden" name="redirect_to" value="po">
     @endif
 
-    <div class="order-station-grid">
-        <div style="display: flex; flex-direction: column; gap: 1.5rem;">
-            
+    <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+
             {{-- KARTU 1: INFORMASI DOKUMEN & PENGIRIM --}}
             <div class="card" style="border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
                 <div class="card-header" style="background: #ffffff; padding: 0.875rem 1.25rem; border-bottom: 1px solid #e2e8f0;">
@@ -208,7 +204,7 @@
                 </div>
                 <div style="padding: 1.25rem; display: flex; flex-direction: column; gap: 1.25rem;">
                     
-                    {{-- BARIS 1: NOMOR PENERIMAAN, TANGGAL MASUK, REFERENSI PO, NO SURAT JALAN --}}
+                    {{-- BARIS 1: NOMOR PENERIMAAN, TANGGAL MASUK, REFERENSI PO --}}
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.25rem;">
                         <div class="form-group" style="margin-bottom: 0;">
                             <label for="terima_no" class="form-label" style="font-weight: 600; font-size: 0.85rem;">Nomor Penerimaan <span style="color:#ef4444;">*</span></label>
@@ -237,16 +233,10 @@
                             </select>
                             <small style="color: #64748b; font-size: 0.725rem;">Pilih PO untuk otomatis memuat barang.</small>
                         </div>
-
-                        <div class="form-group" style="margin-bottom: 0;">
-                            <label for="suratjalan_no" class="form-label" style="font-weight: 600; font-size: 0.85rem;">No Surat Jalan Supplier</label>
-                            <input type="text" id="suratjalan_no" name="suratjalan_no" value="{{ old('suratjalan_no') }}" class="form-control" placeholder="Contoh: SJ-2026/09/8812" style="height: 38px; border-radius: 6px; font-size: 0.85rem;">
-                            <small style="color: #64748b; font-size: 0.725rem;">Nomor surat jalan supir vendor.</small>
-                        </div>
                     </div>
 
-                    {{-- BARIS 2: SUPPLIER PENGIRIM & GUDANG TUJUAN MASUK (KEMBAR PERSIS DENGAN PO) --}}
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem; align-items: start;">
+                    {{-- BARIS 2: SUPPLIER PENGIRIM & GUDANG TUJUAN MASUK --}}
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.25rem; align-items: start;">
                         
                         {{-- Kolom Supplier Pengirim --}}
                         <div class="form-group" style="margin-bottom: 0;">
@@ -254,7 +244,7 @@
                                 <label id="lblSupplierHeader" class="form-label" style="font-weight: 600; font-size: 0.85rem; margin-bottom: 0;">
                                     Supplier Pengirim <span style="color:#ef4444;">*</span>
                                 </label>
-                                <a href="javascript:void(0)" onclick="openSupplierModal()" style="font-size: 0.75rem; color: #0284c7; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 0.3rem;" title="Buka Daftar Supplier Lengkap (Tabel Excel Grid)">
+                                <a href="javascript:void(0)" onclick="openSupplierModal()" style="font-size: 0.75rem; color: #0284c7; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 0.3rem;" title="Buka Daftar Supplier Lengkap">
                                     <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                                     Daftar Supplier ({{ $supplierList->count() }})
                                 </a>
@@ -280,7 +270,7 @@
 
                             <div id="supplier_search_wrapper" style="position: relative;">
                                 <div style="position: relative; width: 100%;">
-                                    <input type="text" id="supplier_search_input" class="form-control" placeholder="Cari nama atau kode supplier (misal: Sawit, Singkong, SUP-01)..." autocomplete="off" style="padding-left: 2.2rem !important; padding-right: 2rem !important; height: 38px; font-size: 0.85rem; border-radius: 6px; width: 100%; box-sizing: border-box;">
+                                    <input type="text" id="supplier_search_input" class="form-control" placeholder="Cari nama atau kode supplier..." autocomplete="off" style="padding-left: 2.2rem !important; padding-right: 2rem !important; height: 38px; font-size: 0.85rem; border-radius: 6px; width: 100%; box-sizing: border-box;">
                                     <span style="position: absolute; left: 0.7rem; top: 50%; transform: translateY(-50%); color: #94a3b8; pointer-events: none;">
                                         <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                                     </span>
@@ -290,7 +280,6 @@
                                 </div>
 
                                 <div id="supplier_dropdown_list" style="display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.15), 0 8px 10px -6px rgba(0,0,0,0.06); max-height: 280px; overflow-y: auto; z-index: 1050;">
-                                    {{-- Diisi dinamis via JS --}}
                                 </div>
                             </div>
 
@@ -309,7 +298,7 @@
                                     </option>
                                 @endforeach
                             </select>
-                            <small style="color: #64748b; font-size: 0.725rem; display: block; margin-top: 0.25rem;">Ketik untuk memilih cepat, atau klik <strong>Daftar Supplier</strong> di atas untuk tabel lengkap.</small>
+                            <small style="color: #64748b; font-size: 0.725rem; display: block; margin-top: 0.25rem;">Ketik untuk memilih cepat, atau klik <strong>Daftar Supplier</strong>.</small>
                         </div>
 
                         {{-- Kolom Gudang Penyimpanan --}}
@@ -325,7 +314,7 @@
                                     </option>
                                 @endforeach
                             </select>
-                            <small style="color: #64748b; font-size: 0.725rem; display: block; margin-top: 0.25rem;">Lokasi fisik gudang tempat komoditas disimpan.</small>
+                            <small style="color: #64748b; font-size: 0.725rem; display: block; margin-top: 0.25rem;">Lokasi gudang tempat komoditas fisik disimpan.</small>
                         </div>
                     </div>
 
@@ -334,359 +323,347 @@
                         <label for="catatan_txt" class="form-label" style="font-weight: 600; font-size: 0.85rem; margin-bottom: 0.35rem;">
                             Catatan Tambahan Penerimaan
                         </label>
-                        <textarea id="catatan_txt" name="catatan_txt" rows="2" class="form-control" style="border-radius: 6px; font-size: 0.85rem;" placeholder="Contoh: Diterima dalam kondisi baik, kadar air singkong 18%, plat truk AB-1234-CD.">{{ old('catatan_txt') }}</textarea>
+                        <textarea id="catatan_txt" name="catatan_txt" rows="2" class="form-control" style="border-radius: 6px; font-size: 0.85rem;" placeholder="Contoh: Diterima dalam kondisi baik, kadar air 18%, plat truk AB-1234-CD.">{{ old('catatan_txt') }}</textarea>
                     </div>
 
                 </div>
             </div>
 
-    @if ($selectedPo)
-        <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 0.875rem 1.25rem; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
-            <div style="font-size: 0.875rem; color: #334155;">
-                <strong style="color: #0f172a;">PO Terpilih:</strong> <span style="font-family: monospace; font-weight: 700; color: #0284c7;">{{ $selectedPo->po_no }}</span> &bull; 
-                Supplier: <strong>{{ $selectedPo->supplier?->supplier_nm }}</strong>
-                @if ($selectedPo->status_cd == 'PARTIAL')
-                    <span class="badge" style="background:#e0f2fe; color:#0369a1; font-weight:700; margin-left: 0.35rem; font-size: 0.75rem;">Sebagian Diterima</span>
-                @else
-                    <span class="badge" style="background:#fef3c7; color:#92400e; font-weight:700; margin-left: 0.35rem; font-size: 0.75rem;">Terbuka Penuh</span>
-                @endif
-            </div>
-            <div style="display: flex; gap: 0.5rem; align-items: center;">
-                <button type="button" onclick="copyAllRemainingPoQty()" class="btn btn-sm" style="background: #0284c7; color: #ffffff; font-weight: 700; font-size: 0.775rem; padding: 0.35rem 0.75rem; border-radius: 6px; display: inline-flex; align-items: center; gap: 0.35rem;" title="Isi kuantitas terima dengan seluruh sisa PO">
-                    <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"/></svg>
-                    Salin Sisa PO
-                </button>
-                <button type="button" onclick="clearAllTerimaQty()" class="btn btn-secondary btn-sm" style="font-weight: 600; font-size: 0.775rem; padding: 0.35rem 0.65rem; display: inline-flex; align-items: center; gap: 0.35rem;" title="Kosongkan kuantitas agar bisa diketik manual">
-                    <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                    Kosongkan Qty
-                </button>
-            </div>
-        </div>
-    @endif
+            @if ($selectedPo)
+                <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 0.875rem 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+                    <div style="font-size: 0.875rem; color: #334155;">
+                        <strong style="color: #0f172a;">PO Terpilih:</strong> <span style="font-family: monospace; font-weight: 700; color: #0284c7;">{{ $selectedPo->po_no }}</span> &bull; 
+                        Supplier: <strong>{{ $selectedPo->supplier?->supplier_nm }}</strong>
+                        @if ($selectedPo->status_cd == 'PARTIAL')
+                            <span class="badge" style="background:#e0f2fe; color:#0369a1; font-weight:700; margin-left: 0.35rem; font-size: 0.75rem;">Sebagian Diterima</span>
+                        @else
+                            <span class="badge" style="background:#fef3c7; color:#92400e; font-weight:700; margin-left: 0.35rem; font-size: 0.75rem;">Terbuka Penuh</span>
+                        @endif
+                    </div>
+                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                        <button type="button" onclick="copyAllRemainingPoQty()" class="btn btn-sm" style="background: #0284c7; color: #ffffff; font-weight: 700; font-size: 0.775rem; padding: 0.35rem 0.75rem; border-radius: 6px; display: inline-flex; align-items: center; gap: 0.35rem;" title="Isi kuantitas terima dengan seluruh sisa PO">
+                            <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"/></svg>
+                            Salin Sisa PO
+                        </button>
+                        <button type="button" onclick="clearAllTerimaQty()" class="btn btn-secondary btn-sm" style="font-weight: 600; font-size: 0.775rem; padding: 0.35rem 0.65rem; display: inline-flex; align-items: center; gap: 0.35rem;" title="Kosongkan kuantitas agar bisa diketik manual">
+                            <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                            Kosongkan Qty
+                        </button>
+                    </div>
+                </div>
+            @endif
 
-    {{-- KARTU 2: DETAIL BARANG & NOMOR BATCH (INVENTORY ENGINE - EXCEL STYLE) --}}
-    <div class="card" style="border: 1px solid #cbd5e1; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
-        <div class="card-header" style="background: #ffffff; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #cbd5e1; padding: 0.875rem 1.25rem; flex-wrap: wrap; gap: 0.5rem;">
-            <div>
-                <strong style="color: #0f172a; font-size: 0.95rem;">2. Fisik Barang Diterima &amp; Alokasi Batch</strong>
-                <span style="font-size: 0.75rem; color: #64748b; margin-left: 0.5rem;">
-                    💡 Tekan <kbd style="background:#e2e8f0; padding:2px 5px; border-radius:3px; font-weight:700;">Enter</kbd> untuk berpindah baris layaknya Excel
-                </span>
-            </div>
-            <button type="button" onclick="addTerimaRow(true)" class="btn btn-primary btn-sm" style="font-weight: 600; background: #059669; padding: 0.4rem 0.85rem;">
-                + Tambah Baris
-            </button>
-        </div>
-
-        {{-- FILTER BAR CEPAT UNTUK KATEGORI BARANG --}}
-        <div style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0.55rem 1.25rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.65rem;">
-            <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
-                <span style="font-size: 0.725rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em;">
-                    Kategori:
-                </span>
-                <div class="category-segmented-control" role="group" aria-label="Filter Kategori Barang">
-                    <button type="button" class="category-segment-btn active" data-category="ALL" onclick="filterBarangCategory('ALL', this)">
-                        <span>Semua</span>
-                        <span class="category-segment-count">{{ $barangList->count() }}</span>
-                    </button>
-                    <button type="button" class="category-segment-btn" data-category="BB" onclick="filterBarangCategory('BB', this)">
-                        <span>Bahan Baku</span>
-                        <span class="category-segment-count">{{ $barangList->filter(fn($b) => in_array($b->jenisBarang?->jenis_barang_cd, ['RAW', 'BB']))->count() }}</span>
-                    </button>
-                    <button type="button" class="category-segment-btn" data-category="BUMBU" onclick="filterBarangCategory('BUMBU', this)">
-                        <span>Bumbu &amp; Penolong</span>
-                        <span class="category-segment-count">{{ $barangList->filter(fn($b) => in_array($b->jenisBarang?->jenis_barang_cd, ['SUPP', 'BUMBU', 'BP']) && !preg_match('/(PLASTIK|KARTON|ROLL|LAKBAN|SARUNG|RAFIA)/i', $b->barang_nm))->count() }}</span>
-                    </button>
-                    <button type="button" class="category-segment-btn" data-category="PACK" onclick="filterBarangCategory('PACK', this)">
-                        <span>Kemasan</span>
-                        <span class="category-segment-count">{{ $barangList->filter(fn($b) => in_array($b->jenisBarang?->jenis_barang_cd, ['PACK']) || (in_array($b->jenisBarang?->jenis_barang_cd, ['BP']) && preg_match('/(PLASTIK|KARTON|ROLL|LAKBAN|SARUNG|RAFIA)/i', $b->barang_nm)))->count() }}</span>
+            {{-- KARTU 2: DETAIL BARANG & NOMOR BATCH (INVENTORY ENGINE - EXCEL STYLE SATU BARIS) --}}
+            <div class="card" style="border: 1px solid #cbd5e1; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+                <div class="card-header" style="background: #ffffff; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #cbd5e1; padding: 0.875rem 1.25rem; flex-wrap: wrap; gap: 0.5rem;">
+                    <div>
+                        <strong style="color: #0f172a; font-size: 0.95rem;">2. Fisik Barang Diterima, Alokasi Batch &amp; Komersial</strong>
+                        <span style="font-size: 0.75rem; color: #64748b; margin-left: 0.5rem;">
+                            💡 Tekan <kbd style="background:#e2e8f0; padding:2px 5px; border-radius:3px; font-weight:700;">Enter</kbd> untuk berpindah baris layaknya Excel
+                        </span>
+                    </div>
+                    <button type="button" onclick="addTerimaRow(true)" class="btn btn-primary btn-sm" style="font-weight: 600; background: #059669; padding: 0.4rem 0.85rem;">
+                        + Tambah Baris
                     </button>
                 </div>
-            </div>
-            <div style="font-size: 0.725rem; color: #059669; font-weight: 600; display: flex; align-items: center; gap: 0.25rem;">
-                <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                <span>Hanya bahan masuk supplier (WIP &amp; FG tidak ditampilkan)</span>
-            </div>
-        </div>
 
-        <div style="overflow-x: auto;">
-            <table class="excel-grid-table" id="tableTerimaItems" style="width: 100%; min-width: 1050px;">
-                <thead>
-                    <tr>
-                        <th style="width: 32px; text-align: center;">No</th>
-                        <th style="min-width: 220px; text-align: left;">Nama Komoditas / Barang <span style="color:#ef4444;">*</span></th>
-                        <th style="width: 160px; text-align: left;">Nomor Batch Fisik <span style="color:#ef4444;">*</span></th>
-                        <th style="width: 120px; text-align: center;">Tgl Expired</th>
-                        <th style="width: 95px; text-align: center;">Grade Mutu</th>
-                        <th style="width: 110px; text-align: right;">Qty Masuk (Bruto) <span style="color:#ef4444;">*</span></th>
-                        <th style="width: 95px; text-align: right;">Afkir (Reject)</th>
-                        <th style="width: 105px; text-align: right; background: #064e3b;">Netto Bersih</th>
-                        <th style="width: 60px; text-align: center;">Satuan</th>
-                        <th style="width: 115px; text-align: right;">Harga Satuan (Rp)</th>
-                        <th style="width: 40px; text-align: center;">Hapus</th>
-                    </tr>
-                </thead>
-                <tbody id="terimaItemsContainer">
-                    @if ($selectedPo && $selectedPo->details->isNotEmpty())
-                        {{-- Prefilled items from selected PO --}}
-                        @php $prefilledBatches = []; @endphp
-                        @foreach ($selectedPo->details as $idx => $pdtl)
-                            @if ((float) $pdtl->sisa_qty > 0)
-                                @php
-                                    $batchVal = app(\App\Services\Common\CodeGeneratorService::class)->generateBatchNo(
-                                        $pdtl->barang?->barang_cd, 
-                                        old('terima_tgl', date('Y-m-d')), 
-                                        $pdtl->barang?->barang_nm,
-                                        $prefilledBatches
-                                    );
-                                    $prefilledBatches[] = $batchVal;
-                                @endphp
-                                <tr class="terima-row" data-index="{{ $idx }}" data-sisa="{{ (float) $pdtl->sisa_qty }}">
-                                    <td class="row-num" style="font-weight: 700; text-align: center; color: #475569; background: #f1f5f9;">{{ $idx + 1 }}</td>
+                {{-- FILTER BAR CEPAT UNTUK KATEGORI BARANG --}}
+                <div style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0.55rem 1.25rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.65rem;">
+                    <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
+                        <span style="font-size: 0.725rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em;">
+                            Kategori:
+                        </span>
+                        <div class="category-segmented-control" role="group" aria-label="Filter Kategori Barang">
+                            <button type="button" class="category-segment-btn active" data-category="ALL" onclick="filterBarangCategory('ALL', this)">
+                                <span>Semua</span>
+                                <span class="category-segment-count">{{ $barangList->count() }}</span>
+                            </button>
+                            <button type="button" class="category-segment-btn" data-category="BB" onclick="filterBarangCategory('BB', this)">
+                                <span>Bahan Baku</span>
+                                <span class="category-segment-count">{{ $barangList->filter(fn($b) => in_array($b->jenisBarang?->jenis_barang_cd, ['RAW', 'BB']))->count() }}</span>
+                            </button>
+                            <button type="button" class="category-segment-btn" data-category="BUMBU" onclick="filterBarangCategory('BUMBU', this)">
+                                <span>Bumbu &amp; Penolong</span>
+                                <span class="category-segment-count">{{ $barangList->filter(fn($b) => in_array($b->jenisBarang?->jenis_barang_cd, ['SUPP', 'BUMBU', 'BP']) && !preg_match('/(PLASTIK|KARTON|ROLL|LAKBAN|SARUNG|RAFIA)/i', $b->barang_nm))->count() }}</span>
+                            </button>
+                            <button type="button" class="category-segment-btn" data-category="PACK" onclick="filterBarangCategory('PACK', this)">
+                                <span>Kemasan</span>
+                                <span class="category-segment-count">{{ $barangList->filter(fn($b) => in_array($b->jenisBarang?->jenis_barang_cd, ['PACK']) || (in_array($b->jenisBarang?->jenis_barang_cd, ['BP']) && preg_match('/(PLASTIK|KARTON|ROLL|LAKBAN|SARUNG|RAFIA)/i', $b->barang_nm)))->count() }}</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div style="font-size: 0.725rem; color: #059669; font-weight: 600; display: flex; align-items: center; gap: 0.25rem;">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        <span>Hanya bahan masuk supplier (WIP &amp; FG tidak ditampilkan)</span>
+                    </div>
+                </div>
+
+                <div>
+                    <table class="excel-grid-table" id="tableTerimaItems" style="width: 100%;">
+                        <thead>
+                            <tr>
+                                <th style="width: 32px; text-align: center;">No</th>
+                                <th style="min-width: 180px; text-align: left;">Nama Komoditas / Barang <span style="color:#ef4444;">*</span></th>
+                                <th style="width: 140px; text-align: left;">Nomor Batch Fisik <span style="color:#ef4444;">*</span></th>
+                                <th style="width: 110px; text-align: center;">Tgl Expired</th>
+                                <th style="width: 90px; text-align: center;">Grade</th>
+                                <th style="width: 85px; text-align: right;">Qty (Bruto) <span style="color:#ef4444;">*</span></th>
+                                <th style="width: 70px; text-align: right;">Afkir</th>
+                                <th style="width: 75px; text-align: right; background: #064e3b; color: #ffffff;">Netto</th>
+                                <th style="width: 45px; text-align: center;">Satuan</th>
+                                <th style="width: 95px; text-align: right;">Harga Satuan</th>
+                                <th style="width: 60px; text-align: right;" title="Diskon dagang per item (%)">Disc (%)</th>
+                                <th style="width: 85px; text-align: right;" title="Potongan nominal item (Rp)">Potongan</th>
+                                <th style="width: 80px; text-align: center;" title="Pajak Pertambahan Nilai">PPN</th>
+                                <th style="width: 95px; text-align: right; background: #0f172a; color: #ffffff;" title="Subtotal bersih setelah diskon, potongan & PPN">Subtotal</th>
+                                <th style="width: 35px; text-align: center;">Hapus</th>
+                            </tr>
+                        </thead>
+                        <tbody id="terimaItemsContainer">
+                            @if ($selectedPo && $selectedPo->details->isNotEmpty())
+                                {{-- Prefilled items from selected PO --}}
+                                @foreach ($selectedPo->details as $idx => $pdtl)
+                                    @if ((float) $pdtl->sisa_qty > 0)
+                                        @php
+                                            $acronym = app(\App\Services\Common\CodeGeneratorService::class)->extractBarangAcronym(
+                                                $pdtl->barang?->barang_nm, 
+                                                $pdtl->barang?->barang_cd
+                                            );
+                                            $batchPrefix = ($acronym ?: 'BRG') . '-';
+                                        @endphp
+                                        <tr class="terima-row" data-index="{{ $idx }}" data-sisa="{{ (float) $pdtl->sisa_qty }}">
+                                            <td class="row-num" style="font-weight: 700; text-align: center; color: #475569; background: #f1f5f9;">{{ $idx + 1 }}</td>
+                                            <td>
+                                                <input type="hidden" name="items[{{ $idx }}][podtl_id]" value="{{ $pdtl->podtl_id }}">
+                                                <input type="hidden" name="items[{{ $idx }}][barang_id]" value="{{ $pdtl->barang_id }}" class="item-barang-id">
+                                                <strong style="color: #0f172a; display: block; font-size: 0.85rem;">{{ $pdtl->barang?->barang_nm }}</strong>
+                                                <span style="font-size: 0.725rem; color: #64748b;">
+                                                    Pesanan: {{ number_format((float) $pdtl->pesan_qty, 2) }} | <strong>Sisa: {{ number_format((float) $pdtl->sisa_qty, 2) }}</strong>
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <input type="text" name="items[{{ $idx }}][batch_no]" value="{{ old("items.{$idx}.batch_no", $batchPrefix) }}" placeholder="{{ $batchPrefix }}... (isi no batch fisik)" class="form-control item-batch" style="font-family: monospace; font-weight: 700; color: #0284c7; width: 100%;" required>
+                                            </td>
+                                            <td>
+                                                <input type="date" name="items[{{ $idx }}][expired_tgl]" value="{{ old("items.{$idx}.expired_tgl") }}" class="form-control" style="font-size: 0.8rem;">
+                                            </td>
+                                            <td>
+                                                <select name="items[{{ $idx }}][grade_cd]" class="form-control" style="font-size: 0.8rem;">
+                                                    <option value="A" selected>Grade A Super</option>
+                                                    <option value="B">Grade B Standar</option>
+                                                    <option value="REJECT">Reject / Afkir</option>
+                                                </select>
+                                            </td>
+                                            <td>
+                                                <input type="number" step="0.0001" min="0" max="{{ $pdtl->sisa_qty }}" name="items[{{ $idx }}][terima_qty]" value="{{ (float) $pdtl->sisa_qty }}" class="form-control item-terima-qty" style="text-align: right; font-weight: 700;" oninput="calculateTotalTerima()" required>
+                                            </td>
+                                            <td>
+                                                <input type="number" step="0.0001" min="0" name="items[{{ $idx }}][reject_qty]" value="0" class="form-control item-reject-qty" placeholder="0" style="text-align: right;" oninput="calculateTotalTerima()">
+                                            </td>
+                                            <td style="text-align: right; font-weight: 700; color: #047857; background: #f0fdf4;" class="row-netto">
+                                                {{ number_format((float) $pdtl->sisa_qty, 2, ',', '.') }}
+                                            </td>
+                                            <td style="text-align: center;">
+                                                <span class="row-satuan" style="font-weight: 700; color: #475569; font-size: 0.8rem;">{{ $pdtl->barang?->satuanDasar?->satuan_nm ?? '-' }}</span>
+                                            </td>
+                                            <td>
+                                                <input type="number" step="0.01" min="0" name="items[{{ $idx }}][harga_nominal]" value="{{ (float) $pdtl->harga_nominal }}" class="form-control item-harga" placeholder="0" style="text-align: right; font-weight: 600;" oninput="calculateTotalTerima()">
+                                            </td>
+                                            <td>
+                                                <input type="number" step="0.1" min="0" max="100" name="items[{{ $idx }}][diskon_persen]" value="{{ old("items.{$idx}.diskon_persen", 0) }}" class="form-control item-diskon" placeholder="0" style="text-align: right;" oninput="calculateTotalTerima()">
+                                            </td>
+                                            <td>
+                                                <input type="number" step="0.01" min="0" name="items[{{ $idx }}][potongan_nominal]" value="{{ old("items.{$idx}.potongan_nominal", 0) }}" class="form-control item-potongan" placeholder="0" style="text-align: right;" oninput="calculateTotalTerima()">
+                                            </td>
+                                            <td>
+                                                <select name="items[{{ $idx }}][ppn_tipe]" class="form-control item-ppn-tipe" onchange="calculateTotalTerima()" style="font-size: 0.775rem; font-weight: 600;">
+                                                    <option value="NON_PPN" {{ old("items.{$idx}.ppn_tipe", 'NON_PPN') === 'NON_PPN' ? 'selected' : '' }}>Non (0%)</option>
+                                                    <option value="PPN_11" {{ old("items.{$idx}.ppn_tipe") === 'PPN_11' ? 'selected' : '' }}>PPN 11%</option>
+                                                </select>
+                                            </td>
+                                            <td style="text-align: right; font-weight: 700; font-family: monospace; color: #0f172a;" class="row-subtotal">
+                                                Rp 0
+                                            </td>
+                                            <td style="text-align: center;">
+                                                <button type="button" onclick="removeTerimaRow(this)" class="btn btn-danger btn-sm" style="padding: 0.2rem 0.45rem; font-size: 0.8rem;" title="Hapus Baris">&times;</button>
+                                            </td>
+                                        </tr>
+                                    @endif
+                                @endforeach
+                            @else
+                                {{-- Row Kosong Default --}}
+                                <tr class="terima-row" data-index="0" data-sisa="0">
+                                    <td class="row-num" style="font-weight: 700; text-align: center; color: #475569; background: #f1f5f9;">1</td>
                                     <td>
-                                        <input type="hidden" name="items[{{ $idx }}][podtl_id]" value="{{ $pdtl->podtl_id }}">
-                                        <input type="hidden" name="items[{{ $idx }}][barang_id]" value="{{ $pdtl->barang_id }}" class="item-barang-id">
-                                        <strong style="color: #0f172a; display: block; font-size: 0.85rem;">{{ $pdtl->barang?->barang_nm }}</strong>
-                                        <span style="font-size: 0.725rem; color: #64748b;">
-                                            Pesanan: {{ number_format((float) $pdtl->pesan_qty, 2) }} | <strong>Sisa: {{ number_format((float) $pdtl->sisa_qty, 2) }}</strong>
-                                        </span>
+                                        <select name="items[0][barang_id]" class="form-control item-barang" onchange="updateTerimaSatuanAndBatch(this)" required>
+                                            <option value="">-- Pilih Barang (Bahan Baku / Penolong) --</option>
+                                            
+                                            <optgroup label="BAHAN BAKU (RAW MATERIAL)" class="grp-bb">
+                                                @foreach($barangList->filter(fn($b) => in_array($b->jenisBarang?->jenis_barang_cd, ['RAW', 'BB'])) as $b)
+                                                    <option value="{{ $b->barang_id }}" 
+                                                            data-category="BB"
+                                                            data-cd="{{ $b->barang_cd }}" 
+                                                            data-nm="{{ $b->barang_nm }}"
+                                                            data-acronym="{{ app(\App\Services\Common\CodeGeneratorService::class)->extractBarangAcronym($b->barang_nm, $b->barang_cd) }}"
+                                                            data-satuan="{{ $b->satuanDasar?->satuan_nm ?? '-' }}" 
+                                                            data-harga="{{ (float) ($b->harga_beli_standar ?? 0) }}">
+                                                        {{ $b->barang_nm }} ({{ $b->barang_cd }}) - Std: Rp {{ number_format((float) ($b->harga_beli_standar ?? 0), 0, ',', '.') }}/{{ $b->satuanDasar?->satuan_cd }}
+                                                    </option>
+                                                @endforeach
+                                            </optgroup>
+
+                                            <optgroup label="BUMBU &amp; BAHAN PENOLONG" class="grp-bumbu">
+                                                @foreach($barangList->filter(fn($b) => in_array($b->jenisBarang?->jenis_barang_cd, ['SUPP', 'BUMBU', 'BP']) && !preg_match('/(PLASTIK|KARTON|ROLL|LAKBAN|SARUNG|RAFIA)/i', $b->barang_nm)) as $b)
+                                                    <option value="{{ $b->barang_id }}" 
+                                                            data-category="BUMBU"
+                                                            data-cd="{{ $b->barang_cd }}" 
+                                                            data-nm="{{ $b->barang_nm }}"
+                                                            data-acronym="{{ app(\App\Services\Common\CodeGeneratorService::class)->extractBarangAcronym($b->barang_nm, $b->barang_cd) }}"
+                                                            data-satuan="{{ $b->satuanDasar?->satuan_nm ?? '-' }}" 
+                                                            data-harga="{{ (float) ($b->harga_beli_standar ?? 0) }}">
+                                                        {{ $b->barang_nm }} ({{ $b->barang_cd }}) - Std: Rp {{ number_format((float) ($b->harga_beli_standar ?? 0), 0, ',', '.') }}/{{ $b->satuanDasar?->satuan_cd }}
+                                                    </option>
+                                                @endforeach
+                                            </optgroup>
+
+                                            <optgroup label="BAHAN KEMASAN &amp; PACKAGING" class="grp-pack">
+                                                @foreach($barangList->filter(fn($b) => in_array($b->jenisBarang?->jenis_barang_cd, ['PACK']) || (in_array($b->jenisBarang?->jenis_barang_cd, ['BP']) && preg_match('/(PLASTIK|KARTON|ROLL|LAKBAN|SARUNG|RAFIA)/i', $b->barang_nm))) as $b)
+                                                    <option value="{{ $b->barang_id }}" 
+                                                            data-category="PACK"
+                                                            data-cd="{{ $b->barang_cd }}" 
+                                                            data-nm="{{ $b->barang_nm }}"
+                                                            data-acronym="{{ app(\App\Services\Common\CodeGeneratorService::class)->extractBarangAcronym($b->barang_nm, $b->barang_cd) }}"
+                                                            data-satuan="{{ $b->satuanDasar?->satuan_nm ?? '-' }}" 
+                                                            data-harga="{{ (float) ($b->harga_beli_standar ?? 0) }}">
+                                                        {{ $b->barang_nm }} ({{ $b->barang_cd }}) - Std: Rp {{ number_format((float) ($b->harga_beli_standar ?? 0), 0, ',', '.') }}/{{ $b->satuanDasar?->satuan_cd }}
+                                                    </option>
+                                                @endforeach
+                                            </optgroup>
+                                        </select>
                                     </td>
                                     <td>
-                                        <input type="text" name="items[{{ $idx }}][batch_no]" value="{{ old("items.{$idx}.batch_no", $batchVal) }}" class="form-control item-batch" style="font-family: monospace; font-weight: 700; color: #0284c7;" required>
+                                        <input type="text" name="items[0][batch_no]" id="batch_0" value="" placeholder="Contoh: BC-... (isi batch fisik)" class="form-control item-batch" style="font-family: monospace; font-weight: 700; color: #0284c7; width: 100%;" required>
                                     </td>
                                     <td>
-                                        <input type="date" name="items[{{ $idx }}][expired_tgl]" class="form-control">
+                                        <input type="date" name="items[0][expired_tgl]" class="form-control" style="font-size: 0.8rem;">
                                     </td>
                                     <td>
-                                        <select name="items[{{ $idx }}][grade_cd]" class="form-control">
+                                        <select name="items[0][grade_cd]" class="form-control" style="font-size: 0.8rem;">
                                             <option value="A" selected>Grade A Super</option>
                                             <option value="B">Grade B Standar</option>
                                             <option value="REJECT">Reject / Afkir</option>
                                         </select>
                                     </td>
                                     <td>
-                                        <input type="number" step="0.0001" min="0" max="{{ $pdtl->sisa_qty }}" name="items[{{ $idx }}][terima_qty]" value="{{ (float) $pdtl->sisa_qty }}" class="form-control item-terima-qty" style="text-align: right; font-weight: 700;" oninput="calculateTotalTerima()" required>
+                                        <input type="number" step="0.0001" min="0" name="items[0][terima_qty]" value="1" class="form-control item-terima-qty" style="text-align: right; font-weight: 700;" oninput="calculateTotalTerima()" required>
                                     </td>
                                     <td>
-                                        <input type="number" step="0.0001" min="0" name="items[{{ $idx }}][reject_qty]" value="0" class="form-control item-reject-qty" placeholder="0" style="text-align: right;" oninput="calculateTotalTerima()">
+                                        <input type="number" step="0.0001" min="0" name="items[0][reject_qty]" value="0" class="form-control item-reject-qty" placeholder="0" style="text-align: right;" oninput="calculateTotalTerima()">
                                     </td>
                                     <td style="text-align: right; font-weight: 700; color: #047857; background: #f0fdf4;" class="row-netto">
-                                        {{ number_format((float) $pdtl->sisa_qty, 2, ',', '.') }}
+                                        1,00
                                     </td>
                                     <td style="text-align: center;">
-                                        <span style="font-weight: 700; color: #475569; font-size: 0.8rem;">{{ $pdtl->barang?->satuanDasar?->satuan_nm ?? '-' }}</span>
+                                        <span class="row-satuan" style="font-weight: 700; color: #475569; font-size: 0.8rem;">-</span>
                                     </td>
                                     <td>
-                                        <input type="number" step="0.01" min="0" name="items[{{ $idx }}][harga_nominal]" value="{{ (float) $pdtl->harga_nominal }}" class="form-control item-harga" placeholder="0" style="text-align: right;" oninput="calculateTotalTerima()">
+                                        <input type="number" step="0.01" min="0" name="items[0][harga_nominal]" value="0" class="form-control item-harga" placeholder="0" style="text-align: right; font-weight: 600;" oninput="calculateTotalTerima()">
+                                    </td>
+                                    <td>
+                                        <input type="number" step="0.1" min="0" max="100" name="items[0][diskon_persen]" value="0" class="form-control item-diskon" placeholder="0" style="text-align: right;" oninput="calculateTotalTerima()">
+                                    </td>
+                                    <td>
+                                        <input type="number" step="0.01" min="0" name="items[0][potongan_nominal]" value="0" class="form-control item-potongan" placeholder="0" style="text-align: right;" oninput="calculateTotalTerima()">
+                                    </td>
+                                    <td>
+                                        <select name="items[0][ppn_tipe]" class="form-control item-ppn-tipe" onchange="calculateTotalTerima()" style="font-size: 0.775rem; font-weight: 600;">
+                                            <option value="NON_PPN" selected>Non (0%)</option>
+                                            <option value="PPN_11">PPN 11%</option>
+                                        </select>
+                                    </td>
+                                    <td style="text-align: right; font-weight: 700; font-family: monospace; color: #0f172a;" class="row-subtotal">
+                                        Rp 0
                                     </td>
                                     <td style="text-align: center;">
                                         <button type="button" onclick="removeTerimaRow(this)" class="btn btn-danger btn-sm" style="padding: 0.2rem 0.45rem; font-size: 0.8rem;" title="Hapus Baris">&times;</button>
                                     </td>
                                 </tr>
                             @endif
-                        @endforeach
-                    @else
-                        {{-- Row Kosong Default --}}
-                        <tr class="terima-row" data-index="0" data-sisa="0">
-                            <td class="row-num" style="font-weight: 700; text-align: center; color: #475569; background: #f1f5f9;">1</td>
-                            <td>
-                                <select name="items[0][barang_id]" class="form-control item-barang" onchange="updateTerimaSatuanAndBatch(this)" required>
-                                    <option value="">-- Pilih Barang (Bahan Baku / Penolong) --</option>
-                                    
-                                    <optgroup label="BAHAN BAKU (RAW MATERIAL)" class="grp-bb">
-                                        @foreach($barangList->filter(fn($b) => in_array($b->jenisBarang?->jenis_barang_cd, ['RAW', 'BB'])) as $b)
-                                            <option value="{{ $b->barang_id }}" 
-                                                    data-category="BB"
-                                                    data-cd="{{ $b->barang_cd }}" 
-                                                    data-nm="{{ $b->barang_nm }}"
-                                                    data-acronym="{{ app(\App\Services\Common\CodeGeneratorService::class)->extractBarangAcronym($b->barang_nm, $b->barang_cd) }}"
-                                                    data-satuan="{{ $b->satuanDasar?->satuan_nm ?? '-' }}" 
-                                                    data-harga="{{ (float) ($b->harga_beli_standar ?? 0) }}">
-                                                {{ $b->barang_nm }} ({{ $b->barang_cd }}) - Std: Rp {{ number_format((float) ($b->harga_beli_standar ?? 0), 0, ',', '.') }}/{{ $b->satuanDasar?->satuan_cd }}
-                                            </option>
-                                        @endforeach
-                                    </optgroup>
+                        </tbody>
+                        <tfoot>
+                            <tr style="background: #f8fafc; font-weight: 700; border-top: 2px solid #cbd5e1;">
+                                <td colspan="5" style="text-align: right; padding: 0.55rem 0.75rem; color: #475569; font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.03em;">
+                                    Total:
+                                </td>
+                                <td id="totalBrutoQtyDisplay" style="padding: 0.45rem 0.35rem; color: #0284c7; font-size: 0.825rem; text-align: right; font-family: monospace; font-weight: 700;" title="Total Bruto Timbangan">
+                                    0,00
+                                </td>
+                                <td id="totalRejectQtyDisplay" style="padding: 0.45rem 0.35rem; color: #dc2626; font-size: 0.825rem; text-align: right; font-family: monospace; font-weight: 700;" title="Total Afkir / Reject">
+                                    0,00
+                                </td>
+                                <td id="totalNettoQtyDisplay" style="padding: 0.45rem 0.35rem; color: #047857; font-size: 0.85rem; text-align: right; background: #dcfce7; font-family: monospace; font-weight: 800;" title="Total Netto Bersih">
+                                    0,00
+                                </td>
+                                <td style="text-align: center; color: #64748b; font-size: 0.75rem;">Total</td>
+                                <td></td>
+                                <td id="totalTerimaDiskonDisplay" style="padding: 0.45rem 0.35rem; color: #dc2626; font-size: 0.8rem; text-align: right; font-family: monospace;">-</td>
+                                <td id="totalTerimaPotonganDisplay" style="padding: 0.45rem 0.35rem; color: #dc2626; font-size: 0.8rem; text-align: right; font-family: monospace;">-</td>
+                                <td id="totalTerimaPpnDisplay" style="padding: 0.45rem 0.35rem; color: #0284c7; font-size: 0.8rem; text-align: center; font-family: monospace;">-</td>
+                                <td id="totalTerimaNilaiDisplay" style="padding: 0.45rem 0.35rem; color: #0f172a; font-size: 0.875rem; text-align: right; font-family: monospace; font-weight: 800;">
+                                    Rp 0
+                                </td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
 
-                                    <optgroup label="BUMBU &amp; BAHAN PENOLONG" class="grp-bumbu">
-                                        @foreach($barangList->filter(fn($b) => in_array($b->jenisBarang?->jenis_barang_cd, ['SUPP', 'BUMBU', 'BP']) && !preg_match('/(PLASTIK|KARTON|ROLL|LAKBAN|SARUNG|RAFIA)/i', $b->barang_nm)) as $b)
-                                            <option value="{{ $b->barang_id }}" 
-                                                    data-category="BUMBU"
-                                                    data-cd="{{ $b->barang_cd }}" 
-                                                    data-nm="{{ $b->barang_nm }}"
-                                                    data-acronym="{{ app(\App\Services\Common\CodeGeneratorService::class)->extractBarangAcronym($b->barang_nm, $b->barang_cd) }}"
-                                                    data-satuan="{{ $b->satuanDasar?->satuan_nm ?? '-' }}" 
-                                                    data-harga="{{ (float) ($b->harga_beli_standar ?? 0) }}">
-                                                {{ $b->barang_nm }} ({{ $b->barang_cd }}) - Std: Rp {{ number_format((float) ($b->harga_beli_standar ?? 0), 0, ',', '.') }}/{{ $b->satuanDasar?->satuan_cd }}
-                                            </option>
-                                        @endforeach
-                                    </optgroup>
+                {{-- CARD FOOTER: RINGKASAN EFISIEN & TOMBOL SIMPAN / BATAL TERPADU --}}
+                <div class="card-footer" style="background: #f8fafc; border-top: 1px solid #cbd5e1; padding: 1rem 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                    
+                    {{-- Kiri: Statistik Fisik & Stok --}}
+                    <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+                        <div style="background: #ecfdf5; border: 1.5px solid #a7f3d0; border-radius: 6px; padding: 0.45rem 0.85rem; display: flex; align-items: center; gap: 0.5rem;">
+                            <span style="font-size: 0.75rem; color: #065f46; font-weight: 700; text-transform: uppercase;">Total Netto Masuk:</span>
+                            <strong style="font-size: 1.15rem; color: #047857; font-family: monospace;" id="barTotalNetto">0,00</strong>
+                        </div>
 
-                                    <optgroup label="BAHAN KEMASAN &amp; PACKAGING" class="grp-pack">
-                                        @foreach($barangList->filter(fn($b) => in_array($b->jenisBarang?->jenis_barang_cd, ['PACK']) || (in_array($b->jenisBarang?->jenis_barang_cd, ['BP']) && preg_match('/(PLASTIK|KARTON|ROLL|LAKBAN|SARUNG|RAFIA)/i', $b->barang_nm))) as $b)
-                                            <option value="{{ $b->barang_id }}" 
-                                                    data-category="PACK"
-                                                    data-cd="{{ $b->barang_cd }}" 
-                                                    data-nm="{{ $b->barang_nm }}"
-                                                    data-acronym="{{ app(\App\Services\Common\CodeGeneratorService::class)->extractBarangAcronym($b->barang_nm, $b->barang_cd) }}"
-                                                    data-satuan="{{ $b->satuanDasar?->satuan_nm ?? '-' }}" 
-                                                    data-harga="{{ (float) ($b->harga_beli_standar ?? 0) }}">
-                                                {{ $b->barang_nm }} ({{ $b->barang_cd }}) - Std: Rp {{ number_format((float) ($b->harga_beli_standar ?? 0), 0, ',', '.') }}/{{ $b->satuanDasar?->satuan_cd }}
-                                            </option>
-                                        @endforeach
-                                    </optgroup>
-                                </select>
-                            </td>
-                            <td>
-                                <input type="text" name="items[0][batch_no]" id="batch_0" value="" placeholder="Otomatis saat barang dipilih" class="form-control item-batch" style="font-family: monospace; font-weight: 700; color: #0284c7;" required>
-                            </td>
-                            <td>
-                                <input type="date" name="items[0][expired_tgl]" class="form-control">
-                            </td>
-                            <td>
-                                <select name="items[0][grade_cd]" class="form-control">
-                                    <option value="A" selected>Grade A Super</option>
-                                    <option value="B">Grade B Standar</option>
-                                    <option value="REJECT">Reject / Afkir</option>
-                                </select>
-                            </td>
-                            <td>
-                                <input type="number" step="0.0001" min="0" name="items[0][terima_qty]" value="1" class="form-control item-terima-qty" style="text-align: right; font-weight: 700;" oninput="calculateTotalTerima()" required>
-                            </td>
-                            <td>
-                                <input type="number" step="0.0001" min="0" name="items[0][reject_qty]" value="0" class="form-control item-reject-qty" placeholder="0" style="text-align: right;" oninput="calculateTotalTerima()">
-                            </td>
-                            <td style="text-align: right; font-weight: 700; color: #047857; background: #f0fdf4;" class="row-netto">
-                                1,00
-                            </td>
-                            <td style="text-align: center;">
-                                <span class="row-satuan" style="font-weight: 700; color: #475569; font-size: 0.8rem;">-</span>
-                            </td>
-                            <td>
-                                <input type="number" step="0.01" min="0" name="items[0][harga_nominal]" value="0" class="form-control item-harga" placeholder="0" style="text-align: right;" oninput="calculateTotalTerima()">
-                            </td>
-                            <td style="text-align: center;">
-                                <button type="button" onclick="removeTerimaRow(this)" class="btn btn-danger btn-sm" style="padding: 0.2rem 0.45rem; font-size: 0.8rem;" title="Hapus Baris">&times;</button>
-                            </td>
-                        </tr>
-                    @endif
-                </tbody>
-                <tfoot>
-                    <tr style="background: #f8fafc; font-weight: 700; border-top: 2px solid #cbd5e1;">
-                        <td colspan="5" style="text-align: right; padding: 0.65rem 0.75rem; color: #475569; font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.05em;">
-                            Total Timbangan Fisik:
-                        </td>
-                        <td id="totalBrutoQtyDisplay" style="padding: 0.65rem 0.45rem; color: #0284c7; font-size: 0.9rem; text-align: right; font-family: monospace; font-weight: 700;" title="Total Bruto Timbangan">
-                            0.00
-                        </td>
-                        <td id="totalRejectQtyDisplay" style="padding: 0.65rem 0.45rem; color: #dc2626; font-size: 0.9rem; text-align: right; font-family: monospace; font-weight: 700;" title="Total Afkir / Reject">
-                            0.00
-                        </td>
-                        <td id="totalNettoQtyDisplay" style="padding: 0.65rem 0.45rem; color: #047857; font-size: 0.95rem; text-align: right; background: #dcfce7; font-family: monospace; font-weight: 800;" title="Total Netto Bersih">
-                            0.00
-                        </td>
-                        <td style="text-align: center; color: #64748b; font-size: 0.725rem;">Subtotal:</td>
-                        <td id="totalTerimaNilaiDisplay" style="text-align: right; padding: 0.65rem 0.45rem; font-size: 0.9rem; color: #0f172a; font-family: monospace; font-weight: 700;">
-                            Rp 0
-                        </td>
-                        <td></td>
-                    </tr>
-                </tfoot>
-            </table>
+                        <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 0.45rem 0.85rem; display: flex; align-items: center; gap: 0.5rem;">
+                            <span style="font-size: 0.75rem; color: #64748b; font-weight: 600;">Afkir / Reject:</span>
+                            <strong style="font-size: 1rem; color: #dc2626; font-family: monospace;" id="barTotalReject">0,00</strong>
+                        </div>
+
+                        <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 0.45rem 0.85rem; display: flex; align-items: center; gap: 0.5rem;">
+                            <span style="font-size: 0.75rem; color: #64748b; font-weight: 600;">Komoditas:</span>
+                            <strong style="font-size: 1rem; color: #0f172a;"><span id="barTotalItems">0</span> Item</strong>
+                        </div>
+                    </div>
+
+                    {{-- Kanan: Total Estimasi Nilai / Tagihan & Tombol Simpan / Batal --}}
+                    <div style="display: flex; align-items: center; gap: 1.25rem; flex-wrap: wrap;">
+                        <div style="text-align: right;">
+                            <span style="font-size: 0.7rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; display: block;">Total Estimasi Tagihan / Nilai Masuk:</span>
+                            <strong id="barGrandTotal" style="font-size: 1.4rem; color: #0f172a; font-family: monospace; font-weight: 800;">Rp 0</strong>
+                            <div id="barTaxSummaryLine" style="font-size: 0.725rem; color: #64748b; margin-top: 2px; display: none;"></div>
+                        </div>
+
+                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                            <a href="{{ route('gudang.terima.index') }}" class="btn btn-secondary" style="font-size: 0.85rem; padding: 0.6rem 1.15rem; border-radius: 6px; font-weight: 600;">
+                                Batal
+                            </a>
+
+                            <button type="submit" id="btnSubmitTerima" class="btn btn-primary" style="background: #059669; font-size: 0.925rem; font-weight: 700; padding: 0.6rem 1.35rem; border-radius: 6px; box-shadow: 0 2px 4px rgba(5, 150, 105, 0.25); display: inline-flex; align-items: center; gap: 0.45rem; cursor: pointer;">
+                                <svg width="17" height="17" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                <span>Simpan Penerimaan Fisik</span>
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
         </div>
     </div>
-
-        </div> {{-- End Kolom Kiri (.order-station-grid left) --}}
-
-        {{-- KOLOM KANAN: STICKY ACTION SIDEBAR --}}
-        <div class="sticky-action-sidebar" style="position: sticky; top: 1.25rem; display: flex; flex-direction: column; gap: 1.25rem;">
-            
-            {{-- KARTU SUMMARY & ACTION UTAMA --}}
-            <div class="card" style="border: 1px solid #cbd5e1; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.06); overflow: hidden;">
-                <div class="card-header" style="background: #0f172a; color: #ffffff; padding: 0.875rem 1.25rem;">
-                    <div style="font-size: 0.725rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em; color: #94a3b8;">
-                        Ringkasan Penerimaan
-                    </div>
-                    <strong style="color: #ffffff; font-size: 1.05rem;">Estimasi Nilai HPP Masuk</strong>
-                </div>
-
-                <div style="padding: 1.25rem;">
-                    {{-- TOTAL NOMINAL DISPLAY BESAR --}}
-                    <div style="margin-bottom: 1.25rem;">
-                        <span style="font-size: 0.725rem; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; display: block;">Total Nilai Masuk:</span>
-                        <div id="sideGrandTotal" style="font-size: 1.65rem; font-weight: 800; color: #0f172a; margin-top: 0.2rem; font-family: monospace; letter-spacing: -0.02em;">
-                            Rp 0
-                        </div>
-                    </div>
-
-                    {{-- STATISTIK DAMPAK KARTU STOK --}}
-                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.75rem 1rem; margin-bottom: 1.25rem; display: flex; flex-direction: column; gap: 0.55rem; font-size: 0.85rem;">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <span style="color: #64748b;">Jumlah Komoditas:</span>
-                            <strong style="color: #0f172a;"><span id="sideTotalItems">0</span> Jenis Bahan</strong>
-                        </div>
-                        
-                        <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 0.4rem; border-top: 1px dashed #e2e8f0;">
-                            <span style="color: #64748b;">Gudang Tujuan:</span>
-                            <strong id="sideGudangName" style="color: #0f172a; font-size: 0.8rem; max-width: 150px; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">-</strong>
-                        </div>
-
-                        {{-- HIGHLIGHT NETTO BERSIH MASUK STOK --}}
-                        <div style="padding: 0.55rem 0.65rem; background: #dcfce7; border: 1px solid #86efac; border-radius: 5px; margin-top: 0.2rem;">
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <span style="color: #166534; font-size: 0.775rem; font-weight: 700; text-transform: uppercase;">Netto Masuk Stok:</span>
-                                <strong style="color: #15803d; font-size: 1.05rem; font-family: monospace;"><span id="sideTotalNetto">0.00</span></strong>
-                            </div>
-                            <div id="sideRejectNotice" style="font-size: 0.7rem; color: #166534; margin-top: 0.2rem; display: flex; justify-content: space-between;">
-                                <span>Afkir (Reject):</span>
-                                <span id="sideTotalRejectText" style="font-weight: 700; color: #dc2626;">0.00 (Tidak Masuk)</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div style="margin-bottom: 1.25rem; font-size: 0.75rem; color: #64748b; line-height: 1.4; display: flex; gap: 0.35rem;">
-                        <svg width="15" height="15" fill="none" stroke="#059669" viewBox="0 0 24 24" style="flex-shrink: 0; margin-top: 1px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                        <span>Saldo gudang bertambah otomatis sesuai <strong>Netto Bersih</strong> dan tercatat pada Kartu Stok saat disimpan.</span>
-                    </div>
-
-                    {{-- TOMBOL UTAMA: SIMPAN & MASUKKAN KE STOK GUDANG --}}
-                    <button type="submit" id="btnSubmitTerima" class="btn btn-primary" style="width: 100%; padding: 0.75rem 1rem; font-size: 0.95rem; font-weight: 700; background: #059669; justify-content: center; box-shadow: 0 4px 6px -1px rgba(5, 150, 105, 0.25); display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
-                        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                        <span>Simpan &amp; Masukkan ke Stok</span>
-                    </button>
-
-                    <a href="{{ route('gudang.terima.index') }}" class="btn btn-secondary" style="width: 100%; justify-content: center; margin-top: 0.65rem; font-size: 0.85rem; padding: 0.5rem;">
-                        Batal &amp; Kembali ke Daftar
-                    </a>
-                </div>
-            </div>
-
-            {{-- KARTU PANDUAN CEPAT OPERATOR --}}
-            <div class="card" style="border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.03); background: #ffffff;">
-                <div class="card-header" style="background: #ffffff; padding: 0.75rem 1.25rem; border-bottom: 1px solid #e2e8f0;">
-                    <strong style="color: #0f172a; font-size: 0.85rem;">Panduan Penerimaan Fisik</strong>
-                </div>
-                <div style="padding: 1rem 1.25rem; font-size: 0.8rem; color: #475569; line-height: 1.5;">
-                    <div style="margin-bottom: 0.5rem; display: flex; gap: 0.5rem;">
-                        <span style="color: #059669; font-weight: 700;">&bull;</span>
-                        <span><strong>Nomor Batch Terisolasi:</strong> Format kode batch dibuat otomatis per komoditas &amp; tanggal kedatangan (contoh: <code>BC-28092026-01</code>).</span>
-                    </div>
-                    <div style="margin-bottom: 0.5rem; display: flex; gap: 0.5rem;">
-                        <span style="color: #059669; font-weight: 700;">&bull;</span>
-                        <span><strong>Hitung Timbangan Fisik:</strong> Input kuantitas bruto timbangan &amp; jumlah reject/afkir untuk mendapatkan kuantitas <strong>Netto Bersih</strong>.</span>
-                    </div>
-                    <div style="margin-bottom: 0.5rem; display: flex; gap: 0.5rem;">
-                        <span style="color: #059669; font-weight: 700;">&bull;</span>
-                        <span><strong>Filter Kategori Cepat:</strong> Gunakan tombol chip di atas tabel untuk memfilter bahan baku mentah, bumbu, atau kemasan.</span>
-                    </div>
-                    <div style="display: flex; gap: 0.5rem;">
-                        <span style="color: #059669; font-weight: 700;">&bull;</span>
-                        <span>Tekan <kbd style="background:#e2e8f0; padding:1px 4px; border-radius:3px; font-weight:700;">Enter</kbd> pada kuantitas/harga untuk langsung menambah baris baru.</span>
-                    </div>
-                </div>
-            </div>
-
-        </div> {{-- End Kolom Kanan (.sticky-action-sidebar) --}}
-    </div> {{-- End .order-station-grid --}}
 </form>
 
 {{-- ========================================================================= --}}
@@ -769,7 +746,6 @@
 
             <button type="button" class="btn btn-secondary btn-sm" onclick="closeModal('modalPilihSupplier')">Tutup</button>
         </div>
-    </div>
 </div>
 
 <script>
@@ -1249,13 +1225,13 @@
                 </select>
             </td>
             <td>
-                <input type="text" name="items[${terimaRowIndex}][batch_no]" value="" placeholder="Otomatis saat barang dipilih" class="form-control item-batch" style="font-family: monospace; font-weight: 700; color: #0284c7;" required>
+                <input type="text" name="items[${terimaRowIndex}][batch_no]" value="" placeholder="Contoh: BC-... (isi batch fisik)" class="form-control item-batch" style="font-family: monospace; font-weight: 700; color: #0284c7; width: 100%;" required>
             </td>
             <td>
-                <input type="date" name="items[${terimaRowIndex}][expired_tgl]" class="form-control">
+                <input type="date" name="items[${terimaRowIndex}][expired_tgl]" class="form-control" style="font-size: 0.8rem;">
             </td>
             <td>
-                <select name="items[${terimaRowIndex}][grade_cd]" class="form-control">
+                <select name="items[${terimaRowIndex}][grade_cd]" class="form-control" style="font-size: 0.8rem;">
                     <option value="A" selected>Grade A Super</option>
                     <option value="B">Grade B Standar</option>
                     <option value="REJECT">Reject / Afkir</option>
@@ -1274,7 +1250,22 @@
                 <span class="row-satuan" style="font-weight: 700; color: #475569; font-size: 0.8rem;">-</span>
             </td>
             <td>
-                <input type="number" step="0.01" min="0" name="items[${terimaRowIndex}][harga_nominal]" value="0" class="form-control item-harga" placeholder="0" style="text-align: right;" oninput="calculateTotalTerima()">
+                <input type="number" step="0.01" min="0" name="items[${terimaRowIndex}][harga_nominal]" value="0" class="form-control item-harga" placeholder="0" style="text-align: right; font-weight: 600;" oninput="calculateTotalTerima()">
+            </td>
+            <td>
+                <input type="number" step="0.1" min="0" max="100" name="items[${terimaRowIndex}][diskon_persen]" value="0" class="form-control item-diskon" placeholder="0" style="text-align: right;" oninput="calculateTotalTerima()">
+            </td>
+            <td>
+                <input type="number" step="0.01" min="0" name="items[${terimaRowIndex}][potongan_nominal]" value="0" class="form-control item-potongan" placeholder="0" style="text-align: right;" oninput="calculateTotalTerima()">
+            </td>
+            <td>
+                <select name="items[${terimaRowIndex}][ppn_tipe]" class="form-control item-ppn-tipe" onchange="calculateTotalTerima()" style="font-size: 0.775rem; font-weight: 600;">
+                    <option value="NON_PPN" selected>Non (0%)</option>
+                    <option value="PPN_11">PPN 11%</option>
+                </select>
+            </td>
+            <td style="text-align: right; font-weight: 700; font-family: monospace; color: #0f172a;" class="row-subtotal">
+                Rp 0
             </td>
             <td style="text-align: center;">
                 <button type="button" onclick="removeTerimaRow(this)" class="btn btn-danger btn-sm" style="padding: 0.2rem 0.45rem; font-size: 0.8rem;" title="Hapus Baris">&times;</button>
@@ -1287,7 +1278,6 @@
         attachExcelKeyboardEventsTerima(tr);
         calculateTotalTerima();
 
-        // Terapkan filter kategori barang yang aktif
         const select = tr.querySelector('.item-barang');
         applyBarangCategoryFilterToSelect(select, activeBarangCategory);
 
@@ -1309,23 +1299,25 @@
 
     function updateTerimaRowNumbers() {
         document.querySelectorAll('.terima-row').forEach((row, idx) => {
-            row.querySelector('.row-num').innerText = idx + 1;
+            const numElem = row.querySelector('.row-num');
+            if (numElem) numElem.innerText = idx + 1;
         });
     }
 
-    async function updateTerimaSatuanAndBatch(selectElem) {
+    function updateTerimaSatuanAndBatch(selectElem) {
         const row = selectElem.closest('tr');
         const selectedOption = selectElem.options ? selectElem.options[selectElem.selectedIndex] : null;
         const barangId = selectElem.value;
+        const batchInput = row.querySelector('.item-batch');
+
         if (!barangId) {
-            const batchInput = row.querySelector('.item-batch');
             if (batchInput) {
                 batchInput.value = '';
-                batchInput.placeholder = 'Otomatis saat barang dipilih';
+                batchInput.placeholder = 'Pilih barang dahulu';
             }
             const satuanSpan = row.querySelector('.row-satuan');
             if (satuanSpan) satuanSpan.innerText = '-';
-            const hargaInput = row.querySelector('.item-harga') || row.querySelector('input[name*="[harga_nominal]"]');
+            const hargaInput = row.querySelector('.item-harga');
             if (hargaInput) hargaInput.value = 0;
             calculateTotalTerima();
             return;
@@ -1337,85 +1329,54 @@
         const satuanSpan = row.querySelector('.row-satuan');
         if (satuanSpan && satuan !== '-') satuanSpan.innerText = satuan;
 
-        // Ambil tanggal dari input terima_tgl
-        const tglInput = document.getElementById('terima_tgl');
-        const tglMasuk = tglInput?.value || '';
-
-        // Otomatis generate nomor batch via AJAX
-        const batchInput = row.querySelector('.item-batch');
+        // Otomatis generate prefix kode barang saja (misal BC-, PR-)
+        // Tanggal dan urutan sequence dihilangkan sesuai arahan mentor agar nomor batch fisik diisi manual oleh pengguna
         if (batchInput) {
-            batchInput.value = 'Membuat batch...';
-            try {
-                // Kumpulkan batch_no yang sudah ada di baris-baris lain agar tidak kembar nomor urutnya
-                const existingBatches = [];
-                document.querySelectorAll('.item-batch').forEach(inp => {
-                    if (inp !== batchInput && inp.value && !inp.value.includes('...')) {
-                        existingBatches.push(inp.value.trim());
-                    }
-                });
-
-                const excludeParam = existingBatches.length > 0 ? `&exclude=${encodeURIComponent(existingBatches.join(','))}` : '';
-                const url = `{{ route('ajax.generate_code') }}?type=batch_no&barang_id=${barangId}&date=${tglMasuk}${excludeParam}`;
-                const resp = await fetch(url, {
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                });
-                const data = await resp.json();
-                if (data.status === 'success' && data.code) {
-                    batchInput.value = data.code;
+            let acronym = selectedOption?.dataset?.acronym || '';
+            if (!acronym) {
+                const cd = selectedOption?.dataset?.cd || '';
+                const nm = selectedOption?.dataset?.nm || '';
+                if (cd && !cd.startsWith('BRG-')) {
+                    acronym = cd.replace(/[^A-Z]/g, '').substring(0, 2);
+                } else if (nm) {
+                    const words = nm.trim().split(/\s+/);
+                    acronym = words.length >= 2 ? (words[0][0] + words[1][0]).toUpperCase() : nm.substring(0, 2).toUpperCase();
                 } else {
-                    // Fallback generator client-side
-                    const acronym = selectedOption?.dataset?.acronym || 'BRG';
-                    const dateParts = tglMasuk ? tglMasuk.split('-') : [];
-                    const formattedDate = dateParts.length === 3 ? `${dateParts[2]}${dateParts[1]}${dateParts[0]}` : '01012026';
-                    const prefix = `${acronym}-${formattedDate}-`;
-                    let maxNum = 0;
-                    existingBatches.forEach(b => {
-                        if (b.startsWith(prefix)) {
-                            const n = parseInt(b.substring(prefix.length), 10);
-                            if (!isNaN(n) && n > maxNum) maxNum = n;
-                        }
-                    });
-                    batchInput.value = `${prefix}${String(maxNum + 1).padStart(2, '0')}`;
+                    acronym = 'BRG';
                 }
-            } catch (err) {
-                console.error('Gagal mengambil nomor batch berikutnya:', err);
-                const acronym = selectedOption?.dataset?.acronym || 'BRG';
-                const dateParts = tglMasuk ? tglMasuk.split('-') : [];
-                const formattedDate = dateParts.length === 3 ? `${dateParts[2]}${dateParts[1]}${dateParts[0]}` : '01012026';
-                const prefix = `${acronym}-${formattedDate}-`;
-                let maxNum = 0;
-                existingBatches.forEach(b => {
-                    if (b.startsWith(prefix)) {
-                        const n = parseInt(b.substring(prefix.length), 10);
-                        if (!isNaN(n) && n > maxNum) maxNum = n;
-                    }
-                });
-                batchInput.value = `${prefix}${String(maxNum + 1).padStart(2, '0')}`;
+            }
+            const prefix = (acronym ? acronym.toUpperCase() : 'BRG') + '-';
+            const currentVal = batchInput.value.trim();
+
+            if (!currentVal || currentVal.endsWith('-')) {
+                batchInput.value = prefix;
+            } else if (currentVal.indexOf('-') > 0) {
+                // Pertahankan nomor fisik yang sudah diketik jika user mengganti pilihan barang
+                const suffix = currentVal.substring(currentVal.indexOf('-') + 1);
+                batchInput.value = prefix + suffix;
+            } else {
+                batchInput.value = prefix + currentVal;
+            }
+
+            batchInput.placeholder = `${prefix}... (Isi no batch fisik)`;
+
+            // Arahkan kursor langsung ke akhir prefix agar user langsung mengetik nomor batch fisik
+            if (document.activeElement === selectElem) {
+                setTimeout(() => {
+                    batchInput.focus();
+                    const len = batchInput.value.length;
+                    batchInput.setSelectionRange(len, len);
+                }, 50);
             }
         }
 
-        const hargaInput = row.querySelector('.item-harga') || row.querySelector('input[name*="[harga_nominal]"]');
+        const hargaInput = row.querySelector('.item-harga');
         if (hargaInput && defaultHarga > 0 && (!hargaInput.value || parseFloat(hargaInput.value) === 0)) {
             hargaInput.value = defaultHarga;
         }
         calculateTotalTerima();
     }
 
-    // Ketika tanggal penerimaan diubah, sinkronkan otomatis seluruh nomor batch di tabel
-    document.getElementById('terima_tgl')?.addEventListener('change', async function() {
-        const rows = document.querySelectorAll('.terima-row');
-        for (const row of rows) {
-            const selectElem = row.querySelector('.item-barang') || row.querySelector('.item-barang-id');
-            if (selectElem && selectElem.value) {
-                await updateTerimaSatuanAndBatch(selectElem);
-            }
-        }
-    });
-
-    // Inisialisasi awal saat halaman selesai dimuat: jika ada baris yang sudah terpilih barangnya, ambil batch berikutnya
     document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.terima-row').forEach(row => {
             const selectElem = row.querySelector('.item-barang');
@@ -1425,18 +1386,24 @@
         });
     });
 
-    // Kalkulasi Lengkap Timbangan Pabrik: Bruto, Reject/Afkir, Netto Bersih, dan Nilai Fisik
     function calculateTotalTerima() {
         let totalBruto = 0;
         let totalReject = 0;
-        let totalNilai = 0;
+        let totalSubtotalBruto = 0;
+        let totalDiskon = 0;
+        let totalPotongan = 0;
+        let totalSubtotalNetto = 0;
+        let totalPpn = 0;
         let activeItemCount = 0;
 
         document.querySelectorAll('.terima-row').forEach(row => {
             const selectElem = row.querySelector('.item-barang') || row.querySelector('.item-barang-id');
             const terimaInput = row.querySelector('.item-terima-qty');
             const rejectInput = row.querySelector('.item-reject-qty');
-            const hargaInput = row.querySelector('.item-harga') || row.querySelector('input[name*="[harga_nominal]"]');
+            const hargaInput = row.querySelector('.item-harga');
+            const diskonInput = row.querySelector('.item-diskon');
+            const potonganInput = row.querySelector('.item-potongan');
+            const ppnSelect = row.querySelector('.item-ppn-tipe');
 
             if (selectElem && selectElem.value) {
                 activeItemCount++;
@@ -1445,57 +1412,95 @@
             const terimaQty = parseFloat(terimaInput?.value) || 0;
             const rejectQty = parseFloat(rejectInput?.value) || 0;
             const hargaNominal = parseFloat(hargaInput?.value) || 0;
+            const diskonPersen = Math.min(100, Math.max(0, parseFloat(diskonInput?.value) || 0));
+            const potonganNominal = Math.max(0, parseFloat(potonganInput?.value) || 0);
+            const isPpn11 = ppnSelect ? ppnSelect.value === 'PPN_11' : false;
 
+            // Netto Fisik
             const netto = Math.max(0, terimaQty - rejectQty);
-
             const nettoSpan = row.querySelector('.row-netto');
             if (nettoSpan) {
                 nettoSpan.innerText = netto.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
             }
 
+            // Komersial & Pajak Baris
+            const diskonUnit = hargaNominal * (diskonPersen / 100);
+            const hargaNetto = Math.max(0, hargaNominal - diskonUnit);
+            const rowSubtotalNetto = Math.max(0, (terimaQty * hargaNetto) - potonganNominal);
+            const itemPpnNominal = isPpn11 ? Math.round(rowSubtotalNetto * 0.11) : 0;
+            const rowSubtotalTagihan = rowSubtotalNetto + itemPpnNominal;
+
+            const rowSubtotalCell = row.querySelector('.row-subtotal');
+            if (rowSubtotalCell) {
+                rowSubtotalCell.innerText = 'Rp ' + Math.round(rowSubtotalTagihan).toLocaleString('id-ID');
+            }
+
             totalBruto += terimaQty;
             totalReject += rejectQty;
-            totalNilai += (terimaQty * hargaNominal);
+            totalSubtotalBruto += (terimaQty * hargaNominal);
+            totalDiskon += (terimaQty * diskonUnit);
+            totalPotongan += potonganNominal;
+            totalSubtotalNetto += rowSubtotalNetto;
+            totalPpn += itemPpnNominal;
         });
 
         const totalNetto = Math.max(0, totalBruto - totalReject);
+        const grandTotal = Math.max(0, totalSubtotalNetto + totalPpn);
 
         // Update Tabel Footer
         const brutoDisplay = document.getElementById('totalBrutoQtyDisplay');
         const rejectDisplay = document.getElementById('totalRejectQtyDisplay');
         const nettoDisplay = document.getElementById('totalNettoQtyDisplay');
+        const diskonDisplay = document.getElementById('totalTerimaDiskonDisplay');
+        const potonganDisplay = document.getElementById('totalTerimaPotonganDisplay');
+        const ppnDisplay = document.getElementById('totalTerimaPpnDisplay');
         const nilaiDisplay = document.getElementById('totalTerimaNilaiDisplay');
 
         if (brutoDisplay) brutoDisplay.innerText = totalBruto.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         if (rejectDisplay) rejectDisplay.innerText = totalReject.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         if (nettoDisplay) nettoDisplay.innerText = totalNetto.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        if (nilaiDisplay) nilaiDisplay.innerText = 'Rp ' + totalNilai.toLocaleString('id-ID');
+        if (diskonDisplay) diskonDisplay.innerText = totalDiskon > 0 ? '-Rp ' + Math.round(totalDiskon).toLocaleString('id-ID') : '-';
+        if (potonganDisplay) potonganDisplay.innerText = totalPotongan > 0 ? '-Rp ' + Math.round(totalPotongan).toLocaleString('id-ID') : '-';
+        if (ppnDisplay) ppnDisplay.innerText = totalPpn > 0 ? '+Rp ' + Math.round(totalPpn).toLocaleString('id-ID') : '-';
+        if (nilaiDisplay) nilaiDisplay.innerText = 'Rp ' + Math.round(grandTotal).toLocaleString('id-ID');
 
-        // Update Sticky Action Sidebar
-        const sideGrandTotal = document.getElementById('sideGrandTotal');
-        const sideTotalItems = document.getElementById('sideTotalItems');
-        const sideTotalNetto = document.getElementById('sideTotalNetto');
-        const sideTotalRejectText = document.getElementById('sideTotalRejectText');
+        // Update Bar Ringkasan Terpadu di Footer Tabel
+        const barTotalNetto = document.getElementById('barTotalNetto');
+        const barTotalReject = document.getElementById('barTotalReject');
+        const barTotalItems = document.getElementById('barTotalItems');
+        const barGrandTotal = document.getElementById('barGrandTotal');
+        const barTaxSummaryLine = document.getElementById('barTaxSummaryLine');
 
-        if (sideGrandTotal) sideGrandTotal.innerText = 'Rp ' + totalNilai.toLocaleString('id-ID');
-        if (sideTotalItems) sideTotalItems.innerText = activeItemCount;
-        if (sideTotalNetto) sideTotalNetto.innerText = totalNetto.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        if (sideTotalRejectText) {
-            sideTotalRejectText.innerText = totalReject.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' Unit (Tidak Masuk)';
+        if (barTotalNetto) barTotalNetto.innerText = totalNetto.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        if (barTotalReject) barTotalReject.innerText = totalReject.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        if (barTotalItems) barTotalItems.innerText = activeItemCount;
+        if (barGrandTotal) barGrandTotal.innerText = 'Rp ' + Math.round(grandTotal).toLocaleString('id-ID');
+
+        if (barTaxSummaryLine) {
+            if (totalPpn > 0 || totalDiskon > 0 || totalPotongan > 0) {
+                let parts = [];
+                if (totalDiskon > 0) parts.push(`Diskon: -Rp ${Math.round(totalDiskon).toLocaleString('id-ID')}`);
+                if (totalPotongan > 0) parts.push(`Potongan: -Rp ${Math.round(totalPotongan).toLocaleString('id-ID')}`);
+                if (totalPpn > 0) parts.push(`PPN 11%: +Rp ${Math.round(totalPpn).toLocaleString('id-ID')}`);
+                barTaxSummaryLine.style.display = 'block';
+                barTaxSummaryLine.innerHTML = `<span style="color:#0f172a; font-weight:600;">DPP Netto: Rp ${Math.round(totalSubtotalNetto).toLocaleString('id-ID')}</span> &bull; ${parts.join(' &bull; ')}`;
+            } else {
+                barTaxSummaryLine.style.display = 'none';
+                barTaxSummaryLine.innerHTML = '';
+            }
         }
     }
 
-    // Sinkronisasi Nama Gudang Tujuan ke Sidebar Kanan
-    function updateSideGudangDisplay() {
-        const gdgSelect = document.getElementById('gudang_id');
-        const sideGdg = document.getElementById('sideGudangName');
-        if (!sideGdg || !gdgSelect) return;
-        const opt = gdgSelect.options[gdgSelect.selectedIndex];
-        sideGdg.innerText = (opt && opt.value) ? opt.text : '- Belum Dipilih -';
-    }
-
-    document.getElementById('gudang_id')?.addEventListener('change', updateSideGudangDisplay);
-    updateSideGudangDisplay();
+    // Shortcut Pintasan Keyboard Ctrl+S / Cmd+S untuk Simpan Cepat
+    document.addEventListener('keydown', function(e) {
+        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+            e.preventDefault();
+            const btn = document.getElementById('btnSubmitTerima');
+            if (btn && !btn.disabled) {
+                btn.click();
+            }
+        }
+    });
 
     // Excel Keyboard Navigation untuk Penerimaan Barang
     function attachExcelKeyboardEventsTerima(rowElement) {
@@ -1507,7 +1512,7 @@
                     const allRows = Array.from(document.querySelectorAll('.terima-row'));
                     const currentRowIdx = allRows.indexOf(rowElement);
 
-                    if (input.classList.contains('item-terima-qty') || input.classList.contains('item-reject-qty') || input.classList.contains('item-harga')) {
+                    if (input.classList.contains('item-terima-qty') || input.classList.contains('item-reject-qty') || input.classList.contains('item-harga') || input.classList.contains('item-diskon') || input.classList.contains('item-potongan')) {
                         if (currentRowIdx === allRows.length - 1) {
                             addTerimaRow(true);
                         } else {

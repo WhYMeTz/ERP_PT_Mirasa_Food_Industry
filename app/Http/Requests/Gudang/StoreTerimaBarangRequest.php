@@ -17,10 +17,12 @@ class StoreTerimaBarangRequest extends FormRequest
             'terima_no'     => 'nullable|string|max:50|unique:dat_terima_hdr,terima_no',
             'terima_tgl'    => 'required|date',
             'po_id'         => 'nullable|integer|exists:dat_po_hdr,po_id',
-            'supplier_id'   => 'required|integer|exists:mst_supplier,supplier_id',
-            'gudang_id'     => 'required|integer|exists:mst_gudang,gudang_id',
-            'suratjalan_no' => 'nullable|string|max:100',
-            'catatan_txt'   => 'nullable|string',
+            'supplier_id'      => 'required|integer|exists:mst_supplier,supplier_id',
+            'gudang_id'        => 'required|integer|exists:mst_gudang,gudang_id',
+            'suratjalan_no'    => 'nullable|string|max:100',
+            'catatan_txt'      => 'nullable|string',
+            'potongan_nominal' => 'nullable|numeric|min:0',
+            'ppn_tipe'         => 'nullable|string|in:NON_PPN,PPN_11',
 
             'items'                 => 'required|array|min:1',
             'items.*.barang_id'     => 'required|integer|exists:mst_barang,barang_id',
@@ -29,9 +31,11 @@ class StoreTerimaBarangRequest extends FormRequest
             'items.*.expired_tgl'   => 'nullable|date',
             'items.*.grade_cd'      => 'nullable|string|max:20',
             'items.*.reject_qty'    => 'nullable|numeric|min:0',
-            'items.*.terima_qty'    => 'nullable|numeric|min:0',
-            'items.*.harga_nominal' => 'nullable|numeric|min:0',
-            'items.*.catatan_txt'   => 'nullable|string',
+            'items.*.harga_nominal'    => 'nullable|numeric|min:0',
+            'items.*.diskon_persen'    => 'nullable|numeric|min:0|max:100',
+            'items.*.potongan_nominal' => 'nullable|numeric|min:0',
+            'items.*.ppn_tipe'         => 'nullable|string|in:NON_PPN,PPN_11',
+            'items.*.catatan_txt'      => 'nullable|string',
         ];
     }
 

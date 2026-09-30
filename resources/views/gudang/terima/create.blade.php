@@ -619,41 +619,56 @@
                 </div>
 
                 {{-- CARD FOOTER: RINGKASAN EFISIEN & TOMBOL SIMPAN / BATAL TERPADU --}}
-                <div class="card-footer" style="background: #f8fafc; border-top: 1px solid #cbd5e1; padding: 1rem 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                <div class="card-footer" style="background: #ffffff; border-top: 1px solid #cbd5e1; padding: 0.85rem 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
                     
-                    {{-- Kiri: Statistik Fisik & Stok --}}
-                    <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
-                        <div style="background: #ecfdf5; border: 1.5px solid #a7f3d0; border-radius: 6px; padding: 0.45rem 0.85rem; display: flex; align-items: center; gap: 0.5rem;">
-                            <span style="font-size: 0.75rem; color: #065f46; font-weight: 700; text-transform: uppercase;">Total Netto Masuk:</span>
-                            <strong style="font-size: 1.15rem; color: #047857; font-family: monospace;" id="barTotalNetto">0,00</strong>
+                    {{-- Kiri: 3 Metrik Fisik & Stok (Netto, Afkir, Komoditas) Terstruktur Rapi & Seragam --}}
+                    <div style="display: flex; align-items: center; gap: 1.25rem; flex-wrap: wrap;">
+                        {{-- 1. Netto Masuk --}}
+                        <div>
+                            <span style="font-size: 0.68rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; display: block; line-height: 1;">Total Netto Masuk</span>
+                            <div style="margin-top: 0.2rem; font-size: 1.15rem; font-weight: 800; color: #047857; font-family: monospace; line-height: 1.2;">
+                                <span id="barTotalNetto">0,00</span>
+                            </div>
                         </div>
 
-                        <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 0.45rem 0.85rem; display: flex; align-items: center; gap: 0.5rem;">
-                            <span style="font-size: 0.75rem; color: #64748b; font-weight: 600;">Afkir / Reject:</span>
-                            <strong style="font-size: 1rem; color: #dc2626; font-family: monospace;" id="barTotalReject">0,00</strong>
+                        <div style="width: 1px; height: 26px; background: #e2e8f0;"></div>
+
+                        {{-- 2. Afkir / Reject --}}
+                        <div>
+                            <span style="font-size: 0.68rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; display: block; line-height: 1;">Afkir / Reject</span>
+                            <div style="margin-top: 0.2rem; font-size: 1.15rem; font-weight: 800; color: #dc2626; font-family: monospace; line-height: 1.2;">
+                                <span id="barTotalReject">0,00</span>
+                            </div>
                         </div>
 
-                        <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 0.45rem 0.85rem; display: flex; align-items: center; gap: 0.5rem;">
-                            <span style="font-size: 0.75rem; color: #64748b; font-weight: 600;">Komoditas:</span>
-                            <strong style="font-size: 1rem; color: #0f172a;"><span id="barTotalItems">0</span> Item</strong>
+                        <div style="width: 1px; height: 26px; background: #e2e8f0;"></div>
+
+                        {{-- 3. Komoditas --}}
+                        <div>
+                            <span style="font-size: 0.68rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; display: block; line-height: 1;">Total Komoditas</span>
+                            <div style="margin-top: 0.2rem; font-size: 1.15rem; font-weight: 800; color: #0f172a; line-height: 1.2;">
+                                <span id="barTotalItems">0</span> <span style="font-size: 0.85rem; font-weight: 600; color: #64748b;">Item</span>
+                            </div>
                         </div>
                     </div>
 
-                    {{-- Kanan: Total Estimasi Nilai / Tagihan & Tombol Simpan / Batal --}}
+                    {{-- Kanan: Total Estimasi Tagihan & Tombol Aksi --}}
                     <div style="display: flex; align-items: center; gap: 1.25rem; flex-wrap: wrap;">
                         <div style="text-align: right;">
-                            <span style="font-size: 0.7rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; display: block;">Total Estimasi Tagihan / Nilai Masuk:</span>
-                            <strong id="barGrandTotal" style="font-size: 1.4rem; color: #0f172a; font-family: monospace; font-weight: 800;">Rp 0</strong>
-                            <div id="barTaxSummaryLine" style="font-size: 0.725rem; color: #64748b; margin-top: 2px; display: none;"></div>
+                            <span style="font-size: 0.7rem; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; display: block; line-height: 1;">Total Estimasi Tagihan</span>
+                            <strong id="barGrandTotal" style="font-size: 1.35rem; color: #0f172a; font-family: monospace; font-weight: 800; line-height: 1.3; display: block;">Rp 0</strong>
+                            <div id="barTaxSummaryLine" style="font-size: 0.725rem; color: #64748b; margin-top: 1px; display: none;"></div>
                         </div>
 
+                        <div style="width: 1px; height: 32px; background: #e2e8f0;"></div>
+
                         <div style="display: flex; gap: 0.5rem; align-items: center;">
-                            <a href="{{ route('gudang.terima.index') }}" class="btn btn-secondary" style="font-size: 0.85rem; padding: 0.6rem 1.15rem; border-radius: 6px; font-weight: 600;">
+                            <a href="{{ route('gudang.terima.index') }}" class="btn btn-secondary" style="font-size: 0.85rem; padding: 0.55rem 1.15rem; border-radius: 6px; font-weight: 600; background: #ffffff; border: 1px solid #cbd5e1; color: #475569;">
                                 Batal
                             </a>
 
-                            <button type="submit" id="btnSubmitTerima" class="btn btn-primary" style="background: #059669; font-size: 0.925rem; font-weight: 700; padding: 0.6rem 1.35rem; border-radius: 6px; box-shadow: 0 2px 4px rgba(5, 150, 105, 0.25); display: inline-flex; align-items: center; gap: 0.45rem; cursor: pointer;">
-                                <svg width="17" height="17" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            <button type="submit" id="btnSubmitTerima" class="btn btn-primary" style="background: #059669; font-size: 0.875rem; font-weight: 700; padding: 0.55rem 1.35rem; border-radius: 6px; box-shadow: 0 1px 3px rgba(5, 150, 105, 0.25); display: inline-flex; align-items: center; gap: 0.45rem; cursor: pointer; border: none; color: #ffffff;">
+                                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M5 13l4 4L19 7"/></svg>
                                 <span>Simpan Penerimaan Fisik</span>
                             </button>
                         </div>
@@ -1304,7 +1319,7 @@
         });
     }
 
-    function updateTerimaSatuanAndBatch(selectElem) {
+    function updateTerimaSatuanAndBatch(selectElem, isUserChange = true) {
         const row = selectElem.closest('tr');
         const selectedOption = selectElem.options ? selectElem.options[selectElem.selectedIndex] : null;
         const barangId = selectElem.value;
@@ -1389,8 +1404,12 @@
         }
 
         const hargaInput = row.querySelector('.item-harga');
-        if (hargaInput && defaultHarga > 0 && (!hargaInput.value || parseFloat(hargaInput.value) === 0)) {
-            hargaInput.value = defaultHarga;
+        if (hargaInput) {
+            if (isUserChange) {
+                hargaInput.value = defaultHarga;
+            } else if (defaultHarga > 0 && (!hargaInput.value || parseFloat(hargaInput.value) === 0)) {
+                hargaInput.value = defaultHarga;
+            }
         }
         calculateTotalTerima();
     }
@@ -1399,7 +1418,7 @@
         document.querySelectorAll('.terima-row').forEach(row => {
             const selectElem = row.querySelector('.item-barang');
             if (selectElem && selectElem.value) {
-                updateTerimaSatuanAndBatch(selectElem);
+                updateTerimaSatuanAndBatch(selectElem, false);
             }
         });
     });

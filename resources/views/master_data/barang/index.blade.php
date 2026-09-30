@@ -9,12 +9,16 @@
         <p style="color: #64748b; font-size: 0.875rem; margin-top: 0.25rem;">Kelola data katalog bahan baku, barang dalam proses, dan produk jadi.</p>
     </div>
     <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+        <a href="{{ route('master.barang.export.pdf') }}" target="_blank" class="btn btn-secondary" style="background: #ffffff; border: 1.5px solid #e11d48; color: #e11d48; font-size: 0.85rem; font-weight: 700; padding: 0.55rem 0.95rem; box-shadow: 0 1px 2px rgba(0,0,0,0.03); display: inline-flex; align-items: center; gap: 0.35rem;" title="Buka & Cetak Katalog Dokumen PDF Resmi">
+            <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+            <span>📄 Cetak PDF</span>
+        </a>
         <a href="{{ route('master.barang.export') }}" class="btn btn-secondary" style="background: #ffffff; border: 1.5px solid #cbd5e1; color: #334155; font-size: 0.85rem; font-weight: 600; padding: 0.55rem 0.95rem; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">
-            📊 Ekspor Excel
+            📊 Eksport Excel
         </a>
         @if (Auth::user()?->canManageMasterData())
             <button type="button" onclick="openModal('modalImportBarang')" class="btn btn-secondary" style="background: #ffffff; border: 1.5px solid #0284c7; color: #0284c7; font-size: 0.85rem; font-weight: 700; padding: 0.55rem 0.95rem; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">
-                📥 Impor Excel
+                📥 Import Excel
             </button>
             <button type="button" onclick="openModal('modalTambahBarang')" class="btn btn-primary" style="font-size: 0.85rem; padding: 0.55rem 1rem;">
                 <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>

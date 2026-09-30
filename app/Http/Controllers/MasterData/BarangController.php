@@ -9,24 +9,35 @@ use App\Models\MasterData\MstJenisBarang;
 use App\Models\MasterData\MstSatuan;
 use App\Services\Common\CodeGeneratorService;
 use App\Services\MasterData\BarangExcelService;
+use App\Services\MasterData\BarangPdfService;
 use App\Services\MasterData\BarangService;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class BarangController extends Controller
 {
     /**
-     * Injeksi dependensi BarangService, CodeGeneratorService & BarangExcelService via Constructor.
+     * Injeksi dependensi BarangService, CodeGeneratorService, BarangExcelService & BarangPdfService via Constructor.
      */
     public function __construct(
         protected BarangService $barangService,
         protected CodeGeneratorService $codeGeneratorService,
-        protected BarangExcelService $barangExcelService
+        protected BarangExcelService $barangExcelService,
+        protected BarangPdfService $barangPdfService
     ) {}
+
+    /**
+     * Ekspor seluruh data master barang ke file dokumen PDF resmi.
+     */
+    public function exportPdf(): Response
+    {
+        return $this->barangPdfService->exportPdf();
+    }
 
     /**
      * Ekspor seluruh data master barang ke file Excel (.xlsx).

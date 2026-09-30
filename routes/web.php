@@ -52,6 +52,7 @@ Route::middleware('auth')->group(function () {
         ->middleware('role:user_manage,SUPERADMIN');
 
     // Master Data Routes
+    Route::get('master-barang/export-pdf', [BarangController::class, 'exportPdf'])->name('master.barang.export.pdf');
     Route::get('master-barang/export', [BarangController::class, 'export'])->name('master.barang.export');
     Route::get('master-barang/template', [BarangController::class, 'template'])->name('master.barang.template');
     Route::post('master-barang/import', [BarangController::class, 'import'])->name('master.barang.import');

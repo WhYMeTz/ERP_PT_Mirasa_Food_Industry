@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\UserController;
 use App\Http\Controllers\Common\CodeGeneratorController;
 use App\Http\Controllers\Gudang\PemakaianController;
 use App\Http\Controllers\Gudang\PoController;
+use App\Http\Controllers\Gudang\ReturPembelianController;
 use App\Http\Controllers\Gudang\StokController;
 use App\Http\Controllers\Gudang\TerimaBarangController;
 use App\Http\Controllers\MasterData\BarangController;
@@ -16,6 +17,7 @@ use App\Http\Controllers\MasterData\KaryawanController;
 use App\Http\Controllers\MasterData\SatuanController;
 use App\Http\Controllers\MasterData\SupplierController;
 use App\Http\Controllers\Produksi\BomController;
+use App\Http\Controllers\Produksi\ProduksiController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -50,6 +52,9 @@ Route::middleware('auth')->group(function () {
         ->middleware('role:user_manage,SUPERADMIN');
 
     // Master Data Routes
+    Route::get('master-barang/export', [BarangController::class, 'export'])->name('master.barang.export');
+    Route::get('master-barang/template', [BarangController::class, 'template'])->name('master.barang.template');
+    Route::post('master-barang/import', [BarangController::class, 'import'])->name('master.barang.import');
     Route::resource('master-barang', BarangController::class)->names('master.barang');
     Route::resource('master-satuan', SatuanController::class)->names('master.satuan');
     Route::resource('master-jenis', JenisBarangController::class)->names('master.jenis');
@@ -117,6 +122,17 @@ Route::middleware('auth')->group(function () {
             ->middleware('role:terima_create');
         Route::resource('terima', TerimaBarangController::class)->only(['index', 'show'])->middleware('role:terima_view');
 
+        // Retur Pembelian ke Supplier (Outbound Retur Cacat/Reject): (Berdasarkan izin 'retur_create')
+        Route::get('retur/batches', [ReturPembelianController::class, 'getBatches'])->name('retur.batches');
+        Route::get('retur/po-data/{poId}', [ReturPembelianController::class, 'getPoData'])->name('retur.po-data');
+        Route::get('retur/create', [ReturPembelianController::class, 'create'])
+            ->name('retur.create')
+            ->middleware('role:retur_create');
+        Route::post('retur', [ReturPembelianController::class, 'store'])
+            ->name('retur.store')
+            ->middleware('role:retur_create');
+        Route::resource('retur', ReturPembelianController::class)->only(['index', 'show'])->middleware('role:retur_view');
+
         // Barang Keluar (Pemakaian Bahan Baku / Outbound): (Berdasarkan izin 'pemakaian_create')
         Route::get('pemakaian/batches', [PemakaianController::class, 'getBatches'])->name('pemakaian.batches');
         Route::get('pemakaian/alokasi-resep', [PemakaianController::class, 'alokasiResepFifo'])->name('pemakaian.alokasi-resep');
@@ -131,5 +147,15 @@ Route::middleware('auth')->group(function () {
         // Monitoring Persediaan: Lacak Stok & Kartu Stok (Berdasarkan izin 'stok_view')
         Route::get('stok', [StokController::class, 'index'])->name('stok.index')->middleware('role:stok_view');
         Route::get('stok/ledger', [StokController::class, 'ledger'])->name('stok.ledger')->middleware('role:stok_view');
+    });
+
+    // Produksi & HPP Harian (Sesuai Excel Asli PT Mirasa)
+    Route::prefix('produksi')->name('produksi.')->middleware('role:produksi_view')->group(function () {
+        Route::get('/', [ProduksiController::class, 'index'])->name('index');
+        Route::get('/rekap', [ProduksiController::class, 'index'])->name('rekap');
+        Route::get('/create', [ProduksiController::class, 'create'])->name('create')->middleware('role:produksi_create');
+        Route::post('/', [ProduksiController::class, 'store'])->name('store')->middleware('role:produksi_create');
+        Route::get('/pakai-data/{pakaiId}', [ProduksiController::class, 'getPakaiData'])->name('pakai-data');
+        Route::delete('/{id}', [ProduksiController::class, 'destroy'])->name('destroy')->middleware('role:produksi_create');
     });
 });

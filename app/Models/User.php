@@ -268,6 +268,19 @@ class User extends Authenticatable
     }
 
     /**
+     * Hak akses Retur Pembelian ke Supplier
+     */
+    public function canAccessRetur(): bool
+    {
+        return $this->isSuperAdmin() || $this->canDo('retur_view') || $this->canDo('retur_create');
+    }
+
+    public function canCreateRetur(): bool
+    {
+        return $this->isSuperAdmin() || $this->canDo('retur_create');
+    }
+
+    /**
      * Hak akses Barang Keluar (Pemakaian Bahan Baku / Outbound)
      */
     public function canAccessPemakaian(): bool
@@ -278,6 +291,19 @@ class User extends Authenticatable
     public function canCreatePemakaian(): bool
     {
         return $this->isSuperAdmin() || $this->canDo('pemakaian_create');
+    }
+
+    /**
+     * Hak akses Produksi & Laporan HPP Harian
+     */
+    public function canAccessProduksi(): bool
+    {
+        return $this->isSuperAdmin() || $this->canDo('produksi_view') || $this->canDo('produksi_create');
+    }
+
+    public function canCreateProduksi(): bool
+    {
+        return $this->isSuperAdmin() || $this->canDo('produksi_create');
     }
 
     /**

@@ -587,11 +587,42 @@
                         </a>
                     @endif
 
+                    {{-- RETUR PEMBELIAN (PENGEMBALIAN BARANG KE SUPPLIER) --}}
+                    @if (Auth::user()->canAccessRetur())
+                        <a href="{{ route('gudang.retur.index') }}" class="pill-item {{ request()->routeIs('gudang.retur.*') ? 'active' : '' }}">
+                            <span>Retur Pembelian</span>
+                        </a>
+                    @endif
+
                     {{-- PEMAKAIAN BAHAN (OUTBOUND) --}}
                     @if (Auth::user()->canAccessPemakaian())
                         <a href="{{ route('gudang.pemakaian.index') }}" class="pill-item {{ request()->routeIs('gudang.pemakaian.*') ? 'active' : '' }}">
                             <span>Pemakaian Bahan</span>
                         </a>
+                    @endif
+
+                    {{-- PRODUKSI & HPP HARIAN (EXCEL SHEET) --}}
+                    @if (Auth::user()->canAccessProduksi())
+                        <div class="pill-dropdown" id="navDropdownProduksi">
+                            <button type="button" 
+                                    class="pill-dropdown-btn {{ request()->routeIs('produksi.*') ? 'active' : '' }}" 
+                                    onclick="toggleNavDropdown('navDropdownProduksi', event)">
+                                <span>Produksi &amp; HPP</span>
+                                <span class="pill-dropdown-arrow">▼</span>
+                            </button>
+                            <div class="dropdown-menu" style="min-width: 220px; padding: 0.4rem;">
+                                <a href="{{ route('produksi.index') }}" class="mega-item {{ request()->routeIs('produksi.index') || request()->routeIs('produksi.rekap') ? 'active' : '' }}">
+                                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                    <span>Buku Rekap HPP (Excel Grid)</span>
+                                </a>
+                                @if (Auth::user()->canCreateProduksi())
+                                    <a href="{{ route('produksi.create') }}" class="mega-item {{ request()->routeIs('produksi.create') ? 'active' : '' }}">
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                                        <span>+ Catat Hasil Produksi</span>
+                                    </a>
+                                @endif
+                            </div>
+                        </div>
                     @endif
 
                     {{-- STOK PERSEDIAAN (CLICK-BASED DROPDOWN) --}}

@@ -622,5 +622,32 @@ class CodeGeneratorService
         $prefix = 'QC-' . $dateFormatted . '-';
         return $this->generate('dat_qc_inbound_hdr', 'qc_no', $prefix, 4);
     }
+
+    /**
+     * Generate Nomor Dokumen PO Penjualan / Sales Order ke Customer (format: SO-YYYYMM-0001)
+     */
+    public function generateSoNo(?string $date = null): string
+    {
+        $prefix = 'SO-' . date('Ym', strtotime($date ?? date('Y-m-d'))) . '-';
+        return $this->generate('dat_so_hdr', 'so_no', $prefix, 4);
+    }
+
+    /**
+     * Generate Nomor Faktur / Invoice Penjualan (format: INV-YYYYMM-0001)
+     */
+    public function generateFakturNo(?string $date = null): string
+    {
+        $prefix = 'INV-' . date('Ym', strtotime($date ?? date('Y-m-d'))) . '-';
+        return $this->generate('dat_so_hdr', 'faktur_no', $prefix, 4);
+    }
+
+    /**
+     * Generate Nomor Surat Jalan Pengiriman (format: SJ-YYYYMM-0001)
+     */
+    public function generateSuratJalanNo(?string $date = null): string
+    {
+        $prefix = 'SJ-' . date('Ym', strtotime($date ?? date('Y-m-d'))) . '-';
+        return $this->generate('dat_so_hdr', 'surat_jalan_no', $prefix, 4);
+    }
 }
 

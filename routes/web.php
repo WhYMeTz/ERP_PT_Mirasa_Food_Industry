@@ -17,6 +17,7 @@ use App\Http\Controllers\MasterData\JenisSupplierController;
 use App\Http\Controllers\MasterData\KaryawanController;
 use App\Http\Controllers\MasterData\SatuanController;
 use App\Http\Controllers\MasterData\SupplierController;
+use App\Http\Controllers\Penjualan\SoController;
 use App\Http\Controllers\Produksi\BomController;
 use App\Http\Controllers\Produksi\ProduksiController;
 use Illuminate\Support\Facades\Auth;
@@ -172,5 +173,13 @@ Route::middleware('auth')->group(function () {
         Route::post('inbound', [QcInboundController::class, 'store'])->name('inbound.store')->middleware('role:qc_create');
         Route::get('inbound/{id}/berita-acara', [QcInboundController::class, 'beritaAcara'])->name('inbound.berita_acara')->middleware('role:qc_view');
         Route::resource('inbound', QcInboundController::class)->only(['index', 'show'])->names('inbound')->middleware('role:qc_view');
+    });
+
+    // Modul Transaksi Penjualan (PO Penjualan / Sales Order)
+    Route::prefix('penjualan')->name('penjualan.')->group(function () {
+        Route::get('so/{id}/export-faktur', [SoController::class, 'exportFakturPdf'])->name('so.export-faktur');
+        Route::get('so/{id}/export-surat-jalan', [SoController::class, 'exportSuratJalanPdf'])->name('so.export-surat-jalan');
+        Route::post('so/{id}/cancel', [SoController::class, 'cancel'])->name('so.cancel');
+        Route::resource('so', SoController::class);
     });
 });

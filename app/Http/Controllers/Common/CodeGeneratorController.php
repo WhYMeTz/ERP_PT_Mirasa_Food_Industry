@@ -27,6 +27,10 @@ class CodeGeneratorController extends Controller
             case 'customer':
                 $code = $this->codeGeneratorService->generateCustomerCode($name);
                 break;
+            case 'so':
+                $date = $request->query('date', date('Y-m-d'));
+                $code = $this->codeGeneratorService->generateSoNo($date);
+                break;
             case 'gudang':
                 $tipe = $request->query('tipe');
                 $code = $this->codeGeneratorService->generateGudangCode($tipe, $name);

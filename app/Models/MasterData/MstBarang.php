@@ -60,6 +60,28 @@ class MstBarang extends Model
     }
 
     /**
+     * Scope barang hasil produksi pabrik yang dijual ke customer:
+     * - Barang Jadi (FG): untuk pasar eceran/distributor (misal: Ping-Ping, Maksi, KS Jumbo)
+     * - Barang Setengah Jadi (WIP): untuk pasokan industri B2B (misal: PT Indofood CBP Sukses Makmur Tbk)
+     */
+    public function scopeHasilProduksi($query)
+    {
+        return $query->whereHas('jenisBarang', function ($q) {
+            $q->whereIn('jenis_barang_cd', ['FG', 'WIP']);
+        });
+    }
+
+    /**
+     * Alias scope untuk barang yang dapat dijual di PO Penjualan.
+     */
+    public function scopeProdukJadi($query)
+    {
+        return $query->whereHas('jenisBarang', function ($q) {
+            $q->whereIn('jenis_barang_cd', ['FG', 'WIP']);
+        });
+    }
+
+    /**
      * Relasi ke Jenis Barang
      */
     public function jenisBarang(): BelongsTo

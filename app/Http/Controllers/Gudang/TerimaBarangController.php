@@ -11,9 +11,11 @@ use App\Models\MasterData\MstSupplier;
 use App\Services\Common\CodeGeneratorService;
 use App\Services\Gudang\PoService;
 use App\Services\Gudang\TerimaBarangService;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\View\View;
 
 class TerimaBarangController extends Controller
@@ -163,5 +165,108 @@ class TerimaBarangController extends Controller
         }
 
         return view('gudang.terima.show', compact('terima'));
+    }
+
+    /**
+     * Export Bukti Penerimaan Barang (GRN) ke format PDF resmi.
+     */
+    public function exportPdf(int $id): Response
+    {
+        $terima = $this->terimaService->getById($id);
+
+        $logoPath = public_path('images/logo.png');
+        $logoBase64 = null;
+        if (file_exists($logoPath)) {
+            $logoBase64 = 'data:image/png;base64,' . base64_encode(file_get_contents($logoPath));
+        }
+
+        $pdf = Pdf::loadView('gudang.terima.pdf_bukti_terima', [
+            'terima'     => $terima,
+            'logoBase64' => $logoBase64,
+            'printedAt'  => now()->translatedFormat('d F Y H:i'),
+            'printedBy'  => auth()->user()?->karyawan?->karyawan_nm ?? (auth()->user()?->nama_lengkap ?? 'Staff Gudang'),
+        ]);
+
+        $pdf->setPaper('a4', 'portrait');
+
+        $fileName = 'GRN-' . preg_replace('/[^A-Za-z0-9\-]/', '', $terima->terima_no) . '.pdf';
+        return $pdf->stream($fileName);
+    }
+
+    /**
+     * Export Rekapitulasi / Laporan Barang Masuk ke format PDF (A4 Landscape).
+     */
+    public function exportRekapPdf(Request $request): Response
+    {
+        $search = $request->input('search');
+        $gudangId = $request->input('gudang_id') ? (int) $request->input('gudang_id') : null;
+
+        $user = auth()->user();
+        $allowedGudangIds = $user ? $user->getAllowedGudangIds() : [];
+
+        if ($gudangId !== null) {
+            $effectiveGudang = ($user && !$user->canAccessGudang($gudangId)) ? $allowedGudangIds : $gudangId;
+        } else {
+            $effectiveGudang = ($user && $user->isSuperAdmin()) ? null : $allowedGudangIds;
+        }
+
+        $query = \App\Models\Gudang\DatTerimaDtl::with([
+            'header.supplier', 
+            'header.gudang', 
+            'header.po', 
+            'barang.jenisBarang', 
+            'barang.satuanDasar'
+        ])->whereHas('header', function ($q) use ($effectiveGudang) {
+            $q->where('deleted_st', false);
+            if (is_array($effectiveGudang)) {
+                $q->whereIn('gudang_id', $effectiveGudang);
+            } elseif ($effectiveGudang !== null) {
+                $q->where('gudang_id', $effectiveGudang);
+            }
+        });
+
+        if (!empty($search)) {
+            $query->where(function ($q) use ($search) {
+                $q->where('batch_no', 'ILIKE', "%{$search}%")
+                  ->orWhereHas('barang', function ($bq) use ($search) {
+                      $bq->where('barang_nm', 'ILIKE', "%{$search}%")
+                         ->orWhere('barang_cd', 'ILIKE', "%{$search}%");
+                  })
+                  ->orWhereHas('header', function ($hq) use ($search) {
+                      $hq->where('terima_no', 'ILIKE', "%{$search}%")
+                         ->orWhere('suratjalan_no', 'ILIKE', "%{$search}%")
+                         ->orWhereHas('supplier', function ($sq) use ($search) {
+                             $sq->where('supplier_nm', 'ILIKE', "%{$search}%");
+                         });
+                  });
+            });
+        }
+
+        $items = $query->orderBy('terimadtl_id', 'desc')->get();
+
+        $gudangNm = null;
+        if ($gudangId) {
+            $gudangNm = MstGudang::find($gudangId)?->gudang_nm;
+        }
+
+        $logoPath = public_path('images/logo.png');
+        $logoBase64 = null;
+        if (file_exists($logoPath)) {
+            $logoBase64 = 'data:image/png;base64,' . base64_encode(file_get_contents($logoPath));
+        }
+
+        $pdf = Pdf::loadView('gudang.terima.pdf_rekap', [
+            'items'      => $items,
+            'gudangNm'   => $gudangNm,
+            'search'     => $search,
+            'logoBase64' => $logoBase64,
+            'printedAt'  => now()->translatedFormat('d F Y H:i'),
+            'printedBy'  => auth()->user()?->karyawan?->karyawan_nm ?? (auth()->user()?->nama_lengkap ?? 'Staff Gudang'),
+        ]);
+
+        $pdf->setPaper('a4', 'landscape');
+
+        $fileName = 'Rekap_Barang_Masuk_' . date('Ymd_His') . '.pdf';
+        return $pdf->stream($fileName);
     }
 }

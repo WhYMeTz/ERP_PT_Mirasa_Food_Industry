@@ -123,6 +123,12 @@ Route::middleware('auth')->group(function () {
         Route::delete('terima/{terima}', [TerimaBarangController::class, 'destroy'])
             ->name('terima.destroy')
             ->middleware('role:terima_create');
+        Route::get('terima/export-rekap-pdf', [TerimaBarangController::class, 'exportRekapPdf'])
+            ->name('terima.export-rekap-pdf')
+            ->middleware('role:terima_view');
+        Route::get('terima/{id}/export-pdf', [TerimaBarangController::class, 'exportPdf'])
+            ->name('terima.export-pdf')
+            ->middleware('role:terima_view');
         Route::resource('terima', TerimaBarangController::class)->only(['index', 'show'])->middleware('role:terima_view');
 
         // Retur Pembelian ke Supplier (Outbound Retur Cacat/Reject): (Berdasarkan izin 'retur_create')

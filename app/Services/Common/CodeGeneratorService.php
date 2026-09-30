@@ -465,8 +465,12 @@ class CodeGeneratorService
             'PLASTIK HD'    => 'HD',
             'LAKBAN KECIL'  => 'LK',
             'LAKBAN SEDANG' => 'LS',
+            'LAKBAN BESAR'  => 'LB',
             'SINGKONG'      => 'SK',
             'UBI UNGU'      => 'UU',
+            'UBI'           => 'UB',
+            'OPAK'          => 'OP',
+            'PUYUR'         => 'PY',
         ];
 
         foreach ($dictionary as $key => $acronym) {
@@ -475,32 +479,37 @@ class CodeGeneratorService
             }
         }
 
-        // 2. Jika kode barang Mirasa berformat seperti "MSW00G-BP2", ambil 2 huruf depan jika bukan "BRG"
-        if (!empty($codeUpper) && !str_starts_with($codeUpper, 'BRG-')) {
-            $codeClean = preg_replace('/[^A-Z]/', '', $codeUpper);
-            if (strlen($codeClean) >= 2) {
-                return substr($codeClean, 0, 2);
-            }
+        // 2. Jika kode barang Bahan Baku berformat "BB-SK001", ambil inisial setelah "BB-" (misal: "SK", "UB", "OP")
+        if (preg_match('/^BB-([A-Z]{2,4})\d/i', $codeUpper, $matches)) {
+            return $matches[1];
         }
 
-        // 3. Jika nama memiliki 2 kata atau lebih, ambil huruf pertama dari 2 kata pertama
+        // 3. Jika kode barang berformat seperti "BCS00G-BP2", ambil huruf sebelum angka (bisa 2 atau 3 karakter seperti "BCS", "BCL", "BBL")
+        if (!str_starts_with($codeUpper, 'BRG-') && preg_match('/^([A-Z]{2,4})\d/i', $codeUpper, $matches)) {
+            return $matches[1];
+        }
+
+        // 4. Jika nama memiliki 3 kata atau lebih (misal: Bumbu Chilli Seas), ambil huruf pertama dari 3 kata (misal: "BCS")
         if (!empty($nameUpper)) {
             $words = array_values(array_filter(explode(' ', preg_replace('/[^A-Z0-9\s]/', '', $nameUpper))));
-            if (count($words) >= 2) {
+            if (count($words) >= 3) {
+                return substr($words[0], 0, 1) . substr($words[1], 0, 1) . substr($words[2], 0, 1);
+            } elseif (count($words) === 2) {
                 return substr($words[0], 0, 1) . substr($words[1], 0, 1);
             } elseif (count($words) === 1) {
                 $w = $words[0];
-                if (strlen($w) >= 2) {
-                    return substr($w, 0, 2);
-                }
-                return $w;
+                return strlen($w) >= 3 ? substr($w, 0, 3) : (strlen($w) >= 2 ? substr($w, 0, 2) : $w);
             }
         }
 
-        // 4. Fallback dari kode barang
+        // 5. Fallback dari kode barang
         if (!empty($codeUpper)) {
-            $clean = preg_replace('/[^A-Z0-9]/', '', str_replace('BRG-', '', $codeUpper));
-            return substr($clean, 0, 3) ?: 'BRG';
+            $clean = preg_replace('/[^A-Z]/', '', str_replace('BRG-', '', $codeUpper));
+            if (strlen($clean) >= 3) {
+                return substr($clean, 0, 3);
+            } elseif (strlen($clean) >= 2) {
+                return substr($clean, 0, 2);
+            }
         }
 
         return 'BRG';
@@ -574,4 +583,34 @@ class CodeGeneratorService
         $prefix = 'OUT-' . date('Ym') . '-';
         return $this->generate('dat_pakai_hdr', 'pakai_no', $prefix, 4);
     }
+
+    /**
+     * Generate Nomor Dokumen Produksi Harian (format: PRD-YYYYMMDD-0001)
+     */
+    public function generateProduksiNo(?string $date = null): string
+    {
+        $dateFormatted = date('Ymd', strtotime($date ?? date('Y-m-d')));
+        $prefix = 'PRD-' . $dateFormatted . '-';
+        return $this->generate('dat_produksi_harian', 'produksi_no', $prefix, 4);
+    }
+
+    /**
+     * Generate Nomor Batch WIP Hasil Produksi (format: WIP-DDMMYY-01 atau WIP-[VARIAN]-DDMMYY-01)
+     */
+    public function generateWipBatchNo(?string $varian = null, ?string $date = null): string
+    {
+        $dateFormatted = date('dmy', strtotime($date ?? date('Y-m-d')));
+        $prefix = !empty($varian) ? "WIP-{$varian}-{$dateFormatted}-" : "WIP-{$dateFormatted}-";
+        return $this->generate('dat_produksi_harian', 'batch_wip_no', $prefix, 2);
+    }
+
+    /**
+     * Generate Nomor Dokumen Retur Pembelian ke Supplier (format: RET-YYYYMM-0001)
+     */
+    public function generateReturNo(): string
+    {
+        $prefix = 'RET-' . date('Ym') . '-';
+        return $this->generate('dat_retur_hdr', 'retur_no', $prefix, 4);
+    }
 }
+

@@ -228,8 +228,8 @@ class TerimaBarangService
                 $barangId = $row['barang_id'];
                 $batchNo = $row['batch_no'];
 
-                // Ambil atau generate nomor batch sesuai format PT Mirasa ([INISIAL]-[DDMMYYYY]-[01])
-                if (empty($batchNo)) {
+                // Ambil atau generate nomor batch jika kosong atau hanya prefix strip
+                if (empty($batchNo) || trim($batchNo) === '' || str_ends_with(trim($batchNo), '-')) {
                     $barang = MstBarang::find($barangId);
                     $batchNo = $this->codeGenerator->generateBatchNo(
                         $barang?->barang_cd ?? 'ITEM',

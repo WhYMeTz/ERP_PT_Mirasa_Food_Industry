@@ -1329,18 +1329,36 @@
         const satuanSpan = row.querySelector('.row-satuan');
         if (satuanSpan && satuan !== '-') satuanSpan.innerText = satuan;
 
-        // Otomatis generate prefix kode barang saja (misal BC-, PR-)
-        // Tanggal dan urutan sequence dihilangkan sesuai arahan mentor agar nomor batch fisik diisi manual oleh pengguna
+        // Otomatis generate inisial barang saja di depan (misal MS-, SK-, UU-)
+        // Tidak ada tambahan kode lain di belakangnya, sehingga kosong (misal MS-) agar admin mengisi nomor batch supplier
         if (batchInput) {
             let acronym = selectedOption?.dataset?.acronym || '';
             if (!acronym) {
-                const cd = selectedOption?.dataset?.cd || '';
-                const nm = selectedOption?.dataset?.nm || '';
-                if (cd && !cd.startsWith('BRG-')) {
-                    acronym = cd.replace(/[^A-Z]/g, '').substring(0, 2);
+                const nm = (selectedOption?.dataset?.nm || '').toUpperCase().trim();
+                const cd = (selectedOption?.dataset?.cd || '').toUpperCase().trim();
+                if (nm.includes('MINYAK SAWIT')) acronym = 'MS';
+                else if (nm.includes('MINYAK KELAPA')) acronym = 'MK';
+                else if (nm.includes('PERENYAH')) acronym = 'PR';
+                else if (nm.includes('PLASTIK HD')) acronym = 'HD';
+                else if (nm.includes('LAKBAN KECIL')) acronym = 'LK';
+                else if (nm.includes('LAKBAN SEDANG')) acronym = 'LS';
+                else if (nm.includes('SINGKONG')) acronym = 'SK';
+                else if (nm.includes('UBI UNGU')) acronym = 'UU';
+                else if (cd.startsWith('BB-')) {
+                    const match = cd.match(/^BB-([A-Z]{2,4})\d/i);
+                    acronym = match ? match[1] : 'BB';
+                } else if (cd && !cd.startsWith('BRG-')) {
+                    const match = cd.match(/^([A-Z]{2,4})\d/i);
+                    acronym = match ? match[1] : cd.replace(/[^A-Z]/g, '').substring(0, 3);
                 } else if (nm) {
-                    const words = nm.trim().split(/\s+/);
-                    acronym = words.length >= 2 ? (words[0][0] + words[1][0]).toUpperCase() : nm.substring(0, 2).toUpperCase();
+                    const words = nm.split(/\s+/);
+                    if (words.length >= 3) {
+                        acronym = words[0][0] + words[1][0] + words[2][0];
+                    } else if (words.length === 2) {
+                        acronym = words[0][0] + words[1][0];
+                    } else {
+                        acronym = nm.substring(0, 3);
+                    }
                 } else {
                     acronym = 'BRG';
                 }
@@ -1348,17 +1366,17 @@
             const prefix = (acronym ? acronym.toUpperCase() : 'BRG') + '-';
             const currentVal = batchInput.value.trim();
 
-            if (!currentVal || currentVal.endsWith('-')) {
+            if (!currentVal || currentVal.endsWith('-') || currentVal === prefix) {
                 batchInput.value = prefix;
             } else if (currentVal.indexOf('-') > 0) {
-                // Pertahankan nomor fisik yang sudah diketik jika user mengganti pilihan barang
+                // Pertahankan nomor fisik supplier yang sudah diketik jika user mengganti pilihan barang
                 const suffix = currentVal.substring(currentVal.indexOf('-') + 1);
                 batchInput.value = prefix + suffix;
             } else {
                 batchInput.value = prefix + currentVal;
             }
 
-            batchInput.placeholder = `${prefix}... (Isi no batch fisik)`;
+            batchInput.placeholder = `${prefix}... (isi batch supplier)`;
 
             // Arahkan kursor langsung ke akhir prefix agar user langsung mengetik nomor batch fisik
             if (document.activeElement === selectElem) {

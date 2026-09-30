@@ -1304,7 +1304,7 @@
         });
     }
 
-    function updateTerimaSatuanAndBatch(selectElem) {
+    function updateTerimaSatuanAndBatch(selectElem, isUserChange = true) {
         const row = selectElem.closest('tr');
         const selectedOption = selectElem.options ? selectElem.options[selectElem.selectedIndex] : null;
         const barangId = selectElem.value;
@@ -1371,8 +1371,12 @@
         }
 
         const hargaInput = row.querySelector('.item-harga');
-        if (hargaInput && defaultHarga > 0 && (!hargaInput.value || parseFloat(hargaInput.value) === 0)) {
-            hargaInput.value = defaultHarga;
+        if (hargaInput) {
+            if (isUserChange) {
+                hargaInput.value = defaultHarga;
+            } else if (defaultHarga > 0 && (!hargaInput.value || parseFloat(hargaInput.value) === 0)) {
+                hargaInput.value = defaultHarga;
+            }
         }
         calculateTotalTerima();
     }
@@ -1381,7 +1385,7 @@
         document.querySelectorAll('.terima-row').forEach(row => {
             const selectElem = row.querySelector('.item-barang');
             if (selectElem && selectElem.value) {
-                updateTerimaSatuanAndBatch(selectElem);
+                updateTerimaSatuanAndBatch(selectElem, false);
             }
         });
     });

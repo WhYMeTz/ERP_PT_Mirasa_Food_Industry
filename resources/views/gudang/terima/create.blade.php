@@ -470,15 +470,15 @@
                                                 <input type="number" step="0.01" min="0" name="items[{{ $idx }}][harga_nominal]" value="{{ (float) $pdtl->harga_nominal }}" class="form-control item-harga" placeholder="0" style="text-align: right; font-weight: 600;" oninput="calculateTotalTerima()">
                                             </td>
                                             <td>
-                                                <input type="number" step="0.1" min="0" max="100" name="items[{{ $idx }}][diskon_persen]" value="{{ old("items.{$idx}.diskon_persen", 0) }}" class="form-control item-diskon" placeholder="0" style="text-align: right;" oninput="calculateTotalTerima()">
+                                                <input type="number" step="0.1" min="0" max="100" name="items[{{ $idx }}][diskon_persen]" value="{{ old("items.{$idx}.diskon_persen", (float)($pdtl->diskon_persen ?? 0)) }}" class="form-control item-diskon" placeholder="0" style="text-align: right;" oninput="calculateTotalTerima()">
                                             </td>
                                             <td>
-                                                <input type="number" step="0.01" min="0" name="items[{{ $idx }}][potongan_nominal]" value="{{ old("items.{$idx}.potongan_nominal", 0) }}" class="form-control item-potongan" placeholder="0" style="text-align: right;" oninput="calculateTotalTerima()">
+                                                <input type="number" step="0.01" min="0" name="items[{{ $idx }}][potongan_nominal]" value="{{ old("items.{$idx}.potongan_nominal", (float)($pdtl->potongan_nominal ?? 0)) }}" class="form-control item-potongan" placeholder="0" style="text-align: right;" oninput="calculateTotalTerima()">
                                             </td>
                                             <td>
                                                 <select name="items[{{ $idx }}][ppn_tipe]" class="form-control item-ppn-tipe" onchange="calculateTotalTerima()" style="font-size: 0.775rem; font-weight: 600;">
-                                                    <option value="NON_PPN" {{ old("items.{$idx}.ppn_tipe", 'NON_PPN') === 'NON_PPN' ? 'selected' : '' }}>Non (0%)</option>
-                                                    <option value="PPN_11" {{ old("items.{$idx}.ppn_tipe") === 'PPN_11' ? 'selected' : '' }}>PPN 11%</option>
+                                                    <option value="NON_PPN" {{ old("items.{$idx}.ppn_tipe", $pdtl->ppn_tipe ?? 'NON_PPN') === 'NON_PPN' ? 'selected' : '' }}>Non (0%)</option>
+                                                    <option value="PPN_11" {{ old("items.{$idx}.ppn_tipe", $pdtl->ppn_tipe ?? 'NON_PPN') === 'PPN_11' ? 'selected' : '' }}>PPN 11%</option>
                                                 </select>
                                             </td>
                                             <td style="text-align: right; font-weight: 700; font-family: monospace; color: #0f172a;" class="row-subtotal">

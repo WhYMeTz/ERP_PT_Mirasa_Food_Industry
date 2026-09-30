@@ -542,16 +542,19 @@
                     <table class="excel-grid-table" id="tableItems">
                         <thead>
                             <tr>
-                                <th style="width: 35px; text-align: center;">No</th>
-                                <th style="min-width: 260px; text-align: left;">Nama Komoditas / Bahan Baku <span style="color:#f87171;">*</span></th>
-                                <th class="col-supplier" style="display: none; min-width: 220px; text-align: left;">
+                                <th style="width: 32px; text-align: center;">No</th>
+                                <th style="min-width: 230px; text-align: left;">Nama Komoditas / Bahan Baku <span style="color:#f87171;">*</span></th>
+                                <th class="col-supplier" style="display: none; min-width: 200px; text-align: left;">
                                     Supplier Mitra <span style="color:#f87171;">*</span>
                                 </th>
-                                <th style="width: 90px; text-align: center;">Satuan</th>
-                                <th style="width: 120px; text-align: right;">Kuantitas <span style="color:#f87171;">*</span></th>
-                                <th style="width: 150px; text-align: right;">Harga Satuan (Rp)</th>
-                                <th style="width: 150px; text-align: right;">Subtotal (Rp)</th>
-                                <th style="width: 45px; text-align: center;">Hapus</th>
+                                <th style="width: 70px; text-align: center;">Satuan</th>
+                                <th style="width: 95px; text-align: right;">Kuantitas <span style="color:#f87171;">*</span></th>
+                                <th style="width: 110px; text-align: right;">@Harga Satuan</th>
+                                <th style="width: 65px; text-align: right;" title="Diskon dagang per item (%)">Disc (%)</th>
+                                <th style="width: 90px; text-align: right;" title="Potongan nominal item (Rp)">Potongan</th>
+                                <th style="width: 85px; text-align: center;" title="Pajak Pertambahan Nilai">PPN</th>
+                                <th style="width: 115px; text-align: right; background: #0f172a; color: #ffffff;" title="Subtotal bersih setelah diskon, potongan & PPN">Subtotal</th>
+                                <th style="width: 35px; text-align: center;">Hapus</th>
                             </tr>
                         </thead>
                         <tbody id="itemsContainer">
@@ -564,7 +567,7 @@
                                         
                                         <optgroup label="BAHAN BAKU (RAW MATERIAL)" class="grp-bb">
                                             @foreach($barangList->filter(fn($b) => in_array($b->jenisBarang?->jenis_barang_cd, ['RAW', 'BB'])) as $b)
-                                                <option value="{{ $b->barang_id }}" data-category="BB" data-satuan="{{ $b->satuanDasar?->satuan_nm ?? '-' }}" data-harga="{{ (float) ($b->harga_beli_standar ?? 0) }}">
+                                                <option value="{{ $b->barang_id }}" data-category="BB" data-code="{{ $b->barang_cd }}" data-satuan="{{ $b->satuanDasar?->satuan_nm ?? '-' }}" data-harga="{{ (float) ($b->harga_beli_standar ?? 0) }}">
                                                     {{ $b->barang_nm }} ({{ $b->barang_cd }}) - Std: Rp {{ number_format((float) ($b->harga_beli_standar ?? 0), 0, ',', '.') }}/{{ $b->satuanDasar?->satuan_cd }}
                                                 </option>
                                             @endforeach
@@ -572,7 +575,7 @@
 
                                         <optgroup label="BUMBU &amp; BAHAN PENOLONG" class="grp-bumbu">
                                             @foreach($barangList->filter(fn($b) => in_array($b->jenisBarang?->jenis_barang_cd, ['SUPP', 'BUMBU', 'BP']) && !preg_match('/(PLASTIK|KARTON|ROLL|LAKBAN|SARUNG|RAFIA)/i', $b->barang_nm)) as $b)
-                                                <option value="{{ $b->barang_id }}" data-category="BUMBU" data-satuan="{{ $b->satuanDasar?->satuan_nm ?? '-' }}" data-harga="{{ (float) ($b->harga_beli_standar ?? 0) }}">
+                                                <option value="{{ $b->barang_id }}" data-category="BUMBU" data-code="{{ $b->barang_cd }}" data-satuan="{{ $b->satuanDasar?->satuan_nm ?? '-' }}" data-harga="{{ (float) ($b->harga_beli_standar ?? 0) }}">
                                                     {{ $b->barang_nm }} ({{ $b->barang_cd }}) - Std: Rp {{ number_format((float) ($b->harga_beli_standar ?? 0), 0, ',', '.') }}/{{ $b->satuanDasar?->satuan_cd }}
                                                 </option>
                                             @endforeach
@@ -580,12 +583,13 @@
 
                                         <optgroup label="BAHAN KEMASAN &amp; PACKAGING" class="grp-pack">
                                             @foreach($barangList->filter(fn($b) => in_array($b->jenisBarang?->jenis_barang_cd, ['PACK']) || (in_array($b->jenisBarang?->jenis_barang_cd, ['BP']) && preg_match('/(PLASTIK|KARTON|ROLL|LAKBAN|SARUNG|RAFIA)/i', $b->barang_nm))) as $b)
-                                                <option value="{{ $b->barang_id }}" data-category="PACK" data-satuan="{{ $b->satuanDasar?->satuan_nm ?? '-' }}" data-harga="{{ (float) ($b->harga_beli_standar ?? 0) }}">
+                                                <option value="{{ $b->barang_id }}" data-category="PACK" data-code="{{ $b->barang_cd }}" data-satuan="{{ $b->satuanDasar?->satuan_nm ?? '-' }}" data-harga="{{ (float) ($b->harga_beli_standar ?? 0) }}">
                                                     {{ $b->barang_nm }} ({{ $b->barang_cd }}) - Std: Rp {{ number_format((float) ($b->harga_beli_standar ?? 0), 0, ',', '.') }}/{{ $b->satuanDasar?->satuan_cd }}
                                                 </option>
                                             @endforeach
                                         </optgroup>
                                     </select>
+                                    <div class="row-barang-hint" style="font-size: 0.68rem; margin-top: 2px; color: #64748b; display: none;"></div>
                                 </td>
                                 <td class="col-supplier" style="display: none;">
                                     <select name="items[0][supplier_id]" class="form-control item-supplier" onchange="calculateGrandTotal()">
@@ -600,9 +604,21 @@
                                     <input type="number" step="0.0001" min="0.0001" name="items[0][pesan_qty]" class="form-control item-qty" value="1" oninput="calculateSubtotal(this)" style="text-align: right; font-weight: 700;" required>
                                 </td>
                                 <td>
-                                    <input type="number" step="0.01" min="0" name="items[0][harga_nominal]" class="form-control item-harga" value="0" oninput="calculateSubtotal(this)" placeholder="0" style="text-align: right;">
+                                    <input type="number" step="0.01" min="0" name="items[0][harga_nominal]" class="form-control item-harga" value="0" oninput="calculateSubtotal(this)" placeholder="0" style="text-align: right; font-weight: 600;">
                                 </td>
-                                <td style="text-align: right; font-weight: 700; color: #0f172a; font-size: 0.875rem;" class="row-subtotal">
+                                <td>
+                                    <input type="number" step="0.1" min="0" max="100" name="items[0][diskon_persen]" class="form-control item-diskon" value="0" oninput="calculateSubtotal(this)" placeholder="0" style="text-align: right;">
+                                </td>
+                                <td>
+                                    <input type="number" step="0.01" min="0" name="items[0][potongan_nominal]" class="form-control item-potongan" value="0" oninput="calculateSubtotal(this)" placeholder="0" style="text-align: right;">
+                                </td>
+                                <td>
+                                    <select name="items[0][ppn_tipe]" class="form-control item-ppn-tipe" onchange="calculateSubtotal(this)" style="font-size: 0.775rem; font-weight: 600;">
+                                        <option value="NON_PPN">Non (0%)</option>
+                                        <option value="PPN_11">PPN 11%</option>
+                                    </select>
+                                </td>
+                                <td style="text-align: right; font-weight: 700; color: #0f172a; font-size: 0.85rem; font-family: monospace;" class="row-subtotal">
                                     Rp 0
                                 </td>
                                 <td style="text-align: center;">
@@ -612,10 +628,13 @@
                         </tbody>
                         <tfoot>
                             <tr style="background: #f8fafc; font-weight: 700; border-top: 2px solid #cbd5e1;">
-                                <td id="tfootQtyColspan" colspan="3" style="text-align: right; padding: 0.75rem 1rem; color: #334155; font-size: 0.85rem;">Total Kuantitas:</td>
-                                <td id="totalQtyDisplay" style="padding: 0.75rem 0.5rem; text-align: right; color: #0284c7; font-size: 0.95rem;">1.00</td>
-                                <td style="text-align: right; padding: 0.75rem 1rem; color: #334155; font-size: 0.85rem;">Grand Total Pesanan:</td>
-                                <td id="grandTotalDisplay" style="text-align: right; padding: 0.75rem 0.5rem; font-size: 1.05rem; color: #0284c7;">Rp 0</td>
+                                <td id="tfootQtyColspan" colspan="3" style="text-align: right; padding: 0.65rem 0.75rem; color: #334155; font-size: 0.8rem;">Total:</td>
+                                <td id="totalQtyDisplay" style="padding: 0.65rem 0.5rem; text-align: right; color: #0284c7; font-size: 0.875rem; font-weight: 700;">1.00</td>
+                                <td></td>
+                                <td id="totalDiskonDisplay" style="padding: 0.65rem 0.35rem; color: #d97706; font-size: 0.8rem; text-align: right; font-family: monospace;" title="Akumulasi Diskon Item">-</td>
+                                <td id="totalPotonganDisplay" style="padding: 0.65rem 0.35rem; color: #dc2626; font-size: 0.8rem; text-align: right; font-family: monospace;" title="Akumulasi Potongan">-</td>
+                                <td id="totalPpnDisplay" style="padding: 0.65rem 0.35rem; color: #0369a1; font-size: 0.8rem; text-align: center; font-family: monospace;" title="Akumulasi PPN 11%">-</td>
+                                <td id="grandTotalDisplay" style="text-align: right; padding: 0.65rem 0.5rem; font-size: 0.95rem; color: #0f172a; font-family: monospace;">Rp 0</td>
                                 <td></td>
                             </tr>
                         </tfoot>
@@ -639,21 +658,37 @@
                 <div style="padding: 1.25rem;">
                     {{-- TOTAL NOMINAL DISPLAY BESAR --}}
                     <div style="margin-bottom: 1.25rem;">
-                        <span style="font-size: 0.75rem; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; display: block;">Total Pembelian:</span>
+                        <span style="font-size: 0.75rem; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; display: block;">Total Estimasi PO:</span>
                         <div id="sideGrandTotal" style="font-size: 1.65rem; font-weight: 800; color: #0f172a; margin-top: 0.2rem; font-family: monospace; letter-spacing: -0.02em;">
                             Rp 0
                         </div>
                     </div>
 
-                    {{-- STATISTIK ITEM & KUANTITAS --}}
-                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.75rem 1rem; margin-bottom: 1.25rem; display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.85rem;">
+                    {{-- STATISTIK ITEM & KUANTITAS & BREAKDOWN HARGA --}}
+                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.75rem 1rem; margin-bottom: 1.25rem; display: flex; flex-direction: column; gap: 0.45rem; font-size: 0.825rem;">
                         <div style="display: flex; justify-content: space-between;">
                             <span style="color: #64748b;">Jumlah Item:</span>
                             <strong style="color: #0f172a;"><span id="sideTotalItems">1</span> Jenis Bahan</strong>
                         </div>
                         <div style="display: flex; justify-content: space-between; padding-top: 0.35rem; border-top: 1px dashed #e2e8f0;">
-                            <span style="color: #64748b;">Total Volume Kuantitas:</span>
+                            <span style="color: #64748b;">Total Kuantitas:</span>
                             <strong style="color: #0284c7;"><span id="sideTotalQty">1.00</span> Unit</strong>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; padding-top: 0.35rem; border-top: 1px dashed #e2e8f0;">
+                            <span style="color: #64748b;">Subtotal Bruto:</span>
+                            <span id="sideSubtotalBruto" style="font-weight: 600; font-family: monospace; color: #334155;">Rp 0</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span style="color: #64748b;">Diskon Item:</span>
+                            <span id="sideTotalDiskon" style="font-weight: 600; font-family: monospace; color: #d97706;">Rp 0</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span style="color: #64748b;">Potongan Harga:</span>
+                            <span id="sideTotalPotongan" style="font-weight: 600; font-family: monospace; color: #dc2626;">Rp 0</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span style="color: #64748b;">PPN (11%):</span>
+                            <span id="sideTotalPpn" style="font-weight: 600; font-family: monospace; color: #0284c7;">Rp 0</span>
                         </div>
                         <div id="sideAutoSplitBox" style="display: none; padding-top: 0.5rem; border-top: 1px dashed #cbd5e1;">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
@@ -1426,7 +1461,7 @@
                     
                     <optgroup label="BAHAN BAKU (RAW MATERIAL)" class="grp-bb">
                         @foreach($barangList->filter(fn($b) => in_array($b->jenisBarang?->jenis_barang_cd, ['RAW', 'BB'])) as $b)
-                            <option value="{{ $b->barang_id }}" data-category="BB" data-satuan="{{ $b->satuanDasar?->satuan_nm ?? '-' }}" data-harga="{{ (float) ($b->harga_beli_standar ?? 0) }}">
+                            <option value="{{ $b->barang_id }}" data-category="BB" data-code="{{ $b->barang_cd }}" data-satuan="{{ $b->satuanDasar?->satuan_nm ?? '-' }}" data-harga="{{ (float) ($b->harga_beli_standar ?? 0) }}">
                                 {{ $b->barang_nm }} ({{ $b->barang_cd }}) - Std: Rp {{ number_format((float) ($b->harga_beli_standar ?? 0), 0, ',', '.') }}/{{ $b->satuanDasar?->satuan_cd }}
                             </option>
                         @endforeach
@@ -1434,7 +1469,7 @@
 
                     <optgroup label="BUMBU &amp; BAHAN PENOLONG" class="grp-bumbu">
                         @foreach($barangList->filter(fn($b) => in_array($b->jenisBarang?->jenis_barang_cd, ['SUPP', 'BUMBU', 'BP']) && !preg_match('/(PLASTIK|KARTON|ROLL|LAKBAN|SARUNG|RAFIA)/i', $b->barang_nm)) as $b)
-                            <option value="{{ $b->barang_id }}" data-category="BUMBU" data-satuan="{{ $b->satuanDasar?->satuan_nm ?? '-' }}" data-harga="{{ (float) ($b->harga_beli_standar ?? 0) }}">
+                            <option value="{{ $b->barang_id }}" data-category="BUMBU" data-code="{{ $b->barang_cd }}" data-satuan="{{ $b->satuanDasar?->satuan_nm ?? '-' }}" data-harga="{{ (float) ($b->harga_beli_standar ?? 0) }}">
                                 {{ $b->barang_nm }} ({{ $b->barang_cd }}) - Std: Rp {{ number_format((float) ($b->harga_beli_standar ?? 0), 0, ',', '.') }}/{{ $b->satuanDasar?->satuan_cd }}
                             </option>
                         @endforeach
@@ -1442,12 +1477,13 @@
 
                     <optgroup label="BAHAN KEMASAN &amp; PACKAGING" class="grp-pack">
                         @foreach($barangList->filter(fn($b) => in_array($b->jenisBarang?->jenis_barang_cd, ['PACK']) || (in_array($b->jenisBarang?->jenis_barang_cd, ['BP']) && preg_match('/(PLASTIK|KARTON|ROLL|LAKBAN|SARUNG|RAFIA)/i', $b->barang_nm))) as $b)
-                            <option value="{{ $b->barang_id }}" data-category="PACK" data-satuan="{{ $b->satuanDasar?->satuan_nm ?? '-' }}" data-harga="{{ (float) ($b->harga_beli_standar ?? 0) }}">
+                            <option value="{{ $b->barang_id }}" data-category="PACK" data-code="{{ $b->barang_cd }}" data-satuan="{{ $b->satuanDasar?->satuan_nm ?? '-' }}" data-harga="{{ (float) ($b->harga_beli_standar ?? 0) }}">
                                 {{ $b->barang_nm }} ({{ $b->barang_cd }}) - Std: Rp {{ number_format((float) ($b->harga_beli_standar ?? 0), 0, ',', '.') }}/{{ $b->satuanDasar?->satuan_cd }}
                             </option>
                         @endforeach
                     </optgroup>
                 </select>
+                <div class="row-barang-hint" style="font-size: 0.68rem; margin-top: 2px; color: #64748b; display: none;"></div>
             </td>
             <td class="col-supplier" style="${currentPoMode === 'multi' ? '' : 'display: none;'}">
                 <select name="items[${rowIndex}][supplier_id]" class="form-control item-supplier" onchange="calculateGrandTotal()" ${currentPoMode === 'multi' ? 'required' : ''}>
@@ -1462,9 +1498,21 @@
                 <input type="number" step="0.0001" min="0.0001" name="items[${rowIndex}][pesan_qty]" class="form-control item-qty" value="1" oninput="calculateSubtotal(this)" style="text-align: right; font-weight: 700;" required>
             </td>
             <td>
-                <input type="number" step="0.01" min="0" name="items[${rowIndex}][harga_nominal]" class="form-control item-harga" value="0" oninput="calculateSubtotal(this)" placeholder="0" style="text-align: right;">
+                <input type="number" step="0.01" min="0" name="items[${rowIndex}][harga_nominal]" class="form-control item-harga" value="0" oninput="calculateSubtotal(this)" placeholder="0" style="text-align: right; font-weight: 600;">
             </td>
-            <td style="text-align: right; font-weight: 700; color: #0f172a; font-size: 0.875rem;" class="row-subtotal">
+            <td>
+                <input type="number" step="0.1" min="0" max="100" name="items[${rowIndex}][diskon_persen]" class="form-control item-diskon" value="0" oninput="calculateSubtotal(this)" placeholder="0" style="text-align: right;">
+            </td>
+            <td>
+                <input type="number" step="0.01" min="0" name="items[${rowIndex}][potongan_nominal]" class="form-control item-potongan" value="0" oninput="calculateSubtotal(this)" placeholder="0" style="text-align: right;">
+            </td>
+            <td>
+                <select name="items[${rowIndex}][ppn_tipe]" class="form-control item-ppn-tipe" onchange="calculateSubtotal(this)" style="font-size: 0.775rem; font-weight: 600;">
+                    <option value="NON_PPN">Non (0%)</option>
+                    <option value="PPN_11">PPN 11%</option>
+                </select>
+            </td>
+            <td style="text-align: right; font-weight: 700; color: #0f172a; font-size: 0.85rem; font-family: monospace;" class="row-subtotal">
                 Rp 0
             </td>
             <td style="text-align: center;">
@@ -1522,43 +1570,74 @@
         const satuan = selectedOption ? (selectedOption.dataset.satuan || '-') : '-';
         const defaultHarga = parseFloat(selectedOption ? (selectedOption.dataset.harga || 0) : 0);
         const barangCategory = selectedOption ? (selectedOption.dataset.category || 'ALL') : 'ALL';
+        const barangCd = selectedOption ? (selectedOption.dataset.code || '') : '';
 
         row.querySelector('.row-satuan').innerText = satuan;
 
-        const hargaInput = row.querySelector('.item-harga');
-        if (defaultHarga > 0 && (!hargaInput.value || parseFloat(hargaInput.value) === 0)) {
-            hargaInput.value = defaultHarga;
-            calculateSubtotal(hargaInput);
+        // Tampilkan kode barang otomatis
+        const hint = row.querySelector('.row-barang-hint');
+        if (hint) {
+            if (barangCd) {
+                hint.innerHTML = `<span style="font-family: monospace; font-weight: 600; color: #0284c7;">${escapeHtml(barangCd)}</span>`;
+                hint.style.display = 'block';
+            } else {
+                hint.style.display = 'none';
+            }
         }
 
-        // Auto-filter supplier di baris ini sesuai kategori barang terpilih!
+        const hargaInput = row.querySelector('.item-harga');
+        // Selalu update harga standar saat komoditas barang diganti
+        hargaInput.value = defaultHarga;
+
+        // Auto-filter supplier di baris ini sesuai kategori barang terpilih
         const supSelect = row.querySelector('.item-supplier');
         if (supSelect) {
             renderSupplierSelectOptions(supSelect, barangCategory, currentTableSupSearch);
-            calculateGrandTotal();
         }
+
+        calculateGrandTotal();
     }
 
     function calculateSubtotal(inputElem) {
-        const row = inputElem.closest('tr');
-        const qty = parseFloat(row.querySelector('.item-qty').value) || 0;
-        const harga = parseFloat(row.querySelector('.item-harga').value) || 0;
-        const subtotal = qty * harga;
-
-        row.querySelector('.row-subtotal').innerText = 'Rp ' + subtotal.toLocaleString('id-ID');
         calculateGrandTotal();
     }
 
     function calculateGrandTotal() {
         let totalQty = 0;
+        let totalBruto = 0;
+        let totalDiskon = 0;
+        let totalPotongan = 0;
+        let totalDpp = 0;
+        let totalPpn = 0;
         let grandTotal = 0;
         const supplierItemCount = {};
 
         document.querySelectorAll('.item-row').forEach(row => {
-            const qty = parseFloat(row.querySelector('.item-qty').value) || 0;
-            const harga = parseFloat(row.querySelector('.item-harga').value) || 0;
+            const qty = Math.max(0, parseFloat(row.querySelector('.item-qty')?.value) || 0);
+            const harga = Math.max(0, parseFloat(row.querySelector('.item-harga')?.value) || 0);
+            const diskonPersen = Math.min(100, Math.max(0, parseFloat(row.querySelector('.item-diskon')?.value) || 0));
+            const potonganNominal = Math.max(0, parseFloat(row.querySelector('.item-potongan')?.value) || 0);
+            const ppnSelect = row.querySelector('.item-ppn-tipe');
+            const isPpn11 = ppnSelect ? ppnSelect.value === 'PPN_11' : false;
+
+            const diskonUnit = harga * (diskonPersen / 100);
+            const hargaNetto = Math.max(0, harga - diskonUnit);
+            const rowSubtotalNetto = Math.max(0, (qty * hargaNetto) - potonganNominal);
+            const itemPpnNominal = isPpn11 ? Math.round(rowSubtotalNetto * 0.11) : 0;
+            const rowSubtotalTagihan = rowSubtotalNetto + itemPpnNominal;
+
+            const rowSubtotalCell = row.querySelector('.row-subtotal');
+            if (rowSubtotalCell) {
+                rowSubtotalCell.innerText = 'Rp ' + Math.round(rowSubtotalTagihan).toLocaleString('id-ID');
+            }
+
             totalQty += qty;
-            grandTotal += (qty * harga);
+            totalBruto += (qty * harga);
+            totalDiskon += (qty * diskonUnit);
+            totalPotongan += potonganNominal;
+            totalDpp += rowSubtotalNetto;
+            totalPpn += itemPpnNominal;
+            grandTotal += rowSubtotalTagihan;
 
             if (currentPoMode === 'multi') {
                 const supSelect = row.querySelector('.item-supplier');
@@ -1572,13 +1651,27 @@
             }
         });
 
-        const formattedGrandTotal = 'Rp ' + grandTotal.toLocaleString('id-ID');
+        // Update tfoot
         document.getElementById('totalQtyDisplay').innerText = totalQty.toFixed(2);
-        document.getElementById('grandTotalDisplay').innerText = formattedGrandTotal;
+        const diskonDisplay = document.getElementById('totalDiskonDisplay');
+        if (diskonDisplay) diskonDisplay.innerText = totalDiskon > 0 ? '-Rp ' + Math.round(totalDiskon).toLocaleString('id-ID') : '-';
+        const potonganDisplay = document.getElementById('totalPotonganDisplay');
+        if (potonganDisplay) potonganDisplay.innerText = totalPotongan > 0 ? '-Rp ' + Math.round(totalPotongan).toLocaleString('id-ID') : '-';
+        const ppnDisplay = document.getElementById('totalPpnDisplay');
+        if (ppnDisplay) ppnDisplay.innerText = totalPpn > 0 ? '+Rp ' + Math.round(totalPpn).toLocaleString('id-ID') : '-';
+        document.getElementById('grandTotalDisplay').innerText = 'Rp ' + Math.round(grandTotal).toLocaleString('id-ID');
 
         // Update di sticky sidebar kanan
-        document.getElementById('sideGrandTotal').innerText = formattedGrandTotal;
+        document.getElementById('sideGrandTotal').innerText = 'Rp ' + Math.round(grandTotal).toLocaleString('id-ID');
         document.getElementById('sideTotalQty').innerText = totalQty.toFixed(2);
+        const sideSubtotal = document.getElementById('sideSubtotalBruto');
+        if (sideSubtotal) sideSubtotal.innerText = 'Rp ' + Math.round(totalBruto).toLocaleString('id-ID');
+        const sideDiskon = document.getElementById('sideTotalDiskon');
+        if (sideDiskon) sideDiskon.innerText = totalDiskon > 0 ? '-Rp ' + Math.round(totalDiskon).toLocaleString('id-ID') : 'Rp 0';
+        const sidePotongan = document.getElementById('sideTotalPotongan');
+        if (sidePotongan) sidePotongan.innerText = totalPotongan > 0 ? '-Rp ' + Math.round(totalPotongan).toLocaleString('id-ID') : 'Rp 0';
+        const sidePpn = document.getElementById('sideTotalPpn');
+        if (sidePpn) sidePpn.innerText = totalPpn > 0 ? '+Rp ' + Math.round(totalPpn).toLocaleString('id-ID') : 'Rp 0';
 
         const submitBtnText = document.getElementById('btnSubmitPoText');
         const sidePoCountBadge = document.getElementById('sidePoCountBadge');
@@ -1672,6 +1765,7 @@
             if (rowSup && !rowSup.value) rowSup.value = supHiddenSelect.value;
         }
 
+        updateRowSatuan(select);
         calculateSubtotal(targetRow.querySelector('.item-qty'));
     }
 
@@ -1694,7 +1788,7 @@
                     const allRows = Array.from(document.querySelectorAll('.item-row'));
                     const currentRowIdx = allRows.indexOf(rowElement);
 
-                    if (input.classList.contains('item-harga') || input.classList.contains('item-qty')) {
+                    if (input.classList.contains('item-harga') || input.classList.contains('item-qty') || input.classList.contains('item-diskon') || input.classList.contains('item-potongan')) {
                         if (currentRowIdx === allRows.length - 1) {
                             // Di baris terakhir -> buat baris baru dan langsung fokus
                             addRow(true);

@@ -194,22 +194,31 @@
                     <thead>
                         <tr style="border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
                             <th style="width: 40px; text-align: center;">No</th>
-                            <th>Nama Bahan Baku</th>
+                            <th>Nama Komoditas / Bahan Baku</th>
                             <th>Satuan</th>
                             <th style="text-align: right;">Pesan</th>
                             <th style="text-align: right;">Diterima</th>
                             <th style="text-align: right;">Sisa</th>
                             <th style="text-align: right;">Harga Satuan</th>
+                            <th style="text-align: right;">Diskon</th>
+                            <th style="text-align: right;">Potongan</th>
+                            <th style="text-align: center;">PPN</th>
                             <th style="text-align: right;">Subtotal</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach ($po->details as $index => $item)
+                            @php
+                                $diskonPct = (float) ($item->diskon_persen ?? 0);
+                                $potNom = (float) ($item->potongan_nominal ?? 0);
+                                $isPpn = ($item->ppn_tipe ?? '') === 'PPN_11';
+                                $subtotalRow = (float) ($item->subtotal_tagihan ?: $item->subtotal_nominal);
+                            @endphp
                             <tr style="border-bottom: 1px solid #f1f5f9;">
                                 <td style="text-align: center; color: #64748b; font-size: 0.85rem;">{{ $index + 1 }}</td>
                                 <td>
                                     <strong style="color: #0f172a; font-size: 0.875rem;">{{ $item->barang?->barang_nm }}</strong>
-                                    <span style="display: block; font-size: 0.725rem; color: #64748b;">{{ $item->barang?->barang_cd }}</span>
+                                    <span style="display: block; font-size: 0.725rem; color: #64748b; font-family: monospace;">{{ $item->barang?->barang_cd }}</span>
                                 </td>
                                 <td style="color: #475569; font-size: 0.85rem;">
                                     {{ $item->barang?->satuanDasar?->satuan_nm ?? ($item->barang?->satuanDasar?->satuan_cd ?? '-') }}
@@ -223,11 +232,24 @@
                                 <td style="text-align: right; font-weight: 600; font-size: 0.875rem; color: {{ (float) $item->sisa_qty > 0 ? '#b45309' : '#64748b' }};">
                                     {{ number_format((float) $item->sisa_qty, 2) }}
                                 </td>
-                                <td style="text-align: right; font-size: 0.85rem; color: #475569;">
+                                <td style="text-align: right; font-size: 0.85rem; color: #475569; font-family: monospace;">
                                     Rp {{ number_format((float) $item->harga_nominal, 0, ',', '.') }}
                                 </td>
-                                <td style="text-align: right; font-weight: 700; color: #0f172a; font-size: 0.875rem;">
-                                    Rp {{ number_format((float) $item->subtotal_nominal, 0, ',', '.') }}
+                                <td style="text-align: right; font-family: monospace; font-size: 0.85rem; color: {{ $diskonPct > 0 ? '#d97706' : '#94a3b8' }};">
+                                    {{ $diskonPct > 0 ? number_format($diskonPct, 1, ',', '.') . '%' : '-' }}
+                                </td>
+                                <td style="text-align: right; font-family: monospace; font-size: 0.85rem; color: {{ $potNom > 0 ? '#dc2626' : '#94a3b8' }};">
+                                    {{ $potNom > 0 ? 'Rp ' . number_format($potNom, 0, ',', '.') : '-' }}
+                                </td>
+                                <td style="text-align: center;">
+                                    @if ($isPpn)
+                                        <span class="badge" style="background:#e0f2fe; color:#0369a1; font-size:0.7rem; font-weight:700;">PPN 11%</span>
+                                    @else
+                                        <span class="badge" style="background:#f1f5f9; color:#64748b; font-size:0.7rem;">Non-PPN</span>
+                                    @endif
+                                </td>
+                                <td style="text-align: right; font-weight: 700; color: #0f172a; font-size: 0.875rem; font-family: monospace;">
+                                    Rp {{ number_format($subtotalRow, 0, ',', '.') }}
                                 </td>
                             </tr>
                         @endforeach
@@ -235,7 +257,7 @@
                     <tfoot style="background: #f8fafc; border-top: 2px solid #e2e8f0; font-weight: 700;">
                         <tr>
                             <td colspan="3" style="text-align: right; padding: 0.75rem 1rem; color: #475569; font-size: 0.85rem;">
-                                Total Kuantitas &amp; Nominal:
+                                Total Kuantitas &amp; Estimasi:
                             </td>
                             <td style="text-align: right; padding: 0.75rem 0.5rem; color: #0f172a; font-size: 0.875rem;">
                                 {{ number_format($totalPesan, 2) }}
@@ -246,13 +268,64 @@
                             <td style="text-align: right; padding: 0.75rem 0.5rem; color: {{ $totalSisa > 0 ? '#b45309' : '#64748b' }}; font-size: 0.875rem;">
                                 {{ number_format($totalSisa, 2) }}
                             </td>
-                            <td></td>
-                            <td style="text-align: right; padding: 0.75rem 1rem; color: #0f172a; font-size: 1rem;">
-                                Rp {{ number_format((float) $po->total_nominal, 0, ',', '.') }}
+                            <td colspan="4"></td>
+                            <td style="text-align: right; padding: 0.75rem 1rem; color: #0f172a; font-size: 1rem; font-family: monospace;">
+                                Rp {{ number_format((float) ($po->total_tagihan ?: $po->total_nominal), 0, ',', '.') }}
                             </td>
                         </tr>
                     </tfoot>
                 </table>
+            </div>
+
+            {{-- SUMMARY BREAKDOWN KEUANGAN PO: DISKON, POTONGAN, DPP & PPN --}}
+            @php
+                $calcSubtotalBruto = (float) ($po->subtotal_bruto ?: $po->details->sum(fn($d) => (float)$d->pesan_qty * (float)$d->harga_nominal));
+                $calcDiskonItem = (float) ($po->diskon_total ?: $po->details->sum(fn($d) => (float)$d->pesan_qty * (float)($d->diskon_nominal ?? 0)));
+                $calcPotongan = (float) ($po->potongan_nominal ?: $po->details->sum(fn($d) => (float)($d->potongan_nominal ?? 0)));
+                $calcDpp = (float) ($po->dpp_nominal ?: $po->details->sum(fn($d) => (float)($d->subtotal_netto ?? 0)));
+                if ($calcDpp <= 0) {
+                    $calcDpp = max(0, $calcSubtotalBruto - $calcDiskonItem - $calcPotongan);
+                }
+                $calcPpn = (float) ($po->ppn_nominal ?: $po->details->sum(fn($d) => (float)($d->ppn_nominal ?? 0)));
+                $grandTotalTagihan = (float) ($po->total_tagihan ?: ($po->total_nominal ?: ($calcDpp + $calcPpn)));
+            @endphp
+
+            <div style="border-top: 1px solid #e2e8f0; background: #f8fafc; padding: 1.25rem; display: flex; justify-content: flex-end;">
+                <div style="width: 100%; max-width: 440px; display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.85rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; color: #64748b;">
+                        <span>Subtotal Nilai Bruto:</span>
+                        <strong style="color: #0f172a; font-family: monospace;">Rp {{ number_format($calcSubtotalBruto, 0, ',', '.') }}</strong>
+                    </div>
+
+                    @if ($calcDiskonItem > 0)
+                        <div style="display: flex; justify-content: space-between; align-items: center; color: #d97706;">
+                            <span>Akumulasi Diskon Item:</span>
+                            <strong style="font-family: monospace;">- Rp {{ number_format($calcDiskonItem, 0, ',', '.') }}</strong>
+                        </div>
+                    @endif
+
+                    @if ($calcPotongan > 0)
+                        <div style="display: flex; justify-content: space-between; align-items: center; color: #dc2626;">
+                            <span>Potongan Harga Langsung:</span>
+                            <strong style="font-family: monospace;">- Rp {{ number_format($calcPotongan, 0, ',', '.') }}</strong>
+                        </div>
+                    @endif
+
+                    <div style="display: flex; justify-content: space-between; align-items: center; color: #475569; padding-top: 0.35rem; border-top: 1px dashed #cbd5e1;">
+                        <span>Dasar Pengenaan Pajak (DPP):</span>
+                        <strong style="color: #0f172a; font-family: monospace;">Rp {{ number_format($calcDpp, 0, ',', '.') }}</strong>
+                    </div>
+
+                    <div style="display: flex; justify-content: space-between; align-items: center; color: #0284c7;">
+                        <span>PPN (11%):</span>
+                        <strong style="font-family: monospace;">+ Rp {{ number_format($calcPpn, 0, ',', '.') }}</strong>
+                    </div>
+
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 0.65rem; border-top: 2px solid #0f172a; font-size: 1.05rem;">
+                        <span style="font-weight: 700; color: #0f172a;">Total Nilai PO Resmi:</span>
+                        <strong style="color: #0284c7; font-size: 1.2rem; font-family: monospace;">Rp {{ number_format($grandTotalTagihan, 0, ',', '.') }}</strong>
+                    </div>
+                </div>
             </div>
         </div>
 

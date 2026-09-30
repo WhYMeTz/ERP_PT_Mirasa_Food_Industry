@@ -39,6 +39,9 @@ class StorePoRequest extends FormRequest
             'items.*.supplier_id'       => 'nullable|integer|exists:mst_supplier,supplier_id',
             'items.*.pesan_qty'         => 'required|numeric|min:0.0001',
             'items.*.harga_nominal'     => 'nullable|numeric|min:0',
+            'items.*.diskon_persen'     => 'nullable|numeric|min:0|max:100',
+            'items.*.potongan_nominal'  => 'nullable|numeric|min:0',
+            'items.*.ppn_tipe'          => 'nullable|string|in:NON_PPN,PPN_11',
             'items.*.catatan_txt'       => 'nullable|string',
         ];
     }

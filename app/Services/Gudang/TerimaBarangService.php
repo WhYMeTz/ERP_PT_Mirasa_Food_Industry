@@ -189,6 +189,10 @@ class TerimaBarangService
                 ];
             }
 
+            if (empty($processedItems)) {
+                throw new \Exception('Minimal harus ada 1 barang dengan kuantitas terima lebih dari 0 yang valid.');
+            }
+
             // Potongan tambahan faktur global jika ada
             $potonganGlobal = max(0, (float) ($data['potongan_nominal'] ?? 0));
             $totalSemuaPotongan = $totalItemPotongan + $potonganGlobal;

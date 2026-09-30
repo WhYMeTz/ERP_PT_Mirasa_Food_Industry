@@ -141,11 +141,31 @@ class PoService
                     $poNo = $this->codeGenerator->generatePoNo();
                 }
 
-                $totalNominal = 0;
+                $subtotalBruto = 0;
+                $diskonTotal = 0;
+                $totalPotongan = 0;
+                $totalDpp = 0;
+                $totalPpn = 0;
+                $grandTotal = 0;
+
                 foreach ($supplierItems as $item) {
                     $qty = (float) ($item['pesan_qty'] ?? 0);
                     $harga = (float) ($item['harga_nominal'] ?? 0);
-                    $totalNominal += ($qty * $harga);
+                    $diskonPersen = (float) ($item['diskon_persen'] ?? 0);
+                    $diskonUnit = $harga * ($diskonPersen / 100);
+                    $hargaNetto = max(0, $harga - $diskonUnit);
+                    $potonganNominal = (float) ($item['potongan_nominal'] ?? 0);
+                    $subtotalNetto = max(0, ($qty * $hargaNetto) - $potonganNominal);
+                    $ppnTipe = ($item['ppn_tipe'] ?? 'NON_PPN') === 'PPN_11' ? 'PPN_11' : 'NON_PPN';
+                    $ppnNominal = $ppnTipe === 'PPN_11' ? round($subtotalNetto * 0.11, 4) : 0;
+                    $subtotalTagihan = $subtotalNetto + $ppnNominal;
+
+                    $subtotalBruto += ($qty * $harga);
+                    $diskonTotal += ($qty * $diskonUnit);
+                    $totalPotongan += $potonganNominal;
+                    $totalDpp += $subtotalNetto;
+                    $totalPpn += $ppnNominal;
+                    $grandTotal += $subtotalTagihan;
                 }
 
                 $header = DatPoHdr::create([
@@ -155,21 +175,44 @@ class PoService
                     'supplier_id'         => $supplierId,
                     'gudang_id'           => $data['gudang_id'],
                     'status_cd'           => $data['status_cd'] ?? 'APPROVED', // Langsung siap diterima
-                    'total_nominal'       => $totalNominal,
+                    'subtotal_bruto'      => $subtotalBruto,
+                    'diskon_total'        => $diskonTotal,
+                    'potongan_nominal'    => $totalPotongan,
+                    'dpp_nominal'         => $totalDpp,
+                    'ppn_nominal'         => $totalPpn,
+                    'total_nominal'       => $grandTotal,
+                    'total_tagihan'       => $grandTotal,
                     'catatan_txt'         => $data['catatan_txt'] ?? null,
                 ]);
 
                 foreach ($supplierItems as $item) {
                     $qty = (float) ($item['pesan_qty'] ?? 0);
                     $harga = (float) ($item['harga_nominal'] ?? 0);
-                    $subtotal = $qty * $harga;
+                    $diskonPersen = (float) ($item['diskon_persen'] ?? 0);
+                    $diskonUnit = $harga * ($diskonPersen / 100);
+                    $hargaNetto = max(0, $harga - $diskonUnit);
+                    $potonganNominal = (float) ($item['potongan_nominal'] ?? 0);
+                    $subtotalNetto = max(0, ($qty * $hargaNetto) - $potonganNominal);
+                    $ppnTipe = ($item['ppn_tipe'] ?? 'NON_PPN') === 'PPN_11' ? 'PPN_11' : 'NON_PPN';
+                    $ppnPersen = $ppnTipe === 'PPN_11' ? 11.00 : 0;
+                    $ppnNominal = $ppnTipe === 'PPN_11' ? round($subtotalNetto * 0.11, 4) : 0;
+                    $subtotalTagihan = $subtotalNetto + $ppnNominal;
 
                     DatPoDtl::create([
                         'po_id'            => $header->po_id,
                         'barang_id'        => $item['barang_id'],
                         'pesan_qty'        => $qty,
                         'harga_nominal'    => $harga,
-                        'subtotal_nominal' => $subtotal,
+                        'diskon_persen'    => $diskonPersen,
+                        'diskon_nominal'   => $diskonUnit,
+                        'potongan_nominal' => $potonganNominal,
+                        'harga_netto'      => $hargaNetto,
+                        'subtotal_netto'   => $subtotalNetto,
+                        'ppn_tipe'         => $ppnTipe,
+                        'ppn_persen'       => $ppnPersen,
+                        'ppn_nominal'      => $ppnNominal,
+                        'subtotal_nominal' => $subtotalTagihan,
+                        'subtotal_tagihan' => $subtotalTagihan,
                         'terima_qty'       => 0,
                         'catatan_txt'      => $item['catatan_txt'] ?? null,
                     ]);
@@ -214,11 +257,31 @@ class PoService
                 throw new Exception("Minimal harus ada 1 item barang dalam Purchase Order.");
             }
 
-            $totalNominal = 0;
+            $subtotalBruto = 0;
+            $diskonTotal = 0;
+            $totalPotongan = 0;
+            $totalDpp = 0;
+            $totalPpn = 0;
+            $grandTotal = 0;
+
             foreach ($items as $item) {
                 $qty = (float) ($item['pesan_qty'] ?? 0);
                 $harga = (float) ($item['harga_nominal'] ?? 0);
-                $totalNominal += ($qty * $harga);
+                $diskonPersen = (float) ($item['diskon_persen'] ?? 0);
+                $diskonUnit = $harga * ($diskonPersen / 100);
+                $hargaNetto = max(0, $harga - $diskonUnit);
+                $potonganNominal = (float) ($item['potongan_nominal'] ?? 0);
+                $subtotalNetto = max(0, ($qty * $hargaNetto) - $potonganNominal);
+                $ppnTipe = ($item['ppn_tipe'] ?? 'NON_PPN') === 'PPN_11' ? 'PPN_11' : 'NON_PPN';
+                $ppnNominal = $ppnTipe === 'PPN_11' ? round($subtotalNetto * 0.11, 4) : 0;
+                $subtotalTagihan = $subtotalNetto + $ppnNominal;
+
+                $subtotalBruto += ($qty * $harga);
+                $diskonTotal += ($qty * $diskonUnit);
+                $totalPotongan += $potonganNominal;
+                $totalDpp += $subtotalNetto;
+                $totalPpn += $ppnNominal;
+                $grandTotal += $subtotalTagihan;
             }
 
             $po->update([
@@ -226,7 +289,13 @@ class PoService
                 'tgl_estimasi_datang' => $data['tgl_estimasi_datang'] ?? $po->tgl_estimasi_datang,
                 'supplier_id'         => $data['supplier_id'] ?? $po->supplier_id,
                 'gudang_id'           => $data['gudang_id'] ?? $po->gudang_id,
-                'total_nominal'       => $totalNominal,
+                'subtotal_bruto'      => $subtotalBruto,
+                'diskon_total'        => $diskonTotal,
+                'potongan_nominal'    => $totalPotongan,
+                'dpp_nominal'         => $totalDpp,
+                'ppn_nominal'         => $totalPpn,
+                'total_nominal'       => $grandTotal,
+                'total_tagihan'       => $grandTotal,
                 'catatan_txt'         => $data['catatan_txt'] ?? $po->catatan_txt,
             ]);
 
@@ -236,14 +305,31 @@ class PoService
             foreach ($items as $item) {
                 $qty = (float) ($item['pesan_qty'] ?? 0);
                 $harga = (float) ($item['harga_nominal'] ?? 0);
-                $subtotal = $qty * $harga;
+                $diskonPersen = (float) ($item['diskon_persen'] ?? 0);
+                $diskonUnit = $harga * ($diskonPersen / 100);
+                $hargaNetto = max(0, $harga - $diskonUnit);
+                $potonganNominal = (float) ($item['potongan_nominal'] ?? 0);
+                $subtotalNetto = max(0, ($qty * $hargaNetto) - $potonganNominal);
+                $ppnTipe = ($item['ppn_tipe'] ?? 'NON_PPN') === 'PPN_11' ? 'PPN_11' : 'NON_PPN';
+                $ppnPersen = $ppnTipe === 'PPN_11' ? 11.00 : 0;
+                $ppnNominal = $ppnTipe === 'PPN_11' ? round($subtotalNetto * 0.11, 4) : 0;
+                $subtotalTagihan = $subtotalNetto + $ppnNominal;
 
                 DatPoDtl::create([
                     'po_id'            => $po->po_id,
                     'barang_id'        => $item['barang_id'],
                     'pesan_qty'        => $qty,
                     'harga_nominal'    => $harga,
-                    'subtotal_nominal' => $subtotal,
+                    'diskon_persen'    => $diskonPersen,
+                    'diskon_nominal'   => $diskonUnit,
+                    'potongan_nominal' => $potonganNominal,
+                    'harga_netto'      => $hargaNetto,
+                    'subtotal_netto'   => $subtotalNetto,
+                    'ppn_tipe'         => $ppnTipe,
+                    'ppn_persen'       => $ppnPersen,
+                    'ppn_nominal'      => $ppnNominal,
+                    'subtotal_nominal' => $subtotalTagihan,
+                    'subtotal_tagihan' => $subtotalTagihan,
                     'terima_qty'       => 0,
                     'catatan_txt'      => $item['catatan_txt'] ?? null,
                 ]);

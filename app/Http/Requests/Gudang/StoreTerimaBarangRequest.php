@@ -30,6 +30,7 @@ class StoreTerimaBarangRequest extends FormRequest
             'items.*.batch_no'      => 'nullable|string|max:100',
             'items.*.expired_tgl'   => 'nullable|date',
             'items.*.grade_cd'      => 'nullable|string|max:20',
+            'items.*.terima_qty'    => 'required|numeric|min:0',
             'items.*.reject_qty'    => 'nullable|numeric|min:0',
             'items.*.harga_nominal'    => 'nullable|numeric|min:0',
             'items.*.diskon_persen'    => 'nullable|numeric|min:0|max:100',

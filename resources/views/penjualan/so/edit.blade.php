@@ -69,7 +69,7 @@
         Kembali ke Detail Dokumen
     </a>
     <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
-        <h1 style="font-size: 1.5rem; font-weight: 700; color: #0f172a; margin: 0;">Edit PO Penjualan: {{ $order->so_no }}</h1>
+        <h1 style="font-size: 1.5rem; font-weight: 700; color: #0f172a; margin: 0;">Edit Dokumen PO (Penjualan): {{ $order->so_no }}</h1>
         @if ($order->status_cd == 'COMPLETED')
             <span class="badge badge-success">Selesai (100%)</span>
         @elseif ($order->status_cd == 'PARTIAL')
@@ -108,39 +108,41 @@
     @method('PUT')
 
     <div class="order-station-grid">
-        {{-- KOLOM KIRI: FORM DATA DOKUMEN & TABEL BARANG --}}
+        {{-- KOLOM KIRI: FORM DATA DOKUMEN & TABEL INPUTAN BARANG --}}
         <div style="display: flex; flex-direction: column; gap: 1.5rem;">
             
-            {{-- KARTU 1: INFORMASI UTAMA DOKUMEN & CUSTOMER --}}
+            {{-- KARTU 1: DATA UTAMA PEMESAN --}}
             <div class="card" style="border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
                 <div class="card-header" style="background: #ffffff; padding: 0.875rem 1.25rem; border-bottom: 1px solid #e2e8f0;">
                     <strong style="color: #0f172a; font-size: 0.95rem;">1. Informasi Dokumen &amp; Pelanggan (Customer)</strong>
                 </div>
 
                 <div style="padding: 1.25rem; display: flex; flex-direction: column; gap: 1.25rem;">
-                    {{-- BARIS 1: NOMOR SO, TANGGAL SO, ESTIMASI KIRIM --}}
+                    {{-- BARIS 1: a. Tanggal, b. Kode Pesanan --}}
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.25rem;">
+                        {{-- a. Tanggal --}}
                         <div class="form-group" style="margin-bottom: 0;">
-                            <label for="so_no" class="form-label" style="font-weight: 600; font-size: 0.85rem;">Nomor SO / PO Penjualan</label>
-                            <input type="text" id="so_no" name="so_no" value="{{ $order->so_no }}" readonly class="form-control" style="background: #f8fafc; font-weight: 600; font-family: monospace; color: #0284c7; cursor: not-allowed;">
+                            <label for="so_tgl" class="form-label" style="font-weight: 600; font-size: 0.85rem;">a. Tanggal <span style="color:#ef4444;">*</span></label>
+                            <input type="date" id="so_tgl" name="so_tgl" value="{{ old('so_tgl', $order->so_tgl?->format('Y-m-d')) }}" class="form-control" required>
                         </div>
 
+                        {{-- b. Kode Pesanan --}}
                         <div class="form-group" style="margin-bottom: 0;">
-                            <label for="so_tgl" class="form-label" style="font-weight: 600; font-size: 0.85rem;">Tanggal Pesanan <span style="color:#ef4444;">*</span></label>
-                            <input type="date" id="so_tgl" name="so_tgl" value="{{ old('so_tgl', $order->so_tgl?->format('Y-m-d')) }}" class="form-control" required>
+                            <label for="so_no" class="form-label" style="font-weight: 600; font-size: 0.85rem;">b. Kode Pesanan</label>
+                            <input type="text" id="so_no" name="so_no" value="{{ $order->so_no }}" readonly class="form-control" style="background: #f8fafc; font-weight: 700; font-family: monospace; color: #0284c7; cursor: not-allowed;">
                         </div>
 
                         <div class="form-group" style="margin-bottom: 0;">
                             <label for="tgl_kirim_estimasi" class="form-label" style="font-weight: 600; font-size: 0.85rem;">Estimasi Tanggal Kirim</label>
                             <input type="date" id="tgl_kirim_estimasi" name="tgl_kirim_estimasi" value="{{ old('tgl_kirim_estimasi', $order->tgl_kirim_estimasi?->format('Y-m-d')) }}" class="form-control">
-                            <small style="color: #64748b; font-size: 0.725rem;">Target pengiriman ke alamat pemesan.</small>
                         </div>
                     </div>
 
-                    {{-- BARIS 2: CUSTOMER MITRA & NOMOR PO CUSTOMER --}}
-                    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.25rem; align-items: start;">
+                    {{-- BARIS 2: c. Nama Customer, d. Kode Customer (Otomatis) --}}
+                    <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 1.25rem; align-items: start;">
+                        {{-- c. Nama Customer --}}
                         <div class="form-group" style="margin-bottom: 0;">
-                            <label for="customerSelect" class="form-label" style="font-weight: 600; font-size: 0.85rem;">Customer Pemesan <span style="color:#ef4444;">*</span></label>
+                            <label for="customerSelect" class="form-label" style="font-weight: 600; font-size: 0.85rem;">c. Nama Customer <span style="color:#ef4444;">*</span></label>
                             <select name="customer_id" id="customerSelect" required class="form-control">
                                 <option value="">-- Pilih Customer Mitra --</option>
                                 @foreach($customers as $cust)
@@ -155,18 +157,23 @@
                             </select>
                         </div>
 
+                        {{-- d. Kode Customer (Otomatis) --}}
                         <div class="form-group" style="margin-bottom: 0;">
-                            <label for="customer_po_no" class="form-label" style="font-weight: 600; font-size: 0.85rem;">Nomor PO Customer</label>
-                            <input type="text" id="customer_po_no" name="customer_po_no" value="{{ old('customer_po_no', $order->customer_po_no) }}" placeholder="Contoh: PO-CUST/2026/09" class="form-control">
-                            <small style="color: #64748b; font-size: 0.725rem;">Referensi PO dari pihak pelanggan.</small>
+                            <label for="customerCdInput" class="form-label" style="font-weight: 600; font-size: 0.85rem;">d. Kode Customer <span style="color:#0284c7;">*Otomatis</span></label>
+                            <input type="text" id="customerCdInput" readonly class="form-control" value="{{ $order->customer?->customer_cd }}" style="background: #f8fafc; font-family: monospace; font-weight: 700; color: #0284c7; cursor: not-allowed;">
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="customer_po_no" class="form-label" style="font-weight: 600; font-size: 0.85rem;">No PO Customer (Opsional)</label>
+                            <input type="text" id="customer_po_no" name="customer_po_no" value="{{ old('customer_po_no', $order->customer_po_no) }}" placeholder="PO-CUST/09..." class="form-control">
                         </div>
                     </div>
 
-                    {{-- CUSTOMER INFO BOX --}}
+                    {{-- CUSTOMER INFO PREVIEW --}}
                     <div id="customerInfoBox" style="display: none; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.75rem 1rem; font-size: 0.825rem; color: #334155;">
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 1rem;">
                             <div>
-                                <span style="color: #64748b; font-size: 0.75rem; display: block;">Alamat Pengiriman:</span>
+                                <span style="color: #64748b; font-size: 0.75rem; display: block;">Alamat Pengiriman Customer:</span>
                                 <strong id="custAddressText">-</strong>
                             </div>
                             <div>
@@ -178,18 +185,18 @@
                 </div>
             </div>
 
-            {{-- KARTU 2: RINCIAN PRODUK HASIL PRODUKSI (EXCEL GRID TABLE) --}}
+            {{-- KARTU 2: TABEL INPUTAN PRODUK HASIL PRODUKSI --}}
             <div class="card" style="border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
                 <div class="card-header" style="background: #ffffff; padding: 0.875rem 1.25rem; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
                     <div>
-                        <strong style="color: #0f172a; font-size: 0.95rem;">2. Rincian Barang Hasil Produksi yang Dipesan</strong>
+                        <strong style="color: #0f172a; font-size: 0.95rem;">2. Tabel Inputan Rincian Barang</strong>
                         <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.15rem;">
-                            Hanya memuat barang kategori Produk Jadi (FG) dan Barang Setengah Jadi (WIP).
+                            Daftar produk hasil produksi yang dipesan (Barang Jadi / Setengah Jadi).
                         </div>
                     </div>
                     <button type="button" id="btnAddRow" class="btn btn-secondary btn-sm" style="display: inline-flex; align-items: center; gap: 0.35rem; font-weight: 600;">
                         <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
-                        Tambah Baris Produk
+                        + Tambah Baris Barang
                     </button>
                 </div>
 
@@ -197,18 +204,18 @@
                     <table class="excel-grid-table" id="itemsTable">
                         <thead>
                             <tr>
-                                <th style="width: 35px; text-align: center;">No</th>
-                                <th style="min-width: 230px; text-align: left;">Nama Produk (FG / WIP)</th>
-                                <th style="width: 100px; text-align: left;">Kode</th>
-                                <th style="width: 75px; text-align: left;">Jenis</th>
-                                <th style="width: 75px; text-align: left;">Satuan</th>
-                                <th style="width: 90px; text-align: right;">Kuantitas</th>
-                                <th style="width: 120px; text-align: right;">@Harga Satuan</th>
-                                <th style="width: 75px; text-align: right;">Diskon %</th>
-                                <th style="width: 95px; text-align: right;">Potongan</th>
-                                <th style="width: 95px; text-align: center;">PPN</th>
-                                <th style="width: 130px; text-align: right;">Subtotal</th>
-                                <th style="width: 40px; text-align: center;">Aksi</th>
+                                <th style="width: 30px; text-align: center;">No</th>
+                                <th style="width: 100px; text-align: left;">e. Jenis Barang</th>
+                                <th style="min-width: 210px; text-align: left;">f. Nama Barang</th>
+                                <th style="width: 100px; text-align: left;">g. Kode Barang</th>
+                                <th style="width: 85px; text-align: right;">h. Jumlah Pesanan</th>
+                                <th style="width: 70px; text-align: left;">i. Satuan</th>
+                                <th style="width: 110px; text-align: right;">j. @Harga satuan</th>
+                                <th style="width: 70px; text-align: right;">k. Diskon %</th>
+                                <th style="width: 90px; text-align: right;">l. Potongan</th>
+                                <th style="width: 95px; text-align: center;">m. PPN 11% / Non</th>
+                                <th style="width: 125px; text-align: right;">n. Total Harga</th>
+                                <th style="width: 35px; text-align: center;">Aksi</th>
                             </tr>
                         </thead>
                         <tbody id="itemsBody">
@@ -219,7 +226,7 @@
 
                 {{-- Empty Notice --}}
                 <div id="noItemsNotice" style="display: none; padding: 2rem; text-align: center; color: #94a3b8; font-size: 0.85rem;">
-                    Belum ada produk yang ditambahkan. Klik tombol <strong>"Tambah Baris Produk"</strong> di atas.
+                    Belum ada barang pada tabel inputan. Klik tombol <strong>"+ Tambah Baris Barang"</strong> di atas.
                 </div>
             </div>
         </div>
@@ -260,7 +267,7 @@
                     </div>
 
                     <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 0.65rem; border-top: 2px solid #0f172a; font-size: 1rem;">
-                        <span style="font-weight: 700; color: #0f172a;">Total Tagihan SO:</span>
+                        <span style="font-weight: 700; color: #0f172a;">Total Harga Akhir:</span>
                         <strong style="color: #0284c7; font-size: 1.15rem; font-family: monospace;" id="lblTotalTagihan">Rp {{ number_format($order->total_tagihan, 0, ',', '.') }}</strong>
                     </div>
                 </div>
@@ -301,11 +308,14 @@
         return 'Rp ' + Number(amount || 0).toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
     }
 
-    // Customer Selection Change Listener
+    // Customer Selection Change Listener -> Mengisi d. Kode Customer (Otomatis)
     document.getElementById('customerSelect').addEventListener('change', function() {
         const selected = this.options[this.selectedIndex];
+        const code = selected.getAttribute('data-code') || '';
         const address = selected.getAttribute('data-address') || '-';
         const contact = selected.getAttribute('data-contact') || '-';
+
+        document.getElementById('customerCdInput').value = code;
 
         const infoBox = document.getElementById('customerInfoBox');
         if (this.value) {
@@ -317,7 +327,7 @@
         }
     });
 
-    // Tambah Baris Baru
+    // Tambah Baris Baru pada Tabel Inputan
     function addRow(data = {}) {
         rowCounter++;
         const idx = rowCounter;
@@ -328,9 +338,14 @@
 
         tr.innerHTML = `
             <td style="text-align: center; color: #64748b; font-size: 0.8rem;">${idx}</td>
+            {{-- e. Jenis Barang --}}
+            <td>
+                <input type="text" class="form-control item-jenis" readonly placeholder="-" style="background: #f8fafc; font-size: 0.75rem; cursor: not-allowed;">
+            </td>
+            {{-- f. Nama Barang --}}
             <td>
                 <select name="items[${idx}][barang_id]" class="form-control item-barang-select" required style="font-size: 0.8rem;">
-                    <option value="">-- Pilih Produk (FG / WIP) --</option>
+                    <option value="">-- Pilih Nama Barang --</option>
                     ${MASTER_BARANG.map(b => `
                         <option value="${b.barang_id}" 
                                 data-code="${b.barang_cd || ''}" 
@@ -338,38 +353,43 @@
                                 data-satuan="${b.satuan_dasar ? b.satuan_dasar.satuan_nm : 'Pcs'}"
                                 data-harga="${b.harga_jual || b.harga_standar || 0}"
                                 ${data.barang_id == b.barang_id ? 'selected' : ''}>
-                            [${b.jenis_barang ? b.jenis_barang.jenis_barang_cd : (b.jenis_barang_cd || 'FG')}] ${b.barang_nm}
+                            ${b.barang_nm}
                         </option>
                     `).join('')}
                 </select>
             </td>
+            {{-- g. Kode Barang (Otomatis) --}}
             <td>
-                <input type="text" class="form-control item-barang-code" readonly placeholder="-" style="background: #f8fafc; font-family: monospace; font-size: 0.75rem; cursor: not-allowed;">
+                <input type="text" class="form-control item-barang-code" readonly placeholder="Otomatis..." style="background: #f8fafc; font-family: monospace; font-size: 0.75rem; color: #0284c7; font-weight: 700; cursor: not-allowed;">
             </td>
-            <td>
-                <input type="text" class="form-control item-jenis" readonly placeholder="-" style="background: #f8fafc; font-size: 0.75rem; cursor: not-allowed;">
-            </td>
-            <td>
-                <input type="text" class="form-control item-satuan" readonly placeholder="-" style="background: #f8fafc; font-size: 0.75rem; cursor: not-allowed;">
-            </td>
+            {{-- h. Jumlah Pesanan --}}
             <td>
                 <input type="number" step="any" min="0.001" name="items[${idx}][pesan_qty]" value="${data.pesan_qty || 1}" required class="form-control item-qty" style="text-align: right;">
             </td>
+            {{-- i. Satuan --}}
+            <td>
+                <input type="text" class="form-control item-satuan" readonly placeholder="-" style="background: #f8fafc; font-size: 0.75rem; cursor: not-allowed;">
+            </td>
+            {{-- j. @Harga satuan --}}
             <td>
                 <input type="number" step="any" min="0" name="items[${idx}][harga_satuan]" value="${data.harga_satuan || 0}" required class="form-control item-harga" style="text-align: right;">
             </td>
+            {{-- k. Diskon % --}}
             <td>
                 <input type="number" step="any" min="0" max="100" name="items[${idx}][diskon_persen]" value="${data.diskon_persen || 0}" class="form-control item-diskon" style="text-align: right;">
             </td>
+            {{-- l. Potongan Harga --}}
             <td>
                 <input type="number" step="any" min="0" name="items[${idx}][potongan_nominal]" value="${data.potongan_nominal || 0}" class="form-control item-potongan" style="text-align: right;">
             </td>
+            {{-- m. PPN 11% / Non PPN --}}
             <td>
                 <select name="items[${idx}][ppn_tipe]" class="form-control item-ppn" style="font-size: 0.75rem; padding: 0.2rem 0.25rem;">
-                    <option value="NON_PPN" ${data.ppn_tipe === 'NON_PPN' ? 'selected' : ''}>Non-PPN</option>
+                    <option value="NON_PPN" ${data.ppn_tipe === 'NON_PPN' ? 'selected' : ''}>Non PPN</option>
                     <option value="PPN_11" ${data.ppn_tipe === 'PPN_11' ? 'selected' : ''}>PPN 11%</option>
                 </select>
             </td>
+            {{-- n. Total Harga --}}
             <td style="text-align: right;">
                 <span class="item-subtotal-text" style="font-weight: 700; color: #0f172a; font-family: monospace; font-size: 0.825rem;">Rp 0</span>
             </td>

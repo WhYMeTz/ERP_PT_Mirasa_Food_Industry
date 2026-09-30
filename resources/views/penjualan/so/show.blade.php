@@ -177,15 +177,17 @@
                 <table style="width: 100%; border-collapse: collapse;">
                     <thead>
                         <tr style="border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
-                            <th style="width: 40px; text-align: center;">No</th>
-                            <th>Nama Komoditas / Produk</th>
-                            <th>Satuan</th>
-                            <th style="text-align: right;">Jumlah Pesan</th>
-                            <th style="text-align: right;">Harga Satuan</th>
-                            <th style="text-align: right;">Diskon</th>
-                            <th style="text-align: right;">Potongan</th>
-                            <th style="text-align: center;">PPN</th>
-                            <th style="text-align: right;">Subtotal</th>
+                            <th style="width: 35px; text-align: center;">No</th>
+                            <th style="width: 110px; text-align: left;">e. Jenis Barang</th>
+                            <th style="min-width: 190px; text-align: left;">f. Nama Barang</th>
+                            <th style="width: 100px; text-align: left;">g. Kode Barang</th>
+                            <th style="width: 90px; text-align: right;">h. Jumlah Pesanan</th>
+                            <th style="width: 70px; text-align: left;">i. Satuan</th>
+                            <th style="width: 110px; text-align: right;">j. @Harga satuan</th>
+                            <th style="width: 70px; text-align: right;">k. Diskon %</th>
+                            <th style="width: 90px; text-align: right;">l. Potongan Harga</th>
+                            <th style="width: 95px; text-align: center;">m. PPN 11% / Non</th>
+                            <th style="width: 125px; text-align: right;">n. Total Harga</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -198,17 +200,22 @@
                             @endphp
                             <tr style="border-bottom: 1px solid #f1f5f9;">
                                 <td style="text-align: center; color: #64748b; font-size: 0.85rem;">{{ $index + 1 }}</td>
-                                <td>
-                                    <strong style="color: #0f172a; font-size: 0.875rem;">{{ $item->barang?->barang_nm }}</strong>
-                                    <span style="display: block; font-size: 0.725rem; color: #64748b; font-family: monospace;">
-                                        {{ $item->barang?->barang_cd }} &bull; {{ $item->barang?->jenisBarang?->jenis_barang_nm ?? '-' }}
+                                <td style="color: #475569; font-size: 0.85rem;">
+                                    <span class="badge" style="background:#f1f5f9; color:#334155; font-size:0.7rem;">
+                                        {{ $item->barang?->jenisBarang?->jenis_barang_nm ?? ($item->barang?->jenis_barang_cd ?? 'FG') }}
                                     </span>
                                 </td>
-                                <td style="color: #475569; font-size: 0.85rem;">
-                                    {{ $item->barang?->satuanDasar?->satuan_nm ?? ($item->barang?->satuanDasar?->satuan_cd ?? '-') }}
+                                <td>
+                                    <strong style="color: #0f172a; font-size: 0.875rem;">{{ $item->barang?->barang_nm }}</strong>
+                                </td>
+                                <td style="font-family: monospace; font-size: 0.8rem; color: #0284c7; font-weight: 600;">
+                                    {{ $item->barang?->barang_cd }}
                                 </td>
                                 <td style="text-align: right; font-weight: 600; font-size: 0.875rem;">
                                     {{ number_format((float) $item->pesan_qty, 0) }}
+                                </td>
+                                <td style="color: #475569; font-size: 0.85rem;">
+                                    {{ $item->barang?->satuanDasar?->satuan_nm ?? ($item->barang?->satuanDasar?->satuan_cd ?? '-') }}
                                 </td>
                                 <td style="text-align: right; font-size: 0.85rem; color: #475569; font-family: monospace;">
                                     Rp {{ number_format((float) $item->harga_satuan, 0, ',', '.') }}
@@ -223,7 +230,7 @@
                                     @if ($isPpn)
                                         <span class="badge" style="background:#e0f2fe; color:#0369a1; font-size:0.7rem; font-weight:700;">PPN 11%</span>
                                     @else
-                                        <span class="badge" style="background:#f1f5f9; color:#64748b; font-size:0.7rem;">Non-PPN</span>
+                                        <span class="badge" style="background:#f1f5f9; color:#64748b; font-size:0.7rem;">Non PPN</span>
                                     @endif
                                 </td>
                                 <td style="text-align: right; font-weight: 700; color: #0f172a; font-size: 0.875rem; font-family: monospace;">
@@ -234,13 +241,13 @@
                     </tbody>
                     <tfoot style="background: #f8fafc; border-top: 2px solid #e2e8f0; font-weight: 700;">
                         <tr>
-                            <td colspan="3" style="text-align: right; padding: 0.75rem 1rem; color: #475569; font-size: 0.85rem;">
-                                Total Kuantitas &amp; Estimasi:
+                            <td colspan="4" style="text-align: right; padding: 0.75rem 1rem; color: #475569; font-size: 0.85rem;">
+                                Total Kuantitas:
                             </td>
                             <td style="text-align: right; padding: 0.75rem 0.5rem; color: #0f172a; font-size: 0.875rem;">
                                 {{ number_format($totalQty, 0) }}
                             </td>
-                            <td colspan="4"></td>
+                            <td colspan="5"></td>
                             <td style="text-align: right; padding: 0.75rem 1rem; color: #0f172a; font-size: 1rem; font-family: monospace;">
                                 Rp {{ number_format((float) $order->total_tagihan, 0, ',', '.') }}
                             </td>

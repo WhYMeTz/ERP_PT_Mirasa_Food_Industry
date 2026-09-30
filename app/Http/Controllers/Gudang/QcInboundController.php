@@ -27,11 +27,13 @@ class QcInboundController extends Controller
     public function index(Request $request): View
     {
         $filters = [
-            'search'      => $request->input('search'),
-            'status_qc'   => $request->input('status_qc'),
-            'supplier_id' => $request->input('supplier_id'),
-            'tgl_mulai'   => $request->input('tgl_mulai'),
-            'tgl_selesai' => $request->input('tgl_selesai'),
+            'search'            => $request->input('search'),
+            'kategori_barang'   => $request->input('kategori_barang'),
+            'status_qc'         => $request->input('status_qc'),
+            'status_uji_goreng' => $request->input('status_uji_goreng'),
+            'supplier_id'       => $request->input('supplier_id'),
+            'tgl_mulai'         => $request->input('tgl_mulai'),
+            'tgl_selesai'       => $request->input('tgl_selesai'),
         ];
 
         $inspeksiList = $this->qcService->getAllPaginated($filters, 15);
@@ -48,9 +50,9 @@ class QcInboundController extends Controller
         $suppliers = MstSupplier::where('deleted_st', false)->where('active_st', true)->orderBy('supplier_nm')->get();
         $gudangs = MstGudang::where('deleted_st', false)->where('active_st', true)->orderBy('gudang_nm')->get();
         
-        // Hanya ambil barang bahan baku, bahan penolong, dan bumbu
+        // Ambil seluruh barang yang dibeli (Bahan Baku, Bahan Penolong, Plastik, Karton, dll; kecuali FG & WIP)
         $barangs = MstBarang::with(['satuanDasar', 'jenisBarang'])
-            ->bahanBaku()
+            ->bahanProduksi()
             ->where('deleted_st', false)
             ->where('active_st', true)
             ->orderBy('barang_nm')
@@ -79,17 +81,15 @@ class QcInboundController extends Controller
             'gudang_id'                 => 'required|exists:mst_gudang,gudang_id',
             'items'                     => 'required|array|min:1',
             'items.*.barang_id'         => 'required|exists:mst_barang,barang_id',
-            'items.*.qty_timbang_gross' => 'required|numeric|min:0.0001',
+            'items.*.qty_timbang_gross' => 'nullable|numeric|min:0',
             'items.*.kadar_air_persen'  => 'nullable|numeric|min:0|max:100',
             'items.*.refraksi_persen'   => 'nullable|numeric|min:0|max:100',
             'items.*.qty_reject'        => 'nullable|numeric|min:0',
         ], [
-            'supplier_id.required'               => 'Silakan pilih mitra supplier pengirim.',
-            'gudang_id.required'                 => 'Silakan tentukan gudang bongkar muat.',
-            'items.required'                     => 'Minimal harus ada 1 komoditas yang diuji.',
-            'items.*.barang_id.required'         => 'Komoditas barang harus dipilih.',
-            'items.*.qty_timbang_gross.required' => 'Berat timbangan kotor (gross) wajib diisi.',
-            'items.*.qty_timbang_gross.min'      => 'Berat timbangan kotor harus lebih besar dari 0.',
+            'supplier_id.required'       => 'Silakan pilih mitra supplier pengirim.',
+            'gudang_id.required'         => 'Silakan tentukan gudang bongkar muat.',
+            'items.required'             => 'Minimal harus ada 1 komoditas yang diuji.',
+            'items.*.barang_id.required' => 'Komoditas barang harus dipilih.',
         ]);
 
         try {
@@ -135,6 +135,125 @@ class QcInboundController extends Controller
         ])->where('deleted_st', false)->findOrFail($id);
 
         return view('gudang.qc.berita_acara', compact('qc'));
+    }
+
+    /**
+     * Formulir Koreksi / Edit Tiket QC Inbound
+     */
+    public function edit(int $id): View|RedirectResponse
+    {
+        $qc = \App\Models\Gudang\DatQcInboundHdr::with([
+            'supplier',
+            'gudang',
+            'po',
+            'details.barang.satuanDasar',
+            'details.poDetail',
+            'terima',
+        ])->where('deleted_st', false)->findOrFail($id);
+
+        $user = Auth::user();
+        if ($qc->terima && !$user->isSuperAdmin()) {
+            return redirect()->route('qc.inbound.show', $id)
+                ->with('error', "Tiket QC #{$qc->qc_no} sudah diproses ke Penerimaan Barang (GRN #{$qc->terima->terima_no}). Hanya Super Administrator yang berhak mengedit tiket yang sudah ditarik ke gudang.");
+        }
+
+        $suppliers = MstSupplier::where('deleted_st', false)->where('active_st', true)->orderBy('supplier_nm')->get();
+        $gudangs = MstGudang::where('deleted_st', false)->where('active_st', true)->orderBy('gudang_nm')->get();
+        
+        $barangs = MstBarang::with(['satuanDasar', 'jenisBarang'])
+            ->bahanProduksi()
+            ->where('deleted_st', false)
+            ->where('active_st', true)
+            ->orderBy('barang_nm')
+            ->get();
+
+        $pos = DatPoHdr::with(['supplier', 'details.barang'])
+            ->where('deleted_st', false)
+            ->where(function($q) use ($qc) {
+                $q->whereIn('status_cd', ['APPROVED', 'PARTIAL']);
+                if ($qc->po_id) {
+                    $q->orWhere('po_id', $qc->po_id);
+                }
+            })
+            ->orderBy('po_tgl', 'desc')
+            ->get();
+
+        return view('gudang.qc.edit', compact('qc', 'suppliers', 'gudangs', 'barangs', 'pos'));
+    }
+
+    /**
+     * Memperbarui data tiket inspeksi QC (Koreksi)
+     */
+    public function update(Request $request, int $id): RedirectResponse
+    {
+        $request->validate([
+            'supplier_id'               => 'required|exists:mst_supplier,supplier_id',
+            'gudang_id'                 => 'required|exists:mst_gudang,gudang_id',
+            'items'                     => 'required|array|min:1',
+            'items.*.barang_id'         => 'required|exists:mst_barang,barang_id',
+            'items.*.qty_timbang_gross' => 'nullable|numeric|min:0',
+            'items.*.kadar_air_persen'  => 'nullable|numeric|min:0|max:100',
+            'items.*.refraksi_persen'   => 'nullable|numeric|min:0|max:100',
+            'items.*.qty_reject'        => 'nullable|numeric|min:0',
+        ], [
+            'supplier_id.required'       => 'Silakan pilih mitra supplier pengirim.',
+            'gudang_id.required'         => 'Silakan tentukan gudang bongkar muat.',
+            'items.required'             => 'Minimal harus ada 1 komoditas yang diuji.',
+            'items.*.barang_id.required' => 'Komoditas barang harus dipilih.',
+        ]);
+
+        try {
+            $qc = \App\Models\Gudang\DatQcInboundHdr::where('deleted_st', false)->findOrFail($id);
+            $user = Auth::user();
+            $updatedQc = $this->qcService->update($qc, $request->all(), $user);
+
+            $msg = "Tiket QC {$updatedQc->qc_no} berhasil diperbarui.";
+            if ($user->isSuperAdmin() && $updatedQc->terima) {
+                $msg .= " Sinkronisasi otomatis ke Penerimaan Barang (#{$updatedQc->terima->terima_no}) & Batch Stok selesai tanpa unpost.";
+            }
+
+            return redirect()->route('qc.inbound.show', $updatedQc->qc_id)
+                ->with('success', $msg);
+        } catch (Exception $e) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Gagal memperbarui tiket QC: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Menghapus tiket QC
+     */
+    public function destroy(int $id): RedirectResponse
+    {
+        try {
+            $qc = \App\Models\Gudang\DatQcInboundHdr::where('deleted_st', false)->findOrFail($id);
+            $user = Auth::user();
+            $this->qcService->destroy($qc, $user);
+
+            return redirect()->route('qc.inbound.index')
+                ->with('success', "Tiket QC #{$qc->qc_no} berhasil dibatalkan / dihapus.");
+        } catch (Exception $e) {
+            return redirect()->back()
+                ->with('error', 'Gagal menghapus tiket QC: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Memperbarui hasil uji goreng (Pengujian II) susulan
+     */
+    public function updateUjiGoreng(Request $request, int $id): RedirectResponse
+    {
+        try {
+            $user = Auth::user();
+            $this->qcService->updateUjiGoreng($id, $request->all(), $user);
+
+            return redirect()->route('qc.inbound.show', $id)
+                ->with('success', 'Hasil uji goreng lab (Pengujian II) berhasil disimpan & diperbarui.');
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->with('error', 'Gagal memperbarui hasil uji goreng: ' . $e->getMessage());
+        }
     }
 
     /**

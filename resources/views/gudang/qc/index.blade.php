@@ -45,12 +45,35 @@
             </div>
 
             <div>
+                <label class="form-label" style="font-size: 0.8rem; font-weight: 700;">Komoditas Masuk</label>
+                <select name="kategori_barang" class="form-control">
+                    <option value="">-- Semua Komoditas --</option>
+                    <option value="SINGKONG" {{ ($filters['kategori_barang'] ?? '') === 'SINGKONG' ? 'selected' : '' }}>🥔 Singkong</option>
+                    <option value="MINYAK" {{ ($filters['kategori_barang'] ?? '') === 'MINYAK' ? 'selected' : '' }}>🛢️ Minyak Goreng</option>
+                    <option value="PLASTIK" {{ ($filters['kategori_barang'] ?? '') === 'PLASTIK' ? 'selected' : '' }}>🛍️ Plastik Kemasan</option>
+                    <option value="KARTON" {{ ($filters['kategori_barang'] ?? '') === 'KARTON' ? 'selected' : '' }}>📦 Karton Box</option>
+                    <option value="MSG" {{ ($filters['kategori_barang'] ?? '') === 'MSG' ? 'selected' : '' }}>🧂 MSG</option>
+                    <option value="GARAM" {{ ($filters['kategori_barang'] ?? '') === 'GARAM' ? 'selected' : '' }}>🧂 Garam</option>
+                    <option value="PERENYAH" {{ ($filters['kategori_barang'] ?? '') === 'PERENYAH' ? 'selected' : '' }}>✨ Perenyah</option>
+                </select>
+            </div>
+
+            <div>
                 <label class="form-label" style="font-size: 0.8rem; font-weight: 700;">Status Tiket QC</label>
                 <select name="status_qc" class="form-control">
                     <option value="">-- Semua Status --</option>
                     <option value="SIAP_GUDANG" {{ ($filters['status_qc'] ?? '') === 'SIAP_GUDANG' ? 'selected' : '' }}>⏳ Siap Terima di Gudang</option>
                     <option value="DITERIMA_GUDANG" {{ ($filters['status_qc'] ?? '') === 'DITERIMA_GUDANG' ? 'selected' : '' }}>✅ Selesai Diterima Gudang</option>
                     <option value="DITOLAK_TOTAL" {{ ($filters['status_qc'] ?? '') === 'DITOLAK_TOTAL' ? 'selected' : '' }}>❌ Ditolak Total (Reject)</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="form-label" style="font-size: 0.8rem; font-weight: 700;">Status Uji Goreng (Lab)</label>
+                <select name="status_uji_goreng" class="form-control">
+                    <option value="">-- Semua Uji Goreng --</option>
+                    <option value="MENUNGGU_LAB" {{ ($filters['status_uji_goreng'] ?? '') === 'MENUNGGU_LAB' ? 'selected' : '' }}>⏳ Menyusul di Lab</option>
+                    <option value="SELESAI" {{ ($filters['status_uji_goreng'] ?? '') === 'SELESAI' ? 'selected' : '' }}>🍟 Uji Goreng Selesai</option>
                 </select>
             </div>
 
@@ -108,11 +131,16 @@
                                 <a href="{{ route('qc.inbound.show', $qc->qc_id) }}" style="color: inherit; text-decoration: none;">
                                     {{ $qc->qc_no }}
                                 </a>
-                                @if ($qc->terima)
-                                    <div style="font-size: 0.725rem; color: #059669; font-weight: normal; margin-top: 2px;">
-                                        🔗 GRN: {{ $qc->terima->terima_no }}
-                                    </div>
-                                @endif
+                                <div style="display: flex; gap: 0.35rem; align-items: center; margin-top: 3px; flex-wrap: wrap;">
+                                    <span style="font-size: 0.7rem; font-weight: 800; background: #e0f2fe; color: #0284c7; padding: 0.1rem 0.45rem; border-radius: 10px;">
+                                        {{ $qc->kategori_barang ?? 'SINGKONG' }}
+                                    </span>
+                                    @if ($qc->terima)
+                                        <span style="font-size: 0.7rem; color: #059669; font-weight: 700;">
+                                            🔗 GRN: {{ $qc->terima->terima_no }}
+                                        </span>
+                                    @endif
+                                </div>
                             </td>
                             <td style="padding: 0.85rem 1rem;">
                                 <div style="font-weight: 600; color: #0f172a;">{{ $qc->tgl_periksa->format('d/m/Y H:i') }}</div>
@@ -158,13 +186,37 @@
                                 @else
                                     <span class="badge badge-info">{{ $qc->status_qc }}</span>
                                 @endif
+
+                                @if ($qc->status_uji_goreng === 'MENUNGGU_LAB')
+                                    <div style="font-size: 0.675rem; color: #b45309; font-weight: 700; margin-top: 3px;">
+                                        ⏳ Goreng: Menyusul
+                                    </div>
+                                @elseif ($qc->status_uji_goreng === 'SELESAI')
+                                    <div style="font-size: 0.675rem; color: #15803d; font-weight: 700; margin-top: 3px;">
+                                        🍟 Goreng: Selesai
+                                    </div>
+                                @endif
                             </td>
                             <td style="padding: 0.85rem 1rem; text-align: center;">
-                                <div style="display: flex; gap: 0.35rem; justify-content: center;">
+                                <div style="display: flex; gap: 0.35rem; justify-content: center; align-items: center; flex-wrap: wrap;">
                                     <a href="{{ route('qc.inbound.show', $qc->qc_id) }}" class="btn btn-sm btn-secondary" title="Lihat Lembar Uji">
                                         Detail
                                     </a>
-                                    @if ($qc->status_qc === 'SIAP_GUDANG' && Auth::user()->canAccessTerima())
+                                    @if (Auth::user()?->canEditQc() && (!$qc->terima || Auth::user()?->isSuperAdmin()))
+                                        <a href="{{ route('qc.inbound.edit', $qc->qc_id) }}" class="btn btn-sm btn-secondary" title="Edit / Koreksi Tiket" style="color: #1d4ed8; background: #eff6ff; border-color: #bfdbfe;">
+                                            ✏️
+                                        </a>
+                                    @endif
+                                    @if (Auth::user()?->canDeleteQc() && (!$qc->terima || Auth::user()?->isSuperAdmin()))
+                                        <form action="{{ route('qc.inbound.destroy', $qc->qc_id) }}" method="POST" style="display: inline-block; margin: 0;" onsubmit="return confirm('Hapus / batalkan tiket QC #{{ $qc->qc_no }}? {{ $qc->terima ? 'PERHATIAN: Tiket ini terhubung dengan GRN #' . $qc->terima->terima_no . '.' : '' }}');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-sm btn-secondary" title="Hapus Tiket" style="color: #dc2626; background: #fef2f2; border-color: #fecaca; padding: 0.25rem 0.5rem;">
+                                                🗑️
+                                            </button>
+                                        </form>
+                                    @endif
+                                    @if ($qc->status_qc === 'SIAP_GUDANG' && Auth::user()?->canAccessTerima())
                                         <a href="{{ route('gudang.terima.create', ['qc_id' => $qc->qc_id]) }}" class="btn btn-sm btn-primary" title="Tarik ke Penerimaan Gudang">
                                             📦 Terima
                                         </a>

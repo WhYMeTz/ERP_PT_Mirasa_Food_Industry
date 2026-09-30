@@ -1,8 +1,5 @@
 @extends('layouts.app')
 
-@section('title', 'Berita Acara Penolakan Bahan Baku Singkong - PT Mirasa')
-
-@section('content')
 @php
     \Carbon\Carbon::setLocale('id');
     $tgl = $qc->tgl_periksa ? \Carbon\Carbon::parse($qc->tgl_periksa) : now();
@@ -11,34 +8,115 @@
     
     // Nomor Surat: No. XX/MFI/MM/YYYY
     $noUrut = str_pad($qc->qc_id, 2, '0', STR_PAD_LEFT);
-    $bulanRomawi = [
-        1 => 'I', 2 => 'II', 3 => 'III', 4 => 'IV', 5 => 'V', 6 => 'VI',
-        7 => 'VII', 8 => 'VIII', 9 => '09', 10 => '10', 11 => '11', 12 => '12'
-    ];
     $bulanStr = $tgl->format('m');
     $tahunStr = $tgl->format('Y');
     $nomorSuratDefault = "{$noUrut}/MFI/{$bulanStr}/{$tahunStr}";
 
-    // Jumlah total berat yang ditolak atau gross
+    $kat = strtoupper($qc->kategori_barang ?? 'SINGKONG');
+
+    // Unit & Quantity
+    $unit = in_array($kat, ['PLASTIK', 'KARTON']) ? 'PCS' : 'KG';
     $totalReject = $qc->details->sum('qty_reject');
     $totalGross = $qc->details->sum('qty_timbang_gross');
-    $jumlahText = $totalReject > 0 ? number_format($totalReject, 0, ',', '.') . ' KG' : ($totalGross > 0 ? number_format($totalGross, 0, ',', '.') . ' KG' : '-');
+    if ($totalReject > 0) {
+        $jumlahText = number_format($totalReject, 0, ',', '.') . ' ' . $unit;
+    } elseif ($totalGross > 0) {
+        $jumlahText = number_format($totalGross, 0, ',', '.') . ' ' . $unit;
+    } else {
+        $jumlahText = '-';
+    }
 
-    // Alasan ketidaksesuaian mutu
+    if ($kat === 'MINYAK') {
+        $commodityTitle = 'Bahan Minyak Goreng';
+        $asalLabel = 'Pabrik Produsen';
+        $asalValue = $qc->nama_produsen ?: ($qc->negara_produsen ?: 'INDONESIA');
+    } elseif ($kat === 'PLASTIK') {
+        $commodityTitle = 'Bahan Kemas Plastik';
+        $asalLabel = 'Pabrik Produsen';
+        $asalValue = $qc->nama_produsen ?: ($qc->negara_produsen ?: 'INDONESIA');
+    } elseif ($kat === 'KARTON') {
+        $commodityTitle = 'Bahan Kemas Karton Box';
+        $asalLabel = 'Pabrik Produsen';
+        $asalValue = $qc->nama_produsen ?: ($qc->negara_produsen ?: 'INDONESIA');
+    } elseif ($kat === 'MSG') {
+        $commodityTitle = 'Bahan Penolong MSG';
+        $asalLabel = 'Pabrik Produsen';
+        $asalValue = $qc->nama_produsen ?: ($qc->negara_produsen ?: 'INDONESIA');
+    } elseif ($kat === 'GARAM') {
+        $commodityTitle = 'Bahan Penolong Garam';
+        $asalLabel = 'Pabrik Produsen';
+        $asalValue = $qc->nama_produsen ?: ($qc->negara_produsen ?: 'INDONESIA');
+    } elseif ($kat === 'PERENYAH') {
+        $commodityTitle = 'Bahan Penolong Perenyah';
+        $asalLabel = 'Pabrik Produsen';
+        $asalValue = $qc->nama_produsen ?: ($qc->negara_produsen ?: 'INDONESIA');
+    } else {
+        $commodityTitle = 'Bahan Baku Singkong';
+        $asalLabel = 'Asal singkong';
+        $asalValue = $qc->lokasi_panen ?: 'WONOSOBO';
+    }
+
+    // Alasan ketidaksesuaian mutu otomatis sesuai komoditas
     $alasanItems = [];
     foreach ($qc->details as $d) {
-        if ($d->fryer_rasa === 'PAHIT') $alasanItems[] = 'SINGKONG MENTAH / GORENG PAHIT';
-        if ($d->fryer_tekstur === 'ALOT') $alasanItems[] = 'TEKSTUR ALOT / LIAT';
-        if ($d->fryer_penampakan === 'OILSOAKED') $alasanItems[] = 'HASIL GORENG MBELING & OILSOAKED';
-        if ((float)$d->defect_gambos_persen > 0) $alasanItems[] = 'GAMBOS / KOPONG';
-        if ($d->kondisi_busuk) $alasanItems[] = 'BUSUK';
-        if ($d->kondisi_lembek) $alasanItems[] = 'LENGKAT & LEMBEK';
+        if ($kat === 'SINGKONG') {
+            if ($d->fryer_rasa === 'PAHIT') $alasanItems[] = 'SINGKONG MENTAH / GORENG PAHIT';
+            if ($d->fryer_tekstur === 'ALOT') $alasanItems[] = 'TEKSTUR ALOT / LIAT';
+            if ($d->fryer_penampakan === 'OILSOAKED') $alasanItems[] = 'HASIL GORENG MBELING & OILSOAKED';
+            if ((float)$d->defect_gambos_persen > 0) $alasanItems[] = 'GAMBOS / KOPONG';
+            if ($d->kondisi_busuk) $alasanItems[] = 'BUSUK';
+            if ($d->kondisi_lembek) $alasanItems[] = 'LENGKAT & LEMBEK';
+        } elseif ($kat === 'MINYAK') {
+            if ($d->kondisi_tangki_jerigen === 'TIDAK_STANDARD') $alasanItems[] = 'KONDISI WADAH / TANGKI TIDAK STANDARD';
+            if (!$d->minyak_jernih_st) $alasanItems[] = 'MINYAK KERUH / TIDAK JERNIH';
+            if (!$d->tangki_bersih_st) $alasanItems[] = 'TANGKI BAGIAN DALAM KOTOR';
+            if ($d->status_raw_material === 'TDK_STD') $alasanItems[] = 'KUALITAS MINYAK TIDAK STANDARD';
+        } elseif ($kat === 'PLASTIK') {
+            if ($d->kemasan_sobek) $alasanItems[] = 'KEMASAN SOBEK / RUSAK';
+            if ($d->kemasan_kotor) $alasanItems[] = 'KEMASAN KOTOR';
+            if ($d->kemasan_apek) $alasanItems[] = 'KEMASAN APEK';
+            if ($d->kemasan_basah) $alasanItems[] = 'KEMASAN BASAH';
+            if ($d->status_raw_material === 'TDK_STD') $alasanItems[] = 'KETEBALAN / KEUTUHAN TIDAK STANDAR';
+        } elseif ($kat === 'KARTON') {
+            if ($d->kemasan_sobek) $alasanItems[] = 'KARTON SOBEK / RUSAK';
+            if ($d->kemasan_jamur) $alasanItems[] = 'KARTON BERJAMUR';
+            if ($d->kemasan_basah) $alasanItems[] = 'KARTON BASAH';
+            if ($d->kemasan_berminyak) $alasanItems[] = 'KARTON BERMINYAK';
+            if ($d->status_raw_material === 'TDK_STD') $alasanItems[] = 'DIMENSI / SPESIFIKASI TIDAK SESUAI STANDAR';
+        } else {
+            // Bahan Penolong (MSG, Garam, Perenyah)
+            if ($d->isi_basah) $alasanItems[] = 'KONDISI FISIK BAHAN BASAH';
+            if ($d->isi_gumpal) $alasanItems[] = 'KONDISI BAHAN MENGGUMPAL';
+            if ($d->isi_berminyak) $alasanItems[] = 'KONDISI BAHAN BERMINYAK';
+            if ($d->kemasan_sobek) $alasanItems[] = 'KEMASAN ZAK SOBEK';
+            if ($d->kemasan_kotor) $alasanItems[] = 'KEMASAN KOTOR';
+            if ($d->kemasan_jamur) $alasanItems[] = 'KEMASAN BERJAMUR';
+            if ($d->status_raw_material === 'TDK_STD') $alasanItems[] = 'KUALITAS BAHAN TIDAK STANDARD';
+        }
+
+        if (!empty($d->catatan_dtl)) {
+            $alasanItems[] = $d->catatan_dtl;
+        }
     }
-    $alasanDefault = !empty($alasanItems) 
-        ? implode(', ', array_unique($alasanItems))
-        : 'HASIL GORENG MBELING, GAMBOS, LENGKAT DAN SINGKONG MENTAH PAHIT';
+
+    if (!empty($qc->catatan_umum)) {
+        $alasanItems[] = $qc->catatan_umum;
+    }
+
+    if (!empty($alasanItems)) {
+        $alasanDefault = implode(', ', array_unique($alasanItems));
+    } else {
+        if ($kat === 'SINGKONG') {
+            $alasanDefault = 'HASIL GORENG MBELING, GAMBOS, LENGKAT DAN SINGKONG MENTAH PAHIT';
+        } else {
+            $alasanDefault = 'KUALITAS FISIK / KEMASAN TIDAK MEMENUHI STANDAR KEBETERIMAAN PT MIRASA';
+        }
+    }
 @endphp
 
+@section('title', 'Berita Acara Penolakan ' . $commodityTitle . ' - PT Mirasa')
+
+@section('content')
 <div style="max-width: 850px; margin: 0 auto; padding-bottom: 3rem;">
     {{-- TOP ACTION / TOOLBAR (Hidden when printing) --}}
     <div class="no-print" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 0.75rem; background: #ffffff; padding: 1rem 1.25rem; border-radius: 10px; border: 1px solid #cbd5e1; box-shadow: 0 2px 4px rgba(0,0,0,0.04);">
@@ -47,7 +125,7 @@
                 &larr; Kembali ke Lembar Uji QC
             </a>
             <span style="font-size: 0.875rem; color: #64748b;">|</span>
-            <span style="font-size: 0.9rem; font-weight: 700; color: #0f172a;">Berita Acara Penolakan Singkong</span>
+            <span style="font-size: 0.9rem; font-weight: 700; color: #0f172a;">Berita Acara Penolakan: {{ $commodityTitle }}</span>
         </div>
         <div style="display: flex; gap: 0.5rem;">
             <button type="button" onclick="window.print()" class="btn btn-primary btn-sm" style="border-radius: 8px; font-weight: 700; background: #dc2626; border-color: #dc2626;">
@@ -76,7 +154,7 @@
                         PT. MIRASA FOOD INDUSTRY
                     </div>
                     <div style="font-family: Arial, sans-serif; font-size: 13pt; font-weight: 800; margin-top: 0.5rem; color: #000000;">
-                        Form Berita Acara Penolakan<br>Bahan Baku Singkong
+                        Form Berita Acara Penolakan<br>{{ $commodityTitle }}
                     </div>
                 </td>
 
@@ -100,7 +178,7 @@
                         </tr>
                         <tr>
                             <td style="padding: 4px 6px; border: none;">
-                                <strong>Halaman</strong> :
+                                <strong>Halaman</strong> : 1 dari 1
                             </td>
                         </tr>
                     </table>
@@ -111,7 +189,7 @@
         {{-- JUDUL BERITA ACARA --}}
         <div style="text-align: center; margin-bottom: 1.75rem;">
             <div style="font-size: 13pt; font-weight: 800; text-decoration: underline; letter-spacing: 0.5px;">
-                BERITA ACARA KUALITAS BAHAN BAKU SINGKONG
+                BERITA ACARA KUALITAS {{ strtoupper($commodityTitle) }}
             </div>
             <div style="font-size: 11pt; margin-top: 0.2rem;" contenteditable="true" title="Klik untuk mengubah nomor surat">
                 No. {{ $nomorSuratDefault }}
@@ -120,23 +198,30 @@
 
         {{-- PARAGRAF PEMBUKA --}}
         <p style="margin-bottom: 1.25rem; text-align: justify; text-indent: 2.5rem;">
-            Pada hari <strong>{{ $hari }}</strong>, <strong>{{ $tglLengkap }}</strong> telah dilakukan pengecekan bahan baku singkong dengan rincian sebagai berikut:
+            Pada hari <strong>{{ $hari }}</strong>, <strong>{{ $tglLengkap }}</strong> telah dilakukan pengecekan {{ strtolower($commodityTitle) }} dengan rincian sebagai berikut:
         </p>
 
         {{-- TABEL RINCIAN --}}
-        <table style="margin-left: 2.5rem; margin-bottom: 1.5rem; border-collapse: collapse; border: none; font-size: 11pt; width: 80%;">
+        <table style="margin-left: 2.5rem; margin-bottom: 1.5rem; border-collapse: collapse; border: none; font-size: 11pt; width: 85%;">
             <tr>
-                <td style="width: 140px; padding: 3px 0; border: none;">Nama supplier</td>
+                <td style="width: 150px; padding: 3px 0; border: none;">Nama supplier</td>
                 <td style="width: 15px; text-align: center; border: none;">:</td>
                 <td style="padding: 3px 0; border: none; font-weight: 700;" contenteditable="true">
-                    {{ strtoupper($qc->supplier?->supplier_nm ?? 'PAK ANGGRI') }}
+                    {{ strtoupper($qc->supplier?->supplier_nm ?? '-') }}
                 </td>
             </tr>
             <tr>
-                <td style="padding: 3px 0; border: none;">Asal singkong</td>
+                <td style="padding: 3px 0; border: none;">{{ $asalLabel }}</td>
                 <td style="text-align: center; border: none;">:</td>
                 <td style="padding: 3px 0; border: none; font-weight: 700;" contenteditable="true">
-                    {{ strtoupper($qc->lokasi_panen ?: 'WONOSOBO') }}
+                    {{ strtoupper($asalValue) }}
+                </td>
+            </tr>
+            <tr>
+                <td style="padding: 3px 0; border: none;">Nama Barang / Jenis</td>
+                <td style="text-align: center; border: none;">:</td>
+                <td style="padding: 3px 0; border: none; font-weight: 700;" contenteditable="true">
+                    {{ strtoupper($qc->details->pluck('barang.barang_nm')->filter()->first() ?: ($qc->nama_jenis ?: $kat)) }}
                 </td>
             </tr>
             <tr>
@@ -147,17 +232,17 @@
                 </td>
             </tr>
             <tr>
-                <td style="padding: 3px 0; border: none;">No Plat</td>
+                <td style="padding: 3px 0; border: none;">No Plat / Truk</td>
                 <td style="text-align: center; border: none;">:</td>
                 <td style="padding: 3px 0; border: none; font-weight: 700;" contenteditable="true">
-                    {{ strtoupper($qc->plat_nomor_truk ?: 'R 9659 BT') }}
+                    {{ strtoupper($qc->plat_nomor_truk ?: '-') }}
                 </td>
             </tr>
         </table>
 
         {{-- PARAGRAF PENERANGAN & ALASAN CACAT MUTU --}}
         <p style="margin-bottom: 1.5rem; text-align: justify; text-indent: 2.5rem; line-height: 1.6;">
-            Menerangkan bahwa pada {{ $tglLengkap }} bahan baku singkong dari supplier di atas, setelah dilakukan sampling ternyata memiliki kualitas yang tidak sesuai dengan standar yang telah ditetapkan &rarr; <strong style="font-style: italic;" contenteditable="true">{{ strtoupper($alasanDefault) }}.</strong> Demikian berita acara kualitas bahan baku singkong <strong>PT. Mirasa Food Industry</strong>, keterangan tersebut dibuat apa adanya.
+            Menerangkan bahwa pada {{ $tglLengkap }} {{ strtolower($commodityTitle) }} dari supplier di atas, setelah dilakukan sampling ternyata memiliki kualitas yang tidak sesuai dengan standar yang telah ditetapkan &rarr; <strong style="font-style: italic;" contenteditable="true">{{ strtoupper($alasanDefault) }}.</strong> Demikian berita acara penolakan {{ strtolower($commodityTitle) }} <strong>PT. Mirasa Food Industry</strong>, keterangan tersebut dibuat apa adanya.
         </p>
 
         <p style="margin-bottom: 2rem;">
@@ -173,9 +258,9 @@
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 3.5rem 2rem; text-align: center; font-size: 11pt; padding: 0 1rem;">
             {{-- BARIS 1 --}}
             <div>
-                <div style="font-weight: 700; margin-bottom: 5.5rem;">Tim Pengecekan Bahan Baku</div>
+                <div style="font-weight: 700; margin-bottom: 5.5rem;">Tim Pengecekan Bahan</div>
                 <div style="font-weight: 700; text-decoration: underline;" contenteditable="true">
-                    {{ $qc->petugas_qc_nama ?: 'Siti Astiyanti' }}
+                    {{ $qc->petugas_qc_nama ?: 'Petugas QC' }}
                 </div>
             </div>
 

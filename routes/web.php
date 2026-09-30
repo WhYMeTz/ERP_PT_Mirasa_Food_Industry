@@ -177,7 +177,11 @@ Route::middleware('auth')->group(function () {
         Route::get('inbound/ticket-data/{id}', [QcInboundController::class, 'getTicketData'])->name('inbound.ticket_data');
         Route::get('inbound/create', [QcInboundController::class, 'create'])->name('inbound.create')->middleware('role:qc_create');
         Route::post('inbound', [QcInboundController::class, 'store'])->name('inbound.store')->middleware('role:qc_create');
+        Route::get('inbound/{id}/edit', [QcInboundController::class, 'edit'])->name('inbound.edit')->middleware('role:qc_edit');
+        Route::put('inbound/{id}', [QcInboundController::class, 'update'])->name('inbound.update')->middleware('role:qc_edit');
+        Route::delete('inbound/{id}', [QcInboundController::class, 'destroy'])->name('inbound.destroy')->middleware('role:qc_delete');
         Route::get('inbound/{id}/berita-acara', [QcInboundController::class, 'beritaAcara'])->name('inbound.berita_acara')->middleware('role:qc_view');
+        Route::post('inbound/{id}/uji-goreng', [QcInboundController::class, 'updateUjiGoreng'])->name('inbound.update_uji_goreng')->middleware('role:qc_create');
         Route::resource('inbound', QcInboundController::class)->only(['index', 'show'])->names('inbound')->middleware('role:qc_view');
     });
 

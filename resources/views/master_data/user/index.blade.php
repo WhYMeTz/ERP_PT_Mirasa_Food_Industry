@@ -343,71 +343,132 @@
 </div>
 
 {{-- MODAL POPUP ATUR HAK AKSES PERAN --}}
-<div id="modalAturIzinPeran" class="modal-backdrop">
-    <div class="modal-dialog" style="max-width: 760px;">
-        <div class="modal-header">
+<div id="modalAturIzinPeran" class="modal-backdrop" style="align-items: flex-start; padding: 1.5rem 1rem; overflow-y: auto;">
+    <div class="modal-dialog" style="max-width: 980px; width: 100%; max-height: calc(100vh - 3rem); display: flex; flex-direction: column; border-radius: 16px; overflow: hidden; margin: 0 auto; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4); border: 1.5px solid #cbd5e1;">
+        <div class="modal-header" style="background: linear-gradient(135deg, #0284c7 0%, #0f172a 100%); color: #ffffff; padding: 1.15rem 1.75rem; flex-shrink: 0;">
             <div>
-                <h2 class="modal-title" style="display: flex; align-items: center; gap: 0.5rem;">
+                <h2 class="modal-title" style="display: flex; align-items: center; gap: 0.65rem; color: #ffffff; font-size: 1.25rem;">
                     <span>🛡️ Pengaturan Hak Akses Peran:</span>
-                    <span id="labelModalRoleName" style="color: #0284c7;">Admin Gudang</span>
+                    <span id="labelModalRoleName" style="background: rgba(255,255,255,0.2); padding: 0.2rem 0.75rem; border-radius: 8px; font-weight: 800;">Admin Gudang</span>
                 </h2>
-                <p style="font-size: 0.75rem; color: #64748b; margin-top: 0.2rem;">
-                    Centang menu dan aksi operasional yang diizinkan untuk peran ini.
+                <p style="font-size: 0.8rem; color: rgba(255,255,255,0.85); margin-top: 0.25rem;">
+                    Pemisahan terstruktur: Hak akses <strong>Edit</strong>, <strong>Hapus</strong>, <strong>Input</strong>, dan <strong>Lihat</strong> dikelompokkan secara mandiri.
                 </p>
             </div>
-            <button type="button" class="modal-close" onclick="closeModal('modalAturIzinPeran')">&times;</button>
+            <button type="button" class="modal-close" onclick="closeModal('modalAturIzinPeran')" style="color: #ffffff; font-size: 1.75rem;">&times;</button>
         </div>
 
-        <form action="{{ route('admin.users.permissions.update') }}" method="POST">
+        <form action="{{ route('admin.users.permissions.update') }}" method="POST" style="display: flex; flex-direction: column; overflow: hidden; height: 100%; flex: 1 1 auto; margin: 0;">
             @csrf
             <input type="hidden" id="modal_single_role" name="single_role" value="ADMIN_GUDANG">
 
-            <div class="modal-body" style="padding: 1.25rem 1.5rem;">
+            {{-- STICKY CONTROL BAR (PILIHAN ROLE & FILTER KATEGORI) --}}
+            <div style="background: #ffffff; padding: 1rem 1.75rem 0.75rem; border-bottom: 1.5px solid #e2e8f0; flex-shrink: 0; display: flex; flex-direction: column; gap: 0.75rem;">
                 {{-- ROLE TABS DI DALAM POPUP --}}
-                <div style="display: flex; gap: 0.35rem; margin-bottom: 1.25rem; flex-wrap: wrap; background: #f1f5f9; padding: 0.35rem; border-radius: 8px;">
-                    @foreach ($matrix as $roleKey => $roleInfo)
-                        <button type="button" 
-                                id="btnRoleTab_{{ $roleKey }}" 
-                                onclick="switchRoleInModal('{{ $roleKey }}')"
-                                class="role-tab-btn"
-                                style="padding: 0.35rem 0.75rem; font-size: 0.8rem; border-radius: 6px; font-weight: 600; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">
-                            {{ $roleKey }}
-                        </button>
-                    @endforeach
+                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
+                    <div style="font-size: 0.75rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;">
+                        PILIH PERAN (ROLE):
+                    </div>
+                    <div style="display: flex; gap: 0.35rem; flex-wrap: wrap; background: #f1f5f9; padding: 0.3rem; border-radius: 8px;">
+                        @foreach ($matrix as $roleKey => $roleInfo)
+                            <button type="button" 
+                                    id="btnRoleTab_{{ $roleKey }}" 
+                                    onclick="switchRoleInModal('{{ $roleKey }}')"
+                                    class="role-tab-btn"
+                                    style="padding: 0.35rem 0.85rem; font-size: 0.8rem; border-radius: 6px; font-weight: 700; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">
+                                {{ $roleKey }}
+                            </button>
+                        @endforeach
+                    </div>
                 </div>
 
-                {{-- QUICK SELECT ALL / DESELECT ALL --}}
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; padding-bottom: 0.5rem; border-bottom: 1px dashed #e2e8f0;">
-                    <span style="font-size: 0.8rem; color: #64748b; font-weight: 600;">Daftar Hak Akses & Menu Terkait:</span>
-                    <div style="display: flex; gap: 0.5rem;">
-                        <button type="button" onclick="toggleAllModalCheckboxes(true)" class="btn btn-secondary btn-sm" style="font-size: 0.75rem; padding: 0.2rem 0.5rem;">
+                {{-- FILTER KATEGORI AKSI (EDIT SENDIRI, HAPUS SENDIRI, INPUT, LIHAT) --}}
+                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; padding-top: 0.4rem; border-top: 1px dashed #e2e8f0;">
+                    <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;" id="permCategoryFilterNav">
+                        <button type="button" onclick="filterModalCategory('ALL', this)" class="cat-filter-btn" style="font-size: 0.775rem; font-weight: 800; padding: 0.35rem 0.75rem; border-radius: 6px; border: 1.5px solid #0284c7; background: #0284c7; color: #ffffff; cursor: pointer; transition: all 0.15s;">
+                            ✨ Semua Kategori
+                        </button>
+                        <button type="button" onclick="filterModalCategory('edit', this)" class="cat-filter-btn" style="font-size: 0.775rem; font-weight: 800; padding: 0.35rem 0.75rem; border-radius: 6px; border: 1.5px solid #fcd34d; background: #fffbeb; color: #b45309; cursor: pointer; transition: all 0.15s;">
+                            ✏️ Edit &amp; Koreksi
+                        </button>
+                        <button type="button" onclick="filterModalCategory('delete', this)" class="cat-filter-btn" style="font-size: 0.775rem; font-weight: 800; padding: 0.35rem 0.75rem; border-radius: 6px; border: 1.5px solid #fca5a5; background: #fef2f2; color: #dc2626; cursor: pointer; transition: all 0.15s;">
+                            🗑️ Hapus &amp; Batal
+                        </button>
+                        <button type="button" onclick="filterModalCategory('create', this)" class="cat-filter-btn" style="font-size: 0.775rem; font-weight: 800; padding: 0.35rem 0.75rem; border-radius: 6px; border: 1.5px solid #86efac; background: #f0fdf4; color: #15803d; cursor: pointer; transition: all 0.15s;">
+                            ➕ Input &amp; Transaksi
+                        </button>
+                        <button type="button" onclick="filterModalCategory('view', this)" class="cat-filter-btn" style="font-size: 0.775rem; font-weight: 800; padding: 0.35rem 0.75rem; border-radius: 6px; border: 1.5px solid #7dd3fc; background: #f0f9ff; color: #0284c7; cursor: pointer; transition: all 0.15s;">
+                            👁️ Lihat / Read-Only
+                        </button>
+                        <button type="button" onclick="filterModalCategory('master', this)" class="cat-filter-btn" style="font-size: 0.775rem; font-weight: 800; padding: 0.35rem 0.75rem; border-radius: 6px; border: 1.5px solid #d8b4fe; background: #faf5ff; color: #7c3aed; cursor: pointer; transition: all 0.15s;">
+                            📁 Master Data
+                        </button>
+                    </div>
+
+                    {{-- QUICK SELECT ALL / DESELECT ALL --}}
+                    <div style="display: flex; gap: 0.4rem;">
+                        <button type="button" onclick="toggleAllModalCheckboxes(true)" class="btn btn-secondary btn-sm" style="font-size: 0.75rem; padding: 0.25rem 0.6rem; font-weight: 700; border-radius: 6px;">
                             ✓ Centang Semua
                         </button>
-                        <button type="button" onclick="toggleAllModalCheckboxes(false)" class="btn btn-secondary btn-sm" style="font-size: 0.75rem; padding: 0.2rem 0.5rem;">
+                        <button type="button" onclick="toggleAllModalCheckboxes(false)" class="btn btn-secondary btn-sm" style="font-size: 0.75rem; padding: 0.25rem 0.6rem; font-weight: 700; border-radius: 6px;">
                             ✕ Kosongkan
                         </button>
                     </div>
                 </div>
+            </div>
 
-                {{-- PERMISSIONS CHECKBOX GROUPS --}}
-                <div style="display: flex; flex-direction: column; gap: 1rem; max-height: 50vh; overflow-y: auto; padding-right: 0.25rem;">
+            {{-- SCROLLABLE PERMISSIONS CONTAINER --}}
+            <div class="modal-body" style="padding: 1.25rem 1.75rem; flex: 1 1 auto; overflow-y: auto; max-height: calc(100vh - 290px); background: #f8fafc;">
+                <div style="display: flex; flex-direction: column; gap: 1.15rem;">
                     @foreach ($modules as $modKey => $module)
-                        <div style="border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
-                            <div style="background: #f8fafc; padding: 0.5rem 0.85rem; font-size: 0.8125rem; font-weight: 700; color: #334155; border-bottom: 1px solid #e2e8f0;">
-                                {{ $module['title'] }}
+                        <div class="perm-category-block" data-category="{{ $module['category_key'] ?? 'other' }}" style="background: #ffffff; border: 1.5px solid {{ $module['border_color'] ?? '#e2e8f0' }}; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+                            {{-- HEADER KATEGORI DENGAN WARNA KHUSUS --}}
+                            <div style="background: {{ $module['bg_color'] ?? '#f8fafc' }}; padding: 0.65rem 1rem; border-bottom: 1px solid {{ $module['border_color'] ?? '#e2e8f0' }}; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                                <div>
+                                    <span style="font-weight: 800; font-size: 0.875rem; color: {{ $module['theme_color'] ?? '#0f172a' }};">
+                                        {{ $module['title'] }}
+                                    </span>
+                                    <div style="font-size: 0.725rem; color: #64748b; margin-top: 0.15rem;">
+                                        {{ $module['desc'] ?? '' }}
+                                    </div>
+                                </div>
+                                <span style="font-size: 0.7rem; font-weight: 800; background: {{ $module['badge_bg'] ?? '#e2e8f0' }}; color: {{ $module['badge_text'] ?? '#334155' }}; padding: 0.2rem 0.55rem; border-radius: 6px; border: 1px solid {{ $module['border_color'] ?? '#cbd5e1' }};">
+                                    {{ count($module['items']) }} Izin Fitur
+                                </span>
                             </div>
-                            <div style="padding: 0.65rem 0.85rem; display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+
+                            {{-- CHECKBOX ITEMS GRID --}}
+                            <div style="padding: 0.85rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 0.65rem;">
                                 @foreach ($module['items'] as $itemKey => $item)
-                                    <label style="display: flex; align-items: flex-start; gap: 0.5rem; padding: 0.45rem; border-radius: 6px; border: 1px solid #f1f5f9; background: #ffffff; cursor: pointer; transition: background 0.15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='#ffffff'">
+                                    @php
+                                        $itemAction = $item['action'] ?? 'OTHER';
+                                        $badgeStyle = 'background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1;';
+                                        if ($itemAction === 'EDIT') $badgeStyle = 'background: #fffbeb; color: #b45309; border: 1px solid #fde68a;';
+                                        elseif ($itemAction === 'DELETE') $badgeStyle = 'background: #fef2f2; color: #dc2626; border: 1px solid #fca5a5;';
+                                        elseif ($itemAction === 'CREATE') $badgeStyle = 'background: #f0fdf4; color: #15803d; border: 1px solid #86efac;';
+                                        elseif ($itemAction === 'VIEW') $badgeStyle = 'background: #f0f9ff; color: #0284c7; border: 1px solid #7dd3fc;';
+                                        elseif ($itemAction === 'MANAGE') $badgeStyle = 'background: #faf5ff; color: #7c3aed; border: 1px solid #d8b4fe;';
+                                    @endphp
+                                    <label class="perm-item-label" style="display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.65rem 0.85rem; border-radius: 8px; border: 1px solid #e2e8f0; background: #ffffff; cursor: pointer; transition: all 0.15s; position: relative;" onmouseover="this.style.borderColor='#94a3b8'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.03)';" onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none';">
                                         <input type="checkbox" 
                                                class="modal-perm-checkbox" 
                                                id="chk_perm_{{ $itemKey }}" 
                                                name="permissions[]" 
                                                value="{{ $itemKey }}" 
-                                               style="width: 17px; height: 17px; accent-color: #0284c7; margin-top: 0.15rem; cursor: pointer;">
-                                        <div style="font-size: 0.8rem; line-height: 1.3;">
-                                            <strong style="color: #0f172a; display: block;">{{ $item['label'] }}</strong>
-                                            <span style="color: #64748b; font-size: 0.7rem;">{{ $item['desc'] }}</span>
+                                               style="width: 18px; height: 18px; accent-color: #0284c7; margin-top: 0.15rem; cursor: pointer; flex-shrink: 0;">
+                                        <div style="flex: 1 1 auto;">
+                                            <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.4rem; margin-bottom: 0.2rem;">
+                                                <strong style="color: #0f172a; font-size: 0.825rem;">{{ $item['label'] }}</strong>
+                                                <span style="font-size: 0.65rem; font-weight: 800; padding: 0.1rem 0.45rem; border-radius: 4px; {{ $badgeStyle }} flex-shrink: 0;">
+                                                    {{ $itemAction }}
+                                                </span>
+                                            </div>
+                                            <div style="color: #64748b; font-size: 0.725rem; line-height: 1.35;">
+                                                {{ $item['desc'] }}
+                                            </div>
+                                            <div style="font-size: 0.675rem; color: #94a3b8; font-family: monospace; margin-top: 0.2rem;">
+                                                key: {{ $itemKey }}
+                                            </div>
                                         </div>
                                     </label>
                                 @endforeach
@@ -417,11 +478,12 @@
                 </div>
             </div>
 
-            <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
-                <button type="button" class="btn btn-secondary" onclick="closeModal('modalAturIzinPeran')">
+            {{-- FIXED BOTTOM FOOTER --}}
+            <div class="modal-footer" style="padding: 1rem 1.75rem; border-top: 1.5px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: #ffffff; flex-shrink: 0;">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('modalAturIzinPeran')" style="border-radius: 8px;">
                     Batal
                 </button>
-                <button type="submit" class="btn btn-primary" style="padding: 0.65rem 1.5rem; font-weight: 700;">
+                <button type="submit" class="btn btn-primary" style="padding: 0.65rem 1.75rem; font-weight: 800; border-radius: 8px; background: #0284c7; border-color: #0284c7; box-shadow: 0 2px 4px rgba(2, 132, 199, 0.25);">
                     💾 Simpan Hak Akses <span id="btnModalRoleName"></span>
                 </button>
             </div>
@@ -437,6 +499,7 @@
             roleCd = 'ADMIN_GUDANG';
         }
         switchRoleInModal(roleCd);
+        filterModalCategory('ALL', document.querySelector('.cat-filter-btn'));
         openModal('modalAturIzinPeran');
     }
 
@@ -468,9 +531,35 @@
         });
     }
 
+    function filterModalCategory(catKey, btn) {
+        document.querySelectorAll('.cat-filter-btn').forEach(b => {
+            b.style.background = '#ffffff';
+            b.style.borderColor = '#cbd5e1';
+            b.style.color = '#475569';
+        });
+
+        if (btn) {
+            btn.style.background = '#0284c7';
+            btn.style.borderColor = '#0284c7';
+            btn.style.color = '#ffffff';
+        }
+
+        document.querySelectorAll('.perm-category-block').forEach(block => {
+            if (catKey === 'ALL' || block.getAttribute('data-category') === catKey) {
+                block.style.display = 'block';
+            } else {
+                block.style.display = 'none';
+            }
+        });
+    }
+
     function toggleAllModalCheckboxes(check) {
-        document.querySelectorAll('.modal-perm-checkbox').forEach(chk => {
-            chk.checked = check;
+        document.querySelectorAll('.perm-category-block').forEach(block => {
+            if (block.style.display !== 'none') {
+                block.querySelectorAll('.modal-perm-checkbox').forEach(chk => {
+                    chk.checked = check;
+                });
+            }
         });
     }
 

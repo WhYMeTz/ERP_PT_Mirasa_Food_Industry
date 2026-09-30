@@ -355,6 +355,16 @@ class User extends Authenticatable
         return $this->isSuperAdmin() || $this->isQc() || $this->canDo('qc_create');
     }
 
+    public function canEditQc(): bool
+    {
+        return $this->isSuperAdmin() || $this->isQc() || $this->canDo('qc_edit');
+    }
+
+    public function canDeleteQc(): bool
+    {
+        return $this->isSuperAdmin() || $this->canDo('qc_delete');
+    }
+
     /**
      * Dapatkan nama rute halaman muka (dashboard) default berdasarkan role
      */

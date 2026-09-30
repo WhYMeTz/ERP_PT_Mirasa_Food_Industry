@@ -13,38 +13,150 @@ class PermissionService
      * Seluruh daftar hak akses dan menu yang dapat diatur oleh Superadmin
      */
     public const MODULES = [
-        'TRANSAKSI_GUDANG' => [
-            'title' => '📦 Transaksi Gudang & Operasional Produksi',
-            'items' => [
-                'po_view'          => ['label' => 'Lihat Purchase Order (PO)', 'desc' => 'Membuka menu dan melihat daftar dokumen pemesanan bahan.'],
-                'po_create'        => ['label' => 'Buat & Kelola PO', 'desc' => 'Membuat PO baru, mengubah, membatalkan, atau menutup PO.'],
-                'qc_view'          => ['label' => 'Lihat Tiket QC Masuk', 'desc' => 'Melihat daftar dan riwayat hasil inspeksi mutu bahan baku dari QC.'],
-                'qc_create'        => ['label' => 'Input Inspeksi QC (Mobile)', 'desc' => 'Mencatat hasil uji kadar air, refraksi kotoran, dan timbangan sampling.'],
-                'terima_view'      => ['label' => 'Lihat Barang Masuk (GRN)', 'desc' => 'Membuka menu penerimaan fisik bahan masuk dari supplier.'],
-                'terima_create'    => ['label' => 'Catat Penerimaan Barang & Batch', 'desc' => 'Mencatat fisik bongkar muat, no batch baru, dan harga masuk.'],
-                'pemakaian_view'   => ['label' => 'Lihat Barang Keluar (OUT)', 'desc' => 'Membuka menu pemakaian bahan keluar untuk lini produksi.'],
-                'pemakaian_create' => ['label' => 'Catat Pengeluaran Bahan Produksi', 'desc' => 'Mengeluarkan bahan baku/bumbu per batch untuk SPK pabrik.'],
-                'produksi_view'    => ['label' => 'Lihat Laporan HPP & Produksi', 'desc' => 'Melihat buku rekap HPP harian, rendemen, dan hasil WIP.'],
-                'produksi_create'  => ['label' => 'Input Hasil Produksi & HPP', 'desc' => 'Mencatat hasil timbangan WIP harian, absensi tenaga kerja, dan gas.'],
-                'retur_view'       => ['label' => 'Lihat Retur Pembelian', 'desc' => 'Melihat daftar dokumen pengembalian barang cacat/rusak ke supplier.'],
-                'retur_create'     => ['label' => 'Catat Retur Pembelian', 'desc' => 'Membuat retur pengembalian barang fisik dan update kuota PO/tagihan.'],
-                'stok_view'        => ['label' => 'Lacak Stok & Kartu Stok', 'desc' => 'Memantau sisa kuantitas batch (Tersedia/Habis) dan buku mutasi.'],
+        'AKSI_EDIT' => [
+            'title'        => '✏️ Hak Akses Edit & Koreksi Data (Revisi Transaksi)',
+            'desc'         => 'Wewenang mengoreksi transaksi yang salah ketik atau penyesuaian timbangan/lab.',
+            'category_key' => 'edit',
+            'theme_color'  => '#d97706',
+            'bg_color'     => '#fffbeb',
+            'border_color' => '#fde68a',
+            'badge'        => '✏️ EDIT',
+            'badge_bg'     => '#fef3c7',
+            'badge_text'   => '#b45309',
+            'items'        => [
+                'qc_edit' => [
+                    'label'  => 'Edit & Koreksi Tiket QC',
+                    'desc'   => 'Mengubah data tiket QC yang salah ketik atau revisi timbangan/lab.',
+                    'action' => 'EDIT',
+                ],
+            ],
+        ],
+        'AKSI_DELETE' => [
+            'title'        => '🗑️ Hak Akses Hapus & Batalkan Data (Void / Pembatalan)',
+            'desc'         => 'Wewenang menghapus atau membatalkan dokumen operasional.',
+            'category_key' => 'delete',
+            'theme_color'  => '#dc2626',
+            'bg_color'     => '#fef2f2',
+            'border_color' => '#fecaca',
+            'badge'        => '🗑️ HAPUS',
+            'badge_bg'     => '#fee2e2',
+            'badge_text'   => '#b91c1c',
+            'items'        => [
+                'qc_delete' => [
+                    'label'  => 'Hapus / Batalkan Tiket QC',
+                    'desc'   => 'Menghapus tiket QC yang batal atau salah input.',
+                    'action' => 'DELETE',
+                ],
+            ],
+        ],
+        'AKSI_CREATE' => [
+            'title'        => '➕ Hak Akses Input & Transaksi Baru (Entry Operasional)',
+            'desc'         => 'Wewenang mencatat dokumen baru untuk transaksi harian.',
+            'category_key' => 'create',
+            'theme_color'  => '#15803d',
+            'bg_color'     => '#f0fdf4',
+            'border_color' => '#bbf7d0',
+            'badge'        => '➕ INPUT',
+            'badge_bg'     => '#dcfce7',
+            'badge_text'   => '#15803d',
+            'items'        => [
+                'po_create' => [
+                    'label'  => 'Buat & Kelola PO',
+                    'desc'   => 'Membuat PO baru, mengubah, membatalkan, atau menutup PO.',
+                    'action' => 'CREATE',
+                ],
+                'qc_create' => [
+                    'label'  => 'Input Inspeksi QC (Mobile)',
+                    'desc'   => 'Mencatat hasil uji kadar air, refraksi kotoran, dan timbangan sampling.',
+                    'action' => 'CREATE',
+                ],
+                'terima_create' => [
+                    'label'  => 'Catat Penerimaan Barang & Batch',
+                    'desc'   => 'Mencatat fisik bongkar muat, no batch baru, dan harga masuk.',
+                    'action' => 'CREATE',
+                ],
+                'pemakaian_create' => [
+                    'label'  => 'Catat Pengeluaran Bahan Produksi',
+                    'desc'   => 'Mengeluarkan bahan baku/bumbu per batch untuk SPK pabrik.',
+                    'action' => 'CREATE',
+                ],
+                'produksi_create' => [
+                    'label'  => 'Input Hasil Produksi & HPP',
+                    'desc'   => 'Mencatat hasil timbangan WIP harian, absensi tenaga kerja, dan gas.',
+                    'action' => 'CREATE',
+                ],
+                'retur_create' => [
+                    'label'  => 'Catat Retur Pembelian',
+                    'desc'   => 'Membuat retur pengembalian barang fisik dan update kuota PO/tagihan.',
+                    'action' => 'CREATE',
+                ],
+            ],
+        ],
+        'AKSI_VIEW' => [
+            'title'        => '👁️ Hak Akses Lihat Menu & Monitoring (Read-Only)',
+            'desc'         => 'Wewenang membuka menu untuk memantau data tanpa izin mengubah.',
+            'category_key' => 'view',
+            'theme_color'  => '#0284c7',
+            'bg_color'     => '#f0f9ff',
+            'border_color' => '#bae6fd',
+            'badge'        => '👁️ LIHAT',
+            'badge_bg'     => '#e0f2fe',
+            'badge_text'   => '#0369a1',
+            'items'        => [
+                'po_view' => [
+                    'label'  => 'Lihat Purchase Order (PO)',
+                    'desc'   => 'Membuka menu dan melihat daftar dokumen pemesanan bahan.',
+                    'action' => 'VIEW',
+                ],
+                'qc_view' => [
+                    'label'  => 'Lihat Tiket QC Masuk',
+                    'desc'   => 'Melihat daftar dan riwayat hasil inspeksi mutu bahan baku dari QC.',
+                    'action' => 'VIEW',
+                ],
+                'terima_view' => [
+                    'label'  => 'Lihat Barang Masuk (GRN)',
+                    'desc'   => 'Membuka menu penerimaan fisik bahan masuk dari supplier.',
+                    'action' => 'VIEW',
+                ],
+                'pemakaian_view' => [
+                    'label'  => 'Lihat Barang Keluar (OUT)',
+                    'desc'   => 'Membuka menu pemakaian bahan keluar untuk lini produksi.',
+                    'action' => 'VIEW',
+                ],
+                'produksi_view' => [
+                    'label'  => 'Lihat Laporan HPP & Produksi',
+                    'desc'   => 'Melihat buku rekap HPP harian, rendemen, dan hasil WIP.',
+                    'action' => 'VIEW',
+                ],
+                'retur_view' => [
+                    'label'  => 'Lihat Retur Pembelian',
+                    'desc'   => 'Melihat daftar dokumen pengembalian barang cacat/rusak ke supplier.',
+                    'action' => 'VIEW',
+                ],
+                'stok_view' => [
+                    'label'  => 'Lacak Stok & Kartu Stok',
+                    'desc'   => 'Memantau sisa kuantitas batch (Tersedia/Habis) dan buku mutasi.',
+                    'action' => 'VIEW',
+                ],
             ],
         ],
         'MASTER_DATA' => [
-            'title' => '📁 Master Data & Katalog Referensi',
-            'items' => [
-                'master_barang_view'     => ['label' => 'Lihat Katalog Barang', 'desc' => 'Melihat daftar master singkong, minyak, bumbu, dan kemasan.'],
-                'master_barang_manage'   => ['label' => 'Kelola Master Barang', 'desc' => 'Menambah barang baru, mengatur batas minimum stok & harga beli.'],
-                'master_supplier_view'   => ['label' => 'Lihat Master Supplier', 'desc' => 'Melihat daftar mitra supplier petani singkong & vendor.'],
-                'master_supplier_manage' => ['label' => 'Kelola Master Supplier', 'desc' => 'Menambah dan mengedit mitra rekanan supplier.'],
-                'master_gudang_manage'   => ['label' => 'Kelola Gudang & Satuan', 'desc' => 'Menambah dan mengedit daftar gudang unit dan satuan barang.'],
-            ],
-        ],
-        'SISTEM' => [
-            'title' => '👥 Pengaturan Akun & Keamanan Sistem',
-            'items' => [
-                'user_manage' => ['label' => 'Manajemen Pengguna & Hak Akses', 'desc' => 'Mengelola user login, password, dan mengubah hak akses peran.'],
+            'title'        => '📁 Master Data & Keamanan Sistem',
+            'desc'         => 'Wewenang mengelola katalog referensi dan akun sistem.',
+            'category_key' => 'master',
+            'theme_color'  => '#7c3aed',
+            'bg_color'     => '#faf5ff',
+            'border_color' => '#e9d5ff',
+            'badge'        => '⚙️ KELOLA',
+            'badge_bg'     => '#f3e8ff',
+            'badge_text'   => '#6b21a8',
+            'items'        => [
+                'master_barang_view'     => ['label' => 'Lihat Katalog Barang', 'desc' => 'Melihat daftar master singkong, minyak, bumbu, dan kemasan.', 'action' => 'VIEW'],
+                'master_barang_manage'   => ['label' => 'Kelola Master Barang', 'desc' => 'Menambah barang baru, mengatur batas minimum stok & harga beli.', 'action' => 'MANAGE'],
+                'master_supplier_view'   => ['label' => 'Lihat Master Supplier', 'desc' => 'Melihat daftar mitra supplier petani singkong & vendor.', 'action' => 'VIEW'],
+                'master_supplier_manage' => ['label' => 'Kelola Master Supplier', 'desc' => 'Menambah dan mengedit mitra rekanan supplier.', 'action' => 'MANAGE'],
+                'master_gudang_manage'   => ['label' => 'Kelola Gudang & Satuan', 'desc' => 'Menambah dan mengedit daftar gudang unit dan satuan barang.', 'action' => 'MANAGE'],
+                'user_manage'            => ['label' => 'Manajemen Pengguna & Hak Akses', 'desc' => 'Mengelola user login, password, dan mengubah hak akses peran.', 'action' => 'MANAGE'],
             ],
         ],
     ];
@@ -56,6 +168,7 @@ class PermissionService
         'ADMIN_GUDANG' => [
             'qc_view',
             'qc_create',
+            'qc_edit',
             'terima_view',
             'terima_create',
             'retur_view',
@@ -101,6 +214,7 @@ class PermissionService
         'QC' => [
             'qc_view',
             'qc_create',
+            'qc_edit',
             'po_view',
             'terima_view',
             'retur_view',
@@ -110,12 +224,43 @@ class PermissionService
     ];
 
     /**
-     * Pastikan tabel hak akses memiliki data awal jika masih kosong
+     * Pastikan tabel hak akses memiliki data awal jika masih kosong,
+     * serta menambahkan key baru jika ada fitur/modul baru yang ditambahkan ke sistem.
      */
     public function ensureInitialized(): void
     {
         if (SysRolePermission::count() === 0) {
             $this->seedDefaults();
+            return;
+        }
+
+        $allKeys = self::getAllPermissionKeys();
+        $roles = ['ADMIN_GUDANG', 'PURCHASING', 'STAFF_PRODUKSI', 'FINANCE', 'QC'];
+        $existing = SysRolePermission::select('role_cd', 'permission_cd')->get();
+        $keyed = [];
+        foreach ($existing as $e) {
+            $keyed[$e->role_cd . '_' . $e->permission_cd] = true;
+        }
+
+        $hasNew = false;
+        foreach ($roles as $roleCd) {
+            $defaultPerms = self::DEFAULT_PERMISSIONS[$roleCd] ?? [];
+            foreach ($allKeys as $key) {
+                if (!isset($keyed[$roleCd . '_' . $key])) {
+                    $isAllowed = in_array($key, $defaultPerms, true);
+                    SysRolePermission::create([
+                        'role_cd'       => $roleCd,
+                        'permission_cd' => $key,
+                        'allowed_st'    => $isAllowed,
+                        'updated_by'    => 'SYSTEM_INIT',
+                    ]);
+                    $hasNew = true;
+                }
+            }
+        }
+
+        if ($hasNew) {
+            Cache::forget('mirasa_role_permissions');
         }
     }
 

@@ -470,7 +470,7 @@
 {{-- MODAL CEPAT CATAT BARANG MASUK --}}
 @if (in_array($po->status_cd, ['APPROVED', 'PARTIAL']) && $po->total_sisa_qty > 0)
 <div id="modalQuickReceive" class="no-print" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.55); z-index: 9999; align-items: center; justify-content: center; padding: 1rem;">
-    <div style="background: white; border-radius: 10px; width: 100%; max-width: 660px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2); overflow: hidden; max-height: 90vh; display: flex; flex-direction: column;">
+    <div style="background: white; border-radius: 10px; width: 100%; max-width: 780px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2); overflow: hidden; max-height: 90vh; display: flex; flex-direction: column;">
         <div style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 1rem 1.25rem; display: flex; align-items: center; justify-content: space-between;">
             <div>
                 <strong style="color: #0f172a; font-size: 1.05rem;">Catat Barang Masuk</strong>
@@ -481,7 +481,7 @@
             <button type="button" onclick="closeQuickReceiveModal()" style="background: transparent; border: none; font-size: 1.35rem; color: #64748b; cursor: pointer; padding: 0 0.25rem;">&times;</button>
         </div>
 
-        <form action="{{ route('gudang.terima.store') }}" method="POST" style="padding: 1.25rem; overflow-y: auto; flex: 1;">
+        <form action="{{ route('gudang.terima.store') }}" method="POST" style="padding: 1.25rem; overflow-y: auto; flex: 1;" id="formQuickReceiveShow">
             @csrf
             <input type="hidden" name="po_id" value="{{ $po->po_id }}">
             <input type="hidden" name="supplier_id" value="{{ $po->supplier_id }}">
@@ -515,14 +515,22 @@
                         <thead style="background: #f8fafc; font-size: 0.8rem; border-bottom: 1px solid #e2e8f0;">
                             <tr>
                                 <th style="padding: 0.6rem 0.75rem; text-align: left;">Nama Barang</th>
-                                <th style="padding: 0.6rem 0.75rem; text-align: right; width: 90px;">Sisa PO</th>
-                                <th style="padding: 0.6rem 0.75rem; text-align: right; width: 145px;">Masuk Hari Ini</th>
+                                <th style="padding: 0.6rem 0.75rem; text-align: right; width: 80px;">Sisa PO</th>
+                                <th style="padding: 0.6rem 0.75rem; text-align: left; width: 175px;">No. Batch Supplier <span style="color:#ef4444;">*</span></th>
+                                <th style="padding: 0.6rem 0.75rem; text-align: right; width: 120px;">Masuk Hari Ini</th>
                             </tr>
                         </thead>
                         <tbody>
                             @php $rowIdx = 0; @endphp
                             @foreach ($po->details as $pdtl)
                                 @if ((float) $pdtl->sisa_qty > 0)
+                                    @php
+                                        $acronym = app(\App\Services\Common\CodeGeneratorService::class)->extractBarangAcronym(
+                                            $pdtl->barang?->barang_nm,
+                                            $pdtl->barang?->barang_cd
+                                        );
+                                        $batchPrefix = ($acronym ?: 'BRG') . '-';
+                                    @endphp
                                     <tr style="border-top: 1px solid #f1f5f9;">
                                         <td style="padding: 0.6rem 0.75rem;">
                                             <input type="hidden" name="items[{{ $rowIdx }}][podtl_id]" value="{{ $pdtl->podtl_id }}">
@@ -536,6 +544,15 @@
                                         <td style="padding: 0.6rem 0.75rem; text-align: right; font-weight: 600; color: #b45309;">
                                             {{ number_format((float) $pdtl->sisa_qty, 2) }}
                                         </td>
+                                        <td style="padding: 0.6rem 0.75rem;">
+                                            <input type="text" 
+                                                   name="items[{{ $rowIdx }}][batch_no]" 
+                                                   value="{{ $batchPrefix }}" 
+                                                   placeholder="{{ $batchPrefix }}... (isi no batch supplier)" 
+                                                   class="form-control quick-show-batch" 
+                                                   style="font-family: monospace; font-weight: 700; color: #0284c7; width: 100%; font-size: 0.825rem; padding: 0.35rem 0.5rem;" 
+                                                   required>
+                                        </td>
                                         <td style="padding: 0.6rem 0.75rem; text-align: right;">
                                             <input type="number" 
                                                    step="0.0001" 
@@ -545,7 +562,7 @@
                                                    value="{{ (float) $pdtl->sisa_qty }}" 
                                                    data-sisa="{{ (float) $pdtl->sisa_qty }}"
                                                    class="form-control quick-terima-input" 
-                                                   style="text-align: right; font-weight: 700; width: 130px; display: inline-block; padding: 0.35rem 0.5rem; font-size: 0.85rem;" 
+                                                   style="text-align: right; font-weight: 700; width: 100%; display: inline-block; padding: 0.35rem 0.5rem; font-size: 0.85rem;" 
                                                    required>
                                         </td>
                                     </tr>
@@ -660,5 +677,53 @@
             closeForceCloseModal();
         }
     });
+
+    // Validasi Kelengkapan Batch Fisik Supplier di Quick Receive Modal Show
+    const quickShowForm = document.getElementById('formQuickReceiveShow');
+    if (quickShowForm) {
+        quickShowForm.addEventListener('submit', function(e) {
+            const rows = document.querySelectorAll('#modalQuickReceive tbody tr');
+            let errorFound = false;
+
+            rows.forEach((row, idx) => {
+                if (errorFound) return;
+                const qtyInput = row.querySelector('.quick-terima-input');
+                const batchInput = row.querySelector('.quick-show-batch');
+                const qty = parseFloat(qtyInput ? qtyInput.value : 0) || 0;
+
+                if (qty > 0 && batchInput) {
+                    const batchVal = batchInput.value.trim();
+                    if (!batchVal || batchVal.endsWith('-')) {
+                        e.preventDefault();
+                        errorFound = true;
+                        batchInput.style.border = '2px solid #ef4444';
+                        batchInput.style.backgroundColor = '#fef2f2';
+                        batchInput.focus();
+                        const len = batchInput.value.length;
+                        batchInput.setSelectionRange(len, len);
+
+                        alert(`⚠️ Nomor Batch Fisik Supplier pada baris ke-${idx + 1} belum diisi lengkap!\n\nSilakan ketikkan kode lot / faktur yang tertera pada surat jalan atau kemasan supplier di belakang tanda strip.`);
+                    } else {
+                        batchInput.style.border = '';
+                        batchInput.style.backgroundColor = '';
+                    }
+                }
+            });
+
+            if (errorFound) {
+                return false;
+            }
+        });
+
+        document.addEventListener('input', function(e) {
+            if (e.target && e.target.classList.contains('quick-show-batch')) {
+                const val = e.target.value.trim();
+                if (val && !val.endsWith('-')) {
+                    e.target.style.border = '';
+                    e.target.style.backgroundColor = '';
+                }
+            }
+        });
+    }
 </script>
 @endsection

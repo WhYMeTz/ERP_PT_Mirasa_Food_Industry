@@ -232,14 +232,11 @@ class TerimaBarangService
                 $barangId = $row['barang_id'];
                 $batchNo = $row['batch_no'];
 
-                // Ambil atau generate nomor batch jika kosong atau hanya prefix strip
+                // Validasi nomor batch fisik supplier tidak boleh kosong atau hanya berupa prefix strip
                 if (empty($batchNo) || trim($batchNo) === '' || str_ends_with(trim($batchNo), '-')) {
                     $barang = MstBarang::find($barangId);
-                    $batchNo = $this->codeGenerator->generateBatchNo(
-                        $barang?->barang_cd ?? 'ITEM',
-                        $data['terima_tgl'] ?? date('Y-m-d'),
-                        $barang?->barang_nm
-                    );
+                    $barangNm = $barang?->barang_nm ?? "ID #{$barangId}";
+                    throw new \Exception("Nomor batch dari faktur supplier untuk komoditas '{$barangNm}' wajib diisi lengkap.");
                 }
 
                 // Simpan detail penerimaan

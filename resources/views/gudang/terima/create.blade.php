@@ -442,7 +442,7 @@
                                                 </span>
                                             </td>
                                             <td>
-                                                <input type="text" name="items[{{ $idx }}][batch_no]" value="{{ old("items.{$idx}.batch_no", $batchPrefix) }}" placeholder="{{ $batchPrefix }}... (isi no batch fisik)" class="form-control item-batch" style="font-family: monospace; font-weight: 700; color: #0284c7; width: 100%;" required>
+                                                <input type="text" name="items[{{ $idx }}][batch_no]" value="{{ old("items.{$idx}.batch_no", $batchPrefix) }}" placeholder="{{ $batchPrefix }}... (ketik nomor batch dari faktur supplier)" class="form-control item-batch" style="font-family: monospace; font-weight: 700; color: #0284c7; width: 100%;" required>
                                             </td>
                                             <td>
                                                 <input type="date" name="items[{{ $idx }}][expired_tgl]" value="{{ old("items.{$idx}.expired_tgl") }}" class="form-control" style="font-size: 0.8rem;">
@@ -542,7 +542,7 @@
                                         </select>
                                     </td>
                                     <td>
-                                        <input type="text" name="items[0][batch_no]" id="batch_0" value="" placeholder="Contoh: BC-... (isi batch fisik)" class="form-control item-batch" style="font-family: monospace; font-weight: 700; color: #0284c7; width: 100%;" required>
+                                        <input type="text" name="items[0][batch_no]" id="batch_0" value="" placeholder="Contoh: BC-... (ketik nomor batch dari faktur supplier)" class="form-control item-batch" style="font-family: monospace; font-weight: 700; color: #0284c7; width: 100%;" required>
                                     </td>
                                     <td>
                                         <input type="date" name="items[0][expired_tgl]" class="form-control" style="font-size: 0.8rem;">
@@ -1240,7 +1240,7 @@
                 </select>
             </td>
             <td>
-                <input type="text" name="items[${terimaRowIndex}][batch_no]" value="" placeholder="Contoh: BC-... (isi batch fisik)" class="form-control item-batch" style="font-family: monospace; font-weight: 700; color: #0284c7; width: 100%;" required>
+                <input type="text" name="items[${terimaRowIndex}][batch_no]" value="" placeholder="Contoh: BC-... (ketik nomor batch dari faktur supplier)" class="form-control item-batch" style="font-family: monospace; font-weight: 700; color: #0284c7; width: 100%;" required>
             </td>
             <td>
                 <input type="date" name="items[${terimaRowIndex}][expired_tgl]" class="form-control" style="font-size: 0.8rem;">
@@ -1526,6 +1526,59 @@
                 barTaxSummaryLine.innerHTML = '';
             }
         }
+    }
+
+    // Validasi Kelengkapan Batch Fisik Supplier Sebelum Form Disubmit
+    const formTerimaElem = document.getElementById('formTerima');
+    if (formTerimaElem) {
+        formTerimaElem.addEventListener('submit', function(e) {
+            const rows = document.querySelectorAll('.terima-row');
+            let errorFound = false;
+
+            rows.forEach((row, idx) => {
+                if (errorFound) return;
+
+                const barangSelect = row.querySelector('.item-barang') || row.querySelector('.item-barang-id');
+                const qtyInput = row.querySelector('.item-terima-qty');
+                const batchInput = row.querySelector('.item-batch');
+
+                const hasBarang = barangSelect && barangSelect.value;
+                const qty = parseFloat(qtyInput ? qtyInput.value : 0) || 0;
+
+                if (hasBarang && qty > 0 && batchInput) {
+                    const batchVal = batchInput.value.trim();
+                    if (!batchVal || batchVal.endsWith('-')) {
+                        e.preventDefault();
+                        errorFound = true;
+                        batchInput.style.border = '2px solid #ef4444';
+                        batchInput.style.backgroundColor = '#fef2f2';
+                        batchInput.focus();
+                        const len = batchInput.value.length;
+                        batchInput.setSelectionRange(len, len);
+
+                        alert(`⚠️ Nomor Batch Fisik Supplier pada baris ke-${idx + 1} belum diisi lengkap!\n\nSilakan ketikkan kode lot / faktur yang tertera pada surat jalan atau kemasan supplier di belakang tanda strip.`);
+                    } else {
+                        batchInput.style.border = '';
+                        batchInput.style.backgroundColor = '';
+                    }
+                }
+            });
+
+            if (errorFound) {
+                return false;
+            }
+        });
+
+        // Reset style error saat user mulai mengetik di kolom batch
+        document.addEventListener('input', function(e) {
+            if (e.target && e.target.classList.contains('item-batch')) {
+                const val = e.target.value.trim();
+                if (val && !val.endsWith('-')) {
+                    e.target.style.border = '';
+                    e.target.style.backgroundColor = '';
+                }
+            }
+        });
     }
 
     // Shortcut Pintasan Keyboard Ctrl+S / Cmd+S untuk Simpan Cepat

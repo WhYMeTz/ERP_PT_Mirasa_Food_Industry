@@ -45,8 +45,15 @@ class StoreTerimaBarangRequest extends FormRequest
         $validator->after(function ($validator) {
             $items = $this->input('items', []);
             $totalTerima = 0;
-            foreach ($items as $item) {
-                $totalTerima += (float) ($item['terima_qty'] ?? 0);
+            foreach ($items as $idx => $item) {
+                $qty = (float) ($item['terima_qty'] ?? 0);
+                $totalTerima += $qty;
+                if ($qty > 0) {
+                    $batchNo = trim($item['batch_no'] ?? '');
+                    if (empty($batchNo) || str_ends_with($batchNo, '-')) {
+                        $validator->errors()->add("items.{$idx}.batch_no", "Nomor batch fisik dari faktur supplier pada baris ke-" . ($idx + 1) . " wajib diisi setelah tanda strip (contoh: {$batchNo}NOMORFAKTUR).");
+                    }
+                }
             }
             if ($totalTerima <= 0) {
                 $validator->errors()->add('items', 'Minimal harus ada 1 barang dengan kuantitas terima lebih dari 0.');

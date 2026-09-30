@@ -8,15 +8,33 @@
         <h1 style="font-size: 1.5rem; font-weight: 700; color: #0f172a;">Master Data Barang</h1>
         <p style="color: #64748b; font-size: 0.875rem; margin-top: 0.25rem;">Kelola data katalog bahan baku, barang dalam proses, dan produk jadi.</p>
     </div>
-    <div>
+    <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+        <a href="{{ route('master.barang.export') }}" class="btn btn-secondary" style="background: #ffffff; border: 1.5px solid #cbd5e1; color: #334155; font-size: 0.85rem; font-weight: 600; padding: 0.55rem 0.95rem; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">
+            📊 Ekspor Excel
+        </a>
         @if (Auth::user()?->canManageMasterData())
-            <button type="button" onclick="openModal('modalTambahBarang')" class="btn btn-primary">
+            <button type="button" onclick="openModal('modalImportBarang')" class="btn btn-secondary" style="background: #ffffff; border: 1.5px solid #0284c7; color: #0284c7; font-size: 0.85rem; font-weight: 700; padding: 0.55rem 0.95rem; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">
+                📥 Impor Excel
+            </button>
+            <button type="button" onclick="openModal('modalTambahBarang')" class="btn btn-primary" style="font-size: 0.85rem; padding: 0.55rem 1rem;">
                 <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                 Tambah Barang Baru
             </button>
         @endif
     </div>
 </div>
+
+@if(session('success'))
+    <div style="background: #ecfdf5; border: 1.5px solid #a7f3d0; border-radius: 8px; padding: 0.85rem 1.25rem; color: #065f46; margin-bottom: 1.25rem; font-size: 0.875rem; font-weight: 600; display: flex; align-items: center; gap: 0.5rem;">
+        <span>{{ session('success') }}</span>
+    </div>
+@endif
+
+@if(session('error'))
+    <div style="background: #fef2f2; border: 1.5px solid #fecaca; border-radius: 8px; padding: 0.85rem 1.25rem; color: #991b1b; margin-bottom: 1.25rem; font-size: 0.875rem; font-weight: 600; display: flex; align-items: center; gap: 0.5rem;">
+        <span>⚠️ {{ session('error') }}</span>
+    </div>
+@endif
 
 <div class="card">
     <div class="card-header">
@@ -272,6 +290,55 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" onclick="closeModal('modalEditBarang')">Batal</button>
                 <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{{-- MODAL IMPORT MASTER BARANG DARI EXCEL --}}
+<div id="modalImportBarang" class="modal-backdrop">
+    <div class="modal-dialog" style="max-width: 540px;">
+        <div class="modal-header">
+            <h3 class="modal-title" style="display: flex; align-items: center; gap: 0.5rem;">
+                <span>📥 Impor Master Barang dari Excel</span>
+            </h3>
+            <button type="button" class="modal-close" onclick="closeModal('modalImportBarang')">&times;</button>
+        </div>
+        <form action="{{ route('master.barang.import') }}" method="POST" enctype="multipart/form-data">
+            @csrf
+            <div class="modal-body">
+                <div style="background: #f0f9ff; border: 1.5px solid #bae6fd; border-radius: 8px; padding: 0.85rem 1rem; margin-bottom: 1.25rem;">
+                    <strong style="color: #0369a1; font-size: 0.85rem; display: block; margin-bottom: 0.25rem;">
+                        💡 Petunjuk Pengisian File:
+                    </strong>
+                    <ul style="margin: 0; padding-left: 1.25rem; font-size: 0.8rem; color: #334155; line-height: 1.5;">
+                        <li>Gunakan template resmi sistem agar format kolom terbaca akurat.</li>
+                        <li><strong>Kode Barang</strong> boleh dikosongkan (sistem akan otomatis membuat kode).</li>
+                        <li>Jika Kode Barang sudah terdaftar, data akan <strong>diperbarui otomatis (UPSERT)</strong>.</li>
+                        <li>Format file yang didukung: <strong>.xlsx, .xls, .csv</strong> (maks. 10MB).</li>
+                    </ul>
+                    <div style="margin-top: 0.75rem; padding-top: 0.5rem; border-top: 1px dashed #7dd3fc;">
+                        <a href="{{ route('master.barang.template') }}" class="btn btn-secondary btn-sm" style="background: #ffffff; border: 1px solid #0284c7; color: #0284c7; font-weight: 700; text-decoration: none;">
+                            📥 Unduh Template Excel (.xlsx)
+                        </a>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label for="excel_file" class="form-label" style="font-weight: 700;">
+                        Pilih File Excel / CSV <span style="color: #ef4444;">*</span>
+                    </label>
+                    <input type="file" id="excel_file" name="excel_file" accept=".xlsx,.xls,.csv" class="form-control" style="padding: 0.5rem;" required>
+                    <small style="color: #64748b; font-size: 0.75rem; margin-top: 0.25rem; display: block;">
+                        Pastikan data berada di sheet pertama dan dimulai dari baris ke-4 sesuai template.
+                    </small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('modalImportBarang')">Batal</button>
+                <button type="submit" class="btn btn-primary" style="font-weight: 700;">
+                    🚀 Mulai Impor Data
+                </button>
             </div>
         </form>
     </div>

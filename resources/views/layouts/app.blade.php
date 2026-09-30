@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title', 'ERP PT Mirasa Food Industry')</title>
+    <link rel="icon" type="image/png" href="{{ asset('images/logo.png') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -562,9 +563,9 @@
     <header>
         <div class="header-left">
             <a href="{{ Auth::check() ? route(Auth::user()->getDashboardRoute()) : url('/') }}" class="brand" style="text-decoration: none; display: flex; align-items: center; gap: 0.65rem;">
-                <div style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: #ffffff; width: 34px; height: 34px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.05rem; box-shadow: 0 2px 4px rgba(2, 132, 199, 0.25); flex-shrink: 0;">
-                    M
-                </div>
+                <img src="{{ asset('images/logo.png') }}" 
+                     alt="Logo Cap Payung PT Mirasa" 
+                     style="width: 36px; height: 36px; object-fit: contain; border-radius: 8px; flex-shrink: 0; background: #ffffff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08); padding: 1px;">
                 <div style="display: flex; flex-direction: column; line-height: 1.15;">
                     <span style="font-weight: 800; font-size: 0.95rem; color: #0f172a; letter-spacing: -0.01em;">MIRASA</span>
                     <span style="font-size: 0.65rem; color: #64748b; font-weight: 700; letter-spacing: 0.04em;">FOOD ERP</span>

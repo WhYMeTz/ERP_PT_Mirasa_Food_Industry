@@ -8,21 +8,68 @@ use App\Http\Requests\MasterData\UpdateBarangRequest;
 use App\Models\MasterData\MstJenisBarang;
 use App\Models\MasterData\MstSatuan;
 use App\Services\Common\CodeGeneratorService;
+use App\Services\MasterData\BarangExcelService;
 use App\Services\MasterData\BarangService;
+use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class BarangController extends Controller
 {
     /**
-     * Injeksi dependensi BarangService & CodeGeneratorService via Constructor.
+     * Injeksi dependensi BarangService, CodeGeneratorService & BarangExcelService via Constructor.
      */
     public function __construct(
         protected BarangService $barangService,
-        protected CodeGeneratorService $codeGeneratorService
+        protected CodeGeneratorService $codeGeneratorService,
+        protected BarangExcelService $barangExcelService
     ) {}
+
+    /**
+     * Ekspor seluruh data master barang ke file Excel (.xlsx).
+     */
+    public function export(): StreamedResponse
+    {
+        return $this->barangExcelService->export();
+    }
+
+    /**
+     * Download template format Excel untuk Import.
+     */
+    public function template(): StreamedResponse
+    {
+        return $this->barangExcelService->downloadTemplate();
+    }
+
+    /**
+     * Memproses upload file Excel untuk Import ke Master Barang.
+     */
+    public function import(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'excel_file' => 'required|file|mimes:xlsx,xls,csv|max:10240', // Maks 10MB
+        ], [
+            'excel_file.required' => 'Silakan pilih file Excel (.xlsx / .xls / .csv) terlebih dahulu.',
+            'excel_file.mimes'    => 'Format file harus berupa Excel (.xlsx / .xls) atau CSV.',
+            'excel_file.max'      => 'Ukuran file tidak boleh melebihi 10MB.',
+        ]);
+
+        try {
+            $result = $this->barangExcelService->import($request->file('excel_file'));
+
+            $msg = "✅ Berhasil memproses {$result['total']} barang! (Tambah baru: {$result['inserted']}, Perbarui: {$result['updated']})";
+            if (!empty($result['errors'])) {
+                $msg .= " Catatan peringatan: " . implode('; ', array_slice($result['errors'], 0, 3));
+            }
+
+            return redirect()->route('master.barang.index')->with('success', $msg);
+        } catch (Exception $e) {
+            return redirect()->route('master.barang.index')->with('error', 'Gagal mengimpor file Excel: ' . $e->getMessage());
+        }
+    }
 
     /**
      * Menampilkan daftar barang (Paginated).

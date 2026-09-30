@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - ERP PT Mirasa Food Industry</title>
+    <link rel="icon" type="image/png" href="{{ asset('images/logo.png') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -168,7 +169,7 @@
 
 <div class="login-card">
     <div class="brand">
-        <span class="brand-badge">ERP</span>
+        <img src="{{ asset('images/logo.png') }}" alt="Logo Cap Payung" style="width: 44px; height: 44px; object-fit: contain; border-radius: 10px; background: #ffffff; box-shadow: 0 2px 6px rgba(0,0,0,0.08); padding: 2px; flex-shrink: 0;">
         <div>
             <div class="brand-text">PT Mirasa Food Industry</div>
             <div class="brand-sub">Sistem Manajemen Produksi & Distribusi Makanan</div>

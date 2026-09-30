@@ -208,14 +208,14 @@
         <colgroup>
             <col style="width: 3%;">  {{-- No --}}
             <col style="width: 8%;">  {{-- Tanggal --}}
-            <col style="width: 12%;"> {{-- Kode Batch --}}
+            <col style="width: 11%;"> {{-- Kode Batch --}}
             <col style="width: 10%;"> {{-- Kode Barang --}}
-            <col style="width: 17%;"> {{-- Nama Barang --}}
-            <col style="width: 11%;"> {{-- Jenis --}}
-            <col style="width: 14%;"> {{-- Keterangan / Supplier --}}
+            <col style="width: 16%;"> {{-- Nama Barang --}}
+            <col style="width: 10%;"> {{-- Jenis --}}
+            <col style="width: 13%;"> {{-- Keterangan / Supplier --}}
             <col style="width: 8%;">  {{-- Qty Masuk --}}
-            <col style="width: 8%;">  {{-- Harga Satuan --}}
-            <col style="width: 9%;">  {{-- Total Harga --}}
+            <col style="width: 10%;"> {{-- Harga Satuan --}}
+            <col style="width: 11%;"> {{-- Total Harga --}}
         </colgroup>
         <thead>
             <tr>
@@ -226,9 +226,9 @@
                 <th>Nama Barang</th>
                 <th>Jenis</th>
                 <th>Keterangan</th>
-                <th style="text-align: right;">Qty Masuk</th>
-                <th style="text-align: right;">Harga Satuan</th>
-                <th style="text-align: right;">Total Harga</th>
+                <th style="text-align: right; white-space: nowrap;">Qty Masuk</th>
+                <th style="text-align: right; white-space: nowrap;">Harga Satuan</th>
+                <th style="text-align: right; white-space: nowrap;">Total Harga</th>
             </tr>
         </thead>
         <tbody>
@@ -281,16 +281,16 @@
                     <td style="color: #475569; font-size: 6.8pt;">
                         {{ $keterangan }}
                     </td>
-                    <td style="text-align: right; font-weight: bold; color: #0d3844;">
+                    <td style="text-align: right; font-weight: bold; color: #0d3844; white-space: nowrap;">
                         {{ number_format($qty, 2, ',', '.') }}
                         @if($satuan)
                             <span style="font-size: 6pt; font-weight: normal; color: #64748b;">{{ $satuan }}</span>
                         @endif
                     </td>
-                    <td style="text-align: right; font-family: monospace; font-size: 6.8pt;">
+                    <td style="text-align: right; font-family: monospace; font-size: 6.8pt; white-space: nowrap;">
                         {{ number_format($harga, 2, ',', '.') }}
                     </td>
-                    <td style="text-align: right; font-family: monospace; font-weight: bold; color: #0f172a; font-size: 7pt;">
+                    <td style="text-align: right; font-family: monospace; font-weight: bold; color: #0f172a; font-size: 7pt; white-space: nowrap;">
                         {{ number_format($subtotal, 2, ',', '.') }}
                     </td>
                 </tr>
@@ -304,14 +304,14 @@
         </tbody>
         <tfoot style="background: #f1f5f9; font-weight: bold;">
             <tr>
-                <td colspan="7" style="text-align: right; padding: 4px 6px; font-size: 7.5pt; color: #0f172a;">
+                <td colspan="7" style="text-align: right; padding: 4px 6px; font-size: 7.5pt; color: #0f172a; white-space: nowrap;">
                     TOTAL:
                 </td>
-                <td style="text-align: right; color: #134e5e; padding: 4px; font-size: 7.5pt;">
+                <td style="text-align: right; color: #134e5e; padding: 4px; font-size: 7.5pt; white-space: nowrap;">
                     {{ number_format($grandQty, 2, ',', '.') }}
                 </td>
                 <td></td>
-                <td style="text-align: right; font-family: monospace; color: #134e5e; font-size: 7.5pt; padding: 4px;">
+                <td style="text-align: right; font-family: monospace; color: #134e5e; font-size: 7.5pt; padding: 4px; white-space: nowrap;">
                     {{ number_format($grandTotal, 2, ',', '.') }}
                 </td>
             </tr>

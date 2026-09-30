@@ -68,13 +68,12 @@
         }
 
         /* Meta Information Table */
-        .info-table {
+        .info-outer {
             width: 100%;
-            margin-bottom: 8px;
             border-collapse: collapse;
-            table-layout: fixed;
+            margin-bottom: 8px;
         }
-        .info-table td {
+        .info-outer td {
             vertical-align: top;
             padding: 0;
         }
@@ -183,56 +182,76 @@
         </tr>
     </table>
 
-    {{-- DOKUMEN & MITRA INFORMASI --}}
-    <table class="info-table">
+    {{-- DOKUMEN & MITRA INFORMASI (Kotak Kiri & Kanan Sama Tinggi dengan outer table) --}}
+    <table class="info-outer">
         <tr>
-            <td style="width: 50%; padding-right: 4px;">
-                <div class="info-card">
-                    <strong style="color: #0f172a; font-size: 7.8pt; display: block; margin-bottom: 3px; border-bottom: 1px solid #e2e8f0; padding-bottom: 2px;">
-                        SUPPLIER PENGIRIM:
-                    </strong>
-                    <div style="font-size: 8.5pt; font-weight: bold; color: #0f172a;">{{ $terima->supplier?->supplier_nm ?? '-' }}</div>
-                    <div style="color: #64748b; font-size: 7pt; font-family: monospace;">Kode: {{ $terima->supplier?->supplier_cd ?? '-' }}</div>
-                    <div style="color: #475569; font-size: 7.2pt; margin-top: 1px;">
-                        {{ $terima->supplier?->alamat_txt ?? 'Alamat tidak terdata' }}
-                    </div>
-                    <div style="color: #475569; font-size: 7.2pt; margin-top: 1px;">
-                        Kontak: <strong>{{ $terima->supplier?->kontak_no ?? '-' }}</strong>
-                    </div>
-                </div>
+            {{-- KOLOM KIRI: Supplier --}}
+            <td style="width: 49%; padding-right: 4px;">
+                <table style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; background: #f8fafc; border-radius: 4px;">
+                    <tr>
+                        <td colspan="2" style="padding: 5px 8px 3px 8px; border-bottom: 1px solid #e2e8f0;">
+                            <strong style="color: #0f172a; font-size: 7.8pt;">SUPPLIER PENGIRIM:</strong>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="width: 38%; color: #64748b; font-size: 7.2pt; padding: 2px 8px;">Nama Supplier:</td>
+                        <td style="font-weight: bold; color: #0f172a; font-size: 7.2pt; padding: 2px 8px;">
+                            {{ $terima->supplier?->supplier_nm ?? '-' }}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="color: #64748b; font-size: 7.2pt; padding: 2px 8px;">Kode Supplier:</td>
+                        <td style="font-weight: bold; color: #475569; font-size: 7.2pt; padding: 2px 8px;">
+                            {{ $terima->supplier?->supplier_cd ?? '-' }}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="color: #64748b; font-size: 7.2pt; padding: 2px 8px;">Alamat Kantor:</td>
+                        <td style="color: #334155; font-size: 7.2pt; padding: 2px 8px;">
+                            {{ $terima->supplier?->alamat_txt ?? '-' }}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="color: #64748b; font-size: 7.2pt; padding: 2px 8px 5px 8px;">Kontak HP/Telp:</td>
+                        <td style="font-weight: bold; color: #0f172a; font-size: 7.2pt; padding: 2px 8px 5px 8px;">
+                            {{ $terima->supplier?->kontak_no ?? '-' }}
+                        </td>
+                    </tr>
+                </table>
             </td>
-            <td style="width: 50%; padding-left: 4px;">
-                <div class="info-card">
-                    <strong style="color: #0f172a; font-size: 7.8pt; display: block; margin-bottom: 3px; border-bottom: 1px solid #e2e8f0; padding-bottom: 2px;">
-                        DOKUMEN &amp; GUDANG PENYIMPANAN:
-                    </strong>
-                    <table style="width: 100%; border-collapse: collapse; font-size: 7.2pt;">
-                        <tr>
-                            <td style="width: 44%; color: #64748b; padding: 1px 0;">Tanggal Masuk:</td>
-                            <td style="font-weight: bold; color: #0f172a; padding: 1px 0;">
-                                {{ $terima->terima_tgl ? \Carbon\Carbon::parse($terima->terima_tgl)->translatedFormat('d F Y') : '-' }}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="color: #64748b; padding: 1px 0;">No. Surat Jalan:</td>
-                            <td style="font-weight: bold; color: #0284c7; padding: 1px 0; font-family: monospace;">
-                                {{ $terima->suratjalan_no ?: '-' }}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="color: #64748b; padding: 1px 0;">Ref. Purchase Order:</td>
-                            <td style="font-weight: bold; color: #0f172a; padding: 1px 0; font-family: monospace;">
-                                {{ $terima->po ? $terima->po->po_no : 'Non-PO / Langsung' }}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="color: #64748b; padding: 1px 0;">Gudang Simpan:</td>
-                            <td style="font-weight: bold; color: #134e5e; padding: 1px 0;">
-                                {{ $terima->gudang?->gudang_nm ?? '-' }}
-                            </td>
-                        </tr>
-                    </table>
-                </div>
+            {{-- KOLOM KANAN: Dokumen --}}
+            <td style="width: 49%; padding-left: 4px;">
+                <table style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; background: #f8fafc; border-radius: 4px;">
+                    <tr>
+                        <td colspan="2" style="padding: 5px 8px 3px 8px; border-bottom: 1px solid #e2e8f0;">
+                            <strong style="color: #0f172a; font-size: 7.8pt;">DOKUMEN &amp; GUDANG PENYIMPANAN:</strong>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="width: 42%; color: #64748b; font-size: 7.2pt; padding: 2px 8px;">Tanggal Masuk:</td>
+                        <td style="font-weight: bold; color: #0f172a; font-size: 7.2pt; padding: 2px 8px;">
+                            {{ $terima->terima_tgl ? \Carbon\Carbon::parse($terima->terima_tgl)->translatedFormat('d F Y') : '-' }}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="color: #64748b; font-size: 7.2pt; padding: 2px 8px;">No. Surat Jalan:</td>
+                        <td style="font-weight: bold; color: #0284c7; font-size: 7.2pt; padding: 2px 8px;">
+                            {{ $terima->suratjalan_no ?: '-' }}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="color: #64748b; font-size: 7.2pt; padding: 2px 8px;">Ref. Purchase Order:</td>
+                        <td style="font-weight: bold; color: #0f172a; font-size: 7.2pt; padding: 2px 8px;">
+                            {{ $terima->po ? $terima->po->po_no : 'Non-PO / Langsung' }}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="color: #64748b; font-size: 7.2pt; padding: 2px 8px 5px 8px;">Gudang Simpan:</td>
+                        <td style="font-weight: bold; color: #134e5e; font-size: 7.2pt; padding: 2px 8px 5px 8px;">
+                            {{ $terima->gudang?->gudang_nm ?? '-' }}
+                        </td>
+                    </tr>
+                </table>
             </td>
         </tr>
     </table>
@@ -244,12 +263,12 @@
             <col style="width: 10%;"> {{-- Kode Barang --}}
             <col style="width: 18%;"> {{-- Nama Barang --}}
             <col style="width: 9%;">  {{-- Jenis --}}
-            <col style="width: 13%;"> {{-- Kode Batch --}}
+            <col style="width: 12%;"> {{-- Kode Batch --}}
             <col style="width: 8%;">  {{-- Expired --}}
             <col style="width: 8%;">  {{-- Qty Masuk --}}
             <col style="width: 4%;">  {{-- Satuan --}}
-            <col style="width: 12%;"> {{-- Harga Satuan --}}
-            <col style="width: 15%;"> {{-- Total Nilai --}}
+            <col style="width: 11%;"> {{-- Harga Satuan --}}
+            <col style="width: 17%;"> {{-- Total Nilai --}}
         </colgroup>
         <thead>
             <tr>
@@ -259,10 +278,10 @@
                 <th>Jenis</th>
                 <th>Kode Batch</th>
                 <th style="text-align: center;">Expired</th>
-                <th style="text-align: right; white-space: nowrap;">Qty</th>
+                <th style="text-align: right; white-space: nowrap; padding-right: 6px;">Qty</th>
                 <th style="text-align: center;">Sat</th>
-                <th style="text-align: right; white-space: nowrap;">@Harga</th>
-                <th style="text-align: right; white-space: nowrap;">Total Nilai</th>
+                <th style="text-align: right; white-space: nowrap; padding-right: 6px;">@Harga</th>
+                <th style="text-align: right; white-space: nowrap; padding-right: 6px;">Total Nilai</th>
             </tr>
         </thead>
         <tbody>
@@ -295,16 +314,16 @@
                     <td style="text-align: center; font-size: 6.8pt; color: #475569; white-space: nowrap;">
                         {{ $dtl->expired_tgl ? \Carbon\Carbon::parse($dtl->expired_tgl)->format('d/m/Y') : '-' }}
                     </td>
-                    <td style="text-align: right; font-weight: bold; color: #134e5e; white-space: nowrap;">
+                    <td style="text-align: right; font-weight: bold; color: #134e5e; white-space: nowrap; padding-right: 6px;">
                         {{ number_format($qty, 2, ',', '.') }}
                     </td>
                     <td style="text-align: center; font-size: 6.8pt; color: #475569; white-space: nowrap;">
                         {{ $dtl->barang?->satuanDasar?->satuan_cd ?? ($dtl->barang?->satuanDasar?->satuan_nm ?? '-') }}
                     </td>
-                    <td style="text-align: right; font-family: monospace; font-size: 6.8pt; color: #475569; white-space: nowrap;">
+                    <td style="text-align: right; font-size: 7.2pt; color: #475569; white-space: nowrap; padding-right: 6px; padding-left: 6px;">
                         {{ number_format($harga, 2, ',', '.') }}
                     </td>
-                    <td style="text-align: right; font-weight: bold; font-family: monospace; color: #0f172a; font-size: 7.2pt; white-space: nowrap;">
+                    <td style="text-align: right; font-weight: bold; color: #0f172a; font-size: 7.5pt; white-space: nowrap; padding-right: 6px; padding-left: 6px;">
                         {{ number_format($subtotal, 2, ',', '.') }}
                     </td>
                 </tr>
@@ -318,12 +337,12 @@
         </tbody>
         <tfoot style="background: #f1f5f9; font-weight: bold;">
             <tr>
-                <td colspan="6" style="text-align: right; padding: 4px 6px; font-size: 7.2pt; white-space: nowrap;">Total Kuantitas Masuk:</td>
-                <td style="text-align: right; color: #134e5e; padding: 4px; font-size: 7.5pt; white-space: nowrap;">
+                <td colspan="6" style="text-align: right; padding: 5px 6px; font-size: 7.2pt; white-space: nowrap;">Total Kuantitas Masuk:</td>
+                <td style="text-align: right; color: #134e5e; padding: 5px 6px; font-size: 7.5pt; white-space: nowrap;">
                     {{ number_format($totalQty, 2, ',', '.') }}
                 </td>
-                <td colspan="2" style="text-align: right; padding: 4px 6px; font-size: 7.2pt; white-space: nowrap;">Total Subtotal:</td>
-                <td style="text-align: right; font-family: monospace; color: #134e5e; font-size: 7.5pt; padding: 4px; white-space: nowrap;">
+                <td colspan="2" style="text-align: right; padding: 5px 6px; font-size: 7.2pt; white-space: nowrap;">Total Subtotal:</td>
+                <td style="text-align: right; color: #134e5e; font-size: 7.8pt; padding: 5px 6px; white-space: nowrap;">
                     {{ number_format($totalNominal, 2, ',', '.') }}
                 </td>
             </tr>
@@ -345,14 +364,14 @@
                 <table style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; background: #f8fafc; border-radius: 4px;">
                     <tr>
                         <td style="padding: 3px 8px; font-size: 7.5pt; color: #64748b;">Subtotal Bruto:</td>
-                        <td style="padding: 3px 8px; text-align: right; font-family: monospace; font-weight: bold; font-size: 7.5pt; white-space: nowrap;">
+                        <td style="padding: 3px 8px; text-align: right; font-weight: bold; font-size: 7.8pt; white-space: nowrap; color: #0f172a;">
                             Rp {{ number_format((float) ($terima->subtotal_nominal ?: $totalNominal), 2, ',', '.') }}
                         </td>
                     </tr>
                     @if((float) ($terima->potongan_nominal ?? 0) > 0)
                         <tr>
                             <td style="padding: 2px 8px; font-size: 7.5pt; color: #dc2626;">Potongan Langsung:</td>
-                            <td style="padding: 2px 8px; text-align: right; font-family: monospace; color: #dc2626; font-size: 7.5pt; white-space: nowrap;">
+                            <td style="padding: 2px 8px; text-align: right; color: #dc2626; font-size: 7.5pt; white-space: nowrap; font-weight: bold;">
                                 - Rp {{ number_format((float) $terima->potongan_nominal, 2, ',', '.') }}
                             </td>
                         </tr>
@@ -360,14 +379,14 @@
                     @if((float) ($terima->ppn_nominal ?? 0) > 0)
                         <tr>
                             <td style="padding: 2px 8px; font-size: 7.5pt; color: #0284c7;">PPN:</td>
-                            <td style="padding: 2px 8px; text-align: right; font-family: monospace; color: #0284c7; font-size: 7.5pt; white-space: nowrap;">
+                            <td style="padding: 2px 8px; text-align: right; color: #0284c7; font-size: 7.5pt; white-space: nowrap; font-weight: bold;">
                                 + Rp {{ number_format((float) $terima->ppn_nominal, 2, ',', '.') }}
                             </td>
                         </tr>
                     @endif
                     <tr style="border-top: 1px solid #cbd5e1; background: #f1f5f9;">
                         <td style="padding: 4px 8px; font-weight: bold; color: #0f172a; font-size: 7.8pt;">Total Tagihan Masuk:</td>
-                        <td style="padding: 4px 8px; text-align: right; font-weight: bold; font-family: monospace; color: #134e5e; font-size: 8.5pt; white-space: nowrap;">
+                        <td style="padding: 4px 8px; text-align: right; font-weight: bold; color: #134e5e; font-size: 8.5pt; white-space: nowrap;">
                             Rp {{ number_format((float) ($terima->total_tagihan ?: $totalNominal), 2, ',', '.') }}
                         </td>
                     </tr>

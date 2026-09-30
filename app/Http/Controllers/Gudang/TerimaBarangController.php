@@ -188,6 +188,8 @@ class TerimaBarangController extends Controller
         ]);
 
         $pdf->setPaper('a4', 'portrait');
+        $pdf->setOption('isHtml5ParserEnabled', true);
+        $pdf->setOption('isRemoteEnabled', true);
 
         $fileName = 'GRN-' . preg_replace('/[^A-Za-z0-9\-]/', '', $terima->terima_no) . '.pdf';
         return $pdf->stream($fileName);
@@ -265,6 +267,8 @@ class TerimaBarangController extends Controller
         ]);
 
         $pdf->setPaper('a4', 'landscape');
+        $pdf->setOption('isHtml5ParserEnabled', true);
+        $pdf->setOption('isRemoteEnabled', true);
 
         $fileName = 'Rekap_Barang_Masuk_' . date('Ymd_His') . '.pdf';
         return $pdf->stream($fileName);

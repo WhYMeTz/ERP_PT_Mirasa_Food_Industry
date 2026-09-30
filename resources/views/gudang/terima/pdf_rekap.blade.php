@@ -20,21 +20,21 @@
             padding: 0;
         }
 
-        /* Kop Surat Perusahaan */
+        /* Kop Surat Perusahaan - Tidak menggunakan table-layout fixed agar logo dan teks rapat di kiri */
         .kop-table {
             width: 100%;
             border-bottom: 2px solid #134e5e;
             padding-bottom: 6px;
             margin-bottom: 8px;
-            table-layout: fixed;
         }
         .kop-logo {
-            width: 48px;
+            width: 50px;
             vertical-align: middle;
         }
         .kop-text {
             padding-left: 10px;
             vertical-align: middle;
+            text-align: left;
         }
         .kop-company {
             font-size: 13pt;
@@ -50,7 +50,7 @@
         .kop-title-box {
             text-align: right;
             vertical-align: middle;
-            width: 320px;
+            white-space: nowrap;
         }
         .doc-title {
             font-size: 12pt;
@@ -352,12 +352,13 @@
     {{-- Script Nomor Halaman Otomatis di DomPDF --}}
     <script type="text/php">
         if (isset($pdf)) {
-            $font = $fontMetrics->get_font("Helvetica", "normal");
+            $text = "Halaman {PAGE_NUM} dari {PAGE_COUNT} | Dicetak otomatis melalui Sistem ERP PT Mirasa Food Industry";
             $size = 7;
-            $text = "Halaman {PAGE_NUM} dari {PAGE_COUNT}";
+            $font = $fontMetrics->getFont("Helvetica");
             $width = $fontMetrics->get_text_width($text, $font, $size);
-            // Kertas A4 Landscape: lebar 841.89 pt, tinggi 595.28 pt
-            $pdf->page_text(841.89 - $width - 28, 595.28 - 20, $text, $font, $size, array(0.4, 0.4, 0.4));
+            $x = ($pdf->get_width() - $width) / 2;
+            $y = $pdf->get_height() - 20;
+            $pdf->page_text($x, $y, $text, $font, $size, array(0.5, 0.5, 0.5));
         }
     </script>
 

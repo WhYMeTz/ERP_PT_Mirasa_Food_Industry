@@ -621,24 +621,34 @@
                 {{-- CARD FOOTER: RINGKASAN EFISIEN & TOMBOL SIMPAN / BATAL TERPADU --}}
                 <div class="card-footer" style="background: #ffffff; border-top: 1px solid #cbd5e1; padding: 0.85rem 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
                     
-                    {{-- Kiri: Statistik Fisik & Stok Bersih --}}
-                    <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
-                        <div style="display: flex; align-items: center; gap: 0.55rem;">
-                            <span style="display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; background: #ecfdf5; color: #059669; border-radius: 6px; border: 1px solid #a7f3d0;">
-                                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M5 13l4 4L19 7"/></svg>
-                            </span>
-                            <div>
-                                <span style="font-size: 0.7rem; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; display: block; line-height: 1;">Total Netto Masuk</span>
-                                <strong style="font-size: 1.15rem; color: #047857; font-family: monospace; font-weight: 800; line-height: 1.2;" id="barTotalNetto">0,00</strong>
+                    {{-- Kiri: 3 Metrik Fisik & Stok (Netto, Afkir, Komoditas) Terstruktur Rapi & Seragam --}}
+                    <div style="display: flex; align-items: center; gap: 1.25rem; flex-wrap: wrap;">
+                        {{-- 1. Netto Masuk --}}
+                        <div>
+                            <span style="font-size: 0.68rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; display: block; line-height: 1;">Total Netto Masuk</span>
+                            <div style="margin-top: 0.2rem; font-size: 1.15rem; font-weight: 800; color: #047857; font-family: monospace; line-height: 1.2;">
+                                <span id="barTotalNetto">0,00</span>
                             </div>
                         </div>
 
                         <div style="width: 1px; height: 26px; background: #e2e8f0;"></div>
 
-                        <div style="display: flex; align-items: center; gap: 0.65rem; font-size: 0.8rem; color: #64748b;">
-                            <span>Afkir / Reject: <strong id="barTotalReject" style="color: #dc2626; font-family: monospace; font-weight: 700;">0,00</strong></span>
-                            <span style="color: #cbd5e1;">&bull;</span>
-                            <span>Komoditas: <strong id="barTotalItems" style="color: #0f172a; font-weight: 700;">0</strong> Item</span>
+                        {{-- 2. Afkir / Reject --}}
+                        <div>
+                            <span style="font-size: 0.68rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; display: block; line-height: 1;">Afkir / Reject</span>
+                            <div style="margin-top: 0.2rem; font-size: 1.15rem; font-weight: 800; color: #dc2626; font-family: monospace; line-height: 1.2;">
+                                <span id="barTotalReject">0,00</span>
+                            </div>
+                        </div>
+
+                        <div style="width: 1px; height: 26px; background: #e2e8f0;"></div>
+
+                        {{-- 3. Komoditas --}}
+                        <div>
+                            <span style="font-size: 0.68rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; display: block; line-height: 1;">Total Komoditas</span>
+                            <div style="margin-top: 0.2rem; font-size: 1.15rem; font-weight: 800; color: #0f172a; line-height: 1.2;">
+                                <span id="barTotalItems">0</span> <span style="font-size: 0.85rem; font-weight: 600; color: #64748b;">Item</span>
+                            </div>
                         </div>
                     </div>
 

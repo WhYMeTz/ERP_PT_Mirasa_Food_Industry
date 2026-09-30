@@ -21,6 +21,7 @@ class DatTerimaHdr extends Model
         'terima_no',
         'terima_tgl',
         'po_id',
+        'qc_id',
         'supplier_id',
         'gudang_id',
         'suratjalan_no',
@@ -58,6 +59,14 @@ class DatTerimaHdr extends Model
     public function po(): BelongsTo
     {
         return $this->belongsTo(DatPoHdr::class, 'po_id', 'po_id');
+    }
+
+    /**
+     * Relasi ke Tiket Pemeriksaan Kualitas (Incoming QC)
+     */
+    public function qcInbound(): BelongsTo
+    {
+        return $this->belongsTo(DatQcInboundHdr::class, 'qc_id', 'qc_id');
     }
 
     /**

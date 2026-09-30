@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\UserController;
 use App\Http\Controllers\Common\CodeGeneratorController;
 use App\Http\Controllers\Gudang\PemakaianController;
 use App\Http\Controllers\Gudang\PoController;
+use App\Http\Controllers\Gudang\QcInboundController;
 use App\Http\Controllers\Gudang\ReturPembelianController;
 use App\Http\Controllers\Gudang\StokController;
 use App\Http\Controllers\Gudang\TerimaBarangController;
@@ -132,6 +133,9 @@ Route::middleware('auth')->group(function () {
         Route::post('retur', [ReturPembelianController::class, 'store'])
             ->name('retur.store')
             ->middleware('role:retur_create');
+        Route::get('retur/{id}/berita-acara', [ReturPembelianController::class, 'beritaAcara'])
+            ->name('retur.berita_acara')
+            ->middleware('role:retur_view');
         Route::resource('retur', ReturPembelianController::class)->only(['index', 'show'])->middleware('role:retur_view');
 
         // Barang Keluar (Pemakaian Bahan Baku / Outbound): (Berdasarkan izin 'pemakaian_create')
@@ -158,5 +162,15 @@ Route::middleware('auth')->group(function () {
         Route::post('/', [ProduksiController::class, 'store'])->name('store')->middleware('role:produksi_create');
         Route::get('/pakai-data/{pakaiId}', [ProduksiController::class, 'getPakaiData'])->name('pakai-data');
         Route::delete('/{id}', [ProduksiController::class, 'destroy'])->name('destroy')->middleware('role:produksi_create');
+    });
+
+    // Quality Control (QC) Inbound Bahan Baku (Mobile-First / Google Form Style)
+    Route::prefix('qc')->name('qc.')->group(function () {
+        Route::get('inbound/siap-gudang', [QcInboundController::class, 'getSiapGudang'])->name('inbound.siap_gudang');
+        Route::get('inbound/ticket-data/{id}', [QcInboundController::class, 'getTicketData'])->name('inbound.ticket_data');
+        Route::get('inbound/create', [QcInboundController::class, 'create'])->name('inbound.create')->middleware('role:qc_create');
+        Route::post('inbound', [QcInboundController::class, 'store'])->name('inbound.store')->middleware('role:qc_create');
+        Route::get('inbound/{id}/berita-acara', [QcInboundController::class, 'beritaAcara'])->name('inbound.berita_acara')->middleware('role:qc_view');
+        Route::resource('inbound', QcInboundController::class)->only(['index', 'show'])->names('inbound')->middleware('role:qc_view');
     });
 });

@@ -229,6 +229,15 @@ class ReturPembelianController extends Controller
     }
 
     /**
+     * Cetak Berita Acara Penolakan Bahan Baku Singkong (HACCP Form: MFI/HACCP-04/FRM-03/041/VIII/2021)
+     */
+    public function beritaAcara(int $id): View
+    {
+        $retur = $this->returService->getById($id);
+        return view('gudang.retur.berita_acara', compact('retur'));
+    }
+
+    /**
      * Endpoint API untuk mengambil daftar nomor batch stok fisik yang tersedia di gudang terpilih
      */
     public function getBatches(Request $request): JsonResponse

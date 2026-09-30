@@ -581,6 +581,28 @@
                         </a>
                     @endif
 
+                    {{-- QUALITY CONTROL (QC) INBOUND BAHAN BAKU --}}
+                    @if (Auth::user()->canAccessQc())
+                        <div class="pill-dropdown" id="navDropdownQc">
+                            <button type="button" 
+                                    class="pill-dropdown-btn {{ request()->routeIs('qc.*') ? 'active' : '' }}" 
+                                    onclick="toggleNavDropdown('navDropdownQc', event)">
+                                <span>QC Bahan Baku</span>
+                                <span class="pill-dropdown-arrow">▼</span>
+                            </button>
+                            <div class="dropdown-menu" style="min-width: 220px; padding: 0.4rem;">
+                                <a href="{{ route('qc.inbound.create') }}" class="mega-item {{ request()->routeIs('qc.inbound.create') ? 'active' : '' }}">
+                                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                                    <span>Form Uji Lapangan (Mobile)</span>
+                                </a>
+                                <a href="{{ route('qc.inbound.index') }}" class="mega-item {{ request()->routeIs('qc.inbound.index') ? 'active' : '' }}">
+                                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                    <span>Riwayat Tiket QC</span>
+                                </a>
+                            </div>
+                        </div>
+                    @endif
+
                     {{-- BARANG MASUK (GRN) --}}
                     @if (Auth::user()->canAccessTerima())
                         <a href="{{ route('gudang.terima.index') }}" class="pill-item {{ request()->routeIs('gudang.terima.*') ? 'active' : '' }}">

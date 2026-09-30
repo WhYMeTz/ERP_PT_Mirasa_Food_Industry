@@ -18,6 +18,8 @@ class PermissionService
             'items' => [
                 'po_view'          => ['label' => 'Lihat Purchase Order (PO)', 'desc' => 'Membuka menu dan melihat daftar dokumen pemesanan bahan.'],
                 'po_create'        => ['label' => 'Buat & Kelola PO', 'desc' => 'Membuat PO baru, mengubah, membatalkan, atau menutup PO.'],
+                'qc_view'          => ['label' => 'Lihat Tiket QC Masuk', 'desc' => 'Melihat daftar dan riwayat hasil inspeksi mutu bahan baku dari QC.'],
+                'qc_create'        => ['label' => 'Input Inspeksi QC (Mobile)', 'desc' => 'Mencatat hasil uji kadar air, refraksi kotoran, dan timbangan sampling.'],
                 'terima_view'      => ['label' => 'Lihat Barang Masuk (GRN)', 'desc' => 'Membuka menu penerimaan fisik bahan masuk dari supplier.'],
                 'terima_create'    => ['label' => 'Catat Penerimaan Barang & Batch', 'desc' => 'Mencatat fisik bongkar muat, no batch baru, dan harga masuk.'],
                 'pemakaian_view'   => ['label' => 'Lihat Barang Keluar (OUT)', 'desc' => 'Membuka menu pemakaian bahan keluar untuk lini produksi.'],
@@ -52,6 +54,8 @@ class PermissionService
      */
     public const DEFAULT_PERMISSIONS = [
         'ADMIN_GUDANG' => [
+            'qc_view',
+            'qc_create',
             'terima_view',
             'terima_create',
             'retur_view',
@@ -75,6 +79,7 @@ class PermissionService
         'PURCHASING' => [
             'po_view',
             'po_create',
+            'qc_view',
             'terima_view',
             'retur_view',
             'retur_create',
@@ -85,6 +90,7 @@ class PermissionService
         ],
         'FINANCE' => [
             'po_view',
+            'qc_view',
             'terima_view',
             'retur_view',
             'pemakaian_view',
@@ -93,10 +99,11 @@ class PermissionService
             'master_barang_view',
         ],
         'QC' => [
+            'qc_view',
+            'qc_create',
+            'po_view',
             'terima_view',
-            'terima_create',
             'retur_view',
-            'retur_create',
             'stok_view',
             'master_barang_view',
         ],

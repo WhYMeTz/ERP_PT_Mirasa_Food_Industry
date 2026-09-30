@@ -612,5 +612,15 @@ class CodeGeneratorService
         $prefix = 'RET-' . date('Ym') . '-';
         return $this->generate('dat_retur_hdr', 'retur_no', $prefix, 4);
     }
+
+    /**
+     * Generate Nomor Dokumen Inspeksi QC Masuk (format: QC-YYYYMMDD-0001)
+     */
+    public function generateQcNo(?string $date = null): string
+    {
+        $dateFormatted = date('Ymd', strtotime($date ?? date('Y-m-d')));
+        $prefix = 'QC-' . $dateFormatted . '-';
+        return $this->generate('dat_qc_inbound_hdr', 'qc_no', $prefix, 4);
+    }
 }
 

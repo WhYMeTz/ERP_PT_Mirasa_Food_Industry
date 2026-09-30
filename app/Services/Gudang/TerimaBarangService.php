@@ -170,9 +170,12 @@ class TerimaBarangService
                 $processedItems[] = [
                     'barang_id'        => $barangId,
                     'podtl_id'         => !empty($item['podtl_id']) ? (int) $item['podtl_id'] : null,
+                    'qcdtl_id'         => !empty($item['qcdtl_id']) ? (int) $item['qcdtl_id'] : null,
                     'batch_no'         => !empty($item['batch_no']) ? trim($item['batch_no']) : null,
                     'expired_tgl'      => !empty($item['expired_tgl']) ? $item['expired_tgl'] : null,
                     'grade_cd'         => !empty($item['grade_cd']) ? trim($item['grade_cd']) : null,
+                    'kadar_air_persen' => !empty($item['kadar_air_persen']) ? (float) $item['kadar_air_persen'] : 0,
+                    'refraksi_persen'  => !empty($item['refraksi_persen']) ? (float) $item['refraksi_persen'] : 0,
                     'terima_qty'       => $terimaQty,
                     'reject_qty'       => (float) ($item['reject_qty'] ?? 0),
                     'harga_nominal'    => $hargaNominal,
@@ -213,6 +216,7 @@ class TerimaBarangService
                 'terima_no'        => $terimaNo,
                 'terima_tgl'       => $data['terima_tgl'] ?? date('Y-m-d'),
                 'po_id'            => $poId,
+                'qc_id'            => !empty($data['qc_id']) ? (int)$data['qc_id'] : null,
                 'supplier_id'      => $supplierId,
                 'gudang_id'        => $gudangId,
                 'suratjalan_no'    => $data['suratjalan_no'] ?? null,
@@ -243,12 +247,15 @@ class TerimaBarangService
                 $dtl = DatTerimaDtl::create([
                     'terima_id'        => $header->terima_id,
                     'podtl_id'         => $row['podtl_id'],
+                    'qcdtl_id'         => $row['qcdtl_id'] ?? null,
                     'barang_id'        => $barangId,
                     'batch_no'         => $batchNo,
                     'expired_tgl'      => $row['expired_tgl'],
                     'terima_qty'       => $row['terima_qty'],
                     'reject_qty'       => $row['reject_qty'],
                     'grade_cd'         => $row['grade_cd'],
+                    'kadar_air_persen' => $row['kadar_air_persen'] ?? 0,
+                    'refraksi_persen'  => $row['refraksi_persen'] ?? 0,
                     'harga_nominal'    => $row['harga_nominal'],
                     'diskon_persen'    => $row['diskon_persen'],
                     'diskon_nominal'   => $row['diskon_nominal'],
@@ -316,6 +323,11 @@ class TerimaBarangService
                     }
                     $poHdr->save();
                 }
+            }
+
+            // 4. Update status tiket QC jika penerimaan berasal dari tiket QC
+            if (!empty($data['qc_id'])) {
+                app(\App\Services\Gudang\QcInboundService::class)->markAsProcessed((int) $data['qc_id']);
             }
 
             return $header->fresh(['details.barang']);

@@ -189,8 +189,34 @@
     <p style="color: #64748b; font-size: 0.875rem; margin-top: 0.25rem; margin-bottom: 0;">Barang yang dicatat di formulir ini akan langsung menambah saldo fisik gudang, membuat nomor batch baru, dan dicatat pada Kartu Stok.</p>
 </div>
 
+{{-- BANNER INTEGRASI TIKET QC --}}
+<div id="qcIntegrationBanner" style="background: linear-gradient(135deg, #f0fdf4 0%, #e0f2fe 100%); border: 1.5px solid #0284c7; border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; box-shadow: 0 2px 4px rgba(2, 132, 199, 0.08);">
+    <div style="display: flex; align-items: center; gap: 0.85rem;">
+        <div style="width: 42px; height: 42px; border-radius: 10px; background: #0284c7; color: #ffffff; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; flex-shrink: 0; box-shadow: 0 2px 5px rgba(2, 132, 199, 0.3);">
+            🔬
+        </div>
+        <div>
+            <div style="font-weight: 800; font-size: 0.95rem; color: #0369a1;" id="qcBannerTitle">
+                Sinkronisasi Inspeksi Mutu QC Lapangan
+            </div>
+            <div style="font-size: 0.8rem; color: #334155;" id="qcBannerSubtitle">
+                Tarik hasil sampling kadar air, refraksi kotoran, dan timbangan truk yang telah diverifikasi tim QC.
+            </div>
+        </div>
+    </div>
+    <div style="display: flex; gap: 0.5rem; align-items: center;">
+        <button type="button" onclick="openQcModal()" class="btn btn-primary btn-sm" style="border-radius: 8px; font-weight: 700; background: #0284c7; border: none; padding: 0.5rem 0.9rem; box-shadow: 0 2px 4px rgba(2, 132, 199, 0.25);">
+            ⚡ Tarik Data dari Tiket QC
+        </button>
+        <button type="button" id="btnDetachQc" onclick="detachQcTicket()" style="display: none; background: #fee2e2; border: 1px solid #fecaca; color: #b91c1c; padding: 0.45rem 0.75rem; border-radius: 6px; font-size: 0.75rem; font-weight: 700; cursor: pointer;">
+            ✕ Lepas Tiket QC
+        </button>
+    </div>
+</div>
+
 <form action="{{ route('gudang.terima.store') }}" method="POST" id="formTerima">
     @csrf
+    <input type="hidden" name="qc_id" id="input_qc_id" value="{{ old('qc_id', request('qc_id')) }}">
     @if ($selectedPo)
         <input type="hidden" name="redirect_to" value="po">
     @endif
@@ -204,8 +230,8 @@
                 </div>
                 <div style="padding: 1.25rem; display: flex; flex-direction: column; gap: 1.25rem;">
                     
-                    {{-- BARIS 1: NOMOR PENERIMAAN, TANGGAL MASUK, REFERENSI PO --}}
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.25rem;">
+                    {{-- BARIS 1: NOMOR PENERIMAAN, TANGGAL MASUK, REFERENSI PO, NO SURAT JALAN --}}
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1.25rem;">
                         <div class="form-group" style="margin-bottom: 0;">
                             <label for="terima_no" class="form-label" style="font-weight: 600; font-size: 0.85rem;">Nomor Penerimaan <span style="color:#ef4444;">*</span></label>
                             <input type="text" id="terima_no" name="terima_no" value="{{ old('terima_no', $nextTerimaNo ?? '') }}" class="form-control" style="background: #f8fafc; font-weight: 600; height: 38px; border-radius: 6px; font-size: 0.85rem;" required>
@@ -216,6 +242,12 @@
                             <label for="terima_tgl" class="form-label" style="font-weight: 600; font-size: 0.85rem;">Tanggal Masuk Fisik <span style="color:#ef4444;">*</span></label>
                             <input type="date" id="terima_tgl" name="terima_tgl" value="{{ old('terima_tgl', date('Y-m-d')) }}" class="form-control" style="height: 38px; border-radius: 6px; font-size: 0.85rem;" required>
                             <small style="color: #64748b; font-size: 0.725rem;">Waktu kedatangan armada di pabrik.</small>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="suratjalan_no" class="form-label" style="font-weight: 600; font-size: 0.85rem;">No. Surat Jalan Supplier</label>
+                            <input type="text" id="suratjalan_no" name="suratjalan_no" value="{{ old('suratjalan_no') }}" class="form-control" placeholder="Contoh: SJ-2026/09/88" style="height: 38px; border-radius: 6px; font-size: 0.85rem;">
+                            <small style="color: #64748b; font-size: 0.725rem;">Nomor surat jalan fisik supplier.</small>
                         </div>
 
                         <div class="form-group" style="margin-bottom: 0;">
@@ -761,6 +793,59 @@
 
             <button type="button" class="btn btn-secondary btn-sm" onclick="closeModal('modalPilihSupplier')">Tutup</button>
         </div>
+    </div>
+</div>
+
+{{-- ========================================================================= --}}
+{{-- MODAL PILIH TIKET QC INBOUND (STATUS SIAP_GUDANG)                          --}}
+{{-- ========================================================================= --}}
+<div id="modalPilihQc" class="modal-backdrop">
+    <div class="modal-dialog" style="max-width: 920px; max-height: 90vh; display: flex; flex-direction: column;">
+        <div class="modal-header" style="background: #ffffff; border-bottom: 1px solid #e2e8f0; padding: 0.85rem 1.25rem;">
+            <div style="display: flex; align-items: center; gap: 0.65rem;">
+                <div style="width: 32px; height: 32px; border-radius: 8px; background: #e0f2fe; color: #0284c7; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;">
+                    🔬
+                </div>
+                <div>
+                    <h2 class="modal-title" style="font-size: 1.1rem; font-weight: 700; color: #0f172a; margin: 0;">Tiket QC Inbound (Siap Terima di Gudang)</h2>
+                    <p style="color: #64748b; font-size: 0.8rem; margin: 0.2rem 0 0 0;">Pilih tiket hasil inspeksi mutu lapangan untuk ditarik otomatis ke formulir penerimaan barang.</p>
+                </div>
+            </div>
+            <button type="button" class="modal-close" onclick="closeModal('modalPilihQc')">&times;</button>
+        </div>
+
+        <div style="flex: 1; overflow-y: auto; padding: 1rem 1.25rem; min-height: 250px; max-height: 55vh;">
+            <div id="qcModalLoading" style="text-align: center; padding: 2.5rem; color: #64748b;">
+                <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">⏳</div>
+                <div>Memuat daftar tiket QC yang siap diterima...</div>
+            </div>
+            <div id="qcModalEmpty" style="display: none; text-align: center; padding: 3rem 1rem; color: #64748b;">
+                <div style="font-size: 2.2rem; margin-bottom: 0.5rem;">📭</div>
+                <div style="font-weight: 700; color: #0f172a; font-size: 1rem;">Tidak Ada Tiket QC Pending</div>
+                <div style="font-size: 0.825rem; margin-top: 0.25rem;">Semua tiket QC sudah diproses atau belum ada input uji baru dari tim QC.</div>
+            </div>
+            <table class="excel-grid-table" id="qcModalTable" style="display: none; width: 100%;">
+                <thead>
+                    <tr>
+                        <th style="width: 35px; text-align: center;">No</th>
+                        <th style="width: 130px; text-align: left;">No. Tiket QC</th>
+                        <th style="width: 120px; text-align: left;">Waktu Uji</th>
+                        <th style="text-align: left;">Supplier &amp; PO</th>
+                        <th style="width: 120px; text-align: left;">Truk / Sopir</th>
+                        <th style="width: 90px; text-align: right;">Gross (KG)</th>
+                        <th style="width: 90px; text-align: right; background: #064e3b; color: #ffffff;">Netto (KG)</th>
+                        <th style="width: 80px; text-align: center;">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="qcModalTbody">
+                </tbody>
+            </table>
+        </div>
+
+        <div class="modal-footer" style="background: #f8fafc; border-top: 1px solid #e2e8f0; padding: 0.65rem 1.25rem; display: flex; justify-content: flex-end;">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="closeModal('modalPilihQc')">Tutup</button>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -1627,5 +1712,260 @@
     function clearAllInputsCreate() {
         clearAllTerimaQty();
     }
+
+    // =========================================================================
+    // 4. INTEGRASI TIKET QC INBOUND (SAMPLING KADAR AIR, REFRAKSI & TIMBANGAN)
+    // =========================================================================
+    let currentLoadedQcTicket = null;
+
+    function openQcModal() {
+        openModal('modalPilihQc');
+        const loading = document.getElementById('qcModalLoading');
+        const empty = document.getElementById('qcModalEmpty');
+        const table = document.getElementById('qcModalTable');
+        const tbody = document.getElementById('qcModalTbody');
+
+        if (loading) loading.style.display = 'block';
+        if (empty) empty.style.display = 'none';
+        if (table) table.style.display = 'none';
+        if (tbody) tbody.innerHTML = '';
+
+        fetch("{{ route('qc.inbound.siap_gudang') }}")
+            .then(res => res.json())
+            .then(json => {
+                if (loading) loading.style.display = 'none';
+                if (!json.tickets || json.tickets.length === 0) {
+                    if (empty) empty.style.display = 'block';
+                    return;
+                }
+
+                if (table) table.style.display = 'table';
+                let html = '';
+                json.tickets.forEach((t, idx) => {
+                    html += `
+                        <tr class="sup-modal-row" onclick="applyQcTicket(${t.qc_id}); closeModal('modalPilihQc');" style="cursor: pointer;">
+                            <td style="text-align: center; color: #64748b; font-size: 0.775rem;">${idx + 1}</td>
+                            <td>
+                                <strong style="color: #0284c7; font-family: monospace; font-size: 0.85rem;">${escapeHtml(t.qc_no)}</strong>
+                            </td>
+                            <td style="font-size: 0.8rem; color: #334155;">${escapeHtml(t.tgl_periksa)}</td>
+                            <td>
+                                <strong style="color: #0f172a; font-size: 0.85rem;">${escapeHtml(t.supplier_nm || '-')}</strong>
+                                ${t.po_no ? `<div style="font-size:0.75rem; color:#0284c7;">PO: ${escapeHtml(t.po_no)}</div>` : ''}
+                                <div style="font-size: 0.75rem; color: #64748b;">${escapeHtml(t.item_summary)}</div>
+                            </td>
+                            <td style="font-size: 0.8rem; color: #475569;">
+                                <div><strong>${escapeHtml(t.plat_nomor_truk || '-')}</strong></div>
+                                <div style="font-size: 0.725rem; color: #64748b;">${escapeHtml(t.sopir_nama || '')}</div>
+                            </td>
+                            <td style="text-align: right; font-weight: 600; font-size: 0.85rem;">
+                                ${parseFloat(t.total_gross).toLocaleString('id-ID', {minimumFractionDigits: 2})}
+                            </td>
+                            <td style="text-align: right; font-weight: 800; color: #15803d; font-size: 0.9rem; background: #f0fdf4;">
+                                ${parseFloat(t.total_netto).toLocaleString('id-ID', {minimumFractionDigits: 2})}
+                            </td>
+                            <td style="text-align: center;">
+                                <button type="button" class="btn btn-primary btn-sm" style="padding: 0.25rem 0.65rem; font-size: 0.75rem; font-weight: 700; background: #0284c7;" onclick="event.stopPropagation(); applyQcTicket(${t.qc_id}); closeModal('modalPilihQc');">
+                                    Pilih
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                });
+                tbody.innerHTML = html;
+            })
+            .catch(err => {
+                if (loading) loading.style.display = 'none';
+                alert('Gagal memuat tiket QC: ' + err.message);
+            });
+    }
+
+    function applyQcTicket(qcId) {
+        if (!qcId) return;
+
+        fetch(`{{ url('qc/inbound/ticket-data') }}/${qcId}`)
+            .then(res => res.json())
+            .then(json => {
+                if (json.status !== 'success' || !json.data) {
+                    alert('Data tiket QC tidak ditemukan.');
+                    return;
+                }
+
+                const data = json.data;
+                currentLoadedQcTicket = data;
+
+                // 1. Set Hidden Input
+                const inputQcId = document.getElementById('input_qc_id');
+                if (inputQcId) inputQcId.value = data.qc_id;
+
+                // 2. Set Supplier
+                if (data.supplier_id) {
+                    selectSupplier(data.supplier_id);
+                }
+
+                // 3. Set Gudang
+                if (data.gudang_id) {
+                    const gdgSelect = document.getElementById('gudang_id');
+                    if (gdgSelect) gdgSelect.value = data.gudang_id;
+                }
+
+                // 4. Set PO (jika ada)
+                if (data.po_id) {
+                    const poSelect = document.getElementById('po_id');
+                    if (poSelect) poSelect.value = data.po_id;
+                }
+
+                // 5. Set Surat Jalan
+                const sjInput = document.getElementById('suratjalan_no');
+                if (sjInput) {
+                    sjInput.value = data.surat_jalan_supplier || '';
+                }
+
+                // 6. Set Catatan dengan info Sopir & Plat
+                const catInput = document.getElementById('catatan_txt');
+                if (catInput && (!catInput.value || catInput.value.includes('QC Tiket'))) {
+                    let cat = `QC Tiket: ${data.qc_no}`;
+                    if (data.plat_nomor_truk) cat += `, Plat Truk: ${data.plat_nomor_truk}`;
+                    if (data.sopir_nama) cat += `, Sopir: ${data.sopir_nama}`;
+                    catInput.value = cat;
+                }
+
+                // 7. Update Banner
+                const bannerTitle = document.getElementById('qcBannerTitle');
+                const bannerSub = document.getElementById('qcBannerSubtitle');
+                const btnDetach = document.getElementById('btnDetachQc');
+
+                if (bannerTitle) {
+                    bannerTitle.innerHTML = `<span style="color:#15803d;">✅ Terhubung dengan Tiket QC: ${escapeHtml(data.qc_no)}</span>`;
+                }
+                if (bannerSub) {
+                    bannerSub.innerHTML = `Supplier: <strong>${escapeHtml(data.supplier_nm || '-')}</strong> &bull; Truk: <strong>${escapeHtml(data.plat_nomor_truk || '-')}</strong> &bull; Petugas QC: <strong>${escapeHtml(data.petugas_qc_nama || '-')}</strong>`;
+                }
+                if (btnDetach) btnDetach.style.display = 'inline-block';
+
+                // 8. Muat Item Barang dari Tiket QC ke Tabel
+                const container = document.getElementById('terimaItemsContainer');
+                if (container && data.items && data.items.length > 0) {
+                    container.innerHTML = '';
+                    terimaRowIndex = 0;
+
+                    data.items.forEach((it, idx) => {
+                        const tr = document.createElement('tr');
+                        tr.className = 'terima-row';
+                        tr.dataset.index = idx;
+                        tr.dataset.sisa = 0;
+
+                        const rowGross = parseFloat(it.gross_qty) || 0;
+                        const rowRefraksiPersen = parseFloat(it.refraksi_persen) || 0;
+                        const rowRefraksiQty = parseFloat(it.refraksi_qty) || 0;
+                        const rowRejectQty = parseFloat(it.reject_qty) || 0;
+                        const rowNetto = parseFloat(it.netto_qty) || 0;
+                        const defaultHarga = parseFloat(it.std_harga) || 0;
+
+                        tr.innerHTML = `
+                            <td class="row-num" style="font-weight: 700; text-align: center; color: #475569; background: #f1f5f9;">${idx + 1}</td>
+                            <td>
+                                <input type="hidden" name="items[${idx}][podtl_id]" value="${it.podtl_id || ''}">
+                                <input type="hidden" name="items[${idx}][qcdtl_id]" value="${it.qcdtl_id || ''}">
+                                <input type="hidden" name="items[${idx}][kadar_air_persen]" value="${it.kadar_air || 0}">
+                                <input type="hidden" name="items[${idx}][refraksi_persen]" value="${rowRefraksiPersen}">
+                                <input type="hidden" name="items[${idx}][barang_id]" value="${it.barang_id}" class="item-barang-id">
+                                
+                                <strong style="color: #0f172a; display: block; font-size: 0.85rem;">${escapeHtml(it.barang_nm)}</strong>
+                                <div style="display: flex; gap: 0.4rem; align-items: center; margin-top: 2px; flex-wrap: wrap;">
+                                    <span style="font-size: 0.725rem; font-family: monospace; color: #64748b;">${escapeHtml(it.barang_cd)}</span>
+                                    <span class="badge" style="background: #e0f2fe; color: #0369a1; font-size: 0.675rem; font-weight: 700;">
+                                        Kadar Air: ${it.kadar_air}%
+                                    </span>
+                                    ${rowRefraksiPersen > 0 ? `
+                                        <span class="badge" style="background: #fef3c7; color: #b45309; font-size: 0.675rem; font-weight: 700;">
+                                            Refraksi: ${rowRefraksiPersen}% (-${rowRefraksiQty.toFixed(1)} KG)
+                                        </span>
+                                    ` : ''}
+                                </div>
+                            </td>
+                            <td>
+                                <input type="text" name="items[${idx}][batch_no]" value="${escapeHtml(it.batch_prefix || 'BRG-')}" placeholder="${escapeHtml(it.batch_prefix || 'BRG-')}... (isi batch supplier)" class="form-control item-batch" style="font-family: monospace; font-weight: 700; color: #0284c7; width: 100%;" required>
+                            </td>
+                            <td>
+                                <input type="date" name="items[${idx}][expired_tgl]" class="form-control" style="font-size: 0.8rem;">
+                            </td>
+                            <td>
+                                <select name="items[${idx}][grade_cd]" class="form-control" style="font-size: 0.8rem;">
+                                    <option value="A" ${it.grade_cd === 'A' ? 'selected' : ''}>Grade A Super</option>
+                                    <option value="B" ${it.grade_cd === 'B' ? 'selected' : ''}>Grade B Standar</option>
+                                    <option value="C" ${it.grade_cd === 'C' ? 'selected' : ''}>Grade C Campur</option>
+                                    <option value="REJECT" ${it.grade_cd === 'REJECT' ? 'selected' : ''}>Reject / Afkir</option>
+                                </select>
+                            </td>
+                            <td>
+                                <input type="number" step="0.0001" min="0" name="items[${idx}][terima_qty]" value="${rowNetto > 0 ? rowNetto : rowGross}" class="form-control item-terima-qty" style="text-align: right; font-weight: 700;" oninput="calculateTotalTerima()" required title="Netto bersih diterima (Gross ${rowGross} KG dikurangi refraksi & reject)">
+                            </td>
+                            <td>
+                                <input type="number" step="0.0001" min="0" name="items[${idx}][reject_qty]" value="${rowRejectQty}" class="form-control item-reject-qty" placeholder="0" style="text-align: right;" oninput="calculateTotalTerima()">
+                            </td>
+                            <td style="text-align: right; font-weight: 700; color: #047857; background: #f0fdf4;" class="row-netto">
+                                ${rowNetto.toLocaleString('id-ID', {minimumFractionDigits: 2})}
+                            </td>
+                            <td style="text-align: center;">
+                                <span class="row-satuan" style="font-weight: 700; color: #475569; font-size: 0.8rem;">${escapeHtml(it.satuan_nm)}</span>
+                            </td>
+                            <td>
+                                <input type="number" step="0.01" min="0" name="items[${idx}][harga_nominal]" value="${defaultHarga}" class="form-control item-harga" placeholder="0" style="text-align: right; font-weight: 600;" oninput="calculateTotalTerima()">
+                            </td>
+                            <td>
+                                <input type="number" step="0.1" min="0" max="100" name="items[${idx}][diskon_persen]" value="0" class="form-control item-diskon" placeholder="0" style="text-align: right;" oninput="calculateTotalTerima()">
+                            </td>
+                            <td>
+                                <input type="number" step="0.01" min="0" name="items[${idx}][potongan_nominal]" value="0" class="form-control item-potongan" placeholder="0" style="text-align: right;" oninput="calculateTotalTerima()">
+                            </td>
+                            <td>
+                                <select name="items[${idx}][ppn_tipe]" class="form-control item-ppn-tipe" onchange="calculateTotalTerima()" style="font-size: 0.775rem; font-weight: 600;">
+                                    <option value="NON_PPN" selected>Non (0%)</option>
+                                    <option value="PPN_11">PPN 11%</option>
+                                </select>
+                            </td>
+                            <td style="text-align: right; font-weight: 700; font-family: monospace; color: #0f172a;" class="row-subtotal">
+                                Rp 0
+                            </td>
+                            <td style="text-align: center;">
+                                <button type="button" onclick="removeTerimaRow(this)" class="btn btn-danger btn-sm" style="padding: 0.2rem 0.45rem; font-size: 0.8rem;" title="Hapus Baris">&times;</button>
+                            </td>
+                        `;
+                        container.appendChild(tr);
+                        terimaRowIndex++;
+                        attachExcelKeyboardEventsTerima(tr);
+                    });
+
+                    calculateTotalTerima();
+                }
+            })
+            .catch(err => {
+                alert('Gagal mengambil data tiket QC: ' + err.message);
+            });
+    }
+
+    function detachQcTicket() {
+        const inputQcId = document.getElementById('input_qc_id');
+        if (inputQcId) inputQcId.value = '';
+
+        const bannerTitle = document.getElementById('qcBannerTitle');
+        const bannerSub = document.getElementById('qcBannerSubtitle');
+        const btnDetach = document.getElementById('btnDetachQc');
+
+        if (bannerTitle) bannerTitle.innerText = 'Sinkronisasi Inspeksi Mutu QC Lapangan';
+        if (bannerSub) bannerSub.innerText = 'Tarik hasil sampling kadar air, refraksi kotoran, dan timbangan truk yang telah diverifikasi tim QC.';
+        if (btnDetach) btnDetach.style.display = 'none';
+
+        currentLoadedQcTicket = null;
+    }
+
+    // Auto-load QC ticket if qc_id parameter is present in URL or old input
+    document.addEventListener('DOMContentLoaded', function() {
+        const qcIdInput = document.getElementById('input_qc_id');
+        if (qcIdInput && qcIdInput.value) {
+            applyQcTicket(qcIdInput.value);
+        }
+    });
 </script>
 @endsection

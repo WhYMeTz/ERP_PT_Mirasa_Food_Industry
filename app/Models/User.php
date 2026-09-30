@@ -343,10 +343,27 @@ class User extends Authenticatable
     }
 
     /**
+     * Hak akses QC Inbound Bahan Baku
+     */
+    public function canAccessQc(): bool
+    {
+        return $this->isSuperAdmin() || $this->isQc() || $this->isGudang() || $this->canDo('qc_view');
+    }
+
+    public function canCreateQc(): bool
+    {
+        return $this->isSuperAdmin() || $this->isQc() || $this->canDo('qc_create');
+    }
+
+    /**
      * Dapatkan nama rute halaman muka (dashboard) default berdasarkan role
      */
     public function getDashboardRoute(): string
     {
+        if ($this->isQc()) {
+            return 'qc.inbound.create';
+        }
+
         if ($this->isProduksi()) {
             return 'gudang.pemakaian.index';
         }

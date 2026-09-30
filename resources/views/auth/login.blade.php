@@ -226,6 +226,7 @@
                             elseif ($u->role_cd === 'STAFF_PRODUKSI') $roleColor = '#ea580c';
                             elseif ($u->role_cd === 'ADMIN_GUDANG') $roleColor = '#0284c7';
                             elseif ($u->role_cd === 'PURCHASING') $roleColor = '#d97706';
+                            elseif ($u->role_cd === 'QC') $roleColor = '#059669';
                         @endphp
                         <span class="demo-btn-role" style="color: {{ $roleColor }};">{{ $u->role_cd }}</span>
                         <span class="demo-btn-name">{{ $u->name }}</span>

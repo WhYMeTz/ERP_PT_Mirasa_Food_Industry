@@ -59,6 +59,11 @@ class DatReturHdr extends Model
         return $this->belongsTo(DatTerimaHdr::class, 'terima_id', 'terima_id');
     }
 
+    public function terima(): BelongsTo
+    {
+        return $this->penerimaan();
+    }
+
     /**
      * Relasi ke Mitra Supplier
      */

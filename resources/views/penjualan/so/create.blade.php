@@ -3,239 +3,284 @@
 @section('title', 'Buat PO Penjualan Baru - ERP PT Mirasa')
 
 @section('content')
-<div class="page-container">
-    {{-- Breadcrumb & Title --}}
-    <div style="margin-bottom: 1.5rem;">
-        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
-            <a href="{{ route('penjualan.so.index') }}" style="color: #0284c7; text-decoration: none; font-size: 0.825rem; font-weight: 600;">
-                PO Penjualan
-            </a>
-            <span style="color: #94a3b8; font-size: 0.8rem;">/</span>
-            <span style="color: #64748b; font-size: 0.825rem; font-weight: 600;">Formulir Pesanan Baru</span>
-        </div>
-        <h1 style="font-size: 1.5rem; font-weight: 800; color: #0f172a; margin: 0; letter-spacing: -0.02em;">
-            Buat Dokumen PO Penjualan (Sales Order)
-        </h1>
-        <p style="font-size: 0.85rem; color: #64748b; margin: 0.2rem 0 0 0;">
-            Format kode pesanan otomatis standar ERP PT Mirasa Food Industry (<strong style="color: #0284c7;">SO-YYYYMM-XXXX</strong>).
-        </p>
-    </div>
+<style>
+    .order-station-grid {
+        display: grid;
+        grid-template-columns: 2.3fr 1fr;
+        gap: 1.5rem;
+        align-items: start;
+        margin-bottom: 2rem;
+    }
+    @media (max-width: 1100px) {
+        .order-station-grid {
+            grid-template-columns: 1fr;
+        }
+        .sticky-action-sidebar {
+            position: static !important;
+            top: auto !important;
+        }
+    }
+    .excel-grid-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.825rem;
+    }
+    .excel-grid-table th {
+        background: #0f172a;
+        color: #f8fafc;
+        font-weight: 600;
+        padding: 0.55rem 0.45rem;
+        border: 1px solid #334155;
+        font-size: 0.775rem;
+        letter-spacing: 0.02em;
+    }
+    .excel-grid-table td {
+        padding: 0.35rem 0.45rem;
+        border: 1px solid #cbd5e1;
+        background: #ffffff;
+        vertical-align: middle;
+    }
+    .excel-grid-table tr:nth-child(even) td {
+        background: #fafafa;
+    }
+    .excel-grid-table tr:hover td {
+        background: #f0f9ff;
+    }
+    .excel-grid-table .form-control {
+        border: 1px solid #cbd5e1;
+        border-radius: 4px;
+        padding: 0.35rem 0.5rem !important;
+        font-size: 0.825rem !important;
+        height: 32px;
+        box-sizing: border-box;
+        width: 100%;
+        transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .excel-grid-table .form-control:focus {
+        border-color: #0284c7 !important;
+        box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.25) !important;
+        background: #ffffff !important;
+    }
+</style>
 
-    @if ($errors->any())
-        <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; color: #991b1b;">
-            <div style="font-weight: 700; margin-bottom: 0.35rem; display: flex; align-items: center; gap: 0.5rem;">
-                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                Terdapat kesalahan pengisian data pesanan:
-            </div>
-            <ul style="margin: 0; padding-left: 1.25rem; font-size: 0.825rem;">
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
-
-    <form method="POST" action="{{ route('penjualan.so.store') }}" id="soForm">
-        @csrf
-
-        {{-- Section 1: Header Pesanan & Data Customer --}}
-        <div class="card" style="border: 1px solid #e2e8f0; border-radius: 10px; margin-bottom: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
-            <div style="padding: 1rem 1.25rem; background: #f8fafc; border-bottom: 1px solid #e2e8f0; border-radius: 10px 10px 0 0; display: flex; align-items: center; gap: 0.5rem;">
-                <svg width="18" height="18" fill="none" stroke="#0284c7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                <span style="font-weight: 700; color: #0f172a; font-size: 0.925rem;">1. Informasi Utama &amp; Data Customer</span>
-            </div>
-
-            <div style="padding: 1.25rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.25rem;">
-                {{-- Tanggal Pesanan --}}
-                <div>
-                    <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.4rem;">
-                        Tanggal Pesanan <span style="color: #ef4444;">*</span>
-                    </label>
-                    <input type="date" name="so_tgl" id="soTglInput" value="{{ old('so_tgl', date('Y-m-d')) }}" required class="form-control" style="font-size: 0.875rem;">
-                    <div style="font-size: 0.725rem; color: #64748b; margin-top: 0.25rem;">Mengubah tanggal akan otomatis memperbarui kode urut SO.</div>
-                </div>
-
-                {{-- Kode Pesanan (Otomatis) --}}
-                <div>
-                    <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.4rem;">
-                        Kode Pesanan (Standar ERP) <span style="color: #0284c7;">*Otomatis</span>
-                    </label>
-                    <div style="position: relative;">
-                        <input type="text" name="so_no" id="soNoInput" value="{{ old('so_no', $soNo) }}" readonly class="form-control" style="background: #f1f5f9; font-family: monospace; font-weight: 800; color: #0284c7; font-size: 0.95rem; cursor: not-allowed;">
-                        <span style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); font-size: 0.675rem; background: #e0f2fe; color: #0369a1; padding: 2px 6px; border-radius: 4px; font-weight: 700;">AUTO</span>
-                    </div>
-                    <div style="font-size: 0.725rem; color: #64748b; margin-top: 0.25rem;">Format resmi: <code>SO-YYYYMM-0001</code></div>
-                </div>
-
-                {{-- Nama Customer --}}
-                <div>
-                    <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.4rem;">
-                        Pilih Customer <span style="color: #ef4444;">*</span>
-                    </label>
-                    <select name="customer_id" id="customerSelect" required class="form-control" style="font-size: 0.875rem;">
-                        <option value="">-- Pilih Customer Pemesan --</option>
-                        @foreach($customers as $cust)
-                            <option value="{{ $cust->customer_id }}"
-                                    data-code="{{ $cust->customer_cd }}"
-                                    data-contact="{{ $cust->kontak_no }}"
-                                    data-address="{{ $cust->alamat_txt }}"
-                                    {{ old('customer_id') == $cust->customer_id ? 'selected' : '' }}>
-                                {{ $cust->customer_nm }} ({{ $cust->customer_cd }})
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-
-                {{-- Kode Customer (Otomatis) --}}
-                <div>
-                    <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.4rem;">
-                        Kode Customer <span style="color: #0284c7;">*Otomatis</span>
-                    </label>
-                    <input type="text" id="customerCdInput" readonly class="form-control" placeholder="Terisi otomatis..." style="background: #f8fafc; font-family: monospace; font-weight: 700; color: #334155; cursor: not-allowed;">
-                </div>
-
-                {{-- Nomor PO Asli dari Customer --}}
-                <div>
-                    <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.4rem;">
-                        Nomor PO Customer (Opsional)
-                    </label>
-                    <input type="text" name="customer_po_no" value="{{ old('customer_po_no') }}" placeholder="Contoh: PO-CUST/2026/091" class="form-control" style="font-size: 0.875rem;">
-                    <div style="font-size: 0.725rem; color: #64748b; margin-top: 0.25rem;">Nomor referensi pesanan dari pihak pembeli/toko.</div>
-                </div>
-
-                {{-- Estimasi Tanggal Kirim --}}
-                <div>
-                    <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.4rem;">
-                        Estimasi Tanggal Kirim
-                    </label>
-                    <input type="date" name="tgl_kirim_estimasi" value="{{ old('tgl_kirim_estimasi', date('Y-m-d', strtotime('+3 days'))) }}" class="form-control" style="font-size: 0.875rem;">
-                </div>
-            </div>
-
-            {{-- Info Customer Info Banner --}}
-            <div id="customerInfoBox" style="display: none; padding: 0.85rem 1.25rem; background: #f0fdf4; border-top: 1px solid #bbf7d0; font-size: 0.8rem; color: #166534;">
-                <div style="display: flex; gap: 1.5rem; flex-wrap: wrap;">
-                    <div><strong>Alamat Pengiriman:</strong> <span id="custAddressText">-</span></div>
-                    <div><strong>Kontak / HP:</strong> <span id="custContactText">-</span></div>
-                </div>
-            </div>
-        </div>
-
-        {{-- Section 2: Grid Input Barang Pesanan (Excel-Style Table) --}}
-        <div class="card" style="border: 1px solid #e2e8f0; border-radius: 10px; margin-bottom: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.02); overflow: hidden;">
-            <div style="padding: 1rem 1.25rem; background: #0f172a; color: #ffffff; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
-                <div style="display: flex; align-items: center; gap: 0.5rem;">
-                    <svg width="18" height="18" fill="none" stroke="#38bdf8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
-                    <span style="font-weight: 700; font-size: 0.925rem;">2. Rincian Barang Hasil Produksi (Barang Jadi / Setengah Jadi)</span>
-                </div>
-                <button type="button" id="btnAddRow" class="btn btn-sm" style="background: #0284c7; color: #ffffff; font-weight: 700; border-radius: 6px; padding: 0.4rem 0.85rem; display: inline-flex; align-items: center; gap: 0.35rem; border: none; cursor: pointer;">
-                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
-                    <span>+ Tambah Baris Barang</span>
-                </button>
-            </div>
-
-            <div style="overflow-x: auto;">
-                <table class="table" id="itemsTable" style="margin: 0; width: 100%; border-collapse: collapse; font-size: 0.825rem;">
-                    <thead>
-                        <tr style="background: #1e293b; color: #f8fafc; text-align: left;">
-                            <th style="padding: 0.65rem 0.5rem; width: 35px; text-align: center;">#</th>
-                            <th style="padding: 0.65rem 0.5rem; min-width: 220px;">Nama Produk (FG / WIP)</th>
-                            <th style="padding: 0.65rem 0.5rem; width: 130px;">Kode Barang</th>
-                            <th style="padding: 0.65rem 0.5rem; width: 110px;">Jenis</th>
-                            <th style="padding: 0.65rem 0.5rem; width: 100px;">Jumlah</th>
-                            <th style="padding: 0.65rem 0.5rem; width: 80px;">Satuan</th>
-                            <th style="padding: 0.65rem 0.5rem; width: 130px;">@Harga Satuan (Rp)</th>
-                            <th style="padding: 0.65rem 0.5rem; width: 85px;">Diskon %</th>
-                            <th style="padding: 0.65rem 0.5rem; width: 110px;">Potongan (Rp)</th>
-                            <th style="padding: 0.65rem 0.5rem; width: 110px;">PPN 11%</th>
-                            <th style="padding: 0.65rem 0.5rem; width: 140px; text-align: right;">Total Harga (Rp)</th>
-                            <th style="padding: 0.65rem 0.5rem; width: 45px; text-align: center;">Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody id="itemsBody">
-                        {{-- Row template di-render via JS --}}
-                    </tbody>
-                </table>
-            </div>
-
-            {{-- Empty State jika belum ada baris --}}
-            <div id="noItemsNotice" style="display: none; padding: 2rem; text-align: center; color: #64748b; background: #fafafa;">
-                Klik tombol <strong>+ Tambah Baris Barang</strong> untuk mulai menambahkan item ke dalam pesanan penjualan.
-            </div>
-        </div>
-
-        {{-- Section 3: Ringkasan Nilai & Komersial --}}
-        <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 1.5rem; margin-bottom: 2rem; align-items: start;">
-            {{-- Catatan Pesanan --}}
-            <div class="card" style="border: 1px solid #e2e8f0; border-radius: 10px; padding: 1.25rem;">
-                <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.4rem;">
-                    Catatan / Syarat Khusus Pesanan
-                </label>
-                <textarea name="catatan_txt" rows="4" class="form-control" placeholder="Contoh: Pengiriman via ekspedisi internal, sertakan sampel kemasan baru, toleransi susut berat maksimal 0.5%." style="font-size: 0.85rem;">{{ old('catatan_txt') }}</textarea>
-                <div style="font-size: 0.725rem; color: #64748b; margin-top: 0.35rem;">
-                    Catatan ini akan otomatis tercetak pada dokumen Faktur dan Surat Jalan.
-                </div>
-            </div>
-
-            {{-- Live Calculation Summary Box --}}
-            <div class="card" style="border: 2px solid #0284c7; border-radius: 10px; padding: 1.25rem; background: #f8fafc; box-shadow: 0 4px 6px -1px rgba(2, 132, 199, 0.1);">
-                <div style="font-weight: 800; font-size: 0.95rem; color: #0f172a; border-bottom: 1px solid #e2e8f0; padding-bottom: 0.75rem; margin-bottom: 0.75rem; display: flex; justify-content: space-between; align-items: center;">
-                    <span>Kalkulasi Otomatis Total</span>
-                    <span class="badge" style="background: #e0f2fe; color: #0284c7; font-size: 0.7rem; font-weight: 700;">Live Realtime</span>
-                </div>
-
-                <div style="display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.85rem;">
-                    <div style="display: flex; justify-content: space-between; color: #475569;">
-                        <span>Subtotal Bruto:</span>
-                        <span id="lblSubtotalBruto" style="font-weight: 700; color: #0f172a;">Rp 0</span>
-                    </div>
-
-                    <div style="display: flex; justify-content: space-between; color: #475569;">
-                        <span>Total Diskon Item:</span>
-                        <span id="lblTotalDiskon" style="font-weight: 700; color: #dc2626;">- Rp 0</span>
-                    </div>
-
-                    <div style="display: flex; justify-content: space-between; align-items: center; color: #475569;">
-                        <span>Potongan Faktur (Rp):</span>
-                        <input type="number" step="any" min="0" name="potongan_nominal" id="headerPotonganInput" value="{{ old('potongan_nominal', 0) }}" class="form-control" style="width: 130px; text-align: right; padding: 0.25rem 0.5rem; font-size: 0.85rem; height: 30px;">
-                    </div>
-
-                    <div style="display: flex; justify-content: space-between; color: #475569; border-top: 1px dashed #cbd5e1; padding-top: 0.5rem;">
-                        <span>Dasar Pengenaan Pajak (DPP):</span>
-                        <span id="lblDppNominal" style="font-weight: 700; color: #0f172a;">Rp 0</span>
-                    </div>
-
-                    <div style="display: flex; justify-content: space-between; color: #475569;">
-                        <span>Total PPN 11%:</span>
-                        <span id="lblTotalPpn" style="font-weight: 700; color: #16a34a;">+ Rp 0</span>
-                    </div>
-
-                    <div style="display: flex; justify-content: space-between; align-items: center; border-top: 2px solid #0f172a; padding-top: 0.75rem; margin-top: 0.25rem;">
-                        <span style="font-size: 1rem; font-weight: 800; color: #0f172a;">TOTAL TAGIHAN:</span>
-                        <span id="lblTotalTagihan" style="font-size: 1.25rem; font-weight: 800; color: #0284c7;">Rp 0</span>
-                    </div>
-                </div>
-
-                {{-- Action Buttons --}}
-                <div style="display: flex; gap: 0.75rem; margin-top: 1.25rem;">
-                    <a href="{{ route('penjualan.so.index') }}" class="btn btn-outline-secondary" style="flex: 1; text-align: center; font-weight: 600; padding: 0.6rem; border-radius: 6px;">
-                        Batal
-                    </a>
-                    <button type="submit" class="btn btn-primary" style="flex: 2; font-weight: 700; padding: 0.6rem; border-radius: 6px; box-shadow: 0 2px 4px rgba(2, 132, 199, 0.2);">
-                        Simpan PO Penjualan
-                    </button>
-                </div>
-            </div>
-        </div>
-    </form>
+<div style="margin-bottom: 1.25rem;">
+    <a href="{{ route('penjualan.so.index') }}" style="color: #64748b; text-decoration: none; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.35rem; margin-bottom: 0.35rem;">
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+        Kembali ke Daftar PO Penjualan
+    </a>
+    <h1 style="font-size: 1.5rem; font-weight: 700; color: #0f172a; margin: 0;">Buat Purchase Order (PO) Penjualan Baru</h1>
+    <p style="color: #64748b; font-size: 0.875rem; margin-top: 0.25rem; margin-bottom: 0;">
+        Formulir pemesanan produk hasil produksi (barang jadi &amp; barang setengah jadi) ke pelanggan atau mitra distributor.
+    </p>
 </div>
 
-{{-- Pass Master Data to Javascript for instantaneous responsive auto-filling --}}
+@if (isset($errors) && $errors->any())
+    <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; color: #991b1b;">
+        <div style="font-weight: 700; margin-bottom: 0.35rem; display: flex; align-items: center; gap: 0.5rem;">
+            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            Terdapat kesalahan pengisian data pesanan:
+        </div>
+        <ul style="margin: 0; padding-left: 1.25rem; font-size: 0.825rem;">
+            @foreach ($errors->all() as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+    </div>
+@endif
+
+<form method="POST" action="{{ route('penjualan.so.store') }}" id="formPo">
+    @csrf
+
+    <div class="order-station-grid">
+        {{-- KOLOM KIRI: FORM DATA DOKUMEN & TABEL BARANG --}}
+        <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+            
+            {{-- KARTU 1: INFORMASI UTAMA DOKUMEN & CUSTOMER --}}
+            <div class="card" style="border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+                <div class="card-header" style="background: #ffffff; padding: 0.875rem 1.25rem; border-bottom: 1px solid #e2e8f0;">
+                    <strong style="color: #0f172a; font-size: 0.95rem;">1. Informasi Dokumen &amp; Pelanggan (Customer)</strong>
+                </div>
+
+                <div style="padding: 1.25rem; display: flex; flex-direction: column; gap: 1.25rem;">
+                    {{-- BARIS 1: NOMOR SO, TANGGAL SO, ESTIMASI KIRIM --}}
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.25rem;">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="so_no" class="form-label" style="font-weight: 600; font-size: 0.85rem;">Nomor SO / PO Penjualan <span style="color:#ef4444;">*</span></label>
+                            <input type="text" id="so_no" name="so_no" value="{{ old('so_no', $soNo) }}" readonly class="form-control" style="background: #f8fafc; font-weight: 600; font-family: monospace; color: #0284c7;" required>
+                            <small style="color: #64748b; font-size: 0.725rem;">Nomor otomatis standar ERP (<code>SO-YYYYMM-XXXX</code>).</small>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="so_tgl" class="form-label" style="font-weight: 600; font-size: 0.85rem;">Tanggal Pesanan <span style="color:#ef4444;">*</span></label>
+                            <input type="date" id="so_tgl" name="so_tgl" value="{{ old('so_tgl', date('Y-m-d')) }}" class="form-control" required>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="tgl_kirim_estimasi" class="form-label" style="font-weight: 600; font-size: 0.85rem;">Estimasi Tanggal Kirim</label>
+                            <input type="date" id="tgl_kirim_estimasi" name="tgl_kirim_estimasi" value="{{ old('tgl_kirim_estimasi', date('Y-m-d', strtotime('+3 days'))) }}" class="form-control">
+                            <small style="color: #64748b; font-size: 0.725rem;">Target pengiriman ke alamat pemesan.</small>
+                        </div>
+                    </div>
+
+                    {{-- BARIS 2: CUSTOMER MITRA & NOMOR PO CUSTOMER --}}
+                    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.25rem; align-items: start;">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="customerSelect" class="form-label" style="font-weight: 600; font-size: 0.85rem;">Customer Pemesan <span style="color:#ef4444;">*</span></label>
+                            <select name="customer_id" id="customerSelect" required class="form-control">
+                                <option value="">-- Pilih Customer Mitra --</option>
+                                @foreach($customers as $cust)
+                                    <option value="{{ $cust->customer_id }}"
+                                            data-code="{{ $cust->customer_cd }}"
+                                            data-contact="{{ $cust->kontak_no }}"
+                                            data-address="{{ $cust->alamat_txt }}"
+                                            {{ old('customer_id') == $cust->customer_id ? 'selected' : '' }}>
+                                        {{ $cust->customer_nm }} ({{ $cust->customer_cd }})
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="customer_po_no" class="form-label" style="font-weight: 600; font-size: 0.85rem;">Nomor PO Customer</label>
+                            <input type="text" id="customer_po_no" name="customer_po_no" value="{{ old('customer_po_no') }}" placeholder="Contoh: PO-CUST/2026/09" class="form-control">
+                            <small style="color: #64748b; font-size: 0.725rem;">Referensi PO dari pihak pelanggan.</small>
+                        </div>
+                    </div>
+
+                    {{-- CUSTOMER INFO BOX --}}
+                    <div id="customerInfoBox" style="display: none; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.75rem 1rem; font-size: 0.825rem; color: #334155;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div>
+                                <span style="color: #64748b; font-size: 0.75rem; display: block;">Alamat Pengiriman:</span>
+                                <strong id="custAddressText">-</strong>
+                            </div>
+                            <div>
+                                <span style="color: #64748b; font-size: 0.75rem; display: block;">Kontak / No Telepon:</span>
+                                <strong id="custContactText">-</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- KARTU 2: RINCIAN PRODUK HASIL PRODUKSI (EXCEL GRID TABLE) --}}
+            <div class="card" style="border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+                <div class="card-header" style="background: #ffffff; padding: 0.875rem 1.25rem; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                    <div>
+                        <strong style="color: #0f172a; font-size: 0.95rem;">2. Rincian Barang Hasil Produksi yang Dipesan</strong>
+                        <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.15rem;">
+                            Hanya memuat barang kategori Produk Jadi (FG) dan Barang Setengah Jadi (WIP).
+                        </div>
+                    </div>
+                    <button type="button" id="btnAddRow" class="btn btn-secondary btn-sm" style="display: inline-flex; align-items: center; gap: 0.35rem; font-weight: 600;">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+                        Tambah Baris Produk
+                    </button>
+                </div>
+
+                <div style="overflow-x: auto;">
+                    <table class="excel-grid-table" id="itemsTable">
+                        <thead>
+                            <tr>
+                                <th style="width: 35px; text-align: center;">No</th>
+                                <th style="min-width: 230px; text-align: left;">Nama Produk (FG / WIP)</th>
+                                <th style="width: 100px; text-align: left;">Kode</th>
+                                <th style="width: 75px; text-align: left;">Jenis</th>
+                                <th style="width: 75px; text-align: left;">Satuan</th>
+                                <th style="width: 90px; text-align: right;">Kuantitas</th>
+                                <th style="width: 120px; text-align: right;">@Harga Satuan</th>
+                                <th style="width: 75px; text-align: right;">Diskon %</th>
+                                <th style="width: 95px; text-align: right;">Potongan</th>
+                                <th style="width: 95px; text-align: center;">PPN</th>
+                                <th style="width: 130px; text-align: right;">Subtotal</th>
+                                <th style="width: 40px; text-align: center;">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="itemsBody">
+                            {{-- Baris produk ditambahkan secara dinamis via JavaScript --}}
+                        </tbody>
+                    </table>
+                </div>
+
+                {{-- Empty Notice --}}
+                <div id="noItemsNotice" style="display: none; padding: 2rem; text-align: center; color: #94a3b8; font-size: 0.85rem;">
+                    Belum ada produk yang ditambahkan. Klik tombol <strong>"Tambah Baris Produk"</strong> di atas.
+                </div>
+            </div>
+        </div>
+
+        {{-- KOLOM KANAN: SIDEBAR RINGKASAN & AKSI DOKUMEN --}}
+        <div class="sticky-action-sidebar" style="display: flex; flex-direction: column; gap: 1.25rem; position: sticky; top: 1rem;">
+            
+            {{-- PANEL 1: RINGKASAN KALKULASI OTOMATIS --}}
+            <div class="card" style="border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+                <div class="card-header" style="background: #ffffff; padding: 0.75rem 1.25rem; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+                    <strong style="color: #0f172a; font-size: 0.9rem;">Ringkasan Nilai Pesanan</strong>
+                    <span class="badge" style="background: #e0f2fe; color: #0284c7; font-size: 0.7rem; font-weight: 700;">Live Realtime</span>
+                </div>
+                <div style="padding: 1.25rem; display: flex; flex-direction: column; gap: 0.65rem; font-size: 0.85rem;">
+                    <div style="display: flex; justify-content: space-between; color: #64748b;">
+                        <span>Subtotal Nilai Bruto:</span>
+                        <strong style="color: #0f172a; font-family: monospace;" id="lblSubtotalBruto">Rp 0</strong>
+                    </div>
+
+                    <div style="display: flex; justify-content: space-between; color: #d97706;">
+                        <span>Akumulasi Diskon:</span>
+                        <strong style="font-family: monospace;" id="lblTotalDiskon">- Rp 0</strong>
+                    </div>
+
+                    <div style="display: flex; justify-content: space-between; align-items: center; color: #dc2626;">
+                        <span>Potongan Faktur:</span>
+                        <input type="number" step="any" min="0" name="potongan_nominal" id="headerPotonganInput" value="{{ old('potongan_nominal', 0) }}" class="form-control" style="width: 120px; text-align: right; padding: 0.2rem 0.45rem; font-size: 0.825rem; height: 28px;">
+                    </div>
+
+                    <div style="display: flex; justify-content: space-between; color: #475569; padding-top: 0.35rem; border-top: 1px dashed #cbd5e1;">
+                        <span>Dasar Pengenaan Pajak (DPP):</span>
+                        <strong style="color: #0f172a; font-family: monospace;" id="lblDppNominal">Rp 0</strong>
+                    </div>
+
+                    <div style="display: flex; justify-content: space-between; color: #0284c7;">
+                        <span>PPN (11%):</span>
+                        <strong style="font-family: monospace;" id="lblTotalPpn">+ Rp 0</strong>
+                    </div>
+
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 0.65rem; border-top: 2px solid #0f172a; font-size: 1rem;">
+                        <span style="font-weight: 700; color: #0f172a;">Total Tagihan SO:</span>
+                        <strong style="color: #0284c7; font-size: 1.15rem; font-family: monospace;" id="lblTotalTagihan">Rp 0</strong>
+                    </div>
+                </div>
+            </div>
+
+            {{-- PANEL 2: CATATAN PESANAN --}}
+            <div class="card" style="border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+                <div class="card-header" style="background: #ffffff; padding: 0.75rem 1.25rem; border-bottom: 1px solid #e2e8f0;">
+                    <strong style="color: #0f172a; font-size: 0.9rem;">Catatan Pesanan</strong>
+                </div>
+                <div style="padding: 1rem 1.25rem;">
+                    <textarea name="catatan_txt" rows="3" class="form-control" placeholder="Instruksi pengiriman, toleransi mutu, dll..." style="font-size: 0.825rem; width: 100%; box-sizing: border-box;">{{ old('catatan_txt') }}</textarea>
+                    <div style="font-size: 0.725rem; color: #64748b; margin-top: 0.35rem;">
+                        Tercetak otomatis pada Faktur dan Surat Jalan.
+                    </div>
+                </div>
+            </div>
+
+            {{-- PANEL 3: TOMBOL AKSI SIMPAN --}}
+            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.65rem; font-weight: 700; font-size: 0.9rem; justify-content: center;">
+                    Simpan Dokumen PO Penjualan
+                </button>
+                <a href="{{ route('penjualan.so.index') }}" class="btn btn-secondary" style="width: 100%; padding: 0.6rem; text-align: center; justify-content: center; box-sizing: border-box;">
+                    Batal
+                </a>
+            </div>
+        </div>
+    </div>
+</form>
+
 <script>
     const MASTER_BARANG = @json($barangs);
     let rowCounter = 0;
 
-    // Format mata uang Rupiah
     function formatRupiah(amount) {
         return 'Rp ' + Number(amount || 0).toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
     }
@@ -243,11 +288,8 @@
     // Customer Selection Change Listener
     document.getElementById('customerSelect').addEventListener('change', function() {
         const selected = this.options[this.selectedIndex];
-        const code = selected.getAttribute('data-code') || '';
         const address = selected.getAttribute('data-address') || '-';
         const contact = selected.getAttribute('data-contact') || '-';
-
-        document.getElementById('customerCdInput').value = code;
 
         const infoBox = document.getElementById('customerInfoBox');
         if (this.value) {
@@ -259,8 +301,8 @@
         }
     });
 
-    // Generate Code Ajax when Date changes
-    document.getElementById('soTglInput').addEventListener('change', function() {
+    // Auto generate code when date changes
+    document.getElementById('so_tgl').addEventListener('change', function() {
         const dateVal = this.value;
         if (!dateVal) return;
 
@@ -268,7 +310,7 @@
             .then(res => res.json())
             .then(data => {
                 if (data.status === 'success' && data.code) {
-                    document.getElementById('soNoInput').value = data.code;
+                    document.getElementById('so_no').value = data.code;
                 }
             })
             .catch(err => console.error('Error generating SO code:', err));
@@ -282,65 +324,63 @@
 
         const tr = document.createElement('tr');
         tr.id = `row_${idx}`;
-        tr.style.borderBottom = '1px solid #e2e8f0';
 
         tr.innerHTML = `
-            <td style="padding: 0.4rem 0.5rem; text-align: center; color: #64748b; font-weight: 700;">${idx}</td>
-            <td style="padding: 0.4rem 0.5rem;">
-                <select name="items[${idx}][barang_id]" class="form-control item-barang-select" required style="font-size: 0.8rem; padding: 0.35rem 0.5rem;">
-                    <option value="">-- Pilih Barang (FG / WIP) --</option>
+            <td style="text-align: center; color: #64748b; font-size: 0.8rem;">${idx}</td>
+            <td>
+                <select name="items[${idx}][barang_id]" class="form-control item-barang-select" required style="font-size: 0.8rem;">
+                    <option value="">-- Pilih Produk (FG / WIP) --</option>
                     ${MASTER_BARANG.map(b => `
                         <option value="${b.barang_id}" 
                                 data-code="${b.barang_cd || ''}" 
-                                data-jenis="${b.jenis_barang ? b.jenis_barang.jenis_barang_nm : '-'}" 
+                                data-jenis="${b.jenis_barang ? b.jenis_barang.jenis_barang_nm : (b.jenis_barang_cd || 'FG')}" 
                                 data-satuan="${b.satuan_dasar ? b.satuan_dasar.satuan_nm : 'Pcs'}"
                                 data-harga="${b.harga_jual || b.harga_standar || 0}"
                                 ${data.barang_id == b.barang_id ? 'selected' : ''}>
-                            [${b.jenis_barang ? b.jenis_barang.jenis_barang_cd : 'FG'}] ${b.barang_nm}
+                            [${b.jenis_barang ? b.jenis_barang.jenis_barang_cd : (b.jenis_barang_cd || 'FG')}] ${b.barang_nm}
                         </option>
                     `).join('')}
                 </select>
             </td>
-            <td style="padding: 0.4rem 0.5rem;">
-                <input type="text" class="form-control item-barang-code" readonly placeholder="-" style="background: #f8fafc; font-family: monospace; font-size: 0.775rem; cursor: not-allowed;">
+            <td>
+                <input type="text" class="form-control item-barang-code" readonly placeholder="-" style="background: #f8fafc; font-family: monospace; font-size: 0.75rem; cursor: not-allowed;">
             </td>
-            <td style="padding: 0.4rem 0.5rem;">
-                <input type="text" class="form-control item-jenis" readonly placeholder="-" style="background: #f8fafc; font-size: 0.775rem; cursor: not-allowed;">
+            <td>
+                <input type="text" class="form-control item-jenis" readonly placeholder="-" style="background: #f8fafc; font-size: 0.75rem; cursor: not-allowed;">
             </td>
-            <td style="padding: 0.4rem 0.5rem;">
-                <input type="number" step="any" min="0.001" name="items[${idx}][pesan_qty]" value="${data.pesan_qty || 1}" required class="form-control item-qty" style="font-size: 0.8rem; text-align: right;">
+            <td>
+                <input type="text" class="form-control item-satuan" readonly placeholder="-" style="background: #f8fafc; font-size: 0.75rem; cursor: not-allowed;">
             </td>
-            <td style="padding: 0.4rem 0.5rem;">
-                <input type="text" class="form-control item-satuan" readonly placeholder="-" style="background: #f8fafc; font-size: 0.775rem; cursor: not-allowed;">
+            <td>
+                <input type="number" step="any" min="0.001" name="items[${idx}][pesan_qty]" value="${data.pesan_qty || 1}" required class="form-control item-qty" style="text-align: right;">
             </td>
-            <td style="padding: 0.4rem 0.5rem;">
-                <input type="number" step="any" min="0" name="items[${idx}][harga_satuan]" value="${data.harga_satuan || 0}" required class="form-control item-harga" style="font-size: 0.8rem; text-align: right;">
+            <td>
+                <input type="number" step="any" min="0" name="items[${idx}][harga_satuan]" value="${data.harga_satuan || 0}" required class="form-control item-harga" style="text-align: right;">
             </td>
-            <td style="padding: 0.4rem 0.5rem;">
-                <input type="number" step="any" min="0" max="100" name="items[${idx}][diskon_persen]" value="${data.diskon_persen || 0}" class="form-control item-diskon" style="font-size: 0.8rem; text-align: right;">
+            <td>
+                <input type="number" step="any" min="0" max="100" name="items[${idx}][diskon_persen]" value="${data.diskon_persen || 0}" class="form-control item-diskon" style="text-align: right;">
             </td>
-            <td style="padding: 0.4rem 0.5rem;">
-                <input type="number" step="any" min="0" name="items[${idx}][potongan_nominal]" value="${data.potongan_nominal || 0}" class="form-control item-potongan" style="font-size: 0.8rem; text-align: right;">
+            <td>
+                <input type="number" step="any" min="0" name="items[${idx}][potongan_nominal]" value="${data.potongan_nominal || 0}" class="form-control item-potongan" style="text-align: right;">
             </td>
-            <td style="padding: 0.4rem 0.5rem;">
-                <select name="items[${idx}][ppn_tipe]" class="form-control item-ppn" style="font-size: 0.8rem; padding: 0.35rem 0.3rem;">
-                    <option value="NON_PPN" ${data.ppn_tipe === 'NON_PPN' ? 'selected' : ''}>Non PPN</option>
+            <td>
+                <select name="items[${idx}][ppn_tipe]" class="form-control item-ppn" style="font-size: 0.75rem; padding: 0.2rem 0.25rem;">
+                    <option value="NON_PPN" ${data.ppn_tipe === 'NON_PPN' ? 'selected' : ''}>Non-PPN</option>
                     <option value="PPN_11" ${data.ppn_tipe === 'PPN_11' ? 'selected' : ''}>PPN 11%</option>
                 </select>
             </td>
-            <td style="padding: 0.4rem 0.5rem; text-align: right;">
-                <span class="item-subtotal-text" style="font-weight: 700; color: #0f172a; font-size: 0.85rem;">Rp 0</span>
+            <td style="text-align: right;">
+                <span class="item-subtotal-text" style="font-weight: 700; color: #0f172a; font-family: monospace; font-size: 0.825rem;">Rp 0</span>
             </td>
-            <td style="padding: 0.4rem 0.5rem; text-align: center;">
-                <button type="button" class="btn btn-sm btn-outline-danger btn-remove-row" style="padding: 0.2rem 0.45rem; border-radius: 4px;" title="Hapus Baris">
-                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+            <td style="text-align: center;">
+                <button type="button" class="btn-remove-row" style="background: transparent; border: none; color: #ef4444; cursor: pointer; padding: 2px;" title="Hapus Baris">
+                    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                 </button>
             </td>
         `;
 
         tbody.appendChild(tr);
 
-        // Pasang event listener pada elemen baris
         const selBarang = tr.querySelector('.item-barang-select');
         const inCode = tr.querySelector('.item-barang-code');
         const inJenis = tr.querySelector('.item-jenis');
@@ -364,7 +404,6 @@
             calculateGrandTotal();
         });
 
-        // Trigger manual bila sudah ada data
         if (data.barang_id) {
             selBarang.dispatchEvent(new Event('change'));
         }
@@ -391,7 +430,6 @@
         checkEmptyState();
     }
 
-    // Kalkulasi per baris
     function calculateRow(tr) {
         const qty = parseFloat(tr.querySelector('.item-qty').value) || 0;
         const harga = parseFloat(tr.querySelector('.item-harga').value) || 0;
@@ -413,7 +451,6 @@
         tr.dataset.subtotal = subtotal;
     }
 
-    // Kalkulasi Total Header Dokumen
     function calculateGrandTotal() {
         const rows = document.querySelectorAll('#itemsBody tr');
         let totalBruto = 0;
@@ -457,11 +494,9 @@
         }
     }
 
-    // Bind event
     document.getElementById('btnAddRow').addEventListener('click', () => addRow());
     document.getElementById('headerPotonganInput').addEventListener('input', calculateGrandTotal);
 
-    // Initial setup: tambahkan 1 baris awal secara otomatis
     document.addEventListener('DOMContentLoaded', () => {
         addRow();
         document.getElementById('customerSelect').dispatchEvent(new Event('change'));

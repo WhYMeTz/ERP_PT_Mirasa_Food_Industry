@@ -43,11 +43,30 @@ class SoController extends Controller
 
         $orders = $this->soService->getAllPaginated(15, $search, $status, $filters);
 
+        // Status Counts & Metrik Konsisten dengan PO Pembelian
+        $rawCounts = DatSoHdr::where('deleted_st', false)
+            ->selectRaw("
+                COUNT(*) as all_count,
+                COUNT(CASE WHEN status_cd = 'APPROVED' THEN 1 END) as approved_count,
+                COUNT(CASE WHEN status_cd IN ('PROCESSING', 'PARTIAL') THEN 1 END) as partial_count,
+                COUNT(CASE WHEN status_cd = 'COMPLETED' THEN 1 END) as completed_count,
+                SUM(CASE WHEN status_cd != 'CANCELLED' THEN total_tagihan ELSE 0 END) as total_omzet
+            ")
+            ->first();
+
+        $statusCounts = [
+            'all'         => (int) ($rawCounts->all_count ?? 0),
+            'approved'    => (int) ($rawCounts->approved_count ?? 0),
+            'partial'     => (int) ($rawCounts->partial_count ?? 0),
+            'completed'   => (int) ($rawCounts->completed_count ?? 0),
+            'total_omzet' => (float) ($rawCounts->total_omzet ?? 0),
+        ];
+
         // KPI Ringkasan Metrik
         $kpi = [
-            'total_so'       => DatSoHdr::active()->count(),
+            'total_so'       => $statusCounts['all'],
             'so_bulan_ini'   => DatSoHdr::active()->whereMonth('so_tgl', date('m'))->whereYear('so_tgl', date('Y'))->count(),
-            'total_omzet'    => DatSoHdr::active()->where('status_cd', '!=', 'CANCELLED')->sum('total_tagihan'),
+            'total_omzet'    => $statusCounts['total_omzet'],
             'so_pending'     => DatSoHdr::active()->whereIn('status_cd', ['APPROVED', 'PROCESSING', 'PARTIAL'])->count(),
         ];
 
@@ -55,7 +74,7 @@ class SoController extends Controller
         $customers = MstCustomer::active()->orderBy('customer_nm')->get(['customer_id', 'customer_cd', 'customer_nm']);
         $barangs = MstBarang::produkJadi()->active()->orderBy('barang_nm')->get(['barang_id', 'barang_cd', 'barang_nm']);
 
-        return view('penjualan.so.index', compact('orders', 'kpi', 'customers', 'barangs', 'search', 'status', 'filters'));
+        return view('penjualan.so.index', compact('orders', 'kpi', 'statusCounts', 'customers', 'barangs', 'search', 'status', 'filters'));
     }
 
     /**

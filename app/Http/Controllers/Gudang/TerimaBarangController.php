@@ -12,6 +12,8 @@ use App\Services\Common\CodeGeneratorService;
 use App\Services\Gudang\PoService;
 use App\Services\Gudang\TerimaBarangService;
 use Barryvdh\DomPDF\Facade\Pdf;
+use App\Exports\Gudang\TerimaBarangExport;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -187,7 +189,7 @@ class TerimaBarangController extends Controller
             'printedBy'  => auth()->user()?->karyawan?->karyawan_nm ?? (auth()->user()?->nama_lengkap ?? 'Staff Gudang'),
         ]);
 
-        $pdf->setPaper('a4', 'portrait');
+        $pdf->setPaper('a4', 'landscape');
         $pdf->setOption('isHtml5ParserEnabled', true);
         $pdf->setOption('isRemoteEnabled', true);
 
@@ -272,5 +274,68 @@ class TerimaBarangController extends Controller
 
         $fileName = 'Rekap_Barang_Masuk_' . date('Ymd_His') . '.pdf';
         return $pdf->stream($fileName);
+    }
+
+    /**
+     * Export Rekapitulasi / Laporan Barang Masuk ke format Excel (.xlsx).
+     */
+    public function exportExcel(Request $request): StreamedResponse
+    {
+        $search = $request->input('search');
+        $gudangId = $request->input('gudang_id') ? (int) $request->input('gudang_id') : null;
+
+        $user = auth()->user();
+        $allowedGudangIds = $user ? $user->getAllowedGudangIds() : [];
+
+        if ($gudangId !== null) {
+            $effectiveGudang = ($user && !$user->canAccessGudang($gudangId)) ? $allowedGudangIds : $gudangId;
+        } else {
+            $effectiveGudang = ($user && $user->isSuperAdmin()) ? null : $allowedGudangIds;
+        }
+
+        $query = \App\Models\Gudang\DatTerimaDtl::with([
+            'header.supplier', 
+            'header.gudang', 
+            'header.po', 
+            'barang.jenisBarang', 
+            'barang.satuanDasar'
+        ])->whereHas('header', function ($q) use ($effectiveGudang) {
+            $q->where('deleted_st', false);
+            if (is_array($effectiveGudang)) {
+                $q->whereIn('gudang_id', $effectiveGudang);
+            } elseif ($effectiveGudang !== null) {
+                $q->where('gudang_id', $effectiveGudang);
+            }
+        });
+
+        if (!empty($search)) {
+            $query->where(function ($q) use ($search) {
+                $q->where('batch_no', 'ILIKE', "%{$search}%")
+                  ->orWhereHas('barang', function ($bq) use ($search) {
+                      $bq->where('barang_nm', 'ILIKE', "%{$search}%")
+                         ->orWhere('barang_cd', 'ILIKE', "%{$search}%");
+                  })
+                  ->orWhereHas('header', function ($hq) use ($search) {
+                      $hq->where('terima_no', 'ILIKE', "%{$search}%")
+                         ->orWhere('suratjalan_no', 'ILIKE', "%{$search}%")
+                         ->orWhereHas('supplier', function ($sq) use ($search) {
+                             $sq->where('supplier_nm', 'ILIKE', "%{$search}%");
+                         });
+                  });
+            });
+        }
+
+        $items = $query->orderBy('terimadtl_id', 'desc')->get();
+
+        $gudangNm = null;
+        if ($gudangId) {
+            $gudangNm = MstGudang::find($gudangId)?->gudang_nm;
+        }
+
+        $printedBy = auth()->user()?->karyawan?->karyawan_nm ?? (auth()->user()?->nama_lengkap ?? 'Staff Gudang');
+        $printedAt = now()->translatedFormat('d F Y H:i');
+
+        $export = new TerimaBarangExport($items, $gudangNm, $search, $printedBy, $printedAt);
+        return $export->download('Rekap_Barang_Masuk_' . date('Ymd_His') . '.xlsx');
     }
 }

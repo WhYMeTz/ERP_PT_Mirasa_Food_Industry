@@ -13,7 +13,11 @@
     <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
         <a href="{{ route('gudang.terima.export-rekap-pdf', request()->query()) }}" target="_blank" class="btn btn-secondary" style="background: #ffffff; border: 1.5px solid #134e5e; color: #134e5e; font-size: 0.85rem; font-weight: 700; padding: 0.55rem 0.95rem; box-shadow: 0 1px 2px rgba(0,0,0,0.03); display: inline-flex; align-items: center; gap: 0.35rem;" title="Buka & Cetak Laporan Rekapitulasi Dokumen PDF Resmi">
             <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
-            <span>📄 Cetak Rekap (PDF)</span>
+            <span>Cetak Rekap (PDF)</span>
+        </a>
+        <a href="{{ route('gudang.terima.export-excel', request()->query()) }}" class="btn btn-secondary" style="background: #ffffff; border: 1.5px solid #059669; color: #059669; font-size: 0.85rem; font-weight: 700; padding: 0.55rem 0.95rem; box-shadow: 0 1px 2px rgba(0,0,0,0.03); display: inline-flex; align-items: center; gap: 0.35rem;" title="Download Rekap Barang Masuk format Excel (.xlsx)">
+            <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            <span>Export Excel</span>
         </a>
         @if (Auth::user()?->canCreateTerima())
             <a href="{{ route('gudang.terima.create') }}" class="btn btn-primary" style="background: #059669;">
@@ -249,9 +253,6 @@
                                     <a href="{{ route('gudang.terima.show', $row->header?->terima_id) }}" class="btn btn-secondary btn-sm" title="Lihat Dokumen Lengkap">
                                         Detail
                                     </a>
-                                    <a href="{{ route('gudang.terima.export-pdf', $row->header?->terima_id) }}" target="_blank" class="btn btn-sm" style="background: #ffffff; color: #134e5e; border: 1.5px solid #134e5e; padding: 0.25rem 0.55rem; font-size: 0.75rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.25rem;" title="Buka & Cetak PDF Bukti Terima (GRN)">
-                                        📄 Cetak PDF
-                                    </a>
                                 </div>
                             </td>
                         </tr>
@@ -330,9 +331,6 @@
                                 <div style="display: inline-flex; gap: 0.35rem; align-items: center;">
                                     <a href="{{ route('gudang.terima.show', $item->terima_id) }}" class="btn btn-secondary btn-sm" title="Lihat Dokumen Lengkap">
                                         Detail
-                                    </a>
-                                    <a href="{{ route('gudang.terima.export-pdf', $item->terima_id) }}" target="_blank" class="btn btn-sm" style="background: #ffffff; color: #134e5e; border: 1.5px solid #134e5e; padding: 0.25rem 0.55rem; font-size: 0.75rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.25rem;" title="Buka & Cetak PDF Bukti Terima (GRN)">
-                                        📄 Cetak PDF
                                     </a>
                                 </div>
                             </td>

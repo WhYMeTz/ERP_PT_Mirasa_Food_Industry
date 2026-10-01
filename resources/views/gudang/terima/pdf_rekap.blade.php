@@ -20,7 +20,6 @@
             padding: 0;
         }
 
-        /* Kop Surat Perusahaan - Tidak menggunakan table-layout fixed agar logo dan teks rapat di kiri */
         .kop-table {
             width: 100%;
             border-bottom: 2px solid #134e5e;
@@ -65,7 +64,6 @@
             margin-top: 2px;
         }
 
-        /* Filter info table */
         .filter-table {
             width: 100%;
             margin-bottom: 6px;
@@ -80,7 +78,6 @@
             vertical-align: middle;
         }
 
-        /* Data table - Mengadopsi Layout & Warna Excel Barang_Masuk (#134e5e) */
         table.data-table {
             width: 100%;
             border-collapse: collapse;
@@ -95,7 +92,7 @@
             page-break-inside: avoid;
         }
         table.data-table th {
-            background-color: #134e5e; /* Dark Teal sesuai Excel Barang_Masuk */
+            background-color: #134e5e;
             color: #ffffff;
             font-weight: bold;
             text-align: left;
@@ -128,7 +125,6 @@
             word-break: break-all;
         }
 
-        /* Signatures */
         .sign-table {
             width: 100%;
             margin-top: 10px;
@@ -203,7 +199,6 @@
     </table>
 
     {{-- TABEL DATA BARANG MASUK SESUAI STRUKTUR EXCEL BARANG_MASUK --}}
-    {{-- Lebar kolom dipastikan pas 100% tanpa kepotong --}}
     <table class="data-table">
         <colgroup>
             <col style="width: 3%;">  {{-- No --}}

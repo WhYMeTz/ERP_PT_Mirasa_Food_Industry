@@ -126,6 +126,9 @@ Route::middleware('auth')->group(function () {
         Route::get('terima/export-rekap-pdf', [TerimaBarangController::class, 'exportRekapPdf'])
             ->name('terima.export-rekap-pdf')
             ->middleware('role:terima_view');
+        Route::get('terima/export-excel', [TerimaBarangController::class, 'exportExcel'])
+            ->name('terima.export-excel')
+            ->middleware('role:terima_view');
         Route::get('terima/{id}/export-pdf', [TerimaBarangController::class, 'exportPdf'])
             ->name('terima.export-pdf')
             ->middleware('role:terima_view');

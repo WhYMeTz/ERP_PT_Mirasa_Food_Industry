@@ -274,9 +274,15 @@
                                     @endif
                                 </div>
                             </div>
-                        </td>
+                        @php
+                            $nominalRow = (float) $po->total_tagihan > 0 
+                                ? (float) $po->total_tagihan 
+                                : ((float) $po->total_nominal > 0 
+                                    ? (float) $po->total_nominal 
+                                    : (float) $po->details->sum(fn($d) => (float)$d->subtotal_tagihan > 0 ? (float)$d->subtotal_tagihan : ((float)$d->subtotal_nominal > 0 ? (float)$d->subtotal_nominal : (float)$d->pesan_qty * (float)$d->harga_nominal)));
+                        @endphp
                         <td style="text-align: right; font-weight: 700; color: #0f172a; font-size: 0.875rem;">
-                            Rp {{ number_format((float) $po->total_nominal, 0, ',', '.') }}
+                            Rp {{ number_format($nominalRow, 0, ',', '.') }}
                         </td>
                         <td style="text-align: right; position: relative;">
                             <div style="position: relative; display: inline-block;">
@@ -657,9 +663,10 @@
         });
     }
 
-    // Toggle dropdown Aksi per baris PO
+    // Toggle dropdown Aksi per baris PO dengan Smart Viewport Positioning (Bebas Scroll Table)
     function togglePoIndexDropdown(event, dropdownId) {
         event.stopPropagation();
+        const btn = event.currentTarget;
         const dropdown = document.getElementById(dropdownId);
         if (!dropdown) return;
         const isOpen = dropdown.style.display === 'block';
@@ -670,9 +677,45 @@
         });
 
         if (!isOpen) {
+            // Tampilkan sementara secara invisible untuk mengukur tinggi & lebarnya
             dropdown.style.display = 'block';
+            dropdown.style.visibility = 'hidden';
+            dropdown.style.position = 'fixed';
+            dropdown.style.zIndex = '999999';
+
+            const rect = btn.getBoundingClientRect();
+            const dropdownHeight = dropdown.offsetHeight || 220;
+            const dropdownWidth = dropdown.offsetWidth || 220;
+            const spaceBelow = window.innerHeight - rect.bottom;
+
+            // Jika ruang di bawah sempit (seperti baris-baris bawah tabel), buka ke ATAS (dropup)
+            if (spaceBelow < dropdownHeight && rect.top > dropdownHeight) {
+                dropdown.style.top = (rect.top - dropdownHeight - 4) + 'px';
+            } else {
+                dropdown.style.top = (rect.bottom + 4) + 'px';
+            }
+
+            // Posisikan horizontal sejajar sisi kanan tombol aksi
+            let leftPos = rect.right - dropdownWidth;
+            if (leftPos < 10) leftPos = 10;
+            dropdown.style.left = leftPos + 'px';
+
+            dropdown.style.visibility = 'visible';
         }
     }
+
+    // Tutup dropdown saat scroll window/tabel atau resize
+    window.addEventListener('scroll', function() {
+        document.querySelectorAll('.po-action-menu-dropdown').forEach(el => {
+            el.style.display = 'none';
+        });
+    }, true);
+
+    window.addEventListener('resize', function() {
+        document.querySelectorAll('.po-action-menu-dropdown').forEach(el => {
+            el.style.display = 'none';
+        });
+    });
 
     // Tutup dropdown saat klik di luar
     document.addEventListener('click', function(e) {

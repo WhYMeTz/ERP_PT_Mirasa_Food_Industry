@@ -170,6 +170,23 @@
     $totalPesan = (float) $po->details->sum('pesan_qty');
     $totalTerima = (float) $po->details->sum('terima_qty');
     $totalSisa = (float) $po->total_sisa_qty;
+
+    $totalSubtotalItems = (float) $po->details->sum(function($d) {
+        $subTagihan = (float) ($d->subtotal_tagihan ?? 0);
+        $subNominal = (float) ($d->subtotal_nominal ?? 0);
+        $subNetto = (float) ($d->subtotal_netto ?? 0);
+        $calc = (float) $d->pesan_qty * (float) $d->harga_nominal;
+        if ($subTagihan > 0) return $subTagihan;
+        if ($subNominal > 0) return $subNominal;
+        if ($subNetto > 0) return $subNetto;
+        return $calc;
+    });
+
+    $totalTagihanHdr = (float) ($po->total_tagihan ?? 0);
+    $totalNominalHdr = (float) ($po->total_nominal ?? 0);
+    $displayTotalPO = $totalTagihanHdr > 0 
+        ? $totalTagihanHdr 
+        : ($totalNominalHdr > 0 ? $totalNominalHdr : $totalSubtotalItems);
 @endphp
 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
     {{-- TOTAL NOMINAL PO --}}
@@ -178,7 +195,7 @@
             Total Nilai Pesanan
         </span>
         <div style="font-size: 1.35rem; font-weight: 700; color: #0f172a; margin-top: 0.25rem;">
-            Rp {{ number_format((float) $po->total_nominal, 0, ',', '.') }}
+            Rp {{ number_format($displayTotalPO, 0, ',', '.') }}
         </div>
         <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.35rem;">
             {{ $po->details->count() }} item bahan baku &bull; {{ number_format($totalPesan, 0) }} total kuantitas
@@ -276,7 +293,21 @@
                                 $diskonPct = (float) ($item->diskon_persen ?? 0);
                                 $potNom = (float) ($item->potongan_nominal ?? 0);
                                 $isPpn = ($item->ppn_tipe ?? '') === 'PPN_11';
-                                $subtotalRow = (float) ($item->subtotal_tagihan ?: $item->subtotal_nominal);
+                                
+                                $subTagihan = (float) ($item->subtotal_tagihan ?? 0);
+                                $subNominal = (float) ($item->subtotal_nominal ?? 0);
+                                $subNetto = (float) ($item->subtotal_netto ?? 0);
+                                $calcManual = (float)$item->pesan_qty * (float)$item->harga_nominal;
+
+                                if ($subTagihan > 0) {
+                                    $subtotalRow = $subTagihan;
+                                } elseif ($subNominal > 0) {
+                                    $subtotalRow = $subNominal;
+                                } elseif ($subNetto > 0) {
+                                    $subtotalRow = $subNetto;
+                                } else {
+                                    $subtotalRow = $calcManual;
+                                }
                             @endphp
                             <tr style="border-bottom: 1px solid #f1f5f9;">
                                 <td style="text-align: center; color: #64748b; font-size: 0.85rem;">{{ $index + 1 }}</td>
@@ -321,7 +352,7 @@
                     <tfoot style="background: #f8fafc; border-top: 2px solid #e2e8f0; font-weight: 700;">
                         <tr>
                             <td colspan="3" style="text-align: right; padding: 0.75rem 1rem; color: #475569; font-size: 0.85rem;">
-                                Total Kuantitas &amp; Estimasi:
+                                Total Kuantitas &amp; Subtotal Keseluruhan:
                             </td>
                             <td style="text-align: right; padding: 0.75rem 0.5rem; color: #0f172a; font-size: 0.875rem;">
                                 {{ number_format($totalPesan, 2) }}
@@ -334,7 +365,7 @@
                             </td>
                             <td colspan="4"></td>
                             <td style="text-align: right; padding: 0.75rem 1rem; color: #0f172a; font-size: 1rem; font-family: monospace;">
-                                Rp {{ number_format((float) ($po->total_tagihan ?: $po->total_nominal), 0, ',', '.') }}
+                                Rp {{ number_format($displayTotalPO, 0, ',', '.') }}
                             </td>
                         </tr>
                     </tfoot>
@@ -343,15 +374,37 @@
 
             {{-- SUMMARY BREAKDOWN KEUANGAN PO: DISKON, POTONGAN, DPP & PPN --}}
             @php
-                $calcSubtotalBruto = (float) ($po->subtotal_bruto ?: $po->details->sum(fn($d) => (float)$d->pesan_qty * (float)$d->harga_nominal));
-                $calcDiskonItem = (float) ($po->diskon_total ?: $po->details->sum(fn($d) => (float)$d->pesan_qty * (float)($d->diskon_nominal ?? 0)));
-                $calcPotongan = (float) ($po->potongan_nominal ?: $po->details->sum(fn($d) => (float)($d->potongan_nominal ?? 0)));
-                $calcDpp = (float) ($po->dpp_nominal ?: $po->details->sum(fn($d) => (float)($d->subtotal_netto ?? 0)));
-                if ($calcDpp <= 0) {
-                    $calcDpp = max(0, $calcSubtotalBruto - $calcDiskonItem - $calcPotongan);
+                $calcSubtotalBruto = (float) ($po->subtotal_bruto ?? 0) > 0 
+                    ? (float) $po->subtotal_bruto 
+                    : (float) $po->details->sum(fn($d) => (float)$d->pesan_qty * (float)$d->harga_nominal);
+
+                if ($calcSubtotalBruto <= 0 && $displayTotalPO > 0) {
+                    $calcSubtotalBruto = $displayTotalPO;
                 }
-                $calcPpn = (float) ($po->ppn_nominal ?: $po->details->sum(fn($d) => (float)($d->ppn_nominal ?? 0)));
-                $grandTotalTagihan = (float) ($po->total_tagihan ?: ($po->total_nominal ?: ($calcDpp + $calcPpn)));
+
+                $calcDiskonItem = (float) ($po->diskon_total ?? 0) > 0 
+                    ? (float) $po->diskon_total 
+                    : (float) $po->details->sum(fn($d) => (float)$d->pesan_qty * (float)($d->diskon_nominal ?? 0));
+
+                $calcPotongan = (float) ($po->potongan_nominal ?? 0) > 0 
+                    ? (float) $po->potongan_nominal 
+                    : (float) $po->details->sum(fn($d) => (float)($d->potongan_nominal ?? 0));
+
+                $calcDpp = (float) ($po->dpp_nominal ?? 0) > 0 
+                    ? (float) $po->dpp_nominal 
+                    : max(0, $calcSubtotalBruto - $calcDiskonItem - $calcPotongan);
+
+                $calcPpn = (float) ($po->ppn_nominal ?? 0) > 0 
+                    ? (float) $po->ppn_nominal 
+                    : (float) $po->details->sum(fn($d) => (float)($d->ppn_nominal ?? 0));
+
+                $grandTotalTagihan = $totalTagihanHdr > 0 
+                    ? $totalTagihanHdr 
+                    : ($totalNominalHdr > 0 ? $totalNominalHdr : ($calcDpp + $calcPpn));
+
+                if ($grandTotalTagihan <= 0 && $displayTotalPO > 0) {
+                    $grandTotalTagihan = $displayTotalPO;
+                }
             @endphp
 
             <div style="border-top: 1px solid #e2e8f0; background: #f8fafc; padding: 1.25rem; display: flex; justify-content: flex-end;">
@@ -945,13 +998,52 @@
         });
     }
 
-    // Toggle dropdown Menu Aksi Dokumen PO
+    // Toggle dropdown Menu Aksi Dokumen PO dengan Smart Positioning
     function toggleShowActionMenu(event) {
         if (event) event.stopPropagation();
+        const btn = event.currentTarget;
         const dropdown = document.getElementById('showActionMenuDropdown');
         if (!dropdown) return;
-        dropdown.style.display = (dropdown.style.display === 'block') ? 'none' : 'block';
+        
+        const isOpen = dropdown.style.display === 'block';
+        if (isOpen) {
+            dropdown.style.display = 'none';
+            return;
+        }
+
+        dropdown.style.display = 'block';
+        dropdown.style.visibility = 'hidden';
+        dropdown.style.position = 'fixed';
+        dropdown.style.zIndex = '999999';
+
+        const rect = btn.getBoundingClientRect();
+        const dropdownHeight = dropdown.offsetHeight || 260;
+        const dropdownWidth = dropdown.offsetWidth || 250;
+        const spaceBelow = window.innerHeight - rect.bottom;
+
+        if (spaceBelow < dropdownHeight && rect.top > dropdownHeight) {
+            dropdown.style.top = (rect.top - dropdownHeight - 4) + 'px';
+        } else {
+            dropdown.style.top = (rect.bottom + 4) + 'px';
+        }
+
+        let leftPos = rect.right - dropdownWidth;
+        if (leftPos < 10) leftPos = 10;
+        dropdown.style.left = leftPos + 'px';
+
+        dropdown.style.visibility = 'visible';
     }
+
+    // Tutup dropdown saat scroll window atau resize
+    window.addEventListener('scroll', function() {
+        const dropdown = document.getElementById('showActionMenuDropdown');
+        if (dropdown) dropdown.style.display = 'none';
+    }, true);
+
+    window.addEventListener('resize', function() {
+        const dropdown = document.getElementById('showActionMenuDropdown');
+        if (dropdown) dropdown.style.display = 'none';
+    });
 
     // Tutup dropdown saat klik di luar
     document.addEventListener('click', function(e) {

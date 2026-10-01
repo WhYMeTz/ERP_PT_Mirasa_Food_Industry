@@ -19,11 +19,11 @@ class PemakaianExport
     protected string  $printedBy;
     protected string  $printedAt;
 
-    // Warna tema korporat (Merah Pemakaian / Outbound)
-    const COLOR_HEADER_BG = 'FF7F1D1D'; // Dark Red
+    // Warna tema korporat — SERAGAM dengan TerimaBarangExport (Dark Teal #134E5E)
+    const COLOR_HEADER_BG = 'FF134E5E'; // Dark Teal (sama dengan Barang Masuk)
     const COLOR_HEADER_FG = 'FFFFFFFF';
     const COLOR_ROW_EVEN  = 'FFFAFAFA';
-    const COLOR_TOTAL_BG  = 'FFFEE2E2';
+    const COLOR_TOTAL_BG  = 'FFE2E8F0'; // Abu-abu biru (sama dengan Barang Masuk)
     const COLOR_BORDER    = 'FFCBD5E1';
     const COLOR_RED       = 'FFDC2626';
     const COLOR_DARK      = 'FF0F172A';
@@ -160,7 +160,7 @@ class PemakaianExport
             'font'      => ['bold' => true, 'size' => 9.5, 'color' => ['argb' => self::COLOR_HEADER_FG]],
             'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => self::COLOR_HEADER_BG]],
             'alignment' => ['vertical' => Alignment::VERTICAL_CENTER, 'wrapText' => true],
-            'borders'   => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['argb' => 'FF6B0000']]],
+            'borders'   => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['argb' => 'FF0D3844']]],
         ]);
 
         // Alignment header
@@ -228,7 +228,7 @@ class PemakaianExport
 
             // Bold total harga
             $sheet->getStyle('J' . $row)->getFont()->setBold(true);
-            $sheet->getStyle('J' . $row)->getFont()->getColor()->setARGB(self::COLOR_RED);
+            $sheet->getStyle('J' . $row)->getFont()->getColor()->setARGB(self::COLOR_GREEN);
 
             // Border
             $sheet->getStyle('A' . $row . ':N' . $row)->applyFromArray([
@@ -255,13 +255,13 @@ class PemakaianExport
                 'font'      => ['bold' => true, 'size' => 9.5, 'color' => ['argb' => self::COLOR_DARK]],
                 'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => self::COLOR_TOTAL_BG]],
                 'alignment' => ['vertical' => Alignment::VERTICAL_CENTER],
-                'borders'   => ['allBorders' => ['borderStyle' => Border::BORDER_MEDIUM, 'color' => ['argb' => 'FFFCA5A5']]],
+                'borders'   => ['allBorders' => ['borderStyle' => Border::BORDER_MEDIUM, 'color' => ['argb' => 'FF94A3B8']]],
             ]);
 
             $sheet->getStyle('A' . $totalRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
             $sheet->getStyle('H' . $totalRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
             $sheet->getStyle('J' . $totalRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
-            $sheet->getStyle('J' . $totalRow)->getFont()->getColor()->setARGB(self::COLOR_RED);
+            $sheet->getStyle('J' . $totalRow)->getFont()->getColor()->setARGB(self::COLOR_GREEN);
             $sheet->getRowDimension($totalRow)->setRowHeight(20);
         }
 

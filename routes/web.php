@@ -132,6 +132,12 @@ Route::middleware('auth')->group(function () {
         Route::get('terima/export-excel', [TerimaBarangController::class, 'exportExcel'])
             ->name('terima.export-excel')
             ->middleware('role:terima_view');
+        Route::get('terima/download-template', [TerimaBarangController::class, 'downloadTemplate'])
+            ->name('terima.download-template')
+            ->middleware('role:terima_view');
+        Route::post('terima/import-excel', [TerimaBarangController::class, 'importExcel'])
+            ->name('terima.import-excel')
+            ->middleware('role:terima_create');
         Route::get('terima/{id}/export-pdf', [TerimaBarangController::class, 'exportPdf'])
             ->name('terima.export-pdf')
             ->middleware('role:terima_view');

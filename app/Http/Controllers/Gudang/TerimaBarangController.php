@@ -13,6 +13,8 @@ use App\Services\Gudang\PoService;
 use App\Services\Gudang\TerimaBarangService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Exports\Gudang\TerimaBarangExport;
+use App\Exports\Gudang\TerimaBarangTemplate;
+use App\Imports\Gudang\TerimaBarangImport;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -337,5 +339,55 @@ class TerimaBarangController extends Controller
 
         $export = new TerimaBarangExport($items, $gudangNm, $search, $printedBy, $printedAt);
         return $export->download('Rekap_Barang_Masuk_' . date('Ymd_His') . '.xlsx');
+    }
+
+    /**
+     * Download template Excel kosong untuk Import Barang Masuk.
+     */
+    public function downloadTemplate(): StreamedResponse
+    {
+        return (new TerimaBarangTemplate())->download();
+    }
+
+    /**
+     * Proses upload file Excel dan import data Barang Masuk.
+     */
+    public function importExcel(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'import_file' => [
+                'required',
+                'file',
+                'mimes:xlsx,xls',
+                'max:5120', // maks 5 MB
+            ],
+        ], [
+            'import_file.required' => 'File Excel wajib dipilih.',
+            'import_file.mimes'    => 'Format file harus .xlsx atau .xls.',
+            'import_file.max'      => 'Ukuran file maksimal 5 MB.',
+        ]);
+
+        try {
+            $importer = app(TerimaBarangImport::class);
+            $importer->import($request->file('import_file'));
+
+            $msg = "Import selesai: {$importer->successCount} GRN berhasil, {$importer->errorCount} GRN gagal.";
+
+            if ($importer->errorCount > 0) {
+                $errors = collect($importer->results)
+                    ->where('status', 'error')
+                    ->pluck('message')
+                    ->implode(' | ');
+                return redirect()->route('gudang.terima.index')
+                    ->with('warning', $msg . ' Kesalahan: ' . $errors);
+            }
+
+            return redirect()->route('gudang.terima.index')
+                ->with('success', $msg);
+
+        } catch (\Exception $e) {
+            return redirect()->route('gudang.terima.index')
+                ->with('error', 'Import gagal: ' . $e->getMessage());
+        }
     }
 }

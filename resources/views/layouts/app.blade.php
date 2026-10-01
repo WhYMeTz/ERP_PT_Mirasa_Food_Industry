@@ -558,6 +558,7 @@
             margin-top: auto;
         }
     </style>
+    @stack('styles')
 </head>
 <body>
     <header>
@@ -970,5 +971,6 @@
             }, 500);
         }
     </script>
+    @stack('scripts')
 </body>
 </html>

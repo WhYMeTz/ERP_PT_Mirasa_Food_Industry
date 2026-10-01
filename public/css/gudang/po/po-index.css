@@ -1,0 +1,31 @@
+/* =========================================================================
+ * ERP PT MIRASA - PURCHASE ORDER INDEX STYLES (LISTING)
+ * ========================================================================= */
+
+/* Dropdown Menu Aksi Fixed Smart Positioning */
+.po-action-menu-dropdown {
+    position: fixed;
+    background: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e2e8f0;
+    width: 220px;
+    padding: 0.35rem 0;
+    font-size: 0.825rem;
+}
+
+.po-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.85rem;
+    text-decoration: none;
+    font-weight: 600;
+    transition: background 0.15s ease;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    width: 100%;
+    text-align: left;
+    font-size: 0.825rem;
+}

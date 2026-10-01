@@ -1,0 +1,46 @@
+/* =========================================================================
+ * ERP PT MIRASA - PURCHASE ORDER DETAIL STYLES (SHOW)
+ * ========================================================================= */
+
+@media print {
+    header, nav, aside, .sidebar, #sidebar, .btn, .no-print, .alert, footer {
+        display: none !important;
+    }
+    body, main, .main-content, .content-wrapper, .container, .container-fluid {
+        padding: 0 !important;
+        margin: 0 !important;
+        background: #ffffff !important;
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+    .print-only {
+        display: block !important;
+        width: 100% !important;
+        color: #000000 !important;
+        font-family: 'Helvetica', 'Arial', sans-serif !important;
+        padding: 0 !important;
+    }
+    .print-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .print-table th, .print-table td {
+        border: 1px solid #000000;
+    }
+}
+
+.print-only {
+    display: none;
+}
+
+/* Dropdown Menu Aksi Fixed Smart Positioning */
+.show-action-menu-dropdown {
+    position: fixed;
+    background: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e2e8f0;
+    width: 240px;
+    padding: 0.35rem 0;
+    font-size: 0.825rem;
+}

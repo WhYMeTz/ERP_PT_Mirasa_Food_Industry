@@ -1,0 +1,209 @@
+/* =========================================================================
+ * ERP PT MIRASA - PURCHASE ORDER FORM STYLES (CREATE & EDIT)
+ * ========================================================================= */
+
+.order-station-grid {
+    display: grid;
+    grid-template-columns: 2.3fr 1fr;
+    gap: 1.5rem;
+    align-items: start;
+    margin-bottom: 2rem;
+}
+
+@media (max-width: 1100px) {
+    .order-station-grid {
+        grid-template-columns: 1fr;
+    }
+    .sticky-action-sidebar {
+        position: static !important;
+        top: auto !important;
+    }
+}
+
+/* Excel-Style Dense Grid Table */
+.excel-grid-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.825rem;
+}
+
+.excel-grid-table th {
+    background: #0f172a;
+    color: #f8fafc;
+    font-weight: 600;
+    padding: 0.55rem 0.45rem;
+    border: 1px solid #334155;
+    font-size: 0.775rem;
+    letter-spacing: 0.02em;
+}
+
+.excel-grid-table td {
+    padding: 0.35rem 0.45rem;
+    border: 1px solid #cbd5e1;
+    background: #ffffff;
+    vertical-align: middle;
+}
+
+.excel-grid-table tr:nth-child(even) td {
+    background: #fafafa;
+}
+
+.excel-grid-table tr:hover td {
+    background: #f0f9ff;
+}
+
+.excel-grid-table .form-control {
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    padding: 0.35rem 0.5rem !important;
+    font-size: 0.825rem !important;
+    height: 32px;
+    box-sizing: border-box;
+    width: 100%;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.excel-grid-table .form-control:focus {
+    border-color: #0284c7 !important;
+    box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.25) !important;
+    background: #ffffff !important;
+}
+
+/* Category Segmented Control */
+.category-segmented-control {
+    display: inline-flex;
+    background: #f1f5f9;
+    padding: 3px;
+    border-radius: 6px;
+    gap: 2px;
+    border: 1px solid #cbd5e1;
+}
+
+.category-segment-btn {
+    background: transparent;
+    border: none;
+    padding: 0.32rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #475569;
+    border-radius: 4px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    transition: all 0.15s ease;
+    line-height: 1.25;
+}
+
+.category-segment-btn:hover:not(.active) {
+    color: #0f172a;
+    background: rgba(255, 255, 255, 0.7);
+}
+
+.category-segment-btn.active {
+    background: #ffffff;
+    color: #0284c7;
+    font-weight: 700;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.category-segment-count {
+    font-size: 0.675rem;
+    padding: 0.1rem 0.45rem;
+    border-radius: 9999px;
+    background: #e2e8f0;
+    color: #475569;
+    font-weight: 700;
+    transition: all 0.15s ease;
+}
+
+.category-segment-btn.active .category-segment-count {
+    background: #e0f2fe;
+    color: #0284c7;
+}
+
+/* Supplier Modal Tabs */
+.sup-modal-tab {
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    color: #475569;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.3rem 0.65rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.12s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    white-space: nowrap;
+}
+
+.sup-modal-tab:hover {
+    background: #f1f5f9;
+    color: #0f172a;
+    border-color: #94a3b8;
+}
+
+.sup-modal-tab.active {
+    background: #0284c7;
+    border-color: #0284c7;
+    color: #ffffff;
+    box-shadow: 0 1px 2px rgba(2, 132, 199, 0.2);
+}
+
+/* Supplier Dropdown Items */
+.sup-option-item {
+    padding: 0.65rem 0.95rem;
+    border-bottom: 1px solid #f1f5f9;
+    cursor: pointer;
+    transition: background 0.1s ease;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.sup-option-item:hover, .sup-option-item.highlighted {
+    background: #f0f9ff;
+}
+
+.sup-option-item:last-child {
+    border-bottom: none;
+}
+
+/* Supplier Modal Table Row */
+.sup-modal-row {
+    cursor: pointer;
+    transition: background 0.08s ease;
+}
+
+.sup-modal-row:hover td {
+    background: #f0f9ff !important;
+}
+
+/* PO Mode Switcher (Single / Auto-Split) */
+.po-mode-btn {
+    background: transparent;
+    border: none;
+    padding: 0.4rem 0.95rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border-radius: 5px;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.po-mode-btn.active {
+    background: #ffffff;
+    color: #0f172a;
+    font-weight: 700;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.po-mode-btn:hover:not(.active) {
+    color: #1e293b;
+}

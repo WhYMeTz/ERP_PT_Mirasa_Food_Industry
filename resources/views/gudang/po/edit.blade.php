@@ -2,67 +2,11 @@
 
 @section('title', 'Edit Purchase Order ' . $po->po_no . ' - ERP PT Mirasa')
 
-@section('content')
-<style>
-    .order-station-grid {
-        display: grid;
-        grid-template-columns: 2.3fr 1fr;
-        gap: 1.5rem;
-        align-items: start;
-        margin-bottom: 2rem;
-    }
-    @media (max-width: 1100px) {
-        .order-station-grid {
-            grid-template-columns: 1fr;
-        }
-        .sticky-action-sidebar {
-            position: static !important;
-            top: auto !important;
-        }
-    }
-    .excel-grid-table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 0.825rem;
-    }
-    .excel-grid-table th {
-        background: #0f172a;
-        color: #f8fafc;
-        font-weight: 600;
-        padding: 0.55rem 0.45rem;
-        border: 1px solid #334155;
-        font-size: 0.775rem;
-        letter-spacing: 0.02em;
-    }
-    .excel-grid-table td {
-        padding: 0.35rem 0.45rem;
-        border: 1px solid #cbd5e1;
-        background: #ffffff;
-        vertical-align: middle;
-    }
-    .excel-grid-table tr:nth-child(even) td {
-        background: #fafafa;
-    }
-    .excel-grid-table tr:hover td {
-        background: #f0f9ff;
-    }
-    .excel-grid-table .form-control {
-        border: 1px solid #cbd5e1;
-        border-radius: 4px;
-        padding: 0.35rem 0.5rem !important;
-        font-size: 0.825rem !important;
-        height: 32px;
-        box-sizing: border-box;
-        width: 100%;
-        transition: border-color 0.15s, box-shadow 0.15s;
-    }
-    .excel-grid-table .form-control:focus {
-        border-color: #0284c7 !important;
-        box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.25) !important;
-        background: #ffffff !important;
-    }
-</style>
+@push('styles')
+    <link rel="stylesheet" href="{{ asset('css/gudang/po/po-form.css') }}">
+@endpush
 
+@section('content')
 {{-- TOP HEADER COMMAND --}}
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 1rem;">
     <div>
@@ -397,125 +341,8 @@
 
 @push('scripts')
 <script>
-    let rowIndex = {{ $po->details->count() }};
-
-    function handleBarangChange(selectEl) {
-        const row = selectEl.closest('tr');
-        const selectedOpt = selectEl.options[selectEl.selectedIndex];
-        const satuanBadge = row.querySelector('.satuan-badge');
-        const inputHarga = row.querySelector('.input-harga');
-
-        if (selectedOpt && selectedOpt.value) {
-            satuanBadge.textContent = selectedOpt.getAttribute('data-satuan') || 'KG';
-            const defaultHarga = parseFloat(selectedOpt.getAttribute('data-harga')) || 0;
-            if (parseFloat(inputHarga.value) === 0 && defaultHarga > 0) {
-                inputHarga.value = defaultHarga;
-            }
-        } else {
-            satuanBadge.textContent = '-';
-        }
-        calculateRow(selectEl);
-    }
-
-    function calculateRow(element) {
-        const row = element.closest('tr');
-        const qty = parseFloat(row.querySelector('.input-qty').value) || 0;
-        const harga = parseFloat(row.querySelector('.input-harga').value) || 0;
-        const diskonPersen = parseFloat(row.querySelector('.input-diskon').value) || 0;
-        const potonganNominal = parseFloat(row.querySelector('.input-potongan').value) || 0;
-        const ppnTipe = row.querySelector('.select-ppn').value;
-
-        const diskonUnit = harga * (diskonPersen / 100);
-        const hargaNetto = Math.max(0, harga - diskonUnit);
-        const subtotalNetto = Math.max(0, (qty * hargaNetto) - potonganNominal);
-        const ppnNominal = (ppnTipe === 'PPN_11') ? Math.round(subtotalNetto * 0.11) : 0;
-        const subtotalTagihan = subtotalNetto + ppnNominal;
-
-        row.querySelector('.row-subtotal').textContent = 'Rp ' + subtotalTagihan.toLocaleString('id-ID');
-        row.setAttribute('data-subtotal-bruto', (qty * harga));
-        row.setAttribute('data-diskon-total', (qty * diskonUnit) + potonganNominal);
-        row.setAttribute('data-dpp', subtotalNetto);
-        row.setAttribute('data-ppn', ppnNominal);
-        row.setAttribute('data-grand-total', subtotalTagihan);
-
-        calculateAllTotals();
-    }
-
-    function calculateAllTotals() {
-        let totalBruto = 0;
-        let totalDiskon = 0;
-        let totalDpp = 0;
-        let totalPpn = 0;
-        let grandTotal = 0;
-
-        document.querySelectorAll('#tbodyPoItems tr.po-item-row').forEach(row => {
-            const qty = parseFloat(row.querySelector('.input-qty').value) || 0;
-            const harga = parseFloat(row.querySelector('.input-harga').value) || 0;
-            const diskonPersen = parseFloat(row.querySelector('.input-diskon').value) || 0;
-            const potonganNominal = parseFloat(row.querySelector('.input-potongan').value) || 0;
-            const ppnTipe = row.querySelector('.select-ppn').value;
-
-            const diskonUnit = harga * (diskonPersen / 100);
-            const hargaNetto = Math.max(0, harga - diskonUnit);
-            const subtotalNetto = Math.max(0, (qty * hargaNetto) - potonganNominal);
-            const ppnNominal = (ppnTipe === 'PPN_11') ? Math.round(subtotalNetto * 0.11) : 0;
-            const subtotalTagihan = subtotalNetto + ppnNominal;
-
-            totalBruto += (qty * harga);
-            totalDiskon += (qty * diskonUnit) + potonganNominal;
-            totalDpp += subtotalNetto;
-            totalPpn += ppnNominal;
-            grandTotal += subtotalTagihan;
-        });
-
-        document.getElementById('summarySubtotalBruto').textContent = 'Rp ' + totalBruto.toLocaleString('id-ID');
-        document.getElementById('summaryDiskon').textContent = '- Rp ' + totalDiskon.toLocaleString('id-ID');
-        document.getElementById('summaryDpp').textContent = 'Rp ' + totalDpp.toLocaleString('id-ID');
-        document.getElementById('summaryPpn').textContent = 'Rp ' + totalPpn.toLocaleString('id-ID');
-        document.getElementById('summaryGrandTotal').textContent = 'Rp ' + grandTotal.toLocaleString('id-ID');
-
-        const rowCount = document.querySelectorAll('#tbodyPoItems tr.po-item-row').length;
-        document.getElementById('badgeItemCount').textContent = `(${rowCount} item)`;
-    }
-
-    function addNewItemRow() {
-        const tbody = document.getElementById('tbodyPoItems');
-        const template = document.getElementById('templateRow').innerHTML;
-        const currentCount = tbody.querySelectorAll('tr.po-item-row').length + 1;
-
-        const html = template
-            .replace(/__INDEX__/g, rowIndex)
-            .replace(/__NUM__/g, currentCount);
-
-        tbody.insertAdjacentHTML('beforeend', html);
-        rowIndex++;
-        renumberRows();
-        calculateAllTotals();
-    }
-
-    function removeRow(btn) {
-        const tbody = document.getElementById('tbodyPoItems');
-        const rows = tbody.querySelectorAll('tr.po-item-row');
-        if (rows.length <= 1) {
-            alert('Minimal harus ada 1 item barang dalam Purchase Order.');
-            return;
-        }
-
-        btn.closest('tr').remove();
-        renumberRows();
-        calculateAllTotals();
-    }
-
-    function renumberRows() {
-        document.querySelectorAll('#tbodyPoItems tr.po-item-row').forEach((row, idx) => {
-            row.querySelector('.row-num').textContent = idx + 1;
-        });
-    }
-
-    // Hitung total awal saat halaman dimuat
-    document.addEventListener('DOMContentLoaded', function() {
-        calculateAllTotals();
-    });
+    window.editRowIndex = {{ $po->details->count() }};
 </script>
+<script src="{{ asset('js/gudang/po/po-edit.js') }}"></script>
 @endpush
 @endsection

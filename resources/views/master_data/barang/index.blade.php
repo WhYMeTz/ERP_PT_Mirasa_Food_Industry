@@ -3,6 +3,86 @@
 @section('title', 'Master Data Barang - ERP PT Mirasa')
 
 @section('content')
+@push('styles')
+<style>
+/* Dropdown Aksi Cerdas (Smart Viewport Positioning) */
+.action-dropdown-menu {
+    position: fixed;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    min-width: 195px;
+    z-index: 999999 !important;
+    display: none;
+    overflow: hidden;
+    padding: 0.35rem 0;
+    animation: fadeInDropdown 0.12s ease-out;
+}
+
+@keyframes fadeInDropdown {
+    from { opacity: 0; transform: scale(0.96); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+.action-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.55rem 0.95rem;
+    color: #1e293b;
+    text-decoration: none;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    transition: background 0.12s ease, color 0.12s ease;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    width: 100%;
+    text-align: left;
+    box-sizing: border-box;
+}
+
+.action-dropdown-item:hover {
+    background: #f0fdf4;
+    color: #059669;
+}
+
+.action-dropdown-item.danger-item:hover {
+    background: #fef2f2;
+    color: #dc2626;
+}
+
+.action-dropdown-divider {
+    height: 1px;
+    background: #f1f5f9;
+    margin: 0.3rem 0;
+}
+
+.btn-action-trigger {
+    background: #ffffff;
+    border: 1.5px solid #cbd5e1;
+    color: #1e293b;
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 0.32rem 0.75rem;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    transition: all 0.15s ease;
+}
+
+.btn-action-trigger:hover,
+.btn-action-trigger.active {
+    background: #f0fdf4;
+    border-color: #059669;
+    color: #059669;
+}
+</style>
+@endpush
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
     <div>
         <h1 style="font-size: 1.5rem; font-weight: 700; color: #0f172a;">Master Data Barang</h1>
@@ -84,12 +164,29 @@
                         <td style="text-align: right; font-weight: 600; color: #0f172a;">
                             Rp {{ number_format((float) $item->harga_beli_standar, 2, ',', '.') }}
                         </td>
-                        <td style="text-align: right;">
-                            @if (Auth::user()?->canManageMasterData())
-                                <div style="display: inline-flex; gap: 0.35rem;">
+                        <td style="text-align: right; position: relative;">
+                            <button type="button" class="btn-action-trigger" onclick="toggleSmartActionDropdown(this, event, 'dropdown-barang-{{ $item->barang_id }}')">
+                                <span>Aksi</span>
+                                <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                            </button>
+                            <div id="dropdown-barang-{{ $item->barang_id }}" class="action-dropdown-menu">
+                                {{-- Aksi 1: Cek Stok Gudang --}}
+                                <a href="{{ route('gudang.stok.index', ['search' => $item->barang_nm]) }}" class="action-dropdown-item">
+                                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                                    <span>Cek Stok Gudang</span>
+                                </a>
+
+                                {{-- Aksi 2: Kartu Stok (Ledger) --}}
+                                <a href="{{ route('gudang.stok.ledger', ['barang_id' => $item->barang_id]) }}" class="action-dropdown-item">
+                                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                                    <span>Lihat Kartu Stok</span>
+                                </a>
+
+                                @if (Auth::user()?->canManageMasterData())
+                                    <div class="action-dropdown-divider"></div>
                                     <button type="button" 
-                                        class="btn btn-secondary btn-sm" 
-                                        onclick="editBarang(
+                                        class="action-dropdown-item" 
+                                        onclick="closeAllActionDropdowns(); editBarang(
                                             {{ $item->barang_id }},
                                             '{{ addslashes($item->barang_cd) }}',
                                             '{{ addslashes($item->barang_nm) }}',
@@ -99,21 +196,19 @@
                                             '{{ number_format($item->konversi_qty, 4, '.', '') }}',
                                             '{{ number_format($item->batas_minimum_qty ?? 0, 4, '.', '') }}',
                                             '{{ number_format($item->harga_beli_standar ?? 0, 2, '.', '') }}'
-                                        )"
-                                        title="Edit">
-                                        Edit
+                                        )">
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                        <span>Edit Data Barang</span>
                                     </button>
-                                    <form action="{{ route('master.barang.destroy', $item->barang_id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menonaktifkan barang ini?')">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn btn-danger btn-sm" title="Hapus">
-                                            Hapus
-                                        </button>
-                                    </form>
-                                </div>
-                            @else
-                                <span style="color: #94a3b8; font-size: 0.8rem;">Lihat Saja</span>
-                            @endif
+
+                                    <button type="button" 
+                                        class="action-dropdown-item danger-item" 
+                                        onclick="closeAllActionDropdowns(); openDeleteBarangModal({{ $item->barang_id }}, '{{ addslashes($item->barang_cd) }}', '{{ addslashes($item->barang_nm) }}')">
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                        <span>Hapus / Nonaktifkan</span>
+                                    </button>
+                                @endif
+                            </div>
                         </td>
                     </tr>
                 @empty
@@ -348,7 +443,121 @@
     </div>
 </div>
 
+{{-- MODAL KONFIRMASI HAPUS/NONAKTIFKAN BARANG --}}
+<div id="modalDeleteBarang" class="modal-backdrop">
+    <div class="modal-dialog" style="max-width: 440px;">
+        <div class="modal-header" style="background: #fef2f2; border-bottom: 1px solid #fecaca;">
+            <h3 class="modal-title" style="color: #991b1b; display: flex; align-items: center; gap: 0.5rem; font-size: 1rem;">
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                <span>Konfirmasi Nonaktifkan Barang</span>
+            </h3>
+            <button type="button" class="modal-close" onclick="closeModal('modalDeleteBarang')">&times;</button>
+        </div>
+        <form id="formDeleteBarang" method="POST" action="">
+            @csrf
+            @method('DELETE')
+            <div class="modal-body" style="padding: 1.25rem;">
+                <p style="font-size: 0.875rem; color: #334155; margin-bottom: 0.75rem;">
+                    Apakah Anda yakin ingin menonaktifkan master barang berikut?
+                </p>
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.75rem; margin-bottom: 0.75rem;">
+                    <div style="font-family: monospace; font-weight: 700; color: #0284c7; font-size: 0.85rem;" id="deleteBarangCd"></div>
+                    <div style="font-weight: 700; color: #0f172a; font-size: 0.95rem; margin-top: 0.2rem;" id="deleteBarangNm"></div>
+                </div>
+                <small style="color: #dc2626; font-size: 0.75rem; display: block; line-height: 1.4;">
+                    ⚠️ Barang yang dinonaktifkan tidak akan muncul lagi pada pencarian input transaksi baru (PO &amp; Penerimaan).
+                </small>
+            </div>
+            <div class="modal-footer" style="padding: 0.75rem 1.25rem; background: #fafafa; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 0.5rem;">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="closeModal('modalDeleteBarang')">Batal</button>
+                <button type="submit" class="btn btn-danger btn-sm" style="background: #dc2626; color: #fff; font-weight: 700;">
+                    Ya, Nonaktifkan Barang
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
+    let activeDropdownMenu = null;
+    let activeTriggerButton = null;
+
+    function toggleSmartActionDropdown(button, event, menuId) {
+        if (event) {
+            event.stopPropagation();
+            event.preventDefault();
+        }
+        const targetMenu = document.getElementById(menuId);
+        if (!targetMenu) return;
+
+        if (activeDropdownMenu === targetMenu && targetMenu.style.display === 'block') {
+            closeAllActionDropdowns();
+            return;
+        }
+
+        closeAllActionDropdowns();
+
+        targetMenu.style.display = 'block';
+        activeDropdownMenu = targetMenu;
+        activeTriggerButton = button;
+        button.classList.add('active');
+
+        positionActionDropdown(button, targetMenu);
+    }
+
+    function positionActionDropdown(button, menu) {
+        if (!button || !menu) return;
+        const rect = button.getBoundingClientRect();
+        const menuWidth = menu.offsetWidth || 195;
+        const menuHeight = menu.offsetHeight || 150;
+        const viewportHeight = window.innerHeight;
+        const viewportWidth = window.innerWidth;
+
+        const spaceBelow = viewportHeight - rect.bottom;
+        const spaceAbove = rect.top;
+
+        if (spaceBelow < menuHeight && spaceAbove > spaceBelow) {
+            menu.style.top = `${rect.top - menuHeight - 4}px`;
+        } else {
+            menu.style.top = `${rect.bottom + 4}px`;
+        }
+
+        let leftPos = rect.right - menuWidth;
+        if (leftPos < 10) leftPos = 10;
+        if (leftPos + menuWidth > viewportWidth - 10) {
+            leftPos = viewportWidth - menuWidth - 10;
+        }
+        menu.style.left = `${leftPos}px`;
+    }
+
+    function closeAllActionDropdowns() {
+        document.querySelectorAll('.action-dropdown-menu').forEach(m => m.style.display = 'none');
+        document.querySelectorAll('.btn-action-trigger').forEach(b => b.classList.remove('active'));
+        activeDropdownMenu = null;
+        activeTriggerButton = null;
+    }
+
+    window.addEventListener('click', function(e) {
+        if (!e.target.closest('.action-dropdown-menu') && !e.target.closest('.btn-action-trigger')) {
+            closeAllActionDropdowns();
+        }
+    });
+
+    window.addEventListener('scroll', function() {
+        if (activeDropdownMenu && activeTriggerButton) {
+            positionActionDropdown(activeTriggerButton, activeDropdownMenu);
+        }
+    }, true);
+
+    window.addEventListener('resize', closeAllActionDropdowns);
+
+    function openDeleteBarangModal(id, code, name) {
+        document.getElementById('deleteBarangCd').innerText = code;
+        document.getElementById('deleteBarangNm').innerText = name;
+        document.getElementById('formDeleteBarang').action = '{{ url("master-barang") }}/' + id;
+        openModal('modalDeleteBarang');
+    }
+
     function editBarang(id, kode, nama, jenisId, satuanDasarId, satuanBesarId, konversi, batasMin, hargaStandar) {
         document.getElementById('edit_barang_cd').value = kode;
         document.getElementById('edit_barang_nm').value = nama;

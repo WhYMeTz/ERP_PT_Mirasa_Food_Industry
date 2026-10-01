@@ -306,6 +306,9 @@ class StokService
                   ->orWhere('barang_cd', 'ILIKE', "%{$search}%")
                   ->orWhereHas('jenisBarang', function ($jq) use ($search) {
                       $jq->where('jenis_barang_nm', 'ILIKE', "%{$search}%");
+                  })
+                  ->orWhereHas('stokBatches', function ($sq) use ($search) {
+                      $sq->where('batch_no', 'ILIKE', "%{$search}%");
                   });
             });
         }

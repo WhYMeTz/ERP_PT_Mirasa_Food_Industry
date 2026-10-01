@@ -335,6 +335,250 @@ class TerimaBarangService
     }
 
     /**
+     * Memperbarui dokumen penerimaan barang:
+     * 1. Rollback stok lama & PO progress lama
+     * 2. Hapus detail lama
+     * 3. Update header & buat detail baru
+     * 4. Suntik stok baru & update PO progress baru
+     */
+    public function update(int $id, array $data): DatTerimaHdr
+    {
+        return DB::transaction(function () use ($id, $data) {
+            $terima = DatTerimaHdr::with(['details', 'po.details'])->lockForUpdate()->findOrFail($id);
+
+            if ($terima->deleted_st) {
+                throw new Exception("Dokumen penerimaan {$terima->terima_no} sudah dihapus dan tidak dapat diubah.");
+            }
+
+            // 1. Rollback stok lama untuk setiap item detail
+            foreach ($terima->details as $dtl) {
+                $this->stokService->deductStock(
+                    $terima->gudang_id,
+                    $dtl->barang_id,
+                    $dtl->batch_no,
+                    (float) $dtl->terima_qty,
+                    $terima->terima_no,
+                    "Penyesuaian (Rollback Edit) Dokumen Penerimaan {$terima->terima_no}"
+                );
+
+                // Kembalikan terima_qty di PO Detail jika terkait PO lama
+                if (!empty($dtl->podtl_id)) {
+                    $poDtl = DatPoDtl::find($dtl->podtl_id);
+                    if ($poDtl) {
+                        $poDtl->terima_qty = max(0, (float) $poDtl->terima_qty - (float) $dtl->terima_qty);
+                        $poDtl->save();
+                    }
+                }
+            }
+
+            // Hapus detail lama
+            DatTerimaDtl::where('terima_id', $terima->terima_id)->delete();
+
+            $items = $data['items'] ?? [];
+            if (empty($items)) {
+                throw new Exception("Minimal harus ada 1 item barang yang diterima.");
+            }
+
+            $gudangId = (int) ($data['gudang_id'] ?? $terima->gudang_id);
+            $supplierId = (int) ($data['supplier_id'] ?? $terima->supplier_id);
+            $poId = !empty($data['po_id']) ? (int) $data['po_id'] : null;
+
+            // Hitung akumulasi subtotal, diskon, potongan, dan PPN per item
+            $subtotalNominal = 0;
+            $totalDiskonNominal = 0;
+            $totalItemPotongan = 0;
+            $totalDppPpn = 0;
+            $totalDppNonPpn = 0;
+            $totalPpnNominal = 0;
+            $hasPpn = false;
+            $hasNonPpn = false;
+            $processedItems = [];
+
+            foreach ($items as $item) {
+                $terimaQty = (float) ($item['terima_qty'] ?? 0);
+                if ($terimaQty <= 0) {
+                    continue;
+                }
+
+                $barangId = (int) $item['barang_id'];
+                $hargaNominal = (float) ($item['harga_nominal'] ?? 0);
+                $diskonPersen = (float) ($item['diskon_persen'] ?? 0);
+                $diskonNominalUnit = round($hargaNominal * ($diskonPersen / 100), 4);
+                $hargaSetelahDiskon = max(0, $hargaNominal - $diskonNominalUnit);
+
+                $potonganItem = max(0, (float) ($item['potongan_nominal'] ?? 0));
+                $subtotalNetto = max(0, round(($terimaQty * $hargaSetelahDiskon) - $potonganItem, 4));
+                $hargaNetto = $terimaQty > 0 ? round($subtotalNetto / $terimaQty, 4) : 0;
+
+                $itemPpnTipe = ($item['ppn_tipe'] ?? 'NON_PPN') === 'PPN_11' ? 'PPN_11' : 'NON_PPN';
+                $itemPpnPersen = ($itemPpnTipe === 'PPN_11') ? 11.00 : 0.00;
+                $itemPpnNominal = ($itemPpnTipe === 'PPN_11') ? round($subtotalNetto * 0.11, 2) : 0.00;
+                $subtotalTagihan = round($subtotalNetto + $itemPpnNominal, 2);
+
+                if ($itemPpnTipe === 'PPN_11') {
+                    $hasPpn = true;
+                    $totalDppPpn += $subtotalNetto;
+                } else {
+                    $hasNonPpn = true;
+                    $totalDppNonPpn += $subtotalNetto;
+                }
+
+                $subtotalNominal += $subtotalNetto;
+                $totalDiskonNominal += round($terimaQty * $diskonNominalUnit, 4);
+                $totalItemPotongan += $potonganItem;
+                $totalPpnNominal += $itemPpnNominal;
+
+                $processedItems[] = [
+                    'barang_id'        => $barangId,
+                    'podtl_id'         => !empty($item['podtl_id']) ? (int) $item['podtl_id'] : null,
+                    'qcdtl_id'         => !empty($item['qcdtl_id']) ? (int) $item['qcdtl_id'] : null,
+                    'batch_no'         => !empty($item['batch_no']) ? trim($item['batch_no']) : null,
+                    'expired_tgl'      => !empty($item['expired_tgl']) ? $item['expired_tgl'] : null,
+                    'grade_cd'         => !empty($item['grade_cd']) ? trim($item['grade_cd']) : null,
+                    'kadar_air_persen' => !empty($item['kadar_air_persen']) ? (float) $item['kadar_air_persen'] : 0,
+                    'refraksi_persen'  => !empty($item['refraksi_persen']) ? (float) $item['refraksi_persen'] : 0,
+                    'terima_qty'       => $terimaQty,
+                    'reject_qty'       => (float) ($item['reject_qty'] ?? 0),
+                    'harga_nominal'    => $hargaNominal,
+                    'diskon_persen'    => $diskonPersen,
+                    'diskon_nominal'   => $diskonNominalUnit,
+                    'potongan_nominal' => $potonganItem,
+                    'harga_netto'      => $hargaNetto,
+                    'subtotal_netto'   => $subtotalNetto,
+                    'ppn_tipe'         => $itemPpnTipe,
+                    'ppn_persen'       => $itemPpnPersen,
+                    'ppn_nominal'      => $itemPpnNominal,
+                    'subtotal_tagihan' => $subtotalTagihan,
+                    'catatan_txt'      => $item['catatan_txt'] ?? null,
+                ];
+            }
+
+            if (empty($processedItems)) {
+                throw new Exception('Minimal harus ada 1 barang dengan kuantitas terima lebih dari 0 yang valid.');
+            }
+
+            $potonganGlobal = max(0, (float) ($data['potongan_nominal'] ?? 0));
+            $totalSemuaPotongan = $totalItemPotongan + $potonganGlobal;
+
+            $headerPpnTipe = 'NON_PPN';
+            if ($hasPpn && $hasNonPpn) {
+                $headerPpnTipe = 'MIXED';
+            } elseif ($hasPpn) {
+                $headerPpnTipe = 'PPN_11';
+            }
+
+            $dppNominal = max(0, $totalDppPpn - $potonganGlobal);
+            $totalTagihan = round($subtotalNominal + $totalPpnNominal - $potonganGlobal, 2);
+
+            // Update Header
+            $terima->update([
+                'terima_no'        => !empty($data['terima_no']) ? trim($data['terima_no']) : $terima->terima_no,
+                'terima_tgl'       => $data['terima_tgl'] ?? $terima->terima_tgl,
+                'po_id'            => $poId,
+                'supplier_id'      => $supplierId,
+                'gudang_id'        => $gudangId,
+                'suratjalan_no'    => $data['suratjalan_no'] ?? null,
+                'catatan_txt'      => $data['catatan_txt'] ?? null,
+                'subtotal_nominal' => $subtotalNominal,
+                'potongan_nominal' => $totalSemuaPotongan,
+                'dpp_nominal'      => $dppNominal,
+                'ppn_tipe'         => $headerPpnTipe,
+                'ppn_persen'       => $hasPpn ? 11.00 : 0.00,
+                'ppn_nominal'      => $totalPpnNominal,
+                'total_tagihan'    => $totalTagihan,
+            ]);
+
+            // Simpan detail baru & suntik stok baru
+            foreach ($processedItems as $row) {
+                $barangId = $row['barang_id'];
+                $batchNo = $row['batch_no'];
+
+                if (empty($batchNo) || trim($batchNo) === '' || str_ends_with(trim($batchNo), '-')) {
+                    $barang = MstBarang::find($barangId);
+                    $barangNm = $barang?->barang_nm ?? "ID #{$barangId}";
+                    throw new Exception("Nomor batch dari faktur supplier untuk komoditas '{$barangNm}' wajib diisi lengkap.");
+                }
+
+                $dtl = DatTerimaDtl::create([
+                    'terima_id'        => $terima->terima_id,
+                    'podtl_id'         => $row['podtl_id'],
+                    'qcdtl_id'         => $row['qcdtl_id'] ?? null,
+                    'barang_id'        => $barangId,
+                    'batch_no'         => $batchNo,
+                    'expired_tgl'      => $row['expired_tgl'],
+                    'terima_qty'       => $row['terima_qty'],
+                    'reject_qty'       => $row['reject_qty'],
+                    'grade_cd'         => $row['grade_cd'],
+                    'kadar_air_persen' => $row['kadar_air_persen'] ?? 0,
+                    'refraksi_persen'  => $row['refraksi_persen'] ?? 0,
+                    'harga_nominal'    => $row['harga_nominal'],
+                    'diskon_persen'    => $row['diskon_persen'],
+                    'diskon_nominal'   => $row['diskon_nominal'],
+                    'potongan_nominal' => $row['potongan_nominal'],
+                    'harga_netto'      => $row['harga_netto'],
+                    'subtotal_netto'   => $row['subtotal_netto'],
+                    'ppn_tipe'         => $row['ppn_tipe'],
+                    'ppn_persen'       => $row['ppn_persen'],
+                    'ppn_nominal'      => $row['ppn_nominal'],
+                    'subtotal_tagihan' => $row['subtotal_tagihan'],
+                    'catatan_txt'      => $row['catatan_txt'],
+                ]);
+
+                // Suntik stok fisik & kartu stok
+                $this->stokService->addStock(
+                    $gudangId,
+                    $barangId,
+                    $batchNo,
+                    $row['terima_qty'],
+                    $row['expired_tgl'],
+                    $terima->terima_no,
+                    "Penerimaan Barang Fisik No {$terima->terima_no} (Update)",
+                    $row['harga_netto']
+                );
+
+                // Update terima_qty di PO Detail jika terkait PO
+                if (!empty($dtl->podtl_id)) {
+                    $poDtl = DatPoDtl::find($dtl->podtl_id);
+                    if ($poDtl) {
+                        $poDtl->terima_qty = (float) $poDtl->terima_qty + $row['terima_qty'];
+                        $poDtl->save();
+                    }
+                }
+            }
+
+            // Update status PO jika terkait
+            $affectedPoIds = array_filter(array_unique([$terima->po_id, $poId]));
+            foreach ($affectedPoIds as $pId) {
+                $poHdr = DatPoHdr::with('details')->find($pId);
+                if ($poHdr) {
+                    $semuaTuntas = true;
+                    $adaYangDiterima = false;
+
+                    foreach ($poHdr->details as $pdtl) {
+                        if ((float) $pdtl->terima_qty < (float) $pdtl->pesan_qty) {
+                            $semuaTuntas = false;
+                        }
+                        if ((float) $pdtl->terima_qty > 0) {
+                            $adaYangDiterima = true;
+                        }
+                    }
+
+                    if ($semuaTuntas) {
+                        $poHdr->status_cd = 'COMPLETED';
+                    } elseif ($adaYangDiterima) {
+                        $poHdr->status_cd = 'PARTIAL';
+                    } else {
+                        $poHdr->status_cd = 'OPEN';
+                    }
+                    $poHdr->save();
+                }
+            }
+
+            return $terima->fresh(['details.barang']);
+        });
+    }
+
+    /**
      * Membatalkan / menghapus dokumen penerimaan barang secara aman.
      * Mengurangi kembali saldo stok fisik di gudang dan mengembalikan progres PO.
      */

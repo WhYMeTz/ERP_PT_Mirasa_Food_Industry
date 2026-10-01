@@ -172,6 +172,87 @@ class TerimaBarangController extends Controller
     }
 
     /**
+     * Tampilan form edit penerimaan barang.
+     */
+    public function edit(int $id): View
+    {
+        $terima = $this->terimaService->getById($id);
+        $supplierList = MstSupplier::active()->with('jenisSupplier')->orderBy('supplier_nm')->get();
+        $user = auth()->user();
+        $gudangList = $user ? $user->getAllowedGudangList() : collect();
+        $allowedGudangIds = ($user && $user->isSuperAdmin()) ? null : ($user ? $user->getAllowedGudangIds() : []);
+        $barangList = MstBarang::active()->bahanBaku()->with(['satuanDasar', 'jenisBarang'])->orderBy('barang_nm')->get();
+        $openPoList = $this->poService->getOpenPoList(null, $allowedGudangIds);
+
+        // Sertakan PO saat ini jika bukan status OPEN agar dropdown tetap menampilkan PO-nya
+        if ($terima->po_id && !$openPoList->contains('po_id', $terima->po_id)) {
+            $currentPo = \App\Models\Gudang\DatPoHdr::with(['supplier', 'details.barang.satuanDasar'])->find($terima->po_id);
+            if ($currentPo) {
+                $openPoList->push($currentPo);
+            }
+        }
+
+        return view('gudang.terima.edit', compact(
+            'terima',
+            'supplierList',
+            'gudangList',
+            'barangList',
+            'openPoList'
+        ));
+    }
+
+    /**
+     * Memproses update data penerimaan barang dan penyesuaian saldo stok fisik.
+     */
+    public function update(Request $request, int $id): RedirectResponse|JsonResponse
+    {
+        $validated = $request->validate([
+            'terima_no'        => 'required|string|max:50|unique:dat_terima_hdr,terima_no,' . $id . ',terima_id',
+            'terima_tgl'       => 'required|date',
+            'po_id'            => 'nullable|integer|exists:dat_po_hdr,po_id',
+            'supplier_id'      => 'required|integer|exists:mst_supplier,supplier_id',
+            'gudang_id'        => 'required|integer|exists:mst_gudang,gudang_id',
+            'suratjalan_no'    => 'nullable|string|max:100',
+            'catatan_txt'      => 'nullable|string',
+            'potongan_nominal' => 'nullable|numeric|min:0',
+            'ppn_tipe'         => 'nullable|string|in:NON_PPN,PPN_11',
+
+            'items'                 => 'required|array|min:1',
+            'items.*.barang_id'     => 'required|integer|exists:mst_barang,barang_id',
+            'items.*.podtl_id'      => 'nullable|integer|exists:dat_po_dtl,podtl_id',
+            'items.*.batch_no'      => 'nullable|string|max:100',
+            'items.*.expired_tgl'   => 'nullable|date',
+            'items.*.grade_cd'      => 'nullable|string|max:20',
+            'items.*.terima_qty'    => 'required|numeric|min:0',
+            'items.*.reject_qty'    => 'nullable|numeric|min:0',
+            'items.*.harga_nominal'    => 'nullable|numeric|min:0',
+            'items.*.diskon_persen'    => 'nullable|numeric|min:0|max:100',
+            'items.*.potongan_nominal' => 'nullable|numeric|min:0',
+            'items.*.ppn_tipe'         => 'nullable|string|in:NON_PPN,PPN_11',
+            'items.*.catatan_txt'      => 'nullable|string',
+        ]);
+
+        try {
+            $terima = $this->terimaService->update($id, $validated);
+
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'status'  => 'success',
+                    'message' => "Penerimaan barang {$terima->terima_no} berhasil diperbarui dan stok telah disesuaikan.",
+                    'data'    => $terima,
+                ]);
+            }
+
+            return redirect()
+                ->route('gudang.terima.show', $terima->terima_id)
+                ->with('success', "Penerimaan barang {$terima->terima_no} berhasil diperbarui dan stok telah disesuaikan.");
+        } catch (\Exception $e) {
+            return back()->withInput()->withErrors(['error' => $e->getMessage()]);
+        }
+    }
+
+
+    /**
      * Export Bukti Penerimaan Barang (GRN) ke format PDF resmi.
      */
     public function exportPdf(int $id): Response

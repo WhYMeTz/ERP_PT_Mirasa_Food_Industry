@@ -9,6 +9,10 @@
         <p style="color: #64748b; font-size: 0.875rem; margin-top: 0.25rem;">Pengaturan akun login, hak akses (Role), dan penugasan lokasi gudang/pabrik (Gudang Magelang, Gudang Bahan Baku, dll).</p>
     </div>
     <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+        <button type="button" onclick="openModal('modalKelolaRoles')" class="btn btn-secondary" style="border: 1px solid #cbd5e1; color: #475569; font-weight: 700;">
+            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+            ✨ Kelola Peran (Role)
+        </button>
         <button type="button" onclick="openRolePermissionModal('ADMIN_GUDANG')" class="btn btn-secondary" style="border: 1px solid #cbd5e1; color: #0284c7; font-weight: 700;">
             <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
             🛡️ Atur Hak Akses Peran (Popup)
@@ -366,8 +370,14 @@
             <div style="background: #ffffff; padding: 1rem 1.75rem 0.75rem; border-bottom: 1.5px solid #e2e8f0; flex-shrink: 0; display: flex; flex-direction: column; gap: 0.75rem;">
                 {{-- ROLE TABS DI DALAM POPUP --}}
                 <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
-                    <div style="font-size: 0.75rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;">
-                        PILIH PERAN (ROLE):
+                    <div style="display: flex; align-items: center; gap: 0.65rem;">
+                        <span style="font-size: 0.75rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;">
+                            PILIH PERAN (ROLE):
+                        </span>
+                        <button type="button" onclick="openModal('modalTambahRole')" class="btn btn-secondary btn-sm" style="font-size: 0.725rem; font-weight: 700; padding: 0.2rem 0.6rem; color: #0284c7; border: 1.5px dashed #0284c7; background: #f0f9ff; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem;" title="Tambah Peran Baru">
+                            <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                            <span>Tambah Role</span>
+                        </button>
                     </div>
                     <div style="display: flex; gap: 0.35rem; flex-wrap: wrap; background: #f1f5f9; padding: 0.3rem; border-radius: 8px;">
                         @foreach ($matrix as $roleKey => $roleInfo)
@@ -613,5 +623,47 @@
 
         openModal('modalEditUser');
     }
+
+    function editRoleData(id, code, name, desc) {
+        closeModal('modalKelolaRoles');
+        document.getElementById('edit_role_code').value = code;
+        document.getElementById('edit_role_name').value = name;
+        document.getElementById('edit_role_desc').value = desc;
+        document.getElementById('formEditRole').action = '{{ url("pengguna-sistem/roles") }}/' + id;
+        openModal('modalEditRole');
+    }
+
+    function openDeleteRoleModal(id, code, name, userCount) {
+        closeModal('modalKelolaRoles');
+        document.getElementById('deleteRoleCode').innerText = code;
+        document.getElementById('deleteRoleName').innerText = name;
+        const btn = document.getElementById('btnConfirmDeleteRole');
+        const warning = document.getElementById('deleteRoleWarning');
+
+        if (userCount > 0) {
+            warning.innerHTML = '<span style="color: #dc2626; font-size: 0.8rem; font-weight: 700; display: block; line-height: 1.4;">' +
+                '❌ Tidak dapat dihapus: Masih terdapat ' + userCount + ' akun pengguna yang menggunakan peran ini. Ubah peran pengguna terlebih dahulu.' +
+                '</span>';
+            btn.disabled = true;
+            btn.style.opacity = '0.5';
+            btn.style.cursor = 'not-allowed';
+        } else {
+            warning.innerHTML = '<small style="color: #dc2626; font-size: 0.75rem; display: block; line-height: 1.4;">' +
+                '⚠️ Peran yang dihapus tidak akan muncul lagi di pilihan pembuatan akun baru dan matriks perizinan.' +
+                '</small>';
+            btn.disabled = false;
+            btn.style.opacity = '1';
+            btn.style.cursor = 'pointer';
+        }
+
+        document.getElementById('formDeleteRole').action = '{{ url("pengguna-sistem/roles") }}/' + id;
+        openModal('modalDeleteRole');
+    }
 </script>
+
+{{-- MODALS KELOLA PERAN --}}
+@include('master_data.user.partials.modal-role-create')
+@include('master_data.user.partials.modal-role-manage')
+@include('master_data.user.partials.modal-role-edit')
+@include('master_data.user.partials.modal-role-delete')
 @endsection

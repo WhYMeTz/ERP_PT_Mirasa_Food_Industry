@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Auth\RoleController;
 use App\Http\Controllers\Auth\UserController;
 use App\Http\Controllers\Common\CodeGeneratorController;
 use App\Http\Controllers\Gudang\PemakaianController;
@@ -49,6 +50,21 @@ Route::middleware('auth')->group(function () {
     Route::post('pengguna-sistem/hak-akses', [UserController::class, 'updatePermissions'])
         ->name('admin.users.permissions.update')
         ->middleware('role:user_manage,SUPERADMIN');
+
+    // Manajemen Peran (Roles) Dinamis
+    Route::get('pengguna-sistem/roles', [RoleController::class, 'index'])
+        ->name('admin.roles.index')
+        ->middleware('role:user_manage,SUPERADMIN');
+    Route::post('pengguna-sistem/roles', [RoleController::class, 'store'])
+        ->name('admin.roles.store')
+        ->middleware('role:user_manage,SUPERADMIN');
+    Route::put('pengguna-sistem/roles/{id}', [RoleController::class, 'update'])
+        ->name('admin.roles.update')
+        ->middleware('role:user_manage,SUPERADMIN');
+    Route::delete('pengguna-sistem/roles/{id}', [RoleController::class, 'destroy'])
+        ->name('admin.roles.destroy')
+        ->middleware('role:user_manage,SUPERADMIN');
+
     Route::resource('pengguna-sistem', UserController::class)
         ->names('admin.users')
         ->middleware('role:user_manage,SUPERADMIN');

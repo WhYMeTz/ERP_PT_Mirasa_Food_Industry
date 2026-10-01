@@ -343,7 +343,10 @@ class PermissionService
         }
 
         $allKeys = self::getAllPermissionKeys();
-        $roles = ['ADMIN_GUDANG', 'PURCHASING', 'STAFF_PRODUKSI', 'FINANCE', 'QC'];
+        $roles = array_keys(app(RoleService::class)->getNonSuperAdminRoles());
+        if (empty($roles)) {
+            $roles = ['ADMIN_GUDANG', 'PURCHASING', 'STAFF_PRODUKSI', 'FINANCE', 'QC'];
+        }
         $existing = SysRolePermission::select('role_cd', 'permission_cd')->get();
         $keyed = [];
         foreach ($existing as $e) {
@@ -413,13 +416,16 @@ class PermissionService
     {
         $this->ensureInitialized();
 
-        $roles = [
-            'ADMIN_GUDANG'   => 'Admin / Petugas Gudang',
-            'PURCHASING'     => 'Purchasing / Pengadaan Bahan',
-            'STAFF_PRODUKSI' => 'Staff / Operator Produksi',
-            'FINANCE'        => 'Finance & Akuntansi',
-            'QC'             => 'Quality Control (QC)',
-        ];
+        $roles = app(RoleService::class)->getNonSuperAdminRoles();
+        if (empty($roles)) {
+            $roles = [
+                'ADMIN_GUDANG'   => 'Admin / Petugas Gudang',
+                'PURCHASING'     => 'Purchasing / Pengadaan Bahan',
+                'STAFF_PRODUKSI' => 'Staff / Operator Produksi',
+                'FINANCE'        => 'Finance & Akuntansi',
+                'QC'             => 'Quality Control (QC)',
+            ];
+        }
 
         $records = SysRolePermission::all()->groupBy('role_cd');
 

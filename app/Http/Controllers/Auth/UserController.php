@@ -20,7 +20,7 @@ class UserController extends Controller
         protected KaryawanService $karyawanService
     ) {}
 
-    public function index(Request $request, \App\Services\Auth\PermissionService $permissionService): View|JsonResponse
+    public function index(Request $request, \App\Services\Auth\PermissionService $permissionService, \App\Services\Auth\RoleService $roleService): View|JsonResponse
     {
         $perPage = (int) $request->input('per_page', 15);
         $search = $request->input('search');
@@ -30,6 +30,7 @@ class UserController extends Controller
         $karyawanList = $this->karyawanService->getAllActive();
         $gudangList = MstGudang::active()->orderBy('gudang_nm')->get();
         $roleList = $this->userService->getAvailableRoles();
+        $allRoles = $roleService->getAllRoles();
         $matrix = $permissionService->getPermissionMatrix();
         $modules = \App\Services\Auth\PermissionService::MODULES;
 
@@ -42,7 +43,7 @@ class UserController extends Controller
         }
 
         return view('master_data.user.index', compact(
-            'userList', 'karyawanList', 'gudangList', 'roleList', 'search', 'role',
+            'userList', 'karyawanList', 'gudangList', 'roleList', 'allRoles', 'search', 'role',
             'matrix', 'modules'
         ));
     }
@@ -101,12 +102,13 @@ class UserController extends Controller
     /**
      * Tampilkan antarmuka pengaturan matriks hak akses per role
      */
-    public function permissions(\App\Services\Auth\PermissionService $permissionService): View
+    public function permissions(\App\Services\Auth\PermissionService $permissionService, \App\Services\Auth\RoleService $roleService): View
     {
         $matrix = $permissionService->getPermissionMatrix();
         $modules = \App\Services\Auth\PermissionService::MODULES;
+        $allRoles = $roleService->getAllRoles();
 
-        return view('master_data.user.permissions', compact('matrix', 'modules'));
+        return view('master_data.user.permissions', compact('matrix', 'modules', 'allRoles'));
     }
 
     /**

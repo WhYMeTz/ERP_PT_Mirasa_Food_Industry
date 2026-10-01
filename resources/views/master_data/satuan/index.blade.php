@@ -2,11 +2,15 @@
 
 @section('title', 'Master Data Satuan - ERP PT Mirasa')
 
+@push('styles')
+    <link rel="stylesheet" href="{{ asset('css/master/satuan/satuan-index.css') }}">
+@endpush
+
 @section('content')
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
     <div>
         <h1 style="font-size: 1.5rem; font-weight: 700; color: #0f172a;">Master Data Satuan</h1>
-        <p style="color: #64748b; font-size: 0.875rem; margin-top: 0.25rem;">Kelola unit ukuran (Satuan Dasar & Satuan Besar) untuk transaksi gudang dan produksi.</p>
+        <p style="color: #64748b; font-size: 0.875rem; margin-top: 0.25rem;">Kelola unit ukuran (Satuan Dasar &amp; Satuan Besar) untuk transaksi gudang dan produksi.</p>
     </div>
     <div>
         <button type="button" onclick="openModal('modalTambahSatuan')" class="btn btn-primary">
@@ -36,7 +40,7 @@
                     <th>Kode Satuan</th>
                     <th>Nama Satuan</th>
                     <th>Status</th>
-                    <th style="width: 150px; text-align: right;">Aksi</th>
+                    <th style="width: 130px; text-align: center;">Aksi</th>
                 </tr>
             </thead>
             <tbody>
@@ -48,21 +52,31 @@
                         <td>
                             <span class="badge badge-success">Aktif</span>
                         </td>
-                        <td style="text-align: right;">
-                            <div style="display: inline-flex; gap: 0.35rem;">
+                        <td style="text-align: center; vertical-align: middle;">
+                            <button type="button" 
+                                class="btn-action-trigger" 
+                                onclick="toggleSmartActionDropdown(this, event, 'action-menu-{{ $item->satuan_id }}')">
+                                <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/></svg>
+                                <span>Aksi</span>
+                                <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                            </button>
+
+                            <div id="action-menu-{{ $item->satuan_id }}" class="action-dropdown-menu">
                                 <button type="button" 
-                                    class="btn btn-secondary btn-sm" 
-                                    onclick="editSatuan({{ $item->satuan_id }}, '{{ addslashes($item->satuan_cd) }}', '{{ addslashes($item->satuan_nm) }}')"
-                                    title="Edit">
-                                    Edit
+                                    class="action-dropdown-item" 
+                                    onclick="closeAllActionDropdowns(); editSatuan({{ $item->satuan_id }}, '{{ addslashes($item->satuan_cd) }}', '{{ addslashes($item->satuan_nm) }}')">
+                                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                    <span>Edit Data Satuan</span>
                                 </button>
-                                <form action="{{ route('master.satuan.destroy', $item->satuan_id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menonaktifkan satuan ini?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn btn-danger btn-sm" title="Hapus">
-                                        Hapus
-                                    </button>
-                                </form>
+
+                                <div class="action-dropdown-divider"></div>
+
+                                <button type="button" 
+                                    class="action-dropdown-item danger-item" 
+                                    onclick="closeAllActionDropdowns(); openDeleteSatuanModal({{ $item->satuan_id }}, '{{ addslashes($item->satuan_cd) }}', '{{ addslashes($item->satuan_nm) }}')">
+                                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                    <span>Hapus / Nonaktifkan</span>
+                                </button>
                             </div>
                         </td>
                     </tr>
@@ -84,68 +98,18 @@
     @endif
 </div>
 
-{{-- MODAL TAMBAH SATUAN --}}
-<div id="modalTambahSatuan" class="modal-backdrop">
-    <div class="modal-dialog">
-        <div class="modal-header">
-            <h2 class="modal-title">Tambah Satuan Baru</h2>
-            <button type="button" class="modal-close" onclick="closeModal('modalTambahSatuan')">&times;</button>
-        </div>
-        <form action="{{ route('master.satuan.store') }}" method="POST">
-            @csrf
-            <div class="modal-body">
-                <div class="form-group">
-                    <label for="create_satuan_cd" class="form-label">Kode Satuan <span style="color:#ef4444;">*</span></label>
-                    <input type="text" id="create_satuan_cd" name="satuan_cd" class="form-control" placeholder="Contoh: KG, SAK, DUS" style="text-transform: uppercase;" required>
-                    <span style="font-size: 0.775rem; color: #64748b; margin-top: 0.25rem; display: block;">Singkatan huruf besar tanpa spasi.</span>
-                </div>
-                <div class="form-group" style="margin-bottom: 0;">
-                    <label for="create_satuan_nm" class="form-label">Nama Satuan <span style="color:#ef4444;">*</span></label>
-                    <input type="text" id="create_satuan_nm" name="satuan_nm" class="form-control" placeholder="Contoh: Kilogram, Sak 50Kg" required>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="closeModal('modalTambahSatuan')">Batal</button>
-                <button type="submit" class="btn btn-primary">Simpan Satuan</button>
-            </div>
-        </form>
-    </div>
-</div>
+{{-- MODALS --}}
+@include('master_data.satuan.partials.modal-create')
+@include('master_data.satuan.partials.modal-edit')
+@include('master_data.satuan.partials.modal-delete')
 
-{{-- MODAL EDIT SATUAN --}}
-<div id="modalEditSatuan" class="modal-backdrop">
-    <div class="modal-dialog">
-        <div class="modal-header">
-            <h2 class="modal-title">Edit Data Satuan</h2>
-            <button type="button" class="modal-close" onclick="closeModal('modalEditSatuan')">&times;</button>
-        </div>
-        <form id="formEditSatuan" method="POST">
-            @csrf
-            @method('PUT')
-            <div class="modal-body">
-                <div class="form-group">
-                    <label for="edit_satuan_cd" class="form-label">Kode Satuan <span style="color:#ef4444;">*</span></label>
-                    <input type="text" id="edit_satuan_cd" name="satuan_cd" class="form-control" style="text-transform: uppercase;" required>
-                </div>
-                <div class="form-group" style="margin-bottom: 0;">
-                    <label for="edit_satuan_nm" class="form-label">Nama Satuan <span style="color:#ef4444;">*</span></label>
-                    <input type="text" id="edit_satuan_nm" name="satuan_nm" class="form-control" required>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="closeModal('modalEditSatuan')">Batal</button>
-                <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
-            </div>
-        </form>
-    </div>
-</div>
-
+@push('scripts')
 <script>
-    function editSatuan(id, kode, nama) {
-        document.getElementById('edit_satuan_cd').value = kode;
-        document.getElementById('edit_satuan_nm').value = nama;
-        document.getElementById('formEditSatuan').action = '{{ url("master-satuan") }}/' + id;
-        openModal('modalEditSatuan');
-    }
+    window.masterSatuanConfig = {
+        baseUrl: "{{ url('master-satuan') }}",
+        csrfToken: "{{ csrf_token() }}"
+    };
 </script>
+<script src="{{ asset('js/master/satuan/satuan-index.js') }}"></script>
+@endpush
 @endsection

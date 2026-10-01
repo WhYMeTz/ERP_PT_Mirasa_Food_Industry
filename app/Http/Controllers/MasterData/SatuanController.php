@@ -54,6 +54,8 @@ class SatuanController extends Controller
      */
     public function store(StoreSatuanRequest $request): RedirectResponse|JsonResponse
     {
+        abort_unless($request->user()->canCreateMasterSatuan(), 403, 'Anda tidak memiliki hak akses untuk menambah data satuan.');
+
         $satuan = $this->satuanService->store($request->validated());
 
         if ($request->wantsJson()) {
@@ -74,6 +76,8 @@ class SatuanController extends Controller
      */
     public function edit(int $id): View
     {
+        abort_unless(auth()->user()->canEditMasterSatuan(), 403, 'Anda tidak memiliki hak akses untuk mengedit data satuan.');
+
         $satuan = $this->satuanService->getById($id);
 
         return view('master_data.satuan.edit', compact('satuan'));
@@ -84,6 +88,8 @@ class SatuanController extends Controller
      */
     public function update(UpdateSatuanRequest $request, int $id): RedirectResponse|JsonResponse
     {
+        abort_unless($request->user()->canEditMasterSatuan(), 403, 'Anda tidak memiliki hak akses untuk mengedit data satuan.');
+
         $satuan = $this->satuanService->update($id, $request->validated());
 
         if ($request->wantsJson()) {
@@ -104,12 +110,15 @@ class SatuanController extends Controller
      */
     public function destroy(Request $request, int $id): RedirectResponse|JsonResponse
     {
+        abort_unless($request->user()->canDeleteMasterSatuan(), 403, 'Anda tidak memiliki hak akses untuk menonaktifkan data satuan.');
+
         $this->satuanService->delete($id);
 
         if ($request->wantsJson()) {
             return response()->json([
                 'status'  => 'success',
                 'message' => 'Data satuan berhasil dinonaktifkan.',
+                'data'    => null,
             ]);
         }
 

@@ -19,7 +19,7 @@
         <a href="{{ route('master.barang.export') }}" class="btn btn-secondary" style="background: #ffffff; border: 1.5px solid #cbd5e1; color: #334155; font-size: 0.85rem; font-weight: 600; padding: 0.55rem 0.95rem; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">
             📊 Eksport Excel
         </a>
-        @if (Auth::user()?->canManageMasterData())
+        @if (Auth::user()?->canCreateMasterBarang())
             <button type="button" onclick="openModal('modalImportBarang')" class="btn btn-secondary" style="background: #ffffff; border: 1.5px solid #0284c7; color: #0284c7; font-size: 0.85rem; font-weight: 700; padding: 0.55rem 0.95rem; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">
                 📥 Import Excel
             </button>
@@ -105,8 +105,11 @@
                                     <span>Lihat Kartu Stok</span>
                                 </a>
 
-                                @if (Auth::user()?->canManageMasterData())
+                                @if (Auth::user()?->canEditMasterBarang() || Auth::user()?->canDeleteMasterBarang())
                                     <div class="action-dropdown-divider"></div>
+                                @endif
+
+                                @if (Auth::user()?->canEditMasterBarang())
                                     <button type="button" 
                                         class="action-dropdown-item" 
                                         onclick="closeAllActionDropdowns(); editBarang(
@@ -123,7 +126,9 @@
                                         <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                                         <span>Edit Data Barang</span>
                                     </button>
+                                @endif
 
+                                @if (Auth::user()?->canDeleteMasterBarang())
                                     <button type="button" 
                                         class="action-dropdown-item danger-item" 
                                         onclick="closeAllActionDropdowns(); openDeleteBarangModal({{ $item->barang_id }}, '{{ addslashes($item->barang_cd) }}', '{{ addslashes($item->barang_nm) }}')">

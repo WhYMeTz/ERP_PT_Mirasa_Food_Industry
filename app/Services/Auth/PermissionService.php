@@ -39,6 +39,16 @@ class PermissionService
                     'desc'   => 'Mengubah data penerimaan barang, nomor surat jalan, tanggal, nomor batch, dan rincian fisik komoditas.',
                     'action' => 'EDIT',
                 ],
+                'master_barang_edit' => [
+                    'label'  => 'Edit & Koreksi Master Barang',
+                    'desc'   => 'Mengubah kode, nama, jenis, satuan, konversi, batas minimum stok, dan harga standar barang.',
+                    'action' => 'EDIT',
+                ],
+                'master_satuan_edit' => [
+                    'label'  => 'Edit Data Master Satuan',
+                    'desc'   => 'Mengubah kode dan nama unit satuan barang.',
+                    'action' => 'EDIT',
+                ],
             ],
         ],
         'AKSI_DELETE' => [
@@ -65,6 +75,16 @@ class PermissionService
                 'terima_delete' => [
                     'label'  => 'Hapus / Batalkan Penerimaan Barang',
                     'desc'   => 'Menghapus transaksi penerimaan barang dan membatalkan mutasi stok masuk terkait.',
+                    'action' => 'DELETE',
+                ],
+                'master_barang_delete' => [
+                    'label'  => 'Hapus / Nonaktifkan Master Barang',
+                    'desc'   => 'Menonaktifkan data master barang agar tidak dapat digunakan dalam transaksi baru.',
+                    'action' => 'DELETE',
+                ],
+                'master_satuan_delete' => [
+                    'label'  => 'Hapus / Nonaktifkan Master Satuan',
+                    'desc'   => 'Menonaktifkan data unit satuan ukuran.',
                     'action' => 'DELETE',
                 ],
             ],
@@ -108,6 +128,16 @@ class PermissionService
                 'retur_create' => [
                     'label'  => 'Catat Retur Pembelian',
                     'desc'   => 'Membuat retur pengembalian barang fisik dan update kuota PO/tagihan.',
+                    'action' => 'CREATE',
+                ],
+                'master_barang_create' => [
+                    'label'  => 'Tambah Master Barang Baru',
+                    'desc'   => 'Mendaftarkan barang baru ke dalam katalog sistem.',
+                    'action' => 'CREATE',
+                ],
+                'master_satuan_create' => [
+                    'label'  => 'Tambah Master Satuan Baru',
+                    'desc'   => 'Mendaftarkan unit satuan ukuran baru ke sistem.',
                     'action' => 'CREATE',
                 ],
             ],
@@ -201,6 +231,10 @@ class PermissionService
             'produksi_create',
             'stok_view',
             'master_barang_view',
+            'master_barang_create',
+            'master_barang_edit',
+            'master_satuan_create',
+            'master_satuan_edit',
             'master_gudang_manage',
         ],
         'STAFF_PRODUKSI' => [

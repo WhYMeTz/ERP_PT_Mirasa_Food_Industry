@@ -13,10 +13,12 @@
         <p style="color: #64748b; font-size: 0.875rem; margin-top: 0.25rem;">Kelola unit ukuran (Satuan Dasar &amp; Satuan Besar) untuk transaksi gudang dan produksi.</p>
     </div>
     <div>
-        <button type="button" onclick="openModal('modalTambahSatuan')" class="btn btn-primary">
-            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-            Tambah Satuan Baru
-        </button>
+        @if (Auth::user()?->canCreateMasterSatuan())
+            <button type="button" onclick="openModal('modalTambahSatuan')" class="btn btn-primary">
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                Tambah Satuan Baru
+            </button>
+        @endif
     </div>
 </div>
 
@@ -53,30 +55,40 @@
                             <span class="badge badge-success">Aktif</span>
                         </td>
                         <td style="text-align: center; vertical-align: middle;">
-                            <button type="button" 
-                                class="btn-action-trigger" 
-                                onclick="toggleSmartActionDropdown(this, event, 'action-menu-{{ $item->satuan_id }}')">
-                                <span>Aksi</span>
-                                <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-                            </button>
-
-                            <div id="action-menu-{{ $item->satuan_id }}" class="action-dropdown-menu">
+                            @if (Auth::user()?->canEditMasterSatuan() || Auth::user()?->canDeleteMasterSatuan())
                                 <button type="button" 
-                                    class="action-dropdown-item" 
-                                    onclick="closeAllActionDropdowns(); editSatuan({{ $item->satuan_id }}, '{{ addslashes($item->satuan_cd) }}', '{{ addslashes($item->satuan_nm) }}')">
-                                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                                    <span>Edit Data Satuan</span>
+                                    class="btn-action-trigger" 
+                                    onclick="toggleSmartActionDropdown(this, event, 'action-menu-{{ $item->satuan_id }}')">
+                                    <span>Aksi</span>
+                                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                                 </button>
 
-                                <div class="action-dropdown-divider"></div>
+                                <div id="action-menu-{{ $item->satuan_id }}" class="action-dropdown-menu">
+                                    @if (Auth::user()?->canEditMasterSatuan())
+                                        <button type="button" 
+                                            class="action-dropdown-item" 
+                                            onclick="closeAllActionDropdowns(); editSatuan({{ $item->satuan_id }}, '{{ addslashes($item->satuan_cd) }}', '{{ addslashes($item->satuan_nm) }}')">
+                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                            <span>Edit Data Satuan</span>
+                                        </button>
+                                    @endif
 
-                                <button type="button" 
-                                    class="action-dropdown-item danger-item" 
-                                    onclick="closeAllActionDropdowns(); openDeleteSatuanModal({{ $item->satuan_id }}, '{{ addslashes($item->satuan_cd) }}', '{{ addslashes($item->satuan_nm) }}')">
-                                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                    <span>Hapus / Nonaktifkan</span>
-                                </button>
-                            </div>
+                                    @if (Auth::user()?->canEditMasterSatuan() && Auth::user()?->canDeleteMasterSatuan())
+                                        <div class="action-dropdown-divider"></div>
+                                    @endif
+
+                                    @if (Auth::user()?->canDeleteMasterSatuan())
+                                        <button type="button" 
+                                            class="action-dropdown-item danger-item" 
+                                            onclick="closeAllActionDropdowns(); openDeleteSatuanModal({{ $item->satuan_id }}, '{{ addslashes($item->satuan_cd) }}', '{{ addslashes($item->satuan_nm) }}')">
+                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                            <span>Hapus / Nonaktifkan</span>
+                                        </button>
+                                    @endif
+                                </div>
+                            @else
+                                <span style="font-size: 0.75rem; color: #94a3b8;">-</span>
+                            @endif
                         </td>
                     </tr>
                 @empty

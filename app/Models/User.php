@@ -352,7 +352,40 @@ class User extends Authenticatable
 
     public function canManageMasterData(): bool
     {
-        return $this->isSuperAdmin() || $this->canDo('master_barang_manage');
+        return $this->isSuperAdmin() 
+            || $this->canDo('master_barang_manage')
+            || $this->canDo('master_barang_create')
+            || $this->canDo('master_barang_edit');
+    }
+
+    public function canCreateMasterBarang(): bool
+    {
+        return $this->isSuperAdmin() || $this->canDo('master_barang_create') || $this->canDo('master_barang_manage');
+    }
+
+    public function canEditMasterBarang(): bool
+    {
+        return $this->isSuperAdmin() || $this->canDo('master_barang_edit') || $this->canDo('master_barang_manage');
+    }
+
+    public function canDeleteMasterBarang(): bool
+    {
+        return $this->isSuperAdmin() || $this->canDo('master_barang_delete') || $this->canDo('master_barang_manage');
+    }
+
+    public function canCreateMasterSatuan(): bool
+    {
+        return $this->isSuperAdmin() || $this->canDo('master_satuan_create') || $this->canDo('master_gudang_manage');
+    }
+
+    public function canEditMasterSatuan(): bool
+    {
+        return $this->isSuperAdmin() || $this->canDo('master_satuan_edit') || $this->canDo('master_gudang_manage');
+    }
+
+    public function canDeleteMasterSatuan(): bool
+    {
+        return $this->isSuperAdmin() || $this->canDo('master_satuan_delete') || $this->canDo('master_gudang_manage');
     }
 
     public function canAccessSupplier(): bool

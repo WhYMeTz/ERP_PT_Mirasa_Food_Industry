@@ -124,6 +124,8 @@ class BarangController extends Controller
      */
     public function store(StoreBarangRequest $request): RedirectResponse|JsonResponse
     {
+        abort_unless($request->user()->canCreateMasterBarang(), 403, 'Anda tidak memiliki hak akses untuk menambah master barang.');
+
         $barang = $this->barangService->store($request->validated());
 
         if ($request->wantsJson()) {
@@ -162,6 +164,8 @@ class BarangController extends Controller
      */
     public function edit(int $id): View
     {
+        abort_unless(auth()->user()->canEditMasterBarang(), 403, 'Anda tidak memiliki hak akses untuk mengedit master barang.');
+
         $barang = $this->barangService->getById($id);
         $jenisBarangList = MstJenisBarang::active()->orderBy('jenis_barang_nm')->get();
         $satuanList = MstSatuan::active()->orderBy('satuan_nm')->get();
@@ -174,6 +178,8 @@ class BarangController extends Controller
      */
     public function update(UpdateBarangRequest $request, $id = null): RedirectResponse|JsonResponse
     {
+        abort_unless($request->user()->canEditMasterBarang(), 403, 'Anda tidak memiliki hak akses untuk mengedit master barang.');
+
         $barangId = (int) ($request->route('master_barang') ?? $id ?? $request->input('barang_id'));
         $barang = $this->barangService->update($barangId, $request->validated());
 
@@ -195,12 +201,15 @@ class BarangController extends Controller
      */
     public function destroy(Request $request, int $id): RedirectResponse|JsonResponse
     {
+        abort_unless($request->user()->canDeleteMasterBarang(), 403, 'Anda tidak memiliki hak akses untuk menonaktifkan master barang.');
+
         $this->barangService->delete($id);
 
         if ($request->wantsJson()) {
             return response()->json([
                 'status'  => 'success',
                 'message' => 'Data barang berhasil dinonaktifkan (soft delete).',
+                'data'    => null,
             ]);
         }
 

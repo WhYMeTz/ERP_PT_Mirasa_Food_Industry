@@ -1,11 +1,11 @@
 @extends('layouts.app')
 
-@section('title', 'Barang Masuk & Penerimaan Fisik (Goods Receipt) - ERP PT Mirasa')
+@section('title', 'Penerimaan Barang & Bahan Baku (GRN) - ERP PT Mirasa')
 
 @section('content')
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 1rem;">
     <div>
-        <h1 style="font-size: 1.5rem; font-weight: 700; color: #0f172a; margin: 0;">Barang Masuk &amp; Penerimaan Fisik (GRN)</h1>
+        <h1 style="font-size: 1.5rem; font-weight: 700; color: #0f172a; margin: 0;">Penerimaan Barang &amp; Bahan Baku (GRN)</h1>
         <p style="color: #64748b; font-size: 0.875rem; margin-top: 0.25rem; margin-bottom: 0;">
             Buku catatan fisik bongkar muat bahan baku masuk ke gudang, nomor batch, dan tanggal kadaluarsa (Inbound FIFO).
         </p>
@@ -22,7 +22,7 @@
         @if (Auth::user()?->canCreateTerima())
             <a href="{{ route('gudang.terima.create') }}" class="btn btn-primary" style="background: #059669;">
                 <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                Catat Barang Masuk
+                Catat Penerimaan Barang
             </a>
         @endif
     </div>
@@ -259,7 +259,7 @@
                     @empty
                         <tr>
                             <td colspan="9" style="text-align: center; padding: 3rem 1rem; color: #94a3b8;">
-                                Belum ada riwayat penerimaan barang fisik. Klik tombol <strong>"+ Catat Barang Masuk"</strong> di atas.
+                                Belum ada riwayat penerimaan barang fisik. Klik tombol <strong>"+ Catat Penerimaan Barang"</strong> di atas.
                             </td>
                         </tr>
                     @endforelse

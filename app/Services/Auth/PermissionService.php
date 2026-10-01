@@ -114,7 +114,7 @@ class PermissionService
                     'action' => 'VIEW',
                 ],
                 'terima_view' => [
-                    'label'  => 'Lihat Barang Masuk (GRN)',
+                    'label'  => 'Lihat Penerimaan Barang & Bahan Baku (GRN)',
                     'desc'   => 'Membuka menu penerimaan fisik bahan masuk dari supplier.',
                     'action' => 'VIEW',
                 ],

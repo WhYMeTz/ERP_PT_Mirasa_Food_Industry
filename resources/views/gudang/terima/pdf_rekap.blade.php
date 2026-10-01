@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Rekapitulasi Barang Masuk - PT Mirasa Food Industry</title>
+    <title>Rekapitulasi Penerimaan Barang &amp; Bahan Baku - PT Mirasa Food Industry</title>
     <style>
         @page {
             size: a4 landscape;
@@ -178,7 +178,7 @@
                 </div>
             </td>
             <td class="kop-title-box">
-                <div class="doc-title">LAPORAN BARANG MASUK</div>
+                <div class="doc-title">LAPORAN PENERIMAAN BARANG &amp; BAHAN BAKU</div>
                 <div class="doc-number">Dicetak: {{ $printedAt }} WIB &bull; Oleh: {{ $printedBy }}</div>
             </td>
         </tr>

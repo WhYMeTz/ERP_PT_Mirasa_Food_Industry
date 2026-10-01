@@ -125,7 +125,7 @@
     <div class="card" style="padding: 1rem 1.25rem; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
         <div style="display: flex; justify-content: space-between; align-items: baseline;">
             <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b;">
-                Realisasi Barang Masuk
+                Realisasi Penerimaan Barang
             </span>
             <span style="font-size: 0.8rem; font-weight: 700; color: {{ $pct >= 100 ? '#059669' : ($pct > 0 ? '#d97706' : '#64748b') }};">
                 {{ $pct }}%
@@ -473,7 +473,7 @@
     <div style="background: white; border-radius: 10px; width: 100%; max-width: 780px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2); overflow: hidden; max-height: 90vh; display: flex; flex-direction: column;">
         <div style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 1rem 1.25rem; display: flex; align-items: center; justify-content: space-between;">
             <div>
-                <strong style="color: #0f172a; font-size: 1.05rem;">Catat Barang Masuk</strong>
+                <strong style="color: #0f172a; font-size: 1.05rem;">Catat Penerimaan Barang</strong>
                 <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.15rem;">
                     {{ $po->po_no }} &bull; {{ $po->supplier?->supplier_nm }}
                 </div>

@@ -618,10 +618,10 @@
                         </div>
                     @endif
 
-                    {{-- BARANG MASUK (GRN) --}}
+                    {{-- PENERIMAAN BARANG & BAHAN BAKU (GRN) --}}
                     @if (Auth::user()->canAccessTerima())
                         <a href="{{ route('gudang.terima.index') }}" class="pill-item {{ request()->routeIs('gudang.terima.*') ? 'active' : '' }}">
-                            <span>Barang Masuk</span>
+                            <span>Penerimaan Barang &amp; Bahan Baku</span>
                         </a>
                     @endif
 

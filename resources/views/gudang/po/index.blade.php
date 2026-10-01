@@ -287,7 +287,7 @@
                                     <button type="button" 
                                             class="btn btn-primary btn-sm" 
                                             style="background: #059669; padding: 0.3rem 0.65rem;" 
-                                            title="Catat barang masuk langsung di tempat tanpa pindah halaman"
+                                            title="Catat penerimaan barang langsung di tempat tanpa pindah halaman"
                                             onclick="openQuickReceiveIndexModal({{ json_encode($poPayload) }})">
                                         Terima
                                     </button>
@@ -375,7 +375,7 @@
     <div style="background: white; border-radius: 10px; width: 100%; max-width: 780px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2); overflow: hidden; max-height: 90vh; display: flex; flex-direction: column;">
         <div style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 1rem 1.25rem; display: flex; align-items: center; justify-content: space-between;">
             <div>
-                <strong style="color: #0f172a; font-size: 1.05rem;" id="modalPoTitle">Catat Barang Masuk</strong>
+                <strong style="color: #0f172a; font-size: 1.05rem;" id="modalPoTitle">Catat Penerimaan Barang</strong>
                 <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.15rem;" id="modalPoSubtitle">
                     -
                 </div>

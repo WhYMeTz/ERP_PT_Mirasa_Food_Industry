@@ -1946,6 +1946,10 @@
     }
 
     function detachQcTicket() {
+        if (!confirm('Lepas tiket QC ini? Seluruh data supplier dan daftar barang yang terisi akan dikosongkan.')) {
+            return;
+        }
+
         const inputQcId = document.getElementById('input_qc_id');
         if (inputQcId) inputQcId.value = '';
 
@@ -1958,6 +1962,43 @@
         if (btnDetach) btnDetach.style.display = 'none';
 
         currentLoadedQcTicket = null;
+
+        // 1. Kosongkan & Buka Kembali Pilihan Supplier
+        if (typeof clearSelectedSupplier === 'function') {
+            clearSelectedSupplier();
+            const supDropdownList = document.getElementById('supDropdownList');
+            if (supDropdownList) supDropdownList.style.display = 'none';
+        }
+
+        // 2. Kosongkan PO, Surat Jalan, dan Catatan jika terisi dari QC
+        const poSelect = document.getElementById('po_id');
+        if (poSelect) poSelect.value = '';
+
+        const sjInput = document.getElementById('suratjalan_no');
+        if (sjInput) sjInput.value = '';
+
+        const catInput = document.getElementById('catatan_txt');
+        if (catInput && catInput.value.includes('QC Tiket')) {
+            catInput.value = '';
+        }
+
+        // 3. Kosongkan seluruh item dan sediakan 1 baris kosong default
+        const container = document.getElementById('terimaItemsContainer');
+        if (container) {
+            container.innerHTML = '';
+            terimaRowIndex = 0;
+            addTerimaRow(false);
+        }
+
+        // 4. Hitung ulang total sehingga semua kembali ke 0
+        calculateTotalTerima();
+
+        // 5. Bersihkan parameter qc_id di URL agar tidak reload tiket lama saat refresh
+        if (window.history && window.history.replaceState) {
+            const currentUrl = new URL(window.location.href);
+            currentUrl.searchParams.delete('qc_id');
+            window.history.replaceState({}, document.title, currentUrl.toString());
+        }
     }
 
     // Auto-load QC ticket if qc_id parameter is present in URL or old input

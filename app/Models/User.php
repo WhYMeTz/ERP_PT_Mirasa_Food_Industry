@@ -265,6 +265,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Cek apakah pengguna memiliki permission tertentu
+     */
+    public function hasPermission(string $permissionCd): bool
+    {
+        return $this->isSuperAdmin() || $this->canDo($permissionCd);
+    }
+
+    /**
      * Hak akses Barang Masuk (GRN / Inbound)
      */
     public function canAccessTerima(): bool
@@ -275,6 +283,16 @@ class User extends Authenticatable
     public function canCreateTerima(): bool
     {
         return $this->isSuperAdmin() || $this->canDo('terima_create');
+    }
+
+    public function canEditTerima(): bool
+    {
+        return $this->isSuperAdmin() || $this->canDo('terima_edit') || $this->canDo('terima_create');
+    }
+
+    public function canDeleteTerima(): bool
+    {
+        return $this->isSuperAdmin() || $this->canDo('terima_delete') || $this->canDo('terima_create');
     }
 
     /**

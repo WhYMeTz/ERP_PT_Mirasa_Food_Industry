@@ -653,6 +653,25 @@
         if (barTotalItems) barTotalItems.innerText = activeItemCount;
         if (barGrandTotal) barGrandTotal.innerText = 'Rp ' + Math.round(grandTotal).toLocaleString('id-ID');
 
+        // Update Card Ringkasan Tambahan / Halaman Edit
+        const globalPotonganInput = document.getElementById('global_potongan');
+        const globalPotonganNominal = Math.max(0, parseFloat(globalPotonganInput?.value) || 0);
+        const finalGrandTotal = Math.max(0, grandTotal - globalPotonganNominal);
+
+        const lblTotalBruto = document.getElementById('lblTotalBruto');
+        const lblTotalAfkir = document.getElementById('lblTotalAfkir');
+        const lblTotalNetto = document.getElementById('lblTotalNetto');
+        const lblSubtotalNominal = document.getElementById('lblSubtotalNominal');
+        const lblTotalPpn = document.getElementById('lblTotalPpn');
+        const lblGrandTotal = document.getElementById('lblGrandTotal');
+
+        if (lblTotalBruto) lblTotalBruto.innerText = totalBruto.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        if (lblTotalAfkir) lblTotalAfkir.innerText = totalReject.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        if (lblTotalNetto) lblTotalNetto.innerText = totalNetto.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        if (lblSubtotalNominal) lblSubtotalNominal.innerText = 'Rp ' + Math.round(totalSubtotalNetto).toLocaleString('id-ID');
+        if (lblTotalPpn) lblTotalPpn.innerText = 'Rp ' + Math.round(totalPpn).toLocaleString('id-ID');
+        if (lblGrandTotal) lblGrandTotal.innerText = 'Rp ' + Math.round(finalGrandTotal).toLocaleString('id-ID');
+
         if (barTaxSummaryLine) {
             if (totalPpn > 0 || totalDiskon > 0 || totalPotongan > 0) {
                 let parts = [];
@@ -667,6 +686,13 @@
             }
         }
     }
+
+    // Expose Global Aliases
+    window.calculateTotalTerima = calculateTotalTerima;
+    window.addTerimaRow = addTerimaRow;
+    window.removeTerimaRow = removeTerimaRow;
+    window.addNewItemRow = () => addTerimaRow(true);
+    window.removeItemRow = (btn) => removeTerimaRow(btn);
 
     // Validasi Kelengkapan Batch Fisik Supplier Sebelum Form Disubmit
     const formTerimaElem = document.getElementById('formTerima');

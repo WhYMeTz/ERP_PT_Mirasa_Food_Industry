@@ -34,6 +34,11 @@ class PermissionService
                     'desc'   => 'Mengubah tanggal, supplier, gudang, catatan, atau rincian item pesanan PO yang belum diterima.',
                     'action' => 'EDIT',
                 ],
+                'terima_edit' => [
+                    'label'  => 'Edit & Koreksi Penerimaan Barang',
+                    'desc'   => 'Mengubah data penerimaan barang, nomor surat jalan, tanggal, nomor batch, dan rincian fisik komoditas.',
+                    'action' => 'EDIT',
+                ],
             ],
         ],
         'AKSI_DELETE' => [
@@ -55,6 +60,11 @@ class PermissionService
                 'po_delete' => [
                     'label'  => 'Hapus Purchase Order (PO)',
                     'desc'   => 'Menghapus dokumen Purchase Order (khusus Super Admin / wewenang khusus).',
+                    'action' => 'DELETE',
+                ],
+                'terima_delete' => [
+                    'label'  => 'Hapus / Batalkan Penerimaan Barang',
+                    'desc'   => 'Menghapus transaksi penerimaan barang dan membatalkan mutasi stok masuk terkait.',
                     'action' => 'DELETE',
                 ],
             ],
@@ -181,6 +191,8 @@ class PermissionService
             'qc_edit',
             'terima_view',
             'terima_create',
+            'terima_edit',
+            'terima_delete',
             'retur_view',
             'retur_create',
             'pemakaian_view',

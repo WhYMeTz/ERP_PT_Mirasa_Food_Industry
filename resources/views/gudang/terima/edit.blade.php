@@ -279,7 +279,47 @@
                                 </tr>
                             @endforeach
                         </tbody>
+                        @php
+                            $initBruto = (float) $terima->details->sum('terima_qty');
+                            $initReject = (float) $terima->details->sum('reject_qty');
+                            $initNetto = max(0, $initBruto - $initReject);
+                            $initSubtotal = (float) ($terima->subtotal_nominal ?: $terima->details->sum(function($d) {
+                                $hargaNetto = max(0, (float)$d->harga_nominal - ((float)$d->harga_nominal * ((float)($d->diskon_persen ?? 0) / 100)));
+                                return max(0, ((float)$d->terima_qty * $hargaNetto) - (float)($d->potongan_nominal ?? 0));
+                            }));
+                            $initPpn = (float) ($terima->ppn_nominal ?: $terima->details->sum('ppn_nominal'));
+                            $initPotongan = (float) ($terima->potongan_nominal ?? 0);
+                            $initGrandTotal = (float) ($terima->total_tagihan ?: max(0, $initSubtotal + $initPpn - $initPotongan));
+                        @endphp
+                        <tfoot>
+                            <tr style="background: #f8fafc; font-weight: 700; border-top: 2px solid #cbd5e1;">
+                                <td colspan="5" style="text-align: right; padding: 0.55rem 0.75rem; color: #475569; font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.03em;">
+                                    Total:
+                                </td>
+                                <td id="totalBrutoQtyDisplay" style="padding: 0.45rem 0.35rem; color: #0284c7; font-size: 0.825rem; text-align: right; font-family: monospace; font-weight: 700;" title="Total Bruto Timbangan">
+                                    {{ number_format($initBruto, 2, ',', '.') }}
+                                </td>
+                                <td id="totalRejectQtyDisplay" style="padding: 0.45rem 0.35rem; color: #dc2626; font-size: 0.825rem; text-align: right; font-family: monospace; font-weight: 700;" title="Total Afkir / Reject">
+                                    {{ number_format($initReject, 2, ',', '.') }}
+                                </td>
+                                <td id="totalNettoQtyDisplay" style="padding: 0.45rem 0.35rem; color: #047857; font-size: 0.85rem; text-align: right; background: #dcfce7; font-family: monospace; font-weight: 800;" title="Total Netto Bersih">
+                                    {{ number_format($initNetto, 2, ',', '.') }}
+                                </td>
+                                <td style="text-align: center; color: #64748b; font-size: 0.75rem;">Total</td>
+                                <td></td>
+                                <td id="totalTerimaDiskonDisplay" style="padding: 0.45rem 0.35rem; color: #dc2626; font-size: 0.8rem; text-align: right; font-family: monospace;">-</td>
+                                <td id="totalTerimaPotonganDisplay" style="padding: 0.45rem 0.35rem; color: #dc2626; font-size: 0.8rem; text-align: right; font-family: monospace;">-</td>
+                                <td id="totalTerimaPpnDisplay" style="padding: 0.45rem 0.35rem; color: #0284c7; font-size: 0.8rem; text-align: center; font-family: monospace;">
+                                    {{ $initPpn > 0 ? '+Rp ' . number_format($initPpn, 0, ',', '.') : '-' }}
+                                </td>
+                                <td id="totalTerimaNilaiDisplay" style="padding: 0.45rem 0.35rem; color: #0f172a; font-size: 0.875rem; text-align: right; font-family: monospace; font-weight: 800;">
+                                    Rp {{ number_format($initSubtotal + $initPpn, 0, ',', '.') }}
+                                </td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
                     </table>
+                    @include('gudang.terima.partials.item-row-template')
                 </div>
 
                 {{-- TOTAL REKAPITULASI BAWAH --}}
@@ -288,22 +328,22 @@
                         <strong style="color: #0f172a; font-size: 0.85rem; display: block; margin-bottom: 0.5rem;">Ringkasan Kuantitas Fisik:</strong>
                         <div style="display: flex; justify-content: space-between; font-size: 0.825rem; color: #475569; margin-bottom: 0.25rem;">
                             <span>Total Kuantitas Bruto:</span>
-                            <strong id="lblTotalBruto" style="color: #0f172a;">0</strong>
+                            <strong id="lblTotalBruto" style="color: #0f172a;">{{ number_format($initBruto, 2, ',', '.') }}</strong>
                         </div>
                         <div style="display: flex; justify-content: space-between; font-size: 0.825rem; color: #ef4444; margin-bottom: 0.25rem;">
                             <span>Total Afkir / Reject:</span>
-                            <strong id="lblTotalAfkir">0</strong>
+                            <strong id="lblTotalAfkir">{{ number_format($initReject, 2, ',', '.') }}</strong>
                         </div>
                         <div style="display: flex; justify-content: space-between; font-size: 0.9rem; font-weight: 700; color: #059669; border-top: 1px solid #cbd5e1; padding-top: 0.35rem;">
                             <span>Total Kuantitas Bersih Masuk (Netto):</span>
-                            <span id="lblTotalNetto">0</span>
+                            <span id="lblTotalNetto">{{ number_format($initNetto, 2, ',', '.') }}</span>
                         </div>
                     </div>
 
                     <div style="background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 1rem;">
                         <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: #475569; margin-bottom: 0.35rem;">
                             <span>Subtotal Nilai Bahan:</span>
-                            <strong id="lblSubtotalNominal" style="font-family: monospace; color: #0f172a;">Rp 0</strong>
+                            <strong id="lblSubtotalNominal" style="font-family: monospace; color: #0f172a;">Rp {{ number_format($initSubtotal, 0, ',', '.') }}</strong>
                         </div>
                         <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: #475569; margin-bottom: 0.35rem;">
                             <span>Potongan Global Faktur:</span>
@@ -313,11 +353,11 @@
                         </div>
                         <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: #475569; margin-bottom: 0.35rem;">
                             <span>Pajak PPN (11%):</span>
-                            <strong id="lblTotalPpn" style="font-family: monospace; color: #0284c7;">Rp 0</strong>
+                            <strong id="lblTotalPpn" style="font-family: monospace; color: #0284c7;">{{ $initPpn > 0 ? '+Rp ' . number_format($initPpn, 0, ',', '.') : 'Rp 0' }}</strong>
                         </div>
                         <div style="display: flex; justify-content: space-between; font-size: 1.05rem; font-weight: 800; color: #0f172a; border-top: 2px solid #0f172a; padding-top: 0.5rem; margin-top: 0.5rem;">
                             <span>Total Tagihan Bersih:</span>
-                            <span id="lblGrandTotal" style="font-family: monospace; color: #047857;">Rp 0</span>
+                            <span id="lblGrandTotal" style="font-family: monospace; color: #047857;">Rp {{ number_format($initGrandTotal, 0, ',', '.') }}</span>
                         </div>
                     </div>
                 </div>
@@ -361,6 +401,7 @@
     window.qcSiapGudangUrl = "{{ route('qc.inbound.siap_gudang') }}";
     window.terimaCreateUrl = "{{ route('gudang.terima.create') }}";
     window.oldSupplierId = {{ old('supplier_id', $terima->supplier_id) }};
+    window.selectedPoDetailsCount = {{ $terima->details->count() }};
 </script>
 <script src="{{ asset('js/gudang/terima/terima-create.js') }}"></script>
 <script>

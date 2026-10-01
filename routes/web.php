@@ -119,13 +119,13 @@ Route::middleware('auth')->group(function () {
             ->middleware('role:terima_create');
         Route::get('terima/{terima}/edit', [TerimaBarangController::class, 'edit'])
             ->name('terima.edit')
-            ->middleware('role:terima_create');
+            ->middleware('role:terima_edit,terima_create');
         Route::put('terima/{terima}', [TerimaBarangController::class, 'update'])
             ->name('terima.update')
-            ->middleware('role:terima_create');
+            ->middleware('role:terima_edit,terima_create');
         Route::delete('terima/{terima}', [TerimaBarangController::class, 'destroy'])
             ->name('terima.destroy')
-            ->middleware('role:terima_create');
+            ->middleware('role:terima_delete,terima_create');
         Route::get('terima/export-rekap-pdf', [TerimaBarangController::class, 'exportRekapPdf'])
             ->name('terima.export-rekap-pdf')
             ->middleware('role:terima_view');

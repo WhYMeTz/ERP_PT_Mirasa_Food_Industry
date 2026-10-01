@@ -11,14 +11,20 @@
         </p>
     </div>
     <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
-        <a href="{{ route('gudang.pemakaian.export-rekap-pdf', request()->query()) }}" target="_blank" class="btn btn-secondary" style="background: #ffffff; border: 1.5px solid #7f1d1d; color: #7f1d1d; font-size: 0.85rem; font-weight: 700; padding: 0.55rem 0.95rem; box-shadow: 0 1px 2px rgba(0,0,0,0.03); display: inline-flex; align-items: center; gap: 0.35rem;" title="Buka & Cetak Rekap Barang Keluar PDF Resmi">
+        <a href="{{ route('gudang.pemakaian.export-rekap-pdf', request()->query()) }}" target="_blank" class="btn btn-secondary" style="background: #ffffff; border: 1.5px solid #dc2626; color: #dc2626; font-size: 0.85rem; font-weight: 700; padding: 0.55rem 0.95rem; box-shadow: 0 1px 2px rgba(0,0,0,0.03); display: inline-flex; align-items: center; gap: 0.35rem; transition: all 0.15s ease-in-out;" onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background='#ffffff'" title="Buka & Cetak Rekap Barang Keluar PDF Resmi">
             <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
             <span>Cetak Rekap (PDF)</span>
         </a>
-        <a href="{{ route('gudang.pemakaian.export-excel', request()->query()) }}" class="btn btn-secondary" style="background: #ffffff; border: 1.5px solid #059669; color: #059669; font-size: 0.85rem; font-weight: 700; padding: 0.55rem 0.95rem; box-shadow: 0 1px 2px rgba(0,0,0,0.03); display: inline-flex; align-items: center; gap: 0.35rem;" title="Download Rekap Barang Keluar format Excel (.xlsx)">
+        <a href="{{ route('gudang.pemakaian.export-excel', request()->query()) }}" class="btn btn-secondary" style="background: #ffffff; border: 1.5px solid #059669; color: #059669; font-size: 0.85rem; font-weight: 700; padding: 0.55rem 0.95rem; box-shadow: 0 1px 2px rgba(0,0,0,0.03); display: inline-flex; align-items: center; gap: 0.35rem; transition: all 0.15s ease-in-out;" onmouseover="this.style.background='#ecfdf5'" onmouseout="this.style.background='#ffffff'" title="Download Rekap Barang Keluar format Excel (.xlsx)">
             <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
             <span>Export Excel</span>
         </a>
+        @if (Auth::user()?->canCreatePemakaian())
+            <button type="button" onclick="document.getElementById('modal-import-pemakaian').style.display='flex'" class="btn btn-secondary" style="background: #ffffff; border: 1.5px solid #7c3aed; color: #7c3aed; font-size: 0.85rem; font-weight: 700; padding: 0.55rem 0.95rem; box-shadow: 0 1px 2px rgba(0,0,0,0.03); display: inline-flex; align-items: center; gap: 0.35rem; transition: all 0.15s ease-in-out;" onmouseover="this.style.background='#faf5ff'" onmouseout="this.style.background='#ffffff'" title="Import data pemakaian dari file Excel">
+                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                <span>Import Excel</span>
+            </button>
+        @endif
         @if (Auth::user()?->canCreatePemakaian())
             <a href="{{ route('gudang.pemakaian.create') }}" class="btn btn-primary" style="background: #dc2626;">
                 <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
@@ -412,3 +418,93 @@
     @endif
 </div>
 @endsection
+
+{{-- ════════════════════════════════════════════════════════ --}}
+{{--  MODAL IMPORT EXCEL PEMAKAIAN BAHAN                      --}}
+{{-- ════════════════════════════════════════════════════════ --}}
+<div id="modal-import-pemakaian" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(15,23,42,0.55); align-items:center; justify-content:center; padding:1rem;">
+    <div style="background:#fff; border-radius:12px; box-shadow:0 20px 60px rgba(0,0,0,0.2); width:100%; max-width:520px; overflow:hidden;">
+
+        {{-- Header Modal --}}
+        <div style="background:#134e5e; padding:1rem 1.5rem; display:flex; justify-content:space-between; align-items:center;">
+            <div>
+                <div style="font-weight:700; font-size:1rem; color:#fff;">Import Pemakaian Bahan dari Excel</div>
+                <div style="font-size:0.8rem; color:#a5f3d8; margin-top:2px;">Upload file .xlsx sesuai template resmi ERP Mirasa</div>
+            </div>
+            <button type="button" onclick="document.getElementById('modal-import-pemakaian').style.display='none'" style="background:none; border:none; color:#fff; cursor:pointer; font-size:1.4rem; line-height:1;">&times;</button>
+        </div>
+
+        {{-- Body Modal --}}
+        <div style="padding:1.5rem;">
+
+            @if(session('success'))
+                <div style="background:#dcfce7; border:1px solid #86efac; color:#14532d; border-radius:8px; padding:0.75rem 1rem; margin-bottom:1rem; font-size:0.85rem;">
+                    ✅ {{ session('success') }}
+                </div>
+            @endif
+            @if(session('warning'))
+                <div style="background:#fef9c3; border:1px solid #fde68a; color:#713f12; border-radius:8px; padding:0.75rem 1rem; margin-bottom:1rem; font-size:0.85rem;">
+                    ⚠️ {{ session('warning') }}
+                </div>
+            @endif
+            @if(session('error'))
+                <div style="background:#fee2e2; border:1px solid #fca5a5; color:#7f1d1d; border-radius:8px; padding:0.75rem 1rem; margin-bottom:1rem; font-size:0.85rem;">
+                    ❌ {{ session('error') }}
+                </div>
+            @endif
+
+            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:0.9rem 1rem; margin-bottom:1.25rem; font-size:0.83rem; color:#475569;">
+                <div style="font-weight:700; color:#0f172a; margin-bottom:0.4rem;">📋 Cara Import:</div>
+                <ol style="margin:0; padding-left:1.25rem; line-height:1.8;">
+                    <li>Download template resmi terlebih dahulu</li>
+                    <li>Isi data di sheet <strong>Barang Keluar</strong> mulai baris ke-7</li>
+                    <li>Gunakan sheet <em>Ref. Kode Barang</em> & <em>Ref. Gudang</em> sebagai referensi</li>
+                    <li>Baris dengan <strong>No. Dokumen sama</strong> dianggap satu dokumen pengeluaran</li>
+                    <li>Batch & stok harus sudah tersedia di gudang yang dituju</li>
+                    <li>Simpan file lalu upload di sini</li>
+                </ol>
+            </div>
+
+            <a href="{{ route('gudang.pemakaian.download-template') }}" class="btn" style="display:flex; align-items:center; justify-content:center; gap:0.5rem; background:#f0fdf4; border:1.5px solid #059669; color:#059669; font-weight:700; padding:0.65rem 1rem; border-radius:8px; text-decoration:none; font-size:0.875rem; margin-bottom:1.25rem; width:100%;">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+                Download Template Import (.xlsx)
+            </a>
+
+            <form method="POST" action="{{ route('gudang.pemakaian.import-excel') }}" enctype="multipart/form-data">
+                @csrf
+                <div style="margin-bottom:1rem;">
+                    <label style="display:block; font-size:0.85rem; font-weight:600; color:#374151; margin-bottom:0.5rem;">Pilih File Excel (.xlsx / .xls)</label>
+                    <input type="file" name="import_file" id="import_file_pemakaian" accept=".xlsx,.xls"
+                        style="display:block; width:100%; font-size:0.875rem; border:1.5px solid #cbd5e1; border-radius:8px; padding:0.5rem; background:#f8fafc; cursor:pointer;"
+                        required>
+                    @error('import_file')
+                        <div style="color:#dc2626; font-size:0.8rem; margin-top:0.3rem;">{{ $message }}</div>
+                    @enderror
+                    <div style="font-size:0.77rem; color:#94a3b8; margin-top:0.3rem;">Maksimal 5 MB. Hanya format .xlsx dan .xls. Batch harus sudah ada di stok gudang.</div>
+                </div>
+
+                <div style="display:flex; gap:0.75rem;">
+                    <button type="submit" id="btn-import-pakai" style="flex:1; background:#134e5e; color:#fff; border:none; border-radius:8px; padding:0.7rem 1rem; font-size:0.9rem; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:0.5rem;">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                        Proses Import
+                    </button>
+                    <button type="button" onclick="document.getElementById('modal-import-pemakaian').style.display='none'" style="background:#f1f5f9; color:#475569; border:1.5px solid #e2e8f0; border-radius:8px; padding:0.7rem 1rem; font-size:0.9rem; font-weight:600; cursor:pointer;">
+                        Batal
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    @if(session('warning') || session('error'))
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('modal-import-pemakaian').style.display = 'flex';
+        });
+    @endif
+    document.querySelector('#modal-import-pemakaian form')?.addEventListener('submit', function() {
+        const btn = document.getElementById('btn-import-pakai');
+        if (btn) { btn.disabled = true; btn.textContent = 'Memproses...'; }
+    });
+</script>

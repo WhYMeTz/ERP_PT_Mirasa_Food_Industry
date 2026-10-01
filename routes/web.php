@@ -166,6 +166,12 @@ Route::middleware('auth')->group(function () {
         Route::get('pemakaian/export-excel', [PemakaianController::class, 'exportExcel'])
             ->name('pemakaian.export-excel')
             ->middleware('role:pemakaian_view');
+        Route::get('pemakaian/download-template', [PemakaianController::class, 'downloadTemplate'])
+            ->name('pemakaian.download-template')
+            ->middleware('role:pemakaian_view');
+        Route::post('pemakaian/import-excel', [PemakaianController::class, 'importExcel'])
+            ->name('pemakaian.import-excel')
+            ->middleware('role:pemakaian_create');
         Route::get('pemakaian/create', [PemakaianController::class, 'create'])
             ->name('pemakaian.create')
             ->middleware('role:pemakaian_create');

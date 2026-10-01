@@ -228,7 +228,12 @@ class TerimaBarangTemplate
             // Format angka
             $sheet->getStyle('H' . $r)->getNumberFormat()->setFormatCode('#,##0.00');
             $sheet->getStyle('I' . $r)->getNumberFormat()->setFormatCode('"Rp "#,##0.00');
-            $sheet->getStyle('J' . $r)->getNumberFormat()->setFormatCode('"Rp "#,##0.00');
+            // Formula otomatis:
+            // 1. Nama Barang (Kolom E), Jenis (Kolom F), Satuan (Kolom K) otomatis terisi via VLOOKUP saat Kode Barang (D) diisi
+            $sheet->setCellValue('E' . $r, '=IF(D' . $r . '="","",IFERROR(VLOOKUP(D' . $r . ",'Ref. Kode Barang'!\$A\$2:\$D\$1000,2,FALSE),\"\"))");
+            $sheet->setCellValue('F' . $r, '=IF(D' . $r . '="","",IFERROR(VLOOKUP(D' . $r . ",'Ref. Kode Barang'!\$A\$2:\$D\$1000,3,FALSE),\"\"))");
+            $sheet->setCellValue('K' . $r, '=IF(D' . $r . '="","",IFERROR(VLOOKUP(D' . $r . ",'Ref. Kode Barang'!\$A\$2:\$D\$1000,4,FALSE),\"\"))");
+            // 2. Total Harga (Kolom J) = Qty (H) * Harga (I)
             $sheet->setCellValue('J' . $r, '=IF(H' . $r . '*I' . $r . '>0,H' . $r . '*I' . $r . ',"")');
             $sheet->getStyle('Q' . $r)->getNumberFormat()->setFormatCode('0.00"%"');
             $sheet->getStyle('R' . $r)->getNumberFormat()->setFormatCode('"Rp "#,##0.00');

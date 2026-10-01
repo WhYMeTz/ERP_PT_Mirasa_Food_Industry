@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Gudang;
 
 use App\Exports\Gudang\PemakaianExport;
+use App\Exports\Gudang\PemakaianTemplate;
+use App\Imports\Gudang\PemakaianImport;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Gudang\StorePemakaianRequest;
 use App\Models\Gudang\DatPakaiDtl;
@@ -446,5 +448,54 @@ class PemakaianController extends Controller
         $export = new PemakaianExport($items, $gudangNm, $search, $tujuan, $printedBy, $printedAt);
         return $export->download('Rekap_Barang_Keluar_' . date('Ymd_His') . '.xlsx');
     }
-}
 
+    /**
+     * Download template Excel kosong untuk Import Pemakaian Bahan.
+     */
+    public function downloadTemplate(): StreamedResponse
+    {
+        return (new PemakaianTemplate())->download();
+    }
+
+    /**
+     * Proses upload file Excel dan import data Pemakaian Bahan.
+     */
+    public function importExcel(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'import_file' => [
+                'required',
+                'file',
+                'mimes:xlsx,xls',
+                'max:5120',
+            ],
+        ], [
+            'import_file.required' => 'File Excel wajib dipilih.',
+            'import_file.mimes'    => 'Format file harus .xlsx atau .xls.',
+            'import_file.max'      => 'Ukuran file maksimal 5 MB.',
+        ]);
+
+        try {
+            $importer = app(PemakaianImport::class);
+            $importer->import($request->file('import_file'));
+
+            $msg = "Import selesai: {$importer->successCount} dokumen berhasil, {$importer->errorCount} dokumen gagal.";
+
+            if ($importer->errorCount > 0) {
+                $errors = collect($importer->results)
+                    ->where('status', 'error')
+                    ->pluck('message')
+                    ->implode(' | ');
+                return redirect()->route('gudang.pemakaian.index')
+                    ->with('warning', $msg . ' Kesalahan: ' . $errors);
+            }
+
+            return redirect()->route('gudang.pemakaian.index')
+                ->with('success', $msg);
+
+        } catch (\Exception $e) {
+            return redirect()->route('gudang.pemakaian.index')
+                ->with('error', 'Import gagal: ' . $e->getMessage());
+        }
+    }
+}

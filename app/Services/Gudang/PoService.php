@@ -362,6 +362,39 @@ class PoService
     }
 
     /**
+     * Menghapus dokumen PO secara aman (Soft Delete).
+     * Hanya diizinkan jika belum ada penerimaan barang fisik di gudang.
+     */
+    public function delete(int $id): bool
+    {
+        return DB::transaction(function () use ($id) {
+            $po = DatPoHdr::with(['details', 'penerimaan'])->findOrFail($id);
+
+            $sudahAdaTerima = $po->penerimaan()->where('deleted_st', false)->exists()
+                || $po->details->contains(fn($dtl) => (float) $dtl->terima_qty > 0);
+
+            if ($sudahAdaTerima) {
+                throw new Exception("PO {$po->po_no} tidak dapat dihapus karena sudah ada riwayat penerimaan barang fisik (GRN). Silakan hapus/batalkan data penerimaan terlebih dahulu jika ingin menghapus dokumen PO ini.");
+            }
+
+            $userName = auth()->user()?->karyawan?->karyawan_nm ?? (auth()->user()?->name ?? 'SUPERADMIN');
+
+            $po->update([
+                'deleted_st' => true,
+                'deleted_by' => $userName,
+                'status_cd'  => 'CANCELLED',
+            ]);
+
+            DatPoDtl::where('po_id', $po->po_id)->update([
+                'deleted_st' => true,
+                'deleted_by' => $userName,
+            ]);
+
+            return true;
+        });
+    }
+
+    /**
      * Menutup paksa PO yang statusnya masih PARTIAL jika sisa kuota barang
      * tidak dapat/tidak akan dikirim lagi oleh supplier.
      */

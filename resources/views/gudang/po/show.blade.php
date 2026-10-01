@@ -6,21 +6,29 @@
 {{-- PRINT STYLES --}}
 <style>
     @media print {
-        header, nav, .btn, .no-print, .alert {
+        header, nav, aside, .sidebar, #sidebar, .btn, .no-print, .alert, footer {
             display: none !important;
         }
-        body, main, .main-content {
+        body, main, .main-content, .content-wrapper, .container, .container-fluid {
             padding: 0 !important;
             margin: 0 !important;
             background: #ffffff !important;
-        }
-        .card {
-            box-shadow: none !important;
-            border: 1px solid #cbd5e1 !important;
-            break-inside: avoid;
+            width: 100% !important;
+            max-width: 100% !important;
         }
         .print-only {
             display: block !important;
+            width: 100% !important;
+            color: #000000 !important;
+            font-family: 'Helvetica', 'Arial', sans-serif !important;
+            padding: 0 !important;
+        }
+        .print-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .print-table th, .print-table td {
+            border: 1px solid #000000;
         }
     }
     .print-only {
@@ -53,37 +61,93 @@
         </div>
     </div>
 
-    {{-- ACTION BUTTONS --}}
-    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
-        {{-- TOMBOL CETAK PO --}}
-        <button type="button" onclick="window.print()" class="btn btn-secondary" style="padding: 0.45rem 0.85rem; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.35rem;">
-            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-            Cetak Dokumen PO
+    {{-- SINGLE UNIFIED ACTION DROPDOWN --}}
+    <div style="position: relative; display: inline-block;">
+        <button type="button" 
+                class="btn btn-primary show-dropdown-trigger" 
+                onclick="toggleShowActionMenu(event)"
+                style="display: inline-flex; align-items: center; gap: 0.45rem; padding: 0.5rem 1rem; font-size: 0.875rem; font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/></svg>
+            <span>Menu Aksi PO</span>
+            <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
         </button>
 
-        @if (in_array($po->status_cd, ['APPROVED', 'PARTIAL']) && $po->total_sisa_qty > 0)
-            <button type="button" onclick="openQuickReceiveModal()" class="btn btn-primary" style="background:#059669; padding: 0.45rem 0.85rem; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.35rem;">
-                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                Terima Barang
-            </button>
-        @endif
-
-        @if ($po->status_cd == 'PARTIAL')
-            <button type="button" onclick="openForceCloseModal()" class="btn btn-secondary" style="border: 1px solid #cbd5e1; padding: 0.45rem 0.85rem; font-size: 0.85rem;">
-                Tutup PO (Selesai Parsial)
-            </button>
-        @endif
-
-        @if (in_array($po->status_cd, ['DRAFT', 'APPROVED']) && $po->details->sum('terima_qty') == 0)
-            <form action="{{ route('gudang.po.cancel', $po->po_id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin membatalkan Purchase Order ini?')" style="margin: 0;">
-                @csrf
-                <button type="submit" class="btn btn-danger" style="padding: 0.45rem 0.85rem; font-size: 0.85rem;">
-                    Batalkan PO
+        {{-- DROPDOWN MENU ITEMS --}}
+        <div id="showActionMenuDropdown" class="show-action-menu-dropdown" style="display: none; position: absolute; right: 0; top: calc(100% + 6px); background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.15), 0 8px 10px -6px rgba(0,0,0,0.1); width: 250px; z-index: 1000; overflow: hidden; padding: 0.4rem 0; font-size: 0.85rem; text-align: left;">
+            
+            {{-- 1. TERIMA BARANG (JIKA STATUS MEMUNGKINKAN) --}}
+            @if (in_array($po->status_cd, ['APPROVED', 'PARTIAL']) && $po->total_sisa_qty > 0)
+                <button type="button" onclick="openQuickReceiveModal(); toggleShowActionMenu(event);" style="width: 100%; border: none; background: transparent; text-align: left; display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1rem; color: #059669; font-weight: 700; cursor: pointer; transition: background 0.15s;" onmouseover="this.style.background='#ecfdf5'" onmouseout="this.style.background='transparent'">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <span>Catat Terima Barang</span>
                 </button>
-            </form>
-        @endif
+            @endif
+
+            {{-- 2. CETAK PDF RESMI (HACCP) --}}
+            <a href="{{ route('gudang.po.export-pdf', $po->po_id) }}" target="_blank" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1rem; color: #1e293b; text-decoration: none; font-weight: 600; transition: background 0.15s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
+                <svg width="16" height="16" fill="none" stroke="#dc2626" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                <span>Cetak PDF Resmi (HACCP)</span>
+            </a>
+
+            {{-- 3. PRINT BROWSER --}}
+            <button type="button" onclick="window.print(); toggleShowActionMenu(event);" style="width: 100%; border: none; background: transparent; text-align: left; display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1rem; color: #475569; cursor: pointer; transition: background 0.15s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                <span>Print Dokumen (Browser)</span>
+            </button>
+
+            <div style="border-top: 1px solid #f1f5f9; margin: 0.25rem 0;"></div>
+
+            {{-- 4. EDIT PO --}}
+            @php
+                $canEdit = (Auth::user()?->isSuperAdmin() || Auth::user()?->canEditPo()) && (!in_array($po->status_cd, ['COMPLETED', 'CLOSED', 'CANCELLED']) || Auth::user()?->isSuperAdmin());
+            @endphp
+            @if ($canEdit)
+                <a href="{{ route('gudang.po.edit', $po->po_id) }}" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1rem; color: #d97706; text-decoration: none; font-weight: 600; transition: background 0.15s;" onmouseover="this.style.background='#fffbeb'" onmouseout="this.style.background='transparent'">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                    <span>Edit Purchase Order</span>
+                </a>
+            @endif
+
+            {{-- 5. TUTUP PO (SELESAI PARSIAL) --}}
+            @if ($po->status_cd == 'PARTIAL')
+                <button type="button" onclick="openForceCloseModal(); toggleShowActionMenu(event);" style="width: 100%; border: none; background: transparent; text-align: left; display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1rem; color: #475569; cursor: pointer; transition: background 0.15s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                    <span>Tutup PO (Selesai Parsial)</span>
+                </button>
+            @endif
+
+            {{-- 6. BATALKAN PO --}}
+            @if (in_array($po->status_cd, ['DRAFT', 'APPROVED']) && $po->details->sum('terima_qty') == 0)
+                <form action="{{ route('gudang.po.cancel', $po->po_id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin membatalkan Purchase Order ini?')" style="margin: 0;">
+                    @csrf
+                    <button type="submit" style="width: 100%; border: none; background: transparent; text-align: left; display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1rem; color: #ea580c; cursor: pointer; transition: background 0.15s;" onmouseover="this.style.background='#fff7ed'" onmouseout="this.style.background='transparent'">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+                        <span>Batalkan PO</span>
+                    </button>
+                </form>
+            @endif
+
+            {{-- 7. HAPUS PO --}}
+            @php
+                $canDelete = (Auth::user()?->isSuperAdmin() || Auth::user()?->canDeletePo()) && ($po->details->sum('terima_qty') == 0 || Auth::user()?->isSuperAdmin());
+            @endphp
+            @if ($canDelete)
+                <div style="border-top: 1px solid #f1f5f9; margin: 0.25rem 0;"></div>
+                <form action="{{ route('gudang.po.destroy', $po->po_id) }}" method="POST" onsubmit="return confirm('PERINGATAN: Apakah Anda yakin ingin MENGHAPUS dokumen Purchase Order {{ $po->po_no }}? Tindakan ini tidak dapat dibatalkan.')" style="margin: 0;">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" style="width: 100%; border: none; background: transparent; text-align: left; display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1rem; color: #dc2626; font-weight: 600; cursor: pointer; transition: background 0.15s;" onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background='transparent'">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                        <span>Hapus PO</span>
+                    </button>
+                </form>
+            @endif
+        </div>
     </div>
 </div>
+
+{{-- BUNGKUS KONTEN DASHBOARD WEB DENGAN NO-PRINT AGAR TIDAK MUNCUL SAAT CETAK BROWSER --}}
+<div class="no-print">
 
 {{-- ALERT JIKA PO SUDAH DITUTUP --}}
 @if ($po->status_cd == 'CLOSED')
@@ -466,6 +530,161 @@
 
     </div>
 </div>
+</div> {{-- AKHIR DARI .no-print --}}
+
+{{-- DOKUMEN CETAK RESMI FORMAT ASLI HACCP (HANYA MUNCUL SAAT PRINT BROWSER) --}}
+<div class="print-only">
+    {{-- KOP TABEL STANDAR HACCP --}}
+    <table style="width: 100%; border: 2px solid #000000; border-collapse: collapse; margin-bottom: 25px;">
+        <tr>
+            <td style="width: 110px; text-align: center; padding: 6px 4px; border: 1px solid #000000; vertical-align: middle;">
+                <img src="{{ asset('images/logo.png') }}" style="width: 58px; height: auto;" alt="Logo Cap Payung">
+                <div style="font-size: 6.5pt; font-weight: 800; color: #dc2626; margin-top: 2px; letter-spacing: 0.04em;">
+                    ENAK - GURIH - LEZAT
+                </div>
+            </td>
+            <td style="text-align: center; padding: 8px 10px; border: 1px solid #000000; vertical-align: middle;">
+                <div style="font-size: 11pt; font-weight: 800; color: #000000; letter-spacing: 0.03em;">PT. MIRASA FOOD INDUSTRY</div>
+                <div style="font-size: 10pt; font-weight: 600; margin-top: 6px;">Form</div>
+                <div style="font-size: 12pt; font-weight: 800; margin-top: 1px;">Permintaan Barang</div>
+            </td>
+            <td style="width: 250px; padding: 0; border: 1px solid #000000; vertical-align: middle;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 8.5pt;">
+                    <tr>
+                        <td style="width: 100px; border-right: 1px solid #000000; border-bottom: 1px solid #000000; font-weight: 600; padding: 4px 6px;">Nomor dokumen</td>
+                        <td style="width: 8px; text-align: center; border-bottom: 1px solid #000000; padding: 4px 0;">:</td>
+                        <td style="font-weight: 700; padding: 4px 6px; border-bottom: 1px solid #000000;">MFI/HACCP-04/FRM-03/050/VIII/2021</td>
+                    </tr>
+                    <tr>
+                        <td style="width: 100px; border-right: 1px solid #000000; border-bottom: 1px solid #000000; font-weight: 600; padding: 4px 6px;">Terbitan/Tgl</td>
+                        <td style="width: 8px; text-align: center; border-bottom: 1px solid #000000; padding: 4px 0;">:</td>
+                        <td style="font-weight: 700; padding: 4px 6px; border-bottom: 1px solid #000000;">19-08-2021</td>
+                    </tr>
+                    <tr>
+                        <td style="width: 100px; border-right: 1px solid #000000; border-bottom: 1px solid #000000; font-weight: 600; padding: 4px 6px;">Revisi</td>
+                        <td style="width: 8px; text-align: center; border-bottom: 1px solid #000000; padding: 4px 0;">:</td>
+                        <td style="font-weight: 700; padding: 4px 6px; border-bottom: 1px solid #000000;">00</td>
+                    </tr>
+                    <tr>
+                        <td style="width: 100px; border-right: 1px solid #000000; font-weight: 600; padding: 4px 6px;">Halaman</td>
+                        <td style="width: 8px; text-align: center; padding: 4px 0;">:</td>
+                        <td style="font-weight: 700; padding: 4px 6px;">1 dari 1</td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+
+    {{-- NO PO & KEPADA YTH --}}
+    <table style="width: 100%; border-collapse: collapse; margin-bottom: 25px;">
+        <tr>
+            <td style="width: 50%; vertical-align: top; padding: 0;">
+                <table style="border-collapse: collapse; font-size: 10pt;">
+                    <tr>
+                        <td style="width: 32px; font-weight: 700; vertical-align: top;">No.</td>
+                        <td style="width: 8px; vertical-align: top;"></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: 700; vertical-align: top;">PO</td>
+                        <td style="font-weight: 700; vertical-align: top;">:</td>
+                        <td style="font-weight: 800; font-family: monospace; font-size: 10.5pt; padding-left: 4px;">{{ $po->po_no }}</td>
+                    </tr>
+                </table>
+            </td>
+            <td style="width: 50%; padding-left: 20px; vertical-align: top;">
+                <div style="font-size: 10pt; font-weight: 700; margin-bottom: 2px;">
+                    Kepada Yth:
+                </div>
+                <div style="font-size: 10.5pt; font-weight: 800;">
+                    {{ $po->supplier?->supplier_nm ?? '-' }}
+                </div>
+                @if ($po->supplier?->alamat_txt)
+                    <div style="font-size: 9pt; color: #334155; margin-top: 2px;">
+                        {{ $po->supplier->alamat_txt }}
+                    </div>
+                @endif
+                @if ($po->supplier?->telepon_no && $po->supplier?->telepon_no !== '-')
+                    <div style="font-size: 9pt; color: #334155;">
+                        Telp: {{ $po->supplier->telepon_no }}
+                    </div>
+                @endif
+            </td>
+        </tr>
+    </table>
+
+    {{-- JUDUL DOKUMEN --}}
+    <div style="text-align: center; margin-bottom: 22px;">
+        <div style="font-size: 12.5pt; font-weight: 800; text-decoration: underline; letter-spacing: 0.05em;">SURAT PERMINTAAN BARANG</div>
+        <div style="font-size: 11pt; font-weight: 800; letter-spacing: 0.05em; margin-top: 3px;">PURCHASE ORDER</div>
+    </div>
+
+    {{-- TABEL BARANG --}}
+    <table style="width: 100%; border-collapse: collapse; border: 2px solid #000000; margin-bottom: 30px;">
+        <thead>
+            <tr>
+                <th style="width: 45px; border: 1px solid #000000; border-bottom: 2px solid #000000; padding: 6px 6px; font-weight: 800; font-size: 9.5pt; text-align: center; background: #ffffff;">NO</th>
+                <th style="border: 1px solid #000000; border-bottom: 2px solid #000000; padding: 6px 6px; font-weight: 800; font-size: 9.5pt; text-align: left; padding-left: 10px; background: #ffffff;">NAMA BARANG</th>
+                <th style="width: 140px; border: 1px solid #000000; border-bottom: 2px solid #000000; padding: 6px 6px; font-weight: 800; font-size: 9.5pt; text-align: center; background: #ffffff;">JUMLAH</th>
+                <th style="width: 180px; border: 1px solid #000000; border-bottom: 2px solid #000000; padding: 6px 6px; font-weight: 800; font-size: 9.5pt; text-align: center; background: #ffffff;">KETERANGAN</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach ($po->details as $idx => $d)
+                <tr>
+                    <td style="border: 1px solid #000000; padding: 7px 8px; font-size: 9.5pt; text-align: center; font-weight: 700;">{{ $idx + 1 }}.</td>
+                    <td style="border: 1px solid #000000; padding: 7px 8px; font-size: 9.5pt; padding-left: 10px;">
+                        <strong style="color: #000000;">{{ $d->barang?->barang_nm ?? '-' }}</strong>
+                        @if ($d->barang?->barang_cd)
+                            <div style="font-size: 8pt; color: #64748b; font-family: monospace;">{{ $d->barang->barang_cd }}</div>
+                        @endif
+                    </td>
+                    <td style="border: 1px solid #000000; padding: 7px 8px; font-size: 9.5pt; text-align: center; font-weight: 800;">
+                        {{ number_format((float) $d->pesan_qty, 0, ',', '.') }} {{ $d->barang?->satuanDasar?->satuan_cd ?? 'KG' }}
+                    </td>
+                    <td style="border: 1px solid #000000; padding: 7px 8px; font-size: 9pt; padding-left: 8px;">
+                        {{ $d->catatan_txt ?: '-' }}
+                    </td>
+                </tr>
+            @endforeach
+
+            @php $emptyRows = max(0, 3 - count($po->details)); @endphp
+            @for ($i = 0; $i < $emptyRows; $i++)
+                <tr>
+                    <td style="border: 1px solid #000000; padding: 7px 8px; text-align: center; color: transparent;">&nbsp;</td>
+                    <td style="border: 1px solid #000000; padding: 7px 8px;">&nbsp;</td>
+                    <td style="border: 1px solid #000000; padding: 7px 8px;">&nbsp;</td>
+                    <td style="border: 1px solid #000000; padding: 7px 8px;">&nbsp;</td>
+                </tr>
+            @endfor
+        </tbody>
+    </table>
+
+    {{-- TANDA TANGAN & CATATAN PENGIRIMAN --}}
+    <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+        <tr>
+            <td style="width: 55%; vertical-align: top; padding: 0;">
+                <div style="font-size: 9.5pt; line-height: 1.45; margin-top: 15px;">
+                    <strong>NB.</strong><br>
+                    Barang di kirim ke alamat:<br>
+                    <strong style="font-size: 10pt;">PT. MIRASA FOOD INDUSTRY</strong><br>
+                    <strong>Magelang</strong><br>
+                    <span style="font-size: 8.5pt; color: #475569;">Jl. Munggur No. 2 Ambartawang, Kec. Mungkid, Kab. Magelang, Jawa Tengah 56512</span>
+                </div>
+            </td>
+            <td style="width: 45%; text-align: center; vertical-align: top; padding: 0;">
+                <div style="font-size: 10pt;">
+                    Magelang, {{ $po->po_tgl ? \Carbon\Carbon::parse($po->po_tgl)->translatedFormat('d F Y') : now()->translatedFormat('d F Y') }}<br>
+                    <strong>Mengetahui</strong>
+                </div>
+                <div style="height: 65px;"></div>
+                <div style="font-size: 10pt;">
+                    .......................................
+                </div>
+            </td>
+        </tr>
+    </table>
+</div>
 
 {{-- MODAL CEPAT CATAT BARANG MASUK --}}
 @if (in_array($po->status_cd, ['APPROVED', 'PARTIAL']) && $po->total_sisa_qty > 0)
@@ -725,5 +944,21 @@
             }
         });
     }
+
+    // Toggle dropdown Menu Aksi Dokumen PO
+    function toggleShowActionMenu(event) {
+        if (event) event.stopPropagation();
+        const dropdown = document.getElementById('showActionMenuDropdown');
+        if (!dropdown) return;
+        dropdown.style.display = (dropdown.style.display === 'block') ? 'none' : 'block';
+    }
+
+    // Tutup dropdown saat klik di luar
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.show-dropdown-trigger') && !e.target.closest('.show-action-menu-dropdown')) {
+            const dropdown = document.getElementById('showActionMenuDropdown');
+            if (dropdown) dropdown.style.display = 'none';
+        }
+    });
 </script>
 @endsection

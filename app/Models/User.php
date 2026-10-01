@@ -254,6 +254,16 @@ class User extends Authenticatable
         return $this->isSuperAdmin() || $this->canDo('po_create');
     }
 
+    public function canEditPo(): bool
+    {
+        return $this->isSuperAdmin() || $this->canDo('po_edit') || $this->canDo('po_create');
+    }
+
+    public function canDeletePo(): bool
+    {
+        return $this->isSuperAdmin() || $this->canDo('po_delete');
+    }
+
     /**
      * Hak akses Barang Masuk (GRN / Inbound)
      */

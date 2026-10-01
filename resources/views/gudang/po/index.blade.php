@@ -278,20 +278,70 @@
                         <td style="text-align: right; font-weight: 700; color: #0f172a; font-size: 0.875rem;">
                             Rp {{ number_format((float) $po->total_nominal, 0, ',', '.') }}
                         </td>
-                        <td style="text-align: right;">
-                            <div style="display: inline-flex; gap: 0.35rem; align-items: center;">
-                                <a href="{{ route('gudang.po.show', $po->po_id) }}" class="btn btn-secondary btn-sm" title="Lihat Detail Lengkap PO">
-                                    Detail
-                                </a>
-                                @if ($canReceive)
-                                    <button type="button" 
-                                            class="btn btn-primary btn-sm" 
-                                            style="background: #059669; padding: 0.3rem 0.65rem;" 
-                                            title="Catat penerimaan barang langsung di tempat tanpa pindah halaman"
-                                            onclick="openQuickReceiveIndexModal({{ json_encode($poPayload) }})">
-                                        Terima
-                                    </button>
-                                @endif
+                        <td style="text-align: right; position: relative;">
+                            <div style="position: relative; display: inline-block;">
+                                <button type="button" 
+                                        class="btn btn-secondary btn-sm po-dropdown-trigger" 
+                                        onclick="togglePoIndexDropdown(event, 'poDropdown-{{ $po->po_id }}')"
+                                        style="display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.35rem 0.65rem; font-size: 0.8rem; font-weight: 600; border-radius: 6px; background: #ffffff; border: 1px solid #cbd5e1; color: #1e293b; box-shadow: 0 1px 2px rgba(0,0,0,0.04);">
+                                    <span>Aksi</span>
+                                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+                                </button>
+
+                                {{-- DROPDOWN MENU ITEMS --}}
+                                <div id="poDropdown-{{ $po->po_id }}" class="po-action-menu-dropdown" style="display: none; position: absolute; right: 0; top: calc(100% + 4px); background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.12), 0 8px 10px -6px rgba(0,0,0,0.08); width: 220px; z-index: 1000; text-align: left; padding: 0.35rem 0; font-size: 0.825rem;">
+                                    
+                                    {{-- 1. LIHAT DETAIL --}}
+                                    <a href="{{ route('gudang.po.show', $po->po_id) }}" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.85rem; color: #1e293b; text-decoration: none; transition: background 0.15s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
+                                        <svg width="15" height="15" fill="none" stroke="#0284c7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                        <span>Lihat Detail PO</span>
+                                    </a>
+
+                                    {{-- 2. CETAK PDF RESMI (HACCP) --}}
+                                    <a href="{{ route('gudang.po.export-pdf', $po->po_id) }}" target="_blank" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.85rem; color: #1e293b; text-decoration: none; transition: background 0.15s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
+                                        <svg width="15" height="15" fill="none" stroke="#dc2626" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                        <span>Cetak PDF Resmi (HACCP)</span>
+                                    </a>
+
+                                    {{-- 3. TERIMA BARANG (JIKA STATUS MEMUNGKINKAN) --}}
+                                    @if ($canReceive)
+                                        <button type="button" 
+                                                onclick="openQuickReceiveIndexModal({{ json_encode($poPayload) }})"
+                                                style="width: 100%; border: none; background: transparent; text-align: left; display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.85rem; color: #059669; font-weight: 600; cursor: pointer; transition: background 0.15s;"
+                                                onmouseover="this.style.background='#ecfdf5'" onmouseout="this.style.background='transparent'">
+                                            <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                            <span>Catat Terima Barang</span>
+                                        </button>
+                                    @endif
+
+                                    <div style="border-top: 1px solid #f1f5f9; margin: 0.25rem 0;"></div>
+
+                                    {{-- 4. EDIT PO --}}
+                                    @php
+                                        $canEdit = (Auth::user()?->isSuperAdmin() || Auth::user()?->canEditPo()) && (!in_array($po->status_cd, ['COMPLETED', 'CLOSED', 'CANCELLED']) || Auth::user()?->isSuperAdmin());
+                                    @endphp
+                                    @if ($canEdit)
+                                        <a href="{{ route('gudang.po.edit', $po->po_id) }}" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.85rem; color: #d97706; text-decoration: none; font-weight: 600; transition: background 0.15s;" onmouseover="this.style.background='#fffbeb'" onmouseout="this.style.background='transparent'">
+                                            <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                            <span>Edit Purchase Order</span>
+                                        </a>
+                                    @endif
+
+                                    {{-- 5. HAPUS PO --}}
+                                    @php
+                                        $canDelete = (Auth::user()?->isSuperAdmin() || Auth::user()?->canDeletePo()) && ($totalTerima == 0 || Auth::user()?->isSuperAdmin());
+                                    @endphp
+                                    @if ($canDelete)
+                                        <form action="{{ route('gudang.po.destroy', $po->po_id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin MENGHAPUS dokumen Purchase Order {{ $po->po_no }}? Tindakan ini tidak dapat dibatalkan.')" style="margin: 0;">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" style="width: 100%; border: none; background: transparent; text-align: left; display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.85rem; color: #dc2626; cursor: pointer; transition: background 0.15s; font-size: 0.825rem;" onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background='transparent'">
+                                                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                                <span>Hapus PO</span>
+                                            </button>
+                                        </form>
+                                    @endif
+                                </div>
                             </div>
                         </td>
                     </tr>
@@ -606,5 +656,31 @@
             }
         });
     }
+
+    // Toggle dropdown Aksi per baris PO
+    function togglePoIndexDropdown(event, dropdownId) {
+        event.stopPropagation();
+        const dropdown = document.getElementById(dropdownId);
+        if (!dropdown) return;
+        const isOpen = dropdown.style.display === 'block';
+
+        // Tutup seluruh dropdown lain yang sedang terbuka
+        document.querySelectorAll('.po-action-menu-dropdown').forEach(el => {
+            el.style.display = 'none';
+        });
+
+        if (!isOpen) {
+            dropdown.style.display = 'block';
+        }
+    }
+
+    // Tutup dropdown saat klik di luar
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.po-dropdown-trigger') && !e.target.closest('.po-action-menu-dropdown')) {
+            document.querySelectorAll('.po-action-menu-dropdown').forEach(el => {
+                el.style.display = 'none';
+            });
+        }
+    });
 </script>
 @endsection

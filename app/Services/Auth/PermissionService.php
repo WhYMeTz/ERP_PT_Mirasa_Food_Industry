@@ -29,6 +29,11 @@ class PermissionService
                     'desc'   => 'Mengubah data tiket QC yang salah ketik atau revisi timbangan/lab.',
                     'action' => 'EDIT',
                 ],
+                'po_edit' => [
+                    'label'  => 'Edit & Koreksi Purchase Order (PO)',
+                    'desc'   => 'Mengubah tanggal, supplier, gudang, catatan, atau rincian item pesanan PO yang belum diterima.',
+                    'action' => 'EDIT',
+                ],
             ],
         ],
         'AKSI_DELETE' => [
@@ -45,6 +50,11 @@ class PermissionService
                 'qc_delete' => [
                     'label'  => 'Hapus / Batalkan Tiket QC',
                     'desc'   => 'Menghapus tiket QC yang batal atau salah input.',
+                    'action' => 'DELETE',
+                ],
+                'po_delete' => [
+                    'label'  => 'Hapus Purchase Order (PO)',
+                    'desc'   => 'Menghapus dokumen Purchase Order (khusus Super Admin / wewenang khusus).',
                     'action' => 'DELETE',
                 ],
             ],
@@ -192,6 +202,7 @@ class PermissionService
         'PURCHASING' => [
             'po_view',
             'po_create',
+            'po_edit',
             'qc_view',
             'terima_view',
             'retur_view',

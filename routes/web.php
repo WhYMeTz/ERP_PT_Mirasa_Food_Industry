@@ -95,16 +95,19 @@ Route::middleware('auth')->group(function () {
         Route::post('po', [PoController::class, 'store'])
             ->name('po.store')
             ->middleware('role:po_create');
-        Route::get('po/{po}/edit', [PoController::class, 'edit'])
+        Route::get('po/{id}/edit', [PoController::class, 'edit'])
             ->name('po.edit')
-            ->middleware('role:po_create');
-        Route::put('po/{po}', [PoController::class, 'update'])
+            ->middleware('role:po_edit,po_create');
+        Route::put('po/{id}', [PoController::class, 'update'])
             ->name('po.update')
-            ->middleware('role:po_create');
-        Route::patch('po/{po}', [PoController::class, 'update']);
-        Route::delete('po/{po}', [PoController::class, 'destroy'])
+            ->middleware('role:po_edit,po_create');
+        Route::patch('po/{id}', [PoController::class, 'update']);
+        Route::delete('po/{id}', [PoController::class, 'destroy'])
             ->name('po.destroy')
-            ->middleware('role:po_create');
+            ->middleware('role:po_delete');
+        Route::get('po/{id}/export-pdf', [PoController::class, 'exportPdf'])
+            ->name('po.export-pdf')
+            ->middleware('role:po_view');
         Route::resource('po', PoController::class)->only(['index', 'show'])->middleware('role:po_view');
 
         // Barang Masuk (GRN / Inbound): Terima Barang & Batch (Berdasarkan izin 'terima_create')

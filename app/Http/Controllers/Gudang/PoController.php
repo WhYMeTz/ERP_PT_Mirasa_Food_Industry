@@ -223,4 +223,148 @@ class PoController extends Controller
             return back()->withErrors(['error' => $e->getMessage()]);
         }
     }
+
+    /**
+     * Export Dokumen Resmi Purchase Order (Surat Permintaan Barang MFI/HACCP-04/FRM-03/050/VIII/2021) ke PDF.
+     */
+    public function exportPdf(int $id): \Illuminate\Http\Response
+    {
+        $po = $this->poService->getById($id);
+
+        $logoPath = public_path('images/logo.png');
+        $logoBase64 = null;
+        if (file_exists($logoPath)) {
+            $logoBase64 = 'data:image/png;base64,' . base64_encode(file_get_contents($logoPath));
+        }
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('gudang.po.pdf', [
+            'po'         => $po,
+            'logoBase64' => $logoBase64,
+            'printedAt'  => now()->translatedFormat('d F Y H:i'),
+            'printedBy'  => auth()->user()?->karyawan?->karyawan_nm ?? (auth()->user()?->name ?? 'Staff Purchasing'),
+        ]);
+
+        $pdf->setPaper('a4', 'portrait');
+        $pdf->setOption('isHtml5ParserEnabled', true);
+        $pdf->setOption('isRemoteEnabled', true);
+
+        $cleanPoNo = preg_replace('/[^A-Za-z0-9\-]/', '', $po->po_no);
+        $fileName = 'PO-' . $cleanPoNo . '.pdf';
+        return $pdf->stream($fileName);
+    }
+
+    /**
+     * Form Ubah Dokumen Purchase Order
+     */
+    public function edit(int $id): View|RedirectResponse
+    {
+        $user = Auth::user();
+        $po = $this->poService->getById($id);
+
+        // Cek apakah PO sudah ada penerimaan barang fisik
+        $hasReceived = $po->details->contains(fn($dtl) => (float) $dtl->terima_qty > 0);
+        if ($hasReceived && !$user?->isSuperAdmin()) {
+            return redirect()
+                ->route('gudang.po.show', $po->po_id)
+                ->with('error', "Purchase Order {$po->po_no} tidak dapat diedit karena sudah memiliki barang yang diterima di gudang (GRN).");
+        }
+
+        if (in_array($po->status_cd, ['COMPLETED', 'CLOSED', 'CANCELLED']) && !$user?->isSuperAdmin()) {
+            return redirect()
+                ->route('gudang.po.show', $po->po_id)
+                ->with('error', "Purchase Order {$po->po_no} dengan status {$po->status_cd} tidak dapat diedit.");
+        }
+
+        $supplierList = MstSupplier::active()
+            ->with('jenisSupplier')
+            ->orderBy('supplier_nm')
+            ->get();
+        $jenisSupplierList = MstJenisSupplier::active()
+            ->orderBy('jenis_supplier_nm')
+            ->get();
+        $gudangList = $user ? $user->getAllowedGudangList() : collect();
+
+        // Bahan Baku & Bahan Penolong
+        $barangList = MstBarang::active()
+            ->bahanBaku()
+            ->with(['satuanDasar', 'jenisBarang'])
+            ->orderBy('barang_nm')
+            ->get();
+
+        return view('gudang.po.edit', compact(
+            'po',
+            'supplierList',
+            'jenisSupplierList',
+            'gudangList',
+            'barangList'
+        ));
+    }
+
+    /**
+     * Simpan Perubahan Purchase Order
+     */
+    public function update(Request $request, int $id): RedirectResponse|JsonResponse
+    {
+        $request->validate([
+            'po_tgl'                => 'required|date',
+            'supplier_id'           => 'required|exists:mst_supplier,supplier_id',
+            'gudang_id'             => 'required|exists:mst_gudang,gudang_id',
+            'tgl_estimasi_datang'   => 'nullable|date',
+            'catatan_txt'           => 'nullable|string|max:1000',
+            'items'                 => 'required|array|min:1',
+            'items.*.barang_id'     => 'required|exists:mst_barang,barang_id',
+            'items.*.pesan_qty'     => 'required|numeric|min:0.01',
+            'items.*.harga_nominal' => 'required|numeric|min:0',
+        ], [
+            'items.required'        => 'Minimal harus ada 1 item barang yang dipesan.',
+            'items.min'             => 'Minimal harus ada 1 item barang yang dipesan.',
+            'supplier_id.required'  => 'Supplier mitra wajib dipilih.',
+            'gudang_id.required'    => 'Gudang tujuan wajib dipilih.',
+        ]);
+
+        try {
+            $data = $request->all();
+            $po = $this->poService->update($id, $data);
+
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'status'  => 'success',
+                    'message' => "Dokumen Purchase Order {$po->po_no} berhasil diperbarui.",
+                    'data'    => $po,
+                ]);
+            }
+
+            return redirect()
+                ->route('gudang.po.show', $po->po_id)
+                ->with('success', "Dokumen Purchase Order {$po->po_no} berhasil diperbarui.");
+        } catch (\Exception $e) {
+            return back()->withInput()->withErrors(['error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Hapus Dokumen Purchase Order
+     */
+    public function destroy(Request $request, int $id): RedirectResponse|JsonResponse
+    {
+        try {
+            $po = DatPoHdr::findOrFail($id);
+            $poNo = $po->po_no;
+
+            $this->poService->delete($id);
+
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'status'  => 'success',
+                    'message' => "Purchase Order {$poNo} berhasil dihapus dari sistem.",
+                ]);
+            }
+
+            return redirect()
+                ->route('gudang.po.index')
+                ->with('success', "Purchase Order {$poNo} berhasil dihapus dari sistem.");
+        } catch (\Exception $e) {
+            return back()->withErrors(['error' => $e->getMessage()]);
+        }
+    }
 }

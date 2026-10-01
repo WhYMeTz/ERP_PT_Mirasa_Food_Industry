@@ -151,6 +151,12 @@ Route::middleware('auth')->group(function () {
         // Barang Keluar (Pemakaian Bahan Baku / Outbound): (Berdasarkan izin 'pemakaian_create')
         Route::get('pemakaian/batches', [PemakaianController::class, 'getBatches'])->name('pemakaian.batches');
         Route::get('pemakaian/alokasi-resep', [PemakaianController::class, 'alokasiResepFifo'])->name('pemakaian.alokasi-resep');
+        Route::get('pemakaian/export-rekap-pdf', [PemakaianController::class, 'exportRekapPdf'])
+            ->name('pemakaian.export-rekap-pdf')
+            ->middleware('role:pemakaian_view');
+        Route::get('pemakaian/export-excel', [PemakaianController::class, 'exportExcel'])
+            ->name('pemakaian.export-excel')
+            ->middleware('role:pemakaian_view');
         Route::get('pemakaian/create', [PemakaianController::class, 'create'])
             ->name('pemakaian.create')
             ->middleware('role:pemakaian_create');

@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers\Gudang;
 
+use App\Exports\Gudang\PemakaianExport;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Gudang\StorePemakaianRequest;
+use App\Models\Gudang\DatPakaiDtl;
 use App\Models\Gudang\DatPakaiHdr;
 use App\Models\Gudang\DatStokBatch;
 use App\Models\MasterData\MstBarang;
@@ -12,12 +14,15 @@ use App\Services\Common\CodeGeneratorService;
 use App\Services\Gudang\PemakaianService;
 use App\Services\Gudang\StokService;
 use App\Services\Produksi\BomService;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class PemakaianController extends Controller
 {
@@ -307,6 +312,139 @@ class PemakaianController extends Controller
                 'message' => $e->getMessage(),
             ], 422);
         }
+    }
+
+    /**
+     * Export Rekapitulasi Barang Keluar (Pemakaian) ke format PDF (A4 Landscape).
+     */
+    public function exportRekapPdf(Request $request): Response
+    {
+        $search    = $request->input('search');
+        $tujuan    = $request->input('tujuan');
+        $kategori  = $request->input('kategori');
+        $startDate = $request->input('start_date');
+        $endDate   = $request->input('end_date');
+        $gudangId  = $request->input('gudang_id') ? (int) $request->input('gudang_id') : null;
+
+        $user = Auth::user();
+        $allowedGudangIds = $user ? $user->getAllowedGudangIds() : [];
+
+        if ($gudangId !== null) {
+            $effectiveGudang = ($user && !$user->canAccessGudang($gudangId)) ? $allowedGudangIds : $gudangId;
+        } else {
+            $effectiveGudang = ($user && $user->isSuperAdmin()) ? null : $allowedGudangIds;
+        }
+
+        $query = DatPakaiDtl::with(['header.gudang', 'barang.jenisBarang', 'barang.satuanDasar'])
+            ->whereHas('header', function ($q) use ($effectiveGudang, $tujuan, $startDate, $endDate) {
+                $q->where('deleted_st', false);
+                if (is_array($effectiveGudang)) {
+                    $q->whereIn('gudang_id', $effectiveGudang);
+                } elseif ($effectiveGudang !== null) {
+                    $q->where('gudang_id', $effectiveGudang);
+                }
+                if (!empty($tujuan)) {
+                    $q->where('tujuan_pemakaian', $tujuan);
+                }
+                if (!empty($startDate)) {
+                    $q->whereDate('pakai_tgl', '>=', $startDate);
+                }
+                if (!empty($endDate)) {
+                    $q->whereDate('pakai_tgl', '<=', $endDate);
+                }
+            });
+
+        if (!empty($search)) {
+            $query->where(function ($q) use ($search) {
+                $q->where('batch_no', 'ILIKE', "%{$search}%")
+                  ->orWhere('keterangan_txt', 'ILIKE', "%{$search}%")
+                  ->orWhereHas('barang', fn($bq) => $bq->where('barang_nm', 'ILIKE', "%{$search}%")->orWhere('barang_cd', 'ILIKE', "%{$search}%"));
+            });
+        }
+
+        $items = $query->orderBy('pakaidtl_id', 'desc')->get();
+
+        $gudangNm = $gudangId ? MstGudang::find($gudangId)?->gudang_nm : null;
+
+        $logoPath = public_path('images/logo.png');
+        $logoBase64 = null;
+        if (file_exists($logoPath)) {
+            $logoBase64 = 'data:image/png;base64,' . base64_encode(file_get_contents($logoPath));
+        }
+
+        $pdf = Pdf::loadView('gudang.pemakaian.pdf_rekap', [
+            'items'      => $items,
+            'gudangNm'   => $gudangNm,
+            'search'     => $search,
+            'tujuan'     => $tujuan,
+            'logoBase64' => $logoBase64,
+            'printedAt'  => now()->translatedFormat('d F Y H:i'),
+            'printedBy'  => Auth::user()?->karyawan?->karyawan_nm ?? (Auth::user()?->nama_lengkap ?? 'Staff Gudang'),
+        ]);
+
+        $pdf->setPaper('a4', 'landscape');
+        $pdf->setOption('isHtml5ParserEnabled', true);
+        $pdf->setOption('isRemoteEnabled', true);
+
+        $fileName = 'Rekap_Barang_Keluar_' . date('Ymd_His') . '.pdf';
+        return $pdf->stream($fileName);
+    }
+
+    /**
+     * Export Rekapitulasi Barang Keluar (Pemakaian) ke format Excel (.xlsx).
+     */
+    public function exportExcel(Request $request): StreamedResponse
+    {
+        $search    = $request->input('search');
+        $tujuan    = $request->input('tujuan');
+        $startDate = $request->input('start_date');
+        $endDate   = $request->input('end_date');
+        $gudangId  = $request->input('gudang_id') ? (int) $request->input('gudang_id') : null;
+
+        $user = Auth::user();
+        $allowedGudangIds = $user ? $user->getAllowedGudangIds() : [];
+
+        if ($gudangId !== null) {
+            $effectiveGudang = ($user && !$user->canAccessGudang($gudangId)) ? $allowedGudangIds : $gudangId;
+        } else {
+            $effectiveGudang = ($user && $user->isSuperAdmin()) ? null : $allowedGudangIds;
+        }
+
+        $query = DatPakaiDtl::with(['header.gudang', 'barang.jenisBarang', 'barang.satuanDasar'])
+            ->whereHas('header', function ($q) use ($effectiveGudang, $tujuan, $startDate, $endDate) {
+                $q->where('deleted_st', false);
+                if (is_array($effectiveGudang)) {
+                    $q->whereIn('gudang_id', $effectiveGudang);
+                } elseif ($effectiveGudang !== null) {
+                    $q->where('gudang_id', $effectiveGudang);
+                }
+                if (!empty($tujuan)) {
+                    $q->where('tujuan_pemakaian', $tujuan);
+                }
+                if (!empty($startDate)) {
+                    $q->whereDate('pakai_tgl', '>=', $startDate);
+                }
+                if (!empty($endDate)) {
+                    $q->whereDate('pakai_tgl', '<=', $endDate);
+                }
+            });
+
+        if (!empty($search)) {
+            $query->where(function ($q) use ($search) {
+                $q->where('batch_no', 'ILIKE', "%{$search}%")
+                  ->orWhere('keterangan_txt', 'ILIKE', "%{$search}%")
+                  ->orWhereHas('barang', fn($bq) => $bq->where('barang_nm', 'ILIKE', "%{$search}%")->orWhere('barang_cd', 'ILIKE', "%{$search}%"));
+            });
+        }
+
+        $items = $query->orderBy('pakaidtl_id', 'desc')->get();
+
+        $gudangNm  = $gudangId ? MstGudang::find($gudangId)?->gudang_nm : null;
+        $printedBy = Auth::user()?->karyawan?->karyawan_nm ?? (Auth::user()?->nama_lengkap ?? 'Staff Gudang');
+        $printedAt = now()->translatedFormat('d F Y H:i');
+
+        $export = new PemakaianExport($items, $gudangNm, $search, $tujuan, $printedBy, $printedAt);
+        return $export->download('Rekap_Barang_Keluar_' . date('Ymd_His') . '.xlsx');
     }
 }
 

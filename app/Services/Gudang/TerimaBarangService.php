@@ -333,4 +333,73 @@ class TerimaBarangService
             return $header->fresh(['details.barang']);
         });
     }
+
+    /**
+     * Membatalkan / menghapus dokumen penerimaan barang secara aman.
+     * Mengurangi kembali saldo stok fisik di gudang dan mengembalikan progres PO.
+     */
+    public function delete(int $id): bool
+    {
+        return DB::transaction(function () use ($id) {
+            $terima = DatTerimaHdr::with(['details', 'po.details'])->lockForUpdate()->findOrFail($id);
+
+            if ($terima->deleted_st) {
+                throw new \Exception("Dokumen penerimaan {$terima->terima_no} sudah pernah dihapus.");
+            }
+
+            // 1. Kurangi kembali stok untuk setiap item detail (validasi ketersediaan batch otomatis oleh deductStock)
+            foreach ($terima->details as $dtl) {
+                $this->stokService->deductStock(
+                    $terima->gudang_id,
+                    $dtl->barang_id,
+                    $dtl->batch_no,
+                    (float) $dtl->terima_qty,
+                    $terima->terima_no,
+                    "Pembatalan Dokumen Penerimaan Barang No {$terima->terima_no}"
+                );
+
+                // 2. Kembalikan terima_qty di PO Detail jika terkait PO
+                if (!empty($dtl->podtl_id)) {
+                    $poDtl = DatPoDtl::find($dtl->podtl_id);
+                    if ($poDtl) {
+                        $poDtl->terima_qty = max(0, (float) $poDtl->terima_qty - (float) $dtl->terima_qty);
+                        $poDtl->save();
+                    }
+                }
+            }
+
+            // 3. Recalculate status PO jika terkait PO
+            if ($terima->po_id) {
+                $poHdr = DatPoHdr::with('details')->find($terima->po_id);
+                if ($poHdr) {
+                    $semuaTuntas = true;
+                    $adaYangDiterima = false;
+
+                    foreach ($poHdr->details as $pdtl) {
+                        if ((float) $pdtl->terima_qty < (float) $pdtl->pesan_qty) {
+                            $semuaTuntas = false;
+                        }
+                        if ((float) $pdtl->terima_qty > 0) {
+                            $adaYangDiterima = true;
+                        }
+                    }
+
+                    if ($semuaTuntas) {
+                        $poHdr->status_cd = 'COMPLETED';
+                    } elseif ($adaYangDiterima) {
+                        $poHdr->status_cd = 'PARTIAL';
+                    } else {
+                        $poHdr->status_cd = 'OPEN';
+                    }
+                    $poHdr->save();
+                }
+            }
+
+            // 4. Tandai dokumen penerimaan sebagai terhapus (soft delete)
+            $terima->deleted_st = true;
+            $terima->save();
+
+            return true;
+        });
+    }
 }

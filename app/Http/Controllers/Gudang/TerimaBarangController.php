@@ -390,4 +390,35 @@ class TerimaBarangController extends Controller
                 ->with('error', 'Import gagal: ' . $e->getMessage());
         }
     }
+
+    /**
+     * Membatalkan / menghapus dokumen penerimaan barang.
+     */
+    public function destroy(Request $request, int $id): RedirectResponse|JsonResponse
+    {
+        $user = auth()->user();
+        if (!$user || (!$user->isSuperAdmin() && !$user->hasPermission('terima_create'))) {
+            abort(403, 'Anda tidak memiliki hak akses untuk membatalkan penerimaan barang.');
+        }
+
+        try {
+            $terima = DatTerimaHdr::findOrFail($id);
+            $terimaNo = $terima->terima_no;
+
+            $this->terimaService->delete($id);
+
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'status'  => 'success',
+                    'message' => "Penerimaan barang {$terimaNo} berhasil dibatalkan dan stok telah disesuaikan kembali.",
+                ]);
+            }
+
+            return redirect()
+                ->route('gudang.terima.index')
+                ->with('success', "Penerimaan barang {$terimaNo} berhasil dibatalkan dan saldo stok telah disesuaikan kembali.");
+        } catch (\Exception $e) {
+            return back()->withErrors(['error' => $e->getMessage()]);
+        }
+    }
 }

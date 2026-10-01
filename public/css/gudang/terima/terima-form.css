@@ -1,0 +1,208 @@
+/**
+ * =========================================================================
+ * ERP PT MIRASA - TERIMA BARANG (GRN) FORM & CREATE STYLESHEET
+ * =========================================================================
+ */
+
+.excel-grid-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.825rem;
+}
+.excel-grid-table th {
+    background: #0f172a;
+    color: #f8fafc;
+    font-weight: 600;
+    padding: 0.6rem 0.5rem;
+    border: 1px solid #334155;
+    font-size: 0.8rem;
+    letter-spacing: 0.02em;
+}
+.excel-grid-table td {
+    padding: 0.35rem 0.45rem;
+    border: 1px solid #cbd5e1;
+    background: #ffffff;
+    vertical-align: middle;
+}
+.excel-grid-table tr:nth-child(even) td {
+    background: #f8fafc;
+}
+.excel-grid-table tr:hover td {
+    background: #f0fdf4;
+}
+.excel-grid-table .form-control {
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    padding: 0.35rem 0.5rem !important;
+    font-size: 0.825rem !important;
+    height: 32px;
+    box-sizing: border-box;
+    width: 100%;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+.excel-grid-table .form-control:focus {
+    border-color: #059669 !important;
+    box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.25) !important;
+    background: #ffffff !important;
+}
+.excel-table-scroll::-webkit-scrollbar-track {
+    background: #f1f5f9;
+}
+.excel-table-scroll::-webkit-scrollbar-thumb {
+    background: #94a3b8;
+    border-radius: 4px;
+}
+.excel-table-scroll::-webkit-scrollbar-thumb:hover {
+    background: #64748b;
+}
+
+.sup-filter-chip, .barang-filter-chip {
+    background: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    color: #475569;
+    font-size: 0.725rem;
+    font-weight: 600;
+    padding: 0.25rem 0.65rem;
+    border-radius: 9999px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    line-height: 1.2;
+}
+.sup-filter-chip:hover {
+    background: #e2e8f0;
+    color: #1e293b;
+}
+.sup-filter-chip.active {
+    background: #059669;
+    border-color: #059669;
+    color: #ffffff;
+    box-shadow: 0 1px 3px rgba(5, 150, 105, 0.3);
+}
+
+.qc-filter-chip {
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    color: #475569;
+    font-size: 0.725rem;
+    font-weight: 600;
+    padding: 0.25rem 0.65rem;
+    border-radius: 9999px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+.qc-filter-chip:hover {
+    background: #f1f5f9;
+    color: #0f172a;
+    border-color: #94a3b8;
+}
+.qc-filter-chip.active {
+    background: #0284c7;
+    border-color: #0284c7;
+    color: #ffffff;
+    box-shadow: 0 1px 3px rgba(2, 132, 199, 0.3);
+}
+
+.category-segmented-control {
+    display: inline-flex;
+    background: #f1f5f9;
+    padding: 3px;
+    border-radius: 6px;
+    gap: 2px;
+    border: 1px solid #cbd5e1;
+}
+.category-segment-btn {
+    background: transparent;
+    border: none;
+    padding: 0.32rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #475569;
+    border-radius: 4px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    transition: all 0.15s ease;
+    line-height: 1.25;
+}
+.category-segment-btn:hover:not(.active) {
+    color: #0f172a;
+    background: rgba(255, 255, 255, 0.7);
+}
+.category-segment-btn.active {
+    background: #ffffff;
+    color: #059669;
+    font-weight: 700;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+.category-segment-count {
+    font-size: 0.675rem;
+    padding: 0.1rem 0.45rem;
+    border-radius: 9999px;
+    background: #e2e8f0;
+    color: #475569;
+    font-weight: 700;
+    transition: all 0.15s ease;
+}
+.category-segment-btn.active .category-segment-count {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.sup-option-item {
+    padding: 0.6rem 0.85rem;
+    border-bottom: 1px solid #f1f5f9;
+    cursor: pointer;
+    transition: background 0.1s ease;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.sup-option-item:hover, .sup-option-item.highlighted {
+    background: #f0fdf4;
+}
+.sup-option-item:last-child {
+    border-bottom: none;
+}
+
+.sup-modal-tab {
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    color: #475569;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.3rem 0.65rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.12s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    white-space: nowrap;
+}
+.sup-modal-tab:hover {
+    background: #f1f5f9;
+    color: #0f172a;
+    border-color: #94a3b8;
+}
+.sup-modal-tab.active {
+    background: #059669;
+    border-color: #059669;
+    color: #ffffff;
+    box-shadow: 0 1px 2px rgba(5, 150, 105, 0.25);
+}
+.sup-modal-row {
+    cursor: pointer;
+    transition: background 0.08s ease;
+}
+.sup-modal-row:hover td {
+    background: #f0fdf4 !important;
+}

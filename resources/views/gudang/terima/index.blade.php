@@ -2,6 +2,10 @@
 
 @section('title', 'Penerimaan Barang & Bahan Baku (GRN) - ERP PT Mirasa')
 
+@push('styles')
+    <link rel="stylesheet" href="{{ asset('css/gudang/terima/terima-index.css') }}">
+@endpush
+
 @section('content')
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 1rem;">
     <div>
@@ -254,11 +258,39 @@
                                     @endif
                                 </small>
                             </td>
-                            <td style="text-align: right;">
-                                <div style="display: inline-flex; gap: 0.35rem; align-items: center;">
-                                    <a href="{{ route('gudang.terima.show', $row->header?->terima_id) }}" class="btn btn-secondary btn-sm" title="Lihat Dokumen Lengkap">
-                                        Detail
+                            <td style="text-align: right; position: relative;">
+                                <button type="button" class="btn-action-trigger" onclick="toggleSmartActionDropdown(this, event, 'dropdown-item-{{ $row->terimadtl_id }}')">
+                                    <span>Aksi</span>
+                                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                </button>
+                                <div id="dropdown-item-{{ $row->terimadtl_id }}" class="action-dropdown-menu">
+                                    <a href="{{ route('gudang.terima.show', $row->header?->terima_id) }}" class="action-dropdown-item">
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                        <span>Lihat Surat Jalan / GRN</span>
                                     </a>
+                                    <a href="{{ route('gudang.terima.export-pdf', $row->header?->terima_id) }}" target="_blank" class="action-dropdown-item">
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                                        <span>Cetak PDF (GRN)</span>
+                                    </a>
+                                    @if ($row->header?->po_id)
+                                        <a href="{{ route('gudang.po.show', $row->header->po_id) }}" class="action-dropdown-item">
+                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                                            <span>Lihat PO Terkait</span>
+                                        </a>
+                                    @endif
+                                    @if ($row->header?->gudang_id)
+                                        <a href="{{ route('gudang.stok.index', ['gudang_id' => $row->header->gudang_id, 'search' => $row->batch_no]) }}" class="action-dropdown-item">
+                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                                            <span>Cek Stok Batch di Gudang</span>
+                                        </a>
+                                    @endif
+                                    @if (Auth::user()?->isSuperAdmin() || Auth::user()?->hasPermission('terima_create'))
+                                        <div class="action-dropdown-divider"></div>
+                                        <button type="button" class="action-dropdown-item danger-item" onclick="openDeleteTerimaModal({{ $row->header?->terima_id }}, '{{ $row->header?->terima_no }}', '{{ addslashes($row->header?->supplier?->supplier_nm ?? '') }}')">
+                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                            <span>Batalkan Dokumen</span>
+                                        </button>
+                                    @endif
                                 </div>
                             </td>
                         </tr>
@@ -333,11 +365,39 @@
                                     <small style="display: block; font-size: 0.7rem; color: #0284c7; font-weight: 600;">+ PPN 11%</small>
                                 @endif
                             </td>
-                            <td style="text-align: right;">
-                                <div style="display: inline-flex; gap: 0.35rem; align-items: center;">
-                                    <a href="{{ route('gudang.terima.show', $item->terima_id) }}" class="btn btn-secondary btn-sm" title="Lihat Dokumen Lengkap">
-                                        Detail
+                            <td style="text-align: right; position: relative;">
+                                <button type="button" class="btn-action-trigger" onclick="toggleSmartActionDropdown(this, event, 'dropdown-hdr-{{ $item->terima_id }}')">
+                                    <span>Aksi</span>
+                                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                </button>
+                                <div id="dropdown-hdr-{{ $item->terima_id }}" class="action-dropdown-menu">
+                                    <a href="{{ route('gudang.terima.show', $item->terima_id) }}" class="action-dropdown-item">
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                        <span>Lihat Detail Dokumen</span>
                                     </a>
+                                    <a href="{{ route('gudang.terima.export-pdf', $item->terima_id) }}" target="_blank" class="action-dropdown-item">
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                                        <span>Cetak PDF (GRN)</span>
+                                    </a>
+                                    @if ($item->po_id)
+                                        <a href="{{ route('gudang.po.show', $item->po_id) }}" class="action-dropdown-item">
+                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                                            <span>Lihat PO Terkait</span>
+                                        </a>
+                                    @endif
+                                    @if ($item->gudang_id)
+                                        <a href="{{ route('gudang.stok.index', ['gudang_id' => $item->gudang_id]) }}" class="action-dropdown-item">
+                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                                            <span>Lihat Stok di Gudang Ini</span>
+                                        </a>
+                                    @endif
+                                    @if (Auth::user()?->isSuperAdmin() || Auth::user()?->hasPermission('terima_create'))
+                                        <div class="action-dropdown-divider"></div>
+                                        <button type="button" class="action-dropdown-item danger-item" onclick="openDeleteTerimaModal({{ $item->terima_id }}, '{{ $item->terima_no }}', '{{ addslashes($item->supplier?->supplier_nm ?? '') }}')">
+                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                            <span>Batalkan Dokumen</span>
+                                        </button>
+                                    @endif
                                 </div>
                             </td>
                         </tr>
@@ -361,101 +421,9 @@
 </div>
 @endsection
 
-{{-- ════════════════════════════════════════════════════════ --}}
-{{--  MODAL IMPORT EXCEL BARANG MASUK                         --}}
-{{-- ════════════════════════════════════════════════════════ --}}
-<div id="modal-import-excel" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(15,23,42,0.55); align-items:center; justify-content:center; padding:1rem;">
-    <div style="background:#fff; border-radius:12px; box-shadow:0 20px 60px rgba(0,0,0,0.2); width:100%; max-width:520px; overflow:hidden;">
+@include('gudang.terima.partials.modal-import-excel')
+@include('gudang.terima.partials.modal-delete-confirm')
 
-        {{-- Header Modal --}}
-        <div style="background:#134e5e; padding:1rem 1.5rem; display:flex; justify-content:space-between; align-items:center;">
-            <div>
-                <div style="font-weight:700; font-size:1rem; color:#fff;">Import Data Barang Masuk dari Excel</div>
-                <div style="font-size:0.8rem; color:#a5f3d8; margin-top:2px;">Upload file .xlsx sesuai template resmi ERP Mirasa</div>
-            </div>
-            <button type="button" onclick="document.getElementById('modal-import-excel').style.display='none'" style="background:none; border:none; color:#fff; cursor:pointer; font-size:1.4rem; line-height:1;">&times;</button>
-        </div>
-
-        {{-- Body Modal --}}
-        <div style="padding:1.5rem;">
-
-            {{-- Notifikasi sukses/warning/error --}}
-            @if(session('success'))
-                <div style="background:#dcfce7; border:1px solid #86efac; color:#14532d; border-radius:8px; padding:0.75rem 1rem; margin-bottom:1rem; font-size:0.85rem;">
-                    ✅ {{ session('success') }}
-                </div>
-            @endif
-            @if(session('warning'))
-                <div style="background:#fef9c3; border:1px solid #fde68a; color:#713f12; border-radius:8px; padding:0.75rem 1rem; margin-bottom:1rem; font-size:0.85rem;">
-                    ⚠️ {{ session('warning') }}
-                </div>
-            @endif
-            @if(session('error'))
-                <div style="background:#fee2e2; border:1px solid #fca5a5; color:#7f1d1d; border-radius:8px; padding:0.75rem 1rem; margin-bottom:1rem; font-size:0.85rem;">
-                    ❌ {{ session('error') }}
-                </div>
-            @endif
-
-            {{-- Langkah-langkah --}}
-            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:0.9rem 1rem; margin-bottom:1.25rem; font-size:0.83rem; color:#475569;">
-                <div style="font-weight:700; color:#0f172a; margin-bottom:0.4rem;">📋 Cara Import:</div>
-                <ol style="margin:0; padding-left:1.25rem; line-height:1.8;">
-                    <li>Download template resmi terlebih dahulu</li>
-                    <li>Isi data di sheet <strong>Barang Masuk</strong> mulai baris ke-7</li>
-                    <li>Lihat sheet <em>Ref. Kode Barang</em>, <em>Ref. Supplier</em>, <em>Ref. Gudang</em> sebagai referensi</li>
-                    <li>Baris dengan <strong>No. GRN sama</strong> dianggap satu dokumen GRN</li>
-                    <li>Simpan file lalu upload di sini</li>
-                </ol>
-            </div>
-
-            {{-- Download Template --}}
-            <a href="{{ route('gudang.terima.download-template') }}" class="btn" style="display:flex; align-items:center; justify-content:center; gap:0.5rem; background:#f0fdf4; border:1.5px solid #059669; color:#059669; font-weight:700; padding:0.65rem 1rem; border-radius:8px; text-decoration:none; font-size:0.875rem; margin-bottom:1.25rem; width:100%;">
-                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
-                Download Template Import (.xlsx)
-            </a>
-
-            {{-- Form Upload --}}
-            <form method="POST" action="{{ route('gudang.terima.import-excel') }}" enctype="multipart/form-data">
-                @csrf
-                <div style="margin-bottom:1rem;">
-                    <label style="display:block; font-size:0.85rem; font-weight:600; color:#374151; margin-bottom:0.5rem;">Pilih File Excel (.xlsx / .xls)</label>
-                    <input type="file" name="import_file" id="import_file" accept=".xlsx,.xls"
-                        style="display:block; width:100%; font-size:0.875rem; border:1.5px solid #cbd5e1; border-radius:8px; padding:0.5rem; background:#f8fafc; cursor:pointer;"
-                        required>
-                    @error('import_file')
-                        <div style="color:#dc2626; font-size:0.8rem; margin-top:0.3rem;">{{ $message }}</div>
-                    @enderror
-                    <div style="font-size:0.77rem; color:#94a3b8; margin-top:0.3rem;">Maksimal 5 MB. Hanya format .xlsx dan .xls yang diterima.</div>
-                </div>
-
-                <div style="display:flex; gap:0.75rem;">
-                    <button type="submit" id="btn-import-submit" style="flex:1; background:#134e5e; color:#fff; border:none; border-radius:8px; padding:0.7rem 1rem; font-size:0.9rem; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:0.5rem;">
-                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-                        Proses Import
-                    </button>
-                    <button type="button" onclick="document.getElementById('modal-import-excel').style.display='none'" style="background:#f1f5f9; color:#475569; border:1.5px solid #e2e8f0; border-radius:8px; padding:0.7rem 1rem; font-size:0.9rem; font-weight:600; cursor:pointer;">
-                        Batal
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<script>
-    // Buka modal otomatis jika ada pesan session dari proses import
-    @if(session('warning') || session('error'))
-        document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('modal-import-excel').style.display = 'flex';
-        });
-    @endif
-
-    // Disable tombol saat submit agar tidak double-click
-    document.querySelector('#modal-import-excel form')?.addEventListener('submit', function() {
-        const btn = document.getElementById('btn-import-submit');
-        if (btn) {
-            btn.disabled = true;
-            btn.innerHTML = '<svg class="animate-spin" width="16" height="16" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-dasharray="30 10"/></svg> Memproses...';
-        }
-    });
-</script>
+@push('scripts')
+<script src="{{ asset('js/gudang/terima/terima-index.js') }}"></script>
+@endpush

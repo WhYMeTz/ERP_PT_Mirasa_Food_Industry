@@ -2,34 +2,11 @@
 
 @section('title', 'Detail Penerimaan Barang ' . $terima->terima_no . ' - ERP PT Mirasa')
 
+@push('styles')
+    <link rel="stylesheet" href="{{ asset('css/gudang/terima/terima-show.css') }}">
+@endpush
+
 @section('content')
-<style>
-    @media print {
-        header, nav, .btn, .no-print, .alert, footer {
-            display: none !important;
-        }
-        body, main {
-            padding: 0 !important;
-            margin: 0 !important;
-            background: #ffffff !important;
-        }
-        .card {
-            box-shadow: none !important;
-            border: 1px solid #000000 !important;
-            break-inside: avoid;
-        }
-        .print-only {
-            display: block !important;
-        }
-        table th, table td {
-            border: 1px solid #cbd5e1 !important;
-            color: #000000 !important;
-        }
-    }
-    .print-only {
-        display: none;
-    }
-</style>
 
 {{-- PRINT-ONLY HEADER --}}
 <div class="print-only" style="margin-bottom: 1.5rem; border-bottom: 2px solid #0f172a; padding-bottom: 0.75rem;">
@@ -57,14 +34,37 @@
             <span class="badge badge-success">Stok Masuk Gudang (GRN)</span>
         </div>
     </div>
-    <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+    <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; position: relative;">
         <a href="{{ route('gudang.terima.export-pdf', $terima->terima_id) }}" target="_blank" class="btn btn-secondary" style="background: #ffffff; border: 1.5px solid #dc2626; color: #dc2626; font-size: 0.85rem; font-weight: 700; padding: 0.55rem 0.95rem; box-shadow: 0 1px 2px rgba(0,0,0,0.03); display: inline-flex; align-items: center; gap: 0.35rem; transition: all 0.15s ease-in-out;" onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background='#ffffff'" title="Buka & Cetak Bukti Penerimaan Barang Dokumen PDF Resmi">
             <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
             <span>Cetak PDF (GRN)</span>
         </a>
-        <a href="{{ route('gudang.stok.index', ['gudang_id' => $terima->gudang_id]) }}" class="btn btn-secondary">
-            Lihat Stok di Gudang Ini &rarr;
-        </a>
+
+        {{-- Dropdown Aksi Show --}}
+        <button type="button" class="btn btn-secondary" onclick="toggleSmartActionDropdown(this, event, 'dropdown-show-terima')" style="background: #ffffff; border: 1.5px solid #cbd5e1; font-weight: 700; font-size: 0.85rem; padding: 0.55rem 0.85rem; display: inline-flex; align-items: center; gap: 0.35rem;">
+            <span>Aksi Dokumen</span>
+            <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+
+        <div id="dropdown-show-terima" class="action-dropdown-menu">
+            <a href="{{ route('gudang.stok.index', ['gudang_id' => $terima->gudang_id]) }}" class="action-dropdown-item">
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                <span>Lihat Stok di Gudang Ini</span>
+            </a>
+            @if ($terima->po_id)
+                <a href="{{ route('gudang.po.show', $terima->po_id) }}" class="action-dropdown-item">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                    <span>Buka Purchase Order Terkait</span>
+                </a>
+            @endif
+            @if (Auth::user()?->isSuperAdmin() || Auth::user()?->hasPermission('terima_create'))
+                <div class="action-dropdown-divider"></div>
+                <button type="button" class="action-dropdown-item danger-item" onclick="openDeleteTerimaModal({{ $terima->terima_id }}, '{{ $terima->terima_no }}', '{{ addslashes($terima->supplier?->supplier_nm ?? '') }}')">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    <span>Batalkan Penerimaan Ini</span>
+                </button>
+            @endif
+        </div>
     </div>
 </div>
 
@@ -337,4 +337,10 @@
         <span style="color: #64748b; font-size: 0.75rem; margin-top: 0.25rem; display: block;">Nama & Tanda Tangan</span>
     </div>
 </div>
+
+@include('gudang.terima.partials.modal-delete-confirm')
+
+@push('scripts')
+<script src="{{ asset('js/gudang/terima/terima-show.js') }}"></script>
+@endpush
 @endsection

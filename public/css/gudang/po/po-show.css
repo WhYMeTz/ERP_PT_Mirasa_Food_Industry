@@ -34,13 +34,50 @@
 }
 
 /* Dropdown Menu Aksi Fixed Smart Positioning */
-.show-action-menu-dropdown {
+.show-action-menu-dropdown,
+.action-dropdown-menu {
     position: fixed;
     background: #ffffff;
     border-radius: 8px;
     box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-    border: 1px solid #e2e8f0;
+    border: 1px solid #cbd5e1;
     width: 240px;
     padding: 0.35rem 0;
-    font-size: 0.825rem;
+    font-size: 0.8125rem;
+    z-index: 999999 !important;
 }
+
+.action-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.55rem 0.95rem;
+    color: #1e293b;
+    text-decoration: none;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    transition: background 0.12s ease, color 0.12s ease;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    width: 100%;
+    text-align: left;
+    box-sizing: border-box;
+}
+
+.action-dropdown-item:hover {
+    background: #f0fdf4;
+    color: #059669;
+}
+
+.action-dropdown-item.danger-item:hover {
+    background: #fef2f2;
+    color: #dc2626;
+}
+
+.action-dropdown-divider {
+    height: 1px;
+    background: #f1f5f9;
+    margin: 0.3rem 0;
+}
+

@@ -114,55 +114,96 @@ function clearAllQuickInputs() {
     });
 }
 
+let activeDropdownMenu = null;
+let activeTriggerButton = null;
+
 /**
  * Toggle dropdown Aksi per baris PO dengan Smart Viewport Positioning (Bebas Scroll Table)
  */
-function togglePoIndexDropdown(event, dropdownId) {
-    event.stopPropagation();
-    const btn = event.currentTarget;
-    const dropdown = document.getElementById(dropdownId);
-    if (!dropdown) return;
-    const isOpen = dropdown.style.display === 'block';
-
-    // Tutup seluruh dropdown lain yang sedang terbuka
-    document.querySelectorAll('.po-action-menu-dropdown').forEach(el => {
-        el.style.display = 'none';
-    });
-
-    if (!isOpen) {
-        dropdown.style.display = 'block';
-        dropdown.style.visibility = 'hidden';
-        dropdown.style.position = 'fixed';
-        dropdown.style.zIndex = '999999';
-
-        const rect = btn.getBoundingClientRect();
-        const dropdownHeight = dropdown.offsetHeight || 220;
-        const dropdownWidth = dropdown.offsetWidth || 220;
-        const spaceBelow = window.innerHeight - rect.bottom;
-
-        // Jika ruang di bawah sempit, buka ke ATAS (dropup)
-        if (spaceBelow < dropdownHeight && rect.top > dropdownHeight) {
-            dropdown.style.top = (rect.top - dropdownHeight - 4) + 'px';
-        } else {
-            dropdown.style.top = (rect.bottom + 4) + 'px';
-        }
-
-        let leftPos = rect.right - dropdownWidth;
-        if (leftPos < 10) leftPos = 10;
-        dropdown.style.left = leftPos + 'px';
-
-        dropdown.style.visibility = 'visible';
+function toggleSmartActionDropdown(button, event, menuId) {
+    if (event) {
+        event.stopPropagation();
+        event.preventDefault();
     }
+
+    const targetMenu = document.getElementById(menuId);
+    if (!targetMenu) return;
+
+    // Jika dropdown yang sama sedang terbuka, tutup
+    if (activeDropdownMenu === targetMenu && targetMenu.style.display === 'block') {
+        closeAllActionDropdowns();
+        return;
+    }
+
+    // Tutup dropdown lain yang sedang terbuka
+    closeAllActionDropdowns();
+
+    // Tampilkan menu dan hitung posisinya secara pintar (Fixed Viewport)
+    targetMenu.style.display = 'block';
+    activeDropdownMenu = targetMenu;
+    activeTriggerButton = button;
+    button.classList.add('active');
+
+    positionActionDropdown(button, targetMenu);
 }
+
+function positionActionDropdown(button, menu) {
+    if (!button || !menu) return;
+
+    const rect = button.getBoundingClientRect();
+    const menuWidth = menu.offsetWidth || 195;
+    const menuHeight = menu.offsetHeight || 150;
+    const viewportHeight = window.innerHeight;
+    const viewportWidth = window.innerWidth;
+
+    // Cek ruang vertikal: jika ruang bawah tidak cukup, letakkan di atas tombol (Dropup)
+    const spaceBelow = viewportHeight - rect.bottom;
+    const spaceAbove = rect.top;
+
+    if (spaceBelow < menuHeight && spaceAbove > spaceBelow) {
+        // Dropup (di atas tombol)
+        menu.style.top = `${rect.top - menuHeight - 4}px`;
+    } else {
+        // Dropdown (di bawah tombol)
+        menu.style.top = `${rect.bottom + 4}px`;
+    }
+
+    // Cek ruang horizontal: posisikan rata kanan tombol
+    let leftPos = rect.right - menuWidth;
+    if (leftPos < 8) {
+        leftPos = 8;
+    }
+    if (leftPos + menuWidth > viewportWidth - 8) {
+        leftPos = viewportWidth - menuWidth - 8;
+    }
+
+    menu.style.left = `${leftPos}px`;
+}
+
+function closeAllActionDropdowns() {
+    document.querySelectorAll('.action-dropdown-menu, .po-action-menu-dropdown').forEach(menu => {
+        menu.style.display = 'none';
+    });
+    if (activeTriggerButton) {
+        activeTriggerButton.classList.remove('active');
+        activeTriggerButton = null;
+    }
+    activeDropdownMenu = null;
+}
+
+// Fallback alias
+function togglePoIndexDropdown(event, dropdownId) {
+    const btn = event ? event.currentTarget : null;
+    toggleSmartActionDropdown(btn, event, dropdownId);
+}
+
 
 document.addEventListener('DOMContentLoaded', function () {
     // Escape key listener
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
             closeQuickReceiveIndexModal();
-            document.querySelectorAll('.po-action-menu-dropdown').forEach(el => {
-                el.style.display = 'none';
-            });
+            closeAllActionDropdowns();
         }
     });
 
@@ -217,22 +258,20 @@ document.addEventListener('DOMContentLoaded', function () {
 
 // Tutup dropdown saat scroll window/tabel atau resize
 window.addEventListener('scroll', function () {
-    document.querySelectorAll('.po-action-menu-dropdown').forEach(el => {
-        el.style.display = 'none';
-    });
+    closeAllActionDropdowns();
 }, true);
 
 window.addEventListener('resize', function () {
-    document.querySelectorAll('.po-action-menu-dropdown').forEach(el => {
-        el.style.display = 'none';
-    });
+    closeAllActionDropdowns();
 });
 
 // Tutup dropdown saat klik di luar
 document.addEventListener('click', function (e) {
-    if (!e.target.closest('.po-dropdown-trigger') && !e.target.closest('.po-action-menu-dropdown')) {
-        document.querySelectorAll('.po-action-menu-dropdown').forEach(el => {
-            el.style.display = 'none';
-        });
+    if (!e.target.closest('.btn-action-trigger') && 
+        !e.target.closest('.po-dropdown-trigger') && 
+        !e.target.closest('.action-dropdown-menu') && 
+        !e.target.closest('.po-action-menu-dropdown')) {
+        closeAllActionDropdowns();
     }
 });
+

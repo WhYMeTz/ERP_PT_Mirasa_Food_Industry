@@ -261,18 +261,11 @@ class PoController extends Controller
         $user = Auth::user();
         $po = $this->poService->getById($id);
 
-        // Cek apakah PO sudah ada penerimaan barang fisik
-        $hasReceived = $po->details->contains(fn($dtl) => (float) $dtl->terima_qty > 0);
-        if ($hasReceived && !$user?->isSuperAdmin()) {
-            return redirect()
-                ->route('gudang.po.show', $po->po_id)
-                ->with('error', "Purchase Order {$po->po_no} tidak dapat diedit karena sudah memiliki barang yang diterima di gudang (GRN).");
-        }
-
+        // Hanya status final (COMPLETED, CLOSED, CANCELLED) yang tidak dapat diedit sama sekali (kecuali Super Admin)
         if (in_array($po->status_cd, ['COMPLETED', 'CLOSED', 'CANCELLED']) && !$user?->isSuperAdmin()) {
             return redirect()
                 ->route('gudang.po.show', $po->po_id)
-                ->with('error', "Purchase Order {$po->po_no} dengan status {$po->status_cd} tidak dapat diedit.");
+                ->with('error', "Purchase Order {$po->po_no} dengan status {$po->status_cd} sudah selesai/ditutup dan tidak dapat diedit.");
         }
 
         $supplierList = MstSupplier::active()
@@ -306,20 +299,25 @@ class PoController extends Controller
     public function update(Request $request, int $id): RedirectResponse|JsonResponse
     {
         $request->validate([
-            'po_tgl'                => 'required|date',
-            'supplier_id'           => 'required|exists:mst_supplier,supplier_id',
-            'gudang_id'             => 'required|exists:mst_gudang,gudang_id',
-            'tgl_estimasi_datang'   => 'nullable|date',
-            'catatan_txt'           => 'nullable|string|max:1000',
-            'items'                 => 'required|array|min:1',
-            'items.*.barang_id'     => 'required|exists:mst_barang,barang_id',
-            'items.*.pesan_qty'     => 'required|numeric|min:0.01',
-            'items.*.harga_nominal' => 'required|numeric|min:0',
+            'po_tgl'                   => 'required|date',
+            'supplier_id'              => 'required|exists:mst_supplier,supplier_id',
+            'gudang_id'                => 'required|exists:mst_gudang,gudang_id',
+            'tgl_estimasi_datang'      => 'nullable|date',
+            'catatan_txt'              => 'nullable|string|max:1000',
+            'items'                    => 'required|array|min:1',
+            'items.*.podtl_id'         => 'nullable|integer',
+            'items.*.barang_id'        => 'required|exists:mst_barang,barang_id',
+            'items.*.pesan_qty'        => 'required|numeric|min:0.01',
+            'items.*.harga_nominal'    => 'required|numeric|min:0',
+            'items.*.diskon_persen'    => 'nullable|numeric|min:0|max:100',
+            'items.*.potongan_nominal' => 'nullable|numeric|min:0',
+            'items.*.ppn_tipe'         => 'nullable|string|in:NON_PPN,PPN_11',
+            'items.*.catatan_txt'      => 'nullable|string|max:255',
         ], [
-            'items.required'        => 'Minimal harus ada 1 item barang yang dipesan.',
-            'items.min'             => 'Minimal harus ada 1 item barang yang dipesan.',
-            'supplier_id.required'  => 'Supplier mitra wajib dipilih.',
-            'gudang_id.required'    => 'Gudang tujuan wajib dipilih.',
+            'items.required'           => 'Minimal harus ada 1 item barang yang dipesan.',
+            'items.min'                => 'Minimal harus ada 1 item barang yang dipesan.',
+            'supplier_id.required'     => 'Supplier mitra wajib dipilih.',
+            'gudang_id.required'       => 'Gudang tujuan wajib dipilih.',
         ]);
 
         try {

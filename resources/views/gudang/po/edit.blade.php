@@ -82,6 +82,10 @@
     </div>
 </div>
 
+@php
+    $hasAnyReceived = $po->details->contains(fn($dtl) => (float) $dtl->terima_qty > 0);
+@endphp
+
 @if ($errors->any())
     <div class="alert alert-danger" style="margin-bottom: 1.25rem;">
         <strong>Perhatian! Terdapat kesalahan pada input Anda:</strong>
@@ -90,6 +94,16 @@
                 <li>{{ $error }}</li>
             @endforeach
         </ul>
+    </div>
+@endif
+
+@if ($hasAnyReceived)
+    <div style="margin-bottom: 1.25rem; background: #fffbeb; border: 1.5px solid #fde68a; color: #92400e; border-radius: 8px; padding: 0.85rem 1.15rem; display: flex; gap: 0.75rem; align-items: flex-start; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">
+        <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink: 0; margin-top: 1px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <div style="font-size: 0.85rem; line-height: 1.45;">
+            <strong style="font-size: 0.9rem;">Informasi: Dokumen PO ini telah memiliki penerimaan barang di gudang (Status: {{ $po->status_cd }}).</strong><br>
+            Anda dapat memperbarui <strong>Diskon (%)</strong>, <strong>Potongan (Rp)</strong>, <strong>Harga Satuan</strong>, <strong>Catatan</strong>, serta <strong>menambah kuantitas atau item baru</strong>. Untuk item yang sudah diterima di gudang, komoditas barang tidak dapat diganti/dihapus, dan kuantitas pemesanan tidak boleh lebih kecil dari jumlah yang sudah diterima fisik.
+        </div>
     </div>
 @endif
 
@@ -119,14 +133,21 @@
 
                         <div class="form-group" style="margin-bottom: 0;">
                             <label for="supplier_id" class="form-label" style="font-weight: 600; font-size: 0.85rem;">Supplier Mitra <span style="color:#ef4444;">*</span></label>
-                            <select id="supplier_id" name="supplier_id" class="form-control" required>
-                                <option value="">-- Pilih Supplier Mitra --</option>
-                                @foreach ($supplierList as $sup)
-                                    <option value="{{ $sup->supplier_id }}" {{ old('supplier_id', $po->supplier_id) == $sup->supplier_id ? 'selected' : '' }}>
-                                        {{ $sup->supplier_nm }} ({{ $sup->supplier_cd }})
-                                    </option>
-                                @endforeach
-                            </select>
+                            @if($hasAnyReceived)
+                                <input type="hidden" name="supplier_id" value="{{ $po->supplier_id }}">
+                                <select class="form-control" disabled style="background: #f1f5f9; color: #475569; cursor: not-allowed;">
+                                    <option>{{ $po->supplier?->supplier_nm ?? 'Supplier' }} ({{ $po->supplier?->supplier_cd }}) - Terkunci (Sudah ada penerimaan)</option>
+                                </select>
+                            @else
+                                <select id="supplier_id" name="supplier_id" class="form-control" required>
+                                    <option value="">-- Pilih Supplier Mitra --</option>
+                                    @foreach ($supplierList as $sup)
+                                        <option value="{{ $sup->supplier_id }}" {{ old('supplier_id', $po->supplier_id) == $sup->supplier_id ? 'selected' : '' }}>
+                                            {{ $sup->supplier_nm }} ({{ $sup->supplier_cd }})
+                                        </option>
+                                    @endforeach
+                                </select>
+                            @endif
                         </div>
 
                         <div class="form-group" style="margin-bottom: 0;">
@@ -173,7 +194,7 @@
                             <tr>
                                 <th style="width: 35px; text-align: center;">No</th>
                                 <th style="min-width: 220px; text-align: left;">Bahan Baku / Komoditas <span style="color:#ef4444;">*</span></th>
-                                <th style="width: 105px; text-align: right;">Kuantitas <span style="color:#ef4444;">*</span></th>
+                                <th style="width: 110px; text-align: right;">Kuantitas <span style="color:#ef4444;">*</span></th>
                                 <th style="width: 60px; text-align: center;">Satuan</th>
                                 <th style="width: 125px; text-align: right;">Harga Satuan (Rp)</th>
                                 <th style="width: 75px; text-align: right;">Diskon %</th>
@@ -186,25 +207,44 @@
                         </thead>
                         <tbody id="tbodyPoItems">
                             @foreach ($po->details as $idx => $dtl)
+                                @php
+                                    $isItemReceived = (float) $dtl->terima_qty > 0;
+                                @endphp
                                 <tr class="po-item-row" data-row-index="{{ $idx }}">
                                     <td style="text-align: center; font-weight: 600; color: #64748b;" class="row-num">
                                         {{ $idx + 1 }}
                                     </td>
                                     <td>
-                                        <select name="items[{{ $idx }}][barang_id]" class="form-control item-barang-select" required onchange="handleBarangChange(this)">
-                                            <option value="">-- Pilih Barang --</option>
-                                            @foreach ($barangList as $b)
-                                                <option value="{{ $b->barang_id }}" 
-                                                        data-satuan="{{ $b->satuanDasar?->satuan_cd ?? 'KG' }}"
-                                                        data-harga="{{ (float) $b->harga_beli_standar }}"
-                                                        {{ $dtl->barang_id == $b->barang_id ? 'selected' : '' }}>
-                                                    {{ $b->barang_nm }} ({{ $b->barang_cd }})
-                                                </option>
-                                            @endforeach
-                                        </select>
+                                        <input type="hidden" name="items[{{ $idx }}][podtl_id]" value="{{ $dtl->podtl_id }}">
+                                        @if($isItemReceived)
+                                            <input type="hidden" name="items[{{ $idx }}][barang_id]" value="{{ $dtl->barang_id }}">
+                                            <div style="font-weight: 600; color: #1e293b; font-size: 0.825rem;">
+                                                {{ $dtl->barang?->barang_nm }} <span style="color:#64748b; font-size:0.75rem;">({{ $dtl->barang?->barang_cd }})</span>
+                                            </div>
+                                            <div style="margin-top: 3px;">
+                                                <span class="badge" style="background: #fef3c7; color: #92400e; border: 1px solid #fde68a; font-size: 0.7rem; font-weight: 700; padding: 2px 6px;">
+                                                    Diterima: {{ (float) $dtl->terima_qty }} {{ $dtl->barang?->satuanDasar?->satuan_cd ?? 'KG' }}
+                                                </span>
+                                            </div>
+                                        @else
+                                            <select name="items[{{ $idx }}][barang_id]" class="form-control item-barang-select" required onchange="handleBarangChange(this)">
+                                                <option value="">-- Pilih Barang --</option>
+                                                @foreach ($barangList as $b)
+                                                    <option value="{{ $b->barang_id }}" 
+                                                            data-satuan="{{ $b->satuanDasar?->satuan_cd ?? 'KG' }}"
+                                                            data-harga="{{ (float) $b->harga_beli_standar }}"
+                                                            {{ $dtl->barang_id == $b->barang_id ? 'selected' : '' }}>
+                                                        {{ $b->barang_nm }} ({{ $b->barang_cd }})
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                        @endif
                                     </td>
                                     <td>
-                                        <input type="number" step="any" min="0.01" name="items[{{ $idx }}][pesan_qty]" class="form-control input-qty" value="{{ (float) $dtl->pesan_qty }}" required style="text-align: right; font-weight: 700;" oninput="calculateRow(this)">
+                                        <input type="number" step="any" min="{{ $isItemReceived ? (float) $dtl->terima_qty : 0.01 }}" name="items[{{ $idx }}][pesan_qty]" class="form-control input-qty" value="{{ (float) $dtl->pesan_qty }}" required style="text-align: right; font-weight: 700;" oninput="calculateRow(this)">
+                                        @if($isItemReceived)
+                                            <div style="font-size: 0.675rem; color: #b45309; font-weight: 600; text-align: right; margin-top: 2px;">Min: {{ (float) $dtl->terima_qty }}</div>
+                                        @endif
                                     </td>
                                     <td style="text-align: center; font-weight: 600; color: #475569; font-size: 0.8rem;" class="satuan-badge">
                                         {{ $dtl->barang?->satuanDasar?->satuan_cd ?? 'KG' }}
@@ -231,9 +271,15 @@
                                         <input type="text" name="items[{{ $idx }}][catatan_txt]" class="form-control" value="{{ $dtl->catatan_txt }}" placeholder="Catatan spesifikasi...">
                                     </td>
                                     <td style="text-align: center;">
-                                        <button type="button" onclick="removeRow(this)" class="btn btn-sm btn-danger" style="padding: 0.2rem 0.45rem; font-size: 0.75rem; border-radius: 4px;" title="Hapus Baris">
-                                            &times;
-                                        </button>
+                                        @if($isItemReceived)
+                                            <button type="button" class="btn btn-sm btn-secondary" disabled style="padding: 0.25rem 0.45rem; font-size: 0.75rem; border-radius: 4px; opacity: 0.6; cursor: not-allowed;" title="Item sudah diterima di gudang, tidak dapat dihapus.">
+                                                <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                                            </button>
+                                        @else
+                                            <button type="button" onclick="removeRow(this)" class="btn btn-sm btn-danger" style="padding: 0.2rem 0.45rem; font-size: 0.75rem; border-radius: 4px;" title="Hapus Baris">
+                                                &times;
+                                            </button>
+                                        @endif
                                     </td>
                                 </tr>
                             @endforeach
@@ -302,6 +348,7 @@
             __NUM__
         </td>
         <td>
+            <input type="hidden" name="items[__INDEX__][podtl_id]" value="">
             <select name="items[__INDEX__][barang_id]" class="form-control item-barang-select" required onchange="handleBarangChange(this)">
                 <option value="">-- Pilih Barang --</option>
                 @foreach ($barangList as $b)

@@ -239,22 +239,45 @@ class PoService
     }
 
     /**
-     * Memperbarui dokumen PO jika status masih DRAFT atau APPROVED (belum ada penerimaan fisik).
+     * Memperbarui dokumen PO (termasuk status PARTIAL / penerimaan bertahap).
      */
     public function update(int $id, array $data): DatPoHdr
     {
         return DB::transaction(function () use ($id, $data) {
-            $po = DatPoHdr::with('details')->findOrFail($id);
+            $po = DatPoHdr::with('details.barang')->findOrFail($id);
 
-            // Cek apakah sudah ada barang yang diterima
-            $sudahAdaPenerimaan = $po->details->contains(fn($dtl) => (float) $dtl->terima_qty > 0);
-            if ($sudahAdaPenerimaan) {
-                throw new Exception("PO tidak dapat diedit karena sebagian atau seluruh barang sudah diterima di gudang.");
+            // Validasi status dokumen
+            if (in_array($po->status_cd, ['COMPLETED', 'CLOSED', 'CANCELLED'])) {
+                $user = auth()->user();
+                if (!$user || !$user->isSuperAdmin()) {
+                    throw new Exception("PO {$po->po_no} dengan status {$po->status_cd} tidak dapat diedit.");
+                }
             }
 
             $items = $data['items'] ?? [];
             if (empty($items)) {
                 throw new Exception("Minimal harus ada 1 item barang dalam Purchase Order.");
+            }
+
+            // Kumpulkan ID detail yang dikirim dari form
+            $submittedDtlIds = [];
+            foreach ($items as $item) {
+                if (!empty($item['podtl_id'])) {
+                    $submittedDtlIds[] = (int) $item['podtl_id'];
+                }
+            }
+
+            // Validasi item yang sudah ada penerimaan fisik di gudang (terima_qty > 0):
+            // 1. Tidak boleh dihapus dari PO
+            // 2. Qty pesan tidak boleh lebih kecil dari terima_qty
+            foreach ($po->details as $existingDtl) {
+                $terimaQty = (float) $existingDtl->terima_qty;
+                if ($terimaQty > 0) {
+                    if (!in_array($existingDtl->podtl_id, $submittedDtlIds)) {
+                        $barangNm = $existingDtl->barang?->barang_nm ?? 'Item #' . $existingDtl->barang_id;
+                        throw new Exception("Barang '{$barangNm}' sudah diterima di gudang sebanyak {$terimaQty} dan tidak dapat dihapus dari Purchase Order.");
+                    }
+                }
             }
 
             $subtotalBruto = 0;
@@ -263,47 +286,24 @@ class PoService
             $totalDpp = 0;
             $totalPpn = 0;
             $grandTotal = 0;
+            $totalPesanQtyAll = 0;
+            $totalTerimaQtyAll = 0;
+
+            $existingDetailsById = $po->details->keyBy('podtl_id');
+            $processedDtlIds = [];
 
             foreach ($items as $item) {
+                $dtlId = !empty($item['podtl_id']) ? (int) $item['podtl_id'] : null;
+                $existingDtl = ($dtlId && $existingDetailsById->has($dtlId)) ? $existingDetailsById->get($dtlId) : null;
+
+                $terimaQty = $existingDtl ? (float) $existingDtl->terima_qty : 0;
                 $qty = (float) ($item['pesan_qty'] ?? 0);
-                $harga = (float) ($item['harga_nominal'] ?? 0);
-                $diskonPersen = (float) ($item['diskon_persen'] ?? 0);
-                $diskonUnit = $harga * ($diskonPersen / 100);
-                $hargaNetto = max(0, $harga - $diskonUnit);
-                $potonganNominal = (float) ($item['potongan_nominal'] ?? 0);
-                $subtotalNetto = max(0, ($qty * $hargaNetto) - $potonganNominal);
-                $ppnTipe = ($item['ppn_tipe'] ?? 'NON_PPN') === 'PPN_11' ? 'PPN_11' : 'NON_PPN';
-                $ppnNominal = $ppnTipe === 'PPN_11' ? round($subtotalNetto * 0.11, 4) : 0;
-                $subtotalTagihan = $subtotalNetto + $ppnNominal;
 
-                $subtotalBruto += ($qty * $harga);
-                $diskonTotal += ($qty * $diskonUnit);
-                $totalPotongan += $potonganNominal;
-                $totalDpp += $subtotalNetto;
-                $totalPpn += $ppnNominal;
-                $grandTotal += $subtotalTagihan;
-            }
+                if ($existingDtl && $qty < $terimaQty) {
+                    $barangNm = $existingDtl->barang?->barang_nm ?? 'Item #' . $existingDtl->barang_id;
+                    throw new Exception("Kuantitas pesan untuk '{$barangNm}' ({$qty}) tidak boleh lebih kecil dari kuantitas yang sudah diterima di gudang ({$terimaQty}).");
+                }
 
-            $po->update([
-                'po_tgl'              => $data['po_tgl'] ?? $po->po_tgl,
-                'tgl_estimasi_datang' => $data['tgl_estimasi_datang'] ?? $po->tgl_estimasi_datang,
-                'supplier_id'         => $data['supplier_id'] ?? $po->supplier_id,
-                'gudang_id'           => $data['gudang_id'] ?? $po->gudang_id,
-                'subtotal_bruto'      => $subtotalBruto,
-                'diskon_total'        => $diskonTotal,
-                'potongan_nominal'    => $totalPotongan,
-                'dpp_nominal'         => $totalDpp,
-                'ppn_nominal'         => $totalPpn,
-                'total_nominal'       => $grandTotal,
-                'total_tagihan'       => $grandTotal,
-                'catatan_txt'         => $data['catatan_txt'] ?? $po->catatan_txt,
-            ]);
-
-            // Hapus detail lama dan ganti dengan yang baru
-            DatPoDtl::where('po_id', $po->po_id)->delete();
-
-            foreach ($items as $item) {
-                $qty = (float) ($item['pesan_qty'] ?? 0);
                 $harga = (float) ($item['harga_nominal'] ?? 0);
                 $diskonPersen = (float) ($item['diskon_persen'] ?? 0);
                 $diskonUnit = $harga * ($diskonPersen / 100);
@@ -315,9 +315,22 @@ class PoService
                 $ppnNominal = $ppnTipe === 'PPN_11' ? round($subtotalNetto * 0.11, 4) : 0;
                 $subtotalTagihan = $subtotalNetto + $ppnNominal;
 
-                DatPoDtl::create([
+                $subtotalBruto += ($qty * $harga);
+                $diskonTotal += ($qty * $diskonUnit);
+                $totalPotongan += $potonganNominal;
+                $totalDpp += $subtotalNetto;
+                $totalPpn += $ppnNominal;
+                $grandTotal += $subtotalTagihan;
+
+                $totalPesanQtyAll += $qty;
+                $totalTerimaQtyAll += $terimaQty;
+
+                // Jika barang sudah diterima di gudang, barang_id tidak boleh diubah
+                $barangId = ($existingDtl && $terimaQty > 0) ? $existingDtl->barang_id : (int) $item['barang_id'];
+
+                $payload = [
                     'po_id'            => $po->po_id,
-                    'barang_id'        => $item['barang_id'],
+                    'barang_id'        => $barangId,
                     'pesan_qty'        => $qty,
                     'harga_nominal'    => $harga,
                     'diskon_persen'    => $diskonPersen,
@@ -330,12 +343,68 @@ class PoService
                     'ppn_nominal'      => $ppnNominal,
                     'subtotal_nominal' => $subtotalTagihan,
                     'subtotal_tagihan' => $subtotalTagihan,
-                    'terima_qty'       => 0,
                     'catatan_txt'      => $item['catatan_txt'] ?? null,
-                ]);
+                ];
+
+                if ($existingDtl) {
+                    $existingDtl->update($payload);
+                    $processedDtlIds[] = $existingDtl->podtl_id;
+                } else {
+                    $payload['terima_qty'] = 0;
+                    $newDtl = DatPoDtl::create($payload);
+                    $processedDtlIds[] = $newDtl->podtl_id;
+                }
+
+                // Update harga beli acuan di Master Barang
+                if ($harga > 0) {
+                    $barang = MstBarang::find($barangId);
+                    if ($barang && (float) $barang->harga_beli_standar != $harga) {
+                        $barang->harga_beli_standar = $harga;
+                        $barang->save();
+                    }
+                }
             }
 
-            return $po->fresh(['details.barang']);
+            // Hapus detail lama yang tidak dikirim dan terima_qty == 0
+            foreach ($po->details as $oldDtl) {
+                if (!in_array($oldDtl->podtl_id, $processedDtlIds) && (float) $oldDtl->terima_qty == 0) {
+                    $oldDtl->delete();
+                }
+            }
+
+            // Evaluasi status_cd dokumen PO
+            $newStatusCd = $po->status_cd;
+            if ($totalTerimaQtyAll > 0) {
+                if ($totalTerimaQtyAll >= $totalPesanQtyAll) {
+                    $newStatusCd = 'COMPLETED';
+                } else {
+                    $newStatusCd = 'PARTIAL';
+                }
+            } elseif ($po->status_cd === 'DRAFT') {
+                $newStatusCd = 'DRAFT';
+            } else {
+                $newStatusCd = 'APPROVED';
+            }
+
+            $hasAnyReceived = $po->details->contains(fn($dtl) => (float) $dtl->terima_qty > 0);
+
+            $po->update([
+                'po_tgl'              => $data['po_tgl'] ?? $po->po_tgl,
+                'tgl_estimasi_datang' => $data['tgl_estimasi_datang'] ?? $po->tgl_estimasi_datang,
+                'supplier_id'         => $hasAnyReceived ? $po->supplier_id : ($data['supplier_id'] ?? $po->supplier_id),
+                'gudang_id'           => $data['gudang_id'] ?? $po->gudang_id,
+                'status_cd'           => $newStatusCd,
+                'subtotal_bruto'      => $subtotalBruto,
+                'diskon_total'        => $diskonTotal,
+                'potongan_nominal'    => $totalPotongan,
+                'dpp_nominal'         => $totalDpp,
+                'ppn_nominal'         => $totalPpn,
+                'total_nominal'       => $grandTotal,
+                'total_tagihan'       => $grandTotal,
+                'catatan_txt'         => $data['catatan_txt'] ?? $po->catatan_txt,
+            ]);
+
+            return $po->fresh(['supplier', 'details.barang']);
         });
     }
 

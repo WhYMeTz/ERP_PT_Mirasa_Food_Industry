@@ -431,6 +431,34 @@ class User extends Authenticatable
         return $this->isSuperAdmin() || $this->canDo('master_supplier_delete') || $this->canDo('master_supplier_manage');
     }
 
+    public function canAccessCustomer(): bool
+    {
+        return $this->isSuperAdmin() || $this->canDo('master_customer_view') || $this->canDo('master_customer_manage');
+    }
+
+    public function canManageCustomer(): bool
+    {
+        return $this->isSuperAdmin() 
+            || $this->canDo('master_customer_manage')
+            || $this->canDo('master_customer_create')
+            || $this->canDo('master_customer_edit');
+    }
+
+    public function canCreateMasterCustomer(): bool
+    {
+        return $this->isSuperAdmin() || $this->canDo('master_customer_create') || $this->canDo('master_customer_manage');
+    }
+
+    public function canEditMasterCustomer(): bool
+    {
+        return $this->isSuperAdmin() || $this->canDo('master_customer_edit') || $this->canDo('master_customer_manage');
+    }
+
+    public function canDeleteMasterCustomer(): bool
+    {
+        return $this->isSuperAdmin() || $this->canDo('master_customer_delete') || $this->canDo('master_customer_manage');
+    }
+
     public function canManageGudang(): bool
     {
         return $this->isSuperAdmin() || $this->canDo('master_gudang_manage');

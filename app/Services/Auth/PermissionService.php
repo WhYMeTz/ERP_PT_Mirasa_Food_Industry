@@ -59,6 +59,11 @@ class PermissionService
                     'desc'   => 'Mengubah data mitra pemasok, kontak telepon, alamat, dan jenis supplier.',
                     'action' => 'EDIT',
                 ],
+                'master_customer_edit' => [
+                    'label'  => 'Edit & Koreksi Master Customer',
+                    'desc'   => 'Mengubah data klien B2B, kontak PIC, dan alamat pengiriman customer.',
+                    'action' => 'EDIT',
+                ],
             ],
         ],
         'AKSI_DELETE' => [
@@ -105,6 +110,11 @@ class PermissionService
                 'master_supplier_delete' => [
                     'label'  => 'Hapus / Nonaktifkan Master Supplier',
                     'desc'   => 'Menonaktifkan mitra pemasok agar tidak dapat dipilih dalam pembuatan PO baru.',
+                    'action' => 'DELETE',
+                ],
+                'master_customer_delete' => [
+                    'label'  => 'Hapus / Nonaktifkan Master Customer',
+                    'desc'   => 'Menonaktifkan klien / customer dari sistem penjualan.',
                     'action' => 'DELETE',
                 ],
             ],
@@ -168,6 +178,11 @@ class PermissionService
                 'master_supplier_create' => [
                     'label'  => 'Tambah Master Supplier Baru',
                     'desc'   => 'Mendaftarkan mitra supplier petani singkong atau vendor industri baru.',
+                    'action' => 'CREATE',
+                ],
+                'master_customer_create' => [
+                    'label'  => 'Tambah Master Customer Baru',
+                    'desc'   => 'Mendaftarkan klien / customer pembeli B2B baru.',
                     'action' => 'CREATE',
                 ],
             ],
@@ -235,6 +250,8 @@ class PermissionService
                 'master_barang_manage'   => ['label' => 'Kelola Master Barang', 'desc' => 'Menambah barang baru, mengatur batas minimum stok & harga beli.', 'action' => 'MANAGE'],
                 'master_supplier_view'   => ['label' => 'Lihat Master Supplier', 'desc' => 'Melihat daftar mitra supplier petani singkong & vendor.', 'action' => 'VIEW'],
                 'master_supplier_manage' => ['label' => 'Kelola Master Supplier', 'desc' => 'Menambah dan mengedit mitra rekanan supplier.', 'action' => 'MANAGE'],
+                'master_customer_view'   => ['label' => 'Lihat Master Customer', 'desc' => 'Melihat daftar klien B2B dan distributor pembeli.', 'action' => 'VIEW'],
+                'master_customer_manage' => ['label' => 'Kelola Master Customer', 'desc' => 'Menambah dan mengedit profil klien customer B2B.', 'action' => 'MANAGE'],
                 'master_gudang_manage'   => ['label' => 'Kelola Gudang & Satuan', 'desc' => 'Menambah dan mengedit daftar gudang unit dan satuan barang.', 'action' => 'MANAGE'],
                 'user_manage'            => ['label' => 'Manajemen Pengguna & Hak Akses', 'desc' => 'Mengelola user login, password, dan mengubah hak akses peran.', 'action' => 'MANAGE'],
             ],

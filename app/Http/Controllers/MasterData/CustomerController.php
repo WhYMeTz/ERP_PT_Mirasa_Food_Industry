@@ -21,6 +21,8 @@ class CustomerController extends Controller
 
     public function index(Request $request): View|JsonResponse
     {
+        abort_unless($request->user()->canAccessCustomer(), 403, 'Anda tidak memiliki hak akses untuk melihat master customer.');
+
         $perPage = (int) $request->input('per_page', 15);
         $search = $request->input('search');
 
@@ -41,6 +43,8 @@ class CustomerController extends Controller
 
     public function store(StoreCustomerRequest $request): RedirectResponse|JsonResponse
     {
+        abort_unless($request->user()->canCreateMasterCustomer(), 403, 'Anda tidak memiliki hak akses untuk menambah master customer.');
+
         $customer = $this->customerService->store($request->validated());
 
         if ($request->wantsJson()) {
@@ -58,6 +62,8 @@ class CustomerController extends Controller
 
     public function update(UpdateCustomerRequest $request, int $id): RedirectResponse|JsonResponse
     {
+        abort_unless($request->user()->canEditMasterCustomer(), 403, 'Anda tidak memiliki hak akses untuk mengedit master customer.');
+
         $customer = $this->customerService->update($id, $request->validated());
 
         if ($request->wantsJson()) {
@@ -75,12 +81,15 @@ class CustomerController extends Controller
 
     public function destroy(Request $request, int $id): RedirectResponse|JsonResponse
     {
+        abort_unless($request->user()->canDeleteMasterCustomer(), 403, 'Anda tidak memiliki hak akses untuk menonaktifkan master customer.');
+
         $this->customerService->delete($id);
 
         if ($request->wantsJson()) {
             return response()->json([
                 'status'  => 'success',
                 'message' => 'Data customer berhasil dinonaktifkan.',
+                'data'    => null,
             ]);
         }
 

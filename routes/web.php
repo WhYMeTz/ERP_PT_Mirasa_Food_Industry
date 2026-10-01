@@ -72,10 +72,8 @@ Route::middleware('auth')->group(function () {
         ->names('master.supplier')
         ->middleware('role:SUPERADMIN,PURCHASING');
 
-    // Master Customer & Karyawan (Khusus Superadmin)
-    Route::resource('master-customer', CustomerController::class)
-        ->names('master.customer')
-        ->middleware('role:SUPERADMIN');
+    // Master Customer & Karyawan
+    Route::resource('master-customer', CustomerController::class)->names('master.customer');
     Route::resource('master-karyawan', KaryawanController::class)
         ->names('master.karyawan')
         ->middleware('role:SUPERADMIN');

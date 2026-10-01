@@ -82,6 +82,34 @@
         box-shadow: 0 1px 3px rgba(5, 150, 105, 0.3);
     }
 
+    .qc-filter-chip {
+        background: #ffffff;
+        border: 1px solid #cbd5e1;
+        color: #475569;
+        font-size: 0.725rem;
+        font-weight: 600;
+        padding: 0.25rem 0.65rem;
+        border-radius: 9999px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        line-height: 1.2;
+        white-space: nowrap;
+    }
+    .qc-filter-chip:hover {
+        background: #f1f5f9;
+        color: #0f172a;
+        border-color: #94a3b8;
+    }
+    .qc-filter-chip.active {
+        background: #0284c7;
+        border-color: #0284c7;
+        color: #ffffff;
+        box-shadow: 0 1px 3px rgba(2, 132, 199, 0.3);
+    }
+
     .category-segmented-control {
         display: inline-flex;
         background: #f1f5f9;
@@ -800,21 +828,74 @@
 {{-- MODAL PILIH TIKET QC INBOUND (STATUS SIAP_GUDANG)                          --}}
 {{-- ========================================================================= --}}
 <div id="modalPilihQc" class="modal-backdrop">
-    <div class="modal-dialog" style="max-width: 920px; max-height: 90vh; display: flex; flex-direction: column;">
+    <div class="modal-dialog" style="max-width: 980px; max-height: 90vh; display: flex; flex-direction: column;">
         <div class="modal-header" style="background: #ffffff; border-bottom: 1px solid #e2e8f0; padding: 0.85rem 1.25rem;">
             <div style="display: flex; align-items: center; gap: 0.65rem;">
-                <div style="width: 32px; height: 32px; border-radius: 8px; background: #e0f2fe; color: #0284c7; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;">
+                <div style="width: 34px; height: 34px; border-radius: 8px; background: #e0f2fe; color: #0284c7; display: flex; align-items: center; justify-content: center; font-size: 1.15rem; flex-shrink: 0;">
                     🔬
                 </div>
                 <div>
-                    <h2 class="modal-title" style="font-size: 1.1rem; font-weight: 700; color: #0f172a; margin: 0;">Tiket QC Inbound (Siap Terima di Gudang)</h2>
+                    <h2 class="modal-title" style="font-size: 1.05rem; font-weight: 700; color: #0f172a; margin: 0;">Tiket QC Inbound (Siap Terima di Gudang)</h2>
                     <p style="color: #64748b; font-size: 0.8rem; margin: 0.2rem 0 0 0;">Pilih tiket hasil inspeksi mutu lapangan untuk ditarik otomatis ke formulir penerimaan barang.</p>
                 </div>
             </div>
             <button type="button" class="modal-close" onclick="closeModal('modalPilihQc')">&times;</button>
         </div>
 
-        <div style="flex: 1; overflow-y: auto; padding: 1rem 1.25rem; min-height: 250px; max-height: 55vh;">
+        {{-- TOOLBAR FILTER & CARI TIKET QC --}}
+        <div style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0.75rem 1.25rem; display: flex; flex-direction: column; gap: 0.6rem;">
+            {{-- Baris 1: Pencarian Cepat, Filter PO, dan Status Counter --}}
+            <div style="display: flex; gap: 0.65rem; align-items: center; flex-wrap: wrap;">
+                <div style="position: relative; flex: 1; min-width: 250px;">
+                    <span style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 0.85rem; color: #94a3b8; pointer-events: none;">🔍</span>
+                    <input type="text" id="qcSearchInput" class="form-control" placeholder="Cari No. Tiket QC, Supplier, Barang, No PO, Truk, Sopir..." style="padding-left: 2.2rem; padding-right: 2rem; font-size: 0.825rem; height: 34px; border-radius: 6px;" oninput="filterQcTickets()">
+                    <button type="button" id="btnQcSearchClear" onclick="clearQcSearch()" style="display: none; position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #94a3b8; font-size: 0.9rem; cursor: pointer; padding: 2px 4px;" title="Hapus pencarian">&times;</button>
+                </div>
+
+                <div style="width: 175px;">
+                    <select id="qcFilterPo" class="form-control" style="font-size: 0.8rem; height: 34px; border-radius: 6px;" onchange="filterQcTickets()">
+                        <option value="">Semua Status PO</option>
+                        <option value="PO">Dengan No. PO</option>
+                        <option value="NON_PO">Non-PO (Langsung)</option>
+                    </select>
+                </div>
+
+                <div style="font-size: 0.775rem; color: #475569; font-weight: 600; white-space: nowrap;" id="qcResultCount">
+                    Memuat...
+                </div>
+            </div>
+
+            {{-- Baris 2: Filter Pills Kategori Komoditas --}}
+            <div style="display: flex; gap: 0.35rem; align-items: center; overflow-x: auto; padding-bottom: 2px;">
+                <span style="font-size: 0.725rem; font-weight: 700; color: #64748b; margin-right: 0.25rem; text-transform: uppercase;">Komoditas:</span>
+                <button type="button" class="qc-filter-chip active" data-cat="" onclick="setQcCategoryFilter('', this)">
+                    Semua
+                </button>
+                <button type="button" class="qc-filter-chip" data-cat="SINGKONG" onclick="setQcCategoryFilter('SINGKONG', this)">
+                    🥔 Singkong
+                </button>
+                <button type="button" class="qc-filter-chip" data-cat="MINYAK" onclick="setQcCategoryFilter('MINYAK', this)">
+                    🛢️ Minyak Goreng
+                </button>
+                <button type="button" class="qc-filter-chip" data-cat="PLASTIK" onclick="setQcCategoryFilter('PLASTIK', this)">
+                    🛍️ Plastik Kemasan
+                </button>
+                <button type="button" class="qc-filter-chip" data-cat="KARTON" onclick="setQcCategoryFilter('KARTON', this)">
+                    📦 Karton Box
+                </button>
+                <button type="button" class="qc-filter-chip" data-cat="MSG" onclick="setQcCategoryFilter('MSG', this)">
+                    🧂 MSG
+                </button>
+                <button type="button" class="qc-filter-chip" data-cat="GARAM" onclick="setQcCategoryFilter('GARAM', this)">
+                    🧂 Garam
+                </button>
+                <button type="button" class="qc-filter-chip" data-cat="PERENYAH" onclick="setQcCategoryFilter('PERENYAH', this)">
+                    ✨ Perenyah
+                </button>
+            </div>
+        </div>
+
+        <div style="flex: 1; overflow-y: auto; padding: 0.85rem 1.25rem; min-height: 250px; max-height: 55vh;" class="excel-table-scroll">
             <div id="qcModalLoading" style="text-align: center; padding: 2.5rem; color: #64748b;">
                 <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">⏳</div>
                 <div>Memuat daftar tiket QC yang siap diterima...</div>
@@ -828,13 +909,13 @@
                 <thead>
                     <tr>
                         <th style="width: 35px; text-align: center;">No</th>
-                        <th style="width: 130px; text-align: left;">No. Tiket QC</th>
-                        <th style="width: 120px; text-align: left;">Waktu Uji</th>
-                        <th style="text-align: left;">Supplier &amp; PO</th>
-                        <th style="width: 120px; text-align: left;">Truk / Sopir</th>
+                        <th style="width: 135px; text-align: left;">No. Tiket QC</th>
+                        <th style="width: 115px; text-align: left;">Waktu Uji</th>
+                        <th style="text-align: left;">Supplier &amp; Komoditas / PO</th>
+                        <th style="width: 130px; text-align: left;">Truk / Sopir</th>
                         <th style="width: 90px; text-align: right;">Gross (KG)</th>
-                        <th style="width: 90px; text-align: right; background: #064e3b; color: #ffffff;">Netto (KG)</th>
-                        <th style="width: 80px; text-align: center;">Aksi</th>
+                        <th style="width: 95px; text-align: right; background: #064e3b; color: #ffffff;">Netto (KG)</th>
+                        <th style="width: 75px; text-align: center;">Aksi</th>
                     </tr>
                 </thead>
                 <tbody id="qcModalTbody">
@@ -842,7 +923,10 @@
             </table>
         </div>
 
-        <div class="modal-footer" style="background: #f8fafc; border-top: 1px solid #e2e8f0; padding: 0.65rem 1.25rem; display: flex; justify-content: flex-end;">
+        <div class="modal-footer" style="background: #f8fafc; border-top: 1px solid #e2e8f0; padding: 0.65rem 1.25rem; display: flex; justify-content: space-between; align-items: center;">
+            <div style="font-size: 0.75rem; color: #64748b;">
+                💡 <em>Klik pada baris atau tombol <strong>Pilih</strong> untuk memuat data ke formulir penerimaan.</em>
+            </div>
             <button type="button" class="btn btn-secondary btn-sm" onclick="closeModal('modalPilihQc')">Tutup</button>
         </div>
     </div>
@@ -1717,6 +1801,8 @@
     // 4. INTEGRASI TIKET QC INBOUND (SAMPLING KADAR AIR, REFRAKSI & TIMBANGAN)
     // =========================================================================
     let currentLoadedQcTicket = null;
+    let allQcTickets = [];
+    let activeQcCategory = '';
 
     function openQcModal() {
         openModal('modalPilihQc');
@@ -1724,60 +1810,201 @@
         const empty = document.getElementById('qcModalEmpty');
         const table = document.getElementById('qcModalTable');
         const tbody = document.getElementById('qcModalTbody');
+        const searchInput = document.getElementById('qcSearchInput');
+        const filterPo = document.getElementById('qcFilterPo');
+        const counter = document.getElementById('qcResultCount');
+
+        if (searchInput) searchInput.value = '';
+        if (filterPo) filterPo.value = '';
+        const btnClear = document.getElementById('btnQcSearchClear');
+        if (btnClear) btnClear.style.display = 'none';
+
+        activeQcCategory = '';
+        document.querySelectorAll('.qc-filter-chip').forEach(btn => {
+            btn.classList.toggle('active', btn.getAttribute('data-cat') === '');
+        });
 
         if (loading) loading.style.display = 'block';
         if (empty) empty.style.display = 'none';
         if (table) table.style.display = 'none';
         if (tbody) tbody.innerHTML = '';
+        if (counter) counter.innerText = 'Memuat...';
 
         fetch("{{ route('qc.inbound.siap_gudang') }}")
             .then(res => res.json())
             .then(json => {
                 if (loading) loading.style.display = 'none';
-                if (!json.tickets || json.tickets.length === 0) {
+                allQcTickets = json.tickets || [];
+
+                if (allQcTickets.length === 0) {
                     if (empty) empty.style.display = 'block';
+                    if (counter) counter.innerText = '0 tiket';
                     return;
                 }
 
                 if (table) table.style.display = 'table';
-                let html = '';
-                json.tickets.forEach((t, idx) => {
-                    html += `
-                        <tr class="sup-modal-row" onclick="applyQcTicket(${t.qc_id}); closeModal('modalPilihQc');" style="cursor: pointer;">
-                            <td style="text-align: center; color: #64748b; font-size: 0.775rem;">${idx + 1}</td>
-                            <td>
-                                <strong style="color: #0284c7; font-family: monospace; font-size: 0.85rem;">${escapeHtml(t.qc_no)}</strong>
-                            </td>
-                            <td style="font-size: 0.8rem; color: #334155;">${escapeHtml(t.tgl_periksa)}</td>
-                            <td>
-                                <strong style="color: #0f172a; font-size: 0.85rem;">${escapeHtml(t.supplier_nm || '-')}</strong>
-                                ${t.po_no ? `<div style="font-size:0.75rem; color:#0284c7;">PO: ${escapeHtml(t.po_no)}</div>` : ''}
-                                <div style="font-size: 0.75rem; color: #64748b;">${escapeHtml(t.item_summary)}</div>
-                            </td>
-                            <td style="font-size: 0.8rem; color: #475569;">
-                                <div><strong>${escapeHtml(t.plat_nomor_truk || '-')}</strong></div>
-                                <div style="font-size: 0.725rem; color: #64748b;">${escapeHtml(t.sopir_nama || '')}</div>
-                            </td>
-                            <td style="text-align: right; font-weight: 600; font-size: 0.85rem;">
-                                ${parseFloat(t.total_gross).toLocaleString('id-ID', {minimumFractionDigits: 2})}
-                            </td>
-                            <td style="text-align: right; font-weight: 800; color: #15803d; font-size: 0.9rem; background: #f0fdf4;">
-                                ${parseFloat(t.total_netto).toLocaleString('id-ID', {minimumFractionDigits: 2})}
-                            </td>
-                            <td style="text-align: center;">
-                                <button type="button" class="btn btn-primary btn-sm" style="padding: 0.25rem 0.65rem; font-size: 0.75rem; font-weight: 700; background: #0284c7;" onclick="event.stopPropagation(); applyQcTicket(${t.qc_id}); closeModal('modalPilihQc');">
-                                    Pilih
-                                </button>
-                            </td>
-                        </tr>
-                    `;
-                });
-                tbody.innerHTML = html;
+                filterQcTickets();
+                if (searchInput) setTimeout(() => searchInput.focus(), 150);
             })
             .catch(err => {
                 if (loading) loading.style.display = 'none';
                 alert('Gagal memuat tiket QC: ' + err.message);
             });
+    }
+
+    function setQcCategoryFilter(cat, btn) {
+        activeQcCategory = cat;
+        document.querySelectorAll('.qc-filter-chip').forEach(b => b.classList.remove('active'));
+        if (btn) btn.classList.add('active');
+        filterQcTickets();
+    }
+
+    function clearQcSearch() {
+        const input = document.getElementById('qcSearchInput');
+        if (input) {
+            input.value = '';
+            input.focus();
+        }
+        filterQcTickets();
+    }
+
+    function filterQcTickets() {
+        const searchVal = (document.getElementById('qcSearchInput')?.value || '').toLowerCase().trim();
+        const poFilter = document.getElementById('qcFilterPo')?.value || '';
+        const btnClear = document.getElementById('btnQcSearchClear');
+        if (btnClear) btnClear.style.display = searchVal ? 'block' : 'none';
+
+        const filtered = allQcTickets.filter(t => {
+            // 1. Kategori Komoditas
+            if (activeQcCategory) {
+                const itemSummary = (t.item_summary || '').toUpperCase();
+                const tCat = (t.kategori_barang || '').toUpperCase();
+                const tNamaJenis = (t.nama_jenis || '').toUpperCase();
+
+                if (activeQcCategory === 'SINGKONG') {
+                    if (tCat !== 'SINGKONG' && !itemSummary.includes('SINGKONG') && !tNamaJenis.includes('SINGKONG')) return false;
+                } else if (activeQcCategory === 'MINYAK') {
+                    if (tCat !== 'MINYAK' && !itemSummary.includes('MINYAK') && !tNamaJenis.includes('MINYAK')) return false;
+                } else if (activeQcCategory === 'PLASTIK') {
+                    if (tCat !== 'PLASTIK' && !itemSummary.includes('PLASTIK') && !tNamaJenis.includes('PLASTIK')) return false;
+                } else if (activeQcCategory === 'KARTON') {
+                    if (tCat !== 'KARTON' && !itemSummary.includes('KARTON') && !tNamaJenis.includes('KARTON')) return false;
+                } else if (activeQcCategory === 'MSG') {
+                    if (tCat !== 'MSG' && !itemSummary.includes('MSG') && !tNamaJenis.includes('MSG')) return false;
+                } else if (activeQcCategory === 'GARAM') {
+                    if (tCat !== 'GARAM' && !itemSummary.includes('GARAM') && !tNamaJenis.includes('GARAM')) return false;
+                } else if (activeQcCategory === 'PERENYAH') {
+                    if (tCat !== 'PERENYAH' && !itemSummary.includes('PERENYAH') && !tNamaJenis.includes('PERENYAH')) return false;
+                }
+            }
+
+            // 2. Status PO
+            if (poFilter === 'PO') {
+                if (!t.po_no || t.po_no === 'Non-PO') return false;
+            } else if (poFilter === 'NON_PO') {
+                if (t.po_no && t.po_no !== 'Non-PO') return false;
+            }
+
+            // 3. Kata Kunci Pencarian (No QC, Supplier, Barang, PO, Truk, Sopir, Surat Jalan)
+            if (searchVal) {
+                const haystack = [
+                    t.qc_no || '',
+                    t.supplier_nm || '',
+                    t.po_no || '',
+                    t.item_summary || '',
+                    t.plat_nomor_truk || '',
+                    t.sopir_nama || '',
+                    t.surat_jalan_supplier || '',
+                    t.tgl_periksa || '',
+                    t.kategori_barang || '',
+                    t.nama_jenis || '',
+                ].join(' ').toLowerCase();
+
+                if (!haystack.includes(searchVal)) return false;
+            }
+
+            return true;
+        });
+
+        renderQcTicketsTable(filtered);
+    }
+
+    function renderQcTicketsTable(tickets) {
+        const tbody = document.getElementById('qcModalTbody');
+        const counter = document.getElementById('qcResultCount');
+        if (!tbody) return;
+
+        if (counter) {
+            counter.innerText = `Menampilkan ${tickets.length} dari ${allQcTickets.length} tiket`;
+        }
+
+        if (tickets.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="8" style="text-align: center; padding: 2.5rem 1rem; color: #64748b;">
+                        <div style="font-size: 1.6rem; margin-bottom: 0.35rem;">🔍</div>
+                        <strong style="color: #1e293b; font-size: 0.9rem;">Tidak ada tiket QC yang cocok</strong>
+                        <div style="font-size: 0.775rem; margin-top: 0.25rem;">Coba sesuaikan kata kunci pencarian atau ubah pilihan filter komoditas/PO.</div>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        let html = '';
+        tickets.forEach((t, idx) => {
+            let catBadge = '';
+            const kCat = (t.kategori_barang || 'SINGKONG').toUpperCase();
+            if (kCat === 'SINGKONG') {
+                catBadge = `<span class="badge" style="background: #ecfdf5; color: #047857; font-size: 0.675rem; font-weight: 700;">🥔 Singkong</span>`;
+            } else if (kCat === 'MINYAK') {
+                catBadge = `<span class="badge" style="background: #fefce8; color: #a16207; font-size: 0.675rem; font-weight: 700;">🛢️ Minyak</span>`;
+            } else if (kCat === 'PLASTIK') {
+                catBadge = `<span class="badge" style="background: #eff6ff; color: #1d4ed8; font-size: 0.675rem; font-weight: 700;">🛍️ Plastik</span>`;
+            } else if (kCat === 'KARTON') {
+                catBadge = `<span class="badge" style="background: #fff7ed; color: #c2410c; font-size: 0.675rem; font-weight: 700;">📦 Karton</span>`;
+            } else if (kCat === 'MSG') {
+                catBadge = `<span class="badge" style="background: #f5f3ff; color: #6d28d9; font-size: 0.675rem; font-weight: 700;">🧂 MSG</span>`;
+            } else if (kCat === 'GARAM') {
+                catBadge = `<span class="badge" style="background: #f0fdfa; color: #0f766e; font-size: 0.675rem; font-weight: 700;">🧂 Garam</span>`;
+            } else if (kCat === 'PERENYAH') {
+                catBadge = `<span class="badge" style="background: #fdf4ff; color: #a21caf; font-size: 0.675rem; font-weight: 700;">✨ Perenyah</span>`;
+            }
+
+            html += `
+                <tr class="sup-modal-row" onclick="applyQcTicket(${t.qc_id}); closeModal('modalPilihQc');" style="cursor: pointer;">
+                    <td style="text-align: center; color: #64748b; font-size: 0.775rem;">${idx + 1}</td>
+                    <td>
+                        <strong style="color: #0284c7; font-family: monospace; font-size: 0.85rem;">${escapeHtml(t.qc_no)}</strong>
+                    </td>
+                    <td style="font-size: 0.8rem; color: #334155;">${escapeHtml(t.tgl_periksa)}</td>
+                    <td>
+                        <strong style="color: #0f172a; font-size: 0.85rem;">${escapeHtml(t.supplier_nm || '-')}</strong>
+                        <div style="display: flex; gap: 0.35rem; align-items: center; margin-top: 2px; flex-wrap: wrap;">
+                            ${catBadge}
+                            ${t.po_no && t.po_no !== 'Non-PO' ? `<span style="font-size:0.725rem; font-weight: 600; color:#0284c7;">PO: ${escapeHtml(t.po_no)}</span>` : `<span style="font-size:0.725rem; color:#94a3b8;">Non-PO</span>`}
+                        </div>
+                        <div style="font-size: 0.75rem; color: #64748b; margin-top: 2px;">${escapeHtml(t.item_summary || '-')}</div>
+                    </td>
+                    <td style="font-size: 0.8rem; color: #475569;">
+                        <div><strong>${escapeHtml(t.plat_nomor_truk || '-')}</strong></div>
+                        ${t.sopir_nama ? `<div style="font-size: 0.725rem; color: #64748b;">${escapeHtml(t.sopir_nama)}</div>` : ''}
+                    </td>
+                    <td style="text-align: right; font-weight: 600; font-size: 0.85rem;">
+                        ${parseFloat(t.total_gross).toLocaleString('id-ID', {minimumFractionDigits: 2})}
+                    </td>
+                    <td style="text-align: right; font-weight: 800; color: #15803d; font-size: 0.9rem; background: #f0fdf4;">
+                        ${parseFloat(t.total_netto).toLocaleString('id-ID', {minimumFractionDigits: 2})}
+                    </td>
+                    <td style="text-align: center;">
+                        <button type="button" class="btn btn-primary btn-sm" style="padding: 0.25rem 0.65rem; font-size: 0.75rem; font-weight: 700; background: #0284c7;" onclick="event.stopPropagation(); applyQcTicket(${t.qc_id}); closeModal('modalPilihQc');">
+                            Pilih
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+        tbody.innerHTML = html;
     }
 
     function applyQcTicket(qcId) {

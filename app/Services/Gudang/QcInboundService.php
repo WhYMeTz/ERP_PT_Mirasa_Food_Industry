@@ -83,6 +83,8 @@ class QcInboundService
                 return [
                     'qc_id'                 => $h->qc_id,
                     'qc_no'                 => $h->qc_no,
+                    'kategori_barang'       => $h->kategori_barang ?? 'SINGKONG',
+                    'nama_jenis'            => $h->nama_jenis,
                     'po_id'                 => $h->po_id,
                     'po_no'                 => $h->po?->po_no ?? 'Non-PO',
                     'supplier_id'           => $h->supplier_id,
@@ -90,6 +92,8 @@ class QcInboundService
                     'gudang_id'             => $h->gudang_id,
                     'gudang_nm'             => $h->gudang?->gudang_nm ?? '-',
                     'surat_jalan_supplier'  => $h->surat_jalan_supplier,
+                    'plat_nomor_truk'       => $h->plat_nomor_truk,
+                    'sopir_nama'            => $h->sopir_nama,
                     'tgl_periksa'           => $h->tgl_periksa->format('d/m/Y H:i'),
                     'total_gross'           => (float) $totalGross,
                     'total_netto'           => (float) $totalNetto,

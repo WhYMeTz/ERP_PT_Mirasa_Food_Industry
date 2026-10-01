@@ -4,84 +4,7 @@
 
 @section('content')
 @push('styles')
-<style>
-/* Dropdown Aksi Cerdas (Smart Viewport Positioning) */
-.action-dropdown-menu {
-    position: fixed;
-    background: #ffffff;
-    border: 1px solid #cbd5e1;
-    border-radius: 8px;
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-    min-width: 195px;
-    z-index: 999999 !important;
-    display: none;
-    overflow: hidden;
-    padding: 0.35rem 0;
-    animation: fadeInDropdown 0.12s ease-out;
-}
-
-@keyframes fadeInDropdown {
-    from { opacity: 0; transform: scale(0.96); }
-    to { opacity: 1; transform: scale(1); }
-}
-
-.action-dropdown-item {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    padding: 0.55rem 0.95rem;
-    color: #1e293b;
-    text-decoration: none;
-    font-size: 0.8125rem;
-    font-weight: 500;
-    transition: background 0.12s ease, color 0.12s ease;
-    cursor: pointer;
-    border: none;
-    background: transparent;
-    width: 100%;
-    text-align: left;
-    box-sizing: border-box;
-}
-
-.action-dropdown-item:hover {
-    background: #f0fdf4;
-    color: #059669;
-}
-
-.action-dropdown-item.danger-item:hover {
-    background: #fef2f2;
-    color: #dc2626;
-}
-
-.action-dropdown-divider {
-    height: 1px;
-    background: #f1f5f9;
-    margin: 0.3rem 0;
-}
-
-.btn-action-trigger {
-    background: #ffffff;
-    border: 1.5px solid #cbd5e1;
-    color: #1e293b;
-    font-size: 0.8rem;
-    font-weight: 700;
-    padding: 0.32rem 0.75rem;
-    border-radius: 6px;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    cursor: pointer;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-    transition: all 0.15s ease;
-}
-
-.btn-action-trigger:hover,
-.btn-action-trigger.active {
-    background: #f0fdf4;
-    border-color: #059669;
-    color: #059669;
-}
-</style>
+    <link rel="stylesheet" href="{{ asset('css/master/barang/barang-index.css') }}">
 @endpush
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
     <div>
@@ -478,98 +401,10 @@
     </div>
 </div>
 
+@push('scripts')
 <script>
-    let activeDropdownMenu = null;
-    let activeTriggerButton = null;
-
-    function toggleSmartActionDropdown(button, event, menuId) {
-        if (event) {
-            event.stopPropagation();
-            event.preventDefault();
-        }
-        const targetMenu = document.getElementById(menuId);
-        if (!targetMenu) return;
-
-        if (activeDropdownMenu === targetMenu && targetMenu.style.display === 'block') {
-            closeAllActionDropdowns();
-            return;
-        }
-
-        closeAllActionDropdowns();
-
-        targetMenu.style.display = 'block';
-        activeDropdownMenu = targetMenu;
-        activeTriggerButton = button;
-        button.classList.add('active');
-
-        positionActionDropdown(button, targetMenu);
-    }
-
-    function positionActionDropdown(button, menu) {
-        if (!button || !menu) return;
-        const rect = button.getBoundingClientRect();
-        const menuWidth = menu.offsetWidth || 195;
-        const menuHeight = menu.offsetHeight || 150;
-        const viewportHeight = window.innerHeight;
-        const viewportWidth = window.innerWidth;
-
-        const spaceBelow = viewportHeight - rect.bottom;
-        const spaceAbove = rect.top;
-
-        if (spaceBelow < menuHeight && spaceAbove > spaceBelow) {
-            menu.style.top = `${rect.top - menuHeight - 4}px`;
-        } else {
-            menu.style.top = `${rect.bottom + 4}px`;
-        }
-
-        let leftPos = rect.right - menuWidth;
-        if (leftPos < 10) leftPos = 10;
-        if (leftPos + menuWidth > viewportWidth - 10) {
-            leftPos = viewportWidth - menuWidth - 10;
-        }
-        menu.style.left = `${leftPos}px`;
-    }
-
-    function closeAllActionDropdowns() {
-        document.querySelectorAll('.action-dropdown-menu').forEach(m => m.style.display = 'none');
-        document.querySelectorAll('.btn-action-trigger').forEach(b => b.classList.remove('active'));
-        activeDropdownMenu = null;
-        activeTriggerButton = null;
-    }
-
-    window.addEventListener('click', function(e) {
-        if (!e.target.closest('.action-dropdown-menu') && !e.target.closest('.btn-action-trigger')) {
-            closeAllActionDropdowns();
-        }
-    });
-
-    window.addEventListener('scroll', function() {
-        if (activeDropdownMenu && activeTriggerButton) {
-            positionActionDropdown(activeTriggerButton, activeDropdownMenu);
-        }
-    }, true);
-
-    window.addEventListener('resize', closeAllActionDropdowns);
-
-    function openDeleteBarangModal(id, code, name) {
-        document.getElementById('deleteBarangCd').innerText = code;
-        document.getElementById('deleteBarangNm').innerText = name;
-        document.getElementById('formDeleteBarang').action = '{{ url("master-barang") }}/' + id;
-        openModal('modalDeleteBarang');
-    }
-
-    function editBarang(id, kode, nama, jenisId, satuanDasarId, satuanBesarId, konversi, batasMin, hargaStandar) {
-        document.getElementById('edit_barang_cd').value = kode;
-        document.getElementById('edit_barang_nm').value = nama;
-        document.getElementById('edit_jenis_barang_id').value = jenisId;
-        document.getElementById('edit_satuan_dasar_id').value = satuanDasarId;
-        document.getElementById('edit_satuan_besar_id').value = satuanBesarId || '';
-        document.getElementById('edit_konversi_qty').value = konversi;
-        document.getElementById('edit_batas_minimum_qty').value = batasMin || 0;
-        document.getElementById('edit_harga_beli_standar').value = hargaStandar || 0;
-        document.getElementById('edit_barang_id').value = id;
-        document.getElementById('formEditBarang').action = '{{ url("master-barang") }}/' + id;
-        openModal('modalEditBarang');
-    }
+    window.masterBarangBaseUrl = "{{ url('master-barang') }}";
 </script>
+<script src="{{ asset('js/master/barang/barang-index.js') }}"></script>
+@endpush
 @endsection

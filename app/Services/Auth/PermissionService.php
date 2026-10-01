@@ -49,6 +49,11 @@ class PermissionService
                     'desc'   => 'Mengubah kode dan nama unit satuan barang.',
                     'action' => 'EDIT',
                 ],
+                'master_jenis_edit' => [
+                    'label'  => 'Edit Master Jenis Barang',
+                    'desc'   => 'Mengubah kode dan nama jenis/kategori barang (RAW, WIP, FG, PACK).',
+                    'action' => 'EDIT',
+                ],
             ],
         ],
         'AKSI_DELETE' => [
@@ -85,6 +90,11 @@ class PermissionService
                 'master_satuan_delete' => [
                     'label'  => 'Hapus / Nonaktifkan Master Satuan',
                     'desc'   => 'Menonaktifkan data unit satuan ukuran.',
+                    'action' => 'DELETE',
+                ],
+                'master_jenis_delete' => [
+                    'label'  => 'Hapus / Nonaktifkan Jenis Barang',
+                    'desc'   => 'Menonaktifkan jenis/kategori klasifikasi barang.',
                     'action' => 'DELETE',
                 ],
             ],
@@ -138,6 +148,11 @@ class PermissionService
                 'master_satuan_create' => [
                     'label'  => 'Tambah Master Satuan Baru',
                     'desc'   => 'Mendaftarkan unit satuan ukuran baru ke sistem.',
+                    'action' => 'CREATE',
+                ],
+                'master_jenis_create' => [
+                    'label'  => 'Tambah Jenis Barang Baru',
+                    'desc'   => 'Mendaftarkan kategori / jenis klasifikasi barang baru.',
                     'action' => 'CREATE',
                 ],
             ],
@@ -235,6 +250,8 @@ class PermissionService
             'master_barang_edit',
             'master_satuan_create',
             'master_satuan_edit',
+            'master_jenis_create',
+            'master_jenis_edit',
             'master_gudang_manage',
         ],
         'STAFF_PRODUKSI' => [

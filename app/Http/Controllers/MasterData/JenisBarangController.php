@@ -37,6 +37,8 @@ class JenisBarangController extends Controller
 
     public function store(StoreJenisBarangRequest $request): RedirectResponse|JsonResponse
     {
+        abort_unless($request->user()->canCreateMasterJenis(), 403, 'Anda tidak memiliki hak akses untuk menambah jenis barang.');
+
         $jenis = $this->jenisBarangService->store($request->validated());
 
         if ($request->wantsJson()) {
@@ -54,6 +56,8 @@ class JenisBarangController extends Controller
 
     public function update(UpdateJenisBarangRequest $request, int $id): RedirectResponse|JsonResponse
     {
+        abort_unless($request->user()->canEditMasterJenis(), 403, 'Anda tidak memiliki hak akses untuk mengedit jenis barang.');
+
         $jenis = $this->jenisBarangService->update($id, $request->validated());
 
         if ($request->wantsJson()) {
@@ -71,12 +75,15 @@ class JenisBarangController extends Controller
 
     public function destroy(Request $request, int $id): RedirectResponse|JsonResponse
     {
+        abort_unless($request->user()->canDeleteMasterJenis(), 403, 'Anda tidak memiliki hak akses untuk menonaktifkan jenis barang.');
+
         $this->jenisBarangService->delete($id);
 
         if ($request->wantsJson()) {
             return response()->json([
                 'status'  => 'success',
                 'message' => 'Data jenis barang berhasil dinonaktifkan.',
+                'data'    => null,
             ]);
         }
 

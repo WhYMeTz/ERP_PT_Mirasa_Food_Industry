@@ -388,6 +388,21 @@ class User extends Authenticatable
         return $this->isSuperAdmin() || $this->canDo('master_satuan_delete') || $this->canDo('master_gudang_manage');
     }
 
+    public function canCreateMasterJenis(): bool
+    {
+        return $this->isSuperAdmin() || $this->canDo('master_jenis_create') || $this->canDo('master_barang_manage');
+    }
+
+    public function canEditMasterJenis(): bool
+    {
+        return $this->isSuperAdmin() || $this->canDo('master_jenis_edit') || $this->canDo('master_barang_manage');
+    }
+
+    public function canDeleteMasterJenis(): bool
+    {
+        return $this->isSuperAdmin() || $this->canDo('master_jenis_delete') || $this->canDo('master_barang_manage');
+    }
+
     public function canAccessSupplier(): bool
     {
         return $this->isSuperAdmin() || $this->canDo('master_supplier_view') || $this->canDo('master_supplier_manage');

@@ -2,6 +2,10 @@
 
 @section('title', 'Master Jenis Barang - ERP PT Mirasa')
 
+@push('styles')
+    <link rel="stylesheet" href="{{ asset('css/master/jenis/jenis-index.css') }}">
+@endpush
+
 @section('content')
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
     <div>
@@ -9,10 +13,12 @@
         <p style="color: #64748b; font-size: 0.875rem; margin-top: 0.25rem;">Kelola klasifikasi material: Bahan Baku (RAW), Setengah Jadi (WIP), Barang Jadi (FG), dan Kemasan.</p>
     </div>
     <div>
-        <button type="button" onclick="openModal('modalTambahJenis')" class="btn btn-primary">
-            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-            Tambah Jenis Baru
-        </button>
+        @if (Auth::user()?->canCreateMasterJenis())
+            <button type="button" onclick="openModal('modalTambahJenis')" class="btn btn-primary">
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                Tambah Jenis Baru
+            </button>
+        @endif
     </div>
 </div>
 
@@ -36,34 +42,53 @@
                     <th>Kode Jenis</th>
                     <th>Nama Jenis Barang</th>
                     <th>Status</th>
-                    <th style="width: 150px; text-align: right;">Aksi</th>
+                    <th style="width: 130px; text-align: center;">Aksi</th>
                 </tr>
             </thead>
             <tbody>
                 @forelse ($jenisList as $index => $item)
                     <tr>
                         <td>{{ $jenisList->firstItem() + $index }}</td>
-                        <td><strong style="color: #0284c7;">{{ $item->jenis_barang_cd }}</strong></td>
+                        <td><strong style="color: #0284c7; font-size: 1rem;">{{ $item->jenis_barang_cd }}</strong></td>
                         <td style="font-weight: 600;">{{ $item->jenis_barang_nm }}</td>
                         <td>
                             <span class="badge badge-success">Aktif</span>
                         </td>
-                        <td style="text-align: right;">
-                            <div style="display: inline-flex; gap: 0.35rem;">
+                        <td style="text-align: center; vertical-align: middle;">
+                            @if (Auth::user()?->canEditMasterJenis() || Auth::user()?->canDeleteMasterJenis())
                                 <button type="button" 
-                                    class="btn btn-secondary btn-sm" 
-                                    onclick="editJenis({{ $item->jenis_barang_id }}, '{{ addslashes($item->jenis_barang_cd) }}', '{{ addslashes($item->jenis_barang_nm) }}')"
-                                    title="Edit">
-                                    Edit
+                                    class="btn-action-trigger" 
+                                    onclick="toggleSmartActionDropdown(this, event, 'action-menu-{{ $item->jenis_barang_id }}')">
+                                    <span>Aksi</span>
+                                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                                 </button>
-                                <form action="{{ route('master.jenis.destroy', $item->jenis_barang_id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menonaktifkan jenis barang ini?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn btn-danger btn-sm" title="Hapus">
-                                        Hapus
-                                    </button>
-                                </form>
-                            </div>
+
+                                <div id="action-menu-{{ $item->jenis_barang_id }}" class="action-dropdown-menu">
+                                    @if (Auth::user()?->canEditMasterJenis())
+                                        <button type="button" 
+                                            class="action-dropdown-item" 
+                                            onclick="closeAllActionDropdowns(); editJenis({{ $item->jenis_barang_id }}, '{{ addslashes($item->jenis_barang_cd) }}', '{{ addslashes($item->jenis_barang_nm) }}')">
+                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                            <span>Edit Jenis Barang</span>
+                                        </button>
+                                    @endif
+
+                                    @if (Auth::user()?->canEditMasterJenis() && Auth::user()?->canDeleteMasterJenis())
+                                        <div class="action-dropdown-divider"></div>
+                                    @endif
+
+                                    @if (Auth::user()?->canDeleteMasterJenis())
+                                        <button type="button" 
+                                            class="action-dropdown-item danger-item" 
+                                            onclick="closeAllActionDropdowns(); openDeleteJenisModal({{ $item->jenis_barang_id }}, '{{ addslashes($item->jenis_barang_cd) }}', '{{ addslashes($item->jenis_barang_nm) }}')">
+                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                            <span>Hapus / Nonaktifkan</span>
+                                        </button>
+                                    @endif
+                                </div>
+                            @else
+                                <span style="font-size: 0.75rem; color: #94a3b8;">-</span>
+                            @endif
                         </td>
                     </tr>
                 @empty
@@ -84,67 +109,18 @@
     @endif
 </div>
 
-{{-- MODAL TAMBAH JENIS --}}
-<div id="modalTambahJenis" class="modal-backdrop">
-    <div class="modal-dialog">
-        <div class="modal-header">
-            <h2 class="modal-title">Tambah Jenis Barang Baru</h2>
-            <button type="button" class="modal-close" onclick="closeModal('modalTambahJenis')">&times;</button>
-        </div>
-        <form action="{{ route('master.jenis.store') }}" method="POST">
-            @csrf
-            <div class="modal-body">
-                <div class="form-group">
-                    <label for="create_jenis_cd" class="form-label">Kode Jenis Barang <span style="color:#ef4444;">*</span></label>
-                    <input type="text" id="create_jenis_cd" name="jenis_barang_cd" class="form-control" placeholder="Contoh: RAW, WIP, FG, PACK" style="text-transform: uppercase;" required>
-                </div>
-                <div class="form-group" style="margin-bottom: 0;">
-                    <label for="create_jenis_nm" class="form-label">Nama Jenis Barang <span style="color:#ef4444;">*</span></label>
-                    <input type="text" id="create_jenis_nm" name="jenis_barang_nm" class="form-control" placeholder="Contoh: Bahan Baku Singkong & Minyak" required>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="closeModal('modalTambahJenis')">Batal</button>
-                <button type="submit" class="btn btn-primary">Simpan Jenis Barang</button>
-            </div>
-        </form>
-    </div>
-</div>
+{{-- MODALS --}}
+@include('master_data.jenis.partials.modal-create')
+@include('master_data.jenis.partials.modal-edit')
+@include('master_data.jenis.partials.modal-delete')
 
-{{-- MODAL EDIT JENIS --}}
-<div id="modalEditJenis" class="modal-backdrop">
-    <div class="modal-dialog">
-        <div class="modal-header">
-            <h2 class="modal-title">Edit Jenis Barang</h2>
-            <button type="button" class="modal-close" onclick="closeModal('modalEditJenis')">&times;</button>
-        </div>
-        <form id="formEditJenis" method="POST">
-            @csrf
-            @method('PUT')
-            <div class="modal-body">
-                <div class="form-group">
-                    <label for="edit_jenis_cd" class="form-label">Kode Jenis Barang <span style="color:#ef4444;">*</span></label>
-                    <input type="text" id="edit_jenis_cd" name="jenis_barang_cd" class="form-control" style="text-transform: uppercase;" required>
-                </div>
-                <div class="form-group" style="margin-bottom: 0;">
-                    <label for="edit_jenis_nm" class="form-label">Nama Jenis Barang <span style="color:#ef4444;">*</span></label>
-                    <input type="text" id="edit_jenis_nm" name="jenis_barang_nm" class="form-control" required>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="closeModal('modalEditJenis')">Batal</button>
-                <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
-            </div>
-        </form>
-    </div>
-</div>
-
+@push('scripts')
 <script>
-    function editJenis(id, kode, nama) {
-        document.getElementById('edit_jenis_cd').value = kode;
-        document.getElementById('edit_jenis_nm').value = nama;
-        document.getElementById('formEditJenis').action = '{{ url("master-jenis") }}/' + id;
-        openModal('modalEditJenis');
-    }
+    window.masterJenisConfig = {
+        baseUrl: "{{ url('master-jenis') }}",
+        csrfToken: "{{ csrf_token() }}"
+    };
 </script>
+<script src="{{ asset('js/master/jenis/jenis-index.js') }}"></script>
+@endpush
 @endsection

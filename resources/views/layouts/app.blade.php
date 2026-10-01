@@ -575,123 +575,159 @@
 
             @auth
                 <nav class="pill-nav">
-                    {{-- PURCHASE ORDER (PEMBELIAN & PENJUALAN) --}}
-                    @if (Auth::user()->canAccessPo())
-                        <div class="pill-dropdown" id="navDropdownPo">
+                    {{-- 1. PENGADAAN & BAHAN MASUK (INBOUND) --}}
+                    @if (Auth::user()->canAccessPo() || Auth::user()->canAccessQc() || Auth::user()->canAccessTerima() || Auth::user()->canAccessRetur())
+                        @php
+                            $isInboundActive = request()->routeIs('gudang.po.*') || 
+                                              request()->routeIs('penjualan.so.*') || 
+                                              request()->routeIs('qc.*') || 
+                                              request()->routeIs('gudang.terima.*') || 
+                                              request()->routeIs('gudang.retur.*');
+                        @endphp
+                        <div class="pill-dropdown" id="navDropdownInbound">
                             <button type="button" 
-                                    class="pill-dropdown-btn {{ request()->routeIs('gudang.po.*') || request()->routeIs('penjualan.so.*') ? 'active' : '' }}" 
-                                    onclick="toggleNavDropdown('navDropdownPo', event)">
-                                <span>Pesan Order (PO)</span>
+                                    class="pill-dropdown-btn {{ $isInboundActive ? 'active' : '' }}" 
+                                    onclick="toggleNavDropdown('navDropdownInbound', event)">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #0284c7;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                                <span>Pengadaan &amp; Inbound</span>
                                 <span class="pill-dropdown-arrow">▼</span>
                             </button>
-                            <div class="dropdown-menu" style="min-width: 200px; padding: 0.4rem;">
-                                <a href="{{ route('gudang.po.index') }}" class="mega-item {{ request()->routeIs('gudang.po.*') ? 'active' : '' }}">
-                                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
-                                    <span>PO Pembelian</span>
-                                </a>
-                                <a href="{{ route('penjualan.so.index') }}" class="mega-item {{ request()->routeIs('penjualan.so.*') ? 'active' : '' }}">
-                                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                                    <span>PO Penjualan</span>
-                                </a>
-                            </div>
-                        </div>
-                    @endif
+                            <div class="dropdown-menu" style="min-width: 250px; padding: 0.45rem;">
+                                @if (Auth::user()->canAccessPo())
+                                    <a href="{{ route('gudang.po.index') }}" class="mega-item {{ request()->routeIs('gudang.po.*') ? 'active' : '' }}">
+                                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+                                        <div style="display: flex; flex-direction: column;">
+                                            <span style="font-weight: 600;">Purchase Order (PO)</span>
+                                            <span style="font-size: 0.6875rem; color: #64748b;">Pemesanan bahan ke supplier</span>
+                                        </div>
+                                    </a>
+                                    <a href="{{ route('penjualan.so.index') }}" class="mega-item {{ request()->routeIs('penjualan.so.*') ? 'active' : '' }}">
+                                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                        <div style="display: flex; flex-direction: column;">
+                                            <span style="font-weight: 600;">PO Penjualan (SO)</span>
+                                            <span style="font-size: 0.6875rem; color: #64748b;">Pesanan produk dari customer</span>
+                                        </div>
+                                    </a>
+                                @endif
 
-                    {{-- QUALITY CONTROL (QC) INBOUND BAHAN BAKU --}}
-                    @if (Auth::user()->canAccessQc())
-                        <div class="pill-dropdown" id="navDropdownQc">
-                            <button type="button" 
-                                    class="pill-dropdown-btn {{ request()->routeIs('qc.*') ? 'active' : '' }}" 
-                                    onclick="toggleNavDropdown('navDropdownQc', event)">
-                                <span>QC Bahan Baku</span>
-                                <span class="pill-dropdown-arrow">▼</span>
-                            </button>
-                            <div class="dropdown-menu" style="min-width: 220px; padding: 0.4rem;">
-                                <a href="{{ route('qc.inbound.create') }}" class="mega-item {{ request()->routeIs('qc.inbound.create') ? 'active' : '' }}">
-                                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
-                                    <span>Form Uji Lapangan (Mobile)</span>
-                                </a>
-                                <a href="{{ route('qc.inbound.index') }}" class="mega-item {{ request()->routeIs('qc.inbound.index') ? 'active' : '' }}">
-                                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                    <span>Riwayat Tiket QC</span>
-                                </a>
-                            </div>
-                        </div>
-                    @endif
+                                @if (Auth::user()->canAccessQc())
+                                    <div style="height: 1px; background: #f1f5f9; margin: 0.3rem 0;"></div>
+                                    <a href="{{ route('qc.inbound.index') }}" class="mega-item {{ request()->routeIs('qc.inbound.index') ? 'active' : '' }}">
+                                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                        <div style="display: flex; flex-direction: column;">
+                                            <span style="font-weight: 600;">Pemeriksaan Mutu (QC)</span>
+                                            <span style="font-size: 0.6875rem; color: #64748b;">Uji kadar air, kotoran &amp; sampling</span>
+                                        </div>
+                                    </a>
+                                @endif
 
-                    {{-- PENERIMAAN BARANG & BAHAN BAKU (GRN) --}}
-                    @if (Auth::user()->canAccessTerima())
-                        <a href="{{ route('gudang.terima.index') }}" class="pill-item {{ request()->routeIs('gudang.terima.*') ? 'active' : '' }}">
-                            <span>Penerimaan Barang &amp; Bahan Baku</span>
-                        </a>
-                    @endif
+                                @if (Auth::user()->canAccessTerima())
+                                    <div style="height: 1px; background: #f1f5f9; margin: 0.3rem 0;"></div>
+                                    <a href="{{ route('gudang.terima.index') }}" class="mega-item {{ request()->routeIs('gudang.terima.*') ? 'active' : '' }}">
+                                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
+                                        <div style="display: flex; flex-direction: column;">
+                                            <span style="font-weight: 600;">Penerimaan Barang (GRN)</span>
+                                            <span style="font-size: 0.6875rem; color: #64748b;">Bongkar muat fisik &amp; nomor batch</span>
+                                        </div>
+                                    </a>
+                                @endif
 
-                    {{-- RETUR PEMBELIAN (PENGEMBALIAN BARANG KE SUPPLIER) --}}
-                    @if (Auth::user()->canAccessRetur())
-                        <a href="{{ route('gudang.retur.index') }}" class="pill-item {{ request()->routeIs('gudang.retur.*') ? 'active' : '' }}">
-                            <span>Retur Pembelian</span>
-                        </a>
-                    @endif
-
-                    {{-- PEMAKAIAN BAHAN (OUTBOUND) --}}
-                    @if (Auth::user()->canAccessPemakaian())
-                        <a href="{{ route('gudang.pemakaian.index') }}" class="pill-item {{ request()->routeIs('gudang.pemakaian.*') ? 'active' : '' }}">
-                            <span>Pemakaian Bahan</span>
-                        </a>
-                    @endif
-
-                    {{-- PRODUKSI & HPP HARIAN (EXCEL SHEET) --}}
-                    @if (Auth::user()->canAccessProduksi())
-                        <div class="pill-dropdown" id="navDropdownProduksi">
-                            <button type="button" 
-                                    class="pill-dropdown-btn {{ request()->routeIs('produksi.*') ? 'active' : '' }}" 
-                                    onclick="toggleNavDropdown('navDropdownProduksi', event)">
-                                <span>Produksi &amp; HPP</span>
-                                <span class="pill-dropdown-arrow">▼</span>
-                            </button>
-                            <div class="dropdown-menu" style="min-width: 220px; padding: 0.4rem;">
-                                <a href="{{ route('produksi.index') }}" class="mega-item {{ request()->routeIs('produksi.index') || request()->routeIs('produksi.rekap') ? 'active' : '' }}">
-                                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                                    <span>Buku Rekap HPP (Excel Grid)</span>
-                                </a>
-                                @if (Auth::user()->canCreateProduksi())
-                                    <a href="{{ route('produksi.create') }}" class="mega-item {{ request()->routeIs('produksi.create') ? 'active' : '' }}">
-                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                                        <span>+ Catat Hasil Produksi</span>
+                                @if (Auth::user()->canAccessRetur())
+                                    <a href="{{ route('gudang.retur.index') }}" class="mega-item {{ request()->routeIs('gudang.retur.*') ? 'active' : '' }}">
+                                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                        <div style="display: flex; flex-direction: column;">
+                                            <span style="font-weight: 600;">Retur Pembelian</span>
+                                            <span style="font-size: 0.6875rem; color: #64748b;">Pengembalian barang reject ke vendor</span>
+                                        </div>
                                     </a>
                                 @endif
                             </div>
                         </div>
                     @endif
 
-                    {{-- STOK PERSEDIAAN (CLICK-BASED DROPDOWN) --}}
+                    {{-- 2. OPERASIONAL PRODUKSI PABRIK --}}
+                    @if (Auth::user()->canAccessPemakaian() || Auth::user()->canAccessProduksi())
+                        @php
+                            $isProduksiActive = request()->routeIs('gudang.pemakaian.*') || request()->routeIs('produksi.*');
+                        @endphp
+                        <div class="pill-dropdown" id="navDropdownProduksi">
+                            <button type="button" 
+                                    class="pill-dropdown-btn {{ $isProduksiActive ? 'active' : '' }}" 
+                                    onclick="toggleNavDropdown('navDropdownProduksi', event)">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #ea580c;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+                                <span>Produksi Pabrik</span>
+                                <span class="pill-dropdown-arrow">▼</span>
+                            </button>
+                            <div class="dropdown-menu" style="min-width: 250px; padding: 0.45rem;">
+                                @if (Auth::user()->canAccessPemakaian())
+                                    <a href="{{ route('gudang.pemakaian.index') }}" class="mega-item {{ request()->routeIs('gudang.pemakaian.*') ? 'active' : '' }}">
+                                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
+                                        <div style="display: flex; flex-direction: column;">
+                                            <span style="font-weight: 600;">Pemakaian Bahan (SPK)</span>
+                                            <span style="font-size: 0.6875rem; color: #64748b;">Pengeluaran bahan baku ke penggorengan</span>
+                                        </div>
+                                    </a>
+                                @endif
+
+                                @if (Auth::user()->canAccessProduksi())
+                                    <div style="height: 1px; background: #f1f5f9; margin: 0.3rem 0;"></div>
+                                    <a href="{{ route('produksi.index') }}" class="mega-item {{ request()->routeIs('produksi.index') || request()->routeIs('produksi.rekap') ? 'active' : '' }}">
+                                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                        <div style="display: flex; flex-direction: column;">
+                                            <span style="font-weight: 600;">Rekap Hasil &amp; HPP Harian</span>
+                                            <span style="font-size: 0.6875rem; color: #64748b;">Timbangan keripik jadi &amp; susut HPP</span>
+                                        </div>
+                                    </a>
+                                    @if (Auth::user()->canCreateProduksi())
+                                        <a href="{{ route('produksi.create') }}" class="mega-item {{ request()->routeIs('produksi.create') ? 'active' : '' }}">
+                                            <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                                            <div style="display: flex; flex-direction: column;">
+                                                <span style="font-weight: 600;">+ Input Hasil Produksi</span>
+                                                <span style="font-size: 0.6875rem; color: #64748b;">Catat hasil masak, borongan &amp; gas</span>
+                                            </div>
+                                        </a>
+                                    @endif
+                                @endif
+                            </div>
+                        </div>
+                    @endif
+
+                    {{-- 3. GUDANG & STOK PERSEDIAAN --}}
                     @if (Auth::user()->canAccessStok())
                         <div class="pill-dropdown" id="navDropdownStok">
                             <button type="button" 
                                     class="pill-dropdown-btn {{ request()->routeIs('gudang.stok.*') ? 'active' : '' }}" 
                                     onclick="toggleNavDropdown('navDropdownStok', event)">
-                                <span>Stok Persediaan</span>
+                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #059669;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2 1.5 3 3.5 3h9c2 0 3.5-1 3.5-3V7M4 7c0-2 1.5-3 3.5-3h9c2 0 3.5 1 3.5 3M4 7h16m-8 4v6"/></svg>
+                                <span>Stok &amp; Gudang</span>
                                 <span class="pill-dropdown-arrow">▼</span>
                             </button>
-                            <div class="dropdown-menu" style="min-width: 210px; padding: 0.4rem;">
+                            <div class="dropdown-menu" style="min-width: 240px; padding: 0.45rem;">
                                 <a href="{{ route('gudang.stok.index') }}" class="mega-item {{ request()->routeIs('gudang.stok.index') ? 'active' : '' }}">
-                                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-                                    <span>Lacak Stok Gudang</span>
+                                    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                                    <div style="display: flex; flex-direction: column;">
+                                        <span style="font-weight: 600;">Lacak Stok Komoditas</span>
+                                        <span style="font-size: 0.6875rem; color: #64748b;">Saldo fisik &amp; status batch gudang</span>
+                                    </div>
                                 </a>
                                 <a href="{{ route('gudang.stok.ledger') }}" class="mega-item {{ request()->routeIs('gudang.stok.ledger') ? 'active' : '' }}">
-                                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
-                                    <span>Buku Kartu Stok (Ledger)</span>
+                                    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                                    <div style="display: flex; flex-direction: column;">
+                                        <span style="font-weight: 600;">Buku Kartu Stok (Ledger)</span>
+                                        <span style="font-size: 0.6875rem; color: #64748b;">Rekap mutasi masuk &amp; keluar</span>
+                                    </div>
                                 </a>
                             </div>
                         </div>
                     @endif
 
-                    {{-- MASTER DATA (2-KOLOM MEGA MENU) --}}
+                    {{-- 4. MASTER DATA (2-KOLOM MEGA MENU) --}}
                     @if (Auth::user()->canAccessMasterData())
                         <div class="pill-dropdown" id="navDropdownMaster">
                             <button type="button" 
                                     class="pill-dropdown-btn {{ request()->routeIs('master.*') ? 'active' : '' }}" 
                                     onclick="toggleNavDropdown('navDropdownMaster', event)">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #7c3aed;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
                                 <span>Master Data</span>
                                 <span class="pill-dropdown-arrow">▼</span>
                             </button>
@@ -761,9 +797,10 @@
                         </div>
                     @endif
 
-                    {{-- HAK AKSES SISTEM (KHUSUS SUPERADMIN) --}}
+                    {{-- 5. HAK AKSES SISTEM (KHUSUS SUPERADMIN) --}}
                     @if (Auth::user()->canManageUsers())
                         <a href="{{ route('admin.users.index') }}" class="pill-item {{ request()->routeIs('admin.users.*') ? 'active' : '' }}">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #64748b;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
                             <span>Hak Akses User</span>
                         </a>
                     @endif

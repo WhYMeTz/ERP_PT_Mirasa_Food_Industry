@@ -410,7 +410,25 @@ class User extends Authenticatable
 
     public function canManageSupplier(): bool
     {
-        return $this->isSuperAdmin() || $this->canDo('master_supplier_manage');
+        return $this->isSuperAdmin() 
+            || $this->canDo('master_supplier_manage')
+            || $this->canDo('master_supplier_create')
+            || $this->canDo('master_supplier_edit');
+    }
+
+    public function canCreateMasterSupplier(): bool
+    {
+        return $this->isSuperAdmin() || $this->canDo('master_supplier_create') || $this->canDo('master_supplier_manage');
+    }
+
+    public function canEditMasterSupplier(): bool
+    {
+        return $this->isSuperAdmin() || $this->canDo('master_supplier_edit') || $this->canDo('master_supplier_manage');
+    }
+
+    public function canDeleteMasterSupplier(): bool
+    {
+        return $this->isSuperAdmin() || $this->canDo('master_supplier_delete') || $this->canDo('master_supplier_manage');
     }
 
     public function canManageGudang(): bool

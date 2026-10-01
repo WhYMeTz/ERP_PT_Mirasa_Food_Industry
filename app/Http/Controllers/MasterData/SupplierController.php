@@ -44,6 +44,8 @@ class SupplierController extends Controller
 
     public function store(StoreSupplierRequest $request): RedirectResponse|JsonResponse
     {
+        abort_unless($request->user()->canCreateMasterSupplier(), 403, 'Anda tidak memiliki hak akses untuk menambah master supplier.');
+
         $supplier = $this->supplierService->store($request->validated());
 
         if ($request->wantsJson()) {
@@ -61,6 +63,8 @@ class SupplierController extends Controller
 
     public function update(UpdateSupplierRequest $request, int $id): RedirectResponse|JsonResponse
     {
+        abort_unless($request->user()->canEditMasterSupplier(), 403, 'Anda tidak memiliki hak akses untuk mengedit master supplier.');
+
         $supplier = $this->supplierService->update($id, $request->validated());
 
         if ($request->wantsJson()) {
@@ -78,12 +82,15 @@ class SupplierController extends Controller
 
     public function destroy(Request $request, int $id): RedirectResponse|JsonResponse
     {
+        abort_unless($request->user()->canDeleteMasterSupplier(), 403, 'Anda tidak memiliki hak akses untuk menonaktifkan master supplier.');
+
         $this->supplierService->delete($id);
 
         if ($request->wantsJson()) {
             return response()->json([
                 'status'  => 'success',
                 'message' => 'Data supplier berhasil dinonaktifkan.',
+                'data'    => null,
             ]);
         }
 

@@ -2,6 +2,10 @@
 
 @section('title', 'Master Data Supplier - ERP PT Mirasa')
 
+@push('styles')
+    <link rel="stylesheet" href="{{ asset('css/master/supplier/supplier-index.css') }}">
+@endpush
+
 @section('content')
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
     <div>
@@ -9,10 +13,12 @@
         <p style="color: #64748b; font-size: 0.875rem; margin-top: 0.25rem;">Kelola data pemasok singkong, minyak, bumbu, kemasan, sparepart, dan ekspedisi.</p>
     </div>
     <div>
-        <button type="button" onclick="openModal('modalTambahSupplier')" class="btn btn-primary">
-            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-            Tambah Supplier Baru
-        </button>
+        @if (Auth::user()?->canCreateMasterSupplier())
+            <button type="button" onclick="openModal('modalTambahSupplier')" class="btn btn-primary">
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                Tambah Supplier Baru
+            </button>
+        @endif
     </div>
 </div>
 
@@ -38,14 +44,14 @@
                     <th>Jenis Supplier</th>
                     <th>Kontak / Telp</th>
                     <th>Alamat</th>
-                    <th style="width: 150px; text-align: right;">Aksi</th>
+                    <th style="width: 130px; text-align: center;">Aksi</th>
                 </tr>
             </thead>
             <tbody>
                 @forelse ($suppliers as $index => $item)
                     <tr>
                         <td>{{ $suppliers->firstItem() + $index }}</td>
-                        <td><strong style="color: #0284c7;">{{ $item->supplier_cd }}</strong></td>
+                        <td><strong style="color: #0284c7; font-size: 1rem;">{{ $item->supplier_cd }}</strong></td>
                         <td style="font-weight: 600;">{{ $item->supplier_nm }}</td>
                         <td>
                             @if ($item->jenisSupplier)
@@ -56,22 +62,41 @@
                         </td>
                         <td>{{ $item->kontak_no ?? '-' }}</td>
                         <td>{{ $item->alamat_txt ?? '-' }}</td>
-                        <td style="text-align: right;">
-                            <div style="display: inline-flex; gap: 0.35rem;">
+                        <td style="text-align: center; vertical-align: middle;">
+                            @if (Auth::user()?->canEditMasterSupplier() || Auth::user()?->canDeleteMasterSupplier())
                                 <button type="button" 
-                                    class="btn btn-secondary btn-sm" 
-                                    onclick="editSupplier({{ $item->supplier_id }}, '{{ addslashes($item->supplier_cd) }}', '{{ addslashes($item->supplier_nm) }}', '{{ $item->jenis_supplier_id ?? '' }}', '{{ addslashes($item->kontak_no ?? '') }}', '{{ addslashes($item->alamat_txt ?? '') }}')"
-                                    title="Edit">
-                                    Edit
+                                    class="btn-action-trigger" 
+                                    onclick="toggleSmartActionDropdown(this, event, 'action-menu-{{ $item->supplier_id }}')">
+                                    <span>Aksi</span>
+                                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                                 </button>
-                                <form action="{{ route('master.supplier.destroy', $item->supplier_id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menonaktifkan supplier ini?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn btn-danger btn-sm" title="Hapus">
-                                        Hapus
-                                    </button>
-                                </form>
-                            </div>
+
+                                <div id="action-menu-{{ $item->supplier_id }}" class="action-dropdown-menu">
+                                    @if (Auth::user()?->canEditMasterSupplier())
+                                        <button type="button" 
+                                            class="action-dropdown-item" 
+                                            onclick="closeAllActionDropdowns(); editSupplier({{ $item->supplier_id }}, '{{ addslashes($item->supplier_cd) }}', '{{ addslashes($item->supplier_nm) }}', '{{ $item->jenis_supplier_id ?? '' }}', '{{ addslashes($item->kontak_no ?? '') }}', '{{ addslashes($item->alamat_txt ?? '') }}')">
+                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                            <span>Edit Data Supplier</span>
+                                        </button>
+                                    @endif
+
+                                    @if (Auth::user()?->canEditMasterSupplier() && Auth::user()?->canDeleteMasterSupplier())
+                                        <div class="action-dropdown-divider"></div>
+                                    @endif
+
+                                    @if (Auth::user()?->canDeleteMasterSupplier())
+                                        <button type="button" 
+                                            class="action-dropdown-item danger-item" 
+                                            onclick="closeAllActionDropdowns(); openDeleteSupplierModal({{ $item->supplier_id }}, '{{ addslashes($item->supplier_cd) }}', '{{ addslashes($item->supplier_nm) }}')">
+                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                            <span>Hapus / Nonaktifkan</span>
+                                        </button>
+                                    @endif
+                                </div>
+                            @else
+                                <span style="font-size: 0.75rem; color: #94a3b8;">-</span>
+                            @endif
                         </td>
                     </tr>
                 @empty
@@ -92,110 +117,18 @@
     @endif
 </div>
 
-{{-- MODAL TAMBAH SUPPLIER --}}
-<div id="modalTambahSupplier" class="modal-backdrop">
-    <div class="modal-dialog">
-        <div class="modal-header">
-            <h2 class="modal-title">Tambah Supplier Baru</h2>
-            <button type="button" class="modal-close" onclick="closeModal('modalTambahSupplier')">&times;</button>
-        </div>
-        <form action="{{ route('master.supplier.store') }}" method="POST">
-            @csrf
-            <div class="modal-body">
-                <div class="form-group">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.375rem;">
-                        <label for="create_supplier_cd" class="form-label" style="margin-bottom: 0;">Kode Supplier <span style="color:#ef4444;">*</span></label>
-                        <button type="button" class="btn btn-secondary btn-sm" data-target="create_supplier_cd" onclick="const opt = document.getElementById('create_jenis_supplier_id').options[document.getElementById('create_jenis_supplier_id').selectedIndex]; fetchNextCode('supplier', 'create_supplier_cd', {name: document.getElementById('create_supplier_nm').value, jenis: opt?.dataset?.cd || ''})" style="padding: 0.2rem 0.6rem; font-size: 0.75rem;" title="Generate Kode Otomatis">
-                            ↺ Auto Generate
-                        </button>
-                    </div>
-                    <input type="text" id="create_supplier_cd" name="supplier_cd" value="{{ $nextSupplierCode ?? '' }}" class="form-control" placeholder="Contoh: SKG-UNT atau SUP-SMT" style="text-transform: uppercase;" required>
-                    <small style="color: #64748b; font-size: 0.75rem; display: block; margin-top: 0.25rem;">Petani Singkong otomatis berawalan SKG- (misal: SKG-UNT), Vendor Industri berawalan SUP- (misal: SUP-SMT).</small>
-                </div>
-                <div class="form-group">
-                    <label for="create_jenis_supplier_id" class="form-label">Jenis Supplier <span style="color:#ef4444;">*</span></label>
-                    <select id="create_jenis_supplier_id" name="jenis_supplier_id" class="form-control" onchange="const opt = this.options[this.selectedIndex]; fetchNextCode('supplier', 'create_supplier_cd', {name: document.getElementById('create_supplier_nm')?.value || '', jenis: opt?.dataset?.cd || ''})" required>
-                        <option value="">-- Pilih Jenis Supplier --</option>
-                        @foreach ($jenisSupplierList as $js)
-                            <option value="{{ $js->jenis_supplier_id }}" data-cd="{{ $js->jenis_supplier_cd }}">{{ $js->jenis_supplier_nm }} ({{ $js->jenis_supplier_cd }})</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="create_supplier_nm" class="form-label">Nama Supplier / Mitra <span style="color:#ef4444;">*</span></label>
-                    <input type="text" id="create_supplier_nm" name="supplier_nm" class="form-control" placeholder="Contoh: UNTUNG atau PT. SMART TBK" oninput="const opt = document.getElementById('create_jenis_supplier_id').options[document.getElementById('create_jenis_supplier_id').selectedIndex]; debounceCodeFromName('supplier', 'create_supplier_nm', 'create_supplier_cd', {jenis: opt?.dataset?.cd || ''})" required>
-                </div>
-                <div class="form-group">
-                    <label for="create_kontak_no" class="form-label">Kontak / No Telepon (WhatsApp)</label>
-                    <input type="text" id="create_kontak_no" name="kontak_no" class="form-control" placeholder="Contoh: 081234567890">
-                </div>
-                <div class="form-group" style="margin-bottom: 0;">
-                    <label for="create_alamat_txt" class="form-label">Alamat Lengkap</label>
-                    <textarea id="create_alamat_txt" name="alamat_txt" class="form-control" rows="2" placeholder="Contoh: Desa Sukamaju, RT 02/05, Kec. Wonosobo"></textarea>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="closeModal('modalTambahSupplier')">Batal</button>
-                <button type="submit" class="btn btn-primary">Simpan Supplier</button>
-            </div>
-        </form>
-    </div>
-</div>
+{{-- MODALS --}}
+@include('master_data.supplier.partials.modal-create')
+@include('master_data.supplier.partials.modal-edit')
+@include('master_data.supplier.partials.modal-delete')
 
-{{-- MODAL EDIT SUPPLIER --}}
-<div id="modalEditSupplier" class="modal-backdrop">
-    <div class="modal-dialog">
-        <div class="modal-header">
-            <h2 class="modal-title">Edit Data Supplier</h2>
-            <button type="button" class="modal-close" onclick="closeModal('modalEditSupplier')">&times;</button>
-        </div>
-        <form id="formEditSupplier" method="POST">
-            @csrf
-            @method('PUT')
-            <div class="modal-body">
-                <div class="form-group">
-                    <label for="edit_supplier_cd" class="form-label">Kode Supplier <span style="color:#ef4444;">*</span></label>
-                    <input type="text" id="edit_supplier_cd" name="supplier_cd" class="form-control" style="text-transform: uppercase;" required>
-                </div>
-                <div class="form-group">
-                    <label for="edit_supplier_nm" class="form-label">Nama Supplier / Mitra <span style="color:#ef4444;">*</span></label>
-                    <input type="text" id="edit_supplier_nm" name="supplier_nm" class="form-control" required>
-                </div>
-                <div class="form-group">
-                    <label for="edit_jenis_supplier_id" class="form-label">Jenis Supplier</label>
-                    <select id="edit_jenis_supplier_id" name="jenis_supplier_id" class="form-control">
-                        <option value="">-- Pilih Jenis Supplier (Opsional) --</option>
-                        @foreach ($jenisSupplierList as $js)
-                            <option value="{{ $js->jenis_supplier_id }}">{{ $js->jenis_supplier_nm }} ({{ $js->jenis_supplier_cd }})</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="edit_kontak_no" class="form-label">Kontak / No Telepon</label>
-                    <input type="text" id="edit_kontak_no" name="kontak_no" class="form-control">
-                </div>
-                <div class="form-group" style="margin-bottom: 0;">
-                    <label for="edit_alamat_txt" class="form-label">Alamat Lengkap</label>
-                    <textarea id="edit_alamat_txt" name="alamat_txt" class="form-control" rows="2"></textarea>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="closeModal('modalEditSupplier')">Batal</button>
-                <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
-            </div>
-        </form>
-    </div>
-</div>
-
+@push('scripts')
 <script>
-    function editSupplier(id, kode, nama, jenisSupplierId, kontak, alamat) {
-        document.getElementById('edit_supplier_cd').value = kode;
-        document.getElementById('edit_supplier_nm').value = nama;
-        document.getElementById('edit_jenis_supplier_id').value = jenisSupplierId || '';
-        document.getElementById('edit_kontak_no').value = kontak || '';
-        document.getElementById('edit_alamat_txt').value = alamat || '';
-        document.getElementById('formEditSupplier').action = '{{ url("master-supplier") }}/' + id;
-        openModal('modalEditSupplier');
-    }
+    window.masterSupplierConfig = {
+        baseUrl: "{{ url('master-supplier') }}",
+        csrfToken: "{{ csrf_token() }}"
+    };
 </script>
+<script src="{{ asset('js/master/supplier/supplier-index.js') }}"></script>
+@endpush
 @endsection

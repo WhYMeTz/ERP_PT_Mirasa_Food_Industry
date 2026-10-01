@@ -54,6 +54,11 @@ class PermissionService
                     'desc'   => 'Mengubah kode dan nama jenis/kategori barang (RAW, WIP, FG, PACK).',
                     'action' => 'EDIT',
                 ],
+                'master_supplier_edit' => [
+                    'label'  => 'Edit & Koreksi Master Supplier',
+                    'desc'   => 'Mengubah data mitra pemasok, kontak telepon, alamat, dan jenis supplier.',
+                    'action' => 'EDIT',
+                ],
             ],
         ],
         'AKSI_DELETE' => [
@@ -95,6 +100,11 @@ class PermissionService
                 'master_jenis_delete' => [
                     'label'  => 'Hapus / Nonaktifkan Jenis Barang',
                     'desc'   => 'Menonaktifkan jenis/kategori klasifikasi barang.',
+                    'action' => 'DELETE',
+                ],
+                'master_supplier_delete' => [
+                    'label'  => 'Hapus / Nonaktifkan Master Supplier',
+                    'desc'   => 'Menonaktifkan mitra pemasok agar tidak dapat dipilih dalam pembuatan PO baru.',
                     'action' => 'DELETE',
                 ],
             ],
@@ -153,6 +163,11 @@ class PermissionService
                 'master_jenis_create' => [
                     'label'  => 'Tambah Jenis Barang Baru',
                     'desc'   => 'Mendaftarkan kategori / jenis klasifikasi barang baru.',
+                    'action' => 'CREATE',
+                ],
+                'master_supplier_create' => [
+                    'label'  => 'Tambah Master Supplier Baru',
+                    'desc'   => 'Mendaftarkan mitra supplier petani singkong atau vendor industri baru.',
                     'action' => 'CREATE',
                 ],
             ],
@@ -273,6 +288,8 @@ class PermissionService
             'stok_view',
             'master_barang_view',
             'master_supplier_view',
+            'master_supplier_create',
+            'master_supplier_edit',
             'master_supplier_manage',
         ],
         'FINANCE' => [

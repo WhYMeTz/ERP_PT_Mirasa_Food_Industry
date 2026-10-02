@@ -22,12 +22,20 @@
 
     {{-- TOP APP NAV --}}
     <div class="qc-detail-top-nav">
-        <a href="{{ route('qc.inbound.show', $qc->qc_id) }}" class="qc-detail-back-btn">
+        <a href="{{ route('qc.inbound.show', [$qc->qc_id, 'view' => 'mobile']) }}" class="qc-detail-back-btn">
             <span>&larr; Batal &amp; Kembali</span>
         </a>
-        <span style="font-size: 0.75rem; font-weight: 700; color: #64748b;">
-            QC Lapangan &bull; Edit Sampling
-        </span>
+        <div style="display: flex; align-items: center; gap: 0.45rem;">
+            @if (Auth::user()?->isSuperAdmin())
+                <a href="{{ route('qc.inbound.edit', $qc->qc_id) }}" class="btn-qc-switch-desktop" style="font-size: 0.72rem; font-weight: 700; color: #0284c7; background: #e0f2fe; border: 1px solid #bae6fd; padding: 0.25rem 0.5rem; border-radius: 6px; text-decoration: none; display: inline-flex; align-items: center; gap: 0.25rem;" title="Buka Dokumen Edit Excel Desktop">
+                    <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                    <span>Edit Web ERP</span>
+                </a>
+            @endif
+            <span style="font-size: 0.75rem; font-weight: 700; color: #64748b;">
+                QC Lapangan &bull; Edit
+            </span>
+        </div>
     </div>
 
     {{-- HEADER CARD MOBILE --}}
@@ -65,6 +73,7 @@
         @csrf
         @method('PUT')
         
+        <input type="hidden" name="view" value="mobile">
         <input type="hidden" name="kategori_barang" value="{{ $qc->kategori_barang }}">
 
         {{-- KARTU 1: INFO PENGIRIMAN, PO & KOMODITAS --}}

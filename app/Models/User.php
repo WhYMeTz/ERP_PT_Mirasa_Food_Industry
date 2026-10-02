@@ -616,7 +616,7 @@ class User extends Authenticatable
 
     public function canEditQc(): bool
     {
-        return $this->isSuperAdmin() || $this->isQc() || $this->canDo('qc_edit');
+        return $this->isSuperAdmin() || $this->isQc() || $this->isGudang() || $this->canDo('qc_edit');
     }
 
     public function canDeleteQc(): bool

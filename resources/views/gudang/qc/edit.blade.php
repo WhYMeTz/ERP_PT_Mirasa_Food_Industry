@@ -73,15 +73,15 @@
         </div>
     </div>
 
-    {{-- ALERT OVERRIDE SUPER ADMIN JIKA SUDAH DITARIK KE GRN --}}
+    {{-- ALERT SINKRONISASI JIKA SUDAH DITARIK KE GRN --}}
     @if ($qc->terima)
         <div style="background: #fffbeb; border: 1.5px solid #fcd34d; border-radius: 10px; padding: 0.9rem 1.25rem; color: #92400e; font-size: 0.825rem; line-height: 1.5; margin-bottom: 1.25rem;">
             <div style="font-weight: 800; font-size: 0.9rem; display: flex; align-items: center; gap: 0.45rem; color: #b45309; margin-bottom: 0.2rem;">
-                <span>⚡</span> <span>MODE OVERRIDE SUPER ADMINISTRATOR</span>
+                <span>⚡</span> <span>SINKRONISASI PENERIMAAN GUDANG (GRN)</span>
             </div>
             <div>
                 Tiket QC ini sudah ditarik ke Penerimaan Gudang (GRN <strong>#{{ $qc->terima->terima_no }}</strong>).
-                Perubahan kuantitas atau parameter pada dokumen ini <strong>akan otomatis menyelaraskan (cascade update) data Penerimaan Gudang &amp; Batch Stok terkait</strong>.
+                Perubahan kuantitas atau parameter pada dokumen ini <strong>akan otomatis menyelaraskan (cascade update) data Penerimaan Gudang &amp; Batch Stok terkait</strong> tanpa perlu pembatalan manual.
             </div>
         </div>
     @endif
@@ -164,12 +164,15 @@
                 <span style="color: #38bdf8; font-weight: 800;">📝 Mode Koreksi Dokumen Aktif</span>
                 <div style="opacity: 0.8; font-size: 0.75rem;">Pastikan seluruh sel parameter dan kesimpulan sudah sesuai standar</div>
             </div>
-            <div style="display: flex; gap: 0.65rem; align-items: center;">
+            <div style="display: flex; gap: 0.65rem; align-items: center; flex-wrap: wrap;">
                 <a href="{{ route('qc.inbound.show', $qc->qc_id) }}" class="btn btn-sm" style="background: rgba(255,255,255,0.15); color: #ffffff; border: none; font-weight: 700; border-radius: 8px;">
                     Batal
                 </a>
-                <button type="submit" class="btn btn-primary" style="background: #0284c7; border: none; font-weight: 800; padding: 0.6rem 1.4rem; border-radius: 8px; font-size: 0.9rem; cursor: pointer; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.4);">
-                    💾 Simpan Perubahan Dokumen QC
+                <button type="submit" name="and_print" value="0" class="btn btn-secondary" style="background: #334155; color: #ffffff; border: 1px solid #475569; font-weight: 800; padding: 0.6rem 1.2rem; border-radius: 8px; font-size: 0.875rem; cursor: pointer;">
+                    💾 Simpan Perubahan
+                </button>
+                <button type="submit" name="and_print" value="1" class="btn btn-primary" style="background: #0284c7; border: none; font-weight: 800; padding: 0.6rem 1.4rem; border-radius: 8px; font-size: 0.875rem; cursor: pointer; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.4); display: inline-flex; align-items: center; gap: 0.4rem;">
+                    <span>🖨️</span> <span>Simpan &amp; Cetak A4</span>
                 </button>
             </div>
         </div>

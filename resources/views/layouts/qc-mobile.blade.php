@@ -27,13 +27,6 @@
             </a>
 
             <div class="qc-top-actions">
-                {{-- JIKA USER BUKAN MURNI QC (MISAL SUPERADMIN ATAU ADMIN GUDANG), SEDIAKAN SHORTCUT KE ERP DESKTOP --}}
-                @if (Auth::user()?->isSuperAdmin() || Auth::user()?->isGudang())
-                    <a href="{{ route('gudang.stok.index') }}" class="qc-btn-desktop-switch" title="Kembali ke Tampilan Penuh ERP Desktop">
-                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                        <span>ERP Desktop</span>
-                    </a>
-                @endif
 
                 {{-- TOMBOL LOGOUT MINI --}}
                 <form action="{{ route('logout') }}" method="POST" style="margin: 0;" onsubmit="return confirm('Keluar dari sesi akun QC?');">
@@ -78,8 +71,8 @@
                 <span style="font-weight: 800; margin-top: 2px;">Input QC</span>
             </a>
 
-            {{-- MENU 2: RIWAYAT TIKET QC --}}
-            <a href="{{ route('qc.inbound.index') }}" class="qc-nav-item {{ (request()->routeIs('qc.inbound.index') || request()->routeIs('qc.inbound.show') || request()->routeIs('qc.inbound.edit')) ? 'active' : '' }}">
+            {{-- MENU 2: RIWAYAT TIKET QC (KHUSUS MOBILE) --}}
+            <a href="{{ route('qc.inbound.index', ['view' => 'mobile']) }}" class="qc-nav-item {{ ((request()->routeIs('qc.inbound.index') && request('view') !== 'desktop') || request()->routeIs('qc.inbound.show') || request()->routeIs('qc.inbound.edit')) ? 'active' : '' }}">
                 <svg class="qc-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
                 </svg>

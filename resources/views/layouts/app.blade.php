@@ -610,16 +610,6 @@
                                     </a>
                                 @endif
 
-                                @if (Auth::user()->canAccessQc())
-                                    <div style="height: 1px; background: #f1f5f9; margin: 0.3rem 0;"></div>
-                                    <a href="{{ route('qc.inbound.index') }}" class="mega-item {{ request()->routeIs('qc.inbound.index') ? 'active' : '' }}">
-                                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                        <div style="display: flex; flex-direction: column;">
-                                            <span style="font-weight: 600;">Pemeriksaan Mutu (QC)</span>
-                                            <span style="font-size: 0.6875rem; color: #64748b;">Uji kadar air, kotoran &amp; sampling</span>
-                                        </div>
-                                    </a>
-                                @endif
 
                                 @if (Auth::user()->canAccessTerima())
                                     <div style="height: 1px; background: #f1f5f9; margin: 0.3rem 0;"></div>
@@ -810,11 +800,17 @@
                         </div>
                     @endif
 
-                    {{-- 5. HAK AKSES SISTEM (KHUSUS SUPERADMIN) --}}
+                    {{-- 5. HAK AKSES SISTEM & ALAT KHUSUS SUPERADMIN --}}
                     @if (Auth::user()->canManageUsers())
                         <a href="{{ route('admin.users.index') }}" class="pill-item {{ request()->routeIs('admin.users.*') ? 'active' : '' }}">
                             <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #64748b;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
                             <span>Hak Akses User</span>
+                        </a>
+                    @endif
+                    @if (Auth::user()->isSuperAdmin())
+                        <a href="{{ route('qc.inbound.index', ['view' => 'mobile']) }}" class="pill-item {{ request()->routeIs('qc.inbound.*') ? 'active' : '' }}" title="Buka Aplikasi Web Mobile QC Lapangan">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #0284c7;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                            <span style="color: #0284c7; font-weight: 700;">QC Mobile</span>
                         </a>
                     @endif
                 </nav>

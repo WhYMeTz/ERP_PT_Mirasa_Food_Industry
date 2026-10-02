@@ -35,6 +35,7 @@
             <form id="formDeleteQc" method="POST" style="margin: 0;">
                 @csrf
                 @method('DELETE')
+                <input type="hidden" name="view" value="{{ request('view') }}">
                 <button type="submit" style="padding: 0.55rem 1.15rem; border-radius: 8px; border: none; background: #dc2626; color: #ffffff; font-weight: 800; font-size: 0.825rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.35rem; box-shadow: 0 2px 4px rgba(220, 38, 38, 0.3);">
                     <span>🗑️</span>
                     <span>Ya, Batalkan Tiket</span>

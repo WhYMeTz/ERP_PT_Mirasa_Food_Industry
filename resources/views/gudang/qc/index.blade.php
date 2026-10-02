@@ -22,19 +22,14 @@
             </p>
         </div>
 
-        <div class="qc-admin-header-actions">
-            {{-- SHORTCUT BERALIH KE MODE HP MOBILE FEED --}}
-            <a href="{{ route('qc.inbound.index', ['view' => 'mobile']) }}" class="btn-qc-switch-mobile" title="Buka Tampilan Khusus Smartphone Lapangan">
-                <span>📱 Mode Mobile QC</span>
-            </a>
-
-            @if (Auth::user()?->canCreateQc())
-                <a href="{{ route('qc.inbound.create') }}" class="btn-qc-new">
-                    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
-                    <span>+ Input QC Baru</span>
+        @if (Auth::user()->isSuperAdmin())
+            <div class="qc-admin-header-actions">
+                {{-- SHORTCUT BERALIH KE MODE HP MOBILE FEED (KHUSUS SUPERADMIN) --}}
+                <a href="{{ route('qc.inbound.index', ['view' => 'mobile']) }}" class="btn-qc-switch-mobile" title="Buka Tampilan Khusus Smartphone Lapangan">
+                    <span>📱 Mode Mobile QC Lapangan</span>
                 </a>
-            @endif
-        </div>
+            </div>
+        @endif
     </div>
 
     {{-- KARTU METRIK STATISTIK OPERASIONAL --}}
@@ -156,7 +151,7 @@
                             $totalReject = $qc->details->sum('qty_reject');
                             $totalNetto = $qc->details->sum('qty_netto_lolos');
                             $kat = strtoupper((string) ($qc->kategori_barang ?: 'SINGKONG'));
-                            $isLocked = !empty($qc->terima) && !Auth::user()?->isSuperAdmin();
+                            $isLocked = !empty($qc->terima) && !Auth::user()?->isSuperAdmin() && !Auth::user()?->isGudang();
                             $menuId = 'actionMenuQc_' . $qc->qc_id;
                         @endphp
                         <tr>
@@ -280,7 +275,7 @@
                                 {{-- FIXED DROPDOWN CONTAINER --}}
                                 <div id="{{ $menuId }}" class="action-dropdown-menu">
                                     <a href="{{ route('qc.inbound.show', $qc->qc_id) }}" class="action-dropdown-item primary">
-                                        <span>👁️</span> <span>Lihat Detail Sampling</span>
+                                        <span>📄</span> <span>Dokumen HACCP &amp; Cetak A4</span>
                                     </a>
 
                                     {{-- OPSI TARIK KE GRN JIKA BELUM DITERIMA --}}
@@ -297,18 +292,18 @@
                                         </button>
                                     @endif
 
-                                    {{-- CETAK LEMBAR HACCP RESMI A4 --}}
+                                    {{-- CETAK LANGSUNG FORMAT A4 DOKUMEN FISIK --}}
                                     <a href="{{ route('gudang.qc.haccp_cetak', $qc->qc_id) }}" target="_blank" class="action-dropdown-item">
-                                        <span>🖨️</span> <span>Cetak Lembar HACCP</span>
+                                        <span>🖨️</span> <span>Cetak Langsung (A4)</span>
                                     </a>
 
                                     <div class="action-dropdown-divider"></div>
 
-                                    {{-- EDIT QC --}}
+                                    {{-- EDIT SELURUH DOKUMEN HACCP --}}
                                     @if (Auth::user()?->canEditQc())
                                         @if (!$isLocked)
-                                            <a href="{{ route('qc.inbound.edit', [$qc->qc_id, 'view' => 'mobile']) }}" class="action-dropdown-item">
-                                                <span>✏️</span> <span>Edit Parameter QC</span>
+                                            <a href="{{ route('qc.inbound.edit', $qc->qc_id) }}" class="action-dropdown-item">
+                                                <span>✏️</span> <span>Edit Seluruh Dokumen HACCP</span>
                                             </a>
                                         @else
                                             <span class="action-dropdown-item" style="color: #94a3b8; cursor: not-allowed;" title="Terkunci karena sudah dibuatkan GRN">

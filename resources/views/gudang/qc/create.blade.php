@@ -8,35 +8,40 @@
 
 @section('content')
 <div style="max-width: 880px; margin: 0 auto; padding-bottom: 3.5rem;">
-    {{-- Header Banner HACCP PT Mirasa --}}
-    <div style="background: linear-gradient(135deg, #0284c7 0%, #0f172a 100%); border-radius: 14px 14px 0 0; padding: 1.5rem 1.75rem; color: #ffffff; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+    {{-- Header Banner QC Lapangan --}}
+    <div style="background: linear-gradient(135deg, #0284c7 0%, #0f172a 100%); border-radius: 14px 14px 0 0; padding: 1.25rem 1.5rem; color: #ffffff; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
         <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
             <div>
                 <div style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.4rem; flex-wrap: wrap;">
                     <span style="background: rgba(255,255,255,0.2); font-size: 0.72rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; padding: 0.2rem 0.6rem; border-radius: 20px;">
-                        🔬 PT. MIRASA FOOD INDUSTRY &bull; HACCP-04
+                        🔬 QC LAPANGAN &bull; INBOUND
                     </span>
-                    <span id="badgeDocNo" style="background: #10b981; color: #ffffff; font-size: 0.7rem; font-weight: 800; padding: 0.2rem 0.55rem; border-radius: 20px;">
-                        No. Dok: MFI/HACCP-04/FRM-03/048/VIII/2021
-                    </span>
+                    <span id="badgeDocNo" style="display: none;"></span>
                 </div>
-                <h1 id="titleFormHaccp" style="font-size: 1.45rem; font-weight: 900; margin: 0; line-height: 1.25;">
-                    Checklist Standar Kebeterimaan Singkong
+                <h1 id="titleFormHaccp" style="font-size: 1.35rem; font-weight: 900; margin: 0; line-height: 1.25;">
+                    Sampling Mutu Singkong
                 </h1>
-                <p id="descFormHaccp" style="font-size: 0.85rem; margin: 0.35rem 0 0; opacity: 0.9;">
-                    Laporan Kedatangan Bahan Masuk sesuai Standar HACCP &amp; Jaminan Halal PT Mirasa Food Industry
+                <p id="descFormHaccp" style="font-size: 0.825rem; margin: 0.35rem 0 0; opacity: 0.9;">
+                    Pencatatan sampling mutu kedatangan bahan baku di lapangan
                 </p>
             </div>
-            <a href="{{ route('qc.inbound.index') }}" class="btn btn-sm" style="background: rgba(255,255,255,0.9); color: #0284c7; border-radius: 8px; font-weight: 700;">
-                📋 Riwayat Tiket
-            </a>
+            <div style="display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap;">
+                @if (Auth::user()?->isSuperAdmin())
+                    <a href="{{ route('qc.inbound.index', ['view' => 'desktop']) }}" class="btn btn-sm" style="background: rgba(255,255,255,0.18); color: #ffffff; border: 1px solid rgba(255,255,255,0.4); border-radius: 8px; font-weight: 700;" title="Kembali ke Web ERP Desktop">
+                        🖥️ Ke Web ERP
+                    </a>
+                @endif
+                <a href="{{ route('qc.inbound.index', ['view' => 'mobile']) }}" class="btn btn-sm" style="background: rgba(255,255,255,0.9); color: #0284c7; border-radius: 8px; font-weight: 700;">
+                    📋 Riwayat Tiket
+                </a>
+            </div>
         </div>
     </div>
 
-    {{-- SELECTOR 7 KOMODITAS / FORM HACCP RESMI --}}
-    <div style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-top: none; border-radius: 0 0 14px 14px; padding: 0.9rem 1.25rem; margin-bottom: 1.25rem;">
+    {{-- SELECTOR 7 KOMODITAS --}}
+    <div style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-top: none; border-radius: 0 0 14px 14px; padding: 0.85rem 1.25rem; margin-bottom: 1.25rem;">
         <div style="font-size: 0.775rem; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.4rem;">
-            <span>🏷️</span> <span>PILIH FORMULIR RESMI HACCP SESUAI KOMODITAS MASUK:</span>
+            <span>🏷️</span> <span>PILIH JENIS BAHAN DATANG:</span>
         </div>
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(115px, 1fr)); gap: 0.45rem;" id="komoditasSelector">
             <button type="button" onclick="selectKomoditas('SINGKONG')" class="btn komoditas-btn active-komoditas" id="btnKomoditas_SINGKONG" style="font-size: 0.8rem; font-weight: 800; padding: 0.5rem 0.4rem; border-radius: 8px; border: 2px solid #0284c7; background: #0284c7; color: #ffffff; text-align: center; cursor: pointer; transition: all 0.15s;">
@@ -89,6 +94,7 @@
 
     <form action="{{ route('qc.inbound.store') }}" method="POST" id="qcForm" style="display: flex; flex-direction: column; gap: 1.25rem;">
         @csrf
+        <input type="hidden" name="view" value="mobile">
         <input type="hidden" name="kategori_barang" id="kategoriBarangInput" value="{{ old('kategori_barang', 'SINGKONG') }}">
         <input type="hidden" name="status_uji_goreng" id="statusUjiGorengInput" value="SELESAI">
 
@@ -1040,8 +1046,8 @@
     const KOMODITAS_CONFIG = {
         'SINGKONG': {
             docNo: 'MFI/HACCP-04/FRM-03/048/VIII/2021',
-            title: 'Checklist Standar Kebeterimaan Singkong',
-            desc: 'Laporan Kedatangan Singkong: Pengujian I (Fisik) & Pengujian II (Hasil Fryer / Uji Goreng)',
+            title: 'Sampling Mutu Singkong',
+            desc: 'Pemeriksaan Fisik Timbangan & Uji Kematangan Fryer',
             labelNamaJenis: 'Nama Bahan / Jenis Singkong',
             hasPanenFields: true,
             sampleUnit: 'KG',
@@ -1049,8 +1055,8 @@
         },
         'MINYAK': {
             docNo: 'MFI/HACCP-04/FRM-03/029/VIII/2021',
-            title: 'Cheklist Pemeriksaan Kedatangan Minyak Goreng',
-            desc: 'Laporan Kedatangan Minyak Goreng: Uji Parameter FFA di COA vs QC Mirasa & Kebersihan Tangki',
+            title: 'Sampling Mutu Minyak Goreng',
+            desc: 'Pemeriksaan FFA di COA, Kebersihan Tangki & Suhu',
             labelNamaJenis: 'NAMA JENIS (Contoh: Minyak Sawit Curah)',
             hasPanenFields: false,
             sampleUnit: 'gr',
@@ -1058,8 +1064,8 @@
         },
         'PLASTIK': {
             docNo: 'MFI/HACCP-04/FRM-03/030/VIII/2021',
-            title: 'Cheklist Pemeriksaan Kedatangan Plastik',
-            desc: 'Laporan Kedatangan Plastik: Cacat Kemasan & Uji Ketebalan / Keutuhan (Tidak Sobek)',
+            title: 'Sampling Mutu Plastik Kemasan',
+            desc: 'Pemeriksaan Ketebalan, Cacat Kemasan & Bebas Sobek',
             labelNamaJenis: 'NAMA JENIS (Contoh: PP 08, OPP, Pouch)',
             hasPanenFields: false,
             sampleUnit: 'pcs',
@@ -1067,8 +1073,8 @@
         },
         'KARTON': {
             docNo: 'MFI/HACCP-04/FRM-03/031/VIII/2021',
-            title: 'Cheklist Pemeriksaan Kedatangan Karton',
-            desc: 'Laporan Kedatangan Karton: Cacat Kemasan & Uji Dimensi (Panjang, Lebar, Tinggi, Spesifikasi)',
+            title: 'Sampling Mutu Karton Box',
+            desc: 'Pemeriksaan Dimensi (P x L x T), Cacat & Kekuatan',
             labelNamaJenis: 'NAMA JENIS KARTON (Contoh: Master Box Balado)',
             hasPanenFields: false,
             sampleUnit: 'pcs',
@@ -1076,8 +1082,8 @@
         },
         'MSG': {
             docNo: 'MFI/HACCP-04/FRM-03/032/VIII/2021',
-            title: 'Cheklist Pemeriksaan Kedatangan MSG',
-            desc: 'Laporan Kedatangan MSG: Uji Kondisi Fisik Bahan Penolong (Kering, Basah, Gumpal, Minyak) & Kemasan',
+            title: 'Sampling Mutu MSG',
+            desc: 'Uji Fisik Bahan Penolong (Kering, Gumpal) & Keutuhan Kemasan',
             labelNamaJenis: 'NAMA JENIS (Contoh: MSG Miku / Ajinomoto / Miwon)',
             hasPanenFields: false,
             sampleUnit: 'gr',
@@ -1085,8 +1091,8 @@
         },
         'GARAM': {
             docNo: 'MFI/HACCP-04/FRM-03/033/VIII/2021',
-            title: 'Cheklist Pemeriksaan Kedatangan Garam',
-            desc: 'Laporan Kedatangan Garam: Uji Kondisi Fisik Bahan Penolong (Kering, Basah, Gumpal, Minyak) & Kemasan',
+            title: 'Sampling Mutu Garam',
+            desc: 'Uji Fisik Garam (Kering, Bebas Kotoran) & Keutuhan Kemasan',
             labelNamaJenis: 'NAMA JENIS (Contoh: Garam Halus Beryodium)',
             hasPanenFields: false,
             sampleUnit: 'gr',
@@ -1094,8 +1100,8 @@
         },
         'PERENYAH': {
             docNo: 'MFI/HACCP-04/FRM-03/063/IX/2023',
-            title: 'Cheklist Pemeriksaan Kedatangan Perenyah',
-            desc: 'Laporan Kedatangan Perenyah: Uji Kondisi Fisik Bahan Penolong (Kering, Basah, Gumpal, Minyak) & Kemasan',
+            title: 'Sampling Mutu Perenyah',
+            desc: 'Uji Fisik Perenyah (Kering, Homogen) & Label Halal / Kadaluarsa',
             labelNamaJenis: 'NAMA JENIS (Contoh: Perenyah Keripik Singkong)',
             hasPanenFields: false,
             sampleUnit: 'gr',

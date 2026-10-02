@@ -17,6 +17,12 @@
             </h1>
 
             <div class="qc-header-actions">
+                @if (Auth::user()?->isSuperAdmin())
+                    <a href="{{ route('qc.inbound.index', ['view' => 'desktop']) }}" class="btn-qc-switch-desktop" style="font-size: 0.75rem; font-weight: 700; color: #0284c7; background: #e0f2fe; border: 1px solid #bae6fd; padding: 0.35rem 0.65rem; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 0.35rem;" title="Kembali ke Tampilan Web Desktop">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                        <span>Mode Web</span>
+                    </a>
+                @endif
                 @if (Auth::user()?->canCreateQc())
                     <a href="{{ route('qc.inbound.create') }}" class="qc-btn-create-inline">
                         <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
@@ -25,15 +31,10 @@
                 @endif
             </div>
         </div>
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.25rem;">
+        <div style="margin-top: 0.25rem;">
             <p class="qc-index-subtitle" style="margin: 0;">
-                Riwayat sampling mutu kedatangan &bull; Mode Mobile Touch
+                Riwayat sampling mutu kedatangan &bull; Khusus Petugas Lapangan
             </p>
-            @if (Auth::user()?->isSuperAdmin() || Auth::user()?->isGudang())
-                <a href="{{ route('qc.inbound.index', ['view' => 'desktop']) }}" style="font-size: 0.725rem; font-weight: 700; color: #0284c7; text-decoration: none; background: #e0f2fe; padding: 0.2rem 0.55rem; border-radius: 6px;">
-                    💻 Mode Web Admin PC &rarr;
-                </a>
-            @endif
         </div>
     </div>
 
@@ -109,7 +110,7 @@
                 {{-- HEADER KARTU --}}
                 <div class="qc-card-header">
                     <div class="qc-card-id-wrap">
-                        <a href="{{ route('qc.inbound.show', $qc->qc_id) }}" class="qc-card-id">
+                        <a href="{{ route('qc.inbound.show', [$qc->qc_id, 'view' => 'mobile']) }}" class="qc-card-id">
                             {{ $qc->qc_no }}
                         </a>
                         <span class="qc-card-time">
@@ -217,7 +218,7 @@
                         </button>
                     @endif
 
-                    <a href="{{ route('qc.inbound.show', $qc->qc_id) }}" class="qc-btn-action qc-btn-detail">
+                    <a href="{{ route('qc.inbound.show', [$qc->qc_id, 'view' => 'mobile']) }}" class="qc-btn-action qc-btn-detail">
                         <span>👁️ Detail Uji</span>
                     </a>
 
@@ -232,13 +233,6 @@
                                 <span>🔒 Terkunci</span>
                             </button>
                         @endif
-                    @endif
-
-                    {{-- SHORTCUT TARIK KE GRN JIKA DI HP DIBUKA OLEH GUDANG --}}
-                    @if ($qc->status_qc === 'SIAP_GUDANG' && Auth::user()?->canAccessTerima())
-                        <a href="{{ route('gudang.terima.create', ['qc_id' => $qc->qc_id]) }}" class="qc-btn-action" style="background: #10b981; color: #ffffff; border-color: #059669;">
-                            <span>📦 Tarik GRN</span>
-                        </a>
                     @endif
 
                     {{-- TOMBOL HAPUS DENGAN MODAL BAHAYA --}}

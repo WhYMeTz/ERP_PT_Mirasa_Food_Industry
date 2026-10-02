@@ -480,8 +480,8 @@ class QcInboundService
             $terimaLinked = $qc->terima;
 
             // Validasi: Staf biasa tidak boleh mengedit jika sudah ditarik ke Penerimaan Gudang
-            if ($terimaLinked && !$isSuperAdmin) {
-                throw new Exception("Tiket QC #{$qc->qc_no} sudah diproses ke Penerimaan Barang (GRN #{$terimaLinked->terima_no}). Anda tidak memiliki wewenang mengedit data yang sudah masuk gudang. Silakan hubungi Super Administrator.");
+            if ($terimaLinked && !$isSuperAdmin && !$user->isGudang()) {
+                throw new Exception("Tiket QC #{$qc->qc_no} sudah diproses ke Penerimaan Barang (GRN #{$terimaLinked->terima_no}). Anda tidak memiliki wewenang mengedit data yang sudah masuk gudang. Silakan hubungi Admin Gudang atau Super Administrator.");
             }
 
             $kategoriBarang = !empty($data['kategori_barang']) ? strtoupper(trim($data['kategori_barang'])) : ($qc->kategori_barang ?? 'SINGKONG');
@@ -521,8 +521,8 @@ class QcInboundService
                 'catatan_umum'                => !empty($data['catatan_umum']) ? trim($data['catatan_umum']) : $qc->catatan_umum,
             ]);
 
-            if ($isSuperAdmin && $terimaLinked) {
-                $qc->catatan_umum .= " [REVISI SUPER ADMIN oleh {$user->name} pada " . now()->format('d/m/Y H:i') . "]";
+            if (($isSuperAdmin || $user->isGudang()) && $terimaLinked) {
+                $qc->catatan_umum .= " [REVISI oleh {$user->name} pada " . now()->format('d/m/Y H:i') . "]";
             }
             $qc->save();
 
@@ -622,6 +622,14 @@ class QcInboundService
                         'kondisi_busuk'              => !empty($row['kondisi_busuk']),
                         'kondisi_berjamur'           => !empty($row['kondisi_berjamur']),
                         'kondisi_lembek'             => !empty($row['kondisi_lembek']),
+                        'fryer_rasa'                 => $row['fryer_rasa'] ?? ($existingDtl?->fryer_rasa ?? 'TIDAK_PAHIT'),
+                        'fryer_tekstur'              => $row['fryer_tekstur'] ?? ($existingDtl?->fryer_tekstur ?? 'RENYAH'),
+                        'fryer_penampakan'           => $row['fryer_penampakan'] ?? ($existingDtl?->fryer_penampakan ?? 'TIDAK_OILSOAKED'),
+                        'defect_breakage_persen'     => isset($row['defect_breakage_persen']) ? (float)$row['defect_breakage_persen'] : ($existingDtl?->defect_breakage_persen ?? 0),
+                        'defect_cluster_persen'      => isset($row['defect_cluster_persen']) ? (float)$row['defect_cluster_persen'] : ($existingDtl?->defect_cluster_persen ?? 0),
+                        'defect_foldover_persen'     => isset($row['defect_foldover_persen']) ? (float)$row['defect_foldover_persen'] : ($existingDtl?->defect_foldover_persen ?? 0),
+                        'defect_oilsoaked_persen'    => isset($row['defect_oilsoaked_persen']) ? (float)$row['defect_oilsoaked_persen'] : ($existingDtl?->defect_oilsoaked_persen ?? 0),
+                        'defect_gambos_persen'       => isset($row['defect_gambos_persen']) ? (float)$row['defect_gambos_persen'] : ($existingDtl?->defect_gambos_persen ?? 0),
                         'qty_timbang_gross'          => $gross,
                         'kadar_air_persen'           => $kadarAir,
                         'refraksi_persen'            => $refraksiPersen,
@@ -650,8 +658,8 @@ class QcInboundService
                     $qc->save();
                 }
 
-                // 3. AUTO-CASCADE SINKRONISASI KE PENERIMAAN GUDANG (GRN) & STOK BATCH (KHUSUS SUPER ADMIN)
-                if ($isSuperAdmin && $terimaLinked) {
+                // 3. AUTO-CASCADE SINKRONISASI KE PENERIMAAN GUDANG (GRN) & STOK BATCH
+                if (($isSuperAdmin || $user->isGudang()) && $terimaLinked) {
                     $terimaLinked->load('details');
                     $subtotalBaru = 0;
                     $ppnNominalBaru = 0;

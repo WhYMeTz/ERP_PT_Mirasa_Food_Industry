@@ -2,32 +2,11 @@
 
 @section('title', 'Detail Resep ' . $bom->bom_no . ' - ERP PT Mirasa')
 
-@section('content')
-<style>
-    @media print {
-        header, .no-print, nav, footer, .btn {
-            display: none !important;
-        }
-        body {
-            background: #ffffff !important;
-            color: #000000 !important;
-        }
-        .card {
-            border: none !important;
-            box-shadow: none !important;
-        }
-        .print-header {
-            display: block !important;
-        }
-    }
-    .print-header {
-        display: none;
-        border-bottom: 2px solid #000;
-        padding-bottom: 10px;
-        margin-bottom: 15px;
-    }
-</style>
+@push('styles')
+    <link rel="stylesheet" href="{{ asset('css/master/resep/resep-show.css') }}">
+@endpush
 
+@section('content')
 <div class="no-print" style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
     <div>
         <a href="{{ route('master.resep.index') }}" style="color: #64748b; text-decoration: none; font-size: 0.875rem; display: inline-flex; align-items: center; gap: 0.25rem;">
@@ -45,10 +24,12 @@
             <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
             Cetak Standar Resep
         </button>
-        <a href="{{ route('master.resep.edit', $bom->bom_id) }}" class="btn btn-primary" style="background: #2563eb; display: inline-flex; align-items: center; gap: 0.35rem;">
-            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-            Edit Formula
-        </a>
+        @if (Auth::user()?->canEditMasterResep())
+            <a href="{{ route('master.resep.edit', $bom->bom_id) }}" class="btn btn-primary" style="background: #2563eb; display: inline-flex; align-items: center; gap: 0.35rem;">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                Edit Formula
+            </a>
+        @endif
     </div>
 </div>
 

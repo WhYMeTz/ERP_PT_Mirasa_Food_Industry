@@ -1,0 +1,44 @@
+/**
+ * =========================================================================
+ * ERP PT MIRASA - MASTER FORMULA RESEP PRODUKSI (BOM) FORM STYLESHEET
+ * =========================================================================
+ */
+
+.materials-table th {
+    background: #f8fafc;
+    color: #475569;
+    font-size: 0.825rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 2px solid #e2e8f0;
+    padding: 0.65rem 0.75rem;
+}
+
+.materials-table td {
+    padding: 0.5rem 0.75rem;
+    vertical-align: middle;
+}
+
+.satuan-display {
+    color: #475569;
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+.btn-remove-material {
+    color: #ef4444;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    padding: 0.3rem 0.6rem;
+    border-radius: 6px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn-remove-material:hover {
+    background: #dc2626;
+    color: #ffffff;
+    border-color: #dc2626;
+}

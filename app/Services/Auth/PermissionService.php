@@ -79,6 +79,11 @@ class PermissionService
                     'desc'   => 'Mengubah profil staf, departemen, jabatan, dan nomor kontak karyawan.',
                     'action' => 'EDIT',
                 ],
+                'master_resep_edit' => [
+                    'label'  => 'Edit & Koreksi Formula Resep (BOM)',
+                    'desc'   => 'Mengubah takaran komposisi bahan baku & penolong per batch formula resep.',
+                    'action' => 'EDIT',
+                ],
             ],
         ],
         'AKSI_DELETE' => [
@@ -145,6 +150,11 @@ class PermissionService
                 'master_karyawan_delete' => [
                     'label'  => 'Hapus / Nonaktifkan Karyawan',
                     'desc'   => 'Menonaktifkan data staf/karyawan dari daftar aktif perusahaan.',
+                    'action' => 'DELETE',
+                ],
+                'master_resep_delete' => [
+                    'label'  => 'Hapus / Nonaktifkan Formula Resep',
+                    'desc'   => 'Menghapus atau menonaktifkan formula resep BOM dari sistem.',
                     'action' => 'DELETE',
                 ],
             ],
@@ -230,6 +240,11 @@ class PermissionService
                     'desc'   => 'Mendaftarkan karyawan baru ke dalam sistem sumber daya manusia perusahaan.',
                     'action' => 'CREATE',
                 ],
+                'master_resep_create' => [
+                    'label'  => 'Buat Formula Resep Baru',
+                    'desc'   => 'Membuat standar formula resep komposisi bahan baku (Bill of Materials) baru.',
+                    'action' => 'CREATE',
+                ],
             ],
         ],
         'AKSI_VIEW' => [
@@ -302,6 +317,8 @@ class PermissionService
                 'master_perusahaan_manage' => ['label' => 'Kelola Master Perusahaan', 'desc' => 'Menambah dan mengedit data entitas perusahaan dan cabang.', 'action' => 'MANAGE'],
                 'master_karyawan_view'   => ['label' => 'Lihat Master Karyawan', 'desc' => 'Melihat daftar profil karyawan, jabatan, dan penugasan departemen.', 'action' => 'VIEW'],
                 'master_karyawan_manage' => ['label' => 'Kelola Master Karyawan', 'desc' => 'Menambah, mengedit, dan mengelola profil karyawan.', 'action' => 'MANAGE'],
+                'master_resep_view'      => ['label' => 'Lihat Formula Resep (BOM)', 'desc' => 'Melihat daftar formula dan komposisi standar resep produksi.', 'action' => 'VIEW'],
+                'master_resep_manage'    => ['label' => 'Kelola Formula Resep (BOM)', 'desc' => 'Membuat, mengubah, dan mengelola formula resep produksi.', 'action' => 'MANAGE'],
                 'master_gudang_manage'   => ['label' => 'Kelola Gudang & Satuan', 'desc' => 'Menambah dan mengedit daftar gudang unit dan satuan barang.', 'action' => 'MANAGE'],
                 'user_manage'            => ['label' => 'Manajemen Pengguna & Hak Akses', 'desc' => 'Mengelola user login, password, dan mengubah hak akses peran.', 'action' => 'MANAGE'],
             ],
@@ -336,6 +353,7 @@ class PermissionService
             'master_jenis_edit',
             'master_jenis_supplier_view',
             'master_perusahaan_view',
+            'master_resep_view',
             'master_gudang_manage',
         ],
         'STAFF_PRODUKSI' => [
@@ -345,6 +363,10 @@ class PermissionService
             'produksi_create',
             'stok_view',
             'master_barang_view',
+            'master_resep_view',
+            'master_resep_create',
+            'master_resep_edit',
+            'master_resep_manage',
         ],
         'PURCHASING' => [
             'po_view',

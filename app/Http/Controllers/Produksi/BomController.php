@@ -25,6 +25,8 @@ class BomController extends Controller
      */
     public function index(Request $request): View
     {
+        abort_if(!auth()->user()?->canAccessResep(), 403, 'Anda tidak memiliki hak akses untuk melihat formula resep.');
+
         $search = $request->input('search');
         $perPage = (int) $request->input('per_page', 15);
 
@@ -38,6 +40,8 @@ class BomController extends Controller
      */
     public function create(): View
     {
+        abort_if(!auth()->user()?->canCreateMasterResep(), 403, 'Anda tidak memiliki hak akses untuk membuat formula resep baru.');
+
         $autoNo = $this->codeGenerator->generate('mst_bom_hdr', 'bom_no', 'BOM-');
 
         // Barang output/target jadi (FG & WIP)
@@ -68,6 +72,8 @@ class BomController extends Controller
      */
     public function store(StoreBomRequest $request): RedirectResponse
     {
+        abort_if(!auth()->user()?->canCreateMasterResep(), 403, 'Anda tidak memiliki hak akses untuk membuat formula resep baru.');
+
         try {
             $bom = $this->bomService->store($request->validated());
 
@@ -83,6 +89,8 @@ class BomController extends Controller
      */
     public function show(int $id): View
     {
+        abort_if(!auth()->user()?->canAccessResep(), 403, 'Anda tidak memiliki hak akses untuk melihat formula resep.');
+
         $bom = $this->bomService->getById($id);
 
         return view('master_data.resep.show', compact('bom'));
@@ -93,6 +101,8 @@ class BomController extends Controller
      */
     public function edit(int $id): View
     {
+        abort_if(!auth()->user()?->canEditMasterResep(), 403, 'Anda tidak memiliki hak akses untuk mengedit formula resep.');
+
         $bom = $this->bomService->getById($id);
 
         $barangJadiList = MstBarang::active()
@@ -113,6 +123,8 @@ class BomController extends Controller
      */
     public function update(UpdateBomRequest $request, int $id): RedirectResponse
     {
+        abort_if(!auth()->user()?->canEditMasterResep(), 403, 'Anda tidak memiliki hak akses untuk mengedit formula resep.');
+
         try {
             $bom = $this->bomService->update($id, $request->validated());
 
@@ -128,6 +140,8 @@ class BomController extends Controller
      */
     public function destroy(int $id): RedirectResponse
     {
+        abort_if(!auth()->user()?->canDeleteMasterResep(), 403, 'Anda tidak memiliki hak akses untuk menghapus formula resep.');
+
         try {
             $this->bomService->delete($id);
 

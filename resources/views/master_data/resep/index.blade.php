@@ -2,18 +2,24 @@
 
 @section('title', 'Formula Resep Produksi (BOM) - ERP PT Mirasa')
 
+@push('styles')
+    <link rel="stylesheet" href="{{ asset('css/master/resep/resep-index.css') }}">
+@endpush
+
 @section('content')
 <div style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
     <div>
         <h1 style="font-size: 1.5rem; font-weight: 700; color: #0f172a;">Formula Resep Produksi (BOM)</h1>
         <p style="color: #64748b; font-size: 0.875rem; margin-top: 0.25rem;">
-            Daftar standar komposisi bahan baku & penolong (*Bill of Materials*) untuk otomatisasi pengeluaran gudang (FIFO) dan kalkulasi HPP.
+            Daftar standar komposisi bahan baku &amp; penolong (*Bill of Materials*) untuk otomatisasi pengeluaran gudang (FIFO) dan kalkulasi HPP.
         </p>
     </div>
-    <a href="{{ route('master.resep.create') }}" class="btn btn-primary" style="background: #2563eb; display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1.25rem; font-weight: 700;">
-        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-        + Buat Formula Resep Baru
-    </a>
+    @if (Auth::user()?->canCreateMasterResep())
+        <a href="{{ route('master.resep.create') }}" class="btn btn-primary" style="background: #2563eb; display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1.25rem; font-weight: 700;">
+            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            + Buat Formula Resep Baru
+        </a>
+    @endif
 </div>
 
 {{-- PENCARIAN & FILTER --}}
@@ -44,7 +50,7 @@
                     <th style="padding: 0.85rem 1rem; text-align: right;">Ukuran Batch Standar</th>
                     <th style="padding: 0.85rem 1rem; text-align: center;">Komponen Bahan</th>
                     <th style="padding: 0.85rem 1rem;">Catatan</th>
-                    <th style="padding: 0.85rem 1rem; text-align: center; width: 140px;">Aksi</th>
+                    <th style="padding: 0.85rem 1rem; text-align: right; width: 110px;">Aksi</th>
                 </tr>
             </thead>
             <tbody>
@@ -82,21 +88,37 @@
                         <td style="padding: 0.85rem 1rem; color: #64748b; font-size: 0.85rem; max-width: 250px;">
                             {{ Str::limit($bom->catatan_txt ?? '-', 60) }}
                         </td>
-                        <td style="padding: 0.85rem 1rem; text-align: center;">
-                            <div style="display: inline-flex; align-items: center; gap: 0.35rem;">
-                                <a href="{{ route('master.resep.show', $bom->bom_id) }}" class="btn btn-secondary btn-sm" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" title="Lihat Komposisi Bahan">
-                                    Detail
-                                </a>
-                                <a href="{{ route('master.resep.edit', $bom->bom_id) }}" class="btn btn-secondary btn-sm" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; color: #d97706;" title="Edit Formula">
-                                    Edit
-                                </a>
-                                <form action="{{ route('master.resep.destroy', $bom->bom_id) }}" method="POST" style="display: inline;" onsubmit="return confirm('Apakah Anda yakin ingin menghapus formula resep {{ $bom->bom_no }}?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn btn-secondary btn-sm" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; color: #ef4444;" title="Hapus Resep">
-                                        &times;
-                                    </button>
-                                </form>
+                        <td style="padding: 0.85rem 1rem; text-align: right;">
+                            <div style="position: relative; display: inline-block;">
+                                <button type="button" 
+                                    class="btn-action-trigger" 
+                                    onclick="toggleSmartActionDropdown(this, event, 'action-menu-{{ $bom->bom_id }}')">
+                                    Aksi ▼
+                                </button>
+
+                                <div id="action-menu-{{ $bom->bom_id }}" class="action-dropdown-menu">
+                                    <a href="{{ route('master.resep.show', $bom->bom_id) }}" class="action-dropdown-item">
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                        Rincian Formula
+                                    </a>
+
+                                    @if (Auth::user()?->canEditMasterResep())
+                                        <a href="{{ route('master.resep.edit', $bom->bom_id) }}" class="action-dropdown-item">
+                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                            Edit Formula
+                                        </a>
+                                    @endif
+
+                                    @if (Auth::user()?->canDeleteMasterResep())
+                                        <div class="action-dropdown-divider"></div>
+                                        <button type="button" 
+                                            class="action-dropdown-item danger-item" 
+                                            onclick="closeAllActionDropdowns(); openDeleteResepModal({{ $bom->bom_id }}, '{{ addslashes($bom->bom_no) }}', '{{ addslashes($bom->bom_nm) }}', '{{ addslashes($bom->barangJadi?->barang_nm ?? '-') }}', '{{ number_format((float) $bom->batch_ukuran_qty, 0, ',', '.') }} {{ addslashes($bom->barangJadi?->satuanDasar?->satuan_nm ?? 'Unit') }}')">
+                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                            Hapus Formula
+                                        </button>
+                                    @endif
+                                </div>
                             </div>
                         </td>
                     </tr>
@@ -108,9 +130,11 @@
                             <p style="font-size: 0.875rem; margin-top: 0.25rem;">
                                 Buat formula resep BOM pertama untuk otomatisasi kalkulasi kebutuhan bahan baku dan alokasi batch FIFO.
                             </p>
-                            <a href="{{ route('master.resep.create') }}" class="btn btn-primary" style="margin-top: 1rem; display: inline-flex; align-items: center; gap: 0.35rem;">
-                                + Buat Formula Baru
-                            </a>
+                            @if (Auth::user()?->canCreateMasterResep())
+                                <a href="{{ route('master.resep.create') }}" class="btn btn-primary" style="margin-top: 1rem; display: inline-flex; align-items: center; gap: 0.35rem;">
+                                    + Buat Formula Baru
+                                </a>
+                            @endif
                         </td>
                     </tr>
                 @endforelse
@@ -124,4 +148,17 @@
         </div>
     @endif
 </div>
+
+{{-- MODALS --}}
+@include('master_data.resep.partials.modal-delete')
+
 @endsection
+
+@push('scripts')
+    <script>
+        window.appConfig = {
+            resepBaseUrl: "{{ url('master-resep') }}"
+        };
+    </script>
+    <script src="{{ asset('js/master/resep/resep-index.js') }}"></script>
+@endpush

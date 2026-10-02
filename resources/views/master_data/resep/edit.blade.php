@@ -2,6 +2,10 @@
 
 @section('title', 'Edit Formula Resep (BOM) ' . $bom->bom_no . ' - ERP PT Mirasa')
 
+@push('styles')
+    <link rel="stylesheet" href="{{ asset('css/master/resep/resep-form.css') }}">
+@endpush
+
 @section('content')
 <div style="margin-bottom: 1.5rem;">
     <a href="{{ route('master.resep.index') }}" style="color: #64748b; text-decoration: none; font-size: 0.875rem; display: inline-flex; align-items: center; gap: 0.25rem;">
@@ -11,7 +15,7 @@
         Edit Formula Resep Produksi: {{ $bom->bom_no }}
     </h1>
     <p style="color: #64748b; font-size: 0.875rem;">
-        Perbarui nama, ukuran batch dasar, atau penyesuaian takaran bahan baku & penolong.
+        Perbarui nama, ukuran batch dasar, atau penyesuaian takaran bahan baku &amp; penolong.
     </p>
 </div>
 
@@ -80,7 +84,7 @@
     <div class="card" style="margin-bottom: 1.5rem;">
         <div class="card-header">
             <div>
-                <h2 style="font-size: 1.1rem; font-weight: 700; color: #0f172a;">Rincian Bahan Baku & Penolong (BOM Detail)</h2>
+                <h2 style="font-size: 1.1rem; font-weight: 700; color: #0f172a;">Rincian Bahan Baku &amp; Penolong (BOM Detail)</h2>
                 <p style="color: #64748b; font-size: 0.8rem; margin-top: 0.15rem;">
                     Kebutuhan bahan untuk menghasilkan 1 batch ukuran standar di atas.
                 </p>
@@ -91,18 +95,18 @@
         </div>
 
         <div style="overflow-x: auto; padding: 1rem;">
-            <table style="width: 100%; border-collapse: collapse;" id="materialsTable">
+            <table class="materials-table" style="width: 100%; border-collapse: collapse;" id="materialsTable">
                 <thead>
-                    <tr style="border-bottom: 2px solid #e2e8f0; text-align: left; font-size: 0.85rem; color: #475569;">
-                        <th style="padding: 0.5rem; width: 40%;">Bahan Baku / Penolong</th>
-                        <th style="padding: 0.5rem; width: 22%;">Takaran Kebutuhan (Qty)</th>
-                        <th style="padding: 0.5rem; width: 15%;">Satuan</th>
-                        <th style="padding: 0.5rem; width: 18%;">Keterangan / Catatan</th>
-                        <th style="padding: 0.5rem; width: 5%; text-align: center;">Hapus</th>
+                    <tr>
+                        <th style="width: 38%;">Bahan Baku / Penolong</th>
+                        <th style="width: 22%; text-align: right;">Takaran Kebutuhan (Qty)</th>
+                        <th style="width: 14%;">Satuan</th>
+                        <th style="width: 20%;">Keterangan / Catatan</th>
+                        <th style="width: 6%; text-align: center;">Hapus</th>
                     </tr>
                 </thead>
                 <tbody id="materialsBody">
-                    {{-- Rendered via JS --}}
+                    {{-- Diisi secara dinamis oleh JavaScript --}}
                 </tbody>
             </table>
         </div>
@@ -116,6 +120,7 @@
         </button>
     </div>
 </form>
+@endsection
 
 @php
     $existingItemsData = $bom->details->map(function($d) {
@@ -128,87 +133,12 @@
     })->values();
 @endphp
 
-<script>
-    const BAHAN_LIST = @json($bahanBakuList);
-    const EXISTING_ITEMS = @json($existingItemsData);
-    let materialIndex = 0;
-
-    function onTargetProductChanged(selectEl) {
-        const selectedOpt = selectEl.selectedOptions[0];
-        const satuan = selectedOpt ? selectedOpt.getAttribute('data-satuan') : 'Unit';
-        document.getElementById('targetSatuanLabel').textContent = satuan || 'Unit';
-    }
-
-    function addMaterialRow(initialData = null) {
-        const tbody = document.getElementById('materialsBody');
-        const tr = document.createElement('tr');
-        tr.id = `mat-row-${materialIndex}`;
-        tr.style.borderBottom = '1px solid #f1f5f9';
-
-        let options = '<option value="">-- Pilih Bahan Baku / Penolong --</option>';
-        BAHAN_LIST.forEach(b => {
-            const jenis = b.jenis_barang ? b.jenis_barang.jenis_barang_cd : '';
-            const isSel = (initialData && parseInt(initialData.barang_mentah_id) === parseInt(b.barang_id)) ? 'selected' : '';
-            options += `<option value="${b.barang_id}" data-satuan="${b.satuan_dasar?.satuan_nm || ''}" ${isSel}>[${b.barang_cd}] ${b.barang_nm} (${jenis})</option>`;
-        });
-
-        const qtyVal = initialData ? initialData.kebutuhan_qty : '';
-        const catVal = initialData ? (initialData.catatan_txt || '') : '';
-        const satuanVal = initialData ? (initialData.satuan_nm || '') : '';
-
-        tr.innerHTML = `
-            <td style="padding: 0.5rem;">
-                <select name="items[${materialIndex}][barang_mentah_id]" class="form-control mat-select" style="font-size: 0.875rem;" required onchange="onMaterialSelected(this)">
-                    ${options}
-                </select>
-            </td>
-            <td style="padding: 0.5rem;">
-                <input type="number" step="0.0001" min="0.0001" name="items[${materialIndex}][kebutuhan_qty]" value="${qtyVal}" class="form-control" placeholder="0" style="font-weight: 700; text-align: right;" required>
-            </td>
-            <td style="padding: 0.5rem; color: #475569; font-weight: 600; font-size: 0.85rem;" class="satuan-display">
-                ${satuanVal}
-            </td>
-            <td style="padding: 0.5rem;">
-                <input type="text" name="items[${materialIndex}][catatan_txt]" value="${catVal}" class="form-control" placeholder="Misal: Grade A, 1.5kg/karton" style="font-size: 0.85rem;">
-            </td>
-            <td style="padding: 0.5rem; text-align: center;">
-                <button type="button" class="btn btn-secondary btn-sm" onclick="removeMaterialRow(this)" style="color: #ef4444; padding: 0.25rem 0.5rem;" title="Hapus Baris">&times;</button>
-            </td>
-        `;
-
-        tbody.appendChild(tr);
-        materialIndex++;
-    }
-
-    function removeMaterialRow(btn) {
-        const tbody = document.getElementById('materialsBody');
-        if (tbody.children.length > 1) {
-            btn.closest('tr').remove();
-        } else {
-            alert('Minimal harus ada 1 bahan dalam resep formula.');
-        }
-    }
-
-    function onMaterialSelected(selectEl) {
-        const row = selectEl.closest('tr');
-        const selectedOpt = selectEl.selectedOptions[0];
-        const satuan = selectedOpt ? selectedOpt.getAttribute('data-satuan') : '';
-        row.querySelector('.satuan-display').textContent = satuan;
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-        if (EXISTING_ITEMS && EXISTING_ITEMS.length > 0) {
-            EXISTING_ITEMS.forEach(it => {
-                addMaterialRow(it);
-            });
-        } else {
-            addMaterialRow();
-        }
-
-        const targetSelect = document.getElementById('barang_jadi_id');
-        if (targetSelect) {
-            onTargetProductChanged(targetSelect);
-        }
-    });
-</script>
-@endsection
+@push('scripts')
+    <script>
+        window.appConfig = {
+            bahanBakuList: @json($bahanBakuList),
+            initialDetails: @json($existingItemsData)
+        };
+    </script>
+    <script src="{{ asset('js/master/resep/resep-form.js') }}"></script>
+@endpush

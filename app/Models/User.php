@@ -350,6 +350,7 @@ class User extends Authenticatable
         return $this->isSuperAdmin() 
             || $this->canDo('master_barang_view')
             || $this->canAccessKaryawan()
+            || $this->canAccessResep()
             || $this->canAccessSupplier()
             || $this->canAccessCustomer()
             || $this->canAccessPerusahaan();
@@ -563,6 +564,41 @@ class User extends Authenticatable
             || $this->role_cd === 'HRD'
             || $this->canDo('master_karyawan_delete') 
             || $this->canDo('master_karyawan_manage');
+    }
+
+    /**
+     * Hak akses Master Formula Resep (BOM)
+     */
+    public function canAccessResep(): bool
+    {
+        return $this->isSuperAdmin() 
+            || $this->isProduksi()
+            || $this->isGudang()
+            || $this->canDo('master_resep_view') 
+            || $this->canDo('master_resep_manage');
+    }
+
+    public function canCreateMasterResep(): bool
+    {
+        return $this->isSuperAdmin() 
+            || $this->isProduksi()
+            || $this->canDo('master_resep_create') 
+            || $this->canDo('master_resep_manage');
+    }
+
+    public function canEditMasterResep(): bool
+    {
+        return $this->isSuperAdmin() 
+            || $this->isProduksi()
+            || $this->canDo('master_resep_edit') 
+            || $this->canDo('master_resep_manage');
+    }
+
+    public function canDeleteMasterResep(): bool
+    {
+        return $this->isSuperAdmin() 
+            || $this->canDo('master_resep_delete') 
+            || $this->canDo('master_resep_manage');
     }
 
     /**

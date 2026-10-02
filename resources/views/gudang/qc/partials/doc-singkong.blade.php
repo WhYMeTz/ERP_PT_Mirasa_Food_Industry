@@ -1,42 +1,51 @@
 {{-- ========================================================================= --}}
 {{-- DOKUMEN CHECKLIST STANDAR KEBETERIMAAN BAHAN BAKU: SINGKONG               --}}
-{{-- NO. DOKUMEN: MFI/HACCP-04/FRM-03/048/VIII/2021 (PENGUJIAN I & II)        --}}
+{{-- NO. DOKUMEN: MFI/HACCP-04/FRM-03/048/VIII/2021 (1 LEMBAR TUNGGAL SELESAI) --}}
+{{-- PERSIS FORMAT FORMULIR EXCEL RESMI PT MIRASA FOOD INDUSTRY                --}}
 {{-- ========================================================================= --}}
+@php
+    $isEdit = $isEdit ?? false;
+    $firstDetail = $qc->details->first();
+    $qcdtlId = $firstDetail?->qcdtl_id ?? ($firstDtl?->qcdtl_id ?? 0);
+    $totalGross = $qc->details->sum('qty_timbang_gross');
+    $totalNetto = $qc->details->sum('qty_netto_lolos');
+    $totalReject = $qc->details->sum('qty_reject');
+@endphp
 
-{{-- LEMBAR 1: PENGUJIAN I (SAMPLING KEDATANGAN) --}}
-<div class="print-sheet" style="min-width: 820px; background: #ffffff; border: 1.5px solid #000000; padding: 1.5rem; margin-bottom: 2rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); font-family: Arial, sans-serif; font-size: 0.8rem; color: #000000;">
+<div class="excel-doc-sheet" style="min-width: 860px; background: #ffffff; border: 2px solid #000000; padding: 1.25rem; margin-bottom: 2rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.06); font-family: Arial, sans-serif; font-size: 0.8rem; color: #000000;">
+    
     {{-- KOP SURAT RESMI PT MIRASA --}}
-    <div style="border: 2px solid #000000; margin-bottom: 0.75rem;">
+    <div style="border: 2px solid #000000; margin-bottom: 0.5rem;">
         <table style="width: 100%; border-collapse: collapse;">
             <tr>
-                <td style="width: 85px; text-align: center; vertical-align: middle; padding: 6px; border-right: 2px solid #000000;">
-                    <img src="{{ asset('images/logo.png') }}" alt="Cap Payung" style="width: 65px; height: 65px; object-fit: contain;">
+                <td style="width: 130px; text-align: center; vertical-align: middle; padding: 6px; border-right: 2px solid #000000;">
+                    <img src="{{ asset('images/logo.png') }}" alt="Cap Payung" style="width: 75px; height: 75px; object-fit: contain;">
                 </td>
                 <td style="vertical-align: middle; text-align: center; padding: 6px;">
-                    <div style="font-size: 1.2rem; font-weight: 900; color: #000000; letter-spacing: 0.05em;">
+                    <div style="font-size: 1.35rem; font-weight: 900; color: #000000; letter-spacing: 0.04em;">
                         PT. MIRASA FOOD INDUSTRY
                     </div>
-                    <div style="font-size: 1rem; font-weight: 800; color: #000000; margin-top: 3px;">
+                    <div style="font-size: 1.05rem; font-weight: 800; color: #000000; margin-top: 4px;">
                         {{ $docTitle }}
                     </div>
                 </td>
-                <td style="width: 250px; vertical-align: middle; padding: 0; border-left: 2px solid #000000;">
+                <td style="width: 320px; vertical-align: middle; padding: 0; border-left: 2px solid #000000;">
                     <table style="width: 100%; border-collapse: collapse; font-size: 0.72rem;">
                         <tr style="border-bottom: 1px solid #000000;">
-                            <td style="padding: 3px 6px; font-weight: 700; width: 85px; border-right: 1px solid #000000;">No. Dokumen</td>
-                            <td style="padding: 3px 6px; font-weight: 800;">{{ $docNo }}</td>
+                            <td style="padding: 4px 6px; font-weight: 700; width: 110px; border-right: 1px solid #000000;">No. Dokumen :</td>
+                            <td style="padding: 4px 6px; font-weight: 800;">{{ $docNo }}</td>
                         </tr>
                         <tr style="border-bottom: 1px solid #000000;">
-                            <td style="padding: 3px 6px; font-weight: 700; border-right: 1px solid #000000;">Revisi</td>
-                            <td style="padding: 3px 6px;">{{ $revisi }}</td>
+                            <td style="padding: 4px 6px; font-weight: 700; border-right: 1px solid #000000;">Revisi :</td>
+                            <td style="padding: 4px 6px;">{{ $revisi }}</td>
                         </tr>
                         <tr style="border-bottom: 1px solid #000000;">
-                            <td style="padding: 3px 6px; font-weight: 700; border-right: 1px solid #000000;">Tanggal Terbit</td>
-                            <td style="padding: 3px 6px;">{{ $tglTerbit }}</td>
+                            <td style="padding: 4px 6px; font-weight: 700; border-right: 1px solid #000000;">Tanggal Terbit :</td>
+                            <td style="padding: 4px 6px;">{{ $tglTerbit }}</td>
                         </tr>
                         <tr>
-                            <td style="padding: 3px 6px; font-weight: 700; border-right: 1px solid #000000;">Halaman</td>
-                            <td style="padding: 3px 6px;">1 dari 2</td>
+                            <td style="padding: 4px 6px; font-weight: 700; border-right: 1px solid #000000;">Halaman :</td>
+                            <td style="padding: 4px 6px;">1 dari 1</td>
                         </tr>
                     </table>
                 </td>
@@ -44,40 +53,74 @@
         </table>
     </div>
 
-    {{-- TABEL IDENTITAS PENGUJIAN I --}}
-    <div style="border: 2px solid #000000; margin-bottom: 0.75rem;">
+    {{-- TABEL IDENTITAS KEDATANGAN SINGKONG --}}
+    <div style="border: 2px solid #000000; margin-bottom: 0.5rem;">
         <table style="width: 100%; border-collapse: collapse; font-size: 0.78rem;">
             <tr>
                 <td style="width: 35%; vertical-align: middle; text-align: center; padding: 0.85rem 0.5rem; border-right: 2px solid #000000; border-bottom: 2px solid #000000;">
                     <div style="font-size: 0.75rem; font-weight: 700; color: #334155; letter-spacing: 0.05em;">MIRASA FOOD INDUSTRY</div>
                     <div style="font-size: 0.8rem; font-weight: 700; margin-top: 2px;">LAPORAN KEDATANGAN</div>
-                    <div style="font-size: 1.35rem; font-weight: 900; margin-top: 3px; letter-spacing: 0.08em;">
+                    <div style="font-size: 1.45rem; font-weight: 900; margin-top: 3px; letter-spacing: 0.08em;">
                         S I N G K O N G
                     </div>
-                    <div style="font-size: 1rem; font-weight: 900; margin-top: 3px; color: #0284c7; letter-spacing: 0.05em;">
-                        PENGUJIAN I
+                    <div style="font-size: 0.85rem; font-weight: 800; margin-top: 4px; color: #0284c7; letter-spacing: 0.04em;">
+                        SAMPLING MUTU &amp; UJI GORENG
                     </div>
                 </td>
                 <td style="width: 65%; padding: 0; vertical-align: top; border-bottom: 2px solid #000000;">
                     <table style="width: 100%; border-collapse: collapse; font-size: 0.78rem;">
                         <tr style="border-bottom: 1px solid #000000;">
                             <td style="padding: 4px 6px; width: 100px; font-weight: 700; border-right: 1px solid #000000;">Nama RM</td>
-                            <td colspan="4" style="padding: 4px 6px; font-weight: 800;">: {{ $qc->nama_jenis ?: 'Singkong Basah Curah' }}</td>
+                            <td colspan="4" style="padding: 4px 6px; font-weight: 800;">
+                                @if($isEdit)
+                                    <input type="text" name="nama_jenis" value="{{ old('nama_jenis', $qc->nama_jenis ?? 'Singkong Basah Curah') }}" class="excel-cell-input font-bold">
+                                @else
+                                    : {{ $qc->nama_jenis ?: 'Singkong Basah Curah' }}
+                                @endif
+                            </td>
                         </tr>
                         <tr style="border-bottom: 1px solid #000000; background: #f8fafc; text-align: center; font-weight: 700;">
                             <td style="padding: 4px 6px; border-right: 1px solid #000000;">Nama Produsen</td>
                             <td style="padding: 4px 6px; border-right: 1px solid #000000;">Negara Produsen</td>
                             <td style="padding: 4px 6px; border-right: 1px solid #000000;">Jumlah Surat Jalan (kg)</td>
                             <td style="padding: 4px 6px; border-right: 1px solid #000000;">Jumlah di Pabrik (kg)</td>
-                            <td style="padding: 4px 6px; width: 120px;">LOKASI PANEN :</td>
+                            <td style="padding: 4px 6px; width: 130px;">LOKASI PANEN :</td>
                         </tr>
                         <tr style="border-bottom: 1px solid #000000; text-align: center;">
-                            <td style="padding: 5px 6px; font-weight: 700; border-right: 1px solid #000000;">{{ $qc->nama_produsen ?: ($qc->supplier?->supplier_nm ?? '-') }}</td>
-                            <td style="padding: 5px 6px; border-right: 1px solid #000000;">{{ $qc->negara_produsen ?: 'Indonesia' }}</td>
-                            <td style="padding: 5px 6px; font-weight: 700; border-right: 1px solid #000000;">{{ $qc->jumlah_surat_jalan ? number_format($qc->jumlah_surat_jalan, 0, ',', '.') : '-' }}</td>
-                            <td style="padding: 5px 6px; font-weight: 800; color: #0284c7; border-right: 1px solid #000000;">{{ $qc->jumlah_di_pabrik ? number_format($qc->jumlah_di_pabrik, 0, ',', '.') : number_format($totalGross, 0, ',', '.') }}</td>
-                            <td rowspan="4" style="padding: 5px 6px; vertical-align: top; font-weight: 700;">
-                                <div>{{ $qc->lokasi_panen ?: 'Wonosobo / Mitra' }}</div>
+                            <td style="padding: 4px 6px; border-right: 1px solid #000000;">
+                                @if($isEdit)
+                                    <input type="text" name="nama_produsen" value="{{ old('nama_produsen', $qc->nama_produsen ?? $qc->supplier?->supplier_nm) }}" class="excel-cell-input text-center">
+                                @else
+                                    {{ $qc->nama_produsen ?: ($qc->supplier?->supplier_nm ?? '-') }}
+                                @endif
+                            </td>
+                            <td style="padding: 4px 6px; border-right: 1px solid #000000;">
+                                @if($isEdit)
+                                    <input type="text" name="negara_produsen" value="{{ old('negara_produsen', $qc->negara_produsen ?? 'Indonesia') }}" class="excel-cell-input text-center">
+                                @else
+                                    {{ $qc->negara_produsen ?: 'Indonesia' }}
+                                @endif
+                            </td>
+                            <td style="padding: 4px 6px; border-right: 1px solid #000000;">
+                                @if($isEdit)
+                                    <input type="number" step="any" name="jumlah_surat_jalan" value="{{ old('jumlah_surat_jalan', $qc->jumlah_surat_jalan) }}" class="excel-cell-input text-center font-bold">
+                                @else
+                                    {{ $qc->jumlah_surat_jalan ? number_format($qc->jumlah_surat_jalan, 0, ',', '.') : '-' }}
+                                @endif
+                            </td>
+                            <td style="padding: 4px 6px; border-right: 1px solid #000000;">
+                                @if($isEdit)
+                                    <input type="number" step="any" name="jumlah_di_pabrik" value="{{ old('jumlah_di_pabrik', $qc->jumlah_di_pabrik ?? $totalGross) }}" class="excel-cell-input text-center font-bold">
+                                @else
+                                    <strong style="color: #0284c7;">{{ $qc->jumlah_di_pabrik ? number_format($qc->jumlah_di_pabrik, 0, ',', '.') : number_format($totalGross, 0, ',', '.') }}</strong>
+                                @endif
+                            </td>
+                            <td rowspan="4" style="padding: 4px 6px; vertical-align: top; font-weight: 700;">
+                                @if($isEdit)
+                                    <input type="text" name="lokasi_panen" value="{{ old('lokasi_panen', $qc->lokasi_panen ?? 'Wonosobo / Mitra') }}" class="excel-cell-input text-center" placeholder="Lokasi Panen">
+                                @else
+                                    <div>{{ $qc->lokasi_panen ?: 'Wonosobo / Mitra' }}</div>
+                                @endif
                                 <div style="margin-top: 15px; border-top: 1px dashed #000; padding-top: 4px; font-size: 0.7rem; font-weight: 700;">
                                     <u>Tanda Tangan ACC</u>
                                 </div>
@@ -85,65 +128,111 @@
                         </tr>
                         <tr style="border-bottom: 1px solid #000000;">
                             <td style="padding: 4px 6px; font-weight: 700; border-right: 1px solid #000000;">Umur Singkong</td>
-                            <td colspan="3" style="padding: 4px 6px; border-right: 1px solid #000000;">: {{ $qc->umur_singkong_bln ? $qc->umur_singkong_bln . ' Bulan' : '9 Bulan' }}</td>
+                            <td colspan="3" style="padding: 4px 6px; border-right: 1px solid #000000;">
+                                @if($isEdit)
+                                    <input type="number" step="0.1" name="umur_singkong_bln" value="{{ old('umur_singkong_bln', $qc->umur_singkong_bln ?? 9) }}" style="width: 70px; border: 1px solid #cbd5e1; padding: 2px 4px; font-size: 0.78rem;"> Bulan
+                                @else
+                                    : {{ $qc->umur_singkong_bln ? $qc->umur_singkong_bln . ' Bulan' : '9 Bulan' }}
+                                @endif
+                            </td>
                         </tr>
                         <tr style="border-bottom: 1px solid #000000;">
                             <td style="padding: 4px 6px; font-weight: 700; border-right: 1px solid #000000;">Tanggal Panen</td>
-                            <td colspan="3" style="padding: 4px 6px; border-right: 1px solid #000000;">: {{ $qc->tgl_panen ? $qc->tgl_panen->format('d/m/Y') : '-' }}</td>
+                            <td colspan="3" style="padding: 4px 6px; border-right: 1px solid #000000;">
+                                @if($isEdit)
+                                    <input type="date" name="tgl_panen" value="{{ old('tgl_panen', $qc->tgl_panen ? $qc->tgl_panen->format('Y-m-d') : date('Y-m-d')) }}" class="excel-cell-input">
+                                @else
+                                    : {{ $qc->tgl_panen ? $qc->tgl_panen->format('d/m/Y') : '-' }}
+                                @endif
+                            </td>
                         </tr>
                         <tr>
                             <td style="padding: 4px 6px; font-weight: 700; border-right: 1px solid #000000;">Tanggal Datang</td>
-                            <td colspan="3" style="padding: 4px 6px; border-right: 1px solid #000000;">: {{ $qc->tgl_periksa ? $qc->tgl_periksa->format('d/m/Y H:i') : '-' }} WIB</td>
+                            <td colspan="3" style="padding: 4px 6px; border-right: 1px solid #000000;">
+                                @if($isEdit)
+                                    <input type="datetime-local" name="tgl_periksa" value="{{ old('tgl_periksa', $qc->tgl_periksa ? $qc->tgl_periksa->format('Y-m-d\TH:i') : date('Y-m-d\TH:i')) }}" class="excel-cell-input">
+                                @else
+                                    : {{ $qc->tgl_periksa ? $qc->tgl_periksa->format('d/m/Y H:i') : '-' }} WIB
+                                @endif
+                            </td>
                         </tr>
                     </table>
                 </td>
             </tr>
             <tr>
                 <td style="padding: 5px 10px; border-right: 2px solid #000000;">
-                    <strong>Jumlah Sample (kg):</strong> : {{ $qc->jumlah_sample_kg ? number_format($qc->jumlah_sample_kg, 1) . ' kg' : '10.0 kg' }}
+                    <strong>Jumlah Sample (kg):</strong>
+                    @if($isEdit)
+                        <input type="number" step="0.1" name="jumlah_sample_kg" value="{{ old('jumlah_sample_kg', $qc->jumlah_sample_kg ?? 10) }}" style="width: 80px; border: 1px solid #94a3b8; padding: 2px 6px; font-size: 0.8rem; font-weight: 700;"> kg
+                    @else
+                        : {{ $qc->jumlah_sample_kg ? number_format($qc->jumlah_sample_kg, 1) . ' kg' : '10.0 kg' }}
+                    @endif
                 </td>
                 <td style="padding: 5px 10px;">
-                    <strong>Nomor DO / SJ :</strong> {{ $qc->nomor_do ?: ($qc->surat_jalan_supplier ?: '-') }} &bull; Plat: {{ $qc->plat_nomor_truk ?: '-' }} ({{ $qc->sopir_nama ?: '-' }})
+                    <strong>Nomor DO / SJ :</strong>
+                    @if($isEdit)
+                        <input type="text" name="nomor_do" value="{{ old('nomor_do', $qc->nomor_do ?? $qc->surat_jalan_supplier) }}" style="width: 140px; border: 1px solid #94a3b8; padding: 2px 6px; font-size: 0.8rem; font-weight: 700;">
+                        &bull; Plat: <input type="text" name="plat_nomor_truk" value="{{ old('plat_nomor_truk', $qc->plat_nomor_truk) }}" style="width: 100px; border: 1px solid #94a3b8; padding: 2px 6px; font-size: 0.8rem; text-transform: uppercase;">
+                        &bull; Sopir: <input type="text" name="sopir_nama" value="{{ old('sopir_nama', $qc->sopir_nama) }}" style="width: 110px; border: 1px solid #94a3b8; padding: 2px 6px; font-size: 0.8rem;">
+                    @else
+                        : {{ $qc->nomor_do ?: ($qc->surat_jalan_supplier ?: '-') }} &bull; Plat: {{ $qc->plat_nomor_truk ?: '-' }} ({{ $qc->sopir_nama ?: '-' }})
+                    @endif
                 </td>
             </tr>
         </table>
     </div>
 
     {{-- KONDISI TRANSPORTASI & AUDIT HALAL --}}
-    <div style="border: 2px solid #000000; margin-bottom: 0.75rem;">
+    <div style="border: 2px solid #000000; margin-bottom: 0.5rem;">
         <table style="width: 100%; border-collapse: collapse; font-size: 0.78rem;">
             <tr style="border-bottom: 1px solid #000000;">
-                <td style="padding: 5px 8px; width: 170px; font-weight: 700;">KONDISI TRANSPORTASI</td>
-                <td style="padding: 5px 8px; width: 25px; text-align: center;">
-                    <span style="display: inline-block; width: 15px; height: 15px; border: 1.5px solid #000; text-align: center; line-height: 13px; font-weight: 900;">
-                        {{ $qc->bebas_cemaran_st ? '✔' : '' }}
-                    </span>
+                <td style="padding: 6px 8px; width: 170px; font-weight: 700;">KONDISI TRANSPORTASI</td>
+                <td style="padding: 6px 8px; width: 30px; text-align: center;">
+                    @if($isEdit)
+                        <input type="radio" name="bebas_cemaran_st" value="1" {{ old('bebas_cemaran_st', $qc->bebas_cemaran_st ? '1' : '1') == '1' ? 'checked' : '' }} class="excel-checkbox">
+                    @else
+                        <span class="excel-box-check">{{ $qc->bebas_cemaran_st ? '✔' : '' }}</span>
+                    @endif
                 </td>
-                <td style="padding: 5px 8px; width: 240px;">Tidak ada cemaran, Najis / Kotoran</td>
-                <td style="padding: 5px 8px; width: 25px; text-align: center;">
-                    <span style="display: inline-block; width: 15px; height: 15px; border: 1.5px solid #000; text-align: center; line-height: 13px; font-weight: 900;">
-                        {{ !$qc->bebas_cemaran_st ? '✔' : '' }}
-                    </span>
+                <td style="padding: 6px 8px; width: 230px;">Tidak ada cemaran, Najis / Kotoran</td>
+                <td style="padding: 6px 8px; width: 30px; text-align: center;">
+                    @if($isEdit)
+                        <input type="radio" name="bebas_cemaran_st" value="0" {{ old('bebas_cemaran_st', $qc->bebas_cemaran_st ? '1' : '1') == '0' ? 'checked' : '' }} class="excel-checkbox">
+                    @else
+                        <span class="excel-box-check">{{ !$qc->bebas_cemaran_st ? '✔' : '' }}</span>
+                    @endif
                 </td>
-                <td style="padding: 5px 8px;">Ada cemaran</td>
+                <td style="padding: 6px 8px;">Ada cemaran</td>
             </tr>
+
             <tr>
                 <td colspan="3" style="padding: 5px 8px; font-weight: 700;">
                     APAKAH BARANG TERSEBUT DIANGKUT BERSAMA DENGAN BARANG HARAM ?
                 </td>
                 <td colspan="2" style="padding: 5px 8px;">
-                    <div style="display: flex; align-items: center; gap: 1rem;">
-                        <span style="display: inline-flex; align-items: center; gap: 4px;">
-                            <span style="display: inline-block; width: 15px; height: 15px; border: 1.5px solid #000; text-align: center; line-height: 13px; font-weight: 900;">
-                                {{ !$qc->angkut_barang_haram_st ? '✔' : '' }}
-                            </span> Tidak
-                        </span>
-                        <span style="display: inline-flex; align-items: center; gap: 4px;">
-                            <span style="display: inline-block; width: 15px; height: 15px; border: 1.5px solid #000; text-align: center; line-height: 13px; font-weight: 900;">
-                                {{ $qc->angkut_barang_haram_st ? '✔' : '' }}
-                            </span> Ya
-                        </span>
-                        <span style="margin-left: 0.75rem; color: #475569;">Komentar : {{ $qc->komentar_transportasi ?: '-' }}</span>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                        <label class="excel-btn-toggle {{ !$qc->angkut_barang_haram_st ? 'active' : '' }}">
+                            @if($isEdit)
+                                <input type="radio" name="angkut_barang_haram_st" value="0" {{ old('angkut_barang_haram_st', $qc->angkut_barang_haram_st ? '1' : '0') == '0' ? 'checked' : '' }}>
+                            @else
+                                <span class="excel-box-check mini">{{ !$qc->angkut_barang_haram_st ? '✔' : '' }}</span>
+                            @endif
+                            <span>Tidak</span>
+                        </label>
+                        <label class="excel-btn-toggle {{ $qc->angkut_barang_haram_st ? 'active' : '' }}">
+                            @if($isEdit)
+                                <input type="radio" name="angkut_barang_haram_st" value="1" {{ old('angkut_barang_haram_st', $qc->angkut_barang_haram_st ? '1' : '0') == '1' ? 'checked' : '' }}>
+                            @else
+                                <span class="excel-box-check mini">{{ $qc->angkut_barang_haram_st ? '✔' : '' }}</span>
+                            @endif
+                            <span>Ya</span>
+                        </label>
+                        <span style="margin-left: 0.75rem; font-weight: 700;">Komentar :</span>
+                        @if($isEdit)
+                            <input type="text" name="komentar_transportasi" value="{{ old('komentar_transportasi', $qc->komentar_transportasi) }}" style="flex: 1; border: 1px solid #cbd5e1; padding: 2px 6px; font-size: 0.78rem;" placeholder="-">
+                        @else
+                            <span style="color: #475569;">{{ $qc->komentar_transportasi ?: '-' }}</span>
+                        @endif
                     </div>
                 </td>
             </tr>
@@ -151,19 +240,25 @@
     </div>
 
     {{-- 2. ISI RAW MATERIAL, TABEL PARAMETER DIAMETER & CHECKLIST KONDISI --}}
-    <div style="border: 2px solid #000000; margin-bottom: 0.75rem;">
-        <div style="padding: 5px 8px; border-bottom: 1px solid #000000; display: flex; align-items: center; gap: 1.5rem; background: #f8fafc;">
+    <div style="border: 2px solid #000000; margin-bottom: 0.5rem;">
+        <div style="padding: 5px 12px; border-bottom: 2px solid #000000; display: flex; align-items: center; gap: 1.5rem; background: #ffffff;">
             <span style="font-weight: 800;">2. ISI RAW MATERIAL</span>
-            <span style="display: inline-flex; align-items: center; gap: 4px; font-weight: 700;">
-                <span style="display: inline-block; width: 15px; height: 15px; border: 1.5px solid #000; text-align: center; line-height: 13px; font-weight: 900;">
-                    {{ ($firstDetail?->status_raw_material ?? 'OK') === 'OK' ? '✔' : '' }}
-                </span> OK
-            </span>
-            <span style="display: inline-flex; align-items: center; gap: 4px; font-weight: 700;">
-                <span style="display: inline-block; width: 15px; height: 15px; border: 1.5px solid #000; text-align: center; line-height: 13px; font-weight: 900;">
-                    {{ ($firstDetail?->status_raw_material ?? '') === 'TDK_STD' ? '✔' : '' }}
-                </span> TDK STD
-            </span>
+            <label style="display: inline-flex; align-items: center; gap: 5px; cursor: pointer;">
+                @if($isEdit)
+                    <input type="radio" name="items[{{ $qcdtlId }}][status_raw_material]" value="OK" {{ old('items.'.$qcdtlId.'.status_raw_material', $firstDetail?->status_raw_material ?? 'OK') === 'OK' ? 'checked' : '' }} class="excel-checkbox">
+                @else
+                    <span class="excel-box-check">{{ ($firstDetail?->status_raw_material ?? 'OK') === 'OK' ? '✔' : '' }}</span>
+                @endif
+                <span style="font-weight: 700;">OK</span>
+            </label>
+            <label style="display: inline-flex; align-items: center; gap: 5px; cursor: pointer;">
+                @if($isEdit)
+                    <input type="radio" name="items[{{ $qcdtlId }}][status_raw_material]" value="TDK_STD" {{ old('items.'.$qcdtlId.'.status_raw_material', $firstDetail?->status_raw_material ?? '') === 'TDK_STD' ? 'checked' : '' }} class="excel-checkbox">
+                @else
+                    <span class="excel-box-check">{{ ($firstDetail?->status_raw_material ?? '') === 'TDK_STD' ? '✔' : '' }}</span>
+                @endif
+                <span style="font-weight: 700;">TDK STD</span>
+            </label>
         </div>
 
         <div style="display: grid; grid-template-columns: 1.15fr 1fr;">
@@ -179,81 +274,150 @@
                     </tr>
                     <tr style="border-bottom: 1px solid #000000;">
                         <td style="padding: 4px 8px; border-right: 1px solid #000000;">- &lt; 4 cm</td>
-                        <td style="padding: 4px; text-align: center; font-weight: 800; border-right: 1px solid #000000; color: {{ (float)($firstDetail?->diameter_kurang_4cm_persen ?? 0) > 5 ? '#dc2626' : '#059669' }};">
-                            {{ $firstDetail?->diameter_kurang_4cm_persen !== null ? number_format($firstDetail->diameter_kurang_4cm_persen, 1) . '%' : '-' }}
+                        <td style="padding: 4px; text-align: center; font-weight: 800; border-right: 1px solid #000000;">
+                            @if($isEdit)
+                                <input type="number" step="0.1" name="items[{{ $qcdtlId }}][diameter_kurang_4cm_persen]" value="{{ old('items.'.$qcdtlId.'.diameter_kurang_4cm_persen', $firstDetail?->diameter_kurang_4cm_persen ?? 0) }}" class="excel-cell-input text-center"> %
+                            @else
+                                <span style="color: {{ (float)($firstDetail?->diameter_kurang_4cm_persen ?? 0) > 5 ? '#dc2626' : '#059669' }};">
+                                    {{ $firstDetail?->diameter_kurang_4cm_persen !== null ? number_format($firstDetail->diameter_kurang_4cm_persen, 1) . '%' : '-' }}
+                                </span>
+                            @endif
                         </td>
                         <td style="padding: 4px; text-align: center;">Max 5.0%</td>
                     </tr>
                     <tr style="border-bottom: 1px solid #000000;">
                         <td style="padding: 4px 8px; border-right: 1px solid #000000;">- &ge; 4 cm</td>
-                        <td style="padding: 4px; text-align: center; font-weight: 800; border-right: 1px solid #000000; color: {{ (float)($firstDetail?->diameter_lebih_4cm_persen ?? 0) < 95 ? '#dc2626' : '#059669' }};">
-                            {{ $firstDetail?->diameter_lebih_4cm_persen !== null ? number_format($firstDetail->diameter_lebih_4cm_persen, 1) . '%' : '-' }}
+                        <td style="padding: 4px; text-align: center; font-weight: 800; border-right: 1px solid #000000;">
+                            @if($isEdit)
+                                <input type="number" step="0.1" name="items[{{ $qcdtlId }}][diameter_lebih_4cm_persen]" value="{{ old('items.'.$qcdtlId.'.diameter_lebih_4cm_persen', $firstDetail?->diameter_lebih_4cm_persen ?? 100) }}" class="excel-cell-input text-center"> %
+                            @else
+                                <span style="color: {{ (float)($firstDetail?->diameter_lebih_4cm_persen ?? 0) < 95 ? '#dc2626' : '#059669' }};">
+                                    {{ $firstDetail?->diameter_lebih_4cm_persen !== null ? number_format($firstDetail->diameter_lebih_4cm_persen, 1) . '%' : '-' }}
+                                </span>
+                            @endif
                         </td>
                         <td style="padding: 4px; text-align: center;">Min 95%</td>
                     </tr>
                     <tr style="border-bottom: 1px solid #000000;">
-                        <td colspan="3" style="padding: 3px 6px; font-weight: 700; background: #f8fafc;">3. Hasil Fryer (Pengujian I: Sampel Awal)</td>
+                        <td colspan="3" style="padding: 3px 6px; font-weight: 700; background: #f8fafc;">3. Hasil Fryer (Uji Rasa &amp; Tekstur)</td>
                     </tr>
                     <tr style="border-bottom: 1px solid #000000;">
                         <td style="padding: 4px 8px; border-right: 1px solid #000000;">- RASA</td>
                         <td style="padding: 4px; text-align: center; border-right: 1px solid #000000; font-weight: 700;">
-                            {{ $firstDetail?->fryer_rasa === 'PAHIT' ? 'Pahit' : 'Tidak Pahit' }}
+                            @if($isEdit)
+                                <select name="items[{{ $qcdtlId }}][fryer_rasa]" class="excel-cell-input">
+                                    <option value="TIDAK_PAHIT" {{ ($firstDetail?->fryer_rasa ?? 'TIDAK_PAHIT') === 'TIDAK_PAHIT' ? 'selected' : '' }}>Tidak Pahit</option>
+                                    <option value="PAHIT" {{ ($firstDetail?->fryer_rasa ?? '') === 'PAHIT' ? 'selected' : '' }}>Pahit</option>
+                                </select>
+                            @else
+                                <span style="color: {{ $firstDetail?->fryer_rasa === 'PAHIT' ? '#dc2626' : '#059669' }};">
+                                    {{ $firstDetail?->fryer_rasa === 'PAHIT' ? 'Pahit' : 'Tidak Pahit' }}
+                                </span>
+                            @endif
                         </td>
                         <td style="padding: 4px; text-align: center;">Tidak Pahit</td>
                     </tr>
                     <tr style="border-bottom: 1px solid #000000;">
                         <td style="padding: 4px 8px; border-right: 1px solid #000000;">- Tekstur</td>
                         <td style="padding: 4px; text-align: center; border-right: 1px solid #000000; font-weight: 700;">
-                            {{ $firstDetail?->fryer_tekstur ? ucfirst(strtolower($firstDetail->fryer_tekstur)) : 'Renyah' }}
+                            @if($isEdit)
+                                <select name="items[{{ $qcdtlId }}][fryer_tekstur]" class="excel-cell-input">
+                                    <option value="RENYAH" {{ ($firstDetail?->fryer_tekstur ?? 'RENYAH') === 'RENYAH' ? 'selected' : '' }}>Renyah</option>
+                                    <option value="ALOT" {{ ($firstDetail?->fryer_tekstur ?? '') === 'ALOT' ? 'selected' : '' }}>Alot</option>
+                                    <option value="LEMBEK" {{ ($firstDetail?->fryer_tekstur ?? '') === 'LEMBEK' ? 'selected' : '' }}>Lembek</option>
+                                </select>
+                            @else
+                                <span style="color: {{ $firstDetail?->fryer_tekstur === 'ALOT' ? '#dc2626' : '#059669' }};">
+                                    {{ $firstDetail?->fryer_tekstur ? ucfirst(strtolower($firstDetail->fryer_tekstur)) : 'Renyah' }}
+                                </span>
+                            @endif
                         </td>
                         <td style="padding: 4px; text-align: center;">Renyah</td>
                     </tr>
                     <tr>
                         <td style="padding: 4px 8px; border-right: 1px solid #000000;">- Penampakan</td>
                         <td style="padding: 4px; text-align: center; border-right: 1px solid #000000; font-weight: 700;">
-                            {{ $firstDetail?->fryer_penampakan === 'OILSOAKED' ? 'Oilsoaked' : 'Tidak Oilsoaked' }}
+                            @if($isEdit)
+                                <select name="items[{{ $qcdtlId }}][fryer_penampakan]" class="excel-cell-input">
+                                    <option value="TIDAK_OILSOAKED" {{ ($firstDetail?->fryer_penampakan ?? 'TIDAK_OILSOAKED') === 'TIDAK_OILSOAKED' ? 'selected' : '' }}>Tidak Oilsoaked</option>
+                                    <option value="OILSOAKED" {{ ($firstDetail?->fryer_penampakan ?? '') === 'OILSOAKED' ? 'selected' : '' }}>Oilsoaked</option>
+                                </select>
+                            @else
+                                <span style="color: {{ $firstDetail?->fryer_penampakan === 'OILSOAKED' ? '#dc2626' : '#059669' }};">
+                                    {{ $firstDetail?->fryer_penampakan === 'OILSOAKED' ? 'Oilsoaked' : 'Tidak Oilsoaked' }}
+                                </span>
+                            @endif
                         </td>
                         <td style="padding: 4px; text-align: center;">Tidak Oilsoaked</td>
                     </tr>
                 </table>
             </div>
 
+            {{-- CHECKLIST KONDISI FISIK SINGKONG --}}
             <div style="padding: 8px 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; align-items: center; font-size: 0.775rem;">
-                <div style="display: flex; align-items: center; gap: 6px;">
-                    <span style="display: inline-block; width: 16px; height: 16px; border: 1.5px solid #000; text-align: center; line-height: 14px; font-weight: 900;">
-                        {{ $firstDetail?->kondisi_segar ? '✔' : '' }}
-                    </span> SEGAR
-                </div>
-                <div style="display: flex; align-items: center; gap: 6px;">
-                    <span style="display: inline-block; width: 16px; height: 16px; border: 1.5px solid #000; text-align: center; line-height: 14px; font-weight: 900;">
-                        {{ $firstDetail?->kondisi_busuk ? '✔' : '' }}
-                    </span> BUSUK
-                </div>
-                <div style="display: flex; align-items: center; gap: 6px;">
-                    <span style="display: inline-block; width: 16px; height: 16px; border: 1.5px solid #000; text-align: center; line-height: 14px; font-weight: 900;">
-                        {{ $firstDetail?->kondisi_layu ? '✔' : '' }}
-                    </span> LAYU
-                </div>
-                <div style="display: flex; align-items: center; gap: 6px;">
-                    <span style="display: inline-block; width: 16px; height: 16px; border: 1.5px solid #000; text-align: center; line-height: 14px; font-weight: 900;">
-                        {{ $firstDetail?->kondisi_berjamur ? '✔' : '' }}
-                    </span> BERJAMUR
-                </div>
-                <div style="display: flex; align-items: center; gap: 6px;">
-                    <span style="display: inline-block; width: 16px; height: 16px; border: 1.5px solid #000; text-align: center; line-height: 14px; font-weight: 900;">
-                        {{ $firstDetail?->kondisi_basah ? '✔' : '' }}
-                    </span> BASAH
-                </div>
-                <div style="display: flex; align-items: center; gap: 6px;">
-                    <span style="display: inline-block; width: 16px; height: 16px; border: 1.5px solid #000; text-align: center; line-height: 14px; font-weight: 900;">
-                        {{ $firstDetail?->kondisi_lembek ? '✔' : '' }}
-                    </span> TEKSTUR LEMBEK
-                </div>
-                <div style="display: flex; align-items: center; gap: 6px;">
-                    <span style="display: inline-block; width: 16px; height: 16px; border: 1.5px solid #000; text-align: center; line-height: 14px; font-weight: 900;">
-                        {{ $firstDetail?->kondisi_terkelupas ? '✔' : '' }}
-                    </span> TERKELUPAS
-                </div>
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                    @if($isEdit)
+                        <input type="checkbox" name="items[{{ $qcdtlId }}][kondisi_segar]" value="1" {{ old('items.'.$qcdtlId.'.kondisi_segar', $firstDetail?->kondisi_segar) ? 'checked' : '' }} class="excel-checkbox">
+                    @else
+                        <span class="excel-box-check">{{ $firstDetail?->kondisi_segar ? '✔' : '' }}</span>
+                    @endif
+                    <span style="font-weight: 800;">SEGAR</span>
+                </label>
+
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                    @if($isEdit)
+                        <input type="checkbox" name="items[{{ $qcdtlId }}][kondisi_busuk]" value="1" {{ old('items.'.$qcdtlId.'.kondisi_busuk', $firstDetail?->kondisi_busuk) ? 'checked' : '' }} class="excel-checkbox">
+                    @else
+                        <span class="excel-box-check">{{ $firstDetail?->kondisi_busuk ? '✔' : '' }}</span>
+                    @endif
+                    <span style="font-weight: 800;">BUSUK</span>
+                </label>
+
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                    @if($isEdit)
+                        <input type="checkbox" name="items[{{ $qcdtlId }}][kondisi_layu]" value="1" {{ old('items.'.$qcdtlId.'.kondisi_layu', $firstDetail?->kondisi_layu) ? 'checked' : '' }} class="excel-checkbox">
+                    @else
+                        <span class="excel-box-check">{{ $firstDetail?->kondisi_layu ? '✔' : '' }}</span>
+                    @endif
+                    <span style="font-weight: 800;">LAYU</span>
+                </label>
+
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                    @if($isEdit)
+                        <input type="checkbox" name="items[{{ $qcdtlId }}][kondisi_berjamur]" value="1" {{ old('items.'.$qcdtlId.'.kondisi_berjamur', $firstDetail?->kondisi_berjamur) ? 'checked' : '' }} class="excel-checkbox">
+                    @else
+                        <span class="excel-box-check">{{ $firstDetail?->kondisi_berjamur ? '✔' : '' }}</span>
+                    @endif
+                    <span style="font-weight: 800;">BERJAMUR</span>
+                </label>
+
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                    @if($isEdit)
+                        <input type="checkbox" name="items[{{ $qcdtlId }}][kondisi_basah]" value="1" {{ old('items.'.$qcdtlId.'.kondisi_basah', $firstDetail?->kondisi_basah) ? 'checked' : '' }} class="excel-checkbox">
+                    @else
+                        <span class="excel-box-check">{{ $firstDetail?->kondisi_basah ? '✔' : '' }}</span>
+                    @endif
+                    <span style="font-weight: 800;">BASAH</span>
+                </label>
+
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                    @if($isEdit)
+                        <input type="checkbox" name="items[{{ $qcdtlId }}][kondisi_lembek]" value="1" {{ old('items.'.$qcdtlId.'.kondisi_lembek', $firstDetail?->kondisi_lembek) ? 'checked' : '' }} class="excel-checkbox">
+                    @else
+                        <span class="excel-box-check">{{ $firstDetail?->kondisi_lembek ? '✔' : '' }}</span>
+                    @endif
+                    <span style="font-weight: 800;">TEKSTUR LEMBEK</span>
+                </label>
+
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                    @if($isEdit)
+                        <input type="checkbox" name="items[{{ $qcdtlId }}][kondisi_terkelupas]" value="1" {{ old('items.'.$qcdtlId.'.kondisi_terkelupas', $firstDetail?->kondisi_terkelupas) ? 'checked' : '' }} class="excel-checkbox">
+                    @else
+                        <span class="excel-box-check">{{ $firstDetail?->kondisi_terkelupas ? '✔' : '' }}</span>
+                    @endif
+                    <span style="font-weight: 800;">TERKELUPAS</span>
+                </label>
+
                 <div style="display: flex; align-items: center; gap: 6px; color: #64748b;">
                     <span style="display: inline-block; width: 16px; height: 16px; border: 1.5px solid #000;"></span> ....................
                 </div>
@@ -261,368 +425,96 @@
         </div>
     </div>
 
-    {{-- DEFECT FRYING & KESIMPULAN PENGUJIAN I --}}
-    <div style="border: 2px solid #000000; margin-bottom: 0.75rem; padding: 6px 10px; font-size: 0.78rem;">
+    {{-- DEFFECT FRYING & TONASE KEDATANGAN & KESIMPULAN --}}
+    <div style="border: 2px solid #000000; margin-bottom: 0.5rem; padding: 6px 10px; font-size: 0.78rem;">
+        {{-- DEFECT FRYING PERCENTAGES --}}
         <div style="margin-bottom: 0.5rem;">
-            <span style="font-weight: 800; text-decoration: underline;">DEFECT FRYING :</span>
+            <span style="font-weight: 800; text-decoration: underline;">DEFFECT FRYING :</span>
             <span style="margin-left: 0.5rem;">
-                <u>{{ $firstDetail?->defect_breakage_persen !== null ? number_format($firstDetail->defect_breakage_persen, 1) . '%' : '___' }}</u> Breakage / 
-                <u>{{ $firstDetail?->defect_cluster_persen !== null ? number_format($firstDetail->defect_cluster_persen, 1) . '%' : '___' }}</u> Cluster / 
-                <u>{{ $firstDetail?->defect_foldover_persen !== null ? number_format($firstDetail->defect_foldover_persen, 1) . '%' : '___' }}</u> Foldover / 
-                <u>{{ $firstDetail?->defect_oilsoaked_persen !== null ? number_format($firstDetail->defect_oilsoaked_persen, 1) . '%' : '___' }}</u> Oilsoaked - Polos / 
-                <u>{{ $firstDetail?->defect_gambos_persen !== null ? number_format($firstDetail->defect_gambos_persen, 1) . '%' : '___' }}</u> Gambos (%)
+                @if($isEdit)
+                    <input type="number" step="0.1" name="items[{{ $qcdtlId }}][defect_breakage_persen]" value="{{ old('items.'.$qcdtlId.'.defect_breakage_persen', $firstDetail?->defect_breakage_persen ?? 0) }}" style="width: 55px; border: 1px solid #cbd5e1; padding: 1px 4px;"> Breakage / 
+                    <input type="number" step="0.1" name="items[{{ $qcdtlId }}][defect_cluster_persen]" value="{{ old('items.'.$qcdtlId.'.defect_cluster_persen', $firstDetail?->defect_cluster_persen ?? 0) }}" style="width: 55px; border: 1px solid #cbd5e1; padding: 1px 4px;"> Cluster / 
+                    <input type="number" step="0.1" name="items[{{ $qcdtlId }}][defect_foldover_persen]" value="{{ old('items.'.$qcdtlId.'.defect_foldover_persen', $firstDetail?->defect_foldover_persen ?? 0) }}" style="width: 55px; border: 1px solid #cbd5e1; padding: 1px 4px;"> Foldover / 
+                    <input type="number" step="0.1" name="items[{{ $qcdtlId }}][defect_oilsoaked_persen]" value="{{ old('items.'.$qcdtlId.'.defect_oilsoaked_persen', $firstDetail?->defect_oilsoaked_persen ?? 0) }}" style="width: 55px; border: 1px solid #cbd5e1; padding: 1px 4px;"> Oilsoaked - Polos / 
+                    <input type="number" step="0.1" name="items[{{ $qcdtlId }}][defect_gambos_persen]" value="{{ old('items.'.$qcdtlId.'.defect_gambos_persen', $firstDetail?->defect_gambos_persen ?? 0) }}" style="width: 55px; border: 1px solid #cbd5e1; padding: 1px 4px;"> Gambos (%)
+                @else
+                    <u>{{ $firstDetail?->defect_breakage_persen !== null ? number_format($firstDetail->defect_breakage_persen, 1) . '%' : '___' }}</u> Breakage / 
+                    <u>{{ $firstDetail?->defect_cluster_persen !== null ? number_format($firstDetail->defect_cluster_persen, 1) . '%' : '___' }}</u> Cluster / 
+                    <u>{{ $firstDetail?->defect_foldover_persen !== null ? number_format($firstDetail->defect_foldover_persen, 1) . '%' : '___' }}</u> Foldover / 
+                    <u>{{ $firstDetail?->defect_oilsoaked_persen !== null ? number_format($firstDetail->defect_oilsoaked_persen, 1) . '%' : '___' }}</u> Oilsoaked - Polos / 
+                    <u>{{ $firstDetail?->defect_gambos_persen !== null ? number_format($firstDetail->defect_gambos_persen, 1) . '%' : '___' }}</u> Gambos (%)
+                @endif
             </span>
         </div>
 
-        <div style="border-top: 1px solid #000000; padding-top: 5px; display: flex; align-items: center; gap: 2rem;">
-            <span style="font-weight: 800;">KESIMPULAN</span>
-            <div style="display: flex; align-items: center; gap: 0.5rem;">
-                <span style="display: inline-block; width: 16px; height: 16px; border: 1.5px solid #000; text-align: center; line-height: 14px; font-weight: 900;">
-                    {{ $qc->status_qc !== 'DITOLAK_TOTAL' ? '✔' : '' }}
-                </span>
-                <strong>TERIMA :</strong> <u>{{ number_format($totalNetto, 2, ',', '.') }}</u> kg
+        {{-- RINGKASAN TONASE & KESIMPULAN --}}
+        <div style="border-top: 1px solid #000000; padding-top: 6px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+            <div style="display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap;">
+                <span style="font-weight: 800;">KESIMPULAN</span>
+                <label style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
+                    @if($isEdit)
+                        <input type="radio" name="kesimpulan_qc" value="TERIMA" {{ old('kesimpulan_qc', $qc->status_qc !== 'DITOLAK_TOTAL' ? 'TERIMA' : '') === 'TERIMA' ? 'checked' : '' }} class="excel-checkbox">
+                    @else
+                        <span class="excel-box-check">{{ $qc->status_qc !== 'DITOLAK_TOTAL' ? '✔' : '' }}</span>
+                    @endif
+                    <strong>TERIMA :</strong> 
+                    @if($isEdit)
+                        <input type="number" step="any" name="items[{{ $qcdtlId }}][qty_netto_lolos]" value="{{ old('items.'.$qcdtlId.'.qty_netto_lolos', $firstDetail?->qty_netto_lolos ?? $totalNetto) }}" style="width: 100px; border: 1px solid #94a3b8; padding: 2px 4px; font-weight: 800; color: #0284c7;"> kg
+                    @else
+                        <u>{{ number_format($totalNetto, 2, ',', '.') }}</u> kg
+                    @endif
+                </label>
+                <label style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
+                    @if($isEdit)
+                        <input type="radio" name="kesimpulan_qc" value="TOLAK" {{ old('kesimpulan_qc', $qc->status_qc === 'DITOLAK_TOTAL' ? 'TOLAK' : '') === 'TOLAK' ? 'checked' : '' }} class="excel-checkbox">
+                    @else
+                        <span class="excel-box-check">{{ $qc->status_qc === 'DITOLAK_TOTAL' ? '✔' : '' }}</span>
+                    @endif
+                    <strong style="color: #dc2626;">TOLAK :</strong> 
+                    @if($isEdit)
+                        <input type="number" step="any" name="items[{{ $qcdtlId }}][qty_reject]" value="{{ old('items.'.$qcdtlId.'.qty_reject', $firstDetail?->qty_reject ?? $totalReject) }}" style="width: 80px; border: 1px solid #94a3b8; padding: 2px 4px; color: #dc2626; font-weight: 800;"> kg
+                    @else
+                        <u>{{ number_format($totalReject, 2, ',', '.') }}</u> kg
+                    @endif
+                </label>
             </div>
-            <div style="display: flex; align-items: center; gap: 0.5rem;">
-                <span style="display: inline-block; width: 16px; height: 16px; border: 1.5px solid #000; text-align: center; line-height: 14px; font-weight: 900;">
-                    {{ $qc->status_qc === 'DITOLAK_TOTAL' ? '✔' : '' }}
-                </span>
-                <strong>TOLAK :</strong> <u>{{ number_format($totalReject, 2, ',', '.') }}</u> kg
+
+            <div style="font-size: 0.75rem; color: #475569;">
+                Bruto: <strong>{{ number_format($totalGross, 0, ',', '.') }} kg</strong> &bull; 
+                Refraksi: <strong>{{ number_format($firstDetail?->refraksi_persen ?? 0, 1) }}%</strong>
             </div>
         </div>
 
-        <div style="border-top: 1px solid #000000; margin-top: 5px; padding-top: 4px;">
-            <strong>KOMENTAR :</strong> {{ $firstDetail?->catatan_dtl ?: ($qc->catatan_umum ?: 'Sampling Pengujian I Sesuai Standar HACCP') }}
+        <div style="border-top: 1px solid #000000; margin-top: 6px; padding-top: 4px;">
+            <strong>KOMENTAR :</strong> 
+            @if($isEdit)
+                <input type="text" name="catatan_umum" value="{{ old('catatan_umum', $firstDetail?->catatan_dtl ?: $qc->catatan_umum) }}" class="excel-cell-input" style="margin-top: 3px;" placeholder="Catatan hasil sampling kedatangan dan uji goreng singkong...">
+            @else
+                {{ $firstDetail?->catatan_dtl ?: ($qc->catatan_umum ?: 'Sampling kedatangan dan uji fryer sesuai standar mutu PT Mirasa.') }}
+            @endif
         </div>
     </div>
 
-    {{-- TANDA TANGAN RESMI PENGUJIAN I --}}
+    {{-- TANDA TANGAN RESMI --}}
     <div style="border: 2px solid #000000; font-size: 0.78rem;">
         <table style="width: 100%; border-collapse: collapse; text-align: center;">
             <tr style="border-bottom: 1px solid #000000; background: #f8fafc; font-weight: 700;">
-                <td style="padding: 4px; width: 50%; border-right: 2px solid #000000;">QC RAW MATERIAL : {{ $qc->petugas_qc_nama }}</td>
-                <td style="padding: 4px; width: 50%;">QC Supervisor : {{ $qc->qc_supervisor_nama ?: 'Supervisor QC' }}</td>
-            </tr>
-            <tr style="border-bottom: 1px solid #000000; background: #f1f5f9; font-weight: 700; font-size: 0.72rem;">
-                <td style="padding: 2px; border-right: 2px solid #000000;">
-                    <table style="width: 100%;"><tr><td style="width: 50%; border-right: 1px solid #000;">NAMA</td><td style="width: 50%;">TTD</td></tr></table>
+                <td style="padding: 4px; width: 50%; border-right: 2px solid #000000;">
+                    QC RAW MATERIAL : 
+                    @if($isEdit)
+                        <input type="text" name="petugas_qc_nama" value="{{ old('petugas_qc_nama', $qc->petugas_qc_nama) }}" style="width: 150px; border: 1px solid #cbd5e1; padding: 2px 6px; font-weight: 700;">
+                    @else
+                        {{ $qc->petugas_qc_nama }}
+                    @endif
                 </td>
-                <td style="padding: 2px;">
-                    <table style="width: 100%;"><tr><td style="width: 50%; border-right: 1px solid #000;">NAMA</td><td style="width: 50%;">TTD</td></tr></table>
+                <td style="padding: 4px; width: 50%;">
+                    QC Supervisor : 
+                    @if($isEdit)
+                        <input type="text" name="qc_supervisor_nama" value="{{ old('qc_supervisor_nama', $qc->qc_supervisor_nama) }}" style="width: 150px; border: 1px solid #cbd5e1; padding: 2px 6px; font-weight: 700;" placeholder="Supervisor QC">
+                    @else
+                        {{ $qc->qc_supervisor_nama ?: 'Supervisor QC' }}
+                    @endif
                 </td>
-            </tr>
-            <tr style="height: 48px;">
-                <td style="padding: 2px; border-right: 2px solid #000000; vertical-align: middle;">
-                    <table style="width: 100%;"><tr><td style="width: 50%; border-right: 1px solid #000; font-weight: 700;">{{ $qc->petugas_qc_nama }}</td><td style="width: 50%; color: #15803d; font-weight: 800;">[VERIFIED]</td></tr></table>
-                </td>
-                <td style="padding: 2px; vertical-align: middle;">
-                    <table style="width: 100%;"><tr><td style="width: 50%; border-right: 1px solid #000; font-weight: 700;">{{ $qc->qc_supervisor_nama ?: 'Supervisor QC' }}</td><td style="width: 50%; color: #15803d; font-weight: 800;">[APPROVED]</td></tr></table>
-                </td>
-            </tr>
-        </table>
-    </div>
-    <div style="font-size: 0.7rem; margin-top: 4px;">Keterangan : N : Normal, R : Renyah</div>
-</div>
-
-{{-- LEMBAR 2: PENGUJIAN II (FRYER & DEFECT) --}}
-<div class="print-sheet" style="min-width: 820px; background: #ffffff; border: 1.5px solid #000000; padding: 1.5rem; margin-bottom: 2rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); font-family: Arial, sans-serif; font-size: 0.8rem; color: #000000;">
-    {{-- KOP SURAT RESMI PT MIRASA --}}
-    <div style="border: 2px solid #000000; margin-bottom: 0.75rem;">
-        <table style="width: 100%; border-collapse: collapse;">
-            <tr>
-                <td style="width: 85px; text-align: center; vertical-align: middle; padding: 6px; border-right: 2px solid #000000;">
-                    <img src="{{ asset('images/logo.png') }}" alt="Cap Payung" style="width: 65px; height: 65px; object-fit: contain;">
-                </td>
-                <td style="vertical-align: middle; text-align: center; padding: 6px;">
-                    <div style="font-size: 1.2rem; font-weight: 900; color: #000000; letter-spacing: 0.05em;">
-                        PT. MIRASA FOOD INDUSTRY
-                    </div>
-                    <div style="font-size: 1rem; font-weight: 800; color: #000000; margin-top: 3px;">
-                        {{ $docTitle }}
-                    </div>
-                </td>
-                <td style="width: 250px; vertical-align: middle; padding: 0; border-left: 2px solid #000000;">
-                    <table style="width: 100%; border-collapse: collapse; font-size: 0.72rem;">
-                        <tr style="border-bottom: 1px solid #000000;">
-                            <td style="padding: 3px 6px; font-weight: 700; width: 85px; border-right: 1px solid #000000;">No. Dokumen</td>
-                            <td style="padding: 3px 6px; font-weight: 800;">{{ $docNo }}</td>
-                        </tr>
-                        <tr style="border-bottom: 1px solid #000000;">
-                            <td style="padding: 3px 6px; font-weight: 700; border-right: 1px solid #000000;">Revisi</td>
-                            <td style="padding: 3px 6px;">{{ $revisi }}</td>
-                        </tr>
-                        <tr style="border-bottom: 1px solid #000000;">
-                            <td style="padding: 3px 6px; font-weight: 700; border-right: 1px solid #000000;">Tanggal Terbit</td>
-                            <td style="padding: 3px 6px;">{{ $tglTerbit }}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 3px 6px; font-weight: 700; border-right: 1px solid #000000;">Halaman</td>
-                            <td style="padding: 3px 6px;">2 dari 2</td>
-                        </tr>
-                    </table>
-                </td>
-            </tr>
-        </table>
-    </div>
-
-    {{-- TABEL IDENTITAS PENGUJIAN II --}}
-    <div style="border: 2px solid #000000; margin-bottom: 0.75rem;">
-        <table style="width: 100%; border-collapse: collapse; font-size: 0.78rem;">
-            <tr>
-                <td style="width: 35%; vertical-align: middle; text-align: center; padding: 0.85rem 0.5rem; border-right: 2px solid #000000; border-bottom: 2px solid #000000;">
-                    <div style="font-size: 0.75rem; font-weight: 700; color: #334155; letter-spacing: 0.05em;">MIRASA FOOD INDUSTRY</div>
-                    <div style="font-size: 0.8rem; font-weight: 700; margin-top: 2px;">LAPORAN KEDATANGAN</div>
-                    <div style="font-size: 1.35rem; font-weight: 900; margin-top: 3px; letter-spacing: 0.08em;">
-                        S I N G K O N G
-                    </div>
-                    <div style="font-size: 1rem; font-weight: 900; margin-top: 3px; color: #d97706; letter-spacing: 0.05em;">
-                        PENGUJIAN II
-                    </div>
-                </td>
-                <td style="width: 65%; padding: 0; vertical-align: top; border-bottom: 2px solid #000000;">
-                    <table style="width: 100%; border-collapse: collapse; font-size: 0.78rem;">
-                        <tr style="border-bottom: 1px solid #000000;">
-                            <td style="padding: 4px 6px; width: 100px; font-weight: 700; border-right: 1px solid #000000;">Nama RM</td>
-                            <td colspan="4" style="padding: 4px 6px; font-weight: 800;">: {{ $qc->nama_jenis ?: 'Singkong Basah Curah' }}</td>
-                        </tr>
-                        <tr style="border-bottom: 1px solid #000000; background: #f8fafc; text-align: center; font-weight: 700;">
-                            <td style="padding: 4px 6px; border-right: 1px solid #000000;">Nama Produsen</td>
-                            <td style="padding: 4px 6px; border-right: 1px solid #000000;">Negara Produsen</td>
-                            <td style="padding: 4px 6px; border-right: 1px solid #000000;">Jumlah Surat Jalan (kg)</td>
-                            <td style="padding: 4px 6px; border-right: 1px solid #000000;">Jumlah di Pabrik (kg)</td>
-                            <td style="padding: 4px 6px; width: 120px;">LOKASI PANEN :</td>
-                        </tr>
-                        <tr style="border-bottom: 1px solid #000000; text-align: center;">
-                            <td style="padding: 5px 6px; font-weight: 700; border-right: 1px solid #000000;">{{ $qc->nama_produsen ?: ($qc->supplier?->supplier_nm ?? '-') }}</td>
-                            <td style="padding: 5px 6px; border-right: 1px solid #000000;">{{ $qc->negara_produsen ?: 'Indonesia' }}</td>
-                            <td style="padding: 5px 6px; font-weight: 700; border-right: 1px solid #000000;">{{ $qc->jumlah_surat_jalan ? number_format($qc->jumlah_surat_jalan, 0, ',', '.') : '-' }}</td>
-                            <td style="padding: 5px 6px; font-weight: 800; color: #0284c7; border-right: 1px solid #000000;">{{ $qc->jumlah_di_pabrik ? number_format($qc->jumlah_di_pabrik, 0, ',', '.') : number_format($totalGross, 0, ',', '.') }}</td>
-                            <td rowspan="4" style="padding: 5px 6px; vertical-align: top; font-weight: 700;">
-                                <div>{{ $qc->lokasi_panen ?: 'Wonosobo / Mitra' }}</div>
-                                <div style="margin-top: 15px; border-top: 1px dashed #000; padding-top: 4px; font-size: 0.7rem; font-weight: 700;">
-                                    <u>Tanda Tangan ACC</u>
-                                </div>
-                            </td>
-                        </tr>
-                        <tr style="border-bottom: 1px solid #000000;">
-                            <td style="padding: 4px 6px; font-weight: 700; border-right: 1px solid #000000;">Umur Singkong</td>
-                            <td colspan="3" style="padding: 4px 6px; border-right: 1px solid #000000;">: {{ $qc->umur_singkong_bln ? $qc->umur_singkong_bln . ' Bulan' : '9 Bulan' }}</td>
-                        </tr>
-                        <tr style="border-bottom: 1px solid #000000;">
-                            <td style="padding: 4px 6px; font-weight: 700; border-right: 1px solid #000000;">Tanggal Panen</td>
-                            <td colspan="3" style="padding: 4px 6px; border-right: 1px solid #000000;">: {{ $qc->tgl_panen ? $qc->tgl_panen->format('d/m/Y') : '-' }}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 4px 6px; font-weight: 700; border-right: 1px solid #000000;">Tanggal Datang</td>
-                            <td colspan="3" style="padding: 4px 6px; border-right: 1px solid #000000;">: {{ $qc->tgl_periksa ? $qc->tgl_periksa->format('d/m/Y H:i') : '-' }} WIB</td>
-                        </tr>
-                    </table>
-                </td>
-            </tr>
-            <tr>
-                <td style="padding: 5px 10px; border-right: 2px solid #000000;">
-                    <strong>Jumlah Sample (kg):</strong> : {{ $qc->jumlah_sample_kg ? number_format($qc->jumlah_sample_kg, 1) . ' kg' : '10.0 kg' }}
-                </td>
-                <td style="padding: 5px 10px;">
-                    <strong>Nomor DO / SJ :</strong> {{ $qc->nomor_do ?: ($qc->surat_jalan_supplier ?: '-') }} &bull; Plat: {{ $qc->plat_nomor_truk ?: '-' }} ({{ $qc->sopir_nama ?: '-' }})
-                </td>
-            </tr>
-        </table>
-    </div>
-
-    {{-- KONDISI TRANSPORTASI & AUDIT HALAL --}}
-    <div style="border: 2px solid #000000; margin-bottom: 0.75rem;">
-        <table style="width: 100%; border-collapse: collapse; font-size: 0.78rem;">
-            <tr style="border-bottom: 1px solid #000000;">
-                <td style="padding: 5px 8px; width: 170px; font-weight: 700;">KONDISI TRANSPORTASI</td>
-                <td style="padding: 5px 8px; width: 25px; text-align: center;">
-                    <span style="display: inline-block; width: 15px; height: 15px; border: 1.5px solid #000; text-align: center; line-height: 13px; font-weight: 900;">
-                        {{ $qc->bebas_cemaran_st ? '✔' : '' }}
-                    </span>
-                </td>
-                <td style="padding: 5px 8px; width: 240px;">Tidak ada cemaran, Najis / Kotoran</td>
-                <td style="padding: 5px 8px; width: 25px; text-align: center;">
-                    <span style="display: inline-block; width: 15px; height: 15px; border: 1.5px solid #000; text-align: center; line-height: 13px; font-weight: 900;">
-                        {{ !$qc->bebas_cemaran_st ? '✔' : '' }}
-                    </span>
-                </td>
-                <td style="padding: 5px 8px;">Ada cemaran</td>
-            </tr>
-            <tr>
-                <td colspan="3" style="padding: 5px 8px; font-weight: 700;">
-                    APAKAH BARANG TERSEBUT DIANGKUT BERSAMA DENGAN BARANG HARAM ?
-                </td>
-                <td colspan="2" style="padding: 5px 8px;">
-                    <div style="display: flex; align-items: center; gap: 1rem;">
-                        <span style="display: inline-flex; align-items: center; gap: 4px;">
-                            <span style="display: inline-block; width: 15px; height: 15px; border: 1.5px solid #000; text-align: center; line-height: 13px; font-weight: 900;">
-                                {{ !$qc->angkut_barang_haram_st ? '✔' : '' }}
-                            </span> Tidak
-                        </span>
-                        <span style="display: inline-flex; align-items: center; gap: 4px;">
-                            <span style="display: inline-block; width: 15px; height: 15px; border: 1.5px solid #000; text-align: center; line-height: 13px; font-weight: 900;">
-                                {{ $qc->angkut_barang_haram_st ? '✔' : '' }}
-                            </span> Ya
-                        </span>
-                        <span style="margin-left: 0.75rem; color: #475569;">Komentar : {{ $qc->komentar_transportasi ?: '-' }}</span>
-                    </div>
-                </td>
-            </tr>
-        </table>
-    </div>
-
-    {{-- 2. ISI RAW MATERIAL, TABEL HASIL FRYER & CHECKLIST KONDISI --}}
-    <div style="border: 2px solid #000000; margin-bottom: 0.75rem;">
-        <div style="padding: 5px 8px; border-bottom: 1px solid #000000; display: flex; align-items: center; gap: 1.5rem; background: #f8fafc;">
-            <span style="font-weight: 800;">2. ISI RAW MATERIAL</span>
-            <span style="display: inline-flex; align-items: center; gap: 4px; font-weight: 700;">
-                <span style="display: inline-block; width: 15px; height: 15px; border: 1.5px solid #000; text-align: center; line-height: 13px; font-weight: 900;">
-                    {{ ($firstDetail?->status_raw_material ?? 'OK') === 'OK' ? '✔' : '' }}
-                </span> OK
-            </span>
-            <span style="display: inline-flex; align-items: center; gap: 4px; font-weight: 700;">
-                <span style="display: inline-block; width: 15px; height: 15px; border: 1.5px solid #000; text-align: center; line-height: 13px; font-weight: 900;">
-                    {{ ($firstDetail?->status_raw_material ?? '') === 'TDK_STD' ? '✔' : '' }}
-                </span> TDK STD
-            </span>
-        </div>
-
-        <div style="display: grid; grid-template-columns: 1.15fr 1fr;">
-            <div style="border-right: 2px solid #000000;">
-                <table style="width: 100%; border-collapse: collapse; font-size: 0.75rem;">
-                    <tr style="background: #e2e8f0; font-weight: 800; border-bottom: 1px solid #000000; text-align: center;">
-                        <td style="padding: 4px; border-right: 1px solid #000000; width: 45%;">Parameter</td>
-                        <td style="padding: 4px; border-right: 1px solid #000000; width: 30%;">Hasil Analisa</td>
-                        <td style="padding: 4px; width: 25%;">Standard</td>
-                    </tr>
-                    <tr style="border-bottom: 1px solid #000000;">
-                        <td colspan="3" style="padding: 3px 6px; font-weight: 700; background: #f8fafc;">1. Diameter</td>
-                    </tr>
-                    <tr style="border-bottom: 1px solid #000000;">
-                        <td style="padding: 4px 8px; border-right: 1px solid #000000;">- &lt; 4 cm</td>
-                        <td style="padding: 4px; text-align: center; font-weight: 800; border-right: 1px solid #000000; color: {{ (float)($firstDetail?->diameter_kurang_4cm_persen ?? 0) > 5 ? '#dc2626' : '#059669' }};">
-                            {{ $firstDetail?->diameter_kurang_4cm_persen !== null ? number_format($firstDetail->diameter_kurang_4cm_persen, 1) . '%' : '-' }}
-                        </td>
-                        <td style="padding: 4px; text-align: center;">Max 5.0%</td>
-                    </tr>
-                    <tr style="border-bottom: 1px solid #000000;">
-                        <td style="padding: 4px 8px; border-right: 1px solid #000000;">- &ge; 4 cm</td>
-                        <td style="padding: 4px; text-align: center; font-weight: 800; border-right: 1px solid #000000; color: {{ (float)($firstDetail?->diameter_lebih_4cm_persen ?? 0) < 95 ? '#dc2626' : '#059669' }};">
-                            {{ $firstDetail?->diameter_lebih_4cm_persen !== null ? number_format($firstDetail->diameter_lebih_4cm_persen, 1) . '%' : '-' }}
-                        </td>
-                        <td style="padding: 4px; text-align: center;">Min 95%</td>
-                    </tr>
-                    <tr style="border-bottom: 1px solid #000000;">
-                        <td colspan="3" style="padding: 3px 6px; font-weight: 700; background: #fef3c7; color: #b45309;">
-                            3. Hasil Fryer (Uji Laboratorium)
-                        </td>
-                    </tr>
-                    <tr style="border-bottom: 1px solid #000000;">
-                        <td style="padding: 4px 8px; border-right: 1px solid #000000;">- RASA</td>
-                        <td style="padding: 4px; text-align: center; border-right: 1px solid #000000; font-weight: 800; color: {{ $firstDetail?->fryer_rasa === 'PAHIT' ? '#dc2626' : '#059669' }};">
-                            {{ $firstDetail?->fryer_rasa === 'PAHIT' ? '❌ Pahit' : 'Tidak Pahit' }}
-                        </td>
-                        <td style="padding: 4px; text-align: center;">Tidak Pahit</td>
-                    </tr>
-                    <tr style="border-bottom: 1px solid #000000;">
-                        <td style="padding: 4px 8px; border-right: 1px solid #000000;">- Tekstur</td>
-                        <td style="padding: 4px; text-align: center; border-right: 1px solid #000000; font-weight: 800; color: {{ $firstDetail?->fryer_tekstur === 'ALOT' ? '#dc2626' : '#059669' }};">
-                            {{ $firstDetail?->fryer_tekstur ? ucfirst(strtolower($firstDetail->fryer_tekstur)) : 'Renyah' }}
-                        </td>
-                        <td style="padding: 4px; text-align: center;">Renyah</td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 4px 8px; border-right: 1px solid #000000;">- Penampakan</td>
-                        <td style="padding: 4px; text-align: center; border-right: 1px solid #000000; font-weight: 800; color: {{ $firstDetail?->fryer_penampakan === 'OILSOAKED' ? '#dc2626' : '#059669' }};">
-                            {{ $firstDetail?->fryer_penampakan === 'OILSOAKED' ? '❌ Oilsoaked' : 'Tidak Oilsoaked' }}
-                        </td>
-                        <td style="padding: 4px; text-align: center;">Tidak Oilsoaked</td>
-                    </tr>
-                </table>
-            </div>
-
-            <div style="padding: 8px 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; align-items: center; font-size: 0.775rem;">
-                <div style="display: flex; align-items: center; gap: 6px;">
-                    <span style="display: inline-block; width: 16px; height: 16px; border: 1.5px solid #000; text-align: center; line-height: 14px; font-weight: 900;">
-                        {{ $firstDetail?->kondisi_segar ? '✔' : '' }}
-                    </span> SEGAR
-                </div>
-                <div style="display: flex; align-items: center; gap: 6px;">
-                    <span style="display: inline-block; width: 16px; height: 16px; border: 1.5px solid #000; text-align: center; line-height: 14px; font-weight: 900;">
-                        {{ $firstDetail?->kondisi_busuk ? '✔' : '' }}
-                    </span> BUSUK
-                </div>
-                <div style="display: flex; align-items: center; gap: 6px;">
-                    <span style="display: inline-block; width: 16px; height: 16px; border: 1.5px solid #000; text-align: center; line-height: 14px; font-weight: 900;">
-                        {{ $firstDetail?->kondisi_layu ? '✔' : '' }}
-                    </span> LAYU
-                </div>
-                <div style="display: flex; align-items: center; gap: 6px;">
-                    <span style="display: inline-block; width: 16px; height: 16px; border: 1.5px solid #000; text-align: center; line-height: 14px; font-weight: 900;">
-                        {{ $firstDetail?->kondisi_berjamur ? '✔' : '' }}
-                    </span> BERJAMUR
-                </div>
-                <div style="display: flex; align-items: center; gap: 6px;">
-                    <span style="display: inline-block; width: 16px; height: 16px; border: 1.5px solid #000; text-align: center; line-height: 14px; font-weight: 900;">
-                        {{ $firstDetail?->kondisi_basah ? '✔' : '' }}
-                    </span> BASAH
-                </div>
-                <div style="display: flex; align-items: center; gap: 6px;">
-                    <span style="display: inline-block; width: 16px; height: 16px; border: 1.5px solid #000; text-align: center; line-height: 14px; font-weight: 900;">
-                        {{ $firstDetail?->kondisi_lembek ? '✔' : '' }}
-                    </span> TEKSTUR LEMBEK
-                </div>
-                <div style="display: flex; align-items: center; gap: 6px;">
-                    <span style="display: inline-block; width: 16px; height: 16px; border: 1.5px solid #000; text-align: center; line-height: 14px; font-weight: 900;">
-                        {{ $firstDetail?->kondisi_terkelupas ? '✔' : '' }}
-                    </span> TERKELUPAS
-                </div>
-                <div style="display: flex; align-items: center; gap: 6px; color: #64748b;">
-                    <span style="display: inline-block; width: 16px; height: 16px; border: 1.5px solid #000;"></span> ....................
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {{-- DEFECT FRYING & KESIMPULAN PENGUJIAN II --}}
-    <div style="border: 2px solid #000000; margin-bottom: 0.75rem; padding: 6px 10px; font-size: 0.78rem;">
-        <div style="margin-bottom: 0.5rem;">
-            <span style="font-weight: 800; text-decoration: underline;">DEFECT FRYING :</span>
-            <span style="margin-left: 0.5rem;">
-                <u>{{ $firstDetail?->defect_breakage_persen !== null ? number_format($firstDetail->defect_breakage_persen, 1) . '%' : '___' }}</u> Breakage / 
-                <u>{{ $firstDetail?->defect_cluster_persen !== null ? number_format($firstDetail->defect_cluster_persen, 1) . '%' : '___' }}</u> Cluster / 
-                <u>{{ $firstDetail?->defect_foldover_persen !== null ? number_format($firstDetail->defect_foldover_persen, 1) . '%' : '___' }}</u> Foldover / 
-                <u>{{ $firstDetail?->defect_oilsoaked_persen !== null ? number_format($firstDetail->defect_oilsoaked_persen, 1) . '%' : '___' }}</u> Oilsoaked - Polos / 
-                <u>{{ $firstDetail?->defect_gambos_persen !== null ? number_format($firstDetail->defect_gambos_persen, 1) . '%' : '___' }}</u> Gambos (%)
-            </span>
-        </div>
-
-        <div style="border-top: 1px solid #000000; padding-top: 5px; display: flex; align-items: center; gap: 2rem;">
-            <span style="font-weight: 800;">KESIMPULAN FINAL</span>
-            <div style="display: flex; align-items: center; gap: 0.5rem;">
-                <span style="display: inline-block; width: 16px; height: 16px; border: 1.5px solid #000; text-align: center; line-height: 14px; font-weight: 900;">
-                    {{ $qc->status_qc !== 'DITOLAK_TOTAL' ? '✔' : '' }}
-                </span>
-                <strong>TERIMA :</strong> <u>{{ number_format($totalNetto, 2, ',', '.') }}</u> kg
-            </div>
-            <div style="display: flex; align-items: center; gap: 0.5rem;">
-                <span style="display: inline-block; width: 16px; height: 16px; border: 1.5px solid #000; text-align: center; line-height: 14px; font-weight: 900;">
-                    {{ $qc->status_qc === 'DITOLAK_TOTAL' ? '✔' : '' }}
-                </span>
-                <strong>TOLAK :</strong> <u>{{ number_format($totalReject, 2, ',', '.') }}</u> kg
-            </div>
-        </div>
-
-        <div style="border-top: 1px solid #000000; margin-top: 5px; padding-top: 4px;">
-            <strong>KOMENTAR :</strong> {{ $firstDetail?->catatan_dtl ?: ($qc->catatan_umum ?: 'Pengujian II Fryer Selesai & Lolos Uji Lab') }}
-        </div>
-    </div>
-
-    {{-- TANDA TANGAN RESMI PENGUJIAN II --}}
-    <div style="border: 2px solid #000000; font-size: 0.78rem;">
-        <table style="width: 100%; border-collapse: collapse; text-align: center;">
-            <tr style="border-bottom: 1px solid #000000; background: #f8fafc; font-weight: 700;">
-                <td style="padding: 4px; width: 50%; border-right: 2px solid #000000;">QC RAW MATERIAL : {{ $qc->petugas_qc_nama }}</td>
-                <td style="padding: 4px; width: 50%;">QC Supervisor : {{ $qc->qc_supervisor_nama ?: 'Supervisor QC' }}</td>
             </tr>
             <tr style="border-bottom: 1px solid #000000; background: #f1f5f9; font-weight: 700; font-size: 0.72rem;">
                 <td style="padding: 2px; border-right: 2px solid #000000;">

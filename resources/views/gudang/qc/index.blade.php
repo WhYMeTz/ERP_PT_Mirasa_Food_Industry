@@ -1,275 +1,151 @@
-@extends('layouts.qc-mobile')
+@extends('layouts.app')
 
-@section('title', 'Riwayat & Tiket QC Bahan Masuk - PT Mirasa')
+@section('title', 'Pemeriksaan Mutu Bahan Masuk (QC Inbound) - PT Mirasa')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/gudang/qc/qc-index.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/gudang/qc/qc-admin-index.css') }}">
 @endpush
 
 @section('content')
-<div id="qcIndexWrapper" style="max-width: 800px; margin: 0 auto; transition: max-width 0.2s ease;">
-    {{-- HEADER HALAMAN & VIEW SWITCHER (DUAL MODE: HP VS PC GUDANG) --}}
-    <div class="qc-index-header">
-        <div class="qc-index-title-row">
-            <h1 class="qc-index-title">
-                <span>🔬</span>
-                <span>Riwayat Tiket QC Masuk</span>
+<div class="qc-admin-container">
+    {{-- HEADER HALAMAN & ACTIONS --}}
+    <div class="qc-admin-header">
+        <div>
+            <div class="qc-admin-badge-sub">
+                <span>🔬 Quality Control &amp; Penerimaan Bahan</span>
+            </div>
+            <h1 class="qc-admin-title">
+                <span>Pemeriksaan Mutu Kedatangan (QC Inbound)</span>
             </h1>
-
-            <div class="qc-header-actions">
-                {{-- SWITCHER TAMPILAN: KARTU HP VS TABEL GUDANG PC --}}
-                <div class="qc-view-switcher" title="Ganti Tampilan Antara Mode HP dan Mode Desktop Gudang">
-                    <button type="button" id="btnViewCard" class="qc-switch-btn active" onclick="switchQcView('card')">
-                        <span>📱 Kartu HP</span>
-                    </button>
-                    <button type="button" id="btnViewTable" class="qc-switch-btn" onclick="switchQcView('table')">
-                        <span>💻 Tabel Gudang</span>
-                    </button>
-                </div>
-
-                @if (Auth::user()?->canCreateQc())
-                    <a href="{{ route('qc.inbound.create') }}" class="qc-btn-create-inline">
-                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
-                        <span>+ Input QC</span>
-                    </a>
-                @endif
-            </div>
+            <p class="qc-admin-subtitle">
+                Monitoring hasil sampling kedatangan bahan baku, uji lab fisik &amp; fryer, serta serah terima ke Gudang Pabrik.
+            </p>
         </div>
-        <p class="qc-index-subtitle">
-            Daftar inspeksi mutu bahan masuk. Petugas QC menggunakan mode kartu di HP, Admin Gudang dapat beralih ke mode tabel untuk menarik ke Penerimaan (GRN).
-        </p>
+
+        <div class="qc-admin-header-actions">
+            {{-- SHORTCUT BERALIH KE MODE HP MOBILE FEED --}}
+            <a href="{{ route('qc.inbound.index', ['view' => 'mobile']) }}" class="btn-qc-switch-mobile" title="Buka Tampilan Khusus Smartphone Lapangan">
+                <span>📱 Mode Mobile QC</span>
+            </a>
+
+            @if (Auth::user()?->canCreateQc())
+                <a href="{{ route('qc.inbound.create') }}" class="btn-qc-new">
+                    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+                    <span>+ Input QC Baru</span>
+                </a>
+            @endif
+        </div>
     </div>
 
-    {{-- HORIZONTAL SCROLLABLE FILTER CHIPS --}}
-    <div class="qc-chips-container">
-        @php
-            $currKat = $filters['kategori_barang'] ?? '';
-            $currSts = $filters['status_qc'] ?? '';
-            $isAll = empty($currKat) && empty($currSts) && empty($filters['search']);
-        @endphp
-        <a href="{{ route('qc.inbound.index') }}" class="qc-chip {{ $isAll ? 'active' : '' }}">
-            <span>Semua</span>
-        </a>
-        <a href="{{ route('qc.inbound.index', ['status_qc' => 'SIAP_GUDANG']) }}" class="qc-chip {{ $currSts === 'SIAP_GUDANG' ? 'active' : '' }}">
-            <span>⏳ Siap Gudang</span>
-        </a>
-        <a href="{{ route('qc.inbound.index', ['kategori_barang' => 'SINGKONG']) }}" class="qc-chip {{ $currKat === 'SINGKONG' ? 'active' : '' }}">
-            <span>🥔 Singkong</span>
-        </a>
-        <a href="{{ route('qc.inbound.index', ['kategori_barang' => 'MINYAK']) }}" class="qc-chip {{ $currKat === 'MINYAK' ? 'active' : '' }}">
-            <span>🛢️ Minyak</span>
-        </a>
-        <a href="{{ route('qc.inbound.index', ['kategori_barang' => 'PLASTIK']) }}" class="qc-chip {{ $currKat === 'PLASTIK' ? 'active' : '' }}">
-            <span>🛍️ Plastik</span>
-        </a>
-        <a href="{{ route('qc.inbound.index', ['kategori_barang' => 'KARTON']) }}" class="qc-chip {{ $currKat === 'KARTON' ? 'active' : '' }}">
-            <span>📦 Karton</span>
-        </a>
-        <a href="{{ route('qc.inbound.index', ['status_qc' => 'DITERIMA_GUDANG']) }}" class="qc-chip {{ $currSts === 'DITERIMA_GUDANG' ? 'active' : '' }}">
-            <span>✅ Masuk Gudang</span>
-        </a>
-        <a href="{{ route('qc.inbound.index', ['status_qc' => 'DITOLAK_TOTAL']) }}" class="qc-chip {{ $currSts === 'DITOLAK_TOTAL' ? 'active' : '' }}">
-            <span>❌ Ditolak</span>
-        </a>
-    </div>
-
-    {{-- PENCARIAN TIKET / TRUK / SOPIR / SUPPLIER --}}
-    <div class="qc-search-card">
-        <form action="{{ route('qc.inbound.index') }}" method="GET" class="qc-search-form">
-            @if (!empty($filters['kategori_barang']))
-                <input type="hidden" name="kategori_barang" value="{{ $filters['kategori_barang'] }}">
-            @endif
-            @if (!empty($filters['status_qc']))
-                <input type="hidden" name="status_qc" value="{{ $filters['status_qc'] }}">
-            @endif
-
-            <div class="qc-search-input-wrap">
-                <svg class="qc-search-icon" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                </svg>
-                <input type="text" name="search" class="qc-search-input" placeholder="Cari No Tiket, Plat Truk, Sopir, Supplier..." value="{{ $filters['search'] ?? '' }}">
+    {{-- KARTU METRIK STATISTIK OPERASIONAL --}}
+    <div class="qc-stat-grid">
+        <div class="qc-stat-card siap">
+            <div>
+                <div class="qc-stat-title">Siap Ditarik ke GRN</div>
+                <div class="qc-stat-val">{{ number_format($countSiap ?? 0, 0, ',', '.') }}</div>
+                <div class="qc-stat-desc">Lolos uji sampling &amp; siap bongkar gudang</div>
             </div>
-            <button type="submit" class="qc-search-btn">Cari</button>
-            @if (!empty($filters['search']) || !empty($filters['kategori_barang']) || !empty($filters['status_qc']))
-                <a href="{{ route('qc.inbound.index') }}" class="qc-search-btn-reset">Reset</a>
-            @endif
+            <div class="qc-stat-icon">⏳</div>
+        </div>
+
+        <div class="qc-stat-card fryer">
+            <div>
+                <div class="qc-stat-title">Menunggu Uji Fryer</div>
+                <div class="qc-stat-val">{{ number_format($countFryer ?? 0, 0, ',', '.') }}</div>
+                <div class="qc-stat-desc">Singkong perlu hasil tes lab penggorengan</div>
+            </div>
+            <div class="qc-stat-icon">🍟</div>
+        </div>
+
+        <div class="qc-stat-card selesai">
+            <div>
+                <div class="qc-stat-title">Sudah Masuk Gudang</div>
+                <div class="qc-stat-val">{{ number_format($countSelesai ?? 0, 0, ',', '.') }}</div>
+                <div class="qc-stat-desc">Telah terbit Bukti Penerimaan Barang (GRN)</div>
+            </div>
+            <div class="qc-stat-icon">✅</div>
+        </div>
+
+        <div class="qc-stat-card reject">
+            <div>
+                <div class="qc-stat-title">Ditolak QC / Reject</div>
+                <div class="qc-stat-val">{{ number_format($countReject ?? 0, 0, ',', '.') }}</div>
+                <div class="qc-stat-desc">Tidak memenuhi parameter standar mutu</div>
+            </div>
+            <div class="qc-stat-icon">❌</div>
+        </div>
+    </div>
+
+    {{-- FILTER & PENCARIAN WEB ADMIN --}}
+    <div class="qc-filter-card">
+        <form action="{{ route('qc.inbound.index') }}" method="GET" class="qc-filter-grid">
+            <input type="hidden" name="view" value="desktop">
+
+            <div class="qc-form-group">
+                <label class="qc-form-label">Pencarian Cepat</label>
+                <input type="text" name="search" class="qc-form-input" placeholder="No. QC, Surat Jalan, Plat Truk, Sopir..." value="{{ $filters['search'] ?? '' }}">
+            </div>
+
+            <div class="qc-form-group">
+                <label class="qc-form-label">Komoditas</label>
+                <select name="kategori_barang" class="qc-form-select">
+                    <option value="">-- Semua Komoditas --</option>
+                    <option value="SINGKONG" {{ ($filters['kategori_barang'] ?? '') === 'SINGKONG' ? 'selected' : '' }}>🥔 Singkong</option>
+                    <option value="MINYAK" {{ ($filters['kategori_barang'] ?? '') === 'MINYAK' ? 'selected' : '' }}>🛢️ Minyak Goreng</option>
+                    <option value="PLASTIK" {{ ($filters['kategori_barang'] ?? '') === 'PLASTIK' ? 'selected' : '' }}>🛍️ Plastik</option>
+                    <option value="KARTON" {{ ($filters['kategori_barang'] ?? '') === 'KARTON' ? 'selected' : '' }}>📦 Karton</option>
+                    <option value="MSG" {{ ($filters['kategori_barang'] ?? '') === 'MSG' ? 'selected' : '' }}>🧂 MSG</option>
+                    <option value="GARAM" {{ ($filters['kategori_barang'] ?? '') === 'GARAM' ? 'selected' : '' }}>🧂 Garam</option>
+                    <option value="PERENYAH" {{ ($filters['kategori_barang'] ?? '') === 'PERENYAH' ? 'selected' : '' }}>✨ Perenyah</option>
+                </select>
+            </div>
+
+            <div class="qc-form-group">
+                <label class="qc-form-label">Status Antrean</label>
+                <select name="status_qc" class="qc-form-select">
+                    <option value="">-- Semua Status --</option>
+                    <option value="SIAP_GUDANG" {{ ($filters['status_qc'] ?? '') === 'SIAP_GUDANG' ? 'selected' : '' }}>⏳ Siap Gudang</option>
+                    <option value="DITERIMA_GUDANG" {{ ($filters['status_qc'] ?? '') === 'DITERIMA_GUDANG' ? 'selected' : '' }}>✅ Selesai Diterima (GRN)</option>
+                    <option value="DITOLAK_TOTAL" {{ ($filters['status_qc'] ?? '') === 'DITOLAK_TOTAL' ? 'selected' : '' }}>❌ Ditolak QC (Reject)</option>
+                </select>
+            </div>
+
+            <div class="qc-form-group">
+                <label class="qc-form-label">Mitra Supplier</label>
+                <select name="supplier_id" class="qc-form-select">
+                    <option value="">-- Semua Supplier --</option>
+                    @foreach ($suppliers as $s)
+                        <option value="{{ $s->supplier_id }}" {{ ($filters['supplier_id'] ?? '') == $s->supplier_id ? 'selected' : '' }}>
+                            {{ $s->supplier_nm }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div class="qc-filter-actions">
+                <button type="submit" class="btn-filter-submit">Filter</button>
+                <a href="{{ route('qc.inbound.index', ['view' => 'desktop']) }}" class="btn-filter-reset">Reset</a>
+            </div>
         </form>
     </div>
 
-    {{-- ========================================================================= --}}
-    {{-- TAMPILAN 1: CARD FEED KHUSUS SMARTPHONE / TIM QC LAPANGAN               --}}
-    {{-- ========================================================================= --}}
-    <div id="qcCardContainer" class="qc-card-feed">
-        @forelse ($inspeksiList as $qc)
-            @php
-                $totalGross = $qc->details->sum('qty_timbang_gross');
-                $totalRefraksi = $qc->details->sum('qty_refraksi');
-                $totalReject = $qc->details->sum('qty_reject');
-                $totalNetto = $qc->details->sum('qty_netto_lolos');
-                $kat = strtoupper((string) ($qc->kategori_barang ?: 'SINGKONG'));
-                $isLocked = !empty($qc->terima) && !Auth::user()?->isSuperAdmin();
-            @endphp
-            <div class="qc-card-item">
-                {{-- HEADER KARTU --}}
-                <div class="qc-card-header">
-                    <div class="qc-card-id-wrap">
-                        <a href="{{ route('qc.inbound.show', $qc->qc_id) }}" class="qc-card-id">
-                            {{ $qc->qc_no }}
-                        </a>
-                        <span class="qc-card-time">
-                            📅 {{ $qc->tgl_periksa ? $qc->tgl_periksa->format('d/m/Y H:i') : '-' }} &bull; {{ $qc->petugas_qc_nama }}
-                        </span>
-                    </div>
-                    <div class="qc-card-badges">
-                        <span class="badge-commodity">
-                            @if ($kat === 'SINGKONG') 🥔 @elseif ($kat === 'MINYAK') 🛢️ @elseif ($kat === 'PLASTIK') 🛍️ @elseif ($kat === 'KARTON') 📦 @else ✨ @endif
-                            {{ $kat }}
-                        </span>
-
-                        @if ($qc->status_qc === 'SIAP_GUDANG')
-                            <span class="badge-status-siap">⏳ Siap Gudang</span>
-                        @elseif ($qc->status_qc === 'DITERIMA_GUDANG')
-                            <span class="badge-status-diterima">✅ Masuk Gudang</span>
-                        @elseif ($qc->status_qc === 'DITOLAK_TOTAL')
-                            <span class="badge-status-reject">❌ Reject Total</span>
-                        @else
-                            <span class="badge-status-siap">{{ $qc->status_qc }}</span>
-                        @endif
-
-                        @if ($kat === 'SINGKONG')
-                            @if ($qc->status_uji_goreng === 'MENUNGGU_LAB')
-                                <span class="badge-status-lab">⏳ Lab Fryer</span>
-                            @elseif ($qc->status_uji_goreng === 'SELESAI')
-                                <span class="badge-status-lab" style="background: #dcfce7; color: #166534;">🍟 Fryer Selesai</span>
-                            @endif
-                        @endif
-                    </div>
-                </div>
-
-                {{-- BADAN KARTU --}}
-                <div class="qc-card-body">
-                    {{-- META GRID INFO LOGISTIK --}}
-                    <div class="qc-card-meta-grid">
-                        <div class="qc-meta-item">
-                            <span class="qc-meta-label">Mitra Supplier</span>
-                            <span class="qc-meta-value strong" style="color: #0f172a;">
-                                {{ $qc->supplier?->supplier_nm ?? 'Supplier Langsung' }}
-                            </span>
-                            @if ($qc->po)
-                                <span style="font-size: 0.72rem; color: #0284c7; font-weight: 700; margin-top: 1px;">
-                                    PO: {{ $qc->po->po_no }}
-                                </span>
-                            @endif
-                        </div>
-
-                        <div class="qc-meta-item">
-                            <span class="qc-meta-label">Armada Truk &amp; Sopir</span>
-                            <span class="qc-meta-value strong">
-                                🚛 {{ $qc->plat_nomor_truk ?: 'No Plat -' }}
-                            </span>
-                            <span style="font-size: 0.72rem; color: #64748b; margin-top: 1px;">
-                                Sopir: {{ $qc->sopir_nama ?: '-' }}
-                            </span>
-                        </div>
-                    </div>
-
-                    {{-- RINGKASAN METRIK TIMBANGAN SAMPLING --}}
-                    <div class="qc-metric-box">
-                        <div class="qc-metric-col">
-                            <span class="qc-metric-label">Gross</span>
-                            <span class="qc-metric-val">{{ number_format($totalGross, 0, ',', '.') }}</span>
-                        </div>
-                        <div class="qc-metric-col">
-                            <span class="qc-metric-label">Refraksi</span>
-                            <span class="qc-metric-val refraksi">{{ number_format($totalRefraksi, 0, ',', '.') }}</span>
-                        </div>
-                        <div class="qc-metric-col">
-                            <span class="qc-metric-label">Reject</span>
-                            <span class="qc-metric-val reject">{{ number_format($totalReject, 0, ',', '.') }}</span>
-                        </div>
-                        <div class="qc-metric-col">
-                            <span class="qc-metric-label">Netto Lolos</span>
-                            <span class="qc-metric-val netto">{{ number_format($totalNetto, 0, ',', '.') }} <small style="font-size: 0.65rem;">kg</small></span>
-                        </div>
-                    </div>
-
-                    {{-- STATUS INTEGRASI GUDANG PERSIMPANGAN --}}
-                    @if ($qc->terima)
-                        <div class="qc-grn-banner">
-                            <span>📦</span>
-                            <span>Sudah diterima Gudang &bull; GRN: <strong>{{ $qc->terima->terima_no }}</strong></span>
-                        </div>
-                    @elseif ($qc->status_qc === 'SIAP_GUDANG')
-                        <div class="qc-waiting-banner">
-                            <span>⏳</span>
-                            <span>Sampling lolos uji &bull; Menunggu admin gudang membuat Bukti Terima Barang (GRN)</span>
-                        </div>
-                    @endif
-                </div>
-
-                {{-- FOOTER AKSI TOMBOL TOUCH-FRIENDLY --}}
-                <div class="qc-card-actions">
-                    <a href="{{ route('qc.inbound.show', $qc->qc_id) }}" class="qc-btn-action qc-btn-detail">
-                        <span>👁️ Detail Uji</span>
-                    </a>
-
-                    {{-- TOMBOL EDIT KHUSUS SAMPLING QC --}}
-                    @if (Auth::user()?->canEditQc())
-                        @if (!$isLocked)
-                            <a href="{{ route('qc.inbound.edit', $qc->qc_id) }}" class="qc-btn-action qc-btn-edit" title="Edit / Koreksi Parameter Mutu Sampling">
-                                <span>✏️ Edit</span>
-                            </a>
-                        @else
-                            <button type="button" class="qc-btn-action qc-btn-locked" title="Tiket terkunci karena sudah diproses Gudang menjadi GRN #{{ $qc->terima->terima_no }}">
-                                <span>🔒 Terkunci</span>
-                            </button>
-                        @endif
-                    @endif
-
-                    {{-- SHORTCUT TARIK KE GRN JIKA DI HP DIBUKA OLEH GUDANG --}}
-                    @if ($qc->status_qc === 'SIAP_GUDANG' && Auth::user()?->canAccessTerima())
-                        <a href="{{ route('gudang.terima.create', ['qc_id' => $qc->qc_id]) }}" class="qc-btn-action" style="background: #10b981; color: #ffffff; border-color: #059669;">
-                            <span>📦 Tarik GRN</span>
-                        </a>
-                    @endif
-
-                    {{-- TOMBOL HAPUS DENGAN MODAL BAHAYA --}}
-                    @if (Auth::user()?->canDeleteQc() && !$isLocked)
-                        <button type="button" class="qc-btn-action qc-btn-delete" onclick="openDeleteQcModal('{{ $qc->qc_id }}', '{{ $qc->qc_no }}')" title="Batalkan Tiket QC">
-                            <span>🗑️</span>
-                        </button>
-                    @endif
-                </div>
-            </div>
-        @empty
-            <div class="qc-empty-state">
-                <div class="qc-empty-icon">🔬</div>
-                <div class="qc-empty-title">Belum Ada Tiket QC Inbound</div>
-                <div class="qc-empty-desc">
-                    Silakan klik tombol "Input QC Baru" di atas untuk memulai pencatatan inspeksi kedatangan bahan baku.
-                </div>
-            </div>
-        @endforelse
-    </div>
-
-    {{-- ========================================================================= --}}
-    {{-- TAMPILAN 2: TABEL OPERASIONAL GUDANG (KHUSUS ADMIN GUDANG DI PC/DESKTOP) --}}
-    {{-- ========================================================================= --}}
-    <div id="qcTableContainer" class="qc-table-card" style="display: none;">
+    {{-- TABEL DATA OPERASIONAL INBOUND QC --}}
+    <div class="qc-table-card">
         <div class="qc-table-responsive">
-            <table class="qc-table-desktop">
+            <table class="qc-admin-table">
                 <thead>
                     <tr>
-                        <th>No. Tiket QC &amp; Jam</th>
-                        <th>Komoditas</th>
+                        <th style="width: 170px;">No. Tiket QC &amp; Waktu</th>
+                        <th style="width: 110px;">Komoditas</th>
                         <th>Supplier &amp; PO</th>
                         <th>Armada / Sopir</th>
                         <th style="text-align: right;">Gross (kg)</th>
                         <th style="text-align: right;">Refraksi</th>
                         <th style="text-align: right;">Reject</th>
-                        <th style="text-align: right;">Netto Lolos (kg)</th>
-                        <th style="text-align: center;">Status Mutu</th>
-                        <th style="text-align: center;">Tindakan Gudang</th>
+                        <th style="text-align: right; color: #047857;">Netto Lolos (kg)</th>
+                        <th style="text-align: center;">Status Mutu &amp; Lab</th>
+                        <th style="text-align: center;">Status Gudang</th>
+                        <th style="text-align: center; width: 100px;">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -281,93 +157,170 @@
                             $totalNetto = $qc->details->sum('qty_netto_lolos');
                             $kat = strtoupper((string) ($qc->kategori_barang ?: 'SINGKONG'));
                             $isLocked = !empty($qc->terima) && !Auth::user()?->isSuperAdmin();
+                            $menuId = 'actionMenuQc_' . $qc->qc_id;
                         @endphp
                         <tr>
+                            {{-- 1. NO QC & WAKTU --}}
                             <td>
                                 <a href="{{ route('qc.inbound.show', $qc->qc_id) }}" style="font-weight: 800; color: #0284c7; text-decoration: none;">
                                     {{ $qc->qc_no }}
                                 </a>
-                                <div style="font-size: 0.725rem; color: #64748b; margin-top: 2px;">
-                                    {{ $qc->tgl_periksa ? $qc->tgl_periksa->format('d/m/Y H:i') : '-' }} &bull; {{ $qc->petugas_qc_nama }}
+                                <div style="font-size: 0.72rem; color: #64748b; margin-top: 2px;">
+                                    📅 {{ $qc->tgl_periksa ? $qc->tgl_periksa->format('d/m/Y H:i') : '-' }}
+                                </div>
+                                <div style="font-size: 0.7rem; color: #94a3b8;">
+                                    QC: {{ $qc->petugas_qc_nama ?: 'Petugas' }}
                                 </div>
                             </td>
+
+                            {{-- 2. KOMODITAS --}}
                             <td>
-                                <span class="badge-commodity">
+                                <span class="badge-qc-commodity">
                                     @if ($kat === 'SINGKONG') 🥔 @elseif ($kat === 'MINYAK') 🛢️ @elseif ($kat === 'PLASTIK') 🛍️ @elseif ($kat === 'KARTON') 📦 @else ✨ @endif
                                     {{ $kat }}
                                 </span>
                             </td>
+
+                            {{-- 3. SUPPLIER & PO --}}
                             <td>
                                 <div style="font-weight: 700; color: #0f172a;">
                                     {{ $qc->supplier?->supplier_nm ?? 'Supplier Langsung' }}
                                 </div>
                                 @if ($qc->po)
-                                    <div style="font-size: 0.725rem; color: #0284c7; font-weight: 600;">
+                                    <div style="font-size: 0.72rem; color: #0284c7; font-weight: 700;">
                                         PO: {{ $qc->po->po_no }}
                                     </div>
                                 @else
-                                    <div style="font-size: 0.7rem; color: #94a3b8;">(Tanpa PO)</div>
+                                    <div style="font-size: 0.7rem; color: #94a3b8;">(Non-PO)</div>
                                 @endif
                             </td>
-                            <td>
-                                <div style="font-weight: 700; color: #334155;">{{ $qc->plat_nomor_truk ?: '-' }}</div>
-                                <div style="font-size: 0.725rem; color: #64748b;">Sopir: {{ $qc->sopir_nama ?: '-' }}</div>
-                            </td>
-                            <td style="text-align: right; font-weight: 700;">
-                                {{ number_format($totalGross, 0, ',', '.') }}
-                            </td>
-                            <td style="text-align: right; color: #d97706; font-weight: 600;">
-                                {{ number_format($totalRefraksi, 0, ',', '.') }}
-                            </td>
-                            <td style="text-align: right; color: #dc2626; font-weight: 600;">
-                                {{ number_format($totalReject, 0, ',', '.') }}
-                            </td>
-                            <td style="text-align: right; font-weight: 800; color: #059669; font-size: 0.925rem;">
-                                {{ number_format($totalNetto, 0, ',', '.') }}
-                            </td>
-                            <td style="text-align: center;">
-                                @if ($qc->status_qc === 'SIAP_GUDANG')
-                                    <span class="badge-status-siap">⏳ Siap Gudang</span>
-                                @elseif ($qc->status_qc === 'DITERIMA_GUDANG')
-                                    <span class="badge-status-diterima">✅ Masuk Gudang</span>
-                                @elseif ($qc->status_qc === 'DITOLAK_TOTAL')
-                                    <span class="badge-status-reject">❌ Reject Total</span>
-                                @else
-                                    <span class="badge-status-siap">{{ $qc->status_qc }}</span>
-                                @endif
 
-                                @if ($kat === 'SINGKONG' && $qc->status_uji_goreng === 'MENUNGGU_LAB')
-                                    <div style="margin-top: 3px;">
-                                        <span class="badge-status-lab">⏳ Lab Fryer</span>
+                            {{-- 4. ARMADA / SOPIR --}}
+                            <td>
+                                <div style="font-weight: 700; color: #334155;">
+                                    🚛 {{ $qc->plat_nomor_truk ?: '-' }}
+                                </div>
+                                <div style="font-size: 0.72rem; color: #64748b;">
+                                    Sopir: {{ $qc->sopir_nama ?: '-' }}
+                                </div>
+                                @if ($qc->nomor_do)
+                                    <div style="font-size: 0.7rem; color: #64748b;">
+                                        DO: {{ $qc->nomor_do }}
                                     </div>
                                 @endif
                             </td>
-                            <td style="text-align: center;">
-                                <div style="display: flex; gap: 0.35rem; align-items: center; justify-content: center; flex-wrap: wrap;">
-                                    {{-- TOMBOL UTAMA ADMIN GUDANG: TARIK KE PENERIMAAN GUDANG (GRN) --}}
-                                    @if ($qc->status_qc === 'SIAP_GUDANG' && Auth::user()?->canAccessTerima())
-                                        <a href="{{ route('gudang.terima.create', ['qc_id' => $qc->qc_id]) }}" class="qc-btn-pull-grn" title="Buat Bukti Terima Barang (GRN) berdasarkan tiket QC ini">
-                                            <span>📦 Tarik ke GRN</span>
-                                        </a>
-                                    @elseif ($qc->terima)
-                                        <a href="{{ route('gudang.terima.show', $qc->terima->terima_id) }}" class="qc-grn-badge-link" title="Buka Dokumen Penerimaan Gudang">
-                                            <span>🔗 GRN #{{ $qc->terima->terima_no }}</span>
-                                        </a>
-                                    @endif
 
-                                    <a href="{{ route('qc.inbound.show', $qc->qc_id) }}" class="btn btn-sm btn-secondary" title="Lihat Lembar Uji">
-                                        Detail
+                            {{-- 5. GROSS --}}
+                            <td style="text-align: right; font-weight: 700;">
+                                {{ number_format($totalGross, 0, ',', '.') }}
+                            </td>
+
+                            {{-- 6. REFRAKSI --}}
+                            <td style="text-align: right; color: #d97706; font-weight: 600;">
+                                {{ number_format($totalRefraksi, 0, ',', '.') }}
+                            </td>
+
+                            {{-- 7. REJECT --}}
+                            <td style="text-align: right; color: #dc2626; font-weight: 600;">
+                                {{ number_format($totalReject, 0, ',', '.') }}
+                            </td>
+
+                            {{-- 8. NETTO LOLOS --}}
+                            <td style="text-align: right; font-weight: 900; color: #059669; font-size: 0.925rem;">
+                                {{ number_format($totalNetto, 0, ',', '.') }}
+                            </td>
+
+                            {{-- 9. STATUS MUTU & LAB --}}
+                            <td style="text-align: center;">
+                                @if ($qc->status_qc === 'SIAP_GUDANG')
+                                    <span class="badge-qc-status siap">⏳ Lolos / Siap</span>
+                                @elseif ($qc->status_qc === 'DITERIMA_GUDANG')
+                                    <span class="badge-qc-status masuk">✅ Diterima</span>
+                                @elseif ($qc->status_qc === 'DITOLAK_TOTAL')
+                                    <span class="badge-qc-status reject">❌ Ditolak</span>
+                                @else
+                                    <span class="badge-qc-status siap">{{ $qc->status_qc }}</span>
+                                @endif
+
+                                @if ($kat === 'SINGKONG')
+                                    @if ($qc->status_uji_goreng === 'MENUNGGU_LAB')
+                                        <div>
+                                            <span class="badge-lab-warning">🍟 Uji Fryer Pending</span>
+                                        </div>
+                                    @elseif ($qc->status_uji_goreng === 'SELESAI')
+                                        <div>
+                                            <span style="font-size: 0.68rem; color: #166534; font-weight: 700;">🍟 Fryer Selesai</span>
+                                        </div>
+                                    @endif
+                                @endif
+                            </td>
+
+                            {{-- 10. STATUS GUDANG --}}
+                            <td style="text-align: center;">
+                                @if ($qc->terima)
+                                    <a href="{{ route('gudang.terima.show', $qc->terima->terima_id) }}" class="badge-grn-linked" title="Lihat Penerimaan Barang (GRN)">
+                                        <span>📦 GRN #{{ $qc->terima->terima_no }}</span>
+                                    </a>
+                                @elseif ($qc->status_qc === 'SIAP_GUDANG')
+                                    <span style="font-size: 0.72rem; color: #d97706; font-weight: 700;">
+                                        ⏳ Belum Ditarik
+                                    </span>
+                                @else
+                                    <span style="font-size: 0.72rem; color: #94a3b8;">-</span>
+                                @endif
+                            </td>
+
+                            {{-- 11. SMART ACTION DROPDOWN --}}
+                            <td style="text-align: center; vertical-align: middle;">
+                                <button type="button" class="btn-action-trigger" onclick="toggleSmartActionDropdown(this, event, '{{ $menuId }}')">
+                                    <span>Aksi</span>
+                                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+                                </button>
+
+                                {{-- FIXED DROPDOWN CONTAINER --}}
+                                <div id="{{ $menuId }}" class="action-dropdown-menu">
+                                    <a href="{{ route('qc.inbound.show', $qc->qc_id) }}" class="action-dropdown-item primary">
+                                        <span>👁️</span> <span>Lihat Detail Sampling</span>
                                     </a>
 
-                                    @if (Auth::user()?->canEditQc() && !$isLocked)
-                                        <a href="{{ route('qc.inbound.edit', $qc->qc_id) }}" class="btn btn-sm btn-secondary" title="Edit Koreksi" style="color: #1d4ed8; background: #eff6ff; border-color: #bfdbfe;">
-                                            ✏️
+                                    {{-- OPSI TARIK KE GRN JIKA BELUM DITERIMA --}}
+                                    @if ($qc->status_qc === 'SIAP_GUDANG' && Auth::user()?->canAccessTerima())
+                                        <a href="{{ route('gudang.terima.create', ['qc_id' => $qc->qc_id]) }}" class="action-dropdown-item success">
+                                            <span>📦</span> <span>Tarik ke GRN Gudang</span>
                                         </a>
                                     @endif
 
+                                    {{-- OPSI CEPAT UJI FRYER LAB SINGKONG --}}
+                                    @if ($kat === 'SINGKONG' && $qc->status_uji_goreng === 'MENUNGGU_LAB')
+                                        <button type="button" class="action-dropdown-item warning" onclick="openModalUjiFryer('{{ $qc->qc_id }}', '{{ $qc->qc_no }}', '{{ $qc->details->first()?->qcdtl_id }}')">
+                                            <span>🍟</span> <span>Lengkapi Uji Fryer</span>
+                                        </button>
+                                    @endif
+
+                                    {{-- CETAK LEMBAR HACCP RESMI A4 --}}
+                                    <a href="{{ route('gudang.qc.haccp_cetak', $qc->qc_id) }}" target="_blank" class="action-dropdown-item">
+                                        <span>🖨️</span> <span>Cetak Lembar HACCP</span>
+                                    </a>
+
+                                    <div class="action-dropdown-divider"></div>
+
+                                    {{-- EDIT QC --}}
+                                    @if (Auth::user()?->canEditQc())
+                                        @if (!$isLocked)
+                                            <a href="{{ route('qc.inbound.edit', [$qc->qc_id, 'view' => 'mobile']) }}" class="action-dropdown-item">
+                                                <span>✏️</span> <span>Edit Parameter QC</span>
+                                            </a>
+                                        @else
+                                            <span class="action-dropdown-item" style="color: #94a3b8; cursor: not-allowed;" title="Terkunci karena sudah dibuatkan GRN">
+                                                <span>🔒</span> <span>Terkunci (GRN Ada)</span>
+                                            </span>
+                                        @endif
+                                    @endif
+
+                                    {{-- HAPUS / BATALKAN TIKET QC --}}
                                     @if (Auth::user()?->canDeleteQc() && !$isLocked)
-                                        <button type="button" class="btn btn-sm btn-secondary" onclick="openDeleteQcModal('{{ $qc->qc_id }}', '{{ $qc->qc_no }}')" title="Batalkan Tiket" style="color: #dc2626; background: #fef2f2; border-color: #fecaca;">
-                                            🗑️
+                                        <button type="button" class="action-dropdown-item danger" onclick="openDeleteQcModal('{{ $qc->qc_id }}', '{{ $qc->qc_no }}')">
+                                            <span>🗑️</span> <span>Batalkan Tiket QC</span>
                                         </button>
                                     @endif
                                 </div>
@@ -375,31 +328,35 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="10" style="padding: 3rem; text-align: center; color: #64748b;">
+                            <td colspan="11" style="padding: 3.5rem 1.5rem; text-align: center; color: #64748b;">
                                 <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🔬</div>
-                                <div style="font-weight: 700; font-size: 1rem; color: #0f172a;">Belum Ada Tiket Inspeksi QC</div>
-                                <div style="font-size: 0.85rem; margin-top: 0.25rem;">Tidak ada data tiket QC yang sesuai dengan kriteria filter.</div>
+                                <div style="font-weight: 700; font-size: 1rem; color: #0f172a;">Belum Ada Tiket QC Inbound</div>
+                                <div style="font-size: 0.85rem; margin-top: 0.25rem;">
+                                    Belum ada data kedatangan bahan baku yang dicatat atau sesuai kriteria filter di atas.
+                                </div>
                             </td>
                         </tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
-    </div>
 
-    {{-- PAGINASI --}}
-    @if ($inspeksiList->hasPages())
-        <div style="margin-top: 1.25rem; background: #ffffff; padding: 0.85rem; border-radius: 12px; border: 1px solid #e2e8f0; text-align: center;">
-            {{ $inspeksiList->withQueryString()->links() }}
-        </div>
-    @endif
+        @if ($inspeksiList->hasPages())
+            <div style="padding: 1rem 1.25rem; border-top: 1px solid #f1f5f9; background: #ffffff;">
+                {{ $inspeksiList->withQueryString()->links() }}
+            </div>
+        @endif
+    </div>
 </div>
 
 {{-- MODAL KONFIRMASI HAPUS --}}
 @include('gudang.qc.partials.modal-delete')
 
+{{-- MODAL UJI GORENG FRYER --}}
+@include('gudang.qc.partials.modal-uji-fryer')
+
 @endsection
 
 @push('scripts')
-    <script src="{{ asset('js/gudang/qc/qc-index.js') }}"></script>
+    <script src="{{ asset('js/gudang/qc/qc-admin-index.js') }}"></script>
 @endpush

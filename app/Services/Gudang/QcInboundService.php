@@ -420,18 +420,38 @@ class QcInboundService
             $qc = DatQcInboundHdr::with('details')->findOrFail($qcId);
 
             $items = $data['items'] ?? [];
-            foreach ($items as $qcdtlId => $dtlData) {
-                $detail = $qc->details->firstWhere('qcdtl_id', (int)$qcdtlId);
-                if ($detail) {
-                    $detail->update([
-                        'fryer_rasa'             => $dtlData['fryer_rasa'] ?? 'TIDAK_PAHIT',
-                        'fryer_tekstur'          => $dtlData['fryer_tekstur'] ?? 'RENYAH',
-                        'fryer_penampakan'       => $dtlData['fryer_penampakan'] ?? 'TIDAK_OILSOAKED',
-                        'defect_breakage_persen' => (float)($dtlData['defect_breakage_persen'] ?? 0),
-                        'defect_cluster_persen'  => (float)($dtlData['defect_cluster_persen'] ?? 0),
-                        'defect_foldover_persen' => (float)($dtlData['defect_foldover_persen'] ?? 0),
-                        'defect_oilsoaked_persen'=> (float)($dtlData['defect_oilsoaked_persen'] ?? 0),
-                        'defect_gambos_persen'   => (float)($dtlData['defect_gambos_persen'] ?? 0),
+            if (!empty($items)) {
+                foreach ($items as $qcdtlId => $dtlData) {
+                    $detail = $qc->details->firstWhere('qcdtl_id', (int)$qcdtlId);
+                    if ($detail) {
+                        $detail->update([
+                            'fryer_rasa'             => $dtlData['fryer_rasa'] ?? 'TIDAK_PAHIT',
+                            'fryer_tekstur'          => $dtlData['fryer_tekstur'] ?? 'RENYAH',
+                            'fryer_penampakan'       => $dtlData['fryer_penampakan'] ?? 'TIDAK_OILSOAKED',
+                            'defect_breakage_persen' => (float)($dtlData['defect_breakage_persen'] ?? 0),
+                            'defect_cluster_persen'  => (float)($dtlData['defect_cluster_persen'] ?? 0),
+                            'defect_foldover_persen' => (float)($dtlData['defect_foldover_persen'] ?? 0),
+                            'defect_oilsoaked_persen'=> (float)($dtlData['defect_oilsoaked_persen'] ?? 0),
+                            'defect_gambos_persen'   => (float)($dtlData['defect_gambos_persen'] ?? 0),
+                        ]);
+                    }
+                }
+            } else {
+                // Fallback: Jika data dikirim langsung tanpa pembungkus items[]
+                $targetDtl = !empty($data['qcdtl_id'])
+                    ? $qc->details->firstWhere('qcdtl_id', (int)$data['qcdtl_id'])
+                    : $qc->details->first();
+
+                if ($targetDtl) {
+                    $targetDtl->update([
+                        'fryer_rasa'             => $data['fryer_rasa'] ?? 'TIDAK_PAHIT',
+                        'fryer_tekstur'          => $data['fryer_tekstur'] ?? 'RENYAH',
+                        'fryer_penampakan'       => $data['fryer_penampakan'] ?? 'TIDAK_OILSOAKED',
+                        'defect_breakage_persen' => (float)($data['defect_breakage_persen'] ?? 0),
+                        'defect_cluster_persen'  => (float)($data['defect_cluster_persen'] ?? 0),
+                        'defect_foldover_persen' => (float)($data['defect_foldover_persen'] ?? 0),
+                        'defect_oilsoaked_persen'=> (float)($data['defect_oilsoaked_persen'] ?? 0),
+                        'defect_gambos_persen'   => (float)($data['defect_gambos_persen'] ?? 0),
                     ]);
                 }
             }

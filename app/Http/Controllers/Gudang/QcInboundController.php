@@ -23,6 +23,7 @@ class QcInboundController extends Controller
 
     /**
      * Menampilkan daftar tiket inspeksi QC bahan masuk
+     * Otomatis memisahkan Tampilan Lapangan Mobile vs Web Admin Gudang Desktop
      */
     public function index(Request $request): View
     {
@@ -39,7 +40,21 @@ class QcInboundController extends Controller
         $inspeksiList = $this->qcService->getAllPaginated($filters, 15);
         $suppliers = MstSupplier::where('deleted_st', false)->where('active_st', true)->orderBy('supplier_nm')->get();
 
-        return view('gudang.qc.index', compact('inspeksiList', 'suppliers', 'filters'));
+        $user = \Illuminate\Support\Facades\Auth::user();
+        $isMobileReq = $request->input('view') === 'mobile' || ($user?->isQc() && !$user?->isSuperAdmin() && !$user?->isGudang() && $request->input('view') !== 'desktop');
+
+        // Jika diakses oleh smartphone Petugas QC / minta mode mobile
+        if ($isMobileReq) {
+            return view('gudang.qc.index-mobile', compact('inspeksiList', 'suppliers', 'filters'));
+        }
+
+        // Metrik Statistik Operasional Gudang & QC Inbound (Khusus Web Admin Desktop)
+        $countSiap = \App\Models\Gudang\DatQcInboundHdr::where('deleted_st', false)->where('status_qc', 'SIAP_GUDANG')->count();
+        $countFryer = \App\Models\Gudang\DatQcInboundHdr::where('deleted_st', false)->where('status_uji_goreng', 'MENUNGGU_LAB')->count();
+        $countSelesai = \App\Models\Gudang\DatQcInboundHdr::where('deleted_st', false)->where('status_qc', 'DITERIMA_GUDANG')->count();
+        $countReject = \App\Models\Gudang\DatQcInboundHdr::where('deleted_st', false)->where('status_qc', 'DITOLAK_TOTAL')->count();
+
+        return view('gudang.qc.index', compact('inspeksiList', 'suppliers', 'filters', 'countSiap', 'countFryer', 'countSelesai', 'countReject'));
     }
 
     /**
@@ -154,8 +169,9 @@ class QcInboundController extends Controller
 
     /**
      * Menampilkan dokumen lembar hasil uji QC
+     * Default SELALU menampilkan detail ringkas mobile. Lembar HACCP hanya jika view=haccp
      */
-    public function show(int $id): View
+    public function show(Request $request, int $id): View
     {
         $qc = \App\Models\Gudang\DatQcInboundHdr::with([
             'supplier',
@@ -166,7 +182,13 @@ class QcInboundController extends Controller
             'terima',
         ])->where('deleted_st', false)->findOrFail($id);
 
-        return view('gudang.qc.show', compact('qc'));
+        // Jika eksplisit minta lembar cetak HACCP desktop
+        if ($request->input('view') === 'haccp') {
+            return view('gudang.qc.show', compact('qc'));
+        }
+
+        // Default selalu detail biasa (mobile)
+        return view('gudang.qc.show-mobile', compact('qc'));
     }
 
     /**
@@ -180,8 +202,9 @@ class QcInboundController extends Controller
 
     /**
      * Formulir Koreksi / Edit Tiket QC Inbound
+     * Mendukung tampilan mobile edit biasa untuk smartphone QC dan formulir HACCP desktop
      */
-    public function edit(int $id): View|RedirectResponse
+    public function edit(Request $request, int $id): View|RedirectResponse
     {
         $qc = \App\Models\Gudang\DatQcInboundHdr::with([
             'supplier',
@@ -219,7 +242,13 @@ class QcInboundController extends Controller
             ->orderBy('po_tgl', 'desc')
             ->get();
 
-        return view('gudang.qc.edit', compact('qc', 'suppliers', 'gudangs', 'barangs', 'pos'));
+        // Jika eksplisit minta edit formulir HACCP desktop
+        if ($request->input('view') === 'haccp') {
+            return view('gudang.qc.edit', compact('qc', 'suppliers', 'gudangs', 'barangs', 'pos'));
+        }
+
+        // Default selalu edit mobile biasa
+        return view('gudang.qc.edit-mobile', compact('qc', 'suppliers', 'gudangs', 'barangs', 'pos'));
     }
 
     /**

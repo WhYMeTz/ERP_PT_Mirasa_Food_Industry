@@ -12,13 +12,13 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class RekapHppTemplate
 {
-    const COLOR_ORANGE_HEADER = 'FFF4B084';
-    const COLOR_GREEN_MEGA    = 'FFA9D08E';
-    const COLOR_GREEN_SUB     = 'FFC6E0B4';
-    const COLOR_YELLOW_HEADER = 'FFFFC000';
-    const COLOR_YELLOW_CELL   = 'FFFFFF00';
-    const COLOR_RED_TEXT      = 'FFC00000';
-    const COLOR_BLUE_TEXT     = 'FF002060';
+    const COLOR_ORANGE_HEADER = 'FFF4B084'; // Header Hari & Tanggal
+    const COLOR_GREEN_HEADER  = 'FF92D050'; // Header Total Biaya Produksi, Total WIP & seluruh sub-header hijau
+    const COLOR_YELLOW_HEADER = 'FFFFC000'; // Header Total Biaya & Baris TOTAL / RATA-RATA
+    const COLOR_GREY_HEADER   = 'FFF2F2F2'; // Header Harga Pokok Produksi
+    const COLOR_YELLOW_CELL   = 'FFFFFF00'; // Background sel Total Biaya & Total WIP Kg
+    const COLOR_RED_TEXT      = 'FFC00000'; // Pos FOH (Foto Copy, QC, Listrik, Mesin, Limbah)
+    const COLOR_BLUE_TEXT     = 'FF002060'; // Persentase (Minyak %, Rendemen %)
     const COLOR_BORDER        = 'FF000000';
 
     public function download(): StreamedResponse
@@ -54,92 +54,149 @@ class RekapHppTemplate
         $currentYear = (int) date('Y');
         $currentMonth = (int) date('n');
 
-        $sheet->setCellValue('A1', 'PT. MIRASA FOOD INDUSTRY');
-        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(12);
+        // ═════════════════════════════════════════════════════════════════
+        // HEADER ROW 1, 2, & 3 MENGIKUTI 100% SPREADSHEET EXCEL MIRASA
+        // ═════════════════════════════════════════════════════════════════
 
-        $sheet->setCellValue('A2', 'TEMPLATE BUKU REKAPITULASI BIAYA PRODUKSI HARIAN & RENDEMEN (WIP)');
-        $sheet->getStyle('A2')->getFont()->setBold(true)->setSize(11);
+        // ROW 1: MEGA HEADERS
+        $sheet->setCellValue('A1', 'HARI');
+        $sheet->mergeCells('A1:A3');
+        $sheet->setCellValue('B1', 'TANGGAL');
+        $sheet->mergeCells('B1:B3');
+        $sheet->getStyle('A1:B3')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB(self::COLOR_ORANGE_HEADER);
 
-        $sheet->setCellValue('A3', 'Isi data harian pada baris ke-7 ke bawah. Kolom bertanda kuning dan rumus persentase otomatis terhitung.');
-        $sheet->getStyle('A3')->getFont()->setSize(8)->setItalic(true);
+        // Mega Header Total Biaya Produksi / KG (C1:AD1)
+        $sheet->setCellValue('C1', 'TOTAL BIAYA PRODUKSI / KG');
+        $sheet->mergeCells('C1:AD1');
 
-        // Header Rows 5 & 6
-        $sheet->setCellValue('A5', 'HARI');
-        $sheet->mergeCells('A5:A6');
-        $sheet->setCellValue('B5', 'TANGGAL');
-        $sheet->mergeCells('B5:B6');
-        $sheet->getStyle('A5:B6')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB(self::COLOR_ORANGE_HEADER);
+        // Total Biaya (AE1:AE3)
+        $sheet->setCellValue('AE1', "TOTAL\nBIAYA");
+        $sheet->mergeCells('AE1:AE3');
+        $sheet->getStyle('AE1:AE3')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB(self::COLOR_YELLOW_HEADER);
 
-        // Mega Header Biaya
-        $sheet->setCellValue('C5', 'TOTAL BIAYA PRODUKSI / KG');
-        $sheet->mergeCells('C5:AD5');
-        $sheet->getStyle('C5:AD5')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB(self::COLOR_GREEN_MEGA);
+        // Total WIP (AF1:AG1)
+        $sheet->setCellValue('AF1', 'TOTAL WIP');
+        $sheet->mergeCells('AF1:AG1');
 
-        // Sub-headers
-        $sheet->setCellValue('C6', 'SINGKONG (KG)');
-        $sheet->setCellValue('D6', 'SINGKONG (RP)');
-        $sheet->setCellValue('E6', 'MINYAK SAWIT');
-        $sheet->setCellValue('F6', 'MINYAK KELAPA');
-        $sheet->setCellValue('G6', 'MINYAK (RP)');
-        $sheet->setCellValue('H6', 'MINYAK (%)');
-        $sheet->setCellValue('I6', 'CNG (MMBTU)');
-        $sheet->setCellValue('J6', 'CNG (RP)');
-        $sheet->setCellValue('K6', 'TK LANGSUNG');
-        $sheet->setCellValue('L6', 'TK TDK LANGSUNG');
-        $sheet->setCellValue('M6', 'TK TRAINING');
-        $sheet->setCellValue('N6', 'TK TOTAL (RP)');
-        $sheet->setCellValue('O6', 'BUMBU PERENYAH');
-        $sheet->setCellValue('P6', 'KARTON BARU');
-        $sheet->setCellValue('Q6', 'KARTON BEKAS');
-        $sheet->setCellValue('R6', 'PLASTIK HD 90x100');
-        $sheet->setCellValue('S6', 'LAKBAN BESAR');
-        $sheet->setCellValue('T6', 'LAKBAN KECIL');
-        $sheet->setCellValue('U6', 'TALI RAFIA');
-        $sheet->setCellValue('V6', 'FOTO COPY');
-        $sheet->setCellValue('W6', 'SARUNG TGN PLSTK');
-        $sheet->setCellValue('X6', 'SARUNG TGN KAIN');
-        $sheet->setCellValue('Y6', 'PEMERIKSAAN MUTU');
-        $sheet->setCellValue('Z6', 'LISTRIK & AIR + TELP');
-        $sheet->setCellValue('AA6', 'PEMLHR MESIN');
-        $sheet->setCellValue('AB6', 'PENYS MESIN');
-        $sheet->setCellValue('AC6', 'LIMBAH PADAT');
-        $sheet->setCellValue('AD6', 'BAHAN KIMIA');
+        // Harga Pokok Produksi (AH1:AH3)
+        $sheet->setCellValue('AH1', "HARGA POKOK\nPRODUKSI");
+        $sheet->mergeCells('AH1:AH3');
+        $sheet->getStyle('AH1:AH3')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB(self::COLOR_GREY_HEADER);
 
-        $sheet->getStyle('C6:AD6')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB(self::COLOR_GREEN_SUB);
-        $sheet->getStyle('Y6:AD6')->getFont()->getColor()->setARGB(self::COLOR_RED_TEXT);
-        $sheet->getStyle('H6')->getFont()->getColor()->setARGB(self::COLOR_BLUE_TEXT);
+        // ROW 2: KATEGORI BIAYA & SUB-MEGA
+        $sheet->setCellValue('C2', 'SINGKONG');
+        $sheet->mergeCells('C2:D2');
 
-        // Total Biaya
-        $sheet->setCellValue('AE5', "TOTAL\nBIAYA");
-        $sheet->mergeCells('AE5:AE6');
-        $sheet->getStyle('AE5:AE6')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB(self::COLOR_YELLOW_HEADER);
+        $sheet->setCellValue('E2', 'MINYAK GORENG');
+        $sheet->mergeCells('E2:H2');
 
-        // Mega Header WIP
-        $sheet->setCellValue('AF5', 'TOTAL WIP');
-        $sheet->mergeCells('AF5:AG5');
-        $sheet->getStyle('AF5:AG5')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB(self::COLOR_GREEN_MEGA);
+        $sheet->setCellValue('I2', 'CNG');
+        $sheet->mergeCells('I2:J2');
 
-        $sheet->setCellValue('AF6', 'TOTAL KG');
-        $sheet->setCellValue('AG6', 'RENDEMEN %');
-        $sheet->getStyle('AF6:AG6')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB(self::COLOR_GREEN_SUB);
-        $sheet->getStyle('AG6')->getFont()->getColor()->setARGB(self::COLOR_BLUE_TEXT);
+        $sheet->setCellValue('K2', 'TENAGA KERJA');
+        $sheet->mergeCells('K2:N2');
 
-        // HPP / Kg
-        $sheet->setCellValue('AH5', "HARGA POKOK\nPRODUKSI");
-        $sheet->mergeCells('AH5:AH6');
-        $sheet->getStyle('AH5:AH6')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFF2F2F2');
+        $sheet->setCellValue('O2', "BUMBU\nPERENYAH");
+        $sheet->mergeCells('O2:O3');
 
-        $sheet->getStyle('A5:AH6')->getFont()->setBold(true)->setSize(8);
-        $sheet->getStyle('A5:AH6')->getAlignment()->setVertical(Alignment::VERTICAL_CENTER)->setHorizontal(Alignment::HORIZONTAL_CENTER)->setWrapText(true);
-        $sheet->getStyle('A5:AH6')->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN)->getColor()->setARGB(self::COLOR_BORDER);
-        $sheet->getRowDimension(5)->setRowHeight(24);
-        $sheet->getRowDimension(6)->setRowHeight(32);
+        $sheet->setCellValue('P2', 'KARTON FL');
+        $sheet->mergeCells('P2:Q2');
 
-        // 31 Baris Hari Kalender
+        $sheet->setCellValue('R2', "PLASTIK HD\n90x100");
+        $sheet->mergeCells('R2:R3');
+
+        $sheet->setCellValue('S2', 'LAKBAN');
+        $sheet->mergeCells('S2:T2');
+
+        $sheet->setCellValue('U2', "TALI\nRAFIA");
+        $sheet->mergeCells('U2:U3');
+
+        $sheet->setCellValue('V2', "FOTO\nCOPY");
+        $sheet->mergeCells('V2:V3');
+
+        $sheet->setCellValue('W2', 'SARUNG TANGAN');
+        $sheet->mergeCells('W2:X2');
+
+        $sheet->setCellValue('Y2', "PENGAWASAN\nMUTU");
+        $sheet->mergeCells('Y2:Y3');
+
+        $sheet->setCellValue('Z2', "LISTRIK &\nAIR - TELP");
+        $sheet->mergeCells('Z2:Z3');
+
+        $sheet->setCellValue('AA2', "PEMLHR\nMESIN");
+        $sheet->mergeCells('AA2:AA3');
+
+        $sheet->setCellValue('AB2', "PENYS\nMESIN");
+        $sheet->mergeCells('AB2:AB3');
+
+        $sheet->setCellValue('AC2', 'B. PNGOLHN LIMBAH');
+        $sheet->mergeCells('AC2:AD2');
+
+        // WIP Sub-headers
+        $sheet->setCellValue('AF2', "TOTAL\nKG");
+        $sheet->mergeCells('AF2:AF3');
+
+        $sheet->setCellValue('AG2', "RENDEMEN\n%");
+        $sheet->mergeCells('AG2:AG3');
+
+        // ROW 3: SUB-KOLOM SPESIFIK
+        $sheet->setCellValue('C3', 'KG');
+        $sheet->setCellValue('D3', 'Rp');
+
+        $sheet->setCellValue('E3', 'SAWIT');
+        $sheet->setCellValue('F3', 'KELAPA');
+        $sheet->setCellValue('G3', 'Rp');
+        $sheet->setCellValue('H3', '%');
+
+        $sheet->setCellValue('I3', 'MMBTU');
+        $sheet->setCellValue('J3', 'Rp');
+
+        $sheet->setCellValue('K3', 'LANGSUNG');
+        $sheet->setCellValue('L3', "TIDAK\nLANGSUNG");
+        $sheet->setCellValue('M3', 'TRAINING');
+        $sheet->setCellValue('N3', 'Rp');
+
+        $sheet->setCellValue('P3', 'BARU');
+        $sheet->setCellValue('Q3', 'BEKAS');
+
+        $sheet->setCellValue('S3', 'BESAR');
+        $sheet->setCellValue('T3', 'KECIL');
+
+        $sheet->setCellValue('W3', 'PLASTIK');
+        $sheet->setCellValue('X3', 'KAIN');
+
+        $sheet->setCellValue('AC3', "LIMBAH\nPADAT");
+        $sheet->setCellValue('AD3', "BAHAN\nKIMIA");
+
+        // Fills untuk seluruh Header Hijau (C1:AD3 dan AF1:AG3)
+        $sheet->getStyle('C1:AD3')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB(self::COLOR_GREEN_HEADER);
+        $sheet->getStyle('AF1:AG3')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB(self::COLOR_GREEN_HEADER);
+
+        // Teks Merah untuk Pos FOH
+        $sheet->getStyle('V2:V3')->getFont()->getColor()->setARGB(self::COLOR_RED_TEXT);
+        $sheet->getStyle('Y2:AB3')->getFont()->getColor()->setARGB(self::COLOR_RED_TEXT);
+        $sheet->getStyle('AC2:AD3')->getFont()->getColor()->setARGB(self::COLOR_RED_TEXT);
+
+        // Teks Biru untuk Persentase
+        $sheet->getStyle('H3')->getFont()->getColor()->setARGB(self::COLOR_BLUE_TEXT);
+        $sheet->getStyle('AG2:AG3')->getFont()->getColor()->setARGB(self::COLOR_BLUE_TEXT);
+
+        // Styling Umum Header Rows 1 to 3
+        $sheet->getStyle('A1:AH3')->getFont()->setBold(true)->setSize(8);
+        $sheet->getStyle('A1:AH3')->getAlignment()->setVertical(Alignment::VERTICAL_CENTER)->setHorizontal(Alignment::HORIZONTAL_CENTER)->setWrapText(true);
+        $sheet->getStyle('A1:AH3')->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN)->getColor()->setARGB(self::COLOR_BORDER);
+
+        $sheet->getRowDimension(1)->setRowHeight(26);
+        $sheet->getRowDimension(2)->setRowHeight(28);
+        $sheet->getRowDimension(3)->setRowHeight(24);
+
+        // ═════════════════════════════════════════════════════════════════
+        // DATA ROWS: BARIS 4 S/D 34 (31 HARI KALENDER)
+        // ═════════════════════════════════════════════════════════════════
         $dayNames = [0 => 'Sunday', 1 => 'Monday', 2 => 'Tuesday', 3 => 'Wednesday', 4 => 'Thursday', 5 => 'Friday', 6 => 'Saturday'];
         $daysInMonth = 31;
 
-        $row = 7;
+        $row = 4;
         for ($d = 1; $d <= $daysInMonth; $d++) {
             $dateObj = Carbon::createFromDate($currentYear, $currentMonth, $d);
             $dayName = $dayNames[$dateObj->dayOfWeek] ?? 'Day';
@@ -175,7 +232,12 @@ class RekapHppTemplate
             $sheet->getStyle("H{$row}")->getFont()->getColor()->setARGB(self::COLOR_BLUE_TEXT);
             $sheet->getStyle("AG{$row}")->getFont()->getColor()->setARGB(self::COLOR_BLUE_TEXT);
             $sheet->getStyle("AE{$row}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB(self::COLOR_YELLOW_CELL);
+            $sheet->getStyle("AE{$row}")->getFont()->getColor()->setARGB(self::COLOR_BLUE_TEXT);
+            $sheet->getStyle("AE{$row}")->getFont()->setBold(true);
+
             $sheet->getStyle("AF{$row}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB(self::COLOR_YELLOW_CELL);
+            $sheet->getStyle("AF{$row}")->getFont()->getColor()->setARGB(self::COLOR_BLUE_TEXT);
+            $sheet->getStyle("AF{$row}")->getFont()->setBold(true);
 
             if ($isSunday) {
                 $sheet->getStyle("A{$row}:AH{$row}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFFCE4D6');
@@ -188,8 +250,10 @@ class RekapHppTemplate
             $row++;
         }
 
-        // Baris TOTAL & RATA - RATA
-        $startDataRow = 7;
+        // ═════════════════════════════════════════════════════════════════
+        // BARIS TOTAL & RATA - RATA (Row 35 & 36)
+        // ═════════════════════════════════════════════════════════════════
+        $startDataRow = 4;
         $endDataRow = $row - 1;
 
         $rowTotal = $row;

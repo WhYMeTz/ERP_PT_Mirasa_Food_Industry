@@ -34,8 +34,18 @@ class RekapHppImport
         $sheet = $spreadsheet->getActiveSheet();
         $highestRow = $sheet->getHighestDataRow();
 
-        if ($highestRow < self::DATA_START_ROW) {
-            throw new Exception('Berkas Excel tidak memiliki data kalender produksi (dimulai dari baris ke-7).');
+        // Deteksi dinamis baris awal data: cari baris pertama (antara baris 4 sampai 10) yang kolom B berisi tanggal
+        $startRow = 4;
+        for ($checkRow = 4; $checkRow <= 10; $checkRow++) {
+            $valB = $sheet->getCell('B' . $checkRow)->getValue();
+            if (!empty($valB) && (is_numeric($valB) || preg_match('/\d+[\/\-]\d+[\/\-]\d+/', (string) $valB))) {
+                $startRow = $checkRow;
+                break;
+            }
+        }
+
+        if ($highestRow < $startRow) {
+            throw new Exception('Berkas Excel tidak memiliki data kalender produksi (dimulai dari baris ke-' . $startRow . ').');
         }
 
         // Cari gudang aktif default
@@ -44,8 +54,8 @@ class RekapHppImport
 
         $username = Auth::user()?->username ?? 'IMPORT_EXCEL';
 
-        DB::transaction(function () use ($sheet, $highestRow, $gudang, $username) {
-            for ($r = self::DATA_START_ROW; $r <= $highestRow; $r++) {
+        DB::transaction(function () use ($sheet, $highestRow, $startRow, $gudang, $username) {
+            for ($r = $startRow; $r <= $highestRow; $r++) {
                 $cellA = trim((string) $sheet->getCell('A' . $r)->getValue());
 
                 // Berhenti jika sudah sampai baris TOTAL atau RATA-RATA

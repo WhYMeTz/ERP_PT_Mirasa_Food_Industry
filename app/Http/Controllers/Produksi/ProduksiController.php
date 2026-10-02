@@ -378,7 +378,7 @@ class ProduksiController extends Controller
         $pdf = Pdf::loadView('produksi.pdf.rekap-hpp', compact('report', 'year', 'month', 'monthName'))
             ->setPaper('legal', 'landscape');
 
-        return $pdf->download("Rekap_HPP_{$monthName}_{$year}.pdf");
+        return $pdf->stream("Rekap_HPP_{$monthName}_{$year}.pdf");
     }
 
     /**

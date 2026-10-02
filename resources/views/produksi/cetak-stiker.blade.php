@@ -79,43 +79,47 @@
                 </div>
             </div>
 
-            {{-- Body: 4 Baris Sinkron Presisi Tinggi --}}
-            <table class="st-table">
-                <tbody>
-                    <tr>
-                        <td class="st-lbl-left">No Batch</td>
-                        <td class="st-colon">:</td>
-                        <td class="st-val-left st-batch-num">{{ $batchNoDisplay }}</td>
-                        <td class="st-lbl-right">Tgl. Produksi</td>
-                        <td class="st-colon">:</td>
-                        <td class="st-val-right">{{ $tglProduksiStr }}</td>
-                    </tr>
-                    <tr>
-                        <td class="st-lbl-left">Gross</td>
-                        <td class="st-colon">:</td>
-                        <td class="st-val-left">{{ $isIfm ? '7.08 kg' : 'STANDAR' }}</td>
-                        <td class="st-lbl-right">Tgl. Kadaluarsa</td>
-                        <td class="st-colon">:</td>
-                        <td class="st-val-right">{{ $tglKadaluarsaStr }}</td>
-                    </tr>
-                    <tr>
-                        <td class="st-lbl-left">Netto</td>
-                        <td class="st-colon">:</td>
-                        <td class="st-val-left">{{ $isIfm ? '6 kg' : 'BAL/RETAIL' }}</td>
-                        <td class="st-lbl-right">Varietas RM</td>
-                        <td class="st-colon">:</td>
-                        <td class="st-val-right">{{ $isIfm ? ($produksi->varietas_singkong ?: 'STP / MGU') : 'STANDAR' }}</td>
-                    </tr>
-                    <tr>
-                        <td class="st-lbl-left">Jam</td>
-                        <td class="st-colon">:</td>
-                        <td class="st-val-left">{{ $jamStr }}</td>
-                        <td colspan="3" class="st-plant-cell">
-                            <div class="plant-code-box">{{ $isIfm ? 'M029 / - / ISA' : 'MIRASA / FG' }}</div>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+            {{-- Body: 2 Kolom Alami Tanpa Gap Canggung --}}
+            <div class="sticker-cols-container">
+                {{-- Kolom Kiri --}}
+                <div class="st-left-col">
+                    <div class="st-row">
+                        <span class="st-lbl">No Batch :</span>
+                        <span class="st-val st-batch-num">{{ $batchNoDisplay }}</span>
+                    </div>
+                    <div class="st-row">
+                        <span class="st-lbl">Gross :</span>
+                        <span class="st-val">{{ $isIfm ? '7.08 kg' : 'STANDAR' }}</span>
+                    </div>
+                    <div class="st-row">
+                        <span class="st-lbl">Netto :</span>
+                        <span class="st-val">{{ $isIfm ? '6 kg' : 'BAL/RETAIL' }}</span>
+                    </div>
+                    <div class="st-row">
+                        <span class="st-lbl">Jam :</span>
+                        <span class="st-val">{{ $jamStr }}</span>
+                    </div>
+                </div>
+
+                {{-- Kolom Kanan --}}
+                <div class="st-right-col">
+                    <div class="st-row">
+                        <span class="st-lbl">Tgl. Produksi :</span>
+                        <span class="st-val">{{ $tglProduksiStr }}</span>
+                    </div>
+                    <div class="st-row">
+                        <span class="st-lbl">Tgl. Kadaluarsa :</span>
+                        <span class="st-val">{{ $tglKadaluarsaStr }}</span>
+                    </div>
+                    <div class="st-row">
+                        <span class="st-lbl">Varietas RM :</span>
+                        <span class="st-val">{{ $isIfm ? ($produksi->varietas_singkong ?: 'STP / MGU') : 'STANDAR' }}</span>
+                    </div>
+                    <div class="st-row" style="justify-content: flex-end;">
+                        <div class="plant-code-box">{{ $isIfm ? 'M029 / - / ISA' : 'MIRASA / FG' }}</div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 

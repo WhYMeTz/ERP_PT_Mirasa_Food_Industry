@@ -34,7 +34,7 @@
 
         {{-- SECTION TOMBOL PILIHAN SHIFT (KHUSUS PRODUKSI IFM) --}}
         <div id="sectionShiftSelection">
-            <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.5rem;">
+            <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.45rem;">
                 Pilih Shift Kerja Produksi <span style="color: #ef4444;">*</span>
             </label>
             <div class="shift-selection-grid">
@@ -66,36 +66,39 @@
             </div>
         </div>
 
-        {{-- FORM INPUT SPESIFIKASI KARTON & WIDGET PREVIEW --}}
-        <div style="display: grid; grid-template-columns: 1.3fr 1fr; gap: 1.5rem; align-items: start;">
-            {{-- KOLOM KIRI: INPUT PARAMETER KARTON --}}
-            <div>
-                <div class="karton-spec-grid" style="margin-bottom: 1rem;">
-                    {{-- Input Qty Karton Selesai --}}
-                    <div>
-                        <label id="labelKartonTitle" style="display: block; font-size: 0.775rem; font-weight: 700; color: #0f172a; margin-bottom: 0.35rem;">
-                            Karton Selesai Dikemas <span style="color: #ef4444;">*</span>
-                        </label>
-                        <div style="position: relative;">
-                            <input type="number" step="1" min="0" name="qty_karton" id="qty_karton" 
-                                value="{{ old('qty_karton', 0) }}" 
-                                class="form-control" 
-                                style="font-weight: 800; font-size: 1.15rem; color: #0f172a; padding-right: 4.5rem;" 
-                                placeholder="0" 
-                                oninput="updateKartonRangeAndBatch()">
-                            <span style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); font-size: 0.8rem; font-weight: 700; color: #64748b; pointer-events: none;">
-                                Kemasan
-                            </span>
-                        </div>
-                        <small style="color: #64748b; font-size: 0.72rem; margin-top: 0.25rem; display: block;">
-                            Estimasi berat: <strong id="liveEstimasiKg" style="color: #0284c7;">0.00 Kg</strong> <span id="liveEstimasiDesc">(Netto 6 Kg/Karton)</span>.
-                        </small>
+        {{-- 2-COLUMN BALANCED WORKSPACE GRID --}}
+        <div class="shift-workspace-grid">
+            {{-- KOLOM KIRI: PARAMETER INPUT & SPESIFIKASI KARTON --}}
+            <div class="shift-form-pane">
+                {{-- Panel 1: Spesifikasi Nomor Karton & Waktu --}}
+                <div class="form-subpanel">
+                    <div class="subpanel-title">
+                        <span>📦 Spesifikasi Karton Box &amp; Penomoran</span>
                     </div>
 
-                    {{-- No Karton Awal & Akhir (Khusus IFM) --}}
-                    <div id="rowKartonRange" style="display: contents;">
-                        {{-- No Karton Awal --}}
+                    {{-- Baris 1: 3 Kolom Rapi (Karton Selesai, No Awal, No Akhir) --}}
+                    <div class="karton-trio-grid">
+                        {{-- Qty Karton Selesai --}}
                         <div>
+                            <label id="labelKartonTitle" style="display: block; font-size: 0.775rem; font-weight: 700; color: #0f172a; margin-bottom: 0.35rem;">
+                                Karton Selesai <span style="color: #ef4444;">*</span>
+                            </label>
+                            <div class="input-suffix-wrapper">
+                                <input type="number" step="1" min="0" name="qty_karton" id="qty_karton" 
+                                    value="{{ old('qty_karton', 0) }}" 
+                                    class="form-control" 
+                                    style="font-weight: 800; font-size: 1.1rem; color: #0f172a; padding-right: 4.5rem;" 
+                                    placeholder="0" 
+                                    oninput="updateKartonRangeAndBatch()">
+                                <span class="input-suffix-tag">Kemasan</span>
+                            </div>
+                            <small style="color: #64748b; font-size: 0.72rem; margin-top: 0.25rem; display: block;">
+                                Berat: <strong id="liveEstimasiKg" style="color: #0284c7;">0.00 Kg</strong> <span id="liveEstimasiDesc">(Netto 6 Kg/Box)</span>
+                            </small>
+                        </div>
+
+                        {{-- No. Karton Awal --}}
+                        <div id="colKartonAwal">
                             <label style="display: block; font-size: 0.775rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">
                                 No. Karton Awal <span style="color: #ef4444;">*</span>
                             </label>
@@ -109,8 +112,8 @@
                             </small>
                         </div>
 
-                        {{-- No Karton Akhir (Readonly) --}}
-                        <div>
+                        {{-- No. Karton Akhir (Readonly) --}}
+                        <div id="colKartonAkhir">
                             <label style="display: block; font-size: 0.775rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">
                                 No. Karton Akhir
                             </label>
@@ -124,81 +127,68 @@
                             </small>
                         </div>
                     </div>
+
+                    {{-- Baris 2: Varietas & Jam Packing --}}
+                    <div class="varietas-time-grid" style="margin-top: 0.85rem;">
+                        <div>
+                            <label style="display: block; font-size: 0.775rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">
+                                Varietas Singkong Mentah
+                            </label>
+                            <input type="text" name="varietas_singkong" id="varietas_singkong" 
+                                value="{{ old('varietas_singkong', 'STP / MGU') }}" 
+                                class="form-control" 
+                                placeholder="Contoh: STP / MGU" 
+                                style="font-weight: 600; font-size: 0.85rem;" 
+                                oninput="updateStickerPreview()">
+                            <small style="color: #64748b; font-size: 0.72rem;">Singkong Tape (STP) / Manggu (MGU).</small>
+                        </div>
+
+                        <div>
+                            <label style="display: block; font-size: 0.775rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">
+                                Jam Produksi / Cetak Stiker
+                            </label>
+                            <input type="time" name="jam_produksi" id="jam_produksi" 
+                                value="{{ old('jam_produksi', date('H:i')) }}" 
+                                class="form-control" 
+                                style="font-family: monospace; font-weight: 700; font-size: 0.85rem;" 
+                                oninput="updateStickerPreview()">
+                            <small style="color: #64748b; font-size: 0.72rem;">Waktu packing fisik.</small>
+                        </div>
+                    </div>
                 </div>
 
-                {{-- Baris 2: Varietas & Jam Packing --}}
-                <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 1rem; margin-bottom: 1.25rem;">
-                    <div>
-                        <label style="display: block; font-size: 0.775rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">
-                            Varietas Singkong Mentah
-                        </label>
-                        <input type="text" name="varietas_singkong" id="varietas_singkong" 
-                            value="{{ old('varietas_singkong', 'STP / MGU') }}" 
-                            class="form-control" 
-                            placeholder="Contoh: STP, MGU, atau STP / MGU" 
-                            style="font-weight: 600; font-size: 0.85rem;" 
-                            oninput="updateStickerPreview()">
-                        <small style="color: #64748b; font-size: 0.72rem;">Singkong Tape (STP) / Manggu (MGU).</small>
+                {{-- Panel 2: Quick Fill Salin ke Timbangan --}}
+                <div class="form-subpanel">
+                    <div class="subpanel-title">
+                        <span>⚖️ Salin Hasil Estimasi ke Form Timbangan WIP</span>
                     </div>
-
-                    <div>
-                        <label style="display: block; font-size: 0.775rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">
-                            Jam Produksi / Cetak Stiker
-                        </label>
-                        <input type="time" name="jam_produksi" id="jam_produksi" 
-                            value="{{ old('jam_produksi', date('H:i')) }}" 
-                            class="form-control" 
-                            style="font-family: monospace; font-weight: 700; font-size: 0.85rem;" 
-                            oninput="updateStickerPreview()">
-                        <small style="color: #64748b; font-size: 0.72rem;">Waktu packing fisik.</small>
+                    <div style="font-size: 0.75rem; color: #64748b; margin-bottom: 0.4rem;">
+                        Klik tombol untuk menyalin hasil kalkulasi berat karton langsung ke rincian timbangan di bawah:
                     </div>
-                </div>
-
-                {{-- HASIL KODE BATCH RANGE WIP & QUICK COPY BUTTON --}}
-                <div class="batch-result-display">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #94a3b8; letter-spacing: 0.05em;">
-                            Kode Batch Resmi (Kartu Persediaan):
-                        </span>
-                        <span style="font-size: 0.72rem; color: #38bdf8; font-weight: 600;">Otomatis Sesuai Standar Lini</span>
-                    </div>
-                    <div class="batch-result-code" id="liveBatchCode">
-                        {{ old('batch_wip_no', 'A0001 - A0001') }}
-                    </div>
-                    <input type="hidden" name="batch_wip_no" id="batch_wip_no" value="{{ old('batch_wip_no') }}">
-                    
-                    {{-- Tampilan Estimasi Kedaluwarsa --}}
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.4rem; font-size: 0.75rem; border-top: 1px dashed #334155; padding-top: 0.4rem;">
-                        <span style="color: #94a3b8;">📅 Estimasi Kedaluwarsa:</span>
-                        <strong id="liveExpDate" style="color: #38bdf8;">-</strong>
-                    </div>
-
-                    {{-- Quick Action Buttons Salin ke Timbangan WIP --}}
-                    <div style="display: flex; gap: 0.5rem; align-items: center; margin-top: 0.65rem; padding-top: 0.65rem; border-top: 1px dashed #334155; flex-wrap: wrap;">
-                        <span style="font-size: 0.725rem; color: #94a3b8;">Salin hasil ke timbangan:</span>
+                    <div class="copy-actions-wrapper">
                         <button type="button" class="btn-copy-wip" onclick="copyKartonToWipKg('asin_barco_qty')">
-                            📥 Asin Barco
+                            📥 Salin ke Asin Barco
                         </button>
-                        <button type="button" class="btn-copy-wip" style="background: #059669;" onclick="copyKartonToWipKg('asin_sawit_qty')">
-                            📥 Asin Sawit
+                        <button type="button" class="btn-copy-wip btn-copy-sawit" onclick="copyKartonToWipKg('asin_sawit_qty')">
+                            📥 Salin ke Asin Sawit
                         </button>
                     </div>
                 </div>
             </div>
 
-            {{-- KOLOM KANAN: LIVE PREVIEW STIKER KARTON FISIK / LABEL RETAIL --}}
-            <div class="sticker-wrapper">
-                <div style="font-size: 0.75rem; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 0.35rem;">
-                    <span>🏷️ Preview Label Stiker Fisik Kemasan</span>
+            {{-- KOLOM KANAN: PREVIEW STIKER FISIK & BATCH SUMMARY RESMI --}}
+            <div class="shift-preview-pane">
+                <div class="preview-pane-header">
+                    <span>🏷️ PREVIEW LABEL STIKER FISIK KEMASAN</span>
                 </div>
 
-                {{-- KOTAK STIKER FISIK ASLI PABRIK (PERSIS FISIK PABRIK) --}}
+                {{-- KOTAK STIKER FISIK ASLI PABRIK (KOMPAK & PERSIS FISIK ASLI) --}}
                 <div class="carton-physical-sticker">
                     {{-- Header: WIP-FCC & Halal Emblem --}}
                     <div class="sticker-header">
                         <div class="sticker-title" id="stMainTitle">WIP-FCC</div>
                         <div class="sticker-halal-box">
-                            <svg viewBox="0 0 100 100" width="34" height="34" style="display: block; margin: 0 auto;">
+                            <svg viewBox="0 0 100 100" width="30" height="30" style="display: block; margin: 0 auto;">
                                 <circle cx="50" cy="50" r="46" fill="none" stroke="#000000" stroke-width="4"/>
                                 <circle cx="50" cy="50" r="39" fill="none" stroke="#000000" stroke-width="1.5"/>
                                 <text x="50" y="30" font-size="8.5" font-weight="900" text-anchor="middle" font-family="Arial, sans-serif">MAJELIS ULAMA</text>
@@ -210,43 +200,63 @@
                         </div>
                     </div>
 
-                    {{-- Body: 4 Baris Sinkron Presisi Tinggi --}}
-                    <table class="st-table">
-                        <tbody>
-                            <tr>
-                                <td class="st-lbl-left">No Batch</td>
-                                <td class="st-colon">:</td>
-                                <td class="st-val-left st-batch-num" id="stShiftKarton">A / 0001</td>
-                                <td class="st-lbl-right">Tgl. Produksi</td>
-                                <td class="st-colon">:</td>
-                                <td class="st-val-right" id="stDate">{{ strtoupper(date('d M Y')) }}</td>
-                            </tr>
-                            <tr>
-                                <td class="st-lbl-left">Gross</td>
-                                <td class="st-colon">:</td>
-                                <td class="st-val-left" id="stGross">7.08 kg</td>
-                                <td class="st-lbl-right">Tgl. Kadaluarsa</td>
-                                <td class="st-colon">:</td>
-                                <td class="st-val-right" id="stExpDate">{{ strtoupper(date('d M Y', strtotime('+6 months'))) }}</td>
-                            </tr>
-                            <tr>
-                                <td class="st-lbl-left">Netto</td>
-                                <td class="st-colon">:</td>
-                                <td class="st-val-left" id="stNetto">6 kg</td>
-                                <td class="st-lbl-right">Varietas RM</td>
-                                <td class="st-colon">:</td>
-                                <td class="st-val-right" id="stVarietas">STP / MGU</td>
-                            </tr>
-                            <tr>
-                                <td class="st-lbl-left">Jam</td>
-                                <td class="st-colon">:</td>
-                                <td class="st-val-left" id="stTime">14.03</td>
-                                <td colspan="3" class="st-plant-cell">
-                                    <div class="plant-code-box">M029 / - / ISA</div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+                    {{-- Body: 2 Kolom Alami Tanpa Gap Canggung --}}
+                    <div class="sticker-cols-container">
+                        {{-- Kolom Kiri --}}
+                        <div class="st-left-col">
+                            <div class="st-row">
+                                <span class="st-lbl">No Batch :</span>
+                                <span class="st-val st-batch-num" id="stShiftKarton">A / 0001</span>
+                            </div>
+                            <div class="st-row">
+                                <span class="st-lbl">Gross :</span>
+                                <span class="st-val" id="stGross">7.08 kg</span>
+                            </div>
+                            <div class="st-row">
+                                <span class="st-lbl">Netto :</span>
+                                <span class="st-val" id="stNetto">6 kg</span>
+                            </div>
+                            <div class="st-row">
+                                <span class="st-lbl">Jam :</span>
+                                <span class="st-val" id="stTime">01.46</span>
+                            </div>
+                        </div>
+
+                        {{-- Kolom Kanan --}}
+                        <div class="st-right-col">
+                            <div class="st-row">
+                                <span class="st-lbl">Tgl. Produksi :</span>
+                                <span class="st-val" id="stDate">{{ strtoupper(date('d M Y')) }}</span>
+                            </div>
+                            <div class="st-row">
+                                <span class="st-lbl">Tgl. Kadaluarsa :</span>
+                                <span class="st-val" id="stExpDate">{{ strtoupper(date('d M Y', strtotime('+6 months'))) }}</span>
+                            </div>
+                            <div class="st-row">
+                                <span class="st-lbl">Varietas RM :</span>
+                                <span class="st-val" id="stVarietas">STP / MGU</span>
+                            </div>
+                            <div class="st-row" style="justify-content: flex-end;">
+                                <div class="plant-code-box" id="stPlantCode">M029 / - / ISA</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- CARD BATCH SUMMARY RESMI PERSADAAN (KOMPAK & ELEGAN) --}}
+                <div class="batch-summary-card">
+                    <div class="header-line">
+                        <span>Kode Batch Resmi Persadaan:</span>
+                        <span style="color: #38bdf8;">Otomatis Standar Lini</span>
+                    </div>
+                    <div class="batch-code-val" id="liveBatchCode">
+                        {{ old('batch_wip_no', 'A0001 - A0001') }}
+                    </div>
+                    <input type="hidden" name="batch_wip_no" id="batch_wip_no" value="{{ old('batch_wip_no') }}">
+                    <div class="footer-line">
+                        <span style="color: #94a3b8;">📅 Estimasi Kedaluwarsa:</span>
+                        <strong id="liveExpDate" style="color: #38bdf8;">-</strong>
+                    </div>
                 </div>
 
                 <div style="font-size: 0.7rem; color: #64748b; text-align: center; max-width: 380px;">

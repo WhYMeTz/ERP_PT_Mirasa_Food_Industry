@@ -120,9 +120,13 @@
         const labelKartonTitle = document.getElementById('labelKartonTitle');
         const liveEstimasiDesc = document.getElementById('liveEstimasiDesc');
 
+        const colAwal = document.getElementById('colKartonAwal');
+        const colAkhir = document.getElementById('colKartonAkhir');
+
         if (isIfm) {
             if (sectionShift) sectionShift.style.display = 'block';
-            if (rowKartonRange) rowKartonRange.style.display = 'grid';
+            if (colAwal) colAwal.style.display = 'block';
+            if (colAkhir) colAkhir.style.display = 'block';
             if (bannerRegularFG) bannerRegularFG.style.display = 'none';
             if (cardHeaderTitle) cardHeaderTitle.textContent = '🏷️ 2. Shift Kerja, Penomoran Batch & Kemasan Karton (Standar Indofood IFM / WIP-FCC)';
             if (cardHeaderBadge) {
@@ -131,12 +135,13 @@
                 cardHeaderBadge.style.color = '#1e40af';
                 cardHeaderBadge.style.borderColor = '#bfdbfe';
             }
-            if (labelKartonTitle) labelKartonTitle.textContent = 'Karton Selesai Dikemas';
-            if (liveEstimasiDesc) liveEstimasiDesc.textContent = '(Netto 6 Kg/Karton)';
+            if (labelKartonTitle) labelKartonTitle.textContent = 'Karton Selesai';
+            if (liveEstimasiDesc) liveEstimasiDesc.textContent = '(Netto 6 Kg/Box)';
         } else {
             // Mode Barang Jadi Reguler Mirasa (Ping-Ping, Retail)
             if (sectionShift) sectionShift.style.display = 'none';
-            if (rowKartonRange) rowKartonRange.style.display = 'none';
+            if (colAwal) colAwal.style.display = 'none';
+            if (colAkhir) colAkhir.style.display = 'none';
             if (bannerRegularFG) bannerRegularFG.style.display = 'block';
             if (cardHeaderTitle) cardHeaderTitle.textContent = '🏷️ 2. Penomoran Batch & Masa Simpan Barang Jadi (Standar Persediaan Mirasa)';
             if (cardHeaderBadge) {
@@ -274,6 +279,11 @@
             if (stShiftKarton) {
                 stShiftKarton.textContent = batchCode || tglFormatted;
             }
+        }
+
+        const stPlantCode = document.getElementById('stPlantCode');
+        if (stPlantCode) {
+            stPlantCode.textContent = isIfm ? 'M029 / - / ISA' : 'MIRASA / FG';
         }
 
         if (stVarietas) stVarietas.textContent = varietas;

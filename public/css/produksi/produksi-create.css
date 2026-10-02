@@ -1,6 +1,7 @@
 /* 
  * Produksi Create Stylesheet - ERP PT Mirasa Food Industry
- * Tema: Industrial Modern Manufacturing, Shift Cards & Physical Carton Sticker Preview
+ * Tema: Industrial Modern Manufacturing, Shift Cards & Authentic Physical Carton Sticker
+ * Path: public/css/produksi/produksi-create.css
  */
 
 /* Container & Header */
@@ -22,7 +23,7 @@
     border: 2px solid #e2e8f0;
     border-radius: 10px;
     background: #ffffff;
-    padding: 1rem 1.25rem;
+    padding: 0.85rem 1.15rem;
     cursor: pointer;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
@@ -40,7 +41,7 @@
 }
 
 .shift-card-btn .shift-title {
-    font-size: 1.15rem;
+    font-size: 1.05rem;
     font-weight: 800;
     color: #1e293b;
     display: flex;
@@ -49,13 +50,13 @@
 }
 
 .shift-card-btn .shift-desc {
-    font-size: 0.775rem;
+    font-size: 0.75rem;
     color: #64748b;
-    margin-top: 0.25rem;
+    margin-top: 0.2rem;
 }
 
 .shift-card-btn .shift-badge {
-    font-size: 0.8rem;
+    font-size: 0.775rem;
     font-weight: 700;
     padding: 0.25rem 0.65rem;
     border-radius: 9999px;
@@ -94,54 +95,138 @@
     color: #ffffff;
 }
 
-/* Karton & Batch Spec Grid */
-.karton-spec-grid {
+/* 2-Column Balanced Workspace Grid */
+.shift-workspace-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
-    align-items: flex-end;
+    grid-template-columns: 1.15fr 1fr;
+    gap: 1.5rem;
+    align-items: start;
 }
 
-.batch-result-display {
-    background: #0f172a;
-    border: 2px solid #334155;
-    border-radius: 10px;
-    padding: 0.85rem 1.25rem;
-    color: #ffffff;
+/* Left Pane: Parameter Form */
+.shift-form-pane {
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    gap: 1rem;
 }
 
-.batch-result-code {
-    font-family: 'Consolas', 'Courier New', monospace;
-    font-size: 1.35rem;
+.form-subpanel {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1rem 1.15rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.subpanel-title {
+    font-size: 0.775rem;
     font-weight: 800;
-    color: #38bdf8;
+    color: #475569;
+    text-transform: uppercase;
     letter-spacing: 0.05em;
-    margin-top: 0.2rem;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
 }
 
-/* Physical Sticker Carton Widget */
-.sticker-wrapper {
+/* 3-Column Clean Row for Karton */
+.karton-trio-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 0.85rem;
+}
+
+/* 2-Column Clean Row for Varietas & Time */
+.varietas-time-grid {
+    display: grid;
+    grid-template-columns: 1.25fr 1fr;
+    gap: 0.85rem;
+}
+
+.input-suffix-wrapper {
+    position: relative;
+}
+
+.input-suffix-tag {
+    position: absolute;
+    right: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #64748b;
+    pointer-events: none;
+}
+
+/* Quick Fill Action Buttons */
+.copy-actions-wrapper {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-top: 0.35rem;
+}
+
+.btn-copy-wip {
+    background: #0284c7;
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.4rem 0.75rem;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    transition: background 0.15s ease;
+}
+
+.btn-copy-wip:hover {
+    background: #0369a1;
+}
+
+.btn-copy-sawit {
+    background: #059669;
+}
+
+.btn-copy-sawit:hover {
+    background: #047857;
+}
+
+/* Right Pane: Live Sticker Preview Panel */
+.shift-preview-pane {
     background: #f8fafc;
     border: 1.5px dashed #cbd5e1;
-    border-radius: 12px;
-    padding: 1.25rem;
+    border-radius: 10px;
+    padding: 1.15rem;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.85rem;
 }
 
+.preview-pane-header {
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+/* Authentic Physical Sticker Box - Compact Realistic Size (390px) */
 .carton-physical-sticker {
-    width: 100%;
-    max-width: 480px;
+    width: 390px;
+    max-width: 100%;
     background: #ffffff;
-    border: 3px solid #000000;
+    border: 2px solid #000000;
     border-radius: 0;
-    padding: 0.85rem 1.15rem 0.85rem 1.15rem;
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+    padding: 8px 12px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
     font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif;
     color: #000000;
     position: relative;
@@ -149,19 +234,20 @@
     box-sizing: border-box;
 }
 
+/* Sticker Header: WIP-FCC & Halal Emblem */
 .carton-physical-sticker .sticker-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding-bottom: 0.45rem;
-    margin-bottom: 0.55rem;
-    border-bottom: 2.5px solid #000000;
+    padding-bottom: 3px;
+    margin-bottom: 5px;
+    border-bottom: 2px solid #000000;
 }
 
 .carton-physical-sticker .sticker-title {
-    font-size: 2.35rem;
+    font-size: 2.15rem;
     font-weight: 900;
-    letter-spacing: 0.03em;
+    letter-spacing: 0.02em;
     color: #000000;
     font-family: 'Times New Roman', Times, Georgia, serif;
     line-height: 1;
@@ -176,110 +262,139 @@
 }
 
 .carton-physical-sticker .halal-cert-id {
-    font-size: 0.55rem;
+    font-size: 7.5px;
     font-weight: 800;
     color: #000000;
     font-family: Arial, sans-serif;
     line-height: 1.1;
-    margin-top: 2px;
+    margin-top: 1px;
 }
 
 .carton-physical-sticker .halal-cert-date {
-    font-size: 0.55rem;
+    font-size: 7.5px;
     font-weight: 700;
     color: #000000;
     font-family: Arial, sans-serif;
     line-height: 1.1;
 }
 
-/* 4-Row Perfect Aligned Table Layout */
-.carton-physical-sticker .st-table {
-    width: 100%;
-    border-collapse: collapse;
+/* Sticker Body: 2 Columns Cohesive Layout */
+.carton-physical-sticker .sticker-cols-container {
+    display: flex;
+    justify-content: space-between;
     font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.35;
     color: #000000;
 }
 
-.carton-physical-sticker .st-table td {
-    padding: 2.5px 0;
-    vertical-align: middle;
-    font-size: 0.85rem;
-    font-weight: 700;
-    line-height: 1.35;
+.carton-physical-sticker .st-left-col {
+    width: 165px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.carton-physical-sticker .st-right-col {
+    width: 195px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.carton-physical-sticker .st-row {
+    height: 24px;
+    display: flex;
+    align-items: center;
     white-space: nowrap;
 }
 
-.carton-physical-sticker .st-lbl-left {
-    width: 68px;
+.carton-physical-sticker .st-lbl {
+    font-weight: 700;
+    color: #000000;
+    margin-right: 4px;
 }
 
-.carton-physical-sticker .st-colon {
-    width: 12px;
-    text-align: center;
+.carton-physical-sticker .st-val {
+    font-weight: 700;
+    color: #000000;
 }
 
-.carton-physical-sticker .st-val-left {
-    width: 90px;
-}
-
-.carton-physical-sticker .st-val-left.st-batch-num {
+.carton-physical-sticker .st-val.st-batch-num {
     font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif;
     font-weight: 900;
-    font-size: 0.95rem;
-    letter-spacing: 0.03em;
+    font-size: 14px;
+    letter-spacing: 0.02em;
 }
 
-.carton-physical-sticker .st-lbl-right {
-    width: 118px;
-}
-
-.carton-physical-sticker .st-val-right {
-    text-align: left;
-}
-
-.carton-physical-sticker .st-plant-cell {
-    text-align: right;
-    padding-top: 1px !important;
-}
-
-/* Plant Code Box at Bottom Right */
+/* Plant Code Box at Row 4 Right */
 .carton-physical-sticker .plant-code-box {
     border: 2px solid #000000;
-    padding: 2px 10px;
+    padding: 1px 8px;
     display: inline-block;
     font-family: 'Times New Roman', Georgia, serif;
     font-weight: 900;
-    font-size: 0.95rem;
-    letter-spacing: 0.06em;
+    font-size: 14px;
+    letter-spacing: 0.05em;
     line-height: 1.2;
+    margin-left: auto;
 }
 
-/* Quick Fill Action Button */
-.btn-copy-wip {
-    background: #0284c7;
+/* Elegant Batch Summary Card Below Sticker */
+.batch-summary-card {
+    width: 390px;
+    max-width: 100%;
+    background: #0f172a;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
     color: #ffffff;
-    border: none;
-    border-radius: 6px;
-    font-size: 0.775rem;
-    font-weight: 700;
-    padding: 0.4rem 0.75rem;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    transition: background 0.15s ease;
+    box-sizing: border-box;
 }
 
-.btn-copy-wip:hover {
-    background: #0369a1;
+.batch-summary-card .header-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #94a3b8;
+    letter-spacing: 0.05em;
+}
+
+.batch-summary-card .batch-code-val {
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #38bdf8;
+    letter-spacing: 0.05em;
+    margin: 0.25rem 0;
+}
+
+.batch-summary-card .footer-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.72rem;
+    border-top: 1px dashed #334155;
+    padding-top: 0.35rem;
+    margin-top: 0.25rem;
 }
 
 /* Responsive */
-@media (max-width: 768px) {
-    .shift-selection-grid {
+@media (max-width: 900px) {
+    .shift-workspace-grid {
         grid-template-columns: 1fr;
     }
-    .carton-spec-grid {
+    .karton-trio-grid {
+        grid-template-columns: 1fr;
+    }
+    .varietas-time-grid {
+        grid-template-columns: 1fr;
+    }
+    .shift-selection-grid {
         grid-template-columns: 1fr;
     }
 }

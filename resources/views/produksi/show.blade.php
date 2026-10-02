@@ -231,48 +231,52 @@
                             </div>
                         </div>
 
-                        {{-- Body: 4 Baris Sinkron Presisi Tinggi --}}
+                        {{-- Body: 2 Kolom Alami Tanpa Gap Canggung --}}
                         @php
                             $activeShift = $produksi->shift_cd ?: 'A';
                             $kartonNoPadded = str_pad((string) ($produksi->no_karton_awal ?: 1), 4, '0', STR_PAD_LEFT);
                             $batchNoDisplay = $isIfm ? ($activeShift . ' / ' . $kartonNoPadded) : $produksi->batch_wip_no;
                         @endphp
-                        <table class="st-table">
-                            <tbody>
-                                <tr>
-                                    <td class="st-lbl-left">No Batch</td>
-                                    <td class="st-colon">:</td>
-                                    <td class="st-val-left st-batch-num">{{ $batchNoDisplay }}</td>
-                                    <td class="st-lbl-right">Tgl. Produksi</td>
-                                    <td class="st-colon">:</td>
-                                    <td class="st-val-right">{{ strtoupper(Carbon\Carbon::parse($produksi->produksi_tgl)->format('d M Y')) }}</td>
-                                </tr>
-                                <tr>
-                                    <td class="st-lbl-left">Gross</td>
-                                    <td class="st-colon">:</td>
-                                    <td class="st-val-left">{{ $isIfm ? '7.08 kg' : 'STANDAR' }}</td>
-                                    <td class="st-lbl-right">Tgl. Kadaluarsa</td>
-                                    <td class="st-colon">:</td>
-                                    <td class="st-val-right">{{ strtoupper(Carbon\Carbon::parse($expDate)->format('d M Y')) }}</td>
-                                </tr>
-                                <tr>
-                                    <td class="st-lbl-left">Netto</td>
-                                    <td class="st-colon">:</td>
-                                    <td class="st-val-left">{{ $isIfm ? '6 kg' : 'BAL/RETAIL' }}</td>
-                                    <td class="st-lbl-right">Varietas RM</td>
-                                    <td class="st-colon">:</td>
-                                    <td class="st-val-right">{{ $isIfm ? ($produksi->varietas_singkong ?: 'STP / MGU') : 'STANDAR' }}</td>
-                                </tr>
-                                <tr>
-                                    <td class="st-lbl-left">Jam</td>
-                                    <td class="st-colon">:</td>
-                                    <td class="st-val-left">{{ $produksi->jam_produksi ? str_replace(':', '.', $produksi->jam_produksi) : '14.03' }}</td>
-                                    <td colspan="3" class="st-plant-cell">
-                                        <div class="plant-code-box">{{ $isIfm ? 'M029 / - / ISA' : 'MIRASA / FG' }}</div>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                        <div class="sticker-cols-container">
+                            {{-- Kolom Kiri --}}
+                            <div class="st-left-col">
+                                <div class="st-row">
+                                    <span class="st-lbl">No Batch :</span>
+                                    <span class="st-val st-batch-num">{{ $batchNoDisplay }}</span>
+                                </div>
+                                <div class="st-row">
+                                    <span class="st-lbl">Gross :</span>
+                                    <span class="st-val">{{ $isIfm ? '7.08 kg' : 'STANDAR' }}</span>
+                                </div>
+                                <div class="st-row">
+                                    <span class="st-lbl">Netto :</span>
+                                    <span class="st-val">{{ $isIfm ? '6 kg' : 'BAL/RETAIL' }}</span>
+                                </div>
+                                <div class="st-row">
+                                    <span class="st-lbl">Jam :</span>
+                                    <span class="st-val">{{ $produksi->jam_produksi ? str_replace(':', '.', $produksi->jam_produksi) : '14.03' }}</span>
+                                </div>
+                            </div>
+
+                            {{-- Kolom Kanan --}}
+                            <div class="st-right-col">
+                                <div class="st-row">
+                                    <span class="st-lbl">Tgl. Produksi :</span>
+                                    <span class="st-val">{{ strtoupper(Carbon\Carbon::parse($produksi->produksi_tgl)->format('d M Y')) }}</span>
+                                </div>
+                                <div class="st-row">
+                                    <span class="st-lbl">Tgl. Kadaluarsa :</span>
+                                    <span class="st-val">{{ strtoupper(Carbon\Carbon::parse($expDate)->format('d M Y')) }}</span>
+                                </div>
+                                <div class="st-row">
+                                    <span class="st-lbl">Varietas RM :</span>
+                                    <span class="st-val">{{ $isIfm ? ($produksi->varietas_singkong ?: 'STP / MGU') : 'STANDAR' }}</span>
+                                </div>
+                                <div class="st-row" style="justify-content: flex-end;">
+                                    <div class="plant-code-box">{{ $isIfm ? 'M029 / - / ISA' : 'MIRASA / FG' }}</div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <div style="text-align: center; margin-top: 0.75rem;" class="no-print">

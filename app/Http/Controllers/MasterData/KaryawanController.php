@@ -21,6 +21,8 @@ class KaryawanController extends Controller
 
     public function index(Request $request): View|JsonResponse
     {
+        abort_if(!auth()->user()?->canAccessKaryawan(), 403, 'Anda tidak memiliki hak akses untuk melihat master karyawan.');
+
         $perPage = (int) $request->input('per_page', 15);
         $search = $request->input('search');
         $departemen = $request->input('departemen');
@@ -52,6 +54,8 @@ class KaryawanController extends Controller
 
     public function store(StoreKaryawanRequest $request): RedirectResponse|JsonResponse
     {
+        abort_if(!auth()->user()?->canCreateMasterKaryawan(), 403, 'Anda tidak memiliki hak akses untuk menambah karyawan baru.');
+
         $karyawan = $this->karyawanService->store($request->validated());
 
         if ($request->wantsJson()) {
@@ -69,6 +73,8 @@ class KaryawanController extends Controller
 
     public function update(UpdateKaryawanRequest $request, int $id): RedirectResponse|JsonResponse
     {
+        abort_if(!auth()->user()?->canEditMasterKaryawan(), 403, 'Anda tidak memiliki hak akses untuk mengedit data karyawan.');
+
         $karyawan = $this->karyawanService->update($id, $request->validated());
 
         if ($request->wantsJson()) {
@@ -86,6 +92,8 @@ class KaryawanController extends Controller
 
     public function destroy(Request $request, int $id): RedirectResponse|JsonResponse
     {
+        abort_if(!auth()->user()?->canDeleteMasterKaryawan(), 403, 'Anda tidak memiliki hak akses untuk menonaktifkan data karyawan.');
+
         $this->karyawanService->delete($id);
 
         if ($request->wantsJson()) {

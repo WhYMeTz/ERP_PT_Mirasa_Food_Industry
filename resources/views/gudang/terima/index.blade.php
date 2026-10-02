@@ -130,7 +130,7 @@
             <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Cari No GRN, SJ, supplier, batch, atau bahan..." class="form-control" style="padding: 0.45rem 0.75rem; max-width: 300px; font-size: 0.85rem;">
             
             <select name="gudang_id" class="form-control" style="padding: 0.45rem 0.75rem; max-width: 180px; font-size: 0.85rem;" onchange="this.form.submit()">
-                <option value="">-- Semua Gudang --</option>
+                <option value="">-- Semua Perusahaan / Cabang --</option>
                 @foreach ($gudangList as $gdg)
                     <option value="{{ $gdg->gudang_id }}" {{ ($gudangId == $gdg->gudang_id) ? 'selected' : '' }}>
                         {{ $gdg->display_name }}

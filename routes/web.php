@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Auth\RoleController;
 use App\Http\Controllers\Auth\UserController;
 use App\Http\Controllers\Common\CodeGeneratorController;
 use App\Http\Controllers\Gudang\PemakaianController;
@@ -49,6 +50,21 @@ Route::middleware('auth')->group(function () {
     Route::post('pengguna-sistem/hak-akses', [UserController::class, 'updatePermissions'])
         ->name('admin.users.permissions.update')
         ->middleware('role:user_manage,SUPERADMIN');
+
+    // Manajemen Peran (Roles) Dinamis
+    Route::get('pengguna-sistem/roles', [RoleController::class, 'index'])
+        ->name('admin.roles.index')
+        ->middleware('role:user_manage,SUPERADMIN');
+    Route::post('pengguna-sistem/roles', [RoleController::class, 'store'])
+        ->name('admin.roles.store')
+        ->middleware('role:user_manage,SUPERADMIN');
+    Route::put('pengguna-sistem/roles/{id}', [RoleController::class, 'update'])
+        ->name('admin.roles.update')
+        ->middleware('role:user_manage,SUPERADMIN');
+    Route::delete('pengguna-sistem/roles/{id}', [RoleController::class, 'destroy'])
+        ->name('admin.roles.destroy')
+        ->middleware('role:user_manage,SUPERADMIN');
+
     Route::resource('pengguna-sistem', UserController::class)
         ->names('admin.users')
         ->middleware('role:user_manage,SUPERADMIN');
@@ -61,13 +77,12 @@ Route::middleware('auth')->group(function () {
     Route::resource('master-barang', BarangController::class)->names('master.barang');
     Route::resource('master-satuan', SatuanController::class)->names('master.satuan');
     Route::resource('master-jenis', JenisBarangController::class)->names('master.jenis');
+    Route::resource('master-perusahaan', GudangController::class)->names('master.perusahaan');
     Route::resource('master-gudang', GudangController::class)->names('master.gudang');
     Route::resource('master-resep', BomController::class)->names('master.resep');
 
-    // Master Supplier (Superadmin & Purchasing)
-    Route::resource('master-jenis-supplier', JenisSupplierController::class)
-        ->names('master.jenis_supplier')
-        ->middleware('role:SUPERADMIN,PURCHASING');
+    // Master Supplier
+    Route::resource('master-jenis-supplier', JenisSupplierController::class)->names('master.jenis_supplier');
     Route::resource('master-supplier', SupplierController::class)
         ->names('master.supplier')
         ->middleware('role:SUPERADMIN,PURCHASING');
@@ -76,7 +91,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('master-customer', CustomerController::class)->names('master.customer');
     Route::resource('master-karyawan', KaryawanController::class)
         ->names('master.karyawan')
-        ->middleware('role:SUPERADMIN');
+        ->middleware('role:SUPERADMIN,HRD,master_karyawan_view,master_karyawan_manage');
 
     // Modul Transaksi Gudang (Inbound, Outbound & Inventory Engine)
     Route::prefix('gudang')->name('gudang.')->group(function () {

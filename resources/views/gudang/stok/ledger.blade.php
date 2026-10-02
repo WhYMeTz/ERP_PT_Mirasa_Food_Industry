@@ -31,9 +31,9 @@
             </div>
 
             <div>
-                <label style="display: block; font-size: 0.8125rem; font-weight: 600; color: #334155; margin-bottom: 0.35rem;">Lokasi Gudang</label>
+                <label style="display: block; font-size: 0.8125rem; font-weight: 600; color: #334155; margin-bottom: 0.35rem;">Perusahaan / Lokasi</label>
                 <select name="gudang_id" class="form-control" onchange="this.form.submit()">
-                    <option value="">-- Semua Lokasi Gudang --</option>
+                    <option value="">-- Semua Perusahaan / Cabang --</option>
                     @foreach ($gudangList as $gdg)
                         <option value="{{ $gdg->gudang_id }}" {{ ($gudangId == $gdg->gudang_id) ? 'selected' : '' }}>
                             {{ $gdg->display_name }} ({{ $gdg->gudang_cd }})
@@ -105,7 +105,7 @@
                     <th>No. Dokumen Ref</th>
                     <th>Tipe Transaksi</th>
                     <th>Nomor Batch</th>
-                    <th>Lokasi Gudang</th>
+                    <th>Perusahaan / Lokasi</th>
                     <th style="text-align: right; color: #059669;">Masuk (+)</th>
                     <th style="text-align: right; color: #dc2626;">Keluar (-)</th>
                     <th style="text-align: right;">Saldo Berjalan</th>

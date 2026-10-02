@@ -145,10 +145,10 @@
                             <small style="color: #64748b; font-size: 0.725rem;">Waktu armada supplier menarik barang dari gudang.</small>
                         </div>
 
-                        {{-- Gudang Asal --}}
+                        {{-- Perusahaan Asal Retur --}}
                         <div class="form-group" style="margin-bottom: 0;">
                             <label for="gudang_id" class="form-label" style="font-weight: 600; font-size: 0.85rem; color: #334155; margin-bottom: 0.35rem;">
-                                Gudang Asal Barang <span style="color: #ef4444;">*</span>
+                                Perusahaan / Cabang Asal Retur <span style="color: #ef4444;">*</span>
                             </label>
                             @if (!empty($userGudangId))
                                 @php $lockedGdg = $gudangList->firstWhere('gudang_id', $userGudangId); @endphp
@@ -169,7 +169,7 @@
                                     @endforeach
                                 </select>
                             @endif
-                            <small style="color: #64748b; font-size: 0.725rem;">Lokasi gudang fisik tempat stok batch dipotong.</small>
+                            <small style="color: #64748b; font-size: 0.725rem;">Entitas perusahaan / cabang asal tempat stok batch diretur.</small>
                         </div>
 
                         {{-- Sumber Asal Barang (Radio PO vs Non-PO) --}}

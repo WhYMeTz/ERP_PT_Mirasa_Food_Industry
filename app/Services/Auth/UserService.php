@@ -171,10 +171,11 @@ class UserService
     }
 
     /**
-     * Mengambil daftar pilihan role
+     * Mengambil daftar pilihan role secara dinamis dari tabel sys_roles
      */
     public function getAvailableRoles(): array
     {
-        return self::ROLES;
+        $dynamicRoles = app(RoleService::class)->getRolesForSelect();
+        return !empty($dynamicRoles) ? $dynamicRoles : self::ROLES;
     }
 }

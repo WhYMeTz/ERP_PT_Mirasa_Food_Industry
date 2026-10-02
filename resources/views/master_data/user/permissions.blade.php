@@ -13,7 +13,14 @@
             Atur menu apa saja yang dapat dibuka dan aksi operasional apa saja yang diizinkan untuk Admin Gudang, Staff Produksi, Purchasing, dll.
         </p>
     </div>
-    <div style="display: flex; gap: 0.5rem;">
+    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+        <button type="button" onclick="openModal('modalTambahRole')" class="btn btn-primary">
+            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            Tambah Peran Baru
+        </button>
+        <button type="button" onclick="openModal('modalKelolaRoles')" class="btn btn-secondary">
+            ✨ Kelola Peran
+        </button>
         <a href="{{ route('admin.users.index') }}" class="btn btn-secondary">
             &larr; Kelola Akun Pengguna
         </a>
@@ -206,5 +213,47 @@
             }
         });
     }
+
+    function editRoleData(id, code, name, desc) {
+        closeModal('modalKelolaRoles');
+        document.getElementById('edit_role_code').value = code;
+        document.getElementById('edit_role_name').value = name;
+        document.getElementById('edit_role_desc').value = desc;
+        document.getElementById('formEditRole').action = '{{ url("pengguna-sistem/roles") }}/' + id;
+        openModal('modalEditRole');
+    }
+
+    function openDeleteRoleModal(id, code, name, userCount) {
+        closeModal('modalKelolaRoles');
+        document.getElementById('deleteRoleCode').innerText = code;
+        document.getElementById('deleteRoleName').innerText = name;
+        const btn = document.getElementById('btnConfirmDeleteRole');
+        const warning = document.getElementById('deleteRoleWarning');
+
+        if (userCount > 0) {
+            warning.innerHTML = '<span style="color: #dc2626; font-size: 0.8rem; font-weight: 700; display: block; line-height: 1.4;">' +
+                '❌ Tidak dapat dihapus: Masih terdapat ' + userCount + ' akun pengguna yang menggunakan peran ini. Ubah peran pengguna terlebih dahulu.' +
+                '</span>';
+            btn.disabled = true;
+            btn.style.opacity = '0.5';
+            btn.style.cursor = 'not-allowed';
+        } else {
+            warning.innerHTML = '<small style="color: #dc2626; font-size: 0.75rem; display: block; line-height: 1.4;">' +
+                '⚠️ Peran yang dihapus tidak akan muncul lagi di pilihan pembuatan akun baru dan matriks perizinan.' +
+                '</small>';
+            btn.disabled = false;
+            btn.style.opacity = '1';
+            btn.style.cursor = 'pointer';
+        }
+
+        document.getElementById('formDeleteRole').action = '{{ url("pengguna-sistem/roles") }}/' + id;
+        openModal('modalDeleteRole');
+    }
 </script>
+
+{{-- MODALS KELOLA PERAN --}}
+@include('master_data.user.partials.modal-role-create')
+@include('master_data.user.partials.modal-role-manage')
+@include('master_data.user.partials.modal-role-edit')
+@include('master_data.user.partials.modal-role-delete')
 @endsection

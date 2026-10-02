@@ -59,9 +59,24 @@ class PermissionService
                     'desc'   => 'Mengubah data mitra pemasok, kontak telepon, alamat, dan jenis supplier.',
                     'action' => 'EDIT',
                 ],
+                'master_jenis_supplier_edit' => [
+                    'label'  => 'Edit Master Jenis Supplier',
+                    'desc'   => 'Mengubah kode dan nama kategori mitra pemasok (RAW, BUMBU, PACK, dll).',
+                    'action' => 'EDIT',
+                ],
                 'master_customer_edit' => [
                     'label'  => 'Edit & Koreksi Master Customer',
                     'desc'   => 'Mengubah data klien B2B, kontak PIC, dan alamat pengiriman customer.',
+                    'action' => 'EDIT',
+                ],
+                'master_perusahaan_edit' => [
+                    'label'  => 'Edit Data Master Perusahaan',
+                    'desc'   => 'Mengubah kode, nama PT/CV, jenis entitas, alamat, dan nomor telepon perusahaan.',
+                    'action' => 'EDIT',
+                ],
+                'master_karyawan_edit' => [
+                    'label'  => 'Edit & Koreksi Data Karyawan',
+                    'desc'   => 'Mengubah profil staf, departemen, jabatan, dan nomor kontak karyawan.',
                     'action' => 'EDIT',
                 ],
             ],
@@ -112,9 +127,24 @@ class PermissionService
                     'desc'   => 'Menonaktifkan mitra pemasok agar tidak dapat dipilih dalam pembuatan PO baru.',
                     'action' => 'DELETE',
                 ],
+                'master_jenis_supplier_delete' => [
+                    'label'  => 'Hapus / Nonaktifkan Jenis Supplier',
+                    'desc'   => 'Menonaktifkan klasifikasi jenis supplier dari sistem.',
+                    'action' => 'DELETE',
+                ],
                 'master_customer_delete' => [
                     'label'  => 'Hapus / Nonaktifkan Master Customer',
                     'desc'   => 'Menonaktifkan klien / customer dari sistem penjualan.',
+                    'action' => 'DELETE',
+                ],
+                'master_perusahaan_delete' => [
+                    'label'  => 'Hapus / Nonaktifkan Entitas Perusahaan',
+                    'desc'   => 'Menonaktifkan kantor cabang / anak perusahaan dari sistem operasional.',
+                    'action' => 'DELETE',
+                ],
+                'master_karyawan_delete' => [
+                    'label'  => 'Hapus / Nonaktifkan Karyawan',
+                    'desc'   => 'Menonaktifkan data staf/karyawan dari daftar aktif perusahaan.',
                     'action' => 'DELETE',
                 ],
             ],
@@ -180,9 +210,24 @@ class PermissionService
                     'desc'   => 'Mendaftarkan mitra supplier petani singkong atau vendor industri baru.',
                     'action' => 'CREATE',
                 ],
+                'master_jenis_supplier_create' => [
+                    'label'  => 'Tambah Jenis Supplier Baru',
+                    'desc'   => 'Mendaftarkan jenis klasifikasi supplier baru ke katalog referensi.',
+                    'action' => 'CREATE',
+                ],
                 'master_customer_create' => [
                     'label'  => 'Tambah Master Customer Baru',
                     'desc'   => 'Mendaftarkan klien / customer pembeli B2B baru.',
+                    'action' => 'CREATE',
+                ],
+                'master_perusahaan_create' => [
+                    'label'  => 'Tambah Master Perusahaan Baru',
+                    'desc'   => 'Mendaftarkan entitas bisnis, cabang, atau anak perusahaan baru ke dalam sistem.',
+                    'action' => 'CREATE',
+                ],
+                'master_karyawan_create' => [
+                    'label'  => 'Tambah Karyawan Baru',
+                    'desc'   => 'Mendaftarkan karyawan baru ke dalam sistem sumber daya manusia perusahaan.',
                     'action' => 'CREATE',
                 ],
             ],
@@ -250,8 +295,13 @@ class PermissionService
                 'master_barang_manage'   => ['label' => 'Kelola Master Barang', 'desc' => 'Menambah barang baru, mengatur batas minimum stok & harga beli.', 'action' => 'MANAGE'],
                 'master_supplier_view'   => ['label' => 'Lihat Master Supplier', 'desc' => 'Melihat daftar mitra supplier petani singkong & vendor.', 'action' => 'VIEW'],
                 'master_supplier_manage' => ['label' => 'Kelola Master Supplier', 'desc' => 'Menambah dan mengedit mitra rekanan supplier.', 'action' => 'MANAGE'],
+                'master_jenis_supplier_view' => ['label' => 'Lihat Master Jenis Supplier', 'desc' => 'Melihat daftar klasifikasi jenis supplier.', 'action' => 'VIEW'],
                 'master_customer_view'   => ['label' => 'Lihat Master Customer', 'desc' => 'Melihat daftar klien B2B dan distributor pembeli.', 'action' => 'VIEW'],
                 'master_customer_manage' => ['label' => 'Kelola Master Customer', 'desc' => 'Menambah dan mengedit profil klien customer B2B.', 'action' => 'MANAGE'],
+                'master_perusahaan_view' => ['label' => 'Lihat Master Perusahaan', 'desc' => 'Melihat daftar entitas bisnis, pusat, cabang, dan anak perusahaan.', 'action' => 'VIEW'],
+                'master_perusahaan_manage' => ['label' => 'Kelola Master Perusahaan', 'desc' => 'Menambah dan mengedit data entitas perusahaan dan cabang.', 'action' => 'MANAGE'],
+                'master_karyawan_view'   => ['label' => 'Lihat Master Karyawan', 'desc' => 'Melihat daftar profil karyawan, jabatan, dan penugasan departemen.', 'action' => 'VIEW'],
+                'master_karyawan_manage' => ['label' => 'Kelola Master Karyawan', 'desc' => 'Menambah, mengedit, dan mengelola profil karyawan.', 'action' => 'MANAGE'],
                 'master_gudang_manage'   => ['label' => 'Kelola Gudang & Satuan', 'desc' => 'Menambah dan mengedit daftar gudang unit dan satuan barang.', 'action' => 'MANAGE'],
                 'user_manage'            => ['label' => 'Manajemen Pengguna & Hak Akses', 'desc' => 'Mengelola user login, password, dan mengubah hak akses peran.', 'action' => 'MANAGE'],
             ],
@@ -284,6 +334,8 @@ class PermissionService
             'master_satuan_edit',
             'master_jenis_create',
             'master_jenis_edit',
+            'master_jenis_supplier_view',
+            'master_perusahaan_view',
             'master_gudang_manage',
         ],
         'STAFF_PRODUKSI' => [
@@ -308,6 +360,9 @@ class PermissionService
             'master_supplier_create',
             'master_supplier_edit',
             'master_supplier_manage',
+            'master_jenis_supplier_view',
+            'master_jenis_supplier_create',
+            'master_jenis_supplier_edit',
         ],
         'FINANCE' => [
             'po_view',
@@ -343,7 +398,10 @@ class PermissionService
         }
 
         $allKeys = self::getAllPermissionKeys();
-        $roles = ['ADMIN_GUDANG', 'PURCHASING', 'STAFF_PRODUKSI', 'FINANCE', 'QC'];
+        $roles = array_keys(app(RoleService::class)->getNonSuperAdminRoles());
+        if (empty($roles)) {
+            $roles = ['ADMIN_GUDANG', 'PURCHASING', 'STAFF_PRODUKSI', 'FINANCE', 'QC'];
+        }
         $existing = SysRolePermission::select('role_cd', 'permission_cd')->get();
         $keyed = [];
         foreach ($existing as $e) {
@@ -413,13 +471,16 @@ class PermissionService
     {
         $this->ensureInitialized();
 
-        $roles = [
-            'ADMIN_GUDANG'   => 'Admin / Petugas Gudang',
-            'PURCHASING'     => 'Purchasing / Pengadaan Bahan',
-            'STAFF_PRODUKSI' => 'Staff / Operator Produksi',
-            'FINANCE'        => 'Finance & Akuntansi',
-            'QC'             => 'Quality Control (QC)',
-        ];
+        $roles = app(RoleService::class)->getNonSuperAdminRoles();
+        if (empty($roles)) {
+            $roles = [
+                'ADMIN_GUDANG'   => 'Admin / Petugas Gudang',
+                'PURCHASING'     => 'Purchasing / Pengadaan Bahan',
+                'STAFF_PRODUKSI' => 'Staff / Operator Produksi',
+                'FINANCE'        => 'Finance & Akuntansi',
+                'QC'             => 'Quality Control (QC)',
+            ];
+        }
 
         $records = SysRolePermission::all()->groupBy('role_cd');
 

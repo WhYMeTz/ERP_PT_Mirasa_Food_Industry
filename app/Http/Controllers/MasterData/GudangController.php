@@ -21,6 +21,8 @@ class GudangController extends Controller
 
     public function index(Request $request): View|JsonResponse
     {
+        abort_unless($request->user()->canAccessPerusahaan(), 403, 'Anda tidak memiliki hak akses untuk melihat master perusahaan.');
+
         $perPage = (int) $request->input('per_page', 15);
         $search = $request->input('search');
 
@@ -30,62 +32,69 @@ class GudangController extends Controller
         if ($request->wantsJson()) {
             return response()->json([
                 'status'  => 'success',
-                'message' => 'Data master gudang berhasil diambil.',
+                'message' => 'Data master perusahaan berhasil diambil.',
                 'data'    => $gudangs,
                 'next_code' => $nextGudangCode,
             ]);
         }
 
-        return view('master_data.gudang.index', compact('gudangs', 'search', 'nextGudangCode'));
+        return view('master_data.perusahaan.index', compact('gudangs', 'search', 'nextGudangCode'));
     }
 
     public function store(StoreGudangRequest $request): RedirectResponse|JsonResponse
     {
+        abort_unless($request->user()->canCreateMasterPerusahaan(), 403, 'Anda tidak memiliki hak akses untuk menambah entitas perusahaan.');
+
         $gudang = $this->gudangService->store($request->validated());
 
         if ($request->wantsJson()) {
             return response()->json([
                 'status'  => 'success',
-                'message' => 'Data gudang berhasil disimpan.',
+                'message' => 'Data entitas perusahaan berhasil disimpan.',
                 'data'    => $gudang,
             ], 201);
         }
 
         return redirect()
-            ->route('master.gudang.index')
-            ->with('success', 'Data gudang berhasil disimpan.');
+            ->route('master.perusahaan.index')
+            ->with('success', 'Data entitas perusahaan berhasil disimpan.');
     }
 
     public function update(UpdateGudangRequest $request, int $id): RedirectResponse|JsonResponse
     {
+        abort_unless($request->user()->canEditMasterPerusahaan(), 403, 'Anda tidak memiliki hak akses untuk mengedit entitas perusahaan.');
+
         $gudang = $this->gudangService->update($id, $request->validated());
 
         if ($request->wantsJson()) {
             return response()->json([
                 'status'  => 'success',
-                'message' => 'Data gudang berhasil diperbarui.',
+                'message' => 'Data entitas perusahaan berhasil diperbarui.',
                 'data'    => $gudang,
             ]);
         }
 
         return redirect()
-            ->route('master.gudang.index')
-            ->with('success', 'Data gudang berhasil diperbarui.');
+            ->route('master.perusahaan.index')
+            ->with('success', 'Data entitas perusahaan berhasil diperbarui.');
     }
 
     public function destroy(Request $request, int $id): RedirectResponse|JsonResponse
     {
+        abort_unless($request->user()->canDeleteMasterPerusahaan(), 403, 'Anda tidak memiliki hak akses untuk menonaktifkan entitas perusahaan.');
+
         $this->gudangService->delete($id);
 
         if ($request->wantsJson()) {
             return response()->json([
                 'status'  => 'success',
-                'message' => 'Data gudang berhasil dinonaktifkan.',
+                'message' => 'Entitas perusahaan berhasil dinonaktifkan.',
+                'data'    => null,
             ]);
         }
 
         return redirect()
-            ->route('master.gudang.index')
-            ->with('success', 'Data gudang berhasil dinonaktifkan.');
+            ->route('master.perusahaan.index')
+            ->with('success', 'Entitas perusahaan berhasil dinonaktifkan.');
     }
 }

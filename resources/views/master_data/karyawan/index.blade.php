@@ -2,6 +2,10 @@
 
 @section('title', 'Master Data Karyawan - ERP PT Mirasa')
 
+@push('styles')
+    <link rel="stylesheet" href="{{ asset('css/master/karyawan/karyawan-index.css') }}">
+@endpush
+
 @section('content')
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
     <div>
@@ -9,10 +13,12 @@
         <p style="color: #64748b; font-size: 0.875rem; margin-top: 0.25rem;">Kelola data profil staf operasional, produksi, gudang, purchasing, dan tim manajemen.</p>
     </div>
     <div>
-        <button type="button" onclick="openModal('modalTambahKaryawan')" class="btn btn-primary">
-            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-            Tambah Karyawan Baru
-        </button>
+        @if (Auth::user()?->canCreateMasterKaryawan())
+            <button type="button" onclick="openModal('modalTambahKaryawan')" class="btn btn-primary">
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                Tambah Karyawan Baru
+            </button>
+        @endif
     </div>
 </div>
 
@@ -44,8 +50,8 @@
                     <th>Departemen</th>
                     <th>Jabatan</th>
                     <th>Kontak / Telp</th>
-                    <th>Akun Sistem & Gudang</th>
-                    <th style="width: 150px; text-align: right;">Aksi</th>
+                    <th>Akun Sistem &amp; Cabang</th>
+                    <th style="width: 110px; text-align: right;">Aksi</th>
                 </tr>
             </thead>
             <tbody>
@@ -70,6 +76,8 @@
                                 elseif ($item->departemen_cd === 'PURCHASING') { $deptBg = '#fef3c7'; $deptClr = '#92400e'; }
                                 elseif ($item->departemen_cd === 'FINANCE') { $deptBg = '#dcfce7'; $deptClr = '#15803d'; }
                                 elseif ($item->departemen_cd === 'QC') { $deptBg = '#f3e8ff'; $deptClr = '#7e22ce'; }
+                                elseif ($item->departemen_cd === 'HRD') { $deptBg = '#fce7f3'; $deptClr = '#be185d'; }
+                                elseif ($item->departemen_cd === 'MANAJEMEN') { $deptBg = '#fef08a'; $deptClr = '#854d0e'; }
                             @endphp
                             <span class="badge" style="background: {{ $deptBg }}; color: {{ $deptClr }}; font-weight: 700;">
                                 {{ $departemenList[$item->departemen_cd] ?? $item->departemen_cd }}
@@ -80,7 +88,7 @@
                         <td>
                             @if ($item->user)
                                 <span class="badge" style="background: #ecfdf5; color: #065f46; font-weight: 600;">
-                                    ✓ Akun Aktif: {{ $item->user->role_cd }}
+                                    ✓ Akun: {{ $item->user->role_cd }}
                                 </span>
                                 @if ($item->user->gudang)
                                     <span style="display: block; font-size: 0.75rem; color: #0284c7; margin-top: 0.15rem;">
@@ -88,7 +96,7 @@
                                     </span>
                                 @else
                                     <span style="display: block; font-size: 0.75rem; color: #94a3b8; margin-top: 0.15rem;">
-                                        🌐 Multi-Gudang (Pusat)
+                                        🌐 Seluruh Perusahaan
                                     </span>
                                 @endif
                             @else
@@ -98,20 +106,35 @@
                             @endif
                         </td>
                         <td style="text-align: right;">
-                            <div style="display: inline-flex; gap: 0.35rem;">
+                            <div style="position: relative; display: inline-block;">
                                 <button type="button" 
-                                    class="btn btn-secondary btn-sm" 
-                                    onclick="editKaryawan({{ $item->karyawan_id }}, '{{ addslashes($item->nik) }}', '{{ addslashes($item->karyawan_nm) }}', '{{ $item->departemen_cd }}', '{{ addslashes($item->jabatan_nm) }}', '{{ addslashes($item->telepon_no ?? '') }}', '{{ addslashes($item->email ?? '') }}', '{{ addslashes($item->alamat_txt ?? '') }}')"
-                                    title="Edit Data">
-                                    Edit
+                                    class="btn-action-trigger" 
+                                    onclick="toggleSmartActionDropdown(this, event, 'action-menu-{{ $item->karyawan_id }}')">
+                                    Aksi ▼
                                 </button>
-                                <form action="{{ route('master.karyawan.destroy', $item->karyawan_id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menonaktifkan data karyawan ini?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn btn-danger btn-sm" title="Hapus">
-                                        Hapus
-                                    </button>
-                                </form>
+
+                                <div id="action-menu-{{ $item->karyawan_id }}" class="action-dropdown-menu">
+                                    @if (Auth::user()?->canEditMasterKaryawan())
+                                        <button type="button" 
+                                            class="action-dropdown-item" 
+                                            onclick="closeAllActionDropdowns(); editKaryawan({{ $item->karyawan_id }}, '{{ addslashes($item->nik) }}', '{{ addslashes($item->karyawan_nm) }}', '{{ $item->departemen_cd }}', '{{ addslashes($item->jabatan_nm) }}', '{{ addslashes($item->telepon_no ?? '') }}', '{{ addslashes($item->email ?? '') }}', '{{ addslashes($item->alamat_txt ?? '') }}')">
+                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                            Edit Data Karyawan
+                                        </button>
+                                    @endif
+
+                                    @if (Auth::user()?->canDeleteMasterKaryawan())
+                                        @if (Auth::user()?->canEditMasterKaryawan())
+                                            <div class="action-dropdown-divider"></div>
+                                        @endif
+                                        <button type="button" 
+                                            class="action-dropdown-item danger-item" 
+                                            onclick="closeAllActionDropdowns(); openDeleteKaryawanModal({{ $item->karyawan_id }}, '{{ addslashes($item->nik) }}', '{{ addslashes($item->karyawan_nm) }}', '{{ addslashes($departemenList[$item->departemen_cd] ?? $item->departemen_cd) }}', '{{ addslashes($item->jabatan_nm) }}')">
+                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                            Nonaktifkan Karyawan
+                                        </button>
+                                    @endif
+                                </div>
                             </div>
                         </td>
                     </tr>
@@ -133,141 +156,19 @@
     @endif
 </div>
 
-{{-- MODAL TAMBAH KARYAWAN --}}
-<div id="modalTambahKaryawan" class="modal-backdrop">
-    <div class="modal-dialog">
-        <div class="modal-header">
-            <h2 class="modal-title">Tambah Karyawan Baru</h2>
-            <button type="button" class="modal-close" onclick="closeModal('modalTambahKaryawan')">&times;</button>
-        </div>
-        <form action="{{ route('master.karyawan.store') }}" method="POST">
-            @csrf
-            <div class="modal-body">
-                <div class="form-group">
-                    <label for="create_nik" class="form-label">Nomor Induk Karyawan (NIK) <span style="color:#ef4444;">*</span></label>
-                    <div style="display: flex; gap: 0.5rem;">
-                        <input type="text" id="create_nik" name="nik" value="{{ old('nik', $nextNik) }}" class="form-control" required placeholder="Contoh: KRY-0001">
-                        <button type="button" class="btn btn-secondary" onclick="document.getElementById('create_nik').value='{{ $nextNik }}'" title="Reset NIK Otomatis">↺</button>
-                    </div>
-                    <small style="color: #64748b; font-size: 0.75rem;">Otomatis terisi nomor urut karyawan, dapat disesuaikan dengan NIK resmi pabrik.</small>
-                </div>
+{{-- MODALS --}}
+@include('master_data.karyawan.partials.modal-create')
+@include('master_data.karyawan.partials.modal-edit')
+@include('master_data.karyawan.partials.modal-delete')
 
-                <div class="form-group">
-                    <label for="create_karyawan_nm" class="form-label">Nama Lengkap Karyawan <span style="color:#ef4444;">*</span></label>
-                    <input type="text" id="create_karyawan_nm" name="karyawan_nm" value="{{ old('karyawan_nm') }}" class="form-control" required placeholder="Contoh: Budi Santoso">
-                </div>
-
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                    <div class="form-group">
-                        <label for="create_departemen_cd" class="form-label">Departemen <span style="color:#ef4444;">*</span></label>
-                        <select id="create_departemen_cd" name="departemen_cd" class="form-control" required>
-                            <option value="">-- Pilih Departemen --</option>
-                            @foreach ($departemenList as $key => $label)
-                                <option value="{{ $key }}" {{ old('departemen_cd') === $key ? 'selected' : '' }}>{{ $label }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="create_jabatan_nm" class="form-label">Jabatan Kerja <span style="color:#ef4444;">*</span></label>
-                        <input type="text" id="create_jabatan_nm" name="jabatan_nm" value="{{ old('jabatan_nm') }}" class="form-control" required placeholder="Contoh: Mandor Produksi">
-                    </div>
-                </div>
-
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                    <div class="form-group">
-                        <label for="create_telepon_no" class="form-label">Nomor Telepon / WhatsApp</label>
-                        <input type="text" id="create_telepon_no" name="telepon_no" value="{{ old('telepon_no') }}" class="form-control" placeholder="Contoh: 08123456789">
-                    </div>
-                    <div class="form-group">
-                        <label for="create_email" class="form-label">Email</label>
-                        <input type="email" id="create_email" name="email" value="{{ old('email') }}" class="form-control" placeholder="Contoh: budi@mirasa.co.id">
-                    </div>
-                </div>
-
-                <div class="form-group" style="margin-bottom: 0;">
-                    <label for="create_alamat_txt" class="form-label">Alamat Domisili</label>
-                    <textarea id="create_alamat_txt" name="alamat_txt" class="form-control" rows="2" placeholder="Alamat lengkap karyawan...">{{ old('alamat_txt') }}</textarea>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="closeModal('modalTambahKaryawan')">Batal</button>
-                <button type="submit" class="btn btn-primary">Simpan Karyawan</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-{{-- MODAL EDIT KARYAWAN --}}
-<div id="modalEditKaryawan" class="modal-backdrop">
-    <div class="modal-dialog">
-        <div class="modal-header">
-            <h2 class="modal-title">Edit Data Karyawan</h2>
-            <button type="button" class="modal-close" onclick="closeModal('modalEditKaryawan')">&times;</button>
-        </div>
-        <form id="formEditKaryawan" method="POST">
-            @csrf
-            @method('PUT')
-            <div class="modal-body">
-                <div class="form-group">
-                    <label for="edit_nik" class="form-label">Nomor Induk Karyawan (NIK) <span style="color:#ef4444;">*</span></label>
-                    <input type="text" id="edit_nik" name="nik" class="form-control" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="edit_karyawan_nm" class="form-label">Nama Lengkap Karyawan <span style="color:#ef4444;">*</span></label>
-                    <input type="text" id="edit_karyawan_nm" name="karyawan_nm" class="form-control" required>
-                </div>
-
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                    <div class="form-group">
-                        <label for="edit_departemen_cd" class="form-label">Departemen <span style="color:#ef4444;">*</span></label>
-                        <select id="edit_departemen_cd" name="departemen_cd" class="form-control" required>
-                            @foreach ($departemenList as $key => $label)
-                                <option value="{{ $key }}">{{ $label }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="edit_jabatan_nm" class="form-label">Jabatan Kerja <span style="color:#ef4444;">*</span></label>
-                        <input type="text" id="edit_jabatan_nm" name="jabatan_nm" class="form-control" required>
-                    </div>
-                </div>
-
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                    <div class="form-group">
-                        <label for="edit_telepon_no" class="form-label">Nomor Telepon / WhatsApp</label>
-                        <input type="text" id="edit_telepon_no" name="telepon_no" class="form-control">
-                    </div>
-                    <div class="form-group">
-                        <label for="edit_email" class="form-label">Email</label>
-                        <input type="email" id="edit_email" name="email" class="form-control">
-                    </div>
-                </div>
-
-                <div class="form-group" style="margin-bottom: 0;">
-                    <label for="edit_alamat_txt" class="form-label">Alamat Domisili</label>
-                    <textarea id="edit_alamat_txt" name="alamat_txt" class="form-control" rows="2"></textarea>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="closeModal('modalEditKaryawan')">Batal</button>
-                <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<script>
-    function editKaryawan(id, nik, nama, departemen, jabatan, telp, email, alamat) {
-        document.getElementById('formEditKaryawan').action = '{{ url("master-karyawan") }}/' + id;
-        document.getElementById('edit_nik').value = nik;
-        document.getElementById('edit_karyawan_nm').value = nama;
-        document.getElementById('edit_departemen_cd').value = departemen;
-        document.getElementById('edit_jabatan_nm').value = jabatan;
-        document.getElementById('edit_telepon_no').value = telp;
-        document.getElementById('edit_email').value = email;
-        document.getElementById('edit_alamat_txt').value = alamat;
-        openModal('modalEditKaryawan');
-    }
-</script>
 @endsection
+
+@push('scripts')
+    <script>
+        window.appConfig = {
+            karyawanBaseUrl: "{{ url('master-karyawan') }}",
+            nextNik: "{{ $nextNik }}"
+        };
+    </script>
+    <script src="{{ asset('js/master/karyawan/karyawan-index.js') }}"></script>
+@endpush

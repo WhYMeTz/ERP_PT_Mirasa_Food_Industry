@@ -130,11 +130,11 @@
                     </div>
 
                     <div class="form-group" style="margin-bottom: 0;">
-                        <label class="form-label" style="font-weight: 700;">Gudang Tujuan di Pabrik <span style="color:#ef4444;">*</span></label>
+                        <label class="form-label" style="font-weight: 700;">Perusahaan / Cabang Tujuan Bongkar <span style="color:#ef4444;">*</span></label>
                         <select name="gudang_id" id="gudangSelect" class="form-control" required>
                             @foreach ($gudangs as $g)
                                 <option value="{{ $g->gudang_id }}" {{ old('gudang_id', $selectedPo?->gudang_id ?? auth()->user()?->gudang_id) == $g->gudang_id ? 'selected' : '' }}>
-                                    {{ $g->gudang_nm }}
+                                    {{ $g->display_name ?? $g->gudang_nm }}
                                 </option>
                             @endforeach
                         </select>

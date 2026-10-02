@@ -74,6 +74,11 @@ class PermissionService
                     'desc'   => 'Mengubah kode, nama PT/CV, jenis entitas, alamat, dan nomor telepon perusahaan.',
                     'action' => 'EDIT',
                 ],
+                'master_karyawan_edit' => [
+                    'label'  => 'Edit & Koreksi Data Karyawan',
+                    'desc'   => 'Mengubah profil staf, departemen, jabatan, dan nomor kontak karyawan.',
+                    'action' => 'EDIT',
+                ],
             ],
         ],
         'AKSI_DELETE' => [
@@ -135,6 +140,11 @@ class PermissionService
                 'master_perusahaan_delete' => [
                     'label'  => 'Hapus / Nonaktifkan Entitas Perusahaan',
                     'desc'   => 'Menonaktifkan kantor cabang / anak perusahaan dari sistem operasional.',
+                    'action' => 'DELETE',
+                ],
+                'master_karyawan_delete' => [
+                    'label'  => 'Hapus / Nonaktifkan Karyawan',
+                    'desc'   => 'Menonaktifkan data staf/karyawan dari daftar aktif perusahaan.',
                     'action' => 'DELETE',
                 ],
             ],
@@ -215,6 +225,11 @@ class PermissionService
                     'desc'   => 'Mendaftarkan entitas bisnis, cabang, atau anak perusahaan baru ke dalam sistem.',
                     'action' => 'CREATE',
                 ],
+                'master_karyawan_create' => [
+                    'label'  => 'Tambah Karyawan Baru',
+                    'desc'   => 'Mendaftarkan karyawan baru ke dalam sistem sumber daya manusia perusahaan.',
+                    'action' => 'CREATE',
+                ],
             ],
         ],
         'AKSI_VIEW' => [
@@ -285,6 +300,8 @@ class PermissionService
                 'master_customer_manage' => ['label' => 'Kelola Master Customer', 'desc' => 'Menambah dan mengedit profil klien customer B2B.', 'action' => 'MANAGE'],
                 'master_perusahaan_view' => ['label' => 'Lihat Master Perusahaan', 'desc' => 'Melihat daftar entitas bisnis, pusat, cabang, dan anak perusahaan.', 'action' => 'VIEW'],
                 'master_perusahaan_manage' => ['label' => 'Kelola Master Perusahaan', 'desc' => 'Menambah dan mengedit data entitas perusahaan dan cabang.', 'action' => 'MANAGE'],
+                'master_karyawan_view'   => ['label' => 'Lihat Master Karyawan', 'desc' => 'Melihat daftar profil karyawan, jabatan, dan penugasan departemen.', 'action' => 'VIEW'],
+                'master_karyawan_manage' => ['label' => 'Kelola Master Karyawan', 'desc' => 'Menambah, mengedit, dan mengelola profil karyawan.', 'action' => 'MANAGE'],
                 'master_gudang_manage'   => ['label' => 'Kelola Gudang & Satuan', 'desc' => 'Menambah dan mengedit daftar gudang unit dan satuan barang.', 'action' => 'MANAGE'],
                 'user_manage'            => ['label' => 'Manajemen Pengguna & Hak Akses', 'desc' => 'Mengelola user login, password, dan mengubah hak akses peran.', 'action' => 'MANAGE'],
             ],

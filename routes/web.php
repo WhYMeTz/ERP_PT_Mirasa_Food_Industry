@@ -91,7 +91,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('master-customer', CustomerController::class)->names('master.customer');
     Route::resource('master-karyawan', KaryawanController::class)
         ->names('master.karyawan')
-        ->middleware('role:SUPERADMIN');
+        ->middleware('role:SUPERADMIN,HRD,master_karyawan_view,master_karyawan_manage');
 
     // Modul Transaksi Gudang (Inbound, Outbound & Inventory Engine)
     Route::prefix('gudang')->name('gudang.')->group(function () {

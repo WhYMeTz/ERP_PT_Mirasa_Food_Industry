@@ -347,7 +347,12 @@ class User extends Authenticatable
      */
     public function canAccessMasterData(): bool
     {
-        return $this->isSuperAdmin() || $this->canDo('master_barang_view');
+        return $this->isSuperAdmin() 
+            || $this->canDo('master_barang_view')
+            || $this->canAccessKaryawan()
+            || $this->canAccessSupplier()
+            || $this->canAccessCustomer()
+            || $this->canAccessPerusahaan();
     }
 
     public function canManageMasterData(): bool
@@ -523,6 +528,41 @@ class User extends Authenticatable
             || $this->canDo('master_perusahaan_delete') 
             || $this->canDo('master_perusahaan_manage')
             || $this->canDo('master_gudang_manage');
+    }
+
+    /**
+     * Hak akses Master Data Karyawan
+     */
+    public function canAccessKaryawan(): bool
+    {
+        return $this->isSuperAdmin() 
+            || $this->role_cd === 'HRD'
+            || $this->canDo('master_karyawan_view') 
+            || $this->canDo('master_karyawan_manage');
+    }
+
+    public function canCreateMasterKaryawan(): bool
+    {
+        return $this->isSuperAdmin() 
+            || $this->role_cd === 'HRD'
+            || $this->canDo('master_karyawan_create') 
+            || $this->canDo('master_karyawan_manage');
+    }
+
+    public function canEditMasterKaryawan(): bool
+    {
+        return $this->isSuperAdmin() 
+            || $this->role_cd === 'HRD'
+            || $this->canDo('master_karyawan_edit') 
+            || $this->canDo('master_karyawan_manage');
+    }
+
+    public function canDeleteMasterKaryawan(): bool
+    {
+        return $this->isSuperAdmin() 
+            || $this->role_cd === 'HRD'
+            || $this->canDo('master_karyawan_delete') 
+            || $this->canDo('master_karyawan_manage');
     }
 
     /**

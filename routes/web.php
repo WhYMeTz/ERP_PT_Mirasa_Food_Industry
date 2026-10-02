@@ -202,13 +202,18 @@ Route::middleware('auth')->group(function () {
     Route::prefix('produksi')->name('produksi.')->middleware('role:produksi_view')->group(function () {
         Route::get('/', [ProduksiController::class, 'index'])->name('index');
         Route::get('/rekap', [ProduksiController::class, 'index'])->name('rekap');
+        Route::get('/export-hasil', [ProduksiController::class, 'exportHasilProduksi'])->name('export-hasil');
+        Route::get('/download-template', [ProduksiController::class, 'downloadHasilTemplate'])->name('download-template');
+        Route::post('/import-excel', [ProduksiController::class, 'importHasilProduksi'])->name('import-excel')->middleware('role:produksi_create');
+        Route::get('/export-rekap-excel', [ProduksiController::class, 'exportRekapExcel'])->name('export-rekap-excel');
+        Route::get('/export-rekap-pdf', [ProduksiController::class, 'exportRekapPdf'])->name('export-rekap-pdf');
         Route::get('/create', [ProduksiController::class, 'create'])->name('create')->middleware('role:produksi_create');
         Route::post('/', [ProduksiController::class, 'store'])->name('store')->middleware('role:produksi_create');
         Route::get('/pakai-data/{pakaiId}', [ProduksiController::class, 'getPakaiData'])->name('pakai-data');
         Route::get('/next-karton', [ProduksiController::class, 'getNextKarton'])->name('next-karton');
-        Route::get('/{id}', [ProduksiController::class, 'show'])->name('show');
-        Route::get('/{id}/cetak-stiker', [ProduksiController::class, 'cetakStiker'])->name('cetak-stiker');
-        Route::delete('/{id}', [ProduksiController::class, 'destroy'])->name('destroy')->middleware('role:produksi_create');
+        Route::get('/{id}', [ProduksiController::class, 'show'])->name('show')->whereNumber('id');
+        Route::get('/{id}/cetak-stiker', [ProduksiController::class, 'cetakStiker'])->name('cetak-stiker')->whereNumber('id');
+        Route::delete('/{id}', [ProduksiController::class, 'destroy'])->name('destroy')->middleware('role:produksi_create')->whereNumber('id');
     });
 
     // Quality Control (QC) Inbound Bahan Baku (Mobile-First / Google Form Style)

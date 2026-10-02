@@ -111,3 +111,46 @@ function closeDeleteProduksiModal() {
         modal.classList.remove('show');
     }
 }
+
+/**
+ * Tab Switching: Tab 1 (Hasil Produksi) vs Tab 2 (Rekap HPP)
+ */
+function switchProduksiTab(tabName) {
+    const btnHasil = document.getElementById('btn-tab-hasil');
+    const btnRekap = document.getElementById('btn-tab-rekap');
+    const paneHasil = document.getElementById('pane-tab-hasil');
+    const paneRekap = document.getElementById('pane-tab-rekap');
+
+    if (!paneHasil || !paneRekap) return;
+
+    if (tabName === 'hasil') {
+        btnHasil?.classList.add('active');
+        btnRekap?.classList.remove('active');
+        paneHasil.classList.add('active');
+        paneRekap.classList.remove('active');
+    } else {
+        btnRekap?.classList.add('active');
+        btnHasil?.classList.remove('active');
+        paneRekap.classList.add('active');
+        paneHasil.classList.remove('active');
+    }
+
+    // Perbarui URL tanpa reload penuh agar bookmark/refresh konsisten
+    const url = new URL(window.location);
+    url.searchParams.set('tab', tabName);
+    window.history.replaceState({}, '', url);
+}
+
+/**
+ * Kontrol Modal Import Excel Hasil Produksi
+ */
+function openModalImportHasil() {
+    const modal = document.getElementById('modal-import-hasil');
+    if (modal) modal.style.display = 'flex';
+}
+
+function closeModalImportHasil() {
+    const modal = document.getElementById('modal-import-hasil');
+    if (modal) modal.style.display = 'none';
+}
+

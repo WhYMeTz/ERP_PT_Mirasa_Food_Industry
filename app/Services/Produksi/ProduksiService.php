@@ -3,6 +3,7 @@
 namespace App\Services\Produksi;
 
 use App\Models\Gudang\DatPakaiHdr;
+use App\Models\Gudang\DatStokBatch;
 use App\Models\MasterData\MstBarang;
 use App\Models\Produksi\DatProduksiHarian;
 use App\Models\Produksi\DatProduksiOutput;
@@ -10,6 +11,8 @@ use App\Services\Common\CodeGeneratorService;
 use App\Services\Gudang\StokService;
 use Carbon\Carbon;
 use Exception;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class ProduksiService
@@ -93,10 +96,140 @@ class ProduksiService
             ? ($totals['total_biaya_produksi'] / $totals['total_wip_qty'])
             : 0;
 
+        // Susun daftar baris kalender per hari (1 s/d 28/30/31) seperti format spreadsheet Mirasa
+        $daysInMonth = Carbon::createFromDate($year, $month, 1)->daysInMonth;
+        $dayNamesIndo = [
+            0 => 'Minggu',
+            1 => 'Senin',
+            2 => 'Selasa',
+            3 => 'Rabu',
+            4 => 'Kamis',
+            5 => 'Jumat',
+            6 => 'Sabtu',
+        ];
+
+        $days = [];
+        for ($day = 1; $day <= $daysInMonth; $day++) {
+            $dateObj = Carbon::createFromDate($year, $month, $day);
+            $dayOfWeek = $dateObj->dayOfWeek;
+            $hariNm = $dayNamesIndo[$dayOfWeek] ?? 'Senin';
+
+            $dayRecords = $records->filter(function ($r) use ($dateObj) {
+                return Carbon::parse($r->produksi_tgl)->isSameDay($dateObj);
+            });
+
+            if ($dayRecords->isNotEmpty()) {
+                foreach ($dayRecords as $rec) {
+                    $days[] = [
+                        'day'                         => $day,
+                        'date'                        => $dateObj->format('Y-m-d'),
+                        'hari_nm'                     => $hariNm,
+                        'has_data'                    => true,
+                        'produksi_id'                 => $rec->produksi_id,
+                        'produksi_no'                 => $rec->produksi_no,
+                        'shift_cd'                    => $rec->shift_cd ?? 'A',
+                        'batch_wip_no'                => $rec->batch_wip_no ?? '-',
+                        'singkong_qty'                => (float) $rec->singkong_qty,
+                        'singkong_nilai'              => (float) $rec->singkong_nilai,
+                        'minyak_sawit_qty'            => (float) $rec->minyak_sawit_qty,
+                        'minyak_kelapa_qty'           => (float) $rec->minyak_kelapa_qty,
+                        'minyak_nilai'                => (float) $rec->minyak_nilai,
+                        'minyak_rasio_persen'         => (float) $rec->minyak_rasio_persen,
+                        'cng_mmbtu'                   => (float) $rec->cng_mmbtu,
+                        'cng_nilai'                   => (float) $rec->cng_nilai,
+                        'tk_langsung_org'             => (int) $rec->tk_langsung_org,
+                        'tk_tidak_langsung_org'       => (int) $rec->tk_tidak_langsung_org,
+                        'tk_training_org'             => (int) $rec->tk_training_org,
+                        'tk_total_nilai'              => (float) $rec->tk_total_nilai,
+                        'bumbu_nilai'                 => (float) $rec->bumbu_nilai,
+                        'karton_baru_nilai'           => (float) $rec->karton_baru_nilai,
+                        'karton_bekas_nilai'          => (float) $rec->karton_bekas_nilai,
+                        'plastik_hd_nilai'            => (float) $rec->plastik_hd_nilai,
+                        'lakban_besar_nilai'          => (float) $rec->lakban_besar_nilai,
+                        'lakban_kecil_nilai'          => (float) $rec->lakban_kecil_nilai,
+                        'tali_rafia_nilai'            => (float) $rec->tali_rafia_nilai,
+                        'fotocopy_nilai'              => (float) $rec->fotocopy_nilai,
+                        'sarung_tangan_plastik_nilai' => (float) $rec->sarung_tangan_plastik_nilai,
+                        'sarung_tangan_kain_nilai'    => (float) $rec->sarung_tangan_kain_nilai,
+                        'qc_pengawasan_nilai'         => (float) $rec->qc_pengawasan_nilai,
+                        'listrik_air_telp_nilai'      => (float) $rec->listrik_air_telp_nilai,
+                        'pemeliharaan_mesin_nilai'    => (float) $rec->pemeliharaan_mesin_nilai,
+                        'penyusutan_mesin_nilai'      => (float) $rec->penyusutan_mesin_nilai,
+                        'limbah_padat_nilai'          => (float) $rec->limbah_padat_nilai,
+                        'limbah_kimia_nilai'          => (float) $rec->limbah_kimia_nilai,
+                        'total_biaya_produksi'        => (float) $rec->total_biaya_produksi,
+                        'asin_barco_qty'              => (float) $rec->asin_barco_qty,
+                        'asin_sawit_qty'              => (float) $rec->asin_sawit_qty,
+                        'no_salt_qty'                 => (float) $rec->no_salt_qty,
+                        'balo_gelombang_qty'          => (float) $rec->balo_gelombang_qty,
+                        'berko_qty'                   => (float) $rec->berko_qty,
+                        'berko_me_qty'                => (float) $rec->berko_me_qty,
+                        'total_berko_qty'             => (float) $rec->total_berko_qty,
+                        'berko_persen'                => (float) $rec->berko_persen,
+                        'total_wip_qty'               => (float) $rec->total_wip_qty,
+                        'rendemen_persen'             => (float) $rec->rendemen_persen,
+                        'hpp_per_kg'                  => (float) $rec->hpp_per_kg,
+                    ];
+                }
+            } else {
+                $days[] = [
+                    'day'                         => $day,
+                    'date'                        => $dateObj->format('Y-m-d'),
+                    'hari_nm'                     => $hariNm,
+                    'has_data'                    => false,
+                    'produksi_id'                 => null,
+                    'produksi_no'                 => null,
+                    'shift_cd'                    => null,
+                    'batch_wip_no'                => null,
+                    'singkong_qty'                => 0,
+                    'singkong_nilai'              => 0,
+                    'minyak_sawit_qty'            => 0,
+                    'minyak_kelapa_qty'           => 0,
+                    'minyak_nilai'                => 0,
+                    'minyak_rasio_persen'         => 0,
+                    'cng_mmbtu'                   => 0,
+                    'cng_nilai'                   => 0,
+                    'tk_langsung_org'             => 0,
+                    'tk_tidak_langsung_org'       => 0,
+                    'tk_training_org'             => 0,
+                    'tk_total_nilai'              => 0,
+                    'bumbu_nilai'                 => 0,
+                    'karton_baru_nilai'           => 0,
+                    'karton_bekas_nilai'          => 0,
+                    'plastik_hd_nilai'            => 0,
+                    'lakban_besar_nilai'          => 0,
+                    'lakban_kecil_nilai'          => 0,
+                    'tali_rafia_nilai'            => 0,
+                    'fotocopy_nilai'              => 0,
+                    'sarung_tangan_plastik_nilai' => 0,
+                    'sarung_tangan_kain_nilai'    => 0,
+                    'qc_pengawasan_nilai'         => 0,
+                    'listrik_air_telp_nilai'      => 0,
+                    'pemeliharaan_mesin_nilai'    => 0,
+                    'penyusutan_mesin_nilai'      => 0,
+                    'limbah_padat_nilai'          => 0,
+                    'limbah_kimia_nilai'          => 0,
+                    'total_biaya_produksi'        => 0,
+                    'asin_barco_qty'              => 0,
+                    'asin_sawit_qty'              => 0,
+                    'no_salt_qty'                 => 0,
+                    'balo_gelombang_qty'          => 0,
+                    'berko_qty'                   => 0,
+                    'berko_me_qty'                => 0,
+                    'total_berko_qty'             => 0,
+                    'berko_persen'                => 0,
+                    'total_wip_qty'               => 0,
+                    'rendemen_persen'             => 0,
+                    'hpp_per_kg'                  => 0,
+                ];
+            }
+        }
+
         return [
             'year'    => $year,
             'month'   => $month,
             'records' => $records,
+            'days'    => $days,
             'totals'  => $totals,
             'count'   => $records->count(),
         ];
@@ -510,4 +643,141 @@ class ProduksiService
             return $produksi->delete();
         });
     }
+
+    /**
+     * Mengambil daftar rincian hasil barang produksi (Point 9 - Hasil Barang Produksi)
+     * Dilengkapi paginasi, filter lengkap, dan sisa stok riil on-hand.
+     */
+    public function getHasilProduksiList(array $filters = [], int $perPage = 20): LengthAwarePaginator
+    {
+        $query = DatProduksiOutput::with(['produksi.gudang', 'barang.satuan'])
+            ->where('deleted_st', false);
+
+        if (!empty($filters['gudang_id'])) {
+            $query->whereHas('produksi', function ($q) use ($filters) {
+                $q->where('gudang_id', $filters['gudang_id']);
+            });
+        }
+
+        if (!empty($filters['search'])) {
+            $search = '%' . $filters['search'] . '%';
+            $query->where(function ($q) use ($search) {
+                $q->where('batch_no', 'like', $search)
+                  ->orWhereHas('barang', function ($b) use ($search) {
+                      $b->where('barang_cd', 'like', $search)
+                        ->orWhere('barang_nm', 'like', $search);
+                  })
+                  ->orWhereHas('produksi', function ($p) use ($search) {
+                      $p->where('produksi_no', 'like', $search);
+                  });
+            });
+        }
+
+        if (!empty($filters['batch_no'])) {
+            $query->where('batch_no', 'like', '%' . $filters['batch_no'] . '%');
+        }
+
+        if (!empty($filters['kategori'])) {
+            $query->where('kategori_output', $filters['kategori']);
+        }
+
+        if (!empty($filters['tgl_dari'])) {
+            $query->whereHas('produksi', function ($p) use ($filters) {
+                $p->whereDate('produksi_tgl', '>=', $filters['tgl_dari']);
+            });
+        }
+
+        if (!empty($filters['tgl_sampai'])) {
+            $query->whereHas('produksi', function ($p) use ($filters) {
+                $p->whereDate('produksi_tgl', '<=', $filters['tgl_sampai']);
+            });
+        }
+
+        // Urutkan dari produksi terbaru
+        $paginator = $query->orderByDesc('output_id')->paginate($perPage)->withQueryString();
+
+        // Attach live sisa stok on hand dari DatStokBatch
+        $this->attachSisaStok($paginator->items());
+
+        return $paginator;
+    }
+
+    /**
+     * Mengambil seluruh hasil produksi untuk keperluan Export Excel
+     */
+    public function getAllHasilProduksi(array $filters = []): Collection
+    {
+        $query = DatProduksiOutput::with(['produksi.gudang', 'barang.satuan'])
+            ->where('deleted_st', false);
+
+        if (!empty($filters['gudang_id'])) {
+            $query->whereHas('produksi', function ($q) use ($filters) {
+                $q->where('gudang_id', $filters['gudang_id']);
+            });
+        }
+
+        if (!empty($filters['search'])) {
+            $search = '%' . $filters['search'] . '%';
+            $query->where(function ($q) use ($search) {
+                $q->where('batch_no', 'like', $search)
+                  ->orWhereHas('barang', function ($b) use ($search) {
+                      $b->where('barang_cd', 'like', $search)
+                        ->orWhere('barang_nm', 'like', $search);
+                  })
+                  ->orWhereHas('produksi', function ($p) use ($search) {
+                      $p->where('produksi_no', 'like', $search);
+                  });
+            });
+        }
+
+        if (!empty($filters['batch_no'])) {
+            $query->where('batch_no', 'like', '%' . $filters['batch_no'] . '%');
+        }
+
+        if (!empty($filters['kategori'])) {
+            $query->where('kategori_output', $filters['kategori']);
+        }
+
+        if (!empty($filters['tgl_dari'])) {
+            $query->whereHas('produksi', function ($p) use ($filters) {
+                $p->whereDate('produksi_tgl', '>=', $filters['tgl_dari']);
+            });
+        }
+
+        if (!empty($filters['tgl_sampai'])) {
+            $query->whereHas('produksi', function ($p) use ($filters) {
+                $p->whereDate('produksi_tgl', '<=', $filters['tgl_sampai']);
+            });
+        }
+
+        $items = $query->orderByDesc('output_id')->get();
+        $this->attachSisaStok($items);
+
+        return $items;
+    }
+
+    /**
+     * Helper privat untuk melampirkan sisa stok on-hand ke item output
+     */
+    protected function attachSisaStok($items): void
+    {
+        foreach ($items as $item) {
+            $gudangId = $item->produksi?->gudang_id;
+            $barangId = $item->barang_id;
+            $batchNo  = $item->batch_no;
+
+            if ($gudangId && $barangId && $batchNo) {
+                $stokBatch = DatStokBatch::where('gudang_id', $gudangId)
+                    ->where('barang_id', $barangId)
+                    ->where('batch_no', $batchNo)
+                    ->where('deleted_st', false)
+                    ->first();
+
+                $item->sisa_stok = $stokBatch ? (float) $stokBatch->sisa_qty : (float) $item->qty_kg;
+            } else {
+                $item->sisa_stok = (float) $item->qty_kg;
+            }
+        }
+    }
 }
+

@@ -98,6 +98,14 @@ class MstBarang extends Model
     }
 
     /**
+     * Alias relasi ke Satuan Dasar (memastikan kompatibilitas modul gudang/produksi)
+     */
+    public function satuan(): BelongsTo
+    {
+        return $this->satuanDasar();
+    }
+
+    /**
      * Relasi ke Satuan Besar (misal: SAK, DUS, BAL)
      */
     public function satuanBesar(): BelongsTo

@@ -2,31 +2,63 @@
 
 namespace App\Http\Controllers\Produksi;
 
+use App\Exports\Produksi\HasilProduksiExport;
+use App\Exports\Produksi\HasilProduksiTemplate;
+use App\Exports\Produksi\RekapHppExport;
 use App\Http\Controllers\Controller;
+use App\Imports\Produksi\HasilProduksiImport;
 use App\Models\Gudang\DatPakaiHdr;
 use App\Models\MasterData\MstGudang;
+use App\Services\Common\CodeGeneratorService;
+use App\Services\Gudang\StokService;
 use App\Services\Produksi\ProduksiService;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ProduksiController extends Controller
 {
     public function __construct(
-        protected ProduksiService $produksiService
+        protected ProduksiService $produksiService,
+        protected CodeGeneratorService $codeGenerator,
+        protected StokService $stokService
     ) {}
 
     /**
-     * Halaman Buku Rekap HPP Harian & Rendemen (Format Excel Asli PT Mirasa).
+     * Halaman Utama Modul Produksi (Dual-Tab):
+     * Tab 1: 📦 Hasil Barang Produksi & Sisa Stok WIP (Project Brief Poin 9)
+     * Tab 2: 📊 Buku Rekap Pembaca HPP & Rendemen (Project Brief Poin 13)
      */
     public function index(Request $request): View
     {
-        $year = (int) $request->input('tahun', 2026);
-        $month = (int) $request->input('bulan', 1);
+        $activeTab = $request->input('tab', 'hasil');
 
+        // Master Gudang untuk filter dropdown
+        $gudangList = MstGudang::where('deleted_st', false)
+            ->where('active_st', true)
+            ->orderBy('gudang_nm')
+            ->get();
+
+        // ── DATA TAB 1: Hasil Barang Produksi (Point 9) ──
+        $filters = [
+            'gudang_id'  => $request->input('gudang_id'),
+            'search'     => $request->input('search'),
+            'batch_no'   => $request->input('batch_no'),
+            'kategori'   => $request->input('kategori'),
+            'tgl_dari'   => $request->input('tgl_dari'),
+            'tgl_sampai' => $request->input('tgl_sampai'),
+        ];
+        $hasilItems = $this->produksiService->getHasilProduksiList($filters, 20);
+
+        // ── DATA TAB 2: Rekap HPP Harian (Point 13) ──
+        $year = (int) $request->input('tahun', date('Y'));
+        $month = (int) $request->input('bulan', date('n'));
         $report = $this->produksiService->getMonthlyReport($year, $month);
 
         $monthsList = [
@@ -34,11 +66,21 @@ class ProduksiController extends Controller
             5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
             9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
         ];
-
-        $yearsList = [2025, 2026, 2027];
+        $yearsList = [2024, 2025, 2026, 2027];
         $monthName = $monthsList[$month] ?? 'Januari';
 
-        return view('produksi.index', compact('report', 'year', 'month', 'monthName', 'monthsList', 'yearsList'));
+        return view('produksi.index', compact(
+            'activeTab',
+            'gudangList',
+            'filters',
+            'hasilItems',
+            'report',
+            'year',
+            'month',
+            'monthName',
+            'monthsList',
+            'yearsList'
+        ));
     }
 
     /**
@@ -212,5 +254,128 @@ class ProduksiController extends Controller
         } catch (Exception $e) {
             return back()->with('error', 'Gagal menghapus data: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Export Excel Daftar Hasil Barang Produksi (.xlsx) (Point 9.B.4)
+     */
+    public function exportHasilProduksi(Request $request): StreamedResponse
+    {
+        $filters = [
+            'gudang_id'  => $request->input('gudang_id'),
+            'search'     => $request->input('search'),
+            'batch_no'   => $request->input('batch_no'),
+            'kategori'   => $request->input('kategori'),
+            'tgl_dari'   => $request->input('tgl_dari'),
+            'tgl_sampai' => $request->input('tgl_sampai'),
+        ];
+
+        $items = $this->produksiService->getAllHasilProduksi($filters);
+
+        $gudangNm = null;
+        if (!empty($filters['gudang_id'])) {
+            $gudang = MstGudang::find($filters['gudang_id']);
+            $gudangNm = $gudang?->gudang_nm;
+        }
+
+        $printedBy = Auth::user()->username ?? 'Admin';
+        $printedAt = Carbon::now()->format('d/m/Y H:i');
+
+        $exporter = new HasilProduksiExport(
+            $items,
+            $gudangNm,
+            $filters['search'],
+            $filters['batch_no'],
+            $printedBy,
+            $printedAt
+        );
+
+        return $exporter->download('Laporan_Hasil_Produksi_' . date('Ymd_His') . '.xlsx');
+    }
+
+    /**
+     * Download Template Resmi Import Excel Hasil Produksi (.xlsx) (Point 9.B.3)
+     */
+    public function downloadHasilTemplate(): StreamedResponse
+    {
+        $template = new HasilProduksiTemplate();
+        return $template->download();
+    }
+
+    /**
+     * Proses Upload File Excel Hasil Produksi (.xlsx) (Point 9.B.3)
+     */
+    public function importHasilProduksi(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'import_file' => 'required|file|mimes:xlsx,xls|max:5120',
+        ], [
+            'import_file.required' => 'Pilih file Excel yang akan diimpor.',
+            'import_file.mimes'    => 'Format file harus berupa .xlsx atau .xls.',
+            'import_file.max'      => 'Ukuran file tidak boleh melebihi 5 MB.',
+        ]);
+
+        try {
+            $importer = new HasilProduksiImport($this->codeGenerator, $this->stokService);
+            $importer->import($request->file('import_file'));
+
+            $msg = "✅ Berhasil mengimpor {$importer->successCount} item hasil produksi!";
+            if ($importer->errorCount > 0) {
+                $msg .= " Catatan: terdapat {$importer->errorCount} grup data yang gagal atau dilewati.";
+            }
+
+            return redirect()->route('produksi.index', ['tab' => 'hasil'])
+                ->with('success', $msg);
+        } catch (Exception $e) {
+            return redirect()->route('produksi.index', ['tab' => 'hasil'])
+                ->with('error', 'Gagal memproses import Excel: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Export Excel Buku Rekap HPP Bulanan (.xlsx) (Point 13.c)
+     */
+    public function exportRekapExcel(Request $request): StreamedResponse
+    {
+        $year = (int) $request->input('tahun', date('Y'));
+        $month = (int) $request->input('bulan', date('n'));
+
+        $report = $this->produksiService->getMonthlyReport($year, $month);
+
+        $monthsList = [
+            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
+            5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
+            9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+        ];
+        $monthName = $monthsList[$month] ?? 'Januari';
+
+        $printedBy = Auth::user()->username ?? 'Admin';
+        $printedAt = Carbon::now()->format('d/m/Y H:i');
+
+        $exporter = new RekapHppExport($report, $year, $month, $monthName, $printedBy, $printedAt);
+        return $exporter->download("Rekap_HPP_{$monthName}_{$year}.xlsx");
+    }
+
+    /**
+     * Export PDF Buku Rekap HPP Bulanan (.pdf) (Point 13.d)
+     */
+    public function exportRekapPdf(Request $request)
+    {
+        $year = (int) $request->input('tahun', date('Y'));
+        $month = (int) $request->input('bulan', date('n'));
+
+        $report = $this->produksiService->getMonthlyReport($year, $month);
+
+        $monthsList = [
+            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
+            5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
+            9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+        ];
+        $monthName = $monthsList[$month] ?? 'Januari';
+
+        $pdf = Pdf::loadView('produksi.pdf.rekap-hpp', compact('report', 'year', 'month', 'monthName'))
+            ->setPaper('legal', 'landscape');
+
+        return $pdf->download("Rekap_HPP_{$monthName}_{$year}.pdf");
     }
 }

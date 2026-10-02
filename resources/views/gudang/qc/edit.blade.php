@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.qc-mobile')
 
 @section('title', 'Koreksi Tiket Uji QC Bahan Masuk (No. ' . $qc->qc_no . ') - PT Mirasa')
 

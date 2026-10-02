@@ -1,0 +1,326 @@
+/* ==========================================================================
+   QC MOBILE LAYOUT & APP-SHELL STYLES - ERP PT MIRASA FOOD INDUSTRY
+   Khusus Operasional Smartphone Tim Quality Control (HACCP Lapangan)
+   ========================================================================== */
+
+:root {
+    --qc-primary: #0284c7;
+    --qc-primary-dark: #0369a1;
+    --qc-primary-light: #e0f2fe;
+    --qc-accent: #0f172a;
+    --qc-bg: #f8fafc;
+    --qc-card-bg: #ffffff;
+    --qc-border: #e2e8f0;
+    --qc-text: #1e293b;
+    --qc-muted: #64748b;
+    --qc-success: #10b981;
+    --qc-warning: #f59e0b;
+    --qc-danger: #ef4444;
+    --qc-bottom-nav-height: 64px;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body.qc-mobile-body {
+    background-color: var(--qc-bg);
+    color: var(--qc-text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding-bottom: calc(var(--qc-bottom-nav-height) + env(safe-area-inset-bottom, 16px));
+    line-height: 1.5;
+}
+
+/* ==========================================================================
+   TOP APP BAR (HEADER)
+   ========================================================================== */
+.qc-top-appbar {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    background: #ffffff;
+    border-bottom: 1px solid var(--qc-border);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    padding: 0.65rem 1rem;
+    padding-top: calc(0.65rem + env(safe-area-inset-top, 0px));
+}
+
+.qc-appbar-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    max-width: 1024px;
+    margin: 0 auto;
+    width: 100%;
+    gap: 0.75rem;
+}
+
+.qc-brand-section {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    text-decoration: none;
+    color: inherit;
+}
+
+.qc-brand-logo {
+    width: 34px;
+    height: 34px;
+    object-fit: contain;
+    border-radius: 8px;
+    background: #ffffff;
+}
+
+.qc-brand-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.qc-brand-title {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1.2;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.qc-brand-badge {
+    background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+    color: #ffffff;
+    font-size: 0.65rem;
+    font-weight: 800;
+    padding: 0.15rem 0.45rem;
+    border-radius: 6px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.qc-brand-sub {
+    font-size: 0.72rem;
+    color: var(--qc-muted);
+    font-weight: 600;
+}
+
+.qc-top-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.qc-user-chip {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.6rem;
+    background: #f1f5f9;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #334155;
+    border: 1px solid #e2e8f0;
+}
+
+.qc-user-avatar {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--qc-primary);
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.65rem;
+    font-weight: 800;
+}
+
+.qc-btn-desktop-switch {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #0284c7;
+    background: #e0f2fe;
+    border: 1px solid #bae6fd;
+    padding: 0.4rem 0.65rem;
+    border-radius: 8px;
+    text-decoration: none;
+    transition: all 0.15s ease;
+}
+
+.qc-btn-desktop-switch:hover {
+    background: #0284c7;
+    color: #ffffff;
+}
+
+.qc-btn-logout-mini {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: 1px solid #fee2e2;
+    background: #fef2f2;
+    color: #dc2626;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.qc-btn-logout-mini:hover {
+    background: #dc2626;
+    color: #ffffff;
+}
+
+/* ==========================================================================
+   MAIN CONTENT WRAPPER
+   ========================================================================== */
+.qc-main-content {
+    flex: 1;
+    width: 100%;
+    max-width: 1024px;
+    margin: 0 auto;
+    padding: 1rem 0.85rem;
+}
+
+/* ==========================================================================
+   FIXED BOTTOM NAVIGATION BAR (RAMAH JEMPOL SMARTPHONE)
+   ========================================================================== */
+.qc-bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    height: var(--qc-bottom-nav-height);
+    background: #ffffff;
+    border-top: 1px solid var(--qc-border);
+    box-shadow: 0 -3px 12px rgba(0, 0, 0, 0.05);
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.qc-bottom-nav-inner {
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+    display: flex;
+    align-items: stretch;
+    justify-content: space-around;
+    height: 100%;
+}
+
+.qc-nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    color: #64748b;
+    font-size: 0.725rem;
+    font-weight: 700;
+    padding: 0.4rem 0.25rem;
+    transition: all 0.15s ease;
+    position: relative;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+}
+
+.qc-nav-icon {
+    width: 22px;
+    height: 22px;
+    margin-bottom: 2px;
+    transition: transform 0.15s ease;
+}
+
+.qc-nav-item.active {
+    color: var(--qc-primary);
+}
+
+.qc-nav-item.active .qc-nav-icon {
+    transform: translateY(-1px) scale(1.08);
+}
+
+.qc-nav-item.active::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 20%;
+    right: 20%;
+    height: 3px;
+    background: var(--qc-primary);
+    border-radius: 0 0 3px 3px;
+}
+
+.qc-nav-item:active {
+    transform: scale(0.96);
+}
+
+/* Floating Action Style for Input QC button */
+.qc-nav-item-highlight {
+    color: #ffffff !important;
+}
+
+.qc-nav-highlight-bubble {
+    background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 10px rgba(2, 132, 199, 0.4);
+    margin-top: -14px;
+    border: 3px solid #ffffff;
+    transition: all 0.15s ease;
+}
+
+.qc-nav-item:hover .qc-nav-highlight-bubble,
+.qc-nav-item:active .qc-nav-highlight-bubble {
+    transform: scale(1.05);
+}
+
+/* ==========================================================================
+   ALERTS & FEEDBACK
+   ========================================================================== */
+.alert-qc {
+    padding: 0.85rem 1rem;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.65rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.alert-qc-success {
+    background: #ecfdf5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+}
+
+.alert-qc-error {
+    background: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+}
+
+/* Utilities */
+.text-center { text-align: center; }
+.font-bold { font-weight: 700; }
+.d-flex { display: flex; }
+.align-center { align-items: center; }
+.justify-between { justify-content: space-between; }

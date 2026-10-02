@@ -123,18 +123,12 @@ class QcInboundController extends Controller
     }
 
     /**
-     * Cetak Berita Acara Penolakan Bahan Baku Singkong (HACCP Form: MFI/HACCP-04/FRM-03/041/VIII/2021)
+     * Berita Acara Penolakan dialihkan ke wewenang Bagian Gudang (Retur Pembelian Inbound)
      */
-    public function beritaAcara(int $id): View
+    public function beritaAcara(int $id): RedirectResponse
     {
-        $qc = \App\Models\Gudang\DatQcInboundHdr::with([
-            'supplier',
-            'gudang',
-            'po',
-            'details.barang.satuanDasar',
-        ])->where('deleted_st', false)->findOrFail($id);
-
-        return view('gudang.qc.berita_acara', compact('qc'));
+        return redirect()->route('qc.inbound.show', $id)
+            ->with('error', 'Administrasi Berita Acara Penolakan dan Retur Bahan Baku dikelola langsung oleh Tim Gudang melalui Modul Retur Gudang.');
     }
 
     /**

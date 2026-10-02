@@ -1,0 +1,470 @@
+/* ==========================================================================
+   QC INBOUND INDEX (MOBILE-FIRST CARD FEED) - ERP PT MIRASA FOOD INDUSTRY
+   ========================================================================== */
+
+/* Page Header */
+.qc-index-header {
+    margin-bottom: 1rem;
+}
+
+.qc-index-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.35rem;
+}
+
+.qc-index-title {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #0f172a;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.qc-index-subtitle {
+    font-size: 0.8rem;
+    color: #64748b;
+    margin: 0;
+}
+
+.qc-btn-create-inline {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: #0284c7;
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 0.825rem;
+    padding: 0.5rem 0.85rem;
+    border-radius: 8px;
+    text-decoration: none;
+    transition: all 0.15s ease;
+}
+
+.qc-btn-create-inline:hover {
+    background: #0369a1;
+}
+
+/* Horizontal Scrollable Chips Filter */
+.qc-chips-container {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    overflow-x: auto;
+    padding: 0.35rem 0.15rem 0.65rem;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+}
+
+.qc-chips-container::-webkit-scrollbar {
+    display: none;
+}
+
+.qc-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.45rem 0.75rem;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 20px;
+    font-size: 0.775rem;
+    font-weight: 700;
+    color: #475569;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: all 0.15s ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.qc-chip:hover, .qc-chip:active {
+    background: #f1f5f9;
+    color: #0f172a;
+}
+
+.qc-chip.active {
+    background: #0284c7;
+    color: #ffffff;
+    border-color: #0284c7;
+    box-shadow: 0 2px 4px rgba(2, 132, 199, 0.25);
+}
+
+/* Search Bar Card */
+.qc-search-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 0.75rem 0.85rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.qc-search-form {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.qc-search-input-wrap {
+    flex: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.qc-search-icon {
+    position: absolute;
+    left: 0.75rem;
+    color: #94a3b8;
+    pointer-events: none;
+}
+
+.qc-search-input {
+    width: 100%;
+    padding: 0.55rem 0.75rem 0.55rem 2.25rem;
+    font-size: 0.85rem;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 8px;
+    outline: none;
+    transition: border-color 0.15s ease;
+}
+
+.qc-search-input:focus {
+    border-color: #0284c7;
+}
+
+.qc-search-btn {
+    background: #0284c7;
+    color: #ffffff;
+    border: none;
+    padding: 0.55rem 0.85rem;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 0.825rem;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.qc-search-btn-reset {
+    background: #f1f5f9;
+    color: #64748b;
+    border: 1px solid #cbd5e1;
+    padding: 0.55rem 0.75rem;
+    border-radius: 8px;
+    font-size: 0.825rem;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+/* ==========================================================================
+   CARD FEED (DAFTAR KARTU MOBILE)
+   ========================================================================== */
+.qc-card-feed {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+}
+
+.qc-card-item {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.03);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.qc-card-item:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.qc-card-header {
+    background: #f8fafc;
+    border-bottom: 1px solid #f1f5f9;
+    padding: 0.75rem 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.qc-card-id-wrap {
+    display: flex;
+    flex-direction: column;
+}
+
+.qc-card-id {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #0284c7;
+    text-decoration: none;
+    line-height: 1.2;
+}
+
+.qc-card-time {
+    font-size: 0.72rem;
+    color: #64748b;
+    font-weight: 600;
+}
+
+.qc-card-badges {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.badge-commodity {
+    background: #e0f2fe;
+    color: #0284c7;
+    font-size: 0.7rem;
+    font-weight: 800;
+    padding: 0.2rem 0.5rem;
+    border-radius: 12px;
+}
+
+.badge-status-siap {
+    background: #fef3c7;
+    color: #b45309;
+    border: 1px solid #fde68a;
+    font-size: 0.7rem;
+    font-weight: 800;
+    padding: 0.2rem 0.5rem;
+    border-radius: 12px;
+}
+
+.badge-status-diterima {
+    background: #ecfdf5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+    font-size: 0.7rem;
+    font-weight: 800;
+    padding: 0.2rem 0.5rem;
+    border-radius: 12px;
+}
+
+.badge-status-reject {
+    background: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+    font-size: 0.7rem;
+    font-weight: 800;
+    padding: 0.2rem 0.5rem;
+    border-radius: 12px;
+}
+
+.badge-status-lab {
+    background: #fef9c3;
+    color: #854d0e;
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 0.15rem 0.4rem;
+    border-radius: 6px;
+}
+
+/* Card Body */
+.qc-card-body {
+    padding: 0.85rem 1rem;
+}
+
+.qc-card-meta-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.65rem;
+    margin-bottom: 0.85rem;
+    font-size: 0.825rem;
+}
+
+.qc-meta-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.qc-meta-label {
+    font-size: 0.68rem;
+    color: #64748b;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-bottom: 0.15rem;
+}
+
+.qc-meta-value {
+    color: #0f172a;
+    font-weight: 600;
+    line-height: 1.25;
+}
+
+.qc-meta-value.strong {
+    font-weight: 700;
+}
+
+/* Timbangan Metric Box */
+.qc-metric-box {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 0.6rem 0.75rem;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.4rem;
+    text-align: center;
+    margin-bottom: 0.75rem;
+}
+
+.qc-metric-col {
+    display: flex;
+    flex-direction: column;
+}
+
+.qc-metric-label {
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+}
+
+.qc-metric-val {
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: #1e293b;
+}
+
+.qc-metric-val.refraksi {
+    color: #d97706;
+}
+
+.qc-metric-val.reject {
+    color: #dc2626;
+}
+
+.qc-metric-val.netto {
+    color: #059669;
+    font-size: 0.95rem;
+}
+
+/* GRN Inbound Link Bar */
+.qc-grn-banner {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #047857;
+    background: #ecfdf5;
+    padding: 0.35rem 0.6rem;
+    border-radius: 6px;
+    margin-bottom: 0.75rem;
+}
+
+.qc-waiting-banner {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #b45309;
+    background: #fffbeb;
+    padding: 0.35rem 0.6rem;
+    border-radius: 6px;
+    margin-bottom: 0.75rem;
+}
+
+/* Card Actions */
+.qc-card-actions {
+    background: #f8fafc;
+    border-top: 1px solid #f1f5f9;
+    padding: 0.65rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    justify-content: flex-end;
+}
+
+.qc-btn-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    font-size: 0.775rem;
+    font-weight: 700;
+    padding: 0.45rem 0.75rem;
+    border-radius: 8px;
+    text-decoration: none;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.qc-btn-detail {
+    background: #f1f5f9;
+    color: #334155;
+    border-color: #cbd5e1;
+    flex: 1;
+}
+
+.qc-btn-detail:hover {
+    background: #e2e8f0;
+    color: #0f172a;
+}
+
+.qc-btn-edit {
+    background: #eff6ff;
+    color: #1d4ed8;
+    border-color: #bfdbfe;
+}
+
+.qc-btn-edit:hover {
+    background: #dbeafe;
+}
+
+.qc-btn-locked {
+    background: #f1f5f9;
+    color: #94a3b8;
+    border-color: #e2e8f0;
+    cursor: not-allowed;
+    font-size: 0.72rem;
+}
+
+.qc-btn-delete {
+    background: #fef2f2;
+    color: #dc2626;
+    border-color: #fecaca;
+    padding: 0.45rem 0.6rem;
+}
+
+.qc-btn-delete:hover {
+    background: #fee2e2;
+}
+
+/* Empty State */
+.qc-empty-state {
+    background: #ffffff;
+    border: 1.5px dashed #cbd5e1;
+    border-radius: 14px;
+    padding: 3rem 1.5rem;
+    text-align: center;
+}
+
+.qc-empty-icon {
+    font-size: 3rem;
+    margin-bottom: 0.5rem;
+}
+
+.qc-empty-title {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin-bottom: 0.25rem;
+}
+
+.qc-empty-desc {
+    font-size: 0.825rem;
+    color: #64748b;
+    margin-bottom: 1.25rem;
+}

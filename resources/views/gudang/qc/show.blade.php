@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.qc-mobile')
 
 @php
     $kat = strtoupper($qc->kategori_barang ?? 'SINGKONG');
@@ -91,9 +91,7 @@
                 </form>
             @endif
 
-            <a href="{{ route('qc.inbound.berita_acara', $qc->qc_id) }}" class="btn btn-secondary btn-sm" style="border-radius: 8px; font-weight: 700; background: #fee2e2; color: #b91c1c; border-color: #fca5a5;">
-                📄 Berita Acara Penolakan
-            </a>
+
             <button type="button" onclick="window.print()" class="btn btn-secondary btn-sm" style="border-radius: 8px; font-weight: 700;">
                 🖨️ Cetak Formulir HACCP (A4)
             </button>

@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.qc-mobile')
 
 @section('title', 'Form Uji QC Bahan Masuk (HACCP 7 Komoditas) - PT Mirasa')
 

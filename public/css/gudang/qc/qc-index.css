@@ -1,5 +1,6 @@
 /* ==========================================================================
-   QC INBOUND INDEX (MOBILE-FIRST CARD FEED) - ERP PT MIRASA FOOD INDUSTRY
+   QC INBOUND INDEX (DUAL-VIEW: MOBILE CARD FEED & DESKTOP GUDANG TABLE)
+   ERP PT MIRASA FOOD INDUSTRY
    ========================================================================== */
 
 /* Page Header */
@@ -29,6 +30,43 @@
     font-size: 0.8rem;
     color: #64748b;
     margin: 0;
+}
+
+.qc-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+/* Dual View Switcher (Kartu HP vs Tabel Gudang) */
+.qc-view-switcher {
+    display: inline-flex;
+    background: #e2e8f0;
+    padding: 0.2rem;
+    border-radius: 8px;
+    gap: 0.2rem;
+}
+
+.qc-switch-btn {
+    border: none;
+    background: transparent;
+    padding: 0.35rem 0.65rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #475569;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.qc-switch-btn.active {
+    background: #ffffff;
+    color: #0284c7;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .qc-btn-create-inline {
@@ -161,7 +199,7 @@
 }
 
 /* ==========================================================================
-   CARD FEED (DAFTAR KARTU MOBILE)
+   VIEW 1: CARD FEED (DAFTAR KARTU MOBILE KHUSUS HP)
    ========================================================================== */
 .qc-card-feed {
     display: flex;
@@ -440,6 +478,87 @@
 
 .qc-btn-delete:hover {
     background: #fee2e2;
+}
+
+/* ==========================================================================
+   VIEW 2: DESKTOP GUDANG OPERATIONAL TABLE (KHUSUS ADMIN GUDANG PC)
+   ========================================================================== */
+.qc-table-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+
+.qc-table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.qc-table-desktop {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 1050px;
+    text-align: left;
+    font-size: 0.85rem;
+}
+
+.qc-table-desktop thead th {
+    background: #f8fafc;
+    border-bottom: 2px solid #e2e8f0;
+    padding: 0.85rem 1rem;
+    font-weight: 700;
+    color: #475569;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+}
+
+.qc-table-desktop tbody td {
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+}
+
+.qc-table-desktop tbody tr:hover {
+    background-color: #f8fafc;
+}
+
+.qc-btn-pull-grn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: #10b981;
+    color: #ffffff;
+    font-weight: 800;
+    font-size: 0.75rem;
+    padding: 0.4rem 0.75rem;
+    border-radius: 6px;
+    text-decoration: none;
+    box-shadow: 0 2px 4px rgba(16, 185, 129, 0.25);
+    white-space: nowrap;
+    transition: background 0.15s ease;
+}
+
+.qc-btn-pull-grn:hover {
+    background: #059669;
+}
+
+.qc-grn-badge-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 800;
+    background: #ecfdf5;
+    color: #047857;
+    border: 1px solid #a7f3d0;
+    padding: 0.25rem 0.55rem;
+    border-radius: 6px;
+    text-decoration: none;
+    white-space: nowrap;
 }
 
 /* Empty State */

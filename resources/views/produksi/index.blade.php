@@ -2,6 +2,10 @@
 
 @section('title', 'HPP/KG ' . strtoupper($monthName) . ' ' . $year . ' - Rekap Produksi Harian')
 
+@push('styles')
+    <link rel="stylesheet" href="{{ asset('css/produksi/produksi-index.css') }}">
+@endpush
+
 @section('content')
 <div style="margin-bottom: 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
     <div>
@@ -97,6 +101,9 @@
         </div>
         <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.4rem;">
             Dari {{ number_format($tot['singkong_qty'], 0, ',', '.') }} kg singkong mentah
+            @if(!empty($tot['total_karton']) && $tot['total_karton'] > 0)
+                &bull; <strong style="color: #0369a1;">{{ number_format($tot['total_karton'], 0, ',', '.') }} Karton/Box</strong>
+            @endif
         </div>
     </div>
 
@@ -168,6 +175,7 @@
                 <tr style="background: #e2e8f0; color: #0f172a; text-align: center; font-weight: 800; font-size: 0.75rem;">
                     <th rowspan="2" style="position: sticky; left: 0; z-index: 25; background: #cbd5e1; border: 1px solid #94a3b8; padding: 0.5rem 0.75rem; min-width: 90px;">HARI</th>
                     <th rowspan="2" style="position: sticky; left: 90px; z-index: 25; background: #cbd5e1; border: 1px solid #94a3b8; padding: 0.5rem 0.75rem; min-width: 85px;">TANGGAL</th>
+                    <th rowspan="2" style="background: #cbd5e1; border: 1px solid #94a3b8; padding: 0.5rem 0.65rem; min-width: 140px; text-align: center;">SHIFT &amp; BATCH</th>
                     
                     {{-- TOTAL BIAYA PRODUKSI / KG (WARNA HIJAU MUDA SEPERTI EXCEL) --}}
                     <th colspan="2" style="background: #a3e635; color: #1a2e05; border: 1px solid #65a30d; padding: 0.4rem;">SINGKONG</th>
@@ -203,6 +211,9 @@
                     </th>
                     <th rowspan="2" style="background: #0284c7; color: #ffffff; border: 1px solid #0369a1; padding: 0.5rem 0.85rem; font-size: 0.825rem; font-weight: 800; min-width: 95px;">
                         HPP/KG<br>(Rp)
+                    </th>
+                    <th rowspan="2" style="position: sticky; right: 0; z-index: 25; background: #0284c7; color: #ffffff; border: 1px solid #0369a1; padding: 0.5rem 0.65rem; font-size: 0.825rem; font-weight: 800; min-width: 80px; text-align: center;">
+                        AKSI
                     </th>
                 </tr>
 
@@ -272,6 +283,40 @@
                         {{-- Sticky Col 2: Tanggal --}}
                         <td style="position: sticky; left: 90px; z-index: 10; background: {{ $isWeekend ? '#fee2e2' : '#f8fafc' }}; text-align: center; font-weight: 600; color: #475569; border-right: 2px solid #94a3b8; padding: 0.45rem 0.5rem;">
                             {{ Carbon\Carbon::parse($row->produksi_tgl)->format('d/m/y') }}
+                        </td>
+
+                        {{-- Shift & Batch WIP --}}
+                        <td style="border-right: 1px solid #cbd5e1; padding: 0.45rem 0.65rem; text-align: left; vertical-align: middle;">
+                            <div style="display: flex; align-items: center; gap: 0.35rem; margin-bottom: 0.2rem;">
+                                @if ($row->shift_cd === 'A')
+                                    <span class="badge-shift-a">Shift A</span>
+                                @elseif ($row->shift_cd === 'B')
+                                    <span class="badge-shift-b">Shift B</span>
+                                @else
+                                    <span style="font-size: 0.7rem; color: #94a3b8; font-style: italic;">Reguler</span>
+                                @endif
+
+                                @if ($row->jam_produksi)
+                                    <span style="font-size: 0.7rem; color: #64748b;">🕒 {{ $row->jam_produksi }}</span>
+                                @endif
+                            </div>
+
+                            @if ($row->batch_wip_no)
+                                <div style="margin-bottom: 0.2rem;">
+                                    <span class="badge-batch-wip">{{ $row->batch_wip_no }}</span>
+                                </div>
+                            @endif
+
+                            <div style="font-size: 0.7rem; color: #475569; display: flex; align-items: center; gap: 0.35rem;">
+                                @if ($row->qty_karton)
+                                    <strong>{{ number_format($row->qty_karton, 0, ',', '.') }} box</strong>
+                                @endif
+                                @if ($row->varietas_singkong)
+                                    <span style="background: #f1f5f9; padding: 0.05rem 0.3rem; border-radius: 3px; font-weight: 600; color: #0369a1;">
+                                        {{ $row->varietas_singkong }}
+                                    </span>
+                                @endif
+                            </div>
                         </td>
 
                         {{-- Singkong --}}
@@ -355,10 +400,33 @@
                         <td style="background: #f0f9ff; font-weight: 800; color: #0369a1; padding: 0.45rem 0.65rem;">
                             {{ $row->hpp_per_kg > 0 ? number_format($row->hpp_per_kg, 2, ',', '.') : '-' }}
                         </td>
+
+                        {{-- Tombol Aksi Smart Dropdown --}}
+                        <td style="position: sticky; right: 0; z-index: 10; background: #ffffff; text-align: center; padding: 0.35rem 0.5rem; vertical-align: middle; border-left: 2px solid #cbd5e1;">
+                            <button type="button" class="btn-action-trigger" onclick="toggleSmartActionDropdown(this, event, 'dropdown-prd-{{ $row->produksi_id }}')">
+                                <span>Aksi</span>
+                                <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                            </button>
+                            <div id="dropdown-prd-{{ $row->produksi_id }}" class="action-dropdown-menu">
+                                <a href="{{ route('produksi.show', $row->produksi_id) }}" class="action-dropdown-item">
+                                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                    <span>Detail &amp; Stiker Karton</span>
+                                </a>
+                                <a href="{{ route('produksi.cetak-stiker', $row->produksi_id) }}" target="_blank" class="action-dropdown-item">
+                                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                                    <span>Cetak Stiker Box</span>
+                                </a>
+                                <div class="action-dropdown-divider"></div>
+                                <button type="button" class="action-dropdown-item danger-item" onclick="openDeleteProduksiModal({{ $row->produksi_id }}, '{{ $row->produksi_no }}', '{{ Carbon\Carbon::parse($row->produksi_tgl)->format('d/m/Y') }}', '{{ $row->shift_cd }}', '{{ $row->batch_wip_no }}')">
+                                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                    <span>Hapus Catatan</span>
+                                </button>
+                            </div>
+                        </td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="40" style="text-align: center; padding: 3rem 1rem; color: #94a3b8; font-size: 0.9rem;">
+                        <td colspan="42" style="text-align: center; padding: 3rem 1rem; color: #94a3b8; font-size: 0.9rem;">
                             Belum ada catatan lembar produksi harian untuk periode {{ $monthName }} {{ $year }}.<br>
                             <a href="{{ route('produksi.create') }}" style="color: #0284c7; font-weight: 700; text-decoration: underline; margin-top: 0.5rem; display: inline-block;">
                                 Klik di sini untuk mencatat produksi hari ini &rarr;
@@ -372,7 +440,7 @@
             @if ($report['count'] > 0)
                 <tfoot style="position: sticky; bottom: 0; z-index: 20; background: #e2e8f0; font-weight: 800; text-align: right; box-shadow: 0 -2px 5px rgba(0,0,0,0.05);">
                     <tr style="border-top: 2px solid #0f172a; border-bottom: 2px solid #0f172a; color: #0f172a;">
-                        <td colspan="2" style="position: sticky; left: 0; z-index: 25; background: #cbd5e1; text-align: center; font-size: 0.8rem; border-right: 2px solid #94a3b8; padding: 0.65rem;">
+                        <td colspan="3" style="position: sticky; left: 0; z-index: 25; background: #cbd5e1; text-align: center; font-size: 0.8rem; border-right: 2px solid #94a3b8; padding: 0.65rem;">
                             TOTAL {{ strtoupper($monthName) }}
                         </td>
 
@@ -447,10 +515,19 @@
                         <td style="background: #0284c7; color: #ffffff; font-size: 0.85rem; padding: 0.65rem 0.75rem;">
                             Rp {{ number_format($tot['hpp_per_kg'], 2, ',', '.') }}
                         </td>
+
+                        {{-- Sticky Col Right Aksi --}}
+                        <td style="position: sticky; right: 0; z-index: 25; background: #0284c7;"></td>
                     </tr>
                 </tfoot>
             @endif
         </table>
     </div>
 </div>
+
+@include('produksi.partials.modal-delete-confirm')
+
+@push('scripts')
+    <script src="{{ asset('js/produksi/produksi-index.js') }}"></script>
+@endpush
 @endsection

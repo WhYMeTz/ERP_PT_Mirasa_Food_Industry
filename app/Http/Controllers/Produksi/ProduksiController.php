@@ -81,6 +81,28 @@ class ProduksiController extends Controller
     }
 
     /**
+     * Endpoint AJAX: Cek nomor urut karton awal yang disarankan berdasarkan tanggal & shift.
+     */
+    public function getNextKarton(Request $request): JsonResponse
+    {
+        try {
+            $tgl = $request->input('tgl', date('Y-m-d'));
+            $shift = $request->input('shift', 'A');
+            $data = $this->produksiService->getNextKartonAwal($tgl, $shift);
+
+            return response()->json([
+                'status' => 'success',
+                'data'   => $data,
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Gagal memeriksa nomor karton: ' . $e->getMessage(),
+            ], 422);
+        }
+    }
+
+    /**
      * Simpan data hasil produksi harian & suntik stok fisik WIP jika POSTED.
      */
     public function store(Request $request): RedirectResponse
@@ -89,6 +111,13 @@ class ProduksiController extends Controller
             'produksi_tgl'                => 'required|date',
             'gudang_id'                   => 'required|exists:mst_gudang,gudang_id',
             'lini_produksi'               => 'required|string|max:100',
+            'shift_cd'                    => 'nullable|string|in:A,B,a,b',
+            'jam_produksi'                => 'nullable|string|max:10',
+            'varietas_singkong'           => 'nullable|string|max:100',
+            'qty_karton'                  => 'nullable|integer|min:0',
+            'no_karton_awal'              => 'nullable|integer|min:1',
+            'no_karton_akhir'             => 'nullable|integer|min:1',
+            'batch_wip_no'                => 'nullable|string|max:100',
             'pakai_id'                    => 'nullable|exists:dat_pakai_hdr,pakai_id',
             'status_cd'                   => 'required|in:DRAFT,POSTED',
 
@@ -151,6 +180,25 @@ class ProduksiController extends Controller
         } catch (Exception $e) {
             return back()->withInput()->with('error', 'Gagal menyimpan hasil produksi: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Tampilkan detail lembar produksi harian, HPP riil, dan rincian karton.
+     */
+    public function show(int $id): View
+    {
+        $produksi = $this->produksiService->getById($id);
+        return view('produksi.show', compact('produksi'));
+    }
+
+    /**
+     * Tampilan cetak label stiker karton fisik (format label sticker box).
+     */
+    public function cetakStiker(Request $request, int $id): View
+    {
+        $produksi = $this->produksiService->getById($id);
+        $noKarton = $request->input('karton_no'); // Opsional: cetak nomor karton tertentu
+        return view('produksi.cetak-stiker', compact('produksi', 'noKarton'));
     }
 
     /**

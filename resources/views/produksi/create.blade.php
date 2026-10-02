@@ -2,8 +2,12 @@
 
 @section('title', 'Catat Hasil Produksi Harian - ERP PT Mirasa')
 
+@push('styles')
+    <link rel="stylesheet" href="{{ asset('css/produksi/produksi-create.css') }}">
+@endpush
+
 @section('content')
-<div style="max-width: 1200px; margin: 0 auto; padding-bottom: 3rem;">
+<div class="produksi-container">
     {{-- Breadcrumb & Header --}}
     <div style="margin-bottom: 1.25rem;">
         <a href="{{ route('produksi.index') }}" style="text-decoration: none; color: #0284c7; font-weight: 700; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.35rem; margin-bottom: 0.5rem;">
@@ -47,7 +51,7 @@
                         <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">
                             Tanggal Produksi <span style="color: #ef4444;">*</span>
                         </label>
-                        <input type="date" name="produksi_tgl" id="produksi_tgl" class="form-control" value="{{ old('produksi_tgl', date('Y-m-d')) }}" required onchange="updateHariLabel()">
+                        <input type="date" name="produksi_tgl" id="produksi_tgl" class="form-control" value="{{ old('produksi_tgl', date('Y-m-d')) }}" required onchange="updateHariLabel(); fetchNextKarton();">
                         <div id="hariLabel" style="font-size: 0.75rem; color: #0284c7; font-weight: 600; margin-top: 0.25rem;"></div>
                     </div>
 
@@ -55,7 +59,7 @@
                         <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">
                             Lini Produksi / Tujuan <span style="color: #ef4444;">*</span>
                         </label>
-                        <select name="lini_produksi" id="lini_produksi" class="form-control" required>
+                        <select name="lini_produksi" id="lini_produksi" class="form-control" required onchange="updateKartonRangeAndBatch()">
                             <option value="PRODUKSI IFM" {{ old('lini_produksi') === 'PRODUKSI IFM' ? 'selected' : '' }}>PRODUKSI IFM (Indofood)</option>
                             <option value="PRODUKSI PING-PING 2000" {{ old('lini_produksi') === 'PRODUKSI PING-PING 2000' ? 'selected' : '' }}>PRODUKSI PING-PING 2000</option>
                             <option value="PRODUKSI PING-PING" {{ old('lini_produksi') === 'PRODUKSI PING-PING' ? 'selected' : '' }}>PRODUKSI PING-PING (Umum)</option>
@@ -118,11 +122,14 @@
             </div>
         </div>
 
-        {{-- BAGIAN 2: BIAYA BAHAN BAKU & KEMASAN (DIRECT MATERIALS) --}}
+        {{-- BAGIAN 2: SHIFT KERJA, PENOMORAN BATCH & KEMASAN KARTON --}}
+        @include('produksi.partials.card-shift-karton')
+
+        {{-- BAGIAN 3: BIAYA BAHAN BAKU & KEMASAN (DIRECT MATERIALS) --}}
         <div class="card" style="margin-bottom: 1.25rem;">
             <div class="card-header" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0.875rem 1.25rem; display: flex; justify-content: space-between; align-items: center;">
                 <strong style="color: #0f172a; font-size: 0.95rem; display: flex; align-items: center; gap: 0.4rem;">
-                    <span>🌾 2. Biaya Bahan Baku &amp; Kemasan (Direct Materials)</span>
+                    <span>🌾 3. Biaya Bahan Baku &amp; Kemasan (Direct Materials)</span>
                 </strong>
                 <span id="badgeSubtotalBahan" style="font-size: 0.8rem; font-weight: 700; color: #0284c7; background: #e0f2fe; padding: 0.2rem 0.6rem; border-radius: 6px;">
                     Subtotal Bahan: Rp 0
@@ -214,12 +221,12 @@
             </div>
         </div>
 
-        {{-- BAGIAN 3: ENERGI (CNG) & TENAGA KERJA --}}
+        {{-- BAGIAN 4 & 5: ENERGI (CNG) & TENAGA KERJA --}}
         <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 1.25rem; margin-bottom: 1.25rem;">
             {{-- ENERGI GAS CNG --}}
             <div class="card">
                 <div class="card-header" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0.875rem 1.25rem;">
-                    <strong style="color: #0f172a; font-size: 0.95rem;">🔥 3. Gas Alam / CNG (Boiler &amp; Fryer)</strong>
+                    <strong style="color: #0f172a; font-size: 0.95rem;">🔥 4. Gas Alam / CNG (Boiler &amp; Fryer)</strong>
                 </div>
                 <div style="padding: 1.25rem;">
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
@@ -248,7 +255,7 @@
             {{-- TENAGA KERJA --}}
             <div class="card">
                 <div class="card-header" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0.875rem 1.25rem;">
-                    <strong style="color: #0f172a; font-size: 0.95rem;">👥 4. Tenaga Kerja (Tarif Rp 91.300 / orang)</strong>
+                    <strong style="color: #0f172a; font-size: 0.95rem;">👥 5. Tenaga Kerja (Tarif Rp 91.300 / orang)</strong>
                 </div>
                 <div style="padding: 1.25rem;">
                     <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; margin-bottom: 0.75rem;">
@@ -289,10 +296,10 @@
             </div>
         </div>
 
-        {{-- BAGIAN 4: BIAYA OVERHEAD PABRIK (FACTORY OVERHEAD / FOH) --}}
+        {{-- BAGIAN 6: BIAYA OVERHEAD PABRIK (FACTORY OVERHEAD / FOH) --}}
         <div class="card" style="margin-bottom: 1.25rem;">
             <div class="card-header" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0.875rem 1.25rem; display: flex; justify-content: space-between; align-items: center;">
-                <strong style="color: #0f172a; font-size: 0.95rem;">⚙️ 5. Biaya Overhead Pabrik (FOH)</strong>
+                <strong style="color: #0f172a; font-size: 0.95rem;">⚙️ 6. Biaya Overhead Pabrik (FOH)</strong>
                 <span id="badgeSubtotalOverhead" style="font-size: 0.8rem; font-weight: 700; color: #475569; background: #f1f5f9; padding: 0.2rem 0.6rem; border-radius: 6px;">
                     Subtotal FOH: Rp 0
                 </span>
@@ -339,11 +346,11 @@
             </div>
         </div>
 
-        {{-- BAGIAN 5: TIMBANGAN OUTPUT WIP (HASIL JADI PRODUKSI) --}}
+        {{-- BAGIAN 7: TIMBANGAN OUTPUT WIP (HASIL JADI PRODUKSI) --}}
         <div class="card" style="margin-bottom: 1.5rem; border: 2px solid #86efac;">
             <div class="card-header" style="background: #f0fdf4; border-bottom: 1px solid #bbf7d0; padding: 0.875rem 1.25rem; display: flex; justify-content: space-between; align-items: center;">
                 <strong style="color: #166534; font-size: 1rem; display: flex; align-items: center; gap: 0.4rem;">
-                    <span>⚖️ 6. Timbangan Hasil Jadi WIP Olahan (Kg)</span>
+                    <span>⚖️ 7. Timbangan Hasil Jadi WIP Olahan (Kg)</span>
                 </strong>
                 <span id="badgeTotalWip" style="font-size: 0.85rem; font-weight: 800; color: #166534; background: #dcfce7; padding: 0.25rem 0.75rem; border-radius: 6px; border: 1px solid #86efac;">
                     Total WIP: 0.00 kg
@@ -451,155 +458,13 @@
     </form>
 </div>
 
-<script>
-    function updateHariLabel() {
-        const val = document.getElementById('produksi_tgl').value;
-        if (!val) return;
-        const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-        const d = new Date(val);
-        const dayNm = days[d.getDay()];
-        document.getElementById('hariLabel').textContent = `Hari: ${dayNm}`;
-    }
-
-    function calcCng() {
-        const mmbtu = parseFloat(document.getElementById('cng_mmbtu').value) || 0;
-        const tarif = parseFloat(document.getElementById('cng_tarif').value) || 0;
-        document.getElementById('cng_nilai').value = Math.round(mmbtu * tarif);
-        calcAll();
-    }
-
-    function calcTk() {
-        const lgs = parseInt(document.getElementById('tk_langsung_org').value) || 0;
-        const tdk = parseInt(document.getElementById('tk_tidak_langsung_org').value) || 0;
-        const trn = parseInt(document.getElementById('tk_training_org').value) || 0;
-        const tarif = parseFloat(document.getElementById('tk_tarif_per_org').value) || 91300;
-        document.getElementById('tk_total_nilai').value = Math.round((lgs + tdk + trn) * tarif);
-        calcAll();
-    }
-
-    function calcAll() {
-        // 1. Bahan
-        const singkongQty = parseFloat(document.getElementById('singkong_qty').value) || 0;
-        const singkongNilai = parseFloat(document.getElementById('singkong_nilai').value) || 0;
-        const sawitQty = parseFloat(document.getElementById('minyak_sawit_qty').value) || 0;
-        const kelapaQty = parseFloat(document.getElementById('minyak_kelapa_qty').value) || 0;
-        const minyakNilai = parseFloat(document.getElementById('minyak_nilai').value) || 0;
-
-        const bumbu = parseFloat(document.getElementById('bumbu_nilai').value) || 0;
-        const kBaru = parseFloat(document.getElementById('karton_baru_nilai').value) || 0;
-        const kBekas = parseFloat(document.getElementById('karton_bekas_nilai').value) || 0;
-        const plastik = parseFloat(document.getElementById('plastik_hd_nilai').value) || 0;
-        const lakbanB = parseFloat(document.getElementById('lakban_besar_nilai').value) || 0;
-        const lakbanK = parseFloat(document.getElementById('lakban_kecil_nilai').value) || 0;
-        const tali = parseFloat(document.getElementById('tali_rafia_nilai').value) || 0;
-
-        const subtotalBahan = singkongNilai + minyakNilai + bumbu + kBaru + kBekas + plastik + lakbanB + lakbanK + tali;
-        document.getElementById('badgeSubtotalBahan').textContent = 'Subtotal Bahan: Rp ' + subtotalBahan.toLocaleString('id-ID');
-
-        // Rasio Minyak
-        const rasioMinyak = singkongQty > 0 ? ((sawitQty + kelapaQty) / singkongQty) * 100 : 0;
-        document.getElementById('liveMinyakRasio').textContent = 'Rasio Minyak: ' + rasioMinyak.toFixed(2) + '%';
-
-        // 2. Energi CNG & TK
-        const cngNilai = parseFloat(document.getElementById('cng_nilai').value) || 0;
-        const tkNilai = parseFloat(document.getElementById('tk_total_nilai').value) || 0;
-
-        // 3. FOH Overhead
-        const fc = parseFloat(document.getElementById('fotocopy_nilai').value) || 0;
-        const stP = parseFloat(document.getElementById('sarung_tangan_plastik_nilai').value) || 0;
-        const stK = parseFloat(document.getElementById('sarung_tangan_kain_nilai').value) || 0;
-        const qc = parseFloat(document.getElementById('qc_pengawasan_nilai').value) || 0;
-        const listrik = parseFloat(document.getElementById('listrik_air_telp_nilai').value) || 0;
-        const pemlhr = parseFloat(document.getElementById('pemeliharaan_mesin_nilai').value) || 0;
-        const penys = parseFloat(document.getElementById('penyusutan_mesin_nilai').value) || 0;
-        const lmbP = parseFloat(document.getElementById('limbah_padat_nilai').value) || 0;
-        const lmbK = parseFloat(document.getElementById('limbah_kimia_nilai').value) || 0;
-
-        const subtotalOverhead = fc + stP + stK + qc + listrik + pemlhr + penys + lmbP + lmbK;
-        document.getElementById('badgeSubtotalOverhead').textContent = 'Subtotal FOH: Rp ' + subtotalOverhead.toLocaleString('id-ID');
-
-        // Total Biaya Produksi
-        const totalBiaya = subtotalBahan + cngNilai + tkNilai + subtotalOverhead;
-        document.getElementById('liveTotalBiaya').textContent = 'Rp ' + totalBiaya.toLocaleString('id-ID');
-
-        // 4. Output WIP
-        const barco = parseFloat(document.getElementById('asin_barco_qty').value) || 0;
-        const sawit = parseFloat(document.getElementById('asin_sawit_qty').value) || 0;
-        const berko = parseFloat(document.getElementById('berko_qty').value) || 0;
-        const berkoMe = parseFloat(document.getElementById('berko_me_qty').value) || 0;
-        const balo = parseFloat(document.getElementById('balo_gelombang_qty').value) || 0;
-        const noSalt = parseFloat(document.getElementById('no_salt_qty').value) || 0;
-
-        const totalWip = barco + sawit + berko + berkoMe + balo + noSalt;
-        document.getElementById('badgeTotalWip').textContent = 'Total WIP: ' + totalWip.toLocaleString('id-ID', { minimumFractionDigits: 2 }) + ' kg';
-
-        // 5. Rendemen & HPP
-        const rendemen = singkongQty > 0 ? (totalWip / singkongQty) * 100 : 0;
-        const hppPerKg = totalWip > 0 ? (totalBiaya / totalWip) : 0;
-
-        const liveRendemen = document.getElementById('liveRendemen');
-        const liveRendemenStatus = document.getElementById('liveRendemenStatus');
-
-        liveRendemen.textContent = rendemen.toFixed(2) + '%';
-        if (rendemen >= 33.0) {
-            liveRendemen.style.color = '#059669';
-            liveRendemenStatus.textContent = '✅ Rendemen Bagus (Di atas target 33%)';
-            liveRendemenStatus.style.color = '#059669';
-        } else if (rendemen >= 30.0) {
-            liveRendemen.style.color = '#d97706';
-            liveRendemenStatus.textContent = '⚠️ Rendemen Sedang (Target 33%)';
-            liveRendemenStatus.style.color = '#d97706';
-        } else {
-            liveRendemen.style.color = '#dc2626';
-            liveRendemenStatus.textContent = rendemen > 0 ? '❌ Rendemen Rendah' : 'Menunggu timbangan';
-            liveRendemenStatus.style.color = rendemen > 0 ? '#dc2626' : '#64748b';
-        }
-
-        document.getElementById('liveHpp').textContent = 'Rp ' + hppPerKg.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' / kg';
-    }
-
-    function loadPakaiData(pakaiId) {
-        if (!pakaiId) return;
-
-        const loading = document.getElementById('pakaiLoading');
-        loading.style.display = 'block';
-
-        fetch(`{{ url('produksi/pakai-data') }}/${pakaiId}`)
-            .then(res => res.json())
-            .then(res => {
-                loading.style.display = 'none';
-                if (res.status === 'success') {
-                    const d = res.data;
-                    document.getElementById('singkong_qty').value = d.singkong_qty || 0;
-                    document.getElementById('singkong_nilai').value = d.singkong_nilai || 0;
-                    document.getElementById('minyak_sawit_qty').value = d.minyak_sawit_qty || 0;
-                    document.getElementById('minyak_kelapa_qty').value = d.minyak_kelapa_qty || 0;
-                    document.getElementById('minyak_nilai').value = d.minyak_nilai || 0;
-                    document.getElementById('bumbu_nilai').value = d.bumbu_nilai || 0;
-                    document.getElementById('karton_baru_nilai').value = d.karton_baru_nilai || 0;
-                    document.getElementById('karton_bekas_nilai').value = d.karton_bekas_nilai || 0;
-                    document.getElementById('plastik_hd_nilai').value = d.plastik_hd_nilai || 0;
-                    document.getElementById('lakban_besar_nilai').value = d.lakban_besar_nilai || 0;
-                    document.getElementById('lakban_kecil_nilai').value = d.lakban_kecil_nilai || 0;
-                    document.getElementById('tali_rafia_nilai').value = d.tali_rafia_nilai || 0;
-
-                    calcAll();
-                } else {
-                    alert('Gagal: ' + res.message);
-                }
-            })
-            .catch(err => {
-                loading.style.display = 'none';
-                console.error(err);
-                alert('Terjadi kesalahan saat memuat data pemakaian bahan.');
-            });
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-        updateHariLabel();
-        calcTk();
-        calcCng();
-        calcAll();
-    });
-</script>
+@push('scripts')
+    <script>
+        window.appConfig = {
+            nextKartonUrl: "{{ route('produksi.next-karton') }}",
+            pakaiDataUrl: "{{ url('produksi/pakai-data') }}"
+        };
+    </script>
+    <script src="{{ asset('js/produksi/produksi-create.js') }}"></script>
+@endpush
 @endsection

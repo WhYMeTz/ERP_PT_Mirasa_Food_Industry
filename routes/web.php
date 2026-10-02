@@ -190,6 +190,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/create', [ProduksiController::class, 'create'])->name('create')->middleware('role:produksi_create');
         Route::post('/', [ProduksiController::class, 'store'])->name('store')->middleware('role:produksi_create');
         Route::get('/pakai-data/{pakaiId}', [ProduksiController::class, 'getPakaiData'])->name('pakai-data');
+        Route::get('/next-karton', [ProduksiController::class, 'getNextKarton'])->name('next-karton');
+        Route::get('/{id}', [ProduksiController::class, 'show'])->name('show');
+        Route::get('/{id}/cetak-stiker', [ProduksiController::class, 'cetakStiker'])->name('cetak-stiker');
         Route::delete('/{id}', [ProduksiController::class, 'destroy'])->name('destroy')->middleware('role:produksi_create');
     });
 

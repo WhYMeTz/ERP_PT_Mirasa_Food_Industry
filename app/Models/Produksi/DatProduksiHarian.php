@@ -18,12 +18,19 @@ class DatProduksiHarian extends Model
     protected $primaryKey = 'produksi_id';
 
     protected $fillable = [
+        'produksi_id',
         'produksi_no',
         'produksi_tgl',
         'hari_nm',
         'pakai_id',
         'gudang_id',
         'lini_produksi',
+        'shift_cd',
+        'jam_produksi',
+        'varietas_singkong',
+        'qty_karton',
+        'no_karton_awal',
+        'no_karton_akhir',
         'status_cd',
 
         // Biaya Bahan
@@ -96,6 +103,9 @@ class DatProduksiHarian extends Model
 
     protected $casts = [
         'produksi_tgl'                => 'date',
+        'qty_karton'                  => 'integer',
+        'no_karton_awal'              => 'integer',
+        'no_karton_akhir'             => 'integer',
         'singkong_qty'                => 'decimal:4',
         'singkong_nilai'              => 'decimal:2',
         'minyak_sawit_qty'            => 'decimal:4',

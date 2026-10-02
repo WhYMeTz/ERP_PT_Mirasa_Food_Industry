@@ -10,14 +10,17 @@ return new class extends Migration
      */
     public function up(): void
     {
+        $bpId = DB::table('mst_jenis_barang')->where('jenis_barang_cd', 'BP')->value('jenis_barang_id') ?? 3;
+        $kgId = DB::table('mst_satuan')->where('satuan_cd', 'KG')->value('satuan_id') ?? 1;
+
         // 1. Tambah MSG jika belum ada
         $existsMsg = DB::table('mst_barang')->where('barang_nm', 'ILIKE', '%MSG%')->exists();
         if (!$existsMsg) {
             DB::table('mst_barang')->insert([
                 'barang_cd'          => 'MSG00G-BP1',
                 'barang_nm'          => 'MSG (MONOSODIUM GLUTAMAT)',
-                'jenis_barang_id'    => 9, // BP (Bahan Penolong)
-                'satuan_dasar_id'    => 3, // KG
+                'jenis_barang_id'    => $bpId, // BP (Bahan Penolong)
+                'satuan_dasar_id'    => $kgId, // KG
                 'konversi_qty'       => 1.0000,
                 'batas_minimum_qty'  => 50.0000,
                 'harga_beli_standar' => 25000.0000,
@@ -34,8 +37,8 @@ return new class extends Migration
             DB::table('mst_barang')->insert([
                 'barang_cd'          => 'GRM00G-BP1',
                 'barang_nm'          => 'GARAM HALUS BERYODIUM',
-                'jenis_barang_id'    => 9, // BP (Bahan Penolong)
-                'satuan_dasar_id'    => 3, // KG
+                'jenis_barang_id'    => $bpId, // BP (Bahan Penolong)
+                'satuan_dasar_id'    => $kgId, // KG
                 'konversi_qty'       => 1.0000,
                 'batas_minimum_qty'  => 100.0000,
                 'harga_beli_standar' => 6000.0000,

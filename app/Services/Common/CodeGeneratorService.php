@@ -585,6 +585,16 @@ class CodeGeneratorService
     }
 
     /**
+     * Generate Nomor Batch Produksi Standar untuk Modul Hasil Produksi (format: PRD-YYYYMMDD-01)
+     */
+    public function generateBatchProduksiNo(?string $date = null): string
+    {
+        $dateFormatted = date('Ymd', strtotime($date ?? date('Y-m-d')));
+        $prefix = 'PRD-' . $dateFormatted . '-';
+        return $this->generate('dat_produksi_harian', 'batch_wip_no', $prefix, 2);
+    }
+
+    /**
      * Generate Nomor Dokumen Produksi Harian (format: PRD-YYYYMMDD-0001)
      */
     public function generateProduksiNo(?string $date = null): string

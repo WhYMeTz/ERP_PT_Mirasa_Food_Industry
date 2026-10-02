@@ -52,7 +52,7 @@
         <a href="{{ route('gudang.pemakaian.index') }}" style="color: #64748b; text-decoration: none; font-size: 0.875rem; display: inline-flex; align-items: center; gap: 0.25rem;">
             &larr; Kembali ke Daftar Pemakaian Bahan
         </a>
-        <h1 style="font-size: 1.5rem; font-weight: 700; color: #0f172a; margin-top: 0.5rem; display: flex; align-items: center; gap: 0.75rem;">
+        <h1 style="font-size: 1.5rem; font-weight: 700; color: #0f172a; margin-top: 0.5rem; display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
             <span>{{ $pakai->pakai_no }}</span>
             <span class="badge" style="background: #fee2e2; color: #991b1b; font-size: 0.85rem;">{{ $pakai->tujuan_pemakaian }}</span>
         </h1>
@@ -87,7 +87,7 @@
                     <th style="min-width: 80px;">Jenis</th>
                     <th style="min-width: 150px;">Keterangan / SPK</th>
                     <th style="min-width: 110px; text-align: right;">Qty Keluar</th>
-                    <th style="min-width: 90px;">Satuan</th>
+                    <th style="min-width: 80px;">Satuan</th>
                     <th style="min-width: 120px; text-align: right;">Harga Satuan</th>
                     <th style="min-width: 130px; text-align: right;">Total Harga</th>
                 </tr>

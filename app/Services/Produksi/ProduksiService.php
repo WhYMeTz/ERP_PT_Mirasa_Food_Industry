@@ -29,10 +29,13 @@ class ProduksiService
             ->whereMonth('produksi_tgl', $month)
             ->where('deleted_st', false)
             ->orderBy('produksi_tgl', 'asc')
+            ->orderBy('shift_cd', 'asc')
+            ->orderBy('created_at', 'asc')
             ->get();
 
         // Hitung Grand Total Kumulatif Bulanan
         $totals = [
+            'total_karton'                => (int) $records->sum('qty_karton'),
             'singkong_qty'                => (float) $records->sum('singkong_qty'),
             'singkong_nilai'              => (float) $records->sum('singkong_nilai'),
             'minyak_sawit_qty'            => (float) $records->sum('minyak_sawit_qty'),
@@ -100,6 +103,55 @@ class ProduksiService
     }
 
     /**
+     * Cari nomor karton awal yang disarankan berdasarkan tanggal dan shift.
+     * Shift A: default 1 atau melanjutkan max hari itu jika ada.
+     * Shift B: otomatis melanjutkan nomor karton akhir dari Shift A hari itu.
+     */
+    public function getNextKartonAwal(string $tgl, string $shift = 'A'): array
+    {
+        $shiftUpper = strtoupper(trim($shift));
+
+        // Cari rekaman produksi pada tanggal tersebut
+        $records = DatProduksiHarian::whereDate('produksi_tgl', $tgl)
+            ->where('deleted_st', false)
+            ->whereNotNull('no_karton_akhir')
+            ->orderBy('no_karton_akhir', 'desc')
+            ->get();
+
+        if ($shiftUpper === 'B') {
+            // Cek apakah sudah ada Shift A hari ini
+            $shiftA = $records->firstWhere('shift_cd', 'A');
+            if ($shiftA && $shiftA->no_karton_akhir > 0) {
+                return [
+                    'next_no_awal'   => $shiftA->no_karton_akhir + 1,
+                    'last_shift'     => 'A',
+                    'last_no_akhir'  => $shiftA->no_karton_akhir,
+                    'source_desc'    => "Melanjutkan Shift A (Karton {$shiftA->no_karton_awal}-{$shiftA->no_karton_akhir})",
+                ];
+            }
+        }
+
+        // Jika Shift A atau tidak ada Shift A sebelumnya
+        $maxAkhir = $records->max('no_karton_akhir');
+        if ($maxAkhir && $maxAkhir > 0) {
+            return [
+                'next_no_awal'  => $maxAkhir + 1,
+                'last_shift'    => $records->first()?->shift_cd,
+                'last_no_akhir' => $maxAkhir,
+                'source_desc'   => "Melanjutkan batch terakhir hari ini (Karton {$maxAkhir})",
+            ];
+        }
+
+        // Default awal
+        return [
+            'next_no_awal'  => 1,
+            'last_shift'    => null,
+            'last_no_akhir' => 0,
+            'source_desc'   => "Awal batch baru (Karton 1)",
+        ];
+    }
+
+    /**
      * Ekstrak & kategorisasi ringkasan biaya bahan dari dokumen Pemakaian Bahan (dat_pakai_hdr).
      */
     public function extractPakaiSummary(int $pakaiId): array
@@ -119,7 +171,12 @@ class ProduksiService
             'lakban_besar_nilai' => 0,
             'lakban_kecil_nilai' => 0,
             'tali_rafia_nilai'   => 0,
+            'varietas_singkong'  => 'STP / MGU',
+            'karton_estimasi'    => 0,
         ];
+
+        $varietasList = [];
+        $kartonCount = 0;
 
         foreach ($pakai->details as $dtl) {
             $barang = $dtl->barang;
@@ -133,6 +190,11 @@ class ProduksiService
             if (str_contains($nm, 'SINGKONG') || str_starts_with($cd, 'BB-SK')) {
                 $summary['singkong_qty'] += $qty;
                 $summary['singkong_nilai'] += $subtotal;
+                if (str_contains($nm, 'TAPE') || str_contains($cd, 'STP')) {
+                    $varietasList[] = 'STP';
+                } elseif (str_contains($nm, 'MANGGU') || str_contains($cd, 'MGU')) {
+                    $varietasList[] = 'MGU';
+                }
             } elseif (str_contains($nm, 'MINYAK')) {
                 if (str_contains($nm, 'KELAPA')) {
                     $summary['minyak_kelapa_qty'] += $qty;
@@ -148,6 +210,7 @@ class ProduksiService
                 } else {
                     $summary['karton_baru_nilai'] += $subtotal;
                 }
+                $kartonCount += (int) $qty;
             } elseif (str_contains($nm, 'PLASTIK') || str_contains($nm, 'HD')) {
                 $summary['plastik_hd_nilai'] += $subtotal;
             } elseif (str_contains($nm, 'LAKBAN')) {
@@ -160,6 +223,11 @@ class ProduksiService
                 $summary['tali_rafia_nilai'] += $subtotal;
             }
         }
+
+        if (!empty($varietasList)) {
+            $summary['varietas_singkong'] = implode(' / ', array_unique($varietasList));
+        }
+        $summary['karton_estimasi'] = $kartonCount;
 
         return $summary;
     }
@@ -297,8 +365,33 @@ class ProduksiService
                 $data['produksi_no'] = $this->codeGenerator->generateProduksiNo($tgl);
             }
 
+            // Normalisasi Shift & Karton
+            $lini = strtoupper($data['lini_produksi'] ?? 'PRODUKSI IFM');
+            $shift = strtoupper(trim($data['shift_cd'] ?? 'A'));
+            $shift = in_array($shift, ['A', 'B']) ? $shift : 'A';
+            $noAwal = !empty($data['no_karton_awal']) ? (int) $data['no_karton_awal'] : 1;
+            $qtyKarton = !empty($data['qty_karton']) ? (int) $data['qty_karton'] : 0;
+            $noAkhir = !empty($data['no_karton_akhir']) ? (int) $data['no_karton_akhir'] : ($qtyKarton > 0 ? ($noAwal + $qtyKarton - 1) : $noAwal);
+
+            $data['shift_cd'] = $shift;
+            $data['no_karton_awal'] = $noAwal;
+            $data['no_karton_akhir'] = $noAkhir;
+            $data['qty_karton'] = $qtyKarton;
+            $data['jam_produksi'] = !empty($data['jam_produksi']) ? trim($data['jam_produksi']) : date('H:i');
+            $data['varietas_singkong'] = !empty($data['varietas_singkong']) ? trim($data['varietas_singkong']) : 'STP / MGU';
+
+            $isIfm = str_contains(strtoupper($lini), 'IFM');
+
+            // Generate Batch No jika belum ada
             if (empty($data['batch_wip_no'])) {
-                $data['batch_wip_no'] = $this->codeGenerator->generateWipBatchNo(null, $tgl);
+                if ($isIfm && $qtyKarton > 0) {
+                    $padAwal = str_pad((string) $noAwal, 4, '0', STR_PAD_LEFT);
+                    $padAkhir = str_pad((string) $noAkhir, 4, '0', STR_PAD_LEFT);
+                    $data['batch_wip_no'] = "{$shift}{$padAwal} - {$shift}{$padAkhir}";
+                } else {
+                    // Barang Jadi Reguler PT Mirasa: Format Tanggal 'd m Y' seperti di buku Excel persediaan (cth: 02 01 2026)
+                    $data['batch_wip_no'] = Carbon::parse($tgl)->format('d m Y');
+                }
             }
 
             // Hitung semua turunan biaya, rendemen, dan HPP/kg
@@ -319,6 +412,13 @@ class ProduksiService
             $gudangId = (int) $produksi->gudang_id;
             $hppPerKg = (float) $produksi->hpp_per_kg;
 
+            // Hitung Tanggal Kedaluwarsa Sesuai Standar Lini:
+            // IFM (Barang Setengah Jadi): +6 Bulan
+            // Barang Jadi Reguler Mirasa: +1 Tahun minus 1 Hari (cth: Batch 02 01 2026 -> Exp 01/01/2027)
+            $expiredDate = $isIfm
+                ? Carbon::parse($tgl)->addMonths(6)->toDateString()
+                : Carbon::parse($tgl)->addYear()->subDay()->toDateString();
+
             foreach ($wipMap as $kategori => $info) {
                 if ($info['qty'] <= 0) continue;
 
@@ -328,7 +428,11 @@ class ProduksiService
                 }
 
                 if ($barang) {
-                    $batchVarian = $produksi->batch_wip_no . '-' . substr($info['code'], 4);
+                    // Untuk IFM beri suffix varian, untuk Reguler gunakan No. Batch murni (cth: 02 01 2026)
+                    $batchVarian = $isIfm
+                        ? $produksi->batch_wip_no . '-' . substr($info['code'], 4)
+                        : $produksi->batch_wip_no;
+
                     $subtotalNilai = round($info['qty'] * $hppPerKg, 2);
 
                     DatProduksiOutput::create([
@@ -349,7 +453,7 @@ class ProduksiService
                             $barang->barang_id,
                             $batchVarian,
                             $info['qty'],
-                            Carbon::parse($tgl)->addMonths(6)->toDateString(), // Expired date default 6 bulan
+                            $expiredDate,
                             $produksi->produksi_no,
                             "Hasil Produksi Harian {$produksi->produksi_no} ({$kategori})",
                             $hppPerKg
@@ -373,11 +477,37 @@ class ProduksiService
     }
 
     /**
-     * Hapus data produksi harian (Soft Delete).
+     * Hapus data produksi harian (Soft Delete) dan sesuaikan stok fisik jika POSTED.
      */
     public function delete(int $id): bool
     {
-        $produksi = $this->getById($id);
-        return $produksi->delete();
+        return DB::transaction(function () use ($id) {
+            $produksi = $this->getById($id);
+
+            // Jika status POSTED, sesuaikan saldo stok WIP yang sempat dicatat
+            if ($produksi->status_cd === 'POSTED') {
+                $outputs = DatProduksiOutput::where('produksi_id', $produksi->produksi_id)
+                    ->where('deleted_st', false)
+                    ->get();
+
+                foreach ($outputs as $out) {
+                    try {
+                        $this->stokService->deductStock(
+                            (int) $produksi->gudang_id,
+                            (int) $out->barang_id,
+                            $out->batch_no,
+                            (float) $out->qty_kg,
+                            $produksi->produksi_no,
+                            "Pembatalan Dokumen Produksi {$produksi->produksi_no}"
+                        );
+                    } catch (Exception $e) {
+                        // Lanjutkan jika ada penyesuaian parsial
+                    }
+                }
+            }
+
+            DatProduksiOutput::where('produksi_id', $produksi->produksi_id)->delete();
+            return $produksi->delete();
+        });
     }
 }

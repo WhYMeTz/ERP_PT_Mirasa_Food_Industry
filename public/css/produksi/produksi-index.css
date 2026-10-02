@@ -368,5 +368,54 @@
     font-weight: 600;
 }
 
+/* ═════════════════════════════════════════════════════════════
+   TABEL REKAPITULASI HPP (POINT 13 - 100% PERSIS EXCEL MIRASA)
+   ═════════════════════════════════════════════════════════════ */
+.table-rekap-mirasa {
+    width: 100%;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+    font-size: 0.75rem;
+    white-space: nowrap;
+}
 
+.table-rekap-mirasa thead th {
+    text-align: center !important;
+    vertical-align: middle !important;
+    box-sizing: border-box;
+}
 
+.table-rekap-mirasa th.th-orange {
+    background-color: #f4b084 !important;
+    color: #000000 !important;
+    border: 1px solid #7f1d1d !important;
+    text-align: center !important;
+}
+
+.table-rekap-mirasa th.th-green {
+    background-color: #92d050 !important;
+    color: #000000 !important;
+    border: 1px solid #3f6212 !important;
+    text-align: center !important;
+}
+
+.table-rekap-mirasa th.th-yellow {
+    background-color: #ffc000 !important;
+    color: #000000 !important;
+    border: 1px solid #ca8a04 !important;
+    text-align: center !important;
+}
+
+.table-rekap-mirasa th.th-grey {
+    background-color: #f2f2f2 !important;
+    color: #000000 !important;
+    border: 1px solid #94a3b8 !important;
+    text-align: center !important;
+}
+
+.table-rekap-mirasa th.th-blue-action {
+    background-color: #0284c7 !important;
+    color: #ffffff !important;
+    border: 1px solid #0369a1 !important;
+    text-align: center !important;
+}

@@ -467,81 +467,81 @@
 
         {{-- CONTAINER SCROLLABLE HORIZONTAL --}}
         <div style="overflow-x: auto; max-height: calc(100vh - 300px); position: relative; border-radius: 0 0 12px 12px;">
-            <table style="width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.75rem; white-space: nowrap;">
+            <table class="table-rekap-mirasa" style="width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.75rem; white-space: nowrap;">
                 {{-- HEADER LEVEL 1, 2, & 3 MENGIKUTI 100% SPREADSHEET EXCEL MIRASA --}}
                 <thead style="position: sticky; top: 0; z-index: 20;">
                     {{-- ROW 1: MEGA HEADERS --}}
                     <tr style="text-align: center; font-weight: 800; font-size: 0.75rem;">
-                        <th rowspan="3" style="position: sticky; left: 0; z-index: 25; background: #f4b084; color: #000000; border: 1px solid #7f1d1d; padding: 0.5rem 0.6rem; min-width: 85px; font-weight: 800;">HARI</th>
-                        <th rowspan="3" style="position: sticky; left: 85px; z-index: 25; background: #f4b084; color: #000000; border: 1px solid #7f1d1d; padding: 0.5rem 0.6rem; min-width: 80px; font-weight: 800;">TANGGAL</th>
-                        <th colspan="28" style="background: #92d050; color: #000000; border: 1px solid #4d7c0f; padding: 0.5rem; font-weight: 900; font-size: 0.85rem; letter-spacing: 0.12em;">TOTAL BIAYA PRODUKSI / KG</th>
-                        <th rowspan="3" style="background: #ffc000; color: #000000; border: 1px solid #ca8a04; padding: 0.5rem 0.75rem; min-width: 110px; font-weight: 900; font-size: 0.8rem; line-height: 1.2;">TOTAL<br>BIAYA</th>
-                        <th colspan="2" style="background: #92d050; color: #000000; border: 1px solid #4d7c0f; padding: 0.5rem; font-weight: 900; font-size: 0.8rem;">TOTAL WIP</th>
-                        <th rowspan="3" style="background: #f2f2f2; color: #000000; border: 1px solid #94a3b8; padding: 0.5rem 0.6rem; min-width: 85px; font-weight: 900; font-size: 0.75rem; line-height: 1.2;">HARGA POKOK<br>PRODUKSI</th>
-                        <th rowspan="3" style="position: sticky; right: 0; z-index: 25; background: #0284c7; color: #ffffff; border: 1px solid #0369a1; padding: 0.5rem 0.65rem; min-width: 75px; font-weight: 800;">AKSI</th>
+                        <th rowspan="3" class="th-orange" style="position: sticky; left: 0; z-index: 25; background-color: #f4b084 !important; color: #000000 !important; border: 1px solid #7f1d1d !important; padding: 0.5rem 0.6rem; min-width: 85px; font-weight: 800; text-align: center !important; vertical-align: middle !important;">HARI</th>
+                        <th rowspan="3" class="th-orange" style="position: sticky; left: 85px; z-index: 25; background-color: #f4b084 !important; color: #000000 !important; border: 1px solid #7f1d1d !important; padding: 0.5rem 0.6rem; min-width: 80px; font-weight: 800; text-align: center !important; vertical-align: middle !important;">TANGGAL</th>
+                        <th colspan="28" class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.6rem 0.5rem; font-weight: 900; font-size: 0.85rem; letter-spacing: 0.15em; text-align: center !important; vertical-align: middle !important;">TOTAL BIAYA PRODUKSI / KG</th>
+                        <th rowspan="3" class="th-yellow" style="background-color: #ffc000 !important; color: #000000 !important; border: 1px solid #ca8a04 !important; padding: 0.5rem 0.75rem; min-width: 110px; font-weight: 900; font-size: 0.8rem; line-height: 1.2; text-align: center !important; vertical-align: middle !important;">TOTAL<br>BIAYA</th>
+                        <th colspan="2" class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.6rem 0.5rem; font-weight: 900; font-size: 0.8rem; text-align: center !important; vertical-align: middle !important;">TOTAL WIP</th>
+                        <th rowspan="3" class="th-grey" style="background-color: #f2f2f2 !important; color: #000000 !important; border: 1px solid #94a3b8 !important; padding: 0.5rem 0.6rem; min-width: 85px; font-weight: 900; font-size: 0.75rem; line-height: 1.2; text-align: center !important; vertical-align: middle !important;">HARGA POKOK<br>PRODUKSI</th>
+                        <th rowspan="3" class="th-blue-action" style="position: sticky; right: 0; z-index: 25; background-color: #0284c7 !important; color: #ffffff !important; border: 1px solid #0369a1 !important; padding: 0.5rem 0.65rem; min-width: 75px; font-weight: 800; text-align: center !important; vertical-align: middle !important;">AKSI</th>
                     </tr>
 
                     {{-- ROW 2: KATEGORI BIAYA --}}
-                    <tr style="background: #a9d08e; color: #000000; text-align: center; font-weight: 800; font-size: 0.72rem;">
-                        <th colspan="2" style="border: 1px solid #65a30d; padding: 0.35rem 0.4rem;">SINGKONG</th>
-                        <th colspan="4" style="border: 1px solid #65a30d; padding: 0.35rem 0.4rem;">MINYAK GORENG</th>
-                        <th colspan="2" style="border: 1px solid #65a30d; padding: 0.35rem 0.4rem;">CNG</th>
-                        <th colspan="4" style="border: 1px solid #65a30d; padding: 0.35rem 0.4rem;">TENAGA KERJA</th>
-                        <th rowspan="2" style="border: 1px solid #65a30d; padding: 0.35rem 0.4rem; min-width: 85px; line-height: 1.2;">BUMBU<br>PERENYAH</th>
-                        <th colspan="2" style="border: 1px solid #65a30d; padding: 0.35rem 0.4rem;">KARTON FL</th>
-                        <th rowspan="2" style="border: 1px solid #65a30d; padding: 0.35rem 0.4rem; min-width: 80px; line-height: 1.2;">PLASTIK HD<br>90x100</th>
-                        <th colspan="2" style="border: 1px solid #65a30d; padding: 0.35rem 0.4rem;">LAKBAN</th>
-                        <th rowspan="2" style="border: 1px solid #65a30d; padding: 0.35rem 0.4rem; min-width: 70px; line-height: 1.2;">TALI<br>RAFIA</th>
-                        <th rowspan="2" style="border: 1px solid #65a30d; color: #c00000; padding: 0.35rem 0.4rem; min-width: 70px; line-height: 1.2;">FOTO<br>COPY</th>
-                        <th colspan="2" style="border: 1px solid #65a30d; padding: 0.35rem 0.4rem;">SARUNG TANGAN</th>
-                        <th rowspan="2" style="border: 1px solid #65a30d; color: #c00000; padding: 0.35rem 0.4rem; min-width: 85px; line-height: 1.2;">PENGAWASAN<br>MUTU</th>
-                        <th rowspan="2" style="border: 1px solid #65a30d; color: #c00000; padding: 0.35rem 0.4rem; min-width: 90px; line-height: 1.2;">LISTRIK &amp;<br>AIR - TELP</th>
-                        <th rowspan="2" style="border: 1px solid #65a30d; color: #c00000; padding: 0.35rem 0.4rem; min-width: 80px; line-height: 1.2;">PEMLHR<br>MESIN</th>
-                        <th rowspan="2" style="border: 1px solid #65a30d; color: #c00000; padding: 0.35rem 0.4rem; min-width: 80px; line-height: 1.2;">PENYS<br>MESIN</th>
-                        <th colspan="2" style="border: 1px solid #65a30d; color: #c00000; padding: 0.35rem 0.4rem;">B. PNGOLHN LIMBAH</th>
+                    <tr style="text-align: center; font-weight: 800; font-size: 0.72rem;">
+                        <th colspan="2" class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.35rem 0.4rem; text-align: center !important; vertical-align: middle !important;">SINGKONG</th>
+                        <th colspan="4" class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.35rem 0.4rem; text-align: center !important; vertical-align: middle !important;">MINYAK GORENG</th>
+                        <th colspan="2" class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.35rem 0.4rem; text-align: center !important; vertical-align: middle !important;">CNG</th>
+                        <th colspan="4" class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.35rem 0.4rem; text-align: center !important; vertical-align: middle !important;">TENAGA KERJA</th>
+                        <th rowspan="2" class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.35rem 0.4rem; min-width: 85px; line-height: 1.2; text-align: center !important; vertical-align: middle !important;">BUMBU<br>PERENYAH</th>
+                        <th colspan="2" class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.35rem 0.4rem; text-align: center !important; vertical-align: middle !important;">KARTON FL</th>
+                        <th rowspan="2" class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.35rem 0.4rem; min-width: 80px; line-height: 1.2; text-align: center !important; vertical-align: middle !important;">PLASTIK HD<br>90x100</th>
+                        <th colspan="2" class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.35rem 0.4rem; text-align: center !important; vertical-align: middle !important;">LAKBAN</th>
+                        <th rowspan="2" class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.35rem 0.4rem; min-width: 70px; line-height: 1.2; text-align: center !important; vertical-align: middle !important;">TALI<br>RAFIA</th>
+                        <th rowspan="2" class="th-green" style="background-color: #92d050 !important; color: #c00000 !important; border: 1px solid #3f6212 !important; padding: 0.35rem 0.4rem; min-width: 70px; line-height: 1.2; text-align: center !important; vertical-align: middle !important; font-weight: 900;">FOTO<br>COPY</th>
+                        <th colspan="2" class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.35rem 0.4rem; text-align: center !important; vertical-align: middle !important;">SARUNG TANGAN</th>
+                        <th rowspan="2" class="th-green" style="background-color: #92d050 !important; color: #c00000 !important; border: 1px solid #3f6212 !important; padding: 0.35rem 0.4rem; min-width: 85px; line-height: 1.2; text-align: center !important; vertical-align: middle !important; font-weight: 900;">PENGAWASAN<br>MUTU</th>
+                        <th rowspan="2" class="th-green" style="background-color: #92d050 !important; color: #c00000 !important; border: 1px solid #3f6212 !important; padding: 0.35rem 0.4rem; min-width: 90px; line-height: 1.2; text-align: center !important; vertical-align: middle !important; font-weight: 900;">LISTRIK &amp;<br>AIR - TELP</th>
+                        <th rowspan="2" class="th-green" style="background-color: #92d050 !important; color: #c00000 !important; border: 1px solid #3f6212 !important; padding: 0.35rem 0.4rem; min-width: 80px; line-height: 1.2; text-align: center !important; vertical-align: middle !important; font-weight: 900;">PEMLHR<br>MESIN</th>
+                        <th rowspan="2" class="th-green" style="background-color: #92d050 !important; color: #c00000 !important; border: 1px solid #3f6212 !important; padding: 0.35rem 0.4rem; min-width: 80px; line-height: 1.2; text-align: center !important; vertical-align: middle !important; font-weight: 900;">PENYS<br>MESIN</th>
+                        <th colspan="2" class="th-green" style="background-color: #92d050 !important; color: #c00000 !important; border: 1px solid #3f6212 !important; padding: 0.35rem 0.4rem; text-align: center !important; vertical-align: middle !important; font-weight: 900;">B. PNGOLHN LIMBAH</th>
 
                         {{-- Under TOTAL WIP --}}
-                        <th rowspan="2" style="border: 1px solid #65a30d; padding: 0.35rem 0.4rem; min-width: 85px; line-height: 1.2;">TOTAL<br>KG</th>
-                        <th rowspan="2" style="border: 1px solid #65a30d; color: #002060; padding: 0.35rem 0.4rem; min-width: 85px; line-height: 1.2;">RENDE<br>MEN %</th>
+                        <th rowspan="2" class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.35rem 0.4rem; min-width: 85px; line-height: 1.2; text-align: center !important; vertical-align: middle !important; font-weight: 800;">TOTAL<br>KG</th>
+                        <th rowspan="2" class="th-green" style="background-color: #92d050 !important; color: #002060 !important; border: 1px solid #3f6212 !important; padding: 0.35rem 0.4rem; min-width: 85px; line-height: 1.2; text-align: center !important; vertical-align: middle !important; font-weight: 900;">RENDE<br>MEN %</th>
                     </tr>
 
                     {{-- ROW 3: SUB-KOLOM SPESIFIK --}}
-                    <tr style="background: #a9d08e; color: #000000; text-align: center; font-weight: 700; font-size: 0.7rem;">
+                    <tr style="text-align: center; font-weight: 700; font-size: 0.7rem;">
                         {{-- Singkong --}}
-                        <th style="border: 1px solid #65a30d; padding: 0.3rem 0.4rem; min-width: 70px;">KG</th>
-                        <th style="border: 1px solid #65a30d; padding: 0.3rem 0.4rem; min-width: 95px;">Rp</th>
+                        <th class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.3rem 0.4rem; min-width: 70px; text-align: center !important; vertical-align: middle !important;">KG</th>
+                        <th class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.3rem 0.4rem; min-width: 95px; text-align: center !important; vertical-align: middle !important;">Rp</th>
 
                         {{-- Minyak Goreng --}}
-                        <th style="border: 1px solid #65a30d; padding: 0.3rem 0.4rem; min-width: 65px;">SAWIT</th>
-                        <th style="border: 1px solid #65a30d; padding: 0.3rem 0.4rem; min-width: 65px;">KELAPA</th>
-                        <th style="border: 1px solid #65a30d; padding: 0.3rem 0.4rem; min-width: 95px;">Rp</th>
-                        <th style="border: 1px solid #65a30d; color: #002060; font-weight: 900; padding: 0.3rem 0.4rem; min-width: 60px;">%</th>
+                        <th class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.3rem 0.4rem; min-width: 65px; text-align: center !important; vertical-align: middle !important;">SAWIT</th>
+                        <th class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.3rem 0.4rem; min-width: 65px; text-align: center !important; vertical-align: middle !important;">KELAPA</th>
+                        <th class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.3rem 0.4rem; min-width: 95px; text-align: center !important; vertical-align: middle !important;">Rp</th>
+                        <th class="th-green" style="background-color: #92d050 !important; color: #002060 !important; border: 1px solid #3f6212 !important; font-weight: 900; padding: 0.3rem 0.4rem; min-width: 60px; text-align: center !important; vertical-align: middle !important;">%</th>
 
                         {{-- CNG --}}
-                        <th style="border: 1px solid #65a30d; padding: 0.3rem 0.4rem; min-width: 70px;">MMBTU</th>
-                        <th style="border: 1px solid #65a30d; padding: 0.3rem 0.4rem; min-width: 95px;">Rp</th>
+                        <th class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.3rem 0.4rem; min-width: 70px; text-align: center !important; vertical-align: middle !important;">MMBTU</th>
+                        <th class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.3rem 0.4rem; min-width: 95px; text-align: center !important; vertical-align: middle !important;">Rp</th>
 
                         {{-- Tenaga Kerja --}}
-                        <th style="border: 1px solid #65a30d; padding: 0.3rem 0.35rem; min-width: 65px;">LANGSUNG</th>
-                        <th style="border: 1px solid #65a30d; padding: 0.3rem 0.35rem; min-width: 65px; line-height: 1.1;">TIDAK<br>LANGSUNG</th>
-                        <th style="border: 1px solid #65a30d; padding: 0.3rem 0.35rem; min-width: 60px;">TRAINING</th>
-                        <th style="border: 1px solid #65a30d; padding: 0.3rem 0.4rem; min-width: 95px;">Rp</th>
+                        <th class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.3rem 0.35rem; min-width: 65px; text-align: center !important; vertical-align: middle !important;">LANGSUNG</th>
+                        <th class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.3rem 0.35rem; min-width: 65px; line-height: 1.1; text-align: center !important; vertical-align: middle !important;">TIDAK<br>LANGSUNG</th>
+                        <th class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.3rem 0.35rem; min-width: 60px; text-align: center !important; vertical-align: middle !important;">TRAINING</th>
+                        <th class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.3rem 0.4rem; min-width: 95px; text-align: center !important; vertical-align: middle !important;">Rp</th>
 
                         {{-- Karton FL --}}
-                        <th style="border: 1px solid #65a30d; padding: 0.3rem 0.4rem; min-width: 80px;">BARU</th>
-                        <th style="border: 1px solid #65a30d; padding: 0.3rem 0.4rem; min-width: 80px;">BEKAS</th>
+                        <th class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.3rem 0.4rem; min-width: 80px; text-align: center !important; vertical-align: middle !important;">BARU</th>
+                        <th class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.3rem 0.4rem; min-width: 80px; text-align: center !important; vertical-align: middle !important;">BEKAS</th>
 
                         {{-- Lakban --}}
-                        <th style="border: 1px solid #65a30d; padding: 0.3rem 0.4rem; min-width: 70px;">BESAR</th>
-                        <th style="border: 1px solid #65a30d; padding: 0.3rem 0.4rem; min-width: 70px;">KECIL</th>
+                        <th class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.3rem 0.4rem; min-width: 70px; text-align: center !important; vertical-align: middle !important;">BESAR</th>
+                        <th class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.3rem 0.4rem; min-width: 70px; text-align: center !important; vertical-align: middle !important;">KECIL</th>
 
                         {{-- Sarung Tangan --}}
-                        <th style="border: 1px solid #65a30d; padding: 0.3rem 0.35rem; min-width: 65px;">PLASTIK</th>
-                        <th style="border: 1px solid #65a30d; padding: 0.3rem 0.35rem; min-width: 60px;">KAIN</th>
+                        <th class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.3rem 0.35rem; min-width: 65px; text-align: center !important; vertical-align: middle !important;">PLASTIK</th>
+                        <th class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.3rem 0.35rem; min-width: 60px; text-align: center !important; vertical-align: middle !important;">KAIN</th>
 
                         {{-- B. Pngolhn Limbah --}}
-                        <th style="border: 1px solid #65a30d; color: #c00000; padding: 0.3rem 0.4rem; min-width: 80px; line-height: 1.1;">LIMBAH<br>PADAT</th>
-                        <th style="border: 1px solid #65a30d; color: #c00000; padding: 0.3rem 0.4rem; min-width: 80px; line-height: 1.1;">BAHAN<br>KIMIA</th>
+                        <th class="th-green" style="background-color: #92d050 !important; color: #c00000 !important; border: 1px solid #3f6212 !important; padding: 0.3rem 0.4rem; min-width: 80px; line-height: 1.1; text-align: center !important; vertical-align: middle !important; font-weight: 800;">LIMBAH<br>PADAT</th>
+                        <th class="th-green" style="background-color: #92d050 !important; color: #c00000 !important; border: 1px solid #3f6212 !important; padding: 0.3rem 0.4rem; min-width: 80px; line-height: 1.1; text-align: center !important; vertical-align: middle !important; font-weight: 800;">BAHAN<br>KIMIA</th>
                     </tr>
                 </thead>
 

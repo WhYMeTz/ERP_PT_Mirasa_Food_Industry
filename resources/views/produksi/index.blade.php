@@ -468,268 +468,216 @@
         {{-- CONTAINER SCROLLABLE HORIZONTAL --}}
         <div style="overflow-x: auto; max-height: calc(100vh - 300px); position: relative; border-radius: 0 0 12px 12px;">
             <table style="width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.75rem; white-space: nowrap;">
-                {{-- HEADER LEVEL 1 --}}
+                {{-- HEADER LEVEL 1, 2, & 3 MENGIKUTI 100% SPREADSHEET EXCEL MIRASA --}}
                 <thead style="position: sticky; top: 0; z-index: 20;">
-                    <tr style="background: #e2e8f0; color: #0f172a; text-align: center; font-weight: 800; font-size: 0.75rem;">
-                        <th rowspan="2" style="position: sticky; left: 0; z-index: 25; background: #f4b084; color: #000000; border: 1px solid #c2410c; padding: 0.5rem 0.75rem; min-width: 90px; font-weight: 800;">HARI</th>
-                        <th rowspan="2" style="position: sticky; left: 90px; z-index: 25; background: #f4b084; color: #000000; border: 1px solid #c2410c; padding: 0.5rem 0.75rem; min-width: 85px; font-weight: 800;">TANGGAL</th>
-                        <th rowspan="2" style="background: #cbd5e1; border: 1px solid #94a3b8; padding: 0.5rem 0.65rem; min-width: 140px; text-align: center;">SHIFT &amp; BATCH</th>
-                        
-                        <th colspan="2" style="background: #a3e635; color: #1a2e05; border: 1px solid #65a30d; padding: 0.4rem;">SINGKONG</th>
-                        <th colspan="4" style="background: #a3e635; color: #1a2e05; border: 1px solid #65a30d; padding: 0.4rem;">MINYAK GORENG</th>
-                        <th colspan="2" style="background: #a3e635; color: #1a2e05; border: 1px solid #65a30d; padding: 0.4rem;">CNG</th>
-                        <th colspan="4" style="background: #a3e635; color: #1a2e05; border: 1px solid #65a30d; padding: 0.4rem;">TENAGA KERJA (Rp 91.300)</th>
-                        <th rowspan="2" style="background: #bef264; color: #1a2e05; border: 1px solid #65a30d; padding: 0.4rem; min-width: 90px;">BUMBU<br>PERENYAH</th>
-                        <th colspan="2" style="background: #a3e635; color: #1a2e05; border: 1px solid #65a30d; padding: 0.4rem;">KARTON IFL</th>
-                        <th rowspan="2" style="background: #bef264; color: #1a2e05; border: 1px solid #65a30d; padding: 0.4rem; min-width: 85px;">PLASTIK HD<br>90x100</th>
-                        <th colspan="2" style="background: #a3e635; color: #1a2e05; border: 1px solid #65a30d; padding: 0.4rem;">LAKBAN</th>
-                        <th rowspan="2" style="background: #bef264; color: #1a2e05; border: 1px solid #65a30d; padding: 0.4rem; min-width: 75px;">TALI<br>RAFIA</th>
-                        <th rowspan="2" style="background: #bef264; color: #c00000; font-weight: 800; border: 1px solid #65a30d; padding: 0.4rem; min-width: 75px;">FOTO<br>COPY</th>
-                        <th colspan="2" style="background: #a3e635; color: #1a2e05; border: 1px solid #65a30d; padding: 0.4rem;">SARUNG TANGAN</th>
-                        <th rowspan="2" style="background: #bef264; color: #c00000; font-weight: 800; border: 1px solid #65a30d; padding: 0.4rem; min-width: 85px;">PENGAWASAN<br>MUTU (QC)</th>
-                        <th rowspan="2" style="background: #bef264; color: #c00000; font-weight: 800; border: 1px solid #65a30d; padding: 0.4rem; min-width: 90px;">LISTRIK &amp;<br>AIR + TELP</th>
-                        <th rowspan="2" style="background: #bef264; color: #c00000; font-weight: 800; border: 1px solid #65a30d; padding: 0.4rem; min-width: 85px;">PEMLHR<br>MESIN</th>
-                        <th rowspan="2" style="background: #bef264; color: #c00000; font-weight: 800; border: 1px solid #65a30d; padding: 0.4rem; min-width: 85px;">PENYS<br>MESIN</th>
-                        <th colspan="2" style="background: #a3e635; color: #1a2e05; border: 1px solid #65a30d; padding: 0.4rem;">B. PNGOLHN LIMBAH</th>
-
-                        <th rowspan="2" style="background: #facc15; color: #713f12; border: 1px solid #ca8a04; padding: 0.5rem 0.85rem; font-size: 0.825rem; font-weight: 800; min-width: 120px;">
-                            TOTAL BIAYA<br>(Rp)
-                        </th>
-
-                        <th colspan="4" style="background: #86efac; color: #064e3b; border: 1px solid #16a34a; padding: 0.4rem;">MANUAL</th>
-                        <th colspan="4" style="background: #86efac; color: #064e3b; border: 1px solid #16a34a; padding: 0.4rem;">BERKO + BERKO ME</th>
-                        <th rowspan="2" style="background: #4ade80; color: #064e3b; border: 1px solid #16a34a; padding: 0.5rem 0.75rem; font-size: 0.825rem; font-weight: 800; min-width: 95px;">
-                            TOTAL WIP<br>(KG)
-                        </th>
-                        <th rowspan="2" style="background: #22c55e; color: #ffffff; border: 1px solid #15803d; padding: 0.5rem 0.75rem; font-size: 0.825rem; font-weight: 800; min-width: 85px;">
-                            RENDEMEN<br>%
-                        </th>
-                        <th rowspan="2" style="background: #0284c7; color: #ffffff; border: 1px solid #0369a1; padding: 0.5rem 0.85rem; font-size: 0.825rem; font-weight: 800; min-width: 95px;">
-                            HPP/KG<br>(Rp)
-                        </th>
-                        <th rowspan="2" style="position: sticky; right: 0; z-index: 25; background: #0284c7; color: #ffffff; border: 1px solid #0369a1; padding: 0.5rem 0.65rem; font-size: 0.825rem; font-weight: 800; min-width: 80px; text-align: center;">
-                            AKSI
-                        </th>
+                    {{-- ROW 1: MEGA HEADERS --}}
+                    <tr style="text-align: center; font-weight: 800; font-size: 0.75rem;">
+                        <th rowspan="3" style="position: sticky; left: 0; z-index: 25; background: #f4b084; color: #000000; border: 1px solid #7f1d1d; padding: 0.5rem 0.6rem; min-width: 85px; font-weight: 800;">HARI</th>
+                        <th rowspan="3" style="position: sticky; left: 85px; z-index: 25; background: #f4b084; color: #000000; border: 1px solid #7f1d1d; padding: 0.5rem 0.6rem; min-width: 80px; font-weight: 800;">TANGGAL</th>
+                        <th colspan="28" style="background: #92d050; color: #000000; border: 1px solid #4d7c0f; padding: 0.5rem; font-weight: 900; font-size: 0.85rem; letter-spacing: 0.12em;">TOTAL BIAYA PRODUKSI / KG</th>
+                        <th rowspan="3" style="background: #ffc000; color: #000000; border: 1px solid #ca8a04; padding: 0.5rem 0.75rem; min-width: 110px; font-weight: 900; font-size: 0.8rem; line-height: 1.2;">TOTAL<br>BIAYA</th>
+                        <th colspan="2" style="background: #92d050; color: #000000; border: 1px solid #4d7c0f; padding: 0.5rem; font-weight: 900; font-size: 0.8rem;">TOTAL WIP</th>
+                        <th rowspan="3" style="background: #f2f2f2; color: #000000; border: 1px solid #94a3b8; padding: 0.5rem 0.6rem; min-width: 85px; font-weight: 900; font-size: 0.75rem; line-height: 1.2;">HARGA POKOK<br>PRODUKSI</th>
+                        <th rowspan="3" style="position: sticky; right: 0; z-index: 25; background: #0284c7; color: #ffffff; border: 1px solid #0369a1; padding: 0.5rem 0.65rem; min-width: 75px; font-weight: 800;">AKSI</th>
                     </tr>
 
-                    {{-- HEADER LEVEL 2 --}}
-                    <tr style="background: #bef264; color: #1a2e05; text-align: center; font-weight: 700; font-size: 0.7rem;">
-                        <th style="border: 1px solid #65a30d; padding: 0.35rem 0.5rem; min-width: 75px;">KG</th>
-                        <th style="border: 1px solid #65a30d; padding: 0.35rem 0.5rem; min-width: 100px;">Rp</th>
+                    {{-- ROW 2: KATEGORI BIAYA --}}
+                    <tr style="background: #a9d08e; color: #000000; text-align: center; font-weight: 800; font-size: 0.72rem;">
+                        <th colspan="2" style="border: 1px solid #65a30d; padding: 0.35rem 0.4rem;">SINGKONG</th>
+                        <th colspan="4" style="border: 1px solid #65a30d; padding: 0.35rem 0.4rem;">MINYAK GORENG</th>
+                        <th colspan="2" style="border: 1px solid #65a30d; padding: 0.35rem 0.4rem;">CNG</th>
+                        <th colspan="4" style="border: 1px solid #65a30d; padding: 0.35rem 0.4rem;">TENAGA KERJA</th>
+                        <th rowspan="2" style="border: 1px solid #65a30d; padding: 0.35rem 0.4rem; min-width: 85px; line-height: 1.2;">BUMBU<br>PERENYAH</th>
+                        <th colspan="2" style="border: 1px solid #65a30d; padding: 0.35rem 0.4rem;">KARTON FL</th>
+                        <th rowspan="2" style="border: 1px solid #65a30d; padding: 0.35rem 0.4rem; min-width: 80px; line-height: 1.2;">PLASTIK HD<br>90x100</th>
+                        <th colspan="2" style="border: 1px solid #65a30d; padding: 0.35rem 0.4rem;">LAKBAN</th>
+                        <th rowspan="2" style="border: 1px solid #65a30d; padding: 0.35rem 0.4rem; min-width: 70px; line-height: 1.2;">TALI<br>RAFIA</th>
+                        <th rowspan="2" style="border: 1px solid #65a30d; color: #c00000; padding: 0.35rem 0.4rem; min-width: 70px; line-height: 1.2;">FOTO<br>COPY</th>
+                        <th colspan="2" style="border: 1px solid #65a30d; padding: 0.35rem 0.4rem;">SARUNG TANGAN</th>
+                        <th rowspan="2" style="border: 1px solid #65a30d; color: #c00000; padding: 0.35rem 0.4rem; min-width: 85px; line-height: 1.2;">PENGAWASAN<br>MUTU</th>
+                        <th rowspan="2" style="border: 1px solid #65a30d; color: #c00000; padding: 0.35rem 0.4rem; min-width: 90px; line-height: 1.2;">LISTRIK &amp;<br>AIR - TELP</th>
+                        <th rowspan="2" style="border: 1px solid #65a30d; color: #c00000; padding: 0.35rem 0.4rem; min-width: 80px; line-height: 1.2;">PEMLHR<br>MESIN</th>
+                        <th rowspan="2" style="border: 1px solid #65a30d; color: #c00000; padding: 0.35rem 0.4rem; min-width: 80px; line-height: 1.2;">PENYS<br>MESIN</th>
+                        <th colspan="2" style="border: 1px solid #65a30d; color: #c00000; padding: 0.35rem 0.4rem;">B. PNGOLHN LIMBAH</th>
 
-                        <th style="border: 1px solid #65a30d; padding: 0.35rem 0.5rem; min-width: 65px;">SAWIT</th>
-                        <th style="border: 1px solid #65a30d; padding: 0.35rem 0.5rem; min-width: 65px;">KELAPA</th>
-                        <th style="border: 1px solid #65a30d; padding: 0.35rem 0.5rem; min-width: 95px;">Rp</th>
-                        <th style="border: 1px solid #65a30d; padding: 0.35rem 0.5rem; min-width: 60px; color: #002060; font-weight: 800;">%</th>
+                        {{-- Under TOTAL WIP --}}
+                        <th rowspan="2" style="border: 1px solid #65a30d; padding: 0.35rem 0.4rem; min-width: 85px; line-height: 1.2;">TOTAL<br>KG</th>
+                        <th rowspan="2" style="border: 1px solid #65a30d; color: #002060; padding: 0.35rem 0.4rem; min-width: 85px; line-height: 1.2;">RENDE<br>MEN %</th>
+                    </tr>
 
-                        <th style="border: 1px solid #65a30d; padding: 0.35rem 0.5rem; min-width: 75px;">MMBTU</th>
-                        <th style="border: 1px solid #65a30d; padding: 0.35rem 0.5rem; min-width: 95px;">Rp</th>
+                    {{-- ROW 3: SUB-KOLOM SPESIFIK --}}
+                    <tr style="background: #a9d08e; color: #000000; text-align: center; font-weight: 700; font-size: 0.7rem;">
+                        {{-- Singkong --}}
+                        <th style="border: 1px solid #65a30d; padding: 0.3rem 0.4rem; min-width: 70px;">KG</th>
+                        <th style="border: 1px solid #65a30d; padding: 0.3rem 0.4rem; min-width: 95px;">Rp</th>
 
-                        <th style="border: 1px solid #65a30d; padding: 0.35rem 0.4rem; min-width: 55px;">LANGSUNG</th>
-                        <th style="border: 1px solid #65a30d; padding: 0.35rem 0.4rem; min-width: 55px;">TDK LANGSUNG</th>
-                        <th style="border: 1px solid #65a30d; padding: 0.35rem 0.4rem; min-width: 50px;">TRAINING</th>
-                        <th style="border: 1px solid #65a30d; padding: 0.35rem 0.5rem; min-width: 90px;">Rp</th>
+                        {{-- Minyak Goreng --}}
+                        <th style="border: 1px solid #65a30d; padding: 0.3rem 0.4rem; min-width: 65px;">SAWIT</th>
+                        <th style="border: 1px solid #65a30d; padding: 0.3rem 0.4rem; min-width: 65px;">KELAPA</th>
+                        <th style="border: 1px solid #65a30d; padding: 0.3rem 0.4rem; min-width: 95px;">Rp</th>
+                        <th style="border: 1px solid #65a30d; color: #002060; font-weight: 900; padding: 0.3rem 0.4rem; min-width: 60px;">%</th>
 
-                        <th style="border: 1px solid #65a30d; padding: 0.35rem 0.5rem; min-width: 80px;">BARU</th>
-                        <th style="border: 1px solid #65a30d; padding: 0.35rem 0.5rem; min-width: 80px;">BEKAS</th>
+                        {{-- CNG --}}
+                        <th style="border: 1px solid #65a30d; padding: 0.3rem 0.4rem; min-width: 70px;">MMBTU</th>
+                        <th style="border: 1px solid #65a30d; padding: 0.3rem 0.4rem; min-width: 95px;">Rp</th>
 
-                        <th style="border: 1px solid #65a30d; padding: 0.35rem 0.5rem; min-width: 70px;">BESAR</th>
-                        <th style="border: 1px solid #65a30d; padding: 0.35rem 0.5rem; min-width: 70px;">KECIL</th>
+                        {{-- Tenaga Kerja --}}
+                        <th style="border: 1px solid #65a30d; padding: 0.3rem 0.35rem; min-width: 65px;">LANGSUNG</th>
+                        <th style="border: 1px solid #65a30d; padding: 0.3rem 0.35rem; min-width: 65px; line-height: 1.1;">TIDAK<br>LANGSUNG</th>
+                        <th style="border: 1px solid #65a30d; padding: 0.3rem 0.35rem; min-width: 60px;">TRAINING</th>
+                        <th style="border: 1px solid #65a30d; padding: 0.3rem 0.4rem; min-width: 95px;">Rp</th>
 
-                        <th style="border: 1px solid #65a30d; padding: 0.35rem 0.4rem; min-width: 65px;">PLASTIK</th>
-                        <th style="border: 1px solid #65a30d; padding: 0.35rem 0.4rem; min-width: 60px;">KAIN</th>
+                        {{-- Karton FL --}}
+                        <th style="border: 1px solid #65a30d; padding: 0.3rem 0.4rem; min-width: 80px;">BARU</th>
+                        <th style="border: 1px solid #65a30d; padding: 0.3rem 0.4rem; min-width: 80px;">BEKAS</th>
 
-                        <th style="border: 1px solid #65a30d; padding: 0.35rem 0.5rem; min-width: 75px;">PADAT</th>
-                        <th style="border: 1px solid #65a30d; padding: 0.35rem 0.5rem; min-width: 75px;">KIMIA</th>
+                        {{-- Lakban --}}
+                        <th style="border: 1px solid #65a30d; padding: 0.3rem 0.4rem; min-width: 70px;">BESAR</th>
+                        <th style="border: 1px solid #65a30d; padding: 0.3rem 0.4rem; min-width: 70px;">KECIL</th>
 
-                        <th style="border: 1px solid #16a34a; padding: 0.35rem 0.5rem; min-width: 65px;">BARCO</th>
-                        <th style="border: 1px solid #16a34a; padding: 0.35rem 0.5rem; min-width: 65px;">SAWIT</th>
-                        <th style="border: 1px solid #16a34a; padding: 0.35rem 0.5rem; min-width: 65px;">NOSALT</th>
-                        <th style="border: 1px solid #16a34a; padding: 0.35rem 0.5rem; min-width: 65px;">BALO</th>
+                        {{-- Sarung Tangan --}}
+                        <th style="border: 1px solid #65a30d; padding: 0.3rem 0.35rem; min-width: 65px;">PLASTIK</th>
+                        <th style="border: 1px solid #65a30d; padding: 0.3rem 0.35rem; min-width: 60px;">KAIN</th>
 
-                        <th style="border: 1px solid #16a34a; padding: 0.35rem 0.5rem; min-width: 70px;">BERKO</th>
-                        <th style="border: 1px solid #16a34a; padding: 0.35rem 0.5rem; min-width: 75px;">BERKO ME</th>
-                        <th style="border: 1px solid #16a34a; padding: 0.35rem 0.5rem; min-width: 75px;">TOTAL</th>
-                        <th style="border: 1px solid #16a34a; padding: 0.35rem 0.4rem; min-width: 55px;">%</th>
+                        {{-- B. Pngolhn Limbah --}}
+                        <th style="border: 1px solid #65a30d; color: #c00000; padding: 0.3rem 0.4rem; min-width: 80px; line-height: 1.1;">LIMBAH<br>PADAT</th>
+                        <th style="border: 1px solid #65a30d; color: #c00000; padding: 0.3rem 0.4rem; min-width: 80px; line-height: 1.1;">BAHAN<br>KIMIA</th>
                     </tr>
                 </thead>
 
-                {{-- BODY: 31 BARIS HARIAN --}}
+                {{-- BODY: 31 BARIS HARIAN DENGAN FORMAT TANGGAL DD/MM/YY SEPERTI EXCEL --}}
                 <tbody>
                     @foreach ($report['days'] as $d)
                         @php
-                            $isSunday = in_array(strtolower($d['hari_nm']), ['minggu', 'ahad']);
+                            $isSunday = in_array(strtolower($d['hari_nm']), ['minggu', 'ahad']) || (\Carbon\Carbon::parse($d['date'])->dayOfWeek === 0);
                             $rowBg = $isSunday ? '#fff1f2' : ($d['has_data'] ? '#ffffff' : '#f8fafc');
                             $cellBorder = '1px solid #e2e8f0';
                         @endphp
                         <tr style="background: {{ $rowBg }}; text-align: right; color: #1e293b;" onmouseover="this.style.background='#f0f9ff'" onmouseout="this.style.background='{{ $rowBg }}'">
-                            {{-- Sticky Kolom 1 & 2 --}}
-                            <td style="position: sticky; left: 0; z-index: 10; background: {{ $rowBg }}; border: {{ $cellBorder }}; padding: 0.45rem 0.65rem; text-align: left; font-weight: 700; color: {{ $isSunday ? '#e11d48' : '#0f172a' }};">
-                                {{ $d['hari_nm'] }}
+                            {{-- Sticky Kolom 1 (HARI: English Sesuai Excel Mirasa) & Kolom 2 (TANGGAL: dd/mm/yy) --}}
+                            <td style="position: sticky; left: 0; z-index: 10; background: {{ $rowBg }}; border: {{ $cellBorder }}; padding: 0.45rem 0.6rem; text-align: left; font-weight: 700; color: {{ $isSunday ? '#e11d48' : '#0f172a' }};">
+                                {{ \Carbon\Carbon::parse($d['date'])->format('l') }}
                             </td>
-                            <td style="position: sticky; left: 90px; z-index: 10; background: {{ $rowBg }}; border: {{ $cellBorder }}; padding: 0.45rem 0.65rem; text-align: center; font-weight: 600;">
-                                {{ sprintf('%02d', $d['day']) }}
-                            </td>
-                            
-                            {{-- Shift & Batch --}}
-                            <td style="border: {{ $cellBorder }}; padding: 0.35rem 0.5rem; text-align: center;">
-                                @if($d['has_data'])
-                                    <div style="display: flex; gap: 0.3rem; align-items: center; justify-content: center;">
-                                        <span class="{{ $d['shift_cd'] == 'A' ? 'badge-shift-a' : 'badge-shift-b' }}">
-                                            Shift {{ $d['shift_cd'] }}
-                                        </span>
-                                        <span class="badge-batch-wip">{{ $d['batch_wip_no'] }}</span>
-                                    </div>
-                                @else
-                                    <span style="color: #cbd5e1;">-</span>
-                                @endif
+                            <td style="position: sticky; left: 85px; z-index: 10; background: {{ $rowBg }}; border: {{ $cellBorder }}; padding: 0.45rem 0.6rem; text-align: center; font-weight: 600;">
+                                {{ \Carbon\Carbon::parse($d['date'])->format('d/m/y') }}
                             </td>
 
                             {{-- Singkong --}}
                             <td style="border: {{ $cellBorder }}; padding: 0.45rem 0.5rem;">
-                                {{ $d['singkong_qty'] > 0 ? number_format($d['singkong_qty'], 0, ',', '.') : '-' }}
+                                {{ $d['has_data'] && $d['singkong_qty'] > 0 ? number_format($d['singkong_qty'], 0, ',', '.') : '-' }}
                             </td>
                             <td style="border: {{ $cellBorder }}; padding: 0.45rem 0.5rem;">
-                                {{ $d['singkong_nilai'] > 0 ? number_format($d['singkong_nilai'], 0, ',', '.') : '-' }}
+                                {{ $d['has_data'] && $d['singkong_nilai'] > 0 ? number_format($d['singkong_nilai'], 0, ',', '.') : '-' }}
                             </td>
 
-                            {{-- Minyak --}}
+                            {{-- Minyak Goreng --}}
                             <td style="border: {{ $cellBorder }}; padding: 0.45rem 0.5rem;">
-                                {{ $d['minyak_sawit_qty'] > 0 ? number_format($d['minyak_sawit_qty'], 1, ',', '.') : '-' }}
+                                {{ $d['has_data'] && $d['minyak_sawit_qty'] > 0 ? number_format($d['minyak_sawit_qty'], 1, ',', '.') : '-' }}
                             </td>
                             <td style="border: {{ $cellBorder }}; padding: 0.45rem 0.5rem;">
-                                {{ $d['minyak_kelapa_qty'] > 0 ? number_format($d['minyak_kelapa_qty'], 1, ',', '.') : '-' }}
+                                {{ $d['has_data'] && $d['minyak_kelapa_qty'] > 0 ? number_format($d['minyak_kelapa_qty'], 1, ',', '.') : '-' }}
                             </td>
                             <td style="border: {{ $cellBorder }}; padding: 0.45rem 0.5rem;">
-                                {{ $d['minyak_nilai'] > 0 ? number_format($d['minyak_nilai'], 0, ',', '.') : '-' }}
+                                {{ $d['has_data'] && $d['minyak_nilai'] > 0 ? number_format($d['minyak_nilai'], 0, ',', '.') : '-' }}
                             </td>
-                            <td style="border: {{ $cellBorder }}; padding: 0.45rem 0.5rem;">
-                                {{ $d['minyak_rasio_persen'] > 0 ? number_format($d['minyak_rasio_persen'], 1, ',', '.') : '-' }}
+                            <td style="border: {{ $cellBorder }}; padding: 0.45rem 0.5rem; text-align: center;">
+                                <span style="color: #002060; font-weight: 800;">
+                                    {{ $d['has_data'] && $d['minyak_rasio_persen'] > 0 ? number_format($d['minyak_rasio_persen'], 2, ',', '.') . '%' : '-' }}
+                                </span>
                             </td>
 
                             {{-- CNG --}}
                             <td style="border: {{ $cellBorder }}; padding: 0.45rem 0.5rem;">
-                                {{ $d['cng_mmbtu'] > 0 ? number_format($d['cng_mmbtu'], 2, ',', '.') : '-' }}
+                                {{ $d['has_data'] && $d['cng_mmbtu'] > 0 ? number_format($d['cng_mmbtu'], 2, ',', '.') : '-' }}
                             </td>
                             <td style="border: {{ $cellBorder }}; padding: 0.45rem 0.5rem;">
-                                {{ $d['cng_nilai'] > 0 ? number_format($d['cng_nilai'], 0, ',', '.') : '-' }}
+                                {{ $d['has_data'] && $d['cng_nilai'] > 0 ? number_format($d['cng_nilai'], 0, ',', '.') : '-' }}
                             </td>
 
                             {{-- Tenaga Kerja --}}
-                            <td style="border: {{ $cellBorder }}; padding: 0.45rem 0.4rem; text-align: center;">
-                                {{ $d['tk_langsung_org'] > 0 ? $d['tk_langsung_org'] : '-' }}
+                            <td style="border: {{ $cellBorder }}; padding: 0.45rem 0.35rem; text-align: center;">
+                                {{ $d['has_data'] && $d['tk_langsung_org'] > 0 ? $d['tk_langsung_org'] : '-' }}
                             </td>
-                            <td style="border: {{ $cellBorder }}; padding: 0.45rem 0.4rem; text-align: center;">
-                                {{ $d['tk_tidak_langsung_org'] > 0 ? $d['tk_tidak_langsung_org'] : '-' }}
+                            <td style="border: {{ $cellBorder }}; padding: 0.45rem 0.35rem; text-align: center;">
+                                {{ $d['has_data'] && $d['tk_tidak_langsung_org'] > 0 ? $d['tk_tidak_langsung_org'] : '-' }}
                             </td>
-                            <td style="border: {{ $cellBorder }}; padding: 0.45rem 0.4rem; text-align: center;">
-                                {{ $d['tk_training_org'] > 0 ? $d['tk_training_org'] : '-' }}
+                            <td style="border: {{ $cellBorder }}; padding: 0.45rem 0.35rem; text-align: center;">
+                                {{ $d['has_data'] && $d['tk_training_org'] > 0 ? $d['tk_training_org'] : '-' }}
                             </td>
                             <td style="border: {{ $cellBorder }}; padding: 0.45rem 0.5rem;">
-                                {{ $d['tk_total_nilai'] > 0 ? number_format($d['tk_total_nilai'], 0, ',', '.') : '-' }}
+                                {{ $d['has_data'] && $d['tk_total_nilai'] > 0 ? number_format($d['tk_total_nilai'], 0, ',', '.') : '-' }}
                             </td>
 
                             {{-- Bahan Pembantu & Pengemas --}}
                             <td style="border: {{ $cellBorder }}; padding: 0.45rem 0.5rem;">
-                                {{ $d['bumbu_nilai'] > 0 ? number_format($d['bumbu_nilai'], 0, ',', '.') : '-' }}
+                                {{ $d['has_data'] && $d['bumbu_nilai'] > 0 ? number_format($d['bumbu_nilai'], 0, ',', '.') : '-' }}
                             </td>
                             <td style="border: {{ $cellBorder }}; padding: 0.45rem 0.5rem;">
-                                {{ $d['karton_baru_nilai'] > 0 ? number_format($d['karton_baru_nilai'], 0, ',', '.') : '-' }}
+                                {{ $d['has_data'] && $d['karton_baru_nilai'] > 0 ? number_format($d['karton_baru_nilai'], 0, ',', '.') : '-' }}
                             </td>
                             <td style="border: {{ $cellBorder }}; padding: 0.45rem 0.5rem;">
-                                {{ $d['karton_bekas_nilai'] > 0 ? number_format($d['karton_bekas_nilai'], 0, ',', '.') : '-' }}
+                                {{ $d['has_data'] && $d['karton_bekas_nilai'] > 0 ? number_format($d['karton_bekas_nilai'], 0, ',', '.') : '-' }}
                             </td>
                             <td style="border: {{ $cellBorder }}; padding: 0.45rem 0.5rem;">
-                                {{ $d['plastik_hd_nilai'] > 0 ? number_format($d['plastik_hd_nilai'], 0, ',', '.') : '-' }}
+                                {{ $d['has_data'] && $d['plastik_hd_nilai'] > 0 ? number_format($d['plastik_hd_nilai'], 0, ',', '.') : '-' }}
                             </td>
                             <td style="border: {{ $cellBorder }}; padding: 0.45rem 0.5rem;">
-                                {{ $d['lakban_besar_nilai'] > 0 ? number_format($d['lakban_besar_nilai'], 0, ',', '.') : '-' }}
+                                {{ $d['has_data'] && $d['lakban_besar_nilai'] > 0 ? number_format($d['lakban_besar_nilai'], 0, ',', '.') : '-' }}
                             </td>
                             <td style="border: {{ $cellBorder }}; padding: 0.45rem 0.5rem;">
-                                {{ $d['lakban_kecil_nilai'] > 0 ? number_format($d['lakban_kecil_nilai'], 0, ',', '.') : '-' }}
+                                {{ $d['has_data'] && $d['lakban_kecil_nilai'] > 0 ? number_format($d['lakban_kecil_nilai'], 0, ',', '.') : '-' }}
                             </td>
                             <td style="border: {{ $cellBorder }}; padding: 0.45rem 0.5rem;">
-                                {{ $d['tali_rafia_nilai'] > 0 ? number_format($d['tali_rafia_nilai'], 0, ',', '.') : '-' }}
+                                {{ $d['has_data'] && $d['tali_rafia_nilai'] > 0 ? number_format($d['tali_rafia_nilai'], 0, ',', '.') : '-' }}
                             </td>
                             <td style="border: {{ $cellBorder }}; padding: 0.45rem 0.5rem;">
-                                {{ $d['fotocopy_nilai'] > 0 ? number_format($d['fotocopy_nilai'], 0, ',', '.') : '-' }}
+                                {{ $d['has_data'] && $d['fotocopy_nilai'] > 0 ? number_format($d['fotocopy_nilai'], 0, ',', '.') : '-' }}
                             </td>
-                            <td style="border: {{ $cellBorder }}; padding: 0.45rem 0.4rem;">
-                                {{ $d['sarung_tangan_plastik_nilai'] > 0 ? number_format($d['sarung_tangan_plastik_nilai'], 0, ',', '.') : '-' }}
+                            <td style="border: {{ $cellBorder }}; padding: 0.45rem 0.35rem;">
+                                {{ $d['has_data'] && $d['sarung_tangan_plastik_nilai'] > 0 ? number_format($d['sarung_tangan_plastik_nilai'], 0, ',', '.') : '-' }}
                             </td>
-                            <td style="border: {{ $cellBorder }}; padding: 0.45rem 0.4rem;">
-                                {{ $d['sarung_tangan_kain_nilai'] > 0 ? number_format($d['sarung_tangan_kain_nilai'], 0, ',', '.') : '-' }}
+                            <td style="border: {{ $cellBorder }}; padding: 0.45rem 0.35rem;">
+                                {{ $d['has_data'] && $d['sarung_tangan_kain_nilai'] > 0 ? number_format($d['sarung_tangan_kain_nilai'], 0, ',', '.') : '-' }}
                             </td>
 
                             {{-- FOH & Operasional --}}
                             <td style="border: {{ $cellBorder }}; padding: 0.45rem 0.5rem;">
-                                {{ $d['qc_pengawasan_nilai'] > 0 ? number_format($d['qc_pengawasan_nilai'], 0, ',', '.') : '-' }}
+                                {{ $d['has_data'] && $d['qc_pengawasan_nilai'] > 0 ? number_format($d['qc_pengawasan_nilai'], 0, ',', '.') : '-' }}
                             </td>
                             <td style="border: {{ $cellBorder }}; padding: 0.45rem 0.5rem;">
-                                {{ $d['listrik_air_telp_nilai'] > 0 ? number_format($d['listrik_air_telp_nilai'], 0, ',', '.') : '-' }}
+                                {{ $d['has_data'] && $d['listrik_air_telp_nilai'] > 0 ? number_format($d['listrik_air_telp_nilai'], 0, ',', '.') : '-' }}
                             </td>
                             <td style="border: {{ $cellBorder }}; padding: 0.45rem 0.5rem;">
-                                {{ $d['pemeliharaan_mesin_nilai'] > 0 ? number_format($d['pemeliharaan_mesin_nilai'], 0, ',', '.') : '-' }}
+                                {{ $d['has_data'] && $d['pemeliharaan_mesin_nilai'] > 0 ? number_format($d['pemeliharaan_mesin_nilai'], 0, ',', '.') : '-' }}
                             </td>
                             <td style="border: {{ $cellBorder }}; padding: 0.45rem 0.5rem;">
-                                {{ $d['penyusutan_mesin_nilai'] > 0 ? number_format($d['penyusutan_mesin_nilai'], 0, ',', '.') : '-' }}
+                                {{ $d['has_data'] && $d['penyusutan_mesin_nilai'] > 0 ? number_format($d['penyusutan_mesin_nilai'], 0, ',', '.') : '-' }}
                             </td>
                             <td style="border: {{ $cellBorder }}; padding: 0.45rem 0.5rem;">
-                                {{ $d['limbah_padat_nilai'] > 0 ? number_format($d['limbah_padat_nilai'], 0, ',', '.') : '-' }}
+                                {{ $d['has_data'] && $d['limbah_padat_nilai'] > 0 ? number_format($d['limbah_padat_nilai'], 0, ',', '.') : '-' }}
                             </td>
                             <td style="border: {{ $cellBorder }}; padding: 0.45rem 0.5rem;">
-                                {{ $d['limbah_kimia_nilai'] > 0 ? number_format($d['limbah_kimia_nilai'], 0, ',', '.') : '-' }}
+                                {{ $d['has_data'] && $d['limbah_kimia_nilai'] > 0 ? number_format($d['limbah_kimia_nilai'], 0, ',', '.') : '-' }}
                             </td>
 
-                            {{-- TOTAL BIAYA (KOLOM KUNING) --}}
-                            <td style="border: 1px solid #ca8a04; background: {{ $d['has_data'] ? '#fef08a' : '#fef9c3' }}; font-weight: 800; color: #713f12; padding: 0.45rem 0.65rem;">
-                                {{ $d['total_biaya_produksi'] > 0 ? number_format($d['total_biaya_produksi'], 0, ',', '.') : '-' }}
+                            {{-- TOTAL BIAYA (Warna Kuning Stabilo Seperti Excel, Nilai Tebal Biru) --}}
+                            <td style="border: 1px solid #ca8a04; background: {{ $d['has_data'] && $d['total_biaya_produksi'] > 0 ? '#ffeb3b' : 'inherit' }}; font-weight: 800; color: #002060; padding: 0.45rem 0.65rem;">
+                                {{ $d['has_data'] && $d['total_biaya_produksi'] > 0 ? number_format($d['total_biaya_produksi'], 0, ',', '.') : '-' }}
                             </td>
 
-                            {{-- Output WIP Manual --}}
-                            <td style="border: {{ $cellBorder }}; padding: 0.45rem 0.5rem;">
-                                {{ $d['asin_barco_qty'] > 0 ? number_format($d['asin_barco_qty'], 0, ',', '.') : '-' }}
-                            </td>
-                            <td style="border: {{ $cellBorder }}; padding: 0.45rem 0.5rem;">
-                                {{ $d['asin_sawit_qty'] > 0 ? number_format($d['asin_sawit_qty'], 0, ',', '.') : '-' }}
-                            </td>
-                            <td style="border: {{ $cellBorder }}; padding: 0.45rem 0.5rem;">
-                                {{ $d['no_salt_qty'] > 0 ? number_format($d['no_salt_qty'], 0, ',', '.') : '-' }}
-                            </td>
-                            <td style="border: {{ $cellBorder }}; padding: 0.45rem 0.5rem;">
-                                {{ $d['balo_gelombang_qty'] > 0 ? number_format($d['balo_gelombang_qty'], 0, ',', '.') : '-' }}
+                            {{-- TOTAL WIP (KG) (Teks Biru Tebal Seperti Excel) --}}
+                            <td style="border: {{ $cellBorder }}; font-weight: 800; color: #002060; padding: 0.45rem 0.65rem;">
+                                {{ $d['has_data'] && $d['total_wip_qty'] > 0 ? number_format($d['total_wip_qty'], 2, ',', '.') : '-' }}
                             </td>
 
-                            {{-- Output WIP Berko --}}
-                            <td style="border: {{ $cellBorder }}; padding: 0.45rem 0.5rem;">
-                                {{ $d['berko_qty'] > 0 ? number_format($d['berko_qty'], 2, ',', '.') : '-' }}
-                            </td>
-                            <td style="border: {{ $cellBorder }}; padding: 0.45rem 0.5rem;">
-                                {{ $d['berko_me_qty'] > 0 ? number_format($d['berko_me_qty'], 2, ',', '.') : '-' }}
-                            </td>
-                            <td style="border: {{ $cellBorder }}; padding: 0.45rem 0.5rem; font-weight: 600;">
-                                {{ $d['total_berko_qty'] > 0 ? number_format($d['total_berko_qty'], 2, ',', '.') : '-' }}
-                            </td>
-                            <td style="border: {{ $cellBorder }}; padding: 0.45rem 0.4rem; color: #64748b;">
-                                {{ $d['berko_persen'] > 0 ? number_format($d['berko_persen'], 2, ',', '.') . '%' : '-' }}
+                            {{-- RENDEMEN % (Teks Biru Tebal Seperti Excel) --}}
+                            <td style="border: {{ $cellBorder }}; font-weight: 800; color: #002060; padding: 0.45rem 0.5rem; text-align: center;">
+                                {{ $d['has_data'] && $d['rendemen_persen'] > 0 ? number_format($d['rendemen_persen'], 2, ',', '.') . '%' : '-' }}
                             </td>
 
-                            {{-- Total WIP (Kg) --}}
-                            <td style="border: 1px solid #16a34a; background: {{ $d['has_data'] ? '#bbf7d0' : '#dcfce7' }}; font-weight: 800; color: #064e3b; padding: 0.45rem 0.65rem;">
-                                {{ $d['total_wip_qty'] > 0 ? number_format($d['total_wip_qty'], 2, ',', '.') : '-' }}
-                            </td>
-
-                            {{-- Rendemen % --}}
-                            @php
-                                $cellRendemenColor = $d['rendemen_persen'] >= 33.0 ? '#15803d' : ($d['rendemen_persen'] >= 30.0 ? '#b45309' : '#b91c1c');
-                            @endphp
-                            <td style="border: 1px solid #15803d; font-weight: 800; color: {{ $cellRendemenColor }}; padding: 0.45rem 0.5rem; text-align: center;">
-                                {{ $d['rendemen_persen'] > 0 ? number_format($d['rendemen_persen'], 2, ',', '.') . '%' : '-' }}
-                            </td>
-
-                            {{-- HPP per Kg --}}
-                            <td style="border: 1px solid #0369a1; background: {{ $d['has_data'] ? '#bae6fd' : '#e0f2fe' }}; font-weight: 800; color: #0369a1; padding: 0.45rem 0.65rem;">
-                                {{ $d['hpp_per_kg'] > 0 ? 'Rp ' . number_format($d['hpp_per_kg'], 2, ',', '.') : '-' }}
+                            {{-- HARGA POKOK PRODUKSI / KG --}}
+                            <td style="border: {{ $cellBorder }}; font-weight: 800; color: #000000; padding: 0.45rem 0.65rem;">
+                                {{ $d['has_data'] && $d['hpp_per_kg'] > 0 ? number_format($d['hpp_per_kg'], 0, ',', '.') : '-' }}
                             </td>
 
                             {{-- Sticky Kolom Kanan Aksi --}}
@@ -749,7 +697,7 @@
                                             <span>Cetak Stiker Karton</span>
                                         </a>
                                         <div class="action-dropdown-divider"></div>
-                                        <button type="button" class="action-dropdown-item danger-item" onclick="openDeleteProduksiModal({{ $d['produksi_id'] }}, '{{ $d['produksi_no'] }}', '{{ $d['hari_nm'] }}, {{ $d['day'] }}/{{ $month }}/{{ $year }}', '{{ $d['shift_cd'] }}', '{{ $d['batch_wip_no'] }}')">
+                                        <button type="button" class="action-dropdown-item danger-item" onclick="openDeleteProduksiModal({{ $d['produksi_id'] }}, '{{ $d['produksi_no'] }}', '{{ $d['hari_nm'] }}, {{ \Carbon\Carbon::parse($d['date'])->format('d/m/Y') }}', '{{ $d['shift_cd'] }}', '{{ $d['batch_wip_no'] }}')">
                                             <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                                             <span>Hapus Data Ini</span>
                                         </button>
@@ -762,82 +710,140 @@
                     @endforeach
                 </tbody>
 
-                {{-- TFOOT: BARIS GRAND TOTAL SEPERTI EXCEL MIRASA --}}
+                {{-- TFOOT: BARIS TOTAL & RATA-RATA SEPERTI EXCEL MIRASA --}}
                 @if($report['count'] > 0)
+                    @php $cnt = max(1, $report['count']); @endphp
                     <tfoot style="position: sticky; bottom: 0; z-index: 20;">
-                        <tr style="background: #0f172a; color: #ffffff; font-weight: 800; font-size: 0.75rem; text-align: right;">
-                            <td colspan="3" style="position: sticky; left: 0; z-index: 25; background: #0f172a; color: #f8fafc; padding: 0.65rem 0.75rem; text-align: center; border-right: 1px solid #334155;">
-                                GRAND TOTAL BULANAN
+                        {{-- ROW 1: T O T A L --}}
+                        <tr style="background: #ffffff; color: #000000; font-weight: 800; font-size: 0.75rem; text-align: right;">
+                            <td colspan="2" style="position: sticky; left: 0; z-index: 25; background: #ffc000; color: #000000; padding: 0.55rem 0.65rem; text-align: center; border: 1px solid #ca8a04; font-weight: 900; letter-spacing: 0.1em;">
+                                T O T A L
                             </td>
 
-                            <td style="padding: 0.5rem;">{{ number_format($tot['singkong_qty'], 0, ',', '.') }}</td>
-                            <td style="padding: 0.5rem;">{{ number_format($tot['singkong_nilai'], 0, ',', '.') }}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['singkong_qty'], 0, ',', '.') }}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['singkong_nilai'], 0, ',', '.') }}</td>
 
-                            <td style="padding: 0.5rem;">{{ number_format($tot['minyak_sawit_qty'], 1, ',', '.') }}</td>
-                            <td style="padding: 0.5rem;">{{ number_format($tot['minyak_kelapa_qty'], 1, ',', '.') }}</td>
-                            <td style="padding: 0.5rem;">{{ number_format($tot['minyak_nilai'], 0, ',', '.') }}</td>
-                            <td style="padding: 0.5rem;">{{ number_format($tot['minyak_rasio_persen'], 1, ',', '.') }}%</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['minyak_sawit_qty'], 1, ',', '.') }}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['minyak_kelapa_qty'], 1, ',', '.') }}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['minyak_nilai'], 0, ',', '.') }}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem; text-align: center;">
+                                <span style="color: #002060; font-weight: 900;">{{ number_format($tot['minyak_rasio_persen'], 2, ',', '.') }}%</span>
+                            </td>
 
-                            <td style="padding: 0.5rem;">{{ number_format($tot['cng_mmbtu'], 2, ',', '.') }}</td>
-                            <td style="padding: 0.5rem;">{{ number_format($tot['cng_nilai'], 0, ',', '.') }}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['cng_mmbtu'], 2, ',', '.') }}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['cng_nilai'], 0, ',', '.') }}</td>
 
-                            <td style="padding: 0.5rem; text-align: center;">{{ $tot['tk_langsung_org'] }}</td>
-                            <td style="padding: 0.5rem; text-align: center;">{{ $tot['tk_tidak_langsung_org'] }}</td>
-                            <td style="padding: 0.5rem; text-align: center;">{{ $tot['tk_training_org'] }}</td>
-                            <td style="padding: 0.5rem;">{{ number_format($tot['tk_total_nilai'], 0, ',', '.') }}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.35rem; text-align: center;">{{ $tot['tk_langsung_org'] }}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.35rem; text-align: center;">{{ $tot['tk_tidak_langsung_org'] }}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.35rem; text-align: center;">{{ $tot['tk_training_org'] }}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['tk_total_nilai'], 0, ',', '.') }}</td>
 
-                            <td style="padding: 0.5rem;">{{ number_format($tot['bumbu_nilai'], 0, ',', '.') }}</td>
-                            <td style="padding: 0.5rem;">{{ number_format($tot['karton_baru_nilai'], 0, ',', '.') }}</td>
-                            <td style="padding: 0.5rem;">{{ number_format($tot['karton_bekas_nilai'], 0, ',', '.') }}</td>
-                            <td style="padding: 0.5rem;">{{ number_format($tot['plastik_hd_nilai'], 0, ',', '.') }}</td>
-                            <td style="padding: 0.5rem;">{{ number_format($tot['lakban_besar_nilai'], 0, ',', '.') }}</td>
-                            <td style="padding: 0.5rem;">{{ number_format($tot['lakban_kecil_nilai'], 0, ',', '.') }}</td>
-                            <td style="padding: 0.5rem;">{{ number_format($tot['tali_rafia_nilai'], 0, ',', '.') }}</td>
-                            <td style="padding: 0.5rem;">{{ number_format($tot['fotocopy_nilai'], 0, ',', '.') }}</td>
-                            <td style="padding: 0.5rem;">{{ number_format($tot['sarung_tangan_plastik_nilai'], 0, ',', '.') }}</td>
-                            <td style="padding: 0.5rem;">{{ number_format($tot['sarung_tangan_kain_nilai'], 0, ',', '.') }}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['bumbu_nilai'], 0, ',', '.') }}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['karton_baru_nilai'], 0, ',', '.') }}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['karton_bekas_nilai'], 0, ',', '.') }}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['plastik_hd_nilai'], 0, ',', '.') }}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['lakban_besar_nilai'], 0, ',', '.') }}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['lakban_kecil_nilai'], 0, ',', '.') }}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['tali_rafia_nilai'], 0, ',', '.') }}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['fotocopy_nilai'], 0, ',', '.') }}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.35rem;">{{ number_format($tot['sarung_tangan_plastik_nilai'], 0, ',', '.') }}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.35rem;">{{ number_format($tot['sarung_tangan_kain_nilai'], 0, ',', '.') }}</td>
 
-                            <td style="padding: 0.5rem;">{{ number_format($tot['qc_pengawasan_nilai'], 0, ',', '.') }}</td>
-                            <td style="padding: 0.5rem;">{{ number_format($tot['listrik_air_telp_nilai'], 0, ',', '.') }}</td>
-                            <td style="padding: 0.5rem;">{{ number_format($tot['pemeliharaan_mesin_nilai'], 0, ',', '.') }}</td>
-                            <td style="padding: 0.5rem;">{{ number_format($tot['penyusutan_mesin_nilai'], 0, ',', '.') }}</td>
-                            <td style="padding: 0.5rem;">{{ number_format($tot['limbah_padat_nilai'], 0, ',', '.') }}</td>
-                            <td style="padding: 0.5rem;">{{ number_format($tot['limbah_kimia_nilai'], 0, ',', '.') }}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['qc_pengawasan_nilai'], 0, ',', '.') }}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['listrik_air_telp_nilai'], 0, ',', '.') }}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['pemeliharaan_mesin_nilai'], 0, ',', '.') }}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['penyusutan_mesin_nilai'], 0, ',', '.') }}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['limbah_padat_nilai'], 0, ',', '.') }}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['limbah_kimia_nilai'], 0, ',', '.') }}</td>
 
                             {{-- Total Biaya Grand --}}
-                            <td style="background: #eab308; color: #713f12; font-size: 0.85rem; padding: 0.65rem 0.75rem;">
-                                Rp {{ number_format($tot['total_biaya_produksi'], 0, ',', '.') }}
+                            <td style="background: #ffeb3b; color: #002060; font-weight: 900; border: 1px solid #ca8a04; padding: 0.55rem 0.65rem;">
+                                {{ number_format($tot['total_biaya_produksi'], 0, ',', '.') }}
                             </td>
 
-                            {{-- Manual Output --}}
-                            <td style="padding: 0.5rem;">{{ number_format($tot['asin_barco_qty'], 0, ',', '.') }}</td>
-                            <td style="padding: 0.5rem;">{{ number_format($tot['asin_sawit_qty'], 0, ',', '.') }}</td>
-                            <td style="padding: 0.5rem;">{{ number_format($tot['no_salt_qty'], 0, ',', '.') }}</td>
-                            <td style="padding: 0.5rem;">{{ number_format($tot['balo_gelombang_qty'], 0, ',', '.') }}</td>
-
-                            {{-- Berko --}}
-                            <td style="padding: 0.5rem;">{{ number_format($tot['berko_qty'], 2, ',', '.') }}</td>
-                            <td style="padding: 0.5rem;">{{ number_format($tot['berko_me_qty'], 2, ',', '.') }}</td>
-                            <td style="padding: 0.5rem;">{{ number_format($tot['total_berko_qty'], 2, ',', '.') }}</td>
-                            <td style="padding: 0.5rem;">{{ number_format($tot['berko_persen'], 2, ',', '.') }}%</td>
-
                             {{-- Grand Total WIP --}}
-                            <td style="background: #86efac; color: #064e3b; font-size: 0.85rem; padding: 0.65rem 0.75rem;">
+                            <td style="border: 1px solid #cbd5e1; color: #002060; font-weight: 900; padding: 0.55rem 0.65rem;">
                                 {{ number_format($tot['total_wip_qty'], 2, ',', '.') }}
                             </td>
 
                             {{-- Rata-rata Rendemen --}}
-                            <td style="background: #22c55e; color: #ffffff; font-size: 0.85rem; padding: 0.65rem 0.75rem;">
+                            <td style="border: 1px solid #cbd5e1; color: #002060; font-weight: 900; padding: 0.55rem 0.5rem; text-align: center;">
                                 {{ number_format($tot['rendemen_persen'], 2, ',', '.') }}%
                             </td>
 
                             {{-- Rata-rata HPP per Kg --}}
-                            <td style="background: #0284c7; color: #ffffff; font-size: 0.85rem; padding: 0.65rem 0.75rem;">
-                                Rp {{ number_format($tot['hpp_per_kg'], 2, ',', '.') }}
+                            <td style="border: 1px solid #cbd5e1; color: #000000; font-weight: 900; padding: 0.55rem 0.65rem;">
+                                {{ number_format($tot['hpp_per_kg'], 0, ',', '.') }}
                             </td>
 
                             {{-- Sticky Col Right Aksi --}}
-                            <td style="position: sticky; right: 0; z-index: 25; background: #0284c7;"></td>
+                            <td style="position: sticky; right: 0; z-index: 25; background: #0284c7; border: 1px solid #0369a1;"></td>
+                        </tr>
+
+                        {{-- ROW 2: R A T A - R A T A --}}
+                        <tr style="background: #f8fafc; color: #000000; font-weight: 800; font-size: 0.75rem; text-align: right;">
+                            <td colspan="2" style="position: sticky; left: 0; z-index: 25; background: #ffc000; color: #000000; padding: 0.5rem 0.65rem; text-align: center; border: 1px solid #ca8a04; font-weight: 900; letter-spacing: 0.05em;">
+                                R A T A - R A T A
+                            </td>
+
+                            <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['singkong_qty'] / $cnt, 0, ',', '.') }}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['singkong_nilai'] / $cnt, 0, ',', '.') }}</td>
+
+                            <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['minyak_sawit_qty'] / $cnt, 1, ',', '.') }}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['minyak_kelapa_qty'] / $cnt, 1, ',', '.') }}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['minyak_nilai'] / $cnt, 0, ',', '.') }}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem; text-align: center;">
+                                <span style="color: #002060; font-weight: 900;">{{ number_format($tot['minyak_rasio_persen'], 2, ',', '.') }}%</span>
+                            </td>
+
+                            <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['cng_mmbtu'] / $cnt, 2, ',', '.') }}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['cng_nilai'] / $cnt, 0, ',', '.') }}</td>
+
+                            <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.35rem; text-align: center;">{{ number_format($tot['tk_langsung_org'] / $cnt, 1, ',', '.') }}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.35rem; text-align: center;">{{ number_format($tot['tk_tidak_langsung_org'] / $cnt, 1, ',', '.') }}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.35rem; text-align: center;">{{ number_format($tot['tk_training_org'] / $cnt, 1, ',', '.') }}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['tk_total_nilai'] / $cnt, 0, ',', '.') }}</td>
+
+                            <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['bumbu_nilai'] / $cnt, 0, ',', '.') }}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['karton_baru_nilai'] / $cnt, 0, ',', '.') }}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['karton_bekas_nilai'] / $cnt, 0, ',', '.') }}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['plastik_hd_nilai'] / $cnt, 0, ',', '.') }}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['lakban_besar_nilai'] / $cnt, 0, ',', '.') }}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['lakban_kecil_nilai'] / $cnt, 0, ',', '.') }}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['tali_rafia_nilai'] / $cnt, 0, ',', '.') }}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['fotocopy_nilai'] / $cnt, 0, ',', '.') }}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.35rem;">{{ number_format($tot['sarung_tangan_plastik_nilai'] / $cnt, 0, ',', '.') }}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.35rem;">{{ number_format($tot['sarung_tangan_kain_nilai'] / $cnt, 0, ',', '.') }}</td>
+
+                            <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['qc_pengawasan_nilai'] / $cnt, 0, ',', '.') }}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['listrik_air_telp_nilai'] / $cnt, 0, ',', '.') }}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['pemeliharaan_mesin_nilai'] / $cnt, 0, ',', '.') }}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['penyusutan_mesin_nilai'] / $cnt, 0, ',', '.') }}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['limbah_padat_nilai'] / $cnt, 0, ',', '.') }}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['limbah_kimia_nilai'] / $cnt, 0, ',', '.') }}</td>
+
+                            {{-- Total Biaya Rata-rata --}}
+                            <td style="background: #ffeb3b; color: #002060; font-weight: 900; border: 1px solid #ca8a04; padding: 0.5rem 0.65rem;">
+                                {{ number_format($tot['total_biaya_produksi'] / $cnt, 0, ',', '.') }}
+                            </td>
+
+                            {{-- WIP Rata-rata --}}
+                            <td style="border: 1px solid #cbd5e1; color: #002060; font-weight: 900; padding: 0.5rem 0.65rem;">
+                                {{ number_format($tot['total_wip_qty'] / $cnt, 2, ',', '.') }}
+                            </td>
+
+                            {{-- Rendemen % --}}
+                            <td style="border: 1px solid #cbd5e1; color: #002060; font-weight: 900; padding: 0.5rem 0.5rem; text-align: center;">
+                                {{ number_format($tot['rendemen_persen'], 2, ',', '.') }}%
+                            </td>
+
+                            {{-- HPP per Kg --}}
+                            <td style="border: 1px solid #cbd5e1; color: #000000; font-weight: 900; padding: 0.5rem 0.65rem;">
+                                {{ number_format($tot['hpp_per_kg'], 0, ',', '.') }}
+                            </td>
+
+                            {{-- Sticky Col Right Aksi --}}
+                            <td style="position: sticky; right: 0; z-index: 25; background: #0284c7; border: 1px solid #0369a1;"></td>
                         </tr>
                     </tfoot>
                 @endif

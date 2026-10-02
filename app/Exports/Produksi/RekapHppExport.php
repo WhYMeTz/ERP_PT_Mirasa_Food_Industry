@@ -181,7 +181,7 @@ class RekapHppExport
             $isSunday = in_array(strtolower($d['hari_nm']), ['minggu', 'ahad']);
             $hasData = !empty($d['has_data']);
 
-            $sheet->setCellValue('A' . $row, $d['hari_nm']);
+            $sheet->setCellValue('A' . $row, Carbon::parse($d['date'])->format('l'));
             $sheet->setCellValue('B' . $row, Carbon::parse($d['date'])->format('d/m/y'));
 
             if ($hasData) {

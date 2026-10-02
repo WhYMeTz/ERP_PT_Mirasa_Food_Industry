@@ -50,7 +50,7 @@
                     <th style="padding: 0.85rem 1rem; text-align: right;">Ukuran Batch Standar</th>
                     <th style="padding: 0.85rem 1rem; text-align: center;">Komponen Bahan</th>
                     <th style="padding: 0.85rem 1rem;">Catatan</th>
-                    <th style="padding: 0.85rem 1rem; text-align: right; width: 110px;">Aksi</th>
+                    <th style="padding: 0.85rem 1rem; text-align: center; width: 100px;">Aksi</th>
                 </tr>
             </thead>
             <tbody>
@@ -88,37 +88,36 @@
                         <td style="padding: 0.85rem 1rem; color: #64748b; font-size: 0.85rem; max-width: 250px;">
                             {{ Str::limit($bom->catatan_txt ?? '-', 60) }}
                         </td>
-                        <td style="padding: 0.85rem 1rem; text-align: right;">
-                            <div style="position: relative; display: inline-block;">
-                                <button type="button" 
-                                    class="btn-action-trigger" 
-                                    onclick="toggleSmartActionDropdown(this, event, 'action-menu-{{ $bom->bom_id }}')">
-                                    Aksi ▼
-                                </button>
+                        <td style="padding: 0.85rem 1rem; text-align: center; vertical-align: middle;">
+                            <button type="button" 
+                                class="btn-action-trigger" 
+                                onclick="toggleSmartActionDropdown(this, event, 'action-menu-{{ $bom->bom_id }}')">
+                                <span>Aksi</span>
+                                <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                            </button>
 
-                                <div id="action-menu-{{ $bom->bom_id }}" class="action-dropdown-menu">
-                                    <a href="{{ route('master.resep.show', $bom->bom_id) }}" class="action-dropdown-item">
-                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                                        Rincian Formula
+                            <div id="action-menu-{{ $bom->bom_id }}" class="action-dropdown-menu">
+                                <a href="{{ route('master.resep.show', $bom->bom_id) }}" class="action-dropdown-item">
+                                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                    <span>Rincian Formula</span>
+                                </a>
+
+                                @if (Auth::user()?->canEditMasterResep())
+                                    <a href="{{ route('master.resep.edit', $bom->bom_id) }}" class="action-dropdown-item">
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                        <span>Edit Formula</span>
                                     </a>
+                                @endif
 
-                                    @if (Auth::user()?->canEditMasterResep())
-                                        <a href="{{ route('master.resep.edit', $bom->bom_id) }}" class="action-dropdown-item">
-                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                                            Edit Formula
-                                        </a>
-                                    @endif
-
-                                    @if (Auth::user()?->canDeleteMasterResep())
-                                        <div class="action-dropdown-divider"></div>
-                                        <button type="button" 
-                                            class="action-dropdown-item danger-item" 
-                                            onclick="closeAllActionDropdowns(); openDeleteResepModal({{ $bom->bom_id }}, '{{ addslashes($bom->bom_no) }}', '{{ addslashes($bom->bom_nm) }}', '{{ addslashes($bom->barangJadi?->barang_nm ?? '-') }}', '{{ number_format((float) $bom->batch_ukuran_qty, 0, ',', '.') }} {{ addslashes($bom->barangJadi?->satuanDasar?->satuan_nm ?? 'Unit') }}')">
-                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                            Hapus Formula
-                                        </button>
-                                    @endif
-                                </div>
+                                @if (Auth::user()?->canDeleteMasterResep())
+                                    <div class="action-dropdown-divider"></div>
+                                    <button type="button" 
+                                        class="action-dropdown-item danger-item" 
+                                        onclick="closeAllActionDropdowns(); openDeleteResepModal({{ $bom->bom_id }}, '{{ addslashes($bom->bom_no) }}', '{{ addslashes($bom->bom_nm) }}', '{{ addslashes($bom->barangJadi?->barang_nm ?? '-') }}', '{{ number_format((float) $bom->batch_ukuran_qty, 0, ',', '.') }} {{ addslashes($bom->barangJadi?->satuanDasar?->satuan_nm ?? 'Unit') }}')">
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                        <span>Hapus Formula</span>
+                                    </button>
+                                @endif
                             </div>
                         </td>
                     </tr>

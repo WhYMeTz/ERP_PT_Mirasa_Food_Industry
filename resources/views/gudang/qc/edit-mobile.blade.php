@@ -66,32 +66,58 @@
         @method('PUT')
         
         <input type="hidden" name="kategori_barang" value="{{ $qc->kategori_barang }}">
-        <input type="hidden" name="items[{{ $qcdtlId }}][barang_id]" value="{{ $barangId }}">
 
-        {{-- KARTU 1: INFO PENGIRIMAN & ARMADA --}}
+        {{-- KARTU 1: INFO PENGIRIMAN, PO & KOMODITAS --}}
         <div class="qc-card-section">
             <h2 class="qc-card-title">
-                <span>🚚</span> <span>1. Info Armada &amp; Pengiriman</span>
+                <span>🚚</span> <span>1. Info Armada, PO &amp; Komoditas</span>
             </h2>
 
             <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                {{-- PILIHAN PO --}}
                 <div>
-                    <label class="qc-info-label" style="display: block; font-weight: 700; margin-bottom: 0.25rem;">Mitra Supplier (Pengirim) *</label>
-                    <select name="supplier_id" class="form-control" style="width: 100%; border-radius: 8px; font-weight: 700;" required>
-                        @foreach ($suppliers as $sup)
-                            <option value="{{ $sup->supplier_id }}" {{ old('supplier_id', $qc->supplier_id) == $sup->supplier_id ? 'selected' : '' }}>
-                                {{ $sup->supplier_nm }}
+                    <label class="qc-info-label" style="display: block; font-weight: 700; margin-bottom: 0.25rem;">Referensi Purchase Order (PO)</label>
+                    <select name="po_id" class="form-control" style="width: 100%; border-radius: 8px; font-weight: 700;">
+                        <option value="">-- Tanpa PO / Non-PO (Pembelian Langsung) --</option>
+                        @foreach ($pos as $po)
+                            <option value="{{ $po->po_id }}" {{ old('po_id', $qc->po_id) == $po->po_id ? 'selected' : '' }}>
+                                {{ $po->po_no }} - {{ $po->supplier?->supplier_nm }} ({{ $po->po_tgl ? $po->po_tgl->format('d/m/Y') : '' }})
                             </option>
                         @endforeach
                     </select>
                 </div>
 
+                {{-- SUPPLIER & GUDANG --}}
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem;">
+                    <div>
+                        <label class="qc-info-label" style="display: block; font-weight: 700; margin-bottom: 0.25rem;">Mitra Supplier *</label>
+                        <select name="supplier_id" class="form-control" style="width: 100%; border-radius: 8px; font-weight: 700;" required>
+                            @foreach ($suppliers as $sup)
+                                <option value="{{ $sup->supplier_id }}" {{ old('supplier_id', $qc->supplier_id) == $sup->supplier_id ? 'selected' : '' }}>
+                                    {{ $sup->supplier_nm }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label class="qc-info-label" style="display: block; font-weight: 700; margin-bottom: 0.25rem;">Gudang Bongkar *</label>
+                        <select name="gudang_id" class="form-control" style="width: 100%; border-radius: 8px; font-weight: 700;" required>
+                            @foreach ($gudangs as $g)
+                                <option value="{{ $g->gudang_id }}" {{ old('gudang_id', $qc->gudang_id) == $g->gudang_id ? 'selected' : '' }}>
+                                    {{ $g->gudang_nm }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+
+                {{-- PILIH BARANG / KOMODITAS --}}
                 <div>
-                    <label class="qc-info-label" style="display: block; font-weight: 700; margin-bottom: 0.25rem;">Gudang Bongkar *</label>
-                    <select name="gudang_id" class="form-control" style="width: 100%; border-radius: 8px; font-weight: 700;" required>
-                        @foreach ($gudangs as $g)
-                            <option value="{{ $g->gudang_id }}" {{ old('gudang_id', $qc->gudang_id) == $g->gudang_id ? 'selected' : '' }}>
-                                {{ $g->gudang_nm }}
+                    <label class="qc-info-label" style="display: block; font-weight: 700; margin-bottom: 0.25rem;">Komoditas / Nama Barang *</label>
+                    <select name="items[{{ $qcdtlId }}][barang_id]" class="form-control" style="width: 100%; border-radius: 8px; font-weight: 800; color: #0284c7;" required>
+                        @foreach ($barangs as $b)
+                            <option value="{{ $b->barang_id }}" {{ old('items.'.$qcdtlId.'.barang_id', $barangId) == $b->barang_id ? 'selected' : '' }}>
+                                {{ $b->barang_cd }} - {{ $b->barang_nm }} ({{ $b->satuanDasar?->satuan_nm ?? 'kg' }})
                             </option>
                         @endforeach
                     </select>
@@ -118,6 +144,33 @@
                         <input type="datetime-local" name="tgl_periksa" value="{{ old('tgl_periksa', $qc->tgl_periksa ? $qc->tgl_periksa->format('Y-m-d\TH:i') : date('Y-m-d\TH:i')) }}" class="form-control" style="width: 100%; border-radius: 8px; font-size: 0.8rem;">
                     </div>
                 </div>
+
+                {{-- INFO KEBUN & PANEN JIKA SINGKONG --}}
+                @if ($kat === 'SINGKONG')
+                    <div style="background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px; padding: 0.65rem 0.85rem;">
+                        <div style="font-size: 0.75rem; font-weight: 800; color: #334155; margin-bottom: 0.4rem;">INFO PANEN &amp; SAMPEL SINGKONG:</div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.4rem;">
+                            <div>
+                                <label class="qc-info-label" style="font-size: 0.72rem;">Lokasi Panen</label>
+                                <input type="text" name="lokasi_panen" value="{{ old('lokasi_panen', $qc->lokasi_panen) }}" placeholder="Kecamatan / Desa" class="form-control" style="width: 100%; border-radius: 6px; font-size: 0.8rem;">
+                            </div>
+                            <div>
+                                <label class="qc-info-label" style="font-size: 0.72rem;">Umur Singkong (Bulan)</label>
+                                <input type="number" step="0.1" name="umur_singkong_bln" value="{{ old('umur_singkong_bln', $qc->umur_singkong_bln ?? 10) }}" class="form-control" style="width: 100%; border-radius: 6px; font-size: 0.8rem;">
+                            </div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                            <div>
+                                <label class="qc-info-label" style="font-size: 0.72rem;">Tanggal Panen</label>
+                                <input type="date" name="tgl_panen" value="{{ old('tgl_panen', $qc->tgl_panen ? $qc->tgl_panen->format('Y-m-d') : '') }}" class="form-control" style="width: 100%; border-radius: 6px; font-size: 0.8rem;">
+                            </div>
+                            <div>
+                                <label class="qc-info-label" style="font-size: 0.72rem;">Jumlah Sampel Uji (kg)</label>
+                                <input type="number" step="0.1" name="jumlah_sample_kg" value="{{ old('jumlah_sample_kg', $qc->jumlah_sample_kg ?? 10) }}" class="form-control" style="width: 100%; border-radius: 6px; font-size: 0.8rem; font-weight: 700;">
+                            </div>
+                        </div>
+                    </div>
+                @endif
 
                 {{-- AUDIT HALAL & KEBERSIHAN --}}
                 <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.65rem 0.85rem; margin-top: 0.25rem;">
@@ -199,6 +252,41 @@
                                 <label class="qc-info-label" style="display: block; font-weight: 700; margin-bottom: 0.25rem;">Diameter &ge; 4 cm (% Min 95%)</label>
                                 <input type="number" step="0.1" name="items[{{ $qcdtlId }}][diameter_lebih_4cm_persen]" value="{{ old('items.'.$qcdtlId.'.diameter_lebih_4cm_persen', $firstDetail?->diameter_lebih_4cm_persen ?? 100) }}" class="form-control" style="width: 100%; border-radius: 8px; font-weight: 700;">
                             </div>
+                        </div>
+                    </div>
+
+                    {{-- KONDISI FISIK & KESEGARAN UMBI --}}
+                    <div>
+                        <div style="font-size: 0.78rem; font-weight: 800; color: #059669; margin-bottom: 0.35rem;">KONDISI FISIK &amp; KESEGARAN UMBI:</div>
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.4rem; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.65rem;">
+                            <label style="display: flex; align-items: center; gap: 6px; font-size: 0.8rem; cursor: pointer;">
+                                <input type="checkbox" name="items[{{ $qcdtlId }}][kondisi_segar]" value="1" {{ old('items.'.$qcdtlId.'.kondisi_segar', $firstDetail?->kondisi_segar) ? 'checked' : '' }}>
+                                <span style="font-weight: 700; color: #16a34a;">✔ Segar</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 6px; font-size: 0.8rem; cursor: pointer;">
+                                <input type="checkbox" name="items[{{ $qcdtlId }}][kondisi_layu]" value="1" {{ old('items.'.$qcdtlId.'.kondisi_layu', $firstDetail?->kondisi_layu) ? 'checked' : '' }}>
+                                <span style="font-weight: 700; color: #dc2626;">✖ Layu</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 6px; font-size: 0.8rem; cursor: pointer;">
+                                <input type="checkbox" name="items[{{ $qcdtlId }}][kondisi_busuk]" value="1" {{ old('items.'.$qcdtlId.'.kondisi_busuk', $firstDetail?->kondisi_busuk) ? 'checked' : '' }}>
+                                <span style="font-weight: 700; color: #dc2626;">✖ Busuk</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 6px; font-size: 0.8rem; cursor: pointer;">
+                                <input type="checkbox" name="items[{{ $qcdtlId }}][kondisi_berjamur]" value="1" {{ old('items.'.$qcdtlId.'.kondisi_berjamur', $firstDetail?->kondisi_berjamur) ? 'checked' : '' }}>
+                                <span style="font-weight: 700; color: #dc2626;">✖ Berjamur</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 6px; font-size: 0.8rem; cursor: pointer;">
+                                <input type="checkbox" name="items[{{ $qcdtlId }}][kondisi_basah]" value="1" {{ old('items.'.$qcdtlId.'.kondisi_basah', $firstDetail?->kondisi_basah) ? 'checked' : '' }}>
+                                <span style="font-weight: 700; color: #dc2626;">✖ Basah</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 6px; font-size: 0.8rem; cursor: pointer;">
+                                <input type="checkbox" name="items[{{ $qcdtlId }}][kondisi_lembek]" value="1" {{ old('items.'.$qcdtlId.'.kondisi_lembek', $firstDetail?->kondisi_lembek) ? 'checked' : '' }}>
+                                <span style="font-weight: 700; color: #dc2626;">✖ Lembek</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 6px; font-size: 0.8rem; cursor: pointer;">
+                                <input type="checkbox" name="items[{{ $qcdtlId }}][kondisi_terkelupas]" value="1" {{ old('items.'.$qcdtlId.'.kondisi_terkelupas', $firstDetail?->kondisi_terkelupas) ? 'checked' : '' }}>
+                                <span style="font-weight: 700; color: #d97706;">Terkelupas</span>
+                            </label>
                         </div>
                     </div>
 

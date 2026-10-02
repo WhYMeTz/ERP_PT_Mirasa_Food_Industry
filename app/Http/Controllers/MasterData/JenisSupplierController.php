@@ -19,6 +19,8 @@ class JenisSupplierController extends Controller
 
     public function index(Request $request): View|JsonResponse
     {
+        abort_unless($request->user()->canAccessJenisSupplier(), 403, 'Anda tidak memiliki hak akses untuk melihat master jenis supplier.');
+
         $perPage = (int) $request->input('per_page', 15);
         $search = $request->input('search');
 
@@ -37,6 +39,8 @@ class JenisSupplierController extends Controller
 
     public function store(StoreJenisSupplierRequest $request): RedirectResponse|JsonResponse
     {
+        abort_unless($request->user()->canCreateMasterJenisSupplier(), 403, 'Anda tidak memiliki hak akses untuk menambah master jenis supplier.');
+
         $jenisSupplier = $this->jenisSupplierService->store($request->validated());
 
         if ($request->wantsJson()) {
@@ -54,6 +58,8 @@ class JenisSupplierController extends Controller
 
     public function update(UpdateJenisSupplierRequest $request, int $id): RedirectResponse|JsonResponse
     {
+        abort_unless($request->user()->canEditMasterJenisSupplier(), 403, 'Anda tidak memiliki hak akses untuk mengedit master jenis supplier.');
+
         $jenisSupplier = $this->jenisSupplierService->update($id, $request->validated());
 
         if ($request->wantsJson()) {
@@ -71,12 +77,15 @@ class JenisSupplierController extends Controller
 
     public function destroy(Request $request, int $id): RedirectResponse|JsonResponse
     {
+        abort_unless($request->user()->canDeleteMasterJenisSupplier(), 403, 'Anda tidak memiliki hak akses untuk menonaktifkan master jenis supplier.');
+
         $this->jenisSupplierService->delete($id);
 
         if ($request->wantsJson()) {
             return response()->json([
                 'status'  => 'success',
                 'message' => 'Data jenis supplier berhasil dinonaktifkan.',
+                'data'    => null,
             ]);
         }
 

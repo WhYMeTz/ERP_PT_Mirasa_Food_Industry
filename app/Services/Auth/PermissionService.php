@@ -59,6 +59,11 @@ class PermissionService
                     'desc'   => 'Mengubah data mitra pemasok, kontak telepon, alamat, dan jenis supplier.',
                     'action' => 'EDIT',
                 ],
+                'master_jenis_supplier_edit' => [
+                    'label'  => 'Edit Master Jenis Supplier',
+                    'desc'   => 'Mengubah kode dan nama kategori mitra pemasok (RAW, BUMBU, PACK, dll).',
+                    'action' => 'EDIT',
+                ],
                 'master_customer_edit' => [
                     'label'  => 'Edit & Koreksi Master Customer',
                     'desc'   => 'Mengubah data klien B2B, kontak PIC, dan alamat pengiriman customer.',
@@ -110,6 +115,11 @@ class PermissionService
                 'master_supplier_delete' => [
                     'label'  => 'Hapus / Nonaktifkan Master Supplier',
                     'desc'   => 'Menonaktifkan mitra pemasok agar tidak dapat dipilih dalam pembuatan PO baru.',
+                    'action' => 'DELETE',
+                ],
+                'master_jenis_supplier_delete' => [
+                    'label'  => 'Hapus / Nonaktifkan Jenis Supplier',
+                    'desc'   => 'Menonaktifkan klasifikasi jenis supplier dari sistem.',
                     'action' => 'DELETE',
                 ],
                 'master_customer_delete' => [
@@ -178,6 +188,11 @@ class PermissionService
                 'master_supplier_create' => [
                     'label'  => 'Tambah Master Supplier Baru',
                     'desc'   => 'Mendaftarkan mitra supplier petani singkong atau vendor industri baru.',
+                    'action' => 'CREATE',
+                ],
+                'master_jenis_supplier_create' => [
+                    'label'  => 'Tambah Jenis Supplier Baru',
+                    'desc'   => 'Mendaftarkan jenis klasifikasi supplier baru ke katalog referensi.',
                     'action' => 'CREATE',
                 ],
                 'master_customer_create' => [
@@ -250,6 +265,7 @@ class PermissionService
                 'master_barang_manage'   => ['label' => 'Kelola Master Barang', 'desc' => 'Menambah barang baru, mengatur batas minimum stok & harga beli.', 'action' => 'MANAGE'],
                 'master_supplier_view'   => ['label' => 'Lihat Master Supplier', 'desc' => 'Melihat daftar mitra supplier petani singkong & vendor.', 'action' => 'VIEW'],
                 'master_supplier_manage' => ['label' => 'Kelola Master Supplier', 'desc' => 'Menambah dan mengedit mitra rekanan supplier.', 'action' => 'MANAGE'],
+                'master_jenis_supplier_view' => ['label' => 'Lihat Master Jenis Supplier', 'desc' => 'Melihat daftar klasifikasi jenis supplier.', 'action' => 'VIEW'],
                 'master_customer_view'   => ['label' => 'Lihat Master Customer', 'desc' => 'Melihat daftar klien B2B dan distributor pembeli.', 'action' => 'VIEW'],
                 'master_customer_manage' => ['label' => 'Kelola Master Customer', 'desc' => 'Menambah dan mengedit profil klien customer B2B.', 'action' => 'MANAGE'],
                 'master_gudang_manage'   => ['label' => 'Kelola Gudang & Satuan', 'desc' => 'Menambah dan mengedit daftar gudang unit dan satuan barang.', 'action' => 'MANAGE'],
@@ -284,6 +300,7 @@ class PermissionService
             'master_satuan_edit',
             'master_jenis_create',
             'master_jenis_edit',
+            'master_jenis_supplier_view',
             'master_gudang_manage',
         ],
         'STAFF_PRODUKSI' => [
@@ -308,6 +325,9 @@ class PermissionService
             'master_supplier_create',
             'master_supplier_edit',
             'master_supplier_manage',
+            'master_jenis_supplier_view',
+            'master_jenis_supplier_create',
+            'master_jenis_supplier_edit',
         ],
         'FINANCE' => [
             'po_view',

@@ -431,6 +431,35 @@ class User extends Authenticatable
         return $this->isSuperAdmin() || $this->canDo('master_supplier_delete') || $this->canDo('master_supplier_manage');
     }
 
+    public function canAccessJenisSupplier(): bool
+    {
+        return $this->isSuperAdmin() 
+            || $this->isPurchasing()
+            || $this->canDo('master_jenis_supplier_view') 
+            || $this->canDo('master_supplier_manage');
+    }
+
+    public function canCreateMasterJenisSupplier(): bool
+    {
+        return $this->isSuperAdmin() 
+            || $this->canDo('master_jenis_supplier_create') 
+            || $this->canDo('master_supplier_manage');
+    }
+
+    public function canEditMasterJenisSupplier(): bool
+    {
+        return $this->isSuperAdmin() 
+            || $this->canDo('master_jenis_supplier_edit') 
+            || $this->canDo('master_supplier_manage');
+    }
+
+    public function canDeleteMasterJenisSupplier(): bool
+    {
+        return $this->isSuperAdmin() 
+            || $this->canDo('master_jenis_supplier_delete') 
+            || $this->canDo('master_supplier_manage');
+    }
+
     public function canAccessCustomer(): bool
     {
         return $this->isSuperAdmin() || $this->canDo('master_customer_view') || $this->canDo('master_customer_manage');

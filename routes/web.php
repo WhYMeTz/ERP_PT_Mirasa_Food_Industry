@@ -80,10 +80,8 @@ Route::middleware('auth')->group(function () {
     Route::resource('master-gudang', GudangController::class)->names('master.gudang');
     Route::resource('master-resep', BomController::class)->names('master.resep');
 
-    // Master Supplier (Superadmin & Purchasing)
-    Route::resource('master-jenis-supplier', JenisSupplierController::class)
-        ->names('master.jenis_supplier')
-        ->middleware('role:SUPERADMIN,PURCHASING');
+    // Master Supplier
+    Route::resource('master-jenis-supplier', JenisSupplierController::class)->names('master.jenis_supplier');
     Route::resource('master-supplier', SupplierController::class)
         ->names('master.supplier')
         ->middleware('role:SUPERADMIN,PURCHASING');

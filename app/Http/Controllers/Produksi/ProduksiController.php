@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Produksi;
 use App\Exports\Produksi\HasilProduksiExport;
 use App\Exports\Produksi\HasilProduksiTemplate;
 use App\Exports\Produksi\RekapHppExport;
+use App\Exports\Produksi\RekapHppTemplate;
 use App\Http\Controllers\Controller;
 use App\Imports\Produksi\HasilProduksiImport;
+use App\Imports\Produksi\RekapHppImport;
 use App\Models\Gudang\DatPakaiHdr;
 use App\Models\MasterData\MstGudang;
 use App\Services\Common\CodeGeneratorService;
@@ -378,4 +380,45 @@ class ProduksiController extends Controller
 
         return $pdf->download("Rekap_HPP_{$monthName}_{$year}.pdf");
     }
+
+    /**
+     * Download Template Excel Buku Rekap HPP Harian (.xlsx)
+     */
+    public function downloadRekapTemplate(): StreamedResponse
+    {
+        $template = new RekapHppTemplate();
+        return $template->download();
+    }
+
+    /**
+     * Proses Upload File Excel Buku Rekap HPP Bulanan (.xlsx)
+     */
+    public function importRekapExcel(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'import_file' => 'required|file|mimes:xlsx,xls|max:5120',
+            'gudang_id'   => 'nullable|exists:mst_gudang,gudang_id',
+        ], [
+            'import_file.required' => 'Pilih berkas Excel Rekap HPP yang akan diimpor.',
+            'import_file.mimes'    => 'Format berkas harus berupa .xlsx atau .xls.',
+            'import_file.max'      => 'Ukuran berkas tidak boleh melebihi 5 MB.',
+        ]);
+
+        try {
+            $importer = new RekapHppImport($this->codeGenerator);
+            $importer->import($request->file('import_file'), (int) $request->input('gudang_id', 1));
+
+            $msg = "✅ Berhasil mengimpor data Rekap HPP ({$importer->successCount} hari produksi diperbarui)!";
+            if ($importer->skipCount > 0) {
+                $msg .= " Catatan: {$importer->skipCount} baris tanggal kosong/libur dilewati.";
+            }
+
+            return redirect()->route('produksi.index', ['tab' => 'rekap'])
+                ->with('success', $msg);
+        } catch (Exception $e) {
+            return redirect()->route('produksi.index', ['tab' => 'rekap'])
+                ->with('error', 'Gagal memproses import Rekap HPP: ' . $e->getMessage());
+        }
+    }
 }
+

@@ -154,3 +154,17 @@ function closeModalImportHasil() {
     if (modal) modal.style.display = 'none';
 }
 
+/**
+ * Kontrol Modal Import Excel Rekap HPP
+ */
+function openModalImportRekap() {
+    const modal = document.getElementById('modal-import-rekap');
+    if (modal) modal.style.display = 'flex';
+}
+
+function closeModalImportRekap() {
+    const modal = document.getElementById('modal-import-rekap');
+    if (modal) modal.style.display = 'none';
+}
+
+

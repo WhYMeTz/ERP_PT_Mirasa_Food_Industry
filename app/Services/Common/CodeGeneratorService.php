@@ -605,6 +605,14 @@ class CodeGeneratorService
     }
 
     /**
+     * Alias untuk generateProduksiNo
+     */
+    public function generateKodeProduksi(?string $date = null): string
+    {
+        return $this->generateProduksiNo($date);
+    }
+
+    /**
      * Generate Nomor Batch WIP Hasil Produksi (format: WIP-DDMMYY-01 atau WIP-[VARIAN]-DDMMYY-01)
      */
     public function generateWipBatchNo(?string $varian = null, ?string $date = null): string

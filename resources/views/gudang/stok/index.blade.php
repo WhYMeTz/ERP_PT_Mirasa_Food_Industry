@@ -342,7 +342,7 @@
                             <tr style="border-bottom: 1px solid #cbd5e1; color: #475569; font-weight: 700;">
                                 <th style="padding: 0.5rem 0.65rem; text-align: center; width: 40px;">No</th>
                                 <th style="padding: 0.5rem 0.65rem; text-align: left;">Nomor Batch</th>
-                                <th style="padding: 0.5rem 0.65rem; text-align: left;">Gudang</th>
+                                <th style="padding: 0.5rem 0.65rem; text-align: left;">Perusahaan / Lokasi</th>
                                 <th style="padding: 0.5rem 0.65rem; text-align: left;">Tgl Terima</th>
                                 <th style="padding: 0.5rem 0.65rem; text-align: left;">Tgl Kadaluarsa</th>
                                 <th style="padding: 0.5rem 0.65rem; text-align: right; font-weight: 800;">Sisa Fisik</th>
@@ -521,7 +521,7 @@
             <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Cari nama, kode komoditas..." class="form-control" style="padding: 0.45rem 0.75rem; max-width: 220px; font-size: 0.85rem;">
 
             <select name="gudang_id" class="form-control" style="padding: 0.45rem 0.75rem; max-width: 170px; font-size: 0.85rem;" onchange="this.form.submit()">
-                <option value="">-- Semua Gudang --</option>
+                <option value="">-- Semua Perusahaan / Cabang --</option>
                 @foreach ($gudangList as $gdg)
                     <option value="{{ $gdg->gudang_id }}" {{ $gudangId == $gdg->gudang_id ? 'selected' : '' }}>
                         {{ $gdg->display_name }}
@@ -643,7 +643,7 @@
                                     <thead>
                                         <tr style="border-bottom: 1px solid #cbd5e1;">
                                             <th style="background: #f1f5f9 !important; color: #334155 !important; font-weight: 700; padding: 0.45rem 0.65rem; text-align: left;">No. Batch</th>
-                                            <th style="background: #f1f5f9 !important; color: #334155 !important; font-weight: 700; padding: 0.45rem 0.65rem; text-align: left;">Gudang Simpan</th>
+                                            <th style="background: #f1f5f9 !important; color: #334155 !important; font-weight: 700; padding: 0.45rem 0.65rem; text-align: left;">Perusahaan / Lokasi</th>
                                             <th style="background: #f1f5f9 !important; color: #334155 !important; font-weight: 700; padding: 0.45rem 0.65rem; text-align: left;">Tgl Terima</th>
                                             <th style="background: #f1f5f9 !important; color: #334155 !important; font-weight: 700; padding: 0.45rem 0.65rem; text-align: right;">Sisa Qty</th>
                                             <th style="background: #f1f5f9 !important; color: #334155 !important; font-weight: 700; padding: 0.45rem 0.65rem; text-align: right;">Harga Satuan</th>
@@ -718,7 +718,7 @@ function toggleAllBatches(show) {
             <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Cari nomor batch, kode atau nama..." class="form-control" style="padding: 0.45rem 0.75rem; max-width: 240px; font-size: 0.85rem;">
 
             <select name="gudang_id" class="form-control" style="padding: 0.45rem 0.75rem; max-width: 170px; font-size: 0.85rem;" onchange="this.form.submit()">
-                <option value="">-- Semua Gudang --</option>
+                <option value="">-- Semua Perusahaan / Cabang --</option>
                 @foreach ($gudangList as $gdg)
                     <option value="{{ $gdg->gudang_id }}" {{ $gudangId == $gdg->gudang_id ? 'selected' : '' }}>
                         {{ $gdg->display_name }}

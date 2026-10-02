@@ -146,20 +146,20 @@
                         <small style="color: #64748b; font-size: 0.725rem; display: block; margin-top: 0.25rem;">Ketik untuk memilih cepat, atau klik <strong>Daftar Supplier</strong>.</small>
                     </div>
 
-                    {{-- Kolom Gudang Penyimpanan --}}
+                    {{-- Kolom Perusahaan / Lokasi Penerima --}}
                     <div class="form-group" style="margin-bottom: 0;">
                         <label for="gudang_id" class="form-label" style="font-weight: 600; font-size: 0.85rem; margin-bottom: 0.35rem;">
-                            Gudang Penyimpanan <span style="color:#ef4444;">*</span>
+                            Perusahaan / Lokasi Penerima <span style="color:#ef4444;">*</span>
                         </label>
                         <select id="gudang_id" name="gudang_id" class="form-control" required style="height: 38px; border-radius: 6px; font-size: 0.85rem;">
-                            <option value="">-- Pilih Gudang Penyimpanan --</option>
+                            <option value="">-- Pilih Perusahaan / Lokasi Penerima --</option>
                             @foreach ($gudangList as $gdg)
                                 <option value="{{ $gdg->gudang_id }}" {{ (old('gudang_id', $terima->gudang_id) == $gdg->gudang_id) ? 'selected' : '' }}>
                                     {{ $gdg->display_name }} ({{ $gdg->gudang_cd }})
                                 </option>
                             @endforeach
                         </select>
-                        <small style="color: #64748b; font-size: 0.725rem; display: block; margin-top: 0.25rem;">Lokasi gudang tempat komoditas fisik disimpan.</small>
+                        <small style="color: #64748b; font-size: 0.725rem; display: block; margin-top: 0.25rem;">Entitas perusahaan / cabang tempat barang diterima.</small>
                     </div>
                 </div>
 

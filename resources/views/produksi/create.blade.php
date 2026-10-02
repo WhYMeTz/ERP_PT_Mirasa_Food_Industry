@@ -65,7 +65,7 @@
 
                     <div>
                         <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">
-                            Gudang Simpan WIP (Hasil Jadi) <span style="color: #ef4444;">*</span>
+                            Perusahaan / Lokasi Simpan WIP (Hasil Jadi) <span style="color: #ef4444;">*</span>
                         </label>
                         <select name="gudang_id" id="gudang_id" class="form-control" required>
                             @foreach ($gudangList as $gdg)

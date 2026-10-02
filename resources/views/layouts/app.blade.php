@@ -777,10 +777,10 @@
                                                 <span>Jenis Supplier</span>
                                             </a>
                                         @endif
-                                        @if (Auth::user()->isSuperAdmin() || Auth::user()->isGudang())
-                                            <a href="{{ route('master.gudang.index') }}" class="mega-item {{ request()->routeIs('master.gudang.*') ? 'active' : '' }}">
+                                        @if (Auth::user()->canAccessPerusahaan())
+                                            <a href="{{ route('master.perusahaan.index') }}" class="mega-item {{ request()->routeIs('master.perusahaan.*', 'master.gudang.*') ? 'active' : '' }}">
                                                 <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
-                                                <span>Lokasi Gudang</span>
+                                                <span>Master Perusahaan</span>
                                             </a>
                                         @endif
                                         @if (Auth::user()->canAccessCustomer())

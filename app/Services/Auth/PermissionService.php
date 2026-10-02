@@ -69,6 +69,11 @@ class PermissionService
                     'desc'   => 'Mengubah data klien B2B, kontak PIC, dan alamat pengiriman customer.',
                     'action' => 'EDIT',
                 ],
+                'master_perusahaan_edit' => [
+                    'label'  => 'Edit Data Master Perusahaan',
+                    'desc'   => 'Mengubah kode, nama PT/CV, jenis entitas, alamat, dan nomor telepon perusahaan.',
+                    'action' => 'EDIT',
+                ],
             ],
         ],
         'AKSI_DELETE' => [
@@ -125,6 +130,11 @@ class PermissionService
                 'master_customer_delete' => [
                     'label'  => 'Hapus / Nonaktifkan Master Customer',
                     'desc'   => 'Menonaktifkan klien / customer dari sistem penjualan.',
+                    'action' => 'DELETE',
+                ],
+                'master_perusahaan_delete' => [
+                    'label'  => 'Hapus / Nonaktifkan Entitas Perusahaan',
+                    'desc'   => 'Menonaktifkan kantor cabang / anak perusahaan dari sistem operasional.',
                     'action' => 'DELETE',
                 ],
             ],
@@ -200,6 +210,11 @@ class PermissionService
                     'desc'   => 'Mendaftarkan klien / customer pembeli B2B baru.',
                     'action' => 'CREATE',
                 ],
+                'master_perusahaan_create' => [
+                    'label'  => 'Tambah Master Perusahaan Baru',
+                    'desc'   => 'Mendaftarkan entitas bisnis, cabang, atau anak perusahaan baru ke dalam sistem.',
+                    'action' => 'CREATE',
+                ],
             ],
         ],
         'AKSI_VIEW' => [
@@ -268,6 +283,8 @@ class PermissionService
                 'master_jenis_supplier_view' => ['label' => 'Lihat Master Jenis Supplier', 'desc' => 'Melihat daftar klasifikasi jenis supplier.', 'action' => 'VIEW'],
                 'master_customer_view'   => ['label' => 'Lihat Master Customer', 'desc' => 'Melihat daftar klien B2B dan distributor pembeli.', 'action' => 'VIEW'],
                 'master_customer_manage' => ['label' => 'Kelola Master Customer', 'desc' => 'Menambah dan mengedit profil klien customer B2B.', 'action' => 'MANAGE'],
+                'master_perusahaan_view' => ['label' => 'Lihat Master Perusahaan', 'desc' => 'Melihat daftar entitas bisnis, pusat, cabang, dan anak perusahaan.', 'action' => 'VIEW'],
+                'master_perusahaan_manage' => ['label' => 'Kelola Master Perusahaan', 'desc' => 'Menambah dan mengedit data entitas perusahaan dan cabang.', 'action' => 'MANAGE'],
                 'master_gudang_manage'   => ['label' => 'Kelola Gudang & Satuan', 'desc' => 'Menambah dan mengedit daftar gudang unit dan satuan barang.', 'action' => 'MANAGE'],
                 'user_manage'            => ['label' => 'Manajemen Pengguna & Hak Akses', 'desc' => 'Mengelola user login, password, dan mengubah hak akses peran.', 'action' => 'MANAGE'],
             ],
@@ -301,6 +318,7 @@ class PermissionService
             'master_jenis_create',
             'master_jenis_edit',
             'master_jenis_supplier_view',
+            'master_perusahaan_view',
             'master_gudang_manage',
         ],
         'STAFF_PRODUKSI' => [

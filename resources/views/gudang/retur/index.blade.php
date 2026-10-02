@@ -230,11 +230,11 @@
                 </select>
             </div>
 
-            {{-- 5. Dropdown Gudang --}}
+            {{-- 5. Dropdown Perusahaan / Cabang --}}
             @if ($gudangList->count() > 1)
                 <div style="flex: 1 1 150px; min-width: 130px;">
                     <select name="gudang_id" class="form-control" style="padding: 0.45rem 0.75rem; font-size: 0.85rem; width: 100%;">
-                        <option value="">-- Semua Gudang --</option>
+                        <option value="">-- Semua Perusahaan / Cabang --</option>
                         @foreach ($gudangList as $gd)
                             <option value="{{ $gd->gudang_id }}" {{ (string) $gudangId === (string) $gd->gudang_id ? 'selected' : '' }}>
                                 {{ $gd->gudang_nm }}

@@ -63,7 +63,7 @@
                     <th>Email Login</th>
                     <th>Profil Karyawan</th>
                     <th>Peran (Role)</th>
-                    <th>Penugasan Gudang / Cabang</th>
+                    <th>Penugasan Perusahaan / Cabang</th>
                     <th>Status</th>
                     <th style="width: 150px; text-align: right;">Aksi</th>
                 </tr>
@@ -106,7 +106,7 @@
                                 <div style="display: inline-flex; align-items: center; gap: 0.35rem; background: #fef2f2; border: 1px solid #fecaca; padding: 0.25rem 0.5rem; border-radius: 6px;">
                                     <span style="font-size: 0.85rem;">🌐</span>
                                     <div>
-                                        <strong style="color: #991b1b; font-size: 0.8125rem;">Akses Seluruh Gudang</strong>
+                                        <strong style="color: #991b1b; font-size: 0.8125rem;">Akses Seluruh Perusahaan</strong>
                                         <span style="display: block; font-size: 0.7rem; color: #b91c1c;">Super Administrator</span>
                                     </div>
                                 </div>
@@ -241,8 +241,8 @@
 
                 <div class="form-group" style="margin-top: 1rem;">
                     <label class="form-label" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
-                        <span style="font-weight: 700; color: #0f172a;">🏭 Penugasan Gudang (Kelola 1, 2, atau Lebih Gudang)</span>
-                        <span style="font-size: 0.75rem; color: #0284c7; font-weight: normal;">* Centang gudang yang diizinkan</span>
+                        <span style="font-weight: 700; color: #0f172a;">🏢 Penugasan Perusahaan / Cabang (Pilih PT/CV yang Diizinkan)</span>
+                        <span style="font-size: 0.75rem; color: #0284c7; font-weight: normal;">* Centang perusahaan yang diizinkan</span>
                     </label>
                     <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 0.75rem; display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; max-height: 190px; overflow-y: auto;">
                         @foreach ($gudangList as $gdg)
@@ -256,7 +256,7 @@
                         @endforeach
                     </div>
                     <small style="color: #64748b; font-size: 0.75rem; margin-top: 0.25rem; display: block;">
-                        💡 <strong>Isolasi Data:</strong> Admin Gudang ini hanya akan melihat stok, dokumen penerimaan, dan pengeluaran pada gudang yang dicentang. Data gudang lain tidak akan tercampur dan tidak terlihat.
+                        💡 <strong>Isolasi Data:</strong> Pengguna ini hanya akan melihat stok, dokumen penerimaan, dan pengeluaran pada perusahaan/cabang yang dicentang. Data entitas lain tidak akan tercampur dan tidak terlihat.
                     </small>
                 </div>
             </div>
@@ -319,8 +319,8 @@
 
                 <div class="form-group" style="margin-top: 1rem;">
                     <label class="form-label" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
-                        <span style="font-weight: 700; color: #0f172a;">🏭 Penugasan Gudang (Kelola 1, 2, atau Lebih Gudang)</span>
-                        <span style="font-size: 0.75rem; color: #0284c7; font-weight: normal;">* Centang gudang yang diizinkan</span>
+                        <span style="font-weight: 700; color: #0f172a;">🏢 Penugasan Perusahaan / Cabang (Pilih PT/CV yang Diizinkan)</span>
+                        <span style="font-size: 0.75rem; color: #0284c7; font-weight: normal;">* Centang perusahaan yang diizinkan</span>
                     </label>
                     <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 0.75rem; display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; max-height: 190px; overflow-y: auto;">
                         @foreach ($gudangList as $gdg)
@@ -334,7 +334,7 @@
                         @endforeach
                     </div>
                     <small style="color: #64748b; font-size: 0.75rem; margin-top: 0.25rem; display: block;">
-                        💡 <strong>Isolasi Data:</strong> Admin Gudang ini hanya akan melihat stok, dokumen penerimaan, dan pengeluaran pada gudang yang dicentang. Data gudang lain tidak akan tercampur dan tidak terlihat.
+                        💡 <strong>Isolasi Data:</strong> Pengguna ini hanya akan melihat stok, dokumen penerimaan, dan pengeluaran pada perusahaan/cabang yang dicentang. Data entitas lain tidak akan tercampur dan tidak terlihat.
                     </small>
                 </div>
             </div>

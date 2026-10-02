@@ -490,7 +490,39 @@ class User extends Authenticatable
 
     public function canManageGudang(): bool
     {
-        return $this->isSuperAdmin() || $this->canDo('master_gudang_manage');
+        return $this->isSuperAdmin() || $this->canDo('master_gudang_manage') || $this->canDo('master_perusahaan_manage');
+    }
+
+    public function canAccessPerusahaan(): bool
+    {
+        return $this->isSuperAdmin() 
+            || $this->canDo('master_perusahaan_view') 
+            || $this->canDo('master_perusahaan_manage')
+            || $this->canDo('master_gudang_manage');
+    }
+
+    public function canCreateMasterPerusahaan(): bool
+    {
+        return $this->isSuperAdmin() 
+            || $this->canDo('master_perusahaan_create') 
+            || $this->canDo('master_perusahaan_manage')
+            || $this->canDo('master_gudang_manage');
+    }
+
+    public function canEditMasterPerusahaan(): bool
+    {
+        return $this->isSuperAdmin() 
+            || $this->canDo('master_perusahaan_edit') 
+            || $this->canDo('master_perusahaan_manage')
+            || $this->canDo('master_gudang_manage');
+    }
+
+    public function canDeleteMasterPerusahaan(): bool
+    {
+        return $this->isSuperAdmin() 
+            || $this->canDo('master_perusahaan_delete') 
+            || $this->canDo('master_perusahaan_manage')
+            || $this->canDo('master_gudang_manage');
     }
 
     /**

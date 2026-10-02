@@ -77,6 +77,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('master-barang', BarangController::class)->names('master.barang');
     Route::resource('master-satuan', SatuanController::class)->names('master.satuan');
     Route::resource('master-jenis', JenisBarangController::class)->names('master.jenis');
+    Route::resource('master-perusahaan', GudangController::class)->names('master.perusahaan');
     Route::resource('master-gudang', GudangController::class)->names('master.gudang');
     Route::resource('master-resep', BomController::class)->names('master.resep');
 

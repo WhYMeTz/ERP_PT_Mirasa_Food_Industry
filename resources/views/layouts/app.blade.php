@@ -623,6 +623,13 @@
 
                                 @if (Auth::user()->canAccessTerima())
                                     <div style="height: 1px; background: #f1f5f9; margin: 0.3rem 0;"></div>
+                                    <a href="{{ route('gudang.qc.antrean') }}" class="mega-item {{ request()->routeIs('gudang.qc.*') ? 'active' : '' }}">
+                                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+                                        <div style="display: flex; flex-direction: column;">
+                                            <span style="font-weight: 600;">Antrean Tiket QC Inbound</span>
+                                            <span style="font-size: 0.6875rem; color: #64748b;">Lolos uji QC siap ditarik ke GRN</span>
+                                        </div>
+                                    </a>
                                     <a href="{{ route('gudang.terima.index') }}" class="mega-item {{ request()->routeIs('gudang.terima.*') ? 'active' : '' }}">
                                         <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
                                         <div style="display: flex; flex-direction: column;">
@@ -742,10 +749,12 @@
                                             <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
                                             <span>Katalog Barang</span>
                                         </a>
-                                        <a href="{{ route('master.resep.index') }}" class="mega-item {{ request()->routeIs('master.resep.*') ? 'active' : '' }}">
-                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-                                            <span>Formula Resep (BOM)</span>
-                                        </a>
+                                        @if (Auth::user()->canAccessResep())
+                                            <a href="{{ route('master.resep.index') }}" class="mega-item {{ request()->routeIs('master.resep.*') ? 'active' : '' }}">
+                                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                                                <span>Formula Resep (BOM)</span>
+                                            </a>
+                                        @endif
                                         @if (Auth::user()->isSuperAdmin() || Auth::user()->isGudang())
                                             <a href="{{ route('master.satuan.index') }}" class="mega-item {{ request()->routeIs('master.satuan.*') ? 'active' : '' }}">
                                                 <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 18h12l3-18H3z"/></svg>

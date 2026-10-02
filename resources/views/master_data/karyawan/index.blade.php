@@ -51,7 +51,7 @@
                     <th>Jabatan</th>
                     <th>Kontak / Telp</th>
                     <th>Akun Sistem &amp; Cabang</th>
-                    <th style="width: 110px; text-align: right;">Aksi</th>
+                    <th style="width: 100px; text-align: center;">Aksi</th>
                 </tr>
             </thead>
             <tbody>
@@ -105,12 +105,13 @@
                                 </span>
                             @endif
                         </td>
-                        <td style="text-align: right;">
-                            <div style="position: relative; display: inline-block;">
+                        <td style="text-align: center; vertical-align: middle;">
+                            @if (Auth::user()?->canEditMasterKaryawan() || Auth::user()?->canDeleteMasterKaryawan())
                                 <button type="button" 
                                     class="btn-action-trigger" 
                                     onclick="toggleSmartActionDropdown(this, event, 'action-menu-{{ $item->karyawan_id }}')">
-                                    Aksi ▼
+                                    <span>Aksi</span>
+                                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                                 </button>
 
                                 <div id="action-menu-{{ $item->karyawan_id }}" class="action-dropdown-menu">
@@ -119,23 +120,26 @@
                                             class="action-dropdown-item" 
                                             onclick="closeAllActionDropdowns(); editKaryawan({{ $item->karyawan_id }}, '{{ addslashes($item->nik) }}', '{{ addslashes($item->karyawan_nm) }}', '{{ $item->departemen_cd }}', '{{ addslashes($item->jabatan_nm) }}', '{{ addslashes($item->telepon_no ?? '') }}', '{{ addslashes($item->email ?? '') }}', '{{ addslashes($item->alamat_txt ?? '') }}')">
                                             <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                                            Edit Data Karyawan
+                                            <span>Edit Data Karyawan</span>
                                         </button>
                                     @endif
 
+                                    @if (Auth::user()?->canEditMasterKaryawan() && Auth::user()?->canDeleteMasterKaryawan())
+                                        <div class="action-dropdown-divider"></div>
+                                    @endif
+
                                     @if (Auth::user()?->canDeleteMasterKaryawan())
-                                        @if (Auth::user()?->canEditMasterKaryawan())
-                                            <div class="action-dropdown-divider"></div>
-                                        @endif
                                         <button type="button" 
                                             class="action-dropdown-item danger-item" 
                                             onclick="closeAllActionDropdowns(); openDeleteKaryawanModal({{ $item->karyawan_id }}, '{{ addslashes($item->nik) }}', '{{ addslashes($item->karyawan_nm) }}', '{{ addslashes($departemenList[$item->departemen_cd] ?? $item->departemen_cd) }}', '{{ addslashes($item->jabatan_nm) }}')">
                                             <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                            Nonaktifkan Karyawan
+                                            <span>Nonaktifkan Karyawan</span>
                                         </button>
                                     @endif
                                 </div>
-                            </div>
+                            @else
+                                <span style="font-size: 0.75rem; color: #94a3b8;">-</span>
+                            @endif
                         </td>
                     </tr>
                 @empty

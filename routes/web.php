@@ -79,7 +79,9 @@ Route::middleware('auth')->group(function () {
     Route::resource('master-jenis', JenisBarangController::class)->names('master.jenis');
     Route::resource('master-perusahaan', GudangController::class)->names('master.perusahaan');
     Route::resource('master-gudang', GudangController::class)->names('master.gudang');
-    Route::resource('master-resep', BomController::class)->names('master.resep');
+    Route::resource('master-resep', BomController::class)
+        ->names('master.resep')
+        ->middleware('role:SUPERADMIN,STAFF_PRODUKSI,master_resep_view,master_resep_manage');
 
     // Master Supplier
     Route::resource('master-jenis-supplier', JenisSupplierController::class)->names('master.jenis_supplier');
@@ -122,6 +124,14 @@ Route::middleware('auth')->group(function () {
             ->name('po.export-pdf')
             ->middleware('role:po_view');
         Route::resource('po', PoController::class)->only(['index', 'show'])->middleware('role:po_view');
+
+        // Antrean Tiket QC Inbound Khusus Admin Gudang (Desktop ERP)
+        Route::get('qc-antrean', [QcInboundController::class, 'gudangAntrean'])
+            ->name('qc.antrean')
+            ->middleware('role:terima_view,terima_create,gudang');
+        Route::get('qc-antrean/{id}/haccp-cetak', [QcInboundController::class, 'gudangHaccpCetak'])
+            ->name('qc.haccp_cetak')
+            ->middleware('role:terima_view,terima_create,gudang');
 
         // Barang Masuk (GRN / Inbound): Terima Barang & Batch (Berdasarkan izin 'terima_create')
         Route::get('terima/create', [TerimaBarangController::class, 'create'])

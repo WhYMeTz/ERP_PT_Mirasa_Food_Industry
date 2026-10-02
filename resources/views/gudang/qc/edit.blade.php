@@ -1,6 +1,10 @@
-@extends('layouts.app')
+@extends('layouts.qc-mobile')
 
 @section('title', 'Koreksi Tiket Uji QC Bahan Masuk (No. ' . $qc->qc_no . ') - PT Mirasa')
+
+@push('styles')
+    <link rel="stylesheet" href="{{ asset('css/gudang/qc/qc-form.css') }}">
+@endpush
 
 @section('content')
 <div style="max-width: 880px; margin: 0 auto; padding-bottom: 3.5rem;">

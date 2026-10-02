@@ -1,0 +1,173 @@
+/* ==========================================================================
+   QC MOBILE GOOGLE FORMS STYLE - ERP PT MIRASA FOOD INDUSTRY
+   Desain ramah sentuhan (touch-friendly), card-per-field, lebar 100% di HP
+   ========================================================================== */
+
+/* Pastikan semua elemen box model terhitung dengan benar */
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+/* Container Formulir Google Forms Style */
+.gform-container, #qcForm {
+    width: 100% !important;
+    max-width: 800px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+/* Override seluruh grid sempit di mobile agar menjadi 1 kolom penuh */
+@media (max-width: 768px) {
+    #qcForm div[style*="grid-template-columns"],
+    .gform-container div[style*="grid-template-columns"],
+    .card-body div[style*="grid-template-columns"] {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 0.85rem !important;
+    }
+
+    /* Khusus tab step switcher di mobile tetap 3 kolom ringkas */
+    #qcTabNav {
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 0.35rem !important;
+    }
+
+    #qcTabNav .btn, #qcTabNav button {
+        padding: 0.6rem 0.25rem !important;
+        font-size: 0.725rem !important;
+        line-height: 1.2 !important;
+        min-height: 48px !important;
+    }
+
+    /* Khusus 7 Komoditas Selector tetap grid 3 atau 4 kolom */
+    #komoditasSelector {
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 0.35rem !important;
+    }
+
+    #komoditasSelector .btn {
+        padding: 0.5rem 0.2rem !important;
+        font-size: 0.75rem !important;
+        min-height: 46px !important;
+    }
+}
+
+/* Form Groups & Cards */
+.form-group {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    margin-bottom: 0.85rem !important;
+}
+
+.form-label {
+    display: block !important;
+    font-size: 0.925rem !important;
+    font-weight: 700 !important;
+    color: #0f172a !important;
+    margin-bottom: 0.4rem !important;
+    line-height: 1.35 !important;
+}
+
+/* Seluruh Input, Select, Textarea Wajib 100% Full-Width */
+.form-control,
+input[type="text"],
+input[type="number"],
+input[type="date"],
+input[type="datetime-local"],
+select,
+textarea {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    padding: 0.75rem 0.95rem !important;
+    font-size: 1rem !important; /* 16px mencegah auto-zoom di HP */
+    line-height: 1.4 !important;
+    color: #0f172a !important;
+    background-color: #ffffff !important;
+    border: 1.5px solid #cbd5e1 !important;
+    border-radius: 10px !important;
+    outline: none !important;
+    min-height: 50px !important;
+    display: block !important;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+.form-control:focus,
+input:focus,
+select:focus,
+textarea:focus {
+    border-color: #0284c7 !important;
+    box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.2) !important;
+    background-color: #ffffff !important;
+}
+
+select, select.form-control {
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 1rem center !important;
+    background-size: 1.1rem !important;
+    padding-right: 2.75rem !important;
+}
+
+/* Card Section ala Google Form */
+.card {
+    background: #ffffff !important;
+    border: 1.5px solid #e2e8f0 !important;
+    border-radius: 14px !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
+    overflow: hidden !important;
+    margin-bottom: 1rem !important;
+}
+
+.card-header {
+    background: #ffffff !important;
+    padding: 1.15rem 1.35rem !important;
+    border-bottom: 1px solid #f1f5f9 !important;
+}
+
+/* Radio button row ala Google Forms (Besar & Ramah Jari) */
+label:has(input[type="radio"]) {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
+    padding: 0.6rem 0.85rem !important;
+    border: 1.5px solid #cbd5e1 !important;
+    border-radius: 8px !important;
+    background: #ffffff !important;
+    cursor: pointer !important;
+    font-size: 0.875rem !important;
+    font-weight: 700 !important;
+    color: #334155 !important;
+    transition: all 0.15s ease !important;
+    user-select: none !important;
+}
+
+label:has(input[type="radio"]:checked) {
+    border-color: #0284c7 !important;
+    background: #e0f2fe !important;
+    color: #0284c7 !important;
+}
+
+input[type="radio"] {
+    width: 18px !important;
+    height: 18px !important;
+    accent-color: #0284c7 !important;
+    margin: 0 !important;
+}
+
+/* Action button Lanjut & Submit di Mobile */
+.btn-submit-action, .gform-btn-submit {
+    width: 100% !important;
+    padding: 0.95rem 1.25rem !important;
+    font-size: 1.05rem !important;
+    font-weight: 800 !important;
+    border-radius: 10px !important;
+    min-height: 52px !important;
+}

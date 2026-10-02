@@ -43,6 +43,53 @@ class QcInboundController extends Controller
     }
 
     /**
+     * Halaman Antrean Tiket QC Inbound Khusus Admin Gudang (Desktop ERP View)
+     */
+    public function gudangAntrean(Request $request): View
+    {
+        $filters = [
+            'search'            => $request->input('search'),
+            'kategori_barang'   => $request->input('kategori_barang'),
+            'status_qc'         => $request->input('status_qc', 'SIAP_GUDANG'), // Default tampilkan yang siap ditarik gudang
+            'supplier_id'       => $request->input('supplier_id'),
+            'tgl_mulai'         => $request->input('tgl_mulai'),
+            'tgl_selesai'       => $request->input('tgl_selesai'),
+        ];
+
+        // Jika user klik "Semua Status", kosongkan status_qc
+        if ($request->input('status_qc') === 'ALL') {
+            $filters['status_qc'] = null;
+        }
+
+        $inspeksiList = $this->qcService->getAllPaginated($filters, 20);
+        $suppliers = MstSupplier::where('deleted_st', false)->where('active_st', true)->orderBy('supplier_nm')->get();
+
+        // Metrik Ringkasan Khusus Gudang
+        $countSiap = \App\Models\Gudang\DatQcInboundHdr::where('deleted_st', false)->where('status_qc', 'SIAP_GUDANG')->count();
+        $countSelesai = \App\Models\Gudang\DatQcInboundHdr::where('deleted_st', false)->where('status_qc', 'DITERIMA_GUDANG')->count();
+        $countReject = \App\Models\Gudang\DatQcInboundHdr::where('deleted_st', false)->where('status_qc', 'DITOLAK_TOTAL')->count();
+
+        return view('gudang.terima.qc-antrean', compact('inspeksiList', 'suppliers', 'filters', 'countSiap', 'countSelesai', 'countReject'));
+    }
+
+    /**
+     * Cetak Lembar Checklist Mutu HACCP Resmi (A4) untuk Arsip Fisik Gudang
+     */
+    public function gudangHaccpCetak(int $id): View
+    {
+        $qc = \App\Models\Gudang\DatQcInboundHdr::with([
+            'supplier',
+            'gudang',
+            'po',
+            'details.barang.satuanDasar',
+            'details.poDetail',
+            'terima',
+        ])->where('deleted_st', false)->findOrFail($id);
+
+        return view('gudang.terima.qc-haccp-cetak', compact('qc'));
+    }
+
+    /**
      * Formulir Uji QC Masuk (Mobile-First / Google Form Style)
      */
     public function create(Request $request): View
@@ -123,18 +170,12 @@ class QcInboundController extends Controller
     }
 
     /**
-     * Cetak Berita Acara Penolakan Bahan Baku Singkong (HACCP Form: MFI/HACCP-04/FRM-03/041/VIII/2021)
+     * Berita Acara Penolakan dialihkan ke wewenang Bagian Gudang (Retur Pembelian Inbound)
      */
-    public function beritaAcara(int $id): View
+    public function beritaAcara(int $id): RedirectResponse
     {
-        $qc = \App\Models\Gudang\DatQcInboundHdr::with([
-            'supplier',
-            'gudang',
-            'po',
-            'details.barang.satuanDasar',
-        ])->where('deleted_st', false)->findOrFail($id);
-
-        return view('gudang.qc.berita_acara', compact('qc'));
+        return redirect()->route('qc.inbound.show', $id)
+            ->with('error', 'Administrasi Berita Acara Penolakan dan Retur Bahan Baku dikelola langsung oleh Tim Gudang melalui Modul Retur Gudang.');
     }
 
     /**

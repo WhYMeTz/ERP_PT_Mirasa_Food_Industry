@@ -61,6 +61,10 @@
         </div>
 
         <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
+            <a href="{{ route('qc.inbound.show', [$qc->qc_id, 'view' => 'mobile']) }}" class="btn btn-sm btn-outline-secondary" style="border-radius: 8px; font-weight: 700;">
+                📱 Ringkas Mobile
+            </a>
+
             @if (Auth::user()?->canEditQc() && !$isLocked)
                 <a href="{{ route('qc.inbound.edit', $qc->qc_id) }}" class="btn btn-sm" style="background: #eff6ff; color: #1d4ed8; border: 1.5px solid #bfdbfe; font-weight: 700; border-radius: 8px;">
                     ✏️ Edit / Koreksi
@@ -157,48 +161,18 @@
         @endif
     </div>
 </div>
+@endsection
 
+@push('scripts')
 <script>
     function toggleUjiGorengForm() {
         const box = document.getElementById('ujiGorengFormBox');
         if (box) {
-            if (box.style.display === 'none' || !box.style.display) {
-                box.style.display = 'block';
+            box.style.display = (box.style.display === 'none' || !box.style.display) ? 'block' : 'none';
+            if (box.style.display === 'block') {
                 box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            } else {
-                box.style.display = 'none';
             }
         }
     }
 </script>
-
-<style>
-    @media print {
-        @page {
-            size: A4 portrait;
-            margin: 10mm 10mm;
-        }
-        .no-print, header, footer, .qc-top-appbar, .qc-bottom-nav {
-            display: none !important;
-        }
-        body {
-            background: #ffffff !important;
-            padding: 0 !important;
-            margin: 0 !important;
-            font-size: 11pt !important;
-            color: #000000 !important;
-        }
-        .print-sheet {
-            border: 2px solid #000000 !important;
-            box-shadow: none !important;
-            padding: 1rem !important;
-            max-width: 100% !important;
-            background: transparent !important;
-            page-break-after: always;
-        }
-        table {
-            page-break-inside: avoid;
-        }
-    }
-</style>
-@endsection
+@endpush

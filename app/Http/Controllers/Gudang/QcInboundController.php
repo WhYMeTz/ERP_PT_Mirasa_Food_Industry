@@ -154,8 +154,9 @@ class QcInboundController extends Controller
 
     /**
      * Menampilkan dokumen lembar hasil uji QC
+     * Default SELALU menampilkan detail ringkas mobile. Lembar HACCP hanya jika view=haccp
      */
-    public function show(int $id): View
+    public function show(Request $request, int $id): View
     {
         $qc = \App\Models\Gudang\DatQcInboundHdr::with([
             'supplier',
@@ -166,7 +167,13 @@ class QcInboundController extends Controller
             'terima',
         ])->where('deleted_st', false)->findOrFail($id);
 
-        return view('gudang.qc.show', compact('qc'));
+        // Jika eksplisit minta lembar cetak HACCP desktop
+        if ($request->input('view') === 'haccp') {
+            return view('gudang.qc.show', compact('qc'));
+        }
+
+        // Default selalu detail biasa (mobile)
+        return view('gudang.qc.show-mobile', compact('qc'));
     }
 
     /**
@@ -180,8 +187,9 @@ class QcInboundController extends Controller
 
     /**
      * Formulir Koreksi / Edit Tiket QC Inbound
+     * Mendukung tampilan mobile edit biasa untuk smartphone QC dan formulir HACCP desktop
      */
-    public function edit(int $id): View|RedirectResponse
+    public function edit(Request $request, int $id): View|RedirectResponse
     {
         $qc = \App\Models\Gudang\DatQcInboundHdr::with([
             'supplier',
@@ -219,7 +227,13 @@ class QcInboundController extends Controller
             ->orderBy('po_tgl', 'desc')
             ->get();
 
-        return view('gudang.qc.edit', compact('qc', 'suppliers', 'gudangs', 'barangs', 'pos'));
+        // Jika eksplisit minta edit formulir HACCP desktop
+        if ($request->input('view') === 'haccp') {
+            return view('gudang.qc.edit', compact('qc', 'suppliers', 'gudangs', 'barangs', 'pos'));
+        }
+
+        // Default selalu edit mobile biasa
+        return view('gudang.qc.edit-mobile', compact('qc', 'suppliers', 'gudangs', 'barangs', 'pos'));
     }
 
     /**

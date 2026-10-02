@@ -17,16 +17,6 @@
             </h1>
 
             <div class="qc-header-actions">
-                {{-- SWITCHER TAMPILAN: KARTU HP VS TABEL GUDANG PC --}}
-                <div class="qc-view-switcher" title="Ganti Tampilan Antara Mode HP dan Mode Desktop Gudang">
-                    <button type="button" id="btnViewCard" class="qc-switch-btn active" onclick="switchQcView('card')">
-                        <span>📱 Kartu HP</span>
-                    </button>
-                    <button type="button" id="btnViewTable" class="qc-switch-btn" onclick="switchQcView('table')">
-                        <span>💻 Tabel Gudang</span>
-                    </button>
-                </div>
-
                 @if (Auth::user()?->canCreateQc())
                     <a href="{{ route('qc.inbound.create') }}" class="qc-btn-create-inline">
                         <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
@@ -36,7 +26,7 @@
             </div>
         </div>
         <p class="qc-index-subtitle">
-            Daftar inspeksi mutu bahan masuk. Petugas QC menggunakan mode kartu di HP, Admin Gudang dapat beralih ke mode tabel untuk menarik ke Penerimaan (GRN).
+            Daftar riwayat tiket inspeksi mutu bahan baku kedatangan PT Mirasa Food Industry.
         </p>
     </div>
 
@@ -216,7 +206,7 @@
                     {{-- TOMBOL EDIT KHUSUS SAMPLING QC --}}
                     @if (Auth::user()?->canEditQc())
                         @if (!$isLocked)
-                            <a href="{{ route('qc.inbound.edit', $qc->qc_id) }}" class="qc-btn-action qc-btn-edit" title="Edit / Koreksi Parameter Mutu Sampling">
+                            <a href="{{ route('qc.inbound.edit', [$qc->qc_id, 'view' => 'mobile']) }}" class="qc-btn-action qc-btn-edit" title="Edit / Koreksi Parameter Mutu Sampling">
                                 <span>✏️ Edit</span>
                             </a>
                         @else
@@ -255,137 +245,6 @@
     {{-- ========================================================================= --}}
     {{-- TAMPILAN 2: TABEL OPERASIONAL GUDANG (KHUSUS ADMIN GUDANG DI PC/DESKTOP) --}}
     {{-- ========================================================================= --}}
-    <div id="qcTableContainer" class="qc-table-card" style="display: none;">
-        <div class="qc-table-responsive">
-            <table class="qc-table-desktop">
-                <thead>
-                    <tr>
-                        <th>No. Tiket QC &amp; Jam</th>
-                        <th>Komoditas</th>
-                        <th>Supplier &amp; PO</th>
-                        <th>Armada / Sopir</th>
-                        <th style="text-align: right;">Gross (kg)</th>
-                        <th style="text-align: right;">Refraksi</th>
-                        <th style="text-align: right;">Reject</th>
-                        <th style="text-align: right;">Netto Lolos (kg)</th>
-                        <th style="text-align: center;">Status Mutu</th>
-                        <th style="text-align: center;">Tindakan Gudang</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse ($inspeksiList as $qc)
-                        @php
-                            $totalGross = $qc->details->sum('qty_timbang_gross');
-                            $totalRefraksi = $qc->details->sum('qty_refraksi');
-                            $totalReject = $qc->details->sum('qty_reject');
-                            $totalNetto = $qc->details->sum('qty_netto_lolos');
-                            $kat = strtoupper((string) ($qc->kategori_barang ?: 'SINGKONG'));
-                            $isLocked = !empty($qc->terima) && !Auth::user()?->isSuperAdmin();
-                        @endphp
-                        <tr>
-                            <td>
-                                <a href="{{ route('qc.inbound.show', $qc->qc_id) }}" style="font-weight: 800; color: #0284c7; text-decoration: none;">
-                                    {{ $qc->qc_no }}
-                                </a>
-                                <div style="font-size: 0.725rem; color: #64748b; margin-top: 2px;">
-                                    {{ $qc->tgl_periksa ? $qc->tgl_periksa->format('d/m/Y H:i') : '-' }} &bull; {{ $qc->petugas_qc_nama }}
-                                </div>
-                            </td>
-                            <td>
-                                <span class="badge-commodity">
-                                    @if ($kat === 'SINGKONG') 🥔 @elseif ($kat === 'MINYAK') 🛢️ @elseif ($kat === 'PLASTIK') 🛍️ @elseif ($kat === 'KARTON') 📦 @else ✨ @endif
-                                    {{ $kat }}
-                                </span>
-                            </td>
-                            <td>
-                                <div style="font-weight: 700; color: #0f172a;">
-                                    {{ $qc->supplier?->supplier_nm ?? 'Supplier Langsung' }}
-                                </div>
-                                @if ($qc->po)
-                                    <div style="font-size: 0.725rem; color: #0284c7; font-weight: 600;">
-                                        PO: {{ $qc->po->po_no }}
-                                    </div>
-                                @else
-                                    <div style="font-size: 0.7rem; color: #94a3b8;">(Tanpa PO)</div>
-                                @endif
-                            </td>
-                            <td>
-                                <div style="font-weight: 700; color: #334155;">{{ $qc->plat_nomor_truk ?: '-' }}</div>
-                                <div style="font-size: 0.725rem; color: #64748b;">Sopir: {{ $qc->sopir_nama ?: '-' }}</div>
-                            </td>
-                            <td style="text-align: right; font-weight: 700;">
-                                {{ number_format($totalGross, 0, ',', '.') }}
-                            </td>
-                            <td style="text-align: right; color: #d97706; font-weight: 600;">
-                                {{ number_format($totalRefraksi, 0, ',', '.') }}
-                            </td>
-                            <td style="text-align: right; color: #dc2626; font-weight: 600;">
-                                {{ number_format($totalReject, 0, ',', '.') }}
-                            </td>
-                            <td style="text-align: right; font-weight: 800; color: #059669; font-size: 0.925rem;">
-                                {{ number_format($totalNetto, 0, ',', '.') }}
-                            </td>
-                            <td style="text-align: center;">
-                                @if ($qc->status_qc === 'SIAP_GUDANG')
-                                    <span class="badge-status-siap">⏳ Siap Gudang</span>
-                                @elseif ($qc->status_qc === 'DITERIMA_GUDANG')
-                                    <span class="badge-status-diterima">✅ Masuk Gudang</span>
-                                @elseif ($qc->status_qc === 'DITOLAK_TOTAL')
-                                    <span class="badge-status-reject">❌ Reject Total</span>
-                                @else
-                                    <span class="badge-status-siap">{{ $qc->status_qc }}</span>
-                                @endif
-
-                                @if ($kat === 'SINGKONG' && $qc->status_uji_goreng === 'MENUNGGU_LAB')
-                                    <div style="margin-top: 3px;">
-                                        <span class="badge-status-lab">⏳ Lab Fryer</span>
-                                    </div>
-                                @endif
-                            </td>
-                            <td style="text-align: center;">
-                                <div style="display: flex; gap: 0.35rem; align-items: center; justify-content: center; flex-wrap: wrap;">
-                                    {{-- TOMBOL UTAMA ADMIN GUDANG: TARIK KE PENERIMAAN GUDANG (GRN) --}}
-                                    @if ($qc->status_qc === 'SIAP_GUDANG' && Auth::user()?->canAccessTerima())
-                                        <a href="{{ route('gudang.terima.create', ['qc_id' => $qc->qc_id]) }}" class="qc-btn-pull-grn" title="Buat Bukti Terima Barang (GRN) berdasarkan tiket QC ini">
-                                            <span>📦 Tarik ke GRN</span>
-                                        </a>
-                                    @elseif ($qc->terima)
-                                        <a href="{{ route('gudang.terima.show', $qc->terima->terima_id) }}" class="qc-grn-badge-link" title="Buka Dokumen Penerimaan Gudang">
-                                            <span>🔗 GRN #{{ $qc->terima->terima_no }}</span>
-                                        </a>
-                                    @endif
-
-                                    <a href="{{ route('qc.inbound.show', $qc->qc_id) }}" class="btn btn-sm btn-secondary" title="Lihat Lembar Uji">
-                                        Detail
-                                    </a>
-
-                                    @if (Auth::user()?->canEditQc() && !$isLocked)
-                                        <a href="{{ route('qc.inbound.edit', $qc->qc_id) }}" class="btn btn-sm btn-secondary" title="Edit Koreksi" style="color: #1d4ed8; background: #eff6ff; border-color: #bfdbfe;">
-                                            ✏️
-                                        </a>
-                                    @endif
-
-                                    @if (Auth::user()?->canDeleteQc() && !$isLocked)
-                                        <button type="button" class="btn btn-sm btn-secondary" onclick="openDeleteQcModal('{{ $qc->qc_id }}', '{{ $qc->qc_no }}')" title="Batalkan Tiket" style="color: #dc2626; background: #fef2f2; border-color: #fecaca;">
-                                            🗑️
-                                        </button>
-                                    @endif
-                                </div>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="10" style="padding: 3rem; text-align: center; color: #64748b;">
-                                <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🔬</div>
-                                <div style="font-weight: 700; font-size: 1rem; color: #0f172a;">Belum Ada Tiket Inspeksi QC</div>
-                                <div style="font-size: 0.85rem; margin-top: 0.25rem;">Tidak ada data tiket QC yang sesuai dengan kriteria filter.</div>
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-    </div>
 
     {{-- PAGINASI --}}
     @if ($inspeksiList->hasPages())

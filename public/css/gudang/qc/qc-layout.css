@@ -434,3 +434,137 @@ select.form-control {
     min-height: 36px;
 }
 
+/* ==========================================================================
+   EXCEL SHEET DOCUMENT STYLING (100% PERSIS FORMAT EXCEL PT MIRASA)
+   ========================================================================== */
+.excel-doc-sheet {
+    background: #ffffff;
+    border: 2px solid #000000;
+    font-family: Arial, sans-serif;
+    color: #000000;
+    line-height: 1.25;
+}
+
+.excel-doc-sheet table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+.excel-cell-input {
+    width: 100%;
+    border: 1px solid #cbd5e1;
+    background: #f8fafc;
+    padding: 3px 6px;
+    font-family: Arial, sans-serif;
+    font-size: 0.78rem;
+    color: #0f172a;
+    border-radius: 3px;
+    box-sizing: border-box;
+    transition: all 0.15s ease;
+}
+
+.excel-cell-input:focus {
+    background: #ffffff;
+    border-color: #0284c7;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2);
+}
+
+.excel-cell-input.text-center {
+    text-align: center;
+}
+
+.excel-cell-input.font-bold {
+    font-weight: 800;
+}
+
+.excel-box-check {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 1.5px solid #000000;
+    text-align: center;
+    line-height: 14px;
+    font-weight: 900;
+    font-size: 0.85rem;
+    color: #000000;
+    vertical-align: middle;
+    background: #ffffff;
+}
+
+.excel-box-check.mini {
+    width: 13px;
+    height: 13px;
+    line-height: 11px;
+    font-size: 0.7rem;
+}
+
+.excel-checkbox {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    vertical-align: middle;
+    accent-color: #0284c7;
+}
+
+.excel-btn-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border: 1px solid #000000;
+    background: #ffffff;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 0.75rem;
+    user-select: none;
+    transition: all 0.15s ease;
+}
+
+.excel-btn-toggle.active {
+    background: #e2e8f0;
+}
+
+.excel-btn-toggle input[type="radio"] {
+    margin: 0;
+    accent-color: #0284c7;
+}
+
+@media print {
+    @page {
+        size: A4 portrait;
+        margin: 8mm 8mm;
+    }
+    .no-print, header, footer, .qc-top-appbar, .qc-bottom-nav, nav {
+        display: none !important;
+    }
+    body {
+        background: #ffffff !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        color: #000000 !important;
+    }
+    .excel-doc-sheet {
+        border: 2px solid #000000 !important;
+        box-shadow: none !important;
+        padding: 0.75rem !important;
+        margin: 0 0 1.5rem 0 !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        background: #ffffff !important;
+        page-break-after: always;
+    }
+    .excel-doc-sheet:last-child {
+        page-break-after: auto;
+    }
+    .excel-cell-input {
+        border: none !important;
+        background: transparent !important;
+        padding: 0 !important;
+        color: #000000 !important;
+    }
+    table {
+        page-break-inside: avoid;
+    }
+}
+

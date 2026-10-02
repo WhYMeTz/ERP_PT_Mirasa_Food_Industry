@@ -184,7 +184,12 @@
                     </div>
 
                     {{-- STATUS INTEGRASI GUDANG PERSIMPANGAN --}}
-                    @if ($qc->terima)
+                    @if ($kat === 'SINGKONG' && $qc->status_uji_goreng === 'MENUNGGU_LAB')
+                        <div class="qc-waiting-banner" style="background: #fffbeb; border-color: #fde68a; color: #92400e;">
+                            <span>🍟</span>
+                            <span>Pengujian II (Uji Goreng Lab) belum diisi &bull; Klik <strong>Uji Fryer</strong> untuk melengkapi</span>
+                        </div>
+                    @elseif ($qc->terima)
                         <div class="qc-grn-banner">
                             <span>📦</span>
                             <span>Sudah diterima Gudang &bull; GRN: <strong>{{ $qc->terima->terima_no }}</strong></span>
@@ -199,6 +204,13 @@
 
                 {{-- FOOTER AKSI TOMBOL TOUCH-FRIENDLY --}}
                 <div class="qc-card-actions">
+                    {{-- TOMBOL CEPAT LANJUTKAN UJI FRYER UNTUK SINGKONG SETENGAH PROSES --}}
+                    @if ($kat === 'SINGKONG' && $qc->status_uji_goreng === 'MENUNGGU_LAB')
+                        <button type="button" class="qc-btn-action" style="background: #d97706; color: #ffffff; border-color: #b45309; font-weight: 800;" onclick="openModalUjiFryer('{{ $qc->qc_id }}', '{{ $qc->qc_no }}', '{{ $qc->details->first()?->qcdtl_id }}')">
+                            <span>🍟 Uji Fryer</span>
+                        </button>
+                    @endif
+
                     <a href="{{ route('qc.inbound.show', $qc->qc_id) }}" class="qc-btn-action qc-btn-detail">
                         <span>👁️ Detail Uji</span>
                     </a>
@@ -256,6 +268,9 @@
 
 {{-- MODAL KONFIRMASI HAPUS --}}
 @include('gudang.qc.partials.modal-delete')
+
+{{-- MODAL UJI GORENG FRYER --}}
+@include('gudang.qc.partials.modal-uji-fryer')
 
 @endsection
 

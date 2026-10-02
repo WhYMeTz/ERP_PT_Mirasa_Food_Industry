@@ -179,10 +179,93 @@
             </div>
         </div>
 
-        {{-- KARTU 3: KEPUTUSAN KESIMPULAN & CATATAN --}}
+        {{-- KARTU 3: PARAMETER MUTU & HASIL FRYER LENGKAP --}}
         <div class="qc-card-section">
             <h2 class="qc-card-title">
-                <span>💬</span> <span>3. Keputusan &amp; Catatan QC</span>
+                <span>🔬</span> <span>3. Parameter Mutu &amp; Pengujian ({{ $kat }})</span>
+            </h2>
+
+            @if ($kat === 'SINGKONG')
+                <div style="display: flex; flex-direction: column; gap: 0.85rem;">
+                    {{-- DIAMETER UMBI --}}
+                    <div>
+                        <div style="font-size: 0.78rem; font-weight: 800; color: #0284c7; margin-bottom: 0.35rem;">PENGUJIAN I &bull; DIAMETER UMBI:</div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem;">
+                            <div>
+                                <label class="qc-info-label" style="display: block; font-weight: 700; margin-bottom: 0.25rem;">Diameter &lt; 4 cm (% Max 5%)</label>
+                                <input type="number" step="0.1" name="items[{{ $qcdtlId }}][diameter_kurang_4cm_persen]" value="{{ old('items.'.$qcdtlId.'.diameter_kurang_4cm_persen', $firstDetail?->diameter_kurang_4cm_persen ?? 0) }}" class="form-control" style="width: 100%; border-radius: 8px;">
+                            </div>
+                            <div>
+                                <label class="qc-info-label" style="display: block; font-weight: 700; margin-bottom: 0.25rem;">Diameter &ge; 4 cm (% Min 95%)</label>
+                                <input type="number" step="0.1" name="items[{{ $qcdtlId }}][diameter_lebih_4cm_persen]" value="{{ old('items.'.$qcdtlId.'.diameter_lebih_4cm_persen', $firstDetail?->diameter_lebih_4cm_persen ?? 100) }}" class="form-control" style="width: 100%; border-radius: 8px; font-weight: 700;">
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- HASIL UJI GORENG (LAB FRYER) --}}
+                    <div style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 10px; padding: 0.85rem;">
+                        <div style="font-size: 0.78rem; font-weight: 800; color: #d97706; margin-bottom: 0.45rem;">PENGUJIAN II &bull; HASIL UJI GORENG (LAB FRYER):</div>
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; margin-bottom: 0.65rem;">
+                            <div>
+                                <label class="qc-info-label" style="display: block; font-weight: 700; margin-bottom: 0.2rem;">Rasa</label>
+                                <select name="items[{{ $qcdtlId }}][fryer_rasa]" class="form-control" style="width: 100%; border-radius: 6px; font-size: 0.8rem; font-weight: 700;">
+                                    <option value="TIDAK_PAHIT" {{ old('items.'.$qcdtlId.'.fryer_rasa', $firstDetail?->fryer_rasa ?? 'TIDAK_PAHIT') === 'TIDAK_PAHIT' ? 'selected' : '' }}>Tidak Pahit</option>
+                                    <option value="PAHIT" {{ old('items.'.$qcdtlId.'.fryer_rasa', $firstDetail?->fryer_rasa ?? '') === 'PAHIT' ? 'selected' : '' }}>Pahit</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="qc-info-label" style="display: block; font-weight: 700; margin-bottom: 0.2rem;">Tekstur</label>
+                                <select name="items[{{ $qcdtlId }}][fryer_tekstur]" class="form-control" style="width: 100%; border-radius: 6px; font-size: 0.8rem; font-weight: 700;">
+                                    <option value="RENYAH" {{ old('items.'.$qcdtlId.'.fryer_tekstur', $firstDetail?->fryer_tekstur ?? 'RENYAH') === 'RENYAH' ? 'selected' : '' }}>Renyah</option>
+                                    <option value="ALOT" {{ old('items.'.$qcdtlId.'.fryer_tekstur', $firstDetail?->fryer_tekstur ?? '') === 'ALOT' ? 'selected' : '' }}>Alot</option>
+                                    <option value="LEMBEK" {{ old('items.'.$qcdtlId.'.fryer_tekstur', $firstDetail?->fryer_tekstur ?? '') === 'LEMBEK' ? 'selected' : '' }}>Lembek</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="qc-info-label" style="display: block; font-weight: 700; margin-bottom: 0.2rem;">Penampakan</label>
+                                <select name="items[{{ $qcdtlId }}][fryer_penampakan]" class="form-control" style="width: 100%; border-radius: 6px; font-size: 0.8rem; font-weight: 700;">
+                                    <option value="TIDAK_OILSOAKED" {{ old('items.'.$qcdtlId.'.fryer_penampakan', $firstDetail?->fryer_penampakan ?? 'TIDAK_OILSOAKED') === 'TIDAK_OILSOAKED' ? 'selected' : '' }}>Normal</option>
+                                    <option value="OILSOAKED" {{ old('items.'.$qcdtlId.'.fryer_penampakan', $firstDetail?->fryer_penampakan ?? '') === 'OILSOAKED' ? 'selected' : '' }}>Oilsoaked</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div style="font-size: 0.725rem; font-weight: 700; color: #475569; margin-bottom: 0.3rem;">DEFECT FRYING (%):</div>
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem;">
+                            <div>
+                                <label class="qc-info-label">Breakage %</label>
+                                <input type="number" step="0.1" name="items[{{ $qcdtlId }}][defect_breakage_persen]" value="{{ old('items.'.$qcdtlId.'.defect_breakage_persen', $firstDetail?->defect_breakage_persen ?? 0) }}" class="form-control" style="width: 100%; border-radius: 6px; font-size: 0.8rem;">
+                            </div>
+                            <div>
+                                <label class="qc-info-label">Cluster %</label>
+                                <input type="number" step="0.1" name="items[{{ $qcdtlId }}][defect_cluster_persen]" value="{{ old('items.'.$qcdtlId.'.defect_cluster_persen', $firstDetail?->defect_cluster_persen ?? 0) }}" class="form-control" style="width: 100%; border-radius: 6px; font-size: 0.8rem;">
+                            </div>
+                            <div>
+                                <label class="qc-info-label">Gambos %</label>
+                                <input type="number" step="0.1" name="items[{{ $qcdtlId }}][defect_gambos_persen]" value="{{ old('items.'.$qcdtlId.'.defect_gambos_persen', $firstDetail?->defect_gambos_persen ?? 0) }}" class="form-control" style="width: 100%; border-radius: 6px; font-size: 0.8rem;">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            @elseif ($kat === 'MINYAK')
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem;">
+                    <div>
+                        <label class="qc-info-label" style="display: block; font-weight: 700; margin-bottom: 0.25rem;">FFA COA</label>
+                        <input type="number" step="0.001" name="items[{{ $qcdtlId }}][ffa_coa]" value="{{ old('items.'.$qcdtlId.'.ffa_coa', $firstDetail?->ffa_coa ?? '') }}" class="form-control" style="width: 100%; border-radius: 8px;">
+                    </div>
+                    <div>
+                        <label class="qc-info-label" style="display: block; font-weight: 700; margin-bottom: 0.25rem;">FFA Cek QC Mirasa</label>
+                        <input type="number" step="0.001" name="items[{{ $qcdtlId }}][ffa_qc]" value="{{ old('items.'.$qcdtlId.'.ffa_qc', $firstDetail?->ffa_qc ?? '') }}" class="form-control" style="width: 100%; border-radius: 8px; font-weight: 700; color: #0284c7;">
+                    </div>
+                </div>
+            @endif
+        </div>
+
+        {{-- KARTU 4: KEPUTUSAN KESIMPULAN & CATATAN --}}
+        <div class="qc-card-section">
+            <h2 class="qc-card-title">
+                <span>💬</span> <span>4. Keputusan &amp; Catatan QC</span>
             </h2>
 
             <div style="display: flex; flex-direction: column; gap: 0.75rem;">

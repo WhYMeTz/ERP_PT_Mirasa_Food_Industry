@@ -1,4 +1,4 @@
-@extends('layouts.qc-mobile')
+@extends((Auth::user()?->isQc() && !Auth::user()?->isSuperAdmin() && !Auth::user()?->isGudang() && request('view') !== 'desktop') ? 'layouts.qc-mobile' : 'layouts.app')
 
 @section('title', 'Koreksi Dokumen QC (No. ' . $qc->qc_no . ') - PT Mirasa')
 

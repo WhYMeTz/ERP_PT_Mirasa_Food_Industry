@@ -125,13 +125,13 @@ Route::middleware('auth')->group(function () {
             ->middleware('role:po_view');
         Route::resource('po', PoController::class)->only(['index', 'show'])->middleware('role:po_view');
 
-        // Antrean Tiket QC Inbound Khusus Admin Gudang (Desktop ERP)
-        Route::get('qc-antrean', [QcInboundController::class, 'gudangAntrean'])
-            ->name('qc.antrean')
-            ->middleware('role:terima_view,terima_create,gudang');
+        // Antrean Tiket QC Inbound -> Dialihkan terpadu ke Riwayat QC & Dokumen HACCP
+        Route::get('qc-antrean', function () {
+            return redirect()->route('qc.inbound.index', ['status_qc' => 'SIAP_GUDANG']);
+        })->name('qc.antrean')->middleware('role:terima_view,terima_create,gudang,qc_view');
         Route::get('qc-antrean/{id}/haccp-cetak', [QcInboundController::class, 'gudangHaccpCetak'])
             ->name('qc.haccp_cetak')
-            ->middleware('role:terima_view,terima_create,gudang');
+            ->middleware('role:terima_view,terima_create,gudang,qc_view');
 
         // Barang Masuk (GRN / Inbound): Terima Barang & Batch (Berdasarkan izin 'terima_create')
         Route::get('terima/create', [TerimaBarangController::class, 'create'])

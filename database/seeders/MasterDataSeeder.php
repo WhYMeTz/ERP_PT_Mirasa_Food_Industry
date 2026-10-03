@@ -6,6 +6,7 @@ use App\Models\MasterData\MstCustomer;
 use App\Models\MasterData\MstGudang;
 use App\Models\MasterData\MstJenisBarang;
 use App\Models\MasterData\MstJenisSupplier;
+use App\Models\MasterData\MstLiniProduksi;
 use App\Models\MasterData\MstSatuan;
 use App\Models\MasterData\MstSupplier;
 use Illuminate\Database\Seeder;
@@ -132,6 +133,47 @@ class MasterDataSeeder extends Seeder
             MstCustomer::firstOrCreate(
                 ['customer_cd' => $customer['customer_cd']],
                 $customer
+            );
+        }
+
+        // 7. Master Lini Produksi / Tujuan
+        $liniData = [
+            [
+                'lini_cd'    => 'IFM',
+                'lini_nm'    => 'PRODUKSI IFM',
+                'tipe_batch' => 'IFM',
+                'keterangan' => 'Indofood IFM (WIP-FCC Keripik Singkong)',
+            ],
+            [
+                'lini_cd'    => 'PP2000',
+                'lini_nm'    => 'PRODUKSI PING-PING 2000',
+                'tipe_batch' => 'REGULER',
+                'keterangan' => 'Produksi Keripik Ping-Ping 2000',
+            ],
+            [
+                'lini_cd'    => 'PP-UMUM',
+                'lini_nm'    => 'PRODUKSI PING-PING',
+                'tipe_batch' => 'REGULER',
+                'keterangan' => 'Produksi Keripik Ping-Ping (Umum / Retail)',
+            ],
+            [
+                'lini_cd'    => 'LAINNYA',
+                'lini_nm'    => 'PRODUKSI LAINNYA',
+                'tipe_batch' => 'REGULER',
+                'keterangan' => 'Lini Produksi / Tujuan Lainnya',
+            ],
+        ];
+
+        foreach ($liniData as $item) {
+            MstLiniProduksi::updateOrCreate(
+                ['lini_cd' => $item['lini_cd']],
+                [
+                    'lini_nm'    => $item['lini_nm'],
+                    'tipe_batch' => $item['tipe_batch'],
+                    'keterangan' => $item['keterangan'],
+                    'active_st'  => true,
+                    'deleted_st' => false,
+                ]
             );
         }
     }

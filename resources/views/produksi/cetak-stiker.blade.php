@@ -10,9 +10,11 @@
     @php
         $isIfm = str_contains(strtoupper($produksi->lini_produksi), 'IFM');
         $title = $isIfm ? 'WIP-FCC' : strtoupper(str_replace('PRODUKSI ', '', $produksi->lini_produksi ?: 'FINISHED GOODS'));
-        $expDateObj = $isIfm
-            ? Carbon\Carbon::parse($produksi->produksi_tgl)->addMonths(6)
-            : Carbon\Carbon::parse($produksi->produksi_tgl)->addYear()->subDay();
+        $expDateObj = !empty($produksi->exp_date)
+            ? Carbon\Carbon::parse($produksi->exp_date)
+            : ($isIfm
+                ? Carbon\Carbon::parse($produksi->produksi_tgl)->addMonths(6)
+                : Carbon\Carbon::parse($produksi->produksi_tgl)->addYear()->subDay());
         
         $tglProduksiStr = strtoupper(Carbon\Carbon::parse($produksi->produksi_tgl)->format('d M Y'));
         $tglKadaluarsaStr = strtoupper($expDateObj->format('d M Y'));

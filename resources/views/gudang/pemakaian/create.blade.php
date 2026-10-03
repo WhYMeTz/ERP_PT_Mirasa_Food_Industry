@@ -174,15 +174,6 @@
                                         </optgroup>
                                     @endforeach
                                 @endif
-                                @if(isset($opsiKhusus) && !empty($opsiKhusus))
-                                    <optgroup label="KEPERLUAN OPERASIONAL LAINNYA">
-                                        @foreach($opsiKhusus as $opsi)
-                                            <option value="{{ $opsi }}" {{ old('tujuan_pemakaian') === $opsi ? 'selected' : '' }}>
-                                                {{ $opsi }}
-                                            </option>
-                                        @endforeach
-                                    </optgroup>
-                                @endif
                             </select>
                             <small style="color: #64748b; font-size: 0.725rem;">Pilih lini kerja produksi atau peruntukan operasional pabrik.</small>
                         </div>

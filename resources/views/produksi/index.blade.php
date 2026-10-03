@@ -333,6 +333,11 @@
                 </select>
             </form>
 
+            <button type="button" onclick="openModalAdjustUtilitas()" class="btn btn-warning" style="padding: 0.45rem 0.85rem; font-size: 0.825rem; display: inline-flex; align-items: center; gap: 0.4rem; background: #d97706; border-color: #b45309; color: #ffffff; cursor: pointer; font-weight: 700; box-shadow: 0 1px 2px rgba(217,119,6,0.2);">
+                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                <span>⚡ Adjust Utilitas (Listrik/Air/Gas)</span>
+            </button>
+
             <button type="button" onclick="openModalImportRekap()" class="btn btn-primary" style="padding: 0.45rem 0.85rem; font-size: 0.825rem; display: inline-flex; align-items: center; gap: 0.4rem; background: #0284c7; border-color: #0284c7; color: #ffffff; cursor: pointer;">
                 <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
                 <span>📥 Import Excel (.xlsx)</span>
@@ -845,6 +850,7 @@
 {{-- MODALS PARTIALS --}}
 @include('produksi.partials.modal-import-hasil')
 @include('produksi.partials.modal-import-rekap')
+@include('produksi.partials.modal-adjust-utilitas')
 @include('produksi.partials.modal-delete-confirm')
 
 @push('scripts')

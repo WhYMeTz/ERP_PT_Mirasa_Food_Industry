@@ -222,6 +222,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/export-rekap-pdf', [ProduksiController::class, 'exportRekapPdf'])->name('export-rekap-pdf');
         Route::get('/download-rekap-template', [ProduksiController::class, 'downloadRekapTemplate'])->name('download-rekap-template');
         Route::post('/import-rekap-excel', [ProduksiController::class, 'importRekapExcel'])->name('import-rekap-excel')->middleware('role:produksi_create');
+        Route::post('/adjust-utilitas', [ProduksiController::class, 'adjustUtilitas'])->name('adjust-utilitas')->middleware('role:produksi_create');
         Route::get('/create', [ProduksiController::class, 'create'])->name('create')->middleware('role:produksi_create');
         Route::post('/', [ProduksiController::class, 'store'])->name('store')->middleware('role:produksi_create');
         Route::get('/pakai-data/{pakaiId}', [ProduksiController::class, 'getPakaiData'])->name('pakai-data');

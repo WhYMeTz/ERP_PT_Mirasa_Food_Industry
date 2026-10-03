@@ -292,6 +292,11 @@ class ProduksiService
         $pakai = DatPakaiHdr::with(['details.barang.jenisBarang'])->where('pakai_id', $pakaiId)->firstOrFail();
 
         $summary = [
+            'pakai_id'           => $pakai->pakai_id,
+            'pakai_no'           => $pakai->pakai_no,
+            'pakai_tgl'          => $pakai->pakai_tgl ? $pakai->pakai_tgl->format('Y-m-d') : null,
+            'tujuan_pemakaian'   => $pakai->tujuan_pemakaian,
+            'gudang_id'          => $pakai->gudang_id,
             'singkong_qty'       => 0,
             'singkong_nilai'     => 0,
             'minyak_sawit_qty'   => 0,
@@ -527,6 +532,13 @@ class ProduksiService
                 }
             }
 
+            // Tanggal Kedaluwarsa Produk (Fallback jika tidak diisi manual oleh operator)
+            if (empty($data['exp_date'])) {
+                $data['exp_date'] = $isIfm
+                    ? Carbon::parse($tgl)->addMonths(6)->toDateString()
+                    : Carbon::parse($tgl)->addYear()->subDay()->toDateString();
+            }
+
             // Hitung semua turunan biaya, rendemen, dan HPP/kg
             $calculated = $this->calculateFields($data);
 
@@ -545,12 +557,12 @@ class ProduksiService
             $gudangId = (int) $produksi->gudang_id;
             $hppPerKg = (float) $produksi->hpp_per_kg;
 
-            // Hitung Tanggal Kedaluwarsa Sesuai Standar Lini:
-            // IFM (Barang Setengah Jadi): +6 Bulan
-            // Barang Jadi Reguler Mirasa: +1 Tahun minus 1 Hari (cth: Batch 02 01 2026 -> Exp 01/01/2027)
-            $expiredDate = $isIfm
-                ? Carbon::parse($tgl)->addMonths(6)->toDateString()
-                : Carbon::parse($tgl)->addYear()->subDay()->toDateString();
+            // Hitung Tanggal Kedaluwarsa Sesuai Input Operator / Standar Lini:
+            $expiredDate = !empty($produksi->exp_date)
+                ? Carbon::parse($produksi->exp_date)->toDateString()
+                : ($isIfm
+                    ? Carbon::parse($tgl)->addMonths(6)->toDateString()
+                    : Carbon::parse($tgl)->addYear()->subDay()->toDateString());
 
             foreach ($wipMap as $kategori => $info) {
                 if ($info['qty'] <= 0) continue;
@@ -778,6 +790,107 @@ class ProduksiService
                 $item->sisa_stok = (float) $item->qty_kg;
             }
         }
+    }
+
+    /**
+     * Penyesuaian Biaya Utilitas Bulanan (Listrik, Air & Gas CNG).
+     * Memperbarui seluruh transaksi produksi pada bulan & tahun tertentu,
+     * lalu menghitung ulang total biaya produksi & HPP/kg secara presisi.
+     */
+    public function adjustMonthlyUtilities(int $year, int $month, array $payload, string $userId): array
+    {
+        return DB::transaction(function () use ($year, $month, $payload, $userId) {
+            $records = DatProduksiHarian::whereYear('produksi_tgl', $year)
+                ->whereMonth('produksi_tgl', $month)
+                ->where('deleted_st', false)
+                ->get();
+
+            if ($records->isEmpty()) {
+                throw new Exception("Tidak ada catatan produksi pada periode bulan " . $month . " tahun " . $year . " untuk disesuaikan.");
+            }
+
+            $count = $records->count();
+            $adjustListrik = !empty($payload['adjust_listrik']);
+            $adjustCng = !empty($payload['adjust_cng']);
+
+            $totalListrik = (float) ($payload['total_listrik_air'] ?? 0);
+            $modeListrik = $payload['mode_alokasi_listrik'] ?? 'bagi_rata';
+
+            $modeCng = $payload['mode_cng'] ?? 'update_tarif';
+            $cngTarifBaru = (float) ($payload['cng_tarif_baru'] ?? 0);
+            $totalCngTagihan = (float) ($payload['total_cng_tagihan'] ?? 0);
+
+            $totalWipBulanIni = (float) $records->sum('total_wip_qty');
+            $totalMmbtuBulanIni = (float) $records->sum('cng_mmbtu');
+
+            // Hitung tarif rata-rata riil CNG jika mode total tagihan
+            $effectiveCngTarif = 0;
+            if ($adjustCng && $modeCng === 'total_tagihan') {
+                if ($totalMmbtuBulanIni > 0) {
+                    $effectiveCngTarif = round($totalCngTagihan / $totalMmbtuBulanIni, 2);
+                } else {
+                    $effectiveCngTarif = 0;
+                }
+            }
+
+            foreach ($records as $record) {
+                // 1. Alokasi Listrik & Air
+                if ($adjustListrik) {
+                    if ($modeListrik === 'bagi_rata') {
+                        $record->listrik_air_telp_nilai = round($totalListrik / $count, 2);
+                    } elseif ($modeListrik === 'proporsional_wip') {
+                        $record->listrik_air_telp_nilai = $totalWipBulanIni > 0
+                            ? round($totalListrik * ($record->total_wip_qty / $totalWipBulanIni), 2)
+                            : round($totalListrik / $count, 2);
+                    }
+                }
+
+                // 2. Alokasi Gas CNG
+                if ($adjustCng) {
+                    if ($modeCng === 'update_tarif' && $cngTarifBaru > 0) {
+                        $record->cng_tarif = $cngTarifBaru;
+                        $record->cng_nilai = round($record->cng_mmbtu * $cngTarifBaru, 2);
+                    } elseif ($modeCng === 'total_tagihan') {
+                        $record->cng_tarif = $effectiveCngTarif;
+                        $record->cng_nilai = round($record->cng_mmbtu * $effectiveCngTarif, 2);
+                    }
+                }
+
+                // 3. Rekalkulasi Biaya Overhead Pabrik
+                $record->total_overhead_nilai = (float) $record->fotocopy_nilai +
+                    (float) $record->sarung_tangan_plastik_nilai +
+                    (float) $record->sarung_tangan_kain_nilai +
+                    (float) $record->qc_pengawasan_nilai +
+                    (float) $record->listrik_air_telp_nilai +
+                    (float) $record->pemeliharaan_mesin_nilai +
+                    (float) $record->penyusutan_mesin_nilai +
+                    (float) $record->limbah_padat_nilai +
+                    (float) $record->limbah_kimia_nilai;
+
+                // 4. Rekalkulasi Total Biaya Produksi (Bahan + CNG + TK + FOH)
+                $record->total_biaya_produksi = (float) $record->total_bahan_nilai +
+                    (float) $record->cng_nilai +
+                    (float) $record->tk_total_nilai +
+                    (float) $record->total_overhead_nilai;
+
+                // 5. Rekalkulasi HPP per Kg
+                $record->hpp_per_kg = $record->total_wip_qty > 0
+                    ? round($record->total_biaya_produksi / $record->total_wip_qty, 2)
+                    : 0;
+
+                // 6. Audit Trail
+                $record->updated_by = $userId;
+                $record->save();
+            }
+
+            return [
+                'count'               => $count,
+                'adjust_listrik'      => $adjustListrik,
+                'total_listrik'       => $totalListrik,
+                'adjust_cng'          => $adjustCng,
+                'effective_cng_tarif' => $modeCng === 'total_tagihan' ? $effectiveCngTarif : $cngTarifBaru,
+            ];
+        });
     }
 }
 

@@ -35,11 +35,15 @@
 
         if (btnA && btnB) {
             if (shiftUpper === 'A') {
-                btnA.classList.add('active-a');
-                btnB.classList.remove('active-b');
+                btnA.classList.add('shift-segmented-active', 'active-a');
+                btnA.classList.remove('shift-segmented-inactive');
+                btnB.classList.add('shift-segmented-inactive');
+                btnB.classList.remove('shift-segmented-active', 'active-b');
             } else {
-                btnB.classList.add('active-b');
-                btnA.classList.remove('active-a');
+                btnB.classList.add('shift-segmented-active', 'active-b');
+                btnB.classList.remove('shift-segmented-inactive');
+                btnA.classList.add('shift-segmented-inactive');
+                btnA.classList.remove('shift-segmented-active', 'active-a');
             }
         }
 
@@ -102,16 +106,40 @@
         return `${expDay}/${expMonth}/${expYear}`;
     }
 
+    // Helper: Hitung Exp Date format ISO YYYY-MM-DD untuk input date HTML
+    function calcExpDateIso(tglStr, isIfm) {
+        if (!tglStr) return '';
+        const parts = tglStr.split('-');
+        if (parts.length !== 3) return '';
+        
+        const y = parseInt(parts[0]);
+        const m = parseInt(parts[1]) - 1;
+        const d = parseInt(parts[2]);
+        const dateObj = new Date(y, m, d);
+
+        if (isIfm) {
+            dateObj.setMonth(dateObj.getMonth() + 6);
+        } else {
+            dateObj.setFullYear(dateObj.getFullYear() + 1);
+            dateObj.setDate(dateObj.getDate() - 1);
+        }
+
+        const expYear = dateObj.getFullYear();
+        const expMonth = String(dateObj.getMonth() + 1).padStart(2, '0');
+        const expDay = String(dateObj.getDate()).padStart(2, '0');
+        return `${expYear}-${expMonth}-${expDay}`;
+    }
+
     // 3. Kalkulasi Rentang Karton & Kode Batch WIP / Barang Jadi
     window.updateKartonRangeAndBatch = function () {
         const shift = document.getElementById('shift_cd')?.value || 'A';
         const noAwal = parseInt(document.getElementById('no_karton_awal')?.value) || 1;
         const qtyKarton = parseInt(document.getElementById('qty_karton')?.value) || 0;
         const liniSelect = document.getElementById('lini_produksi');
-        const lini = liniSelect?.value || 'PRODUKSI IFM';
+        const lini = liniSelect?.value || '';
         const selectedTipe = liniSelect?.selectedOptions?.[0]?.getAttribute('data-tipe');
         const tgl = document.getElementById('produksi_tgl')?.value || '';
-        const isIfm = selectedTipe === 'IFM' || lini.toUpperCase().includes('IFM');
+        const isIfm = Boolean(lini && (selectedTipe === 'IFM' || lini.toUpperCase().includes('IFM')));
 
         // Tampilkan/Sembunyikan elemen spesifik IFM vs Barang Jadi Reguler
         const sectionShift = document.getElementById('sectionShiftSelection');
@@ -125,11 +153,23 @@
         const colAwal = document.getElementById('colKartonAwal');
         const colAkhir = document.getElementById('colKartonAkhir');
 
-        if (isIfm) {
-            if (sectionShift) sectionShift.style.display = 'block';
-            if (colAwal) colAwal.style.display = 'block';
-            if (colAkhir) colAkhir.style.display = 'block';
-            if (bannerRegularFG) bannerRegularFG.style.display = 'none';
+        // Pilihan Shift Kerja & Kolom Karton selalu aktif dan terlihat untuk semua jenis lini
+        if (sectionShift) sectionShift.style.display = 'block';
+        if (colAwal) colAwal.style.display = 'block';
+        if (colAkhir) colAkhir.style.display = 'block';
+        if (bannerRegularFG) bannerRegularFG.style.display = 'none';
+
+        if (!lini) {
+            if (cardHeaderTitle) cardHeaderTitle.textContent = '2. Shift Kerja, Penomoran Batch & Kemasan Karton';
+            if (cardHeaderBadge) {
+                cardHeaderBadge.innerHTML = 'Format Batch: [Shift][NoAwal] - [Shift][NoAkhir]';
+                cardHeaderBadge.style.background = '#eff6ff';
+                cardHeaderBadge.style.color = '#1e40af';
+                cardHeaderBadge.style.borderColor = '#bfdbfe';
+            }
+            if (labelKartonTitle) labelKartonTitle.textContent = 'Karton Selesai';
+            if (liveEstimasiDesc) liveEstimasiDesc.textContent = '(Netto 6 Kg/Box)';
+        } else if (isIfm) {
             if (cardHeaderTitle) cardHeaderTitle.textContent = '2. Shift Kerja, Penomoran Batch & Kemasan Karton (Standar Indofood IFM / WIP-FCC)';
             if (cardHeaderBadge) {
                 cardHeaderBadge.innerHTML = 'Format Batch Karton: [Shift][NoAwal] - [Shift][NoAkhir]';
@@ -141,13 +181,9 @@
             if (liveEstimasiDesc) liveEstimasiDesc.textContent = '(Netto 6 Kg/Box)';
         } else {
             // Mode Barang Jadi Reguler Mirasa (Ping-Ping, Retail)
-            if (sectionShift) sectionShift.style.display = 'none';
-            if (colAwal) colAwal.style.display = 'none';
-            if (colAkhir) colAkhir.style.display = 'none';
-            if (bannerRegularFG) bannerRegularFG.style.display = 'block';
-            if (cardHeaderTitle) cardHeaderTitle.textContent = '2. Penomoran Batch & Masa Simpan Barang Jadi (Standar Persediaan Mirasa)';
+            if (cardHeaderTitle) cardHeaderTitle.textContent = '2. Shift Kerja, Penomoran Batch & Kemasan Karton';
             if (cardHeaderBadge) {
-                cardHeaderBadge.innerHTML = 'Format Batch: Tanggal (DD MM YYYY) &bull; Exp: 1 Tahun - 1 Hari';
+                cardHeaderBadge.innerHTML = 'Format Batch: Tanggal (DD MM YYYY)';
                 cardHeaderBadge.style.background = '#ecfdf5';
                 cardHeaderBadge.style.color = '#065f46';
                 cardHeaderBadge.style.borderColor = '#a7f3d0';
@@ -166,11 +202,11 @@
 
         // Kode Batch: IFM vs Reguler Mirasa
         let batchCode = '';
-        if (isIfm) {
+        if (isIfm || !lini) {
             if (qtyKarton > 0) {
                 batchCode = `${shift}${pad4(noAwal)} - ${shift}${pad4(noAkhir)}`;
             } else {
-                batchCode = `${shift}0001 - ${shift}0001`;
+                batchCode = `${shift}${pad4(noAwal)} - ${shift}${pad4(noAwal)}`;
             }
         } else {
             // Format Batch Tanggal Persis Buku Persediaan Excel PT Mirasa: DD MM YYYY (cth: 02 01 2026)
@@ -194,11 +230,16 @@
         const inputBatch = document.getElementById('batch_wip_no');
         if (inputBatch) inputBatch.value = batchCode;
 
-        // Update keterangan expired date
-        const expDateFormatted = calcExpDateFormatted(tgl, isIfm);
-        const liveExpDate = document.getElementById('liveExpDate');
-        if (liveExpDate) {
-            liveExpDate.textContent = isIfm ? `${expDateFormatted} (+6 Bulan)` : `${expDateFormatted} (1 Tahun - 1 Hari)`;
+        // Update input tanggal expired date (default otomatis namun dapat diedit manual)
+        const expDateIso = calcExpDateIso(tgl, isIfm);
+        const inputExpDate = document.getElementById('exp_date');
+        if (inputExpDate && (!window._expDateUserModified || !inputExpDate.value)) {
+            inputExpDate.value = expDateIso;
+        }
+
+        const expDescEl = document.getElementById('expDateBadgeDesc');
+        if (expDescEl && !window._expDateUserModified) {
+            expDescEl.textContent = isIfm ? '(Standar +6 Bulan)' : '(Standar 1 Thn - 1 Hr)';
         }
 
         // Update estimasi kg
@@ -224,9 +265,9 @@
         const jam = document.getElementById('jam_produksi')?.value || '14:03';
         const varietas = document.getElementById('varietas_singkong')?.value || 'STP / MGU';
         const liniSelect = document.getElementById('lini_produksi');
-        const lini = liniSelect?.value || 'PRODUKSI IFM';
+        const lini = liniSelect?.value || '';
         const selectedTipe = liniSelect?.selectedOptions?.[0]?.getAttribute('data-tipe');
-        const isIfm = selectedTipe === 'IFM' || lini.toUpperCase().includes('IFM');
+        const isIfm = Boolean(lini && (selectedTipe === 'IFM' || lini.toUpperCase().includes('IFM')));
 
         // Format tanggal sticker DD MMM YYYY (cth: 19 AUG 2022 / 02 OKT 2026)
         const monthNamesUpper = ['JAN', 'FEB', 'MAR', 'APR', 'MEI', 'JUN', 'JUL', 'AUG', 'SEP', 'OKT', 'NOV', 'DES'];
@@ -256,6 +297,8 @@
             }
         }
 
+        const batchCode = document.getElementById('batch_wip_no')?.value || tglFormatted;
+
         // Update Sticker DOM Elements
         const stMainTitle = document.getElementById('stMainTitle');
         const stNetto = document.getElementById('stNetto');
@@ -266,7 +309,7 @@
         const stShiftKarton = document.getElementById('stShiftKarton');
         const stTime = document.getElementById('stTime');
 
-        if (isIfm) {
+        if (isIfm || !lini) {
             if (stMainTitle) stMainTitle.textContent = 'WIP-FCC';
             if (stNetto) stNetto.textContent = '6 kg';
             if (stGross) stGross.textContent = '7.08 kg';
@@ -276,15 +319,19 @@
                 const paddedNo = String(cartonNum).padStart(4, '0');
                 stShiftKarton.textContent = `${shift} / ${paddedNo}`;
             }
+            if (stPlantCode) stPlantCode.textContent = 'M029 / - / ISA';
         } else {
             // Mode Barang Jadi Reguler Mirasa
-            const productName = lini.replace('PRODUKSI ', '') || 'PING-PING 2000';
+            const productName = lini.replace('PRODUKSI ', '') || 'KEMASAN RETAIL';
             if (stMainTitle) stMainTitle.textContent = productName;
             if (stNetto) stNetto.textContent = 'KEMASAN BAL';
             if (stGross) stGross.textContent = 'STANDAR';
             if (stShiftKarton) {
-                stShiftKarton.textContent = batchCode || tglFormatted;
+                const cartonNum = noAwal > 0 ? noAwal : 1;
+                const paddedNo = String(cartonNum).padStart(4, '0');
+                stShiftKarton.textContent = `${shift} / ${paddedNo}`;
             }
+            if (stPlantCode) stPlantCode.textContent = 'MIRASA / FG';
         }
 
         const stPlantCode = document.getElementById('stPlantCode');
@@ -497,60 +544,122 @@
 
     // 11. Load Pemakaian Data dari Dokumen Gudang (AJAX)
     window.loadPakaiData = function (pakaiId) {
-        if (!pakaiId) return;
+        if (!pakaiId) {
+            const noticeEl = document.getElementById('pakaiMatchNotice');
+            if (noticeEl) noticeEl.style.display = 'none';
+            return;
+        }
 
         const loading = document.getElementById('pakaiLoading');
         if (loading) loading.style.display = 'block';
 
         const url = `${window.appConfig.pakaiDataUrl}/${pakaiId}`;
-        fetch(url)
-            .then(res => res.json())
+        fetch(url, {
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+            .then(res => {
+                if (!res.ok) {
+                    throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+                }
+                return res.json();
+            })
             .then(res => {
                 if (loading) loading.style.display = 'none';
                 if (res.status === 'success') {
                     const d = res.data;
-                    const setVal = (id, val) => {
-                        const el = document.getElementById(id);
-                        if (el) el.value = val || 0;
-                    };
+                    try {
+                        const setVal = (id, val) => {
+                            const el = document.getElementById(id);
+                            if (el) el.value = val || 0;
+                        };
 
-                    setVal('singkong_qty', d.singkong_qty);
-                    setVal('singkong_nilai', d.singkong_nilai);
-                    setVal('minyak_sawit_qty', d.minyak_sawit_qty);
-                    setVal('minyak_kelapa_qty', d.minyak_kelapa_qty);
-                    setVal('minyak_nilai', d.minyak_nilai);
-                    setVal('bumbu_nilai', d.bumbu_nilai);
-                    setVal('karton_baru_nilai', d.karton_baru_nilai);
-                    setVal('karton_bekas_nilai', d.karton_bekas_nilai);
-                    setVal('plastik_hd_nilai', d.plastik_hd_nilai);
-                    setVal('lakban_besar_nilai', d.lakban_besar_nilai);
-                    setVal('lakban_kecil_nilai', d.lakban_kecil_nilai);
-                    setVal('tali_rafia_nilai', d.tali_rafia_nilai);
+                        // Catatan: Tanggal produksi sengaja dipertahankan tanggal hari ini (tidak mengikuti tanggal BPPB)
 
-                    // Auto-fill varietas singkong jika ada
-                    if (d.varietas_singkong) {
-                        const elVar = document.getElementById('varietas_singkong');
-                        if (elVar) elVar.value = d.varietas_singkong;
-                    }
-
-                    // Auto-suggest estimasi karton jika karton digunakan di gudang
-                    if (d.karton_estimasi && d.karton_estimasi > 0) {
-                        const elKarton = document.getElementById('qty_karton');
-                        if (elKarton && (!elKarton.value || elKarton.value === '0')) {
-                            elKarton.value = d.karton_estimasi;
-                            window.updateKartonRangeAndBatch();
+                        // 1. Auto-sinkronkan Lini Produksi sesuai Tujuan BPPB
+                        if (d.tujuan_pemakaian) {
+                            const elLini = document.getElementById('lini_produksi');
+                            if (elLini) {
+                                const target = d.tujuan_pemakaian.trim().toUpperCase();
+                                let matchedIndex = -1;
+                                for (let i = 0; i < elLini.options.length; i++) {
+                                    const val = (elLini.options[i].value || '').trim().toUpperCase();
+                                    if (!val) continue; // Lewati placeholder kosong agar target.includes("") tidak selalu true
+                                    if (val === target) {
+                                        matchedIndex = i;
+                                        break;
+                                    }
+                                    if (matchedIndex === -1 && (val.includes(target) || target.includes(val))) {
+                                        matchedIndex = i;
+                                    }
+                                }
+                                if (matchedIndex !== -1) {
+                                    elLini.selectedIndex = matchedIndex;
+                                    elLini.dispatchEvent(new Event('change', { bubbles: true }));
+                                }
+                                if (typeof window.updateKartonRangeAndBatch === 'function') window.updateKartonRangeAndBatch();
+                            }
                         }
-                    }
 
-                    window.calcAll();
+                        // 3. Auto-sinkronkan Gudang Asal jika belum terpilih
+                        if (d.gudang_id) {
+                            const elGdg = document.getElementById('gudang_id');
+                            if (elGdg && (!elGdg.value || elGdg.value === '')) {
+                                elGdg.value = d.gudang_id;
+                            }
+                        }
+
+                        // 4. Salin rincian kuantitas & nilai bahan baku
+                        setVal('singkong_qty', d.singkong_qty);
+                        setVal('singkong_nilai', d.singkong_nilai);
+                        setVal('minyak_sawit_qty', d.minyak_sawit_qty);
+                        setVal('minyak_kelapa_qty', d.minyak_kelapa_qty);
+                        setVal('minyak_nilai', d.minyak_nilai);
+                        setVal('bumbu_nilai', d.bumbu_nilai);
+                        setVal('karton_baru_nilai', d.karton_baru_nilai);
+                        setVal('karton_bekas_nilai', d.karton_bekas_nilai);
+                        setVal('plastik_hd_nilai', d.plastik_hd_nilai);
+                        setVal('lakban_besar_nilai', d.lakban_besar_nilai);
+                        setVal('lakban_kecil_nilai', d.lakban_kecil_nilai);
+                        setVal('tali_rafia_nilai', d.tali_rafia_nilai);
+
+                        // Auto-fill varietas singkong jika ada
+                        if (d.varietas_singkong) {
+                            const elVar = document.getElementById('varietas_singkong');
+                            if (elVar) elVar.value = d.varietas_singkong;
+                        }
+
+                        // Auto-suggest estimasi karton jika karton digunakan di gudang
+                        if (d.karton_estimasi && d.karton_estimasi > 0) {
+                            const elKarton = document.getElementById('qty_karton');
+                            if (elKarton && (!elKarton.value || elKarton.value === '0')) {
+                                elKarton.value = d.karton_estimasi;
+                                if (typeof window.updateKartonRangeAndBatch === 'function') window.updateKartonRangeAndBatch();
+                            }
+                        }
+
+                        // Notifikasi sukses tarik data
+                        const noticeEl = document.getElementById('pakaiMatchNotice');
+                        if (noticeEl) {
+                            noticeEl.innerHTML = `Dokumen <strong>[${d.pakai_no || ''}]</strong> berhasil ditarik: Lini disinkronkan ke <strong>${d.tujuan_pemakaian || '-'}</strong> dan seluruh bahan terisi otomatis.`;
+                            noticeEl.style.color = '#0284c7';
+                            noticeEl.style.display = 'block';
+                        }
+
+                        if (typeof window.calcAll === 'function') window.calcAll();
+                    } catch (domErr) {
+                        console.error('Error applying data to form:', domErr);
+                    }
                 } else {
-                    alert('Gagal: ' + res.message);
+                    alert('Gagal: ' + (res.message || 'Respon server tidak valid'));
                 }
             })
             .catch(err => {
                 if (loading) loading.style.display = 'none';
-                console.error(err);
-                alert('Terjadi kesalahan saat memuat data pemakaian bahan.');
+                console.error('Error loadPakaiData:', err);
+                alert('Terjadi kesalahan saat memuat data pemakaian bahan: ' + err.message);
             });
     };
 
@@ -562,6 +671,25 @@
         window.calcCng();
         window.calcAll();
         window.highlightMatchingPakai();
+
+        // Event listener jika user mengedit tanggal kedaluwarsa secara manual
+        const elExp = document.getElementById('exp_date');
+        if (elExp) {
+            elExp.addEventListener('input', () => {
+                window._expDateUserModified = true;
+                const desc = document.getElementById('expDateBadgeDesc');
+                if (desc) desc.textContent = '(Disesuaikan Manual)';
+            });
+        }
+
+        // Jika tanggal produksi diubah, reset flag user modified agar exp date menghitung ulang dari tanggal baru
+        const elTglProd = document.getElementById('produksi_tgl');
+        if (elTglProd) {
+            elTglProd.addEventListener('change', () => {
+                window._expDateUserModified = false;
+                window.updateKartonRangeAndBatch();
+            });
+        }
     });
 
 })();

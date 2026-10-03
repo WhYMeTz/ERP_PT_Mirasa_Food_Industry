@@ -91,9 +91,11 @@
 
     @php
         $isIfm = str_contains(strtoupper($produksi->lini_produksi), 'IFM');
-        $expDate = $isIfm
-            ? Carbon\Carbon::parse($produksi->produksi_tgl)->addMonths(6)->format('d/m/Y')
-            : Carbon\Carbon::parse($produksi->produksi_tgl)->addYear()->subDay()->format('d/m/Y');
+        $expDate = !empty($produksi->exp_date)
+            ? Carbon\Carbon::parse($produksi->exp_date)->format('d/m/Y')
+            : ($isIfm
+                ? Carbon\Carbon::parse($produksi->produksi_tgl)->addMonths(6)->format('d/m/Y')
+                : Carbon\Carbon::parse($produksi->produksi_tgl)->addYear()->subDay()->format('d/m/Y'));
     @endphp
 
     {{-- GRID SECTION: INFORMASI SPESIFIKASI SHIFT, KARTON & STIKER FISIK --}}

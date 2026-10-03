@@ -91,6 +91,7 @@ class DatProduksiHarian extends Model
         'rendemen_persen',
         'hpp_per_kg',
         'batch_wip_no',
+        'exp_date',
         'catatan_txt',
 
         // Audit Trail
@@ -103,6 +104,7 @@ class DatProduksiHarian extends Model
 
     protected $casts = [
         'produksi_tgl'                => 'date',
+        'exp_date'                    => 'date',
         'qty_karton'                  => 'integer',
         'no_karton_awal'              => 'integer',
         'no_karton_akhir'             => 'integer',

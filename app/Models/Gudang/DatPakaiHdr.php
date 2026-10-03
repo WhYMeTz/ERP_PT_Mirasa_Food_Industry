@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class DatPakaiHdr extends Model
 {
@@ -49,5 +50,14 @@ class DatPakaiHdr extends Model
     public function details(): HasMany
     {
         return $this->hasMany(DatPakaiDtl::class, 'pakai_id', 'pakai_id');
+    }
+
+    /**
+     * Relasi ke Laporan Hasil Produksi yang menggunakan dokumen ini
+     */
+    public function produksi(): HasOne
+    {
+        return $this->hasOne(\App\Models\Produksi\DatProduksiHarian::class, 'pakai_id', 'pakai_id')
+            ->where('deleted_st', false);
     }
 }

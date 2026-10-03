@@ -96,11 +96,12 @@ class ProduksiController extends Controller
             ->orderBy('gudang_nm')
             ->get();
 
-        // Ambil daftar pemakaian bahan yang belum pernah dipakai atau daftar terbaru
+        // Ambil daftar dokumen pemakaian bahan yang belum pernah dipakai oleh produksi
         $pakaiList = DatPakaiHdr::with('details.barang')
             ->where('deleted_st', false)
+            ->whereDoesntHave('produksi')
             ->orderBy('pakai_tgl', 'desc')
-            ->limit(30)
+            ->limit(50)
             ->get();
 
         // Ambil daftar master lini produksi aktif untuk dropdown
@@ -169,6 +170,7 @@ class ProduksiController extends Controller
             'no_karton_awal'              => 'nullable|integer|min:1',
             'no_karton_akhir'             => 'nullable|integer|min:1',
             'batch_wip_no'                => 'nullable|string|max:100',
+            'exp_date'                    => 'nullable|date',
             'pakai_id'                    => 'nullable|exists:dat_pakai_hdr,pakai_id',
             'status_cd'                   => 'required|in:DRAFT,POSTED',
 
@@ -425,6 +427,41 @@ class ProduksiController extends Controller
         } catch (Exception $e) {
             return redirect()->route('produksi.index', ['tab' => 'rekap'])
                 ->with('error', 'Gagal memproses import Rekap HPP: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Penyesuaian Biaya Utilitas Bulanan (Listrik, Air & Gas CNG).
+     */
+    public function adjustUtilitas(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'tahun'                => 'required|integer|min:2020|max:2099',
+            'bulan'                => 'required|integer|min:1|max:12',
+            'adjust_listrik'       => 'nullable',
+            'total_listrik_air'    => 'nullable|numeric|min:0',
+            'mode_alokasi_listrik' => 'nullable|in:bagi_rata,proporsional_wip',
+            'adjust_cng'           => 'nullable',
+            'mode_cng'             => 'nullable|in:update_tarif,total_tagihan',
+            'cng_tarif_baru'       => 'nullable|numeric|min:0',
+            'total_cng_tagihan'    => 'nullable|numeric|min:0',
+        ]);
+
+        try {
+            $result = $this->produksiService->adjustMonthlyUtilities(
+                (int) $request->input('tahun'),
+                (int) $request->input('bulan'),
+                $request->all(),
+                Auth::user()?->username ?? 'SYSTEM'
+            );
+
+            return redirect()->route('produksi.index', [
+                'tab'   => 'rekap',
+                'tahun' => $request->input('tahun'),
+                'bulan' => $request->input('bulan'),
+            ])->with('success', "⚡ Berhasil menyesuaikan biaya utilitas untuk {$result['count']} catatan produksi pada periode tersebut!");
+        } catch (Exception $e) {
+            return redirect()->back()->with('error', 'Gagal menyesuaikan utilitas: ' . $e->getMessage());
         }
     }
 }

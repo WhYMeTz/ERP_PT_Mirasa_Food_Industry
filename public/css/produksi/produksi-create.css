@@ -64,6 +64,22 @@
     color: #475569;
 }
 
+.shift-segmented-active {
+    background: #0284c7 !important;
+    color: #ffffff !important;
+    box-shadow: 0 1px 3px rgba(2, 132, 199, 0.3) !important;
+}
+
+.shift-segmented-inactive {
+    background: transparent !important;
+    color: #475569 !important;
+}
+
+.shift-segmented-inactive:hover {
+    background: #e2e8f0 !important;
+    color: #0f172a !important;
+}
+
 /* Active States */
 .shift-card-btn.active-a {
     border-color: #2563eb;

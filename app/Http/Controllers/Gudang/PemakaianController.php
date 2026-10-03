@@ -98,19 +98,12 @@ class PemakaianController extends Controller
             'total_biaya'  => (float) ($ringkasan['grand_total_nilai'] ?? 0),
         ];
 
-        // Ambil daftar tujuan dari Master Lini Produksi aktif + operasional khusus + historis
+        // Ambil daftar tujuan murni dari Master Lini Produksi aktif + historis transaksi
         $activeLini = MstLiniProduksi::where('deleted_st', false)
             ->where('active_st', true)
             ->orderBy('lini_id', 'asc')
             ->pluck('lini_nm')
             ->toArray();
-
-        $opsiKhusus = [
-            'SAMPLE LAB / QC',
-            'AFKIR ULANG',
-            'PACKING / REPACKING',
-            'BUFFER STOK LANTAI PRODUKSI',
-        ];
 
         $historicalTujuan = DatPakaiHdr::where('deleted_st', false)
             ->whereNotNull('tujuan_pemakaian')
@@ -118,7 +111,7 @@ class PemakaianController extends Controller
             ->pluck('tujuan_pemakaian')
             ->toArray();
 
-        $tujuanOptions = array_values(array_unique(array_merge($activeLini, $opsiKhusus, $historicalTujuan)));
+        $tujuanOptions = array_values(array_unique(array_merge($activeLini, $historicalTujuan)));
 
         if ($request->wantsJson()) {
             return response()->json([
@@ -171,18 +164,11 @@ class PemakaianController extends Controller
 
         $autoNo = $this->codeGenerator->generatePakaiNo();
 
-        // Ambil daftar master lini produksi aktif dan keperluan operasional khusus
+        // Ambil daftar master lini produksi aktif murni dari database
         $liniList = MstLiniProduksi::where('deleted_st', false)
             ->where('active_st', true)
             ->orderBy('lini_id', 'asc')
             ->get();
-
-        $opsiKhusus = [
-            'SAMPLE LAB / QC',
-            'AFKIR ULANG',
-            'PACKING / REPACKING',
-            'BUFFER STOK LANTAI PRODUKSI',
-        ];
 
         $bomList = $this->bomService->getAllActive();
 
@@ -192,7 +178,6 @@ class PemakaianController extends Controller
             'userGudangId',
             'autoNo',
             'liniList',
-            'opsiKhusus',
             'bomList'
         ));
     }

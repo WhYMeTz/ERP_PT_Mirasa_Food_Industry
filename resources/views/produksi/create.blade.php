@@ -22,16 +22,12 @@
                     Input data timbangan output WIP, konsumsi energi CNG, absensi pekerja, dan kalkulasi Rendemen harian otomatis.
                 </p>
             </div>
-            
-            <div style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 8px; padding: 0.4rem 0.85rem; color: #166534; font-size: 0.825rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.4rem;">
-                <span>🎯 Target Rendemen: &ge; 33.00%</span>
-            </div>
         </div>
     </div>
 
     @if(session('error'))
         <div style="background: #fef2f2; border: 1.5px solid #fecaca; border-radius: 8px; padding: 0.85rem 1.25rem; color: #991b1b; margin-bottom: 1.25rem; font-size: 0.875rem; font-weight: 600;">
-            ⚠️ {{ session('error') }}
+            {{ session('error') }}
         </div>
     @endif
 
@@ -42,11 +38,45 @@
         <div class="card" style="margin-bottom: 1.25rem;">
             <div class="card-header" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0.875rem 1.25rem;">
                 <strong style="color: #0f172a; font-size: 0.95rem; display: flex; align-items: center; gap: 0.4rem;">
-                    <span>📋 1. Header Dokumen &amp; Referensi Pemakaian Bahan Gudang</span>
+                    <span>1. Dokumen Pengeluaran Gudang &amp; Parameter Lini Produksi</span>
                 </strong>
             </div>
             <div style="padding: 1.25rem;">
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
+                {{-- Status Dokumen otomatis POSTED (Pencatatan aktual pasca-produksi final) --}}
+                <input type="hidden" name="status_cd" id="status_cd" value="POSTED">
+
+                {{-- LANGKAH UTAMA: TARIK DATA DARI DOKUMEN BPPB GUDANG --}}
+                <div style="background: #f0f9ff; padding: 0.95rem 1.15rem; border-radius: 8px; border: 1.5px solid #bae6fd; margin-bottom: 1.25rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.5rem;">
+                        <span style="font-size: 0.85rem; font-weight: 700; color: #0369a1; display: flex; align-items: center; gap: 0.35rem;">
+                            <span>Tarik Data Dokumen Pengeluaran Gudang (BPPB):</span>
+                        </span>
+                        <span style="font-size: 0.75rem; color: #64748b;">
+                            Memilih dokumen BPPB otomatis menyinkronkan Lini Produksi dan Rincian Bahan Baku.
+                        </span>
+                    </div>
+
+                    <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                        <select name="pakai_id" id="pakai_id" class="form-control" style="flex: 1; min-width: 280px; font-size: 0.85rem;" onchange="loadPakaiData(this.value)">
+                            <option value="">-- Pilih Dokumen Pengeluaran Bahan (BPPB Siap Proses) --</option>
+                            @foreach ($pakaiList as $pk)
+                                <option value="{{ $pk->pakai_id }}" data-tujuan="{{ $pk->tujuan_pemakaian }}" data-tgl="{{ Carbon\Carbon::parse($pk->pakai_tgl)->format('Y-m-d') }}">
+                                    [{{ $pk->pakai_no }}] {{ Carbon\Carbon::parse($pk->pakai_tgl)->format('d/m/Y') }} - {{ $pk->tujuan_pemakaian }} ({{ $pk->details->count() }} item bahan)
+                                </option>
+                            @endforeach
+                        </select>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="loadPakaiData(document.getElementById('pakai_id').value)" style="padding: 0.45rem 0.85rem;">
+                            Tarik Ulang
+                        </button>
+                    </div>
+                    <div id="pakaiMatchNotice" style="display: none; font-size: 0.75rem; font-weight: 600; margin-top: 0.4rem;"></div>
+                    <div id="pakaiLoading" style="display: none; font-size: 0.75rem; color: #0284c7; margin-top: 0.35rem; font-weight: 600;">
+                        Memuat rincian bahan dari dokumen gudang...
+                    </div>
+                </div>
+
+                {{-- PARAMETER PRODUKSI (OTOMATIS TERISI & DAPAT DISESUAIKAN) --}}
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem;">
                     <div>
                         <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">
                             Tanggal Produksi <span style="color: #ef4444;">*</span>
@@ -60,73 +90,35 @@
                             Lini Produksi / Tujuan <span style="color: #ef4444;">*</span>
                         </label>
                         <select name="lini_produksi" id="lini_produksi" class="form-control" required onchange="updateKartonRangeAndBatch()">
+                            <option value="">-- Pilih Lini Produksi / Tujuan --</option>
                             @if(isset($liniList) && $liniList->isNotEmpty())
                                 @foreach($liniList->groupBy(fn($item) => $item->kategori_lini ?: 'UMUM') as $kategori => $items)
-                                    <optgroup label="📂 {{ $kategori }}">
+                                    <optgroup label="{{ $kategori }}">
                                         @foreach($items as $lini)
-                                            <option value="{{ $lini->lini_nm }}" data-tipe="{{ $lini->tipe_batch }}" {{ old('lini_produksi', 'PRODUKSI IFM') === $lini->lini_nm ? 'selected' : '' }}>
+                                            <option value="{{ $lini->lini_nm }}" data-tipe="{{ $lini->tipe_batch }}" {{ old('lini_produksi') === $lini->lini_nm ? 'selected' : '' }}>
                                                 {{ $lini->lini_nm }} {{ $lini->keterangan ? '('.$lini->keterangan.')' : '' }}
                                             </option>
                                         @endforeach
                                     </optgroup>
                                 @endforeach
-                            @else
-                                <option value="PRODUKSI IFM" {{ old('lini_produksi') === 'PRODUKSI IFM' ? 'selected' : '' }}>PRODUKSI IFM (Indofood)</option>
                             @endif
                         </select>
+                        <small style="color: #64748b; font-size: 0.725rem;">Otomatis sinkron dari BPPB atau dapat dipilih manual.</small>
                     </div>
 
                     <div>
                         <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">
-                            Perusahaan / Lokasi Simpan WIP (Hasil Jadi) <span style="color: #ef4444;">*</span>
+                            Gudang Penerima Hasil Produksi <span style="color: #ef4444;">*</span>
                         </label>
                         <select name="gudang_id" id="gudang_id" class="form-control" required>
+                            <option value="">-- Pilih Gudang Penerima --</option>
                             @foreach ($gudangList as $gdg)
                                 <option value="{{ $gdg->gudang_id }}" {{ old('gudang_id') == $gdg->gudang_id ? 'selected' : '' }}>
                                     {{ $gdg->gudang_nm }} ({{ $gdg->gudang_cd }})
                                 </option>
                             @endforeach
                         </select>
-                    </div>
-
-                    <div>
-                        <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">
-                            Status Dokumen <span style="color: #ef4444;">*</span>
-                        </label>
-                        <select name="status_cd" id="status_cd" class="form-control" required>
-                            <option value="POSTED" {{ old('status_cd', 'POSTED') === 'POSTED' ? 'selected' : '' }}>POSTED (Selesai - Tambah Stok WIP)</option>
-                            <option value="DRAFT" {{ old('status_cd') === 'DRAFT' ? 'selected' : '' }}>DRAFT (Simpan Sementara)</option>
-                        </select>
-                    </div>
-                </div>
-
-                {{-- PEMILIH DOKUMEN PEMAKAIAN BAHAN UNTUK AUTO-FILL --}}
-                <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed #cbd5e1; background: #f0f9ff; padding: 0.85rem 1rem; border-radius: 8px; border: 1.5px solid #bae6fd;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.5rem;">
-                        <span style="font-size: 0.85rem; font-weight: 700; color: #0369a1; display: flex; align-items: center; gap: 0.35rem;">
-                            <span>Tarik Data dari Dokumen Pengeluaran Bahan Gudang (BPPB):</span>
-                        </span>
-                        <span style="font-size: 0.75rem; color: #64748b;">
-                            Memilih dokumen pemakaian akan otomatis mengisi rincian Singkong, Minyak, Bumbu &amp; Kemasan (tetap dapat disesuaikan).
-                        </span>
-                    </div>
-
-                    <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
-                        <select name="pakai_id" id="pakai_id" class="form-control" style="flex: 1; min-width: 280px; font-size: 0.85rem;" onchange="loadPakaiData(this.value)">
-                            <option value="">-- Pilih Dokumen Pengeluaran Bahan (Opsional) --</option>
-                            @foreach ($pakaiList as $pk)
-                                <option value="{{ $pk->pakai_id }}" data-tujuan="{{ $pk->tujuan_pemakaian }}">
-                                    [{{ $pk->pakai_no }}] {{ Carbon\Carbon::parse($pk->pakai_tgl)->format('d/m/Y') }} - {{ $pk->tujuan_pemakaian }} ({{ $pk->details->count() }} item bahan)
-                                </option>
-                            @endforeach
-                        </select>
-                        <button type="button" class="btn btn-secondary btn-sm" onclick="loadPakaiData(document.getElementById('pakai_id').value)" style="padding: 0.45rem 0.85rem;">
-                            Tarik Ulang
-                        </button>
-                    </div>
-                    <div id="pakaiMatchNotice" style="display: none; font-size: 0.75rem; font-weight: 600; margin-top: 0.35rem;"></div>
-                    <div id="pakaiLoading" style="display: none; font-size: 0.75rem; color: #0284c7; margin-top: 0.35rem; font-weight: 600;">
-                        Memuat rincian bahan dari dokumen gudang...
+                        <small style="color: #64748b; font-size: 0.725rem;">Lokasi gudang fisik tempat penyetoran barang jadi atau WIP.</small>
                     </div>
                 </div>
             </div>
@@ -235,22 +227,25 @@
         <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 1.25rem; margin-bottom: 1.25rem;">
             {{-- ENERGI GAS CNG --}}
             <div class="card">
-                <div class="card-header" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0.875rem 1.25rem;">
+                <div class="card-header" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0.875rem 1.25rem; display: flex; justify-content: space-between; align-items: center;">
                     <strong style="color: #0f172a; font-size: 0.95rem;">4. Gas Alam / CNG (Boiler &amp; Fryer)</strong>
+                    <span style="font-size: 0.7rem; color: #0284c7; background: #e0f2fe; padding: 0.15rem 0.45rem; border-radius: 4px; font-weight: 700;">Flow Meter Harian</span>
                 </div>
                 <div style="padding: 1.25rem;">
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
                         <div>
                             <label style="display: block; font-size: 0.75rem; font-weight: 700; color: #334155; margin-bottom: 0.25rem;">
-                                Meteran CNG (MMBTU)
+                                Meteran CNG (MMBTU) <span style="color: #ef4444;">*</span>
                             </label>
                             <input type="number" step="0.0001" min="0" name="cng_mmbtu" id="cng_mmbtu" class="form-control calc-trigger" style="text-align: right; font-weight: 700;" value="{{ old('cng_mmbtu', 0) }}" placeholder="0" oninput="calcCng()">
+                            <small style="color: #64748b; font-size: 0.7rem;">Delta flow meter fisik.</small>
                         </div>
                         <div>
                             <label style="display: block; font-size: 0.75rem; font-weight: 700; color: #334155; margin-bottom: 0.25rem;">
                                 Tarif per MMBTU (Rp)
                             </label>
                             <input type="number" step="0.01" min="0" name="cng_tarif" id="cng_tarif" class="form-control calc-trigger" style="text-align: right;" value="{{ old('cng_tarif', 226800.00) }}" oninput="calcCng()">
+                            <small style="color: #64748b; font-size: 0.7rem;">Tarif acuan (dapat diedit).</small>
                         </div>
                     </div>
                     <div>
@@ -258,6 +253,7 @@
                             Total Rupiah CNG (Rp)
                         </label>
                         <input type="number" step="0.01" min="0" name="cng_nilai" id="cng_nilai" class="form-control calc-trigger" style="text-align: right; font-weight: 800; color: #c2410c; background: #fff7ed;" value="{{ old('cng_nilai', 0) }}" oninput="calcAll()">
+                        <small style="color: #64748b; font-size: 0.7rem;">Otomatis (MMBTU × Tarif) atau isi manual.</small>
                     </div>
                 </div>
             </div>
@@ -333,8 +329,12 @@
                         <input type="number" step="0.01" min="0" name="qc_pengawasan_nilai" id="qc_pengawasan_nilai" class="form-control calc-trigger" style="text-align: right;" value="{{ old('qc_pengawasan_nilai', 0) }}" oninput="calcAll()">
                     </div>
                     <div>
-                        <label style="font-size: 0.7rem; color: #475569; font-weight: 600;">Listrik &amp; Air + Telp</label>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.2rem;">
+                            <label style="font-size: 0.7rem; color: #475569; font-weight: 700; margin-bottom: 0;">Listrik &amp; Air + Telp</label>
+                            <span style="font-size: 0.65rem; color: #d97706; font-weight: 700;">(Tagihan Bulanan)</span>
+                        </div>
                         <input type="number" step="0.01" min="0" name="listrik_air_telp_nilai" id="listrik_air_telp_nilai" class="form-control calc-trigger" style="text-align: right;" value="{{ old('listrik_air_telp_nilai', 0) }}" oninput="calcAll()">
+                        <small style="color: #64748b; font-size: 0.675rem; display: block; margin-top: 0.2rem;">Isi 0 / estimasi. Bisa disesuaikan di Rekap HPP.</small>
                     </div>
                     <div>
                         <label style="font-size: 0.7rem; color: #475569; font-weight: 600;">Pemeliharaan Mesin</label>

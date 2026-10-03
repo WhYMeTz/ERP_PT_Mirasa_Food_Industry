@@ -107,9 +107,11 @@
         const shift = document.getElementById('shift_cd')?.value || 'A';
         const noAwal = parseInt(document.getElementById('no_karton_awal')?.value) || 1;
         const qtyKarton = parseInt(document.getElementById('qty_karton')?.value) || 0;
-        const lini = document.getElementById('lini_produksi')?.value || 'PRODUKSI IFM';
+        const liniSelect = document.getElementById('lini_produksi');
+        const lini = liniSelect?.value || 'PRODUKSI IFM';
+        const selectedTipe = liniSelect?.selectedOptions?.[0]?.getAttribute('data-tipe');
         const tgl = document.getElementById('produksi_tgl')?.value || '';
-        const isIfm = lini.toUpperCase().includes('IFM');
+        const isIfm = selectedTipe === 'IFM' || lini.toUpperCase().includes('IFM');
 
         // Tampilkan/Sembunyikan elemen spesifik IFM vs Barang Jadi Reguler
         const sectionShift = document.getElementById('sectionShiftSelection');
@@ -218,9 +220,10 @@
         const tgl = document.getElementById('produksi_tgl')?.value || '';
         const jam = document.getElementById('jam_produksi')?.value || '14:03';
         const varietas = document.getElementById('varietas_singkong')?.value || 'STP / MGU';
-        const batchCode = document.getElementById('batch_wip_no')?.value || '';
-        const lini = document.getElementById('lini_produksi')?.value || 'PRODUKSI IFM';
-        const isIfm = lini.toUpperCase().includes('IFM');
+        const liniSelect = document.getElementById('lini_produksi');
+        const lini = liniSelect?.value || 'PRODUKSI IFM';
+        const selectedTipe = liniSelect?.selectedOptions?.[0]?.getAttribute('data-tipe');
+        const isIfm = selectedTipe === 'IFM' || lini.toUpperCase().includes('IFM');
 
         // Format tanggal sticker DD MMM YYYY (cth: 19 AUG 2022 / 02 OKT 2026)
         const monthNamesUpper = ['JAN', 'FEB', 'MAR', 'APR', 'MEI', 'JUN', 'JUL', 'AUG', 'SEP', 'OKT', 'NOV', 'DES'];

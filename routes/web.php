@@ -16,6 +16,7 @@ use App\Http\Controllers\MasterData\GudangController;
 use App\Http\Controllers\MasterData\JenisBarangController;
 use App\Http\Controllers\MasterData\JenisSupplierController;
 use App\Http\Controllers\MasterData\KaryawanController;
+use App\Http\Controllers\MasterData\LiniProduksiController;
 use App\Http\Controllers\MasterData\SatuanController;
 use App\Http\Controllers\MasterData\SupplierController;
 use App\Http\Controllers\Penjualan\SoController;
@@ -82,6 +83,8 @@ Route::middleware('auth')->group(function () {
     Route::resource('master-resep', BomController::class)
         ->names('master.resep')
         ->middleware('role:SUPERADMIN,STAFF_PRODUKSI,master_resep_view,master_resep_manage');
+    Route::resource('master-lini-produksi', LiniProduksiController::class)
+        ->names('master.lini_produksi');
 
     // Master Supplier
     Route::resource('master-jenis-supplier', JenisSupplierController::class)->names('master.jenis_supplier');

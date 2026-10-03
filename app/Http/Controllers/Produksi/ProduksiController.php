@@ -11,6 +11,7 @@ use App\Imports\Produksi\HasilProduksiImport;
 use App\Imports\Produksi\RekapHppImport;
 use App\Models\Gudang\DatPakaiHdr;
 use App\Models\MasterData\MstGudang;
+use App\Models\MasterData\MstLiniProduksi;
 use App\Services\Common\CodeGeneratorService;
 use App\Services\Gudang\StokService;
 use App\Services\Produksi\ProduksiService;
@@ -102,7 +103,13 @@ class ProduksiController extends Controller
             ->limit(30)
             ->get();
 
-        return view('produksi.create', compact('gudangList', 'pakaiList'));
+        // Ambil daftar master lini produksi aktif untuk dropdown
+        $liniList = MstLiniProduksi::where('deleted_st', false)
+            ->where('active_st', true)
+            ->orderBy('lini_id', 'asc')
+            ->get();
+
+        return view('produksi.create', compact('gudangList', 'pakaiList', 'liniList'));
     }
 
     /**

@@ -602,6 +602,40 @@ class User extends Authenticatable
     }
 
     /**
+     * Hak akses Master Lini Produksi / Tujuan
+     */
+    public function canAccessLiniProduksi(): bool
+    {
+        return $this->isSuperAdmin() 
+            || $this->isProduksi()
+            || $this->canDo('master_lini_view') 
+            || $this->canDo('master_lini_manage');
+    }
+
+    public function canCreateMasterLiniProduksi(): bool
+    {
+        return $this->isSuperAdmin() 
+            || $this->isProduksi()
+            || $this->canDo('master_lini_create') 
+            || $this->canDo('master_lini_manage');
+    }
+
+    public function canEditMasterLiniProduksi(): bool
+    {
+        return $this->isSuperAdmin() 
+            || $this->isProduksi()
+            || $this->canDo('master_lini_edit') 
+            || $this->canDo('master_lini_manage');
+    }
+
+    public function canDeleteMasterLiniProduksi(): bool
+    {
+        return $this->isSuperAdmin() 
+            || $this->canDo('master_lini_delete') 
+            || $this->canDo('master_lini_manage');
+    }
+
+    /**
      * Hak akses QC Inbound Bahan Baku
      */
     public function canAccessQc(): bool

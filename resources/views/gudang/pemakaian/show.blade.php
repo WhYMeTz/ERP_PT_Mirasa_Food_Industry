@@ -88,6 +88,7 @@
                     <th style="min-width: 150px;">Keterangan / SPK</th>
                     <th style="min-width: 110px; text-align: right;">Qty Keluar</th>
                     <th style="min-width: 80px;">Satuan</th>
+                    <th style="min-width: 110px; text-align: right;">Sisa Barang</th>
                     <th style="min-width: 120px; text-align: right;">Harga Satuan</th>
                     <th style="min-width: 130px; text-align: right;">Total Harga</th>
                 </tr>
@@ -129,6 +130,14 @@
                         <td style="color: #64748b;">
                             {{ $dtl->barang?->satuanDasar?->satuan_nm }}
                         </td>
+                        <td style="text-align: right; font-weight: 700; color: {{ ($dtl->sisa_gudang_qty ?? 0) > 0 ? '#059669' : '#dc2626' }};">
+                            {{ number_format((float) ($dtl->sisa_gudang_qty ?? 0), 2, ',', '.') }}
+                            @if (!empty($dtl->batch_no) && isset($dtl->sisa_batch_qty))
+                                <div style="font-size: 0.725rem; color: #64748b; font-weight: normal;">
+                                    Batch: {{ number_format((float) $dtl->sisa_batch_qty, 2, ',', '.') }}
+                                </div>
+                            @endif
+                        </td>
                         <td style="text-align: right; color: #334155;">
                             Rp {{ number_format((float) $dtl->harga_satuan, 2, ',', '.') }}
                         </td>
@@ -144,6 +153,7 @@
                     <td style="text-align: right; color: #dc2626; font-size: 1rem; padding: 0.85rem 1rem;">
                         {{ number_format($grandQty, 2, ',', '.') }}
                     </td>
+                    <td></td>
                     <td></td>
                     <td></td>
                     <td style="text-align: right; color: #0f172a; font-size: 1.05rem; padding: 0.85rem 1rem;">

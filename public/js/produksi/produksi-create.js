@@ -130,7 +130,7 @@
             if (colAwal) colAwal.style.display = 'block';
             if (colAkhir) colAkhir.style.display = 'block';
             if (bannerRegularFG) bannerRegularFG.style.display = 'none';
-            if (cardHeaderTitle) cardHeaderTitle.textContent = '🏷️ 2. Shift Kerja, Penomoran Batch & Kemasan Karton (Standar Indofood IFM / WIP-FCC)';
+            if (cardHeaderTitle) cardHeaderTitle.textContent = '2. Shift Kerja, Penomoran Batch & Kemasan Karton (Standar Indofood IFM / WIP-FCC)';
             if (cardHeaderBadge) {
                 cardHeaderBadge.innerHTML = 'Format Batch Karton: [Shift][NoAwal] - [Shift][NoAkhir]';
                 cardHeaderBadge.style.background = '#eff6ff';
@@ -145,7 +145,7 @@
             if (colAwal) colAwal.style.display = 'none';
             if (colAkhir) colAkhir.style.display = 'none';
             if (bannerRegularFG) bannerRegularFG.style.display = 'block';
-            if (cardHeaderTitle) cardHeaderTitle.textContent = '🏷️ 2. Penomoran Batch & Masa Simpan Barang Jadi (Standar Persediaan Mirasa)';
+            if (cardHeaderTitle) cardHeaderTitle.textContent = '2. Penomoran Batch & Masa Simpan Barang Jadi (Standar Persediaan Mirasa)';
             if (cardHeaderBadge) {
                 cardHeaderBadge.innerHTML = 'Format Batch: Tanggal (DD MM YYYY) &bull; Exp: 1 Tahun - 1 Hari';
                 cardHeaderBadge.style.background = '#ecfdf5';
@@ -210,6 +210,9 @@
 
         // Update tampilan stiker karton / kemasan
         window.updateStickerPreview();
+
+        // Update highlight dokumen pengeluaran gudang yang cocok
+        window.highlightMatchingPakai();
     };
 
     // 4. Update Tampilan Stiker Karton Fisik / Kemasan Retail
@@ -423,15 +426,15 @@
         if (liveRendemenStatus) {
             if (rendemen >= 33.0) {
                 if (liveRendemen) liveRendemen.style.color = '#059669';
-                liveRendemenStatus.textContent = '✅ Rendemen Bagus (Di atas target 33%)';
+                liveRendemenStatus.textContent = 'Rendemen Optimal (Di atas target 33%)';
                 liveRendemenStatus.style.color = '#059669';
             } else if (rendemen >= 30.0) {
                 if (liveRendemen) liveRendemen.style.color = '#d97706';
-                liveRendemenStatus.textContent = '⚠️ Rendemen Sedang (Target 33%)';
+                liveRendemenStatus.textContent = 'Rendemen Sedang (Target 33%)';
                 liveRendemenStatus.style.color = '#d97706';
             } else {
                 if (liveRendemen) liveRendemen.style.color = '#dc2626';
-                liveRendemenStatus.textContent = rendemen > 0 ? '❌ Rendemen Rendah' : 'Menunggu timbangan';
+                liveRendemenStatus.textContent = rendemen > 0 ? 'Rendemen Rendah' : 'Menunggu timbangan';
                 liveRendemenStatus.style.color = rendemen > 0 ? '#dc2626' : '#64748b';
             }
         }
@@ -440,7 +443,59 @@
         if (elHpp) elHpp.textContent = formatRupiah(hppPerKg) + ' / kg';
     };
 
-    // 10. Load Pemakaian Data dari Dokumen Gudang (AJAX)
+    // 10. Highlight Dokumen Gudang (BPPB) yang Sesuai dengan Lini Produksi
+    window.highlightMatchingPakai = function () {
+        const selectLini = document.getElementById('lini_produksi');
+        const selectPakai = document.getElementById('pakai_id');
+        if (!selectLini || !selectPakai) return;
+
+        const currentLini = (selectLini.value || '').trim().toUpperCase();
+        let matchCount = 0;
+
+        for (let i = 0; i < selectPakai.options.length; i++) {
+            const opt = selectPakai.options[i];
+            if (!opt.value) continue;
+
+            if (!opt.dataset.originalText) {
+                opt.dataset.originalText = opt.text;
+            }
+
+            const rawOriginal = opt.dataset.originalText;
+            const tujuan = (opt.dataset.tujuan || '').trim().toUpperCase();
+
+            const isMatch = Boolean(currentLini && tujuan && (tujuan === currentLini || tujuan.includes(currentLini) || currentLini.includes(tujuan)));
+
+            if (isMatch) {
+                matchCount++;
+                opt.text = '[SESUAI LINI] ' + rawOriginal.replace(/^\[SESUAI LINI\]\s*/, '');
+                opt.style.fontWeight = 'bold';
+                opt.style.color = '#0284c7';
+                opt.style.backgroundColor = '#f0f9ff';
+            } else {
+                opt.text = rawOriginal.replace(/^\[SESUAI LINI\]\s*/, '');
+                opt.style.fontWeight = 'normal';
+                opt.style.color = '';
+                opt.style.backgroundColor = '';
+            }
+        }
+
+        const noticeEl = document.getElementById('pakaiMatchNotice');
+        if (noticeEl) {
+            if (currentLini && matchCount > 0) {
+                noticeEl.textContent = `Tersedia ${matchCount} dokumen pengeluaran gudang bertarget ${currentLini} (ditandai [SESUAI LINI]).`;
+                noticeEl.style.color = '#0284c7';
+                noticeEl.style.display = 'block';
+            } else if (currentLini) {
+                noticeEl.textContent = `Belum ada dokumen pengeluaran gudang khusus untuk ${currentLini}. Anda tetap dapat memilih dokumen lain atau mengisi bahan secara mandiri.`;
+                noticeEl.style.color = '#64748b';
+                noticeEl.style.display = 'block';
+            } else {
+                noticeEl.style.display = 'none';
+            }
+        }
+    };
+
+    // 11. Load Pemakaian Data dari Dokumen Gudang (AJAX)
     window.loadPakaiData = function (pakaiId) {
         if (!pakaiId) return;
 
@@ -506,6 +561,7 @@
         window.calcTk();
         window.calcCng();
         window.calcAll();
+        window.highlightMatchingPakai();
     });
 
 })();

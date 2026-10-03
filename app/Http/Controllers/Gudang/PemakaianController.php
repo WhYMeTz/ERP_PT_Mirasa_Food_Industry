@@ -12,6 +12,7 @@ use App\Models\Gudang\DatPakaiHdr;
 use App\Models\Gudang\DatStokBatch;
 use App\Models\MasterData\MstBarang;
 use App\Models\MasterData\MstGudang;
+use App\Models\MasterData\MstLiniProduksi;
 use App\Services\Common\CodeGeneratorService;
 use App\Services\Gudang\PemakaianService;
 use App\Services\Gudang\StokService;
@@ -97,19 +98,27 @@ class PemakaianController extends Controller
             'total_biaya'  => (float) ($ringkasan['grand_total_nilai'] ?? 0),
         ];
 
-        $tujuanOptions = [
-            'PRODUKSI IFM',
-            'PRODUKSI PING-PING',
-            'PRODUKSI BWF',
-            'PRODUKSI ASIN BARCO',
-            'PACKING EKSPOR',
-            'PACKING JUMBO',
-            'PACKING XX 500',
-            'PACKING XX2000',
-            'SEASONING XX 2000',
-            'AFKIR ULANG',
+        // Ambil daftar tujuan dari Master Lini Produksi aktif + operasional khusus + historis
+        $activeLini = MstLiniProduksi::where('deleted_st', false)
+            ->where('active_st', true)
+            ->orderBy('lini_id', 'asc')
+            ->pluck('lini_nm')
+            ->toArray();
+
+        $opsiKhusus = [
             'SAMPLE LAB / QC',
+            'AFKIR ULANG',
+            'PACKING / REPACKING',
+            'BUFFER STOK LANTAI PRODUKSI',
         ];
+
+        $historicalTujuan = DatPakaiHdr::where('deleted_st', false)
+            ->whereNotNull('tujuan_pemakaian')
+            ->distinct()
+            ->pluck('tujuan_pemakaian')
+            ->toArray();
+
+        $tujuanOptions = array_values(array_unique(array_merge($activeLini, $opsiKhusus, $historicalTujuan)));
 
         if ($request->wantsJson()) {
             return response()->json([
@@ -162,21 +171,17 @@ class PemakaianController extends Controller
 
         $autoNo = $this->codeGenerator->generatePakaiNo();
 
-        // Opsi tujuan pemakaian standar operasional pabrik Mirasa
-        $tujuanOptions = [
-            'PRODUKSI IFM',
-            'PRODUKSI PING-PING',
-            'PRODUKSI BWF',
-            'PRODUKSI ASIN BARCO',
-            'PACKING EKSPOR',
-            'PACKING JUMBO',
-            'PACKING XX 500',
-            'PACKING XX2000',
-            'SEASONING XX 2000',
-            'BAHAN XX2000',
-            'GMP',
-            'AFKIR ULANG',
+        // Ambil daftar master lini produksi aktif dan keperluan operasional khusus
+        $liniList = MstLiniProduksi::where('deleted_st', false)
+            ->where('active_st', true)
+            ->orderBy('lini_id', 'asc')
+            ->get();
+
+        $opsiKhusus = [
             'SAMPLE LAB / QC',
+            'AFKIR ULANG',
+            'PACKING / REPACKING',
+            'BUFFER STOK LANTAI PRODUKSI',
         ];
 
         $bomList = $this->bomService->getAllActive();
@@ -186,7 +191,8 @@ class PemakaianController extends Controller
             'barangList',
             'userGudangId',
             'autoNo',
-            'tujuanOptions',
+            'liniList',
+            'opsiKhusus',
             'bomList'
         ));
     }
@@ -366,6 +372,25 @@ class PemakaianController extends Controller
 
         $items = $query->orderBy('pakaidtl_id', 'desc')->get();
 
+        if ($items->isNotEmpty()) {
+            $gudangIds = $items->pluck('header.gudang_id')->filter()->unique()->toArray();
+            $barangIds = $items->pluck('barang_id')->filter()->unique()->toArray();
+
+            $totalStokMap = DatStokBatch::whereIn('gudang_id', $gudangIds)
+                ->whereIn('barang_id', $barangIds)
+                ->where('deleted_st', false)
+                ->selectRaw('gudang_id, barang_id, SUM(sisa_qty) as total_sisa')
+                ->groupBy('gudang_id', 'barang_id')
+                ->get()
+                ->keyBy(fn($r) => $r->gudang_id . '_' . $r->barang_id);
+
+            foreach ($items as $dtl) {
+                $gId = $dtl->header?->gudang_id;
+                $bId = $dtl->barang_id;
+                $dtl->sisa_gudang_qty = (float) ($totalStokMap->get($gId . '_' . $bId)?->total_sisa ?? 0);
+            }
+        }
+
         $gudangNm = $gudangId ? MstGudang::find($gudangId)?->gudang_nm : null;
 
         $logoPath = public_path('images/logo.png');
@@ -440,6 +465,25 @@ class PemakaianController extends Controller
         }
 
         $items = $query->orderBy('pakaidtl_id', 'desc')->get();
+
+        if ($items->isNotEmpty()) {
+            $gudangIds = $items->pluck('header.gudang_id')->filter()->unique()->toArray();
+            $barangIds = $items->pluck('barang_id')->filter()->unique()->toArray();
+
+            $totalStokMap = DatStokBatch::whereIn('gudang_id', $gudangIds)
+                ->whereIn('barang_id', $barangIds)
+                ->where('deleted_st', false)
+                ->selectRaw('gudang_id, barang_id, SUM(sisa_qty) as total_sisa')
+                ->groupBy('gudang_id', 'barang_id')
+                ->get()
+                ->keyBy(fn($r) => $r->gudang_id . '_' . $r->barang_id);
+
+            foreach ($items as $dtl) {
+                $gId = $dtl->header?->gudang_id;
+                $bId = $dtl->barang_id;
+                $dtl->sisa_gudang_qty = (float) ($totalStokMap->get($gId . '_' . $bId)?->total_sisa ?? 0);
+            }
+        }
 
         $gudangNm  = $gudangId ? MstGudang::find($gudangId)?->gudang_nm : null;
         $printedBy = Auth::user()?->karyawan?->karyawan_nm ?? (Auth::user()?->nama_lengkap ?? 'Staff Gudang');

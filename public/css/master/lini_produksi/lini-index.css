@@ -1,6 +1,7 @@
 /**
  * =========================================================================
  * ERP PT MIRASA - MASTER DATA LINI PRODUKSI INDEX STYLESHEET
+ * Desain Bersih, Elegan, Standar Enterprise ERP
  * =========================================================================
  */
 
@@ -10,8 +11,8 @@
     background: #ffffff;
     border: 1px solid #cbd5e1;
     border-radius: 8px;
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-    min-width: 180px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.12), 0 8px 10px -6px rgba(0, 0, 0, 0.08);
+    min-width: 175px;
     z-index: 999999 !important;
     display: none;
     overflow: hidden;
@@ -67,49 +68,59 @@
 .btn-action-trigger {
     background: #ffffff;
     border: 1.5px solid #cbd5e1;
-    color: #1e293b;
+    color: #334155;
     font-size: 0.8rem;
-    font-weight: 700;
+    font-weight: 600;
     padding: 0.32rem 0.75rem;
     border-radius: 6px;
     display: inline-flex;
     align-items: center;
     gap: 0.35rem;
     cursor: pointer;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
     transition: all 0.15s ease;
 }
 
 .btn-action-trigger:hover,
 .btn-action-trigger.active {
-    background: #f0fdf4;
-    border-color: #059669;
-    color: #059669;
+    background: #f8fafc;
+    border-color: #0284c7;
+    color: #0284c7;
 }
 
-/* Badge Tipe Batch */
-.badge-batch-ifm {
+/* Badges Kategori Produk */
+.badge-category-fg {
     display: inline-flex;
     align-items: center;
-    gap: 0.35rem;
-    background: #eff6ff;
-    color: #1d4ed8;
-    border: 1px solid #bfdbfe;
-    padding: 0.2rem 0.6rem;
-    border-radius: 9999px;
+    background: #ecfdf5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+    padding: 0.2rem 0.55rem;
+    border-radius: 4px;
     font-size: 0.75rem;
-    font-weight: 700;
+    font-weight: 600;
 }
 
-.badge-batch-reguler {
+.badge-category-wip {
     display: inline-flex;
     align-items: center;
-    gap: 0.35rem;
-    background: #f0fdf4;
-    color: #15803d;
-    border: 1px solid #bbf7d0;
-    padding: 0.2rem 0.6rem;
-    border-radius: 9999px;
+    background: #f8fafc;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+    padding: 0.2rem 0.55rem;
+    border-radius: 4px;
     font-size: 0.75rem;
-    font-weight: 700;
+    font-weight: 600;
+}
+
+.badge-category-default {
+    display: inline-flex;
+    align-items: center;
+    background: #f8fafc;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+    padding: 0.2rem 0.55rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
 }

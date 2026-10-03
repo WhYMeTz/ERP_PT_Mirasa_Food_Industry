@@ -271,6 +271,7 @@
                         <th style="min-width: 190px;">Bahan Keluar</th>
                         <th style="min-width: 130px;">No. Batch (FIFO)</th>
                         <th style="min-width: 110px; text-align: right;">Qty Keluar</th>
+                        <th style="min-width: 120px; text-align: right;">Sisa Barang</th>
                         <th style="min-width: 130px; text-align: right;">Total Biaya (HPP)</th>
                         <th style="width: 100px; text-align: right;">Aksi</th>
                     </tr>
@@ -324,6 +325,19 @@
                                 </span>
                             </td>
                             <td style="text-align: right;">
+                                <span style="font-weight: 700; color: {{ ($row->sisa_gudang_qty ?? 0) > 0 ? '#059669' : '#dc2626' }}; font-size: 0.95rem;">
+                                    {{ number_format((float) ($row->sisa_gudang_qty ?? 0), 2, ',', '.') }}
+                                </span>
+                                <span style="font-size: 0.8rem; color: #64748b; margin-left: 0.2rem;">
+                                    {{ $row->barang?->satuanDasar?->satuan_nm ?? '-' }}
+                                </span>
+                                @if(!empty($row->batch_no) && isset($row->sisa_batch_qty))
+                                    <div style="font-size: 0.725rem; color: #64748b; margin-top: 0.15rem;">
+                                        Batch: {{ number_format((float) $row->sisa_batch_qty, 2, ',', '.') }}
+                                    </div>
+                                @endif
+                            </td>
+                            <td style="text-align: right;">
                                 <div style="font-weight: 700; color: #0f172a; font-size: 0.875rem;">
                                     Rp {{ number_format((float) $row->total_harga, 0, ',', '.') }}
                                 </div>
@@ -339,7 +353,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" style="text-align: center; padding: 3rem 1rem; color: #94a3b8;">
+                            <td colspan="9" style="text-align: center; padding: 3rem 1rem; color: #94a3b8;">
                                 Belum ada riwayat transaksi pengeluaran barang. Klik tombol <strong>"+ Catat Barang Keluar"</strong> di atas.
                             </td>
                         </tr>

@@ -16,17 +16,17 @@
                     Apakah Anda yakin ingin menonaktifkan data lini produksi berikut?
                 </p>
                 <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.75rem; margin-bottom: 0.75rem;">
-                    <div style="font-family: monospace; font-weight: 700; color: #0284c7; font-size: 0.85rem;" id="deleteLiniCd"></div>
-                    <div style="font-weight: 700; color: #0f172a; font-size: 0.95rem; margin-top: 0.2rem;" id="deleteLiniNm"></div>
+                    <div style="font-weight: 700; color: #0284c7; font-size: 0.875rem;" id="deleteLiniCd"></div>
+                    <div style="font-weight: 600; color: #0f172a; font-size: 0.95rem; margin-top: 0.2rem;" id="deleteLiniNm"></div>
                 </div>
-                <small style="color: #dc2626; font-size: 0.75rem; display: block; line-height: 1.4;">
-                    ⚠️ Lini produksi yang dinonaktifkan tidak akan muncul lagi sebagai opsi pada formulir input hasil produksi harian. Data historis yang sudah tersimpan sebelumnya tetap aman.
-                </small>
+                <p style="color: #64748b; font-size: 0.8rem; margin: 0; line-height: 1.45;">
+                    Lini produksi yang dinonaktifkan tidak akan muncul pada pilihan transaksi produksi baru. Data historis yang tersimpan sebelumnya tetap aman.
+                </p>
             </div>
             <div class="modal-footer" style="padding: 0.75rem 1.25rem; background: #fafafa; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 0.5rem;">
                 <button type="button" class="btn btn-secondary btn-sm" onclick="closeModal('modalDeleteLini')">Batal</button>
                 <button type="submit" class="btn btn-danger btn-sm" style="background: #dc2626; color: #fff; font-weight: 700;">
-                    Ya, Nonaktifkan Lini
+                    Ya, Nonaktifkan
                 </button>
             </div>
         </form>

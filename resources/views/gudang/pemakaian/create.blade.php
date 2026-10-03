@@ -159,15 +159,32 @@
 
                         <div class="form-group" style="margin-bottom: 0;">
                             <label for="tujuan_pemakaian" class="form-label" style="font-weight: 600; font-size: 0.85rem; color: #334155; margin-bottom: 0.35rem;">
-                                Tujuan Pemakaian / SPK <span style="color: #ef4444;">*</span>
+                                Tujuan Pemakaian / Lini Kerja <span style="color: #ef4444;">*</span>
                             </label>
-                            <input type="text" name="tujuan_pemakaian" id="tujuan_pemakaian" list="tujuanList" value="{{ old('tujuan_pemakaian', 'PRODUKSI IFM') }}" class="form-control" placeholder="Contoh: PRODUKSI IFM, PRODUKSI BWF, PACKING EKSPOR" style="height: 38px; border-radius: 6px; font-size: 0.85rem;" required oninput="updateSidebarInfo()">
-                            <datalist id="tujuanList">
-                                @foreach ($tujuanOptions as $opt)
-                                    <option value="{{ $opt }}"></option>
-                                @endforeach
-                            </datalist>
-                            <small style="color: #64748b; font-size: 0.725rem;">Pilih lini produksi atau ketik no SPK.</small>
+                            <select name="tujuan_pemakaian" id="tujuan_pemakaian" class="form-control" style="height: 38px; border-radius: 6px; font-size: 0.85rem;" required onchange="updateSidebarInfo()">
+                                <option value="">-- Pilih Lini Produksi / Tujuan Pengeluaran --</option>
+                                @if(isset($liniList) && $liniList->isNotEmpty())
+                                    @foreach($liniList->groupBy(fn($item) => $item->kategori_lini ?: 'UMUM') as $kategori => $items)
+                                        <optgroup label="{{ $kategori }}">
+                                            @foreach($items as $lini)
+                                                <option value="{{ $lini->lini_nm }}" {{ old('tujuan_pemakaian', 'PRODUKSI IFM') === $lini->lini_nm ? 'selected' : '' }}>
+                                                    {{ $lini->lini_nm }} {{ $lini->keterangan ? '('.$lini->keterangan.')' : '' }}
+                                                </option>
+                                            @endforeach
+                                        </optgroup>
+                                    @endforeach
+                                @endif
+                                @if(isset($opsiKhusus) && !empty($opsiKhusus))
+                                    <optgroup label="KEPERLUAN OPERASIONAL LAINNYA">
+                                        @foreach($opsiKhusus as $opsi)
+                                            <option value="{{ $opsi }}" {{ old('tujuan_pemakaian') === $opsi ? 'selected' : '' }}>
+                                                {{ $opsi }}
+                                            </option>
+                                        @endforeach
+                                    </optgroup>
+                                @endif
+                            </select>
+                            <small style="color: #64748b; font-size: 0.725rem;">Pilih lini kerja produksi atau peruntukan operasional pabrik.</small>
                         </div>
                     </div>
 
@@ -1000,6 +1017,7 @@
     document.addEventListener('DOMContentLoaded', () => {
         addRow();
         updateSidebarInfo();
+        document.getElementById('tujuan_pemakaian')?.addEventListener('change', updateSidebarInfo);
         document.getElementById('tujuan_pemakaian')?.addEventListener('input', updateSidebarInfo);
         document.getElementById('gudang_id')?.addEventListener('change', () => {
             updateSidebarInfo();

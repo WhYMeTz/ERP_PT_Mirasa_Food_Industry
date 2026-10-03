@@ -94,8 +94,8 @@
                             Status Dokumen <span style="color: #ef4444;">*</span>
                         </label>
                         <select name="status_cd" id="status_cd" class="form-control" required>
-                            <option value="POSTED" {{ old('status_cd', 'POSTED') === 'POSTED' ? 'selected' : '' }}>✅ POSTED (Suntik Stok WIP Masuk)</option>
-                            <option value="DRAFT" {{ old('status_cd') === 'DRAFT' ? 'selected' : '' }}>📝 DRAFT (Simpan Sementara)</option>
+                            <option value="POSTED" {{ old('status_cd', 'POSTED') === 'POSTED' ? 'selected' : '' }}>POSTED (Selesai - Tambah Stok WIP)</option>
+                            <option value="DRAFT" {{ old('status_cd') === 'DRAFT' ? 'selected' : '' }}>DRAFT (Simpan Sementara)</option>
                         </select>
                     </div>
                 </div>
@@ -103,11 +103,11 @@
                 {{-- PEMILIH DOKUMEN PEMAKAIAN BAHAN UNTUK AUTO-FILL --}}
                 <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed #cbd5e1; background: #f0f9ff; padding: 0.85rem 1rem; border-radius: 8px; border: 1.5px solid #bae6fd;">
                     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.5rem;">
-                        <span style="font-size: 0.85rem; font-weight: 800; color: #0369a1; display: flex; align-items: center; gap: 0.35rem;">
-                            <span>⚡ Tarik Data dari Dokumen Pemakaian Bahan Gudang:</span>
+                        <span style="font-size: 0.85rem; font-weight: 700; color: #0369a1; display: flex; align-items: center; gap: 0.35rem;">
+                            <span>Tarik Data dari Dokumen Pengeluaran Bahan Gudang (BPPB):</span>
                         </span>
                         <span style="font-size: 0.75rem; color: #64748b;">
-                            Memilih dokumen pemakaian akan otomatis mengisi rincian Singkong, Minyak, Bumbu &amp; Kemasan di bawah.
+                            Memilih dokumen pemakaian akan otomatis mengisi rincian Singkong, Minyak, Bumbu &amp; Kemasan (tetap dapat disesuaikan).
                         </span>
                     </div>
 
@@ -115,17 +115,18 @@
                         <select name="pakai_id" id="pakai_id" class="form-control" style="flex: 1; min-width: 280px; font-size: 0.85rem;" onchange="loadPakaiData(this.value)">
                             <option value="">-- Pilih Dokumen Pengeluaran Bahan (Opsional) --</option>
                             @foreach ($pakaiList as $pk)
-                                <option value="{{ $pk->pakai_id }}">
+                                <option value="{{ $pk->pakai_id }}" data-tujuan="{{ $pk->tujuan_pemakaian }}">
                                     [{{ $pk->pakai_no }}] {{ Carbon\Carbon::parse($pk->pakai_tgl)->format('d/m/Y') }} - {{ $pk->tujuan_pemakaian }} ({{ $pk->details->count() }} item bahan)
                                 </option>
                             @endforeach
                         </select>
                         <button type="button" class="btn btn-secondary btn-sm" onclick="loadPakaiData(document.getElementById('pakai_id').value)" style="padding: 0.45rem 0.85rem;">
-                            🔄 Tarik Ulang
+                            Tarik Ulang
                         </button>
                     </div>
+                    <div id="pakaiMatchNotice" style="display: none; font-size: 0.75rem; font-weight: 600; margin-top: 0.35rem;"></div>
                     <div id="pakaiLoading" style="display: none; font-size: 0.75rem; color: #0284c7; margin-top: 0.35rem; font-weight: 600;">
-                        ⏳ Menarik data rincian bahan dari dokumen gudang...
+                        Memuat rincian bahan dari dokumen gudang...
                     </div>
                 </div>
             </div>
@@ -138,7 +139,7 @@
         <div class="card" style="margin-bottom: 1.25rem;">
             <div class="card-header" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0.875rem 1.25rem; display: flex; justify-content: space-between; align-items: center;">
                 <strong style="color: #0f172a; font-size: 0.95rem; display: flex; align-items: center; gap: 0.4rem;">
-                    <span>🌾 3. Biaya Bahan Baku &amp; Kemasan (Direct Materials)</span>
+                    <span>3. Biaya Bahan Baku &amp; Kemasan (Direct Materials)</span>
                 </strong>
                 <span id="badgeSubtotalBahan" style="font-size: 0.8rem; font-weight: 700; color: #0284c7; background: #e0f2fe; padding: 0.2rem 0.6rem; border-radius: 6px;">
                     Subtotal Bahan: Rp 0
@@ -149,7 +150,7 @@
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
                     <div style="background: #fefce8; padding: 0.75rem; border-radius: 8px; border: 1px solid #fef08a;">
                         <span style="display: block; font-size: 0.8rem; font-weight: 800; color: #854d0e; margin-bottom: 0.4rem;">
-                            🌾 Singkong Mentah Masuk
+                            Singkong Mentah Masuk
                         </span>
                         <div style="display: flex; gap: 0.5rem;">
                             <div style="flex: 1;">
@@ -165,7 +166,7 @@
 
                     <div style="background: #f0fdf4; padding: 0.75rem; border-radius: 8px; border: 1px solid #bbf7d0;">
                         <span style="display: block; font-size: 0.8rem; font-weight: 800; color: #166534; margin-bottom: 0.4rem;">
-                            🛢️ Minyak Sawit &amp; Kelapa
+                            Minyak Sawit &amp; Kelapa
                         </span>
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; margin-bottom: 0.4rem;">
                             <div>
@@ -188,7 +189,7 @@
 
                     <div style="background: #f8fafc; padding: 0.75rem; border-radius: 8px; border: 1px solid #e2e8f0;">
                         <span style="display: block; font-size: 0.8rem; font-weight: 800; color: #334155; margin-bottom: 0.4rem;">
-                            🧂 Bumbu &amp; Perenyah (Rp)
+                            Bumbu &amp; Perenyah (Rp)
                         </span>
                         <label style="font-size: 0.7rem; color: #64748b; font-weight: 600;">Nilai Bumbu/Garam/Perenyah</label>
                         <input type="number" step="0.01" min="0" name="bumbu_nilai" id="bumbu_nilai" class="form-control calc-trigger" style="text-align: right;" value="{{ old('bumbu_nilai', 0) }}" placeholder="0" oninput="calcAll()">
@@ -198,7 +199,7 @@
                 {{-- Baris 2: Kemasan & Packaging --}}
                 <div style="background: #faf5ff; padding: 0.85rem; border-radius: 8px; border: 1px solid #e9d5ff;">
                     <span style="display: block; font-size: 0.8rem; font-weight: 800; color: #6b21a8; margin-bottom: 0.5rem;">
-                        📦 Rincian Bahan Kemasan &amp; Packaging (Rp)
+                        Rincian Bahan Kemasan &amp; Packaging (Rp)
                     </span>
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.75rem;">
                         <div>
@@ -235,7 +236,7 @@
             {{-- ENERGI GAS CNG --}}
             <div class="card">
                 <div class="card-header" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0.875rem 1.25rem;">
-                    <strong style="color: #0f172a; font-size: 0.95rem;">🔥 4. Gas Alam / CNG (Boiler &amp; Fryer)</strong>
+                    <strong style="color: #0f172a; font-size: 0.95rem;">4. Gas Alam / CNG (Boiler &amp; Fryer)</strong>
                 </div>
                 <div style="padding: 1.25rem;">
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
@@ -264,7 +265,7 @@
             {{-- TENAGA KERJA --}}
             <div class="card">
                 <div class="card-header" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0.875rem 1.25rem;">
-                    <strong style="color: #0f172a; font-size: 0.95rem;">👥 5. Tenaga Kerja (Tarif Rp 91.300 / orang)</strong>
+                    <strong style="color: #0f172a; font-size: 0.95rem;">5. Tenaga Kerja (Tarif Rp 91.300 / orang)</strong>
                 </div>
                 <div style="padding: 1.25rem;">
                     <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; margin-bottom: 0.75rem;">
@@ -308,7 +309,7 @@
         {{-- BAGIAN 6: BIAYA OVERHEAD PABRIK (FACTORY OVERHEAD / FOH) --}}
         <div class="card" style="margin-bottom: 1.25rem;">
             <div class="card-header" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0.875rem 1.25rem; display: flex; justify-content: space-between; align-items: center;">
-                <strong style="color: #0f172a; font-size: 0.95rem;">⚙️ 6. Biaya Overhead Pabrik (FOH)</strong>
+                <strong style="color: #0f172a; font-size: 0.95rem;">6. Biaya Overhead Pabrik (FOH)</strong>
                 <span id="badgeSubtotalOverhead" style="font-size: 0.8rem; font-weight: 700; color: #475569; background: #f1f5f9; padding: 0.2rem 0.6rem; border-radius: 6px;">
                     Subtotal FOH: Rp 0
                 </span>
@@ -359,7 +360,7 @@
         <div class="card" style="margin-bottom: 1.5rem; border: 2px solid #86efac;">
             <div class="card-header" style="background: #f0fdf4; border-bottom: 1px solid #bbf7d0; padding: 0.875rem 1.25rem; display: flex; justify-content: space-between; align-items: center;">
                 <strong style="color: #166534; font-size: 1rem; display: flex; align-items: center; gap: 0.4rem;">
-                    <span>⚖️ 7. Timbangan Hasil Jadi WIP Olahan (Kg)</span>
+                    <span>7. Timbangan Hasil Jadi WIP Olahan (Kg)</span>
                 </strong>
                 <span id="badgeTotalWip" style="font-size: 0.85rem; font-weight: 800; color: #166534; background: #dcfce7; padding: 0.25rem 0.75rem; border-radius: 6px; border: 1px solid #86efac;">
                     Total WIP: 0.00 kg
@@ -461,7 +462,7 @@
         <div style="display: flex; justify-content: flex-end; gap: 0.75rem; align-items: center;">
             <a href="{{ route('produksi.index') }}" class="btn btn-secondary">Batal</a>
             <button type="submit" class="btn btn-primary" style="padding: 0.75rem 1.75rem; font-size: 0.95rem; font-weight: 800; box-shadow: 0 4px 6px rgba(2, 132, 199, 0.25);">
-                💾 Simpan Lembar Produksi Harian
+                Simpan Lembar Produksi Harian
             </button>
         </div>
     </form>

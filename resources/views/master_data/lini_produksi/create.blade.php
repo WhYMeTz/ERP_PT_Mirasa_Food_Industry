@@ -10,7 +10,7 @@
         </a>
         <h1 style="font-size: 1.5rem; font-weight: 700; color: #0f172a;">Tambah Lini Produksi / Tujuan Baru</h1>
         <p style="color: #64748b; font-size: 0.875rem; margin-top: 0.25rem;">
-            Daftarkan unit lini kerja atau tujuan distribusi hasil produksi baru ke sistem ERP.
+            Daftarkan unit lini kerja atau tujuan alokasi hasil produksi baru.
         </p>
     </div>
 
@@ -20,7 +20,7 @@
 
             <div class="form-group" style="margin-bottom: 1rem;">
                 <label for="lini_cd" class="form-label">Kode Lini <span style="color:#ef4444;">*</span></label>
-                <input type="text" id="lini_cd" name="lini_cd" value="{{ old('lini_cd') }}" class="form-control" placeholder="Contoh: IFM, PP2000, RETAIL" style="text-transform: uppercase;" required>
+                <input type="text" id="lini_cd" name="lini_cd" value="{{ old('lini_cd') }}" class="form-control" placeholder="Contoh: IFM, JUMBO20, BERKO" style="text-transform: uppercase;" required>
                 @error('lini_cd')
                     <div class="form-error" style="color: #ef4444; font-size: 0.775rem; margin-top: 0.25rem;">{{ $message }}</div>
                 @enderror
@@ -28,20 +28,35 @@
 
             <div class="form-group" style="margin-bottom: 1rem;">
                 <label for="lini_nm" class="form-label">Nama Lini Produksi / Tujuan <span style="color:#ef4444;">*</span></label>
-                <input type="text" id="lini_nm" name="lini_nm" value="{{ old('lini_nm') }}" class="form-control" placeholder="Contoh: PRODUKSI IFM, PRODUKSI PING-PING 2000" style="text-transform: uppercase;" required>
+                <input type="text" id="lini_nm" name="lini_nm" value="{{ old('lini_nm') }}" class="form-control" placeholder="Contoh: PRODUKSI IFM, PRODUKSI BERKO" style="text-transform: uppercase;" required>
                 @error('lini_nm')
                     <div class="form-error" style="color: #ef4444; font-size: 0.775rem; margin-top: 0.25rem;">{{ $message }}</div>
                 @enderror
             </div>
 
             <div class="form-group" style="margin-bottom: 1rem;">
-                <label for="tipe_batch" class="form-label">Format Penomoran Batch &amp; Kemasan <span style="color:#ef4444;">*</span></label>
+                <label for="kategori_lini" class="form-label">Kategori Hasil Produksi <span style="color:#ef4444;">*</span></label>
+                <select id="kategori_lini" name="kategori_lini" class="form-control" required>
+                    <option value="FINISH GOOD (FG)" {{ old('kategori_lini') === 'FINISH GOOD (FG)' ? 'selected' : '' }}>
+                        Finish Good (FG)
+                    </option>
+                    <option value="WORK IN PROGRESS (WIP)" {{ old('kategori_lini') === 'WORK IN PROGRESS (WIP)' ? 'selected' : '' }}>
+                        Work In Progress (WIP)
+                    </option>
+                </select>
+                @error('kategori_lini')
+                    <div class="form-error" style="color: #ef4444; font-size: 0.775rem; margin-top: 0.25rem;">{{ $message }}</div>
+                @enderror
+            </div>
+
+            <div class="form-group" style="margin-bottom: 1rem;">
+                <label for="tipe_batch" class="form-label">Format Penomoran Batch <span style="color:#ef4444;">*</span></label>
                 <select id="tipe_batch" name="tipe_batch" class="form-control" required>
                     <option value="REGULER" {{ old('tipe_batch', 'REGULER') === 'REGULER' ? 'selected' : '' }}>
-                        📦 REGULER - Format Tanggal DD MM YYYY (Kemasan Retail Mirasa)
+                        Reguler (Format Tanggal)
                     </option>
                     <option value="IFM" {{ old('tipe_batch') === 'IFM' ? 'selected' : '' }}>
-                        🏭 IFM - Format Shift &amp; Rentang Karton Box (Standar Indofood WIP-FCC 6kg)
+                        IFM (Format Shift &amp; Karton Box)
                     </option>
                 </select>
                 @error('tipe_batch')
@@ -50,8 +65,8 @@
             </div>
 
             <div class="form-group" style="margin-bottom: 1.25rem;">
-                <label for="keterangan" class="form-label">Keterangan / Deskripsi Operasional</label>
-                <input type="text" id="keterangan" name="keterangan" value="{{ old('keterangan') }}" class="form-control" placeholder="Contoh: Penggorengan & Keripik Singkong Retail">
+                <label for="keterangan" class="form-label">Keterangan</label>
+                <input type="text" id="keterangan" name="keterangan" value="{{ old('keterangan') }}" class="form-control" placeholder="Keterangan operasional (opsional)">
                 @error('keterangan')
                     <div class="form-error" style="color: #ef4444; font-size: 0.775rem; margin-top: 0.25rem;">{{ $message }}</div>
                 @enderror

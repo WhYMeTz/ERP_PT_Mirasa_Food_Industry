@@ -149,7 +149,54 @@ class PemakaianService
             });
         }
 
-        return $query->orderBy('pakaidtl_id', 'desc')->paginate($perPage);
+        $paginated = $query->orderBy('pakaidtl_id', 'desc')->paginate($perPage);
+
+        // Kumpulkan ID gudang dan barang untuk kalkulasi sisa stok
+        $items = $paginated->items();
+        if (!empty($items)) {
+            $gudangIds = [];
+            $barangIds = [];
+
+            foreach ($items as $item) {
+                $gId = $item->header?->gudang_id;
+                $bId = $item->barang_id;
+
+                if ($gId) {
+                    $gudangIds[$gId] = $gId;
+                }
+                if ($bId) {
+                    $barangIds[$bId] = $bId;
+                }
+            }
+
+            // 1. Ambil total sisa stok barang di gudang terkait
+            $totalStokMap = DatStokBatch::whereIn('gudang_id', array_values($gudangIds))
+                ->whereIn('barang_id', array_values($barangIds))
+                ->where('deleted_st', false)
+                ->selectRaw('gudang_id, barang_id, SUM(sisa_qty) as total_sisa')
+                ->groupBy('gudang_id', 'barang_id')
+                ->get()
+                ->keyBy(fn($r) => $r->gudang_id . '_' . $r->barang_id);
+
+            // 2. Ambil sisa stok per batch spesifik
+            $batchStokMap = DatStokBatch::whereIn('gudang_id', array_values($gudangIds))
+                ->whereIn('barang_id', array_values($barangIds))
+                ->where('deleted_st', false)
+                ->get()
+                ->keyBy(fn($r) => $r->gudang_id . '_' . $r->barang_id . '_' . $r->batch_no);
+
+            // Assign ke setiap item
+            foreach ($items as $item) {
+                $gId = $item->header?->gudang_id;
+                $bId = $item->barang_id;
+                $bt = $item->batch_no;
+
+                $item->sisa_gudang_qty = (float) ($totalStokMap->get($gId . '_' . $bId)?->total_sisa ?? 0);
+                $item->sisa_batch_qty = (float) ($batchStokMap->get($gId . '_' . $bId . '_' . $bt)?->sisa_qty ?? 0);
+            }
+        }
+
+        return $paginated;
     }
 
     /**
@@ -157,9 +204,32 @@ class PemakaianService
      */
     public function getById(int $id): DatPakaiHdr
     {
-        return DatPakaiHdr::with(['gudang', 'details.barang.satuanDasar', 'details.barang.jenisBarang'])
+        $hdr = DatPakaiHdr::with(['gudang', 'details.barang.satuanDasar', 'details.barang.jenisBarang'])
             ->where('pakai_id', $id)
             ->firstOrFail();
+
+        $gId = $hdr->gudang_id;
+        $barangIds = $hdr->details->pluck('barang_id')->unique()->toArray();
+
+        $totalStokMap = DatStokBatch::where('gudang_id', $gId)
+            ->whereIn('barang_id', $barangIds)
+            ->where('deleted_st', false)
+            ->selectRaw('barang_id, SUM(sisa_qty) as total_sisa')
+            ->groupBy('barang_id')
+            ->pluck('total_sisa', 'barang_id');
+
+        $batchStokMap = DatStokBatch::where('gudang_id', $gId)
+            ->whereIn('barang_id', $barangIds)
+            ->where('deleted_st', false)
+            ->get()
+            ->keyBy(fn($r) => $r->barang_id . '_' . $r->batch_no);
+
+        foreach ($hdr->details as $dtl) {
+            $dtl->sisa_gudang_qty = (float) ($totalStokMap->get($dtl->barang_id) ?? 0);
+            $dtl->sisa_batch_qty = (float) ($batchStokMap->get($dtl->barang_id . '_' . $dtl->batch_no)?->sisa_qty ?? 0);
+        }
+
+        return $hdr;
     }
 
     /**

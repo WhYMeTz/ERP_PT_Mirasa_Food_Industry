@@ -157,18 +157,19 @@
     {{-- TABEL DATA BARANG KELUAR --}}
     <table class="data-table">
         <colgroup>
-            <col style="width: 3%;">   {{-- No --}}
-            <col style="width: 9%;">   {{-- No. Dokumen --}}
-            <col style="width: 8%;">   {{-- Tanggal --}}
-            <col style="width: 11%;">  {{-- Kode Batch --}}
-            <col style="width: 9%;">   {{-- Kode Barang --}}
-            <col style="width: 16%;">  {{-- Nama Barang --}}
-            <col style="width: 9%;">   {{-- Jenis --}}
-            <col style="width: 13%;">  {{-- Keterangan --}}
-            <col style="width: 7%;">   {{-- Qty Keluar --}}
-            <col style="width: 7%;">   {{-- Satuan --}}
-            <col style="width: 9%;">   {{-- Harga Satuan --}}
-            <col style="width: 9%;">   {{-- Total Harga --}}
+            <col style="width: 2.5%;">  {{-- No --}}
+            <col style="width: 8.5%;">  {{-- No. Dokumen --}}
+            <col style="width: 7.5%;">  {{-- Tanggal --}}
+            <col style="width: 10%;">   {{-- Kode Batch --}}
+            <col style="width: 8.5%;">  {{-- Kode Barang --}}
+            <col style="width: 15%;">   {{-- Nama Barang --}}
+            <col style="width: 8%;">    {{-- Jenis --}}
+            <col style="width: 12%;">   {{-- Keterangan --}}
+            <col style="width: 6.5%;">  {{-- Qty Keluar --}}
+            <col style="width: 5%;">    {{-- Satuan --}}
+            <col style="width: 6.5%;">  {{-- Sisa Barang --}}
+            <col style="width: 8%;">    {{-- Harga Satuan --}}
+            <col style="width: 9.5%;">  {{-- Total Harga --}}
         </colgroup>
         <thead>
             <tr>
@@ -182,6 +183,7 @@
                 <th>Keterangan</th>
                 <th style="text-align: right; white-space: nowrap;">Qty Keluar</th>
                 <th style="text-align: center;">Satuan</th>
+                <th style="text-align: right; white-space: nowrap;">Sisa Barang</th>
                 <th style="text-align: right; white-space: nowrap;">Harga Satuan</th>
                 <th style="text-align: right; white-space: nowrap;">Total Harga</th>
             </tr>
@@ -226,6 +228,9 @@
                         {{ number_format($qty, 2, ',', '.') }}
                     </td>
                     <td style="text-align: center; font-size: 6.5pt; color: #64748b;">{{ $satuan }}</td>
+                    <td style="text-align: right; font-weight: bold; color: {{ ($row->sisa_gudang_qty ?? 0) > 0 ? '#047857' : '#7f1d1d' }}; white-space: nowrap;">
+                        {{ number_format((float) ($row->sisa_gudang_qty ?? 0), 2, ',', '.') }}
+                    </td>
                     <td style="text-align: right; font-family: monospace; font-size: 6.8pt; white-space: nowrap;">
                         {{ number_format($harga, 2, ',', '.') }}
                     </td>
@@ -235,7 +240,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="12" style="text-align: center; color: #94a3b8; padding: 15px;">
+                    <td colspan="13" style="text-align: center; color: #94a3b8; padding: 15px;">
                         Tidak ada transaksi barang keluar pada kriteria filter ini.
                     </td>
                 </tr>
@@ -249,6 +254,7 @@
                 <td style="text-align: right; color: #7f1d1d; padding: 4px; font-size: 7.5pt; white-space: nowrap;">
                     {{ number_format($grandQty, 2, ',', '.') }}
                 </td>
+                <td></td>
                 <td></td>
                 <td></td>
                 <td style="text-align: right; font-family: monospace; color: #7f1d1d; font-size: 7.5pt; padding: 4px; white-space: nowrap;">

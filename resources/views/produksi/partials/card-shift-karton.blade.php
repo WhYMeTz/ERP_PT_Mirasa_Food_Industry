@@ -6,7 +6,7 @@
 <div class="card" style="margin-bottom: 1.25rem; border: 1.5px solid #cbd5e1; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.04);">
     <div class="card-header" style="background: #ffffff; border-bottom: 1px solid #e2e8f0; padding: 0.875rem 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
         <strong id="cardHeaderTitle" style="color: #0f172a; font-size: 0.95rem; display: flex; align-items: center; gap: 0.4rem;">
-            <span>🏷️ 2. Shift Kerja, Penomoran Batch &amp; Kemasan Karton (Standar Indofood IFM / WIP-FCC)</span>
+            <span>2. Shift Kerja, Penomoran Batch &amp; Kemasan Karton (Standar Indofood IFM / WIP-FCC)</span>
         </strong>
         <span id="cardHeaderBadge" class="badge" style="background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; font-size: 0.75rem; font-weight: 700;">
             Format Batch Karton: [Shift][NoAwal] - [Shift][NoAkhir]
@@ -20,7 +20,6 @@
         {{-- BANNER INFORMASI MODE BARANG JADI REGULER (PING-PING, RETAIL) --}}
         <div id="bannerRegularFG" style="display: none; background: #ecfdf5; border: 1.5px solid #a7f3d0; border-radius: 8px; padding: 0.85rem 1rem; margin-bottom: 1.25rem;">
             <div style="display: flex; align-items: flex-start; gap: 0.65rem;">
-                <span style="font-size: 1.25rem; line-height: 1;">📋</span>
                 <div>
                     <div style="font-weight: 800; font-size: 0.85rem; color: #065f46;">
                         Mode Produksi Barang Jadi Reguler (Retail / Siap Konsumsi)
@@ -42,7 +41,7 @@
                 <div id="btnShiftA" class="shift-card-btn {{ old('shift_cd', 'A') === 'A' ? 'active-a' : '' }}" onclick="selectShift('A')">
                     <div>
                         <div class="shift-title">
-                            <span>☀️ Shift A (Pagi / Siang)</span>
+                            <span>Shift A (Pagi / Siang)</span>
                         </div>
                         <div class="shift-desc">
                             Jam kerja 07:00 - 15:00 WIB &bull; Default nomor karton dimulai dari 0001
@@ -55,7 +54,7 @@
                 <div id="btnShiftB" class="shift-card-btn {{ old('shift_cd', 'A') === 'B' ? 'active-b' : '' }}" onclick="selectShift('B')">
                     <div>
                         <div class="shift-title">
-                            <span>🌙 Shift B (Malam)</span>
+                            <span>Shift B (Malam)</span>
                         </div>
                         <div class="shift-desc">
                             Jam kerja 15:00 - 23:00 WIB &bull; Otomatis melanjutkan nomor karton akhir hari ini
@@ -73,7 +72,7 @@
                 {{-- Panel 1: Spesifikasi Nomor Karton & Waktu --}}
                 <div class="form-subpanel">
                     <div class="subpanel-title">
-                        <span>📦 Spesifikasi Karton Box &amp; Penomoran</span>
+                        <span>Spesifikasi Karton Box &amp; Penomoran</span>
                     </div>
 
                     {{-- Baris 1: 3 Kolom Rapi (Karton Selesai, No Awal, No Akhir) --}}
@@ -160,17 +159,17 @@
                 {{-- Panel 2: Quick Fill Salin ke Timbangan --}}
                 <div class="form-subpanel">
                     <div class="subpanel-title">
-                        <span>⚖️ Salin Hasil Estimasi ke Form Timbangan WIP</span>
+                        <span>Salin Hasil Estimasi ke Form Timbangan WIP</span>
                     </div>
                     <div style="font-size: 0.75rem; color: #64748b; margin-bottom: 0.4rem;">
                         Klik tombol untuk menyalin hasil kalkulasi berat karton langsung ke rincian timbangan di bawah:
                     </div>
                     <div class="copy-actions-wrapper">
                         <button type="button" class="btn-copy-wip" onclick="copyKartonToWipKg('asin_barco_qty')">
-                            📥 Salin ke Asin Barco
+                            Salin ke Asin Barco
                         </button>
                         <button type="button" class="btn-copy-wip btn-copy-sawit" onclick="copyKartonToWipKg('asin_sawit_qty')">
-                            📥 Salin ke Asin Sawit
+                            Salin ke Asin Sawit
                         </button>
                     </div>
                 </div>
@@ -179,7 +178,7 @@
             {{-- KOLOM KANAN: PREVIEW STIKER FISIK & BATCH SUMMARY RESMI --}}
             <div class="shift-preview-pane">
                 <div class="preview-pane-header">
-                    <span>🏷️ PREVIEW LABEL STIKER FISIK KEMASAN</span>
+                    <span>PREVIEW LABEL STIKER FISIK KEMASAN</span>
                 </div>
 
                 {{-- KOTAK STIKER FISIK ASLI PABRIK (KOMPAK & PERSIS FISIK ASLI) --}}
@@ -254,13 +253,13 @@
                     </div>
                     <input type="hidden" name="batch_wip_no" id="batch_wip_no" value="{{ old('batch_wip_no') }}">
                     <div class="footer-line">
-                        <span style="color: #94a3b8;">📅 Estimasi Kedaluwarsa:</span>
+                        <span style="color: #94a3b8;">Estimasi Kedaluwarsa:</span>
                         <strong id="liveExpDate" style="color: #38bdf8;">-</strong>
                     </div>
                 </div>
 
                 <div style="font-size: 0.7rem; color: #64748b; text-align: center; max-width: 380px;">
-                    💡 Label ini adalah identitas fisik yang ditempel pada kemasan saat hasil olahan disimpan ke gudang barang jadi.
+                    Label ini adalah identitas fisik yang ditempel pada kemasan saat hasil olahan disimpan ke gudang barang jadi.
                 </div>
             </div>
         </div>

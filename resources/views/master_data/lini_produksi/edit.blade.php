@@ -36,25 +36,25 @@
             </div>
 
             <div class="form-group" style="margin-bottom: 1rem;">
-                <label for="kategori_lini" class="form-label">Kelompok Kategori Hasil Produksi <span style="color:#ef4444;">*</span></label>
+                <label for="kategori_lini" class="form-label">Kategori Hasil Produksi <span style="color:#ef4444;">*</span></label>
                 <select id="kategori_lini" name="kategori_lini" class="form-control" required>
                     <option value="FINISH GOOD (FG)" {{ old('kategori_lini', $lini->kategori_lini) === 'FINISH GOOD (FG)' ? 'selected' : '' }}>
-                        📦 FINISH GOOD (FG) - Barang Jadi
+                        Finish Good (FG)
                     </option>
                     <option value="WORK IN PROGRESS (WIP)" {{ old('kategori_lini', $lini->kategori_lini) === 'WORK IN PROGRESS (WIP)' ? 'selected' : '' }}>
-                        ⚖️ WORK IN PROGRESS (WIP) - Barang Setengah Jadi Olahan
+                        Work In Progress (WIP)
                     </option>
                 </select>
             </div>
 
             <div class="form-group" style="margin-bottom: 1rem;">
-                <label for="tipe_batch" class="form-label">Format Penomoran Batch &amp; Kemasan <span style="color:#ef4444;">*</span></label>
+                <label for="tipe_batch" class="form-label">Format Penomoran Batch <span style="color:#ef4444;">*</span></label>
                 <select id="tipe_batch" name="tipe_batch" class="form-control" required>
                     <option value="REGULER" {{ old('tipe_batch', $lini->tipe_batch) === 'REGULER' ? 'selected' : '' }}>
-                        📦 REGULER - Format Tanggal DD MM YYYY (Kemasan Retail Mirasa)
+                        Reguler (Format Tanggal)
                     </option>
                     <option value="IFM" {{ old('tipe_batch', $lini->tipe_batch) === 'IFM' ? 'selected' : '' }}>
-                        🏭 IFM - Format Shift &amp; Rentang Karton Box (Standar Indofood WIP-FCC 6kg)
+                        IFM (Format Shift &amp; Karton Box)
                     </option>
                 </select>
                 @error('tipe_batch')
@@ -63,7 +63,7 @@
             </div>
 
             <div class="form-group" style="margin-bottom: 1rem;">
-                <label for="keterangan" class="form-label">Keterangan / Deskripsi Operasional</label>
+                <label for="keterangan" class="form-label">Keterangan</label>
                 <input type="text" id="keterangan" name="keterangan" value="{{ old('keterangan', $lini->keterangan) }}" class="form-control">
                 @error('keterangan')
                     <div class="form-error" style="color: #ef4444; font-size: 0.775rem; margin-top: 0.25rem;">{{ $message }}</div>
@@ -73,8 +73,8 @@
             <div class="form-group" style="margin-bottom: 1.25rem;">
                 <label for="active_st" class="form-label">Status Keaktifan Lini</label>
                 <select id="active_st" name="active_st" class="form-control">
-                    <option value="1" {{ old('active_st', $lini->active_st ? '1' : '0') == '1' ? 'selected' : '' }}>Aktif (Bisa dipilih di input produksi)</option>
-                    <option value="0" {{ old('active_st', $lini->active_st ? '1' : '0') == '0' ? 'selected' : '' }}>Nonaktif (Disembunyikan dari pilihan)</option>
+                    <option value="1" {{ old('active_st', $lini->active_st ? '1' : '0') == '1' ? 'selected' : '' }}>Aktif</option>
+                    <option value="0" {{ old('active_st', $lini->active_st ? '1' : '0') == '0' ? 'selected' : '' }}>Nonaktif</option>
                 </select>
             </div>
 

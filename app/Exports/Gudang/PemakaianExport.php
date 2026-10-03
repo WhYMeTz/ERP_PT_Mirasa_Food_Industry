@@ -70,7 +70,7 @@ class PemakaianExport
 
         // ── Lebar Kolom ──────────────────────────────────────────────
         // Kolom A-J: Kolom Utama Persis Sesuai Gambar Operasional
-        // Kolom K-N: Kolom Informasi Pelengkap ERP
+        // Kolom K-O: Kolom Informasi Pelengkap ERP & Sisa Stok
         $colWidths = [
             'A' => 18,   // No. SPK / Pakai
             'B' => 14,   // Tanggal
@@ -87,27 +87,28 @@ class PemakaianExport
             'L' => 20,   // Gudang Asal
             'M' => 16,   // No. Dokumen
             'N' => 22,   // Catatan
+            'O' => 16,   // Sisa Barang
         ];
         foreach ($colWidths as $col => $width) {
             $sheet->getColumnDimension($col)->setWidth($width);
         }
 
         // ── Kop Surat ───────────────────────────────────────────────
-        $sheet->mergeCells('A1:N1');
+        $sheet->mergeCells('A1:O1');
         $sheet->setCellValue('A1', 'PT. MIRASA FOOD INDUSTRY');
         $sheet->getStyle('A1')->applyFromArray([
             'font'      => ['bold' => true, 'size' => 14, 'color' => ['argb' => self::COLOR_DARK]],
             'alignment' => ['horizontal' => Alignment::HORIZONTAL_LEFT],
         ]);
 
-        $sheet->mergeCells('A2:N2');
+        $sheet->mergeCells('A2:O2');
         $sheet->setCellValue('A2', 'Pabrik Pengolahan Makanan & Keripik Singkong · Ambartawang, Magelang, Jawa Tengah');
         $sheet->getStyle('A2')->applyFromArray([
             'font'      => ['size' => 9, 'color' => ['argb' => self::COLOR_MUTED]],
             'alignment' => ['horizontal' => Alignment::HORIZONTAL_LEFT],
         ]);
 
-        $sheet->mergeCells('A3:N3');
+        $sheet->mergeCells('A3:O3');
         $sheet->setCellValue('A3', 'LAPORAN REKAPITULASI PEMAKAIAN BAHAN (OUTBOUND / BARANG KELUAR)');
         $sheet->getStyle('A3')->applyFromArray([
             'font'      => ['bold' => true, 'size' => 12, 'color' => ['argb' => self::COLOR_HEADER_BG]],
@@ -124,7 +125,7 @@ class PemakaianExport
         }
         $filterInfo .= '  |  Dicetak: ' . $this->printedAt . ' oleh ' . $this->printedBy;
 
-        $sheet->mergeCells('A4:N4');
+        $sheet->mergeCells('A4:O4');
         $sheet->setCellValue('A4', $filterInfo);
         $sheet->getStyle('A4')->applyFromArray([
             'font'      => ['size' => 9, 'italic' => true, 'color' => ['argb' => self::COLOR_MUTED]],
@@ -150,13 +151,14 @@ class PemakaianExport
             'L' => 'Gudang Asal',
             'M' => 'No. Pakai',
             'N' => 'Catatan',
+            'O' => 'Sisa Barang',
         ];
 
         foreach ($headers as $col => $label) {
             $sheet->setCellValue($col . $headerRow, $label);
         }
 
-        $sheet->getStyle('A' . $headerRow . ':N' . $headerRow)->applyFromArray([
+        $sheet->getStyle('A' . $headerRow . ':O' . $headerRow)->applyFromArray([
             'font'      => ['bold' => true, 'size' => 9.5, 'color' => ['argb' => self::COLOR_HEADER_FG]],
             'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => self::COLOR_HEADER_BG]],
             'alignment' => ['vertical' => Alignment::VERTICAL_CENTER, 'wrapText' => true],
@@ -169,6 +171,7 @@ class PemakaianExport
         $sheet->getStyle('H' . $headerRow . ':J' . $headerRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
         $sheet->getStyle('K' . $headerRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         $sheet->getStyle('L' . $headerRow . ':N' . $headerRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
+        $sheet->getStyle('O' . $headerRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
         $sheet->getRowDimension($headerRow)->setRowHeight(24);
 
         // ── Data Rows ────────────────────────────────────────────────
@@ -205,11 +208,13 @@ class PemakaianExport
             $sheet->setCellValue('L' . $row, $dtl->header?->gudang?->gudang_nm ?? '-');
             $sheet->setCellValue('M' . $row, $dtl->header?->pakai_no ?? '-');
             $sheet->setCellValue('N' . $row, $catatan !== '-' ? $catatan : '');
+            $sheet->setCellValue('O' . $row, (float) ($dtl->sisa_gudang_qty ?? 0));
 
             // Format angka
             $sheet->getStyle('H' . $row)->getNumberFormat()->setFormatCode('#,##0.00');
             $sheet->getStyle('I' . $row)->getNumberFormat()->setFormatCode('"Rp "#,##0.00');
             $sheet->getStyle('J' . $row)->getNumberFormat()->setFormatCode('"Rp "#,##0.00');
+            $sheet->getStyle('O' . $row)->getNumberFormat()->setFormatCode('#,##0.00');
 
             // Alignment
             $sheet->getStyle('A' . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
@@ -218,10 +223,11 @@ class PemakaianExport
             $sheet->getStyle('H' . $row . ':J' . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
             $sheet->getStyle('K' . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
             $sheet->getStyle('L' . $row . ':N' . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
+            $sheet->getStyle('O' . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
 
             // Zebra stripe
             if ($no % 2 === 0) {
-                $sheet->getStyle('A' . $row . ':N' . $row)->applyFromArray([
+                $sheet->getStyle('A' . $row . ':O' . $row)->applyFromArray([
                     'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => self::COLOR_ROW_EVEN]],
                 ]);
             }
@@ -231,7 +237,7 @@ class PemakaianExport
             $sheet->getStyle('J' . $row)->getFont()->getColor()->setARGB(self::COLOR_GREEN);
 
             // Border
-            $sheet->getStyle('A' . $row . ':N' . $row)->applyFromArray([
+            $sheet->getStyle('A' . $row . ':O' . $row)->applyFromArray([
                 'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['argb' => self::COLOR_BORDER]]],
                 'font'    => ['size' => 9],
             ]);
@@ -251,7 +257,7 @@ class PemakaianExport
             $sheet->getStyle('H' . $totalRow)->getNumberFormat()->setFormatCode('#,##0.00');
             $sheet->getStyle('J' . $totalRow)->getNumberFormat()->setFormatCode('"Rp "#,##0.00');
 
-            $sheet->getStyle('A' . $totalRow . ':N' . $totalRow)->applyFromArray([
+            $sheet->getStyle('A' . $totalRow . ':O' . $totalRow)->applyFromArray([
                 'font'      => ['bold' => true, 'size' => 9.5, 'color' => ['argb' => self::COLOR_DARK]],
                 'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => self::COLOR_TOTAL_BG]],
                 'alignment' => ['vertical' => Alignment::VERTICAL_CENTER],

@@ -419,6 +419,41 @@ class MasterBarangExcelSeeder extends Seeder
                 'satuan_cd' => 'KARTON 3,8KG',
                 'harga'     => 0,
             ],
+            [
+                'barang_cd' => 'WIP-BJK',
+                'barang_nm' => 'KS BERKO JKT',
+                'jenis_cd'  => 'WIP',
+                'satuan_cd' => 'KG',
+                'harga'     => 0,
+            ],
+            [
+                'barang_cd' => 'WIP-BBB',
+                'barang_nm' => 'KS BERKO BERBUMBU',
+                'jenis_cd'  => 'WIP',
+                'satuan_cd' => 'KG',
+                'harga'     => 0,
+            ],
+            [
+                'barang_cd' => 'WIP-KCL',
+                'barang_nm' => 'KS KSU CHILLI LEMON',
+                'jenis_cd'  => 'WIP',
+                'satuan_cd' => 'KARTON 7KG',
+                'harga'     => 0,
+            ],
+            [
+                'barang_cd' => 'WIP-AJB',
+                'barang_nm' => 'KS ASIN JB',
+                'jenis_cd'  => 'WIP',
+                'satuan_cd' => 'KARTON 7KG',
+                'harga'     => 0,
+            ],
+            [
+                'barang_cd' => 'WIP-PJB',
+                'barang_nm' => 'KS PEDAS JB',
+                'jenis_cd'  => 'WIP',
+                'satuan_cd' => 'KARTON 7KG',
+                'harga'     => 0,
+            ],
 
             // --- FINISH GOOD (FG) ---
             [
@@ -466,6 +501,13 @@ class MasterBarangExcelSeeder extends Seeder
             [
                 'barang_cd' => 'FG-EC007',
                 'barang_nm' => 'KS EKSPOR RASA CHILLI',
+                'jenis_cd'  => 'FG',
+                'satuan_cd' => 'KARTON',
+                'harga'     => 0,
+            ],
+            [
+                'barang_cd' => 'FG-MX1000',
+                'barang_nm' => 'MAKSI 1000',
                 'jenis_cd'  => 'FG',
                 'satuan_cd' => 'KARTON',
                 'harga'     => 0,

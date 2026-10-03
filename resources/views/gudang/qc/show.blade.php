@@ -7,7 +7,7 @@
     $totalRefraksi = $qc->details->sum('qty_refraksi');
     $totalReject = $qc->details->sum('qty_reject');
     $totalNetto = $qc->details->sum('qty_netto_lolos');
-    $isLocked = !empty($qc->terima) && !Auth::user()?->isSuperAdmin();
+    $isLocked = !empty($qc->terima) && !Auth::user()?->isSuperAdmin() && !Auth::user()?->isGudang();
 
     $revisi = '1';
     $tglTerbit = '11-09-2023';
@@ -61,17 +61,19 @@
         </div>
 
         <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
-            <a href="{{ route('qc.inbound.show', [$qc->qc_id, 'view' => 'mobile']) }}" class="btn btn-sm btn-outline-secondary" style="border-radius: 8px; font-weight: 700;">
-                📱 Ringkas Mobile
-            </a>
-
-            @if (Auth::user()?->canEditQc() && !$isLocked)
-                <a href="{{ route('qc.inbound.edit', $qc->qc_id) }}" class="btn btn-sm" style="background: #eff6ff; color: #1d4ed8; border: 1.5px solid #bfdbfe; font-weight: 700; border-radius: 8px;">
-                    ✏️ Edit / Koreksi
+            @if (Auth::user()?->isSuperAdmin())
+                <a href="{{ route('qc.inbound.show', [$qc->qc_id, 'view' => 'mobile']) }}" class="btn btn-sm btn-outline-secondary" style="border-radius: 8px; font-weight: 700;">
+                    📱 Ringkas Mobile
                 </a>
             @endif
 
-            <button type="button" onclick="window.print()" class="btn btn-primary btn-sm" style="border-radius: 8px; font-weight: 700;">
+            @if (Auth::user()?->canEditQc() && !$isLocked)
+                <a href="{{ route('qc.inbound.edit', $qc->qc_id) }}" class="btn btn-sm" style="background: #0284c7; color: #ffffff; border: none; font-weight: 800; border-radius: 8px; box-shadow: 0 2px 4px rgba(2, 132, 199, 0.3);">
+                    ✏️ Edit Seluruh Dokumen
+                </a>
+            @endif
+
+            <button type="button" onclick="window.print()" class="btn btn-primary btn-sm" style="background: #1e293b; border: none; border-radius: 8px; font-weight: 700;">
                 🖨️ Cetak Dokumen HACCP (A4)
             </button>
         </div>
@@ -174,5 +176,11 @@
             }
         }
     }
+
+    @if (request('print') == 1)
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => { window.print(); }, 400);
+        });
+    @endif
 </script>
 @endpush

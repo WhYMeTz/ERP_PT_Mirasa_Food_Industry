@@ -100,7 +100,12 @@
             <strong style="color: #0f172a;">Dokumen Arsip HACCP PT Mirasa &bull; {{ $qc->qc_no }}</strong>
             <span style="font-size: 0.8rem; color: #64748b; margin-left: 0.5rem;">({{ $kat }})</span>
         </div>
-        <div style="display: flex; gap: 0.5rem;">
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+            @if (Auth::user()?->canEditQc())
+                <a href="{{ route('qc.inbound.edit', $qc->qc_id) }}" class="btn-edit" style="background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd; padding: 0.55rem 1rem; border-radius: 6px; text-decoration: none; font-size: 0.85rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.35rem;">
+                    <span>✏️</span> <span>Edit Dokumen</span>
+                </a>
+            @endif
             <button type="button" onclick="window.print()" class="btn-print">
                 🖨️ Cetak Lembar Dokumen (A4)
             </button>

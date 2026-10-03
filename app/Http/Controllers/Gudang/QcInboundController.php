@@ -158,7 +158,12 @@ class QcInboundController extends Controller
             $user = Auth::user();
             $qc = $this->qcService->store($request->all(), $user);
 
-            return redirect()->route('qc.inbound.show', $qc->qc_id)
+            $redirectParams = ['id' => $qc->qc_id];
+            if ($request->input('view') === 'mobile' || ($user?->isQc() && !$user?->isSuperAdmin() && !$user?->isGudang() && $request->input('view') !== 'desktop')) {
+                $redirectParams['view'] = 'mobile';
+            }
+
+            return redirect()->route('qc.inbound.show', $redirectParams)
                 ->with('success', "Inspeksi QC {$qc->qc_no} berhasil dicatat & diteruskan ke antrean Gudang.");
         } catch (Exception $e) {
             return redirect()->back()
@@ -169,7 +174,8 @@ class QcInboundController extends Controller
 
     /**
      * Menampilkan dokumen lembar hasil uji QC
-     * Default SELALU menampilkan detail ringkas mobile. Lembar HACCP hanya jika view=haccp
+     * Desktop: Dokumen Lembar Cetak HACCP Resmi PT Mirasa
+     * Mobile: Kartu Ringkasan Mobile untuk Lapangan
      */
     public function show(Request $request, int $id): View
     {
@@ -182,13 +188,16 @@ class QcInboundController extends Controller
             'terima',
         ])->where('deleted_st', false)->findOrFail($id);
 
-        // Jika eksplisit minta lembar cetak HACCP desktop
-        if ($request->input('view') === 'haccp') {
-            return view('gudang.qc.show', compact('qc'));
+        $user = Auth::user();
+        $isMobileReq = $request->input('view') === 'mobile' || ($user?->isQc() && !$user?->isSuperAdmin() && !$user?->isGudang() && $request->input('view') !== 'desktop');
+
+        // Jika mode mobile smartphone
+        if ($isMobileReq) {
+            return view('gudang.qc.show-mobile', compact('qc'));
         }
 
-        // Default selalu detail biasa (mobile)
-        return view('gudang.qc.show-mobile', compact('qc'));
+        // Web Admin Desktop: Lembar Dokumen HACCP Format Cetak Resmi
+        return view('gudang.qc.show', compact('qc'));
     }
 
     /**
@@ -216,9 +225,9 @@ class QcInboundController extends Controller
         ])->where('deleted_st', false)->findOrFail($id);
 
         $user = Auth::user();
-        if ($qc->terima && !$user->isSuperAdmin()) {
+        if ($qc->terima && !$user->isSuperAdmin() && !$user->isGudang()) {
             return redirect()->route('qc.inbound.show', $id)
-                ->with('error', "Tiket QC #{$qc->qc_no} sudah diproses ke Penerimaan Barang (GRN #{$qc->terima->terima_no}). Hanya Super Administrator yang berhak mengedit tiket yang sudah ditarik ke gudang.");
+                ->with('error', "Tiket QC #{$qc->qc_no} sudah diproses ke Penerimaan Barang (GRN #{$qc->terima->terima_no}). Hanya Admin Gudang atau Super Administrator yang berhak mengedit tiket yang sudah ditarik ke gudang.");
         }
 
         $suppliers = MstSupplier::where('deleted_st', false)->where('active_st', true)->orderBy('supplier_nm')->get();
@@ -242,13 +251,16 @@ class QcInboundController extends Controller
             ->orderBy('po_tgl', 'desc')
             ->get();
 
-        // Jika eksplisit minta edit formulir HACCP desktop
-        if ($request->input('view') === 'haccp') {
-            return view('gudang.qc.edit', compact('qc', 'suppliers', 'gudangs', 'barangs', 'pos'));
+        $user = Auth::user();
+        $isMobileReq = $request->input('view') === 'mobile' || ($user?->isQc() && !$user?->isSuperAdmin() && !$user?->isGudang() && $request->input('view') !== 'desktop');
+
+        // Jika mode mobile smartphone
+        if ($isMobileReq) {
+            return view('gudang.qc.edit-mobile', compact('qc', 'suppliers', 'gudangs', 'barangs', 'pos'));
         }
 
-        // Default selalu edit mobile biasa
-        return view('gudang.qc.edit-mobile', compact('qc', 'suppliers', 'gudangs', 'barangs', 'pos'));
+        // Web Admin Desktop: Formulir Dokumen HACCP Interaktif (Semua Kolom Bisa Diedit)
+        return view('gudang.qc.edit', compact('qc', 'suppliers', 'gudangs', 'barangs', 'pos'));
     }
 
     /**
@@ -278,11 +290,22 @@ class QcInboundController extends Controller
             $updatedQc = $this->qcService->update($qc, $request->all(), $user);
 
             $msg = "Tiket QC {$updatedQc->qc_no} berhasil diperbarui.";
-            if ($user->isSuperAdmin() && $updatedQc->terima) {
+            if (($user->isSuperAdmin() || $user->isGudang()) && $updatedQc->terima) {
                 $msg .= " Sinkronisasi otomatis ke Penerimaan Barang (#{$updatedQc->terima->terima_no}) & Batch Stok selesai tanpa unpost.";
             }
 
-            return redirect()->route('qc.inbound.show', $updatedQc->qc_id)
+            // Jika user klik tombol "Simpan & Langsung Cetak A4"
+            if ($request->input('and_print') == '1') {
+                return redirect()->route('qc.inbound.show', ['id' => $updatedQc->qc_id, 'print' => 1])
+                    ->with('success', $msg);
+            }
+
+            $redirectParams = ['id' => $updatedQc->qc_id];
+            if ($request->input('view') === 'mobile' || ($user?->isSuperAdmin() && $request->input('view') === 'mobile') || ($user?->isQc() && !$user?->isSuperAdmin() && !$user?->isGudang() && $request->input('view') !== 'desktop')) {
+                $redirectParams['view'] = 'mobile';
+            }
+
+            return redirect()->route('qc.inbound.show', $redirectParams)
                 ->with('success', $msg);
         } catch (Exception $e) {
             return redirect()->back()
@@ -301,7 +324,10 @@ class QcInboundController extends Controller
             $user = Auth::user();
             $this->qcService->destroy($qc, $user);
 
-            return redirect()->route('qc.inbound.index')
+            $isMobile = request('view') === 'mobile' || ($user?->isQc() && !$user?->isSuperAdmin() && !$user?->isGudang() && request('view') !== 'desktop');
+            $redirectParams = $isMobile ? ['view' => 'mobile'] : [];
+
+            return redirect()->route('qc.inbound.index', $redirectParams)
                 ->with('success', "Tiket QC #{$qc->qc_no} berhasil dibatalkan / dihapus.");
         } catch (Exception $e) {
             return redirect()->back()

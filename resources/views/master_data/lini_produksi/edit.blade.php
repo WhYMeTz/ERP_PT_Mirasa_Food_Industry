@@ -44,9 +44,6 @@
                     <option value="WORK IN PROGRESS (WIP)" {{ old('kategori_lini', $lini->kategori_lini) === 'WORK IN PROGRESS (WIP)' ? 'selected' : '' }}>
                         ⚖️ WORK IN PROGRESS (WIP) - Barang Setengah Jadi Olahan
                     </option>
-                    <option value="LAINNYA" {{ old('kategori_lini', $lini->kategori_lini) === 'LAINNYA' ? 'selected' : '' }}>
-                        📂 LAINNYA / UMUM
-                    </option>
                 </select>
             </div>
 

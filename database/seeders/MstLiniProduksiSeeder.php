@@ -144,15 +144,6 @@ class MstLiniProduksiSeeder extends Seeder
                 'tipe_batch'    => 'REGULER',
                 'keterangan'    => 'WIP Pedas JB',
             ],
-
-            // --- UMUM / LAINNYA ---
-            [
-                'lini_cd'       => 'LAINNYA',
-                'lini_nm'       => 'PRODUKSI LAINNYA',
-                'kategori_lini' => 'LAINNYA',
-                'tipe_batch'    => 'REGULER',
-                'keterangan'    => 'Lini Produksi / Tujuan Lainnya',
-            ],
         ];
 
         foreach ($liniData as $item) {

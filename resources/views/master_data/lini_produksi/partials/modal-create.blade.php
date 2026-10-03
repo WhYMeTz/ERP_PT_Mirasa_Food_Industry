@@ -25,7 +25,6 @@
                     <select id="create_kategori_lini" name="kategori_lini" class="form-control" required>
                         <option value="FINISH GOOD (FG)">📦 FINISH GOOD (FG) - Barang Jadi</option>
                         <option value="WORK IN PROGRESS (WIP)">⚖️ WORK IN PROGRESS (WIP) - Barang Setengah Jadi Olahan</option>
-                        <option value="LAINNYA">📂 LAINNYA / UMUM</option>
                     </select>
                     <span style="font-size: 0.75rem; color: #64748b; margin-top: 0.25rem; display: block;">Menentukan optgroup pengelompokan di dropdown formulir produksi harian.</span>
                 </div>

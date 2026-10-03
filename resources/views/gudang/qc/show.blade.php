@@ -1,4 +1,77 @@
-@extends((Auth::user()?->isQc() && !Auth::user()?->isSuperAdmin() && !Auth::user()?->isGudang() && request('view') !== 'desktop') ? 'layouts.qc-mobile' : 'layouts.app')
+@extends(request('popup') ? 'layouts.blank' : 'layouts.app')
+
+@section('title', 'Dokumen QC: ' . $qc->qc_no . ' - PT Mirasa')
+
+@push('styles')
+<style>
+    @media print {
+        @page {
+            size: A4 portrait;
+            margin: 4mm 5mm 4mm 5mm;
+        }
+        *, *::before, *::after {
+            box-sizing: border-box !important;
+        }
+        html, body {
+            background: #ffffff !important;
+            color: #000000 !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            width: 100% !important;
+            height: auto !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+        header, .header-container, .navbar, footer, .no-print, .btn, .alert {
+            display: none !important;
+        }
+        main {
+            padding: 0 !important;
+            margin: 0 !important;
+            max-width: 100% !important;
+            width: 100% !important;
+        }
+        .doc-sheet-print-container {
+            overflow: visible !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            width: 100% !important;
+        }
+        .excel-doc-sheet {
+            box-shadow: none !important;
+            border: 2px solid #000000 !important;
+            margin: 0 auto !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            min-width: 0 !important;
+            padding: 3mm 4mm !important;
+            font-size: 0.72rem !important;
+            line-height: 1.2 !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            page-break-after: avoid !important;
+            break-after: avoid !important;
+        }
+        .excel-doc-sheet table {
+            width: 100% !important;
+            max-width: 100% !important;
+        }
+        .excel-doc-sheet td, .excel-doc-sheet th {
+            padding: 2px 4px !important;
+        }
+        .excel-doc-sheet input, .excel-doc-sheet select {
+            border: none !important;
+            background: transparent !important;
+            padding: 0 !important;
+            color: #000000 !important;
+        }
+        .excel-doc-sheet .doc-header-logo {
+            width: 58px !important;
+            height: 58px !important;
+        }
+    }
+</style>
+@endpush
 
 @php
     $kat = strtoupper($qc->kategori_barang ?? 'SINGKONG');
@@ -38,118 +111,69 @@
     }
 @endphp
 
-@section('title', 'Dokumen QC: ' . $qc->qc_no . ' - PT Mirasa')
-
 @section('content')
-<div style="max-width: 950px; margin: 0 auto; padding-bottom: 3.5rem;">
-    {{-- TOP ACTION TOOLBAR (NO PRINT) --}}
-    <div class="no-print" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem;">
-        <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
-            <a href="{{ route('qc.inbound.index') }}" class="btn btn-secondary btn-sm" style="border-radius: 8px;">
-                &larr; Riwayat Tiket QC
-            </a>
-            <span style="font-size: 0.85rem; color: #64748b;">|</span>
-            <span style="font-size: 0.95rem; font-weight: 800; color: #0f172a;">Tiket #{{ $qc->qc_no }}</span>
-            <span style="font-size: 0.75rem; font-weight: 800; background: #e0f2fe; color: #0284c7; padding: 0.2rem 0.55rem; border-radius: 12px;">
-                {{ $kat }}
-            </span>
-            @if ($qc->terima)
-                <a href="{{ route('gudang.terima.show', $qc->terima->terima_id) }}" style="font-size: 0.75rem; font-weight: 800; background: #dcfce7; color: #15803d; padding: 0.2rem 0.55rem; border-radius: 12px; text-decoration: none; border: 1px solid #86efac;">
-                    📦 GRN #{{ $qc->terima->terima_no }}
+<div style="max-width: {{ request('popup') ? '100%' : '1050px' }}; margin: 0 auto; padding-bottom: {{ request('popup') ? '0.5rem' : '3.5rem' }};">
+    @if (!request('popup'))
+        {{-- TOP ACTION TOOLBAR (NO PRINT) --}}
+        <div class="no-print" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem;">
+            <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                <a href="{{ route('qc.inbound.index') }}" class="btn btn-secondary btn-sm" style="border-radius: 8px;">
+                    &larr; Riwayat Tiket QC
                 </a>
-            @endif
-        </div>
-
-        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
-            @if (Auth::user()?->isSuperAdmin())
-                <a href="{{ route('qc.inbound.show', [$qc->qc_id, 'view' => 'mobile']) }}" class="btn btn-sm btn-outline-secondary" style="border-radius: 8px; font-weight: 700;">
-                    📱 Ringkas Mobile
-                </a>
-            @endif
-
-            @if (Auth::user()?->canEditQc() && !$isLocked)
-                <a href="{{ route('qc.inbound.edit', $qc->qc_id) }}" class="btn btn-sm" style="background: #0284c7; color: #ffffff; border: none; font-weight: 800; border-radius: 8px; box-shadow: 0 2px 4px rgba(2, 132, 199, 0.3);">
-                    ✏️ Edit Seluruh Dokumen
-                </a>
-            @endif
-
-            <button type="button" onclick="window.print()" class="btn btn-primary btn-sm" style="background: #1e293b; border: none; border-radius: 8px; font-weight: 700;">
-                🖨️ Cetak Dokumen HACCP (A4)
-            </button>
-        </div>
-    </div>
-
-    {{-- KOTAK UPDATE SUSULAN UJI GORENG LAB (KHUSUS SINGKONG JIKA MENUNGGU LAB) --}}
-    @if ($kat === 'SINGKONG' && $qc->status_uji_goreng === 'MENUNGGU_LAB')
-        <div class="no-print" style="background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); border: 1.5px solid #fde68a; border-radius: 12px; padding: 1.25rem 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 2px 4px rgba(245, 158, 11, 0.08);">
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
-                <div>
-                    <div style="display: flex; align-items: center; gap: 0.4rem; font-weight: 800; font-size: 0.95rem; color: #b45309;">
-                        <span>⏳</span> <span>Pengujian I Selesai &bull; Hasil Uji Goreng (Lab) Masih Tertunda</span>
-                    </div>
-                    <p style="margin: 0.25rem 0 0; font-size: 0.825rem; color: #78350f;">
-                        Truk sudah lolos tahap sampling. Masukkan hasil uji penggorengan lab di bawah ini jika sampel goreng sudah selesai diuji di fryer.
-                    </p>
-                </div>
-                <button type="button" onclick="toggleUjiGorengForm()" class="btn btn-sm" style="background: #b45309; color: #ffffff; font-weight: 700; border-radius: 8px; border: none; padding: 0.45rem 0.9rem;">
-                    🍟 Input Hasil Uji Goreng Sekarang
-                </button>
+                <span style="font-size: 0.85rem; color: #64748b;">|</span>
+                <span style="font-size: 0.95rem; font-weight: 800; color: #0f172a;">Tiket #{{ $qc->qc_no }}</span>
+                <span style="font-size: 0.75rem; font-weight: 800; background: #e0f2fe; color: #0284c7; padding: 0.2rem 0.55rem; border-radius: 12px;">
+                    {{ $kat }}
+                </span>
+                @if ($qc->terima)
+                    <a href="{{ route('gudang.terima.show', $qc->terima->terima_id) }}" style="font-size: 0.75rem; font-weight: 800; background: #dcfce7; color: #15803d; padding: 0.2rem 0.55rem; border-radius: 12px; text-decoration: none; border: 1px solid #86efac;">
+                        📦 GRN #{{ $qc->terima->terima_no }}
+                    </a>
+                @endif
             </div>
 
-            <div id="ujiGorengFormBox" style="display: none; margin-top: 1.25rem; background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 10px; padding: 1.25rem;">
-                <form action="{{ route('qc.inbound.update_uji_goreng', $qc->qc_id) }}" method="POST">
-                    @csrf
-                    <div style="font-weight: 800; font-size: 0.9rem; color: #0f172a; margin-bottom: 0.75rem;">
-                        Laboratorium QC &bull; Formulir Pengujian II (Uji Goreng Fryer)
-                    </div>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
+                @if (Auth::user()?->isSuperAdmin())
+                    <a href="{{ route('qc.inbound.show', [$qc->qc_id, 'view' => 'mobile']) }}" class="btn btn-sm btn-outline-secondary" style="border-radius: 8px; font-weight: 700;">
+                        📱 Ringkas Mobile
+                    </a>
+                @endif
 
-                    @foreach ($qc->details as $d)
-                        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
-                            <div style="font-weight: 800; font-size: 0.85rem; color: #0284c7; margin-bottom: 0.75rem;">
-                                🍟 {{ $d->barang?->barang_nm ?? 'Singkong' }} (Grade: {{ $d->grade_cd }})
-                            </div>
-                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 0.75rem; margin-bottom: 0.75rem;">
-                                <div>
-                                    <label class="form-label" style="font-size: 0.775rem; font-weight: 700;">RASA (Standar: Tdk Pahit)</label>
-                                    <select name="items[{{ $d->qcdtl_id }}][fryer_rasa]" class="form-control" style="font-size: 0.825rem; font-weight: 600;">
-                                        <option value="TIDAK_PAHIT" {{ ($d->fryer_rasa ?? 'TIDAK_PAHIT') === 'TIDAK_PAHIT' ? 'selected' : '' }}>✅ Tidak Pahit</option>
-                                        <option value="PAHIT" {{ ($d->fryer_rasa ?? '') === 'PAHIT' ? 'selected' : '' }}>❌ Pahit / Sianida</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label class="form-label" style="font-size: 0.775rem; font-weight: 700;">TEKSTUR (Standar: Renyah)</label>
-                                    <select name="items[{{ $d->qcdtl_id }}][fryer_tekstur]" class="form-control" style="font-size: 0.825rem; font-weight: 600;">
-                                        <option value="RENYAH" {{ ($d->fryer_tekstur ?? 'RENYAH') === 'RENYAH' ? 'selected' : '' }}>✅ Renyah</option>
-                                        <option value="ALOT" {{ ($d->fryer_tekstur ?? '') === 'ALOT' ? 'selected' : '' }}>❌ Alot / Keras</option>
-                                        <option value="LEMBEK" {{ ($d->fryer_tekstur ?? '') === 'LEMBEK' ? 'selected' : '' }}>⚠️ Lembek</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label class="form-label" style="font-size: 0.775rem; font-weight: 700;">PENAMPAKAN</label>
-                                    <select name="items[{{ $d->qcdtl_id }}][fryer_penampakan]" class="form-control" style="font-size: 0.825rem; font-weight: 600;">
-                                        <option value="TIDAK_OILSOAKED" {{ ($d->fryer_penampakan ?? 'TIDAK_OILSOAKED') === 'TIDAK_OILSOAKED' ? 'selected' : '' }}>✅ Tidak Oilsoaked</option>
-                                        <option value="OILSOAKED" {{ ($d->fryer_penampakan ?? '') === 'OILSOAKED' ? 'selected' : '' }}>❌ Oilsoaked</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                    @endforeach
+                @if (Auth::user()?->canEditQc() && !$isLocked)
+                    <a href="{{ route('qc.inbound.edit', $qc->qc_id) }}" class="btn btn-sm" style="background: #0284c7; color: #ffffff; border: none; font-weight: 800; border-radius: 8px; box-shadow: 0 2px 4px rgba(2, 132, 199, 0.3);">
+                        ✏️ Edit Seluruh Dokumen
+                    </a>
+                @endif
 
-                    <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1rem;">
-                        <button type="button" onclick="toggleUjiGorengForm()" class="btn btn-secondary btn-sm" style="border-radius: 8px;">
-                            Batal
-                        </button>
-                        <button type="submit" class="btn btn-primary btn-sm" style="border-radius: 8px; font-weight: 800; background: #059669; border-color: #059669;">
-                            💾 Simpan Hasil Uji Goreng Lab
-                        </button>
-                    </div>
-                </form>
+                <button type="button" onclick="window.print()" class="btn btn-primary btn-sm" style="background: #1e293b; border: none; border-radius: 8px; font-weight: 700;">
+                    🖨️ Cetak Dokumen HACCP (A4)
+                </button>
             </div>
         </div>
     @endif
 
+    {{-- PENGINGAT STATUS UJI GORENG LAB (KHUSUS SINGKONG) --}}
+    @if ($kat === 'SINGKONG')
+        @if ($qc->status_uji_goreng === 'MENUNGGU_LAB')
+            <div class="no-print" style="margin-bottom: 1.25rem; background: #fffbeb; border: 1.5px solid #fde68a; color: #92400e; border-radius: 8px; padding: 0.85rem 1.15rem; display: flex; gap: 0.75rem; align-items: flex-start; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">
+                <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink: 0; margin-top: 1px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                <div style="font-size: 0.85rem; line-height: 1.45;">
+                    <strong style="font-size: 0.9rem; color: #b45309;">Pengingat Mutu: Tiket ini belum sampai tahap pengujian II (Uji Goreng Fryer).</strong><br>
+                    Bahan baku singkong telah lolos uji sampling fisik kedatangan. Pengujian laboratorium sensorik goreng (rasa gurih/pahit, kerenyahan, dan penampakan minyak) belum diproses/masih dalam antrean tim QC Lapangan.
+                </div>
+            </div>
+        @elseif ($qc->status_uji_goreng === 'SELESAI')
+            <div class="no-print" style="margin-bottom: 1.25rem; background: #f0fdf4; border: 1.5px solid #bbf7d0; color: #166534; border-radius: 8px; padding: 0.85rem 1.15rem; display: flex; gap: 0.75rem; align-items: center; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">
+                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink: 0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <div style="font-size: 0.85rem;">
+                    <strong>Pengujian Lengkap:</strong> Tahap pengujian I (Sampling Fisik) dan pengujian II (Uji Goreng Lab Fryer) telah selesai diverifikasi oleh tim QC.
+                </div>
+            </div>
+        @endif
+    @endif
+
     {{-- WRAPPER RESPONSIVE AGAR TABEL DOKUMEN DAPAT DI-PAN DI HP TANPA HANCUR --}}
-    <div style="overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 1rem;">
+    <div class="doc-sheet-print-container" style="overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 0.5rem;">
         @if ($kat === 'SINGKONG')
             @include('gudang.qc.partials.doc-singkong')
         @elseif ($kat === 'MINYAK')
@@ -167,16 +191,6 @@
 
 @push('scripts')
 <script>
-    function toggleUjiGorengForm() {
-        const box = document.getElementById('ujiGorengFormBox');
-        if (box) {
-            box.style.display = (box.style.display === 'none' || !box.style.display) ? 'block' : 'none';
-            if (box.style.display === 'block') {
-                box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            }
-        }
-    }
-
     @if (request('print') == 1)
         window.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => { window.print(); }, 400);

@@ -19,7 +19,7 @@
         {{-- Body Pesan Peringatan --}}
         <div style="padding: 1.25rem 1.5rem;">
             <p style="margin: 0 0 0.85rem 0; font-size: 0.875rem; color: #334155; line-height: 1.5;">
-                Apakah Anda yakin ingin menghapus tiket inspeksi QC <strong id="deleteQcNo" style="color: #0284c7;">#QC-0000</strong>?
+                Apakah Anda yakin ingin membatalkan/menghapus dokumen tiket QC <strong id="deleteQcNoText" style="color: #0284c7;">#QC-0000</strong>?
             </p>
             <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 0.75rem 0.9rem; font-size: 0.8rem; color: #92400e; line-height: 1.4;">
                 <strong style="display: block; margin-bottom: 0.2rem;">Perhatian Operasional:</strong>

@@ -12,24 +12,30 @@
     $totalReject = $qc->details->sum('qty_reject');
 @endphp
 
-<div class="excel-doc-sheet" style="min-width: 860px; background: #ffffff; border: 2px solid #000000; padding: 1.25rem; margin-bottom: 2rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.06); font-family: Arial, sans-serif; font-size: 0.8rem; color: #000000;">
+<div class="excel-doc-sheet" style="width: 100%; max-width: 860px; margin: 0 auto 1.5rem; background: #ffffff; border: 2px solid #000000; padding: 0.75rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.06); font-family: Arial, sans-serif; font-size: 0.76rem; color: #000000;">
     
     {{-- 1. KOP SURAT RESMI PT MIRASA --}}
-    <div style="border: 2px solid #000000; margin-bottom: 0.5rem;">
+    <div style="border: 2px solid #000000; margin-bottom: 0.35rem;">
+        {{-- BARIS ATAS: NAMA PERUSAHAAN DI ATAS --}}
+        <div style="text-align: center; font-size: 1.25rem; font-weight: 900; color: #000000; letter-spacing: 0.05em; padding: 4px; border-bottom: 2px solid #000000;">
+            PT. MIRASA FOOD INDUSTRY
+        </div>
+
+        {{-- BARIS UTAMA: LOGO DENGAN TULISAN ENAK GURIH LEZAT | JUDUL DOKUMEN | NO DOKUMEN --}}
         <table style="width: 100%; border-collapse: collapse;">
             <tr>
-                <td style="width: 130px; text-align: center; vertical-align: middle; padding: 6px; border-right: 2px solid #000000;">
-                    <img src="{{ asset('images/logo.png') }}" alt="Cap Payung" style="width: 75px; height: 75px; object-fit: contain;">
-                </td>
-                <td style="vertical-align: middle; text-align: center; padding: 6px;">
-                    <div style="font-size: 1.35rem; font-weight: 900; color: #000000; letter-spacing: 0.04em;">
-                        PT. MIRASA FOOD INDUSTRY
+                <td style="width: 100px; text-align: center; vertical-align: middle; padding: 4px; border-right: 2px solid #000000;">
+                    <img src="{{ asset('images/logo.png') }}" alt="Cap Payung" class="doc-header-logo" style="width: 50px; height: 50px; object-fit: contain;">
+                    <div style="margin-top: 3px; font-weight: 900; font-size: 0.58rem; color: #cc0000; font-style: italic; letter-spacing: 0.02em; white-space: nowrap; line-height: 1.2; font-family: 'Arial Black', Impact, Arial, sans-serif; text-align: center;">
+                        ENAK &bull; GURIH &bull; LEZAT
                     </div>
-                    <div style="font-size: 1.05rem; font-weight: 800; color: #000000; margin-top: 4px;">
+                </td>
+                <td style="vertical-align: middle; text-align: center; padding: 6px 10px;">
+                    <div style="font-size: 1.15rem; font-weight: 900; color: #000000; line-height: 1.3;">
                         Cheklist Pemeriksaan Kedatangan Plastik
                     </div>
                 </td>
-                <td style="width: 320px; vertical-align: middle; padding: 0; border-left: 2px solid #000000;">
+                <td style="width: 255px; vertical-align: middle; padding: 0; border-left: 2px solid #000000;">
                     <table style="width: 100%; border-collapse: collapse; font-size: 0.72rem;">
                         <tr style="border-bottom: 1px solid #000000;">
                             <td style="padding: 4px 6px; font-weight: 700; width: 110px; border-right: 1px solid #000000;">No. Dokumen :</td>
@@ -524,12 +530,12 @@
                     <table style="width: 100%;"><tr><td style="width: 50%; border-right: 1px solid #000;">NAMA</td><td style="width: 50%;">TTD</td></tr></table>
                 </td>
             </tr>
-            <tr style="height: 50px;">
-                <td style="padding: 2px; border-right: 2px solid #000000; vertical-align: middle;">
-                    <table style="width: 100%;"><tr><td style="width: 50%; border-right: 1px solid #000; font-weight: 700;">{{ $qc->petugas_qc_nama }}</td><td style="width: 50%; color: #15803d; font-weight: 800;">[VERIFIED]</td></tr></table>
+            <tr style="height: 38px;">
+                <td style="padding: 2px; border-right: 2px solid #000000; vertical-align: bottom;">
+                    <table style="width: 100%;"><tr><td style="width: 50%; border-right: 1px solid #000; font-weight: 700;">{{ $qc->petugas_qc_nama }}</td><td style="width: 50%;"></td></tr></table>
                 </td>
-                <td style="padding: 2px; vertical-align: middle;">
-                    <table style="width: 100%;"><tr><td style="width: 50%; border-right: 1px solid #000; font-weight: 700;">{{ $qc->qc_supervisor_nama ?: 'Supervisor QC' }}</td><td style="width: 50%; color: #15803d; font-weight: 800;">[APPROVED]</td></tr></table>
+                <td style="padding: 2px; vertical-align: bottom;">
+                    <table style="width: 100%;"><tr><td style="width: 50%; border-right: 1px solid #000; font-weight: 700;">{{ $qc->qc_supervisor_nama ?: 'Supervisor QC' }}</td><td style="width: 50%;"></td></tr></table>
                 </td>
             </tr>
         </table>

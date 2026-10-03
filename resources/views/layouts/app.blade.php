@@ -613,11 +613,11 @@
 
                                 @if (Auth::user()->canAccessTerima())
                                     <div style="height: 1px; background: #f1f5f9; margin: 0.3rem 0;"></div>
-                                    <a href="{{ route('gudang.qc.antrean') }}" class="mega-item {{ request()->routeIs('gudang.qc.*') ? 'active' : '' }}">
-                                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+                                    <a href="{{ route('qc.inbound.index') }}" class="mega-item {{ ((request()->routeIs('qc.inbound.index') && request('view') !== 'mobile') || request()->routeIs('qc.inbound.show') || request()->routeIs('qc.inbound.edit')) ? 'active' : '' }}">
+                                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                                         <div style="display: flex; flex-direction: column;">
-                                            <span style="font-weight: 600;">Antrean Tiket QC Inbound</span>
-                                            <span style="font-size: 0.6875rem; color: #64748b;">Lolos uji QC siap ditarik ke GRN</span>
+                                            <span style="font-weight: 600;">Riwayat QC &amp; Dokumen HACCP</span>
+                                            <span style="font-size: 0.6875rem; color: #64748b;">Monitoring sampling, cetak HACCP &amp; tarik GRN</span>
                                         </div>
                                     </a>
                                     <a href="{{ route('gudang.terima.index') }}" class="mega-item {{ request()->routeIs('gudang.terima.*') ? 'active' : '' }}">

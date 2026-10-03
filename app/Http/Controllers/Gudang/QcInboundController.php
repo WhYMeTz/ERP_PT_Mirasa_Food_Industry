@@ -40,10 +40,9 @@ class QcInboundController extends Controller
         $inspeksiList = $this->qcService->getAllPaginated($filters, 15);
         $suppliers = MstSupplier::where('deleted_st', false)->where('active_st', true)->orderBy('supplier_nm')->get();
 
-        $user = \Illuminate\Support\Facades\Auth::user();
-        $isMobileReq = $request->input('view') === 'mobile' || ($user?->isQc() && !$user?->isSuperAdmin() && !$user?->isGudang() && $request->input('view') !== 'desktop');
+        $isMobileReq = $request->input('view') === 'mobile';
 
-        // Jika diakses oleh smartphone Petugas QC / minta mode mobile
+        // Jika mode mobile smartphone
         if ($isMobileReq) {
             return view('gudang.qc.index-mobile', compact('inspeksiList', 'suppliers', 'filters'));
         }
@@ -58,50 +57,19 @@ class QcInboundController extends Controller
     }
 
     /**
-     * Halaman Antrean Tiket QC Inbound Khusus Admin Gudang (Desktop ERP View)
+     * Halaman Antrean Tiket QC Inbound Khusus Admin Gudang (Dialihkan terpadu ke Riwayat QC Inbound)
      */
-    public function gudangAntrean(Request $request): View
+    public function gudangAntrean(Request $request): RedirectResponse
     {
-        $filters = [
-            'search'            => $request->input('search'),
-            'kategori_barang'   => $request->input('kategori_barang'),
-            'status_qc'         => $request->input('status_qc', 'SIAP_GUDANG'), // Default tampilkan yang siap ditarik gudang
-            'supplier_id'       => $request->input('supplier_id'),
-            'tgl_mulai'         => $request->input('tgl_mulai'),
-            'tgl_selesai'       => $request->input('tgl_selesai'),
-        ];
-
-        // Jika user klik "Semua Status", kosongkan status_qc
-        if ($request->input('status_qc') === 'ALL') {
-            $filters['status_qc'] = null;
-        }
-
-        $inspeksiList = $this->qcService->getAllPaginated($filters, 20);
-        $suppliers = MstSupplier::where('deleted_st', false)->where('active_st', true)->orderBy('supplier_nm')->get();
-
-        // Metrik Ringkasan Khusus Gudang
-        $countSiap = \App\Models\Gudang\DatQcInboundHdr::where('deleted_st', false)->where('status_qc', 'SIAP_GUDANG')->count();
-        $countSelesai = \App\Models\Gudang\DatQcInboundHdr::where('deleted_st', false)->where('status_qc', 'DITERIMA_GUDANG')->count();
-        $countReject = \App\Models\Gudang\DatQcInboundHdr::where('deleted_st', false)->where('status_qc', 'DITOLAK_TOTAL')->count();
-
-        return view('gudang.terima.qc-antrean', compact('inspeksiList', 'suppliers', 'filters', 'countSiap', 'countSelesai', 'countReject'));
+        return redirect()->route('qc.inbound.index', array_merge(['status_qc' => 'SIAP_GUDANG'], $request->all()));
     }
 
     /**
-     * Cetak Lembar Checklist Mutu HACCP Resmi (A4) untuk Arsip Fisik Gudang
+     * Cetak Lembar Checklist Mutu HACCP Resmi (A4) - Dialihkan langsung ke Direct Print pada Indeks QC
      */
-    public function gudangHaccpCetak(int $id): View
+    public function gudangHaccpCetak(int $id): RedirectResponse
     {
-        $qc = \App\Models\Gudang\DatQcInboundHdr::with([
-            'supplier',
-            'gudang',
-            'po',
-            'details.barang.satuanDasar',
-            'details.poDetail',
-            'terima',
-        ])->where('deleted_st', false)->findOrFail($id);
-
-        return view('gudang.terima.qc-haccp-cetak', compact('qc'));
+        return redirect()->route('qc.inbound.index', ['direct_print' => $id]);
     }
 
     /**
@@ -188,8 +156,7 @@ class QcInboundController extends Controller
             'terima',
         ])->where('deleted_st', false)->findOrFail($id);
 
-        $user = Auth::user();
-        $isMobileReq = $request->input('view') === 'mobile' || ($user?->isQc() && !$user?->isSuperAdmin() && !$user?->isGudang() && $request->input('view') !== 'desktop');
+        $isMobileReq = $request->input('view') === 'mobile';
 
         // Jika mode mobile smartphone
         if ($isMobileReq) {
@@ -251,8 +218,7 @@ class QcInboundController extends Controller
             ->orderBy('po_tgl', 'desc')
             ->get();
 
-        $user = Auth::user();
-        $isMobileReq = $request->input('view') === 'mobile' || ($user?->isQc() && !$user?->isSuperAdmin() && !$user?->isGudang() && $request->input('view') !== 'desktop');
+        $isMobileReq = $request->input('view') === 'mobile';
 
         // Jika mode mobile smartphone
         if ($isMobileReq) {
@@ -296,16 +262,17 @@ class QcInboundController extends Controller
 
             // Jika user klik tombol "Simpan & Langsung Cetak A4"
             if ($request->input('and_print') == '1') {
-                return redirect()->route('qc.inbound.show', ['id' => $updatedQc->qc_id, 'print' => 1])
+                return redirect()->route('qc.inbound.index', ['direct_print' => $updatedQc->qc_id])
                     ->with('success', $msg);
             }
 
-            $redirectParams = ['id' => $updatedQc->qc_id];
-            if ($request->input('view') === 'mobile' || ($user?->isSuperAdmin() && $request->input('view') === 'mobile') || ($user?->isQc() && !$user?->isSuperAdmin() && !$user?->isGudang() && $request->input('view') !== 'desktop')) {
-                $redirectParams['view'] = 'mobile';
+            if ($request->input('view') === 'mobile') {
+                return redirect()->route('qc.inbound.show', ['id' => $updatedQc->qc_id, 'view' => 'mobile'])
+                    ->with('success', $msg);
             }
 
-            return redirect()->route('qc.inbound.show', $redirectParams)
+            // Web Admin Desktop: Kembali langsung ke Indeks Riwayat QC Inbound (tanpa harus masuk halaman detail)
+            return redirect()->route('qc.inbound.index')
                 ->with('success', $msg);
         } catch (Exception $e) {
             return redirect()->back()
@@ -324,7 +291,7 @@ class QcInboundController extends Controller
             $user = Auth::user();
             $this->qcService->destroy($qc, $user);
 
-            $isMobile = request('view') === 'mobile' || ($user?->isQc() && !$user?->isSuperAdmin() && !$user?->isGudang() && request('view') !== 'desktop');
+            $isMobile = request('view') === 'mobile';
             $redirectParams = $isMobile ? ['view' => 'mobile'] : [];
 
             return redirect()->route('qc.inbound.index', $redirectParams)

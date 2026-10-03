@@ -75,11 +75,18 @@
         
         <input type="hidden" name="view" value="mobile">
         <input type="hidden" name="kategori_barang" value="{{ $qc->kategori_barang }}">
+        <input type="hidden" name="tahap_uji" value="{{ old('tahap_uji', $qc->tahap_uji ?? 'PENGUJIAN_1') }}">
+        <input type="hidden" name="parent_qc_id" value="{{ old('parent_qc_id', $qc->parent_qc_id) }}">
 
         {{-- KARTU 1: INFO PENGIRIMAN, PO & KOMODITAS --}}
         <div class="qc-card-section">
             <h2 class="qc-card-title">
                 <span>🚚</span> <span>1. Info Armada, PO &amp; Komoditas</span>
+                @if ($kat === 'SINGKONG')
+                    <span style="font-size: 0.72rem; font-weight: 800; padding: 2px 6px; border-radius: 4px; float: right; {{ ($qc->tahap_uji ?? 'PENGUJIAN_1') === 'PENGUJIAN_2' ? 'background: #f3e8ff; color: #7e22ce;' : 'background: #e0f2fe; color: #0369a1;' }}">
+                        {{ ($qc->tahap_uji ?? 'PENGUJIAN_1') === 'PENGUJIAN_2' ? '🍟 Pengujian II' : '🚛 Pengujian I' }}
+                    </span>
+                @endif
             </h2>
 
             <div style="display: flex; flex-direction: column; gap: 0.75rem;">

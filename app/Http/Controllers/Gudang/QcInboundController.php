@@ -98,7 +98,76 @@ class QcInboundController extends Controller
         $selectedPoId = $request->input('po_id');
         $selectedPo = $selectedPoId ? $pos->firstWhere('po_id', $selectedPoId) : null;
 
-        return view('gudang.qc.create', compact('suppliers', 'gudangs', 'barangs', 'pos', 'selectedPo'));
+        // Mendukung Pengujian II Singkong: Ambil data QC asal jika diteruskan via parent_qc_id
+        $parentQc = null;
+        if ($request->filled('parent_qc_id')) {
+            $parentQc = \App\Models\Gudang\DatQcInboundHdr::with([
+                'supplier',
+                'gudang',
+                'po',
+                'details.barang',
+                'terima.details'
+            ])->where('deleted_st', false)->find($request->input('parent_qc_id'));
+        }
+
+        // Ambil daftar batch singkong aktif yang masih ada stok di gudang untuk Pengujian II
+        $activeBatches = \App\Models\Gudang\DatStokBatch::with(['barang', 'gudang'])
+            ->where('deleted_st', false)
+            ->where('sisa_qty', '>', 0)
+            ->whereHas('barang', function ($b) {
+                $b->where('barang_nm', 'ilike', '%singkong%')
+                  ->orWhere('barang_cd', 'ilike', '%SK%');
+            })
+            ->orderBy('created_at', 'desc')
+            ->take(30)
+            ->get()
+            ->map(function ($stok) {
+                $terimaDtl = \App\Models\Gudang\DatTerimaDtl::with(['header.supplier', 'header.po', 'header.qcInbound'])
+                    ->where('batch_no', $stok->batch_no)
+                    ->where('deleted_st', false)
+                    ->first();
+
+                $terimaHdr = $terimaDtl?->header;
+                $qcAsal    = $terimaHdr?->qcInbound;
+                $supplier  = $terimaHdr?->supplier ?? $qcAsal?->supplier;
+                $po        = $terimaHdr?->po ?? $qcAsal?->po;
+
+                return [
+                    'stok_id'              => $stok->stok_id,
+                    'batch_no'             => $stok->batch_no,
+                    'barang_id'            => $stok->barang_id,
+                    'barang_nm'            => $stok->barang?->barang_nm ?? 'Singkong',
+                    'gudang_id'            => $stok->gudang_id,
+                    'gudang_nm'            => $stok->gudang?->gudang_nm ?? '-',
+                    'sisa_qty'             => (float) $stok->sisa_qty,
+                    'supplier_id'          => $supplier?->supplier_id,
+                    'supplier_nm'          => $supplier?->supplier_nm ?? 'Supplier',
+                    'po_id'                => $po?->po_id,
+                    'po_no'                => $po?->po_no ?? 'Non-PO',
+                    'parent_qc_id'         => $qcAsal?->qc_id,
+                    'parent_qc_no'         => $qcAsal?->qc_no,
+                    'plat_nomor_truk'      => $qcAsal?->plat_nomor_truk,
+                    'sopir_nama'           => $qcAsal?->sopir_nama,
+                    'lokasi_panen'         => $qcAsal?->lokasi_panen,
+                    'umur_singkong_bln'    => (float)($qcAsal?->umur_singkong_bln ?? 0),
+                    'tgl_panen'            => $qcAsal?->tgl_panen?->format('Y-m-d'),
+                    'surat_jalan_supplier' => $qcAsal?->surat_jalan_supplier,
+                    'tgl_masuk'            => $stok->created_at ? $stok->created_at->format('d/m/Y') : '-',
+                ];
+            });
+
+        $defaultTahap = $request->input('tahap') == 2 || $parentQc ? 'PENGUJIAN_2' : 'PENGUJIAN_1';
+
+        return view('gudang.qc.create', compact(
+            'suppliers',
+            'gudangs',
+            'barangs',
+            'pos',
+            'selectedPo',
+            'parentQc',
+            'activeBatches',
+            'defaultTahap'
+        ));
     }
 
     /**

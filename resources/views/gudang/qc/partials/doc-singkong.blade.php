@@ -69,8 +69,8 @@
                     <div style="font-size: 1.45rem; font-weight: 900; margin-top: 3px; letter-spacing: 0.08em;">
                         S I N G K O N G
                     </div>
-                    <div style="font-size: 0.85rem; font-weight: 800; margin-top: 4px; color: #0284c7; letter-spacing: 0.04em;">
-                        SAMPLING MUTU &amp; UJI GORENG
+                    <div style="font-size: 0.95rem; font-weight: 900; margin-top: 4px; color: #000000; letter-spacing: 0.08em;">
+                        {{ ($qc->tahap_uji ?? 'PENGUJIAN_1') === 'PENGUJIAN_2' ? 'PENGUJIAN II' : 'PENGUJIAN I' }}
                     </div>
                 </td>
                 <td style="width: 65%; padding: 0; vertical-align: top; border-bottom: 2px solid #000000;">
@@ -79,9 +79,19 @@
                             <td style="padding: 4px 6px; width: 100px; font-weight: 700; border-right: 1px solid #000000;">Nama RM</td>
                             <td colspan="4" style="padding: 4px 6px; font-weight: 800;">
                                 @if($isEdit)
-                                    <input type="text" name="nama_jenis" value="{{ old('nama_jenis', $qc->nama_jenis ?? 'Singkong Basah Curah') }}" class="excel-cell-input font-bold">
+                                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                        <input type="text" name="nama_jenis" value="{{ old('nama_jenis', $qc->nama_jenis ?? 'Singkong Basah Curah') }}" class="excel-cell-input font-bold" style="flex: 2;">
+                                        @if(!empty($qc->batch_no))
+                                            <span style="font-size: 0.72rem; color: #475569; white-space: nowrap;">Batch: <strong>{{ $qc->batch_no }}</strong></span>
+                                        @endif
+                                    </div>
                                 @else
                                     : {{ $qc->nama_jenis ?: 'Singkong Basah Curah' }}
+                                    @if(!empty($qc->batch_no))
+                                        <span style="margin-left: 0.75rem; font-size: 0.72rem; color: #0284c7; background: #e0f2fe; padding: 1px 6px; border-radius: 4px; font-weight: 700;">
+                                            Batch: {{ $qc->batch_no }}
+                                        </span>
+                                    @endif
                                 @endif
                             </td>
                         </tr>

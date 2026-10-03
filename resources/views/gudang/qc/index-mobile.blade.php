@@ -134,10 +134,10 @@
                         @endif
 
                         @if ($kat === 'SINGKONG')
-                            @if ($qc->status_uji_goreng === 'MENUNGGU_LAB')
-                                <span class="badge-status-lab">⏳ Lab Fryer</span>
-                            @elseif ($qc->status_uji_goreng === 'SELESAI')
-                                <span class="badge-status-lab" style="background: #dcfce7; color: #166534;">🍟 Fryer Selesai</span>
+                            @if (($qc->tahap_uji ?? 'PENGUJIAN_1') === 'PENGUJIAN_2')
+                                <span class="badge-status-lab" style="background: #f3e8ff; color: #7e22ce; border: 1px solid #d8b4fe;">🍟 Pengujian II</span>
+                            @else
+                                <span class="badge-status-lab" style="background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd;">🚛 Pengujian I</span>
                             @endif
                         @endif
                     </div>
@@ -211,8 +211,12 @@
 
                 {{-- FOOTER AKSI TOMBOL TOUCH-FRIENDLY --}}
                 <div class="qc-card-actions">
-                    {{-- TOMBOL CEPAT LANJUTKAN UJI FRYER UNTUK SINGKONG SETENGAH PROSES --}}
-                    @if ($kat === 'SINGKONG' && $qc->status_uji_goreng === 'MENUNGGU_LAB')
+                    {{-- TOMBOL CEPAT CATAT PENGUJIAN II UNTUK SINGKONG PENGUJIAN I --}}
+                    @if ($kat === 'SINGKONG' && ($qc->tahap_uji ?? 'PENGUJIAN_1') === 'PENGUJIAN_1' && Auth::user()?->canCreateQc())
+                        <a href="{{ route('qc.inbound.create', ['view' => 'mobile', 'kategori_barang' => 'SINGKONG', 'tahap' => 2, 'parent_qc_id' => $qc->qc_id]) }}" class="qc-btn-action" style="background: #9333ea; color: #ffffff; border-color: #7e22ce; font-weight: 800; text-decoration: none;" title="Catat Pengujian II jika ada temuan mutu saat produksi">
+                            <span>🍟 + Uji II</span>
+                        </a>
+                    @elseif ($kat === 'SINGKONG' && $qc->status_uji_goreng === 'MENUNGGU_LAB')
                         <button type="button" class="qc-btn-action" style="background: #d97706; color: #ffffff; border-color: #b45309; font-weight: 800;" onclick="openModalUjiFryer('{{ $qc->qc_id }}', '{{ $qc->qc_no }}', '{{ $qc->details->first()?->qcdtl_id }}')">
                             <span>🍟 Uji Fryer</span>
                         </button>

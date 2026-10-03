@@ -24,6 +24,9 @@ class DatQcInboundHdr extends Model
         'supplier_id',
         'gudang_id',
         'kategori_barang',
+        'tahap_uji',
+        'parent_qc_id',
+        'batch_no',
         'nama_jenis',
         'negara_produsen',
         'nama_produsen',
@@ -98,6 +101,16 @@ class DatQcInboundHdr extends Model
     public function details(): HasMany
     {
         return $this->hasMany(DatQcInboundDtl::class, 'qc_id', 'qc_id');
+    }
+
+    public function parentQc(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'parent_qc_id', 'qc_id');
+    }
+
+    public function pengujian2List(): HasMany
+    {
+        return $this->hasMany(self::class, 'parent_qc_id', 'qc_id');
     }
 
     public function terima(): HasOne

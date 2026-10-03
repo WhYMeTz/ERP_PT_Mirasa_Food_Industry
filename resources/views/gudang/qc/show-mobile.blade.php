@@ -41,10 +41,17 @@
     <div class="qc-detail-hero">
         <div class="qc-detail-hero-top">
             <div>
-                <span class="badge-tag-commodity">
-                    @if ($kat === 'SINGKONG') 🥔 @elseif ($kat === 'MINYAK') 🛢️ @elseif ($kat === 'PLASTIK') 🛍️ @elseif ($kat === 'KARTON') 📦 @else ✨ @endif
-                    {{ $kat }}
-                </span>
+                <div style="display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap;">
+                    <span class="badge-tag-commodity">
+                        @if ($kat === 'SINGKONG') 🥔 @elseif ($kat === 'MINYAK') 🛢️ @elseif ($kat === 'PLASTIK') 🛍️ @elseif ($kat === 'KARTON') 📦 @else ✨ @endif
+                        {{ $kat }}
+                    </span>
+                    @if ($kat === 'SINGKONG')
+                        <span style="font-size: 0.72rem; font-weight: 800; padding: 0.15rem 0.5rem; border-radius: 6px; {{ ($qc->tahap_uji ?? 'PENGUJIAN_1') === 'PENGUJIAN_2' ? 'background: #f3e8ff; color: #7e22ce; border: 1px solid #d8b4fe;' : 'background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd;' }}">
+                            {{ ($qc->tahap_uji ?? 'PENGUJIAN_1') === 'PENGUJIAN_2' ? '🍟 PENGUJIAN II (PRODUKSI)' : '🚛 PENGUJIAN I (KEDATANGAN)' }}
+                        </span>
+                    @endif
+                </div>
                 <h1 class="qc-detail-ticket-no" style="margin-top: 0.35rem;">{{ $qc->qc_no }}</h1>
             </div>
             <div class="qc-detail-badges">
@@ -66,6 +73,22 @@
             @if ($qc->terima)
                 <div style="margin-top: 0.25rem; background: rgba(0,0,0,0.2); padding: 0.3rem 0.6rem; border-radius: 6px; font-size: 0.75rem;">
                     📦 Sudah Masuk Gudang &bull; GRN: <strong>#{{ $qc->terima->terima_no }}</strong>
+                </div>
+            @endif
+            @if(!empty($qc->batch_no) || !empty($qc->parent_qc_id))
+                <div style="margin-top: 0.35rem; background: rgba(147, 51, 234, 0.25); padding: 0.35rem 0.65rem; border-radius: 6px; font-size: 0.775rem; border: 1px solid rgba(216, 180, 254, 0.4);">
+                    🥔 Batch: <strong>{{ $qc->batch_no ?: '-' }}</strong>
+                    @if($qc->parentQc)
+                        &bull; QC Asal: <a href="{{ route('qc.inbound.show', [$qc->parentQc->qc_id, 'view' => 'mobile']) }}" style="color: #ffffff; text-decoration: underline; font-weight: 700;">#{{ $qc->parentQc->qc_no }}</a>
+                    @endif
+                </div>
+            @endif
+            @if($qc->pengujian2List && $qc->pengujian2List->count() > 0)
+                <div style="margin-top: 0.35rem; background: rgba(220, 38, 38, 0.25); padding: 0.35rem 0.65rem; border-radius: 6px; font-size: 0.775rem; border: 1px solid rgba(254, 202, 202, 0.4);">
+                    ⚠️ Memiliki {{ $qc->pengujian2List->count() }} Laporan Pengujian II (Produksi):
+                    @foreach($qc->pengujian2List as $p2)
+                        <a href="{{ route('qc.inbound.show', [$p2->qc_id, 'view' => 'mobile']) }}" style="color: #ffffff; text-decoration: underline; font-weight: 700; margin-left: 0.35rem;">#{{ $p2->qc_no }}</a>
+                    @endforeach
                 </div>
             @endif
         </div>
@@ -331,7 +354,11 @@
 
 {{-- FIXED BOTTOM BAR MOBILE --}}
 <div class="qc-mobile-bottom-bar">
-    @if ($kat === 'SINGKONG' && $qc->status_uji_goreng === 'MENUNGGU_LAB')
+    @if ($kat === 'SINGKONG' && ($qc->tahap_uji ?? 'PENGUJIAN_1') === 'PENGUJIAN_1')
+        <a href="{{ route('qc.inbound.create', ['view' => 'mobile', 'kategori_barang' => 'SINGKONG', 'tahap' => 2, 'parent_qc_id' => $qc->qc_id]) }}" class="qc-btn-mobile-edit" style="flex: 2; background: #9333ea; text-align: center; border-color: #7e22ce; color: #ffffff; font-weight: 800; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 0.35rem;">
+            <span>🍟 + Catat Pengujian II (Produksi)</span>
+        </a>
+    @elseif ($kat === 'SINGKONG' && $qc->status_uji_goreng === 'MENUNGGU_LAB')
         <button type="button" onclick="openModalUjiFryer('{{ $qc->qc_id }}', '{{ $qc->qc_no }}', '{{ $firstDetail?->qcdtl_id }}')" class="qc-btn-mobile-edit" style="flex: 2; background: #d97706; text-align: center; border-color: #b45309;">
             <span>🍟 Lanjutkan Uji Fryer</span>
         </button>

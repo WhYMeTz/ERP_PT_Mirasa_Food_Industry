@@ -61,6 +61,11 @@
             </h1>
             <span class="badge" style="background:#e0f2fe; color:#0369a1; font-weight: 700;">Status: {{ $qc->status_qc }}</span>
             <span class="badge" style="background:#f1f5f9; color:#475569; font-weight: 700;">Komoditas: {{ $kat }}</span>
+            @if ($kat === 'SINGKONG')
+                <span class="badge" style="{{ ($qc->tahap_uji ?? 'PENGUJIAN_1') === 'PENGUJIAN_2' ? 'background:#f3e8ff; color:#7e22ce; border: 1px solid #d8b4fe;' : 'background:#e0f2fe; color:#0369a1; border: 1px solid #bae6fd;' }} font-weight: 800;">
+                    {{ ($qc->tahap_uji ?? 'PENGUJIAN_1') === 'PENGUJIAN_2' ? '🍟 Pengujian II (Produksi)' : '🚛 Pengujian I (Kedatangan)' }}
+                </span>
+            @endif
         </div>
         <p style="color: #64748b; font-size: 0.85rem; margin-top: 0.25rem; margin-bottom: 0;">
             Koreksi dan sesuaikan data dokumen pemeriksaan mutu, parameter sampling laboratorium, tonase timbangan fisik, serta lembar HACCP.
@@ -103,6 +108,9 @@
     @method('PUT')
 
     <input type="hidden" name="kategori_barang" value="{{ $qc->kategori_barang }}">
+    <input type="hidden" name="tahap_uji" value="{{ old('tahap_uji', $qc->tahap_uji ?? 'PENGUJIAN_1') }}">
+    <input type="hidden" name="parent_qc_id" value="{{ old('parent_qc_id', $qc->parent_qc_id) }}">
+    <input type="hidden" name="batch_no" value="{{ old('batch_no', $qc->batch_no) }}">
     <input type="hidden" name="items[{{ $qcdtlId }}][qcdtl_id]" value="{{ $qcdtlId }}">
     <input type="hidden" name="items[{{ $qcdtlId }}][podtl_id]" value="{{ $firstDetail?->podtl_id }}">
 

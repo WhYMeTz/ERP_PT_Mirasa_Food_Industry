@@ -183,11 +183,24 @@
                             </div>
                         </td>
 
-                        {{-- 2. KOMODITAS --}}
+                        {{-- 2. KOMODITAS & TAHAP UJI --}}
                         <td style="padding: 0.75rem 0.85rem; font-size: 0.85rem; vertical-align: middle;">
                             <span class="badge" style="background: #f1f5f9; color: #334155; font-weight: 700; font-size: 0.75rem;">
                                 {{ $kat }}
                             </span>
+                            @if ($kat === 'SINGKONG')
+                                <div style="margin-top: 0.25rem;">
+                                    @if (($qc->tahap_uji ?? 'PENGUJIAN_1') === 'PENGUJIAN_2')
+                                        <span style="font-size: 0.68rem; font-weight: 800; background: #f3e8ff; color: #7e22ce; padding: 1px 6px; border-radius: 4px; border: 1px solid #d8b4fe; white-space: nowrap;">
+                                            🍟 Pengujian II
+                                        </span>
+                                    @else
+                                        <span style="font-size: 0.68rem; font-weight: 700; background: #e0f2fe; color: #0369a1; padding: 1px 6px; border-radius: 4px; border: 1px solid #bae6fd; white-space: nowrap;">
+                                            🚛 Pengujian I
+                                        </span>
+                                    @endif
+                                </div>
+                            @endif
                         </td>
 
                         {{-- 3. SUPPLIER & PO --}}
@@ -198,6 +211,11 @@
                             @if ($qc->po)
                                 <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.15rem;">
                                     PO: <a href="{{ route('gudang.po.show', $qc->po->po_id) }}" style="color: #0284c7; text-decoration: none;">{{ $qc->po->po_no }}</a>
+                                </div>
+                            @endif
+                            @if ($qc->batch_no)
+                                <div style="font-size: 0.72rem; color: #7e22ce; font-weight: 700; margin-top: 0.15rem;">
+                                    Batch: {{ $qc->batch_no }}
                                 </div>
                             @endif
                         </td>
@@ -308,6 +326,14 @@
                                     <a href="{{ route('gudang.terima.create', ['qc_id' => $qc->qc_id]) }}" class="action-dropdown-item">
                                         <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
                                         <span>Tarik ke GRN Gudang</span>
+                                    </a>
+                                @endif
+
+                                {{-- 4. CATAT PENGUJIAN II (PRODUKSI) --}}
+                                @if ($kat === 'SINGKONG' && ($qc->tahap_uji ?? 'PENGUJIAN_1') === 'PENGUJIAN_1' && Auth::user()?->canCreateQc())
+                                    <a href="{{ route('qc.inbound.create', ['kategori_barang' => 'SINGKONG', 'tahap' => 2, 'parent_qc_id' => $qc->qc_id]) }}" class="action-dropdown-item" style="color: #7e22ce;">
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                        <span>Catat Pengujian II (Produksi)</span>
                                     </a>
                                 @endif
 

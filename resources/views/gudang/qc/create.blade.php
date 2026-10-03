@@ -68,6 +68,78 @@
         </div>
     </div>
 
+    {{-- SELECTOR TAHAP PENGUJIAN SINGKONG (PENGUJIAN I vs PENGUJIAN II) --}}
+    <div id="singkongTahapContainer" style="background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 12px; padding: 0.85rem 1.15rem; margin-bottom: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
+        <div style="font-size: 0.775rem; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.6rem; display: flex; justify-content: space-between; align-items: center;">
+            <span>🔬 TAHAP PENGUJIAN MUTU SINGKONG:</span>
+            <span id="badgeTahapDesc" style="font-size: 0.75rem; color: #0284c7; font-weight: 800; background: #e0f2fe; padding: 2px 8px; border-radius: 6px;">
+                {{ ($defaultTahap ?? 'PENGUJIAN_1') === 'PENGUJIAN_2' ? 'Pengujian II (Mutu Produksi)' : 'Pengujian I (Kedatangan Baru)' }}
+            </span>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem;">
+            <button type="button" onclick="setTahapUji('PENGUJIAN_1')" id="btnTahap_PENGUJIAN_1" class="btn" style="padding: 0.65rem 0.5rem; font-size: 0.825rem; font-weight: 800; border-radius: 8px; border: 2px solid {{ ($defaultTahap ?? 'PENGUJIAN_1') === 'PENGUJIAN_1' ? '#0284c7' : '#cbd5e1' }}; background: {{ ($defaultTahap ?? 'PENGUJIAN_1') === 'PENGUJIAN_1' ? '#0284c7' : '#f8fafc' }}; color: {{ ($defaultTahap ?? 'PENGUJIAN_1') === 'PENGUJIAN_1' ? '#ffffff' : '#475569' }}; cursor: pointer; text-align: center; transition: all 0.15s;">
+                🚛 1. Pengujian I (Kedatangan)
+            </button>
+            <button type="button" onclick="setTahapUji('PENGUJIAN_2')" id="btnTahap_PENGUJIAN_2" class="btn" style="padding: 0.65rem 0.5rem; font-size: 0.825rem; font-weight: 800; border-radius: 8px; border: 2px solid {{ ($defaultTahap ?? 'PENGUJIAN_1') === 'PENGUJIAN_2' ? '#9333ea' : '#cbd5e1' }}; background: {{ ($defaultTahap ?? 'PENGUJIAN_1') === 'PENGUJIAN_2' ? '#9333ea' : '#f8fafc' }}; color: {{ ($defaultTahap ?? 'PENGUJIAN_1') === 'PENGUJIAN_2' ? '#ffffff' : '#475569' }}; cursor: pointer; text-align: center; transition: all 0.15s;">
+                🍟 2. Pengujian II (Produksi)
+            </button>
+        </div>
+    </div>
+
+    {{-- KOTAK PILIH BATCH SINGKONG GUDANG (KHUSUS PENGUJIAN II) --}}
+    <div id="batchPickerSection" style="display: {{ ($defaultTahap ?? 'PENGUJIAN_1') === 'PENGUJIAN_2' ? 'block' : 'none' }}; background: #faf5ff; border: 1.5px solid #d8b4fe; border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1.25rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem; flex-wrap: wrap; gap: 0.5rem;">
+            <div>
+                <div style="font-weight: 800; font-size: 0.875rem; color: #6b21a8; display: flex; align-items: center; gap: 0.35rem;">
+                    <span>📦</span> <span>PILIH BATCH SINGKONG YANG SEDANG DIPRODUKSI:</span>
+                </div>
+                <div style="font-size: 0.75rem; color: #7e22ce;">
+                    Sistem otomatis menyaring batch yang masih memiliki stok di gudang. Tap kartu untuk auto-fill data.
+                </div>
+            </div>
+            <input type="text" id="searchBatchInput" placeholder="🔍 Cari Supplier, Truk, PO, Batch..." oninput="filterBatchCards(this.value)" style="padding: 0.45rem 0.75rem; font-size: 0.8rem; border-radius: 6px; border: 1.5px solid #a855f7; background: #ffffff; max-width: 250px; width: 100%;">
+        </div>
+
+        {{-- Selected Batch Banner --}}
+        <div id="selectedBatchBanner" style="display: {{ !empty($parentQc) ? 'block' : 'none' }}; background: #dcfce7; border: 1.5px solid #86efac; border-radius: 8px; padding: 0.65rem 0.85rem; margin-bottom: 0.75rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="font-size: 0.8rem; color: #166534;">
+                    Batch Terpilih: <strong id="selectedBatchText" style="font-size: 0.85rem;">{{ $parentQc ? ($parentQc->batch_no ?: $parentQc->qc_no . ' • ' . $parentQc->supplier?->supplier_nm) : '-' }}</strong>
+                </div>
+                <button type="button" onclick="clearSelectedBatch()" style="background: none; border: none; color: #dc2626; font-size: 0.75rem; font-weight: 700; cursor: pointer;">
+                    Pilih Batch Lain ↻
+                </button>
+            </div>
+        </div>
+
+        {{-- Batch Cards Grid --}}
+        <div id="batchCardsList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 0.65rem; max-height: 240px; overflow-y: auto; padding-right: 2px;">
+            @forelse ($activeBatches ?? [] as $b)
+                <div class="batch-choice-card" data-search="{{ strtolower($b['batch_no'] . ' ' . $b['supplier_nm'] . ' ' . $b['plat_nomor_truk'] . ' ' . $b['po_no']) }}" onclick="selectBatchCard({{ json_encode($b) }})" style="background: #ffffff; border: 1.5px solid #e9d5ff; border-radius: 8px; padding: 0.75rem; cursor: pointer; transition: all 0.15s; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <span style="font-weight: 800; font-size: 0.825rem; color: #7e22ce;">
+                            🥔 {{ $b['batch_no'] }}
+                        </span>
+                        <span style="font-size: 0.7rem; font-weight: 700; color: #16a34a; background: #dcfce7; padding: 1px 5px; border-radius: 4px;">
+                            Sisa: {{ number_format($b['sisa_qty'], 0, ',', '.') }} kg
+                        </span>
+                    </div>
+                    <div style="font-size: 0.75rem; color: #1e293b; margin-top: 0.35rem; font-weight: 600;">
+                        👤 {{ $b['supplier_nm'] }}
+                    </div>
+                    <div style="font-size: 0.72rem; color: #64748b; margin-top: 0.2rem; display: flex; justify-content: space-between;">
+                        <span>🚚 {{ $b['plat_nomor_truk'] ?: 'Non-Plat' }}</span>
+                        <span>📅 {{ $b['tgl_masuk'] }}</span>
+                    </div>
+                </div>
+            @empty
+                <div style="grid-column: 1 / -1; padding: 1rem; text-align: center; font-size: 0.8rem; color: #64748b; background: #ffffff; border-radius: 8px;">
+                    Belum ada data stok batch singkong aktif di gudang. Anda dapat mengisi data kedatangan &amp; uji produksi secara manual.
+                </div>
+            @endforelse
+        </div>
+    </div>
+
     @if (isset($errors) && $errors->any())
         <div class="alert alert-error" style="margin-top: 0.5rem; margin-bottom: 1rem; border-radius: 10px;">
             <div style="font-weight: 700; margin-bottom: 0.35rem;">⚠️ Harap periksa isian formulir:</div>
@@ -88,7 +160,7 @@
             📏 2. Pemeriksaan Parameter
         </button>
         <button type="button" class="btn" id="tabBtn3" onclick="switchQcTab(3)" style="border-radius: 10px; font-size: 0.825rem; font-weight: 700; padding: 0.75rem 0.5rem; text-align: center; border: 1.5px solid #cbd5e1; background: #ffffff; color: #475569; cursor: pointer; transition: all 0.15s;">
-            🍟 3. Pengujian II (Fryer)
+            🍟 3. Uji Fryer &amp; Defect
         </button>
     </div>
 
@@ -97,6 +169,9 @@
         <input type="hidden" name="view" value="mobile">
         <input type="hidden" name="kategori_barang" id="kategoriBarangInput" value="{{ old('kategori_barang', 'SINGKONG') }}">
         <input type="hidden" name="status_uji_goreng" id="statusUjiGorengInput" value="SELESAI">
+        <input type="hidden" name="tahap_uji" id="tahapUjiInput" value="{{ old('tahap_uji', $defaultTahap ?? 'PENGUJIAN_1') }}">
+        <input type="hidden" name="parent_qc_id" id="parentQcIdInput" value="{{ old('parent_qc_id', $parentQc?->qc_id) }}">
+        <input type="hidden" name="batch_no" id="batchNoInput" value="{{ old('batch_no', $parentQc?->batch_no) }}">
 
         {{-- ========================================================================= --}}
         {{-- TAHAP 1: DOKUMEN KEDATANGAN, TRANSPORTASI & AUDIT HALAL                    --}}
@@ -1135,6 +1210,18 @@
         document.getElementById('descFormHaccp').innerText = cfg.desc;
         document.getElementById('labelNamaJenis').innerText = cfg.labelNamaJenis;
 
+        // Toggle Tahap Pengujian Switcher khusus Singkong
+        const tahapContainer = document.getElementById('singkongTahapContainer');
+        const batchSection = document.getElementById('batchPickerSection');
+        if (type === 'SINGKONG') {
+            if (tahapContainer) tahapContainer.style.display = 'block';
+            const curTahap = document.getElementById('tahapUjiInput')?.value || 'PENGUJIAN_1';
+            setTahapUji(curTahap);
+        } else {
+            if (tahapContainer) tahapContainer.style.display = 'none';
+            if (batchSection) batchSection.style.display = 'none';
+        }
+
         // Toggle panen fields for Singkong
         const displayPanen = cfg.hasPanenFields ? 'block' : 'none';
         document.getElementById('groupLokasiPanen').style.display = displayPanen;
@@ -1234,6 +1321,138 @@
             const el = document.getElementById('bpQtyGross');
             if (el && (!el.value || el.value == 0)) el.value = pabrik > 0 ? pabrik : '';
         }
+    }
+
+    function setTahapUji(tahap) {
+        const tahapInput = document.getElementById('tahapUjiInput');
+        if (tahapInput) tahapInput.value = tahap;
+
+        const btn1 = document.getElementById('btnTahap_PENGUJIAN_1');
+        const btn2 = document.getElementById('btnTahap_PENGUJIAN_2');
+        const badge = document.getElementById('badgeTahapDesc');
+        const batchSection = document.getElementById('batchPickerSection');
+        const titleHaccp = document.getElementById('titleFormHaccp');
+        const descHaccp = document.getElementById('descFormHaccp');
+
+        if (tahap === 'PENGUJIAN_2') {
+            if (btn1) {
+                btn1.style.background = '#f8fafc';
+                btn1.style.borderColor = '#cbd5e1';
+                btn1.style.color = '#475569';
+            }
+            if (btn2) {
+                btn2.style.background = '#9333ea';
+                btn2.style.borderColor = '#9333ea';
+                btn2.style.color = '#ffffff';
+            }
+            if (badge) {
+                badge.innerText = 'Pengujian II (Mutu Produksi)';
+                badge.style.color = '#7e22ce';
+                badge.style.background = '#f3e8ff';
+            }
+            if (batchSection) batchSection.style.display = 'block';
+            if (titleHaccp) titleHaccp.innerText = 'Sampling Mutu Singkong - Pengujian II';
+            if (descHaccp) descHaccp.innerText = 'Pencatatan mutu hasil kupas, slicing & uji fryer saat bahan masuk produksi';
+        } else {
+            if (btn1) {
+                btn1.style.background = '#0284c7';
+                btn1.style.borderColor = '#0284c7';
+                btn1.style.color = '#ffffff';
+            }
+            if (btn2) {
+                btn2.style.background = '#f8fafc';
+                btn2.style.borderColor = '#cbd5e1';
+                btn2.style.color = '#475569';
+            }
+            if (badge) {
+                badge.innerText = 'Pengujian I (Kedatangan Baru)';
+                badge.style.color = '#0284c7';
+                badge.style.background = '#e0f2fe';
+            }
+            if (batchSection) batchSection.style.display = 'none';
+            if (titleHaccp) titleHaccp.innerText = 'Sampling Mutu Singkong';
+            if (descHaccp) descHaccp.innerText = 'Pencatatan sampling mutu kedatangan bahan baku di lapangan';
+        }
+    }
+
+    function filterBatchCards(query) {
+        const q = (query || '').toLowerCase().trim();
+        const cards = document.querySelectorAll('.batch-choice-card');
+        cards.forEach(card => {
+            const dataSearch = card.getAttribute('data-search') || '';
+            if (!q || dataSearch.includes(q)) {
+                card.style.display = 'block';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    }
+
+    function selectBatchCard(batch) {
+        if (!batch) return;
+        document.getElementById('batchNoInput').value = batch.batch_no || '';
+        if (batch.parent_qc_id) {
+            document.getElementById('parentQcIdInput').value = batch.parent_qc_id;
+        }
+        if (batch.supplier_id) {
+            const sSelect = document.getElementById('supplierSelect');
+            if (sSelect) sSelect.value = batch.supplier_id;
+        }
+        if (batch.gudang_id) {
+            const gSelect = document.getElementById('gudangSelect');
+            if (gSelect) gSelect.value = batch.gudang_id;
+        }
+        if (batch.po_id) {
+            const pSelect = document.getElementById('poSelect');
+            if (pSelect) pSelect.value = batch.po_id;
+        }
+        const platInput = document.getElementById('inputPlatTruk');
+        if (platInput && batch.plat_nomor_truk) platInput.value = batch.plat_nomor_truk;
+
+        const sopirInput = document.getElementById('inputNamaSopir');
+        if (sopirInput && batch.sopir_nama) sopirInput.value = batch.sopir_nama;
+
+        const lokasiInput = document.getElementById('inputLokasiPanen');
+        if (lokasiInput && batch.lokasi_panen) lokasiInput.value = batch.lokasi_panen;
+
+        const umurInput = document.getElementById('inputUmurSingkong');
+        if (umurInput && batch.umur_singkong_bln) umurInput.value = batch.umur_singkong_bln;
+
+        const panenInput = document.getElementById('inputTglPanen');
+        if (panenInput && batch.tgl_panen) panenInput.value = batch.tgl_panen;
+
+        const sjInput = document.getElementById('inputSuratJalan');
+        if (sjInput && batch.surat_jalan_supplier) sjInput.value = batch.surat_jalan_supplier;
+
+        const sjQty = document.getElementById('inputJumlahSJ');
+        if (sjQty && batch.sisa_qty) sjQty.value = batch.sisa_qty;
+        const pabrikQty = document.getElementById('inputJumlahPabrik');
+        if (pabrikQty && batch.sisa_qty) pabrikQty.value = batch.sisa_qty;
+
+        // Banner update
+        const banner = document.getElementById('selectedBatchBanner');
+        const bannerText = document.getElementById('selectedBatchText');
+        if (bannerText) bannerText.innerText = `${batch.batch_no} • ${batch.supplier_nm} (Sisa: ${batch.sisa_qty} kg)`;
+        if (banner) banner.style.display = 'block';
+
+        // Pre-fill item 0 gross
+        const gross0 = document.getElementById('gross_0');
+        if (gross0 && batch.sisa_qty) {
+            gross0.value = batch.sisa_qty;
+            calculateCard(0);
+        }
+
+        // Langsung lompat ke Tab 3 (Uji Fryer & Defect Frying)
+        switchQcTab(3);
+    }
+
+    function clearSelectedBatch() {
+        document.getElementById('batchNoInput').value = '';
+        document.getElementById('parentQcIdInput').value = '';
+        const banner = document.getElementById('selectedBatchBanner');
+        if (banner) banner.style.display = 'none';
+        const bannerText = document.getElementById('selectedBatchText');
+        if (bannerText) bannerText.innerText = '-';
     }
 
     function switchQcTab(tabNumber) {
@@ -1773,12 +1992,34 @@
     document.addEventListener('DOMContentLoaded', function () {
         selectKomoditas('{{ old("kategori_barang", "SINGKONG") }}');
 
-        const poSelect = document.getElementById('poSelect');
-        if (poSelect && poSelect.value) {
-            onPoSelected(poSelect);
-        } else {
-            createItemCard();
-        }
+        const defTahap = '{{ old("tahap_uji", $defaultTahap ?? "PENGUJIAN_1") }}';
+        setTahapUji(defTahap);
+
+        @if(!empty($parentQc))
+            const parentData = {
+                batch_no: '{{ $parentQc->batch_no }}',
+                parent_qc_id: '{{ $parentQc->qc_id }}',
+                supplier_id: '{{ $parentQc->supplier_id }}',
+                supplier_nm: '{{ $parentQc->supplier?->supplier_nm }}',
+                gudang_id: '{{ $parentQc->gudang_id }}',
+                po_id: '{{ $parentQc->po_id }}',
+                plat_nomor_truk: '{{ $parentQc->plat_nomor_truk }}',
+                sopir_nama: '{{ $parentQc->sopir_nama }}',
+                lokasi_panen: '{{ $parentQc->lokasi_panen }}',
+                umur_singkong_bln: '{{ (float)$parentQc->umur_singkong_bln }}',
+                tgl_panen: '{{ $parentQc->tgl_panen?->format("Y-m-d") }}',
+                surat_jalan_supplier: '{{ $parentQc->surat_jalan_supplier }}',
+                sisa_qty: '{{ (float)$parentQc->details->sum("qty_netto_lolos") }}',
+            };
+            selectBatchCard(parentData);
+        @else
+            const poSelect = document.getElementById('poSelect');
+            if (poSelect && poSelect.value) {
+                onPoSelected(poSelect);
+            } else {
+                createItemCard();
+            }
+        @endif
     });
 </script>
 @endsection

@@ -125,6 +125,22 @@
                 <span style="font-size: 0.75rem; font-weight: 800; background: #e0f2fe; color: #0284c7; padding: 0.2rem 0.55rem; border-radius: 12px;">
                     {{ $kat }}
                 </span>
+                @if ($kat === 'SINGKONG')
+                    @if ($qc->tahap_uji === 'PENGUJIAN_2')
+                        <span style="font-size: 0.75rem; font-weight: 800; background: #f3e8ff; color: #7e22ce; padding: 0.2rem 0.55rem; border-radius: 12px; border: 1px solid #d8b4fe;">
+                            🍟 PENGUJIAN II (PRODUKSI)
+                        </span>
+                    @else
+                        <span style="font-size: 0.75rem; font-weight: 800; background: #e0f2fe; color: #0369a1; padding: 0.2rem 0.55rem; border-radius: 12px; border: 1px solid #bae6fd;">
+                            🚛 PENGUJIAN I (KEDATANGAN)
+                        </span>
+                    @endif
+                    @if ($qc->batch_no)
+                        <span style="font-size: 0.75rem; font-weight: 800; background: #fef3c7; color: #92400e; padding: 0.2rem 0.55rem; border-radius: 12px; border: 1px solid #fde68a;">
+                            📦 Batch: {{ $qc->batch_no }}
+                        </span>
+                    @endif
+                @endif
                 @if ($qc->terima)
                     <a href="{{ route('gudang.terima.show', $qc->terima->terima_id) }}" style="font-size: 0.75rem; font-weight: 800; background: #dcfce7; color: #15803d; padding: 0.2rem 0.55rem; border-radius: 12px; text-decoration: none; border: 1px solid #86efac;">
                         📦 GRN #{{ $qc->terima->terima_no }}
@@ -136,6 +152,12 @@
                 @if (Auth::user()?->isSuperAdmin())
                     <a href="{{ route('qc.inbound.show', [$qc->qc_id, 'view' => 'mobile']) }}" class="btn btn-sm btn-outline-secondary" style="border-radius: 8px; font-weight: 700;">
                         📱 Ringkas Mobile
+                    </a>
+                @endif
+
+                @if ($kat === 'SINGKONG' && $qc->tahap_uji !== 'PENGUJIAN_2')
+                    <a href="{{ route('qc.inbound.create', ['parent_qc_id' => $qc->qc_id, 'tahap' => 2]) }}" class="btn btn-sm" style="background: #9333ea; color: #ffffff; border: none; font-weight: 800; border-radius: 8px; box-shadow: 0 2px 4px rgba(147, 51, 234, 0.3);">
+                        🍟 + Catat Pengujian II (Produksi)
                     </a>
                 @endif
 

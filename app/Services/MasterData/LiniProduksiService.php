@@ -53,6 +53,7 @@ class LiniProduksiService
         return DB::transaction(function () use ($data) {
             $data['lini_cd'] = strtoupper(trim($data['lini_cd']));
             $data['lini_nm'] = strtoupper(trim($data['lini_nm']));
+            $data['kategori_lini'] = !empty($data['kategori_lini']) ? strtoupper(trim($data['kategori_lini'])) : 'FINISH GOOD (FG)';
             $data['tipe_batch'] = strtoupper(trim($data['tipe_batch'] ?? 'REGULER'));
 
             return MstLiniProduksi::create($data);
@@ -72,6 +73,9 @@ class LiniProduksiService
             }
             if (isset($data['lini_nm'])) {
                 $data['lini_nm'] = strtoupper(trim($data['lini_nm']));
+            }
+            if (isset($data['kategori_lini'])) {
+                $data['kategori_lini'] = strtoupper(trim($data['kategori_lini']));
             }
             if (isset($data['tipe_batch'])) {
                 $data['tipe_batch'] = strtoupper(trim($data['tipe_batch']));

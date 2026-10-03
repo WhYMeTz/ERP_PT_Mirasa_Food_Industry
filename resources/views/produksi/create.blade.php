@@ -61,16 +61,17 @@
                         </label>
                         <select name="lini_produksi" id="lini_produksi" class="form-control" required onchange="updateKartonRangeAndBatch()">
                             @if(isset($liniList) && $liniList->isNotEmpty())
-                                @foreach($liniList as $lini)
-                                    <option value="{{ $lini->lini_nm }}" data-tipe="{{ $lini->tipe_batch }}" {{ old('lini_produksi', 'PRODUKSI IFM') === $lini->lini_nm ? 'selected' : '' }}>
-                                        {{ $lini->lini_nm }} {{ $lini->keterangan ? '('.$lini->keterangan.')' : '' }}
-                                    </option>
+                                @foreach($liniList->groupBy(fn($item) => $item->kategori_lini ?: 'UMUM') as $kategori => $items)
+                                    <optgroup label="📂 {{ $kategori }}">
+                                        @foreach($items as $lini)
+                                            <option value="{{ $lini->lini_nm }}" data-tipe="{{ $lini->tipe_batch }}" {{ old('lini_produksi', 'PRODUKSI IFM') === $lini->lini_nm ? 'selected' : '' }}>
+                                                {{ $lini->lini_nm }} {{ $lini->keterangan ? '('.$lini->keterangan.')' : '' }}
+                                            </option>
+                                        @endforeach
+                                    </optgroup>
                                 @endforeach
                             @else
                                 <option value="PRODUKSI IFM" {{ old('lini_produksi') === 'PRODUKSI IFM' ? 'selected' : '' }}>PRODUKSI IFM (Indofood)</option>
-                                <option value="PRODUKSI PING-PING 2000" {{ old('lini_produksi') === 'PRODUKSI PING-PING 2000' ? 'selected' : '' }}>PRODUKSI PING-PING 2000</option>
-                                <option value="PRODUKSI PING-PING" {{ old('lini_produksi') === 'PRODUKSI PING-PING' ? 'selected' : '' }}>PRODUKSI PING-PING (Umum)</option>
-                                <option value="PRODUKSI LAINNYA" {{ old('lini_produksi') === 'PRODUKSI LAINNYA' ? 'selected' : '' }}>PRODUKSI LAINNYA</option>
                             @endif
                         </select>
                     </div>

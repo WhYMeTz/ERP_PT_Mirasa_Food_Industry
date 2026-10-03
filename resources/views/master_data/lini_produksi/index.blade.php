@@ -43,7 +43,8 @@
                     <th style="width: 60px;">No</th>
                     <th style="width: 130px;">Kode Lini</th>
                     <th>Nama Lini Produksi / Tujuan</th>
-                    <th style="width: 200px;">Format Batch &amp; Kemasan</th>
+                    <th style="width: 170px;">Kelompok Kategori</th>
+                    <th style="width: 190px;">Format Batch</th>
                     <th>Keterangan</th>
                     <th style="width: 90px; text-align: center;">Status</th>
                     <th style="width: 110px; text-align: center;">Aksi</th>
@@ -58,6 +59,21 @@
                         </td>
                         <td style="font-weight: 700; color: #1e293b;">
                             {{ $item->lini_nm }}
+                        </td>
+                        <td>
+                            @if(str_contains((string) $item->kategori_lini, 'WIP'))
+                                <span style="background: #fef3c7; color: #92400e; padding: 0.2rem 0.55rem; border-radius: 6px; font-size: 0.75rem; font-weight: 700; border: 1px solid #fde68a;">
+                                    ⚖️ WIP (Setengah Jadi)
+                                </span>
+                            @elseif(str_contains((string) $item->kategori_lini, 'FG') || str_contains((string) $item->kategori_lini, 'FINISH'))
+                                <span style="background: #e0f2fe; color: #0369a1; padding: 0.2rem 0.55rem; border-radius: 6px; font-size: 0.75rem; font-weight: 700; border: 1px solid #bae6fd;">
+                                    📦 FG (Barang Jadi)
+                                </span>
+                            @else
+                                <span style="background: #f1f5f9; color: #475569; padding: 0.2rem 0.55rem; border-radius: 6px; font-size: 0.75rem; font-weight: 700;">
+                                    {{ $item->kategori_lini }}
+                                </span>
+                            @endif
                         </td>
                         <td>
                             @if ($item->tipe_batch === 'IFM')
@@ -114,7 +130,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="7" style="text-align: center; padding: 2.5rem; color: #94a3b8;">
+                        <td colspan="8" style="text-align: center; padding: 2.5rem; color: #94a3b8;">
                             Belum ada data lini produksi yang terdaftar.
                         </td>
                     </tr>

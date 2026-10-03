@@ -16,8 +16,18 @@
 
                 <div class="form-group" style="margin-bottom: 0.85rem;">
                     <label for="create_lini_nm" class="form-label">Nama Lini Produksi / Tujuan <span style="color:#ef4444;">*</span></label>
-                    <input type="text" id="create_lini_nm" name="lini_nm" class="form-control" placeholder="Contoh: PRODUKSI IFM, PRODUKSI PING-PING 2000" style="text-transform: uppercase;" required>
+                    <input type="text" id="create_lini_nm" name="lini_nm" class="form-control" placeholder="Contoh: PRODUKSI IFM, PRODUKSI BERKO" style="text-transform: uppercase;" required>
                     <span style="font-size: 0.75rem; color: #64748b; margin-top: 0.25rem; display: block;">Nama yang akan tampil pada dropdown pilihan input produksi.</span>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 0.85rem;">
+                    <label for="create_kategori_lini" class="form-label">Kelompok Kategori Hasil Produksi <span style="color:#ef4444;">*</span></label>
+                    <select id="create_kategori_lini" name="kategori_lini" class="form-control" required>
+                        <option value="FINISH GOOD (FG)">📦 FINISH GOOD (FG) - Barang Jadi</option>
+                        <option value="WORK IN PROGRESS (WIP)">⚖️ WORK IN PROGRESS (WIP) - Barang Setengah Jadi Olahan</option>
+                        <option value="LAINNYA">📂 LAINNYA / UMUM</option>
+                    </select>
+                    <span style="font-size: 0.75rem; color: #64748b; margin-top: 0.25rem; display: block;">Menentukan optgroup pengelompokan di dropdown formulir produksi harian.</span>
                 </div>
 
                 <div class="form-group" style="margin-bottom: 0.85rem;">

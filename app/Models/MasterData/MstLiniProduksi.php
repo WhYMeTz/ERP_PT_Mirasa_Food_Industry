@@ -16,6 +16,7 @@ class MstLiniProduksi extends Model
     protected $fillable = [
         'lini_cd',
         'lini_nm',
+        'kategori_lini',
         'tipe_batch',
         'keterangan',
         'created_by',
@@ -42,6 +43,7 @@ class MstLiniProduksi extends Model
         return $query->where(function ($q) use ($term) {
             $q->where('lini_cd', 'ILIKE', "%{$term}%")
               ->orWhere('lini_nm', 'ILIKE', "%{$term}%")
+              ->orWhere('kategori_lini', 'ILIKE', "%{$term}%")
               ->orWhere('keterangan', 'ILIKE', "%{$term}%");
         });
     }

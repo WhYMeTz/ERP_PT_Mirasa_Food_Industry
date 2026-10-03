@@ -36,6 +36,21 @@
             </div>
 
             <div class="form-group" style="margin-bottom: 1rem;">
+                <label for="kategori_lini" class="form-label">Kelompok Kategori Hasil Produksi <span style="color:#ef4444;">*</span></label>
+                <select id="kategori_lini" name="kategori_lini" class="form-control" required>
+                    <option value="FINISH GOOD (FG)" {{ old('kategori_lini', $lini->kategori_lini) === 'FINISH GOOD (FG)' ? 'selected' : '' }}>
+                        📦 FINISH GOOD (FG) - Barang Jadi
+                    </option>
+                    <option value="WORK IN PROGRESS (WIP)" {{ old('kategori_lini', $lini->kategori_lini) === 'WORK IN PROGRESS (WIP)' ? 'selected' : '' }}>
+                        ⚖️ WORK IN PROGRESS (WIP) - Barang Setengah Jadi Olahan
+                    </option>
+                    <option value="LAINNYA" {{ old('kategori_lini', $lini->kategori_lini) === 'LAINNYA' ? 'selected' : '' }}>
+                        📂 LAINNYA / UMUM
+                    </option>
+                </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 1rem;">
                 <label for="tipe_batch" class="form-label">Format Penomoran Batch &amp; Kemasan <span style="color:#ef4444;">*</span></label>
                 <select id="tipe_batch" name="tipe_batch" class="form-control" required>
                     <option value="REGULER" {{ old('tipe_batch', $lini->tipe_batch) === 'REGULER' ? 'selected' : '' }}>

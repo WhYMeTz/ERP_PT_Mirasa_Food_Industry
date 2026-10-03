@@ -33,6 +33,11 @@ class StoreLiniProduksiRequest extends FormRequest
                 'string',
                 'max:100',
             ],
+            'kategori_lini' => [
+                'nullable',
+                'string',
+                'max:50',
+            ],
             'tipe_batch' => [
                 'required',
                 'string',

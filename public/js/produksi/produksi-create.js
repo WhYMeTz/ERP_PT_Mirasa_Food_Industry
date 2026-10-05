@@ -145,7 +145,7 @@
     };
 
     // 3. Kalkulasi Rentang Karton & Kode Batch WIP / Barang Jadi
-    window.updateKartonRangeAndBatch = function () {
+    window.updateKartonRangeAndBatch = function (skipSyncTable = false) {
         const shift = document.getElementById('shift_cd')?.value || 'A';
         const noAwal = parseInt(document.getElementById('no_karton_awal')?.value) || 1;
         const qtyKarton = parseInt(document.getElementById('qty_karton')?.value) || 0;
@@ -297,6 +297,20 @@
 
         // Sinkronkan kode batch ke baris output barang jadi di Bagian 7
         window.syncBatchToOutputItems();
+
+        // Sinkronisasi otomatis ke baris QTY barang di tabel Bagian 7 jika dipicu dari perubahan Karton Selesai
+        if (!skipSyncTable) {
+            const firstQtyInp = document.getElementById('qtyHasil_0');
+            if (firstQtyInp && (isIfm || firstQtyInp.value === '' || firstQtyInp.dataset.syncedByKarton === 'true')) {
+                if (qtyKarton > 0 && parseFloat(firstQtyInp.value) !== qtyKarton) {
+                    firstQtyInp.value = qtyKarton;
+                    firstQtyInp.dataset.syncedByKarton = 'true';
+                    if (typeof window.onQtyHasilInput === 'function') {
+                        window.onQtyHasilInput(0, true);
+                    }
+                }
+            }
+        }
 
         // Update tampilan stiker karton / kemasan
         window.updateStickerPreview();
@@ -1004,6 +1018,17 @@
                 } else if (val > 0) {
                     kgInp.value = val;
                     kgInp.dataset.autoFilled = 'true';
+                }
+            }
+        }
+
+        // Sinkronisasi otomatis dua arah ke kolom Karton Selesai di Bagian 2 (jika produk berkemasan karton / IFM)
+        if (!skipSyncKarton && (satuan.includes('KARTON') || nm.includes('IFM') || cd.includes('FCC'))) {
+            const elKarton = document.getElementById('qty_karton');
+            if (elKarton && parseFloat(elKarton.value) !== val && val > 0) {
+                elKarton.value = Math.round(val);
+                if (typeof window.updateKartonRangeAndBatch === 'function') {
+                    window.updateKartonRangeAndBatch(true);
                 }
             }
         }

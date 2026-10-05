@@ -18,7 +18,10 @@ class DatProduksiOutput extends Model
     protected $fillable = [
         'produksi_id',
         'barang_id',
+        'jenis_cd',
         'kategori_output',
+        'qty_hasil',
+        'satuan_cd',
         'qty_kg',
         'batch_no',
         'hpp_satuan',
@@ -32,6 +35,7 @@ class DatProduksiOutput extends Model
     ];
 
     protected $casts = [
+        'qty_hasil'   => 'decimal:4',
         'qty_kg'      => 'decimal:4',
         'hpp_satuan'  => 'decimal:2',
         'total_nilai' => 'decimal:2',

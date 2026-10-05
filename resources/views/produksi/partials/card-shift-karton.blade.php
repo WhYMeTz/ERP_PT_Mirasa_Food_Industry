@@ -8,7 +8,7 @@
         <strong id="cardHeaderTitle" style="color: #0f172a; font-size: 0.95rem; display: flex; align-items: center; gap: 0.4rem;">
             <span>2. Shift Kerja, Penomoran Batch &amp; Kemasan Karton</span>
         </strong>
-        <span id="cardHeaderBadge" style="font-size: 0.775rem; font-weight: 700; color: #0369a1; background: #e0f2fe; padding: 0.25rem 0.65rem; border-radius: 6px; border: 1px solid #bae6fd;">
+        <span id="cardHeaderBadge" style="font-size: 0.775rem; font-weight: 700; color: #334155; background: #f1f5f9; padding: 0.25rem 0.65rem; border-radius: 4px; border: 1px solid #cbd5e1;">
             Format Batch: [Shift][NoAwal] - [Shift][NoAkhir]
         </span>
     </div>
@@ -19,7 +19,7 @@
         <input type="hidden" name="jam_produksi" id="jam_produksi" value="{{ old('jam_produksi', date('H:i')) }}">
 
         {{-- BARIS 1: SHIFT KERJA & PENOMORAN KARTON --}}
-        <div style="display: grid; grid-template-columns: 1.2fr 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem; align-items: start;">
+        <div id="rowShiftKartonGrid" style="display: grid; grid-template-columns: 1.2fr 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem; align-items: start;">
             {{-- 1. Shift Kerja Segmented Toggle --}}
             <div id="sectionShiftSelection">
                 <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">
@@ -41,7 +41,7 @@
             </div>
 
             {{-- 2. Qty Karton Selesai --}}
-            <div>
+            <div id="colQtyKarton">
                 <label id="labelKartonTitle" style="display: block; font-size: 0.8rem; font-weight: 700; color: #0f172a; margin-bottom: 0.35rem;">
                     Karton Selesai <span style="color: #ef4444;">*</span>
                 </label>
@@ -52,7 +52,7 @@
                         style="font-weight: 800; font-size: 1rem; color: #0f172a; padding-right: 4.5rem;" 
                         placeholder="0" 
                         oninput="updateKartonRangeAndBatch()">
-                    <span style="position: absolute; right: 0.65rem; top: 50%; transform: translateY(-50%); font-size: 0.75rem; font-weight: 700; color: #64748b; pointer-events: none;">Kemasan</span>
+                    <span id="unitKartonSuffix" style="position: absolute; right: 0.65rem; top: 50%; transform: translateY(-50%); font-size: 0.75rem; font-weight: 700; color: #64748b; pointer-events: none;">Kemasan</span>
                 </div>
                 <small style="color: #64748b; font-size: 0.725rem; margin-top: 0.35rem; display: block;">
                     Berat: <strong id="liveEstimasiKg" style="color: #0284c7;">0.00 Kg</strong> <span id="liveEstimasiDesc">(Netto 6 Kg/Box)</span>
@@ -123,17 +123,17 @@
                 </small>
             </div>
 
-            {{-- 3. Kode Batch Resmi Persadaan (Corporate Highlight Box) --}}
-            <div style="background: #ffffff; border: 1.5px solid #bae6fd; border-radius: 8px; padding: 0.75rem 1rem; display: flex; flex-direction: column; justify-content: center; box-shadow: 0 1px 2px rgba(2, 132, 199, 0.05);">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.2rem;">
-                    <span style="font-size: 0.725rem; font-weight: 800; color: #0369a1; text-transform: uppercase; letter-spacing: 0.05em;">
-                        Kode Batch Resmi Persadaan
+            {{-- 3. Kode Batch Resmi Persadaan (Corporate Ledger Box) --}}
+            <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 0.75rem 1rem; display: flex; flex-direction: column; justify-content: center; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+                    <span style="font-size: 0.725rem; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.04em;">
+                        Kode Batch Resmi
                     </span>
-                    <span style="font-size: 0.675rem; background: #e0f2fe; color: #0284c7; font-weight: 700; padding: 0.15rem 0.45rem; border-radius: 4px;">
+                    <span style="font-size: 0.7rem; background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; font-weight: 600; padding: 0.15rem 0.45rem; border-radius: 4px;">
                         Otomatis Standar Lini
                     </span>
                 </div>
-                <div id="liveBatchCode" style="font-family: monospace; font-size: 1.35rem; font-weight: 900; color: #0284c7; letter-spacing: 0.05em; line-height: 1.2;">
+                <div id="liveBatchCode" style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 1.25rem; font-weight: 800; color: #0f172a; letter-spacing: 0.03em; line-height: 1.2;">
                     {{ old('batch_wip_no', 'A0001 - A0001') }}
                 </div>
                 <input type="hidden" name="batch_wip_no" id="batch_wip_no" value="{{ old('batch_wip_no') }}">

@@ -668,11 +668,18 @@
 
                                 @if (Auth::user()->canAccessProduksi())
                                     <div style="height: 1px; background: #f1f5f9; margin: 0.3rem 0;"></div>
-                                    <a href="{{ route('produksi.index') }}" class="mega-item {{ request()->routeIs('produksi.index') || request()->routeIs('produksi.rekap') ? 'active' : '' }}">
+                                    <a href="{{ route('produksi.index') }}" class="mega-item {{ request()->routeIs('produksi.index') ? 'active' : '' }}">
+                                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                                        <div style="display: flex; flex-direction: column;">
+                                            <span style="font-weight: 600;">Hasil Barang Produksi</span>
+                                            <span style="font-size: 0.6875rem; color: #64748b;">Rincian barang jadi (WIP) &amp; sisa stok</span>
+                                        </div>
+                                    </a>
+                                    <a href="{{ route('produksi.rekap') }}" class="mega-item {{ request()->routeIs('produksi.rekap*') ? 'active' : '' }}">
                                         <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                                         <div style="display: flex; flex-direction: column;">
-                                            <span style="font-weight: 600;">Rekap Hasil &amp; HPP Harian</span>
-                                            <span style="font-size: 0.6875rem; color: #64748b;">Timbangan keripik jadi &amp; susut HPP</span>
+                                            <span style="font-weight: 600;">Buku Rekapitulasi HPP</span>
+                                            <span style="font-size: 0.6875rem; color: #64748b;">Audit biaya harian &amp; tren bulanan</span>
                                         </div>
                                     </a>
                                     @if (Auth::user()->canCreateProduksi())

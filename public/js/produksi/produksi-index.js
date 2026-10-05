@@ -167,4 +167,61 @@ function closeModalImportRekap() {
     if (modal) modal.style.display = 'none';
 }
 
+/**
+ * ══════════════════════════════════════════════════════════════════
+ * KONTROL EXECUTIVE COMPACT ACCORDION & VIEW MODE SWITCHER
+ * ══════════════════════════════════════════════════════════════════
+ */
+
+/**
+ * Toggle Baris Detail Akordion Biaya
+ */
+function toggleCostAccordion(dayNum, btn) {
+    const detailRow = document.getElementById('detail-row-' + dayNum);
+    const mainRow = document.getElementById('main-row-' + dayNum);
+    if (!detailRow) return;
+
+    const isShowing = detailRow.classList.contains('show');
+    if (isShowing) {
+        detailRow.classList.remove('show');
+        if (mainRow) mainRow.classList.remove('row-expanded');
+        if (btn) btn.classList.remove('active');
+    } else {
+        detailRow.classList.add('show');
+        if (mainRow) mainRow.classList.add('row-expanded');
+        if (btn) btn.classList.add('active');
+    }
+}
+
+/**
+ * Switch Antara Mode Tampilan Ringkas (Compact) dan Mode Spreadsheet (Excel)
+ */
+function switchHppViewMode(mode) {
+    const compactContainer = document.getElementById('compact-view-container');
+    const spreadsheetContainer = document.getElementById('spreadsheet-view-container');
+    const btnCompact = document.getElementById('btn-mode-compact');
+    const btnSpreadsheet = document.getElementById('btn-mode-spreadsheet');
+
+    if (mode === 'compact') {
+        if (compactContainer) compactContainer.style.display = 'block';
+        if (spreadsheetContainer) spreadsheetContainer.style.display = 'none';
+        if (btnCompact) btnCompact.classList.add('active');
+        if (btnSpreadsheet) btnSpreadsheet.classList.remove('active');
+        localStorage.setItem('mirasa_hpp_view_mode', 'compact');
+    } else {
+        if (compactContainer) compactContainer.style.display = 'none';
+        if (spreadsheetContainer) spreadsheetContainer.style.display = 'block';
+        if (btnCompact) btnCompact.classList.remove('active');
+        if (btnSpreadsheet) btnSpreadsheet.classList.add('active');
+        localStorage.setItem('mirasa_hpp_view_mode', 'spreadsheet');
+    }
+}
+
+// Inisialisasi preferensi view mode saat halaman dimuat
+document.addEventListener('DOMContentLoaded', function () {
+    const savedMode = localStorage.getItem('mirasa_hpp_view_mode') || 'compact';
+    switchHppViewMode(savedMode);
+});
+
+
 

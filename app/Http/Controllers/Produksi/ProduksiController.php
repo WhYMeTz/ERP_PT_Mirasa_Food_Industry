@@ -10,6 +10,7 @@ use App\Http\Controllers\Controller;
 use App\Imports\Produksi\HasilProduksiImport;
 use App\Imports\Produksi\RekapHppImport;
 use App\Models\Gudang\DatPakaiHdr;
+use App\Models\MasterData\MstBarang;
 use App\Models\MasterData\MstGudang;
 use App\Models\MasterData\MstLiniProduksi;
 use App\Services\Common\CodeGeneratorService;
@@ -34,13 +35,14 @@ class ProduksiController extends Controller
     ) {}
 
     /**
-     * Halaman Utama Modul Produksi (Dual-Tab):
-     * Tab 1: 📦 Hasil Barang Produksi & Sisa Stok WIP (Project Brief Poin 9)
-     * Tab 2: 📊 Buku Rekap Pembaca HPP & Rendemen (Project Brief Poin 13)
+     * Halaman Hasil Barang Produksi (WIP & Finish Good) & Sisa Stok Fisik Gudang (Point 9.B).
      */
-    public function index(Request $request): View
+    public function index(Request $request): View|RedirectResponse
     {
-        $activeTab = $request->input('tab', 'hasil');
+        // Backward compatibility: jika user akses tab=rekap, arahkan ke route resmi produksi.rekap
+        if ($request->input('tab') === 'rekap') {
+            return redirect()->route('produksi.rekap', $request->except('tab'));
+        }
 
         // Master Gudang untuk filter dropdown
         $gudangList = MstGudang::where('deleted_st', false)
@@ -48,21 +50,36 @@ class ProduksiController extends Controller
             ->orderBy('gudang_nm')
             ->get();
 
-        // ── DATA TAB 1: Hasil Barang Produksi (Point 9) ──
         $filters = [
             'gudang_id'  => $request->input('gudang_id'),
             'search'     => $request->input('search'),
+            'barang_cd'  => $request->input('barang_cd'),
+            'barang_nm'  => $request->input('barang_nm'),
             'batch_no'   => $request->input('batch_no'),
+            'jenis_cd'   => $request->input('jenis_cd'),
             'kategori'   => $request->input('kategori'),
             'tgl_dari'   => $request->input('tgl_dari'),
             'tgl_sampai' => $request->input('tgl_sampai'),
         ];
         $hasilItems = $this->produksiService->getHasilProduksiList($filters, 20);
 
-        // ── DATA TAB 2: Rekap HPP Harian (Point 13) ──
+        return view('produksi.index', compact(
+            'gudangList',
+            'filters',
+            'hasilItems'
+        ));
+    }
+
+    /**
+     * Halaman Khusus Buku Rekapitulasi Harga Pokok Produksi (HPP):
+     * - Mode Harian: Analisis per hari dalam 1 bulan kalender (Kalender Produksi & Audit Akuntansi)
+     * - Mode Bulanan: Analisis tren per bulan dalam 1 tahun fiskal (Januari s/d Desember)
+     */
+    public function rekap(Request $request): View
+    {
+        $mode = $request->input('mode', 'harian'); // 'harian' atau 'bulanan'
         $year = (int) $request->input('tahun', date('Y'));
         $month = (int) $request->input('bulan', date('n'));
-        $report = $this->produksiService->getMonthlyReport($year, $month);
 
         $monthsList = [
             1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
@@ -72,17 +89,30 @@ class ProduksiController extends Controller
         $yearsList = [2024, 2025, 2026, 2027];
         $monthName = $monthsList[$month] ?? 'Januari';
 
-        return view('produksi.index', compact(
-            'activeTab',
-            'gudangList',
-            'filters',
-            'hasilItems',
-            'report',
+        $report = null;
+        $yearlyReport = null;
+
+        if ($mode === 'bulanan') {
+            $yearlyReport = $this->produksiService->getYearlyReport($year);
+        } else {
+            $report = $this->produksiService->getMonthlyReport($year, $month);
+        }
+
+        $gudangList = MstGudang::where('deleted_st', false)
+            ->where('active_st', true)
+            ->orderBy('gudang_nm')
+            ->get();
+
+        return view('produksi.rekap', compact(
+            'mode',
             'year',
             'month',
             'monthName',
             'monthsList',
-            'yearsList'
+            'yearsList',
+            'report',
+            'yearlyReport',
+            'gudangList'
         ));
     }
 
@@ -110,7 +140,14 @@ class ProduksiController extends Controller
             ->orderBy('lini_id', 'asc')
             ->get();
 
-        return view('produksi.create', compact('gudangList', 'pakaiList', 'liniList'));
+        // Ambil daftar barang hasil produksi aktif (WIP & Finish Good)
+        $barangHasilList = MstBarang::active()
+            ->hasilProduksi()
+            ->with(['satuanDasar', 'satuanBesar', 'jenisBarang'])
+            ->orderBy('barang_nm')
+            ->get();
+
+        return view('produksi.create', compact('gudangList', 'pakaiList', 'liniList', 'barangHasilList'));
     }
 
     /**
@@ -211,13 +248,25 @@ class ProduksiController extends Controller
             'limbah_padat_nilai'          => 'nullable|numeric|min:0',
             'limbah_kimia_nilai'          => 'nullable|numeric|min:0',
 
-            // Hasil Output WIP
+            // Hasil Output Standar WIP Olahan
             'asin_barco_qty'              => 'nullable|numeric|min:0',
             'asin_sawit_qty'              => 'nullable|numeric|min:0',
             'no_salt_qty'                 => 'nullable|numeric|min:0',
             'balo_gelombang_qty'          => 'nullable|numeric|min:0',
             'berko_qty'                   => 'nullable|numeric|min:0',
             'berko_me_qty'                => 'nullable|numeric|min:0',
+
+            // Hasil Output Dinamis (WIP & Finish Good / FG - Blueprint 9.B)
+            'output_items'                 => 'nullable|array',
+            'output_items.*.barang_id'     => 'nullable|exists:mst_barang,barang_id',
+            'output_items.*.jenis_cd'      => 'nullable|string|in:WIP,FG',
+            'output_items.*.qty_hasil'     => 'nullable|numeric|min:0',
+            'output_items.*.satuan_cd'     => 'nullable|string|max:50',
+            'output_items.*.qty_kg'        => 'nullable|numeric|min:0',
+            'output_items.*.batch_no'      => 'nullable|string|max:100',
+            'output_items.*.hpp_satuan'    => 'nullable|numeric|min:0',
+            'output_items.*.keterangan_txt' => 'nullable|string|max:255',
+
             'catatan_txt'                 => 'nullable|string',
         ]);
 
@@ -275,7 +324,10 @@ class ProduksiController extends Controller
         $filters = [
             'gudang_id'  => $request->input('gudang_id'),
             'search'     => $request->input('search'),
+            'barang_cd'  => $request->input('barang_cd'),
+            'barang_nm'  => $request->input('barang_nm'),
             'batch_no'   => $request->input('batch_no'),
+            'jenis_cd'   => $request->input('jenis_cd'),
             'kategori'   => $request->input('kategori'),
             'tgl_dari'   => $request->input('tgl_dari'),
             'tgl_sampai' => $request->input('tgl_sampai'),
@@ -422,10 +474,10 @@ class ProduksiController extends Controller
                 $msg .= " Catatan: {$importer->skipCount} baris tanggal kosong/libur dilewati.";
             }
 
-            return redirect()->route('produksi.index', ['tab' => 'rekap'])
+            return redirect()->route('produksi.rekap')
                 ->with('success', $msg);
         } catch (Exception $e) {
-            return redirect()->route('produksi.index', ['tab' => 'rekap'])
+            return redirect()->route('produksi.rekap')
                 ->with('error', 'Gagal memproses import Rekap HPP: ' . $e->getMessage());
         }
     }
@@ -455,11 +507,11 @@ class ProduksiController extends Controller
                 Auth::user()?->username ?? 'SYSTEM'
             );
 
-            return redirect()->route('produksi.index', [
-                'tab'   => 'rekap',
+            return redirect()->route('produksi.rekap', [
+                'mode'  => 'harian',
                 'tahun' => $request->input('tahun'),
                 'bulan' => $request->input('bulan'),
-            ])->with('success', "⚡ Berhasil menyesuaikan biaya utilitas untuk {$result['count']} catatan produksi pada periode tersebut!");
+            ])->with('success', "Berhasil menyesuaikan biaya utilitas untuk {$result['count']} catatan produksi pada periode tersebut!");
         } catch (Exception $e) {
             return redirect()->back()->with('error', 'Gagal menyesuaikan utilitas: ' . $e->getMessage());
         }

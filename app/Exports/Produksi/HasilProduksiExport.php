@@ -84,14 +84,15 @@ class HasilProduksiExport
             'C' => 'NO. PRODUKSI',
             'D' => 'KODE BATCH',
             'E' => 'GUDANG SIMPAN',
-            'F' => 'KODE BARANG',
-            'G' => 'NAMA BARANG',
-            'H' => 'KATEGORI',
-            'I' => 'QTY HASIL (KG)',
+            'F' => 'JENIS BARANG',
+            'G' => 'KODE BARANG',
+            'H' => 'NAMA BARANG',
+            'I' => 'QTY HASIL',
             'J' => 'SATUAN',
-            'K' => 'HPP/KG (RP)',
-            'L' => 'TOTAL NILAI (RP)',
-            'M' => 'SISA STOK (KG)',
+            'K' => 'BERAT (KG)',
+            'L' => 'HPP SATUAN (RP)',
+            'M' => 'TOTAL NILAI (RP)',
+            'N' => 'SISA STOK (KG)',
         ];
 
         foreach ($headers as $col => $title) {
@@ -100,9 +101,9 @@ class HasilProduksiExport
             $sheet->getStyle($cell)->getFont()->setBold(true)->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color(self::COLOR_HEADER_FG));
             $sheet->getStyle($cell)->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB(self::COLOR_HEADER_BG);
             $sheet->getStyle($cell)->getAlignment()->setVertical(Alignment::VERTICAL_CENTER);
-            if (in_array($col, ['A', 'B', 'C', 'D', 'F', 'H', 'J'])) {
+            if (in_array($col, ['A', 'B', 'C', 'D', 'F', 'G', 'J'])) {
                 $sheet->getStyle($cell)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-            } elseif (in_array($col, ['I', 'K', 'L', 'M'])) {
+            } elseif (in_array($col, ['I', 'K', 'L', 'M', 'N'])) {
                 $sheet->getStyle($cell)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
             }
         }
@@ -110,28 +111,32 @@ class HasilProduksiExport
 
         // Render Data Rows
         $row = 6;
-        $totalQty = 0;
+        $totalQtyKg = 0;
         $totalNilai = 0;
 
         foreach ($this->items as $idx => $item) {
             $prod = $item->produksi;
             $barang = $item->barang;
+            $jenisText = ($item->jenis_cd === 'FG' || ($barang && $barang->isFinishGood())) ? 'Finish Good (FG)' : 'WIP (Setengah Jadi)';
+            $qtyHasilVal = $item->qty_hasil > 0 ? (float) $item->qty_hasil : (float) $item->qty_kg;
+            $satuanVal = $item->satuan_cd ?: ($barang?->satuan?->satuan_nm ?? 'KG');
 
             $sheet->setCellValue('A' . $row, $idx + 1);
             $sheet->setCellValue('B' . $row, $prod ? Carbon::parse($prod->produksi_tgl)->format('d/m/Y') : '-');
             $sheet->setCellValue('C' . $row, $prod->produksi_no ?? '-');
             $sheet->setCellValue('D' . $row, $item->batch_no ?? ($prod->batch_wip_no ?? '-'));
             $sheet->setCellValue('E' . $row, $prod->gudang?->gudang_nm ?? 'Gudang Utama');
-            $sheet->setCellValue('F' . $row, $barang->barang_cd ?? '-');
-            $sheet->setCellValue('G' . $row, $barang->barang_nm ?? '-');
-            $sheet->setCellValue('H' . $row, $item->kategori_output ?? '-');
-            $sheet->setCellValue('I' . $row, (float) $item->qty_kg);
-            $sheet->setCellValue('J' . $row, $barang->satuan?->satuan_nm ?? 'KG');
-            $sheet->setCellValue('K' . $row, (float) $item->hpp_satuan);
-            $sheet->setCellValue('L' . $row, (float) $item->total_nilai);
-            $sheet->setCellValue('M' . $row, (float) ($item->sisa_stok ?? $item->qty_kg));
+            $sheet->setCellValue('F' . $row, $jenisText);
+            $sheet->setCellValue('G' . $row, $barang->barang_cd ?? '-');
+            $sheet->setCellValue('H' . $row, $barang->barang_nm ?? '-');
+            $sheet->setCellValue('I' . $row, $qtyHasilVal);
+            $sheet->setCellValue('J' . $row, $satuanVal);
+            $sheet->setCellValue('K' . $row, (float) $item->qty_kg);
+            $sheet->setCellValue('L' . $row, (float) $item->hpp_satuan);
+            $sheet->setCellValue('M' . $row, (float) $item->total_nilai);
+            $sheet->setCellValue('N' . $row, (float) ($item->sisa_stok ?? $item->qty_kg));
 
-            $totalQty += (float) $item->qty_kg;
+            $totalQtyKg += (float) $item->qty_kg;
             $totalNilai += (float) $item->total_nilai;
 
             // Formats
@@ -140,40 +145,41 @@ class HasilProduksiExport
             $sheet->getStyle('C' . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
             $sheet->getStyle('D' . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
             $sheet->getStyle('F' . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-            $sheet->getStyle('H' . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle('G' . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
             $sheet->getStyle('J' . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
             $sheet->getStyle('I' . $row)->getNumberFormat()->setFormatCode('#,##0.00');
-            $sheet->getStyle('K' . $row)->getNumberFormat()->setFormatCode('#,##0');
+            $sheet->getStyle('K' . $row)->getNumberFormat()->setFormatCode('#,##0.00');
             $sheet->getStyle('L' . $row)->getNumberFormat()->setFormatCode('#,##0');
-            $sheet->getStyle('M' . $row)->getNumberFormat()->setFormatCode('#,##0.00');
+            $sheet->getStyle('M' . $row)->getNumberFormat()->setFormatCode('#,##0');
+            $sheet->getStyle('N' . $row)->getNumberFormat()->setFormatCode('#,##0.00');
 
             if ($idx % 2 === 1) {
-                $sheet->getStyle("A{$row}:M{$row}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB(self::COLOR_ROW_EVEN);
+                $sheet->getStyle("A{$row}:N{$row}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB(self::COLOR_ROW_EVEN);
             }
 
-            $sheet->getStyle("A{$row}:M{$row}")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN)->getColor()->setARGB(self::COLOR_BORDER);
+            $sheet->getStyle("A{$row}:N{$row}")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN)->getColor()->setARGB(self::COLOR_BORDER);
             $sheet->getRowDimension($row)->setRowHeight(20);
 
             $row++;
         }
 
         // Summary Row Total
-        $sheet->setCellValue('A' . $row, 'TOTAL HASIL PRODUKSI');
-        $sheet->mergeCells("A{$row}:H{$row}");
-        $sheet->setCellValue('I' . $row, $totalQty);
-        $sheet->setCellValue('L' . $row, $totalNilai);
+        $sheet->setCellValue('A' . $row, 'TOTAL HASIL PRODUKSI (KG)');
+        $sheet->mergeCells("A{$row}:J{$row}");
+        $sheet->setCellValue('K' . $row, $totalQtyKg);
+        $sheet->setCellValue('M' . $row, $totalNilai);
 
-        $sheet->getStyle("A{$row}:M{$row}")->getFont()->setBold(true);
-        $sheet->getStyle("A{$row}:M{$row}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB(self::COLOR_TOTAL_BG);
-        $sheet->getStyle("A{$row}:M{$row}")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN)->getColor()->setARGB(self::COLOR_BORDER);
+        $sheet->getStyle("A{$row}:N{$row}")->getFont()->setBold(true);
+        $sheet->getStyle("A{$row}:N{$row}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB(self::COLOR_TOTAL_BG);
+        $sheet->getStyle("A{$row}:N{$row}")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN)->getColor()->setARGB(self::COLOR_BORDER);
         $sheet->getStyle('A' . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
-        $sheet->getStyle('I' . $row)->getNumberFormat()->setFormatCode('#,##0.00');
-        $sheet->getStyle('L' . $row)->getNumberFormat()->setFormatCode('#,##0');
+        $sheet->getStyle('K' . $row)->getNumberFormat()->setFormatCode('#,##0.00');
+        $sheet->getStyle('M' . $row)->getNumberFormat()->setFormatCode('#,##0');
         $sheet->getRowDimension($row)->setRowHeight(22);
 
         // Auto Size Kolom
-        foreach (range('A', 'M') as $col) {
+        foreach (range('A', 'N') as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 

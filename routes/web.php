@@ -214,7 +214,7 @@ Route::middleware('auth')->group(function () {
     // Produksi & HPP Harian (Sesuai Excel Asli PT Mirasa)
     Route::prefix('produksi')->name('produksi.')->middleware('role:produksi_view')->group(function () {
         Route::get('/', [ProduksiController::class, 'index'])->name('index');
-        Route::get('/rekap', [ProduksiController::class, 'index'])->name('rekap');
+        Route::get('/rekap', [ProduksiController::class, 'rekap'])->name('rekap');
         Route::get('/export-hasil', [ProduksiController::class, 'exportHasilProduksi'])->name('export-hasil');
         Route::get('/download-template', [ProduksiController::class, 'downloadHasilTemplate'])->name('download-template');
         Route::post('/import-excel', [ProduksiController::class, 'importHasilProduksi'])->name('import-excel')->middleware('role:produksi_create');

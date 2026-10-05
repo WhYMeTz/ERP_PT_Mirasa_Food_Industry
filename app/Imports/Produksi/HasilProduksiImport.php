@@ -174,14 +174,19 @@ class HasilProduksiImport
                         $hppSatuan = $row['hpp_satuan'] > 0 ? $row['hpp_satuan'] : (float) ($barang->harga_beli_pokok ?? 14500);
                         $totalNilai = round($row['qty'] * $hppSatuan, 2);
 
-                        // Kategori mapping
+                        // Kategori & Jenis mapping
                         $kat = !empty($row['kategori']) ? strtoupper($row['kategori']) : 'ASIN_BARCO';
+                        $jenisCd = (strtoupper($barang->jenis_barang ?? '') === 'FG' || $barang->isFinishGood()) ? 'FG' : 'WIP';
+                        $satuanCd = $barang->satuan?->satuan_nm ?? ($jenisCd === 'FG' ? 'DUS' : 'KG');
 
                         DatProduksiOutput::create([
                             'produksi_id'     => $produksi->produksi_id,
                             'barang_id'       => $barang->barang_id,
+                            'jenis_cd'        => $jenisCd,
                             'kategori_output' => $kat,
                             'qty_kg'          => $row['qty'],
+                            'qty_hasil'       => $row['qty'],
+                            'satuan_cd'       => $satuanCd,
                             'batch_no'        => $batchItem,
                             'hpp_satuan'      => $hppSatuan,
                             'total_nilai'     => $totalNilai,

@@ -22,10 +22,6 @@ return new class extends Migration
         if (Schema::hasTable('dat_produksi_output') && !Schema::hasTable('dat_produksi_dtl')) {
             Schema::rename('dat_produksi_output', 'dat_produksi_dtl');
         }
-
-        // 3. Buat database VIEW alias untuk kompatibilitas penuh (Zero breaking change)
-        DB::statement('CREATE OR REPLACE VIEW dat_produksi_harian AS SELECT * FROM dat_produksi_hdr');
-        DB::statement('CREATE OR REPLACE VIEW dat_produksi_output AS SELECT * FROM dat_produksi_dtl');
     }
 
     /**
@@ -33,10 +29,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // Drop VIEW alias terlebih dahulu
-        DB::statement('DROP VIEW IF EXISTS dat_produksi_output CASCADE');
-        DB::statement('DROP VIEW IF EXISTS dat_produksi_harian CASCADE');
-
         // Kembalikan nama tabel semula
         if (Schema::hasTable('dat_produksi_dtl') && !Schema::hasTable('dat_produksi_output')) {
             Schema::rename('dat_produksi_dtl', 'dat_produksi_output');

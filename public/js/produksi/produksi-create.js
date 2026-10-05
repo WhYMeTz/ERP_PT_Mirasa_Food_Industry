@@ -969,29 +969,48 @@
         const satuan = (opt?.dataset?.satuan || '').toUpperCase();
         const jenis = (opt?.dataset?.jenis || '').toUpperCase();
 
-        const isKg = satuan === 'KG' || jenis === 'WIP';
+        // Ekstrak bobot per unit dari satuan_cd (misal: "KARTON 6KG" → 6, "KARTON 7KG" → 7, "KG" → 1)
+        // Pola: cari angka desimal di dalam string satuan (6, 7, 5, 3.8, dsb)
+        let beratPerUnit = 1;
+        const matchBerat = satuan.match(/(\d+[.,]?\d*)\s*KG/);
+        if (matchBerat) {
+            beratPerUnit = parseFloat(matchBerat[1].replace(',', '.')) || 1;
+        }
 
-        if (isKg) {
+        const isKgUnit = satuan === 'KG' || satuan === 'KILOGRAM';
+
+        if (isKgUnit) {
+            // Satuan KG langsung: Total Berat = QTY × 1
             kgInp.value = val > 0 ? val : '';
             kgInp.dataset.autoFilled = 'true';
-        } else if (!kgInp.value || parseFloat(kgInp.value) === 0 || kgInp.dataset.autoFilled === 'true') {
-            if (nm.includes('IFM') || cd.includes('FCC')) {
-                kgInp.value = (val * 6.0).toFixed(2);
+        } else if (beratPerUnit > 1) {
+            // Satuan KARTON xKG: Total Berat = QTY × beratPerUnit
+            if (!kgInp.value || parseFloat(kgInp.value) === 0 || kgInp.dataset.autoFilled === 'true') {
+                kgInp.value = val > 0 ? (val * beratPerUnit).toFixed(2) : '';
                 kgInp.dataset.autoFilled = 'true';
-            } else if (nm.includes('500')) {
-                kgInp.value = (val * 5.0).toFixed(2);
-                kgInp.dataset.autoFilled = 'true';
-            } else if (nm.includes('1000')) {
-                kgInp.value = (val * 6.0).toFixed(2);
-                kgInp.dataset.autoFilled = 'true';
-            } else if (val > 0 && (!kgInp.value || parseFloat(kgInp.value) === 0)) {
-                kgInp.value = val;
-                kgInp.dataset.autoFilled = 'true';
+            }
+        } else {
+            // Fallback: coba deteksi dari nama barang jika satuan tidak informatif
+            if (!kgInp.value || parseFloat(kgInp.value) === 0 || kgInp.dataset.autoFilled === 'true') {
+                if (nm.includes('IFM') || cd.includes('FCC')) {
+                    kgInp.value = (val * 6.0).toFixed(2);
+                    kgInp.dataset.autoFilled = 'true';
+                } else if (nm.includes('500')) {
+                    kgInp.value = (val * 5.0).toFixed(2);
+                    kgInp.dataset.autoFilled = 'true';
+                } else if (nm.includes('1000')) {
+                    kgInp.value = (val * 6.0).toFixed(2);
+                    kgInp.dataset.autoFilled = 'true';
+                } else if (val > 0) {
+                    kgInp.value = val;
+                    kgInp.dataset.autoFilled = 'true';
+                }
             }
         }
 
         window.calcAll();
     };
+
 
     function autoSelectLiniBarang(idx) {
         const selectLini = document.getElementById('lini_produksi');

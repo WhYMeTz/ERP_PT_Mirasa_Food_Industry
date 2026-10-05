@@ -120,5 +120,31 @@ class MstBarang extends Model
     {
         return $this->hasMany(\App\Models\Gudang\DatStokBatch::class, 'barang_id', 'barang_id');
     }
+
+    /**
+     * Cek apakah barang ini termasuk Finish Good (FG) berdasarkan jenis_barang.
+     */
+    public function isFinishGood(): bool
+    {
+        return $this->jenisBarang?->jenis_barang_cd === 'FG';
+    }
+
+    /**
+     * Cek apakah barang ini termasuk Setengah Jadi (WIP) berdasarkan jenis_barang.
+     */
+    public function isWip(): bool
+    {
+        return $this->jenisBarang?->jenis_barang_cd === 'WIP';
+    }
+
+    /**
+     * Cek apakah barang ini merupakan hasil produksi (FG atau WIP).
+     */
+    public function isHasilProduksi(): bool
+    {
+        return in_array($this->jenisBarang?->jenis_barang_cd, ['FG', 'WIP']);
+    }
 }
+
+
 

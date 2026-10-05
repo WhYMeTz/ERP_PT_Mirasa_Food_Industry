@@ -57,7 +57,7 @@ class DatPakaiHdr extends Model
      */
     public function produksi(): HasOne
     {
-        return $this->hasOne(\App\Models\Produksi\DatProduksiHarian::class, 'pakai_id', 'pakai_id')
+        return $this->hasOne(\App\Models\Produksi\DatProduksiHdr::class, 'pakai_id', 'pakai_id')
             ->where('deleted_st', false);
     }
 }

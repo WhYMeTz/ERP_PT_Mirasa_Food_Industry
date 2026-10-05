@@ -3,7 +3,7 @@
 namespace App\Imports\Produksi;
 
 use App\Models\MasterData\MstGudang;
-use App\Models\Produksi\DatProduksiHarian;
+use App\Models\Produksi\DatProduksiHdr;
 use App\Services\Common\CodeGeneratorService;
 use Carbon\Carbon;
 use Exception;
@@ -152,13 +152,13 @@ class RekapHppImport
                 }
 
                 // Cari apakah sudah ada data produksi pada tanggal ini
-                $produksi = DatProduksiHarian::whereDate('produksi_tgl', $tgl)
+                $produksi = DatProduksiHdr::whereDate('produksi_tgl', $tgl)
                     ->where('deleted_st', false)
                     ->first();
 
                 if (!$produksi) {
                     $noProduksi = $this->codeGenerator->generateKodeProduksi($tgl);
-                    $produksi = new DatProduksiHarian();
+                    $produksi = new DatProduksiHdr();
                     $produksi->produksi_no   = $noProduksi;
                     $produksi->produksi_tgl  = $tgl;
                     $produksi->gudang_id     = $gudang->gudang_id;

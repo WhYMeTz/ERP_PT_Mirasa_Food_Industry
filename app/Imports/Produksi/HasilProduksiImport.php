@@ -4,7 +4,8 @@ namespace App\Imports\Produksi;
 
 use App\Models\MasterData\MstBarang;
 use App\Models\MasterData\MstGudang;
-use App\Models\Produksi\DatProduksiHarian;
+use App\Models\Produksi\DatProduksiHdr;
+use App\Models\Produksi\DatProduksiDtl;
 use App\Models\Produksi\DatProduksiOutput;
 use App\Services\Common\CodeGeneratorService;
 use App\Services\Gudang\StokService;
@@ -130,14 +131,14 @@ class HasilProduksiImport
                         ? $firstItem['no_dokumen']
                         : $this->codeGenerator->generateKodeProduksi($tglParsed->format('Y-m-d'));
 
-                    // Cek apakah header produksi harian sudah ada
-                    $produksi = DatProduksiHarian::where('produksi_no', $noProduksi)->first();
+                    // Cek apakah header produksi sudah ada
+                    $produksi = DatProduksiHdr::where('produksi_no', $noProduksi)->first();
 
                     if (!$produksi) {
                         $shift = in_array($firstItem['shift'], ['A', 'B']) ? $firstItem['shift'] : 'A';
                         $batchWip = !empty($firstItem['batch_no']) ? $firstItem['batch_no'] : ($shift . ' / 0001');
 
-                        $produksi = DatProduksiHarian::create([
+                        $produksi = DatProduksiHdr::create([
                             'produksi_no'         => $noProduksi,
                             'produksi_tgl'        => $firstItem['tanggal'],
                             'gudang_id'           => $gudang->gudang_id,
@@ -179,7 +180,7 @@ class HasilProduksiImport
                         $jenisCd = (strtoupper($barang->jenis_barang ?? '') === 'FG' || $barang->isFinishGood()) ? 'FG' : 'WIP';
                         $satuanCd = $barang->satuan?->satuan_nm ?? ($jenisCd === 'FG' ? 'DUS' : 'KG');
 
-                        DatProduksiOutput::create([
+                        DatProduksiDtl::create([
                             'produksi_id'     => $produksi->produksi_id,
                             'barang_id'       => $barang->barang_id,
                             'jenis_cd'        => $jenisCd,

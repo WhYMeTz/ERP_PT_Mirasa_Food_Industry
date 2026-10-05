@@ -5,6 +5,8 @@ namespace App\Services\Produksi;
 use App\Models\Gudang\DatPakaiHdr;
 use App\Models\Gudang\DatStokBatch;
 use App\Models\MasterData\MstBarang;
+use App\Models\Produksi\DatProduksiHdr;
+use App\Models\Produksi\DatProduksiDtl;
 use App\Models\Produksi\DatProduksiHarian;
 use App\Models\Produksi\DatProduksiOutput;
 use App\Services\Common\CodeGeneratorService;
@@ -27,7 +29,7 @@ class ProduksiService
      */
     public function getMonthlyReport(int $year, int $month): array
     {
-        $records = DatProduksiHarian::with(['pemakaianBahan', 'gudang', 'outputs.barang'])
+        $records = DatProduksiHdr::with(['pemakaianBahan', 'gudang', 'outputs.barang'])
             ->whereYear('produksi_tgl', $year)
             ->whereMonth('produksi_tgl', $month)
             ->where('deleted_st', false)
@@ -240,7 +242,7 @@ class ProduksiService
      */
     public function getYearlyReport(int $year): array
     {
-        $allRecords = DatProduksiHarian::whereYear('produksi_tgl', $year)
+        $allRecords = DatProduksiHdr::whereYear('produksi_tgl', $year)
             ->where('deleted_st', false)
             ->orderBy('produksi_tgl', 'asc')
             ->get();
@@ -349,7 +351,7 @@ class ProduksiService
         $shiftUpper = strtoupper(trim($shift));
 
         // Cari rekaman produksi pada tanggal tersebut
-        $records = DatProduksiHarian::whereDate('produksi_tgl', $tgl)
+        $records = DatProduksiHdr::whereDate('produksi_tgl', $tgl)
             ->where('deleted_st', false)
             ->whereNotNull('no_karton_akhir')
             ->orderBy('no_karton_akhir', 'desc')
@@ -640,7 +642,7 @@ class ProduksiService
     /**
      * Menyimpan data kalkulasi produksi harian & menyuntik stok fisik WIP jika status POSTED.
      */
-    public function store(array $data): DatProduksiHarian
+    public function store(array $data): DatProduksiHdr
     {
         return DB::transaction(function () use ($data) {
             $tgl = $data['produksi_tgl'] ?? date('Y-m-d');
@@ -690,7 +692,7 @@ class ProduksiService
             $calculated = $this->calculateFields($data);
 
             // Simpan Header Produksi Harian
-            $produksi = DatProduksiHarian::create($calculated);
+            $produksi = DatProduksiHdr::create($calculated);
 
             // Mapping Master Barang WIP
             $wipMap = [
@@ -784,7 +786,7 @@ class ProduksiService
                     $finalQtyKg = $qtyKg > 0 ? $qtyKg : $qtyHasil;
                     $subtotalNilai = round($finalQtyKg * $hppItem, 2);
 
-                    DatProduksiOutput::create([
+                    DatProduksiDtl::create([
                         'produksi_id'     => $produksi->produksi_id,
                         'barang_id'       => $barang->barang_id,
                         'jenis_cd'        => $jenisCd,
@@ -820,9 +822,9 @@ class ProduksiService
     /**
      * Mengambil 1 data produksi harian beserta relasi.
      */
-    public function getById(int $id): DatProduksiHarian
+    public function getById(int $id): DatProduksiHdr
     {
-        return DatProduksiHarian::with(['pemakaianBahan', 'gudang', 'outputs.barang'])
+        return DatProduksiHdr::with(['pemakaianBahan', 'gudang', 'outputs.barang'])
             ->where('produksi_id', $id)
             ->firstOrFail();
     }
@@ -1068,7 +1070,7 @@ class ProduksiService
     public function adjustMonthlyUtilities(int $year, int $month, array $payload, string $userId): array
     {
         return DB::transaction(function () use ($year, $month, $payload, $userId) {
-            $records = DatProduksiHarian::whereYear('produksi_tgl', $year)
+            $records = DatProduksiHdr::whereYear('produksi_tgl', $year)
                 ->whereMonth('produksi_tgl', $month)
                 ->where('deleted_st', false)
                 ->get();

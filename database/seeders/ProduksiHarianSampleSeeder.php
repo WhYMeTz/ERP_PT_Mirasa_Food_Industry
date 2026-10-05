@@ -4,8 +4,8 @@ namespace Database\Seeders;
 
 use App\Models\MasterData\MstBarang;
 use App\Models\MasterData\MstGudang;
-use App\Models\Produksi\DatProduksiHarian;
-use App\Models\Produksi\DatProduksiOutput;
+use App\Models\Produksi\DatProduksiHdr;
+use App\Models\Produksi\DatProduksiDtl;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
@@ -27,7 +27,7 @@ class ProduksiHarianSampleSeeder extends Seeder
             $barangBerko = MstBarang::where('barang_cd', 'WIP-BRK')->first();
 
             // DATA 1: JUMAT, 02/01/2026
-            $prod1 = DatProduksiHarian::updateOrCreate(
+            $prod1 = DatProduksiHdr::updateOrCreate(
                 ['produksi_no' => 'PRD-20260102-0001'],
                 [
                     'produksi_tgl'                => '2026-01-02',
@@ -94,7 +94,7 @@ class ProduksiHarianSampleSeeder extends Seeder
             );
 
             // DATA 2: SABTU, 03/01/2026
-            $prod2 = DatProduksiHarian::updateOrCreate(
+            $prod2 = DatProduksiHdr::updateOrCreate(
                 ['produksi_no' => 'PRD-20260103-0001'],
                 [
                     'produksi_tgl'                => '2026-01-03',
@@ -162,19 +162,19 @@ class ProduksiHarianSampleSeeder extends Seeder
 
             // Simpan detail output jika barang terdaftar
             if ($barangBarco) {
-                DatProduksiOutput::updateOrCreate(
+                DatProduksiDtl::updateOrCreate(
                     ['produksi_id' => $prod1->produksi_id, 'kategori_output' => 'ASIN_BARCO'],
                     ['barang_id' => $barangBarco->barang_id, 'qty_kg' => 17874.0000, 'batch_no' => 'WIP-020126-01-ASB', 'hpp_satuan' => 14440.04, 'total_nilai' => 17874.0000 * 14440.04]
                 );
             }
             if ($barangSawit) {
-                DatProduksiOutput::updateOrCreate(
+                DatProduksiDtl::updateOrCreate(
                     ['produksi_id' => $prod1->produksi_id, 'kategori_output' => 'ASIN_SAWIT'],
                     ['barang_id' => $barangSawit->barang_id, 'qty_kg' => 777.0000, 'batch_no' => 'WIP-020126-01-ASW', 'hpp_satuan' => 14440.04, 'total_nilai' => 777.0000 * 14440.04]
                 );
             }
             if ($barangBerko) {
-                DatProduksiOutput::updateOrCreate(
+                DatProduksiDtl::updateOrCreate(
                     ['produksi_id' => $prod1->produksi_id, 'kategori_output' => 'BERKO'],
                     ['barang_id' => $barangBerko->barang_id, 'qty_kg' => 1031.4300, 'batch_no' => 'WIP-020126-01-BRK', 'hpp_satuan' => 14440.04, 'total_nilai' => 1031.4300 * 14440.04]
                 );

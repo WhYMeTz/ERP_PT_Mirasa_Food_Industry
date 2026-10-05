@@ -591,7 +591,7 @@ class CodeGeneratorService
     {
         $dateFormatted = date('Ymd', strtotime($date ?? date('Y-m-d')));
         $prefix = 'PRD-' . $dateFormatted . '-';
-        return $this->generate('dat_produksi_harian', 'batch_wip_no', $prefix, 2);
+        return $this->generate('dat_produksi_hdr', 'batch_wip_no', $prefix, 2);
     }
 
     /**
@@ -601,7 +601,7 @@ class CodeGeneratorService
     {
         $dateFormatted = date('Ymd', strtotime($date ?? date('Y-m-d')));
         $prefix = 'PRD-' . $dateFormatted . '-';
-        return $this->generate('dat_produksi_harian', 'produksi_no', $prefix, 4);
+        return $this->generate('dat_produksi_hdr', 'produksi_no', $prefix, 4);
     }
 
     /**
@@ -619,7 +619,7 @@ class CodeGeneratorService
     {
         $dateFormatted = date('dmy', strtotime($date ?? date('Y-m-d')));
         $prefix = !empty($varian) ? "WIP-{$varian}-{$dateFormatted}-" : "WIP-{$dateFormatted}-";
-        return $this->generate('dat_produksi_harian', 'batch_wip_no', $prefix, 2);
+        return $this->generate('dat_produksi_hdr', 'batch_wip_no', $prefix, 2);
     }
 
     /**

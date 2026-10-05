@@ -41,9 +41,9 @@
                     <input type="file" name="import_file" id="import_file" accept=".xlsx,.xls"
                         style="display:block; width:100%; font-size:0.875rem; border:1px solid #cbd5e1; border-radius:6px; padding:0.5rem; background:#f8fafc; cursor:pointer;"
                         required>
-                    @error('import_file')
-                        <div style="color:#dc2626; font-size:0.8rem; margin-top:0.3rem;">{{ $message }}</div>
-                    @enderror
+                    @if(isset($errors) && $errors->has('import_file'))
+                        <div style="color:#dc2626; font-size:0.8rem; margin-top:0.3rem;">{{ $errors->first('import_file') }}</div>
+                    @endif
                     <div style="font-size:0.77rem; color:#94a3b8; margin-top:0.3rem;">Maksimal 5 MB. Format didukung: .xlsx, .xls</div>
                 </div>
 

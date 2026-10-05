@@ -398,4 +398,155 @@ class StokService
             ->orderBy('ledger_id', 'desc')
             ->paginate($perPage);
     }
+
+    /**
+     * Mengambil data Rekap Stok (Blueprint 10 - Rekap Stok).
+     * Kolom: Gudang, Jenis Barang, Nama Barang, Kode Barang, Satuan, Batas Minimum,
+     * Total Masuk (IN), Total Keluar (OUT), Stok Akhir, Nilai Persediaan, Status.
+     */
+    public function getRekapStok(
+        array $filters = [],
+        int $perPage = 25,
+        int|array|null $allowedGudangIds = null
+    ): LengthAwarePaginator {
+        $gudangId = !empty($filters['gudang_id']) ? (int) $filters['gudang_id'] : $allowedGudangIds;
+
+        // Subquery agregasi Batch (Stok Akhir & Nilai Persediaan)
+        $subBatches = DatStokBatch::selectRaw('
+                barang_id,
+                COALESCE(SUM(qty_awal), 0) as total_batch_awal,
+                COALESCE(SUM(sisa_qty), 0) as stok_akhir,
+                COALESCE(SUM(sisa_qty * harga_satuan), 0) as nilai_persediaan
+            ')
+            ->where('deleted_st', false);
+        $this->applyGudangFilter($subBatches, $gudangId);
+        $subBatches->groupBy('barang_id');
+
+        // Subquery mutasi IN
+        $subIn = DatStokLedger::selectRaw('barang_id, SUM(qty) as total_in')
+            ->where('tipe_transaksi_cd', 'IN');
+        $this->applyGudangFilter($subIn, $gudangId);
+        if (!empty($filters['tgl_dari'])) {
+            $subIn->whereDate('transaksi_tgl', '>=', $filters['tgl_dari']);
+        }
+        if (!empty($filters['tgl_sampai'])) {
+            $subIn->whereDate('transaksi_tgl', '<=', $filters['tgl_sampai']);
+        }
+        $subIn->groupBy('barang_id');
+
+        // Subquery mutasi OUT
+        $subOut = DatStokLedger::selectRaw('barang_id, SUM(qty) as total_out')
+            ->where('tipe_transaksi_cd', 'OUT');
+        $this->applyGudangFilter($subOut, $gudangId);
+        if (!empty($filters['tgl_dari'])) {
+            $subOut->whereDate('transaksi_tgl', '>=', $filters['tgl_dari']);
+        }
+        if (!empty($filters['tgl_sampai'])) {
+            $subOut->whereDate('transaksi_tgl', '<=', $filters['tgl_sampai']);
+        }
+        $subOut->groupBy('barang_id');
+
+        $query = MstBarang::active()
+            ->leftJoinSub($subBatches, 'b', 'mst_barang.barang_id', '=', 'b.barang_id')
+            ->leftJoinSub($subIn, 'lin', 'mst_barang.barang_id', '=', 'lin.barang_id')
+            ->leftJoinSub($subOut, 'lout', 'mst_barang.barang_id', '=', 'lout.barang_id')
+            ->select(
+                'mst_barang.*',
+                DB::raw('COALESCE(lin.total_in, b.total_batch_awal, 0) as total_masuk'),
+                DB::raw('COALESCE(lout.total_out, 0) as total_keluar'),
+                DB::raw('COALESCE(b.stok_akhir, 0) as stok_akhir'),
+                DB::raw('COALESCE(b.nilai_persediaan, 0) as nilai_persediaan')
+            )
+            ->with(['jenisBarang', 'satuanDasar']);
+
+        // Filter pencarian: Nama Barang / Kode Barang
+        if (!empty($filters['search'])) {
+            $search = $filters['search'];
+            $query->where(function ($q) use ($search) {
+                $q->where('mst_barang.barang_nm', 'ILIKE', "%{$search}%")
+                  ->orWhere('mst_barang.barang_cd', 'ILIKE', "%{$search}%");
+            });
+        }
+
+        // Filter Jenis Barang
+        if (!empty($filters['jenis_barang_id'])) {
+            $query->where('mst_barang.jenis_barang_id', $filters['jenis_barang_id']);
+        }
+
+        // Filter Status (Aman / Rendah / Habis)
+        if (!empty($filters['status'])) {
+            $st = strtolower($filters['status']);
+            if ($st === 'aman') {
+                $query->whereRaw('COALESCE(b.stok_akhir, 0) > mst_barang.batas_minimum_qty');
+            } elseif ($st === 'rendah') {
+                $query->whereRaw('COALESCE(b.stok_akhir, 0) > 0 AND COALESCE(b.stok_akhir, 0) <= mst_barang.batas_minimum_qty');
+            } elseif ($st === 'habis') {
+                $query->whereRaw('COALESCE(b.stok_akhir, 0) <= 0');
+            }
+        }
+
+        // Tampilkan barang yang pernah ada transaksi atau memiliki stok
+        $query->whereRaw('(COALESCE(b.stok_akhir, 0) > 0 OR COALESCE(lin.total_in, b.total_batch_awal, 0) > 0)');
+
+        return $query->orderByRaw('CASE WHEN COALESCE(b.stok_akhir, 0) > 0 THEN 1 ELSE 0 END DESC')
+            ->orderBy('mst_barang.barang_nm', 'asc')
+            ->paginate($perPage)
+            ->withQueryString();
+    }
+
+    /**
+     * Mengambil ringkasan total KPI Rekap Stok untuk kartu indikator atas.
+     */
+    public function getRekapStokTotals(array $filters = [], int|array|null $allowedGudangIds = null): array
+    {
+        $gudangId = !empty($filters['gudang_id']) ? (int) $filters['gudang_id'] : $allowedGudangIds;
+
+        $subBatches = DatStokBatch::selectRaw('
+                barang_id,
+                COALESCE(SUM(qty_awal), 0) as total_batch_awal,
+                COALESCE(SUM(sisa_qty), 0) as stok_akhir,
+                COALESCE(SUM(sisa_qty * harga_satuan), 0) as nilai_persediaan
+            ')
+            ->where('deleted_st', false);
+        $this->applyGudangFilter($subBatches, $gudangId);
+        $subBatches->groupBy('barang_id');
+
+        $subIn = DatStokLedger::selectRaw('barang_id, SUM(qty) as total_in')
+            ->where('tipe_transaksi_cd', 'IN');
+        $this->applyGudangFilter($subIn, $gudangId);
+        $subIn->groupBy('barang_id');
+
+        $subOut = DatStokLedger::selectRaw('barang_id, SUM(qty) as total_out')
+            ->where('tipe_transaksi_cd', 'OUT');
+        $this->applyGudangFilter($subOut, $gudangId);
+        $subOut->groupBy('barang_id');
+
+        $query = MstBarang::active()
+            ->leftJoinSub($subBatches, 'b', 'mst_barang.barang_id', '=', 'b.barang_id')
+            ->leftJoinSub($subIn, 'lin', 'mst_barang.barang_id', '=', 'lin.barang_id')
+            ->leftJoinSub($subOut, 'lout', 'mst_barang.barang_id', '=', 'lout.barang_id')
+            ->whereRaw('(COALESCE(b.stok_akhir, 0) > 0 OR COALESCE(lin.total_in, b.total_batch_awal, 0) > 0)');
+
+        $rows = $query->selectRaw('
+            COUNT(*) as total_sku,
+            COALESCE(SUM(COALESCE(lin.total_in, b.total_batch_awal, 0)), 0) as grand_masuk,
+            COALESCE(SUM(COALESCE(lout.total_out, 0)), 0) as grand_keluar,
+            COALESCE(SUM(COALESCE(b.stok_akhir, 0)), 0) as grand_stok_akhir,
+            COALESCE(SUM(COALESCE(b.nilai_persediaan, 0)), 0) as grand_nilai_persediaan,
+            COUNT(CASE WHEN COALESCE(b.stok_akhir, 0) > 0 AND COALESCE(b.stok_akhir, 0) <= mst_barang.batas_minimum_qty THEN 1 END) as sku_rendah,
+            COUNT(CASE WHEN COALESCE(b.stok_akhir, 0) > mst_barang.batas_minimum_qty THEN 1 END) as sku_aman,
+            COUNT(CASE WHEN COALESCE(b.stok_akhir, 0) <= 0 THEN 1 END) as sku_habis
+        ')->first();
+
+        return [
+            'total_sku'             => (int) ($rows->total_sku ?? 0),
+            'grand_masuk'           => (float) ($rows->grand_masuk ?? 0),
+            'grand_keluar'          => (float) ($rows->grand_keluar ?? 0),
+            'grand_stok_akhir'      => (float) ($rows->grand_stok_akhir ?? 0),
+            'grand_nilai_persediaan'=> (float) ($rows->grand_nilai_persediaan ?? 0),
+            'sku_rendah'            => (int) ($rows->sku_rendah ?? 0),
+            'sku_aman'              => (int) ($rows->sku_aman ?? 0),
+            'sku_habis'             => (int) ($rows->sku_habis ?? 0),
+        ];
+    }
 }

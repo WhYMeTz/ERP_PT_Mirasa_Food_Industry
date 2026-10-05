@@ -4,13 +4,13 @@
 {{-- ════════════════════════════════════════════════════════════════ --}}
 
 @php
-    $modalCount = (int) ($report['count'] ?? 0);
-    $modalTot = $report['totals'] ?? [
+    $modalCount = (int) (($report ?? [])['count'] ?? 0);
+    $modalTot = (($report ?? [])['totals'] ?? [
         'total_wip_qty' => 0,
         'cng_mmbtu' => 0,
         'listrik_air_telp_nilai' => 0,
         'cng_nilai' => 0,
-    ];
+    ]);
 @endphp
 
 <div id="modal-adjust-utilitas" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(15,23,42,0.55); align-items:center; justify-content:center; padding:1rem;">

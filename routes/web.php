@@ -206,8 +206,11 @@ Route::middleware('auth')->group(function () {
             ->middleware('role:pemakaian_create');
         Route::resource('pemakaian', PemakaianController::class)->only(['index', 'show'])->middleware('role:pemakaian_view');
 
-        // Monitoring Persediaan: Lacak Stok & Kartu Stok (Berdasarkan izin 'stok_view')
+        // Monitoring Persediaan: Lacak Stok, Kartu Stok & Rekapitulasi Persediaan (Berdasarkan izin 'stok_view')
         Route::get('stok', [StokController::class, 'index'])->name('stok.index')->middleware('role:stok_view');
+        Route::get('stok/rekap', [StokController::class, 'rekap'])->name('stok.rekap')->middleware('role:stok_view');
+        Route::get('stok/rekap/export-excel', [StokController::class, 'exportRekapExcel'])->name('stok.rekap.export-excel')->middleware('role:stok_view');
+        Route::get('stok/rekap/export-pdf', [StokController::class, 'exportRekapPdf'])->name('stok.rekap.export-pdf')->middleware('role:stok_view');
         Route::get('stok/ledger', [StokController::class, 'ledger'])->name('stok.ledger')->middleware('role:stok_view');
     });
 

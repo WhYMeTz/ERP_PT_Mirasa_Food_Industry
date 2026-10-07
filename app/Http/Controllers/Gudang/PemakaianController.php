@@ -138,9 +138,18 @@ class PemakaianController extends Controller
         $gudangList = $user ? $user->getAllowedGudangList() : collect();
         $userGudangId = ($gudangList->count() === 1 && !$user?->isSuperAdmin()) ? $gudangList->first()->gudang_id : null;
 
-        // Hanya ambil barang peruntukan produksi (Bahan Baku, Penolong, Kemasan; bukan Barang Jadi FG / WIP)
+        // Ambil barang peruntukan produksi: Bahan Baku, Penolong, Kemasan, serta khusus Berko (bukan seluruh WIP)
         $barangList = MstBarang::active()
-            ->bahanProduksi()
+            ->where(function ($query) {
+                $query->bahanProduksi()
+                      ->orWhere(function ($wip) {
+                          $wip->whereHas('jenisBarang', fn($j) => $j->where('jenis_barang_cd', 'WIP'))
+                              ->where(function ($b) {
+                                  $b->where('barang_nm', 'ILIKE', '%BERKO%')
+                                    ->orWhere('barang_cd', 'ILIKE', '%BRK%');
+                              });
+                      });
+            })
             ->with(['satuanDasar', 'jenisBarang'])
             ->orderBy('barang_nm')
             ->get()
@@ -148,15 +157,15 @@ class PemakaianController extends Controller
                 $cd = strtoupper($b->jenisBarang->jenis_barang_cd ?? '');
                 $nm = strtoupper($b->barang_nm ?? '');
 
-                if ($cd === 'BB' || $cd === 'RAW' || str_contains($nm, 'SINGKONG') || str_contains($nm, 'UBI') || str_contains($nm, 'OPAK') || str_contains($nm, 'PUYUR')) {
+                if ($cd === 'BB' || $cd === 'RAW' || str_contains($nm, 'SINGKONG') || str_contains($nm, 'UBI') || str_contains($nm, 'OPAK') || str_contains($nm, 'PUYUR') || str_contains($nm, 'BERKO') || str_starts_with($cd, 'WIP')) {
                     $b->kategori_kelompok = 'BAHAN_BAKU';
-                    $b->kategori_label = '🌾 Bahan Baku';
+                    $b->kategori_label = 'Bahan Baku';
                 } elseif (str_contains($nm, 'KARTON') || str_contains($nm, 'PLASTIK') || str_contains($nm, 'ROLL') || str_contains($nm, 'LAKBAN') || str_contains($nm, 'RAFIA') || str_contains($nm, 'SARUNG TANGAN') || $cd === 'PACK') {
                     $b->kategori_kelompok = 'KEMASAN';
-                    $b->kategori_label = '📦 Kemasan & Packaging';
+                    $b->kategori_label = 'Kemasan & Packaging';
                 } else {
                     $b->kategori_kelompok = 'BAHAN_PENOLONG';
-                    $b->kategori_label = '🧂 Bahan Penolong & Bumbu';
+                    $b->kategori_label = 'Bahan Penolong & Bumbu';
                 }
 
                 return $b;

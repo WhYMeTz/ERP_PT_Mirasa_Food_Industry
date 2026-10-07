@@ -188,159 +188,197 @@
                         <td colspan="9" class="accordion-detail-cell">
                             <div class="cost-breakdown-grid">
                                 
-                                {{-- KOMPARTEMEN 1: BAHAN BAKU UTAMA & BUMBU (DIRECT MATERIALS) --}}
+                                {{-- KOMPARTEMEN 1: BAHAN BAKU UTAMA & MINYAK GORENG --}}
                                 <div class="mini-cost-card">
                                     <div class="mini-cost-header">
                                         <div class="mini-cost-title">
                                             <span>1. Bahan Baku &amp; Minyak</span>
                                         </div>
-                                        <span class="mini-cost-badge" style="background: #f1f5f9; color: #334155; border: 1px solid #e2e8f0;">Direct Material</span>
+                                        <span class="mini-cost-badge" style="background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0;">Bahan Utama</span>
                                     </div>
                                     <div class="mini-cost-list">
                                         <div class="mini-cost-row">
-                                            <span>Singkong Mentah:</span>
+                                            <span>Singkong Mentah (Kg):</span>
                                             <strong>{{ number_format($d['singkong_qty'], 0, ',', '.') }} kg</strong>
                                         </div>
                                         <div class="mini-cost-row">
-                                            <span>Minyak Sawit:</span>
-                                            <strong>{{ number_format($d['minyak_sawit_qty'], 0, ',', '.') }} kg</strong>
+                                            <span>Singkong Mentah (Rp):</span>
+                                            <strong>Rp {{ number_format($d['singkong_nilai'], 0, ',', '.') }}</strong>
                                         </div>
-                                        @if($d['minyak_kelapa_qty'] > 0)
-                                            <div class="mini-cost-row">
-                                                <span>Minyak Kelapa Barco:</span>
-                                                <strong style="color: #92400e;">{{ number_format($d['minyak_kelapa_qty'], 0, ',', '.') }} kg</strong>
-                                            </div>
-                                        @endif
                                         <div class="mini-cost-row">
-                                            <span>Subtotal Minyak:</span>
+                                            <span>Minyak Sawit:</span>
+                                            <strong>{{ number_format($d['minyak_sawit_qty'], 1, ',', '.') }} kg</strong>
+                                        </div>
+                                        <div class="mini-cost-row">
+                                            <span>Minyak Kelapa:</span>
+                                            <strong style="color: {{ $d['minyak_kelapa_qty'] > 0 ? '#92400e' : '#64748b' }};">{{ number_format($d['minyak_kelapa_qty'], 1, ',', '.') }} kg</strong>
+                                        </div>
+                                        <div class="mini-cost-row">
+                                            <span>Total Biaya Minyak:</span>
                                             <strong>Rp {{ number_format($d['minyak_nilai'], 0, ',', '.') }}</strong>
                                         </div>
                                         <div class="mini-cost-row">
-                                            <span>Rasio Minyak / Singkong:</span>
-                                            <strong>{{ number_format($d['minyak_rasio_persen'], 2, ',', '.') }}%</strong>
+                                            <span>Rasio Minyak (%):</span>
+                                            <strong style="color: #002060;">{{ number_format($d['minyak_rasio_persen'], 2, ',', '.') }}%</strong>
                                         </div>
-                                        @if($d['bumbu_nilai'] > 0)
-                                            <div class="mini-cost-row">
-                                                <span>Bumbu &amp; Perenyah:</span>
-                                                <strong>Rp {{ number_format($d['bumbu_nilai'], 0, ',', '.') }}</strong>
-                                            </div>
-                                        @endif
+                                        <div class="mini-cost-row">
+                                            <span>Bumbu &amp; Perenyah:</span>
+                                            <strong>Rp {{ number_format($d['bumbu_nilai'], 0, ',', '.') }}</strong>
+                                        </div>
                                     </div>
                                 </div>
 
-                                {{-- KOMPARTEMEN 2: BAHAN KEMASAN & PENGEMAS (PACKAGING SUPPLIES) --}}
+                                {{-- KOMPARTEMEN 2: BAHAN KEMASAN & PACKAGING --}}
                                 <div class="mini-cost-card">
                                     <div class="mini-cost-header">
                                         <div class="mini-cost-title">
                                             <span>2. Bahan Kemasan</span>
                                         </div>
-                                        <span class="mini-cost-badge" style="background: #f1f5f9; color: #334155; border: 1px solid #e2e8f0;">Packaging</span>
+                                        <span class="mini-cost-badge" style="background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe;">Packaging</span>
                                     </div>
                                     <div class="mini-cost-list">
                                         <div class="mini-cost-row">
                                             <span>Karton Baru:</span>
                                             <strong>Rp {{ number_format($d['karton_baru_nilai'], 0, ',', '.') }}</strong>
                                         </div>
-                                        @if($d['karton_bekas_nilai'] > 0)
-                                            <div class="mini-cost-row">
-                                                <span>Karton Bekas:</span>
-                                                <strong>Rp {{ number_format($d['karton_bekas_nilai'], 0, ',', '.') }}</strong>
-                                            </div>
-                                        @endif
+                                        <div class="mini-cost-row">
+                                            <span>Karton Bekas:</span>
+                                            <strong>Rp {{ number_format($d['karton_bekas_nilai'], 0, ',', '.') }}</strong>
+                                        </div>
                                         <div class="mini-cost-row">
                                             <span>Plastik HD 90x100:</span>
                                             <strong>Rp {{ number_format($d['plastik_hd_nilai'], 0, ',', '.') }}</strong>
                                         </div>
                                         <div class="mini-cost-row">
-                                            <span>Lakban (Besar &amp; Kecil):</span>
-                                            <strong>Rp {{ number_format($d['lakban_besar_nilai'] + $d['lakban_kecil_nilai'], 0, ',', '.') }}</strong>
+                                            <span>Lakban Besar:</span>
+                                            <strong>Rp {{ number_format($d['lakban_besar_nilai'], 0, ',', '.') }}</strong>
                                         </div>
                                         <div class="mini-cost-row">
-                                            <span>Tali Rafia Pengikat:</span>
+                                            <span>Lakban Kecil:</span>
+                                            <strong>Rp {{ number_format($d['lakban_kecil_nilai'], 0, ',', '.') }}</strong>
+                                        </div>
+                                        <div class="mini-cost-row">
+                                            <span>Tali Rafia:</span>
                                             <strong>Rp {{ number_format($d['tali_rafia_nilai'], 0, ',', '.') }}</strong>
                                         </div>
                                     </div>
                                 </div>
 
-                                {{-- KOMPARTEMEN 3: ENERGI GAS, UPAH & FOH (CONVERSION COSTS) --}}
+                                {{-- KOMPARTEMEN 3: ENERGI GAS CNG & TENAGA KERJA --}}
                                 <div class="mini-cost-card">
                                     <div class="mini-cost-header">
                                         <div class="mini-cost-title">
-                                            <span>3. Energi, Tenaga Kerja &amp; FOH</span>
+                                            <span>3. Energi &amp; Upah Kerja</span>
                                         </div>
-                                        <span class="mini-cost-badge" style="background: #f1f5f9; color: #334155; border: 1px solid #e2e8f0;">Conversion</span>
+                                        <span class="mini-cost-badge" style="background: #fefce8; color: #854d0e; border: 1px solid #fef08a;">Konversi</span>
                                     </div>
                                     <div class="mini-cost-list">
                                         <div class="mini-cost-row">
-                                            <span>Gas Alam (CNG):</span>
+                                            <span>Meteran Gas (CNG):</span>
+                                            <strong>{{ number_format($d['cng_mmbtu'], 3, ',', '.') }} MMBTU</strong>
+                                        </div>
+                                        <div class="mini-cost-row">
+                                            <span>Biaya Gas CNG:</span>
                                             <strong>Rp {{ number_format($d['cng_nilai'], 0, ',', '.') }}</strong>
                                         </div>
-                                        <div class="mini-cost-row" style="font-size: 0.7rem; color: #64748b;">
-                                            <span>Volume Meteran CNG:</span>
-                                            <span>{{ number_format($d['cng_mmbtu'], 3, ',', '.') }} MMBTU</span>
+                                        <div class="mini-cost-row">
+                                            <span>TK Langsung:</span>
+                                            <strong>{{ $d['tk_langsung_org'] }} Orang</strong>
                                         </div>
                                         <div class="mini-cost-row">
-                                            <span>Upah Tenaga Kerja:</span>
+                                            <span>TK Tdk Langsung:</span>
+                                            <strong>{{ $d['tk_tidak_langsung_org'] }} Orang</strong>
+                                        </div>
+                                        <div class="mini-cost-row">
+                                            <span>TK Training:</span>
+                                            <strong>{{ $d['tk_training_org'] }} Orang</strong>
+                                        </div>
+                                        <div class="mini-cost-row">
+                                            <span>Total Upah Kerja:</span>
                                             <strong>Rp {{ number_format($d['tk_total_nilai'], 0, ',', '.') }}</strong>
-                                        </div>
-                                        <div class="mini-cost-row" style="font-size: 0.7rem; color: #64748b;">
-                                            <span>Alokasi Karyawan:</span>
-                                            <span>{{ $d['tk_langsung_org'] + $d['tk_tidak_langsung_org'] + $d['tk_training_org'] }} Orang</span>
-                                        </div>
-                                        <div class="mini-cost-row">
-                                            <span>Listrik, Air &amp; Telp:</span>
-                                            <strong>Rp {{ number_format($d['listrik_air_telp_nilai'], 0, ',', '.') }}</strong>
-                                        </div>
-                                        <div class="mini-cost-row">
-                                            <span>QC, Perawatan &amp; Limbah:</span>
-                                            <strong>Rp {{ number_format($d['qc_pengawasan_nilai'] + $d['pemeliharaan_mesin_nilai'] + $d['penyusutan_mesin_nilai'] + $d['limbah_padat_nilai'] + $d['limbah_kimia_nilai'], 0, ',', '.') }}</strong>
                                         </div>
                                     </div>
                                 </div>
 
-                                {{-- KOMPARTEMEN 4: KLASIFIKASI OUTPUT FISIK WIP (FINISHED INVENTORY) --}}
+                                {{-- KOMPARTEMEN 4: OVERHEAD PABRIK (FOH) & LIMBAH --}}
                                 <div class="mini-cost-card">
                                     <div class="mini-cost-header">
                                         <div class="mini-cost-title">
-                                            <span>4. Output Fisik WIP Olahan</span>
+                                            <span>4. FOH &amp; Pengolahan Limbah</span>
                                         </div>
-                                        <span class="mini-cost-badge" style="background: #f1f5f9; color: #334155; border: 1px solid #e2e8f0;">Finished Goods</span>
+                                        <span class="mini-cost-badge" style="background: #fdf2f8; color: #9d174d; border: 1px solid #fbcfe8;">Overhead</span>
                                     </div>
                                     <div class="mini-cost-list">
-                                        @if($d['asin_barco_qty'] > 0)
-                                            <div class="mini-cost-row">
-                                                <span>Asin Barco:</span>
-                                                <strong style="color: #0369a1;">{{ number_format($d['asin_barco_qty'], 2, ',', '.') }} kg</strong>
-                                            </div>
-                                        @endif
-                                        @if($d['asin_sawit_qty'] > 0)
-                                            <div class="mini-cost-row">
-                                                <span>Asin Sawit:</span>
-                                                <strong style="color: #0369a1;">{{ number_format($d['asin_sawit_qty'], 2, ',', '.') }} kg</strong>
-                                            </div>
-                                        @endif
-                                        @if($d['no_salt_qty'] > 0)
-                                            <div class="mini-cost-row">
-                                                <span>No Salt (IFM):</span>
-                                                <strong style="color: #0369a1;">{{ number_format($d['no_salt_qty'], 2, ',', '.') }} kg</strong>
-                                            </div>
-                                        @endif
-                                        @if($d['balo_gelombang_qty'] > 0)
-                                            <div class="mini-cost-row">
-                                                <span>Balo Gelombang:</span>
-                                                <strong>{{ number_format($d['balo_gelombang_qty'], 2, ',', '.') }} kg</strong>
-                                            </div>
-                                        @endif
+                                        <div class="mini-cost-row">
+                                            <span>Foto Copy / ATK:</span>
+                                            <strong>Rp {{ number_format($d['fotocopy_nilai'], 0, ',', '.') }}</strong>
+                                        </div>
+                                        <div class="mini-cost-row">
+                                            <span>Sarung Tangan Plastik:</span>
+                                            <strong>Rp {{ number_format($d['sarung_tangan_plastik_nilai'], 0, ',', '.') }}</strong>
+                                        </div>
+                                        <div class="mini-cost-row">
+                                            <span>Sarung Tangan Kain:</span>
+                                            <strong>Rp {{ number_format($d['sarung_tangan_kain_nilai'], 0, ',', '.') }}</strong>
+                                        </div>
+                                        <div class="mini-cost-row">
+                                            <span>Pengawasan Mutu (QC):</span>
+                                            <strong>Rp {{ number_format($d['qc_pengawasan_nilai'], 0, ',', '.') }}</strong>
+                                        </div>
+                                        <div class="mini-cost-row">
+                                            <span>Listrik &amp; Air - Telp:</span>
+                                            <strong>Rp {{ number_format($d['listrik_air_telp_nilai'], 0, ',', '.') }}</strong>
+                                        </div>
+                                        <div class="mini-cost-row">
+                                            <span>Pemeliharaan Mesin:</span>
+                                            <strong>Rp {{ number_format($d['pemeliharaan_mesin_nilai'], 0, ',', '.') }}</strong>
+                                        </div>
+                                        <div class="mini-cost-row">
+                                            <span>Penyusutan Mesin:</span>
+                                            <strong>Rp {{ number_format($d['penyusutan_mesin_nilai'], 0, ',', '.') }}</strong>
+                                        </div>
+                                        <div class="mini-cost-row">
+                                            <span>Limbah Padat:</span>
+                                            <strong>Rp {{ number_format($d['limbah_padat_nilai'], 0, ',', '.') }}</strong>
+                                        </div>
+                                        <div class="mini-cost-row">
+                                            <span>Bahan Kimia Limbah:</span>
+                                            <strong>Rp {{ number_format($d['limbah_kimia_nilai'], 0, ',', '.') }}</strong>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {{-- KOMPARTEMEN 5: TOTAL AKUMULASI BIAYA, WIP & HPP --}}
+                                <div class="mini-cost-card" style="border-color: #fde047; background: #fefce8;">
+                                    <div class="mini-cost-header" style="border-bottom-color: #fef08a;">
+                                        <div class="mini-cost-title" style="color: #713f12;">
+                                            <span>5. Output WIP, Rendemen &amp; HPP</span>
+                                        </div>
+                                        <span class="mini-cost-badge" style="background: #ca8a04; color: #ffffff; font-weight: 700;">HPP Final</span>
+                                    </div>
+                                    <div class="mini-cost-list">
+                                        <div class="mini-cost-row">
+                                            <span>Total Output WIP:</span>
+                                            <strong style="color: #0369a1; font-size: 0.85rem;">{{ number_format($d['total_wip_qty'], 2, ',', '.') }} kg</strong>
+                                        </div>
+                                        <div class="mini-cost-row">
+                                            <span>Rendemen Bersih:</span>
+                                            <strong style="color: {{ $rBadgeColor }};">{{ number_format($rendemen, 2, ',', '.') }}%</strong>
+                                        </div>
                                         @if($d['total_berko_qty'] > 0)
                                             <div class="mini-cost-row">
-                                                <span>Berko (Remukan):</span>
-                                                <strong style="color: #991b1b;">{{ number_format($d['total_berko_qty'], 2, ',', '.') }} kg ({{ number_format($d['berko_persen'], 1) }}%)</strong>
+                                                <span>Remukan (Berko):</span>
+                                                <strong style="color: #b91c1c;">{{ number_format($d['total_berko_qty'], 2, ',', '.') }} kg ({{ number_format($d['berko_persen'], 1) }}%)</strong>
                                             </div>
                                         @endif
-                                        <div class="mini-cost-divider"></div>
+                                        <div class="mini-cost-divider" style="background: #fde047;"></div>
                                         <div class="mini-cost-row">
-                                            <span><strong style="color: #0f172a;">Total Fisik Jadi:</strong></span>
-                                            <strong style="color: #0f172a; font-size: 0.85rem;">{{ number_format($d['total_wip_qty'], 2, ',', '.') }} kg</strong>
+                                            <span style="font-weight: 700; color: #713f12;">Total Biaya:</span>
+                                            <strong style="color: #713f12; font-size: 0.875rem;">Rp {{ number_format($d['total_biaya_produksi'], 0, ',', '.') }}</strong>
+                                        </div>
+                                        <div class="mini-cost-row" style="background: #ffffff; padding: 0.35rem 0.5rem; border-radius: 4px; border: 1px solid #fef08a;">
+                                            <span style="font-weight: 800; color: #0f172a; font-size: 0.775rem;">HPP / Kg:</span>
+                                            <strong style="color: #047857; font-size: 1rem; font-family: monospace;">Rp {{ number_format($d['hpp_per_kg'], 0, ',', '.') }}</strong>
                                         </div>
                                     </div>
                                 </div>

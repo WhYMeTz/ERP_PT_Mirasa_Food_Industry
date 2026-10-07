@@ -1,8 +1,3 @@
-{{-- ═════════════════════════════════════════════════════════════
-     PARTIAL: TABEL PEMAKAIAN BAHAN BAKU (BLUEPRINT 9.B.1)
-     Menampilkan: Tanggal Pemakaian, Kode Barang, Nama Barang,
-     Jumlah Pemakaian, dan Sisa Stok Barang di Gudang.
-     ═════════════════════════════════════════════════════════════ --}}
 <div id="wrapperTabelPemakaian" style="margin-top: 1rem; display: none;">
     <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
         <div style="background: #f8fafc; padding: 0.65rem 1rem; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">

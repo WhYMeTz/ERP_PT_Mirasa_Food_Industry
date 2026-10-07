@@ -223,5 +223,172 @@ document.addEventListener('DOMContentLoaded', function () {
     switchHppViewMode(savedMode);
 });
 
+/* ═════════════════════════════════════════════════════════════
+   MODAL REKONSILIASI PENYESUAIAN BIAYA UTILITAS BULANAN
+   ═════════════════════════════════════════════════════════════ */
+function openModalAdjustUtilitas() {
+    const modal = document.getElementById('modal-adjust-utilitas');
+    if (modal) {
+        modal.classList.add('show');
+        modal.style.display = 'flex';
+        updateLivePreview();
+    }
+}
+
+function closeModalAdjustUtilitas() {
+    const modal = document.getElementById('modal-adjust-utilitas');
+    if (modal) {
+        modal.classList.remove('show');
+        modal.style.display = 'none';
+    }
+}
+
+function toggleListrikSection() {
+    const chk = document.getElementById('chk_adjust_listrik');
+    const sec = document.getElementById('section_input_listrik');
+    if (sec && chk) {
+        sec.style.display = chk.checked ? 'block' : 'none';
+    }
+    updateLivePreview();
+}
+
+function toggleCngSection() {
+    const chk = document.getElementById('chk_adjust_cng');
+    const sec = document.getElementById('section_input_cng');
+    if (sec && chk) {
+        sec.style.display = chk.checked ? 'block' : 'none';
+    }
+    updateLivePreview();
+}
+
+function toggleListrikMode() {
+    const mode = document.querySelector('input[name="mode_alokasi_listrik"]:checked')?.value || 'tarif_per_kg';
+    const boxTarif = document.getElementById('listrik_box_tarif');
+    const boxTotal = document.getElementById('listrik_box_total');
+    if (boxTarif && boxTotal) {
+        if (mode === 'tarif_per_kg') {
+            boxTarif.style.display = 'block';
+            boxTotal.style.display = 'none';
+        } else {
+            boxTarif.style.display = 'none';
+            boxTotal.style.display = 'block';
+        }
+    }
+    updateLivePreview();
+}
+
+function toggleCngMode() {
+    const mode = document.querySelector('input[name="mode_cng"]:checked')?.value || 'update_tarif';
+    const boxTarif = document.getElementById('cng_box_tarif');
+    const boxTotal = document.getElementById('cng_box_total');
+    if (boxTarif && boxTotal) {
+        if (mode === 'update_tarif') {
+            boxTarif.style.display = 'block';
+            boxTotal.style.display = 'none';
+        } else {
+            boxTarif.style.display = 'none';
+            boxTotal.style.display = 'block';
+        }
+    }
+    updateLivePreview();
+}
+
+function toggleDateAccordion() {
+    const btn = document.getElementById('btn_toggle_date_preview');
+    const container = document.getElementById('container_date_preview');
+    if (!container || !btn) return;
+    const isShowing = container.classList.contains('show');
+    if (isShowing) {
+        container.classList.remove('show');
+        btn.classList.remove('active');
+    } else {
+        container.classList.add('show');
+        btn.classList.add('active');
+    }
+}
+
+function updateLivePreview() {
+    const modalEl = document.getElementById('modal-adjust-utilitas');
+    if (!modalEl) return;
+
+    const totalWip = parseFloat(modalEl.dataset.wip || '0');
+    const totalMmbtu = parseFloat(modalEl.dataset.mmbtu || '0');
+
+    const chkListrik = document.getElementById('chk_adjust_listrik')?.checked ?? true;
+    const chkCng = document.getElementById('chk_adjust_cng')?.checked ?? true;
+
+    // Listrik
+    const modeListrik = document.querySelector('input[name="mode_alokasi_listrik"]:checked')?.value || 'tarif_per_kg';
+    const tarifListrik = parseFloat(document.getElementById('listrik_tarif_per_kg')?.value || 0);
+    const totalListrikFaktur = parseFloat(document.getElementById('total_listrik_air')?.value || 0);
+
+    // CNG
+    const modeCng = document.querySelector('input[name="mode_cng"]:checked')?.value || 'update_tarif';
+    const tarifCng = parseFloat(document.getElementById('cng_tarif_baru')?.value || 0);
+    const totalCngFaktur = parseFloat(document.getElementById('total_cng_tagihan')?.value || 0);
+
+    // Update 3 Strip KPI
+    const kpiListrik = document.getElementById('kpi_summary_listrik');
+    if (kpiListrik) {
+        if (!chkListrik) {
+            kpiListrik.textContent = '-';
+        } else {
+            const totListrik = modeListrik === 'tarif_per_kg' ? Math.round(totalWip * tarifListrik) : totalListrikFaktur;
+            kpiListrik.textContent = 'Rp ' + totListrik.toLocaleString('id-ID');
+        }
+    }
+
+    const kpiCng = document.getElementById('kpi_summary_cng');
+    if (kpiCng) {
+        if (!chkCng) {
+            kpiCng.textContent = '-';
+        } else {
+            const totCng = modeCng === 'update_tarif' ? Math.round(totalMmbtu * tarifCng) : totalCngFaktur;
+            kpiCng.textContent = 'Rp ' + totCng.toLocaleString('id-ID');
+        }
+    }
+
+    // Update individual preview rows in accordion (if rendered)
+    const rows = modalEl.querySelectorAll('.preview-row');
+    rows.forEach(tr => {
+        const rowWip = parseFloat(tr.dataset.wip || '0');
+        const rowMmbtu = parseFloat(tr.dataset.mmbtu || '0');
+        const cellListrik = tr.querySelector('.cell-new-listrik');
+        const cellCng = tr.querySelector('.cell-new-cng');
+
+        if (cellListrik) {
+            if (!chkListrik) {
+                cellListrik.textContent = '-';
+                cellListrik.style.color = '#94a3b8';
+            } else {
+                let val = 0;
+                if (modeListrik === 'tarif_per_kg') {
+                    val = Math.round(rowWip * tarifListrik);
+                } else {
+                    val = totalWip > 0 ? Math.round(totalListrikFaktur * (rowWip / totalWip)) : 0;
+                }
+                cellListrik.textContent = 'Rp ' + val.toLocaleString('id-ID');
+                cellListrik.style.color = '#0284c7';
+            }
+        }
+
+        if (cellCng) {
+            if (!chkCng) {
+                cellCng.textContent = '-';
+                cellCng.style.color = '#94a3b8';
+            } else {
+                let val = 0;
+                if (modeCng === 'update_tarif') {
+                    val = Math.round(rowMmbtu * tarifCng);
+                } else {
+                    val = totalMmbtu > 0 ? Math.round(totalCngFaktur * (rowMmbtu / totalMmbtu)) : 0;
+                }
+                cellCng.textContent = 'Rp ' + val.toLocaleString('id-ID');
+                cellCng.style.color = '#059669';
+            }
+        }
+    });
+}
+
 
 

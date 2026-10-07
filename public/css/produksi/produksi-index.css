@@ -286,14 +286,14 @@
 }
 
 /* ═════════════════════════════════════════════════════════════
-   TABLE HASIL PRODUKSI (POINT 9)
+   TABLE HASIL PRODUKSI (OPTIMIZED ENTERPRISE COMPACT - NO SCROLL)
    ═════════════════════════════════════════════════════════════ */
 .table-responsive-hasil {
-    overflow-x: auto;
     background: #ffffff;
     border: 1px solid #e2e8f0;
     border-radius: 10px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    overflow: hidden;
 }
 
 .table-hasil {
@@ -301,7 +301,6 @@
     border-collapse: collapse;
     font-size: 0.8rem;
     text-align: left;
-    white-space: nowrap;
 }
 
 .table-hasil th {
@@ -313,13 +312,18 @@
     letter-spacing: 0.05em;
     padding: 0.75rem 0.85rem;
     border-bottom: 1px solid #e2e8f0;
+    white-space: nowrap;
 }
 
 .table-hasil td {
-    padding: 0.7rem 0.85rem;
+    padding: 0.75rem 0.85rem;
     border-bottom: 1px solid #f1f5f9;
     color: #1e293b;
     vertical-align: middle;
+}
+
+.table-hasil tbody tr {
+    transition: background-color 0.12s ease;
 }
 
 .table-hasil tbody tr:hover {
@@ -330,7 +334,61 @@
     background: #f8fafc;
     font-weight: 700;
     border-top: 2px solid #cbd5e1;
-    padding: 0.75rem 0.85rem;
+    padding: 0.8rem 0.85rem;
+}
+
+/* Multi-Tier Compact Cell Typography */
+.cell-doc-link {
+    color: #0284c7;
+    font-weight: 700;
+    font-size: 0.85rem;
+    text-decoration: none;
+    display: inline-block;
+    transition: color 0.15s ease;
+}
+
+.cell-doc-link:hover {
+    color: #0369a1;
+    text-decoration: underline;
+}
+
+.cell-subtext {
+    font-size: 0.725rem;
+    color: #64748b;
+    margin-top: 0.2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.cell-primary-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #0f172a;
+    line-height: 1.25;
+}
+
+.cell-qty-val {
+    font-size: 0.925rem;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    color: #0f172a;
+    line-height: 1.2;
+}
+
+.cell-unit {
+    font-size: 0.725rem;
+    font-weight: 700;
+    color: #64748b;
+    margin-left: 0.15rem;
+}
+
+.cell-nilai-val {
+    font-size: 0.875rem;
+    font-weight: 800;
+    color: #047857;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.2;
 }
 
 /* Status Stok Badges */
@@ -366,6 +424,19 @@
     border-radius: 4px;
     font-size: 0.7rem;
     font-weight: 600;
+}
+
+.badge-satuan-pill {
+    display: inline-block;
+    padding: 0.15rem 0.45rem;
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
 }
 
 /* ═════════════════════════════════════════════════════════════
@@ -556,17 +627,11 @@
     background: #f8fafc;
 }
 
-/* Cost Breakdown Modular Cards */
+/* Cost Breakdown Modular Cards (100% Sesuai 28 Komponen Biaya Excel) */
 .cost-breakdown-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 1rem;
-}
-
-@media (max-width: 1200px) {
-    .cost-breakdown-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 0.85rem;
 }
 
 @media (max-width: 768px) {
@@ -851,6 +916,549 @@
     background: #f1f5f9;
     color: #64748b;
     font-weight: 700;
+}
+
+/* ═════════════════════════════════════════════════════════════
+   MODAL REKONSILIASI & PENYESUAIAN UTILITAS (ENTERPRISE GRADE)
+   ═════════════════════════════════════════════════════════════ */
+.modal-utilitas-dialog {
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25);
+    width: 100%;
+    max-width: 660px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    max-height: 90vh;
+    border: 1px solid #e2e8f0;
+}
+
+.modal-utilitas-header {
+    background: #ffffff;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.modal-utilitas-title {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: #0f172a;
+    letter-spacing: -0.01em;
+    margin: 0;
+    line-height: 1.3;
+}
+
+.modal-utilitas-subtitle {
+    font-size: 0.775rem;
+    color: #64748b;
+    margin-top: 0.25rem;
+}
+
+.modal-utilitas-close {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+    transition: color 0.15s ease, background 0.15s ease;
+}
+
+.modal-utilitas-close:hover {
+    color: #0f172a;
+    background: #f1f5f9;
+}
+
+.modal-utilitas-body {
+    padding: 1.25rem 1.5rem;
+    overflow-y: auto;
+    flex: 1;
+    background: #f8fafc;
+}
+
+/* Metric Strip */
+.utilitas-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.65rem;
+    margin-bottom: 1.25rem;
+}
+
+@media (max-width: 640px) {
+    .utilitas-kpi-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+.utilitas-kpi-tile {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0.65rem 0.75rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.utilitas-kpi-label {
+    font-size: 0.675rem;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.utilitas-kpi-val {
+    font-size: 0.875rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin-top: 0.2rem;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Section Cards */
+.utilitas-section-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 1.15rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+    transition: border-color 0.15s ease;
+}
+
+.utilitas-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.85rem;
+}
+
+.utilitas-toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    cursor: pointer;
+    margin: 0;
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: #0f172a;
+    user-select: none;
+}
+
+/* Custom Switch Toggle */
+.custom-switch {
+    position: relative;
+    display: inline-block;
+    width: 36px;
+    height: 20px;
+    flex-shrink: 0;
+}
+
+.custom-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.switch-slider {
+    position: absolute;
+    cursor: pointer;
+    inset: 0;
+    background-color: #cbd5e1;
+    transition: 0.2s;
+    border-radius: 9999px;
+}
+
+.switch-slider:before {
+    position: absolute;
+    content: "";
+    height: 14px;
+    width: 14px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: 0.2s;
+    border-radius: 50%;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.custom-switch input:checked + .switch-slider {
+    background-color: #0284c7;
+}
+
+.custom-switch input:checked + .switch-slider:before {
+    transform: translateX(16px);
+}
+
+/* Category Badge */
+.utilitas-badge-tag {
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 0.15rem 0.5rem;
+    border-radius: 9999px;
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+}
+
+/* Input Addon Prefix */
+.input-addon-group {
+    display: flex;
+    align-items: center;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    overflow: hidden;
+    background: #ffffff;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.input-addon-group:focus-within {
+    border-color: #0284c7;
+    box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+}
+
+.addon-prefix {
+    background: #f8fafc;
+    border-right: 1px solid #e2e8f0;
+    padding: 0.45rem 0.75rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #64748b;
+    user-select: none;
+}
+
+.addon-input {
+    border: none !important;
+    padding: 0.45rem 0.75rem;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #0f172a;
+    width: 100%;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+/* Segmented Buttons */
+.segmented-btn-group {
+    display: flex;
+    background: #f1f5f9;
+    padding: 0.25rem;
+    border-radius: 8px;
+    gap: 0.25rem;
+    margin-top: 0.4rem;
+}
+
+.segmented-radio-item {
+    flex: 1;
+    text-align: center;
+    position: relative;
+}
+
+.segmented-radio-item input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.segmented-radio-label {
+    display: block;
+    padding: 0.35rem 0.65rem;
+    font-size: 0.775rem;
+    font-weight: 600;
+    color: #64748b;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    user-select: none;
+}
+
+.segmented-radio-item input[type="radio"]:checked + .segmented-radio-label {
+    background: #ffffff;
+    color: #0284c7;
+    font-weight: 700;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* Calculation Callout Box */
+.utilitas-calc-callout {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.75rem;
+    color: #166534;
+    margin-top: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* Corporate Notice Box */
+.utilitas-notice-box {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-left: 3.5px solid #0284c7;
+    border-radius: 6px;
+    padding: 0.65rem 0.85rem;
+    margin-bottom: 0.5rem;
+    font-size: 0.75rem;
+    color: #334155;
+    line-height: 1.45;
+}
+
+/* Modal Footer */
+.modal-utilitas-footer {
+    background: #ffffff;
+    border-top: 1px solid #e2e8f0;
+    padding: 0.85rem 1.5rem;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.65rem;
+}
+
+/* ═════════════════════════════════════════════════════════════
+   MODAL UTILITAS: CARD-BASED WITH COLLAPSIBLE DATE PREVIEW
+   ═════════════════════════════════════════════════════════════ */
+.modal-utilitas-dialog {
+    max-width: 680px !important;
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25);
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    max-height: 90vh;
+}
+
+.modal-utilitas-header {
+    background: #ffffff;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 1.15rem 1.35rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.modal-utilitas-title {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0;
+    letter-spacing: -0.01em;
+}
+
+.modal-utilitas-subtitle {
+    font-size: 0.775rem;
+    color: #64748b;
+    margin-top: 0.2rem;
+}
+
+.modal-utilitas-body {
+    padding: 1.15rem 1.35rem;
+    background: #f8fafc;
+    overflow-y: auto;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+}
+
+/* Kartu Utilitas */
+.utilitas-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1rem 1.15rem;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+.utilitas-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.utilitas-card-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #0f172a;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.utilitas-badge-pill {
+    font-size: 0.675rem;
+    font-weight: 700;
+    color: #475569;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    padding: 0.15rem 0.5rem;
+    border-radius: 9999px;
+}
+
+/* Radio Choice Strip */
+.utilitas-radio-strip {
+    display: flex;
+    gap: 1.25rem;
+    margin-bottom: 0.65rem;
+    font-size: 0.8rem;
+}
+
+.utilitas-radio-lbl {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: #334155;
+    font-weight: 600;
+    cursor: pointer;
+    user-select: none;
+    margin: 0;
+}
+
+.utilitas-radio-lbl input[type="radio"] {
+    accent-color: #0284c7;
+    cursor: pointer;
+}
+
+/* Ringkasan Akumulasi Otomatis (3 Strip KPI) */
+.utilitas-summary-strip {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.65rem;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+}
+
+@media (max-width: 600px) {
+    .utilitas-summary-strip {
+        grid-template-columns: 1fr;
+    }
+}
+
+.summary-strip-tile {
+    display: flex;
+    flex-direction: column;
+}
+
+.summary-tile-label {
+    font-size: 0.675rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #64748b;
+}
+
+.summary-tile-val {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin-top: 0.15rem;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Accordion Trigger Button */
+.btn-accordion-preview {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 0.65rem 1rem;
+    font-size: 0.775rem;
+    font-weight: 700;
+    color: #334155;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn-accordion-preview:hover {
+    background: #f8fafc;
+    border-color: #94a3b8;
+    color: #0f172a;
+}
+
+.btn-accordion-preview.active {
+    background: #f1f5f9;
+    border-color: #0284c7;
+    color: #0284c7;
+}
+
+.btn-accordion-preview svg {
+    transition: transform 0.2s ease;
+}
+
+.btn-accordion-preview.active svg {
+    transform: rotate(180deg);
+}
+
+/* Collapsible Table Container */
+.accordion-table-container {
+    display: none;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    overflow: hidden;
+    max-height: 240px;
+    overflow-y: auto;
+}
+
+.accordion-table-container.show {
+    display: block;
+}
+
+.table-accordion-grid {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.75rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.table-accordion-grid th {
+    background: #f8fafc;
+    color: #475569;
+    font-size: 0.675rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    padding: 0.45rem 0.65rem;
+    border-bottom: 1px solid #e2e8f0;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    white-space: nowrap;
+}
+
+.table-accordion-grid td {
+    padding: 0.4rem 0.65rem;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+}
+
+.table-accordion-grid tbody tr:hover {
+    background: #f8fafc;
+}
+
+/* Footer Modal */
+.modal-utilitas-footer {
+    background: #ffffff;
+    border-top: 1px solid #e2e8f0;
+    padding: 0.85rem 1.35rem;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.65rem;
 }
 
 

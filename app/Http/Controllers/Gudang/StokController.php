@@ -22,7 +22,7 @@ class StokController extends Controller
      */
     public function index(Request $request): View|JsonResponse
     {
-        $viewType = $request->input('view', 'split'); // 'split' (Master-Detail), 'summary' (Tabel Ringkas), 'batch' (Sheet)
+        $viewType = $request->input('view', 'split');
         $defaultPerPage = ($viewType === 'split') ? 100 : 20;
         $perPage = (int) $request->input('per_page', $defaultPerPage);
 
@@ -157,7 +157,9 @@ class StokController extends Controller
 
     /**
      * Halaman Rekapitulasi Stok Komoditas & Valuasi Persediaan (Blueprint 10 - Rekap Stok).
-     * Menampilkan: Batas Minimum, Total Masuk (IN), Total Keluar (OUT), Stok Akhir, Nilai Persediaan, Status.
+     * Mendukung Snapshot Harian (Daily Balance Sheet seperti Excel PT Mirasa) & Split Tab:
+     * - Tab 'hasil_produksi': Stok Gudang Jadi (FG & WIP)
+     * - Tab 'bahan': Stok Bahan Baku & Penolong (RAW, BP, PACK, SUPP)
      */
     public function rekap(Request $request): View|JsonResponse
     {
@@ -182,16 +184,39 @@ class StokController extends Controller
             $gudangId = null;
         }
 
+        $tab = $request->input('tab', 'hasil_produksi');
+        if (!in_array($tab, ['hasil_produksi', 'bahan'])) {
+            $tab = 'hasil_produksi';
+        }
+        $tanggal = $request->input('tanggal', date('Y-m-d'));
+        
+        $dateObj = \Carbon\Carbon::parse($tanggal);
+        $prevDate = $dateObj->copy()->subDay()->toDateString();
+        $nextDate = $dateObj->copy()->addDay()->toDateString();
+        $isToday = $dateObj->isToday();
+
+        $dayNameIndo = [
+            'Sunday' => 'Minggu', 'Monday' => 'Senin', 'Tuesday' => 'Selasa',
+            'Wednesday' => 'Rabu', 'Thursday' => 'Kamis', 'Friday' => 'Jumat', 'Saturday' => 'Sabtu'
+        ][$dateObj->format('l')] ?? $dateObj->format('l');
+        $monthNameIndo = [
+            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
+            5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
+            9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+        ][$dateObj->month] ?? $dateObj->format('F');
+        $formattedDateIndo = $dayNameIndo . ', ' . $dateObj->format('d') . ' ' . $monthNameIndo . ' ' . $dateObj->format('Y');
+
         $filters = [
+            'tab'             => $tab,
+            'tanggal'         => $tanggal,
             'gudang_id'       => $gudangId,
             'search'          => $request->input('search'),
-            'status'          => $request->input('status'), // 'aman', 'rendah', 'habis'
+            'status'          => $request->input('status', 'all'), // 'all', 'bergerak', 'aman', 'rendah', 'habis'
+            'jenis_cd'        => $request->input('jenis_cd', 'all'), // 'all', 'FG', 'WIP', 'RAW', 'BP', 'PACK', 'SUPP'
             'jenis_barang_id' => $request->input('jenis_barang_id') ? (int) $request->input('jenis_barang_id') : null,
-            'tgl_dari'        => $request->input('tgl_dari'),
-            'tgl_sampai'      => $request->input('tgl_sampai'),
         ];
 
-        $perPage = (int) $request->input('per_page', 25);
+        $perPage = (int) $request->input('per_page', 50);
         $rekapList = $this->stokService->getRekapStok($filters, $perPage, $effectiveGudang);
         $totals = $this->stokService->getRekapStokTotals($filters, $effectiveGudang);
 
@@ -200,6 +225,8 @@ class StokController extends Controller
         if ($request->wantsJson()) {
             return response()->json([
                 'status' => 'success',
+                'tab'    => $tab,
+                'tanggal'=> $tanggal,
                 'totals' => $totals,
                 'data'   => $rekapList,
             ]);
@@ -212,7 +239,13 @@ class StokController extends Controller
             'selectedGudang',
             'jenisBarangList',
             'filters',
-            'gudangId'
+            'gudangId',
+            'tab',
+            'tanggal',
+            'prevDate',
+            'nextDate',
+            'isToday',
+            'formattedDateIndo'
         ));
     }
 
@@ -233,13 +266,17 @@ class StokController extends Controller
             $gudangId = $requestedGudangId;
         }
 
+        $tab = $request->input('tab', 'hasil_produksi');
+        $tanggal = $request->input('tanggal', date('Y-m-d'));
+
         $filters = [
+            'tab'             => $tab,
+            'tanggal'         => $tanggal,
             'gudang_id'       => $gudangId,
             'search'          => $request->input('search'),
-            'status'          => $request->input('status'),
+            'status'          => $request->input('status', 'all'),
+            'jenis_cd'        => $request->input('jenis_cd', 'all'),
             'jenis_barang_id' => $request->input('jenis_barang_id') ? (int) $request->input('jenis_barang_id') : null,
-            'tgl_dari'        => $request->input('tgl_dari'),
-            'tgl_sampai'      => $request->input('tgl_sampai'),
         ];
 
         // Ambil semua data (tanpa paginasi untuk export)
@@ -257,7 +294,8 @@ class StokController extends Controller
             \Carbon\Carbon::now()->format('d/m/Y H:i')
         );
 
-        $filename = 'Rekap_Stok_' . ($selectedGudang ? preg_replace('/[^A-Za-z0-9_]/', '_', $selectedGudang->gudang_nm) : 'Semua') . '_' . date('Ymd_His') . '.xlsx';
+        $tabPrefix = $tab === 'hasil_produksi' ? 'Gudang_Jadi' : 'Bahan_Baku';
+        $filename = 'Rekap_Stok_' . $tabPrefix . '_' . $tanggal . '_' . date('His') . '.xlsx';
         return $exporter->download($filename);
     }
 
@@ -278,13 +316,17 @@ class StokController extends Controller
             $gudangId = $requestedGudangId;
         }
 
+        $tab = $request->input('tab', 'hasil_produksi');
+        $tanggal = $request->input('tanggal', date('Y-m-d'));
+
         $filters = [
+            'tab'             => $tab,
+            'tanggal'         => $tanggal,
             'gudang_id'       => $gudangId,
             'search'          => $request->input('search'),
-            'status'          => $request->input('status'),
+            'status'          => $request->input('status', 'all'),
+            'jenis_cd'        => $request->input('jenis_cd', 'all'),
             'jenis_barang_id' => $request->input('jenis_barang_id') ? (int) $request->input('jenis_barang_id') : null,
-            'tgl_dari'        => $request->input('tgl_dari'),
-            'tgl_sampai'      => $request->input('tgl_sampai'),
         ];
 
         $items = $this->stokService->getRekapStok($filters, 10000, $effectiveGudang)->items();
@@ -309,7 +351,8 @@ class StokController extends Controller
             'printedAt'      => \Carbon\Carbon::now()->format('d/m/Y H:i'),
         ])->setPaper('a4', 'landscape');
 
-        $filename = 'Rekap_Stok_' . date('Ymd_His') . '.pdf';
+        $tabPrefix = $tab === 'hasil_produksi' ? 'Gudang_Jadi' : 'Bahan_Baku';
+        $filename = 'Rekap_Stok_' . $tabPrefix . '_' . $tanggal . '_' . date('His') . '.pdf';
         return $pdf->stream($filename);
     }
 }

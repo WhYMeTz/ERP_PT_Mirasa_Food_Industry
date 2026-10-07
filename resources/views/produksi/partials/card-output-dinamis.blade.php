@@ -1,8 +1,3 @@
-{{-- ═════════════════════════════════════════════════════════════
-     PARTIAL: HASIL BARANG PRODUKSI TERPADU (FG & WIP)
-     Mencakup: Jenis Barang (WIP/FG), Nama Barang, Kode Barang,
-     QTY Hasil, Satuan, Total Berat (Kg), dan Kode Batch.
-     ═════════════════════════════════════════════════════════════ --}}
 <div class="card" style="margin-bottom: 1.25rem; border: 1px solid #cbd5e1; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.03); background: #ffffff;">
     <div class="card-header" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0.875rem 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
         <div>

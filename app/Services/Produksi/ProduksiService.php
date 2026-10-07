@@ -7,8 +7,6 @@ use App\Models\Gudang\DatStokBatch;
 use App\Models\MasterData\MstBarang;
 use App\Models\Produksi\DatProduksiHdr;
 use App\Models\Produksi\DatProduksiDtl;
-use App\Models\Produksi\DatProduksiHarian;
-use App\Models\Produksi\DatProduksiOutput;
 use App\Services\Common\CodeGeneratorService;
 use App\Services\Gudang\StokService;
 use Carbon\Carbon;
@@ -39,6 +37,15 @@ class ProduksiService
             ->get();
 
         // Hitung Grand Total Kumulatif Bulanan
+        $totalWipSum = 0;
+        foreach ($records as $r) {
+            $w = (float) $r->total_wip_qty;
+            if ($w <= 0 && $r->outputs && $r->outputs->isNotEmpty()) {
+                $w = (float) $r->outputs->sum('qty_kg');
+            }
+            $totalWipSum += $w;
+        }
+
         $totals = [
             'total_karton'                => (int) $records->sum('qty_karton'),
             'singkong_qty'                => (float) $records->sum('singkong_qty'),
@@ -78,7 +85,7 @@ class ProduksiService
             'berko_qty'                   => (float) $records->sum('berko_qty'),
             'berko_me_qty'                => (float) $records->sum('berko_me_qty'),
             'total_berko_qty'             => (float) $records->sum('total_berko_qty'),
-            'total_wip_qty'               => (float) $records->sum('total_wip_qty'),
+            'total_wip_qty'               => (float) $totalWipSum,
         ];
 
         // Rasio & Rata-rata Tertimbang (Weighted Averages)
@@ -122,6 +129,19 @@ class ProduksiService
 
             if ($dayRecords->isNotEmpty()) {
                 foreach ($dayRecords as $rec) {
+                    $recWip = (float) $rec->total_wip_qty;
+                    if ($recWip <= 0 && $rec->outputs && $rec->outputs->isNotEmpty()) {
+                        $recWip = (float) $rec->outputs->sum('qty_kg');
+                    }
+                    $recHpp = (float) $rec->hpp_per_kg;
+                    if ($recHpp <= 0 && $recWip > 0 && (float) $rec->total_biaya_produksi > 0) {
+                        $recHpp = round((float) $rec->total_biaya_produksi / $recWip, 2);
+                    }
+                    $recRendemen = (float) $rec->rendemen_persen;
+                    if ($recRendemen <= 0 && (float) $rec->singkong_qty > 0 && $recWip > 0) {
+                        $recRendemen = round(($recWip / (float) $rec->singkong_qty) * 100, 2);
+                    }
+
                     $days[] = [
                         'day'                         => $day,
                         'date'                        => $dateObj->format('Y-m-d'),
@@ -168,9 +188,9 @@ class ProduksiService
                         'berko_me_qty'                => (float) $rec->berko_me_qty,
                         'total_berko_qty'             => (float) $rec->total_berko_qty,
                         'berko_persen'                => (float) $rec->berko_persen,
-                        'total_wip_qty'               => (float) $rec->total_wip_qty,
-                        'rendemen_persen'             => (float) $rec->rendemen_persen,
-                        'hpp_per_kg'                  => (float) $rec->hpp_per_kg,
+                        'total_wip_qty'               => $recWip,
+                        'rendemen_persen'             => $recRendemen,
+                        'hpp_per_kg'                  => $recHpp,
                     ];
                 }
             } else {
@@ -409,6 +429,8 @@ class ProduksiService
             'minyak_kelapa_qty'  => 0,
             'minyak_nilai'       => 0,
             'bumbu_nilai'        => 0,
+            'berko_bahan_qty'    => 0,
+            'berko_bahan_nilai'  => 0,
             'karton_baru_nilai'  => 0,
             'karton_bekas_nilai' => 0,
             'plastik_hd_nilai'   => 0,
@@ -447,7 +469,10 @@ class ProduksiService
                 'sisa_stok'  => $sisaStok,
             ];
 
-            if (str_contains($nm, 'SINGKONG') || str_starts_with($cd, 'BB-SK')) {
+            if (str_contains($nm, 'BERKO') || str_starts_with($cd, 'WIP-BRK') || str_starts_with($cd, 'WIP-B')) {
+                $summary['berko_bahan_qty'] += $qty;
+                $summary['berko_bahan_nilai'] += $subtotal;
+            } elseif (str_contains($nm, 'SINGKONG') || str_starts_with($cd, 'BB-SK')) {
                 $summary['singkong_qty'] += $qty;
                 $summary['singkong_nilai'] += $subtotal;
                 if (str_contains($nm, 'TAPE') || str_contains($cd, 'STP')) {
@@ -516,7 +541,8 @@ class ProduksiService
         $lakbanKecilNilai = (float) ($data['lakban_kecil_nilai'] ?? 0);
         $taliRafiaNilai = (float) ($data['tali_rafia_nilai'] ?? 0);
 
-        $totalBahanNilai = $singkongNilai + $minyakNilai + $bumbuNilai + $kartonBaruNilai +
+        $berkoBahanNilai = (float) ($data['berko_bahan_nilai'] ?? 0);
+        $totalBahanNilai = $singkongNilai + $berkoBahanNilai + $minyakNilai + $bumbuNilai + $kartonBaruNilai +
             $kartonBekasNilai + $plastikHdNilai + $lakbanBesarNilai + $lakbanKecilNilai + $taliRafiaNilai;
 
         // Gas CNG
@@ -560,6 +586,7 @@ class ProduksiService
 
         // Ekstraksi dari baris tabel terpadu jika ada
         $totalOutputKg = 0;
+        $uncategorizedQty = 0;
         if (!empty($data['output_items']) && is_array($data['output_items'])) {
             foreach ($data['output_items'] as $item) {
                 $itemKg = (float) ($item['qty_kg'] ?? ($item['qty_hasil'] ?? 0));
@@ -567,25 +594,32 @@ class ProduksiService
                 $totalOutputKg += $itemKg;
 
                 $barangId = (int) ($item['barang_id'] ?? 0);
+                $isMatched = false;
                 if ($barangId > 0) {
                     $b = MstBarang::find($barangId);
                     if ($b) {
                         $cd = strtoupper($b->barang_cd);
                         $nm = strtoupper($b->barang_nm);
-                        if (str_contains($cd, 'ASB') || str_contains($nm, 'BARCO')) $asinBarcoQty += $itemKg;
-                        elseif (str_contains($cd, 'ASW') || str_contains($nm, 'SAWIT')) $asinSawitQty += $itemKg;
-                        elseif (str_contains($cd, 'NSL') || str_contains($nm, 'NO SALT')) $noSaltQty += $itemKg;
-                        elseif (str_contains($cd, 'BLQ') || str_contains($nm, 'BALO') || str_contains($nm, 'BALQI')) $baloQty += $itemKg;
-                        elseif (str_contains($cd, 'BRK-ME') || str_contains($nm, 'BERKO ME')) $berkoMeQty += $itemKg;
-                        elseif (str_contains($cd, 'BRK') || str_contains($nm, 'BERKO')) $berkoQty += $itemKg;
+                        if (str_contains($cd, 'ASB') || str_contains($nm, 'BARCO')) { $asinBarcoQty += $itemKg; $isMatched = true; }
+                        elseif (str_contains($cd, 'ASW') || str_contains($nm, 'SAWIT')) { $asinSawitQty += $itemKg; $isMatched = true; }
+                        elseif (str_contains($cd, 'NSL') || str_contains($nm, 'NO SALT')) { $noSaltQty += $itemKg; $isMatched = true; }
+                        elseif (str_contains($cd, 'BLQ') || str_contains($nm, 'BALO') || str_contains($nm, 'BALQI')) { $baloQty += $itemKg; $isMatched = true; }
+                        elseif (str_contains($cd, 'BRK-ME') || str_contains($nm, 'BERKO ME')) { $berkoMeQty += $itemKg; $isMatched = true; }
+                        elseif (str_contains($cd, 'BRK') || str_contains($nm, 'BERKO')) { $berkoQty += $itemKg; $isMatched = true; }
                     }
+                }
+                if (!$isMatched) {
+                    $uncategorizedQty += $itemKg;
                 }
             }
         }
 
         $totalBerkoQty = $berkoQty + $berkoMeQty;
-        $totalWipQty = $asinBarcoQty + $asinSawitQty + $noSaltQty + $baloQty + $totalBerkoQty;
+        $totalWipQty = $asinBarcoQty + $asinSawitQty + $noSaltQty + $baloQty + $totalBerkoQty + $uncategorizedQty;
         $effectiveOutputKg = $totalOutputKg > 0 ? $totalOutputKg : $totalWipQty;
+        if ($totalWipQty <= 0 && $effectiveOutputKg > 0) {
+            $totalWipQty = $effectiveOutputKg;
+        }
 
         $berkoPersen = $totalWipQty > 0 ? ($totalBerkoQty / $totalWipQty) * 100 : 0;
         $rendemenPersen = $singkongQty > 0 ? ($effectiveOutputKg / $singkongQty) * 100 : 0;
@@ -732,7 +766,7 @@ class ProduksiService
 
                         $subtotalNilai = round($info['qty'] * $hppPerKg, 2);
 
-                        DatProduksiOutput::create([
+                        DatProduksiDtl::create([
                             'produksi_id'     => $produksi->produksi_id,
                             'barang_id'       => $barang->barang_id,
                             'jenis_cd'        => 'WIP',
@@ -839,7 +873,7 @@ class ProduksiService
 
             // Jika status POSTED, sesuaikan saldo stok WIP yang sempat dicatat
             if ($produksi->status_cd === 'POSTED') {
-                $outputs = DatProduksiOutput::where('produksi_id', $produksi->produksi_id)
+                $outputs = DatProduksiDtl::where('produksi_id', $produksi->produksi_id)
                     ->where('deleted_st', false)
                     ->get();
 
@@ -860,7 +894,7 @@ class ProduksiService
                 }
             }
 
-            DatProduksiOutput::where('produksi_id', $produksi->produksi_id)->delete();
+            DatProduksiDtl::where('produksi_id', $produksi->produksi_id)->delete();
             return $produksi->delete();
         });
     }
@@ -871,7 +905,7 @@ class ProduksiService
      */
     public function getHasilProduksiList(array $filters = [], int $perPage = 20): LengthAwarePaginator
     {
-        $query = DatProduksiOutput::with(['produksi.gudang', 'barang.satuan', 'barang.jenisBarang'])
+        $query = DatProduksiDtl::with(['produksi.gudang', 'barang.satuan', 'barang.jenisBarang'])
             ->where('deleted_st', false);
 
         if (!empty($filters['gudang_id'])) {
@@ -957,7 +991,7 @@ class ProduksiService
      */
     public function getAllHasilProduksi(array $filters = []): Collection
     {
-        $query = DatProduksiOutput::with(['produksi.gudang', 'barang.satuan', 'barang.jenisBarang'])
+        $query = DatProduksiDtl::with(['produksi.gudang', 'barang.satuan', 'barang.jenisBarang'])
             ->where('deleted_st', false);
 
         if (!empty($filters['gudang_id'])) {
@@ -1084,7 +1118,8 @@ class ProduksiService
             $adjustCng = !empty($payload['adjust_cng']);
 
             $totalListrik = (float) ($payload['total_listrik_air'] ?? 0);
-            $modeListrik = $payload['mode_alokasi_listrik'] ?? 'bagi_rata';
+            $modeListrik = $payload['mode_alokasi_listrik'] ?? 'tarif_per_kg';
+            $listrikTarifPerKg = (float) ($payload['listrik_tarif_per_kg'] ?? 223.80);
 
             $modeCng = $payload['mode_cng'] ?? 'update_tarif';
             $cngTarifBaru = (float) ($payload['cng_tarif_baru'] ?? 0);
@@ -1106,12 +1141,14 @@ class ProduksiService
             foreach ($records as $record) {
                 // 1. Alokasi Listrik & Air
                 if ($adjustListrik) {
-                    if ($modeListrik === 'bagi_rata') {
-                        $record->listrik_air_telp_nilai = round($totalListrik / $count, 2);
-                    } elseif ($modeListrik === 'proporsional_wip') {
+                    if ($modeListrik === 'tarif_per_kg' && $listrikTarifPerKg > 0) {
+                        $record->listrik_air_telp_nilai = round($record->total_wip_qty * $listrikTarifPerKg, 2);
+                    } elseif ($modeListrik === 'total_tagihan' || $modeListrik === 'proporsional_wip') {
                         $record->listrik_air_telp_nilai = $totalWipBulanIni > 0
                             ? round($totalListrik * ($record->total_wip_qty / $totalWipBulanIni), 2)
                             : round($totalListrik / $count, 2);
+                    } elseif ($modeListrik === 'bagi_rata') {
+                        $record->listrik_air_telp_nilai = round($totalListrik / $count, 2);
                     }
                 }
 
@@ -1144,8 +1181,16 @@ class ProduksiService
                     (float) $record->total_overhead_nilai;
 
                 // 5. Rekalkulasi HPP per Kg
-                $record->hpp_per_kg = $record->total_wip_qty > 0
-                    ? round($record->total_biaya_produksi / $record->total_wip_qty, 2)
+                $effectiveWip = (float) $record->total_wip_qty;
+                if ($effectiveWip <= 0) {
+                    $detailWip = (float) DatProduksiDtl::where('produksi_id', $record->produksi_id)->where('deleted_st', false)->sum('qty_kg');
+                    if ($detailWip > 0) {
+                        $effectiveWip = $detailWip;
+                        $record->total_wip_qty = $detailWip;
+                    }
+                }
+                $record->hpp_per_kg = $effectiveWip > 0
+                    ? round($record->total_biaya_produksi / $effectiveWip, 2)
                     : 0;
 
                 // 6. Audit Trail

@@ -1,23 +1,14 @@
-/**
- * ═══════════════════════════════════════════════════════════════
- * JAVASCRIPT: REKAPITULASI STOK & VALUASI PERSEDIAAN GUDANG
- * ERP PT Mirasa Food Industry (Blueprint 10 - Rekap Stok)
- * ═══════════════════════════════════════════════════════════════
- */
-
 (function () {
     'use strict';
 
     let activeMenu = null;
 
-    // Smart Action Dropdown (Posisi Fixed agar tidak terpotong oleh overflow tabel)
     window.toggleSmartActionDropdown = function (triggerEl, event, menuId) {
         event.stopPropagation();
 
         const menuEl = document.getElementById(menuId);
         if (!menuEl) return;
 
-        // Tutup menu sebelumnya jika ada
         if (activeMenu && activeMenu !== menuEl) {
             activeMenu.style.display = 'none';
         }
@@ -28,7 +19,6 @@
             return;
         }
 
-        // Hitung posisi tombol trigger di viewport
         const rect = triggerEl.getBoundingClientRect();
         const menuWidth = 175;
         const menuHeight = 90;
@@ -49,7 +39,6 @@
         activeMenu = menuEl;
     };
 
-    // Tutup dropdown saat klik di luar
     document.addEventListener('click', function () {
         if (activeMenu) {
             activeMenu.style.display = 'none';
@@ -57,12 +46,27 @@
         }
     });
 
-    // Tutup dropdown saat scroll halaman
     window.addEventListener('scroll', function () {
         if (activeMenu) {
             activeMenu.style.display = 'none';
             activeMenu = null;
         }
     }, true);
+
+    // Auto navigate on date picker change
+    document.addEventListener('DOMContentLoaded', function () {
+        const datePicker = document.getElementById('rekapDatePicker');
+        if (datePicker) {
+            datePicker.addEventListener('change', function () {
+                const targetDate = this.value;
+                if (!targetDate) return;
+
+                const url = new URL(window.location.href);
+                url.searchParams.set('tanggal', targetDate);
+                url.searchParams.delete('page'); // Reset pagination to page 1
+                window.location.href = url.toString();
+            });
+        }
+    });
 
 })();

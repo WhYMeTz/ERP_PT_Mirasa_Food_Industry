@@ -6,7 +6,6 @@ use App\Models\MasterData\MstBarang;
 use App\Models\MasterData\MstGudang;
 use App\Models\Produksi\DatProduksiHdr;
 use App\Models\Produksi\DatProduksiDtl;
-use App\Models\Produksi\DatProduksiOutput;
 use App\Services\Common\CodeGeneratorService;
 use App\Services\Gudang\StokService;
 use Carbon\Carbon;
@@ -57,7 +56,6 @@ class HasilProduksiImport
             $kodeBarang = trim((string) $sheet->getCell('D' . $r)->getValue());
             $qtyRaw     = $sheet->getCell('G' . $r)->getValue();
 
-            // Lewati baris kosong
             if (empty($kodeBarang) && (is_null($qtyRaw) || $qtyRaw === '' || $qtyRaw == 0)) {
                 continue;
             }
@@ -97,7 +95,6 @@ class HasilProduksiImport
             throw new Exception('Tidak ada baris data valid yang dapat diimpor.');
         }
 
-        // Kelompokkan per No Dokumen atau (Tanggal + Shift + Gudang)
         $grouped = $rows->groupBy(function ($item) {
             if (!empty($item['no_dokumen'])) {
                 return $item['no_dokumen'];
@@ -110,7 +107,6 @@ class HasilProduksiImport
                 DB::transaction(function () use ($items, $barangMap, $gudangMap) {
                     $firstItem = $items->first();
 
-                    // Resolve Gudang
                     $gudang = null;
                     if (!empty($firstItem['gudang_input'])) {
                         $inputGudangUpper = strtoupper($firstItem['gudang_input']);
@@ -122,7 +118,7 @@ class HasilProduksiImport
                     }
 
                     if (!$gudang) {
-                        $gudang = $gudangMap->first(); // Default ke gudang pertama jika tidak match
+                        $gudang = $gudangMap->first();
                     }
 
                     // Tentukan atau generate Nomor Produksi

@@ -7,9 +7,6 @@
 @endpush
 
 @section('content')
-{{-- ═════════════════════════════════════════════════════════════
-     HEADER BUKU REKAPITULASI HPP
-     ═════════════════════════════════════════════════════════════ --}}
 <div style="margin-bottom: 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
     <div>
         <div style="font-size: 0.75rem; font-weight: 700; color: #0284c7; text-transform: uppercase; letter-spacing: 0.06em; display: flex; align-items: center; gap: 0.35rem;">
@@ -26,12 +23,21 @@
     </div>
 
     <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
-        <a href="{{ route('produksi.index') }}" class="btn-corp" title="Beralih ke daftar rincian barang hasil produksi">
+        <a href="{{ route('produksi.index') }}" 
+           class="btn btn-secondary" 
+           style="background: #ffffff; border: 1.5px solid #cbd5e1; color: #475569; font-size: 0.85rem; font-weight: 700; padding: 0.55rem 0.95rem; box-shadow: 0 1px 2px rgba(0,0,0,0.03); display: inline-flex; align-items: center; gap: 0.35rem; transition: all 0.15s ease-in-out;" 
+           onmouseover="this.style.background='#f8fafc'" 
+           onmouseout="this.style.background='#ffffff'" 
+           title="Beralih ke daftar rincian barang hasil produksi">
+            <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
             <span>Hasil Barang Produksi</span>
         </a>
 
         @if(Auth::user()->canCreateProduksi())
-            <a href="{{ route('produksi.create') }}" class="btn btn-primary" style="padding: 0.5rem 0.9rem; font-size: 0.825rem; display: inline-flex; align-items: center;">
+            <a href="{{ route('produksi.create') }}" 
+               class="btn btn-primary" 
+               style="background: #059669; font-size: 0.85rem; font-weight: 700; padding: 0.55rem 0.95rem; display: inline-flex; align-items: center; gap: 0.35rem;">
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                 <span>Catat Hasil Produksi</span>
             </a>
         @endif
@@ -51,9 +57,6 @@
     </div>
 @endif
 
-{{-- ═════════════════════════════════════════════════════════════
-     PILIHAN JANGKA WAKTU REKAP: HARIAN VS BULANAN
-     ═════════════════════════════════════════════════════════════ --}}
 <div class="produksi-tabs-nav" style="margin-bottom: 1.25rem;">
     <a href="{{ route('produksi.rekap', ['mode' => 'harian', 'tahun' => $year, 'bulan' => $month]) }}" 
        class="tab-nav-btn {{ $mode === 'harian' ? 'active' : '' }}" 
@@ -69,9 +72,6 @@
     </a>
 </div>
 
-{{-- ═════════════════════════════════════════════════════════════
-     TAMPILAN 1: REKAPITULASI HARIAN (DALAM 1 BULAN KALENDER)
-     ═════════════════════════════════════════════════════════════ --}}
 @if ($mode === 'harian')
     {{-- BARIS KONTROL BULAN/TAHUN & EXPORT REKAP HPP --}}
     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1.25rem;">
@@ -97,22 +97,48 @@
                 </select>
             </form>
 
-            {{-- Action Group Corporate --}}
-            <button type="button" onclick="openModalAdjustUtilitas()" class="btn-corp" title="Alokasi tagihan bulanan listrik, air dan penyesuaian tarif gas CNG">
-                <span>Penyesuaian Utilitas</span>
-            </button>
+            <a href="{{ route('produksi.export-rekap-pdf', ['tahun' => $year, 'bulan' => $month]) }}" 
+               target="_blank" 
+               class="btn btn-secondary" 
+               style="background: #ffffff; border: 1.5px solid #dc2626; color: #dc2626; font-size: 0.85rem; font-weight: 700; padding: 0.55rem 0.95rem; box-shadow: 0 1px 2px rgba(0,0,0,0.03); display: inline-flex; align-items: center; gap: 0.35rem; transition: all 0.15s ease-in-out;" 
+               onmouseover="this.style.background='#fef2f2'" 
+               onmouseout="this.style.background='#ffffff'" 
+               title="Buka &amp; Cetak Dokumen Rekapitulasi HPP PDF Resmi">
+                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                <span>Cetak Rekap (PDF)</span>
+            </a>
 
-            <button type="button" onclick="openModalImportRekap()" class="btn-corp" title="Import data spreadsheet harian format Excel">
-                <span>Import Excel</span>
-            </button>
-
-            <a href="{{ route('produksi.export-rekap-excel', ['tahun' => $year, 'bulan' => $month]) }}" class="btn-corp" style="color: #15803d; border-color: #86efac; background: #f0fdf4;" title="Unduh berkas spreadsheet lengkap (.xlsx)">
+            <a href="{{ route('produksi.export-rekap-excel', ['tahun' => $year, 'bulan' => $month]) }}" 
+               class="btn btn-secondary" 
+               style="background: #ffffff; border: 1.5px solid #059669; color: #059669; font-size: 0.85rem; font-weight: 700; padding: 0.55rem 0.95rem; box-shadow: 0 1px 2px rgba(0,0,0,0.03); display: inline-flex; align-items: center; gap: 0.35rem; transition: all 0.15s ease-in-out;" 
+               onmouseover="this.style.background='#ecfdf5'" 
+               onmouseout="this.style.background='#ffffff'" 
+               title="Download Rekapitulasi HPP format Excel (.xlsx)">
+                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                 <span>Export Excel</span>
             </a>
 
-            <a href="{{ route('produksi.export-rekap-pdf', ['tahun' => $year, 'bulan' => $month]) }}" class="btn-corp" style="color: #b91c1c; border-color: #fecaca; background: #fef2f2;" target="_blank" title="Cetak dokumen resmi rekapitulasi (.pdf)">
-                <span>Export PDF</span>
-            </a>
+            <button type="button" 
+                    onclick="openModalImportRekap()" 
+                    class="btn btn-secondary" 
+                    style="background: #ffffff; border: 1.5px solid #7c3aed; color: #7c3aed; font-size: 0.85rem; font-weight: 700; padding: 0.55rem 0.95rem; box-shadow: 0 1px 2px rgba(0,0,0,0.03); display: inline-flex; align-items: center; gap: 0.35rem; transition: all 0.15s ease-in-out;" 
+                    onmouseover="this.style.background='#faf5ff'" 
+                    onmouseout="this.style.background='#ffffff'" 
+                    title="Import data spreadsheet harian dari file Excel">
+                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                <span>Import Excel</span>
+            </button>
+
+            <button type="button" 
+                    onclick="openModalAdjustUtilitas()" 
+                    class="btn btn-secondary" 
+                    style="background: #ffffff; border: 1.5px solid #0284c7; color: #0284c7; font-size: 0.85rem; font-weight: 700; padding: 0.55rem 0.95rem; box-shadow: 0 1px 2px rgba(0,0,0,0.03); display: inline-flex; align-items: center; gap: 0.35rem; transition: all 0.15s ease-in-out;" 
+                    onmouseover="this.style.background='#f0f9ff'" 
+                    onmouseout="this.style.background='#ffffff'" 
+                    title="Terapkan tarif standar beban listrik &amp; gas CNG ke seluruh catatan produksi harian">
+                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                <span>Set Tarif Utilitas</span>
+            </button>
         </div>
     </div>
 
@@ -209,8 +235,15 @@
                 </select>
             </form>
 
-            <button type="button" onclick="window.print()" class="btn-corp" style="color: #1e293b; border-color: #cbd5e1; background: #ffffff;" title="Cetak atau simpan PDF laporan konsolidasi tahunan">
-                <span>Cetak Laporan</span>
+            <button type="button" 
+                    onclick="window.print()" 
+                    class="btn btn-secondary" 
+                    style="background: #ffffff; border: 1.5px solid #dc2626; color: #dc2626; font-size: 0.85rem; font-weight: 700; padding: 0.55rem 0.95rem; box-shadow: 0 1px 2px rgba(0,0,0,0.03); display: inline-flex; align-items: center; gap: 0.35rem; transition: all 0.15s ease-in-out;" 
+                    onmouseover="this.style.background='#fef2f2'" 
+                    onmouseout="this.style.background='#ffffff'" 
+                    title="Cetak atau simpan PDF laporan konsolidasi tahunan">
+                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                <span>Cetak Laporan (PDF)</span>
             </button>
         </div>
     </div>

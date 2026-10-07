@@ -10,15 +10,16 @@
 <div class="produksi-container">
     {{-- Breadcrumb & Header --}}
     <div style="margin-bottom: 1.25rem;">
-        <a href="{{ route('produksi.index') }}" style="text-decoration: none; color: #0284c7; font-weight: 700; font-size: 0.825rem; margin-bottom: 0.5rem; display: inline-block;">
+        <a href="{{ route('produksi.rekap') }}" style="color: #64748b; text-decoration: none; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.35rem; margin-bottom: 0.35rem;">
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
             Kembali ke Buku Rekap HPP Produksi
         </a>
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
             <div>
-                <h1 style="font-size: 1.4rem; font-weight: 800; color: #0f172a; margin: 0; letter-spacing: -0.01em;">
+                <h1 style="font-size: 1.5rem; font-weight: 700; color: #0f172a; margin: 0;">
                     Formulir Hasil Produksi &amp; Kalkulasi HPP Harian
                 </h1>
-                <p style="margin: 0.25rem 0 0 0; font-size: 0.825rem; color: #64748b;">
+                <p style="color: #64748b; font-size: 0.875rem; margin-top: 0.25rem; margin-bottom: 0;">
                     Pencatatan aktual hasil produksi harian, pemakaian bahan baku, energi CNG, upah operator, dan kalkulasi rendemen otomatis.
                 </p>
             </div>

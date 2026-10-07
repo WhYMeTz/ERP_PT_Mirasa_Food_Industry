@@ -11,8 +11,9 @@
     {{-- BARIS HEADER NAVIGASI & AKSI --}}
     <div style="margin-bottom: 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;" class="no-print">
         <div>
-            <a href="{{ route('produksi.index', ['tahun' => Carbon\Carbon::parse($produksi->produksi_tgl)->year, 'bulan' => Carbon\Carbon::parse($produksi->produksi_tgl)->month]) }}" style="font-size: 0.8rem; font-weight: 700; color: #0284c7; text-decoration: none; display: inline-flex; align-items: center; gap: 0.35rem; margin-bottom: 0.25rem;">
-                &larr; Kembali ke Buku Rekap Bulanan
+            <a href="{{ route('produksi.rekap', ['tahun' => Carbon\Carbon::parse($produksi->produksi_tgl)->year, 'bulan' => Carbon\Carbon::parse($produksi->produksi_tgl)->month]) }}" style="color: #64748b; text-decoration: none; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.35rem; margin-bottom: 0.35rem;">
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                Kembali ke Buku Rekap Bulanan
             </a>
             <h1 style="font-size: 1.45rem; font-weight: 800; color: #0f172a; margin: 0; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
                 <span>Bukti Hasil Produksi: {{ $produksi->produksi_no }}</span>
@@ -374,35 +375,122 @@
                     </tr>
                 </thead>
                 <tbody>
+                    {{-- 1. BAHAN BAKU --}}
                     <tr>
-                        <td style="padding: 0.6rem 1rem; font-weight: 700;">Singkong Mentah</td>
+                        <td style="padding: 0.6rem 1rem; font-weight: 700; color: #0f172a;">Singkong Mentah</td>
                         <td style="padding: 0.6rem 1rem;">{{ number_format($produksi->singkong_qty, 0, ',', '.') }} kg</td>
                         <td style="padding: 0.6rem 1rem; text-align: right; font-weight: 700;">Rp {{ number_format($produksi->singkong_nilai, 0, ',', '.') }}</td>
                     </tr>
                     <tr>
-                        <td style="padding: 0.6rem 1rem; font-weight: 700;">Minyak Goreng (Sawit &amp; Kelapa)</td>
-                        <td style="padding: 0.6rem 1rem;">Sawit: {{ number_format($produksi->minyak_sawit_qty, 0, ',', '.') }} kg | Kelapa: {{ number_format($produksi->minyak_kelapa_qty, 0, ',', '.') }} kg (Rasio: {{ number_format($produksi->minyak_rasio_persen, 2, ',', '.') }}%)</td>
-                        <td style="padding: 0.6rem 1rem; text-align: right; font-weight: 700;">Rp {{ number_format($produksi->minyak_nilai, 0, ',', '.') }}</td>
+                        <td style="padding: 0.6rem 1rem; font-weight: 700; color: #0f172a;">Minyak Goreng Sawit</td>
+                        <td style="padding: 0.6rem 1rem;">{{ number_format($produksi->minyak_sawit_qty, 1, ',', '.') }} kg</td>
+                        <td style="padding: 0.6rem 1rem; text-align: right;">-</td>
                     </tr>
                     <tr>
-                        <td style="padding: 0.6rem 1rem; font-weight: 700;">Energi Gas CNG</td>
+                        <td style="padding: 0.6rem 1rem; font-weight: 700; color: #0f172a;">Minyak Goreng Kelapa (Barco)</td>
+                        <td style="padding: 0.6rem 1rem;">{{ number_format($produksi->minyak_kelapa_qty, 1, ',', '.') }} kg</td>
+                        <td style="padding: 0.6rem 1rem; text-align: right;">-</td>
+                    </tr>
+                    <tr style="background: #f8fafc;">
+                        <td style="padding: 0.6rem 1rem; font-weight: 700; color: #0369a1;">Subtotal Minyak Goreng</td>
+                        <td style="padding: 0.6rem 1rem; color: #0369a1; font-weight: 600;">Rasio terhadap Singkong: {{ number_format($produksi->minyak_rasio_persen, 2, ',', '.') }}%</td>
+                        <td style="padding: 0.6rem 1rem; text-align: right; font-weight: 700; color: #0369a1;">Rp {{ number_format($produksi->minyak_nilai, 0, ',', '.') }}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 0.6rem 1rem; font-weight: 700; color: #0f172a;">Bumbu &amp; Perenyah</td>
+                        <td style="padding: 0.6rem 1rem;">Garam, bumbu racik &amp; bahan perenyah</td>
+                        <td style="padding: 0.6rem 1rem; text-align: right; font-weight: 700;">Rp {{ number_format($produksi->bumbu_nilai, 0, ',', '.') }}</td>
+                    </tr>
+
+                    {{-- 2. KEMASAN --}}
+                    <tr>
+                        <td style="padding: 0.6rem 1rem;">Karton Baru (FL)</td>
+                        <td style="padding: 0.6rem 1rem;">Kemasan karton baru</td>
+                        <td style="padding: 0.6rem 1rem; text-align: right;">Rp {{ number_format($produksi->karton_baru_nilai, 0, ',', '.') }}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 0.6rem 1rem;">Karton Bekas</td>
+                        <td style="padding: 0.6rem 1rem;">Kemasan karton daur ulang/bekas</td>
+                        <td style="padding: 0.6rem 1rem; text-align: right;">Rp {{ number_format($produksi->karton_bekas_nilai, 0, ',', '.') }}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 0.6rem 1rem;">Plastik HD 90x100</td>
+                        <td style="padding: 0.6rem 1rem;">Plastik inner pelindung karton</td>
+                        <td style="padding: 0.6rem 1rem; text-align: right;">Rp {{ number_format($produksi->plastik_hd_nilai, 0, ',', '.') }}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 0.6rem 1rem;">Lakban Besar</td>
+                        <td style="padding: 0.6rem 1rem;">Isolasi perekat karton besar</td>
+                        <td style="padding: 0.6rem 1rem; text-align: right;">Rp {{ number_format($produksi->lakban_besar_nilai, 0, ',', '.') }}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 0.6rem 1rem;">Lakban Kecil</td>
+                        <td style="padding: 0.6rem 1rem;">Isolasi perekat kemasan kecil</td>
+                        <td style="padding: 0.6rem 1rem; text-align: right;">Rp {{ number_format($produksi->lakban_kecil_nilai, 0, ',', '.') }}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 0.6rem 1rem;">Tali Rafia</td>
+                        <td style="padding: 0.6rem 1rem;">Pengikat packing karton</td>
+                        <td style="padding: 0.6rem 1rem; text-align: right;">Rp {{ number_format($produksi->tali_rafia_nilai, 0, ',', '.') }}</td>
+                    </tr>
+
+                    {{-- 3. ENERGI & TENAGA KERJA --}}
+                    <tr>
+                        <td style="padding: 0.6rem 1rem; font-weight: 700; color: #0f172a;">Gas Alam (CNG)</td>
                         <td style="padding: 0.6rem 1rem;">{{ number_format($produksi->cng_mmbtu, 3, ',', '.') }} MMBTU (Tarif: Rp {{ number_format($produksi->cng_tarif, 0, ',', '.') }})</td>
                         <td style="padding: 0.6rem 1rem; text-align: right; font-weight: 700;">Rp {{ number_format($produksi->cng_nilai, 0, ',', '.') }}</td>
                     </tr>
                     <tr>
-                        <td style="padding: 0.6rem 1rem; font-weight: 700;">Upah Tenaga Kerja</td>
-                        <td style="padding: 0.6rem 1rem;">Langsung: {{ $produksi->tk_langsung_org }} org | Tdk Langsung: {{ $produksi->tk_tidak_langsung_org }} org | Training: {{ $produksi->tk_training_org }} org</td>
+                        <td style="padding: 0.6rem 1rem; font-weight: 700; color: #0f172a;">Upah Tenaga Kerja</td>
+                        <td style="padding: 0.6rem 1rem;">Langsung: {{ $produksi->tk_langsung_org }} org | Tdk Langsung: {{ $produksi->tk_tidak_langsung_org }} org | Training: {{ $produksi->tk_training_org }} org (Tarif: Rp {{ number_format($produksi->tk_tarif_per_org, 0, ',', '.') }})</td>
                         <td style="padding: 0.6rem 1rem; text-align: right; font-weight: 700;">Rp {{ number_format($produksi->tk_total_nilai, 0, ',', '.') }}</td>
                     </tr>
+
+                    {{-- 4. OVERHEAD PABRIK (FOH) --}}
                     <tr>
-                        <td style="padding: 0.6rem 1rem; font-weight: 700;">Bumbu &amp; Kemasan (Karton, Plastik, Lakban, Tali)</td>
-                        <td style="padding: 0.6rem 1rem;">Karton Baru/Bekas, Plastik HD, Lakban, Tali Rafia</td>
-                        <td style="padding: 0.6rem 1rem; text-align: right; font-weight: 700;">Rp {{ number_format($produksi->bumbu_nilai + $produksi->karton_baru_nilai + $produksi->karton_bekas_nilai + $produksi->plastik_hd_nilai + $produksi->lakban_besar_nilai + $produksi->lakban_kecil_nilai + $produksi->tali_rafia_nilai, 0, ',', '.') }}</td>
+                        <td style="padding: 0.6rem 1rem;">Foto Copy / ATK</td>
+                        <td style="padding: 0.6rem 1rem;">Dokumentasi &amp; label produksi</td>
+                        <td style="padding: 0.6rem 1rem; text-align: right;">Rp {{ number_format($produksi->fotocopy_nilai, 0, ',', '.') }}</td>
                     </tr>
                     <tr>
-                        <td style="padding: 0.6rem 1rem; font-weight: 700;">Overhead Pabrik (QC, Listrik/Air, Pemeliharaan, Penyusutan, Limbah)</td>
-                        <td style="padding: 0.6rem 1rem;">Biaya pendukung proses manufaktur</td>
-                        <td style="padding: 0.6rem 1rem; text-align: right; font-weight: 700;">Rp {{ number_format($produksi->total_overhead_nilai, 0, ',', '.') }}</td>
+                        <td style="padding: 0.6rem 1rem;">Sarung Tangan Plastik</td>
+                        <td style="padding: 0.6rem 1rem;">Perlengkapan sanitasi food-grade</td>
+                        <td style="padding: 0.6rem 1rem; text-align: right;">Rp {{ number_format($produksi->sarung_tangan_plastik_nilai, 0, ',', '.') }}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 0.6rem 1rem;">Sarung Tangan Kain</td>
+                        <td style="padding: 0.6rem 1rem;">Perlengkapan proteksi operator</td>
+                        <td style="padding: 0.6rem 1rem; text-align: right;">Rp {{ number_format($produksi->sarung_tangan_kain_nilai, 0, ',', '.') }}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 0.6rem 1rem;">Pengawasan Mutu (QC)</td>
+                        <td style="padding: 0.6rem 1rem;">Inspeksi standar mutu &amp; lab</td>
+                        <td style="padding: 0.6rem 1rem; text-align: right;">Rp {{ number_format($produksi->qc_pengawasan_nilai, 0, ',', '.') }}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 0.6rem 1rem;">Listrik &amp; Air - Telp</td>
+                        <td style="padding: 0.6rem 1rem;">Utilitas operasional pabrik</td>
+                        <td style="padding: 0.6rem 1rem; text-align: right;">Rp {{ number_format($produksi->listrik_air_telp_nilai, 0, ',', '.') }}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 0.6rem 1rem;">Pemeliharaan Mesin</td>
+                        <td style="padding: 0.6rem 1rem;">Perawatan preventif &amp; perbaikan mesin fryer/boiler</td>
+                        <td style="padding: 0.6rem 1rem; text-align: right;">Rp {{ number_format($produksi->pemeliharaan_mesin_nilai, 0, ',', '.') }}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 0.6rem 1rem;">Penyusutan Mesin</td>
+                        <td style="padding: 0.6rem 1rem;">Amortisasi aset mesin manufaktur</td>
+                        <td style="padding: 0.6rem 1rem; text-align: right;">Rp {{ number_format($produksi->penyusutan_mesin_nilai, 0, ',', '.') }}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 0.6rem 1rem;">Pengolahan Limbah Padat</td>
+                        <td style="padding: 0.6rem 1rem;">Penanganan limbah padat singkong / kulit</td>
+                        <td style="padding: 0.6rem 1rem; text-align: right;">Rp {{ number_format($produksi->limbah_padat_nilai, 0, ',', '.') }}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 0.6rem 1rem;">Bahan Kimia Limbah</td>
+                        <td style="padding: 0.6rem 1rem;">Treatment kimia air limbah IPAL</td>
+                        <td style="padding: 0.6rem 1rem; text-align: right;">Rp {{ number_format($produksi->limbah_kimia_nilai, 0, ',', '.') }}</td>
                     </tr>
                 </tbody>
                 <tfoot style="background: #fef9c3; font-weight: 800; border-top: 2px solid #ca8a04;">

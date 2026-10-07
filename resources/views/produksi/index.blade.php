@@ -26,12 +26,42 @@
     </div>
 
     <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
-        <a href="{{ route('produksi.rekap') }}" class="btn-corp" title="Buka buku besar rekapitulasi HPP harian & bulanan">
+        <a href="{{ route('produksi.export-hasil', request()->all()) }}" 
+           class="btn btn-secondary" 
+           style="background: #ffffff; border: 1.5px solid #059669; color: #059669; font-size: 0.85rem; font-weight: 700; padding: 0.55rem 0.95rem; box-shadow: 0 1px 2px rgba(0,0,0,0.03); display: inline-flex; align-items: center; gap: 0.35rem; transition: all 0.15s ease-in-out;" 
+           onmouseover="this.style.background='#ecfdf5'" 
+           onmouseout="this.style.background='#ffffff'" 
+           title="Download data hasil produksi format Excel (.xlsx)">
+            <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            <span>Export Excel</span>
+        </a>
+
+        <button type="button" 
+                onclick="openModalImportHasil()" 
+                class="btn btn-secondary" 
+                style="background: #ffffff; border: 1.5px solid #7c3aed; color: #7c3aed; font-size: 0.85rem; font-weight: 700; padding: 0.55rem 0.95rem; box-shadow: 0 1px 2px rgba(0,0,0,0.03); display: inline-flex; align-items: center; gap: 0.35rem; transition: all 0.15s ease-in-out;" 
+                onmouseover="this.style.background='#faf5ff'" 
+                onmouseout="this.style.background='#ffffff'" 
+                title="Import data hasil produksi dari berkas Excel">
+            <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+            <span>Import Excel</span>
+        </button>
+
+        <a href="{{ route('produksi.rekap') }}" 
+           class="btn btn-secondary" 
+           style="background: #ffffff; border: 1.5px solid #0284c7; color: #0284c7; font-size: 0.85rem; font-weight: 700; padding: 0.55rem 0.95rem; box-shadow: 0 1px 2px rgba(0,0,0,0.03); display: inline-flex; align-items: center; gap: 0.35rem; transition: all 0.15s ease-in-out;" 
+           onmouseover="this.style.background='#f0f9ff'" 
+           onmouseout="this.style.background='#ffffff'" 
+           title="Buka buku besar rekapitulasi HPP harian &amp; bulanan">
+            <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
             <span>Buku Rekapitulasi HPP</span>
         </a>
 
         @if(Auth::user()->canCreateProduksi())
-            <a href="{{ route('produksi.create') }}" class="btn btn-primary" style="padding: 0.5rem 0.9rem; font-size: 0.825rem; display: inline-flex; align-items: center;">
+            <a href="{{ route('produksi.create') }}" 
+               class="btn btn-primary" 
+               style="background: #059669; font-size: 0.85rem; font-weight: 700; padding: 0.55rem 0.95rem; display: inline-flex; align-items: center; gap: 0.35rem;">
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                 <span>Catat Hasil Produksi</span>
             </a>
         @endif
@@ -69,13 +99,26 @@
         </div>
 
         <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
-            <button type="button" onclick="openModalImportHasil()" class="btn btn-secondary" style="padding: 0.45rem 0.85rem; font-size: 0.825rem; background: #ffffff; border: 1px solid #cbd5e1; color: #334155;">
-                <span>Import Excel</span>
-            </button>
-
-            <a href="{{ route('produksi.export-hasil', request()->all()) }}" class="btn btn-success" style="padding: 0.45rem 0.85rem; font-size: 0.825rem; background: #059669; border-color: #059669; color: #ffffff;">
+            <a href="{{ route('produksi.export-hasil', request()->all()) }}" 
+               class="btn btn-secondary" 
+               style="background: #ffffff; border: 1.5px solid #059669; color: #059669; font-size: 0.8rem; font-weight: 700; padding: 0.45rem 0.85rem; box-shadow: 0 1px 2px rgba(0,0,0,0.03); display: inline-flex; align-items: center; gap: 0.35rem; transition: all 0.15s ease-in-out;" 
+               onmouseover="this.style.background='#ecfdf5'" 
+               onmouseout="this.style.background='#ffffff'" 
+               title="Download daftar hasil produksi format Excel (.xlsx)">
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                 <span>Export Excel</span>
             </a>
+
+            <button type="button" 
+                    onclick="openModalImportHasil()" 
+                    class="btn btn-secondary" 
+                    style="background: #ffffff; border: 1.5px solid #7c3aed; color: #7c3aed; font-size: 0.8rem; font-weight: 700; padding: 0.45rem 0.85rem; box-shadow: 0 1px 2px rgba(0,0,0,0.03); display: inline-flex; align-items: center; gap: 0.35rem; transition: all 0.15s ease-in-out;" 
+                    onmouseover="this.style.background='#faf5ff'" 
+                    onmouseout="this.style.background='#ffffff'" 
+                    title="Import data hasil produksi dari berkas Excel">
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                <span>Import Excel</span>
+            </button>
         </div>
     </div>
 
@@ -135,32 +178,29 @@
         </form>
     </div>
 
-    {{-- TABEL DATA HASIL PRODUKSI (POINT 9.B) --}}
+    {{-- TABEL DATA HASIL PRODUKSI (OPTIMAL & ERGONOMIS - ZERO HORIZONTAL SCROLL) --}}
     <div class="table-responsive-hasil">
         <table class="table-hasil">
             <thead>
                 <tr>
-                    <th style="width: 45px; text-align: center;">NO</th>
-                    <th style="text-align: center;">TANGGAL</th>
-                    <th style="text-align: center;">NO. PRODUKSI</th>
+                    <th style="width: 40px; text-align: center;">NO</th>
+                    <th>DOKUMEN &amp; TANGGAL</th>
                     <th style="text-align: center;">KODE BATCH</th>
-                    <th>GUDANG SIMPAN</th>
-                    <th style="text-align: center;">JENIS</th>
-                    <th>KODE BARANG</th>
-                    <th>NAMA BARANG</th>
+                    <th style="text-align: center; width: 75px;">JENIS</th>
+                    <th>PRODUK / BARANG</th>
                     <th style="text-align: right;">QTY HASIL</th>
-                    <th style="text-align: center;">SATUAN</th>
+                    <th style="text-align: center; width: 75px;">SATUAN</th>
                     <th style="text-align: right;">BERAT (KG)</th>
-                    <th style="text-align: right;">HPP SATUAN (RP)</th>
-                    <th style="text-align: right;">TOTAL NILAI (RP)</th>
-                    <th style="text-align: center;">SISA STOK (KG)</th>
-                    <th style="text-align: center; width: 85px;">AKSI</th>
+                    <th style="text-align: right;">FINANSIAL (RP)</th>
+                    <th style="text-align: center;">STOK GUDANG</th>
+                    <th style="text-align: center; width: 80px;">AKSI</th>
                 </tr>
             </thead>
             <tbody>
                 @php
                     $pageTotalQtyKg = 0;
                     $pageTotalNilai = 0;
+                    $pageTotalQtyHasil = 0;
                 @endphp
                 @forelse($hasilItems as $idx => $item)
                     @php
@@ -173,29 +213,35 @@
                         $menuId = 'menu-hasil-' . $item->output_id;
                         $satuanTampil = $item->satuan_cd ?: ($barang?->satuan?->satuan_nm ?? ($isFg ? 'DUS' : 'KG'));
                         $qtyHasilTampil = $item->qty_hasil > 0 ? (float) $item->qty_hasil : (float) $item->qty_kg;
+                        $pageTotalQtyHasil += $qtyHasilTampil;
                     @endphp
                     <tr>
                         <td style="text-align: center; color: #94a3b8; font-weight: 600;">
                             {{ $hasilItems->firstItem() + $idx }}
                         </td>
-                        <td style="text-align: center; font-weight: 600; color: #0f172a;">
-                            {{ $prod ? \Carbon\Carbon::parse($prod->produksi_tgl)->format('d/m/Y') : '-' }}
-                        </td>
-                        <td style="text-align: center;">
+
+                        {{-- 1. DOKUMEN & TANGGAL --}}
+                        <td>
                             @if($prod)
-                                <a href="{{ route('produksi.show', $prod->produksi_id) }}" style="color: #0284c7; font-weight: 700; text-decoration: none;">
+                                <a href="{{ route('produksi.show', $prod->produksi_id) }}" class="cell-doc-link">
                                     {{ $prod->produksi_no }}
                                 </a>
                             @else
-                                -
+                                <span style="color: #64748b;">-</span>
                             @endif
+                            <div class="cell-subtext">
+                                <span>{{ $prod ? \Carbon\Carbon::parse($prod->produksi_tgl)->format('d/m/Y') : '-' }}</span>
+                                <span>&bull;</span>
+                                <span style="font-weight: 600;">{{ $prod?->gudang?->gudang_nm ?? 'Gudang Utama' }}</span>
+                            </div>
                         </td>
+
+                        {{-- 2. KODE BATCH (TERPISAH) --}}
                         <td style="text-align: center;">
                             <span class="badge-batch-wip">{{ $item->batch_no ?? ($prod->batch_wip_no ?? '-') }}</span>
                         </td>
-                        <td>
-                            <span style="font-weight: 600; color: #334155;">{{ $prod?->gudang?->gudang_nm ?? 'Gudang Utama' }}</span>
-                        </td>
+
+                        {{-- 3. JENIS (TERPISAH) --}}
                         <td style="text-align: center;">
                             @if($isFg)
                                 <span class="badge-jenis-fg">FG</span>
@@ -203,31 +249,47 @@
                                 <span class="badge-jenis-wip">WIP</span>
                             @endif
                         </td>
+
+                        {{-- 4. PRODUK / BARANG --}}
                         <td>
-                            <code style="background: #f1f5f9; padding: 0.15rem 0.35rem; border-radius: 4px; font-weight: 700; color: #0284c7;">
-                                {{ $barang?->barang_cd ?? '-' }}
-                            </code>
-                        </td>
-                        <td style="font-weight: 600; color: #0f172a;">
-                            {{ $barang?->barang_nm ?? '-' }}
-                        </td>
-                        <td style="text-align: right;">
-                            <div style="font-weight: 800; color: {{ $isFg ? '#047857' : '#0f172a' }};">
-                                {{ number_format($qtyHasilTampil, $isFg ? 0 : 2, ',', '.') }}
+                            <div class="cell-primary-title">
+                                {{ $barang?->barang_nm ?? '-' }}
+                            </div>
+                            <div class="cell-subtext">
+                                <code style="background: #f1f5f9; padding: 0.1rem 0.35rem; border-radius: 4px; font-weight: 700; color: #0284c7; font-size: 0.725rem;">
+                                    {{ $barang?->barang_cd ?? '-' }}
+                                </code>
                             </div>
                         </td>
-                        <td style="text-align: center; font-size: 0.75rem; color: #64748b; font-weight: 700;">
-                            {{ $satuanTampil }}
+
+                        {{-- 5. QTY HASIL (TERPISAH) --}}
+                        <td style="text-align: right;">
+                            <span class="cell-qty-val" style="color: {{ $isFg ? '#047857' : '#0f172a' }};">
+                                {{ number_format($qtyHasilTampil, $isFg ? 0 : 2, ',', '.') }}
+                            </span>
                         </td>
-                        <td style="text-align: right; font-weight: 600; color: #334155;">
+
+                        {{-- 6. SATUAN (TERPISAH) --}}
+                        <td style="text-align: center;">
+                            <span class="badge-satuan-pill">{{ $satuanTampil }}</span>
+                        </td>
+
+                        {{-- 7. BERAT KG (TERPISAH) --}}
+                        <td style="text-align: right; font-weight: 700; color: #1e293b; font-variant-numeric: tabular-nums;">
                             {{ number_format($item->qty_kg, 2, ',', '.') }} kg
                         </td>
-                        <td style="text-align: right; color: #475569;">
-                            Rp {{ number_format($item->hpp_satuan, 0, ',', '.') }}
+
+                        {{-- 8. FINANSIAL & HPP --}}
+                        <td style="text-align: right;">
+                            <div class="cell-nilai-val">
+                                Rp {{ number_format($item->total_nilai, 0, ',', '.') }}
+                            </div>
+                            <div class="cell-subtext" style="justify-content: flex-end;">
+                                @ Rp {{ number_format($item->hpp_satuan, 0, ',', '.') }} / kg
+                            </div>
                         </td>
-                        <td style="text-align: right; font-weight: 700; color: #047857;">
-                            Rp {{ number_format($item->total_nilai, 0, ',', '.') }}
-                        </td>
+
+                        {{-- 9. SISA STOK GUDANG --}}
                         <td style="text-align: center;">
                             @if($sisaStok > 0)
                                 <span class="badge-stok-tersedia">
@@ -239,8 +301,9 @@
                                 </span>
                             @endif
                         </td>
+
+                        {{-- 10. AKSI --}}
                         <td style="text-align: center; position: relative;">
-                            {{-- SMART ACTION DROPDOWN --}}
                             <button type="button" class="btn-action-trigger" onclick="toggleSmartActionDropdown(this, event, '{{ $menuId }}')">
                                 Aksi ▼
                             </button>
@@ -263,7 +326,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="15" style="text-align: center; padding: 2.5rem; color: #64748b;">
+                        <td colspan="11" style="text-align: center; padding: 2.5rem; color: #64748b;">
                             <div style="font-size: 0.95rem; font-weight: 700; color: #334155;">Belum Ada Data Hasil Barang Produksi</div>
                             <div style="font-size: 0.8rem; margin-top: 0.25rem;">Gunakan tombol <strong>+ Catat Hasil Produksi</strong> atau <strong>Import Excel</strong> di atas untuk menambahkan data.</div>
                         </td>
@@ -273,13 +336,14 @@
             @if($hasilItems->count() > 0)
                 <tfoot>
                     <tr>
-                        <td colspan="10" style="text-align: right; font-weight: 800; color: #0f172a; padding: 0.75rem 0.85rem;">
+                        <td colspan="5" style="text-align: right; font-weight: 800; color: #0f172a; padding: 0.75rem 0.85rem;">
                             SUBTOTAL HALAMAN INI:
                         </td>
+                        <td></td>
+                        <td></td>
                         <td style="text-align: right; font-weight: 800; color: #0284c7; padding: 0.75rem 0.85rem;">
                             {{ number_format($pageTotalQtyKg, 2, ',', '.') }} kg
                         </td>
-                        <td></td>
                         <td style="text-align: right; font-weight: 800; color: #047857; padding: 0.75rem 0.85rem;">
                             Rp {{ number_format($pageTotalNilai, 0, ',', '.') }}
                         </td>

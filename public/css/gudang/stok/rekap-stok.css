@@ -1,43 +1,72 @@
 /* ═══════════════════════════════════════════════════════════════
-   STYLESHEET: REKAPITULASI STOK & VALUASI PERSEDIAAN GUDANG
-   ERP PT Mirasa Food Industry (Blueprint 10 - Rekap Stok)
+   STYLESHEET BUKU REKAPITULASI STOK HARIAN & VALUASI PERSEDIAAN
+   ERP PT Mirasa Food Industry - Corporate Industrial Standard
    ═══════════════════════════════════════════════════════════════ */
 
-/* Header Top */
-.rekap-header-wrapper {
+.rekap-container {
+    width: 100%;
+    margin: 0 auto;
+    padding-bottom: 2rem;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   1. CORPORATE DUAL-TAB NAVIGATION BAR (Sama dengan Modul Produksi)
+   ═══════════════════════════════════════════════════════════════ */
+.rekap-tabs-nav {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    gap: 0.5rem;
+    border-bottom: 2px solid #e2e8f0;
     margin-bottom: 1.25rem;
-    flex-wrap: wrap;
-    gap: 0.75rem;
+    padding-bottom: 0;
 }
 
-.rekap-title-group h1 {
-    font-size: 1.35rem;
-    font-weight: 800;
-    color: #0f172a;
-    display: flex;
+.rekap-tab-btn {
+    display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    margin: 0;
-    letter-spacing: -0.01em;
-}
-
-.rekap-title-group p {
+    padding: 0.75rem 1.25rem;
+    font-size: 0.875rem;
+    font-weight: 600;
     color: #64748b;
-    font-size: 0.8125rem;
-    margin: 0.25rem 0 0 0;
+    background: transparent;
+    border: none;
+    border-bottom: 3px solid transparent;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    margin-bottom: -2px;
+    border-radius: 6px 6px 0 0;
+    text-decoration: none;
 }
 
-.rekap-actions-group {
-    display: flex;
-    gap: 0.5rem;
-    align-items: center;
-    flex-wrap: wrap;
+.rekap-tab-btn:hover {
+    color: #0284c7;
+    background: #f8fafc;
 }
 
-/* KPI Cards Grid */
+.rekap-tab-btn.active {
+    color: #0284c7;
+    border-bottom-color: #0284c7;
+    background: #f0f9ff;
+    font-weight: 700;
+}
+
+.rekap-tab-badge {
+    font-size: 0.725rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 9999px;
+    background: #e2e8f0;
+    color: #475569;
+    font-weight: 700;
+}
+
+.rekap-tab-btn.active .rekap-tab-badge {
+    background: #e0f2fe;
+    color: #0369a1;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   2. 4 KARTU METRIK OPERASIONAL (Seragam dengan Stok & PO Mirasa)
+   ═══════════════════════════════════════════════════════════════ */
 .kpi-rekap-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -49,10 +78,8 @@
     background: #ffffff;
     border-radius: 8px;
     border: 1px solid #e2e8f0;
-    padding: 1rem 1.15rem;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
-    position: relative;
-    overflow: hidden;
+    padding: 1rem 1.25rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .kpi-card-header {
@@ -62,173 +89,480 @@
 }
 
 .kpi-label {
-    font-size: 0.725rem;
+    font-size: 0.75rem;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.05em;
     color: #64748b;
+}
+
+.kpi-icon-box {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
 }
 
 .kpi-value {
-    font-size: 1.35rem;
+    font-size: 1.45rem;
     font-weight: 800;
     color: #0f172a;
-    margin-top: 0.35rem;
+    margin-top: 0.25rem;
     line-height: 1.2;
+    font-variant-numeric: tabular-nums;
 }
 
 .kpi-desc {
-    font-size: 0.725rem;
+    font-size: 0.75rem;
     color: #64748b;
-    margin-top: 0.35rem;
+    margin-top: 0.4rem;
 }
 
-/* Filter Card */
-.filter-card {
+/* ═══════════════════════════════════════════════════════════════
+   3. SNAPSHOT DATE BAR & TABLE TOOLBAR (Spacious & Clean Layout)
+   ═══════════════════════════════════════════════════════════════ */
+.snapshot-date-bar {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0.85rem 1.25rem;
+    margin-bottom: 1.25rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.85rem;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+.date-title-group {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    flex-wrap: wrap;
+}
+
+.date-title-group .active-date-txt {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #0f172a;
+    letter-spacing: -0.01em;
+}
+
+.date-controls-group {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+}
+
+.date-nav-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.35rem 0.7rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #334155;
     background: #ffffff;
     border: 1px solid #cbd5e1;
-    border-radius: 8px;
-    padding: 1rem 1.25rem;
-    margin-bottom: 1.25rem;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+    border-radius: 5px;
+    text-decoration: none;
+    transition: all 0.15s ease;
+    cursor: pointer;
+    line-height: 1.2;
+    height: 32px;
+    box-sizing: border-box;
 }
 
-.filter-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 0.75rem;
-    align-items: flex-end;
+.date-nav-btn:hover {
+    background: #f8fafc;
+    border-color: #94a3b8;
+    color: #0f172a;
 }
 
-.filter-label {
-    display: block;
-    font-size: 0.725rem;
+.date-nav-btn.today-btn {
+    background: #f0fdf4;
+    border-color: #86efac;
+    color: #15803d;
     font-weight: 700;
-    text-transform: uppercase;
-    color: #334155;
-    margin-bottom: 0.35rem;
 }
 
-.filter-input {
-    width: 100%;
-    padding: 0.45rem 0.65rem;
-    font-size: 0.8125rem;
+.date-nav-btn.today-btn:hover {
+    background: #dcfce7;
+}
+
+.date-picker-input {
     border: 1px solid #cbd5e1;
-    border-radius: 6px;
+    border-radius: 5px;
+    padding: 0.3rem 0.6rem;
+    font-size: 0.825rem;
+    font-weight: 600;
+    color: #0f172a;
+    background: #ffffff;
     outline: none;
+    height: 32px;
+    box-sizing: border-box;
+}
+
+.date-picker-input:focus {
+    border-color: #0284c7;
+    box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.12);
+}
+
+/* Card Header Toolbar (Filter Pills + Search Bar Terpadu) */
+.table-card-toolbar {
+    background: #ffffff;
+    padding: 0.85rem 1.25rem;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.85rem;
+}
+
+.filter-pills-bar {
+    display: flex;
+    gap: 0.35rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.filter-pill-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.775rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid #cbd5e1;
+    background: #ffffff;
+    color: #475569;
+    text-decoration: none;
+    transition: all 0.15s ease;
+    line-height: 1.2;
+}
+
+.filter-pill-link:hover {
+    background: #f8fafc;
+    border-color: #94a3b8;
+    color: #0f172a;
+}
+
+.filter-pill-link.active {
+    background: #0284c7;
+    color: #ffffff;
+    border-color: #0284c7;
+    box-shadow: 0 1px 3px rgba(2, 132, 199, 0.25);
+}
+
+.filter-pill-link.active-green {
+    background: #059669;
+    color: #ffffff;
+    border-color: #059669;
+    box-shadow: 0 1px 3px rgba(5, 150, 105, 0.25);
+}
+
+.filter-pill-link.active-amber {
+    background: #d97706;
+    color: #ffffff;
+    border-color: #d97706;
+    box-shadow: 0 1px 3px rgba(217, 119, 6, 0.25);
+}
+
+.filter-pill-link.active-red {
+    background: #dc2626;
+    color: #ffffff;
+    border-color: #dc2626;
+    box-shadow: 0 1px 3px rgba(220, 38, 38, 0.25);
+}
+
+
+.toolbar-search-form {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    flex-wrap: wrap;
+}
+
+.form-select-corp {
+    height: 32px;
+    padding: 0.2rem 0.5rem;
+    font-size: 0.8rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 5px;
+    background: #ffffff;
+    color: #334155;
+    font-weight: 600;
+    outline: none;
+}
+
+.form-input-corp {
+    height: 32px;
+    padding: 0.2rem 0.65rem;
+    font-size: 0.8rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 5px;
     background: #ffffff;
     color: #0f172a;
-    transition: border-color 0.15s;
+    outline: none;
+    min-width: 180px;
+    box-sizing: border-box;
 }
 
-.filter-input:focus {
+.form-input-corp:focus, .form-select-corp:focus {
     border-color: #0284c7;
-    box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.15);
+    box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.12);
 }
 
-/* Data Table */
-.table-rekap-container {
-    background: #ffffff;
+/* Corporate Button Styles */
+.btn-corp {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.45rem 0.85rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border-radius: 6px;
     border: 1px solid #cbd5e1;
+    background: #ffffff;
+    color: #334155;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-decoration: none;
+    line-height: 1.2;
+}
+
+.btn-corp:hover {
+    background: #f8fafc;
+    border-color: #94a3b8;
+    color: #0f172a;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   4. TABEL REKAPITULASI (Excel-Mirror PT Mirasa Food Industry)
+   ═══════════════════════════════════════════════════════════════ */
+.table-rekap-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
     border-radius: 8px;
     overflow: hidden;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
-    margin-bottom: 1.25rem;
+    margin-bottom: 1.5rem;
 }
 
 .table-responsive {
     overflow-x: auto;
+    width: 100%;
 }
 
 .table-rekap {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.8rem;
+    font-size: 0.8125rem;
     text-align: left;
 }
 
 .table-rekap thead th {
     background: #f8fafc;
-    color: #334155;
+    color: #475569;
     font-weight: 700;
     font-size: 0.725rem;
     text-transform: uppercase;
     padding: 0.65rem 0.85rem;
-    border-bottom: 1px solid #cbd5e1;
+    border-bottom: 2px solid #cbd5e1;
+    border-right: 1px solid #e2e8f0;
     white-space: nowrap;
+    letter-spacing: 0.02em;
+}
+
+.table-rekap thead th:last-child {
+    border-right: none;
+}
+
+/* Kolom Masuk (Hijau Pastel Excel Mirasa) */
+.table-rekap thead th.th-masuk {
+    background: #dcfce7;
+    color: #166534;
+    border-bottom: 2px solid #86efac;
+}
+
+/* Kolom Keluar (Merah Pastel Excel Mirasa) */
+.table-rekap thead th.th-keluar {
+    background: #fee2e2;
+    color: #991b1b;
+    border-bottom: 2px solid #fca5a5;
 }
 
 .table-rekap tbody tr {
     border-bottom: 1px solid #f1f5f9;
-    transition: background-color 0.15s;
+    transition: background-color 0.15s ease;
 }
 
 .table-rekap tbody tr:hover {
     background-color: #f8fafc;
 }
 
-.table-rekap tbody td {
-    padding: 0.65rem 0.85rem;
-    color: #1e293b;
-    vertical-align: middle;
+.table-rekap tbody tr.row-moved-today {
+    background-color: #f0fdf4;
 }
 
-/* Badges */
-.badge-jenis {
-    font-size: 0.7rem;
+.table-rekap tbody tr.row-moved-today:hover {
+    background-color: #e6fced;
+}
+
+.table-rekap tbody td {
+    padding: 0.6rem 0.85rem;
+    color: #1e293b;
+    vertical-align: middle;
+    border-right: 1px solid #f1f5f9;
+    font-variant-numeric: tabular-nums;
+}
+
+.table-rekap tbody td:last-child {
+    border-right: none;
+}
+
+/* Sel Masuk / Keluar */
+.cell-masuk {
+    text-align: right;
+    font-weight: 600;
+    color: #94a3b8;
+}
+
+.cell-masuk.has-in {
+    background: #f0fdf4;
+    color: #15803d;
     font-weight: 700;
-    padding: 0.15rem 0.45rem;
+}
+
+.cell-keluar {
+    text-align: right;
+    font-weight: 600;
+    color: #94a3b8;
+}
+
+.cell-keluar.has-out {
+    background: #fef2f2;
+    color: #dc2626;
+    font-weight: 700;
+}
+
+/* Badges Komoditas & Status */
+.badge-commodity {
+    font-size: 0.65rem;
+    font-weight: 800;
+    padding: 0.12rem 0.4rem;
+    border-radius: 3px;
+    display: inline-block;
+    letter-spacing: 0.02em;
+}
+
+.badge-fg {
+    background: #eff6ff;
+    color: #1d4ed8;
+    border: 1px solid #bfdbfe;
+}
+
+.badge-wip {
+    background: #fef3c7;
+    color: #b45309;
+    border: 1px solid #fde68a;
+}
+
+.badge-raw,
+.badge-bb {
+    background: #ecfdf5;
+    color: #047857;
+    border: 1px solid #a7f3d0;
+}
+
+.badge-bp {
+    background: #fff7ed;
+    color: #c2410c;
+    border: 1px solid #fed7aa;
+}
+
+.badge-pack {
+    background: #f5f3ff;
+    color: #6d28d9;
+    border: 1px solid #ddd6fe;
+}
+
+.badge-supp {
+    background: #fdf2f8;
+    color: #be185d;
+    border: 1px solid #fbcfe8;
+}
+
+.badge-status {
+    font-size: 0.675rem;
+    font-weight: 700;
+    padding: 0.2rem 0.5rem;
     border-radius: 4px;
-    border: 1px solid #cbd5e1;
-    background: #f1f5f9;
-    color: #334155;
     display: inline-block;
 }
 
 .badge-status-aman {
-    font-size: 0.7rem;
-    font-weight: 700;
-    padding: 0.2rem 0.55rem;
-    border-radius: 4px;
     background: #ecfdf5;
     color: #065f46;
     border: 1px solid #a7f3d0;
-    display: inline-block;
 }
 
 .badge-status-rendah {
-    font-size: 0.7rem;
-    font-weight: 700;
-    padding: 0.2rem 0.55rem;
-    border-radius: 4px;
     background: #fffbeb;
     color: #b45309;
     border: 1px solid #fde68a;
-    display: inline-block;
 }
 
 .badge-status-habis {
-    font-size: 0.7rem;
-    font-weight: 700;
-    padding: 0.2rem 0.55rem;
-    border-radius: 4px;
     background: #fef2f2;
     color: #b91c1c;
     border: 1px solid #fecaca;
-    display: inline-block;
 }
 
-/* Smart Action Dropdown */
+/* ═══════════════════════════════════════════════════════════════
+   5. SMART ACTION DROPDOWN (Fixed Positioning)
+   ═══════════════════════════════════════════════════════════════ */
+.btn-action-trigger {
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    color: #334155;
+    padding: 0.25rem 0.55rem;
+    border-radius: 5px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    transition: all 0.15s ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.btn-action-trigger:hover {
+    background: #f8fafc;
+    border-color: #94a3b8;
+    color: #0f172a;
+}
+
 .action-dropdown-menu {
     display: none;
     position: fixed;
+    z-index: 99999;
+    min-width: 175px;
     background: #ffffff;
-    border: 1px solid #cbd5e1;
+    border: 1px solid #e2e8f0;
     border-radius: 6px;
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-    z-index: 9999;
-    min-width: 170px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
     padding: 0.35rem 0;
+    text-align: left;
 }
 
 .action-dropdown-item {
@@ -239,7 +573,7 @@
     font-size: 0.775rem;
     color: #334155;
     text-decoration: none;
-    transition: background 0.15s;
+    transition: background 0.15s ease;
 }
 
 .action-dropdown-item:hover {

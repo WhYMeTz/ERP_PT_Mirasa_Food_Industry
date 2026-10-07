@@ -468,7 +468,7 @@
             });
         } else {
             const groups = {
-                'BAHAN_BAKU': { label: 'Bahan Baku (Singkong, Ubi, Opak, Puyur)', items: [] },
+                'BAHAN_BAKU': { label: 'Bahan Baku (Singkong, Ubi, Berko, Opak)', items: [] },
                 'BAHAN_PENOLONG': { label: 'Bahan Penolong & Bumbu (Minyak, Bumbu, dll)', items: [] },
                 'KEMASAN': { label: 'Kemasan & Packaging (Karton, Plastik, Lakban)', items: [] },
             };
@@ -562,7 +562,7 @@
                 ${tbody.children.length + 1}
             </td>
             <td style="padding: 0.45rem 0.5rem;">
-                <div class="cat-pill-group" style="display: flex; gap: 0.25rem; margin-bottom: 0.35rem; align-items: center; flex-wrap: wrap;">
+                <div class="cat-pill-group" style="display: flex; gap: 0.25rem; margin-bottom: 0.35rem; align-items: center; flex-wrap: nowrap;">
                     <button type="button" class="btn-chip ${initialCategory === '' ? 'active' : ''}" onclick="setRowCategory(this, '')">Semua</button>
                     <button type="button" class="btn-chip ${initialCategory === 'BAHAN_BAKU' ? 'active' : ''}" onclick="setRowCategory(this, 'BAHAN_BAKU')">Bahan Baku</button>
                     <button type="button" class="btn-chip ${initialCategory === 'BAHAN_PENOLONG' ? 'active' : ''}" onclick="setRowCategory(this, 'BAHAN_PENOLONG')">Bumbu / Penolong</button>
@@ -638,7 +638,7 @@
         } else {
             item.all_batches.forEach(b => {
                 const isSelected = (b.batch_no === item.batch_no) ? 'selected' : '';
-                const prefix = b.is_fifo_top ? '[FIFO Prioritas] ' : '• ';
+                const prefix = b.is_fifo_top ? '[FIFO Prioritas] ' : '';
                 const expInfo = b.expired_tgl ? ` | Exp: ${b.expired_tgl}` : '';
                 const tglTerima = b.tgl_terima ? ` | Masuk: ${b.tgl_terima}` : '';
                 batchOptions += `<option value="${b.batch_no}" data-sisa="${b.sisa_qty}" data-harga="${b.harga_satuan || 0}" data-masuk="${b.tgl_terima}" data-exp="${b.expired_tgl || '-'}" ${isSelected}>
@@ -878,13 +878,13 @@
                 if (res.status === 'success') {
                     if (!res.batches || res.batches.length === 0) {
                         batchSelect.innerHTML = '<option value="">(Stok Fisik Habis di Gudang ini)</option>';
-                        batchInfo.innerHTML = '<span style="color: #dc2626; font-weight: 700; background: #fee2e2; padding: 0.2rem 0.5rem; border-radius: 4px;">⚠️ Stok fisik habis total di gudang ini.</span>';
+                        batchInfo.innerHTML = '<span style="color: #dc2626; font-weight: 700; background: #fee2e2; padding: 0.2rem 0.5rem; border-radius: 4px;">Stok fisik habis total di gudang ini.</span>';
                         row.querySelector('.harga-input').value = 0;
                     } else {
                         let html = '';
                         res.batches.forEach((b, idx) => {
                             const isTop = (idx === 0);
-                            const prefix = isTop ? '⭐ [FIFO PRIORITAS] ' : '• ';
+                            const prefix = isTop ? '[FIFO Prioritas] ' : '';
                             const expInfo = b.expired_tgl ? ` | Exp: ${b.expired_tgl}` : '';
                             const tglTerima = b.tgl_terima ? ` | Masuk: ${b.tgl_terima}` : '';
                             html += `<option value="${b.batch_no}" data-sisa="${b.sisa_qty}" data-harga="${b.harga_satuan || 0}" data-masuk="${b.tgl_terima}" data-exp="${b.expired_tgl || '-'}" ${isTop ? 'selected' : ''}>
@@ -918,7 +918,7 @@
 
         if (isFirstBatch) {
             batchInfo.innerHTML = `<span style="color: #065f46; font-weight: 700; background: #ecfdf5; padding: 0.15rem 0.5rem; border-radius: 4px; border: 1px solid #a7f3d0; display: inline-flex; align-items: center; gap: 0.25rem;">
-                ⭐ Rekomendasi FIFO: Batch masuk paling awal (${tglMasuk}) • Maks: ${sisa.toLocaleString('id-ID')} unit
+                Rekomendasi FIFO: Batch masuk paling awal (${tglMasuk}) • Maks: ${sisa.toLocaleString('id-ID')} unit
             </span>`;
         } else {
             batchInfo.innerHTML = `<span style="color: #0369a1; font-weight: 600; background: #f0f9ff; padding: 0.15rem 0.5rem; border-radius: 4px; border: 1px solid #bae6fd;">
@@ -946,12 +946,12 @@
         const harga = parseFloat(hargaInput.value) || 0;
         const sisa = selectedBatchOpt ? parseFloat(selectedBatchOpt.getAttribute('data-sisa') || 0) : Infinity;
 
-        // Warning tegas jika qty yang diminta melebihi sisa fisik batch
+        // Warning jika qty yang diminta melebihi sisa fisik batch
         if (selectedBatchOpt && selectedBatchOpt.value && qty > sisa) {
             qtyInput.style.borderColor = '#dc2626';
             qtyInput.style.backgroundColor = '#fef2f2';
             batchInfo.innerHTML = `<span style="color: #dc2626; font-weight: 700; background: #fee2e2; padding: 0.2rem 0.5rem; border-radius: 4px; border: 1px solid #fecaca; display: inline-block;">
-                ⚠️ Melebihi sisa batch (${sisa.toLocaleString('id-ID')}). Ambil ${sisa.toLocaleString('id-ID')} di baris ini, lalu klik "+ Tambah Baris" untuk sisa ${(qty - sisa).toLocaleString('id-ID')} dari batch berikutnya.
+                Melebihi sisa batch (${sisa.toLocaleString('id-ID')}). Ambil ${sisa.toLocaleString('id-ID')} di baris ini, lalu klik "+ Tambah Baris" untuk sisa ${(qty - sisa).toLocaleString('id-ID')} dari batch berikutnya.
             </span>`;
         } else if (selectedBatchOpt && selectedBatchOpt.value) {
             qtyInput.style.borderColor = '#cbd5e1';
@@ -960,7 +960,7 @@
             const isFirstBatch = (batchSelect.selectedIndex === 0);
             if (isFirstBatch) {
                 batchInfo.innerHTML = `<span style="color: #065f46; font-weight: 700; background: #ecfdf5; padding: 0.15rem 0.5rem; border-radius: 4px; border: 1px solid #a7f3d0;">
-                    ⭐ Rekomendasi FIFO: Batch masuk paling awal (${tglMasuk}) • Maks: ${sisa.toLocaleString('id-ID')} unit
+                    Rekomendasi FIFO: Batch masuk paling awal (${tglMasuk}) • Maks: ${sisa.toLocaleString('id-ID')} unit
                 </span>`;
             } else {
                 batchInfo.innerHTML = `<span style="color: #0369a1; font-weight: 600; background: #f0f9ff; padding: 0.15rem 0.5rem; border-radius: 4px; border: 1px solid #bae6fd;">

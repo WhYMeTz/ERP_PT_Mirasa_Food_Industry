@@ -488,15 +488,16 @@ class ProduksiController extends Controller
     public function adjustUtilitas(Request $request): RedirectResponse
     {
         $request->validate([
-            'tahun'                => 'required|integer|min:2020|max:2099',
-            'bulan'                => 'required|integer|min:1|max:12',
-            'adjust_listrik'       => 'nullable',
-            'total_listrik_air'    => 'nullable|numeric|min:0',
-            'mode_alokasi_listrik' => 'nullable|in:bagi_rata,proporsional_wip',
-            'adjust_cng'           => 'nullable',
-            'mode_cng'             => 'nullable|in:update_tarif,total_tagihan',
-            'cng_tarif_baru'       => 'nullable|numeric|min:0',
-            'total_cng_tagihan'    => 'nullable|numeric|min:0',
+            'tahun'                 => 'required|integer|min:2020|max:2099',
+            'bulan'                 => 'required|integer|min:1|max:12',
+            'adjust_listrik'        => 'nullable',
+            'mode_alokasi_listrik'  => 'nullable|in:tarif_per_kg,total_tagihan,bagi_rata,proporsional_wip',
+            'listrik_tarif_per_kg'  => 'nullable|numeric|min:0',
+            'total_listrik_air'     => 'nullable|numeric|min:0',
+            'adjust_cng'            => 'nullable',
+            'mode_cng'              => 'nullable|in:update_tarif,total_tagihan',
+            'cng_tarif_baru'        => 'nullable|numeric|min:0',
+            'total_cng_tagihan'     => 'nullable|numeric|min:0',
         ]);
 
         try {

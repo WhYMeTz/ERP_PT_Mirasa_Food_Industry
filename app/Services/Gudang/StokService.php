@@ -5,11 +5,11 @@ namespace App\Services\Gudang;
 use App\Models\Gudang\DatStokBatch;
 use App\Models\Gudang\DatStokLedger;
 use App\Models\MasterData\MstBarang;
+use Carbon\Carbon;
 use Exception;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
-
 
 class StokService
 {
@@ -400,64 +400,123 @@ class StokService
     }
 
     /**
-     * Mengambil data Rekap Stok (Blueprint 10 - Rekap Stok).
-     * Kolom: Gudang, Jenis Barang, Nama Barang, Kode Barang, Satuan, Batas Minimum,
-     * Total Masuk (IN), Total Keluar (OUT), Stok Akhir, Nilai Persediaan, Status.
+     * Halaman Rekapitulasi Stok Komoditas & Valuasi Persediaan (Blueprint 10 - Rekap Stok).
+     * Mendukung Snapshot Harian (Daily Balance Sheet seperti di Excel PT Mirasa) & Split Tab:
+     * - Tab 'hasil_produksi': Stok Gudang Jadi (FG & WIP)
+     * - Tab 'bahan': Stok Bahan Baku & Penolong (RAW, BP, PACK, SUPP, BB)
+     * Menampilkan: Stok Awal, Masuk (IN), Keluar (OUT), Stok Akhir, Satuan, Harga, Total Nilai, Keterangan, Status.
      */
     public function getRekapStok(
         array $filters = [],
-        int $perPage = 25,
+        int $perPage = 50,
         int|array|null $allowedGudangIds = null
     ): LengthAwarePaginator {
         $gudangId = !empty($filters['gudang_id']) ? (int) $filters['gudang_id'] : $allowedGudangIds;
+        $tab = $filters['tab'] ?? 'hasil_produksi';
+        $tgl = !empty($filters['tanggal']) ? Carbon::parse($filters['tanggal'])->toDateString() : date('Y-m-d');
 
-        // Subquery agregasi Batch (Stok Akhir & Nilai Persediaan)
+        // 1. Subquery mutasi hari ini (Tanggal T)
+        $subIn = DatStokLedger::selectRaw('barang_id, COALESCE(SUM(qty), 0) as masuk_hari_ini')
+            ->where('tipe_transaksi_cd', 'IN')
+            ->whereDate('transaksi_tgl', $tgl)
+            ->where('deleted_st', false);
+        $this->applyGudangFilter($subIn, $gudangId);
+        $subIn->groupBy('barang_id');
+
+        $subOut = DatStokLedger::selectRaw('barang_id, COALESCE(SUM(qty), 0) as keluar_hari_ini')
+            ->where('tipe_transaksi_cd', 'OUT')
+            ->whereDate('transaksi_tgl', $tgl)
+            ->where('deleted_st', false);
+        $this->applyGudangFilter($subOut, $gudangId);
+        $subOut->groupBy('barang_id');
+
+        // Keterangan hari ini (gabungan keterangan transaksi ledger pada tanggal T)
+        $subKet = DatStokLedger::selectRaw('barang_id, STRING_AGG(DISTINCT keterangan_txt, \'; \') as keterangan_hari_ini')
+            ->whereDate('transaksi_tgl', $tgl)
+            ->where('deleted_st', false)
+            ->whereNotNull('keterangan_txt')
+            ->where('keterangan_txt', '!=', '');
+        $this->applyGudangFilter($subKet, $gudangId);
+        $subKet->groupBy('barang_id');
+
+        // 2. Subquery Batch saat ini
         $subBatches = DatStokBatch::selectRaw('
                 barang_id,
                 COALESCE(SUM(qty_awal), 0) as total_batch_awal,
-                COALESCE(SUM(sisa_qty), 0) as stok_akhir,
-                COALESCE(SUM(sisa_qty * harga_satuan), 0) as nilai_persediaan
+                COALESCE(SUM(sisa_qty), 0) as sisa_sekarang,
+                CASE WHEN SUM(sisa_qty) > 0 THEN SUM(sisa_qty * harga_satuan) / SUM(sisa_qty) ELSE AVG(harga_satuan) END as harga_satuan
             ')
             ->where('deleted_st', false);
         $this->applyGudangFilter($subBatches, $gudangId);
         $subBatches->groupBy('barang_id');
 
-        // Subquery mutasi IN
-        $subIn = DatStokLedger::selectRaw('barang_id, SUM(qty) as total_in')
-            ->where('tipe_transaksi_cd', 'IN');
-        $this->applyGudangFilter($subIn, $gudangId);
-        if (!empty($filters['tgl_dari'])) {
-            $subIn->whereDate('transaksi_tgl', '>=', $filters['tgl_dari']);
-        }
-        if (!empty($filters['tgl_sampai'])) {
-            $subIn->whereDate('transaksi_tgl', '<=', $filters['tgl_sampai']);
-        }
-        $subIn->groupBy('barang_id');
+        // 3. Subquery mutasi masa depan (setelah tanggal T, untuk rollback jika melihat tanggal lampau)
+        $subFutureIn = DatStokLedger::selectRaw('barang_id, COALESCE(SUM(qty), 0) as in_future')
+            ->where('tipe_transaksi_cd', 'IN')
+            ->whereDate('transaksi_tgl', '>', $tgl)
+            ->where('deleted_st', false);
+        $this->applyGudangFilter($subFutureIn, $gudangId);
+        $subFutureIn->groupBy('barang_id');
 
-        // Subquery mutasi OUT
-        $subOut = DatStokLedger::selectRaw('barang_id, SUM(qty) as total_out')
-            ->where('tipe_transaksi_cd', 'OUT');
-        $this->applyGudangFilter($subOut, $gudangId);
-        if (!empty($filters['tgl_dari'])) {
-            $subOut->whereDate('transaksi_tgl', '>=', $filters['tgl_dari']);
-        }
-        if (!empty($filters['tgl_sampai'])) {
-            $subOut->whereDate('transaksi_tgl', '<=', $filters['tgl_sampai']);
-        }
-        $subOut->groupBy('barang_id');
+        $subFutureOut = DatStokLedger::selectRaw('barang_id, COALESCE(SUM(qty), 0) as out_future')
+            ->where('tipe_transaksi_cd', 'OUT')
+            ->whereDate('transaksi_tgl', '>', $tgl)
+            ->where('deleted_st', false);
+        $this->applyGudangFilter($subFutureOut, $gudangId);
+        $subFutureOut->groupBy('barang_id');
 
-        $query = MstBarang::active()
-            ->leftJoinSub($subBatches, 'b', 'mst_barang.barang_id', '=', 'b.barang_id')
+        $query = MstBarang::active();
+        if ($tab === 'hasil_produksi') {
+            $query->whereHas('jenisBarang', fn($q) => $q->whereIn('jenis_barang_cd', ['FG', 'WIP']));
+        } else {
+            $query->whereHas('jenisBarang', fn($q) => $q->whereIn('jenis_barang_cd', ['RAW', 'BP', 'PACK', 'SUPP', 'BB']));
+        }
+
+        $query->leftJoinSub($subBatches, 'b', 'mst_barang.barang_id', '=', 'b.barang_id')
             ->leftJoinSub($subIn, 'lin', 'mst_barang.barang_id', '=', 'lin.barang_id')
             ->leftJoinSub($subOut, 'lout', 'mst_barang.barang_id', '=', 'lout.barang_id')
+            ->leftJoinSub($subKet, 'lket', 'mst_barang.barang_id', '=', 'lket.barang_id')
+            ->leftJoinSub($subFutureIn, 'fin', 'mst_barang.barang_id', '=', 'fin.barang_id')
+            ->leftJoinSub($subFutureOut, 'fout', 'mst_barang.barang_id', '=', 'fout.barang_id')
             ->select(
                 'mst_barang.*',
-                DB::raw('COALESCE(lin.total_in, b.total_batch_awal, 0) as total_masuk'),
-                DB::raw('COALESCE(lout.total_out, 0) as total_keluar'),
-                DB::raw('COALESCE(b.stok_akhir, 0) as stok_akhir'),
-                DB::raw('COALESCE(b.nilai_persediaan, 0) as nilai_persediaan')
+                DB::raw('COALESCE(lin.masuk_hari_ini, 0) as total_masuk'),
+                DB::raw('COALESCE(lout.keluar_hari_ini, 0) as total_keluar'),
+                DB::raw('lket.keterangan_hari_ini as keterangan_txt'),
+                DB::raw('COALESCE(b.harga_satuan, mst_barang.harga_beli_standar, 0) as harga_satuan'),
+                DB::raw('GREATEST(0, (COALESCE(b.sisa_sekarang, 0) - COALESCE(fin.in_future, 0) + COALESCE(fout.out_future, 0))) as stok_akhir'),
+                DB::raw('GREATEST(0, (COALESCE(b.sisa_sekarang, 0) - COALESCE(fin.in_future, 0) + COALESCE(fout.out_future, 0) - COALESCE(lin.masuk_hari_ini, 0) + COALESCE(lout.keluar_hari_ini, 0))) as stok_awal'),
+                DB::raw('(GREATEST(0, (COALESCE(b.sisa_sekarang, 0) - COALESCE(fin.in_future, 0) + COALESCE(fout.out_future, 0))) * COALESCE(b.harga_satuan, mst_barang.harga_beli_standar, 0)) as nilai_persediaan')
             )
             ->with(['jenisBarang', 'satuanDasar']);
+
+        if (!empty($filters['jenis_cd']) && $filters['jenis_cd'] !== 'all') {
+            $jcd = strtoupper($filters['jenis_cd']);
+            if ($jcd === 'RAW' || $jcd === 'BB') {
+                $query->whereHas('jenisBarang', fn($q) => $q->whereIn('jenis_barang_cd', ['RAW', 'BB']));
+            } elseif ($jcd === 'PACK') {
+                $query->where(function($q) {
+                    $q->whereHas('jenisBarang', fn($jb) => $jb->where('jenis_barang_cd', 'PACK'))
+                      ->orWhere('mst_barang.barang_nm', 'ILIKE', '%KARTON%')
+                      ->orWhere('mst_barang.barang_nm', 'ILIKE', '%PLASTIK%')
+                      ->orWhere('mst_barang.barang_nm', 'ILIKE', '%ROLL%')
+                      ->orWhere('mst_barang.barang_nm', 'ILIKE', '%LAKBAN%')
+                      ->orWhere('mst_barang.barang_nm', 'ILIKE', '%RAFIA%');
+                });
+            } elseif ($jcd === 'SUPP') {
+                $query->where(function($q) {
+                    $q->whereHas('jenisBarang', fn($jb) => $jb->where('jenis_barang_cd', 'SUPP'))
+                      ->orWhere('mst_barang.barang_nm', 'ILIKE', '%BUMBU%')
+                      ->orWhere('mst_barang.barang_nm', 'ILIKE', '%GARAM%')
+                      ->orWhere('mst_barang.barang_nm', 'ILIKE', '%MSG%')
+                      ->orWhere('mst_barang.barang_nm', 'ILIKE', '%PERENYAH%');
+                });
+            } else {
+                $query->whereHas('jenisBarang', fn($q) => $q->where('jenis_barang_cd', $jcd));
+            }
+        } elseif (!empty($filters['jenis_barang_id'])) {
+            $query->where('mst_barang.jenis_barang_id', $filters['jenis_barang_id']);
+        }
 
         // Filter pencarian: Nama Barang / Kode Barang
         if (!empty($filters['search'])) {
@@ -468,85 +527,196 @@ class StokService
             });
         }
 
-        // Filter Jenis Barang
-        if (!empty($filters['jenis_barang_id'])) {
-            $query->where('mst_barang.jenis_barang_id', $filters['jenis_barang_id']);
-        }
-
-        // Filter Status (Aman / Rendah / Habis)
+        // Filter Status
         if (!empty($filters['status'])) {
             $st = strtolower($filters['status']);
-            if ($st === 'aman') {
-                $query->whereRaw('COALESCE(b.stok_akhir, 0) > mst_barang.batas_minimum_qty');
+            if ($st === 'bergerak') {
+                $query->whereRaw('(COALESCE(lin.masuk_hari_ini, 0) > 0 OR COALESCE(lout.keluar_hari_ini, 0) > 0)');
+            } elseif ($st === 'aman') {
+                $query->whereRaw('GREATEST(0, (COALESCE(b.sisa_sekarang, 0) - COALESCE(fin.in_future, 0) + COALESCE(fout.out_future, 0))) > mst_barang.batas_minimum_qty');
             } elseif ($st === 'rendah') {
-                $query->whereRaw('COALESCE(b.stok_akhir, 0) > 0 AND COALESCE(b.stok_akhir, 0) <= mst_barang.batas_minimum_qty');
+                $query->whereRaw('GREATEST(0, (COALESCE(b.sisa_sekarang, 0) - COALESCE(fin.in_future, 0) + COALESCE(fout.out_future, 0))) > 0 AND GREATEST(0, (COALESCE(b.sisa_sekarang, 0) - COALESCE(fin.in_future, 0) + COALESCE(fout.out_future, 0))) <= mst_barang.batas_minimum_qty');
             } elseif ($st === 'habis') {
-                $query->whereRaw('COALESCE(b.stok_akhir, 0) <= 0');
+                $query->whereRaw('GREATEST(0, (COALESCE(b.sisa_sekarang, 0) - COALESCE(fin.in_future, 0) + COALESCE(fout.out_future, 0))) <= 0');
             }
         }
 
-        // Tampilkan barang yang pernah ada transaksi atau memiliki stok
-        $query->whereRaw('(COALESCE(b.stok_akhir, 0) > 0 OR COALESCE(lin.total_in, b.total_batch_awal, 0) > 0)');
-
-        return $query->orderByRaw('CASE WHEN COALESCE(b.stok_akhir, 0) > 0 THEN 1 ELSE 0 END DESC')
+        // Order: barang yang bergerak hari ini diprioritaskan di atas, lalu yang punya stok, lalu nama barang
+        return $query->orderByRaw('CASE WHEN (COALESCE(lin.masuk_hari_ini, 0) > 0 OR COALESCE(lout.keluar_hari_ini, 0) > 0) THEN 1 ELSE 0 END DESC')
+            ->orderByRaw('CASE WHEN GREATEST(0, (COALESCE(b.sisa_sekarang, 0) - COALESCE(fin.in_future, 0) + COALESCE(fout.out_future, 0))) > 0 THEN 1 ELSE 0 END DESC')
             ->orderBy('mst_barang.barang_nm', 'asc')
             ->paginate($perPage)
             ->withQueryString();
     }
 
     /**
-     * Mengambil ringkasan total KPI Rekap Stok untuk kartu indikator atas.
+     * Mengambil ringkasan total KPI Rekap Stok untuk kartu indikator atas berdasarkan tab & tanggal.
      */
     public function getRekapStokTotals(array $filters = [], int|array|null $allowedGudangIds = null): array
     {
         $gudangId = !empty($filters['gudang_id']) ? (int) $filters['gudang_id'] : $allowedGudangIds;
+        $tab = $filters['tab'] ?? 'hasil_produksi';
+        $tgl = !empty($filters['tanggal']) ? Carbon::parse($filters['tanggal'])->toDateString() : date('Y-m-d');
+
+        // Subquery mutasi hari ini (Tanggal T)
+        $subIn = DatStokLedger::selectRaw('barang_id, COALESCE(SUM(qty), 0) as masuk_hari_ini')
+            ->where('tipe_transaksi_cd', 'IN')
+            ->whereDate('transaksi_tgl', $tgl)
+            ->where('deleted_st', false);
+        $this->applyGudangFilter($subIn, $gudangId);
+        $subIn->groupBy('barang_id');
+
+        $subOut = DatStokLedger::selectRaw('barang_id, COALESCE(SUM(qty), 0) as keluar_hari_ini')
+            ->where('tipe_transaksi_cd', 'OUT')
+            ->whereDate('transaksi_tgl', $tgl)
+            ->where('deleted_st', false);
+        $this->applyGudangFilter($subOut, $gudangId);
+        $subOut->groupBy('barang_id');
 
         $subBatches = DatStokBatch::selectRaw('
                 barang_id,
-                COALESCE(SUM(qty_awal), 0) as total_batch_awal,
-                COALESCE(SUM(sisa_qty), 0) as stok_akhir,
-                COALESCE(SUM(sisa_qty * harga_satuan), 0) as nilai_persediaan
+                COALESCE(SUM(sisa_qty), 0) as sisa_sekarang,
+                CASE WHEN SUM(sisa_qty) > 0 THEN SUM(sisa_qty * harga_satuan) / SUM(sisa_qty) ELSE AVG(harga_satuan) END as harga_satuan
             ')
             ->where('deleted_st', false);
         $this->applyGudangFilter($subBatches, $gudangId);
         $subBatches->groupBy('barang_id');
 
-        $subIn = DatStokLedger::selectRaw('barang_id, SUM(qty) as total_in')
-            ->where('tipe_transaksi_cd', 'IN');
-        $this->applyGudangFilter($subIn, $gudangId);
-        $subIn->groupBy('barang_id');
+        $subFutureIn = DatStokLedger::selectRaw('barang_id, COALESCE(SUM(qty), 0) as in_future')
+            ->where('tipe_transaksi_cd', 'IN')
+            ->whereDate('transaksi_tgl', '>', $tgl)
+            ->where('deleted_st', false);
+        $this->applyGudangFilter($subFutureIn, $gudangId);
+        $subFutureIn->groupBy('barang_id');
 
-        $subOut = DatStokLedger::selectRaw('barang_id, SUM(qty) as total_out')
-            ->where('tipe_transaksi_cd', 'OUT');
-        $this->applyGudangFilter($subOut, $gudangId);
-        $subOut->groupBy('barang_id');
+        $subFutureOut = DatStokLedger::selectRaw('barang_id, COALESCE(SUM(qty), 0) as out_future')
+            ->where('tipe_transaksi_cd', 'OUT')
+            ->whereDate('transaksi_tgl', '>', $tgl)
+            ->where('deleted_st', false);
+        $this->applyGudangFilter($subFutureOut, $gudangId);
+        $subFutureOut->groupBy('barang_id');
 
-        $query = MstBarang::active()
-            ->leftJoinSub($subBatches, 'b', 'mst_barang.barang_id', '=', 'b.barang_id')
+        $query = MstBarang::active();
+        if ($tab === 'hasil_produksi') {
+            $query->whereHas('jenisBarang', fn($q) => $q->whereIn('jenis_barang_cd', ['FG', 'WIP']));
+        } else {
+            $query->whereHas('jenisBarang', fn($q) => $q->whereIn('jenis_barang_cd', ['RAW', 'BP', 'PACK', 'SUPP', 'BB']));
+        }
+
+        $query->leftJoinSub($subBatches, 'b', 'mst_barang.barang_id', '=', 'b.barang_id')
             ->leftJoinSub($subIn, 'lin', 'mst_barang.barang_id', '=', 'lin.barang_id')
             ->leftJoinSub($subOut, 'lout', 'mst_barang.barang_id', '=', 'lout.barang_id')
-            ->whereRaw('(COALESCE(b.stok_akhir, 0) > 0 OR COALESCE(lin.total_in, b.total_batch_awal, 0) > 0)');
+            ->leftJoinSub($subFutureIn, 'fin', 'mst_barang.barang_id', '=', 'fin.barang_id')
+            ->leftJoinSub($subFutureOut, 'fout', 'mst_barang.barang_id', '=', 'fout.barang_id');
 
-        $rows = $query->selectRaw('
-            COUNT(*) as total_sku,
-            COALESCE(SUM(COALESCE(lin.total_in, b.total_batch_awal, 0)), 0) as grand_masuk,
-            COALESCE(SUM(COALESCE(lout.total_out, 0)), 0) as grand_keluar,
-            COALESCE(SUM(COALESCE(b.stok_akhir, 0)), 0) as grand_stok_akhir,
-            COALESCE(SUM(COALESCE(b.nilai_persediaan, 0)), 0) as grand_nilai_persediaan,
-            COUNT(CASE WHEN COALESCE(b.stok_akhir, 0) > 0 AND COALESCE(b.stok_akhir, 0) <= mst_barang.batas_minimum_qty THEN 1 END) as sku_rendah,
-            COUNT(CASE WHEN COALESCE(b.stok_akhir, 0) > mst_barang.batas_minimum_qty THEN 1 END) as sku_aman,
-            COUNT(CASE WHEN COALESCE(b.stok_akhir, 0) <= 0 THEN 1 END) as sku_habis
-        ')->first();
+        if (!empty($filters['jenis_cd']) && $filters['jenis_cd'] !== 'all') {
+            $jcd = strtoupper($filters['jenis_cd']);
+            if ($jcd === 'RAW' || $jcd === 'BB') {
+                $query->whereHas('jenisBarang', fn($q) => $q->whereIn('jenis_barang_cd', ['RAW', 'BB']));
+            } elseif ($jcd === 'PACK') {
+                $query->where(function($q) {
+                    $q->whereHas('jenisBarang', fn($jb) => $jb->where('jenis_barang_cd', 'PACK'))
+                      ->orWhere('mst_barang.barang_nm', 'ILIKE', '%KARTON%')
+                      ->orWhere('mst_barang.barang_nm', 'ILIKE', '%PLASTIK%')
+                      ->orWhere('mst_barang.barang_nm', 'ILIKE', '%ROLL%')
+                      ->orWhere('mst_barang.barang_nm', 'ILIKE', '%LAKBAN%')
+                      ->orWhere('mst_barang.barang_nm', 'ILIKE', '%RAFIA%');
+                });
+            } elseif ($jcd === 'SUPP') {
+                $query->where(function($q) {
+                    $q->whereHas('jenisBarang', fn($jb) => $jb->where('jenis_barang_cd', 'SUPP'))
+                      ->orWhere('mst_barang.barang_nm', 'ILIKE', '%BUMBU%')
+                      ->orWhere('mst_barang.barang_nm', 'ILIKE', '%GARAM%')
+                      ->orWhere('mst_barang.barang_nm', 'ILIKE', '%MSG%')
+                      ->orWhere('mst_barang.barang_nm', 'ILIKE', '%PERENYAH%');
+                });
+            } else {
+                $query->whereHas('jenisBarang', fn($q) => $q->where('jenis_barang_cd', $jcd));
+            }
+        }
+
+        if (!empty($filters['search'])) {
+            $search = $filters['search'];
+            $query->where(function ($q) use ($search) {
+                $q->where('mst_barang.barang_nm', 'ILIKE', "%{$search}%")
+                  ->orWhere('mst_barang.barang_cd', 'ILIKE', "%{$search}%");
+            });
+        }
+
+        $items = $query->select(
+            'mst_barang.*',
+            DB::raw('COALESCE(lin.masuk_hari_ini, 0) as masuk_hari_ini'),
+            DB::raw('COALESCE(lout.keluar_hari_ini, 0) as keluar_hari_ini'),
+            DB::raw('COALESCE(b.harga_satuan, mst_barang.harga_beli_standar, 0) as harga_satuan'),
+            DB::raw('GREATEST(0, (COALESCE(b.sisa_sekarang, 0) - COALESCE(fin.in_future, 0) + COALESCE(fout.out_future, 0))) as stok_akhir'),
+            DB::raw('GREATEST(0, (COALESCE(b.sisa_sekarang, 0) - COALESCE(fin.in_future, 0) + COALESCE(fout.out_future, 0) - COALESCE(lin.masuk_hari_ini, 0) + COALESCE(lout.keluar_hari_ini, 0))) as stok_awal'),
+            DB::raw('(GREATEST(0, (COALESCE(b.sisa_sekarang, 0) - COALESCE(fin.in_future, 0) + COALESCE(fout.out_future, 0))) * COALESCE(b.harga_satuan, mst_barang.harga_beli_standar, 0)) as nilai_persediaan')
+        )->with(['satuanDasar', 'jenisBarang'])->get();
+
+        $totalSku = $items->count();
+        $grandAwal = $items->sum('stok_awal');
+        $grandMasuk = $items->sum('masuk_hari_ini');
+        $grandKeluar = $items->sum('keluar_hari_ini');
+        $grandAkhir = $items->sum('stok_akhir');
+        $grandNilai = $items->sum('nilai_persediaan');
+
+        $skuAman = 0;
+        $skuRendah = 0;
+        $skuHabis = 0;
+        $skuBergerak = 0;
+
+        $totalKartonFg = 0;
+        $totalBerkoKg = 0;
+        $totalSingkongKg = 0;
+        $totalMinyakKg = 0;
+
+        foreach ($items as $it) {
+            $akhir = (float) $it->stok_akhir;
+            $minQty = (float) $it->batas_minimum_qty;
+            if ($it->masuk_hari_ini > 0 || $it->keluar_hari_ini > 0) {
+                $skuBergerak++;
+            }
+            if ($akhir <= 0) {
+                $skuHabis++;
+            } elseif ($akhir <= $minQty) {
+                $skuRendah++;
+            } else {
+                $skuAman++;
+            }
+
+            $jcd = $it->jenisBarang?->jenis_barang_cd ?? '';
+            $nm = strtoupper($it->barang_nm);
+            $satuan = strtoupper($it->satuanDasar?->satuan_cd ?? '');
+
+            if ($jcd === 'FG' || str_contains($satuan, 'KARTON') || str_contains($satuan, 'DUS')) {
+                $totalKartonFg += $akhir;
+            }
+            if (str_contains($nm, 'BERKO') || str_contains($it->barang_cd, 'BRK')) {
+                $totalBerkoKg += $akhir;
+            }
+            if (str_contains($nm, 'SINGKONG') || $jcd === 'RAW') {
+                $totalSingkongKg += $akhir;
+            }
+            if (str_contains($nm, 'MINYAK')) {
+                $totalMinyakKg += $akhir;
+            }
+        }
 
         return [
-            'total_sku'             => (int) ($rows->total_sku ?? 0),
-            'grand_masuk'           => (float) ($rows->grand_masuk ?? 0),
-            'grand_keluar'          => (float) ($rows->grand_keluar ?? 0),
-            'grand_stok_akhir'      => (float) ($rows->grand_stok_akhir ?? 0),
-            'grand_nilai_persediaan'=> (float) ($rows->grand_nilai_persediaan ?? 0),
-            'sku_rendah'            => (int) ($rows->sku_rendah ?? 0),
-            'sku_aman'              => (int) ($rows->sku_aman ?? 0),
-            'sku_habis'             => (int) ($rows->sku_habis ?? 0),
+            'total_sku'              => $totalSku,
+            'grand_stok_awal'        => (float) $grandAwal,
+            'grand_masuk'            => (float) $grandMasuk,
+            'grand_keluar'           => (float) $grandKeluar,
+            'grand_stok_akhir'       => (float) $grandAkhir,
+            'grand_nilai_persediaan' => (float) $grandNilai,
+            'sku_aman'               => $skuAman,
+            'sku_rendah'             => $skuRendah,
+            'sku_habis'              => $skuHabis,
+            'sku_bergerak_count'     => $skuBergerak,
+            'total_karton_fg'        => (float) $totalKartonFg,
+            'total_berko_kg'         => (float) $totalBerkoKg,
+            'total_singkong_kg'      => (float) $totalSingkongKg,
+            'total_minyak_kg'        => (float) $totalMinyakKg,
         ];
     }
 }

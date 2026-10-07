@@ -76,8 +76,69 @@
             <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
             <span>Lihat Dokumen HACCP</span>
         </button>
-    </div>
 </div>
+
+{{-- ALERT SUKSES DENGAN NOTIFIKASI JELAS --}}
+@if (session('success'))
+    <div style="margin-bottom: 1.25rem; background: #f0fdf4; border: 1.5px solid #22c55e; border-radius: 8px; padding: 0.9rem 1.25rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; box-shadow: 0 2px 4px rgba(34, 197, 94, 0.1);">
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <div style="width: 32px; height: 32px; border-radius: 50%; background: #22c55e; color: #ffffff; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0; font-weight: 900;">
+                ✓
+            </div>
+            <div>
+                <strong style="color: #15803d; font-size: 0.95rem;">{{ session('success') }}</strong>
+                <div style="font-size: 0.8rem; color: #166534; margin-top: 2px;">
+                    Perubahan data berhasil tersimpan ke sistem. Periksa isian formulir di bawah ini untuk memastikan hasil revisi Anda telah sesuai.
+                </div>
+            </div>
+        </div>
+        <a href="{{ route('qc.inbound.index') }}" class="btn btn-sm" style="background: #15803d; color: #ffffff; font-weight: 700; text-decoration: none; border-radius: 6px; padding: 0.45rem 0.9rem; white-space: nowrap;">
+            Selesai &amp; Kembali ke Riwayat &rarr;
+        </a>
+    </div>
+@endif
+
+{{-- BANNER KHUSUS PENGUJIAN 2 (LANJUTAN SISA MUATAN BAK) --}}
+@if (($qc->tahap_uji ?? 'PENGUJIAN_1') === 'PENGUJIAN_2')
+    <div style="margin-bottom: 1.25rem; background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%); border: 1.5px solid #d8b4fe; border-radius: 10px; padding: 1rem 1.25rem; box-shadow: 0 2px 5px rgba(126, 34, 206, 0.06);">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap;">
+            <div style="display: flex; gap: 0.85rem; align-items: flex-start;">
+                <div style="width: 40px; height: 40px; border-radius: 8px; background: #9333ea; color: #ffffff; display: flex; align-items: center; justify-content: center; font-size: 1.35rem; flex-shrink: 0; box-shadow: 0 2px 4px rgba(147, 51, 234, 0.3);">
+                    🍟
+                </div>
+                <div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                        <strong style="color: #6b21a8; font-size: 1rem;">Dokumen QC Pengujian II (Lantai Produksi / Sisa Setengah Bak Tuntas)</strong>
+                        <span class="badge" style="background: #9333ea; color: #ffffff; font-weight: 800; font-size: 0.72rem;">TAHAP 2</span>
+                    </div>
+                    <div style="font-size: 0.825rem; color: #581c87; margin-top: 0.25rem; line-height: 1.5;">
+                        Tiket ini merupakan pengujian lanjutan dari sisa muatan bak armada truk. Hasil pengujian fisik lapisan dalam dan tes rasa fryer menentukan kelayakan konsumsi dan produksi.
+                    </div>
+                    @if ($qc->parentQc)
+                        <div style="margin-top: 0.55rem; display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; font-size: 0.8rem; background: rgba(255,255,255,0.7); padding: 0.35rem 0.75rem; border-radius: 6px; border: 1px solid #e9d5ff;">
+                            <span style="font-weight: 700; color: #7e22ce;">Dokumen Induk Uji 1:</span>
+                            <span style="font-family: monospace; font-weight: 800; color: #0f172a;">#{{ $qc->parentQc->qc_no }}</span>
+                            <span style="color: #cbd5e1;">&bull;</span>
+                            <span>🚛 <strong>{{ $qc->parentQc->plat_nomor_truk ?: ($qc->plat_nomor_truk ?? '-') }}</strong></span>
+                            <span style="color: #cbd5e1;">&bull;</span>
+                            <span>Sopir: <strong>{{ $qc->parentQc->sopir_nama ?: ($qc->sopir_nama ?? '-') }}</strong></span>
+                            <span style="color: #cbd5e1;">&bull;</span>
+                            <span>Netto Uji 1: <strong style="color: #15803d;">{{ number_format($qc->parentQc->details->sum('qty_netto_lolos'), 0, ',', '.') }} kg</strong> (Grade {{ $qc->parentQc->details->first()?->grade_cd ?? 'A' }})</span>
+                        </div>
+                    @endif
+                </div>
+            </div>
+            @if ($qc->parent_qc_id)
+                <div style="display: flex; gap: 0.5rem; align-items: center; flex-shrink: 0;">
+                    <a href="{{ route('qc.inbound.edit', $qc->parent_qc_id) }}" class="btn btn-sm" style="background: #ffffff; color: #7e22ce; border: 1.5px solid #d8b4fe; font-weight: 700; display: inline-flex; align-items: center; gap: 0.35rem; text-decoration: none; border-radius: 6px; padding: 0.4rem 0.8rem; box-shadow: 0 1px 2px rgba(0,0,0,0.05);" title="Buka dan tinjau dokumen Pengujian I">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                        <span>Tinjau Uji 1 Induk</span>
+                    </a>
+                </div>
+            @endif
+        </div>
+    </div>
+@endif
 
 {{-- ALERT INFORMASI PENERIMAAN GUDANG (GRN) --}}
 @if ($qc->terima)
@@ -182,39 +243,40 @@
                 </div>
             </div>
 
-            {{-- KARTU 2: PARAMETER MUTU & SAMPLING LAB (HACCP) --}}
+            {{-- KARTU 2: PARAMETER MUTU & SAMPLING LAB (FORMULIR INPUTAN BERSIH) --}}
             <div class="card">
                 <div class="card-header">
                     <strong>
                         <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
-                        2. Parameter Mutu Sampling Laboratorium (Formulir HACCP)
+                        2. Parameter Mutu Sampling Laboratorium &amp; Standar Mutu
                     </strong>
-                    <span style="font-size: 0.75rem; color: #64748b;">Standar Spesifikasi Bahan: {{ $kat }}</span>
+                    <span style="font-size: 0.75rem; color: #64748b; font-weight: 700;">Standar Spesifikasi: {{ $kat }}</span>
                 </div>
                 <div style="padding: 1.25rem;">
-                    {{-- SELEKSI ITEM BARANG MASTER --}}
-                    <div class="form-group" style="margin-bottom: 1.25rem;">
-                        <label class="form-label">Master Bahan Baku Terkait <span style="color:#ef4444;">*</span></label>
-                        <select name="items[{{ $qcdtlId }}][barang_id]" class="form-control" required style="font-weight: 600;">
-                            @foreach ($barangs as $b)
-                                <option value="{{ $b->barang_id }}" {{ old("items.{$qcdtlId}.barang_id", $barangId) == $b->barang_id ? 'selected' : '' }}>
-                                    {{ $b->barang_nm }} ({{ $b->barang_cd }}) - {{ $b->satuanDasar?->satuan_cd ?? 'KG' }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-
-                    {{-- INCLUDE SPESIFIK PARAMETER SESUAI KOMODITAS --}}
                     @if ($kat === 'SINGKONG')
-                        @include('gudang.qc.partials.doc-singkong', ['isEdit' => true])
-                    @elseif ($kat === 'MINYAK')
-                        @include('gudang.qc.partials.doc-minyak', ['isEdit' => true])
-                    @elseif ($kat === 'PLASTIK')
-                        @include('gudang.qc.partials.doc-plastik', ['isEdit' => true])
-                    @elseif ($kat === 'KARTON')
-                        @include('gudang.qc.partials.doc-karton', ['isEdit' => true])
+                        @include('gudang.qc.partials.edit-form-singkong')
                     @else
-                        @include('gudang.qc.partials.doc-seasoning', ['isEdit' => true])
+                        {{-- SELEKSI ITEM BARANG MASTER (NON-SINGKONG) --}}
+                        <div class="form-group" style="margin-bottom: 1.25rem;">
+                            <label class="form-label">Master Bahan Baku Terkait <span style="color:#ef4444;">*</span></label>
+                            <select name="items[{{ $qcdtlId }}][barang_id]" class="form-control" required style="font-weight: 600;">
+                                @foreach ($barangs as $b)
+                                    <option value="{{ $b->barang_id }}" {{ old("items.{$qcdtlId}.barang_id", $barangId) == $b->barang_id ? 'selected' : '' }}>
+                                        {{ $b->barang_nm }} ({{ $b->barang_cd }}) - {{ $b->satuanDasar?->satuan_cd ?? 'KG' }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        @if ($kat === 'MINYAK')
+                            @include('gudang.qc.partials.doc-minyak', ['isEdit' => true])
+                        @elseif ($kat === 'PLASTIK')
+                            @include('gudang.qc.partials.doc-plastik', ['isEdit' => true])
+                        @elseif ($kat === 'KARTON')
+                            @include('gudang.qc.partials.doc-karton', ['isEdit' => true])
+                        @else
+                            @include('gudang.qc.partials.doc-seasoning', ['isEdit' => true])
+                        @endif
                     @endif
                 </div>
             </div>
@@ -228,6 +290,45 @@
                     </strong>
                 </div>
                 <div style="padding: 1.25rem; display: flex; flex-direction: column; gap: 1rem;">
+                    @if ($kat === 'SINGKONG')
+                        <div class="qc-grid-2" style="padding-bottom: 0.85rem; border-bottom: 1px dashed #e2e8f0;">
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label class="form-label" style="font-weight: 700;">Muatan di Surat Jalan (kg)</label>
+                                <input type="number" step="0.01" min="0" name="jumlah_surat_jalan" value="{{ old('jumlah_surat_jalan', $qc->jumlah_surat_jalan ?: ($qc->parentQc?->jumlah_surat_jalan ?? '')) }}" class="form-control" placeholder="0.00" style="font-weight: 600;">
+                                <small style="color: #64748b; font-size: 0.72rem;">Total muatan seluruh truk pada surat jalan supplier.</small>
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label class="form-label" style="font-weight: 700;">{{ ($qc->tahap_uji ?? '') === 'PENGUJIAN_2' ? 'Muatan Bongkar Uji 2 (kg)' : 'Muatan Turun di Pabrik (kg)' }}</label>
+                                <input type="number" step="0.01" min="0" name="jumlah_di_pabrik" value="{{ old('jumlah_di_pabrik', $qc->jumlah_di_pabrik) }}" class="form-control" placeholder="0.00" style="font-weight: 600;">
+                                <small style="color: #64748b; font-size: 0.72rem;">{{ ($qc->tahap_uji ?? '') === 'PENGUJIAN_2' ? 'Sisa muatan setengah bak yang dibongkar pada Pengujian II.' : 'Muatan yang dibongkar pada tahap pengujian ini.' }}</small>
+                            </div>
+                        </div>
+
+                        @if (($qc->tahap_uji ?? '') === 'PENGUJIAN_2' && $qc->parentQc)
+                            @php
+                                $p1Netto = (float) $qc->parentQc->details->sum('qty_netto_lolos');
+                            @endphp
+                            <div style="background: #faf5ff; border: 1.5px solid #d8b4fe; border-radius: 8px; padding: 0.85rem 1.15rem; margin-bottom: 0.25rem;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+                                    <div>
+                                        <strong style="color: #6b21a8; font-size: 0.85rem; display: block;">Akumulasi Netto Truk untuk Penerimaan Gudang (GRN):</strong>
+                                        <div style="font-size: 0.8rem; color: #7e22ce; margin-top: 2px;">
+                                            Netto Uji 1 ({{ $qc->parentQc->qc_no }}): <strong>{{ number_format($p1Netto, 0, ',', '.') }} kg</strong>
+                                            <span style="margin: 0 4px; color: #a855f7;">+</span>
+                                            Netto Uji 2: <strong id="inlineNettoUji2">{{ number_format($totalNetto, 0, ',', '.') }} kg</strong>
+                                        </div>
+                                    </div>
+                                    <div style="text-align: right;">
+                                        <span style="font-size: 0.72rem; color: #7e22ce; font-weight: 700; text-transform: uppercase;">Total Gabungan Diterima Gudang:</span>
+                                        <div style="font-size: 1.3rem; font-weight: 900; color: #6b21a8; font-family: monospace;" id="inlineTotalNettoGabungan">
+                                            {{ number_format($p1Netto + $totalNetto, 0, ',', '.') }} kg
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
+                    @endif
+
                     <div class="qc-grid-3">
                         <div class="form-group" style="margin-bottom: 0;">
                             <label class="form-label">Tonase Gross Timbangan (kg) <span style="color:#ef4444;">*</span></label>
@@ -382,6 +483,29 @@
                                 {{ $qc->status_uji_goreng ?: 'DRAFT' }}
                             </span>
                         </div>
+
+                        @if (($qc->tahap_uji ?? '') === 'PENGUJIAN_2' && $qc->parentQc)
+                            @php
+                                $p1Netto = (float) $qc->parentQc->details->sum('qty_netto_lolos');
+                            @endphp
+                            <div style="background: #faf5ff; border: 1.5px solid #d8b4fe; border-radius: 8px; padding: 0.75rem 0.85rem; margin-top: 0.65rem;">
+                                <div style="font-size: 0.72rem; color: #7e22ce; font-weight: 800; text-transform: uppercase; letter-spacing: 0.03em;">
+                                    Akumulasi Uji 1 + Uji 2
+                                </div>
+                                <div style="display: flex; justify-content: space-between; margin-top: 0.35rem; font-size: 0.8rem; color: #6b21a8;">
+                                    <span>Netto Uji 1:</span>
+                                    <strong>{{ number_format($p1Netto, 0, ',', '.') }} kg</strong>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; margin-top: 0.2rem; font-size: 0.8rem; color: #6b21a8;">
+                                    <span>Netto Uji 2:</span>
+                                    <strong id="sidebarNettoUji2">{{ number_format($totalNetto, 0, ',', '.') }} kg</strong>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; margin-top: 0.45rem; padding-top: 0.35rem; border-top: 1px dashed #d8b4fe; font-size: 0.95rem; font-weight: 900; color: #6b21a8;">
+                                    <span>Total Masuk GRN:</span>
+                                    <span id="sidebarTotalAkumulasi">{{ number_format($p1Netto + $totalNetto, 0, ',', '.') }} kg</span>
+                                </div>
+                            </div>
+                        @endif
                     @endif
 
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.65rem; padding-top: 0.65rem; border-top: 1px dashed #e2e8f0;">
@@ -391,20 +515,28 @@
                         </span>
                     </div>
 
-                    {{-- TOMBOL AKSI SUBMIT (PERSIS PO EDIT) --}}
-                    <div style="margin-top: 1.25rem; display: flex; flex-direction: column; gap: 0.65rem;">
-                        <button type="submit" name="and_print" value="0" class="btn btn-primary" style="width: 100%; padding: 0.65rem 1rem; font-size: 0.9rem; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 0.45rem;">
+                    {{-- TOMBOL AKSI SUBMIT (DUA PILIHAN: SIMPAN TETAP DI SINI ATAU SELESAI) --}}
+                    <div style="margin-top: 1.25rem; display: flex; flex-direction: column; gap: 0.55rem;">
+                        <button type="submit" name="action" value="stay" class="btn btn-primary" style="width: 100%; padding: 0.7rem 1rem; font-size: 0.9rem; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; gap: 0.45rem; background: #0284c7; border: none; box-shadow: 0 2px 4px rgba(2, 132, 199, 0.25);">
                             <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                            Simpan Perubahan QC
+                            <span>💾 Simpan Perubahan</span>
+                        </button>
+                        <span style="font-size: 0.72rem; color: #64748b; text-align: center; margin-top: -0.2rem; margin-bottom: 0.25rem;">
+                            Menyimpan data dan tetap di halaman ini untuk melihat hasil.
+                        </span>
+
+                        <button type="submit" name="action" value="save_and_close" class="btn" style="width: 100%; padding: 0.6rem 1rem; font-size: 0.85rem; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 0.45rem; background: #f8fafc; color: #334155; border: 1.5px solid #cbd5e1;">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            <span>Simpan &amp; Kembali ke Riwayat</span>
                         </button>
 
-                        <button type="submit" name="and_print" value="1" class="btn btn-primary" style="width: 100%; background: #0f172a; padding: 0.65rem 1rem; font-size: 0.85rem; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 0.45rem;">
-                            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-                            Simpan &amp; Cetak Lembar HACCP A4
+                        <button type="submit" name="and_print" value="1" class="btn" style="width: 100%; background: #0f172a; color: #ffffff; padding: 0.6rem 1rem; font-size: 0.85rem; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 0.45rem; border: none;">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                            <span>Simpan &amp; Cetak Lembar HACCP A4</span>
                         </button>
 
-                        <a href="{{ route('qc.inbound.index') }}" class="btn btn-secondary" style="width: 100%; text-align: center; padding: 0.55rem; font-size: 0.85rem;">
-                            Batal &amp; Kembali
+                        <a href="{{ route('qc.inbound.index') }}" class="btn btn-secondary" style="width: 100%; text-align: center; padding: 0.55rem; font-size: 0.85rem; margin-top: 0.25rem;">
+                            ✕ Batal / Kembali ke Riwayat
                         </a>
                     </div>
                 </div>
@@ -418,5 +550,8 @@
 @endsection
 
 @push('scripts')
+    <script>
+        window.p1Netto = {{ (float) ($qc->parentQc?->details?->sum('qty_netto_lolos') ?? 0) }};
+    </script>
     <script src="{{ asset('js/gudang/qc/qc-edit-desktop.js') }}"></script>
 @endpush

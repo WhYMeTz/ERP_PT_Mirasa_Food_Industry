@@ -809,10 +809,13 @@
         const tbody = document.getElementById('qcModalTbody');
         const searchInput = document.getElementById('qcSearchInput');
         const filterPo = document.getElementById('qcFilterPo');
+        const filterTahap = document.getElementById('qcFilterTahap');
+        const filterSupplier = document.getElementById('qcFilterSupplier');
         const counter = document.getElementById('qcResultCount');
 
         if (searchInput) searchInput.value = '';
         if (filterPo) filterPo.value = '';
+        if (filterTahap) filterTahap.value = '';
         const btnClear = document.getElementById('btnQcSearchClear');
         if (btnClear) btnClear.style.display = 'none';
 
@@ -825,7 +828,7 @@
         if (empty) empty.style.display = 'none';
         if (table) table.style.display = 'none';
         if (tbody) tbody.innerHTML = '';
-        if (counter) counter.innerText = 'Memuat...';
+        if (counter) counter.innerText = 'Memuat tiket...';
 
         fetch(window.qcSiapGudangUrl || '/qc/inbound/siap-gudang')
             .then(res => res.json())
@@ -833,10 +836,38 @@
                 if (loading) loading.style.display = 'none';
                 allQcTickets = json.tickets || [];
 
+                // 1. Populate Supplier Dropdown
+                populateQcSupplierFilter();
+
+                // 2. Update Commodity Chip Counts
+                updateQcChipCounts();
+
                 if (allQcTickets.length === 0) {
                     if (empty) empty.style.display = 'block';
-                    if (counter) counter.innerText = '0 tiket';
+                    if (counter) counter.innerText = '0 tiket siap tarik';
                     return;
+                }
+
+                // 3. Cek apakah ada supplier yang sudah terpilih di form utama
+                const mainSupplierId = document.getElementById('supplier_id')?.value;
+                const suppAlert = document.getElementById('qcSupplierFilterAlert');
+                const suppAlertName = document.getElementById('qcFilteredSupplierName');
+
+                if (mainSupplierId && filterSupplier) {
+                    const hasMatchingSupplier = allQcTickets.some(t => String(t.supplier_id) === String(mainSupplierId));
+                    if (hasMatchingSupplier) {
+                        filterSupplier.value = mainSupplierId;
+                        const suppObj = window.suppliersData?.find(s => String(s.id) === String(mainSupplierId));
+                        if (suppAlert && suppAlertName) {
+                            suppAlertName.innerText = suppObj ? suppObj.name : `Supplier ID #${mainSupplierId}`;
+                            suppAlert.style.display = 'flex';
+                        }
+                    } else {
+                        filterSupplier.value = '';
+                        if (suppAlert) suppAlert.style.display = 'none';
+                    }
+                } else {
+                    if (suppAlert) suppAlert.style.display = 'none';
                 }
 
                 if (table) table.style.display = 'table';
@@ -847,6 +878,71 @@
                 if (loading) loading.style.display = 'none';
                 alert('Gagal memuat tiket QC: ' + err.message);
             });
+    }
+
+    function populateQcSupplierFilter() {
+        const select = document.getElementById('qcFilterSupplier');
+        if (!select) return;
+
+        const currentVal = select.value;
+        const uniqueSuppliers = new Map();
+
+        allQcTickets.forEach(t => {
+            if (t.supplier_id && t.supplier_nm && !uniqueSuppliers.has(t.supplier_id)) {
+                uniqueSuppliers.set(t.supplier_id, t.supplier_nm);
+            }
+        });
+
+        let opts = '<option value="">Semua Supplier</option>';
+        uniqueSuppliers.forEach((name, id) => {
+            opts += `<option value="${id}">${escapeHtml(name)}</option>`;
+        });
+        select.innerHTML = opts;
+        if (currentVal && uniqueSuppliers.has(Number(currentVal))) {
+            select.value = currentVal;
+        }
+    }
+
+    function updateQcChipCounts() {
+        const counts = {
+            '': allQcTickets.length,
+            'SINGKONG': 0,
+            'MINYAK': 0,
+            'PLASTIK': 0,
+            'KARTON': 0,
+            'BAHAN_PENOLONG': 0,
+        };
+
+        allQcTickets.forEach(t => {
+            const cat = (t.kategori_barang || '').toUpperCase();
+            const item = (t.item_summary || '').toUpperCase();
+
+            if (cat === 'SINGKONG' || item.includes('SINGKONG')) {
+                counts['SINGKONG']++;
+            } else if (cat === 'MINYAK' || item.includes('MINYAK')) {
+                counts['MINYAK']++;
+            } else if (cat === 'PLASTIK' || item.includes('PLASTIK')) {
+                counts['PLASTIK']++;
+            } else if (cat === 'KARTON' || item.includes('KARTON')) {
+                counts['KARTON']++;
+            } else {
+                counts['BAHAN_PENOLONG']++;
+            }
+        });
+
+        const chipAll = document.getElementById('qcChipAll');
+        const chipSingkong = document.getElementById('qcChipSingkong');
+        const chipMinyak = document.getElementById('qcChipMinyak');
+        const chipPlastik = document.getElementById('qcChipPlastik');
+        const chipKarton = document.getElementById('qcChipKarton');
+        const chipPenolong = document.getElementById('qcChipPenolong');
+
+        if (chipAll) chipAll.innerHTML = `Semua (${counts['']})`;
+        if (chipSingkong) chipSingkong.innerHTML = `🥔 Singkong (${counts['SINGKONG']})`;
+        if (chipMinyak) chipMinyak.innerHTML = `🛢️ Minyak (${counts['MINYAK']})`;
+        if (chipPlastik) chipPlastik.innerHTML = `🛍️ Plastik (${counts['PLASTIK']})`;
+        if (chipKarton) chipKarton.innerHTML = `📦 Karton (${counts['KARTON']})`;
+        if (chipPenolong) chipPenolong.innerHTML = `🧂 Bumbu &amp; Penolong (${counts['BAHAN_PENOLONG']})`;
     }
 
     function setQcCategoryFilter(cat, btn) {
@@ -865,19 +961,50 @@
         filterQcTickets();
     }
 
+    function clearSupplierFilter() {
+        const select = document.getElementById('qcFilterSupplier');
+        if (select) select.value = '';
+        const alertBox = document.getElementById('qcSupplierFilterAlert');
+        if (alertBox) alertBox.style.display = 'none';
+        filterQcTickets();
+    }
+
+    function resetAllQcFilters() {
+        const searchInput = document.getElementById('qcSearchInput');
+        const filterPo = document.getElementById('qcFilterPo');
+        const filterTahap = document.getElementById('qcFilterTahap');
+        const filterSupplier = document.getElementById('qcFilterSupplier');
+        const alertBox = document.getElementById('qcSupplierFilterAlert');
+
+        if (searchInput) searchInput.value = '';
+        if (filterPo) filterPo.value = '';
+        if (filterTahap) filterTahap.value = '';
+        if (filterSupplier) filterSupplier.value = '';
+        if (alertBox) alertBox.style.display = 'none';
+
+        activeQcCategory = '';
+        document.querySelectorAll('.qc-filter-chip').forEach(btn => {
+            btn.classList.toggle('active', btn.getAttribute('data-cat') === '');
+        });
+
+        filterQcTickets();
+    }
+
     function filterQcTickets() {
         const searchVal = (document.getElementById('qcSearchInput')?.value || '').toLowerCase().trim();
         const poFilter = document.getElementById('qcFilterPo')?.value || '';
+        const tahapFilter = document.getElementById('qcFilterTahap')?.value || '';
+        const supplierFilter = document.getElementById('qcFilterSupplier')?.value || '';
         const btnClear = document.getElementById('btnQcSearchClear');
         if (btnClear) btnClear.style.display = searchVal ? 'block' : 'none';
 
         const filtered = allQcTickets.filter(t => {
-            // 1. Kategori Komoditas
-            if (activeQcCategory) {
-                const itemSummary = (t.item_summary || '').toUpperCase();
-                const tCat = (t.kategori_barang || '').toUpperCase();
-                const tNamaJenis = (t.nama_jenis || '').toUpperCase();
+            const itemSummary = (t.item_summary || '').toUpperCase();
+            const tCat = (t.kategori_barang || '').toUpperCase();
+            const tNamaJenis = (t.nama_jenis || '').toUpperCase();
 
+            // 1. Filter Kategori Komoditas Chips
+            if (activeQcCategory) {
                 if (activeQcCategory === 'SINGKONG') {
                     if (tCat !== 'SINGKONG' && !itemSummary.includes('SINGKONG') && !tNamaJenis.includes('SINGKONG')) return false;
                 } else if (activeQcCategory === 'MINYAK') {
@@ -886,23 +1013,36 @@
                     if (tCat !== 'PLASTIK' && !itemSummary.includes('PLASTIK') && !tNamaJenis.includes('PLASTIK')) return false;
                 } else if (activeQcCategory === 'KARTON') {
                     if (tCat !== 'KARTON' && !itemSummary.includes('KARTON') && !tNamaJenis.includes('KARTON')) return false;
-                } else if (activeQcCategory === 'MSG') {
-                    if (tCat !== 'MSG' && !itemSummary.includes('MSG') && !tNamaJenis.includes('MSG')) return false;
-                } else if (activeQcCategory === 'GARAM') {
-                    if (tCat !== 'GARAM' && !itemSummary.includes('GARAM') && !tNamaJenis.includes('GARAM')) return false;
-                } else if (activeQcCategory === 'PERENYAH') {
-                    if (tCat !== 'PERENYAH' && !itemSummary.includes('PERENYAH') && !tNamaJenis.includes('PERENYAH')) return false;
+                } else if (activeQcCategory === 'BAHAN_PENOLONG') {
+                    const isMain = tCat === 'SINGKONG' || tCat === 'MINYAK' || tCat === 'PLASTIK' || tCat === 'KARTON';
+                    if (isMain && !itemSummary.includes('MSG') && !itemSummary.includes('GARAM') && !itemSummary.includes('PERENYAH') && !itemSummary.includes('BUMBU')) {
+                        return false;
+                    }
                 }
             }
 
-            // 2. Status PO
+            // 2. Filter Status PO
             if (poFilter === 'PO') {
-                if (!t.po_no || t.po_no === 'Non-PO') return false;
+                const hasPo = Boolean(t.po_id) && t.po_no && t.po_no !== 'Non-PO';
+                if (!hasPo) return false;
             } else if (poFilter === 'NON_PO') {
-                if (t.po_no && t.po_no !== 'Non-PO') return false;
+                const isNonPo = !t.po_id || !t.po_no || t.po_no === 'Non-PO';
+                if (!isNonPo) return false;
             }
 
-            // 3. Kata Kunci Pencarian (No QC, Supplier, Barang, PO, Truk, Sopir, Surat Jalan)
+            // 3. Filter Tahap Singkong
+            if (tahapFilter === 'LENGKAP') {
+                if (!t.has_p2) return false;
+            } else if (tahapFilter === 'UJI_1') {
+                if (t.has_p2) return false;
+            }
+
+            // 4. Filter Supplier
+            if (supplierFilter) {
+                if (String(t.supplier_id) !== String(supplierFilter)) return false;
+            }
+
+            // 5. Kata Kunci Pencarian Bebas
             if (searchVal) {
                 const haystack = [
                     t.qc_no || '',
@@ -915,6 +1055,7 @@
                     t.tgl_periksa || '',
                     t.kategori_barang || '',
                     t.nama_jenis || '',
+                    (t.grades || []).join(' '),
                 ].join(' ').toLowerCase();
 
                 if (!haystack.includes(searchVal)) return false;
@@ -929,6 +1070,8 @@
     function renderQcTicketsTable(tickets) {
         const tbody = document.getElementById('qcModalTbody');
         const counter = document.getElementById('qcResultCount');
+        const emptyDiv = document.getElementById('qcModalEmpty');
+        const table = document.getElementById('qcModalTable');
         if (!tbody) return;
 
         if (counter) {
@@ -936,66 +1079,108 @@
         }
 
         if (tickets.length === 0) {
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="8" style="text-align: center; padding: 2.5rem 1rem; color: #64748b;">
-                        <div style="font-size: 1.6rem; margin-bottom: 0.35rem;">🔍</div>
-                        <strong style="color: #1e293b; font-size: 0.9rem;">Tidak ada tiket QC yang cocok</strong>
-                        <div style="font-size: 0.775rem; margin-top: 0.25rem;">Coba sesuaikan kata kunci pencarian atau ubah pilihan filter komoditas/PO.</div>
-                    </td>
-                </tr>
-            `;
+            if (table) table.style.display = 'none';
+            if (emptyDiv) emptyDiv.style.display = 'block';
             return;
         }
 
+        if (table) table.style.display = 'table';
+        if (emptyDiv) emptyDiv.style.display = 'none';
+
         let html = '';
         tickets.forEach((t, idx) => {
-            let catBadge = '';
             const kCat = (t.kategori_barang || 'SINGKONG').toUpperCase();
-            if (kCat === 'SINGKONG') {
-                catBadge = `<span class="badge" style="background: #ecfdf5; color: #047857; font-size: 0.675rem; font-weight: 700;">🥔 Singkong</span>`;
+            const isSingkong = kCat === 'SINGKONG' || (t.item_summary || '').toUpperCase().includes('SINGKONG');
+
+            // Badge Komoditas
+            let catBadge = '';
+            if (isSingkong) {
+                catBadge = `<span class="badge" style="background: #ecfdf5; color: #047857; font-size: 0.68rem; font-weight: 700; border: 1px solid #a7f3d0;">🥔 Singkong</span>`;
             } else if (kCat === 'MINYAK') {
-                catBadge = `<span class="badge" style="background: #fefce8; color: #a16207; font-size: 0.675rem; font-weight: 700;">🛢️ Minyak</span>`;
+                catBadge = `<span class="badge" style="background: #fefce8; color: #a16207; font-size: 0.68rem; font-weight: 700; border: 1px solid #fef08a;">🛢️ Minyak</span>`;
             } else if (kCat === 'PLASTIK') {
-                catBadge = `<span class="badge" style="background: #eff6ff; color: #1d4ed8; font-size: 0.675rem; font-weight: 700;">🛍️ Plastik</span>`;
+                catBadge = `<span class="badge" style="background: #eff6ff; color: #1d4ed8; font-size: 0.68rem; font-weight: 700; border: 1px solid #bfdbfe;">🛍️ Plastik</span>`;
             } else if (kCat === 'KARTON') {
-                catBadge = `<span class="badge" style="background: #fff7ed; color: #c2410c; font-size: 0.675rem; font-weight: 700;">📦 Karton</span>`;
-            } else if (kCat === 'MSG') {
-                catBadge = `<span class="badge" style="background: #f5f3ff; color: #6d28d9; font-size: 0.675rem; font-weight: 700;">🧂 MSG</span>`;
-            } else if (kCat === 'GARAM') {
-                catBadge = `<span class="badge" style="background: #f0fdfa; color: #0f766e; font-size: 0.675rem; font-weight: 700;">🧂 Garam</span>`;
-            } else if (kCat === 'PERENYAH') {
-                catBadge = `<span class="badge" style="background: #fdf4ff; color: #a21caf; font-size: 0.675rem; font-weight: 700;">✨ Perenyah</span>`;
+                catBadge = `<span class="badge" style="background: #fff7ed; color: #c2410c; font-size: 0.68rem; font-weight: 700; border: 1px solid #fed7aa;">📦 Karton</span>`;
+            } else {
+                catBadge = `<span class="badge" style="background: #f5f3ff; color: #6d28d9; font-size: 0.68rem; font-weight: 700; border: 1px solid #ddd6fe;">🧂 Penolong</span>`;
             }
 
+            // Badge Tahap Singkong
+            let tahapBadge = '';
+            if (isSingkong) {
+                if (t.has_p2) {
+                    tahapBadge = `<span class="qc-stage-badge lengkap" title="Kedatangan ini sudah selesai Pengujian 1 (1/2 bak) dan Pengujian 2 (sisa bak)">🟢 Uji 1 + 2 Lengkap</span>`;
+                } else {
+                    tahapBadge = `<span class="qc-stage-badge uji1" title="Baru selesai Pengujian 1 (1/2 bak)">🟡 Uji 1 (1/2 Bak)</span>`;
+                }
+            } else {
+                tahapBadge = `<span class="qc-stage-badge selesai">✅ Selesai Diuji</span>`;
+            }
+
+            // Badges Grade
+            let gradeBadgesHtml = '';
+            if (t.grades && t.grades.length > 0) {
+                gradeBadgesHtml = t.grades.map(g => {
+                    const color = g === 'A' ? '#047857' : (g === 'B' ? '#b45309' : '#dc2626');
+                    const bg = g === 'A' ? '#ecfdf5' : (g === 'B' ? '#fffbeb' : '#fef2f2');
+                    const bd = g === 'A' ? '#a7f3d0' : (g === 'B' ? '#fde68a' : '#fecaca');
+                    return `<span style="font-size:0.675rem; font-weight:800; background:${bg}; color:${color}; border:1px solid ${bd}; padding:1px 5px; border-radius:4px;">Gr. ${escapeHtml(g)}</span>`;
+                }).join(' ');
+            }
+
+            // PO Badge
+            const hasPo = Boolean(t.po_id) && t.po_no && t.po_no !== 'Non-PO';
+            const poBadge = hasPo 
+                ? `<span style="font-size: 0.725rem; font-weight: 700; color: #0284c7; background: #e0f2fe; padding: 1px 6px; border-radius: 4px; display: inline-flex; align-items: center; gap: 2px;">📄 PO: ${escapeHtml(t.po_no)}</span>` 
+                : `<span style="font-size: 0.725rem; font-weight: 600; color: #64748b; background: #f1f5f9; padding: 1px 6px; border-radius: 4px;">⚡ Non-PO</span>`;
+
             html += `
-                <tr class="sup-modal-row" onclick="applyQcTicket(${t.qc_id}); closeModal('modalPilihQc');" style="cursor: pointer;">
-                    <td style="text-align: center; color: #64748b; font-size: 0.775rem;">${idx + 1}</td>
-                    <td>
-                        <strong style="color: #0284c7; font-family: monospace; font-size: 0.85rem;">${escapeHtml(t.qc_no)}</strong>
+                <tr class="qc-picker-row" onclick="applyQcTicket(${t.qc_id}); closeModal('modalPilihQc');" title="Klik baris ini untuk tarik tiket ${escapeHtml(t.qc_no)}">
+                    <td style="text-align: center; color: #94a3b8; font-weight: 700; font-size: 0.775rem;">
+                        ${idx + 1}
                     </td>
-                    <td style="font-size: 0.8rem; color: #334155;">${escapeHtml(t.tgl_periksa)}</td>
                     <td>
-                        <strong style="color: #0f172a; font-size: 0.85rem;">${escapeHtml(t.supplier_nm || '-')}</strong>
-                        <div style="display: flex; gap: 0.35rem; align-items: center; margin-top: 2px; flex-wrap: wrap;">
-                            ${catBadge}
-                            ${t.po_no && t.po_no !== 'Non-PO' ? `<span style="font-size:0.725rem; font-weight: 600; color:#0284c7;">PO: ${escapeHtml(t.po_no)}</span>` : `<span style="font-size:0.725rem; color:#94a3b8;">Non-PO</span>`}
+                        <div class="qc-ticket-pill">${escapeHtml(t.qc_no)}</div>
+                        <div style="font-size: 0.725rem; color: #64748b; margin-top: 3px; display: flex; align-items: center; gap: 4px;">
+                            <span>🕒</span>
+                            <span>${escapeHtml(t.tgl_periksa)}</span>
                         </div>
-                        <div style="font-size: 0.75rem; color: #64748b; margin-top: 2px;">${escapeHtml(t.item_summary || '-')}</div>
                     </td>
-                    <td style="font-size: 0.8rem; color: #475569;">
-                        <div><strong>${escapeHtml(t.plat_nomor_truk || '-')}</strong></div>
-                        ${t.sopir_nama ? `<div style="font-size: 0.725rem; color: #64748b;">${escapeHtml(t.sopir_nama)}</div>` : ''}
+                    <td>
+                        <strong style="color: #0f172a; font-size: 0.85rem; display: block;">${escapeHtml(t.supplier_nm || '-')}</strong>
+                        <div style="display: flex; gap: 0.35rem; align-items: center; margin-top: 4px; flex-wrap: wrap;">
+                            ${poBadge}
+                            ${t.surat_jalan_supplier ? `<span style="font-size: 0.7rem; color: #64748b; font-family: monospace;">SJ: ${escapeHtml(t.surat_jalan_supplier)}</span>` : ''}
+                        </div>
                     </td>
-                    <td style="text-align: right; font-weight: 600; font-size: 0.85rem;">
-                        ${parseFloat(t.total_gross).toLocaleString('id-ID', {minimumFractionDigits: 2})}
+                    <td>
+                        <div style="display: flex; gap: 0.35rem; align-items: center; flex-wrap: wrap; margin-bottom: 3px;">
+                            ${catBadge}
+                            ${tahapBadge}
+                        </div>
+                        <div style="font-size: 0.8rem; font-weight: 600; color: #1e293b;">${escapeHtml(t.item_summary || t.nama_jenis || '-')}</div>
+                        ${gradeBadgesHtml ? `<div style="display: flex; gap: 0.25rem; align-items: center; margin-top: 3px;">${gradeBadgesHtml}</div>` : ''}
                     </td>
-                    <td style="text-align: right; font-weight: 800; color: #15803d; font-size: 0.9rem; background: #f0fdf4;">
-                        ${parseFloat(t.total_netto).toLocaleString('id-ID', {minimumFractionDigits: 2})}
+                    <td>
+                        <div class="qc-plate-pill">
+                            <span>🚛</span>
+                            <span>${escapeHtml(t.plat_nomor_truk || '-')}</span>
+                        </div>
+                        <div style="font-size: 0.725rem; color: #475569; margin-top: 3px; display: flex; align-items: center; gap: 4px;">
+                            <span>👤</span>
+                            <span>${escapeHtml(t.sopir_nama || '-')}</span>
+                        </div>
+                    </td>
+                    <td style="text-align: right;">
+                        <div class="qc-netto-badge">
+                            <span class="qc-netto-value">${parseFloat(t.total_netto).toLocaleString('id-ID', {minimumFractionDigits: 0})} kg</span>
+                            <span class="qc-gross-sub">Gross: ${parseFloat(t.total_gross).toLocaleString('id-ID', {minimumFractionDigits: 0})} kg</span>
+                        </div>
                     </td>
                     <td style="text-align: center;">
-                        <button type="button" class="btn btn-primary btn-sm" style="padding: 0.25rem 0.65rem; font-size: 0.75rem; font-weight: 700; background: #0284c7;" onclick="event.stopPropagation(); applyQcTicket(${t.qc_id}); closeModal('modalPilihQc');">
-                            Pilih
+                        <button type="button" class="btn-tarik-qc" onclick="event.stopPropagation(); applyQcTicket(${t.qc_id}); closeModal('modalPilihQc');" title="Tarik data inspeksi ke formulir penerimaan">
+                            <span>⚡ Tarik</span>
                         </button>
                     </td>
                 </tr>
@@ -1007,7 +1192,8 @@
     function applyQcTicket(qcId) {
         if (!qcId) return;
 
-        fetch(`{{ url('qc/inbound/ticket-data') }}/${qcId}`)
+        const ticketDataUrl = (window.qcTicketDataBaseUrl || '/qc/inbound/ticket-data') + '/' + qcId;
+        fetch(ticketDataUrl)
             .then(res => res.json())
             .then(json => {
                 if (json.status !== 'success' || !json.data) {

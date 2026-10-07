@@ -639,7 +639,12 @@ class TerimaBarangService
                 }
             }
 
-            // 4. Tandai dokumen penerimaan sebagai terhapus (soft delete)
+            // 4. Kembalikan status tiket QC jika penerimaan berasal dari tiket QC
+            if (!empty($terima->qc_id)) {
+                app(\App\Services\Gudang\QcInboundService::class)->revertProcessed((int) $terima->qc_id);
+            }
+
+            // 5. Tandai dokumen penerimaan sebagai terhapus (soft delete)
             $terima->deleted_st = true;
             $terima->save();
 

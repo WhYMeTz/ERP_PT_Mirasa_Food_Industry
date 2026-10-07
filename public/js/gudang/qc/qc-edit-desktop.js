@@ -51,6 +51,19 @@ document.addEventListener('DOMContentLoaded', function () {
         if (sidebarNetto) {
             sidebarNetto.textContent = Math.round(netto).toLocaleString('id-ID') + ' kg';
         }
+
+        // Update Pengujian 2 akumulasi jika ada
+        const p1Netto = typeof window.p1Netto === 'number' ? window.p1Netto : 0;
+        const totalAkumulasi = p1Netto + netto;
+        const inlineNettoUji2 = document.getElementById('inlineNettoUji2');
+        const inlineTotal = document.getElementById('inlineTotalNettoGabungan');
+        const sidebarNettoUji2 = document.getElementById('sidebarNettoUji2');
+        const sidebarTotal = document.getElementById('sidebarTotalAkumulasi');
+
+        if (inlineNettoUji2) inlineNettoUji2.textContent = Math.round(netto).toLocaleString('id-ID') + ' kg';
+        if (inlineTotal) inlineTotal.textContent = Math.round(totalAkumulasi).toLocaleString('id-ID') + ' kg';
+        if (sidebarNettoUji2) sidebarNettoUji2.textContent = Math.round(netto).toLocaleString('id-ID') + ' kg';
+        if (sidebarTotal) sidebarTotal.textContent = Math.round(totalAkumulasi).toLocaleString('id-ID') + ' kg';
     }
 
     if (grossInput) grossInput.addEventListener('input', calculateNetto);

@@ -356,6 +356,8 @@ class QcInboundController extends Controller
             'details.barang.satuanDasar',
             'details.poDetail',
             'terima',
+            'parentQc.details',
+            'parentQc.supplier',
         ])->where('deleted_st', false)->findOrFail($id);
 
         $user = Auth::user();
@@ -450,9 +452,15 @@ class QcInboundController extends Controller
                     ->with('success', $msg);
             }
 
-            // Web Admin Desktop: Kembali langsung ke Indeks Riwayat QC Inbound (tanpa harus masuk halaman detail)
-            return redirect()->route('qc.inbound.index')
-                ->with('success', $msg);
+            // Web Admin Desktop: Jika user memilih "Simpan & Kembali ke Riwayat"
+            if ($request->input('action') === 'save_and_close') {
+                return redirect()->route('qc.inbound.index')
+                    ->with('success', $msg);
+            }
+
+            // Default Web Admin Desktop: Tetap di halaman edit agar user bisa langsung meninjau data yang baru saja diperbarui
+            return redirect()->route('qc.inbound.edit', $updatedQc->qc_id)
+                ->with('success', "Perubahan data Dokumen QC {$updatedQc->qc_no} berhasil disimpan dan diperbarui.");
         } catch (Exception $e) {
             return redirect()->back()
                 ->withInput()

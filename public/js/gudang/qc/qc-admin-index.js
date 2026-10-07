@@ -222,3 +222,76 @@ function closeDeleteQcModal() {
     const modal = document.getElementById('modalDeleteQc');
     if (modal) modal.style.display = 'none';
 }
+
+/**
+ * =========================================================================
+ * ACCORDION DRAWER DETAIL KEDATANGAN TRUK & AUDIT QC
+ * =========================================================================
+ */
+
+function toggleRowDrawer(qcId, btn) {
+    const drawerRow = document.getElementById(`drawer-${qcId}`);
+    const mainRow = document.getElementById(`row-${qcId}`);
+    if (!drawerRow) return;
+
+    const isHidden = (drawerRow.style.display === 'none' || drawerRow.style.display === '');
+
+    if (isHidden) {
+        drawerRow.style.display = 'table-row';
+        if (btn) btn.classList.add('expanded');
+        if (mainRow) mainRow.classList.add('row-is-expanded');
+    } else {
+        drawerRow.style.display = 'none';
+        if (btn) btn.classList.remove('expanded');
+        if (mainRow) mainRow.classList.remove('row-is-expanded');
+    }
+}
+
+/**
+ * Buka semua drawer atau tutup semua drawer sekaligus
+ */
+let allDrawersExpanded = false;
+function toggleAllDrawers() {
+    const allDrawers = document.querySelectorAll('.qc-drawer-row');
+    const allBtns = document.querySelectorAll('.btn-drawer-toggle');
+    const allMainRows = document.querySelectorAll('.qc-main-row');
+    const textLabel = document.getElementById('btnToggleAllTextLabel');
+    const headerBtn = document.getElementById('btnToggleAllDrawersHeader');
+
+    allDrawersExpanded = !allDrawersExpanded;
+
+    allDrawers.forEach(drawer => {
+        drawer.style.display = allDrawersExpanded ? 'table-row' : 'none';
+    });
+
+    allBtns.forEach(b => {
+        if (allDrawersExpanded) {
+            b.classList.add('expanded');
+        } else {
+            b.classList.remove('expanded');
+        }
+    });
+
+    allMainRows.forEach(row => {
+        if (allDrawersExpanded) {
+            row.classList.add('row-is-expanded');
+        } else {
+            row.classList.remove('row-is-expanded');
+        }
+    });
+
+    if (headerBtn) {
+        headerBtn.title = allDrawersExpanded ? 'Tutup Semua Rincian' : 'Buka Semua Rincian';
+        if (allDrawersExpanded) {
+            headerBtn.classList.add('expanded');
+        } else {
+            headerBtn.classList.remove('expanded');
+        }
+    }
+
+    if (textLabel) {
+        textLabel.textContent = allDrawersExpanded ? 'Tutup Semua Rincian' : 'Buka Semua Rincian';
+    }
+}
+
+

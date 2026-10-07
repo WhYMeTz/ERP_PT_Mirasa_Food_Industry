@@ -562,6 +562,7 @@
 <script>
     window.suppliersData = @json($suppliersJson);
     window.qcSiapGudangUrl = "{{ route('qc.inbound.siap_gudang') }}";
+    window.qcTicketDataBaseUrl = "{{ url('qc/inbound/ticket-data') }}";
     window.terimaCreateUrl = "{{ route('gudang.terima.create') }}";
     window.selectedPoDetailsCount = {{ $selectedPo ? count($selectedPo->details) : 1 }};
     @if(old('supplier_id', $selectedPo?->supplier_id))

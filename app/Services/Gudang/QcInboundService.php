@@ -104,22 +104,56 @@ class QcInboundService
      */
     public function getSiapGudangTickets(): array
     {
-        return DatQcInboundHdr::with(['supplier', 'gudang', 'po', 'details.barang.satuanDasar'])
+        return DatQcInboundHdr::with([
+            'supplier', 
+            'gudang', 
+            'po', 
+            'details.barang.satuanDasar',
+            'pengujian2List.details.barang.satuanDasar'
+        ])
             ->where('deleted_st', false)
+            ->whereNull('parent_qc_id')
             ->where('status_qc', 'SIAP_GUDANG')
+            ->whereDoesntHave('terima', function ($q) {
+                $q->where('deleted_st', false);
+            })
             ->orderBy('tgl_periksa', 'desc')
             ->get()
             ->map(function ($h) {
-                $totalGross = $h->details->sum('qty_timbang_gross');
-                $totalNetto = $h->details->sum('qty_netto_lolos');
-                $totalReject = $h->details->sum('qty_reject');
-                $itemNames = $h->details->map(fn($d) => $d->barang?->barang_nm)->filter()->unique()->implode(', ');
+                $totalGross = (float) $h->details->sum('qty_timbang_gross');
+                $totalNetto = (float) $h->details->sum('qty_netto_lolos');
+                $totalReject = (float) $h->details->sum('qty_reject');
+                $totalRefraksi = (float) $h->details->sum('qty_refraksi');
+                $itemNames = $h->details->map(fn($d) => $d->barang?->barang_nm)->filter();
+                $hasP2 = $h->pengujian2List && $h->pengujian2List->isNotEmpty();
+                $p2Count = $h->pengujian2List ? $h->pengujian2List->count() : 0;
+
+                if ($hasP2) {
+                    foreach ($h->pengujian2List as $p2) {
+                        $totalGross += (float) $p2->details->sum('qty_timbang_gross');
+                        $totalNetto += (float) $p2->details->sum('qty_netto_lolos');
+                        $totalReject += (float) $p2->details->sum('qty_reject');
+                        $totalRefraksi += (float) $p2->details->sum('qty_refraksi');
+                        $itemNames = $itemNames->merge($p2->details->map(fn($d) => $d->barang?->barang_nm)->filter());
+                    }
+                }
+
+                $grades = $h->details->pluck('grade_cd')
+                    ->merge($h->pengujian2List ? $h->pengujian2List->flatMap(fn($p) => $p->details->pluck('grade_cd')) : [])
+                    ->filter()->unique()->values()->all();
+
+                $itemSummary = $itemNames->unique()->implode(', ');
+                $itemCount = $h->details->count() + ($h->pengujian2List ? $h->pengujian2List->sum(fn($p2) => $p2->details->count()) : 0);
 
                 return [
                     'qc_id'                 => $h->qc_id,
                     'qc_no'                 => $h->qc_no,
                     'kategori_barang'       => $h->kategori_barang ?? 'SINGKONG',
                     'nama_jenis'            => $h->nama_jenis,
+                    'tahap_uji'             => $h->tahap_uji,
+                    'has_p2'                => $hasP2,
+                    'p2_count'              => $p2Count,
+                    'grades'                => $grades,
                     'po_id'                 => $h->po_id,
                     'po_no'                 => $h->po?->po_no ?? 'Non-PO',
                     'supplier_id'           => $h->supplier_id,
@@ -127,14 +161,16 @@ class QcInboundService
                     'gudang_id'             => $h->gudang_id,
                     'gudang_nm'             => $h->gudang?->gudang_nm ?? '-',
                     'surat_jalan_supplier'  => $h->surat_jalan_supplier,
-                    'plat_nomor_truk'       => $h->plat_nomor_truk,
-                    'sopir_nama'            => $h->sopir_nama,
+                    'plat_nomor_truk'       => $h->plat_nomor_truk ?: ($h->pengujian2List->first()?->plat_nomor_truk ?? '-'),
+                    'sopir_nama'            => $h->sopir_nama ?: ($h->pengujian2List->first()?->sopir_nama ?? '-'),
                     'tgl_periksa'           => $h->tgl_periksa->format('d/m/Y H:i'),
+                    'tgl_periksa_raw'       => $h->tgl_periksa->format('Y-m-d'),
                     'total_gross'           => (float) $totalGross,
                     'total_netto'           => (float) $totalNetto,
                     'total_reject'          => (float) $totalReject,
-                    'item_count'            => $h->details->count(),
-                    'item_summary'          => $itemNames,
+                    'total_refraksi'        => (float) $totalRefraksi,
+                    'item_count'            => $itemCount,
+                    'item_summary'          => $itemSummary,
                 ];
             })
             ->toArray();
@@ -145,24 +181,49 @@ class QcInboundService
      */
     public function getTicketData(int $qcId): array
     {
-        $qc = DatQcInboundHdr::with(['supplier', 'gudang', 'po.details', 'details.barang.satuanDasar'])
+        $qc = DatQcInboundHdr::with([
+            'supplier', 
+            'gudang', 
+            'po.details', 
+            'details.barang.satuanDasar',
+            'pengujian2List.details.barang.satuanDasar'
+        ])
             ->where('deleted_st', false)
             ->findOrFail($qcId);
 
-        $items = $qc->details->map(function ($d) {
+        // Jika tiket ini adalah anak (Pengujian 2), arahkan ke tiket induk agar data armada & PO lengkap
+        if ($qc->parent_qc_id) {
+            $parent = DatQcInboundHdr::with([
+                'supplier', 
+                'gudang', 
+                'po.details', 
+                'details.barang.satuanDasar',
+                'pengujian2List.details.barang.satuanDasar'
+            ])->find($qc->parent_qc_id);
+            if ($parent) {
+                $qc = $parent;
+            }
+        }
+
+        $items = [];
+        $hasP2 = $qc->pengujian2List->isNotEmpty();
+
+        // 1. Muat Item dari Pengujian 1 (Setengah Bak Awal)
+        foreach ($qc->details as $d) {
             $barang = $d->barang;
             $acronym = app(CodeGeneratorService::class)->extractBarangAcronym(
                 $barang?->barang_nm,
                 $barang?->barang_cd
             );
             $batchPrefix = ($acronym ?: 'BRG') . '-';
+            $labelSuffix = $hasP2 ? ' (Uji 1 - 1/2 Bak)' : '';
 
-            return [
+            $items[] = [
                 'qcdtl_id'                   => $d->qcdtl_id,
                 'podtl_id'                   => $d->podtl_id,
                 'barang_id'                  => $d->barang_id,
                 'barang_cd'                  => $barang?->barang_cd,
-                'barang_nm'                  => $barang?->barang_nm,
+                'barang_nm'                  => ($barang?->barang_nm ?? 'SINGKONG') . $labelSuffix,
                 'satuan_nm'                  => $barang?->satuanDasar?->satuan_nm ?? 'KG',
                 'batch_prefix'               => $batchPrefix,
                 'gross_qty'                  => (float) $d->qty_timbang_gross,
@@ -171,7 +232,7 @@ class QcInboundService
                 'refraksi_qty'               => (float) $d->qty_refraksi,
                 'reject_qty'                 => (float) $d->qty_reject,
                 'netto_qty'                  => (float) $d->qty_netto_lolos,
-                'grade_cd'                   => $d->grade_cd,
+                'grade_cd'                   => $d->grade_cd ?: 'A',
                 'kondisi_fisik'              => $d->kondisi_fisik,
                 'keputusan_qc'               => $d->keputusan_qc,
                 'status_raw_material'        => $d->status_raw_material ?? 'OK',
@@ -180,40 +241,51 @@ class QcInboundService
                 'isi_gumpal'                 => (bool) $d->isi_gumpal,
                 'isi_berminyak'              => (bool) $d->isi_berminyak,
                 'kemasan_kondisi'            => $d->kemasan_kondisi ?? 'OK',
-                'kemasan_kotor'              => (bool) $d->kemasan_kotor,
-                'kemasan_apek'               => (bool) $d->kemasan_apek,
-                'kemasan_basah'              => (bool) $d->kemasan_basah,
-                'kemasan_sobek'              => (bool) $d->kemasan_sobek,
-                'kemasan_jamur'              => (bool) $d->kemasan_jamur,
-                'kemasan_berminyak'          => (bool) $d->kemasan_berminyak,
-                'kemasan_berdebu'            => (bool) $d->kemasan_berdebu,
-                'tipe_wadah_minyak'          => $d->tipe_wadah_minyak ?? 'TANGKI',
-                'kondisi_tangki_jerigen'     => $d->kondisi_tangki_jerigen ?? 'OK',
-                'ffa_coa'                    => $d->ffa_coa !== null ? (float)$d->ffa_coa : null,
-                'ffa_qc'                     => $d->ffa_qc !== null ? (float)$d->ffa_qc : null,
-                'minyak_jernih_st'           => (bool) $d->minyak_jernih_st,
-                'tangki_bersih_st'           => (bool) $d->tangki_bersih_st,
-                'ketebalan_analisa'          => $d->ketebalan_analisa,
-                'ketebalan_standar'          => $d->ketebalan_standar,
-                'keutuhan_analisa'           => $d->keutuhan_analisa,
-                'keutuhan_standar'           => $d->keutuhan_standar,
-                'dimensi_panjang_analisa'    => $d->dimensi_panjang_analisa,
-                'dimensi_panjang_standar'    => $d->dimensi_panjang_standar,
-                'dimensi_lebar_analisa'      => $d->dimensi_lebar_analisa,
-                'dimensi_lebar_standar'      => $d->dimensi_lebar_standar,
-                'dimensi_tinggi_analisa'     => $d->dimensi_tinggi_analisa,
-                'dimensi_tinggi_standar'     => $d->dimensi_tinggi_standar,
-                'spesifikasi_analisa'        => $d->spesifikasi_analisa,
-                'spesifikasi_standar'        => $d->spesifikasi_standar,
-                'diameter_kurang_4cm_persen' => (float) $d->diameter_kurang_4cm_persen,
-                'diameter_lebih_4cm_persen'  => (float) $d->diameter_lebih_4cm_persen,
-                'fryer_rasa'                 => $d->fryer_rasa ?? 'TIDAK_PAHIT',
-                'fryer_tekstur'              => $d->fryer_tekstur ?? 'RENYAH',
-                'fryer_penampakan'           => $d->fryer_penampakan ?? 'TIDAK_OILSOAKED',
-                'catatan'                    => $d->catatan_dtl,
+                'catatan'                    => $d->catatan_dtl ?: ($qc->catatan_umum ?: 'Uji 1 (Setengah Bak)'),
                 'std_harga'                  => (float) ($barang?->harga_beli_standar ?? 0),
             ];
-        })->toArray();
+        }
+
+        // 2. Muat Item dari Pengujian 2 (Sisa Bak Lantai Produksi) jika ada
+        foreach ($qc->pengujian2List as $p2) {
+            foreach ($p2->details as $d2) {
+                $barang2 = $d2->barang ?: $qc->details->first()?->barang;
+                $acronym2 = app(CodeGeneratorService::class)->extractBarangAcronym(
+                    $barang2?->barang_nm,
+                    $barang2?->barang_cd
+                );
+                $batchPrefix2 = ($acronym2 ?: 'BRG') . '-';
+
+                $items[] = [
+                    'qcdtl_id'                   => $d2->qcdtl_id,
+                    'podtl_id'                   => $d2->podtl_id ?: $qc->details->first()?->podtl_id,
+                    'barang_id'                  => $d2->barang_id ?: $qc->details->first()?->barang_id,
+                    'barang_cd'                  => $barang2?->barang_cd,
+                    'barang_nm'                  => ($barang2?->barang_nm ?? 'SINGKONG') . ' (Uji 2 - Sisa Bak)',
+                    'satuan_nm'                  => $barang2?->satuanDasar?->satuan_nm ?? 'KG',
+                    'batch_prefix'               => $batchPrefix2,
+                    'gross_qty'                  => (float) $d2->qty_timbang_gross,
+                    'kadar_air'                  => (float) $d2->kadar_air_persen,
+                    'refraksi_persen'            => (float) $d2->refraksi_persen,
+                    'refraksi_qty'               => (float) $d2->qty_refraksi,
+                    'reject_qty'                 => (float) $d2->qty_reject,
+                    'netto_qty'                  => (float) $d2->qty_netto_lolos,
+                    'grade_cd'                   => $d2->grade_cd ?: 'A',
+                    'kondisi_fisik'              => $d2->kondisi_fisik,
+                    'keputusan_qc'               => $d2->keputusan_qc,
+                    'status_raw_material'        => $d2->status_raw_material ?? 'OK',
+                    'isi_kering'                 => (bool) $d2->isi_kering,
+                    'isi_basah'                  => (bool) $d2->isi_basah,
+                    'isi_gumpal'                 => (bool) $d2->isi_gumpal,
+                    'isi_berminyak'              => (bool) $d2->isi_berminyak,
+                    'kemasan_kondisi'            => $d2->kemasan_kondisi ?? 'OK',
+                    'catatan'                    => $d2->catatan_dtl ?: ($p2->catatan_umum ?: 'Uji 2 (Sisa Bak)'),
+                    'std_harga'                  => (float) ($barang2?->harga_beli_standar ?? 0),
+                ];
+            }
+        }
+
+        $totalPabrik = (float) $qc->jumlah_di_pabrik + (float) $qc->pengujian2List->sum('jumlah_di_pabrik');
 
         return [
             'qc_id'                       => $qc->qc_id,
@@ -238,9 +310,9 @@ class QcInboundService
             'surat_jalan_supplier'        => $qc->surat_jalan_supplier,
             'nomor_do'                    => $qc->nomor_do,
             'jumlah_surat_jalan'          => (float) $qc->jumlah_surat_jalan,
-            'jumlah_di_pabrik'            => (float) $qc->jumlah_di_pabrik,
-            'plat_nomor_truk'             => $qc->plat_nomor_truk,
-            'sopir_nama'                  => $qc->sopir_nama,
+            'jumlah_di_pabrik'            => $totalPabrik,
+            'plat_nomor_truk'             => $qc->plat_nomor_truk ?: ($qc->pengujian2List->first()?->plat_nomor_truk ?? '-'),
+            'sopir_nama'                  => $qc->sopir_nama ?: ($qc->pengujian2List->first()?->sopir_nama ?? '-'),
             'bebas_cemaran_st'            => (bool) $qc->bebas_cemaran_st,
             'angkut_barang_haram_st'      => (bool) $qc->angkut_barang_haram_st,
             'komentar_transportasi'       => $qc->komentar_transportasi,
@@ -250,7 +322,7 @@ class QcInboundService
             'komentar_sertifikat'         => $qc->komentar_sertifikat,
             'sertifikat_halal_berlaku_st' => (bool) $qc->sertifikat_halal_berlaku_st,
             'komentar_berlaku'            => $qc->komentar_berlaku,
-            'tgl_periksa'                 => $qc->tgl_periksa->format('Y-m-d H:i'),
+            'tgl_periksa'                 => $qc->tgl_periksa ? $qc->tgl_periksa->format('Y-m-d H:i') : null,
             'petugas_qc_nama'             => $qc->petugas_qc_nama,
             'qc_supervisor_nama'          => $qc->qc_supervisor_nama,
             'catatan_umum'                => $qc->catatan_umum,
@@ -710,6 +782,34 @@ class QcInboundService
         if ($qc) {
             $qc->status_qc = 'DITERIMA_GUDANG';
             $qc->save();
+
+            // Tandai juga tiket pengujian 2 (anak) jika ada
+            DatQcInboundHdr::where('parent_qc_id', $qc->qc_id)->update(['status_qc' => 'DITERIMA_GUDANG']);
+
+            // Jika tiket ini adalah anak, tandai induknya
+            if ($qc->parent_qc_id) {
+                DatQcInboundHdr::where('qc_id', $qc->parent_qc_id)->update(['status_qc' => 'DITERIMA_GUDANG']);
+            }
+        }
+    }
+
+    /**
+     * Mengembalikan status tiket QC ke SIAP_GUDANG saat dokumen penerimaan dibatalkan/dihapus
+     */
+    public function revertProcessed(int $qcId): void
+    {
+        $qc = DatQcInboundHdr::find($qcId);
+        if ($qc) {
+            $qc->status_qc = 'SIAP_GUDANG';
+            $qc->save();
+
+            // Revert juga tiket pengujian 2 (anak)
+            DatQcInboundHdr::where('parent_qc_id', $qc->qc_id)->update(['status_qc' => 'SIAP_GUDANG']);
+
+            // Jika tiket ini adalah anak, revert induknya
+            if ($qc->parent_qc_id) {
+                DatQcInboundHdr::where('qc_id', $qc->parent_qc_id)->update(['status_qc' => 'SIAP_GUDANG']);
+            }
         }
     }
 
@@ -803,6 +903,7 @@ class QcInboundService
                 'gudang_id'                   => !empty($data['gudang_id']) ? (int)$data['gudang_id'] : $qc->gudang_id,
                 'kategori_barang'             => $kategoriBarang,
                 'tahap_uji'                   => !empty($data['tahap_uji']) ? strtoupper(trim($data['tahap_uji'])) : ($qc->tahap_uji ?? 'PENGUJIAN_1'),
+                'posisi_bak'                  => !empty($data['posisi_bak']) ? strtoupper(trim($data['posisi_bak'])) : $qc->posisi_bak,
                 'parent_qc_id'                => array_key_exists('parent_qc_id', $data) ? (!empty($data['parent_qc_id']) ? (int)$data['parent_qc_id'] : null) : $qc->parent_qc_id,
                 'batch_no'                    => array_key_exists('batch_no', $data) ? (!empty($data['batch_no']) ? trim($data['batch_no']) : null) : $qc->batch_no,
                 'nama_jenis'                  => $namaRm,
@@ -854,7 +955,8 @@ class QcInboundService
                     $rejectQty = (float) ($row['qty_reject'] ?? 0);
 
                     $explicitKeputusan = $row['keputusan_qc'] ?? ($data['kesimpulan_qc'] ?? null);
-                    if ($explicitKeputusan === 'TOLAK' || $explicitKeputusan === 'REJECT_TOTAL') {
+                    $isPahit = ($row['fryer_rasa'] ?? '') === 'PAHIT';
+                    if ($explicitKeputusan === 'TOLAK' || $explicitKeputusan === 'REJECT_TOTAL' || $isPahit) {
                         $keputusan = 'REJECT_TOTAL';
                         $grade = 'REJECT';
                         $qtyRefraksi = 0;

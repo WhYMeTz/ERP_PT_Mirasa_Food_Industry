@@ -126,6 +126,10 @@
                     {{ $kat }}
                 </span>
                 @if ($kat === 'SINGKONG')
+                    @php
+                        $firstDtl = $qc->details->first();
+                        $grade = $firstDtl?->grade_cd ?? 'A';
+                    @endphp
                     @if ($qc->tahap_uji === 'PENGUJIAN_2')
                         <span style="font-size: 0.75rem; font-weight: 800; background: #f3e8ff; color: #7e22ce; padding: 0.2rem 0.55rem; border-radius: 12px; border: 1px solid #d8b4fe;">
                             🍟 PENGUJIAN II (PRODUKSI)
@@ -135,8 +139,21 @@
                             🚛 PENGUJIAN I (KEDATANGAN)
                         </span>
                     @endif
+                    @if ($grade === 'B')
+                        <span style="font-size: 0.75rem; font-weight: 800; background: #fef3c7; color: #b45309; padding: 0.2rem 0.55rem; border-radius: 12px; border: 1px solid #fde68a;">
+                            🟡 Grade B
+                        </span>
+                    @elseif ($grade === 'REJECT')
+                        <span style="font-size: 0.75rem; font-weight: 800; background: #fee2e2; color: #991b1b; padding: 0.2rem 0.55rem; border-radius: 12px; border: 1px solid #fca5a5;">
+                            ❌ Afkir
+                        </span>
+                    @else
+                        <span style="font-size: 0.75rem; font-weight: 800; background: #dcfce7; color: #15803d; padding: 0.2rem 0.55rem; border-radius: 12px; border: 1px solid #86efac;">
+                            🟢 Grade A
+                        </span>
+                    @endif
                     @if ($qc->batch_no)
-                        <span style="font-size: 0.75rem; font-weight: 800; background: #fef3c7; color: #92400e; padding: 0.2rem 0.55rem; border-radius: 12px; border: 1px solid #fde68a;">
+                        <span style="font-size: 0.75rem; font-weight: 800; background: #f8fafc; color: #334155; padding: 0.2rem 0.55rem; border-radius: 12px; border: 1px solid #cbd5e1;">
                             📦 Batch: {{ $qc->batch_no }}
                         </span>
                     @endif
@@ -155,9 +172,9 @@
                     </a>
                 @endif
 
-                @if ($kat === 'SINGKONG' && $qc->tahap_uji !== 'PENGUJIAN_2')
-                    <a href="{{ route('qc.inbound.create', ['parent_qc_id' => $qc->qc_id, 'tahap' => 2]) }}" class="btn btn-sm" style="background: #9333ea; color: #ffffff; border: none; font-weight: 800; border-radius: 8px; box-shadow: 0 2px 4px rgba(147, 51, 234, 0.3);">
-                        🍟 + Catat Pengujian II (Produksi)
+                @if ($qc->status_qc === 'DITOLAK_TOTAL')
+                    <a href="{{ route('qc.inbound.berita_acara', $qc->qc_id) }}" class="btn btn-sm" style="background: #dc2626; color: #ffffff; border: none; font-weight: 800; border-radius: 8px; box-shadow: 0 2px 4px rgba(220, 38, 38, 0.3);">
+                        📄 Cetak Berita Acara Penolakan
                     </a>
                 @endif
 
@@ -174,21 +191,26 @@
         </div>
     @endif
 
-    {{-- PENGINGAT STATUS UJI GORENG LAB (KHUSUS SINGKONG) --}}
-    @if ($kat === 'SINGKONG')
-        @if ($qc->status_uji_goreng === 'MENUNGGU_LAB')
-            <div class="no-print" style="margin-bottom: 1.25rem; background: #fffbeb; border: 1.5px solid #fde68a; color: #92400e; border-radius: 8px; padding: 0.85rem 1.15rem; display: flex; gap: 0.75rem; align-items: flex-start; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">
-                <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink: 0; margin-top: 1px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-                <div style="font-size: 0.85rem; line-height: 1.45;">
-                    <strong style="font-size: 0.9rem; color: #b45309;">Pengingat Mutu: Tiket ini belum sampai tahap pengujian II (Uji Goreng Fryer).</strong><br>
-                    Bahan baku singkong telah lolos uji sampling fisik kedatangan. Pengujian laboratorium sensorik goreng (rasa gurih/pahit, kerenyahan, dan penampakan minyak) belum diproses/masih dalam antrean tim QC Lapangan.
+    {{-- BANNER STATUS & PENOLAKAN --}}
+    @if ($qc->status_qc === 'DITOLAK_TOTAL')
+        <div class="no-print" style="margin-bottom: 1.25rem; background: #fef2f2; border: 1.5px solid #fca5a5; color: #991b1b; border-radius: 8px; padding: 0.85rem 1.15rem; display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; box-shadow: 0 1px 2px rgba(0,0,0,0.03); flex-wrap: wrap;">
+            <div style="display: flex; gap: 0.75rem; align-items: center;">
+                <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink: 0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                <div style="font-size: 0.85rem; line-height: 1.4;">
+                    <strong style="font-size: 0.95rem; color: #b91c1c;">TIKET DITOLAK TOTAL DI GERBANG (PENGUJIAN I)</strong><br>
+                    Bahan baku singkong tidak memenuhi standar mutu (terdeteksi rasa pahit / cacat mutu). Truk tidak diizinkan bongkar ke gudang.
                 </div>
             </div>
-        @elseif ($qc->status_uji_goreng === 'SELESAI')
+            <a href="{{ route('qc.inbound.berita_acara', $qc->qc_id) }}" class="btn btn-sm" style="background: #dc2626; color: #ffffff; border: none; font-weight: 800; border-radius: 8px; white-space: nowrap;">
+                📄 Buka Berita Acara Penolakan
+            </a>
+        </div>
+    @elseif ($kat === 'SINGKONG')
+        @if ($qc->status_uji_goreng === 'SELESAI')
             <div class="no-print" style="margin-bottom: 1.25rem; background: #f0fdf4; border: 1.5px solid #bbf7d0; color: #166534; border-radius: 8px; padding: 0.85rem 1.15rem; display: flex; gap: 0.75rem; align-items: center; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">
                 <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink: 0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 <div style="font-size: 0.85rem;">
-                    <strong>Pengujian Lengkap:</strong> Tahap pengujian I (Sampling Fisik) dan pengujian II (Uji Goreng Lab Fryer) telah selesai diverifikasi oleh tim QC.
+                    <strong>Pengujian I Selesai:</strong> Sampling fisik kedatangan dan uji cepat rasa fryer di depan gerbang telah diverifikasi dengan rasa gurih (tidak pahit). Telah disetujui oleh Petugas QC &amp; Direktur.
                 </div>
             </div>
         @endif

@@ -1,6 +1,7 @@
 @extends('layouts.qc-mobile')
 
 @section('title', 'Koreksi Sampling QC: ' . $qc->qc_no . ' - PT Mirasa')
+@section('hide_bottom_nav', '1')
 
 @push('styles')
     <link rel="stylesheet" href="{{ asset('css/gudang/qc/qc-form.css') }}">
@@ -11,7 +12,83 @@
     $kat = strtoupper((string)($qc->kategori_barang ?: 'SINGKONG'));
     $firstDetail = $qc->details->first();
     $qcdtlId = $firstDetail?->qcdtl_id ?? 0;
-    $barangId = $firstDetail?->barang_id ?? ($barangs->firstWhere('barang_nm', 'like', '%Singkong%')?->barang_id ?? $barangs->first()?->barang_id);
+    
+    $filteredBarangs = $barangs->filter(function($b) use ($kat) {
+        $nm = strtoupper($b->barang_nm);
+        $cd = strtoupper($b->barang_cd);
+        if ($kat === 'SINGKONG') {
+            return str_contains($nm, 'SINGKONG') || str_starts_with($cd, 'BB-SK') || str_contains($nm, 'UBI') || str_contains($nm, 'OPAK') || str_contains($nm, 'PUYUR');
+        } elseif ($kat === 'MINYAK') {
+            return str_contains($nm, 'MINYAK');
+        } elseif ($kat === 'PLASTIK') {
+            return str_contains($nm, 'PLASTIK') || str_contains($nm, 'ROLL') || str_contains($nm, 'KEMASAN') || str_contains($nm, 'OPP') || str_contains($nm, 'PP');
+        } elseif ($kat === 'KARTON') {
+            return str_contains($nm, 'KARTON') || str_contains($nm, 'DUS') || str_contains($nm, 'BOX');
+        } elseif (in_array($kat, ['MSG', 'GARAM', 'PERENYAH'])) {
+            if ($kat === 'MSG') return str_contains($nm, 'MSG') || str_contains($nm, 'MONOSODIUM');
+            if ($kat === 'GARAM') return str_contains($nm, 'GARAM') || str_contains($nm, 'SEASALT') || str_contains($nm, 'SALT');
+            if ($kat === 'PERENYAH') return str_contains($nm, 'PERENYAH');
+        }
+        return true;
+    });
+    if ($filteredBarangs->isEmpty()) {
+        $filteredBarangs = $barangs;
+    }
+
+    $classifyBarang = function ($nm, $cd) {
+        $nm = strtoupper($nm ?? '');
+        $cd = strtoupper($cd ?? '');
+        if (str_contains($nm, 'SINGKONG') || str_starts_with($cd, 'BB-SK') || str_contains($nm, 'UBI') || str_contains($nm, 'OPAK') || str_contains($nm, 'PUYUR') || str_starts_with($cd, 'BB-OP') || str_starts_with($cd, 'BB-PY') || str_starts_with($cd, 'BB-')) {
+            return 'SINGKONG';
+        } elseif (str_contains($nm, 'MINYAK') || str_starts_with($cd, 'BP-MY')) {
+            return 'MINYAK';
+        } elseif (str_contains($nm, 'PLASTIK') || str_contains($nm, 'ROLL') || str_contains($nm, 'KEMASAN') || str_contains($nm, 'OPP') || str_contains($nm, 'PP')) {
+            return 'PLASTIK';
+        } elseif (str_contains($nm, 'KARTON') || str_contains($nm, 'DUS') || str_contains($nm, 'BOX')) {
+            return 'KARTON';
+        } elseif (str_contains($nm, 'MSG') || str_contains($nm, 'MONOSODIUM') || str_contains($nm, 'MICIN') || str_contains($nm, 'GLUTAMAT')) {
+            return 'MSG';
+        } elseif (str_contains($nm, 'GARAM') || str_contains($nm, 'SEASALT') || str_contains($nm, 'SALT')) {
+            return 'GARAM';
+        } elseif (str_contains($nm, 'PERENYAH')) {
+            return 'PERENYAH';
+        } elseif (str_contains($nm, 'BUMBU') || str_contains($nm, 'BALADO') || str_contains($nm, 'CHILLI') || str_contains($nm, 'SEASONING')) {
+            return 'BUMBU';
+        }
+        return 'LAINNYA';
+    };
+
+    $getPoCommodities = function ($p) use ($classifyBarang) {
+        $cats = [];
+        foreach ($p->details as $d) {
+            $cat = $classifyBarang($d->barang?->barang_nm, $d->barang?->barang_cd);
+            $cats[] = $cat;
+            if ($cat === 'BUMBU') {
+                $cats[] = 'MSG';
+                $cats[] = 'GARAM';
+                $cats[] = 'PERENYAH';
+            }
+        }
+        return array_values(array_unique($cats));
+    };
+
+    $filteredPos = $pos->filter(function($p) use ($kat, $qc, $getPoCommodities) {
+        if ($p->po_id == $qc->po_id) return true;
+        $cats = $getPoCommodities($p);
+        if ($kat === 'SINGKONG') return in_array('SINGKONG', $cats);
+        if ($kat === 'MINYAK') return in_array('MINYAK', $cats);
+        if ($kat === 'PLASTIK') return in_array('PLASTIK', $cats);
+        if ($kat === 'KARTON') return in_array('KARTON', $cats);
+        if (in_array($kat, ['MSG', 'GARAM', 'PERENYAH'])) {
+            return in_array($kat, $cats) || in_array('BUMBU', $cats);
+        }
+        return true;
+    });
+    if ($filteredPos->isEmpty() && $qc->po) {
+        $filteredPos = collect([$qc->po]);
+    }
+
+    $barangId = $firstDetail?->barang_id ?? ($filteredBarangs->firstWhere('barang_nm', 'like', '%Singkong%')?->barang_id ?? $filteredBarangs->first()?->barang_id);
     $totalGross = $qc->details->sum('qty_timbang_gross');
     $totalNetto = $qc->details->sum('qty_netto_lolos');
     $totalReject = $qc->details->sum('qty_reject');
@@ -27,9 +104,9 @@
         </a>
         <div style="display: flex; align-items: center; gap: 0.45rem;">
             @if (Auth::user()?->isSuperAdmin())
-                <a href="{{ route('qc.inbound.edit', $qc->qc_id) }}" class="btn-qc-switch-desktop" style="font-size: 0.72rem; font-weight: 700; color: #0284c7; background: #e0f2fe; border: 1px solid #bae6fd; padding: 0.25rem 0.5rem; border-radius: 6px; text-decoration: none; display: inline-flex; align-items: center; gap: 0.25rem;" title="Buka Dokumen Edit Excel Desktop">
-                    <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                    <span>Edit Web ERP</span>
+                <a href="{{ route('qc.inbound.index', ['view' => 'desktop']) }}" class="btn-qc-switch-desktop" style="font-size: 0.75rem; font-weight: 700; color: #0284c7; background: #e0f2fe; border: 1.5px solid #bae6fd; padding: 0.35rem 0.65rem; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 0.3rem;" title="Kembali ke Tabel QC Web Desktop">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                    <span>Tabel Web QC</span>
                 </a>
             @endif
             <span style="font-size: 0.75rem; font-weight: 700; color: #64748b;">
@@ -77,6 +154,9 @@
         <input type="hidden" name="kategori_barang" value="{{ $qc->kategori_barang }}">
         <input type="hidden" name="tahap_uji" value="{{ old('tahap_uji', $qc->tahap_uji ?? 'PENGUJIAN_1') }}">
         <input type="hidden" name="parent_qc_id" value="{{ old('parent_qc_id', $qc->parent_qc_id) }}">
+        <input type="hidden" name="batch_no" value="{{ old('batch_no', $qc->batch_no) }}">
+        <input type="hidden" name="items[{{ $qcdtlId }}][qcdtl_id]" value="{{ $qcdtlId }}">
+        <input type="hidden" name="items[{{ $qcdtlId }}][podtl_id]" value="{{ $firstDetail?->podtl_id }}">
 
         {{-- KARTU 1: INFO PENGIRIMAN, PO & KOMODITAS --}}
         <div class="qc-card-section">
@@ -90,37 +170,75 @@
             </h2>
 
             <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-                {{-- PILIHAN PO --}}
+                {{-- PILIHAN PO DENGAN FILTER SESUAI KOMODITAS --}}
                 <div>
-                    <label class="qc-info-label" style="display: block; font-weight: 700; margin-bottom: 0.25rem;">Referensi Purchase Order (PO)</label>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+                        <label class="qc-info-label" style="font-weight: 700; margin: 0;">Referensi Purchase Order (PO)</label>
+                        <span style="font-size: 0.7rem; font-weight: 700; color: #0284c7; background: #e0f2fe; padding: 2px 6px; border-radius: 4px;">
+                            Filter: {{ $kat }} ({{ $filteredPos->count() }} PO)
+                        </span>
+                    </div>
                     <select name="po_id" class="form-control" style="width: 100%; border-radius: 8px; font-weight: 700;">
                         <option value="">-- Tanpa PO / Non-PO (Pembelian Langsung) --</option>
-                        @foreach ($pos as $po)
+                        @foreach ($filteredPos as $po)
+                            @php
+                                $itemNames = $po->details->map(fn($d) => $d->barang?->barang_nm)->filter()->unique()->implode(', ');
+                            @endphp
                             <option value="{{ $po->po_id }}" {{ old('po_id', $qc->po_id) == $po->po_id ? 'selected' : '' }}>
-                                {{ $po->po_no }} - {{ $po->supplier?->supplier_nm }} ({{ $po->po_tgl ? $po->po_tgl->format('d/m/Y') : '' }})
+                                {{ $po->po_no }} - {{ $po->supplier?->supplier_nm }} ({{ $itemNames ?: ($po->po_tgl ? $po->po_tgl->format('d/m/Y') : 'PO') }})
                             </option>
                         @endforeach
                     </select>
                 </div>
 
                 {{-- SUPPLIER & GUDANG --}}
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem;">
+                <div style="display: flex; flex-direction: column; gap: 0.75rem;">
                     <div>
-                        <label class="qc-info-label" style="display: block; font-weight: 700; margin-bottom: 0.25rem;">Mitra Supplier *</label>
-                        <select name="supplier_id" class="form-control" style="width: 100%; border-radius: 8px; font-weight: 700;" required>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+                            <label class="qc-info-label" style="font-weight: 700; margin: 0;">🏢 Mitra Supplier / Produsen *</label>
+                            <span id="editSupplierBadge" style="font-size: 0.7rem; font-weight: 700; color: #0284c7; background: #e0f2fe; padding: 2px 6px; border-radius: 4px;">
+                                Komoditas: {{ $kat }}
+                            </span>
+                        </div>
+                        <div style="margin-bottom: 0.4rem;">
+                            <input type="text" id="editSupplierSearch" class="form-control" placeholder="🔍 Cari supplier / produsen..." oninput="filterEditSuppliers(this.value)" style="min-height: 38px; font-size: 0.8rem; padding: 0.35rem 0.65rem; border-radius: 6px;">
+                        </div>
+                        <select name="supplier_id" id="editSupplierSelect" class="form-control" style="width: 100%; border-radius: 8px; font-weight: 700;" required onchange="onEditSupplierChange(this)">
                             @foreach ($suppliers as $sup)
-                                <option value="{{ $sup->supplier_id }}" {{ old('supplier_id', $qc->supplier_id) == $sup->supplier_id ? 'selected' : '' }}>
-                                    {{ $sup->supplier_nm }}
+                                @php
+                                    $jenisCd = $sup->jenisSupplier?->jenis_supplier_cd ?: (str_starts_with($sup->supplier_cd, 'SKG-') ? 'RAW' : 'BP');
+                                    $isPetani = ($jenisCd === 'RAW' || str_starts_with($sup->supplier_cd, 'SKG-'));
+                                    $tipeLabel = $isPetani ? 'Petani Singkong' : ($sup->jenisSupplier?->jenis_supplier_nm ?? 'Vendor');
+                                @endphp
+                                <option value="{{ $sup->supplier_id }}"
+                                        data-jenis-cd="{{ $jenisCd }}"
+                                        data-is-petani="{{ $isPetani ? '1' : '0' }}"
+                                        data-supplier-nm="{{ $sup->supplier_nm }}"
+                                        {{ old('supplier_id', $qc->supplier_id) == $sup->supplier_id ? 'selected' : '' }}>
+                                    {{ $sup->supplier_nm }} ({{ $tipeLabel }})
                                 </option>
                             @endforeach
                         </select>
+                        <input type="hidden" name="nama_produsen" id="editNamaProdusen" value="{{ old('nama_produsen', $qc->nama_produsen) }}">
                     </div>
+
                     <div>
-                        <label class="qc-info-label" style="display: block; font-weight: 700; margin-bottom: 0.25rem;">Gudang Bongkar *</label>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+                            <label class="qc-info-label" style="font-weight: 700; margin: 0;">🏢 Perusahaan / Cabang Bongkar *</label>
+                            @if ($gudangs->count() === 1)
+                                <span style="font-size: 0.7rem; font-weight: 700; color: #059669; background: #dcfce7; padding: 2px 6px; border-radius: 4px;">
+                                    Akses: 1 Perusahaan
+                                </span>
+                            @else
+                                <span style="font-size: 0.7rem; font-weight: 700; color: #0284c7; background: #e0f2fe; padding: 2px 6px; border-radius: 4px;">
+                                    Akses: {{ $gudangs->count() }} Perusahaan
+                                </span>
+                            @endif
+                        </div>
                         <select name="gudang_id" class="form-control" style="width: 100%; border-radius: 8px; font-weight: 700;" required>
                             @foreach ($gudangs as $g)
                                 <option value="{{ $g->gudang_id }}" {{ old('gudang_id', $qc->gudang_id) == $g->gudang_id ? 'selected' : '' }}>
-                                    {{ $g->gudang_nm }}
+                                    {{ $g->gudang_nm }} @if(!empty($g->tipe_gudang_cd) && $g->tipe_gudang_cd !== 'Pusat') ({{ $g->tipe_gudang_cd }}) @endif
                                 </option>
                             @endforeach
                         </select>
@@ -130,13 +248,14 @@
                 {{-- PILIH BARANG / KOMODITAS --}}
                 <div>
                     <label class="qc-info-label" style="display: block; font-weight: 700; margin-bottom: 0.25rem;">Komoditas / Nama Barang *</label>
-                    <select name="items[{{ $qcdtlId }}][barang_id]" class="form-control" style="width: 100%; border-radius: 8px; font-weight: 800; color: #0284c7;" required>
-                        @foreach ($barangs as $b)
-                            <option value="{{ $b->barang_id }}" {{ old('items.'.$qcdtlId.'.barang_id', $barangId) == $b->barang_id ? 'selected' : '' }}>
+                    <select name="items[{{ $qcdtlId }}][barang_id]" id="editBarangSelect" class="form-control" style="width: 100%; border-radius: 8px; font-weight: 800; color: #0284c7;" required onchange="onEditBarangChanged(this)">
+                        @foreach ($filteredBarangs as $b)
+                            <option value="{{ $b->barang_id }}" data-nama="{{ $b->barang_nm }}" {{ old('items.'.$qcdtlId.'.barang_id', $barangId) == $b->barang_id ? 'selected' : '' }}>
                                 {{ $b->barang_cd }} - {{ $b->barang_nm }} ({{ $b->satuanDasar?->satuan_nm ?? 'kg' }})
                             </option>
                         @endforeach
                     </select>
+                    <input type="hidden" name="nama_jenis" id="editNamaJenis" value="{{ old('nama_jenis', $qc->nama_jenis) }}">
                 </div>
 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem;">
@@ -215,18 +334,18 @@
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem;">
                     <div>
                         <label class="qc-info-label" style="display: block; font-weight: 700; margin-bottom: 0.25rem;">Jumlah Surat Jalan (kg)</label>
-                        <input type="number" step="any" name="jumlah_surat_jalan" value="{{ old('jumlah_surat_jalan', $qc->jumlah_surat_jalan) }}" class="form-control" style="width: 100%; border-radius: 8px; font-weight: 700;">
+                        <input type="number" step="any" name="jumlah_surat_jalan" id="inputJumlahSJ" value="{{ old('jumlah_surat_jalan', $qc->jumlah_surat_jalan ?? $firstDetail?->qty_timbang_gross) }}" class="form-control" style="width: 100%; border-radius: 8px; font-weight: 700;" oninput="syncMobileGrossFromSJ(this.value)">
                     </div>
                     <div>
                         <label class="qc-info-label" style="display: block; font-weight: 700; margin-bottom: 0.25rem;">Jumlah di Pabrik (kg)</label>
-                        <input type="number" step="any" name="jumlah_di_pabrik" value="{{ old('jumlah_di_pabrik', $qc->jumlah_di_pabrik ?? $totalGross) }}" class="form-control" style="width: 100%; border-radius: 8px; font-weight: 700; color: #0284c7;">
+                        <input type="number" step="any" name="jumlah_di_pabrik" id="inputJumlahPabrik" value="{{ old('jumlah_di_pabrik', $qc->jumlah_di_pabrik ?? ($firstDetail?->qty_timbang_gross ?? $totalGross)) }}" class="form-control" style="width: 100%; border-radius: 8px; font-weight: 700; color: #0284c7;" oninput="syncMobileGrossFromPabrik(this.value)">
                     </div>
                 </div>
 
                 <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem;">
                     <div>
                         <label class="qc-info-label" style="display: block; font-weight: 700; margin-bottom: 0.25rem;">Bruto (kg) *</label>
-                        <input type="number" step="any" name="items[{{ $qcdtlId }}][qty_timbang_gross]" id="inputGross" value="{{ old('items.'.$qcdtlId.'.qty_timbang_gross', $firstDetail?->qty_timbang_gross ?? $totalGross) }}" class="form-control" style="width: 100%; border-radius: 8px; font-weight: 800;" oninput="recalcMobileNetto()" required>
+                        <input type="number" step="any" name="items[{{ $qcdtlId }}][qty_timbang_gross]" id="inputGross" value="{{ old('items.'.$qcdtlId.'.qty_timbang_gross', $firstDetail?->qty_timbang_gross ?? ($qc->jumlah_di_pabrik ?? $totalGross)) }}" class="form-control" style="width: 100%; border-radius: 8px; font-weight: 800;" oninput="syncMobilePabrikFromGross(this.value)" required>
                     </div>
                     <div>
                         <label class="qc-info-label" style="display: block; font-weight: 700; margin-bottom: 0.25rem;">Refraksi (%)</label>
@@ -335,18 +454,28 @@
                         </div>
 
                         <div style="font-size: 0.725rem; font-weight: 700; color: #475569; margin-bottom: 0.3rem;">DEFECT FRYING (%):</div>
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; margin-bottom: 0.5rem;">
+                            <div>
+                                <label class="qc-info-label">Breakage / Remuk (%)</label>
+                                <input type="number" step="0.1" min="0" max="100" name="items[{{ $qcdtlId }}][defect_breakage_persen]" value="{{ old('items.'.$qcdtlId.'.defect_breakage_persen', $firstDetail?->defect_breakage_persen ?? 0) }}" class="form-control" style="width: 100%; border-radius: 6px; font-size: 0.8rem; font-weight: 700;">
+                            </div>
+                            <div>
+                                <label class="qc-info-label">Cluster / Menempel (%)</label>
+                                <input type="number" step="0.1" min="0" max="100" name="items[{{ $qcdtlId }}][defect_cluster_persen]" value="{{ old('items.'.$qcdtlId.'.defect_cluster_persen', $firstDetail?->defect_cluster_persen ?? 0) }}" class="form-control" style="width: 100%; border-radius: 6px; font-size: 0.8rem; font-weight: 700;">
+                            </div>
+                        </div>
                         <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem;">
                             <div>
-                                <label class="qc-info-label">Breakage %</label>
-                                <input type="number" step="0.1" name="items[{{ $qcdtlId }}][defect_breakage_persen]" value="{{ old('items.'.$qcdtlId.'.defect_breakage_persen', $firstDetail?->defect_breakage_persen ?? 0) }}" class="form-control" style="width: 100%; border-radius: 6px; font-size: 0.8rem;">
+                                <label class="qc-info-label">Foldover (%)</label>
+                                <input type="number" step="0.1" min="0" max="100" name="items[{{ $qcdtlId }}][defect_foldover_persen]" value="{{ old('items.'.$qcdtlId.'.defect_foldover_persen', $firstDetail?->defect_foldover_persen ?? 0) }}" class="form-control" style="width: 100%; border-radius: 6px; font-size: 0.8rem; font-weight: 700;">
                             </div>
                             <div>
-                                <label class="qc-info-label">Cluster %</label>
-                                <input type="number" step="0.1" name="items[{{ $qcdtlId }}][defect_cluster_persen]" value="{{ old('items.'.$qcdtlId.'.defect_cluster_persen', $firstDetail?->defect_cluster_persen ?? 0) }}" class="form-control" style="width: 100%; border-radius: 6px; font-size: 0.8rem;">
+                                <label class="qc-info-label">Oilsoaked (%)</label>
+                                <input type="number" step="0.1" min="0" max="100" name="items[{{ $qcdtlId }}][defect_oilsoaked_persen]" value="{{ old('items.'.$qcdtlId.'.defect_oilsoaked_persen', $firstDetail?->defect_oilsoaked_persen ?? 0) }}" class="form-control" style="width: 100%; border-radius: 6px; font-size: 0.8rem; font-weight: 700;">
                             </div>
                             <div>
-                                <label class="qc-info-label">Gambos %</label>
-                                <input type="number" step="0.1" name="items[{{ $qcdtlId }}][defect_gambos_persen]" value="{{ old('items.'.$qcdtlId.'.defect_gambos_persen', $firstDetail?->defect_gambos_persen ?? 0) }}" class="form-control" style="width: 100%; border-radius: 6px; font-size: 0.8rem;">
+                                <label class="qc-info-label">Gambos (%)</label>
+                                <input type="number" step="0.1" min="0" max="100" name="items[{{ $qcdtlId }}][defect_gambos_persen]" value="{{ old('items.'.$qcdtlId.'.defect_gambos_persen', $firstDetail?->defect_gambos_persen ?? 0) }}" class="form-control" style="width: 100%; border-radius: 6px; font-size: 0.8rem; font-weight: 700;">
                             </div>
                         </div>
                     </div>
@@ -407,16 +536,54 @@
 
         {{-- TOMBOL SUBMIT FIXED BOTTOM --}}
         <div class="qc-mobile-bottom-bar">
-            <button type="submit" class="qc-btn-mobile-edit" style="font-size: 0.95rem; padding: 0.8rem 1rem;">
+            <button type="submit" id="btnEditSubmit" class="qc-btn-mobile-edit" style="font-size: 0.95rem; padding: 0.8rem 1rem;">
                 <span>💾 Simpan Perubahan Uji Mutu</span>
             </button>
         </div>
+
+        {{-- FULLSCREEN LOADING OVERLAY UNTUK MENCEGAH DOUBLE CLICK --}}
+        <div id="qcSubmitOverlay" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.72); z-index: 999999; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+            <div style="background: #ffffff; padding: 1.75rem 2rem; border-radius: 16px; text-align: center; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.25); max-width: 320px; margin: 1rem; width: 90%;">
+                <div style="width: 48px; height: 48px; border: 4px solid #e2e8f0; border-top-color: #0284c7; border-radius: 50%; animation: qcSpin 0.8s linear infinite; margin: 0 auto 1.15rem;"></div>
+                <div style="font-weight: 800; font-size: 1.05rem; color: #0f172a; margin-bottom: 0.4rem;">Memperbarui Tiket QC...</div>
+                <div style="font-size: 0.8rem; color: #64748b; line-height: 1.45;">Sedang menyimpan koreksi uji mutu. Mohon tidak menekan tombol lagi.</div>
+            </div>
+        </div>
+        <style>
+            @keyframes qcSpin {
+                to { transform: rotate(360deg); }
+            }
+        </style>
     </form>
 </div>
 @endsection
 
 @push('scripts')
 <script>
+    function syncMobileGrossFromPabrik(val) {
+        const grossEl = document.getElementById('inputGross');
+        if (grossEl) {
+            grossEl.value = val;
+        }
+        recalcMobileNetto();
+    }
+
+    function syncMobileGrossFromSJ(val) {
+        const pabrikEl = document.getElementById('inputJumlahPabrik');
+        if (pabrikEl && (!pabrikEl.value || parseFloat(pabrikEl.value) === 0)) {
+            pabrikEl.value = val;
+            syncMobileGrossFromPabrik(val);
+        }
+    }
+
+    function syncMobilePabrikFromGross(val) {
+        const pabrikEl = document.getElementById('inputJumlahPabrik');
+        if (pabrikEl) {
+            pabrikEl.value = val;
+        }
+        recalcMobileNetto();
+    }
+
     function recalcMobileNetto() {
         const gross = parseFloat(document.getElementById('inputGross')?.value) || 0;
         const refPersen = parseFloat(document.getElementById('inputRefraksiPersen')?.value) || 0;
@@ -430,11 +597,64 @@
         const hiddenEl = document.getElementById('inputNettoLolos');
 
         if (displayEl) {
-            displayEl.innerText = Math.round(netto).toLocaleString('id-ID') + ' kg';
+            displayEl.innerText = (netto % 1 === 0 ? netto : netto.toFixed(2)).toLocaleString('id-ID') + ' kg';
         }
         if (hiddenEl) {
-            hiddenEl.value = Math.round(netto);
+            hiddenEl.value = (netto % 1 === 0 ? netto : netto.toFixed(2));
         }
     }
+
+    function onEditSupplierChange(select) {
+        const opt = select.options[select.selectedIndex];
+        if (opt && opt.value) {
+            const supNm = opt.getAttribute('data-supplier-nm') || opt.text.split('(')[0].trim();
+            const produsenInput = document.getElementById('editNamaProdusen');
+            if (produsenInput) produsenInput.value = supNm;
+        }
+    }
+
+    function filterEditSuppliers(query) {
+        const q = (query || '').toLowerCase().trim();
+        const select = document.getElementById('editSupplierSelect');
+        if (!select) return;
+
+        for (let i = 0; i < select.options.length; i++) {
+            const opt = select.options[i];
+            const text = (opt.text || '').toLowerCase();
+            if (!q || text.includes(q)) {
+                opt.style.display = '';
+                opt.disabled = false;
+            } else {
+                opt.style.display = 'none';
+                opt.disabled = true;
+            }
+        }
+    }
+
+    function onEditBarangChanged(select) {
+        const opt = select.options[select.selectedIndex];
+        if (opt && opt.value) {
+            const bNm = opt.getAttribute('data-nama') || opt.text.split(' - ')[1]?.split(' (')[0] || opt.text;
+            const namaEl = document.getElementById('editNamaJenis');
+            if (namaEl) namaEl.value = bNm.trim();
+        }
+    }
+
+    let isSubmitting = false;
+    document.getElementById('qcEditMobileForm')?.addEventListener('submit', function (e) {
+        if (isSubmitting) {
+            e.preventDefault();
+            return false;
+        }
+        isSubmitting = true;
+        const overlay = document.getElementById('qcSubmitOverlay');
+        if (overlay) overlay.style.display = 'flex';
+        const btn = document.getElementById('btnEditSubmit');
+        if (btn) {
+            btn.disabled = true;
+            btn.style.opacity = '0.5';
+            btn.style.pointerEvents = 'none';
+        }
+    });
 </script>
 @endpush

@@ -134,7 +134,7 @@
                 <button type="button" onclick="closeModalUjiFryer()" style="flex: 1; padding: 0.85rem; border: 1.5px solid #cbd5e1; border-radius: 12px; background: #ffffff; color: #475569; font-weight: 700; font-size: 0.9rem; cursor: pointer;">
                     Batal
                 </button>
-                <button type="submit" style="flex: 2; padding: 0.85rem; border: none; border-radius: 12px; background: #059669; color: #ffffff; font-weight: 800; font-size: 0.95rem; cursor: pointer; box-shadow: 0 4px 6px -1px rgba(5,150,105,0.3);">
+                <button type="submit" id="btnSubmitFryer" style="flex: 2; padding: 0.85rem; border: none; border-radius: 12px; background: #059669; color: #ffffff; font-weight: 800; font-size: 0.95rem; cursor: pointer; box-shadow: 0 4px 6px -1px rgba(5,150,105,0.3);">
                     ✅ Simpan Hasil Fryer
                 </button>
             </div>
@@ -233,8 +233,14 @@ function closeModalUjiFryer() {
     }
 }
 
-// Sinkronkan input radio ke hidden field saat submit
+// Sinkronkan input radio ke hidden field saat submit & cegah double click
+let isFryerSubmitting = false;
 document.getElementById('formUjiFryer')?.addEventListener('submit', function (e) {
+    if (isFryerSubmitting) {
+        e.preventDefault();
+        return false;
+    }
+
     const dtlId = document.getElementById('modalQcDtlIdInput').value;
     if (dtlId) {
         const selRasa = document.querySelector('input[name="fryer_rasa"]:checked')?.value || 'TIDAK_PAHIT';
@@ -256,6 +262,15 @@ document.getElementById('formUjiFryer')?.addEventListener('submit', function (e)
         if (hCluster) hCluster.value = cluster;
         const hGambos = document.getElementById('hiddenGambos');
         if (hGambos) hGambos.value = gambos;
+    }
+
+    isFryerSubmitting = true;
+    const btn = document.getElementById('btnSubmitFryer');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerText = '⏳ Menyimpan...';
+        btn.style.opacity = '0.6';
+        btn.style.pointerEvents = 'none';
     }
 });
 </script>

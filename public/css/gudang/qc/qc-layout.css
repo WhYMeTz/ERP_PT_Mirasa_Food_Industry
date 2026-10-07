@@ -44,9 +44,11 @@ body.qc-mobile-body {
     position: sticky;
     top: 0;
     z-index: 1000;
-    background: #ffffff;
-    border-bottom: 1px solid var(--qc-border);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    background: rgba(255, 255, 255, 0.82);
+    backdrop-filter: blur(24px) saturate(190%);
+    -webkit-backdrop-filter: blur(24px) saturate(190%);
+    border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+    box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04), inset 0 -1px 0 rgba(255, 255, 255, 0.9);
     padding: 0.65rem 1rem;
     padding-top: calc(0.65rem + env(safe-area-inset-top, 0px));
 }
@@ -201,9 +203,11 @@ body.qc-mobile-body {
     right: 0;
     z-index: 1000;
     height: var(--qc-bottom-nav-height);
-    background: #ffffff;
-    border-top: 1px solid var(--qc-border);
-    box-shadow: 0 -3px 12px rgba(0, 0, 0, 0.05);
+    background: rgba(255, 255, 255, 0.78);
+    backdrop-filter: blur(24px) saturate(190%);
+    -webkit-backdrop-filter: blur(24px) saturate(190%);
+    border-top: 1px solid rgba(255, 255, 255, 0.85);
+    box-shadow: 0 -8px 28px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.95);
     display: flex;
     align-items: center;
     justify-content: space-around;
@@ -218,6 +222,7 @@ body.qc-mobile-body {
     align-items: stretch;
     justify-content: space-around;
     height: 100%;
+    padding: 0 0.5rem;
 }
 
 .qc-nav-item {
@@ -230,8 +235,10 @@ body.qc-mobile-body {
     color: #64748b;
     font-size: 0.725rem;
     font-weight: 700;
-    padding: 0.4rem 0.25rem;
-    transition: all 0.15s ease;
+    padding: 0.35rem 0.25rem;
+    margin: 0.25rem 0.2rem;
+    border-radius: 12px;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
     position: relative;
     border: none;
     background: transparent;
@@ -242,30 +249,33 @@ body.qc-mobile-body {
     width: 22px;
     height: 22px;
     margin-bottom: 2px;
-    transition: transform 0.15s ease;
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .qc-nav-item.active {
-    color: var(--qc-primary);
+    color: #0284c7;
+    background: rgba(2, 132, 199, 0.09);
 }
 
 .qc-nav-item.active .qc-nav-icon {
     transform: translateY(-1px) scale(1.08);
+    color: #0284c7;
 }
 
 .qc-nav-item.active::after {
     content: '';
     position: absolute;
-    top: 0;
-    left: 20%;
-    right: 20%;
+    top: 4px;
+    width: 16px;
     height: 3px;
-    background: var(--qc-primary);
-    border-radius: 0 0 3px 3px;
+    background: #0284c7;
+    border-radius: 999px;
+    box-shadow: 0 1px 6px rgba(2, 132, 199, 0.45);
 }
 
 .qc-nav-item:active {
-    transform: scale(0.96);
+    transform: scale(0.94);
+    background: rgba(15, 23, 42, 0.05);
 }
 
 /* Floating Action Style for Input QC button */
@@ -567,4 +577,120 @@ select.form-control {
         page-break-inside: avoid;
     }
 }
+
+/* ==========================================================================
+   QC INTERACTIVE VALIDATION TOAST & FIELD HIGHLIGHT
+   ========================================================================== */
+.qc-toast-container {
+    position: fixed;
+    top: calc(var(--qc-top-appbar-height, 58px) + 12px);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9999999;
+    width: 90%;
+    max-width: 440px;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.qc-toast {
+    pointer-events: auto;
+    background: rgba(254, 242, 242, 0.95);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border: 1.5px solid #f87171;
+    border-radius: 14px;
+    padding: 0.85rem 1rem;
+    box-shadow: 0 10px 25px -5px rgba(220, 38, 38, 0.25), 0 4px 10px rgba(0, 0, 0, 0.05);
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    animation: qcToastSlideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    transition: all 0.25s ease;
+}
+
+.qc-toast.qc-toast-warning {
+    background: rgba(254, 243, 199, 0.95);
+    border-color: #f59e0b;
+    box-shadow: 0 10px 25px -5px rgba(217, 119, 6, 0.25);
+}
+
+.qc-toast-icon {
+    font-size: 1.25rem;
+    flex-shrink: 0;
+    line-height: 1;
+    margin-top: 1px;
+}
+
+.qc-toast-content {
+    flex: 1;
+}
+
+.qc-toast-title {
+    font-size: 0.825rem;
+    font-weight: 800;
+    color: #991b1b;
+    margin-bottom: 0.15rem;
+    line-height: 1.3;
+}
+
+.qc-toast-warning .qc-toast-title {
+    color: #92400e;
+}
+
+.qc-toast-msg {
+    font-size: 0.775rem;
+    color: #7f1d1d;
+    line-height: 1.4;
+    font-weight: 600;
+}
+
+.qc-toast-warning .qc-toast-msg {
+    color: #78350f;
+}
+
+.qc-toast-close {
+    background: transparent;
+    border: none;
+    color: #991b1b;
+    font-size: 1rem;
+    line-height: 1;
+    padding: 0.2rem;
+    cursor: pointer;
+    opacity: 0.6;
+    transition: opacity 0.15s;
+    border-radius: 6px;
+}
+
+.qc-toast-close:hover {
+    opacity: 1;
+}
+
+@keyframes qcToastSlideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-16px) scale(0.96);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Pulsing field animation when validation fails */
+.field-error-pulse {
+    border-color: #ef4444 !important;
+    box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.25) !important;
+    animation: qcFieldShake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@keyframes qcFieldShake {
+    10%, 90% { transform: translate3d(-1px, 0, 0); }
+    20%, 80% { transform: translate3d(2px, 0, 0); }
+    30%, 50%, 70% { transform: translate3d(-3px, 0, 0); }
+    40%, 60% { transform: translate3d(3px, 0, 0); }
+}
+
 

@@ -24,9 +24,12 @@
                     </a>
                 @endif
                 @if (Auth::user()?->canCreateQc())
+                    <a href="{{ route('qc.inbound.create_pengujian_2') }}" class="btn-qc-p2-inline" style="font-size: 0.75rem; font-weight: 800; color: #7e22ce; background: #f3e8ff; border: 1px solid #d8b4fe; padding: 0.35rem 0.65rem; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 0.35rem;" title="Input Pengujian II Produksi">
+                        <span>🍟 + QC 2</span>
+                    </a>
                     <a href="{{ route('qc.inbound.create') }}" class="qc-btn-create-inline">
                         <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
-                        <span>+ Input QC</span>
+                        <span>+ QC 1</span>
                     </a>
                 @endif
             </div>
@@ -43,10 +46,14 @@
         @php
             $currKat = $filters['kategori_barang'] ?? '';
             $currSts = $filters['status_qc'] ?? '';
-            $isAll = empty($currKat) && empty($currSts) && empty($filters['search']);
+            $currTahap = $filters['tahap_uji'] ?? '';
+            $isAll = empty($currKat) && empty($currSts) && empty($currTahap) && empty($filters['search']);
         @endphp
         <a href="{{ route('qc.inbound.index', ['view' => 'mobile']) }}" class="qc-chip {{ $isAll ? 'active' : '' }}">
             <span>Semua</span>
+        </a>
+        <a href="{{ route('qc.inbound.index', ['view' => 'mobile', 'tahap_uji' => 'PENGUJIAN_2']) }}" class="qc-chip {{ $currTahap === 'PENGUJIAN_2' ? 'active' : '' }}" style="{{ $currTahap === 'PENGUJIAN_2' ? 'background: #f3e8ff; color: #7e22ce; border-color: #d8b4fe;' : '' }}">
+            <span>🍟 Pengujian II</span>
         </a>
         <a href="{{ route('qc.inbound.index', ['view' => 'mobile', 'status_qc' => 'SIAP_GUDANG']) }}" class="qc-chip {{ $currSts === 'SIAP_GUDANG' ? 'active' : '' }}">
             <span>⏳ Siap Gudang</span>
@@ -134,10 +141,29 @@
                         @endif
 
                         @if ($kat === 'SINGKONG')
+                            @php
+                                $firstDtl = $qc->details->first();
+                                $grade = $firstDtl?->grade_cd ?? 'A';
+                            @endphp
                             @if (($qc->tahap_uji ?? 'PENGUJIAN_1') === 'PENGUJIAN_2')
-                                <span class="badge-status-lab" style="background: #f3e8ff; color: #7e22ce; border: 1px solid #d8b4fe;">🍟 Pengujian II</span>
+                                <span class="badge-status-lab" style="background: #f3e8ff; color: #7e22ce; border: 1px solid #d8b4fe; font-weight: 800;">
+                                    🍟 Pengujian II
+                                </span>
                             @else
-                                <span class="badge-status-lab" style="background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd;">🚛 Pengujian I</span>
+                                <span class="badge-status-lab" style="background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; font-weight: 800;">
+                                    🚛 Pengujian I
+                                </span>
+                                @if ($qc->isPengujian2Done())
+                                    <span class="badge-status-lab" style="background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0;" title="Batch kedatangan ini sudah selesai Pengujian II">✔ Selesai Uji 2</span>
+                                @endif
+                            @endif
+
+                            @if ($grade === 'B')
+                                <span class="badge-status-lab" style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a; font-weight: 800;">🟡 Grade B</span>
+                            @elseif ($grade === 'REJECT')
+                                <span class="badge-status-reject" style="font-weight: 800;">❌ Afkir</span>
+                            @else
+                                <span class="badge-status-lab" style="background: #dcfce7; color: #15803d; border: 1px solid #86efac; font-weight: 800;">🟢 Grade A</span>
                             @endif
                         @endif
                     </div>
@@ -211,10 +237,10 @@
 
                 {{-- FOOTER AKSI TOMBOL TOUCH-FRIENDLY --}}
                 <div class="qc-card-actions">
-                    {{-- TOMBOL CEPAT CATAT PENGUJIAN II UNTUK SINGKONG PENGUJIAN I --}}
-                    @if ($kat === 'SINGKONG' && ($qc->tahap_uji ?? 'PENGUJIAN_1') === 'PENGUJIAN_1' && Auth::user()?->canCreateQc())
-                        <a href="{{ route('qc.inbound.create', ['view' => 'mobile', 'kategori_barang' => 'SINGKONG', 'tahap' => 2, 'parent_qc_id' => $qc->qc_id]) }}" class="qc-btn-action" style="background: #9333ea; color: #ffffff; border-color: #7e22ce; font-weight: 800; text-decoration: none;" title="Catat Pengujian II jika ada temuan mutu saat produksi">
-                            <span>🍟 + Uji II</span>
+                    {{-- TOMBOL CEPAT CATAT PENGUJIAN II UNTUK SINGKONG PENGUJIAN I (Otomatis hilang jika sudah diuji 2) --}}
+                    @if ($kat === 'SINGKONG' && ($qc->tahap_uji ?? 'PENGUJIAN_1') === 'PENGUJIAN_1' && Auth::user()?->canCreateQc() && !$qc->isPengujian2Done())
+                        <a href="{{ route('qc.inbound.create', ['parent_qc_id' => $qc->qc_id, 'tahap' => 2, 'po_id' => $qc->po_id, 'supplier_id' => $qc->supplier_id, 'view' => 'mobile']) }}" class="qc-btn-action" style="background: #9333ea; color: #ffffff; border-color: #7e22ce; font-weight: 800; text-decoration: none;" title="Lanjutkan Pengujian II untuk kedatangan singkong ini">
+                            <span>🍟 + Uji 2</span>
                         </a>
                     @elseif ($kat === 'SINGKONG' && $qc->status_uji_goreng === 'MENUNGGU_LAB')
                         <button type="button" class="qc-btn-action" style="background: #d97706; color: #ffffff; border-color: #b45309; font-weight: 800;" onclick="openModalUjiFryer('{{ $qc->qc_id }}', '{{ $qc->qc_no }}', '{{ $qc->details->first()?->qcdtl_id }}')">

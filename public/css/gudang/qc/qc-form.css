@@ -171,3 +171,169 @@ input[type="radio"] {
     border-radius: 10px !important;
     min-height: 52px !important;
 }
+
+/* Quick Filter Chips & Search for Supplier / Produsen */
+.supplier-filter-chips {
+    display: flex !important;
+    gap: 0.35rem !important;
+    overflow-x: auto !important;
+    padding-bottom: 4px !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+}
+.supplier-filter-chips::-webkit-scrollbar {
+    display: none !important;
+}
+
+.btn-supplier-chip {
+    font-size: 0.72rem !important;
+    font-weight: 700 !important;
+    padding: 0.28rem 0.6rem !important;
+    border-radius: 6px !important;
+    border: 1px solid #cbd5e1 !important;
+    background: #ffffff !important;
+    color: #475569 !important;
+    white-space: nowrap !important;
+    cursor: pointer !important;
+    min-height: 28px !important;
+    line-height: 1.2 !important;
+    transition: all 0.15s ease !important;
+    flex-shrink: 0 !important;
+}
+.btn-supplier-chip:hover {
+    background: #f1f5f9 !important;
+    border-color: #94a3b8 !important;
+}
+.btn-supplier-chip.active-chip {
+    background: #0284c7 !important;
+    border-color: #0284c7 !important;
+    color: #ffffff !important;
+}
+
+.supplier-search-wrap {
+    position: relative !important;
+    width: 100% !important;
+}
+.supplier-search-input {
+    min-height: 38px !important;
+    padding: 0.4rem 2rem 0.4rem 0.65rem !important;
+    font-size: 0.825rem !important;
+    border-radius: 8px !important;
+    background-color: #f8fafc !important;
+    border: 1.5px solid #cbd5e1 !important;
+}
+.supplier-search-input:focus {
+    background-color: #ffffff !important;
+    border-color: #0284c7 !important;
+}
+.supplier-search-clear {
+    position: absolute !important;
+    right: 8px !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    background: none !important;
+    border: none !important;
+    color: #94a3b8 !important;
+    font-size: 0.9rem !important;
+    cursor: pointer !important;
+    padding: 4px 6px !important;
+    line-height: 1 !important;
+}
+
+/* ==========================================================================
+   STICKY TAB NAV & FLOATING ACTION DOCK (DILAYANGKAN DI ATAS BOTTOM NAVBAR)
+   ========================================================================== */
+
+#qcTabNav {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 100 !important;
+    background: rgba(248, 250, 252, 0.82) !important;
+    backdrop-filter: blur(24px) saturate(190%) !important;
+    -webkit-backdrop-filter: blur(24px) saturate(190%) !important;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.8) !important;
+    padding: 0.5rem 0.25rem !important;
+    margin-bottom: 0.85rem !important;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04) !important;
+}
+
+.qc-form-floating-dock {
+    position: fixed !important;
+    bottom: 60px !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 990 !important;
+    background: rgba(255, 255, 255, 0.78) !important;
+    backdrop-filter: blur(24px) saturate(190%) !important;
+    -webkit-backdrop-filter: blur(24px) saturate(190%) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.85) !important;
+    box-shadow: 0 -8px 28px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
+    padding: 0.65rem 1rem !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 0.65rem !important;
+    max-width: 800px !important;
+    margin: 0 auto !important;
+}
+
+.btn-dock-back {
+    padding: 0.75rem 1rem !important;
+    border: 1.5px solid #cbd5e1 !important;
+    border-radius: 12px !important;
+    background: #ffffff !important;
+    color: #475569 !important;
+    font-weight: 700 !important;
+    font-size: 0.85rem !important;
+    cursor: pointer !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.4rem !important;
+    transition: all 0.15s ease !important;
+    min-height: 48px !important;
+    flex-shrink: 0 !important;
+}
+
+.btn-dock-back:hover {
+    background: #f1f5f9 !important;
+    color: #0f172a !important;
+}
+
+.btn-dock-next {
+    flex: 1 !important;
+    padding: 0.75rem 1.25rem !important;
+    border-radius: 12px !important;
+    border: none !important;
+    font-weight: 800 !important;
+    font-size: 0.925rem !important;
+    cursor: pointer !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0.5rem !important;
+    transition: all 0.2s ease !important;
+    min-height: 48px !important;
+}
+
+.btn-dock-next.btn-primary-state {
+    background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3) !important;
+}
+
+.btn-dock-next.btn-success-state {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3) !important;
+}
+
+.btn-dock-next:disabled {
+    opacity: 0.6 !important;
+    cursor: not-allowed !important;
+}
+
+/* Pastikan form container memiliki padding bawah yang cukup agar konten terbawah tidak tertutup dock */
+#qcIndexWrapper, #qcFormWrapper, .gform-container, #qcForm {
+    padding-bottom: 135px !important;
+}
+

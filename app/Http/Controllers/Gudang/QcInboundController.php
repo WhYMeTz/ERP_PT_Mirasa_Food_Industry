@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Gudang;
 
 use App\Http\Controllers\Controller;
 use App\Models\Gudang\DatPoHdr;
+use App\Models\Gudang\DatQcInboundHdr;
+use App\Models\Gudang\DatStokBatch;
 use App\Models\MasterData\MstBarang;
 use App\Models\MasterData\MstGudang;
 use App\Models\MasterData\MstSupplier;
@@ -27,14 +29,19 @@ class QcInboundController extends Controller
      */
     public function index(Request $request): View
     {
+        $user = Auth::user();
+        $allowedGudangIds = !$user->isSuperAdmin() ? $user->getAllowedGudangIds() : [];
+
         $filters = [
-            'search'            => $request->input('search'),
-            'kategori_barang'   => $request->input('kategori_barang'),
-            'status_qc'         => $request->input('status_qc'),
-            'status_uji_goreng' => $request->input('status_uji_goreng'),
-            'supplier_id'       => $request->input('supplier_id'),
-            'tgl_mulai'         => $request->input('tgl_mulai'),
-            'tgl_selesai'       => $request->input('tgl_selesai'),
+            'search'             => $request->input('search'),
+            'kategori_barang'    => $request->input('kategori_barang'),
+            'status_qc'          => $request->input('status_qc'),
+            'status_uji_goreng'  => $request->input('status_uji_goreng'),
+            'tahap_uji'          => $request->input('tahap_uji'),
+            'supplier_id'        => $request->input('supplier_id'),
+            'tgl_mulai'          => $request->input('tgl_mulai'),
+            'tgl_selesai'        => $request->input('tgl_selesai'),
+            'allowed_gudang_ids' => $allowedGudangIds,
         ];
 
         $inspeksiList = $this->qcService->getAllPaginated($filters, 15);
@@ -47,13 +54,24 @@ class QcInboundController extends Controller
             return view('gudang.qc.index-mobile', compact('inspeksiList', 'suppliers', 'filters'));
         }
 
-        // Metrik Statistik Operasional Gudang & QC Inbound (Khusus Web Admin Desktop)
-        $countSiap = \App\Models\Gudang\DatQcInboundHdr::where('deleted_st', false)->where('status_qc', 'SIAP_GUDANG')->count();
-        $countFryer = \App\Models\Gudang\DatQcInboundHdr::where('deleted_st', false)->where('status_uji_goreng', 'MENUNGGU_LAB')->count();
-        $countSelesai = \App\Models\Gudang\DatQcInboundHdr::where('deleted_st', false)->where('status_qc', 'DITERIMA_GUDANG')->count();
-        $countReject = \App\Models\Gudang\DatQcInboundHdr::where('deleted_st', false)->where('status_qc', 'DITOLAK_TOTAL')->count();
+        // Metrik Statistik Operasional Gudang & QC Inbound (Khusus Web Admin Desktop, difilter hak akses perusahaan)
+        $countSiap = \App\Models\Gudang\DatQcInboundHdr::where('deleted_st', false)
+            ->when(!empty($allowedGudangIds), fn($q) => $q->whereIn('gudang_id', $allowedGudangIds))
+            ->where('status_qc', 'SIAP_GUDANG')->count();
+        $countMenungguUji2 = \App\Models\Gudang\DatQcInboundHdr::where('deleted_st', false)
+            ->when(!empty($allowedGudangIds), fn($q) => $q->whereIn('gudang_id', $allowedGudangIds))
+            ->where('kategori_barang', 'SINGKONG')
+            ->where('tahap_uji', 'PENGUJIAN_1')
+            ->where('status_qc', 'SIAP_GUDANG')
+            ->doesntHave('pengujian2List')->count();
+        $countSelesai = \App\Models\Gudang\DatQcInboundHdr::where('deleted_st', false)
+            ->when(!empty($allowedGudangIds), fn($q) => $q->whereIn('gudang_id', $allowedGudangIds))
+            ->where('status_qc', 'DITERIMA_GUDANG')->count();
+        $countReject = \App\Models\Gudang\DatQcInboundHdr::where('deleted_st', false)
+            ->when(!empty($allowedGudangIds), fn($q) => $q->whereIn('gudang_id', $allowedGudangIds))
+            ->where('status_qc', 'DITOLAK_TOTAL')->count();
 
-        return view('gudang.qc.index', compact('inspeksiList', 'suppliers', 'filters', 'countSiap', 'countFryer', 'countSelesai', 'countReject'));
+        return view('gudang.qc.index', compact('inspeksiList', 'suppliers', 'filters', 'countSiap', 'countMenungguUji2', 'countSelesai', 'countReject'));
     }
 
     /**
@@ -77,8 +95,10 @@ class QcInboundController extends Controller
      */
     public function create(Request $request): View
     {
-        $suppliers = MstSupplier::where('deleted_st', false)->where('active_st', true)->orderBy('supplier_nm')->get();
-        $gudangs = MstGudang::where('deleted_st', false)->where('active_st', true)->orderBy('gudang_nm')->get();
+        $user = Auth::user();
+        $suppliers = MstSupplier::with('jenisSupplier')->where('deleted_st', false)->where('active_st', true)->orderBy('supplier_nm')->get();
+        // Hanya tampilkan entitas perusahaan/gudang yang diizinkan untuk akun pengguna ini
+        $gudangs = $user->getAllowedGudangList();
         
         // Ambil seluruh barang yang dibeli (Bahan Baku, Bahan Penolong, Plastik, Karton, dll; kecuali FG & WIP)
         $barangs = MstBarang::with(['satuanDasar', 'jenisBarang'])
@@ -88,10 +108,14 @@ class QcInboundController extends Controller
             ->orderBy('barang_nm')
             ->get();
 
-        // PO aktif yang siap diterima (APPROVED atau PARTIAL)
+        // PO aktif yang siap diterima (APPROVED atau PARTIAL) yang sesuai dengan akses perusahaan akun
+        $allowedGudangIds = $user->getAllowedGudangIds();
         $pos = DatPoHdr::with(['supplier', 'details.barang'])
             ->where('deleted_st', false)
             ->whereIn('status_cd', ['APPROVED', 'PARTIAL'])
+            ->when(!$user->isSuperAdmin(), function($q) use ($allowedGudangIds) {
+                $q->whereIn('gudang_id', $allowedGudangIds);
+            })
             ->orderBy('po_tgl', 'desc')
             ->get();
 
@@ -110,53 +134,71 @@ class QcInboundController extends Controller
             ])->where('deleted_st', false)->find($request->input('parent_qc_id'));
         }
 
-        // Ambil daftar batch singkong aktif yang masih ada stok di gudang untuk Pengujian II
-        $activeBatches = \App\Models\Gudang\DatStokBatch::with(['barang', 'gudang'])
+        // Ambil daftar kedatangan Pengujian 1 yang belum selesai Pengujian 2 (maksimal 3 hari terakhir)
+        $testedParentIds = DatQcInboundHdr::where('deleted_st', false)
+            ->where('tahap_uji', 'PENGUJIAN_2')
+            ->pluck('parent_qc_id')
+            ->filter()
+            ->unique()
+            ->toArray();
+
+        $pendingPengujian1 = DatQcInboundHdr::with(['supplier', 'po', 'details.barang'])
             ->where('deleted_st', false)
-            ->where('sisa_qty', '>', 0)
-            ->whereHas('barang', function ($b) {
-                $b->where('barang_nm', 'ilike', '%singkong%')
-                  ->orWhere('barang_cd', 'ilike', '%SK%');
-            })
+            ->where('kategori_barang', 'SINGKONG')
+            ->where('tahap_uji', 'PENGUJIAN_1')
+            ->whereIn('status_qc', ['SIAP_GUDANG', 'DITERIMA_GUDANG'])
+            ->whereNotIn('qc_id', $testedParentIds)
+            ->where('created_at', '>=', now()->subDays(3))
+            ->when(!empty($allowedGudangIds), fn($q) => $q->whereIn('gudang_id', $allowedGudangIds))
             ->orderBy('created_at', 'desc')
-            ->take(30)
-            ->get()
-            ->map(function ($stok) {
-                $terimaDtl = \App\Models\Gudang\DatTerimaDtl::with(['header.supplier', 'header.po', 'header.qcInbound'])
-                    ->where('batch_no', $stok->batch_no)
-                    ->where('deleted_st', false)
-                    ->first();
+            ->take(20)
+            ->get();
 
-                $terimaHdr = $terimaDtl?->header;
-                $qcAsal    = $terimaHdr?->qcInbound;
-                $supplier  = $terimaHdr?->supplier ?? $qcAsal?->supplier;
-                $po        = $terimaHdr?->po ?? $qcAsal?->po;
-
-                return [
-                    'stok_id'              => $stok->stok_id,
-                    'batch_no'             => $stok->batch_no,
-                    'barang_id'            => $stok->barang_id,
-                    'barang_nm'            => $stok->barang?->barang_nm ?? 'Singkong',
-                    'gudang_id'            => $stok->gudang_id,
-                    'gudang_nm'            => $stok->gudang?->gudang_nm ?? '-',
-                    'sisa_qty'             => (float) $stok->sisa_qty,
-                    'supplier_id'          => $supplier?->supplier_id,
-                    'supplier_nm'          => $supplier?->supplier_nm ?? 'Supplier',
-                    'po_id'                => $po?->po_id,
-                    'po_no'                => $po?->po_no ?? 'Non-PO',
-                    'parent_qc_id'         => $qcAsal?->qc_id,
-                    'parent_qc_no'         => $qcAsal?->qc_no,
-                    'plat_nomor_truk'      => $qcAsal?->plat_nomor_truk,
-                    'sopir_nama'           => $qcAsal?->sopir_nama,
-                    'lokasi_panen'         => $qcAsal?->lokasi_panen,
-                    'umur_singkong_bln'    => (float)($qcAsal?->umur_singkong_bln ?? 0),
-                    'tgl_panen'            => $qcAsal?->tgl_panen?->format('Y-m-d'),
-                    'surat_jalan_supplier' => $qcAsal?->surat_jalan_supplier,
-                    'tgl_masuk'            => $stok->created_at ? $stok->created_at->format('d/m/Y') : '-',
-                ];
-            });
+        $initialKomoditas = $request->input('kategori_barang');
+        if (!$initialKomoditas && $selectedPo) {
+            $firstItemNm = strtoupper($selectedPo->details->first()?->barang?->barang_nm ?? '');
+            if (str_contains($firstItemNm, 'MINYAK')) {
+                $initialKomoditas = 'MINYAK';
+            } elseif (str_contains($firstItemNm, 'PLASTIK') || str_contains($firstItemNm, 'KEMASAN') || str_contains($firstItemNm, 'OPP') || str_contains($firstItemNm, 'PP')) {
+                $initialKomoditas = 'PLASTIK';
+            } elseif (str_contains($firstItemNm, 'KARTON') || str_contains($firstItemNm, 'DUS') || str_contains($firstItemNm, 'BOX')) {
+                $initialKomoditas = 'KARTON';
+            } elseif (str_contains($firstItemNm, 'MSG') || str_contains($firstItemNm, 'MONOSODIUM')) {
+                $initialKomoditas = 'MSG';
+            } elseif (str_contains($firstItemNm, 'GARAM') || str_contains($firstItemNm, 'SALT')) {
+                $initialKomoditas = 'GARAM';
+            } elseif (str_contains($firstItemNm, 'PERENYAH') || str_contains($firstItemNm, 'BUMBU')) {
+                $initialKomoditas = 'PERENYAH';
+            } else {
+                $initialKomoditas = 'SINGKONG';
+            }
+        }
+        $initialKomoditas = $initialKomoditas ?: 'SINGKONG';
 
         $defaultTahap = $request->input('tahap') == 2 || $parentQc ? 'PENGUJIAN_2' : 'PENGUJIAN_1';
+
+        // Hitung stok riil Singkong di gudang untuk Grade A dan Grade B
+        $stokSingkongA = (float) DatStokBatch::where('deleted_st', false)
+            ->where('sisa_qty', '>', 0)
+            ->when(!empty($allowedGudangIds), fn($q) => $q->whereIn('gudang_id', $allowedGudangIds))
+            ->whereHas('barang', fn($b) => $b->where('barang_nm', 'like', '%SINGKONG%')->orWhere('barang_cd', 'like', '%SK%'))
+            ->where(function($q) {
+                $q->whereIn('batch_no', function($sub) {
+                    $sub->select('batch_no')->from('dat_terima_dtl')->where('deleted_st', false)->where('grade_cd', 'A');
+                })->orWhereNotIn('batch_no', function($sub) {
+                    $sub->select('batch_no')->from('dat_terima_dtl')->where('deleted_st', false)->where('grade_cd', 'B');
+                });
+            })
+            ->sum('sisa_qty');
+
+        $stokSingkongB = (float) DatStokBatch::where('deleted_st', false)
+            ->where('sisa_qty', '>', 0)
+            ->when(!empty($allowedGudangIds), fn($q) => $q->whereIn('gudang_id', $allowedGudangIds))
+            ->whereHas('barang', fn($b) => $b->where('barang_nm', 'like', '%SINGKONG%')->orWhere('barang_cd', 'like', '%SK%'))
+            ->whereIn('batch_no', function($sub) {
+                $sub->select('batch_no')->from('dat_terima_dtl')->where('deleted_st', false)->where('grade_cd', 'B');
+            })
+            ->sum('sisa_qty');
 
         return view('gudang.qc.create', compact(
             'suppliers',
@@ -165,9 +207,56 @@ class QcInboundController extends Controller
             'pos',
             'selectedPo',
             'parentQc',
-            'activeBatches',
-            'defaultTahap'
+            'pendingPengujian1',
+            'defaultTahap',
+            'initialKomoditas',
+            'stokSingkongA',
+            'stokSingkongB'
         ));
+    }
+
+    /**
+     * Menampilkan formulir input QC Pengujian II (Lanjutan Kedatangan Truk)
+     * Dialihkan langsung ke form QC terpadu dengan tahap=2 (tidak ada batch gudang)
+     */
+    public function createPengujian2(Request $request): RedirectResponse
+    {
+        return redirect()->route('qc.inbound.create', array_merge($request->query(), ['tahap' => 2]));
+    }
+
+    /**
+     * Menyimpan hasil uji QC Pengujian II (Lantai Produksi)
+     */
+    public function storePengujian2(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'gudang_id'          => 'required|exists:mst_gudang,gudang_id',
+            'fryer_rasa'         => 'required|in:TIDAK_PAHIT,PAHIT',
+            'jumlah_sample_kg'   => 'nullable|numeric|min:0.1',
+        ], [
+            'gudang_id.required'  => 'Silakan tentukan entitas perusahaan/gudang.',
+            'fryer_rasa.required' => 'Hasil uji rasa singkong wajib ditentukan.',
+        ]);
+
+        try {
+            $user = Auth::user();
+            $qc = $this->qcService->storePengujian2($request->all(), $user);
+
+            $redirectParams = ['inbound' => $qc->qc_id];
+            if ($request->input('view') === 'mobile' || ($user?->isQc() && !$user?->isSuperAdmin() && !$user?->isGudang() && $request->input('view') !== 'desktop')) {
+                $redirectParams['view'] = 'mobile';
+            }
+
+            $pesan = ($qc->status_qc === 'DITOLAK_TOTAL')
+                ? "⚠️ PENGUJIAN II: Rasa PAHIT terdeteksi! Tiket {$qc->qc_no} berstatus TOLAK TOTAL (Hentikan Batch Produksi) dan telah diteruskan ke Admin Gudang."
+                : "✅ PENGUJIAN II: Tiket {$qc->qc_no} berhasil dicatat (Rasa Gurih / Lolos). Produksi batch dapat dilanjutkan.";
+
+            return redirect()->route('qc.inbound.show', $redirectParams)->with('success', $pesan);
+        } catch (Exception $e) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Gagal mencatat Pengujian II: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -195,7 +284,7 @@ class QcInboundController extends Controller
             $user = Auth::user();
             $qc = $this->qcService->store($request->all(), $user);
 
-            $redirectParams = ['id' => $qc->qc_id];
+            $redirectParams = ['inbound' => $qc->qc_id];
             if ($request->input('view') === 'mobile' || ($user?->isQc() && !$user?->isSuperAdmin() && !$user?->isGudang() && $request->input('view') !== 'desktop')) {
                 $redirectParams['view'] = 'mobile';
             }
@@ -223,9 +312,11 @@ class QcInboundController extends Controller
             'details.barang.satuanDasar',
             'details.poDetail',
             'terima',
+            'pengujian2List',
         ])->where('deleted_st', false)->findOrFail($id);
 
-        $isMobileReq = $request->input('view') === 'mobile';
+        $user = Auth::user();
+        $isMobileReq = $request->input('view') === 'mobile' || ($user?->isQc() && !$user?->isSuperAdmin() && !$user?->isGudang() && $request->input('view') !== 'desktop');
 
         // Jika mode mobile smartphone
         if ($isMobileReq) {
@@ -237,12 +328,19 @@ class QcInboundController extends Controller
     }
 
     /**
-     * Berita Acara Penolakan dialihkan ke wewenang Bagian Gudang (Retur Pembelian Inbound)
+     * Berita Acara Penolakan Bahan Baku (Pengujian 1 Ditolak Total di Gerbang)
+     * Ditampilkan untuk dicetak oleh Admin Gudang atau QC melalui Web Desktop
      */
-    public function beritaAcara(int $id): RedirectResponse
+    public function beritaAcara(int $id): View
     {
-        return redirect()->route('qc.inbound.show', $id)
-            ->with('error', 'Administrasi Berita Acara Penolakan dan Retur Bahan Baku dikelola langsung oleh Tim Gudang melalui Modul Retur Gudang.');
+        $qc = \App\Models\Gudang\DatQcInboundHdr::with([
+            'supplier',
+            'gudang',
+            'po',
+            'details.barang.satuanDasar',
+        ])->where('deleted_st', false)->findOrFail($id);
+
+        return view('gudang.qc.berita_acara', compact('qc'));
     }
 
     /**
@@ -266,8 +364,11 @@ class QcInboundController extends Controller
                 ->with('error', "Tiket QC #{$qc->qc_no} sudah diproses ke Penerimaan Barang (GRN #{$qc->terima->terima_no}). Hanya Admin Gudang atau Super Administrator yang berhak mengedit tiket yang sudah ditarik ke gudang.");
         }
 
-        $suppliers = MstSupplier::where('deleted_st', false)->where('active_st', true)->orderBy('supplier_nm')->get();
-        $gudangs = MstGudang::where('deleted_st', false)->where('active_st', true)->orderBy('gudang_nm')->get();
+        $suppliers = MstSupplier::with('jenisSupplier')->where('deleted_st', false)->where('active_st', true)->orderBy('supplier_nm')->get();
+        $gudangs = $user->getAllowedGudangList();
+        if ($qc->gudang && !$gudangs->contains('gudang_id', $qc->gudang_id)) {
+            $gudangs->push($qc->gudang);
+        }
         
         $barangs = MstBarang::with(['satuanDasar', 'jenisBarang'])
             ->bahanProduksi()
@@ -276,6 +377,7 @@ class QcInboundController extends Controller
             ->orderBy('barang_nm')
             ->get();
 
+        $allowedGudangIds = $user->getAllowedGudangIds();
         $pos = DatPoHdr::with(['supplier', 'details.barang'])
             ->where('deleted_st', false)
             ->where(function($q) use ($qc) {
@@ -284,10 +386,18 @@ class QcInboundController extends Controller
                     $q->orWhere('po_id', $qc->po_id);
                 }
             })
+            ->when(!$user->isSuperAdmin(), function($q) use ($allowedGudangIds, $qc) {
+                $q->where(function($sub) use ($allowedGudangIds, $qc) {
+                    $sub->whereIn('gudang_id', $allowedGudangIds);
+                    if ($qc->po_id) {
+                        $sub->orWhere('po_id', $qc->po_id);
+                    }
+                });
+            })
             ->orderBy('po_tgl', 'desc')
             ->get();
 
-        $isMobileReq = $request->input('view') === 'mobile';
+        $isMobileReq = $request->input('view') === 'mobile' || ($user?->isQc() && !$user?->isSuperAdmin() && !$user?->isGudang() && $request->input('view') !== 'desktop');
 
         // Jika mode mobile smartphone
         if ($isMobileReq) {
@@ -335,8 +445,8 @@ class QcInboundController extends Controller
                     ->with('success', $msg);
             }
 
-            if ($request->input('view') === 'mobile') {
-                return redirect()->route('qc.inbound.show', ['id' => $updatedQc->qc_id, 'view' => 'mobile'])
+            if ($request->input('view') === 'mobile' || ($user?->isQc() && !$user?->isSuperAdmin() && !$user?->isGudang())) {
+                return redirect()->route('qc.inbound.show', ['inbound' => $updatedQc->qc_id, 'view' => 'mobile'])
                     ->with('success', $msg);
             }
 

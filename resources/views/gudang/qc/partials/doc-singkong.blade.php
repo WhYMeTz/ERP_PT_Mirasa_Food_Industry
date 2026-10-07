@@ -78,15 +78,18 @@
                         <tr style="border-bottom: 1px solid #000000;">
                             <td style="padding: 4px 6px; width: 100px; font-weight: 700; border-right: 1px solid #000000;">Nama RM</td>
                             <td colspan="4" style="padding: 4px 6px; font-weight: 800;">
+                                @php
+                                    $namaRmDisplay = $qc->details->pluck('barang.barang_nm')->filter()->unique()->implode(', ') ?: ($firstDetail?->barang?->barang_nm ?: ($qc->nama_jenis ?: 'Singkong Basah Curah'));
+                                @endphp
                                 @if($isEdit)
                                     <div style="display: flex; gap: 0.5rem; align-items: center;">
-                                        <input type="text" name="nama_jenis" value="{{ old('nama_jenis', $qc->nama_jenis ?? 'Singkong Basah Curah') }}" class="excel-cell-input font-bold" style="flex: 2;">
+                                        <input type="text" name="nama_jenis" value="{{ old('nama_jenis', $namaRmDisplay) }}" class="excel-cell-input font-bold" style="flex: 2;">
                                         @if(!empty($qc->batch_no))
                                             <span style="font-size: 0.72rem; color: #475569; white-space: nowrap;">Batch: <strong>{{ $qc->batch_no }}</strong></span>
                                         @endif
                                     </div>
                                 @else
-                                    : {{ $qc->nama_jenis ?: 'Singkong Basah Curah' }}
+                                    : {{ $namaRmDisplay }}
                                     @if(!empty($qc->batch_no))
                                         <span style="margin-left: 0.75rem; font-size: 0.72rem; color: #0284c7; background: #e0f2fe; padding: 1px 6px; border-radius: 4px; font-weight: 700;">
                                             Batch: {{ $qc->batch_no }}
@@ -516,20 +519,10 @@
         <table style="width: 100%; border-collapse: collapse; text-align: center;">
             <tr style="border-bottom: 1px solid #000000; background: #f8fafc; font-weight: 700;">
                 <td style="padding: 4px; width: 50%; border-right: 2px solid #000000;">
-                    QC RAW MATERIAL : 
-                    @if($isEdit)
-                        <input type="text" name="petugas_qc_nama" value="{{ old('petugas_qc_nama', $qc->petugas_qc_nama) }}" style="width: 150px; border: 1px solid #cbd5e1; padding: 2px 6px; font-weight: 700;">
-                    @else
-                        {{ $qc->petugas_qc_nama }}
-                    @endif
+                    QC RAW MATERIAL
                 </td>
                 <td style="padding: 4px; width: 50%;">
-                    QC Supervisor : 
-                    @if($isEdit)
-                        <input type="text" name="qc_supervisor_nama" value="{{ old('qc_supervisor_nama', $qc->qc_supervisor_nama) }}" style="width: 150px; border: 1px solid #cbd5e1; padding: 2px 6px; font-weight: 700;" placeholder="Supervisor QC">
-                    @else
-                        {{ $qc->qc_supervisor_nama ?: 'Supervisor QC' }}
-                    @endif
+                    QC Supervisor
                 </td>
             </tr>
             <tr style="border-bottom: 1px solid #000000; background: #f1f5f9; font-weight: 700; font-size: 0.72rem;">
@@ -545,7 +538,7 @@
                     <table style="width: 100%;"><tr><td style="width: 50%; border-right: 1px solid #000; font-weight: 700;">{{ $qc->petugas_qc_nama }}</td><td style="width: 50%;"></td></tr></table>
                 </td>
                 <td style="padding: 2px; vertical-align: bottom;">
-                    <table style="width: 100%;"><tr><td style="width: 50%; border-right: 1px solid #000; font-weight: 700;">{{ $qc->qc_supervisor_nama ?: 'Supervisor QC' }}</td><td style="width: 50%;"></td></tr></table>
+                    <table style="width: 100%;"><tr><td style="width: 50%; border-right: 1px solid #000; font-weight: 700;">{{ $qc->qc_supervisor_nama ?: 'Kepala Direktur / Supervisor' }}</td><td style="width: 50%;"></td></tr></table>
                 </td>
             </tr>
         </table>

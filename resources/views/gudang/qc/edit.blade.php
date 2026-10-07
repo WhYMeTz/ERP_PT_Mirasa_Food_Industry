@@ -206,15 +206,15 @@
 
                     {{-- INCLUDE SPESIFIK PARAMETER SESUAI KOMODITAS --}}
                     @if ($kat === 'SINGKONG')
-                        @include('gudang.qc.partials.doc-singkong')
+                        @include('gudang.qc.partials.doc-singkong', ['isEdit' => true])
                     @elseif ($kat === 'MINYAK')
-                        @include('gudang.qc.partials.doc-minyak')
+                        @include('gudang.qc.partials.doc-minyak', ['isEdit' => true])
                     @elseif ($kat === 'PLASTIK')
-                        @include('gudang.qc.partials.doc-plastik')
+                        @include('gudang.qc.partials.doc-plastik', ['isEdit' => true])
                     @elseif ($kat === 'KARTON')
-                        @include('gudang.qc.partials.doc-karton')
+                        @include('gudang.qc.partials.doc-karton', ['isEdit' => true])
                     @else
-                        @include('gudang.qc.partials.doc-seasoning')
+                        @include('gudang.qc.partials.doc-seasoning', ['isEdit' => true])
                     @endif
                 </div>
             </div>

@@ -1,6 +1,7 @@
 @extends('layouts.qc-mobile')
 
 @section('title', 'Detail Uji QC: ' . $qc->qc_no . ' - PT Mirasa')
+@section('hide_bottom_nav', '1')
 
 @push('styles')
     <link rel="stylesheet" href="{{ asset('css/gudang/qc/qc-mobile-detail.css') }}">
@@ -25,15 +26,21 @@
             <span>&larr; Riwayat Tiket</span>
         </a>
         <div style="display: flex; align-items: center; gap: 0.45rem;">
+            {{-- HANYA SUPER ADMIN YANG BISA KE WEB DAN LANGSUNG MENUJU KE TABEL QC WEB --}}
             @if (Auth::user()?->isSuperAdmin())
-                <a href="{{ route('qc.inbound.show', $qc->qc_id) }}" class="btn-qc-switch-desktop" style="font-size: 0.72rem; font-weight: 700; color: #0284c7; background: #e0f2fe; border: 1px solid #bae6fd; padding: 0.25rem 0.5rem; border-radius: 6px; text-decoration: none; display: inline-flex; align-items: center; gap: 0.25rem;" title="Buka Dokumen Cetak HACCP Desktop">
-                    <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                    <span>Ke Web ERP</span>
+                <a href="{{ route('qc.inbound.index', ['view' => 'desktop']) }}" class="btn-qc-switch-desktop" style="font-size: 0.75rem; font-weight: 700; color: #0284c7; background: #e0f2fe; border: 1.5px solid #bae6fd; padding: 0.35rem 0.65rem; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 0.3rem;" title="Kembali ke Tabel QC Web Desktop">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                    <span>Tabel Web QC</span>
                 </a>
             @endif
-            <span style="font-size: 0.75rem; font-weight: 700; color: #64748b;">
-                QC Lapangan &bull; Detail
-            </span>
+
+            {{-- TOMBOL EDIT CEPAT DI TOP HEADER --}}
+            @if (Auth::user()?->canEditQc() && !$isLocked)
+                <a href="{{ route('qc.inbound.edit', [$qc->qc_id, 'view' => 'mobile']) }}" style="font-size: 0.78rem; font-weight: 800; color: #ffffff; background: #0284c7; border: 1.5px solid #0284c7; padding: 0.35rem 0.75rem; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 0.35rem; box-shadow: 0 2px 4px rgba(2,132,199,0.25);">
+                    <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                    <span>✏️ Edit Uji</span>
+                </a>
+            @endif
         </div>
     </div>
 
@@ -47,9 +54,26 @@
                         {{ $kat }}
                     </span>
                     @if ($kat === 'SINGKONG')
+                        @php
+                            $firstDtl = $qc->details->first();
+                            $grade = $firstDtl?->grade_cd ?? 'A';
+                        @endphp
                         <span style="font-size: 0.72rem; font-weight: 800; padding: 0.15rem 0.5rem; border-radius: 6px; {{ ($qc->tahap_uji ?? 'PENGUJIAN_1') === 'PENGUJIAN_2' ? 'background: #f3e8ff; color: #7e22ce; border: 1px solid #d8b4fe;' : 'background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd;' }}">
                             {{ ($qc->tahap_uji ?? 'PENGUJIAN_1') === 'PENGUJIAN_2' ? '🍟 PENGUJIAN II (PRODUKSI)' : '🚛 PENGUJIAN I (KEDATANGAN)' }}
                         </span>
+                        @if ($grade === 'B')
+                            <span style="font-size: 0.72rem; font-weight: 800; padding: 0.15rem 0.5rem; border-radius: 6px; background: #fef3c7; color: #b45309; border: 1px solid #fde68a;">
+                                🟡 GRADE B
+                            </span>
+                        @elseif ($grade === 'REJECT')
+                            <span style="font-size: 0.72rem; font-weight: 800; padding: 0.15rem 0.5rem; border-radius: 6px; background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5;">
+                                ❌ AFKIR
+                            </span>
+                        @else
+                            <span style="font-size: 0.72rem; font-weight: 800; padding: 0.15rem 0.5rem; border-radius: 6px; background: #dcfce7; color: #15803d; border: 1px solid #86efac;">
+                                🟢 GRADE A
+                            </span>
+                        @endif
                     @endif
                 </div>
                 <h1 class="qc-detail-ticket-no" style="margin-top: 0.35rem;">{{ $qc->qc_no }}</h1>
@@ -202,11 +226,11 @@
                 </div>
             </div>
 
-            {{-- PENGUJIAN II: UJI GORENG (LAB FRYER) --}}
+            {{-- HASIL UJI CEPAT RASA FRYER DI DEPAN --}}
             <div style="border-top: 1.5px dashed #cbd5e1; padding-top: 0.85rem; margin-top: 0.85rem;">
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.45rem;">
                     <div style="font-size: 0.8rem; font-weight: 800; color: #d97706; text-transform: uppercase; display: flex; align-items: center; gap: 0.35rem;">
-                        <span>🍟</span> <span>Pengujian II &bull; Uji Goreng (Fryer)</span>
+                        <span>🍟</span> <span>Hasil Uji Cepat Rasa Fryer (Di Depan)</span>
                     </div>
 
                     @if ($qc->status_uji_goreng === 'MENUNGGU_LAB')
@@ -215,7 +239,7 @@
                         </span>
                     @else
                         <span style="font-size: 0.72rem; font-weight: 800; background: #ecfdf5; color: #059669; padding: 0.2rem 0.6rem; border-radius: 20px; border: 1px solid #a7f3d0;">
-                            ✔ Selesai Diuji
+                            ✔ Selesai Diuji Depan
                         </span>
                     @endif
                 </div>
@@ -258,19 +282,65 @@
                     </div>
 
                     <div style="margin-top: 0.65rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.65rem 0.75rem; font-size: 0.78rem;">
-                        <div style="font-weight: 800; color: #475569; margin-bottom: 0.3rem;">Persentase Cacat Goreng (Defect):</div>
-                        <div style="display: flex; justify-content: space-between; font-weight: 700; color: #1e293b;">
+                        <div style="font-weight: 800; color: #475569; margin-bottom: 0.3rem;">Persentase Cacat Goreng (Defect Frying):</div>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(95px, 1fr)); gap: 0.35rem; font-weight: 700; color: #1e293b; font-size: 0.75rem;">
                             <span>Breakage: {{ $firstDetail?->defect_breakage_persen ?? 0 }}%</span>
                             <span>Cluster: {{ $firstDetail?->defect_cluster_persen ?? 0 }}%</span>
+                            <span>Foldover: {{ $firstDetail?->defect_foldover_persen ?? 0 }}%</span>
+                            <span>Oilsoaked: {{ $firstDetail?->defect_oilsoaked_persen ?? 0 }}%</span>
                             <span>Gambos: {{ $firstDetail?->defect_gambos_persen ?? 0 }}%</span>
                         </div>
                     </div>
 
                     <div style="margin-top: 0.6rem; display: flex; align-items: center; justify-content: space-between; font-size: 0.725rem; color: #64748b;">
-                        <span>Diuji oleh: <strong>{{ $qc->petugas_uji_goreng ?: 'Petugas Lab' }}</strong> ({{ $qc->tgl_uji_goreng ? $qc->tgl_uji_goreng->format('d/m/Y H:i') : '-' }})</span>
+                        <span>Diuji oleh: <strong>{{ $qc->petugas_uji_goreng ?: 'Petugas Lab' }}</strong> ({{ $qc->tgl_uji_goreng ? \Carbon\Carbon::parse($qc->tgl_uji_goreng)->format('d/m/Y H:i') : '-' }})</span>
                         <button type="button" onclick="openModalUjiFryer('{{ $qc->qc_id }}', '{{ $qc->qc_no }}', '{{ $firstDetail?->qcdtl_id }}', { rasa: '{{ $firstDetail?->fryer_rasa }}', tekstur: '{{ $firstDetail?->fryer_tekstur }}', penampakan: '{{ $firstDetail?->fryer_penampakan }}', breakage: '{{ $firstDetail?->defect_breakage_persen }}', cluster: '{{ $firstDetail?->defect_cluster_persen }}', gambos: '{{ $firstDetail?->defect_gambos_persen }}' })" style="background: none; border: none; color: #0284c7; font-weight: 700; cursor: pointer; text-decoration: underline;">
                             Koreksi Lab
                         </button>
+                    </div>
+                @endif
+
+                {{-- PENGUJIAN II (PRODUKSI / WAFEL / WAJAN) --}}
+                @if (($qc->tahap_uji ?? 'PENGUJIAN_1') === 'PENGUJIAN_1')
+                    <div style="border-top: 1.5px dashed #cbd5e1; padding-top: 0.85rem; margin-top: 0.85rem;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.45rem;">
+                            <div style="font-size: 0.82rem; font-weight: 800; color: #7e22ce; text-transform: uppercase; display: flex; align-items: center; gap: 0.35rem;">
+                                <span>🍟</span> <span>QC Pengujian II (Lantai Produksi)</span>
+                            </div>
+                            @if ($qc->pengujian2List && $qc->pengujian2List->count() > 0)
+                                <span style="font-size: 0.72rem; font-weight: 800; background: #ecfdf5; color: #059669; padding: 0.2rem 0.5rem; border-radius: 20px; border: 1px solid #a7f3d0;">
+                                    ✔ Sudah Diuji II ({{ $qc->pengujian2List->count() }}x)
+                                </span>
+                            @else
+                                <span style="font-size: 0.72rem; font-weight: 800; background: #f3e8ff; color: #7e22ce; padding: 0.2rem 0.5rem; border-radius: 20px; border: 1px solid #d8b4fe;">
+                                    Siap Diuji II
+                                </span>
+                            @endif
+                        </div>
+
+                        <p style="font-size: 0.78rem; color: #64748b; margin: 0 0 0.65rem 0; line-height: 1.4;">
+                            Pemeriksaan ulang fisik &amp; uji organoleptik wajan saat batch kedatangan ini ditarik ke proses produksi.
+                        </p>
+
+                        @if ($qc->pengujian2List && $qc->pengujian2List->count() > 0)
+                            <div style="margin-bottom: 0.65rem; display: flex; flex-direction: column; gap: 0.4rem;">
+                                @foreach ($qc->pengujian2List as $p2)
+                                    <a href="{{ route('qc.inbound.show', [$p2->qc_id, 'view' => 'mobile']) }}" style="display: flex; align-items: center; justify-content: space-between; background: #faf5ff; border: 1px solid #d8b4fe; border-radius: 8px; padding: 0.5rem 0.75rem; text-decoration: none; color: #7e22ce; font-size: 0.8rem; font-weight: 700;">
+                                        <span>🍟 {{ $p2->qc_no }} ({{ $p2->tgl_periksa ? $p2->tgl_periksa->format('d/m/Y H:i') : '-' }})</span>
+                                        <span style="font-size: 0.75rem; color: #9333ea; font-weight: 800;">Buka Hasil &rarr;</span>
+                                    </a>
+                                @endforeach
+                            </div>
+                        @endif
+
+                        @if (Auth::user()?->canCreateQc() && !$qc->isPengujian2Done())
+                            @php
+                                $batchVal = $qc->batch_no ?: ($qc->terima?->details?->first()?->batch_no ?: 'BATCH-' . $qc->qc_no);
+                            @endphp
+                            <a href="{{ route('qc.inbound.create', ['parent_qc_id' => $qc->qc_id, 'tahap' => 2, 'view' => 'mobile']) }}" style="width: 100%; padding: 0.7rem; border-radius: 10px; background: #9333ea; color: #ffffff; font-weight: 800; font-size: 0.85rem; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 0.4rem; box-shadow: 0 3px 6px -1px rgba(147, 51, 234, 0.3);">
+                                <span>🍟</span> <span>Lakukan Pengujian 2 Sekarang &rarr;</span>
+                            </a>
+                        @endif
                     </div>
                 @endif
             </div>
@@ -338,30 +408,59 @@
 
         <div class="qc-sign-grid">
             <div class="qc-sign-card">
-                <div class="qc-sign-role">Petugas QC</div>
+                <div class="qc-sign-role">1. Petugas QC Pemeriksa</div>
                 <div class="qc-sign-name">{{ $qc->petugas_qc_nama }}</div>
-                <div class="qc-sign-status">✔ Terverifikasi</div>
+                <div class="qc-sign-status">✔ Terverifikasi (Depan)</div>
             </div>
             <div class="qc-sign-card">
-                <div class="qc-sign-role">Supervisor QC</div>
-                <div class="qc-sign-name">{{ $qc->qc_supervisor_nama ?: 'Supervisor QC' }}</div>
-                <div class="qc-sign-status">✔ Disetujui</div>
+                <div class="qc-sign-role">2. QC Supervisor</div>
+                <div class="qc-sign-name">{{ $qc->qc_supervisor_nama ?: 'Kepala Direktur / Supervisor' }}</div>
+                <div class="qc-sign-status">✔ Disetujui (ACC)</div>
             </div>
         </div>
+    </div>
+
+    {{-- KARTU AKSI CEPAT OPERASIONAL (SELALU TERLIHAT DI HALAMAN) --}}
+    <div style="background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 12px; padding: 1.1rem 1.25rem; margin-top: 1.25rem; box-shadow: 0 2px 5px rgba(0,0,0,0.04); display: flex; flex-direction: column; gap: 0.75rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+            <span style="font-weight: 800; font-size: 0.85rem; color: #334155; text-transform: uppercase; letter-spacing: 0.03em;">Tindakan Operasional</span>
+            @if ($qc->status_qc === 'SIAP_GUDANG')
+                <span style="font-size: 0.75rem; font-weight: 800; color: #0284c7; background: #e0f2fe; padding: 0.2rem 0.6rem; border-radius: 6px;">⏳ Siap Ditarik Gudang</span>
+            @elseif ($qc->status_qc === 'DITERIMA_GUDANG')
+                <span style="font-size: 0.75rem; font-weight: 800; color: #15803d; background: #dcfce7; padding: 0.2rem 0.6rem; border-radius: 6px;">✅ Sudah Masuk Gudang</span>
+            @elseif ($qc->status_qc === 'DITOLAK_TOTAL')
+                <span style="font-size: 0.75rem; font-weight: 800; color: #dc2626; background: #fee2e2; padding: 0.2rem 0.6rem; border-radius: 6px;">❌ Ditolak di Gerbang</span>
+            @endif
+        </div>
+
+        @if (Auth::user()?->canEditQc() && !$isLocked)
+            <a href="{{ route('qc.inbound.edit', [$qc->qc_id, 'view' => 'mobile']) }}" style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; background: #0284c7; color: #ffffff; font-size: 0.95rem; font-weight: 800; padding: 0.85rem 1.25rem; border-radius: 10px; text-decoration: none; box-shadow: 0 3px 6px rgba(2,132,199,0.3);">
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                <span>✏️ Edit &amp; Koreksi Data Sampling QC</span>
+            </a>
+        @elseif ($isLocked)
+            <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 0.75rem; font-size: 0.8rem; font-weight: 700; color: #64748b; text-align: center;">
+                🔒 Tiket terkunci karena barang sudah diproses masuk gudang (GRN)
+            </div>
+        @endif
     </div>
 
 </div>
 
 {{-- FIXED BOTTOM BAR MOBILE --}}
-<div class="qc-mobile-bottom-bar">
-    @if ($kat === 'SINGKONG' && ($qc->tahap_uji ?? 'PENGUJIAN_1') === 'PENGUJIAN_1')
-        <a href="{{ route('qc.inbound.create', ['view' => 'mobile', 'kategori_barang' => 'SINGKONG', 'tahap' => 2, 'parent_qc_id' => $qc->qc_id]) }}" class="qc-btn-mobile-edit" style="flex: 2; background: #9333ea; text-align: center; border-color: #7e22ce; color: #ffffff; font-weight: 800; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 0.35rem;">
-            <span>🍟 + Catat Pengujian II (Produksi)</span>
-        </a>
-    @elseif ($kat === 'SINGKONG' && $qc->status_uji_goreng === 'MENUNGGU_LAB')
-        <button type="button" onclick="openModalUjiFryer('{{ $qc->qc_id }}', '{{ $qc->qc_no }}', '{{ $firstDetail?->qcdtl_id }}')" class="qc-btn-mobile-edit" style="flex: 2; background: #d97706; text-align: center; border-color: #b45309;">
-            <span>🍟 Lanjutkan Uji Fryer</span>
-        </button>
+<div class="qc-mobile-bottom-bar" style="display: flex; gap: 0.65rem; align-items: center;">
+    @if ($qc->status_qc === 'SIAP_GUDANG')
+        <div style="flex: 2; background: #e0f2fe; border: 1.5px solid #7dd3fc; border-radius: 10px; padding: 0.65rem 0.85rem; font-size: 0.8rem; font-weight: 800; color: #0369a1; text-align: center; display: flex; align-items: center; justify-content: center; gap: 0.4rem;">
+            <span>⏳</span> <span>Siap Ditarik Gudang (GRN)</span>
+        </div>
+    @elseif ($qc->status_qc === 'DITERIMA_GUDANG')
+        <div style="flex: 2; background: #dcfce7; border: 1.5px solid #86efac; border-radius: 10px; padding: 0.65rem 0.85rem; font-size: 0.8rem; font-weight: 800; color: #15803d; text-align: center; display: flex; align-items: center; justify-content: center; gap: 0.4rem;">
+            <span>✅</span> <span>Selesai (Sudah Masuk Gudang)</span>
+        </div>
+    @elseif ($qc->status_qc === 'DITOLAK_TOTAL')
+        <div style="flex: 2; background: #fee2e2; border: 1.5px solid #fca5a5; border-radius: 10px; padding: 0.65rem 0.85rem; font-size: 0.8rem; font-weight: 800; color: #b91c1c; text-align: center; display: flex; align-items: center; justify-content: center; gap: 0.4rem;">
+            <span>❌</span> <span>Ditolak di Gerbang (Truk Pulang)</span>
+        </div>
     @endif
 
     @if (Auth::user()?->canEditQc() && !$isLocked)

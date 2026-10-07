@@ -25,6 +25,7 @@ class DatQcInboundHdr extends Model
         'gudang_id',
         'kategori_barang',
         'tahap_uji',
+        'posisi_bak',
         'parent_qc_id',
         'batch_no',
         'nama_jenis',
@@ -68,6 +69,7 @@ class DatQcInboundHdr extends Model
 
     protected $casts = [
         'tgl_periksa'                 => 'datetime',
+        'tgl_uji_goreng'              => 'datetime',
         'tgl_panen'                   => 'date',
         'umur_singkong_bln'           => 'decimal:1',
         'jumlah_sample_kg'            => 'decimal:2',
@@ -110,7 +112,12 @@ class DatQcInboundHdr extends Model
 
     public function pengujian2List(): HasMany
     {
-        return $this->hasMany(self::class, 'parent_qc_id', 'qc_id');
+        return $this->hasMany(self::class, 'parent_qc_id', 'qc_id')->where('deleted_st', false);
+    }
+
+    public function isPengujian2Done(): bool
+    {
+        return $this->pengujian2List && $this->pengujian2List->isNotEmpty();
     }
 
     public function terima(): HasOne

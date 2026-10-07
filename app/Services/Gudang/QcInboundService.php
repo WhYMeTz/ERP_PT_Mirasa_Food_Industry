@@ -22,10 +22,26 @@ class QcInboundService
      */
     public function getAllPaginated(array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
-        $query = DatQcInboundHdr::with(['supplier', 'gudang', 'po', 'details.barang'])
+        $query = DatQcInboundHdr::with([
+            'supplier', 
+            'gudang', 
+            'po', 
+            'details.barang', 
+            'terima', 
+            'pengujian2List.details.barang',
+            'pengujian2List.terima'
+        ])
             ->where('deleted_st', false)
             ->orderBy('tgl_periksa', 'desc')
             ->orderBy('qc_id', 'desc');
+
+        // Untuk tampilan 1 baris per truk, ambil kedatangan induk (Pengujian 1 atau tiket tunggal)
+        if (empty($filters['tahap_uji'])) {
+            $query->where(function ($q) {
+                $q->whereNull('parent_qc_id')
+                  ->orWhereDoesntHave('parentQc');
+            });
+        }
 
         if (!empty($filters['search'])) {
             $search = trim($filters['search']);
@@ -34,7 +50,8 @@ class QcInboundService
                   ->orWhere('surat_jalan_supplier', 'ilike', "%{$search}%")
                   ->orWhere('plat_nomor_truk', 'ilike', "%{$search}%")
                   ->orWhere('sopir_nama', 'ilike', "%{$search}%")
-                  ->orWhereHas('supplier', fn($sq) => $sq->where('supplier_nm', 'ilike', "%{$search}%"));
+                  ->orWhereHas('supplier', fn($sq) => $sq->where('supplier_nm', 'ilike', "%{$search}%"))
+                  ->orWhereHas('pengujian2List', fn($pq) => $pq->where('qc_no', 'ilike', "%{$search}%"));
             });
         }
 
@@ -43,11 +60,25 @@ class QcInboundService
         }
 
         if (!empty($filters['status_qc'])) {
-            $query->where('status_qc', $filters['status_qc']);
+            if ($filters['status_qc'] === 'MENUNGGU_UJI_2') {
+                $query->where('kategori_barang', 'SINGKONG')
+                      ->where('tahap_uji', 'PENGUJIAN_1')
+                      ->where('status_qc', 'SIAP_GUDANG')
+                      ->doesntHave('pengujian2List');
+            } else {
+                $query->where(function ($q) use ($filters) {
+                    $q->where('status_qc', $filters['status_qc'])
+                      ->orWhereHas('pengujian2List', fn($pq) => $pq->where('status_qc', $filters['status_qc']));
+                });
+            }
         }
 
         if (!empty($filters['status_uji_goreng'])) {
             $query->where('status_uji_goreng', $filters['status_uji_goreng']);
+        }
+
+        if (!empty($filters['tahap_uji'])) {
+            $query->where('tahap_uji', $filters['tahap_uji']);
         }
 
         if (!empty($filters['supplier_id'])) {
@@ -59,6 +90,10 @@ class QcInboundService
                 $filters['tgl_mulai'] . ' 00:00:00',
                 $filters['tgl_selesai'] . ' 23:59:59'
             ]);
+        }
+
+        if (!empty($filters['allowed_gudang_ids'])) {
+            $query->whereIn('gudang_id', $filters['allowed_gudang_ids']);
         }
 
         return $query->paginate($perPage)->withQueryString();
@@ -238,6 +273,43 @@ class QcInboundService
 
             $kategoriBarang = !empty($data['kategori_barang']) ? strtoupper(trim($data['kategori_barang'])) : 'SINGKONG';
 
+            $supplier = !empty($data['supplier_id']) ? \App\Models\MasterData\MstSupplier::find($data['supplier_id']) : null;
+            $namaProdusen = !empty($data['nama_produsen']) ? trim($data['nama_produsen']) : ($supplier?->supplier_nm ?? null);
+
+            $firstItem = !empty($data['items']) && is_array($data['items']) ? reset($data['items']) : null;
+            $firstBarangId = $firstItem['barang_id'] ?? ($data['minyak_barang_id'] ?? ($data['plastik_barang_id'] ?? ($data['karton_barang_id'] ?? ($data['bp_barang_id'] ?? null))));
+            $firstBarang = $firstBarangId ? \App\Models\MasterData\MstBarang::find($firstBarangId) : null;
+            $namaRm = !empty($data['nama_jenis']) ? trim($data['nama_jenis']) : ($firstBarang?->barang_nm ?? ($kategoriBarang === 'SINGKONG' ? 'Singkong Basah Curah' : $kategoriBarang));
+
+            // Proteksi Anti-Double Submit (Mencegah input ganda akibat tombol ditekan berkali-kali saat jaringan lambat/lag)
+            $formToken = !empty($data['form_token']) ? trim($data['form_token']) : null;
+            if ($formToken) {
+                $cachedQcId = \Illuminate\Support\Facades\Cache::get("qc_form_token_{$formToken}");
+                if ($cachedQcId) {
+                    $existingQc = DatQcInboundHdr::find($cachedQcId);
+                    if ($existingQc) {
+                        return $existingQc;
+                    }
+                }
+            }
+
+            // Fallback duplikasi: jika data yang sama persis baru saja di-submit oleh user dalam 10 detik terakhir
+            $tahapUji = !empty($data['tahap_uji']) ? strtoupper(trim($data['tahap_uji'])) : 'PENGUJIAN_1';
+            $recentDuplicate = DatQcInboundHdr::where('deleted_st', false)
+                ->where('supplier_id', (int) $data['supplier_id'])
+                ->where('gudang_id', (int) $data['gudang_id'])
+                ->where('kategori_barang', $kategoriBarang)
+                ->where('tahap_uji', $tahapUji)
+                ->where('po_id', !empty($data['po_id']) ? (int)$data['po_id'] : null)
+                ->where('created_by', $user->id ?? null)
+                ->where('created_at', '>=', now()->subSeconds(10))
+                ->latest('qc_id')
+                ->first();
+
+            if ($recentDuplicate) {
+                return $recentDuplicate;
+            }
+
             $header = DatQcInboundHdr::create([
                 'qc_no'                       => $qcNo,
                 'po_id'                       => !empty($data['po_id']) ? (int)$data['po_id'] : null,
@@ -245,11 +317,12 @@ class QcInboundService
                 'gudang_id'                   => (int) $data['gudang_id'],
                 'kategori_barang'             => $kategoriBarang,
                 'tahap_uji'                   => !empty($data['tahap_uji']) ? strtoupper(trim($data['tahap_uji'])) : 'PENGUJIAN_1',
+                'posisi_bak'                  => !empty($data['posisi_bak']) ? strtoupper(trim($data['posisi_bak'])) : null,
                 'parent_qc_id'                => !empty($data['parent_qc_id']) ? (int)$data['parent_qc_id'] : null,
                 'batch_no'                    => !empty($data['batch_no']) ? trim($data['batch_no']) : null,
-                'nama_jenis'                  => !empty($data['nama_jenis']) ? trim($data['nama_jenis']) : null,
+                'nama_jenis'                  => $namaRm,
                 'negara_produsen'             => !empty($data['negara_produsen']) ? trim($data['negara_produsen']) : 'Indonesia',
-                'nama_produsen'               => !empty($data['nama_produsen']) ? trim($data['nama_produsen']) : null,
+                'nama_produsen'               => $namaProdusen,
                 'lokasi_panen'                => !empty($data['lokasi_panen']) ? trim($data['lokasi_panen']) : null,
                 'umur_singkong_bln'           => !empty($data['umur_singkong_bln']) ? (float)$data['umur_singkong_bln'] : null,
                 'tgl_panen'                   => !empty($data['tgl_panen']) ? $data['tgl_panen'] : null,
@@ -281,6 +354,10 @@ class QcInboundService
                 'catatan_umum'                => !empty($data['catatan_umum']) ? trim($data['catatan_umum']) : null,
             ]);
 
+            if ($formToken) {
+                \Illuminate\Support\Facades\Cache::put("qc_form_token_{$formToken}", $header->qc_id, 120);
+            }
+
             $allRejected = true;
             $items = $data['items'] ?? [];
 
@@ -294,10 +371,11 @@ class QcInboundService
                 $refraksiPersen = (float) ($row['refraksi_persen'] ?? 0);
                 $rejectQty = (float) ($row['qty_reject'] ?? 0);
 
-                // Cek apakah user eksplisit memilih KESIMPULAN: TOLAK
+                // Cek apakah user eksplisit memilih KESIMPULAN: TOLAK atau hasil tes rasa di depan PAHIT
                 $explicitKeputusan = $row['keputusan_qc'] ?? ($data['kesimpulan_qc'] ?? null);
+                $isPahit = ($row['fryer_rasa'] ?? '') === 'PAHIT';
 
-                if ($explicitKeputusan === 'TOLAK' || $explicitKeputusan === 'REJECT_TOTAL') {
+                if ($explicitKeputusan === 'TOLAK' || $explicitKeputusan === 'REJECT_TOTAL' || $isPahit) {
                     $keputusan = 'REJECT_TOTAL';
                     $grade = 'REJECT';
                     $qtyRefraksi = 0;
@@ -309,7 +387,7 @@ class QcInboundService
                     // Hitung netto lolos
                     $nettoLolos = max(0, round($gross - $qtyRefraksi - $rejectQty, 4));
 
-                    $grade = !empty($row['grade_cd']) ? $row['grade_cd'] : 'A';
+                    $grade = !empty($row['grade_cd']) ? $row['grade_cd'] : (!empty($data['grade_cd']) ? $data['grade_cd'] : 'A');
 
                     // Tentukan keputusan QC otomatis
                     if ($nettoLolos <= 0 && $gross > 0) {
@@ -403,6 +481,227 @@ class QcInboundService
     }
 
     /**
+     * Menyimpan dokumen Pengujian II (Uji Masuk Lantai Produksi / Batch Penggorengan)
+     */
+    public function storePengujian2(array $data, User $user): DatQcInboundHdr
+    {
+        return DB::transaction(function () use ($data, $user) {
+            $tglPeriksa = !empty($data['tgl_periksa']) ? $data['tgl_periksa'] : now();
+            $qcNo = $this->codeGenerator->generateQcNo(date('Y-m-d', strtotime($tglPeriksa)));
+
+            $petugasQc = !empty($data['petugas_qc_nama']) 
+                ? trim($data['petugas_qc_nama']) 
+                : ($user->name ?? 'Petugas QC');
+
+            $parentQcId = !empty($data['parent_qc_id']) ? (int) $data['parent_qc_id'] : null;
+            $parentQc   = $parentQcId ? DatQcInboundHdr::with(['supplier', 'gudang', 'po', 'details'])->find($parentQcId) : null;
+
+            $supplierId = !empty($data['supplier_id']) ? (int) $data['supplier_id'] : ($parentQc?->supplier_id);
+            $gudangId   = !empty($data['gudang_id']) ? (int) $data['gudang_id'] : ($parentQc?->gudang_id);
+            $poId       = !empty($data['po_id']) ? (int) $data['po_id'] : ($parentQc?->po_id);
+            $batchNo    = !empty($data['batch_no']) ? trim($data['batch_no']) : ($parentQc?->batch_no ?? 'BATCH-' . date('Ymd'));
+
+            // Proteksi Anti-Double Submit Pengujian II (Network lag / Multi-tap)
+            $formToken = !empty($data['form_token']) ? trim($data['form_token']) : null;
+            if ($formToken) {
+                $cachedQcId = \Illuminate\Support\Facades\Cache::get("qc_form_token_{$formToken}");
+                if ($cachedQcId) {
+                    $existingQc = DatQcInboundHdr::find($cachedQcId);
+                    if ($existingQc) {
+                        return $existingQc;
+                    }
+                }
+            }
+
+            // Fallback recent duplicate: batch yang sama di-submit user dalam 10 detik terakhir
+            $recentDuplicate = DatQcInboundHdr::where('deleted_st', false)
+                ->where('tahap_uji', 'PENGUJIAN_2')
+                ->where('batch_no', $batchNo)
+                ->where('created_by', $user->id ?? null)
+                ->where('created_at', '>=', now()->subSeconds(10))
+                ->latest()
+                ->first();
+
+            if ($recentDuplicate) {
+                return $recentDuplicate;
+            }
+
+            $fryerRasa       = $data['fryer_rasa'] ?? 'TIDAK_PAHIT';
+            $fryerTekstur    = $data['fryer_tekstur'] ?? 'RENYAH';
+            $fryerPenampakan = $data['fryer_penampakan'] ?? 'KUNING_CERAH';
+            $isPahit         = ($fryerRasa === 'PAHIT');
+
+            $inputGrade      = !empty($data['grade_cd']) ? strtoupper(trim($data['grade_cd'])) : 'A';
+            $grade           = $isPahit ? 'REJECT' : $inputGrade;
+
+            // Tonase Uji (Default 7.000 kg / 7 Ton atau sesuai input timbangan)
+            $grossTonase = !empty($data['qty_timbang_gross']) 
+                ? (float) $data['qty_timbang_gross'] 
+                : (!empty($data['jumlah_sample_kg']) && (float)$data['jumlah_sample_kg'] > 50 ? (float)$data['jumlah_sample_kg'] : 7000.0);
+
+            $sampleKg = !empty($data['jumlah_sample_kg']) ? (float) $data['jumlah_sample_kg'] : 5.0;
+            $liniProduksi = !empty($data['lini_produksi']) ? trim($data['lini_produksi']) : 'Lini Penggorengan';
+
+            $refraksi = isset($data['refraksi_persen']) ? (float)$data['refraksi_persen'] : 0;
+            $rejectKg = isset($data['qty_reject']) ? (float)$data['qty_reject'] : ($isPahit ? $grossTonase : 0);
+            $qtyRefraksi = round(($grossTonase * $refraksi) / 100, 4);
+            $nettoLolos = $isPahit ? 0 : max(0, round($grossTonase - $rejectKg - $qtyRefraksi, 4));
+
+            $explicitKeputusan = $data['keputusan_qc'] ?? null;
+            if ($isPahit || $explicitKeputusan === 'TOLAK' || $explicitKeputusan === 'REJECT_TOTAL') {
+                $keputusan = 'REJECT_TOTAL';
+                $grade = 'REJECT';
+                $statusQc = 'DITOLAK_TOTAL';
+            } elseif ($rejectKg > 0) {
+                $keputusan = 'REJECT_PARTIAL';
+                $statusQc = 'DITERIMA_GUDANG';
+            } elseif ($refraksi > 0) {
+                $keputusan = 'PASSED_REFRAKSI';
+                $statusQc = 'DITERIMA_GUDANG';
+            } else {
+                $keputusan = 'PASSED';
+                $statusQc = 'DITERIMA_GUDANG';
+            }
+
+            // Catatan bahan penolong (perenyah & minyak)
+            $statusPerenyah = $data['status_perenyah'] ?? 'BELUM_DILARUTKAN';
+            $perenyahTerbuangKg = !empty($data['perenyah_terbuang_kg']) ? (float) $data['perenyah_terbuang_kg'] : 0;
+            $kondisiMinyak = $data['kondisi_minyak'] ?? 'NORMAL';
+            
+            $catatanTambahan = [];
+            $catatanTambahan[] = "🍟 [PENGUJIAN II] Lini: {$liniProduksi}";
+            $catatanTambahan[] = "Tonase Uji: {$grossTonase} kg | Lolos: {$nettoLolos} kg | Reject: {$rejectKg} kg | Grade: {$grade}";
+            $catatanTambahan[] = "Uji Rasa: " . ($isPahit ? 'PAHIT (BAHAYA)' : 'GURIH/TIDAK PAHIT') . " | Tekstur: {$fryerTekstur} | Warna: {$fryerPenampakan}";
+            
+            if ($statusPerenyah === 'SUDAH_DILARUTKAN') {
+                $catatanTambahan[] = "Status Perenyah: SUDAH DILARUTKAN DI BAK (Air terkontaminasi pahit, est. terbuang {$perenyahTerbuangKg} kg)";
+            } elseif ($statusPerenyah === 'BELUM_DILARUTKAN') {
+                $catatanTambahan[] = "Status Perenyah: BELUM DILARUTKAN (100% Utuh / Masih di Sak)";
+            } else {
+                $catatanTambahan[] = "Status Perenyah: TANPA PERENYAH (Tes Sampel Cepat)";
+            }
+
+            if ($kondisiMinyak === 'TERKONTAMINASI') {
+                $catatanTambahan[] = "Kondisi Minyak: TERKONTAMINASI BAU/GETAH (Perlu Kuras/Ganti Minyak Wajan)";
+            }
+
+            if (!empty($data['catatan_umum'])) {
+                $catatanTambahan[] = "Catatan QC: " . trim($data['catatan_umum']);
+            }
+
+            $catatanFinal = implode("\n", $catatanTambahan);
+
+            $header = DatQcInboundHdr::create([
+                'qc_no'                       => $qcNo,
+                'po_id'                       => $poId,
+                'supplier_id'                 => $supplierId ?: 1,
+                'gudang_id'                   => $gudangId ?: 1,
+                'kategori_barang'             => 'SINGKONG',
+                'tahap_uji'                   => 'PENGUJIAN_2',
+                'posisi_bak'                  => !empty($data['posisi_bak']) ? strtoupper(trim($data['posisi_bak'])) : null,
+                'parent_qc_id'                => $parentQcId,
+                'batch_no'                    => $batchNo,
+                'nama_jenis'                  => "Singkong Uji Produksi",
+                'negara_produsen'             => 'Indonesia',
+                'nama_produsen'               => $parentQc?->nama_produsen ?? $parentQc?->supplier?->supplier_nm,
+                'lokasi_panen'                => $parentQc?->lokasi_panen,
+                'umur_singkong_bln'           => $parentQc?->umur_singkong_bln,
+                'tgl_panen'                   => $parentQc?->tgl_panen,
+                'jumlah_sample_kg'            => $sampleKg,
+                'jumlah_sample_pcs'           => null,
+                'jumlah_sample_gr'            => $sampleKg * 1000,
+                'surat_jalan_supplier'        => $parentQc?->surat_jalan_supplier,
+                'nomor_do'                    => $parentQc?->nomor_do,
+                'jumlah_surat_jalan'          => $parentQc?->jumlah_surat_jalan,
+                'jumlah_di_pabrik'            => $grossTonase,
+                'plat_nomor_truk'             => $parentQc?->plat_nomor_truk,
+                'sopir_nama'                  => $parentQc?->sopir_nama,
+                'bebas_cemaran_st'            => true,
+                'angkut_barang_haram_st'      => false,
+                'komentar_transportasi'       => "Pemeriksaan Lanjutan Bak {$posisiBak} (Uji Wajan)",
+                'terdaftar_lppom_st'          => true,
+                'ada_sertifikat_halal_st'     => true,
+                'sertifikat_halal_berlaku_st' => true,
+                'tgl_periksa'                 => $tglPeriksa,
+                'petugas_qc_nama'             => $petugasQc,
+                'qc_supervisor_nama'          => !empty($data['qc_supervisor_nama']) ? trim($data['qc_supervisor_nama']) : ($parentQc?->qc_supervisor_nama ?? 'Kepala Produksi / Direktur'),
+                'status_qc'                   => $statusQc,
+                'status_uji_goreng'           => 'SELESAI',
+                'tgl_uji_goreng'              => now(),
+                'petugas_uji_goreng'          => $petugasQc,
+                'catatan_umum'                => $catatanFinal,
+            ]);
+
+            if ($formToken) {
+                \Illuminate\Support\Facades\Cache::put("qc_form_token_{$formToken}", $header->qc_id, 120);
+            }
+
+            // Cari ID Barang Singkong
+            $barangId = !empty($data['barang_id']) ? (int) $data['barang_id'] : ($parentQc?->details?->first()?->barang_id);
+            if (!$barangId) {
+                $barangSingkong = \App\Models\MasterData\MstBarang::where('barang_nm', 'ilike', '%singkong%')
+                    ->orWhere('barang_cd', 'ilike', '%SK%')
+                    ->first();
+                $barangId = $barangSingkong?->barang_id ?? 1;
+            }
+
+            $kondisiSegar      = isset($data['kondisi_segar']) ? (bool)$data['kondisi_segar'] : true;
+            $kondisiBusuk      = !empty($data['kondisi_busuk']);
+            $kondisiLayu       = !empty($data['kondisi_layu']);
+            $kondisiBerjamur   = !empty($data['kondisi_berjamur']);
+            $kondisiBasah      = !empty($data['kondisi_basah']);
+            $kondisiLembek     = !empty($data['kondisi_lembek']);
+            $kondisiTerkelupas = !empty($data['kondisi_terkelupas']);
+
+            $dKurang4 = isset($data['diameter_kurang_4cm_persen']) ? (float)$data['diameter_kurang_4cm_persen'] : ($parentQc?->details?->first()?->diameter_kurang_4cm_persen ?? 0);
+            $dLebih4  = isset($data['diameter_lebih_4cm_persen']) ? (float)$data['diameter_lebih_4cm_persen'] : ($parentQc?->details?->first()?->diameter_lebih_4cm_persen ?? 100);
+
+            $defectBreakage  = isset($data['defect_breakage_persen']) ? (float)$data['defect_breakage_persen'] : 0;
+            $defectCluster   = isset($data['defect_cluster_persen']) ? (float)$data['defect_cluster_persen'] : 0;
+            $defectFoldover  = isset($data['defect_foldover_persen']) ? (float)$data['defect_foldover_persen'] : 0;
+            $defectOilsoaked = isset($data['defect_oilsoaked_persen']) ? (float)$data['defect_oilsoaked_persen'] : 0;
+            $defectGambos    = isset($data['defect_gambos_persen']) ? (float)$data['defect_gambos_persen'] : 0;
+
+            DatQcInboundDtl::create([
+                'qc_id'                      => $header->qc_id,
+                'podtl_id'                   => $parentQc?->details?->first()?->podtl_id,
+                'barang_id'                  => $barangId,
+                'status_raw_material'        => $isPahit ? 'REJECT' : 'OK',
+                'isi_kering'                 => true,
+                'diameter_kurang_4cm_persen' => $dKurang4,
+                'diameter_lebih_4cm_persen'  => $dLebih4,
+                'kondisi_segar'              => $kondisiSegar,
+                'kondisi_busuk'              => $kondisiBusuk,
+                'kondisi_layu'               => $kondisiLayu,
+                'kondisi_berjamur'           => $kondisiBerjamur,
+                'kondisi_basah'              => $kondisiBasah,
+                'kondisi_lembek'             => $kondisiLembek,
+                'kondisi_terkelupas'         => $kondisiTerkelupas,
+                'defect_breakage_persen'     => $defectBreakage,
+                'defect_cluster_persen'      => $defectCluster,
+                'defect_foldover_persen'     => $defectFoldover,
+                'defect_oilsoaked_persen'    => $defectOilsoaked,
+                'defect_gambos_persen'       => $defectGambos,
+                'fryer_rasa'                 => $fryerRasa,
+                'fryer_tekstur'              => $fryerTekstur,
+                'fryer_penampakan'           => $fryerPenampakan,
+                'qty_timbang_gross'          => $grossTonase,
+                'kadar_air_persen'           => 0,
+                'refraksi_persen'            => $refraksi,
+                'qty_refraksi'               => $qtyRefraksi,
+                'qty_reject'                 => $rejectKg,
+                'qty_netto_lolos'            => $nettoLolos,
+                'grade_cd'                   => $grade,
+                'kondisi_fisik'              => $isPahit ? 'PAHIT' : ($kondisiBusuk ? 'BUSUK' : 'NORMAL'),
+                'keputusan_qc'               => $keputusan,
+                'catatan_dtl'                => "Pengujian II ({$posisiBak}): {$liniProduksi} | Rasa: {$fryerRasa} | Grade: {$grade}",
+            ]);
+
+            return $header;
+        });
+    }
+
+    /**
      * Menandai tiket QC telah diproses dan diterima oleh Admin Gudang
      */
     public function markAsProcessed(int $qcId): void
@@ -489,6 +788,14 @@ class QcInboundService
 
             $kategoriBarang = !empty($data['kategori_barang']) ? strtoupper(trim($data['kategori_barang'])) : ($qc->kategori_barang ?? 'SINGKONG');
 
+            $supplier = !empty($data['supplier_id']) ? \App\Models\MasterData\MstSupplier::find($data['supplier_id']) : null;
+            $namaProdusen = !empty($data['nama_produsen']) ? trim($data['nama_produsen']) : ($supplier?->supplier_nm ?? $qc->nama_produsen);
+
+            $firstItem = !empty($data['items']) && is_array($data['items']) ? reset($data['items']) : null;
+            $firstBarangId = $firstItem['barang_id'] ?? ($data['minyak_barang_id'] ?? ($data['plastik_barang_id'] ?? ($data['karton_barang_id'] ?? ($data['bp_barang_id'] ?? null))));
+            $firstBarang = $firstBarangId ? \App\Models\MasterData\MstBarang::find($firstBarangId) : null;
+            $namaRm = !empty($data['nama_jenis']) ? trim($data['nama_jenis']) : ($firstBarang?->barang_nm ?? $qc->nama_jenis);
+
             // 1. Update Header
             $qc->fill([
                 'po_id'                       => !empty($data['po_id']) ? (int)$data['po_id'] : $qc->po_id,
@@ -498,9 +805,9 @@ class QcInboundService
                 'tahap_uji'                   => !empty($data['tahap_uji']) ? strtoupper(trim($data['tahap_uji'])) : ($qc->tahap_uji ?? 'PENGUJIAN_1'),
                 'parent_qc_id'                => array_key_exists('parent_qc_id', $data) ? (!empty($data['parent_qc_id']) ? (int)$data['parent_qc_id'] : null) : $qc->parent_qc_id,
                 'batch_no'                    => array_key_exists('batch_no', $data) ? (!empty($data['batch_no']) ? trim($data['batch_no']) : null) : $qc->batch_no,
-                'nama_jenis'                  => !empty($data['nama_jenis']) ? trim($data['nama_jenis']) : $qc->nama_jenis,
+                'nama_jenis'                  => $namaRm,
                 'negara_produsen'             => !empty($data['negara_produsen']) ? trim($data['negara_produsen']) : $qc->negara_produsen,
-                'nama_produsen'               => !empty($data['nama_produsen']) ? trim($data['nama_produsen']) : $qc->nama_produsen,
+                'nama_produsen'               => $namaProdusen,
                 'lokasi_panen'                => !empty($data['lokasi_panen']) ? trim($data['lokasi_panen']) : $qc->lokasi_panen,
                 'umur_singkong_bln'           => isset($data['umur_singkong_bln']) ? (float)$data['umur_singkong_bln'] : $qc->umur_singkong_bln,
                 'tgl_panen'                   => !empty($data['tgl_panen']) ? $data['tgl_panen'] : $qc->tgl_panen,
@@ -537,6 +844,7 @@ class QcInboundService
             if (!empty($items)) {
                 $allRejected = true;
                 $deltaQtyPerBarang = [];
+                $processedDetailIds = [];
 
                 foreach ($items as $idx => $row) {
                     $barangId = (int)$row['barang_id'];
@@ -577,8 +885,11 @@ class QcInboundService
                     if (!empty($row['qcdtl_id'])) {
                         $existingDtl = $qc->details->firstWhere('qcdtl_id', (int)$row['qcdtl_id']);
                     }
+                    if (!$existingDtl && !empty($barangId)) {
+                        $existingDtl = $qc->details->firstWhere('barang_id', $barangId);
+                    }
                     if (!$existingDtl) {
-                        $existingDtl = $qc->details->values()->get($idx);
+                        $existingDtl = $qc->details->values()->get($idx) ?? $qc->details->first();
                     }
 
                     $oldNetto = $existingDtl ? (float)$existingDtl->qty_netto_lolos : 0;
@@ -650,10 +961,19 @@ class QcInboundService
 
                     if ($existingDtl) {
                         $existingDtl->update($payloadDtl);
+                        $processedDetailIds[] = $existingDtl->qcdtl_id;
                     } else {
                         $payloadDtl['qc_id'] = $qc->qc_id;
-                        DatQcInboundDtl::create($payloadDtl);
+                        $newDtl = DatQcInboundDtl::create($payloadDtl);
+                        $processedDetailIds[] = $newDtl->qcdtl_id;
                     }
+                }
+
+                // Bersihkan detail lama / duplikat yang tidak lagi ada di formulir (misal duplikasi hasil edit terdahulu)
+                if (!empty($processedDetailIds)) {
+                    DatQcInboundDtl::where('qc_id', $qc->qc_id)
+                        ->whereNotIn('qcdtl_id', $processedDetailIds)
+                        ->delete();
                 }
 
                 if ($allRejected) {

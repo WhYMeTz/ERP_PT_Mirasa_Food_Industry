@@ -16,12 +16,22 @@
 
     // Unit & Quantity
     $unit = in_array($kat, ['PLASTIK', 'KARTON']) ? 'PCS' : 'KG';
-    $totalReject = $qc->details->sum('qty_reject');
-    $totalGross = $qc->details->sum('qty_timbang_gross');
+    $totalReject = (float) $qc->details->sum('qty_reject');
+    $totalGross = (float) $qc->details->sum('qty_timbang_gross');
+    $totalNetto = (float) $qc->details->sum('qty_netto_lolos');
+    
+    // Jika tiket ini adalah induk dan punya pengujian 2 yang ada reject
+    $childReject = (float) $qc->pengujian2List->sum(fn($p) => $p->details->sum('qty_reject'));
+    if ($totalReject == 0 && $childReject > 0) {
+        $totalReject = $childReject;
+    }
+
+    $isPartial = ($totalReject > 0 && ($totalNetto > 0 || $qc->status_qc === 'DITERIMA_GUDANG'));
+    
     if ($totalReject > 0) {
-        $jumlahText = number_format($totalReject, 0, ',', '.') . ' ' . $unit;
+        $jumlahText = number_format($totalReject, 0, ',', '.') . ' ' . $unit . ($isPartial ? ' (Penolakan Sebagian / Parsial)' : ' (Ditolak Total)');
     } elseif ($totalGross > 0) {
-        $jumlahText = number_format($totalGross, 0, ',', '.') . ' ' . $unit;
+        $jumlahText = number_format($totalGross, 0, ',', '.') . ' ' . $unit . ' (Ditolak Total)';
     } else {
         $jumlahText = '-';
     }
@@ -51,7 +61,8 @@
         $asalLabel = 'Pabrik Produsen';
         $asalValue = $qc->nama_produsen ?: ($qc->negara_produsen ?: 'INDONESIA');
     } else {
-        $commodityTitle = 'Bahan Baku Singkong';
+        $tahapSuffix = $qc->parent_qc_id ? ' (Tahap II - Lantai Produksi)' : '';
+        $commodityTitle = 'Bahan Baku Singkong' . $tahapSuffix;
         $asalLabel = 'Asal singkong';
         $asalValue = $qc->lokasi_panen ?: 'WONOSOBO';
     }
@@ -60,12 +71,16 @@
     $alasanItems = [];
     foreach ($qc->details as $d) {
         if ($kat === 'SINGKONG') {
+            if ($d->grade_cd === 'B') $alasanItems[] = 'SINGKONG GRADE B TIDAK MEMENUHI STANDAR MUTU PRODUKSI';
             if ($d->fryer_rasa === 'PAHIT') $alasanItems[] = 'SINGKONG MENTAH / GORENG PAHIT';
             if ($d->fryer_tekstur === 'ALOT') $alasanItems[] = 'TEKSTUR ALOT / LIAT';
             if ($d->fryer_penampakan === 'OILSOAKED') $alasanItems[] = 'HASIL GORENG MBELING & OILSOAKED';
             if ((float)$d->defect_gambos_persen > 0) $alasanItems[] = 'GAMBOS / KOPONG';
             if ($d->kondisi_busuk) $alasanItems[] = 'BUSUK';
             if ($d->kondisi_lembek) $alasanItems[] = 'LENGKAT & LEMBEK';
+            if (!empty($d->kondisi_fisik) && !in_array($d->kondisi_fisik, ['NORMAL', 'OK'])) {
+                $alasanItems[] = str_replace('_', ' ', $d->kondisi_fisik);
+            }
         } elseif ($kat === 'MINYAK') {
             if ($d->kondisi_tangki_jerigen === 'TIDAK_STANDARD') $alasanItems[] = 'KONDISI WADAH / TANGKI TIDAK STANDARD';
             if (!$d->minyak_jernih_st) $alasanItems[] = 'MINYAK KERUH / TIDAK JERNIH';
@@ -99,6 +114,17 @@
         }
     }
 
+    // Periksa juga jika ada anak pengujian 2 yang ada catatan penolakan
+    if (isset($qc->pengujian2List)) {
+        foreach ($qc->pengujian2List as $p2) {
+            foreach ($p2->details as $d2) {
+                if ($d2->grade_cd === 'B') $alasanItems[] = 'PENGUJIAN II: SINGKONG GRADE B TIDAK MEMENUHI STANDAR PABRIK';
+                if ($d2->fryer_rasa === 'PAHIT') $alasanItems[] = 'PENGUJIAN II: SINGKONG PAHIT';
+                if (!empty($d2->catatan_dtl)) $alasanItems[] = $d2->catatan_dtl;
+            }
+        }
+    }
+
     if (!empty($qc->catatan_umum)) {
         $alasanItems[] = $qc->catatan_umum;
     }
@@ -124,6 +150,11 @@
             <a href="{{ route('qc.inbound.show', $qc->qc_id) }}" class="btn btn-secondary btn-sm" style="border-radius: 8px;">
                 &larr; Kembali ke Lembar Uji QC
             </a>
+            @if ($qc->terima)
+                <a href="{{ route('gudang.terima.show', $qc->terima->terima_id) }}" class="btn btn-outline-secondary btn-sm" style="border-radius: 8px;">
+                    Lihat Dokumen GRN &rarr;
+                </a>
+            @endif
             <span style="font-size: 0.875rem; color: #64748b;">|</span>
             <span style="font-size: 0.9rem; font-weight: 700; color: #0f172a;">Berita Acara Penolakan: {{ $commodityTitle }}</span>
         </div>

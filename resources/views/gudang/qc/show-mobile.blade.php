@@ -78,17 +78,17 @@
                 </div>
                 <h1 class="qc-detail-ticket-no" style="margin-top: 0.35rem;">{{ $qc->qc_no }}</h1>
             </div>
-            <div class="qc-detail-badges">
                 @if ($qc->status_qc === 'SIAP_GUDANG')
                     <span class="badge-tag-status siap">⏳ Siap Gudang</span>
+                @elseif ($qc->status_qc === 'DITERIMA_PARSIAL' || ($qc->status_qc === 'DITERIMA_GUDANG' && $qc->details->sum('qty_reject') > 0))
+                    <span class="badge-tag-status" style="background: #fff7ed; color: #c2410c; border: 1px solid #fdba74;">⚠️ Masuk Parsial</span>
                 @elseif ($qc->status_qc === 'DITERIMA_GUDANG')
-                    <span class="badge-tag-status diterima">✅ Masuk Gudang</span>
+                    <span class="badge-tag-status diterima">✅ Masuk Penuh</span>
                 @elseif ($qc->status_qc === 'DITOLAK_TOTAL')
                     <span class="badge-tag-status tolak">❌ Ditolak</span>
                 @else
                     <span class="badge-tag-status siap">{{ $qc->status_qc }}</span>
                 @endif
-            </div>
         </div>
 
         <div class="qc-detail-hero-meta">
@@ -426,8 +426,10 @@
             <span style="font-weight: 800; font-size: 0.85rem; color: #334155; text-transform: uppercase; letter-spacing: 0.03em;">Tindakan Operasional</span>
             @if ($qc->status_qc === 'SIAP_GUDANG')
                 <span style="font-size: 0.75rem; font-weight: 800; color: #0284c7; background: #e0f2fe; padding: 0.2rem 0.6rem; border-radius: 6px;">⏳ Siap Ditarik Gudang</span>
+            @elseif ($qc->status_qc === 'DITERIMA_PARSIAL' || ($qc->status_qc === 'DITERIMA_GUDANG' && $qc->details->sum('qty_reject') > 0))
+                <span style="font-size: 0.75rem; font-weight: 800; color: #c2410c; background: #fff7ed; border: 1px solid #fdba74; padding: 0.2rem 0.6rem; border-radius: 6px;">⚠️ Diterima Parsial (Reject)</span>
             @elseif ($qc->status_qc === 'DITERIMA_GUDANG')
-                <span style="font-size: 0.75rem; font-weight: 800; color: #15803d; background: #dcfce7; padding: 0.2rem 0.6rem; border-radius: 6px;">✅ Sudah Masuk Gudang</span>
+                <span style="font-size: 0.75rem; font-weight: 800; color: #15803d; background: #dcfce7; padding: 0.2rem 0.6rem; border-radius: 6px;">✅ Masuk Gudang (Penuh)</span>
             @elseif ($qc->status_qc === 'DITOLAK_TOTAL')
                 <span style="font-size: 0.75rem; font-weight: 800; color: #dc2626; background: #fee2e2; padding: 0.2rem 0.6rem; border-radius: 6px;">❌ Ditolak di Gerbang</span>
             @endif
@@ -453,9 +455,13 @@
         <div style="flex: 2; background: #e0f2fe; border: 1.5px solid #7dd3fc; border-radius: 10px; padding: 0.65rem 0.85rem; font-size: 0.8rem; font-weight: 800; color: #0369a1; text-align: center; display: flex; align-items: center; justify-content: center; gap: 0.4rem;">
             <span>⏳</span> <span>Siap Ditarik Gudang (GRN)</span>
         </div>
+    @elseif ($qc->status_qc === 'DITERIMA_PARSIAL' || ($qc->status_qc === 'DITERIMA_GUDANG' && $qc->details->sum('qty_reject') > 0))
+        <div style="flex: 2; background: #fff7ed; border: 1.5px solid #fdba74; border-radius: 10px; padding: 0.65rem 0.85rem; font-size: 0.8rem; font-weight: 800; color: #c2410c; text-align: center; display: flex; align-items: center; justify-content: center; gap: 0.4rem;">
+            <span>⚠️</span> <span>Masuk Parsial (Ada Reject)</span>
+        </div>
     @elseif ($qc->status_qc === 'DITERIMA_GUDANG')
         <div style="flex: 2; background: #dcfce7; border: 1.5px solid #86efac; border-radius: 10px; padding: 0.65rem 0.85rem; font-size: 0.8rem; font-weight: 800; color: #15803d; text-align: center; display: flex; align-items: center; justify-content: center; gap: 0.4rem;">
-            <span>✅</span> <span>Selesai (Sudah Masuk Gudang)</span>
+            <span>✅</span> <span>Selesai (Masuk Penuh)</span>
         </div>
     @elseif ($qc->status_qc === 'DITOLAK_TOTAL')
         <div style="flex: 2; background: #fee2e2; border: 1.5px solid #fca5a5; border-radius: 10px; padding: 0.65rem 0.85rem; font-size: 0.8rem; font-weight: 800; color: #b91c1c; text-align: center; display: flex; align-items: center; justify-content: center; gap: 0.4rem;">

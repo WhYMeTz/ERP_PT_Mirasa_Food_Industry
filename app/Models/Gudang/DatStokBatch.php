@@ -20,6 +20,7 @@ class DatStokBatch extends Model
         'gudang_id',
         'barang_id',
         'batch_no',
+        'grade_cd',
         'expired_tgl',
         'qty_awal',
         'harga_satuan',

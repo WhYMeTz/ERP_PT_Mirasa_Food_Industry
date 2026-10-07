@@ -573,6 +573,8 @@
                 </select>
             </td>
             <td style="padding: 0.45rem 0.5rem;">
+                <input type="hidden" name="items[${rowIndex}][grade_cd]" class="grade-input" value="A">
+                <input type="hidden" name="items[${rowIndex}][stok_id]" class="stok-id-input" value="">
                 <select name="items[${rowIndex}][batch_no]" class="form-control batch-select" style="font-size: 0.85rem;" required onchange="onBatchSelect(this)">
                     <option value="">-- Pilih Barang Dulu --</option>
                 </select>
@@ -637,12 +639,13 @@
             batchOptions = '<option value="">(Stok Fisik Habis di Gudang ini)</option>';
         } else {
             item.all_batches.forEach(b => {
-                const isSelected = (b.batch_no === item.batch_no) ? 'selected' : '';
+                const isSelected = (b.batch_no === item.batch_no && (b.grade_cd || 'A') === (item.grade_cd || 'A')) ? 'selected' : '';
                 const prefix = b.is_fifo_top ? '[FIFO Prioritas] ' : '';
+                const gradeBadge = b.grade_cd ? ` [Grade ${b.grade_cd}]` : '';
                 const expInfo = b.expired_tgl ? ` | Exp: ${b.expired_tgl}` : '';
                 const tglTerima = b.tgl_terima ? ` | Masuk: ${b.tgl_terima}` : '';
-                batchOptions += `<option value="${b.batch_no}" data-sisa="${b.sisa_qty}" data-harga="${b.harga_satuan || 0}" data-masuk="${b.tgl_terima}" data-exp="${b.expired_tgl || '-'}" ${isSelected}>
-                    ${prefix}${b.batch_no} (Sisa: ${parseFloat(b.sisa_qty).toLocaleString('id-ID')})${tglTerima}${expInfo}
+                batchOptions += `<option value="${b.batch_no}" data-stok-id="${b.stok_id || ''}" data-grade="${b.grade_cd || 'A'}" data-sisa="${b.sisa_qty}" data-harga="${b.harga_satuan || 0}" data-masuk="${b.tgl_terima}" data-exp="${b.expired_tgl || '-'}" ${isSelected}>
+                    ${prefix}${b.batch_no}${gradeBadge} (Sisa: ${parseFloat(b.sisa_qty).toLocaleString('id-ID')})${tglTerima}${expInfo}
                 </option>`;
             });
         }
@@ -652,8 +655,9 @@
             const badgeBg = item.is_split ? '#fef3c7' : '#ecfdf5';
             const badgeColor = item.is_split ? '#92400e' : '#065f46';
             const badgeBorder = item.is_split ? '#fde68a' : '#a7f3d0';
+            const gradeInfo = item.grade_cd ? ` • Grade ${item.grade_cd}` : '';
             badgeHtml = `<span style="color: ${badgeColor}; font-weight: 700; background: ${badgeBg}; padding: 0.15rem 0.5rem; border-radius: 4px; border: 1px solid ${badgeBorder}; display: inline-flex; align-items: center; gap: 0.25rem;">
-                ${item.catatan_fifo} • Sisa: ${item.sisa_batch.toLocaleString('id-ID')} unit
+                ${item.catatan_fifo}${gradeInfo} • Sisa: ${item.sisa_batch.toLocaleString('id-ID')} unit
             </span>`;
         } else {
             badgeHtml = `<span style="color: #dc2626; font-weight: 700; background: #fee2e2; padding: 0.15rem 0.5rem; border-radius: 4px; border: 1px solid #fecaca; display: inline-block;">
@@ -679,6 +683,8 @@
                 </select>
             </td>
             <td style="padding: 0.45rem 0.5rem;">
+                <input type="hidden" name="items[${rowIndex}][grade_cd]" class="grade-input" value="${item.grade_cd || 'A'}">
+                <input type="hidden" name="items[${rowIndex}][stok_id]" class="stok-id-input" value="${item.stok_id || ''}">
                 <select name="items[${rowIndex}][batch_no]" class="form-control batch-select" style="font-size: 0.85rem;" required onchange="onBatchSelect(this)">
                     ${batchOptions}
                 </select>
@@ -885,10 +891,11 @@
                         res.batches.forEach((b, idx) => {
                             const isTop = (idx === 0);
                             const prefix = isTop ? '[FIFO Prioritas] ' : '';
+                            const gradeBadge = b.grade_cd ? ` [Grade ${b.grade_cd}]` : '';
                             const expInfo = b.expired_tgl ? ` | Exp: ${b.expired_tgl}` : '';
                             const tglTerima = b.tgl_terima ? ` | Masuk: ${b.tgl_terima}` : '';
-                            html += `<option value="${b.batch_no}" data-sisa="${b.sisa_qty}" data-harga="${b.harga_satuan || 0}" data-masuk="${b.tgl_terima}" data-exp="${b.expired_tgl || '-'}" ${isTop ? 'selected' : ''}>
-                                ${prefix}${b.batch_no} (Sisa: ${parseFloat(b.sisa_qty).toLocaleString('id-ID')})${tglTerima}${expInfo}
+                            html += `<option value="${b.batch_no}" data-stok-id="${b.stok_id || ''}" data-grade="${b.grade_cd || 'A'}" data-sisa="${b.sisa_qty}" data-harga="${b.harga_satuan || 0}" data-masuk="${b.tgl_terima}" data-exp="${b.expired_tgl || '-'}" ${isTop ? 'selected' : ''}>
+                                ${prefix}${b.batch_no}${gradeBadge} (Sisa: ${parseFloat(b.sisa_qty).toLocaleString('id-ID')})${tglTerima}${expInfo}
                             </option>`;
                         });
                         batchSelect.innerHTML = html;
@@ -913,16 +920,25 @@
         const sisa = parseFloat(selectedOpt.getAttribute('data-sisa') || 0);
         const harga = parseFloat(selectedOpt.getAttribute('data-harga') || 0);
         const tglMasuk = selectedOpt.getAttribute('data-masuk') || '-';
+        const grade = selectedOpt.getAttribute('data-grade') || 'A';
+        const stokId = selectedOpt.getAttribute('data-stok-id') || '';
+
+        const gradeInput = row.querySelector('.grade-input');
+        if (gradeInput) gradeInput.value = grade;
+        const stokIdInput = row.querySelector('.stok-id-input');
+        if (stokIdInput) stokIdInput.value = stokId;
+
         const batchInfo = row.querySelector('.batch-info');
         const isFirstBatch = (selectEl.selectedIndex === 0);
+        const gradeDisplay = grade ? ` • Grade ${grade}` : '';
 
         if (isFirstBatch) {
             batchInfo.innerHTML = `<span style="color: #065f46; font-weight: 700; background: #ecfdf5; padding: 0.15rem 0.5rem; border-radius: 4px; border: 1px solid #a7f3d0; display: inline-flex; align-items: center; gap: 0.25rem;">
-                Rekomendasi FIFO: Batch masuk paling awal (${tglMasuk}) • Maks: ${sisa.toLocaleString('id-ID')} unit
+                Rekomendasi FIFO: Masuk ${tglMasuk}${gradeDisplay} • Maks: ${sisa.toLocaleString('id-ID')} unit
             </span>`;
         } else {
             batchInfo.innerHTML = `<span style="color: #0369a1; font-weight: 600; background: #f0f9ff; padding: 0.15rem 0.5rem; border-radius: 4px; border: 1px solid #bae6fd;">
-                Pilihan Manual: Masuk ${tglMasuk} • Maks: ${sisa.toLocaleString('id-ID')} unit
+                Pilihan Manual: Masuk ${tglMasuk}${gradeDisplay} • Maks: ${sisa.toLocaleString('id-ID')} unit
             </span>`;
         }
 

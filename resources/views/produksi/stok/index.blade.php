@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Lacak Stok Bahan Baku & Penolong - ERP PT Mirasa')
+@section('title', 'Stok Hasil Produksi (WIP & FG) - ERP PT Mirasa')
 
 @push('styles')
     <link rel="stylesheet" href="{{ asset('css/gudang/stok/batch-detail-modal.css') }}">
@@ -11,71 +11,74 @@
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.75rem;">
     <div>
         <h1 style="font-size: 1.4rem; font-weight: 800; color: #0f172a; display: flex; align-items: center; gap: 0.5rem; margin: 0;">
-            <span>Lacak Stok Bahan Baku & Penolong</span>
-            <span class="badge" style="background: #ecfdf5; color: #065f46; font-size: 0.75rem; font-weight: 700;">Gudang Bahan & Material</span>
+            <span>Stok Hasil Produksi (WIP &amp; Barang Jadi)</span>
+            <span class="badge" style="background: #ea580c18; color: #ea580c; border: 1px solid #ea580c33; font-size: 0.75rem; font-weight: 700;">Lantai Produksi &amp; Gudang Jadi</span>
         </h1>
         <p style="color: #64748b; font-size: 0.825rem; margin: 0.2rem 0 0 0;">
-            Pantau saldo fisik on-hand bahan mentah (singkong, ubi), minyak, bumbu, dan kemasan/packaging sesuai prioritas batch FIFO.
+            Pantau saldo fisik on-hand olahan setengah jadi (WIP) di lantai produksi dan barang jadi kemasan (FG) siap jual.
         </p>
     </div>
     
     <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
         {{-- View Switcher --}}
         <div style="display: inline-flex; background: #e2e8f0; padding: 0.2rem; border-radius: 8px; gap: 0.2rem;">
-            <a href="{{ route('gudang.stok.index', array_merge(request()->except(['view', 'page']), ['view' => 'split'])) }}" 
+            <a href="{{ route('produksi.stok.index', array_merge(request()->except(['view', 'page']), ['view' => 'split'])) }}" 
                class="btn btn-sm" 
                style="background: {{ $viewType === 'split' ? '#ffffff' : 'transparent' }}; color: {{ $viewType === 'split' ? '#0f172a' : '#64748b' }}; box-shadow: {{ $viewType === 'split' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none' }}; border-radius: 6px; font-weight: 700; padding: 0.35rem 0.75rem; font-size: 0.8rem;">
                 ⚡ Split-Screen (Master-Detail)
             </a>
-            <a href="{{ route('gudang.stok.index', array_merge(request()->except(['view', 'page']), ['view' => 'summary'])) }}" 
+            <a href="{{ route('produksi.stok.index', array_merge(request()->except(['view', 'page']), ['view' => 'summary'])) }}" 
                class="btn btn-sm" 
                style="background: {{ $viewType === 'summary' ? '#ffffff' : 'transparent' }}; color: {{ $viewType === 'summary' ? '#0f172a' : '#64748b' }}; box-shadow: {{ $viewType === 'summary' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none' }}; border-radius: 6px; font-weight: 700; padding: 0.35rem 0.75rem; font-size: 0.8rem;">
                 📦 Tabel Ringkas (2-Level)
             </a>
-            <a href="{{ route('gudang.stok.index', array_merge(request()->except(['view', 'page']), ['view' => 'batch'])) }}" 
+            <a href="{{ route('produksi.stok.index', array_merge(request()->except(['view', 'page']), ['view' => 'batch'])) }}" 
                class="btn btn-sm" 
                style="background: {{ $viewType === 'batch' ? '#ffffff' : 'transparent' }}; color: {{ $viewType === 'batch' ? '#0f172a' : '#64748b' }}; box-shadow: {{ $viewType === 'batch' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none' }}; border-radius: 6px; font-weight: 700; padding: 0.35rem 0.75rem; font-size: 0.8rem;">
                 📋 Sheet per-Batch
             </a>
         </div>
 
-        <a href="{{ route('gudang.terima.create') }}" class="btn btn-primary btn-sm" style="background: #059669; border-color: #059669; padding: 0.4rem 0.85rem; font-weight: 600;">
-            + Terima Masuk
+        <a href="{{ route('produksi.create') }}" class="btn btn-primary btn-sm" style="background: #059669; border-color: #059669; padding: 0.4rem 0.85rem; font-weight: 600;">
+            + Input Hasil Produksi
         </a>
-        <a href="{{ route('gudang.pemakaian.create') }}" class="btn btn-primary btn-sm" style="background: #dc2626; border-color: #dc2626; padding: 0.4rem 0.85rem; font-weight: 600;">
-            - Catat Keluar
+        <a href="{{ route('produksi.index') }}" class="btn btn-secondary btn-sm" style="padding: 0.4rem 0.85rem; font-weight: 600;">
+            Riwayat Output
+        </a>
+        <a href="{{ route('produksi.stok.ledger') }}" class="btn btn-secondary btn-sm" style="padding: 0.4rem 0.85rem; font-weight: 600;">
+            📜 Kartu Stok WIP &amp; FG
         </a>
     </div>
 </div>
 
-{{-- 4 KARTU METRIK OPERASIONAL (SERAGAM DENGAN PO & BARANG MASUK) --}}
+{{-- 4 KARTU METRIK OPERASIONAL PRODUKSI --}}
 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1.25rem;">
-    {{-- 1. VALUASI PERSEDIAAN GUDANG --}}
+    {{-- 1. VALUASI HASIL PRODUKSI --}}
     <div style="background: #ffffff; border-radius: 8px; border: 1px solid #e2e8f0; padding: 1rem 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
         <div style="display: flex; justify-content: space-between; align-items: flex-start;">
             <div>
                 <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b;">
-                    Valuasi Persediaan Fisik
+                    Valuasi Stok Produksi (WIP &amp; FG)
                 </span>
                 <div style="font-size: 1.45rem; font-weight: 800; color: #0f172a; margin-top: 0.25rem; font-family: monospace;">
                     Rp {{ number_format($kpiMetrics['total_nilai'], 0, ',', '.') }}
                 </div>
             </div>
-            <div style="width: 32px; height: 32px; border-radius: 6px; background: #f1f5f9; display: flex; align-items: center; justify-content: center; color: #475569; flex-shrink: 0;">
+            <div style="width: 32px; height: 32px; border-radius: 6px; background: #fef2f2; display: flex; align-items: center; justify-content: center; color: #ea580c; flex-shrink: 0;">
                 <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
             </div>
         </div>
         <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.4rem;">
-            Total estimasi aset bahan di gudang
+            Total estimasi aset barang olahan &amp; jadi
         </div>
     </div>
 
-    {{-- 2. TOTAL ITEM (SKU) --}}
+    {{-- 2. TOTAL SKU OUTPUT --}}
     <div style="background: #ffffff; border-radius: 8px; border: 1px solid #e2e8f0; padding: 1rem 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
         <div style="display: flex; justify-content: space-between; align-items: flex-start;">
             <div>
                 <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #0284c7;">
-                    Total Komoditas (SKU)
+                    Total Item Output (SKU)
                 </span>
                 <div style="font-size: 1.45rem; font-weight: 800; color: #0f172a; margin-top: 0.25rem;">
                     {{ $kpiMetrics['total_sku'] }} <span style="font-size: 0.8rem; font-weight: 600; color: #0284c7;">({{ $kpiMetrics['sku_tersedia'] }} Ada Stok)</span>
@@ -86,19 +89,19 @@
             </div>
         </div>
         <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.4rem;">
-            Bahan baku &amp; penolong terdaftar
+            WIP setengah jadi &amp; kemasan Finished Goods
         </div>
     </div>
 
-    {{-- 3. STOK MENIPIS / DEFISIT --}}
+    {{-- 3. STOK MENIPIS / DI BAWAH BUFFER --}}
     <div style="background: {{ $kpiMetrics['sku_menipis'] > 0 ? '#fffbeb' : '#ffffff' }}; border-radius: 8px; border: 1px solid {{ $kpiMetrics['sku_menipis'] > 0 ? '#fde68a' : '#e2e8f0' }}; padding: 1rem 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
         <div style="display: flex; justify-content: space-between; align-items: flex-start;">
             <div>
                 <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: {{ $kpiMetrics['sku_menipis'] > 0 ? '#b45309' : '#64748b' }};">
-                    Stok Menipis (Kritis)
+                    Stok Menipis / Kritis
                 </span>
                 <div style="font-size: 1.45rem; font-weight: 800; color: {{ $kpiMetrics['sku_menipis'] > 0 ? '#b45309' : '#0f172a' }}; margin-top: 0.25rem;">
-                    {{ $kpiMetrics['sku_menipis'] }} <span style="font-size: 0.8rem; font-weight: 600; color: {{ $kpiMetrics['sku_menipis'] > 0 ? '#b45309' : '#64748b' }};">Komoditas</span>
+                    {{ $kpiMetrics['sku_menipis'] }} <span style="font-size: 0.8rem; font-weight: 600; color: {{ $kpiMetrics['sku_menipis'] > 0 ? '#b45309' : '#64748b' }};">Produk</span>
                 </div>
             </div>
             <div style="width: 32px; height: 32px; border-radius: 6px; background: {{ $kpiMetrics['sku_menipis'] > 0 ? '#fef3c7' : '#f1f5f9' }}; display: flex; align-items: center; justify-content: center; color: {{ $kpiMetrics['sku_menipis'] > 0 ? '#d97706' : '#64748b' }}; flex-shrink: 0;">
@@ -106,16 +109,16 @@
             </div>
         </div>
         <div style="font-size: 0.75rem; color: {{ $kpiMetrics['sku_menipis'] > 0 ? '#b45309' : '#64748b' }}; margin-top: 0.4rem;">
-            {{ $kpiMetrics['sku_menipis'] > 0 ? 'Perlu diterbitkan Purchase Order (PO)' : 'Semua bahan di atas safety stock' }}
+            {{ $kpiMetrics['sku_menipis'] > 0 ? 'Perlu dijadwalkan masak / goreng tambahan' : 'Semua produk di atas batas buffer' }}
         </div>
     </div>
 
-    {{-- 4. BATCH AKTIF (FIFO) --}}
+    {{-- 4. BATCH AKTIF --}}
     <div style="background: #ffffff; border-radius: 8px; border: 1px solid #e2e8f0; padding: 1rem 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
         <div style="display: flex; justify-content: space-between; align-items: flex-start;">
             <div>
                 <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #059669;">
-                    Batch Aktif (Inbound FIFO)
+                    Batch Aktif Siap Kirim
                 </span>
                 <div style="font-size: 1.45rem; font-weight: 800; color: #0f172a; margin-top: 0.25rem;">
                     {{ $kpiMetrics['batch_aktif'] }} <span style="font-size: 0.8rem; font-weight: 600; color: #059669;">Batch</span>
@@ -126,7 +129,7 @@
             </div>
         </div>
         <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.4rem;">
-            Lot nomor batch siap alokasi produksi
+            Lot nomor batch hasil masak &amp; packing
         </div>
     </div>
 </div>
@@ -142,7 +145,7 @@
         {{-- Search & Filter Bar Kiri --}}
         <div style="padding: 0.75rem; background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
             <div style="position: relative; margin-bottom: 0.5rem;">
-                <input type="text" id="masterSearchInput" placeholder="Ketik nama atau kode barang..." 
+                <input type="text" id="masterSearchInput" placeholder="Ketik nama atau kode barang jadi..." 
                        style="width: 100%; padding: 0.45rem 2rem 0.45rem 0.75rem; font-size: 0.85rem; border: 1px solid #cbd5e1; border-radius: 6px; outline: none; box-sizing: border-box;"
                        oninput="filterMasterList()">
                 <span style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 0.85rem; pointer-events: none;">🔍</span>
@@ -166,10 +169,10 @@
                 </div>
 
                 {{-- Gudang Selector --}}
-                <form action="{{ route('gudang.stok.index') }}" method="GET" style="margin: 0;">
+                <form action="{{ route('produksi.stok.index') }}" method="GET" style="margin: 0;">
                     <input type="hidden" name="view" value="split">
                     <select name="gudang_id" class="form-control" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; border-radius: 4px; max-width: 220px;" onchange="this.form.submit()">
-                        <option value="">Semua Lokasi / Entitas</option>
+                        <option value="">Semua Lokasi Pabrik</option>
                         @foreach ($gudangList as $gdg)
                             <option value="{{ $gdg->gudang_id }}" {{ $gudangId == $gdg->gudang_id ? 'selected' : '' }}>
                                 {{ $gdg->display_name }}
@@ -195,7 +198,7 @@
                         'barang_id'          => $item->barang_id,
                         'barang_cd'          => $item->barang_cd,
                         'barang_nm'          => $item->barang_nm,
-                        'jenis_nm'           => $item->jenisBarang?->jenis_barang_nm ?? 'Umum',
+                        'jenis_nm'           => $item->jenisBarang?->jenis_barang_nm ?? 'Hasil Produksi',
                         'satuan_nm'          => $item->satuanDasar?->satuan_nm ?? 'Unit',
                         'sisa_qty'           => $sisaQty,
                         'min_stok'           => $minStok,
@@ -231,7 +234,7 @@
                      data-status="{{ $statusCat }}"
                      data-search="{{ strtolower($item->barang_cd . ' ' . $item->barang_nm . ' ' . ($item->jenisBarang?->jenis_barang_nm ?? '')) }}"
                      onclick="selectBarang({{ json_encode($itemData) }})"
-                     style="padding: 0.55rem 0.75rem; border-radius: 8px; border: 1px solid {{ $index === 0 ? '#0284c7' : '#e2e8f0' }}; background: {{ $index === 0 ? '#f0f9ff' : '#ffffff' }}; cursor: pointer; transition: all 0.15s ease; border-left: 4px solid {{ $index === 0 ? '#0284c7' : ($isHabis ? '#cbd5e1' : ($isMenipis ? '#d97706' : '#059669')) }};">
+                     style="padding: 0.55rem 0.75rem; border-radius: 8px; border: 1px solid {{ $index === 0 ? '#ea580c' : '#e2e8f0' }}; background: {{ $index === 0 ? '#fff7ed' : '#ffffff' }}; cursor: pointer; transition: all 0.15s ease; border-left: 4px solid {{ $index === 0 ? '#ea580c' : ($isHabis ? '#cbd5e1' : ($isMenipis ? '#d97706' : '#059669')) }};">
                     
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.15rem;">
                         <span style="font-family: monospace; font-size: 0.75rem; font-weight: 700; color: #475569;">
@@ -254,28 +257,28 @@
 
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.25rem; font-size: 0.75rem;">
                         <span style="color: #64748b;">
-                            {{ $item->jenisBarang?->jenis_barang_nm ?? 'Umum' }}
+                            {{ $item->jenisBarang?->jenis_barang_nm ?? 'Output' }}
                         </span>
-                        <span style="font-weight: 800; color: {{ $isHabis ? '#94a3b8' : ($isMenipis ? '#d97706' : '#059669') }}; font-size: 0.85rem;">
+                        <span style="font-weight: 800; color: {{ $isHabis ? '#94a3b8' : ($isMenipis ? '#d97706' : '#ea580c') }}; font-size: 0.85rem;">
                             {{ number_format($sisaQty, 2, ',', '.') }} {{ $item->satuanDasar?->satuan_nm }}
                         </span>
                     </div>
                 </div>
             @empty
                 <div style="padding: 2rem 1rem; text-align: center; color: #94a3b8; font-size: 0.85rem;">
-                    Tidak ada barang yang cocok.
+                    Tidak ada barang hasil produksi ditemukan.
                 </div>
             @endforelse
         </div>
 
         {{-- Footer Panel Kiri --}}
         <div style="padding: 0.4rem 0.75rem; background: #f8fafc; border-top: 1px solid #e2e8f0; font-size: 0.725rem; color: #64748b; display: flex; justify-content: space-between; align-items: center;">
-            <span id="itemCountLabel">Menampilkan {{ count($summaryList) }} barang</span>
-            <span>💡 Klik barang untuk melihat rincian batch</span>
+            <span id="itemCountLabel">Menampilkan {{ count($summaryList) }} item</span>
+            <span>💡 Klik item untuk rincian batch output</span>
         </div>
     </div>
 
-    {{-- PANEL KANAN: DETAIL BARANG & BATCH FIFO (LEBAR 62%) --}}
+    {{-- PANEL KANAN: DETAIL BARANG & BATCH (LEBAR 62%) --}}
     <div id="detailPanel" style="flex: 1; display: flex; flex-direction: column; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
         {{-- Detail Header --}}
         <div style="padding: 0.85rem 1.25rem; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
@@ -284,7 +287,7 @@
                     <span id="dtlCd" style="font-family: monospace; font-size: 0.8rem; font-weight: 800; background: #e2e8f0; padding: 0.15rem 0.45rem; border-radius: 4px; color: #1e293b;">
                         -
                     </span>
-                    <span id="dtlJenis" style="background: #eff6ff; color: #1d4ed8; padding: 0.15rem 0.45rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700;">
+                    <span id="dtlJenis" style="background: #ffedd5; color: #c2410c; padding: 0.15rem 0.45rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700;">
                         -
                     </span>
                     <span id="dtlStatusBadge"></span>
@@ -295,49 +298,46 @@
             </div>
 
             <div style="display: flex; gap: 0.4rem;">
-                <a id="dtlBtnKeluar" href="{{ route('gudang.pemakaian.create') }}" class="btn btn-sm" style="background: #dc2626; color: #ffffff; font-weight: 600; padding: 0.35rem 0.75rem; font-size: 0.775rem;">
-                    - Catat Keluar
-                </a>
                 <a id="dtlBtnLedger" href="#" class="btn btn-sm btn-secondary" style="font-weight: 600; padding: 0.35rem 0.75rem; font-size: 0.775rem;">
-                    📜 Kartu Stok &rarr;
+                    📜 Kartu Stok WIP/FG &rarr;
                 </a>
             </div>
         </div>
 
-        {{-- Detail Body (Scrollable secara internal jika batch banyak) --}}
+        {{-- Detail Body --}}
         <div style="flex: 1; overflow-y: auto; padding: 1rem 1.25rem;">
             {{-- 4 Kotak Ringkasan Cepat --}}
             <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.6rem; margin-bottom: 1rem;">
                 <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.5rem 0.75rem;">
                     <div style="font-size: 0.7rem; font-weight: 600; color: #64748b; text-transform: uppercase;">Sisa Fisik On-Hand</div>
-                    <div id="dtlSisaQty" style="font-size: 1.1rem; font-weight: 800; color: #059669; margin-top: 0.1rem;">-</div>
+                    <div id="dtlSisaQty" style="font-size: 1.1rem; font-weight: 800; color: #ea580c; margin-top: 0.1rem;">-</div>
                 </div>
 
                 <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.5rem 0.75rem;">
-                    <div style="font-size: 0.7rem; font-weight: 600; color: #64748b; text-transform: uppercase;">Safety Stock (Min)</div>
+                    <div style="font-size: 0.7rem; font-weight: 600; color: #64748b; text-transform: uppercase;">Buffer Minimum</div>
                     <div id="dtlMinStok" style="font-size: 1.1rem; font-weight: 700; color: #475569; margin-top: 0.1rem;">-</div>
                 </div>
 
                 <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.5rem 0.75rem;">
-                    <div style="font-size: 0.7rem; font-weight: 600; color: #64748b; text-transform: uppercase;">Riwayat Masuk / Keluar</div>
+                    <div style="font-size: 0.7rem; font-weight: 600; color: #64748b; text-transform: uppercase;">Hasil / Penjualan</div>
                     <div id="dtlAwalKeluar" style="font-size: 0.85rem; font-weight: 700; color: #334155; margin-top: 0.25rem;">-</div>
                 </div>
 
                 <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.5rem 0.75rem;">
-                    <div style="font-size: 0.7rem; font-weight: 600; color: #64748b; text-transform: uppercase;">Estimasi Nilai Stok</div>
+                    <div style="font-size: 0.7rem; font-weight: 600; color: #64748b; text-transform: uppercase;">Nilai Stok Standar</div>
                     <div id="dtlNilaiTotal" style="font-size: 1rem; font-weight: 800; color: #0f172a; margin-top: 0.1rem;">-</div>
                 </div>
             </div>
 
-            {{-- Bagian Tabel Batch FIFO --}}
+            {{-- Bagian Tabel Batch Output --}}
             <div style="border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
-                <div style="background: #0f394c; color: #ffffff; padding: 0.55rem 0.85rem; display: flex; justify-content: space-between; align-items: center;">
+                <div style="background: #7c2d12; color: #ffffff; padding: 0.55rem 0.85rem; display: flex; justify-content: space-between; align-items: center;">
                     <div style="font-size: 0.8rem; font-weight: 700; display: flex; align-items: center; gap: 0.35rem;">
-                        <span>Rincian Batch FIFO & FEFO</span>
-                        <span id="dtlBatchCountBadge" style="background: #0284c7; padding: 0.1rem 0.4rem; border-radius: 10px; font-size: 0.7rem;">0 Batch</span>
+                        <span>Rincian Lot Batch Hasil Masak &amp; Packing</span>
+                        <span id="dtlBatchCountBadge" style="background: #ea580c; padding: 0.1rem 0.4rem; border-radius: 10px; font-size: 0.7rem;">0 Batch</span>
                     </div>
-                    <div style="font-size: 0.7rem; color: #cbd5e1;">
-                        ⭐ Urutan teratas wajib digunakan terlebih dahulu
+                    <div style="font-size: 0.7rem; color: #fed7aa;">
+                        📦 Prioritas FIFO untuk pengemasan atau pengiriman ke toko/agen
                     </div>
                 </div>
 
@@ -346,13 +346,12 @@
                         <thead style="position: sticky; top: 0; background: #f1f5f9; z-index: 5;">
                             <tr style="border-bottom: 1px solid #cbd5e1; color: #475569; font-weight: 700;">
                                 <th style="padding: 0.5rem 0.65rem; text-align: center; width: 40px;">No</th>
-                                <th style="padding: 0.5rem 0.65rem; text-align: left;">Nomor Batch</th>
-                                <th style="padding: 0.5rem 0.65rem; text-align: center; width: 75px;">Grade</th>
-                                <th style="padding: 0.5rem 0.65rem; text-align: left;">Perusahaan / Lokasi</th>
-                                <th style="padding: 0.5rem 0.65rem; text-align: left;">Tgl Terima</th>
-                                <th style="padding: 0.5rem 0.65rem; text-align: left;">Tgl Kadaluarsa</th>
+                                <th style="padding: 0.5rem 0.65rem; text-align: left;">Nomor Batch Output</th>
+                                <th style="padding: 0.5rem 0.65rem; text-align: left;">Lokasi Penyimpanan</th>
+                                <th style="padding: 0.5rem 0.65rem; text-align: left;">Tgl Dihasilkan</th>
+                                <th style="padding: 0.5rem 0.65rem; text-align: left;">Kadaluarsa</th>
                                 <th style="padding: 0.5rem 0.65rem; text-align: right; font-weight: 800;">Sisa Fisik</th>
-                                <th style="padding: 0.5rem 0.65rem; text-align: right;">Harga Satuan</th>
+                                <th style="padding: 0.5rem 0.65rem; text-align: right;">HPP Standar</th>
                                 <th style="padding: 0.5rem 0.65rem; text-align: right;">Total Nilai</th>
                                 <th style="padding: 0.5rem 0.65rem; text-align: center;">Status</th>
                             </tr>
@@ -374,7 +373,6 @@
     function selectBarang(item) {
         if (!item) return;
 
-        // 1. Highlight kartu terpilih di panel kiri
         document.querySelectorAll('.master-item-card').forEach(el => {
             el.style.border = '1px solid #e2e8f0';
             el.style.background = '#ffffff';
@@ -382,54 +380,49 @@
 
         const activeCard = document.getElementById('item-card-' + item.barang_id);
         if (activeCard) {
-            activeCard.style.border = '1px solid #0284c7';
-            activeCard.style.background = '#f0f9ff';
+            activeCard.style.border = '1px solid #ea580c';
+            activeCard.style.background = '#fff7ed';
         }
 
-        // 2. Isi data header detail panel kanan
         document.getElementById('dtlCd').textContent = item.barang_cd;
         document.getElementById('dtlNm').textContent = item.barang_nm;
         document.getElementById('dtlJenis').textContent = item.jenis_nm;
 
-        // Badge Status
         const badgeSpan = document.getElementById('dtlStatusBadge');
         if (item.status === 'habis') {
-            badgeSpan.innerHTML = '<span style="background: #fee2e2; color: #991b1b; padding: 0.15rem 0.45rem; border-radius: 4px; font-size: 0.725rem; font-weight: 700;">🔴 STOK HABIS</span>';
+            badgeSpan.innerHTML = '<span style="background: #fee2e2; color: #991b1b; padding: 0.15rem 0.45rem; border-radius: 4px; font-size: 0.725rem; font-weight: 700;">🔴 HABIS</span>';
         } else if (item.status === 'menipis') {
-            badgeSpan.innerHTML = '<span style="background: #fef3c7; color: #b45309; padding: 0.15rem 0.45rem; border-radius: 4px; font-size: 0.725rem; font-weight: 700;">⚠️ STOK MENIPIS</span>';
+            badgeSpan.innerHTML = '<span style="background: #fef3c7; color: #b45309; padding: 0.15rem 0.45rem; border-radius: 4px; font-size: 0.725rem; font-weight: 700;">⚠️ MENIPIS</span>';
         } else {
-            badgeSpan.innerHTML = '<span style="background: #dcfce7; color: #166534; padding: 0.15rem 0.45rem; border-radius: 4px; font-size: 0.725rem; font-weight: 700;">🟢 STOK AMAN</span>';
+            badgeSpan.innerHTML = '<span style="background: #dcfce7; color: #166534; padding: 0.15rem 0.45rem; border-radius: 4px; font-size: 0.725rem; font-weight: 700;">🟢 TERSEDIA</span>';
         }
 
-        // Link Tombol Aksi
-        document.getElementById('dtlBtnLedger').href = `{{ route('gudang.stok.ledger') }}?barang_id=${item.barang_id}`;
+        document.getElementById('dtlBtnLedger').href = `{{ route('produksi.stok.ledger') }}?barang_id=${item.barang_id}`;
 
-        // 3. Isi 4 Quick Box
-        const sisaColor = item.status === 'habis' ? '#94a3b8' : (item.status === 'menipis' ? '#d97706' : '#059669');
+        const sisaColor = item.status === 'habis' ? '#94a3b8' : (item.status === 'menipis' ? '#d97706' : '#ea580c');
         document.getElementById('dtlSisaQty').innerHTML = `<span style="color: ${sisaColor}">${item.sisa_qty.toLocaleString('id-ID', {minimumFractionDigits: 2})}</span> <span style="font-size: 0.75rem; font-weight: 600; color: #64748b;">${item.satuan_nm}</span>`;
         
         document.getElementById('dtlMinStok').textContent = item.min_stok > 0 
             ? `${item.min_stok.toLocaleString('id-ID')} ${item.satuan_nm}` 
             : 'Belum diatur';
 
-        document.getElementById('dtlAwalKeluar').innerHTML = `Masuk: ${item.qty_awal.toLocaleString('id-ID')} <br> Keluar: <span style="color: #dc2626">${item.qty_keluar.toLocaleString('id-ID')}</span>`;
+        document.getElementById('dtlAwalKeluar').innerHTML = `Output: ${item.qty_awal.toLocaleString('id-ID')} <br> Keluar: <span style="color: #dc2626">${item.qty_keluar.toLocaleString('id-ID')}</span>`;
 
         document.getElementById('dtlNilaiTotal').textContent = 'Rp ' + item.nilai_total.toLocaleString('id-ID');
 
-        // 4. Render Tabel Batch FIFO
         const tbody = document.getElementById('dtlBatchTbody');
         const countBadge = document.getElementById('dtlBatchCountBadge');
         countBadge.textContent = `${item.batches ? item.batches.length : 0} Batch`;
 
         if (!item.batches || item.batches.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; padding: 2rem 1rem; color: #94a3b8;">Belum ada catatan batch penerimaan untuk barang ini.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; padding: 2rem 1rem; color: #94a3b8;">Belum ada catatan lot hasil produksi untuk barang ini.</td></tr>`;
             return;
         }
 
         let html = '';
         item.batches.forEach((b, idx) => {
             const isFirst = (idx === 0 && !b.is_habis);
-            const rowBg = b.is_habis ? '#fafafa' : (isFirst ? '#f0fdf4' : '#ffffff');
+            const rowBg = b.is_habis ? '#fafafa' : (isFirst ? '#fff7ed' : '#ffffff');
             const textColor = b.is_habis ? '#94a3b8' : '#0f172a';
 
             html += `
@@ -438,19 +431,14 @@
                         ${isFirst ? '<span title="Prioritas 1 FIFO">⭐</span>' : (idx + 1)}
                     </td>
                     <td style="padding: 0.45rem 0.65rem;">
-                        <span class="batch-clickable" onclick="showBatchDetailModal('${b.batch_no}', ${item.barang_id})" title="Klik untuk menelusuri isi detail & riwayat batch" style="font-family: monospace; font-weight: 700; font-size: 0.775rem; background: ${b.is_habis ? '#f1f5f9' : '#e0f2fe'}; color: ${b.is_habis ? '#94a3b8' : '#0369a1'}; padding: 0.15rem 0.45rem; border-radius: 4px; border: 1px solid ${b.is_habis ? '#e2e8f0' : '#bae6fd'};">
+                        <span class="batch-clickable" onclick="showBatchDetailModal('${b.batch_no}', ${item.barang_id})" title="Klik untuk menelusuri isi detail & riwayat batch" style="font-family: monospace; font-weight: 700; font-size: 0.775rem; background: ${b.is_habis ? '#f1f5f9' : '#fff7ed'}; color: ${b.is_habis ? '#94a3b8' : '#ea580c'}; padding: 0.15rem 0.45rem; border-radius: 4px; border: 1px solid ${b.is_habis ? '#e2e8f0' : '#fed7aa'};">
                             ${b.batch_no} 🔍
-                        </span>
-                    </td>
-                    <td style="padding: 0.45rem 0.65rem; text-align: center;">
-                        <span style="font-weight: 800; font-size: 0.72rem; padding: 2px 7px; border-radius: 4px; ${b.grade_cd === 'B' ? 'background: #fef3c7; color: #b45309; border: 1px solid #fde68a;' : (b.grade_cd === 'REJECT' ? 'background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5;' : 'background: #dcfce7; color: #15803d; border: 1px solid #86efac;')}">
-                            ${b.grade_cd === 'B' ? '🟡 Grade B' : (b.grade_cd === 'REJECT' ? '❌ Afkir' : '🟢 Grade A')}
                         </span>
                     </td>
                     <td style="padding: 0.45rem 0.65rem; color: #334155;">${b.gudang_nm}</td>
                     <td style="padding: 0.45rem 0.65rem; color: #64748b;">${b.tgl_terima}</td>
                     <td style="padding: 0.45rem 0.65rem; color: #64748b;">${b.expired_tgl}</td>
-                    <td style="padding: 0.45rem 0.65rem; text-align: right; font-weight: 800; color: ${b.is_habis ? '#94a3b8' : '#059669'};">
+                    <td style="padding: 0.45rem 0.65rem; text-align: right; font-weight: 800; color: ${b.is_habis ? '#94a3b8' : '#ea580c'};">
                         ${b.sisa_qty.toLocaleString('id-ID', {minimumFractionDigits: 2})} ${item.satuan_nm}
                     </td>
                     <td style="padding: 0.45rem 0.65rem; text-align: right; color: #475569;">
@@ -462,7 +450,7 @@
                     <td style="padding: 0.45rem 0.65rem; text-align: center;">
                         ${b.is_habis 
                             ? '<span style="color: #94a3b8; font-size: 0.7rem; font-weight: 700;">HABIS</span>' 
-                            : '<span style="background: #059669; color: #ffffff; padding: 0.1rem 0.4rem; border-radius: 3px; font-size: 0.675rem; font-weight: 700;">TERSEDIA</span>'}
+                            : '<span style="background: #ea580c; color: #ffffff; padding: 0.1rem 0.4rem; border-radius: 3px; font-size: 0.675rem; font-weight: 700;">READY</span>'}
                     </td>
                 </tr>
             `;
@@ -471,7 +459,6 @@
         tbody.innerHTML = html;
     }
 
-    // Filter Instant Panel Kiri (Pencarian & Status Chip)
     function filterMasterList() {
         const query = document.getElementById('masterSearchInput').value.toLowerCase().trim();
         const cards = document.querySelectorAll('.master-item-card');
@@ -510,7 +497,6 @@
         filterMasterList();
     }
 
-    // Auto-select item pertama saat halaman dimuat
     document.addEventListener('DOMContentLoaded', () => {
         const firstItem = @json($firstItemJson);
         if (firstItem) {
@@ -524,15 +510,14 @@
 {{-- ======================================================== --}}
 @elseif ($viewType === 'summary')
 <div class="card" style="border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
-    {{-- Filter Toolbar Mode Ringkas --}}
     <div class="card-header" style="background: #ffffff; padding: 0.875rem 1.25rem; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
-        <form action="{{ route('gudang.stok.index') }}" method="GET" style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; max-width: 860px; width: 100%;">
+        <form action="{{ route('produksi.stok.index') }}" method="GET" style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; max-width: 860px; width: 100%;">
             <input type="hidden" name="view" value="summary">
             
-            <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Cari nama, kode komoditas..." class="form-control" style="padding: 0.45rem 0.75rem; max-width: 220px; font-size: 0.85rem;">
+            <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Cari nama atau kode produk..." class="form-control" style="padding: 0.45rem 0.75rem; max-width: 220px; font-size: 0.85rem;">
 
             <select name="gudang_id" class="form-control" style="padding: 0.45rem 0.75rem; max-width: 170px; font-size: 0.85rem;" onchange="this.form.submit()">
-                <option value="">-- Semua Perusahaan / Cabang --</option>
+                <option value="">-- Semua Lokasi Pabrik --</option>
                 @foreach ($gudangList as $gdg)
                     <option value="{{ $gdg->gudang_id }}" {{ $gudangId == $gdg->gudang_id ? 'selected' : '' }}>
                         {{ $gdg->display_name }}
@@ -541,7 +526,7 @@
             </select>
 
             <select name="jenis_barang_id" class="form-control" style="padding: 0.45rem 0.75rem; max-width: 160px; font-size: 0.85rem;" onchange="this.form.submit()">
-                <option value="">-- Semua Kategori --</option>
+                <option value="">-- Semua Output --</option>
                 @foreach ($jenisBarangList as $jb)
                     <option value="{{ $jb->jenis_barang_id }}" {{ ($jenisBarangId == $jb->jenis_barang_id) ? 'selected' : '' }}>
                         {{ $jb->jenis_barang_nm }}
@@ -559,13 +544,13 @@
 
             <button type="submit" class="btn btn-secondary btn-sm" style="padding: 0.45rem 0.85rem;">Filter</button>
             @if(!empty($search) || !empty($gudangId) || !empty($jenisBarangId) || !empty($status))
-                <a href="{{ route('gudang.stok.index', ['view' => 'summary']) }}" class="btn btn-secondary btn-sm" title="Reset Filter" style="padding: 0.45rem 0.65rem;">Reset</a>
+                <a href="{{ route('produksi.stok.index', ['view' => 'summary']) }}" class="btn btn-secondary btn-sm" title="Reset Filter" style="padding: 0.45rem 0.65rem;">Reset</a>
             @endif
         </form>
 
         <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
             <span style="color: #64748b; font-size: 0.85rem;">
-                Total: <strong style="color: #0f172a;">{{ $summaryList->total() }}</strong> Komoditas
+                Total: <strong style="color: #0f172a;">{{ $summaryList->total() }}</strong> Produk Output
             </span>
             <div style="display: flex; gap: 0.35rem;">
                 <button type="button" class="btn btn-sm btn-secondary" onclick="toggleAllBatches(true)" style="font-size: 0.75rem; padding: 0.3rem 0.6rem;">
@@ -584,13 +569,13 @@
                 <tr style="border-bottom: 2px solid #cbd5e1;">
                     <th style="background: #f8fafc !important; color: #1e293b !important; font-weight: 700; font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.75rem 0.5rem; width: 35px; text-align: center;"></th>
                     <th style="background: #f8fafc !important; color: #1e293b !important; font-weight: 700; font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.75rem 0.75rem; text-align: left;">Kode</th>
-                    <th style="background: #f8fafc !important; color: #1e293b !important; font-weight: 700; font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.75rem 0.75rem; text-align: left;">Nama Komoditas &amp; Kategori</th>
+                    <th style="background: #f8fafc !important; color: #1e293b !important; font-weight: 700; font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.75rem 0.75rem; text-align: left;">Nama Produk &amp; Kategori</th>
                     <th style="background: #f8fafc !important; color: #1e293b !important; font-weight: 700; font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.75rem 0.75rem; text-align: center;">Satuan</th>
-                    <th style="background: #f8fafc !important; color: #1e293b !important; font-weight: 700; font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.75rem 0.75rem; text-align: right;">Min. Stok</th>
-                    <th style="background: #f8fafc !important; color: #1e293b !important; font-weight: 700; font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.75rem 0.75rem; text-align: right;">Masuk</th>
-                    <th style="background: #f8fafc !important; color: #1e293b !important; font-weight: 700; font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.75rem 0.75rem; text-align: right;">Keluar</th>
-                    <th style="background: #f8fafc !important; color: #1e293b !important; font-weight: 800; font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.75rem 0.75rem; text-align: right;">Sisa Fisik</th>
-                    <th style="background: #f8fafc !important; color: #1e293b !important; font-weight: 700; font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.75rem 0.75rem; text-align: right;">Nilai Persediaan</th>
+                    <th style="background: #f8fafc !important; color: #1e293b !important; font-weight: 700; font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.75rem 0.75rem; text-align: right;">Buffer Min</th>
+                    <th style="background: #f8fafc !important; color: #1e293b !important; font-weight: 700; font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.75rem 0.75rem; text-align: right;">Total Output</th>
+                    <th style="background: #f8fafc !important; color: #1e293b !important; font-weight: 700; font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.75rem 0.75rem; text-align: right;">Terjual / Keluar</th>
+                    <th style="background: #f8fafc !important; color: #1e293b !important; font-weight: 800; font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.75rem 0.75rem; text-align: right;">Sisa On-Hand</th>
+                    <th style="background: #f8fafc !important; color: #1e293b !important; font-weight: 700; font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.75rem 0.75rem; text-align: right;">Total Nilai</th>
                     <th style="background: #f8fafc !important; color: #1e293b !important; font-weight: 700; font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.75rem 0.75rem; text-align: center;">Status</th>
                     <th style="background: #f8fafc !important; color: #1e293b !important; font-weight: 700; font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.75rem 0.75rem; text-align: center;">Batch</th>
                     <th style="background: #f8fafc !important; color: #1e293b !important; font-weight: 700; font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.75rem 1rem; text-align: right;">Aksi</th>
@@ -606,22 +591,22 @@
                         $isHabis = $sisaQty <= 0;
                         $isMenipis = !$isHabis && $minStok > 0 && $sisaQty <= $minStok;
                     @endphp
-                    <tr style="border-bottom: 1px solid #f1f5f9; cursor: pointer; transition: background 0.15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'" onclick="toggleBatchRow({{ $item->barang_id }})">
+                    <tr style="border-bottom: 1px solid #f1f5f9; cursor: pointer; transition: background 0.15s;" onmouseover="this.style.background='#fff7ed'" onmouseout="this.style.background='transparent'" onclick="toggleBatchRow({{ $item->barang_id }})">
                         <td style="text-align: center; padding: 0.65rem 0.25rem;">
                             <span id="icon-chevron-{{ $item->barang_id }}" style="display: inline-block; font-size: 0.75rem; color: #64748b; transition: transform 0.2s;">▶</span>
                         </td>
-                        <td style="padding: 0.65rem 0.75rem; font-family: monospace; font-weight: 700; color: #0284c7;">{{ $item->barang_cd }}</td>
+                        <td style="padding: 0.65rem 0.75rem; font-family: monospace; font-weight: 700; color: #ea580c;">{{ $item->barang_cd }}</td>
                         <td style="padding: 0.65rem 0.75rem;">
                             <strong style="color: #0f172a;">{{ $item->barang_nm }}</strong>
                             <span style="display: block; font-size: 0.725rem; color: #64748b; font-weight: 500;">
-                                {{ $item->jenisBarang?->jenis_barang_nm ?? 'Komoditas Umum' }}
+                                {{ $item->jenisBarang?->jenis_barang_nm ?? 'Output' }}
                             </span>
                         </td>
                         <td style="padding: 0.65rem 0.75rem; text-align: center;">{{ $item->satuanDasar?->satuan_nm }}</td>
                         <td style="padding: 0.65rem 0.75rem; text-align: right; color: #64748b;">{{ $minStok > 0 ? number_format($minStok, 0, ',', '.') : '-' }}</td>
                         <td style="padding: 0.65rem 0.75rem; text-align: right;">{{ number_format($qtyAwal, 2, ',', '.') }}</td>
                         <td style="padding: 0.65rem 0.75rem; text-align: right; color: #dc2626;">{{ number_format($qtyKeluar, 2, ',', '.') }}</td>
-                        <td style="padding: 0.65rem 0.75rem; text-align: right; font-weight: 800; color: {{ $isHabis ? '#94a3b8' : ($isMenipis ? '#d97706' : '#059669') }};">
+                        <td style="padding: 0.65rem 0.75rem; text-align: right; font-weight: 800; color: {{ $isHabis ? '#94a3b8' : ($isMenipis ? '#d97706' : '#ea580c') }};">
                             {{ number_format($sisaQty, 2, ',', '.') }}
                         </td>
                         <td style="padding: 0.65rem 0.75rem; text-align: right; font-weight: 700; color: #0f172a;">Rp {{ number_format((float) $item->total_sisa_nilai, 0, ',', '.') }}</td>
@@ -635,12 +620,12 @@
                             @endif
                         </td>
                         <td style="padding: 0.65rem 0.75rem; text-align: center;">
-                            <span style="background: #e0e7ff; color: #3730a3; padding: 0.15rem 0.45rem; border-radius: 10px; font-size: 0.7rem; font-weight: 700;">
+                            <span style="background: #ffedd5; color: #c2410c; padding: 0.15rem 0.45rem; border-radius: 10px; font-size: 0.7rem; font-weight: 700;">
                                 {{ $item->active_batch_count }} Batch
                             </span>
                         </td>
                         <td style="padding: 0.65rem 1rem; text-align: right;" onclick="event.stopPropagation();">
-                            <a href="{{ route('gudang.stok.ledger', ['barang_id' => $item->barang_id, 'gudang_id' => $gudangId]) }}" class="btn btn-secondary btn-sm" style="font-size: 0.725rem; padding: 0.2rem 0.45rem;">
+                            <a href="{{ route('produksi.stok.ledger', ['barang_id' => $item->barang_id, 'gudang_id' => $gudangId]) }}" class="btn btn-secondary btn-sm" style="font-size: 0.725rem; padding: 0.2rem 0.45rem;">
                                 Kartu &rarr;
                             </a>
                         </td>
@@ -653,10 +638,9 @@
                                 <table style="width: 100%; border-collapse: collapse; font-size: 0.775rem;">
                                     <thead>
                                         <tr style="border-bottom: 1px solid #cbd5e1;">
-                                            <th style="background: #f1f5f9 !important; color: #334155 !important; font-weight: 700; padding: 0.45rem 0.65rem; text-align: left;">No. Batch</th>
-                                            <th style="background: #f1f5f9 !important; color: #334155 !important; font-weight: 700; padding: 0.45rem 0.65rem; text-align: center; width: 85px;">Grade</th>
-                                            <th style="background: #f1f5f9 !important; color: #334155 !important; font-weight: 700; padding: 0.45rem 0.65rem; text-align: left;">Perusahaan / Lokasi</th>
-                                            <th style="background: #f1f5f9 !important; color: #334155 !important; font-weight: 700; padding: 0.45rem 0.65rem; text-align: left;">Tgl Terima</th>
+                                            <th style="background: #f1f5f9 !important; color: #334155 !important; font-weight: 700; padding: 0.45rem 0.65rem; text-align: left;">No. Batch Output</th>
+                                            <th style="background: #f1f5f9 !important; color: #334155 !important; font-weight: 700; padding: 0.45rem 0.65rem; text-align: left;">Lokasi Penyimpanan</th>
+                                            <th style="background: #f1f5f9 !important; color: #334155 !important; font-weight: 700; padding: 0.45rem 0.65rem; text-align: left;">Tgl Dihasilkan</th>
                                             <th style="background: #f1f5f9 !important; color: #334155 !important; font-weight: 700; padding: 0.45rem 0.65rem; text-align: right;">Sisa Qty</th>
                                             <th style="background: #f1f5f9 !important; color: #334155 !important; font-weight: 700; padding: 0.45rem 0.65rem; text-align: right;">Harga Satuan</th>
                                             <th style="background: #f1f5f9 !important; color: #334155 !important; font-weight: 700; padding: 0.45rem 0.65rem; text-align: right;">Total Nilai</th>
@@ -667,35 +651,20 @@
                                         @forelse ($item->stokBatches as $b)
                                             <tr style="border-bottom: 1px solid #f1f5f9;">
                                                 <td style="padding: 0.45rem 0.65rem;">
-                                                    <span class="batch-clickable" onclick="showBatchDetailModal('{{ $b->batch_no }}', {{ $b->barang_id }})" title="Klik untuk menelusuri isi detail & riwayat batch" style="font-family: monospace; font-weight: 700; color: #0284c7; background: #e0f2fe; padding: 2px 7px; border-radius: 4px; border: 1px solid #bae6fd; font-size: 0.775rem;">
+                                                    <span class="batch-clickable" onclick="showBatchDetailModal('{{ $b->batch_no }}', {{ $b->barang_id }})" title="Klik untuk menelusuri isi detail & riwayat batch" style="font-family: monospace; font-weight: 700; color: #ea580c; background: #fff7ed; padding: 2px 7px; border-radius: 4px; border: 1px solid #fed7aa; font-size: 0.775rem;">
                                                         {{ $b->batch_no }} 🔍
                                                     </span>
                                                 </td>
-                                                <td style="padding: 0.45rem 0.65rem; text-align: center;">
-                                                    @if ($b->grade_cd === 'B')
-                                                        <span class="badge" style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a; font-weight: 800; font-size: 0.72rem; padding: 2px 7px;">
-                                                            🟡 Grade B
-                                                        </span>
-                                                    @elseif ($b->grade_cd === 'REJECT')
-                                                        <span class="badge" style="background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; font-weight: 800; font-size: 0.72rem; padding: 2px 7px;">
-                                                            ❌ Afkir
-                                                        </span>
-                                                    @else
-                                                        <span class="badge" style="background: #dcfce7; color: #15803d; border: 1px solid #86efac; font-weight: 800; font-size: 0.72rem; padding: 2px 7px;">
-                                                            🟢 Grade A
-                                                        </span>
-                                                    @endif
-                                                </td>
                                                 <td style="padding: 0.45rem 0.65rem;">{{ $b->gudang?->gudang_nm ?? '-' }}</td>
                                                 <td style="padding: 0.45rem 0.65rem; color: #64748b;">{{ $b->created_at ? $b->created_at->format('d/m/Y') : '-' }}</td>
-                                                <td style="padding: 0.45rem 0.65rem; text-align: right; font-weight: 800; color: {{ (float)$b->sisa_qty <= 0 ? '#94a3b8' : '#059669' }};">
+                                                <td style="padding: 0.45rem 0.65rem; text-align: right; font-weight: 800; color: {{ (float)$b->sisa_qty <= 0 ? '#94a3b8' : '#ea580c' }};">
                                                     {{ number_format((float)$b->sisa_qty, 2, ',', '.') }}
                                                 </td>
                                                 <td style="padding: 0.45rem 0.65rem; text-align: right;">Rp {{ number_format((float)$b->harga_satuan, 0, ',', '.') }}</td>
                                                 <td style="padding: 0.45rem 0.65rem; text-align: right; font-weight: 700;">Rp {{ number_format((float)$b->sisa_qty * (float)$b->harga_satuan, 0, ',', '.') }}</td>
                                                 <td style="padding: 0.45rem 0.65rem; text-align: center;">
                                                     <span style="font-size: 0.675rem; font-weight: 700; color: {{ (float)$b->sisa_qty <= 0 ? '#991b1b' : '#166534' }};">
-                                                        {{ (float)$b->sisa_qty <= 0 ? 'HABIS' : 'TERSEDIA' }}
+                                                        {{ (float)$b->sisa_qty <= 0 ? 'HABIS' : 'READY' }}
                                                     </span>
                                                 </td>
                                             </tr>
@@ -708,7 +677,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="12" style="text-align: center; padding: 2.5rem; color: #64748b;">Tidak ada data komoditas stok ditemukan.</td></tr>
+                    <tr><td colspan="12" style="text-align: center; padding: 2.5rem; color: #64748b;">Tidak ada data produk hasil produksi ditemukan.</td></tr>
                 @endforelse
             </tbody>
         </table>
@@ -741,15 +710,14 @@ function toggleAllBatches(show) {
 {{-- ======================================================== --}}
 @else
 <div class="card" style="border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
-    {{-- Filter Toolbar Mode Flat Sheet --}}
     <div class="card-header" style="background: #ffffff; padding: 0.875rem 1.25rem; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
-        <form action="{{ route('gudang.stok.index') }}" method="GET" style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; max-width: 860px; width: 100%;">
+        <form action="{{ route('produksi.stok.index') }}" method="GET" style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; max-width: 860px; width: 100%;">
             <input type="hidden" name="view" value="batch">
             
             <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Cari nomor batch, kode atau nama..." class="form-control" style="padding: 0.45rem 0.75rem; max-width: 240px; font-size: 0.85rem;">
 
             <select name="gudang_id" class="form-control" style="padding: 0.45rem 0.75rem; max-width: 170px; font-size: 0.85rem;" onchange="this.form.submit()">
-                <option value="">-- Semua Perusahaan / Cabang --</option>
+                <option value="">-- Semua Lokasi Pabrik --</option>
                 @foreach ($gudangList as $gdg)
                     <option value="{{ $gdg->gudang_id }}" {{ $gudangId == $gdg->gudang_id ? 'selected' : '' }}>
                         {{ $gdg->display_name }}
@@ -758,7 +726,7 @@ function toggleAllBatches(show) {
             </select>
 
             <select name="jenis_barang_id" class="form-control" style="padding: 0.45rem 0.75rem; max-width: 160px; font-size: 0.85rem;" onchange="this.form.submit()">
-                <option value="">-- Semua Kategori --</option>
+                <option value="">-- Semua Output --</option>
                 @foreach ($jenisBarangList as $jb)
                     <option value="{{ $jb->jenis_barang_id }}" {{ ($jenisBarangId == $jb->jenis_barang_id) ? 'selected' : '' }}>
                         {{ $jb->jenis_barang_nm }}
@@ -774,12 +742,12 @@ function toggleAllBatches(show) {
 
             <button type="submit" class="btn btn-secondary btn-sm" style="padding: 0.45rem 0.85rem;">Filter</button>
             @if(!empty($search) || !empty($gudangId) || !empty($jenisBarangId) || !empty($status))
-                <a href="{{ route('gudang.stok.index', ['view' => 'batch']) }}" class="btn btn-secondary btn-sm" title="Reset Filter" style="padding: 0.45rem 0.65rem;">Reset</a>
+                <a href="{{ route('produksi.stok.index', ['view' => 'batch']) }}" class="btn btn-secondary btn-sm" title="Reset Filter" style="padding: 0.45rem 0.65rem;">Reset</a>
             @endif
         </form>
 
         <span style="color: #64748b; font-size: 0.85rem;">
-            Total: <strong style="color: #0f172a;">{{ $stokList->total() }}</strong> Baris Lot Batch
+            Total: <strong style="color: #0f172a;">{{ $stokList->total() }}</strong> Baris Lot Batch Output
         </span>
     </div>
 
@@ -788,13 +756,13 @@ function toggleAllBatches(show) {
             <thead>
                 <tr style="border-bottom: 2px solid #cbd5e1;">
                     <th style="background: #f8fafc !important; color: #1e293b !important; font-weight: 700; font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.75rem 0.75rem; text-align: left;">Kode Batch</th>
-                    <th style="background: #f8fafc !important; color: #1e293b !important; font-weight: 700; font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.75rem 0.75rem; text-align: left;">Kode Komoditas</th>
-                    <th style="background: #f8fafc !important; color: #1e293b !important; font-weight: 700; font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.75rem 0.75rem; text-align: left;">Nama Komoditas &amp; Gudang</th>
-                    <th style="background: #f8fafc !important; color: #1e293b !important; font-weight: 700; font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.75rem 0.75rem; text-align: right;">Qty Awal</th>
-                    <th style="background: #f8fafc !important; color: #1e293b !important; font-weight: 700; font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.75rem 0.75rem; text-align: right;">Harga Satuan</th>
-                    <th style="background: #f8fafc !important; color: #1e293b !important; font-weight: 700; font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.75rem 0.75rem; text-align: right;">Qty Keluar</th>
-                    <th style="background: #f8fafc !important; color: #1e293b !important; font-weight: 800; font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.75rem 0.75rem; text-align: right;">Sisa Qty</th>
-                    <th style="background: #f8fafc !important; color: #1e293b !important; font-weight: 700; font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.75rem 0.75rem; text-align: right;">Sisa Nilai</th>
+                    <th style="background: #f8fafc !important; color: #1e293b !important; font-weight: 700; font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.75rem 0.75rem; text-align: left;">Kode Barang</th>
+                    <th style="background: #f8fafc !important; color: #1e293b !important; font-weight: 700; font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.75rem 0.75rem; text-align: left;">Nama Produk &amp; Lokasi</th>
+                    <th style="background: #f8fafc !important; color: #1e293b !important; font-weight: 700; font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.75rem 0.75rem; text-align: right;">Qty Output</th>
+                    <th style="background: #f8fafc !important; color: #1e293b !important; font-weight: 700; font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.75rem 0.75rem; text-align: right;">HPP Standar</th>
+                    <th style="background: #f8fafc !important; color: #1e293b !important; font-weight: 700; font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.75rem 0.75rem; text-align: right;">Qty Terjual/Keluar</th>
+                    <th style="background: #f8fafc !important; color: #1e293b !important; font-weight: 800; font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.75rem 0.75rem; text-align: right;">Sisa On-Hand</th>
+                    <th style="background: #f8fafc !important; color: #1e293b !important; font-weight: 700; font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.75rem 0.75rem; text-align: right;">Total Nilai</th>
                     <th style="background: #f8fafc !important; color: #1e293b !important; font-weight: 700; font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.75rem 0.75rem; text-align: center;">Status</th>
                     <th style="background: #f8fafc !important; color: #1e293b !important; font-weight: 700; font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.75rem 1rem; text-align: right;">Aksi</th>
                 </tr>
@@ -806,9 +774,9 @@ function toggleAllBatches(show) {
                         $qtyAwal = (float) ($b->qty_awal > 0 ? $b->qty_awal : $b->sisa_qty);
                         $qtyKeluar = max(0, $qtyAwal - (float) $b->sisa_qty);
                     @endphp
-                    <tr style="border-bottom: 1px solid #f1f5f9; background: {{ $isHabis ? '#fafafa' : '#ffffff' }}; transition: background 0.15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='{{ $isHabis ? '#fafafa' : '#ffffff' }}'">
+                    <tr style="border-bottom: 1px solid #f1f5f9; background: {{ $isHabis ? '#fafafa' : '#ffffff' }}; transition: background 0.15s;" onmouseover="this.style.background='#fff7ed'" onmouseout="this.style.background='{{ $isHabis ? '#fafafa' : '#ffffff' }}'">
                         <td style="padding: 0.65rem 0.75rem;">
-                            <span class="batch-clickable" onclick="showBatchDetailModal('{{ $b->batch_no }}', {{ $b->barang_id }})" title="Klik untuk menelusuri isi detail & riwayat batch" style="font-family: monospace; font-weight: 700; color: #0284c7; background: #e0f2fe; padding: 2px 7px; border-radius: 4px; border: 1px solid #bae6fd; font-size: 0.8rem;">
+                            <span class="batch-clickable" onclick="showBatchDetailModal('{{ $b->batch_no }}', {{ $b->barang_id }})" title="Klik untuk menelusuri isi detail & riwayat batch" style="font-family: monospace; font-weight: 700; color: #ea580c; background: #fff7ed; padding: 2px 7px; border-radius: 4px; border: 1px solid #fed7aa; font-size: 0.8rem;">
                                 {{ $b->batch_no }} 🔍
                             </span>
                         </td>
@@ -825,7 +793,7 @@ function toggleAllBatches(show) {
                         <td style="padding: 0.65rem 0.75rem; text-align: right;">{{ number_format($qtyAwal, 2, ',', '.') }}</td>
                         <td style="padding: 0.65rem 0.75rem; text-align: right;">Rp {{ number_format((float)$b->harga_satuan, 0, ',', '.') }}</td>
                         <td style="padding: 0.65rem 0.75rem; text-align: right; color: #dc2626;">{{ number_format($qtyKeluar, 2, ',', '.') }}</td>
-                        <td style="padding: 0.65rem 0.75rem; text-align: right; font-weight: 800; color: {{ $isHabis ? '#94a3b8' : '#059669' }};">
+                        <td style="padding: 0.65rem 0.75rem; text-align: right; font-weight: 800; color: {{ $isHabis ? '#94a3b8' : '#ea580c' }};">
                             {{ number_format((float)$b->sisa_qty, 2, ',', '.') }}
                         </td>
                         <td style="padding: 0.65rem 0.75rem; text-align: right; font-weight: 700; color: #0f172a;">
@@ -835,12 +803,12 @@ function toggleAllBatches(show) {
                             @if ($isHabis)
                                 <span style="background: #fee2e2; color: #991b1b; padding: 0.15rem 0.45rem; border-radius: 4px; font-size: 0.675rem; font-weight: 700;">HABIS</span>
                             @else
-                                <span style="background: #dcfce7; color: #166534; padding: 0.15rem 0.45rem; border-radius: 4px; font-size: 0.675rem; font-weight: 700;">TERSEDIA</span>
+                                <span style="background: #ea580c; color: #ffffff; padding: 0.15rem 0.45rem; border-radius: 4px; font-size: 0.675rem; font-weight: 700;">READY</span>
                             @endif
                         </td>
                         <td style="padding: 0.65rem 1rem; text-align: center;">
                             @php
-                                $batchMenuId = 'dropdown-batch-' . $b->stok_id;
+                                $batchMenuId = 'dropdown-prod-batch-' . $b->stok_id;
                             @endphp
                             <button type="button" 
                                     class="btn-action-trigger" 
@@ -852,7 +820,7 @@ function toggleAllBatches(show) {
                                     <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
                                     <span>Dossier Batch</span>
                                 </button>
-                                <a href="{{ route('gudang.stok.ledger', ['barang_id' => $b->barang_id, 'gudang_id' => $b->gudang_id]) }}" class="action-dropdown-item">
+                                <a href="{{ route('produksi.stok.ledger', ['barang_id' => $b->barang_id, 'gudang_id' => $b->gudang_id]) }}" class="action-dropdown-item">
                                     <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                                     <span>Buku Kartu Stok</span>
                                 </a>
@@ -860,7 +828,7 @@ function toggleAllBatches(show) {
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="10" style="text-align: center; padding: 2.5rem; color: #64748b;">Tidak ada data batch ditemukan.</td></tr>
+                    <tr><td colspan="10" style="text-align: center; padding: 2.5rem; color: #64748b;">Tidak ada data batch hasil produksi ditemukan.</td></tr>
                 @endforelse
             </tbody>
         </table>

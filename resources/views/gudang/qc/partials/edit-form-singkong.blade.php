@@ -41,7 +41,7 @@
             </div>
         </div>
 
-        <div class="qc-grid-3" style="margin-bottom: 0.85rem;">
+        <div class="qc-grid-4">
             <div class="form-group" style="margin-bottom: 0;">
                 <label class="form-label">Lokasi Asal Panen</label>
                 <input type="text" name="lokasi_panen" class="form-control" value="{{ old('lokasi_panen', $qc->lokasi_panen) }}" placeholder="Contoh: Wonosobo / Kebumen">
@@ -56,35 +56,11 @@
                 <label class="form-label">Tanggal Panen</label>
                 <input type="date" name="tgl_panen" class="form-control" value="{{ old('tgl_panen', $qc->tgl_panen ? $qc->tgl_panen->format('Y-m-d') : '') }}">
             </div>
-        </div>
 
-        <div class="qc-grid-2">
             <div class="form-group" style="margin-bottom: 0;">
                 <label class="form-label">Berat Sampel Uji (kg) <span style="color:#ef4444;">*</span></label>
                 <input type="number" step="0.1" min="0.1" name="jumlah_sample_kg" class="form-control" value="{{ old('jumlah_sample_kg', $qc->jumlah_sample_kg ?? 7.0) }}" required style="font-weight: 700; color: #0284c7;">
-                <small style="color: #64748b; font-size: 0.72rem;">Sampel gabungan untuk uji fisik &amp; uji lab wajan (~7 kg).</small>
-            </div>
-
-            <div class="form-group" style="margin-bottom: 0;">
-                <label class="form-label">Posisi Sampling Muatan Bak Truk <span style="color:#ef4444;">*</span></label>
-                <select name="posisi_bak" class="form-control" style="font-weight: 700; color: {{ $isPengujian2 ? '#7e22ce' : '#0f172a' }};">
-                    <option value="SISA_SETENGAH_BAK" {{ old('posisi_bak', $qc->posisi_bak ?? ($isPengujian2 ? 'SISA_SETENGAH_BAK' : 'SETENGAH_BAK_PERTAMA')) === 'SISA_SETENGAH_BAK' ? 'selected' : '' }}>
-                        🍟 Sisa Setengah Bak (Bongkar Tuntas)
-                    </option>
-                    <option value="SETENGAH_BAK_PERTAMA" {{ old('posisi_bak', $qc->posisi_bak) === 'SETENGAH_BAK_PERTAMA' ? 'selected' : '' }}>
-                        🚛 Setengah Bak Pertama (Awal)
-                    </option>
-                    <option value="BELAKANG" {{ old('posisi_bak', $qc->posisi_bak) === 'BELAKANG' ? 'selected' : '' }}>
-                        📦 Belakang (Pintu Bak)
-                    </option>
-                    <option value="TENGAH" {{ old('posisi_bak', $qc->posisi_bak) === 'TENGAH' ? 'selected' : '' }}>
-                        📦 Tengah (Tengah Muatan)
-                    </option>
-                    <option value="DEPAN" {{ old('posisi_bak', $qc->posisi_bak) === 'DEPAN' ? 'selected' : '' }}>
-                        📦 Depan (Dekat Kabin)
-                    </option>
-                </select>
-                <small style="color: #64748b; font-size: 0.72rem;">Titik sampling singkong pada bak truk armada.</small>
+                <small style="color: #64748b; font-size: 0.72rem;">Sampel gabungan merata (depan, tengah, belakang ~7 kg).</small>
             </div>
         </div>
     </div>

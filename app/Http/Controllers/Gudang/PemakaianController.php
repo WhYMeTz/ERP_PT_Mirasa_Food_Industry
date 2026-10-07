@@ -252,15 +252,19 @@ class PemakaianController extends Controller
             ->where('barang_id', $barangId)
             ->where('sisa_qty', '>', 0)
             ->where('deleted_st', false)
+            ->when($request->filled('grade_cd'), function ($q) use ($request) {
+                $q->where('grade_cd', strtoupper(trim($request->input('grade_cd'))));
+            })
             ->orderByRaw('expired_tgl ASC NULLS LAST')
             ->orderBy('created_at', 'asc')
             ->orderBy('stok_id', 'asc')
-            ->get(['stok_id', 'batch_no', 'sisa_qty', 'harga_satuan', 'expired_tgl', 'created_at']);
+            ->get(['stok_id', 'batch_no', 'grade_cd', 'sisa_qty', 'harga_satuan', 'expired_tgl', 'created_at']);
 
         $formattedBatches = $batches->values()->map(function ($b, $index) {
             return [
                 'stok_id'      => $b->stok_id,
                 'batch_no'     => $b->batch_no,
+                'grade_cd'     => $b->grade_cd ?? 'A',
                 'sisa_qty'     => (float) $b->sisa_qty,
                 'harga_satuan' => (float) $b->harga_satuan,
                 'expired_tgl'  => $b->expired_tgl ? \Carbon\Carbon::parse($b->expired_tgl)->format('d/m/Y') : null,

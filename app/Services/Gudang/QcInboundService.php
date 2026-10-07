@@ -5,6 +5,7 @@ namespace App\Services\Gudang;
 use App\Models\Gudang\DatPoHdr;
 use App\Models\Gudang\DatQcInboundDtl;
 use App\Models\Gudang\DatQcInboundHdr;
+use App\Models\Gudang\DatTerimaHdr;
 use App\Models\User;
 use App\Services\Common\CodeGeneratorService;
 use Exception;
@@ -60,15 +61,46 @@ class QcInboundService
         }
 
         if (!empty($filters['status_qc'])) {
-            if ($filters['status_qc'] === 'MENUNGGU_UJI_2') {
+            $statusVal = strtoupper((string) $filters['status_qc']);
+            if ($statusVal === 'MENUNGGU_UJI_2') {
                 $query->where('kategori_barang', 'SINGKONG')
                       ->where('tahap_uji', 'PENGUJIAN_1')
                       ->where('status_qc', 'SIAP_GUDANG')
                       ->doesntHave('pengujian2List');
+            } elseif (in_array($statusVal, ['DITERIMA_PARSIAL', 'DITOLAK_PARSIAL', 'PARSIAL'])) {
+                $query->where(function ($q) {
+                    $q->whereIn('status_qc', ['DITERIMA_PARSIAL', 'DITOLAK_PARSIAL'])
+                      ->orWhere(function ($sq) {
+                          $sq->where('status_qc', '!=', 'DITOLAK_TOTAL')
+                             ->whereHas('details', fn($dq) => $dq->where('qty_reject', '>', 0));
+                      })
+                      ->orWhereHas('pengujian2List', function ($pq) {
+                          $pq->whereIn('status_qc', ['DITOLAK_TOTAL', 'DITERIMA_PARSIAL', 'DITOLAK_PARSIAL'])
+                             ->orWhereHas('details', fn($dq) => $dq->where('qty_reject', '>', 0));
+                      })
+                      ->orWhere(function ($sq) {
+                          $sq->where('status_qc', 'DITOLAK_TOTAL')
+                             ->whereHas('pengujian2List', fn($pq) => $pq->whereIn('status_qc', ['DITERIMA_GUDANG', 'SIAP_GUDANG']));
+                      });
+                });
+            } elseif ($statusVal === 'DITERIMA_GUDANG') {
+                $query->where(function ($q) {
+                    $q->whereIn('status_qc', ['DITERIMA_GUDANG', 'DITERIMA_PARSIAL'])
+                      ->orWhereHas('pengujian2List', fn($pq) => $pq->whereIn('status_qc', ['DITERIMA_GUDANG', 'DITERIMA_PARSIAL']))
+                      ->orWhereHas('terima', fn($tq) => $tq->where('deleted_st', false));
+                });
+            } elseif ($statusVal === 'DITOLAK_TOTAL') {
+                $query->where(function ($q) {
+                    $q->where('status_qc', 'DITOLAK_TOTAL')
+                      ->where(function ($sq) {
+                          $sq->doesntHave('pengujian2List')
+                             ->orWhereDoesntHave('pengujian2List', fn($pq) => $pq->whereIn('status_qc', ['DITERIMA_GUDANG', 'SIAP_GUDANG']));
+                      });
+                });
             } else {
-                $query->where(function ($q) use ($filters) {
-                    $q->where('status_qc', $filters['status_qc'])
-                      ->orWhereHas('pengujian2List', fn($pq) => $pq->where('status_qc', $filters['status_qc']));
+                $query->where(function ($q) use ($statusVal) {
+                    $q->where('status_qc', $statusVal)
+                      ->orWhereHas('pengujian2List', fn($pq) => $pq->where('status_qc', $statusVal));
                 });
             }
         }
@@ -186,7 +218,9 @@ class QcInboundService
             'gudang', 
             'po.details', 
             'details.barang.satuanDasar',
-            'pengujian2List.details.barang.satuanDasar'
+            'details.poDetail',
+            'pengujian2List.details.barang.satuanDasar',
+            'pengujian2List.details.poDetail',
         ])
             ->where('deleted_st', false)
             ->findOrFail($qcId);
@@ -198,7 +232,9 @@ class QcInboundService
                 'gudang', 
                 'po.details', 
                 'details.barang.satuanDasar',
-                'pengujian2List.details.barang.satuanDasar'
+                'details.poDetail',
+                'pengujian2List.details.barang.satuanDasar',
+                'pengujian2List.details.poDetail',
             ])->find($qc->parent_qc_id);
             if ($parent) {
                 $qc = $parent;
@@ -217,6 +253,8 @@ class QcInboundService
             );
             $batchPrefix = ($acronym ?: 'BRG') . '-';
             $labelSuffix = $hasP2 ? ' (Uji 1 - 1/2 Bak)' : '';
+            $poDtl = $d->poDetail;
+            $hargaPo = $poDtl ? (float) $poDtl->harga_nominal : (float) ($barang?->harga_beli_standar ?? 0);
 
             $items[] = [
                 'qcdtl_id'                   => $d->qcdtl_id,
@@ -242,7 +280,9 @@ class QcInboundService
                 'isi_berminyak'              => (bool) $d->isi_berminyak,
                 'kemasan_kondisi'            => $d->kemasan_kondisi ?? 'OK',
                 'catatan'                    => $d->catatan_dtl ?: ($qc->catatan_umum ?: 'Uji 1 (Setengah Bak)'),
-                'std_harga'                  => (float) ($barang?->harga_beli_standar ?? 0),
+                'std_harga'                  => $hargaPo,
+                'diskon_persen'              => (float) ($poDtl?->diskon_persen ?? 0),
+                'ppn_tipe'                   => $poDtl?->ppn_tipe ?? 'NON_PPN',
             ];
         }
 
@@ -255,6 +295,8 @@ class QcInboundService
                     $barang2?->barang_cd
                 );
                 $batchPrefix2 = ($acronym2 ?: 'BRG') . '-';
+                $poDtl2 = $d2->poDetail ?: $qc->details->first()?->poDetail;
+                $hargaPo2 = $poDtl2 ? (float) $poDtl2->harga_nominal : (float) ($barang2?->harga_beli_standar ?? 0);
 
                 $items[] = [
                     'qcdtl_id'                   => $d2->qcdtl_id,
@@ -280,7 +322,9 @@ class QcInboundService
                     'isi_berminyak'              => (bool) $d2->isi_berminyak,
                     'kemasan_kondisi'            => $d2->kemasan_kondisi ?? 'OK',
                     'catatan'                    => $d2->catatan_dtl ?: ($p2->catatan_umum ?: 'Uji 2 (Sisa Bak)'),
-                    'std_harga'                  => (float) ($barang2?->harga_beli_standar ?? 0),
+                    'std_harga'                  => $hargaPo2,
+                    'diskon_persen'              => (float) ($poDtl2?->diskon_persen ?? 0),
+                    'ppn_tipe'                   => $poDtl2?->ppn_tipe ?? 'NON_PPN',
                 ];
             }
         }
@@ -774,7 +818,129 @@ class QcInboundService
     }
 
     /**
-     * Menandai tiket QC telah diproses dan diterima oleh Admin Gudang
+     * Sinkronisasi & Rekonsiliasi Otomatis Tiket QC dengan Penerimaan Barang (GRN):
+     * - Memperbarui kuantitas diterima (qty_netto_lolos) & ditolak (qty_reject) per baris QC detail.
+     * - Jika Grade B / suatu baris diambil sebagian: mencatat sisa reject & mengubah keputusan_qc ke 'REJECT_PARTIAL'.
+     * - Jika Grade B / suatu baris tidak diambil (dihapus dari form GRN atau terima_qty = 0):
+     *   mencatat seluruh sisa sebagai reject & mengubah keputusan_qc ke 'TOLAK_TOTAL'.
+     * - Menentukan status akhir masing-masing tiket (Uji 1 & Uji 2):
+     *   Jika kuantitas lolos tiket = 0 -> status_qc: 'DITOLAK_TOTAL'
+     *   Jika ada kuantitas lolos -> status_qc: 'DITERIMA_GUDANG'
+     */
+    public function syncFromTerimaBarang(int $qcId, DatTerimaHdr $terima, array $submittedItems): void
+    {
+        $qc = DatQcInboundHdr::with(['details', 'pengujian2List.details'])->find($qcId);
+        if (!$qc) {
+            return;
+        }
+
+        // Jika $qc adalah tiket anak (Pengujian 2), arahkan ke induk agar seluruh siklus armada (Uji 1 & Uji 2) terkoreksi sinkron
+        if ($qc->parent_qc_id) {
+            $parent = DatQcInboundHdr::with(['details', 'pengujian2List.details'])->find($qc->parent_qc_id);
+            if ($parent) {
+                $qc = $parent;
+            }
+        }
+
+        // Petakan item yang dikirim dari form penerimaan berdasarkan qcdtl_id
+        $submittedByQcDtl = [];
+        foreach ($submittedItems as $item) {
+            $qcdtlId = !empty($item['qcdtl_id']) ? (int) $item['qcdtl_id'] : null;
+            if ($qcdtlId) {
+                $submittedByQcDtl[$qcdtlId] = $item;
+            }
+        }
+
+        // Kumpulkan semua tiket yang terlibat (Uji 1 induk + semua Uji 2 anak)
+        $allTickets = collect([$qc])->merge($qc->pengujian2List);
+
+        foreach ($allTickets as $ticket) {
+            $ticketNettoTotal = 0;
+            $ticketRejectTotal = 0;
+
+            foreach ($ticket->details as $dtl) {
+                if (isset($submittedByQcDtl[$dtl->qcdtl_id])) {
+                    // Item ada dalam input penerimaan barang
+                    $sub = $submittedByQcDtl[$dtl->qcdtl_id];
+                    $tQty = max(0, (float) ($sub['terima_qty'] ?? 0));
+                    $rQty = max(0, (float) ($sub['reject_qty'] ?? 0));
+
+                    // Jika rQty tidak diinput manual tetapi tQty < (gross - refraksi), hitung selisihnya otomatis sebagai reject
+                    $grossEst = (float) $dtl->qty_timbang_gross;
+                    $refraksiEst = (float) $dtl->qty_refraksi;
+                    $maxPossibleNetto = max(0, $grossEst - $refraksiEst);
+
+                    if ($rQty <= 0 && $maxPossibleNetto > 0 && $tQty < $maxPossibleNetto) {
+                        $rQty = round($maxPossibleNetto - $tQty, 4);
+                    }
+
+                    $dtl->qty_netto_lolos = $tQty;
+                    $dtl->qty_reject = $rQty;
+
+                    if ($tQty <= 0) {
+                        $dtl->keputusan_qc = 'TOLAK_TOTAL';
+                        $catatanGdg = "Ditolak total oleh gudang ({$rQty} KG reject). Tidak masuk stok pabrik.";
+                    } elseif ($rQty > 0) {
+                        $dtl->keputusan_qc = 'REJECT_PARTIAL';
+                        $catatanGdg = "Diterima sebagian: {$tQty} KG, ditolak: {$rQty} KG (Grade {$dtl->grade_cd}).";
+                    } else {
+                        $dtl->keputusan_qc = 'PASSED';
+                        $catatanGdg = "Diterima penuh ke gudang: {$tQty} KG.";
+                    }
+
+                    // Bersihkan catatan lama dari rekonsiliasi sebelumnya agar tidak menumpuk
+                    $baseCatatan = preg_replace('/\s*\|\s*(Diterima|Ditolak).*$/', '', $dtl->catatan_dtl ?? '');
+                    $dtl->catatan_dtl = trim(($baseCatatan ? $baseCatatan . ' | ' : '') . $catatanGdg);
+                    $dtl->save();
+
+                    $ticketNettoTotal += $tQty;
+                    $ticketRejectTotal += $rQty;
+                } else {
+                    // Item QC ini TIDAK disertakan dalam penerimaan barang (dihapus dari form GRN oleh petugas)
+                    // Maka seluruh muatan baris ini otomatis DITOLAK TOTAL
+                    $rejectedQty = (float) $dtl->qty_timbang_gross > 0 
+                        ? (float) $dtl->qty_timbang_gross 
+                        : (float) $dtl->qty_netto_lolos;
+
+                    $dtl->qty_netto_lolos = 0;
+                    $dtl->qty_reject = $rejectedQty;
+                    $dtl->keputusan_qc = 'TOLAK_TOTAL';
+
+                    $baseCatatan = preg_replace('/\s*\|\s*(Diterima|Ditolak).*$/', '', $dtl->catatan_dtl ?? '');
+                    $catatanGdg = "Ditolak total oleh gudang (baris dihapus dari penerimaan GRN).";
+                    $dtl->catatan_dtl = trim(($baseCatatan ? $baseCatatan . ' | ' : '') . $catatanGdg);
+                    $dtl->save();
+
+                    $ticketRejectTotal += $rejectedQty;
+                }
+            }
+
+            // Tentukan status akhir tiket header ini
+            if ($ticketNettoTotal <= 0) {
+                $ticket->status_qc = 'DITOLAK_TOTAL';
+                $ticket->jumlah_di_pabrik = 0;
+            } elseif ($ticketRejectTotal > 0) {
+                $ticket->status_qc = 'DITERIMA_PARSIAL';
+                $ticket->jumlah_di_pabrik = $ticketNettoTotal;
+            } else {
+                $ticket->status_qc = 'DITERIMA_GUDANG';
+                $ticket->jumlah_di_pabrik = $ticketNettoTotal;
+            }
+            $ticket->save();
+        }
+
+        // Evaluasi ulang tiket induk jika anak mengalami penolakan (parsial atau total)
+        if ($qc->pengujian2List->isNotEmpty()) {
+            $hasChildReject = $qc->pengujian2List->contains(fn($c) => in_array($c->status_qc, ['DITOLAK_TOTAL', 'DITERIMA_PARSIAL']));
+            if ($hasChildReject && $qc->status_qc === 'DITERIMA_GUDANG') {
+                $qc->status_qc = 'DITERIMA_PARSIAL';
+                $qc->save();
+            }
+        }
+    }
+
+    /**
+     * Menandai tiket QC telah diproses dan diterima oleh Admin Gudang (Fallback / Direct)
      */
     public function markAsProcessed(int $qcId): void
     {
@@ -798,18 +964,33 @@ class QcInboundService
      */
     public function revertProcessed(int $qcId): void
     {
-        $qc = DatQcInboundHdr::find($qcId);
-        if ($qc) {
-            $qc->status_qc = 'SIAP_GUDANG';
-            $qc->save();
+        $qc = DatQcInboundHdr::with(['details', 'pengujian2List.details'])->find($qcId);
+        if (!$qc) {
+            return;
+        }
 
-            // Revert juga tiket pengujian 2 (anak)
-            DatQcInboundHdr::where('parent_qc_id', $qc->qc_id)->update(['status_qc' => 'SIAP_GUDANG']);
-
-            // Jika tiket ini adalah anak, revert induknya
-            if ($qc->parent_qc_id) {
-                DatQcInboundHdr::where('qc_id', $qc->parent_qc_id)->update(['status_qc' => 'SIAP_GUDANG']);
+        if ($qc->parent_qc_id) {
+            $parent = DatQcInboundHdr::with(['details', 'pengujian2List.details'])->find($qc->parent_qc_id);
+            if ($parent) {
+                $qc = $parent;
             }
+        }
+
+        $allTickets = collect([$qc])->merge($qc->pengujian2List);
+
+        foreach ($allTickets as $ticket) {
+            $ticket->status_qc = 'SIAP_GUDANG';
+            foreach ($ticket->details as $dtl) {
+                // Kembalikan netto awal (gross - refraksi)
+                $origNetto = max(0, (float) $dtl->qty_timbang_gross - (float) $dtl->qty_refraksi);
+                $dtl->qty_netto_lolos = $origNetto;
+                $dtl->qty_reject = 0;
+                $dtl->keputusan_qc = ($dtl->qty_refraksi > 0) ? 'PASSED_REFRAKSI' : 'PASSED';
+                $dtl->catatan_dtl = preg_replace('/\s*\|\s*(Diterima|Ditolak).*$/', '', $dtl->catatan_dtl ?? '');
+                $dtl->save();
+            }
+            $ticket->jumlah_di_pabrik = $ticket->details->sum('qty_netto_lolos');
+            $ticket->save();
         }
     }
 

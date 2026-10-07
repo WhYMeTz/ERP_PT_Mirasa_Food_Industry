@@ -172,7 +172,7 @@
                     </a>
                 @endif
 
-                @if ($qc->status_qc === 'DITOLAK_TOTAL')
+                @if ($qc->status_qc === 'DITOLAK_TOTAL' || $qc->details->sum('qty_reject') > 0)
                     <a href="{{ route('qc.inbound.berita_acara', $qc->qc_id) }}" class="btn btn-sm" style="background: #dc2626; color: #ffffff; border: none; font-weight: 800; border-radius: 8px; box-shadow: 0 2px 4px rgba(220, 38, 38, 0.3);">
                         📄 Cetak Berita Acara Penolakan
                     </a>
@@ -197,8 +197,21 @@
             <div style="display: flex; gap: 0.75rem; align-items: center;">
                 <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink: 0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
                 <div style="font-size: 0.85rem; line-height: 1.4;">
-                    <strong style="font-size: 0.95rem; color: #b91c1c;">TIKET DITOLAK TOTAL DI GERBANG (PENGUJIAN I)</strong><br>
-                    Bahan baku singkong tidak memenuhi standar mutu (terdeteksi rasa pahit / cacat mutu). Truk tidak diizinkan bongkar ke gudang.
+                    <strong style="font-size: 0.95rem; color: #b91c1c;">TIKET DITOLAK TOTAL DI GERBANG / GUDANG</strong><br>
+                    Bahan baku singkong tidak memenuhi standar mutu pabrik. Muatan ditolak dan tidak diizinkan bongkar ke stok pabrik.
+                </div>
+            </div>
+            <a href="{{ route('qc.inbound.berita_acara', $qc->qc_id) }}" class="btn btn-sm" style="background: #dc2626; color: #ffffff; border: none; font-weight: 800; border-radius: 8px; white-space: nowrap;">
+                📄 Buka Berita Acara Penolakan
+            </a>
+        </div>
+    @elseif ($qc->details->sum('qty_reject') > 0)
+        <div class="no-print" style="margin-bottom: 1.25rem; background: #fef2f2; border: 1.5px solid #fca5a5; color: #991b1b; border-radius: 8px; padding: 0.85rem 1.15rem; display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; box-shadow: 0 1px 2px rgba(0,0,0,0.03); flex-wrap: wrap;">
+            <div style="display: flex; gap: 0.75rem; align-items: center;">
+                <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink: 0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                <div style="font-size: 0.85rem; line-height: 1.4;">
+                    <strong style="font-size: 0.95rem; color: #b91c1c;">PENOLAKAN SEBAGIAN ({{ number_format($qc->details->sum('qty_reject'), 2, ',', '.') }} KG REJECT)</strong><br>
+                    Terdapat bagian muatan (Grade B / afkir) yang ditolak dan tidak masuk stok pabrik. Berita Acara Penolakan resmi telah disiapkan.
                 </div>
             </div>
             <a href="{{ route('qc.inbound.berita_acara', $qc->qc_id) }}" class="btn btn-sm" style="background: #dc2626; color: #ffffff; border: none; font-weight: 800; border-radius: 8px; white-space: nowrap;">

@@ -238,7 +238,9 @@ class BomService
             // Format semua opsi batch untuk dimasukkan ke dropdown baris
             $allBatchOptions = $availableBatches->values()->map(function ($b, $index) {
                 return [
+                    'stok_id'      => $b->stok_id,
                     'batch_no'     => $b->batch_no,
+                    'grade_cd'     => $b->grade_cd ?? 'A',
                     'sisa_qty'     => (float) $b->sisa_qty,
                     'harga_satuan' => (float) $b->harga_satuan,
                     'expired_tgl'  => $b->expired_tgl ? Carbon::parse($b->expired_tgl)->format('d/m/Y') : null,
@@ -257,6 +259,7 @@ class BomService
                     'satuan_nm'       => $satuanNm,
                     'kebutuhan_total' => $kebutuhanTotal,
                     'batch_no'        => '',
+                    'grade_cd'        => 'A',
                     'qty_keluar'      => $kebutuhanTotal,
                     'harga_satuan'    => (float) ($barang->harga_beli_standar ?? 0),
                     'sisa_batch'      => 0,
@@ -298,7 +301,9 @@ class BomService
                     'barang_nm'       => $barang->barang_nm,
                     'satuan_nm'       => $satuanNm,
                     'kebutuhan_total' => $kebutuhanTotal,
+                    'stok_id'         => $batch->stok_id,
                     'batch_no'        => $batch->batch_no,
+                    'grade_cd'        => $batch->grade_cd ?? 'A',
                     'qty_keluar'      => round($ambilQty, 4),
                     'harga_satuan'    => $hargaSatuan,
                     'sisa_batch'      => $sisaBatch,

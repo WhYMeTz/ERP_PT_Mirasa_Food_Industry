@@ -312,9 +312,21 @@
                                 </div>
                             </td>
                             <td>
-                                <span style="font-family: monospace; font-size: 0.825rem; background: #fff1f2; color: #be123c; border: 1px solid #fecdd3; padding: 0.2rem 0.45rem; border-radius: 4px; font-weight: 700; display: inline-block;">
-                                    {{ $row->batch_no }}
-                                </span>
+                                <div style="display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;">
+                                    <span style="font-family: monospace; font-size: 0.825rem; background: #fff1f2; color: #be123c; border: 1px solid #fecdd3; padding: 0.2rem 0.45rem; border-radius: 4px; font-weight: 700; display: inline-block;">
+                                        {{ $row->batch_no }}
+                                    </span>
+                                    @if(!empty($row->grade_cd))
+                                        @php
+                                            $gColor = ($row->grade_cd === 'A') ? '#059669' : (($row->grade_cd === 'B') ? '#d97706' : '#dc2626');
+                                            $gBg = ($row->grade_cd === 'A') ? '#ecfdf5' : (($row->grade_cd === 'B') ? '#fffbeb' : '#fef2f2');
+                                            $gBorder = ($row->grade_cd === 'A') ? '#a7f3d0' : (($row->grade_cd === 'B') ? '#fde68a' : '#fecaca');
+                                        @endphp
+                                        <span style="font-size: 0.7rem; font-weight: 700; color: {{ $gColor }}; background: {{ $gBg }}; border: 1px solid {{ $gBorder }}; padding: 0.1rem 0.35rem; border-radius: 4px;">
+                                            Grade {{ $row->grade_cd }}
+                                        </span>
+                                    @endif
+                                </div>
                             </td>
                             <td style="text-align: right;">
                                 <span style="font-weight: 700; color: #dc2626; font-size: 0.95rem;">

@@ -19,6 +19,7 @@ class DatPakaiDtl extends Model
         'pakai_id',
         'barang_id',
         'batch_no',
+        'grade_cd',
         'qty_keluar',
         'harga_satuan',
         'total_harga',

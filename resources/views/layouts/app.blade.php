@@ -672,7 +672,21 @@
                                         <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
                                         <div style="display: flex; flex-direction: column;">
                                             <span style="font-weight: 600;">Hasil Barang Produksi</span>
-                                            <span style="font-size: 0.6875rem; color: #64748b;">Rincian barang jadi (WIP) &amp; sisa stok</span>
+                                            <span style="font-size: 0.6875rem; color: #64748b;">Riwayat output batch masak &amp; kemas</span>
+                                        </div>
+                                    </a>
+                                    <a href="{{ route('produksi.stok.index') }}" class="mega-item {{ request()->routeIs('produksi.stok.index') ? 'active' : '' }}">
+                                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                                        <div style="display: flex; flex-direction: column;">
+                                            <span style="font-weight: 600;">Lacak Stok WIP &amp; Barang Jadi</span>
+                                            <span style="font-size: 0.6875rem; color: #64748b;">Saldo fisik olahan setengah jadi &amp; FG</span>
+                                        </div>
+                                    </a>
+                                    <a href="{{ route('produksi.stok.ledger') }}" class="mega-item {{ request()->routeIs('produksi.stok.ledger') ? 'active' : '' }}">
+                                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                                        <div style="display: flex; flex-direction: column;">
+                                            <span style="font-weight: 600;">Kartu Stok WIP &amp; FG (Ledger)</span>
+                                            <span style="font-size: 0.6875rem; color: #64748b;">Mutasi output produksi &amp; pengiriman SO</span>
                                         </div>
                                     </a>
                                     <a href="{{ route('produksi.rekap') }}" class="mega-item {{ request()->routeIs('produksi.rekap*') ? 'active' : '' }}">
@@ -703,29 +717,29 @@
                                     class="pill-dropdown-btn {{ request()->routeIs('gudang.stok.*') ? 'active' : '' }}" 
                                     onclick="toggleNavDropdown('navDropdownStok', event)">
                                 <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #059669;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2 1.5 3 3.5 3h9c2 0 3.5-1 3.5-3V7M4 7c0-2 1.5-3 3.5-3h9c2 0 3.5 1 3.5 3M4 7h16m-8 4v6"/></svg>
-                                <span>Stok &amp; Gudang</span>
+                                <span>Stok Gudang (Bahan)</span>
                                 <span class="pill-dropdown-arrow">▼</span>
                             </button>
-                            <div class="dropdown-menu" style="min-width: 240px; padding: 0.45rem;">
+                            <div class="dropdown-menu" style="min-width: 250px; padding: 0.45rem;">
                                 <a href="{{ route('gudang.stok.rekap') }}" class="mega-item {{ request()->routeIs('gudang.stok.rekap*') ? 'active' : '' }}">
                                     <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                                     <div style="display: flex; flex-direction: column;">
-                                        <span style="font-weight: 600;">Rekap Stok Komoditas</span>
-                                        <span style="font-size: 0.6875rem; color: #64748b;">Total masuk, keluar, sisa &amp; valuasi aset</span>
+                                        <span style="font-weight: 600;">Rekap Stok Bahan</span>
+                                        <span style="font-size: 0.6875rem; color: #64748b;">Total masuk, keluar, sisa &amp; valuasi aset bahan</span>
                                     </div>
                                 </a>
                                 <a href="{{ route('gudang.stok.index') }}" class="mega-item {{ request()->routeIs('gudang.stok.index') ? 'active' : '' }}">
                                     <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
                                     <div style="display: flex; flex-direction: column;">
-                                        <span style="font-weight: 600;">Lacak Stok Komoditas</span>
-                                        <span style="font-size: 0.6875rem; color: #64748b;">Saldo fisik &amp; status batch gudang</span>
+                                        <span style="font-weight: 600;">Lacak Stok Bahan Baku &amp; Penolong</span>
+                                        <span style="font-size: 0.6875rem; color: #64748b;">Saldo fisik singkong, minyak, bumbu &amp; kemasan</span>
                                     </div>
                                 </a>
                                 <a href="{{ route('gudang.stok.ledger') }}" class="mega-item {{ request()->routeIs('gudang.stok.ledger') ? 'active' : '' }}">
                                     <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
                                     <div style="display: flex; flex-direction: column;">
-                                        <span style="font-weight: 600;">Buku Kartu Stok (Ledger)</span>
-                                        <span style="font-size: 0.6875rem; color: #64748b;">Rekap mutasi masuk &amp; keluar</span>
+                                        <span style="font-weight: 600;">Buku Kartu Stok Bahan (Ledger)</span>
+                                        <span style="font-size: 0.6875rem; color: #64748b;">Mutasi penerimaan supplier &amp; pemakaian SPK</span>
                                     </div>
                                 </a>
                             </div>

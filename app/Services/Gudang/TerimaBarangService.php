@@ -94,6 +94,7 @@ class TerimaBarangService
             'supplier',
             'gudang',
             'po',
+            'qc.details',
             'details.barang.satuanDasar'
         ])->where('terima_id', $id)->firstOrFail();
     }
@@ -129,9 +130,10 @@ class TerimaBarangService
             $processedItems = [];
 
             foreach ($items as $item) {
-                $terimaQty = (float) ($item['terima_qty'] ?? 0);
-                if ($terimaQty <= 0) {
-                    continue; // Skip jika qty 0
+                $terimaQty = max(0, (float) ($item['terima_qty'] ?? 0));
+                $rejectQty = max(0, (float) ($item['reject_qty'] ?? 0));
+                if ($terimaQty <= 0 && $rejectQty <= 0) {
+                    continue; // Skip jika terima dan reject sama-sama 0
                 }
 
                 $barangId = (int) $item['barang_id'];
@@ -143,7 +145,7 @@ class TerimaBarangService
                 // Potongan khusus per-item (Rp)
                 $potonganItem = max(0, (float) ($item['potongan_nominal'] ?? 0));
                 
-                // Subtotal Netto = (Qty * Harga setelah diskon) - Potongan Item
+                // Subtotal Netto = (Qty * Harga setelah diskon) - Potongan Item (hanya dari kuantitas yang diterima)
                 $subtotalNetto = max(0, round(($terimaQty * $hargaSetelahDiskon) - $potonganItem, 4));
                 // Harga perolehan bersih unit untuk HPP Kartu Stok FIFO
                 $hargaNetto = $terimaQty > 0 ? round($subtotalNetto / $terimaQty, 4) : 0;
@@ -154,30 +156,37 @@ class TerimaBarangService
                 $itemPpnNominal = ($itemPpnTipe === 'PPN_11') ? round($subtotalNetto * 0.11, 2) : 0.00;
                 $subtotalTagihan = round($subtotalNetto + $itemPpnNominal, 2);
 
-                if ($itemPpnTipe === 'PPN_11') {
-                    $hasPpn = true;
-                    $totalDppPpn += $subtotalNetto;
-                } else {
-                    $hasNonPpn = true;
-                    $totalDppNonPpn += $subtotalNetto;
+                if ($terimaQty > 0) {
+                    if ($itemPpnTipe === 'PPN_11') {
+                        $hasPpn = true;
+                        $totalDppPpn += $subtotalNetto;
+                    } else {
+                        $hasNonPpn = true;
+                        $totalDppNonPpn += $subtotalNetto;
+                    }
+
+                    $subtotalNominal += $subtotalNetto;
+                    $totalDiskonNominal += round($terimaQty * $diskonNominalUnit, 4);
+                    $totalItemPotongan += $potonganItem;
+                    $totalPpnNominal += $itemPpnNominal;
                 }
 
-                $subtotalNominal += $subtotalNetto;
-                $totalDiskonNominal += round($terimaQty * $diskonNominalUnit, 4);
-                $totalItemPotongan += $potonganItem;
-                $totalPpnNominal += $itemPpnNominal;
+                $batchNo = !empty($item['batch_no']) ? trim($item['batch_no']) : null;
+                if (empty($batchNo) && $terimaQty <= 0) {
+                    $batchNo = 'REJECT-' . date('Ymd');
+                }
 
                 $processedItems[] = [
                     'barang_id'        => $barangId,
                     'podtl_id'         => !empty($item['podtl_id']) ? (int) $item['podtl_id'] : null,
                     'qcdtl_id'         => !empty($item['qcdtl_id']) ? (int) $item['qcdtl_id'] : null,
-                    'batch_no'         => !empty($item['batch_no']) ? trim($item['batch_no']) : null,
+                    'batch_no'         => $batchNo,
                     'expired_tgl'      => !empty($item['expired_tgl']) ? $item['expired_tgl'] : null,
                     'grade_cd'         => !empty($item['grade_cd']) ? trim($item['grade_cd']) : null,
                     'kadar_air_persen' => !empty($item['kadar_air_persen']) ? (float) $item['kadar_air_persen'] : 0,
                     'refraksi_persen'  => !empty($item['refraksi_persen']) ? (float) $item['refraksi_persen'] : 0,
                     'terima_qty'       => $terimaQty,
-                    'reject_qty'       => (float) ($item['reject_qty'] ?? 0),
+                    'reject_qty'       => $rejectQty,
                     'harga_nominal'    => $hargaNominal,
                     'diskon_persen'    => $diskonPersen,
                     'diskon_nominal'   => $diskonNominalUnit,
@@ -236,14 +245,18 @@ class TerimaBarangService
                 $barangId = $row['barang_id'];
                 $batchNo = $row['batch_no'];
 
-                // Validasi nomor batch fisik supplier tidak boleh kosong atau hanya berupa prefix strip
-                if (empty($batchNo) || trim($batchNo) === '' || str_ends_with(trim($batchNo), '-')) {
-                    $barang = MstBarang::find($barangId);
-                    $barangNm = $barang?->barang_nm ?? "ID #{$barangId}";
-                    throw new \Exception("Nomor batch dari faktur supplier untuk komoditas '{$barangNm}' wajib diisi lengkap.");
+                if ($row['terima_qty'] > 0) {
+                    // Validasi nomor batch fisik supplier tidak boleh kosong atau hanya berupa prefix strip
+                    if (empty($batchNo) || trim($batchNo) === '' || str_ends_with(trim($batchNo), '-')) {
+                        $barang = MstBarang::find($barangId);
+                        $barangNm = $barang?->barang_nm ?? "ID #{$barangId}";
+                        throw new \Exception("Nomor batch dari faktur supplier untuk komoditas '{$barangNm}' wajib diisi lengkap.");
+                    }
+                } else {
+                    $batchNo = $batchNo ?: ('REJECT-' . date('Ymd'));
                 }
 
-                // Simpan detail penerimaan
+                // Simpan detail penerimaan (baik diterima maupun ditolak dicatat resmi pada dokumen GRN)
                 $dtl = DatTerimaDtl::create([
                     'terima_id'        => $header->terima_id,
                     'podtl_id'         => $row['podtl_id'],
@@ -269,33 +282,36 @@ class TerimaBarangService
                     'catatan_txt'      => $row['catatan_txt'],
                 ]);
 
-                // Suntik stok fisik & kartu stok mutasi menggunakan harga netto perolehan (HPP Stok)
-                $this->stokService->addStock(
-                    $gudangId,
-                    $barangId,
-                    $batchNo,
-                    $row['terima_qty'],
-                    $row['expired_tgl'],
-                    $terimaNo,
-                    "Penerimaan Barang Fisik No {$terimaNo}",
-                    $row['harga_netto']
-                );
+                // Suntik stok fisik & kartu stok HANYA jika kuantitas terima > 0
+                if ($row['terima_qty'] > 0) {
+                    $this->stokService->addStock(
+                        $gudangId,
+                        $barangId,
+                        $batchNo,
+                        $row['terima_qty'],
+                        $row['expired_tgl'],
+                        $terimaNo,
+                        "Penerimaan Barang Fisik No {$terimaNo}",
+                        $row['harga_netto'],
+                        $row['grade_cd'] ?? 'A'
+                    );
 
-                // Update terima_qty di PO Detail jika barang ini terkait PO
-                if (!empty($dtl->podtl_id)) {
-                    $poDtl = DatPoDtl::find($dtl->podtl_id);
-                    if ($poDtl) {
-                        $poDtl->terima_qty = (float) $poDtl->terima_qty + $row['terima_qty'];
-                        $poDtl->save();
+                    // Update terima_qty di PO Detail jika barang ini terkait PO
+                    if (!empty($dtl->podtl_id)) {
+                        $poDtl = DatPoDtl::find($dtl->podtl_id);
+                        if ($poDtl) {
+                            $poDtl->terima_qty = (float) $poDtl->terima_qty + $row['terima_qty'];
+                            $poDtl->save();
+                        }
                     }
-                }
 
-                // Update harga beli acuan di Master Barang dengan harga terbaru
-                if ($row['harga_netto'] > 0) {
-                    $barang = MstBarang::find($barangId);
-                    if ($barang && (float) $barang->harga_beli_standar != $row['harga_netto']) {
-                        $barang->harga_beli_standar = $row['harga_netto'];
-                        $barang->save();
+                    // Update harga beli acuan di Master Barang dengan harga terbaru
+                    if ($row['harga_netto'] > 0) {
+                        $barang = MstBarang::find($barangId);
+                        if ($barang && (float) $barang->harga_beli_standar != $row['harga_netto']) {
+                            $barang->harga_beli_standar = $row['harga_netto'];
+                            $barang->save();
+                        }
                     }
                 }
             }
@@ -325,9 +341,13 @@ class TerimaBarangService
                 }
             }
 
-            // 4. Update status tiket QC jika penerimaan berasal dari tiket QC
+            // 4. Sinkronisasi status dan detail kuantitas tiket QC jika penerimaan berasal dari tiket QC
             if (!empty($data['qc_id'])) {
-                app(\App\Services\Gudang\QcInboundService::class)->markAsProcessed((int) $data['qc_id']);
+                app(\App\Services\Gudang\QcInboundService::class)->syncFromTerimaBarang(
+                    (int) $data['qc_id'],
+                    $header,
+                    $items
+                );
             }
 
             return $header->fresh(['details.barang']);
@@ -358,7 +378,8 @@ class TerimaBarangService
                     $dtl->batch_no,
                     (float) $dtl->terima_qty,
                     $terima->terima_no,
-                    "Penyesuaian (Rollback Edit) Dokumen Penerimaan {$terima->terima_no}"
+                    "Penyesuaian (Rollback Edit) Dokumen Penerimaan {$terima->terima_no}",
+                    $dtl->grade_cd ?? 'A'
                 );
 
                 // Kembalikan terima_qty di PO Detail jika terkait PO lama
@@ -395,8 +416,9 @@ class TerimaBarangService
             $processedItems = [];
 
             foreach ($items as $item) {
-                $terimaQty = (float) ($item['terima_qty'] ?? 0);
-                if ($terimaQty <= 0) {
+                $terimaQty = max(0, (float) ($item['terima_qty'] ?? 0));
+                $rejectQty = max(0, (float) ($item['reject_qty'] ?? 0));
+                if ($terimaQty <= 0 && $rejectQty <= 0) {
                     continue;
                 }
 
@@ -415,30 +437,37 @@ class TerimaBarangService
                 $itemPpnNominal = ($itemPpnTipe === 'PPN_11') ? round($subtotalNetto * 0.11, 2) : 0.00;
                 $subtotalTagihan = round($subtotalNetto + $itemPpnNominal, 2);
 
-                if ($itemPpnTipe === 'PPN_11') {
-                    $hasPpn = true;
-                    $totalDppPpn += $subtotalNetto;
-                } else {
-                    $hasNonPpn = true;
-                    $totalDppNonPpn += $subtotalNetto;
+                if ($terimaQty > 0) {
+                    if ($itemPpnTipe === 'PPN_11') {
+                        $hasPpn = true;
+                        $totalDppPpn += $subtotalNetto;
+                    } else {
+                        $hasNonPpn = true;
+                        $totalDppNonPpn += $subtotalNetto;
+                    }
+
+                    $subtotalNominal += $subtotalNetto;
+                    $totalDiskonNominal += round($terimaQty * $diskonNominalUnit, 4);
+                    $totalItemPotongan += $potonganItem;
+                    $totalPpnNominal += $itemPpnNominal;
                 }
 
-                $subtotalNominal += $subtotalNetto;
-                $totalDiskonNominal += round($terimaQty * $diskonNominalUnit, 4);
-                $totalItemPotongan += $potonganItem;
-                $totalPpnNominal += $itemPpnNominal;
+                $batchNo = !empty($item['batch_no']) ? trim($item['batch_no']) : null;
+                if (empty($batchNo) && $terimaQty <= 0) {
+                    $batchNo = 'REJECT-' . date('Ymd');
+                }
 
                 $processedItems[] = [
                     'barang_id'        => $barangId,
                     'podtl_id'         => !empty($item['podtl_id']) ? (int) $item['podtl_id'] : null,
                     'qcdtl_id'         => !empty($item['qcdtl_id']) ? (int) $item['qcdtl_id'] : null,
-                    'batch_no'         => !empty($item['batch_no']) ? trim($item['batch_no']) : null,
+                    'batch_no'         => $batchNo,
                     'expired_tgl'      => !empty($item['expired_tgl']) ? $item['expired_tgl'] : null,
                     'grade_cd'         => !empty($item['grade_cd']) ? trim($item['grade_cd']) : null,
                     'kadar_air_persen' => !empty($item['kadar_air_persen']) ? (float) $item['kadar_air_persen'] : 0,
                     'refraksi_persen'  => !empty($item['refraksi_persen']) ? (float) $item['refraksi_persen'] : 0,
                     'terima_qty'       => $terimaQty,
-                    'reject_qty'       => (float) ($item['reject_qty'] ?? 0),
+                    'reject_qty'       => $rejectQty,
                     'harga_nominal'    => $hargaNominal,
                     'diskon_persen'    => $diskonPersen,
                     'diskon_nominal'   => $diskonNominalUnit,
@@ -493,10 +522,14 @@ class TerimaBarangService
                 $barangId = $row['barang_id'];
                 $batchNo = $row['batch_no'];
 
-                if (empty($batchNo) || trim($batchNo) === '' || str_ends_with(trim($batchNo), '-')) {
-                    $barang = MstBarang::find($barangId);
-                    $barangNm = $barang?->barang_nm ?? "ID #{$barangId}";
-                    throw new Exception("Nomor batch dari faktur supplier untuk komoditas '{$barangNm}' wajib diisi lengkap.");
+                if ($row['terima_qty'] > 0) {
+                    if (empty($batchNo) || trim($batchNo) === '' || str_ends_with(trim($batchNo), '-')) {
+                        $barang = MstBarang::find($barangId);
+                        $barangNm = $barang?->barang_nm ?? "ID #{$barangId}";
+                        throw new Exception("Nomor batch dari faktur supplier untuk komoditas '{$barangNm}' wajib diisi lengkap.");
+                    }
+                } else {
+                    $batchNo = $batchNo ?: ('REJECT-' . date('Ymd'));
                 }
 
                 $dtl = DatTerimaDtl::create([
@@ -524,24 +557,27 @@ class TerimaBarangService
                     'catatan_txt'      => $row['catatan_txt'],
                 ]);
 
-                // Suntik stok fisik & kartu stok
-                $this->stokService->addStock(
-                    $gudangId,
-                    $barangId,
-                    $batchNo,
-                    $row['terima_qty'],
-                    $row['expired_tgl'],
-                    $terima->terima_no,
-                    "Penerimaan Barang Fisik No {$terima->terima_no} (Update)",
-                    $row['harga_netto']
-                );
+                // Suntik stok fisik & kartu stok HANYA jika kuantitas terima > 0
+                if ($row['terima_qty'] > 0) {
+                    $this->stokService->addStock(
+                        $gudangId,
+                        $barangId,
+                        $batchNo,
+                        $row['terima_qty'],
+                        $row['expired_tgl'],
+                        $terima->terima_no,
+                        "Penerimaan Barang Fisik No {$terima->terima_no} (Update)",
+                        $row['harga_netto'],
+                        $row['grade_cd'] ?? 'A'
+                    );
 
-                // Update terima_qty di PO Detail jika terkait PO
-                if (!empty($dtl->podtl_id)) {
-                    $poDtl = DatPoDtl::find($dtl->podtl_id);
-                    if ($poDtl) {
-                        $poDtl->terima_qty = (float) $poDtl->terima_qty + $row['terima_qty'];
-                        $poDtl->save();
+                    // Update terima_qty di PO Detail jika terkait PO
+                    if (!empty($dtl->podtl_id)) {
+                        $poDtl = DatPoDtl::find($dtl->podtl_id);
+                        if ($poDtl) {
+                            $poDtl->terima_qty = (float) $poDtl->terima_qty + $row['terima_qty'];
+                            $poDtl->save();
+                        }
                     }
                 }
             }
@@ -574,6 +610,16 @@ class TerimaBarangService
                 }
             }
 
+            // Sinkronisasi status dan detail kuantitas tiket QC jika penerimaan berasal dari tiket QC
+            $targetQcId = !empty($data['qc_id']) ? (int) $data['qc_id'] : $terima->qc_id;
+            if (!empty($targetQcId)) {
+                app(\App\Services\Gudang\QcInboundService::class)->syncFromTerimaBarang(
+                    (int) $targetQcId,
+                    $terima,
+                    $items
+                );
+            }
+
             return $terima->fresh(['details.barang']);
         });
     }
@@ -599,7 +645,8 @@ class TerimaBarangService
                     $dtl->batch_no,
                     (float) $dtl->terima_qty,
                     $terima->terima_no,
-                    "Pembatalan Dokumen Penerimaan Barang No {$terima->terima_no}"
+                    "Pembatalan Dokumen Penerimaan Barang No {$terima->terima_no}",
+                    $dtl->grade_cd ?? 'A'
                 );
 
                 // 2. Kembalikan terima_qty di PO Detail jika terkait PO

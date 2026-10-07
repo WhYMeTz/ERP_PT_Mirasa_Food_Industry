@@ -71,7 +71,10 @@
             <span>📦 Karton</span>
         </a>
         <a href="{{ route('qc.inbound.index', ['view' => 'mobile', 'status_qc' => 'DITERIMA_GUDANG']) }}" class="qc-chip {{ $currSts === 'DITERIMA_GUDANG' ? 'active' : '' }}">
-            <span>✅ Masuk Gudang</span>
+            <span>✅ Masuk Penuh</span>
+        </a>
+        <a href="{{ route('qc.inbound.index', ['view' => 'mobile', 'status_qc' => 'DITERIMA_PARSIAL']) }}" class="qc-chip {{ in_array($currSts, ['DITERIMA_PARSIAL', 'DITOLAK_PARSIAL', 'PARSIAL']) ? 'active' : '' }}" style="{{ in_array($currSts, ['DITERIMA_PARSIAL', 'DITOLAK_PARSIAL', 'PARSIAL']) ? 'background: #fff7ed; color: #c2410c; border-color: #fdba74;' : '' }}">
+            <span>⚠️ Ditolak / Masuk Parsial</span>
         </a>
         <a href="{{ route('qc.inbound.index', ['view' => 'mobile', 'status_qc' => 'DITOLAK_TOTAL']) }}" class="qc-chip {{ $currSts === 'DITOLAK_TOTAL' ? 'active' : '' }}">
             <span>❌ Ditolak</span>
@@ -132,8 +135,10 @@
 
                         @if ($qc->status_qc === 'SIAP_GUDANG')
                             <span class="badge-status-siap">⏳ Siap Gudang</span>
+                        @elseif ($qc->status_qc === 'DITERIMA_PARSIAL' || ($qc->status_qc === 'DITERIMA_GUDANG' && $totalReject > 0))
+                            <span class="badge-status-diterima" style="background: #fff7ed; color: #c2410c; border: 1px solid #fdba74;">⚠️ Masuk Parsial</span>
                         @elseif ($qc->status_qc === 'DITERIMA_GUDANG')
-                            <span class="badge-status-diterima">✅ Masuk Gudang</span>
+                            <span class="badge-status-diterima">✅ Masuk Penuh</span>
                         @elseif ($qc->status_qc === 'DITOLAK_TOTAL')
                             <span class="badge-status-reject">❌ Reject Total</span>
                         @else
@@ -223,10 +228,17 @@
                             <span>Pengujian II (Uji Goreng Lab) belum diisi &bull; Klik <strong>Uji Fryer</strong> untuk melengkapi</span>
                         </div>
                     @elseif ($qc->terima)
-                        <div class="qc-grn-banner">
-                            <span>📦</span>
-                            <span>Sudah diterima Gudang &bull; GRN: <strong>{{ $qc->terima->terima_no }}</strong></span>
-                        </div>
+                        @if ($qc->status_qc === 'DITERIMA_PARSIAL' || $totalReject > 0)
+                            <div class="qc-waiting-banner" style="background: #fff7ed; border-color: #fdba74; color: #c2410c;">
+                                <span>⚠️</span>
+                                <span>Diterima Sebagian &bull; GRN: <strong>{{ $qc->terima->terima_no }}</strong> (Reject: {{ number_format($totalReject, 0, ',', '.') }} kg)</span>
+                            </div>
+                        @else
+                            <div class="qc-grn-banner">
+                                <span>📦</span>
+                                <span>Sudah diterima Gudang (Penuh) &bull; GRN: <strong>{{ $qc->terima->terima_no }}</strong></span>
+                            </div>
+                        @endif
                     @elseif ($qc->status_qc === 'SIAP_GUDANG')
                         <div class="qc-waiting-banner">
                             <span>⏳</span>
@@ -251,6 +263,12 @@
                     <a href="{{ route('qc.inbound.show', [$qc->qc_id, 'view' => 'mobile']) }}" class="qc-btn-action qc-btn-detail">
                         <span>👁️ Detail Uji</span>
                     </a>
+
+                    @if ($qc->status_qc === 'DITOLAK_TOTAL' || $qc->status_qc === 'DITERIMA_PARSIAL' || $totalReject > 0)
+                        <a href="{{ route('qc.inbound.berita_acara', $qc->qc_id) }}" class="qc-btn-action" style="background: #fee2e2; color: #dc2626; border-color: #fca5a5; font-weight: 700; text-decoration: none;" title="Cetak Berita Acara Penolakan Barang">
+                            <span>📄 Berita Acara</span>
+                        </a>
+                    @endif
 
                     {{-- TOMBOL EDIT KHUSUS SAMPLING QC --}}
                     @if (Auth::user()?->canEditQc())

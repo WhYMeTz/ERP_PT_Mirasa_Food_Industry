@@ -20,6 +20,7 @@ class DatStokLedger extends Model
         'gudang_id',
         'barang_id',
         'batch_no',
+        'grade_cd',
         'transaksi_tgl',
         'dokumen_no',
         'tipe_transaksi_cd',

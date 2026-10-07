@@ -20,8 +20,8 @@
     </div>
 </div>
 
-{{-- 4 KARTU METRIK OPERASIONAL --}}
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+{{-- 5 KARTU METRIK OPERASIONAL --}}
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
     {{-- 1. SIAP DITARIK KE GRN --}}
     <div style="background: #ffffff; border-radius: 8px; border: 1.5px solid #e2e8f0; padding: 1rem 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
         <div style="display: flex; justify-content: space-between; align-items: flex-start;">
@@ -62,12 +62,12 @@
         </div>
     </div>
 
-    {{-- 3. SUDAH MASUK GUDANG (GRN) --}}
+    {{-- 3. SUDAH MASUK GUDANG (PENUH) --}}
     <div style="background: #ffffff; border-radius: 8px; border: 1.5px solid #e2e8f0; padding: 1rem 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
         <div style="display: flex; justify-content: space-between; align-items: flex-start;">
             <div>
                 <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #059669;">
-                    Sudah Masuk Gudang
+                    Masuk Penuh (GRN)
                 </span>
                 <div style="font-size: 1.5rem; font-weight: 700; color: #0f172a; margin-top: 0.25rem;">
                     {{ number_format($countSelesai ?? 0) }}
@@ -82,12 +82,32 @@
         </div>
     </div>
 
-    {{-- 4. DITOLAK TOTAL (REJECT) --}}
+    {{-- 4. DITOLAK / MASUK PARSIAL (REJECT) --}}
+    <div style="background: #ffffff; border-radius: 8px; border: 1.5px solid #e2e8f0; padding: 1rem 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div>
+                <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #c2410c;">
+                    Ditolak / Masuk Parsial
+                </span>
+                <div style="font-size: 1.5rem; font-weight: 700; color: #c2410c; margin-top: 0.25rem;">
+                    {{ number_format($countParsial ?? 0) }}
+                </div>
+            </div>
+            <div style="width: 32px; height: 32px; border-radius: 6px; background: #fff7ed; display: flex; align-items: center; justify-content: center; color: #ea580c; border: 1px solid #fdba74;">
+                <span style="font-size: 0.95rem; font-weight: 800;">⚠️</span>
+            </div>
+        </div>
+        <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.4rem;">
+            Ada muatan ditolak / Berita Acara
+        </div>
+    </div>
+
+    {{-- 5. DITOLAK TOTAL (REJECT) --}}
     <div style="background: #ffffff; border-radius: 8px; border: 1.5px solid #e2e8f0; padding: 1rem 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
         <div style="display: flex; justify-content: space-between; align-items: flex-start;">
             <div>
                 <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #dc2626;">
-                    Ditolak QC / Reject
+                    Ditolak Total
                 </span>
                 <div style="font-size: 1.5rem; font-weight: 700; color: #0f172a; margin-top: 0.25rem;">
                     {{ number_format($countReject ?? 0) }}
@@ -120,12 +140,13 @@
                 <option value="PERENYAH" {{ ($filters['kategori_barang'] ?? '') === 'PERENYAH' ? 'selected' : '' }}>Perenyah</option>
             </select>
 
-            <select name="status_qc" class="form-control" style="padding: 0.45rem 0.75rem; max-width: 175px; font-size: 0.85rem;" onchange="this.form.submit()">
-                <option value="">-- Status QC --</option>
+            <select name="status_qc" class="form-control" style="padding: 0.45rem 0.75rem; max-width: 195px; font-size: 0.85rem;" onchange="this.form.submit()">
+                <option value="">-- Semua Status QC --</option>
                 <option value="SIAP_GUDANG" {{ ($filters['status_qc'] ?? '') === 'SIAP_GUDANG' ? 'selected' : '' }}>Siap Gudang</option>
                 <option value="MENUNGGU_UJI_2" {{ ($filters['status_qc'] ?? '') === 'MENUNGGU_UJI_2' ? 'selected' : '' }}>⏳ Menunggu Uji 2</option>
-                <option value="DITERIMA_GUDANG" {{ ($filters['status_qc'] ?? '') === 'DITERIMA_GUDANG' ? 'selected' : '' }}>Selesai Masuk (GRN)</option>
-                <option value="DITOLAK_TOTAL" {{ ($filters['status_qc'] ?? '') === 'DITOLAK_TOTAL' ? 'selected' : '' }}>Ditolak QC (Reject)</option>
+                <option value="DITERIMA_GUDANG" {{ ($filters['status_qc'] ?? '') === 'DITERIMA_GUDANG' ? 'selected' : '' }}>Selesai Masuk (GRN Penuh)</option>
+                <option value="DITERIMA_PARSIAL" {{ in_array(($filters['status_qc'] ?? ''), ['DITERIMA_PARSIAL', 'DITOLAK_PARSIAL', 'PARSIAL']) ? 'selected' : '' }}>⚠️ Ditolak / Masuk Parsial</option>
+                <option value="DITOLAK_TOTAL" {{ ($filters['status_qc'] ?? '') === 'DITOLAK_TOTAL' ? 'selected' : '' }}>Ditolak Total (Reject)</option>
             </select>
 
             <select name="supplier_id" class="form-control" style="padding: 0.45rem 0.75rem; max-width: 175px; font-size: 0.85rem;" onchange="this.form.submit()">
@@ -299,26 +320,36 @@
                         {{-- 6. PENGUJIAN 2 (RINGKAS & BERSIH) --}}
                         <td>
                             @if ($p2)
-                                <div style="display: flex; align-items: center; gap: 0.4rem;">
-                                    <span style="font-weight: 700; color: #0f172a;">{{ number_format($p2Netto, 0, ',', '.') }} kg</span>
-                                    @if ($p2Grade === 'B')
-                                        <span class="badge" style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a; font-weight: 800; font-size: 0.68rem; padding: 1px 5px; border-radius: 4px;">
-                                            🟡 Gr. B
-                                        </span>
-                                    @elseif ($p2Grade === 'REJECT')
-                                        <span class="badge" style="background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; font-weight: 800; font-size: 0.68rem; padding: 1px 5px; border-radius: 4px;">
-                                            ❌ Afkir
-                                        </span>
-                                    @else
-                                        <span class="badge" style="background: #dcfce7; color: #15803d; border: 1px solid #86efac; font-weight: 800; font-size: 0.68rem; padding: 1px 5px; border-radius: 4px;">
-                                            🟢 Gr. A
-                                        </span>
-                                    @endif
-                                </div>
-                                @if ($p2Refraksi > 0)
-                                    <div style="font-size: 0.68rem; color: #d97706; margin-top: 0.1rem;">
-                                        Ref: -{{ number_format($p2Refraksi, 0, ',', '.') }} kg ({{ number_format($p2RefPersen, 1) }}%)
+                                @if ($p2->status_qc === 'DITOLAK_TOTAL' || $p2Netto <= 0)
+                                    <span class="badge" style="background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; font-weight: 800; font-size: 0.68rem; padding: 2px 6px; border-radius: 4px;" title="Uji 2 Ditolak Total: muatan tidak masuk gudang">
+                                        ❌ Ditolak Total ({{ number_format($p2Gross ?: $p2Reject, 0, ',', '.') }} kg)
+                                    </span>
+                                @else
+                                    <div style="display: flex; align-items: center; gap: 0.4rem;">
+                                        <span style="font-weight: 700; color: #0f172a;">{{ number_format($p2Netto, 0, ',', '.') }} kg</span>
+                                        @if ($p2Grade === 'B')
+                                            <span class="badge" style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a; font-weight: 800; font-size: 0.68rem; padding: 1px 5px; border-radius: 4px;">
+                                                🟡 Gr. B
+                                            </span>
+                                        @elseif ($p2Grade === 'REJECT')
+                                            <span class="badge" style="background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; font-weight: 800; font-size: 0.68rem; padding: 1px 5px; border-radius: 4px;">
+                                                ❌ Afkir
+                                            </span>
+                                        @else
+                                            <span class="badge" style="background: #dcfce7; color: #15803d; border: 1px solid #86efac; font-weight: 800; font-size: 0.68rem; padding: 1px 5px; border-radius: 4px;">
+                                                🟢 Gr. A
+                                            </span>
+                                        @endif
                                     </div>
+                                    @if ($p2Reject > 0)
+                                        <div style="font-size: 0.68rem; color: #dc2626; font-weight: 700; margin-top: 0.1rem;">
+                                            Ditolak: -{{ number_format($p2Reject, 0, ',', '.') }} kg
+                                        </div>
+                                    @elseif ($p2Refraksi > 0)
+                                        <div style="font-size: 0.68rem; color: #d97706; margin-top: 0.1rem;">
+                                            Ref: -{{ number_format($p2Refraksi, 0, ',', '.') }} kg ({{ number_format($p2RefPersen, 1) }}%)
+                                        </div>
+                                    @endif
                                 @endif
                             @elseif ($isSingkong)
                                 @if ($qc->status_qc === 'DITOLAK_TOTAL')
@@ -346,15 +377,31 @@
                             <span style="font-size: 0.975rem; font-weight: 900; color: #047857;">
                                 {{ number_format($totalNetto, 0, ',', '.') }} kg
                             </span>
+                            @if ($totalReject > 0)
+                                <div style="font-size: 0.68rem; color: #dc2626; font-weight: 800; margin-top: 1px;" title="Kuantitas ditolak (tidak masuk stok)">
+                                    -{{ number_format($totalReject, 0, ',', '.') }} kg Reject
+                                </div>
+                            @endif
                         </td>
 
                         {{-- 8. STATUS GUDANG --}}
                         <td style="text-align: center;">
                             @if ($terimaObj)
-                                <a href="{{ route('gudang.terima.show', $terimaObj->terima_id) }}" class="badge-grn-pill" title="GRN: {{ $terimaObj->terima_no }}">
-                                    <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                                    <span>GRN #{{ $terimaObj->terima_no }}</span>
-                                </a>
+                                @if ($qc->status_qc === 'DITERIMA_PARSIAL' || $totalReject > 0 || ($p2 && $p2->status_qc === 'DITOLAK_TOTAL'))
+                                    <a href="{{ route('gudang.terima.show', $terimaObj->terima_id) }}" 
+                                       style="display: inline-flex; align-items: center; gap: 3px; background: #fff7ed; color: #c2410c; border: 1px solid #fdba74; padding: 2px 7px; border-radius: 6px; font-size: 0.72rem; font-weight: 800; text-decoration: none;" 
+                                       title="GRN Parsial (Diterima Sebagian, Reject: {{ number_format($totalReject, 0, ',', '.') }} kg)">
+                                        <span>⚠️ GRN (Parsial)</span>
+                                    </a>
+                                    <div style="font-size: 0.66rem; color: #dc2626; font-weight: 800; margin-top: 2px;">
+                                        Reject {{ number_format($totalReject, 0, ',', '.') }} kg
+                                    </div>
+                                @else
+                                    <a href="{{ route('gudang.terima.show', $terimaObj->terima_id) }}" class="badge-grn-pill" title="GRN: {{ $terimaObj->terima_no }} (Diterima Penuh)">
+                                        <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                        <span>GRN #{{ $terimaObj->terima_no }}</span>
+                                    </a>
+                                @endif
                             @elseif ($qc->status_qc === 'DITOLAK_TOTAL' && (!$p2 || $p2->status_qc === 'DITOLAK_TOTAL'))
                                 <span style="font-size: 0.72rem; color: #dc2626; font-weight: 800; background: #fee2e2; padding: 2px 6px; border-radius: 4px; border: 1px solid #fecaca;">
                                     Ditolak
@@ -368,7 +415,9 @@
                                     Siap GRN
                                 </span>
                             @else
-                                <span style="font-size: 0.75rem; color: #94a3b8;">-</span>
+                                <span style="font-size: 0.72rem; color: #64748b; font-weight: 700;">
+                                    {{ $qc->status_qc }}
+                                </span>
                             @endif
                         </td>
 
@@ -415,13 +464,13 @@
                                 @endif
 
                                 {{-- 3. CETAK BERITA ACARA PENOLAKAN --}}
-                                @if ($qc->status_qc === 'DITOLAK_TOTAL')
+                                @if ($qc->status_qc === 'DITOLAK_TOTAL' || $qc->details->sum('qty_reject') > 0)
                                     <a href="{{ route('qc.inbound.berita_acara', $qc->qc_id) }}" class="action-dropdown-item" style="color: #dc2626; font-weight: 700;">
                                         <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                                         <span>Berita Acara Penolakan (Uji 1)</span>
                                     </a>
                                 @endif
-                                @if ($p2 && $p2->status_qc === 'DITOLAK_TOTAL')
+                                @if ($p2 && ($p2->status_qc === 'DITOLAK_TOTAL' || $p2->details->sum('qty_reject') > 0))
                                     <a href="{{ route('qc.inbound.berita_acara', $p2->qc_id) }}" class="action-dropdown-item" style="color: #dc2626; font-weight: 700;">
                                         <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                                         <span>Berita Acara Penolakan (Uji 2)</span>

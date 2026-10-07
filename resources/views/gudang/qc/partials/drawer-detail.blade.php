@@ -316,13 +316,23 @@
             <div style="padding: 0.85rem 1.25rem; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
                 <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
                     @if ($terimaObj)
-                        <div style="display: flex; align-items: center; gap: 0.4rem; background: #dcfce7; color: #15803d; border: 1px solid #86efac; padding: 4px 10px; border-radius: 6px; font-size: 0.78rem; font-weight: 700;">
-                            <span>✅ Sudah Masuk Stok Gudang</span>
-                            <span style="font-family: monospace;">(GRN: #{{ $terimaObj->terima_no }})</span>
-                        </div>
-                        <span style="font-size: 0.75rem; color: #64748b;">
-                            Diterima pada: <strong>{{ $terimaObj->tgl_terima ? $terimaObj->tgl_terima->format('d/m/Y H:i') : '-' }}</strong>
-                        </span>
+                        @if ($qc->status_qc === 'DITERIMA_PARSIAL' || $totalReject > 0)
+                            <div style="display: flex; align-items: center; gap: 0.4rem; background: #fff7ed; color: #c2410c; border: 1px solid #fdba74; padding: 4px 10px; border-radius: 6px; font-size: 0.78rem; font-weight: 700;">
+                                <span>⚠️ Diterima Sebagian ke Gudang (Parsial)</span>
+                                <span style="font-family: monospace;">(GRN: #{{ $terimaObj->terima_no }})</span>
+                            </div>
+                            <span style="font-size: 0.75rem; color: #c2410c; font-weight: 600;">
+                                Masuk: <strong>{{ number_format($terimaObj->details->sum('qty_terima'), 0, ',', '.') }} kg</strong> &bull; Ditolak: <strong style="color: #dc2626;">{{ number_format($totalReject, 0, ',', '.') }} kg</strong> (Ada Berita Acara)
+                            </span>
+                        @else
+                            <div style="display: flex; align-items: center; gap: 0.4rem; background: #dcfce7; color: #15803d; border: 1px solid #86efac; padding: 4px 10px; border-radius: 6px; font-size: 0.78rem; font-weight: 700;">
+                                <span>✅ Sudah Masuk Stok Gudang (Penuh)</span>
+                                <span style="font-family: monospace;">(GRN: #{{ $terimaObj->terima_no }})</span>
+                            </div>
+                            <span style="font-size: 0.75rem; color: #64748b;">
+                                Diterima pada: <strong>{{ $terimaObj->tgl_terima ? $terimaObj->tgl_terima->format('d/m/Y H:i') : '-' }}</strong>
+                            </span>
+                        @endif
                     @elseif ($qc->status_qc === 'DITOLAK_TOTAL' && (!$p2 || $p2->status_qc === 'DITOLAK_TOTAL'))
                         <div style="display: flex; align-items: center; gap: 0.4rem; background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; padding: 4px 10px; border-radius: 6px; font-size: 0.78rem; font-weight: 700;">
                             <span>🚫 Truk Ditolak QC</span>
@@ -360,8 +370,8 @@
                         </a>
                     @endif
 
-                    @if ($qc->status_qc === 'DITOLAK_TOTAL' || ($p2 && $p2->status_qc === 'DITOLAK_TOTAL'))
-                        <a href="{{ route('qc.inbound.berita_acara', $qc->qc_id) }}" class="btn btn-sm" style="font-size: 0.78rem; font-weight: 700; background: #dc2626; color: #ffffff; padding: 4px 10px; border-radius: 6px; text-decoration: none;">
+                    @if ($qc->status_qc === 'DITOLAK_TOTAL' || $qc->details->sum('qty_reject') > 0 || ($p2 && ($p2->status_qc === 'DITOLAK_TOTAL' || $p2->details->sum('qty_reject') > 0)))
+                        <a href="{{ route('qc.inbound.berita_acara', ($p2 && $p2->details->sum('qty_reject') > 0 && $qc->details->sum('qty_reject') == 0) ? $p2->qc_id : $qc->qc_id) }}" class="btn btn-sm" style="font-size: 0.78rem; font-weight: 700; background: #dc2626; color: #ffffff; padding: 4px 10px; border-radius: 6px; text-decoration: none;">
                             <span>Cetak Berita Acara</span>
                         </a>
                     @endif

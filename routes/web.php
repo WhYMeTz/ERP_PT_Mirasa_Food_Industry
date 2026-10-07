@@ -22,6 +22,7 @@ use App\Http\Controllers\MasterData\SupplierController;
 use App\Http\Controllers\Penjualan\SoController;
 use App\Http\Controllers\Produksi\BomController;
 use App\Http\Controllers\Produksi\ProduksiController;
+use App\Http\Controllers\Produksi\ProduksiStokController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -212,11 +213,15 @@ Route::middleware('auth')->group(function () {
         Route::get('stok/rekap/export-excel', [StokController::class, 'exportRekapExcel'])->name('stok.rekap.export-excel')->middleware('role:stok_view');
         Route::get('stok/rekap/export-pdf', [StokController::class, 'exportRekapPdf'])->name('stok.rekap.export-pdf')->middleware('role:stok_view');
         Route::get('stok/ledger', [StokController::class, 'ledger'])->name('stok.ledger')->middleware('role:stok_view');
+        Route::get('stok/batch-detail/{batch_no}', [StokController::class, 'batchDetail'])->name('stok.batch-detail')->middleware('role:stok_view');
     });
 
     // Produksi & HPP Harian (Sesuai Excel Asli PT Mirasa)
     Route::prefix('produksi')->name('produksi.')->middleware('role:produksi_view')->group(function () {
         Route::get('/', [ProduksiController::class, 'index'])->name('index');
+        Route::get('/stok', [ProduksiStokController::class, 'index'])->name('stok.index');
+        Route::get('/stok/ledger', [ProduksiStokController::class, 'ledger'])->name('stok.ledger');
+        Route::get('/stok/batch-detail/{batch_no}', [ProduksiStokController::class, 'batchDetail'])->name('stok.batch-detail');
         Route::get('/rekap', [ProduksiController::class, 'rekap'])->name('rekap');
         Route::get('/export-hasil', [ProduksiController::class, 'exportHasilProduksi'])->name('export-hasil');
         Route::get('/download-template', [ProduksiController::class, 'downloadHasilTemplate'])->name('download-template');

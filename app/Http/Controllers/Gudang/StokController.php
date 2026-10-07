@@ -33,7 +33,10 @@ class StokController extends Controller
         $user = auth()->user();
         $allowedGudangIds = $user ? $user->getAllowedGudangIds() : [];
         $gudangList = $user ? $user->getAllowedGudangList() : collect();
-        $jenisBarangList = MstJenisBarang::active()->orderBy('jenis_barang_nm')->get();
+        $jenisBarangList = MstJenisBarang::active()
+            ->whereNotIn('jenis_barang_cd', ['WIP', 'FG'])
+            ->orderBy('jenis_barang_nm')
+            ->get();
 
         $requestedGudangId = $request->input('gudang_id') ? (int) $request->input('gudang_id') : null;
 
@@ -55,14 +58,14 @@ class StokController extends Controller
             $gudangId = null;
         }
 
-        $kpiMetrics = $this->stokService->getStokKpiMetrics($effectiveGudang);
+        $kpiMetrics = $this->stokService->getStokKpiMetrics($effectiveGudang, 'bahan');
 
         if ($viewType === 'batch') {
-            $stokList = $this->stokService->getMonitoringStok($perPage, $effectiveGudang, $search, $status, $jenisBarangId);
+            $stokList = $this->stokService->getMonitoringStok($perPage, $effectiveGudang, $search, $status, $jenisBarangId, 'bahan');
             $summaryList = null;
             $dataForJson = $stokList;
         } else {
-            $summaryList = $this->stokService->getStokSummaryByBarang($perPage, $effectiveGudang, $search, $status, $jenisBarangId);
+            $summaryList = $this->stokService->getStokSummaryByBarang($perPage, $effectiveGudang, $search, $status, $jenisBarangId, 'bahan');
             $stokList = null;
             $dataForJson = $summaryList;
         }
@@ -92,11 +95,10 @@ class StokController extends Controller
 
 
     /**
-     * Tampilan audit kartu stok (Stock Ledger) per barang dan mutasi IN / OUT.
+     * Tampilan audit kartu stok (Stock Ledger) per barang dan mutasi IN / OUT (Khusus Bahan Baku & Penolong).
      */
     public function ledger(Request $request): View|JsonResponse
     {
-        $barangId = (int) $request->input('barang_id', 1);
         $startDate = $request->input('start_date');
         $endDate = $request->input('end_date');
         $perPage = (int) $request->input('per_page', 25);
@@ -120,10 +122,16 @@ class StokController extends Controller
             $gudangId = null;
         }
 
-        $selectedBarang = MstBarang::with(['satuanDasar', 'jenisBarang'])->find($barangId)
-            ?? MstBarang::with(['satuanDasar', 'jenisBarang'])->first();
+        $barangList = MstBarang::active()
+            ->whereHas('jenisBarang', fn($q) => $q->whereNotIn('jenis_barang_cd', ['WIP', 'FG']))
+            ->with(['satuanDasar', 'jenisBarang'])
+            ->orderBy('barang_nm')
+            ->get();
 
-        $barangList = MstBarang::active()->orderBy('barang_nm')->get();
+        $requestedBarangId = $request->input('barang_id') ? (int) $request->input('barang_id') : null;
+        $selectedBarang = ($requestedBarangId ? $barangList->firstWhere('barang_id', $requestedBarangId) : null)
+            ?? $barangList->first();
+        $barangId = $selectedBarang?->barang_id;
 
         $ledgerList = $selectedBarang
             ? $this->stokService->getKartuStok($selectedBarang->barang_id, $effectiveGudang, $startDate, $endDate, $perPage)
@@ -354,5 +362,15 @@ class StokController extends Controller
         $tabPrefix = $tab === 'hasil_produksi' ? 'Gudang_Jadi' : 'Bahan_Baku';
         $filename = 'Rekap_Stok_' . $tabPrefix . '_' . $tanggal . '_' . date('His') . '.pdf';
         return $pdf->stream($filename);
+    }
+
+    /**
+     * Endpoint API JSON untuk melihat isi dan penelusuran (traceability) batch.
+     */
+    public function batchDetail(Request $request, string $batchNo): JsonResponse
+    {
+        $barangId = $request->input('barang_id') ? (int) $request->input('barang_id') : null;
+        $data = $this->stokService->getBatchTraceability($batchNo, $barangId);
+        return response()->json($data);
     }
 }

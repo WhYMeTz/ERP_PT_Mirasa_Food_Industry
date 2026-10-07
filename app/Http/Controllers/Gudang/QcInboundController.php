@@ -55,23 +55,44 @@ class QcInboundController extends Controller
         }
 
         // Metrik Statistik Operasional Gudang & QC Inbound (Khusus Web Admin Desktop, difilter hak akses perusahaan)
-        $countSiap = \App\Models\Gudang\DatQcInboundHdr::where('deleted_st', false)
+        $baseMetrics = \App\Models\Gudang\DatQcInboundHdr::where('deleted_st', false)
             ->when(!empty($allowedGudangIds), fn($q) => $q->whereIn('gudang_id', $allowedGudangIds))
-            ->where('status_qc', 'SIAP_GUDANG')->count();
-        $countMenungguUji2 = \App\Models\Gudang\DatQcInboundHdr::where('deleted_st', false)
-            ->when(!empty($allowedGudangIds), fn($q) => $q->whereIn('gudang_id', $allowedGudangIds))
-            ->where('kategori_barang', 'SINGKONG')
+            ->where(function ($q) {
+                $q->whereNull('parent_qc_id')
+                  ->orWhereDoesntHave('parentQc');
+            });
+
+        $countSiap = (clone $baseMetrics)->where('status_qc', 'SIAP_GUDANG')->count();
+        $countMenungguUji2 = (clone $baseMetrics)->where('kategori_barang', 'SINGKONG')
             ->where('tahap_uji', 'PENGUJIAN_1')
             ->where('status_qc', 'SIAP_GUDANG')
             ->doesntHave('pengujian2List')->count();
-        $countSelesai = \App\Models\Gudang\DatQcInboundHdr::where('deleted_st', false)
-            ->when(!empty($allowedGudangIds), fn($q) => $q->whereIn('gudang_id', $allowedGudangIds))
-            ->where('status_qc', 'DITERIMA_GUDANG')->count();
-        $countReject = \App\Models\Gudang\DatQcInboundHdr::where('deleted_st', false)
-            ->when(!empty($allowedGudangIds), fn($q) => $q->whereIn('gudang_id', $allowedGudangIds))
-            ->where('status_qc', 'DITOLAK_TOTAL')->count();
+        $countSelesai = (clone $baseMetrics)->where(function ($q) {
+            $q->where('status_qc', 'DITERIMA_GUDANG')
+              ->orWhereHas('pengujian2List', fn($pq) => $pq->where('status_qc', 'DITERIMA_GUDANG'));
+        })->count();
+        $countParsial = (clone $baseMetrics)->where(function ($q) {
+            $q->whereIn('status_qc', ['DITERIMA_PARSIAL', 'DITOLAK_PARSIAL'])
+              ->orWhere(function ($sq) {
+                  $sq->where('status_qc', '!=', 'DITOLAK_TOTAL')
+                     ->whereHas('details', fn($dq) => $dq->where('qty_reject', '>', 0));
+              })
+              ->orWhereHas('pengujian2List', function ($pq) {
+                  $pq->whereIn('status_qc', ['DITOLAK_TOTAL', 'DITERIMA_PARSIAL', 'DITOLAK_PARSIAL'])
+                     ->orWhereHas('details', fn($dq) => $dq->where('qty_reject', '>', 0));
+              })
+              ->orWhere(function ($sq) {
+                  $sq->where('status_qc', 'DITOLAK_TOTAL')
+                     ->whereHas('pengujian2List', fn($pq) => $pq->whereIn('status_qc', ['DITERIMA_GUDANG', 'SIAP_GUDANG']));
+              });
+        })->count();
+        $countReject = (clone $baseMetrics)->where('status_qc', 'DITOLAK_TOTAL')
+            ->where(function ($sq) {
+                $sq->doesntHave('pengujian2List')
+                   ->orWhereDoesntHave('pengujian2List', fn($pq) => $pq->whereIn('status_qc', ['DITERIMA_GUDANG', 'SIAP_GUDANG']));
+            })->count();
 
-        return view('gudang.qc.index', compact('inspeksiList', 'suppliers', 'filters', 'countSiap', 'countMenungguUji2', 'countSelesai', 'countReject'));
+        return view('gudang.qc.index', compact('inspeksiList', 'suppliers', 'filters', 'countSiap', 'countMenungguUji2', 'countSelesai', 'countParsial', 'countReject'));
     }
 
     /**

@@ -178,21 +178,22 @@ class PemakaianService
                 ->get()
                 ->keyBy(fn($r) => $r->gudang_id . '_' . $r->barang_id);
 
-            // 2. Ambil sisa stok per batch spesifik
+            // 2. Ambil sisa stok per batch spesifik & grade
             $batchStokMap = DatStokBatch::whereIn('gudang_id', array_values($gudangIds))
                 ->whereIn('barang_id', array_values($barangIds))
                 ->where('deleted_st', false)
                 ->get()
-                ->keyBy(fn($r) => $r->gudang_id . '_' . $r->barang_id . '_' . $r->batch_no);
+                ->keyBy(fn($r) => $r->gudang_id . '_' . $r->barang_id . '_' . $r->batch_no . '_' . ($r->grade_cd ?? 'A'));
 
             // Assign ke setiap item
             foreach ($items as $item) {
                 $gId = $item->header?->gudang_id;
                 $bId = $item->barang_id;
                 $bt = $item->batch_no;
+                $gr = $item->grade_cd ?? 'A';
 
                 $item->sisa_gudang_qty = (float) ($totalStokMap->get($gId . '_' . $bId)?->total_sisa ?? 0);
-                $item->sisa_batch_qty = (float) ($batchStokMap->get($gId . '_' . $bId . '_' . $bt)?->sisa_qty ?? 0);
+                $item->sisa_batch_qty = (float) ($batchStokMap->get($gId . '_' . $bId . '_' . $bt . '_' . $gr)?->sisa_qty ?? 0);
             }
         }
 
@@ -222,11 +223,11 @@ class PemakaianService
             ->whereIn('barang_id', $barangIds)
             ->where('deleted_st', false)
             ->get()
-            ->keyBy(fn($r) => $r->barang_id . '_' . $r->batch_no);
+            ->keyBy(fn($r) => $r->barang_id . '_' . $r->batch_no . '_' . ($r->grade_cd ?? 'A'));
 
         foreach ($hdr->details as $dtl) {
             $dtl->sisa_gudang_qty = (float) ($totalStokMap->get($dtl->barang_id) ?? 0);
-            $dtl->sisa_batch_qty = (float) ($batchStokMap->get($dtl->barang_id . '_' . $dtl->batch_no)?->sisa_qty ?? 0);
+            $dtl->sisa_batch_qty = (float) ($batchStokMap->get($dtl->barang_id . '_' . $dtl->batch_no . '_' . ($dtl->grade_cd ?? 'A'))?->sisa_qty ?? 0);
         }
 
         return $hdr;
@@ -355,15 +356,28 @@ class PemakaianService
                     throw new Exception("Nomor batch wajib dipilih untuk setiap item barang yang dikeluarkan.");
                 }
 
-                // Cari batch untuk ambil harga satuan jika tidak diisi
-                $stokBatch = DatStokBatch::where('gudang_id', $gudangId)
+                $gradeCd = !empty($item['grade_cd']) ? strtoupper(trim($item['grade_cd'])) : 'A';
+
+                // Cari batch untuk ambil harga satuan jika tidak diisi & validasi grade
+                $stokBatchQuery = DatStokBatch::where('gudang_id', $gudangId)
                     ->where('barang_id', $barangId)
-                    ->where('batch_no', $batchNo)
-                    ->first();
+                    ->where('batch_no', $batchNo);
+
+                if (!empty($item['stok_id'])) {
+                    $stokBatch = (clone $stokBatchQuery)->where('stok_id', $item['stok_id'])->first();
+                } else {
+                    $stokBatch = (clone $stokBatchQuery)->where('grade_cd', $gradeCd)->first();
+                }
+
+                if (!$stokBatch) {
+                    $stokBatch = $stokBatchQuery->first();
+                }
 
                 if (!$stokBatch) {
                     throw new Exception("Batch '{$batchNo}' tidak ditemukan di gudang yang dipilih.");
                 }
+
+                $gradeCd = $stokBatch->grade_cd ?? $gradeCd;
 
                 $hargaSatuan = !empty($item['harga_satuan']) && (float) $item['harga_satuan'] > 0
                     ? (float) $item['harga_satuan']
@@ -382,20 +396,22 @@ class PemakaianService
                     'pakai_id'       => $header->pakai_id,
                     'barang_id'      => $barangId,
                     'batch_no'       => $batchNo,
+                    'grade_cd'       => $gradeCd,
                     'qty_keluar'     => $qtyKeluar,
                     'harga_satuan'   => $hargaSatuan,
                     'total_harga'    => $totalHarga,
                     'keterangan_txt' => $keteranganDetail,
                 ]);
 
-                // Kurangi stok fisik per batch & catat kartu stok OUT
+                // Kurangi stok fisik per batch & grade serta catat kartu stok OUT
                 $this->stokService->deductStock(
                     $gudangId,
                     $barangId,
                     $batchNo,
                     $qtyKeluar,
                     $pakaiNo,
-                    "Pengeluaran ({$tujuanPemakaian}) - {$keteranganDetail}"
+                    "Pengeluaran ({$tujuanPemakaian}) - {$keteranganDetail}",
+                    $gradeCd
                 );
             }
 

@@ -40,6 +40,18 @@
             <span>Cetak PDF (GRN)</span>
         </a>
 
+        @php
+            $totalRejectQty = (float) $terima->details->sum('reject_qty');
+            $hasQcRejection = $terima->qc_id && ($totalRejectQty > 0 || ($terima->qc && ($terima->qc->status_qc === 'DITOLAK_TOTAL' || $terima->qc->details->sum('qty_reject') > 0)));
+        @endphp
+
+        @if ($hasQcRejection)
+            <a href="{{ route('qc.inbound.berita_acara', $terima->qc_id) }}" target="_blank" class="btn btn-secondary" style="background: #ffffff; border: 1.5px solid #dc2626; color: #dc2626; font-size: 0.85rem; font-weight: 700; padding: 0.55rem 0.95rem; box-shadow: 0 1px 2px rgba(0,0,0,0.03); display: inline-flex; align-items: center; gap: 0.35rem; transition: all 0.15s ease-in-out;" onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background='#ffffff'" title="Buka & Cetak Berita Acara Penolakan Bahan Baku HACCP">
+                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                <span>Berita Acara Penolakan</span>
+            </a>
+        @endif
+
         {{-- Dropdown Aksi Show --}}
         <button type="button" class="btn btn-secondary" onclick="toggleSmartActionDropdown(this, event, 'dropdown-show-terima')" style="background: #ffffff; border: 1.5px solid #cbd5e1; font-weight: 700; font-size: 0.85rem; padding: 0.55rem 0.85rem; display: inline-flex; align-items: center; gap: 0.35rem;">
             <span>Aksi Dokumen</span>
@@ -56,6 +68,18 @@
                     <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
                     <span>Buka Purchase Order Terkait</span>
                 </a>
+            @endif
+            @if ($terima->qc_id)
+                <a href="{{ route('qc.inbound.show', $terima->qc_id) }}" class="action-dropdown-item">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    <span>Buka Tiket QC Inbound Terkait</span>
+                </a>
+                @if ($hasQcRejection)
+                    <a href="{{ route('qc.inbound.berita_acara', $terima->qc_id) }}" target="_blank" class="action-dropdown-item" style="color: #dc2626; font-weight: 700;">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                        <span>Cetak Berita Acara Penolakan</span>
+                    </a>
+                @endif
             @endif
             @if (Auth::user()?->canEditTerima())
                 <a href="{{ route('gudang.terima.edit', $terima->terima_id) }}" class="action-dropdown-item">
@@ -74,7 +98,32 @@
     </div>
 </div>
 
-<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+    {{-- ALERT BANNER PENOLAKAN BAHAN BAKU --}}
+    @if ($totalRejectQty > 0 || ($terima->qc && $terima->qc->details->sum('qty_reject') > 0))
+        @php
+            $displayReject = $totalRejectQty > 0 ? $totalRejectQty : (float) $terima->qc->details->sum('qty_reject');
+        @endphp
+        <div class="no-print" style="margin-bottom: 1.5rem; background: #fef2f2; border: 1.5px solid #fca5a5; border-radius: 8px; padding: 1rem 1.25rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; box-shadow: 0 1px 3px rgba(220,38,38,0.08);">
+            <div style="display: flex; align-items: center; gap: 0.85rem;">
+                <div style="width: 38px; height: 38px; border-radius: 50%; background: #fee2e2; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #dc2626; font-size: 1.25rem;">
+                    ⚠️
+                </div>
+                <div>
+                    <strong style="color: #991b1b; font-size: 0.95rem;">Terdapat Penolakan Muatan Bahan Baku ({{ number_format($displayReject, 2, ',', '.') }} KG Ditolak)</strong>
+                    <p style="color: #b91c1c; font-size: 0.825rem; margin: 0.2rem 0 0 0; line-height: 1.4;">
+                        Kuantitas yang ditolak (Grade B / cacat mutu) tidak masuk stok gudang dan tidak memotong tagihan PO. Berita Acara Penolakan HACCP resmi telah disiapkan untuk sopir/supplier.
+                    </p>
+                </div>
+            </div>
+            @if ($terima->qc_id)
+                <a href="{{ route('qc.inbound.berita_acara', $terima->qc_id) }}" target="_blank" class="btn btn-sm" style="background: #dc2626; color: #ffffff; font-weight: 800; border-radius: 6px; padding: 0.5rem 1rem; border: none; white-space: nowrap; box-shadow: 0 2px 4px rgba(220,38,38,0.25);">
+                    📄 Buka Berita Acara Penolakan &rarr;
+                </a>
+            @endif
+        </div>
+    @endif
+
+    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
     {{-- KARTU INFO PENGIRIM & GUDANG --}}
     <div class="card">
         <div class="card-header" style="background: #f8fafc;">
@@ -126,6 +175,14 @@
                     <span style="color: #94a3b8; font-style: italic;">Non-PO</span>
                 @endif
             </div>
+            @if ($terima->qc_id)
+                <div style="display: flex; justify-content: space-between; padding-top: 0.75rem; border-top: 1px solid #f1f5f9;">
+                    <span style="color: #64748b; font-size: 0.875rem;">Tiket QC Inbound:</span>
+                    <a href="{{ route('qc.inbound.show', $terima->qc_id) }}" style="font-weight: 700; color: #7e22ce; text-decoration: none;">
+                        {{ $terima->qc?->qc_no ?? ('QC #' . $terima->qc_id) }} &rarr;
+                    </a>
+                </div>
+            @endif
         </div>
     </div>
 </div>
@@ -192,6 +249,11 @@
                         </td>
                         <td style="text-align: right; font-weight: 700; font-size: 0.95rem; color: #047857;">
                             + {{ number_format((float) $item->terima_qty, 2, ',', '.') }}
+                            @if ((float) $item->reject_qty > 0)
+                                <div style="font-size: 0.725rem; color: #dc2626; font-weight: 700; margin-top: 2px;">
+                                    Ditolak: {{ number_format((float) $item->reject_qty, 2, ',', '.') }}
+                                </div>
+                            @endif
                         </td>
                         <td style="text-align: center; color: #475569; font-size: 0.85rem;">{{ $item->barang?->satuanDasar?->satuan_nm ?? '-' }}</td>
                         <td style="text-align: right; font-family: monospace; font-size: 0.85rem;">

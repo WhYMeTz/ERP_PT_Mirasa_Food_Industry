@@ -69,6 +69,12 @@ class DatTerimaHdr extends Model
         return $this->belongsTo(DatQcInboundHdr::class, 'qc_id', 'qc_id');
     }
 
+    public function qc(): BelongsTo
+    {
+        return $this->qcInbound();
+    }
+
+
     /**
      * Relasi ke Supplier
      */

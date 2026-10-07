@@ -106,9 +106,21 @@
                     <tr>
                         <td>{{ $index + 1 }}</td>
                         <td>
-                            <span style="font-family: monospace; font-size: 0.85rem; background: #fff1f2; color: #be123c; border: 1px solid #fecdd3; padding: 0.2rem 0.45rem; border-radius: 4px; font-weight: 700;">
-                                {{ $dtl->batch_no }}
-                            </span>
+                            <div style="display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;">
+                                <span style="font-family: monospace; font-size: 0.85rem; background: #fff1f2; color: #be123c; border: 1px solid #fecdd3; padding: 0.2rem 0.45rem; border-radius: 4px; font-weight: 700;">
+                                    {{ $dtl->batch_no }}
+                                </span>
+                                @if(!empty($dtl->grade_cd))
+                                    @php
+                                        $gColor = ($dtl->grade_cd === 'A') ? '#059669' : (($dtl->grade_cd === 'B') ? '#d97706' : '#dc2626');
+                                        $gBg = ($dtl->grade_cd === 'A') ? '#ecfdf5' : (($dtl->grade_cd === 'B') ? '#fffbeb' : '#fef2f2');
+                                        $gBorder = ($dtl->grade_cd === 'A') ? '#a7f3d0' : (($dtl->grade_cd === 'B') ? '#fde68a' : '#fecaca');
+                                    @endphp
+                                    <span style="font-size: 0.725rem; font-weight: 700; color: {{ $gColor }}; background: {{ $gBg }}; border: 1px solid {{ $gBorder }}; padding: 0.15rem 0.4rem; border-radius: 4px;">
+                                        Grade {{ $dtl->grade_cd }}
+                                    </span>
+                                @endif
+                            </div>
                         </td>
                         <td style="font-family: monospace; font-weight: 600; color: #475569;">
                             {{ $dtl->barang?->barang_cd }}

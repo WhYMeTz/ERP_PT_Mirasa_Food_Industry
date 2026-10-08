@@ -265,6 +265,19 @@ class User extends Authenticatable
     }
 
     /**
+     * Hak akses Sales Order (SO) / Penjualan
+     */
+    public function canAccessSo(): bool
+    {
+        return $this->isSuperAdmin() || $this->canDo('so_view') || $this->canDo('so_create') || $this->canAccessPo();
+    }
+
+    public function canCreateSo(): bool
+    {
+        return $this->isSuperAdmin() || $this->canDo('so_create') || $this->canCreatePo();
+    }
+
+    /**
      * Cek apakah pengguna memiliki permission tertentu
      */
     public function hasPermission(string $permissionCd): bool
@@ -332,6 +345,14 @@ class User extends Authenticatable
     public function canCreateProduksi(): bool
     {
         return $this->isSuperAdmin() || $this->canDo('produksi_create');
+    }
+
+    /**
+     * Hak akses Lacak Stok Hasil Produksi (WIP & Barang Jadi)
+     */
+    public function canAccessStokProduksi(): bool
+    {
+        return $this->isSuperAdmin() || $this->canAccessProduksi() || $this->canAccessStok();
     }
 
     /**

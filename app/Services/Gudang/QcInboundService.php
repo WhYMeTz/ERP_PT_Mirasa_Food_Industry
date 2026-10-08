@@ -27,9 +27,9 @@ class QcInboundService
             'supplier', 
             'gudang', 
             'po', 
-            'details.barang', 
+            'details.barang.satuanDasar', 
             'terima', 
-            'pengujian2List.details.barang',
+            'pengujian2List.details.barang.satuanDasar',
             'pengujian2List.terima'
         ])
             ->where('deleted_st', false)

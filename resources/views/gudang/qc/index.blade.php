@@ -129,15 +129,19 @@
         <form action="{{ route('qc.inbound.index') }}" method="GET" style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; max-width: 850px; width: 100%;">
             <input type="text" name="search" value="{{ $filters['search'] ?? '' }}" placeholder="Cari nomor QC, plat truk, supplier, sopir..." class="form-control" style="padding: 0.45rem 0.75rem; max-width: 250px; font-size: 0.85rem;">
             
-            <select name="kategori_barang" class="form-control" style="padding: 0.45rem 0.75rem; max-width: 165px; font-size: 0.85rem;" onchange="this.form.submit()">
-                <option value="">-- Komoditas --</option>
-                <option value="SINGKONG" {{ ($filters['kategori_barang'] ?? '') === 'SINGKONG' ? 'selected' : '' }}>Singkong</option>
-                <option value="MINYAK" {{ ($filters['kategori_barang'] ?? '') === 'MINYAK' ? 'selected' : '' }}>Minyak Goreng</option>
-                <option value="PLASTIK" {{ ($filters['kategori_barang'] ?? '') === 'PLASTIK' ? 'selected' : '' }}>Plastik</option>
-                <option value="KARTON" {{ ($filters['kategori_barang'] ?? '') === 'KARTON' ? 'selected' : '' }}>Karton</option>
-                <option value="MSG" {{ ($filters['kategori_barang'] ?? '') === 'MSG' ? 'selected' : '' }}>MSG</option>
-                <option value="GARAM" {{ ($filters['kategori_barang'] ?? '') === 'GARAM' ? 'selected' : '' }}>Garam</option>
-                <option value="PERENYAH" {{ ($filters['kategori_barang'] ?? '') === 'PERENYAH' ? 'selected' : '' }}>Perenyah</option>
+            <select name="kategori_barang" class="form-control" style="padding: 0.45rem 0.75rem; max-width: 180px; font-size: 0.85rem;" onchange="this.form.submit()">
+                <option value="">-- Semua Komoditas --</option>
+                <optgroup label="🌾 Bahan Baku (2 Tahap)">
+                    <option value="SINGKONG" {{ ($filters['kategori_barang'] ?? '') === 'SINGKONG' ? 'selected' : '' }}>Singkong</option>
+                </optgroup>
+                <optgroup label="📦 Bahan Penolong (1 Tahap)">
+                    <option value="MINYAK" {{ ($filters['kategori_barang'] ?? '') === 'MINYAK' ? 'selected' : '' }}>Minyak Goreng</option>
+                    <option value="PLASTIK" {{ ($filters['kategori_barang'] ?? '') === 'PLASTIK' ? 'selected' : '' }}>Plastik Kemasan</option>
+                    <option value="KARTON" {{ ($filters['kategori_barang'] ?? '') === 'KARTON' ? 'selected' : '' }}>Karton Box</option>
+                    <option value="MSG" {{ ($filters['kategori_barang'] ?? '') === 'MSG' ? 'selected' : '' }}>MSG</option>
+                    <option value="GARAM" {{ ($filters['kategori_barang'] ?? '') === 'GARAM' ? 'selected' : '' }}>Garam</option>
+                    <option value="PERENYAH" {{ ($filters['kategori_barang'] ?? '') === 'PERENYAH' ? 'selected' : '' }}>Perenyah</option>
+                </optgroup>
             </select>
 
             <select name="status_qc" class="form-control" style="padding: 0.45rem 0.75rem; max-width: 195px; font-size: 0.85rem;" onchange="this.form.submit()">
@@ -208,14 +212,21 @@
                 @forelse ($inspeksiList as $qc)
                     @php
                         $kat = strtoupper((string) ($qc->kategori_barang ?: 'SINGKONG'));
-                        $isSingkong = ($kat === 'SINGKONG');
+                        $isSingkong = in_array($kat, ['SINGKONG', 'UBI', 'TALAS']) || str_starts_with($kat, 'BB-') || str_contains($kat, 'SINGKONG');
+                        $isBahanBaku = $isSingkong;
+                        $isBahanPenolong = !$isBahanBaku;
+
+                        // Detail item pertama & relasi master barang
+                        $p1FirstDtl = $qc->details->first();
+                        $barangObj = $p1FirstDtl?->barang;
+                        $satuanCd = $barangObj?->satuanDasar?->satuan_cd ?: ($barangObj?->satuanDasar?->satuan_nm ?: ($isSingkong ? 'kg' : 'Pcs'));
+                        $barangNm = $barangObj?->barang_nm ?: ($qc->nama_jenis ?: $kat);
 
                         // Pengujian 1 Data
                         $p1Gross = (float) $qc->details->sum('qty_timbang_gross');
                         $p1Refraksi = (float) $qc->details->sum('qty_refraksi');
                         $p1Reject = (float) $qc->details->sum('qty_reject');
                         $p1Netto = (float) $qc->details->sum('qty_netto_lolos');
-                        $p1FirstDtl = $qc->details->first();
                         $p1Grade = $p1FirstDtl?->grade_cd ?? 'A';
                         $p1RefPersen = (float) ($p1FirstDtl?->refraksi_persen ?? 0);
 
@@ -230,10 +241,10 @@
                         $p2RefPersen = $p2FirstDtl ? (float) ($p2FirstDtl->refraksi_persen ?? 0) : 0;
 
                         // Combined Truck Totals
-                        $totalGross = $p1Gross + $p2Gross;
-                        $totalRefraksi = $p1Refraksi + $p2Refraksi;
-                        $totalReject = $p1Reject + $p2Reject;
-                        $totalNetto = $p1Netto + $p2Netto;
+                        $totalGross = $isBahanBaku ? ($p1Gross + $p2Gross) : $p1Gross;
+                        $totalRefraksi = $isBahanBaku ? ($p1Refraksi + $p2Refraksi) : $p1Refraksi;
+                        $totalReject = $isBahanBaku ? ($p1Reject + $p2Reject) : $p1Reject;
+                        $totalNetto = $isBahanBaku ? ($p1Netto + $p2Netto) : $p1Netto;
 
                         // Terima GRN
                         $terimaObj = $qc->terima ?: ($p2?->terima);
@@ -257,16 +268,27 @@
                             </button>
                         </td>
 
-                        {{-- 2. DOKUMEN QC & TANGGAL --}}
+                        {{-- 2. DOKUMEN QC & TANGGAL (ADAPTIF: BAHAN BAKU VS BAHAN PENOLONG) --}}
                         <td>
-                            <div style="display: flex; align-items: center; gap: 0.35rem;">
+                            <div style="display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;">
                                 <a href="javascript:void(0)" onclick="openHaccpModal('{{ $qc->qc_id }}', '{{ $qc->qc_no }}')" style="font-weight: 800; color: #0284c7; text-decoration: none; font-family: monospace; font-size: 0.85rem;" title="Klik untuk membuka dokumen HACCP">
                                     {{ $qc->qc_no }}
                                 </a>
-                                <span class="badge" style="background: #f1f5f9; color: #475569; font-weight: 700; font-size: 0.65rem; padding: 1px 5px; border-radius: 4px;">
-                                    {{ $kat }}
-                                </span>
+                                @if ($isBahanBaku)
+                                    <span class="badge" style="background: #fef3c7; color: #92400e; border: 1px solid #fde68a; font-weight: 700; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px;">
+                                        🌾 Bahan Baku • {{ $kat }}
+                                    </span>
+                                @else
+                                    <span class="badge" style="background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; font-weight: 700; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px;">
+                                        📦 Bahan Penolong • {{ $kat }}
+                                    </span>
+                                @endif
                             </div>
+                            @if (!$isBahanBaku && $barangNm)
+                                <div style="font-size: 0.75rem; font-weight: 700; color: #0f172a; margin-top: 0.2rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px;" title="{{ $barangNm }}">
+                                    {{ $barangNm }}
+                                </div>
+                            @endif
                             <div style="font-size: 0.72rem; color: #64748b; margin-top: 0.15rem;">
                                 📅 {{ $qc->tgl_periksa ? $qc->tgl_periksa->format('d/m/Y H:i') : '-' }}
                             </div>
@@ -285,101 +307,131 @@
                         {{-- 4. MUATAN SURAT JALAN --}}
                         <td style="text-align: right;">
                             <div style="font-weight: 700; color: #0f172a;">
-                                {{ number_format((float)$qc->jumlah_surat_jalan, 0, ',', '.') }} kg
+                                {{ number_format((float)$qc->jumlah_surat_jalan, 0, ',', '.') }} {{ $isBahanBaku ? 'kg' : $satuanCd }}
                             </div>
                             <div style="font-size: 0.7rem; color: #64748b; margin-top: 0.1rem;">
                                 SJ: {{ $qc->surat_jalan_supplier ?: '-' }}
                             </div>
                         </td>
 
-                        {{-- 5. PENGUJIAN 1 (RINGKAS & BERSIH) --}}
+                        {{-- 5. PENGUJIAN 1 (ADAPTIF: HASIL MUTU SINGKONG VS BAHAN PENOLONG) --}}
                         <td>
-                            <div style="display: flex; align-items: center; gap: 0.4rem;">
-                                <span style="font-weight: 700; color: #0f172a;">{{ number_format($p1Netto, 0, ',', '.') }} kg</span>
-                                @if ($p1Grade === 'B')
-                                    <span class="badge" style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a; font-weight: 800; font-size: 0.68rem; padding: 1px 5px; border-radius: 4px;">
-                                        🟡 Gr. B
-                                    </span>
-                                @elseif ($p1Grade === 'REJECT')
-                                    <span class="badge" style="background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; font-weight: 800; font-size: 0.68rem; padding: 1px 5px; border-radius: 4px;">
-                                        ❌ Afkir
-                                    </span>
-                                @else
-                                    <span class="badge" style="background: #dcfce7; color: #15803d; border: 1px solid #86efac; font-weight: 800; font-size: 0.68rem; padding: 1px 5px; border-radius: 4px;">
-                                        🟢 Gr. A
-                                    </span>
-                                @endif
-                            </div>
-                            @if ($p1Refraksi > 0)
-                                <div style="font-size: 0.68rem; color: #d97706; margin-top: 0.1rem;">
-                                    Ref: -{{ number_format($p1Refraksi, 0, ',', '.') }} kg ({{ number_format($p1RefPersen, 1) }}%)
-                                </div>
-                            @endif
-                        </td>
-
-                        {{-- 6. PENGUJIAN 2 (RINGKAS & BERSIH) --}}
-                        <td>
-                            @if ($p2)
-                                @if ($p2->status_qc === 'DITOLAK_TOTAL' || $p2Netto <= 0)
-                                    <span class="badge" style="background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; font-weight: 800; font-size: 0.68rem; padding: 2px 6px; border-radius: 4px;" title="Uji 2 Ditolak Total: muatan tidak masuk gudang">
-                                        ❌ Ditolak Total ({{ number_format($p2Gross ?: $p2Reject, 0, ',', '.') }} kg)
-                                    </span>
-                                @else
-                                    <div style="display: flex; align-items: center; gap: 0.4rem;">
-                                        <span style="font-weight: 700; color: #0f172a;">{{ number_format($p2Netto, 0, ',', '.') }} kg</span>
-                                        @if ($p2Grade === 'B')
-                                            <span class="badge" style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a; font-weight: 800; font-size: 0.68rem; padding: 1px 5px; border-radius: 4px;">
-                                                🟡 Gr. B
-                                            </span>
-                                        @elseif ($p2Grade === 'REJECT')
-                                            <span class="badge" style="background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; font-weight: 800; font-size: 0.68rem; padding: 1px 5px; border-radius: 4px;">
-                                                ❌ Afkir
-                                            </span>
-                                        @else
-                                            <span class="badge" style="background: #dcfce7; color: #15803d; border: 1px solid #86efac; font-weight: 800; font-size: 0.68rem; padding: 1px 5px; border-radius: 4px;">
-                                                🟢 Gr. A
-                                            </span>
-                                        @endif
-                                    </div>
-                                    @if ($p2Reject > 0)
-                                        <div style="font-size: 0.68rem; color: #dc2626; font-weight: 700; margin-top: 0.1rem;">
-                                            Ditolak: -{{ number_format($p2Reject, 0, ',', '.') }} kg
-                                        </div>
-                                    @elseif ($p2Refraksi > 0)
-                                        <div style="font-size: 0.68rem; color: #d97706; margin-top: 0.1rem;">
-                                            Ref: -{{ number_format($p2Refraksi, 0, ',', '.') }} kg ({{ number_format($p2RefPersen, 1) }}%)
-                                        </div>
-                                    @endif
-                                @endif
-                            @elseif ($isSingkong)
-                                @if ($qc->status_qc === 'DITOLAK_TOTAL')
-                                    <span style="font-size: 0.72rem; color: #94a3b8; font-style: italic;">— Pulang</span>
-                                @else
-                                    <div style="display: flex; align-items: center; gap: 0.35rem;">
-                                        <span class="badge" style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a; font-weight: 700; font-size: 0.68rem; padding: 1px 5px; border-radius: 4px;">
-                                            ⏳ Menunggu Uji 2
+                            @if ($isBahanBaku)
+                                <div style="display: flex; align-items: center; gap: 0.4rem;">
+                                    <span style="font-weight: 700; color: #0f172a;">{{ number_format($p1Netto, 0, ',', '.') }} kg</span>
+                                    @if ($p1Grade === 'B')
+                                        <span class="badge" style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a; font-weight: 800; font-size: 0.68rem; padding: 1px 5px; border-radius: 4px;">
+                                            🟡 Gr. B
                                         </span>
-                                        @if (Auth::user()?->canCreateQc())
-                                            <a href="{{ route('qc.inbound.create', ['parent_qc_id' => $qc->qc_id, 'tahap' => 2, 'po_id' => $qc->po_id, 'supplier_id' => $qc->supplier_id]) }}" 
-                                               style="background: #7e22ce; color: #ffffff; font-size: 0.68rem; font-weight: 700; padding: 2px 6px; border-radius: 4px; text-decoration: none;" title="Catat Pengujian II">
-                                                + Uji 2
-                                            </a>
-                                        @endif
+                                    @elseif ($p1Grade === 'REJECT')
+                                        <span class="badge" style="background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; font-weight: 800; font-size: 0.68rem; padding: 1px 5px; border-radius: 4px;">
+                                            ❌ Afkir
+                                        </span>
+                                    @else
+                                        <span class="badge" style="background: #dcfce7; color: #15803d; border: 1px solid #86efac; font-weight: 800; font-size: 0.68rem; padding: 1px 5px; border-radius: 4px;">
+                                            🟢 Gr. A
+                                        </span>
+                                    @endif
+                                </div>
+                                @if ($p1Refraksi > 0)
+                                    <div style="font-size: 0.68rem; color: #d97706; margin-top: 0.1rem;">
+                                        Ref: -{{ number_format($p1Refraksi, 0, ',', '.') }} kg ({{ number_format($p1RefPersen, 1) }}%)
                                     </div>
                                 @endif
                             @else
-                                <span style="font-size: 0.75rem; color: #94a3b8;">—</span>
+                                {{-- BAHAN PENOLONG (PENGUJIAN 1 KALI TOK) --}}
+                                <div style="display: flex; align-items: center; gap: 0.4rem;">
+                                    <span style="font-weight: 700; color: #0f172a;">{{ number_format($p1Netto, 0, ',', '.') }} {{ $satuanCd }}</span>
+                                    @if ($qc->status_qc === 'DITOLAK_TOTAL' || $p1Netto <= 0)
+                                        <span class="badge" style="background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; font-weight: 800; font-size: 0.68rem; padding: 1px 5px; border-radius: 4px;">
+                                            ❌ Ditolak
+                                        </span>
+                                    @elseif ($p1Reject > 0)
+                                        <span class="badge" style="background: #fff7ed; color: #c2410c; border: 1px solid #fdba74; font-weight: 800; font-size: 0.68rem; padding: 1px 5px; border-radius: 4px;">
+                                            ⚠️ Parsial
+                                        </span>
+                                    @else
+                                        <span class="badge" style="background: #dcfce7; color: #15803d; border: 1px solid #86efac; font-weight: 800; font-size: 0.68rem; padding: 1px 5px; border-radius: 4px;">
+                                            🟢 Lolos Uji
+                                        </span>
+                                    @endif
+                                </div>
+                                @if ($p1Reject > 0)
+                                    <div style="font-size: 0.68rem; color: #dc2626; font-weight: 700; margin-top: 0.1rem;">
+                                        Reject: -{{ number_format($p1Reject, 0, ',', '.') }} {{ $satuanCd }}
+                                    </div>
+                                @endif
+                            @endif
+                        </td>
+
+                        {{-- 6. PENGUJIAN 2 (ADAPTIF: WAJAN SINGKONG VS 1 TAHAP BAHAN PENOLONG) --}}
+                        <td>
+                            @if ($isSingkong)
+                                @if ($p2)
+                                    @if ($p2->status_qc === 'DITOLAK_TOTAL' || $p2Netto <= 0)
+                                        <span class="badge" style="background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; font-weight: 800; font-size: 0.68rem; padding: 2px 6px; border-radius: 4px;" title="Uji 2 Ditolak Total: muatan tidak masuk gudang">
+                                            ❌ Ditolak Total ({{ number_format($p2Gross ?: $p2Reject, 0, ',', '.') }} kg)
+                                        </span>
+                                    @else
+                                        <div style="display: flex; align-items: center; gap: 0.4rem;">
+                                            <span style="font-weight: 700; color: #0f172a;">{{ number_format($p2Netto, 0, ',', '.') }} kg</span>
+                                            @if ($p2Grade === 'B')
+                                                <span class="badge" style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a; font-weight: 800; font-size: 0.68rem; padding: 1px 5px; border-radius: 4px;">
+                                                    🟡 Gr. B
+                                                </span>
+                                            @elseif ($p2Grade === 'REJECT')
+                                                <span class="badge" style="background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; font-weight: 800; font-size: 0.68rem; padding: 1px 5px; border-radius: 4px;">
+                                                    ❌ Afkir
+                                                </span>
+                                            @else
+                                                <span class="badge" style="background: #dcfce7; color: #15803d; border: 1px solid #86efac; font-weight: 800; font-size: 0.68rem; padding: 1px 5px; border-radius: 4px;">
+                                                    🟢 Gr. A
+                                                </span>
+                                            @endif
+                                        </div>
+                                        @if ($p2Reject > 0)
+                                            <div style="font-size: 0.68rem; color: #dc2626; font-weight: 700; margin-top: 0.1rem;">
+                                                Ditolak: -{{ number_format($p2Reject, 0, ',', '.') }} kg
+                                            </div>
+                                        @elseif ($p2Refraksi > 0)
+                                            <div style="font-size: 0.68rem; color: #d97706; margin-top: 0.1rem;">
+                                                Ref: -{{ number_format($p2Refraksi, 0, ',', '.') }} kg ({{ number_format($p2RefPersen, 1) }}%)
+                                            </div>
+                                        @endif
+                                    @endif
+                                @else
+                                    @if ($qc->status_qc === 'DITOLAK_TOTAL')
+                                        <span style="font-size: 0.72rem; color: #94a3b8; font-style: italic;">— Pulang</span>
+                                    @else
+                                        <div style="display: flex; align-items: center; gap: 0.35rem;">
+                                            <span class="badge" style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a; font-weight: 700; font-size: 0.68rem; padding: 1px 5px; border-radius: 4px;">
+                                                ⏳ Menunggu Uji 2
+                                            </span>
+                                            @if (Auth::user()?->canCreateQc())
+                                                <a href="{{ route('qc.inbound.create', ['parent_qc_id' => $qc->qc_id, 'tahap' => 2, 'po_id' => $qc->po_id, 'supplier_id' => $qc->supplier_id]) }}" 
+                                                   style="background: #7e22ce; color: #ffffff; font-size: 0.68rem; font-weight: 700; padding: 2px 6px; border-radius: 4px; text-decoration: none;" title="Catat Pengujian II">
+                                                    + Uji 2
+                                                </a>
+                                            @endif
+                                        </div>
+                                    @endif
+                                @endif
+                            @else
+                                {{-- BAHAN PENOLONG: TIDAK ADA UJI 2 (HANYA 1 TAHAP) --}}
+                                <span style="color: #94a3b8; font-size: 0.75rem; font-style: italic; background: #f8fafc; padding: 2px 8px; border-radius: 4px; border: 1px dashed #cbd5e1; display: inline-block;">
+                                    — (1 Tahap Saja)
+                                </span>
                             @endif
                         </td>
 
                         {{-- 7. TOTAL NETTO LOLOS --}}
                         <td style="text-align: right;">
                             <span style="font-size: 0.975rem; font-weight: 900; color: #047857;">
-                                {{ number_format($totalNetto, 0, ',', '.') }} kg
+                                {{ number_format($totalNetto, 0, ',', '.') }} {{ $isBahanBaku ? 'kg' : $satuanCd }}
                             </span>
                             @if ($totalReject > 0)
                                 <div style="font-size: 0.68rem; color: #dc2626; font-weight: 800; margin-top: 1px;" title="Kuantitas ditolak (tidak masuk stok)">
-                                    -{{ number_format($totalReject, 0, ',', '.') }} kg Reject
+                                    -{{ number_format($totalReject, 0, ',', '.') }} {{ $isBahanBaku ? 'kg' : $satuanCd }} Reject
                                 </div>
                             @endif
                         </td>
@@ -390,11 +442,11 @@
                                 @if ($qc->status_qc === 'DITERIMA_PARSIAL' || $totalReject > 0 || ($p2 && $p2->status_qc === 'DITOLAK_TOTAL'))
                                     <a href="{{ route('gudang.terima.show', $terimaObj->terima_id) }}" 
                                        style="display: inline-flex; align-items: center; gap: 3px; background: #fff7ed; color: #c2410c; border: 1px solid #fdba74; padding: 2px 7px; border-radius: 6px; font-size: 0.72rem; font-weight: 800; text-decoration: none;" 
-                                       title="GRN Parsial (Diterima Sebagian, Reject: {{ number_format($totalReject, 0, ',', '.') }} kg)">
+                                       title="GRN Parsial (Diterima Sebagian, Reject: {{ number_format($totalReject, 0, ',', '.') }} {{ $isBahanBaku ? 'kg' : $satuanCd }})">
                                         <span>⚠️ GRN (Parsial)</span>
                                     </a>
                                     <div style="font-size: 0.66rem; color: #dc2626; font-weight: 800; margin-top: 2px;">
-                                        Reject {{ number_format($totalReject, 0, ',', '.') }} kg
+                                        Reject {{ number_format($totalReject, 0, ',', '.') }} {{ $isBahanBaku ? 'kg' : $satuanCd }}
                                     </div>
                                 @else
                                     <a href="{{ route('gudang.terima.show', $terimaObj->terima_id) }}" class="badge-grn-pill" title="GRN: {{ $terimaObj->terima_no }} (Diterima Penuh)">
@@ -410,7 +462,7 @@
                                 <span style="font-size: 0.72rem; color: #b45309; font-weight: 700; background: #fef3c7; padding: 2px 6px; border-radius: 4px; border: 1px solid #fde68a;">
                                     Bongkar 1/2
                                 </span>
-                            @elseif ($qc->status_qc === 'SIAP_GUDANG' || ($p2 && $p2->status_qc === 'SIAP_GUDANG'))
+                            @elseif ($qc->status_qc === 'SIAP_GUDANG' || ($p2 && $p2->status_qc === 'SIAP_GUDANG') || in_array($qc->status_qc, ['PASSED', 'DITERIMA_GUDANG']))
                                 <span style="font-size: 0.72rem; color: #047857; font-weight: 800; background: #dcfce7; padding: 2px 6px; border-radius: 4px; border: 1px solid #bbf7d0;">
                                     Siap GRN
                                 </span>
@@ -442,7 +494,7 @@
                                 {{-- 1. LIHAT DOKUMEN HACCP --}}
                                 <button type="button" class="action-dropdown-item" onclick="openHaccpModal('{{ $qc->qc_id }}', '{{ $qc->qc_no }}')">
                                     <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                                    <span>HACCP Uji 1 (#{{ $qc->qc_no }})</span>
+                                    <span>{{ $isSingkong ? 'HACCP Uji 1 (#' . $qc->qc_no . ')' : 'Dokumen HACCP (#' . $qc->qc_no . ')' }}</span>
                                 </button>
                                 @if ($p2)
                                     <button type="button" class="action-dropdown-item" onclick="openHaccpModal('{{ $p2->qc_id }}', '{{ $p2->qc_no }}')">
@@ -454,7 +506,7 @@
                                 {{-- 2. CETAK LEMBAR HACCP A4 --}}
                                 <button type="button" class="action-dropdown-item" onclick="directPrintHaccp('{{ $qc->qc_id }}')">
                                     <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-                                    <span>Cetak HACCP Uji 1 (A4)</span>
+                                    <span>{{ $isSingkong ? 'Cetak HACCP Uji 1 (A4)' : 'Cetak Dokumen HACCP (A4)' }}</span>
                                 </button>
                                 @if ($p2)
                                     <button type="button" class="action-dropdown-item" onclick="directPrintHaccp('{{ $p2->qc_id }}')">
@@ -467,7 +519,7 @@
                                 @if ($qc->status_qc === 'DITOLAK_TOTAL' || $qc->details->sum('qty_reject') > 0)
                                     <a href="{{ route('qc.inbound.berita_acara', $qc->qc_id) }}" class="action-dropdown-item" style="color: #dc2626; font-weight: 700;">
                                         <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                                        <span>Berita Acara Penolakan (Uji 1)</span>
+                                        <span>Berita Acara Penolakan</span>
                                     </a>
                                 @endif
                                 @if ($p2 && ($p2->status_qc === 'DITOLAK_TOTAL' || $p2->details->sum('qty_reject') > 0))
@@ -478,14 +530,14 @@
                                 @endif
 
                                 {{-- 4. TARIK KE GRN GUDANG --}}
-                                @if (!$terimaObj && ($qc->status_qc === 'SIAP_GUDANG' || ($p2 && $p2->status_qc === 'SIAP_GUDANG')) && Auth::user()?->canAccessTerima())
+                                @if (!$terimaObj && ($qc->status_qc === 'SIAP_GUDANG' || ($p2 && $p2->status_qc === 'SIAP_GUDANG') || in_array($qc->status_qc, ['PASSED', 'DITERIMA_GUDANG'])) && Auth::user()?->canAccessTerima())
                                     <a href="{{ route('gudang.terima.create', ['qc_id' => $qc->qc_id]) }}" class="action-dropdown-item">
                                         <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
                                         <span>Tarik ke GRN Gudang</span>
                                     </a>
                                 @endif
 
-                                {{-- 5. CATAT PENGUJIAN II --}}
+                                {{-- 5. CATAT PENGUJIAN II (KHUSUS SINGKONG) --}}
                                 @if ($isSingkong && !$p2 && $qc->status_qc !== 'DITOLAK_TOTAL' && Auth::user()?->canCreateQc())
                                     <a href="{{ route('qc.inbound.create', ['parent_qc_id' => $qc->qc_id, 'tahap' => 2, 'po_id' => $qc->po_id, 'supplier_id' => $qc->supplier_id]) }}" class="action-dropdown-item" style="color: #7e22ce; font-weight: 700;">
                                         <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
@@ -500,7 +552,7 @@
                                     @if (!$isLocked)
                                         <a href="{{ route('qc.inbound.edit', $qc->qc_id) }}" class="action-dropdown-item">
                                             <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                                            <span>Edit QC Uji 1</span>
+                                            <span>{{ $isSingkong ? 'Edit QC Uji 1' : 'Edit Dokumen QC' }}</span>
                                         </a>
                                         @if ($p2)
                                             <a href="{{ route('qc.inbound.edit', $p2->qc_id) }}" class="action-dropdown-item">

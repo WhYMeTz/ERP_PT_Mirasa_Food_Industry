@@ -57,30 +57,46 @@
                 </div>
             </div>
 
-            {{-- 2. GRID KOMPARASI 2 TAHAP PENGUJIAN --}}
+            {{-- 2. GRID KOMPARASI PENGUJIAN --}}
             <div class="qc-stages-grid">
-                {{-- KARTU TAHAP 1: PENGUJIAN 1 (SETENGAH BAK PERTAMA) --}}
+                {{-- KARTU TAHAP 1: PENGUJIAN 1 (ATAU PENGUJIAN TUNGGAL BAHAN PENOLONG) --}}
                 <div class="qc-stage-card stage-uji1">
                     <div class="qc-stage-card-header">
                         <div style="display: flex; align-items: center; gap: 0.4rem;">
-                            <span>🚛 Pengujian 1 (Setengah Bak)</span>
+                            <span>{{ $isSingkong ? '🚛 Pengujian 1 (Setengah Bak)' : '📦 Pemeriksaan Kedatangan Mutu' }}</span>
                             <span style="font-family: monospace; font-size: 0.75rem; background: #ffffff; padding: 1px 6px; border-radius: 4px; color: #0284c7; border: 1px solid #bae6fd;">
                                 #{{ $qc->qc_no }}
                             </span>
                         </div>
                         <div>
-                            @if ($p1Grade === 'B')
-                                <span class="badge" style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a; font-weight: 800; font-size: 0.72rem; padding: 2px 7px; border-radius: 4px;">
-                                    🟡 Grade B
-                                </span>
-                            @elseif ($p1Grade === 'REJECT')
-                                <span class="badge" style="background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; font-weight: 800; font-size: 0.72rem; padding: 2px 7px; border-radius: 4px;">
-                                    ❌ Afkir
-                                </span>
+                            @if ($isSingkong)
+                                @if ($p1Grade === 'B')
+                                    <span class="badge" style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a; font-weight: 800; font-size: 0.72rem; padding: 2px 7px; border-radius: 4px;">
+                                        🟡 Grade B
+                                    </span>
+                                @elseif ($p1Grade === 'REJECT')
+                                    <span class="badge" style="background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; font-weight: 800; font-size: 0.72rem; padding: 2px 7px; border-radius: 4px;">
+                                        ❌ Afkir
+                                    </span>
+                                @else
+                                    <span class="badge" style="background: #dcfce7; color: #15803d; border: 1px solid #86efac; font-weight: 800; font-size: 0.72rem; padding: 2px 7px; border-radius: 4px;">
+                                        🟢 Grade A
+                                    </span>
+                                @endif
                             @else
-                                <span class="badge" style="background: #dcfce7; color: #15803d; border: 1px solid #86efac; font-weight: 800; font-size: 0.72rem; padding: 2px 7px; border-radius: 4px;">
-                                    🟢 Grade A
-                                </span>
+                                @if ($qc->status_qc === 'DITOLAK_TOTAL' || $p1Netto <= 0)
+                                    <span class="badge" style="background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; font-weight: 800; font-size: 0.72rem; padding: 2px 7px; border-radius: 4px;">
+                                        ❌ Ditolak
+                                    </span>
+                                @elseif ($p1Reject > 0)
+                                    <span class="badge" style="background: #fff7ed; color: #c2410c; border: 1px solid #fdba74; font-weight: 800; font-size: 0.72rem; padding: 2px 7px; border-radius: 4px;">
+                                        ⚠️ Parsial
+                                    </span>
+                                @else
+                                    <span class="badge" style="background: #dcfce7; color: #15803d; border: 1px solid #86efac; font-weight: 800; font-size: 0.72rem; padding: 2px 7px; border-radius: 4px;">
+                                        🟢 Lolos Mutu
+                                    </span>
+                                @endif
                             @endif
                         </div>
                     </div>
@@ -89,25 +105,25 @@
                     <div class="qc-stat-grid-4">
                         <div class="qc-stat-cell">
                             <div class="qc-stat-label">Gross Timbang</div>
-                            <div class="qc-stat-val">{{ number_format($p1Gross, 0, ',', '.') }} kg</div>
+                            <div class="qc-stat-val">{{ number_format($p1Gross, 0, ',', '.') }} {{ $isBahanBaku ? 'kg' : $satuanCd }}</div>
                         </div>
                         <div class="qc-stat-cell">
-                            <div class="qc-stat-label">Refraksi</div>
+                            <div class="qc-stat-label">{{ $isBahanBaku ? 'Refraksi' : 'Kotoran/Susut' }}</div>
                             <div class="qc-stat-val" style="color: {{ $p1Refraksi > 0 ? '#d97706' : '#64748b' }};">
-                                -{{ number_format($p1Refraksi, 0, ',', '.') }} kg
+                                -{{ number_format($p1Refraksi, 0, ',', '.') }} {{ $isBahanBaku ? 'kg' : $satuanCd }}
                                 <span style="font-size: 0.68rem; font-weight: 600;">({{ number_format($p1RefPersen, 1) }}%)</span>
                             </div>
                         </div>
                         <div class="qc-stat-cell">
                             <div class="qc-stat-label">Reject / Afkir</div>
                             <div class="qc-stat-val" style="color: {{ $p1Reject > 0 ? '#dc2626' : '#64748b' }};">
-                                {{ number_format($p1Reject, 0, ',', '.') }} kg
+                                {{ number_format($p1Reject, 0, ',', '.') }} {{ $isBahanBaku ? 'kg' : $satuanCd }}
                             </div>
                         </div>
                         <div class="qc-stat-cell">
                             <div class="qc-stat-label">Netto Bersih</div>
                             <div class="qc-stat-val" style="color: #047857; font-size: 1rem;">
-                                {{ number_format($p1Netto, 0, ',', '.') }} kg
+                                {{ number_format($p1Netto, 0, ',', '.') }} {{ $isBahanBaku ? 'kg' : $satuanCd }}
                             </div>
                         </div>
                     </div>
@@ -135,12 +151,31 @@
                                     </strong>
                                 </div>
                             </div>
+                        @else
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.5rem; margin-bottom: 0.6rem;">
+                                <div>
+                                    <span style="color: #64748b;">Nama Komoditas:</span>
+                                    <strong style="color: #0f172a;">{{ $barangNm }}</strong>
+                                </div>
+                                <div>
+                                    <span style="color: #64748b;">Sertifikat Halal:</span>
+                                    <strong style="color: {{ $qc->ada_sertifikat_halal_st ? '#15803d' : '#dc2626' }};">
+                                        {{ $qc->ada_sertifikat_halal_st ? '✅ Ada & Berlaku' : '❌ Tidak Ada' }}
+                                    </strong>
+                                </div>
+                                <div>
+                                    <span style="color: #64748b;">Higienitas Armada:</span>
+                                    <strong style="color: {{ $qc->bebas_cemaran_st ? '#15803d' : '#dc2626' }};">
+                                        {{ $qc->bebas_cemaran_st ? '✅ Bebas Cemaran' : '⚠️ Tercemar' }}
+                                    </strong>
+                                </div>
+                            </div>
                         @endif
 
                         <div style="background: #f8fafc; border-radius: 6px; padding: 0.5rem 0.75rem; border: 1px dashed #cbd5e1; font-size: 0.75rem;">
-                            <span style="font-weight: 700; color: #475569;">Catatan Uji 1:</span>
+                            <span style="font-weight: 700; color: #475569;">Catatan Pemeriksaan:</span>
                             <span style="color: #1e293b;">
-                                {{ $p1FirstDtl?->catatan_dtl ?: ($qc->catatan_umum ?: 'Parameter mutu sesuai SOP kedatangan.') }}
+                                {{ $p1FirstDtl?->catatan_dtl ?: ($qc->catatan_umum ?: 'Parameter mutu sesuai standar HACCP yang ditetapkan.') }}
                             </span>
                         </div>
                     </div>
@@ -150,7 +185,7 @@
                         <div style="display: flex; gap: 0.4rem; align-items: center;">
                             <button type="button" class="btn btn-sm" onclick="openHaccpModal('{{ $qc->qc_id }}', '{{ $qc->qc_no }}')" style="font-size: 0.75rem; font-weight: 700; background: #ffffff; border: 1px solid #cbd5e1; color: #0284c7; padding: 3px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;">
                                 <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                                <span>Preview HACCP Uji 1</span>
+                                <span>{{ $isSingkong ? 'Preview HACCP Uji 1' : 'Preview Dokumen HACCP' }}</span>
                             </button>
                             <button type="button" class="btn btn-sm" onclick="directPrintHaccp('{{ $qc->qc_id }}')" style="font-size: 0.75rem; font-weight: 600; background: #ffffff; border: 1px solid #cbd5e1; color: #475569; padding: 3px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;">
                                 <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
@@ -322,7 +357,7 @@
                                 <span style="font-family: monospace;">(GRN: #{{ $terimaObj->terima_no }})</span>
                             </div>
                             <span style="font-size: 0.75rem; color: #c2410c; font-weight: 600;">
-                                Masuk: <strong>{{ number_format($terimaObj->details->sum('qty_terima'), 0, ',', '.') }} kg</strong> &bull; Ditolak: <strong style="color: #dc2626;">{{ number_format($totalReject, 0, ',', '.') }} kg</strong> (Ada Berita Acara)
+                                Masuk: <strong>{{ number_format($terimaObj->details->sum('qty_terima'), 0, ',', '.') }} {{ $isBahanBaku ? 'kg' : $satuanCd }}</strong> &bull; Ditolak: <strong style="color: #dc2626;">{{ number_format($totalReject, 0, ',', '.') }} {{ $isBahanBaku ? 'kg' : $satuanCd }}</strong> (Ada Berita Acara)
                             </span>
                         @else
                             <div style="display: flex; align-items: center; gap: 0.4rem; background: #dcfce7; color: #15803d; border: 1px solid #86efac; padding: 4px 10px; border-radius: 6px; font-size: 0.78rem; font-weight: 700;">
@@ -352,7 +387,7 @@
                             <span>📦 Lolos QC &bull; Siap Ditarik ke GRN</span>
                         </div>
                         <span style="font-size: 0.75rem; color: #047857; font-weight: 600;">
-                            Total Netto Bersih Lolos: <strong>{{ number_format($totalNetto, 0, ',', '.') }} kg</strong>
+                            Total Netto Bersih Lolos: <strong>{{ number_format($totalNetto, 0, ',', '.') }} {{ $isBahanBaku ? 'kg' : $satuanCd }}</strong>
                         </span>
                     @endif
                 </div>

@@ -179,7 +179,7 @@
                 @endif
 
                 @if (Auth::user()?->canEditQc() && !$isLocked)
-                    <a href="{{ route('qc.inbound.edit', $qc->qc_id) }}" class="btn btn-sm" style="background: #0284c7; color: #ffffff; border: none; font-weight: 800; border-radius: 8px; box-shadow: 0 2px 4px rgba(2, 132, 199, 0.3);">
+                    <a href="{{ route('qc.inbound.edit', [$qc->qc_id, 'ref' => 'detail']) }}" class="btn btn-sm" style="background: #0284c7; color: #ffffff; border: none; font-weight: 800; border-radius: 8px; box-shadow: 0 2px 4px rgba(2, 132, 199, 0.3);">
                         ✏️ Edit Seluruh Dokumen
                     </a>
                 @endif
@@ -232,15 +232,15 @@
     {{-- WRAPPER RESPONSIVE AGAR TABEL DOKUMEN DAPAT DI-PAN DI HP TANPA HANCUR --}}
     <div class="doc-sheet-print-container" style="overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 0.5rem;">
         @if ($kat === 'SINGKONG')
-            @include('gudang.qc.partials.doc-singkong')
+            @include('gudang.qc.partials.singkong.doc-singkong')
         @elseif ($kat === 'MINYAK')
-            @include('gudang.qc.partials.doc-minyak')
+            @include('gudang.qc.partials.minyak.doc-minyak')
         @elseif ($kat === 'PLASTIK')
-            @include('gudang.qc.partials.doc-plastik')
+            @include('gudang.qc.partials.plastik.doc-plastik')
         @elseif ($kat === 'KARTON')
-            @include('gudang.qc.partials.doc-karton')
+            @include('gudang.qc.partials.karton.doc-karton')
         @else
-            @include('gudang.qc.partials.doc-bahan-penolong')
+            @include('gudang.qc.partials.bahan-penolong.doc-bahan-penolong')
         @endif
     </div>
 </div>

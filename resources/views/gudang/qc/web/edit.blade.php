@@ -3,7 +3,7 @@
 @section('title', 'Edit Dokumen QC ' . $qc->qc_no . ' - PT Mirasa')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/gudang/qc/qc-edit-desktop.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/gudang/qc/web/qc-edit-desktop.css') }}">
 @endpush
 
 @php
@@ -45,15 +45,24 @@
         $docNo = 'MFI/HACCP-04/FRM-03/048/VIII/2021';
         $docTitle = 'Cheklist Standar Kebeterimaan Bahan Baku';
     }
+
+    $ref = request('ref');
+    if ($ref === 'detail') {
+        $backUrl = route('qc.inbound.show', $qc->qc_id);
+        $backLabel = 'Kembali ke Detail QC';
+    } else {
+        $backUrl = route('qc.inbound.index');
+        $backLabel = 'Kembali ke Riwayat QC';
+    }
 @endphp
 
 @section('content')
 {{-- TOP HEADER COMMAND (STANDAR PO GUDANG) --}}
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 1rem;">
     <div>
-        <a href="{{ route('qc.inbound.index') }}" style="color: #64748b; text-decoration: none; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.35rem; margin-bottom: 0.35rem;">
+        <a href="{{ $backUrl }}" style="color: #64748b; text-decoration: none; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.35rem; margin-bottom: 0.35rem;">
             <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-            Kembali ke Riwayat QC
+            {{ $backLabel }}
         </a>
         <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
             <h1 style="font-size: 1.5rem; font-weight: 700; color: #0f172a; margin: 0;">
@@ -168,6 +177,7 @@
     @csrf
     @method('PUT')
 
+    <input type="hidden" name="ref" value="{{ $ref ?: 'index' }}">
     <input type="hidden" name="kategori_barang" value="{{ $qc->kategori_barang }}">
     <input type="hidden" name="tahap_uji" value="{{ old('tahap_uji', $qc->tahap_uji ?? 'PENGUJIAN_1') }}">
     <input type="hidden" name="parent_qc_id" value="{{ old('parent_qc_id', $qc->parent_qc_id) }}">
@@ -254,7 +264,7 @@
                 </div>
                 <div style="padding: 1.25rem;">
                     @if ($kat === 'SINGKONG')
-                        @include('gudang.qc.partials.edit-form-singkong')
+                        @include('gudang.qc.partials.singkong.edit-form-singkong')
                     @else
                         {{-- SELEKSI ITEM BARANG MASTER (NON-SINGKONG) --}}
                         <div class="form-group" style="margin-bottom: 1.25rem;">
@@ -269,13 +279,13 @@
                         </div>
 
                         @if ($kat === 'MINYAK')
-                            @include('gudang.qc.partials.doc-minyak', ['isEdit' => true])
+                            @include('gudang.qc.partials.minyak.doc-minyak', ['isEdit' => true])
                         @elseif ($kat === 'PLASTIK')
-                            @include('gudang.qc.partials.doc-plastik', ['isEdit' => true])
+                            @include('gudang.qc.partials.plastik.doc-plastik', ['isEdit' => true])
                         @elseif ($kat === 'KARTON')
-                            @include('gudang.qc.partials.doc-karton', ['isEdit' => true])
+                            @include('gudang.qc.partials.karton.doc-karton', ['isEdit' => true])
                         @else
-                            @include('gudang.qc.partials.doc-seasoning', ['isEdit' => true])
+                            @include('gudang.qc.partials.bahan-penolong.doc-bahan-penolong', ['isEdit' => true])
                         @endif
                     @endif
                 </div>
@@ -535,8 +545,8 @@
                             <span>Simpan &amp; Cetak Lembar HACCP A4</span>
                         </button>
 
-                        <a href="{{ route('qc.inbound.index') }}" class="btn btn-secondary" style="width: 100%; text-align: center; padding: 0.55rem; font-size: 0.85rem; margin-top: 0.25rem;">
-                            ✕ Batal / Kembali ke Riwayat
+                        <a href="{{ $backUrl }}" class="btn btn-secondary" style="width: 100%; text-align: center; padding: 0.55rem; font-size: 0.85rem; margin-top: 0.25rem;">
+                            ✕ Batal / {{ $backLabel }}
                         </a>
                     </div>
                 </div>
@@ -546,12 +556,12 @@
 </form>
 
 {{-- MODAL POPUP PREVIEW DOKUMEN HACCP --}}
-@include('gudang.qc.partials.modal-preview-haccp')
+@include('gudang.qc.partials.common.modal-preview-haccp')
 @endsection
 
 @push('scripts')
     <script>
         window.p1Netto = {{ (float) ($qc->parentQc?->details?->sum('qty_netto_lolos') ?? 0) }};
     </script>
-    <script src="{{ asset('js/gudang/qc/qc-edit-desktop.js') }}"></script>
+    <script src="{{ asset('js/gudang/qc/web/qc-edit-desktop.js') }}"></script>
 @endpush

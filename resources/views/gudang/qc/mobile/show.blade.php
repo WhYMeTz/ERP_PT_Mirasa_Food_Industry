@@ -4,7 +4,7 @@
 @section('hide_bottom_nav', '1')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/gudang/qc/qc-mobile-detail.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/gudang/qc/mobile/qc-mobile-detail.css') }}">
 @endpush
 
 @php
@@ -36,7 +36,7 @@
 
             {{-- TOMBOL EDIT CEPAT DI TOP HEADER --}}
             @if (Auth::user()?->canEditQc() && !$isLocked)
-                <a href="{{ route('qc.inbound.edit', [$qc->qc_id, 'view' => 'mobile']) }}" style="font-size: 0.78rem; font-weight: 800; color: #ffffff; background: #0284c7; border: 1.5px solid #0284c7; padding: 0.35rem 0.75rem; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 0.35rem; box-shadow: 0 2px 4px rgba(2,132,199,0.25);">
+                <a href="{{ route('qc.inbound.edit', [$qc->qc_id, 'view' => 'mobile', 'ref' => 'detail']) }}" style="font-size: 0.78rem; font-weight: 800; color: #ffffff; background: #0284c7; border: 1.5px solid #0284c7; padding: 0.35rem 0.75rem; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 0.35rem; box-shadow: 0 2px 4px rgba(2,132,199,0.25);">
                     <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                     <span>✏️ Edit Uji</span>
                 </a>
@@ -436,7 +436,7 @@
         </div>
 
         @if (Auth::user()?->canEditQc() && !$isLocked)
-            <a href="{{ route('qc.inbound.edit', [$qc->qc_id, 'view' => 'mobile']) }}" style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; background: #0284c7; color: #ffffff; font-size: 0.95rem; font-weight: 800; padding: 0.85rem 1.25rem; border-radius: 10px; text-decoration: none; box-shadow: 0 3px 6px rgba(2,132,199,0.3);">
+            <a href="{{ route('qc.inbound.edit', [$qc->qc_id, 'view' => 'mobile', 'ref' => 'detail']) }}" style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; background: #0284c7; color: #ffffff; font-size: 0.95rem; font-weight: 800; padding: 0.85rem 1.25rem; border-radius: 10px; text-decoration: none; box-shadow: 0 3px 6px rgba(2,132,199,0.3);">
                 <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                 <span>✏️ Edit &amp; Koreksi Data Sampling QC</span>
             </a>
@@ -470,7 +470,7 @@
     @endif
 
     @if (Auth::user()?->canEditQc() && !$isLocked)
-        <a href="{{ route('qc.inbound.edit', [$qc->qc_id, 'view' => 'mobile']) }}" class="qc-btn-mobile-edit" style="flex: 1; text-align: center;">
+        <a href="{{ route('qc.inbound.edit', [$qc->qc_id, 'view' => 'mobile', 'ref' => 'detail']) }}" class="qc-btn-mobile-edit" style="flex: 1; text-align: center;">
             <span>✏️ Edit Uji</span>
         </a>
     @else
@@ -481,6 +481,6 @@
 </div>
 
 {{-- INCLUDE MODAL UJI GORENG FRYER --}}
-@include('gudang.qc.partials.modal-uji-fryer')
+@include('gudang.qc.partials.singkong.modal-uji-fryer')
 
 @endsection

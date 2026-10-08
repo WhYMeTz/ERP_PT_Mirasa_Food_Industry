@@ -269,12 +269,22 @@ class User extends Authenticatable
      */
     public function canAccessSo(): bool
     {
-        return $this->isSuperAdmin() || $this->canDo('so_view') || $this->canDo('so_create') || $this->canAccessPo();
+        return $this->isSuperAdmin() || $this->canDo('so_view') || $this->canDo('so_create');
     }
 
     public function canCreateSo(): bool
     {
-        return $this->isSuperAdmin() || $this->canDo('so_create') || $this->canCreatePo();
+        return $this->isSuperAdmin() || $this->canDo('so_create');
+    }
+
+    public function canEditSo(): bool
+    {
+        return $this->isSuperAdmin() || $this->canDo('so_edit') || $this->canDo('so_create');
+    }
+
+    public function canDeleteSo(): bool
+    {
+        return $this->isSuperAdmin() || $this->canDo('so_delete');
     }
 
     /**
@@ -305,7 +315,7 @@ class User extends Authenticatable
 
     public function canDeleteTerima(): bool
     {
-        return $this->isSuperAdmin() || $this->canDo('terima_delete') || $this->canDo('terima_create');
+        return $this->isSuperAdmin() || $this->canDo('terima_delete');
     }
 
     /**
@@ -321,8 +331,13 @@ class User extends Authenticatable
         return $this->isSuperAdmin() || $this->canDo('retur_create');
     }
 
+    public function canDeleteRetur(): bool
+    {
+        return $this->isSuperAdmin() || $this->canDo('retur_delete');
+    }
+
     /**
-     * Hak akses Barang Keluar (Pemakaian Bahan Baku / Outbound)
+     * Hak akses Barang Keluar (Pemakaian Bahan Baku / Outbound SPK)
      */
     public function canAccessPemakaian(): bool
     {
@@ -352,15 +367,33 @@ class User extends Authenticatable
      */
     public function canAccessStokProduksi(): bool
     {
-        return $this->isSuperAdmin() || $this->canAccessProduksi() || $this->canAccessStok();
+        return $this->isSuperAdmin() || $this->canDo('stok_fg_view');
     }
 
     /**
-     * Hak akses Lacak Stok & Kartu Stok (Persediaan Gudang)
+     * Hak akses Lacak Stok & Kartu Stok (Persediaan Gudang Bahan)
      */
     public function canAccessStok(): bool
     {
         return $this->isSuperAdmin() || $this->canDo('stok_view');
+    }
+
+    /**
+     * Hak akses Adjustment Stok (Koreksi Opname Bahan)
+     */
+    public function canAccessAdjustment(): bool
+    {
+        return $this->isSuperAdmin() || $this->canDo('adjustment_view') || $this->canDo('adjustment_create');
+    }
+
+    public function canCreateAdjustment(): bool
+    {
+        return $this->isSuperAdmin() || $this->canDo('adjustment_create');
+    }
+
+    public function canVoidAdjustment(): bool
+    {
+        return $this->isSuperAdmin() || $this->canDo('adjustment_void');
     }
 
     /**
@@ -372,9 +405,14 @@ class User extends Authenticatable
             || $this->canDo('master_barang_view')
             || $this->canAccessKaryawan()
             || $this->canAccessResep()
+            || $this->canAccessLiniProduksi()
+            || $this->canAccessTarifProduksi()
             || $this->canAccessSupplier()
+            || $this->canAccessJenisSupplier()
             || $this->canAccessCustomer()
-            || $this->canAccessPerusahaan();
+            || $this->canAccessPerusahaan()
+            || $this->canAccessSatuan()
+            || $this->canAccessJenis();
     }
 
     public function canManageMasterData(): bool
@@ -400,6 +438,11 @@ class User extends Authenticatable
         return $this->isSuperAdmin() || $this->canDo('master_barang_delete') || $this->canDo('master_barang_manage');
     }
 
+    public function canAccessSatuan(): bool
+    {
+        return $this->isSuperAdmin() || $this->canDo('master_satuan_view') || $this->canDo('master_satuan_create') || $this->canDo('master_gudang_manage');
+    }
+
     public function canCreateMasterSatuan(): bool
     {
         return $this->isSuperAdmin() || $this->canDo('master_satuan_create') || $this->canDo('master_gudang_manage');
@@ -413,6 +456,11 @@ class User extends Authenticatable
     public function canDeleteMasterSatuan(): bool
     {
         return $this->isSuperAdmin() || $this->canDo('master_satuan_delete') || $this->canDo('master_gudang_manage');
+    }
+
+    public function canAccessJenis(): bool
+    {
+        return $this->isSuperAdmin() || $this->canDo('master_jenis_view') || $this->canDo('master_jenis_create') || $this->canDo('master_barang_manage');
     }
 
     public function canCreateMasterJenis(): bool
@@ -461,7 +509,6 @@ class User extends Authenticatable
     public function canAccessJenisSupplier(): bool
     {
         return $this->isSuperAdmin() 
-            || $this->isPurchasing()
             || $this->canDo('master_jenis_supplier_view') 
             || $this->canDo('master_supplier_manage');
     }
@@ -558,7 +605,6 @@ class User extends Authenticatable
     public function canAccessKaryawan(): bool
     {
         return $this->isSuperAdmin() 
-            || $this->role_cd === 'HRD'
             || $this->canDo('master_karyawan_view') 
             || $this->canDo('master_karyawan_manage');
     }
@@ -566,7 +612,6 @@ class User extends Authenticatable
     public function canCreateMasterKaryawan(): bool
     {
         return $this->isSuperAdmin() 
-            || $this->role_cd === 'HRD'
             || $this->canDo('master_karyawan_create') 
             || $this->canDo('master_karyawan_manage');
     }
@@ -574,7 +619,6 @@ class User extends Authenticatable
     public function canEditMasterKaryawan(): bool
     {
         return $this->isSuperAdmin() 
-            || $this->role_cd === 'HRD'
             || $this->canDo('master_karyawan_edit') 
             || $this->canDo('master_karyawan_manage');
     }
@@ -582,7 +626,6 @@ class User extends Authenticatable
     public function canDeleteMasterKaryawan(): bool
     {
         return $this->isSuperAdmin() 
-            || $this->role_cd === 'HRD'
             || $this->canDo('master_karyawan_delete') 
             || $this->canDo('master_karyawan_manage');
     }
@@ -593,8 +636,6 @@ class User extends Authenticatable
     public function canAccessResep(): bool
     {
         return $this->isSuperAdmin() 
-            || $this->isProduksi()
-            || $this->isGudang()
             || $this->canDo('master_resep_view') 
             || $this->canDo('master_resep_manage');
     }
@@ -602,7 +643,6 @@ class User extends Authenticatable
     public function canCreateMasterResep(): bool
     {
         return $this->isSuperAdmin() 
-            || $this->isProduksi()
             || $this->canDo('master_resep_create') 
             || $this->canDo('master_resep_manage');
     }
@@ -610,7 +650,6 @@ class User extends Authenticatable
     public function canEditMasterResep(): bool
     {
         return $this->isSuperAdmin() 
-            || $this->isProduksi()
             || $this->canDo('master_resep_edit') 
             || $this->canDo('master_resep_manage');
     }
@@ -628,7 +667,6 @@ class User extends Authenticatable
     public function canAccessLiniProduksi(): bool
     {
         return $this->isSuperAdmin() 
-            || $this->isProduksi()
             || $this->canDo('master_lini_view') 
             || $this->canDo('master_lini_manage');
     }
@@ -636,7 +674,6 @@ class User extends Authenticatable
     public function canCreateMasterLiniProduksi(): bool
     {
         return $this->isSuperAdmin() 
-            || $this->isProduksi()
             || $this->canDo('master_lini_create') 
             || $this->canDo('master_lini_manage');
     }
@@ -644,30 +681,8 @@ class User extends Authenticatable
     public function canEditMasterLiniProduksi(): bool
     {
         return $this->isSuperAdmin() 
-            || $this->isProduksi()
             || $this->canDo('master_lini_edit') 
             || $this->canDo('master_lini_manage');
-    }
-
-    /**
-     * Hak akses Master Standar Tarif Produksi & FOH
-     */
-    public function canAccessTarifProduksi(): bool
-    {
-        return $this->isSuperAdmin() 
-            || $this->isProduksi()
-            || $this->isFinance()
-            || $this->canDo('produksi_view')
-            || $this->canDo('master_view');
-    }
-
-    public function canManageTarifProduksi(): bool
-    {
-        return $this->isSuperAdmin() 
-            || $this->isProduksi()
-            || $this->isFinance()
-            || $this->canDo('produksi_create')
-            || $this->canDo('master_manage');
     }
 
     public function canDeleteMasterLiniProduksi(): bool
@@ -678,21 +693,37 @@ class User extends Authenticatable
     }
 
     /**
+     * Hak akses Master Standar Tarif Produksi & FOH
+     */
+    public function canAccessTarifProduksi(): bool
+    {
+        return $this->isSuperAdmin() 
+            || $this->canDo('tarif_produksi_view')
+            || $this->canDo('tarif_produksi_manage');
+    }
+
+    public function canManageTarifProduksi(): bool
+    {
+        return $this->isSuperAdmin() 
+            || $this->canDo('tarif_produksi_manage');
+    }
+
+    /**
      * Hak akses QC Inbound Bahan Baku
      */
     public function canAccessQc(): bool
     {
-        return $this->isSuperAdmin() || $this->isQc() || $this->isGudang() || $this->canDo('qc_view');
+        return $this->isSuperAdmin() || $this->canDo('qc_view') || $this->canDo('qc_create');
     }
 
     public function canCreateQc(): bool
     {
-        return $this->isSuperAdmin() || $this->isQc() || $this->canDo('qc_create');
+        return $this->isSuperAdmin() || $this->canDo('qc_create');
     }
 
     public function canEditQc(): bool
     {
-        return $this->isSuperAdmin() || $this->isQc() || $this->isGudang() || $this->canDo('qc_edit');
+        return $this->isSuperAdmin() || $this->canDo('qc_edit');
     }
 
     public function canDeleteQc(): bool

@@ -51,7 +51,7 @@ class QcInboundController extends Controller
 
         // Jika mode mobile smartphone
         if ($isMobileReq) {
-            return view('gudang.qc.index-mobile', compact('inspeksiList', 'suppliers', 'filters'));
+            return view('gudang.qc.mobile.index', compact('inspeksiList', 'suppliers', 'filters'));
         }
 
         // Metrik Statistik Operasional Gudang & QC Inbound (Khusus Web Admin Desktop, difilter hak akses perusahaan)
@@ -92,7 +92,7 @@ class QcInboundController extends Controller
                    ->orWhereDoesntHave('pengujian2List', fn($pq) => $pq->whereIn('status_qc', ['DITERIMA_GUDANG', 'SIAP_GUDANG']));
             })->count();
 
-        return view('gudang.qc.index', compact('inspeksiList', 'suppliers', 'filters', 'countSiap', 'countMenungguUji2', 'countSelesai', 'countParsial', 'countReject'));
+        return view('gudang.qc.web.index', compact('inspeksiList', 'suppliers', 'filters', 'countSiap', 'countMenungguUji2', 'countSelesai', 'countParsial', 'countReject'));
     }
 
     /**
@@ -221,7 +221,34 @@ class QcInboundController extends Controller
             })
             ->sum('sisa_qty');
 
-        return view('gudang.qc.create', compact(
+        // Hitung stok riil Minyak Goreng di gudang (Minyak Sawit, Kelapa & Total)
+        $stokMinyakSawit = (float) DatStokBatch::where('deleted_st', false)
+            ->where('sisa_qty', '>', 0)
+            ->when(!empty($allowedGudangIds), fn($q) => $q->whereIn('gudang_id', $allowedGudangIds))
+            ->whereHas('barang', fn($b) => $b->where('barang_nm', 'ilike', '%MINYAK SAWIT%')->orWhere('barang_cd', 'MSW00G-BP2'))
+            ->sum('sisa_qty');
+
+        $stokMinyakKelapa = (float) DatStokBatch::where('deleted_st', false)
+            ->where('sisa_qty', '>', 0)
+            ->when(!empty($allowedGudangIds), fn($q) => $q->whereIn('gudang_id', $allowedGudangIds))
+            ->whereHas('barang', fn($b) => $b->where('barang_nm', 'ilike', '%MINYAK KELAPA%')->orWhere('barang_cd', 'MKP00G-BP1'))
+            ->sum('sisa_qty');
+
+        $stokMinyakTotal = (float) DatStokBatch::where('deleted_st', false)
+            ->where('sisa_qty', '>', 0)
+            ->when(!empty($allowedGudangIds), fn($q) => $q->whereIn('gudang_id', $allowedGudangIds))
+            ->whereHas('barang', fn($b) => $b->where('barang_nm', 'ilike', '%MINYAK%'))
+            ->sum('sisa_qty');
+
+        $stokMinyakBatches = DatStokBatch::with(['barang.satuanDasar', 'gudang'])
+            ->where('deleted_st', false)
+            ->where('sisa_qty', '>', 0)
+            ->when(!empty($allowedGudangIds), fn($q) => $q->whereIn('gudang_id', $allowedGudangIds))
+            ->whereHas('barang', fn($b) => $b->where('barang_nm', 'ilike', '%MINYAK%'))
+            ->orderBy('expired_tgl', 'asc')
+            ->get();
+
+        return view('gudang.qc.mobile.create', compact(
             'suppliers',
             'gudangs',
             'barangs',
@@ -232,7 +259,11 @@ class QcInboundController extends Controller
             'defaultTahap',
             'initialKomoditas',
             'stokSingkongA',
-            'stokSingkongB'
+            'stokSingkongB',
+            'stokMinyakSawit',
+            'stokMinyakKelapa',
+            'stokMinyakTotal',
+            'stokMinyakBatches'
         ));
     }
 
@@ -341,11 +372,11 @@ class QcInboundController extends Controller
 
         // Jika mode mobile smartphone
         if ($isMobileReq) {
-            return view('gudang.qc.show-mobile', compact('qc'));
+            return view('gudang.qc.mobile.show', compact('qc'));
         }
 
         // Web Admin Desktop: Lembar Dokumen HACCP Format Cetak Resmi
-        return view('gudang.qc.show', compact('qc'));
+        return view('gudang.qc.web.show', compact('qc'));
     }
 
     /**
@@ -361,7 +392,7 @@ class QcInboundController extends Controller
             'details.barang.satuanDasar',
         ])->where('deleted_st', false)->findOrFail($id);
 
-        return view('gudang.qc.berita_acara', compact('qc'));
+        return view('gudang.qc.web.berita_acara', compact('qc'));
     }
 
     /**
@@ -424,11 +455,11 @@ class QcInboundController extends Controller
 
         // Jika mode mobile smartphone
         if ($isMobileReq) {
-            return view('gudang.qc.edit-mobile', compact('qc', 'suppliers', 'gudangs', 'barangs', 'pos'));
+            return view('gudang.qc.mobile.edit', compact('qc', 'suppliers', 'gudangs', 'barangs', 'pos'));
         }
 
         // Web Admin Desktop: Formulir Dokumen HACCP Interaktif (Semua Kolom Bisa Diedit)
-        return view('gudang.qc.edit', compact('qc', 'suppliers', 'gudangs', 'barangs', 'pos'));
+        return view('gudang.qc.web.edit', compact('qc', 'suppliers', 'gudangs', 'barangs', 'pos'));
     }
 
     /**
@@ -469,12 +500,20 @@ class QcInboundController extends Controller
             }
 
             if ($request->input('view') === 'mobile' || ($user?->isQc() && !$user?->isSuperAdmin() && !$user?->isGudang())) {
+                if ($request->input('ref') === 'index') {
+                    return redirect()->route('qc.inbound.index', ['view' => 'mobile'])
+                        ->with('success', $msg);
+                }
                 return redirect()->route('qc.inbound.show', ['inbound' => $updatedQc->qc_id, 'view' => 'mobile'])
                     ->with('success', $msg);
             }
 
             // Web Admin Desktop: Jika user memilih "Simpan & Kembali ke Riwayat"
             if ($request->input('action') === 'save_and_close') {
+                if ($request->input('ref') === 'detail') {
+                    return redirect()->route('qc.inbound.show', $updatedQc->qc_id)
+                        ->with('success', $msg);
+                }
                 return redirect()->route('qc.inbound.index')
                     ->with('success', $msg);
             }

@@ -1,0 +1,215 @@
+/* ==========================================================================
+   QC MOBILE CREATE STYLES - PT MIRASA FOOD INDUSTRY
+   Modular Stylesheet untuk Form QC Inbound Lapangan Multi-Komoditas
+   ========================================================================== */
+
+/* 1. KEYFRAME ANIMATIONS */
+@keyframes qcSpin {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes modalZoomIn {
+    from { opacity: 0; transform: scale(0.96); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes toastSlideIn {
+    from { transform: translateX(110%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes toastSlideOut {
+    from { transform: translateX(0); opacity: 1; }
+    to { transform: translateX(110%); opacity: 0; }
+}
+
+/* 2. CHIP FILTER BAR */
+.supplier-filter-chips {
+    display: flex;
+    gap: 0.35rem;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+}
+.supplier-filter-chips::-webkit-scrollbar {
+    display: none;
+}
+.btn-supplier-chip {
+    background: #ffffff;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 20px;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #475569;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+.btn-supplier-chip:hover {
+    border-color: #0284c7;
+    color: #0284c7;
+}
+.btn-supplier-chip.active-chip {
+    background: #0284c7;
+    border-color: #0284c7;
+    color: #ffffff;
+}
+
+/* 3. SEARCH WRAPPER */
+.supplier-search-wrap {
+    position: relative;
+    width: 100%;
+}
+.supplier-search-input {
+    font-size: 0.8rem !important;
+    padding: 0.45rem 2rem 0.45rem 0.75rem !important;
+    height: 36px !important;
+    min-height: 36px !important;
+    border-radius: 8px !important;
+    border: 1.5px solid #cbd5e1 !important;
+}
+.supplier-search-clear {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    font-size: 0.85rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+.supplier-search-clear:hover {
+    color: #0f172a;
+}
+
+/* 4. FLOATING DOCK */
+.qc-form-floating-dock {
+    position: fixed;
+    bottom: 58px;
+    left: 0;
+    right: 0;
+    margin: 0 auto;
+    max-width: 880px;
+    padding: 0.65rem 1rem;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(8px);
+    border-top: 1px solid #e2e8f0;
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.06);
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    justify-content: space-between;
+    z-index: 1000;
+}
+.btn-dock-back {
+    background: #f1f5f9;
+    border: 1.5px solid #cbd5e1;
+    color: #475569;
+    font-weight: 700;
+    font-size: 0.825rem;
+    border-radius: 8px;
+    padding: 0.65rem 0.95rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+.btn-dock-back:hover {
+    background: #e2e8f0;
+    color: #0f172a;
+}
+.btn-dock-next {
+    flex: 1;
+    border: none;
+    color: #ffffff;
+    font-weight: 800;
+    font-size: 0.925rem;
+    border-radius: 8px;
+    padding: 0.7rem 1.25rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    transition: all 0.15s ease;
+}
+.btn-dock-next.btn-primary-state {
+    background: #0284c7;
+}
+.btn-dock-next.btn-primary-state:hover {
+    background: #0369a1;
+}
+.btn-dock-next.btn-success-state {
+    background: #059669;
+}
+.btn-dock-next.btn-success-state:hover {
+    background: #047857;
+}
+
+/* 5. TOAST NOTIFICATIONS */
+.qc-toast-container {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    z-index: 9999999;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-width: 380px;
+    width: 90%;
+    pointer-events: none;
+}
+.qc-toast {
+    background: rgba(255, 255, 255, 0.96);
+    border: 1.5px solid #fca5a5;
+    border-left: 5px solid #dc2626;
+    border-radius: 10px;
+    padding: 0.85rem 1rem;
+    box-shadow: 0 10px 25px -5px rgba(220, 38, 38, 0.25);
+    animation: toastSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    pointer-events: auto;
+    font-family: inherit;
+}
+.qc-toast.qc-toast-warning {
+    border-color: #fde047;
+    border-left-color: #d97706;
+    box-shadow: 0 10px 25px -5px rgba(217, 119, 6, 0.25);
+}
+.qc-toast-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.25rem;
+}
+.qc-toast-title {
+    font-weight: 800;
+    font-size: 0.875rem;
+    color: #991b1b;
+}
+.qc-toast.qc-toast-warning .qc-toast-title {
+    color: #92400e;
+}
+.qc-toast-body {
+    font-size: 0.8rem;
+    color: #334155;
+    line-height: 1.35;
+}
+
+/* 6. RESPONSIVE BREAKPOINT TWEAKS */
+@media (max-width: 640px) {
+    .qc-form-floating-dock {
+        bottom: 54px;
+        padding: 0.5rem 0.75rem;
+    }
+    .btn-dock-next {
+        font-size: 0.85rem;
+        padding: 0.6rem 0.85rem;
+    }
+}

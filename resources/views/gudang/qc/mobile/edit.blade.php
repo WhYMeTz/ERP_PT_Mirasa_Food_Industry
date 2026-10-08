@@ -4,8 +4,8 @@
 @section('hide_bottom_nav', '1')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/gudang/qc/qc-form.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/gudang/qc/qc-mobile-detail.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/gudang/qc/mobile/qc-form.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/gudang/qc/mobile/qc-mobile-detail.css') }}">
 @endpush
 
 @php
@@ -92,6 +92,24 @@
     $totalGross = $qc->details->sum('qty_timbang_gross');
     $totalNetto = $qc->details->sum('qty_netto_lolos');
     $totalReject = $qc->details->sum('qty_reject');
+
+    $ref = request('ref');
+    if ($ref === 'detail') {
+        $backUrl = route('qc.inbound.show', [$qc->qc_id, 'view' => 'mobile']);
+        $backLabel = 'Batal ke Detail';
+    } elseif ($ref === 'index') {
+        $backUrl = route('qc.inbound.index', ['view' => 'mobile']);
+        $backLabel = 'Batal ke Riwayat';
+    } else {
+        $prev = url()->previous();
+        if ($prev && str_contains($prev, '/inbound/' . $qc->qc_id) && !str_contains($prev, '/edit')) {
+            $backUrl = route('qc.inbound.show', [$qc->qc_id, 'view' => 'mobile']);
+            $backLabel = 'Batal ke Detail';
+        } else {
+            $backUrl = route('qc.inbound.index', ['view' => 'mobile']);
+            $backLabel = 'Batal ke Riwayat';
+        }
+    }
 @endphp
 
 @section('content')
@@ -99,7 +117,7 @@
 
     {{-- TOP APP NAV --}}
     <div class="qc-detail-top-nav">
-        <a href="{{ route('qc.inbound.show', [$qc->qc_id, 'view' => 'mobile']) }}" class="qc-detail-back-btn">
+        <a href="{{ $backUrl }}" class="qc-detail-back-btn" title="{{ $backLabel }}">
             <span>&larr; Batal &amp; Kembali</span>
         </a>
         <div style="display: flex; align-items: center; gap: 0.45rem;">
@@ -151,6 +169,7 @@
         @method('PUT')
         
         <input type="hidden" name="view" value="mobile">
+        <input type="hidden" name="ref" value="{{ $ref ?: 'index' }}">
         <input type="hidden" name="kategori_barang" value="{{ $qc->kategori_barang }}">
         <input type="hidden" name="tahap_uji" value="{{ old('tahap_uji', $qc->tahap_uji ?? 'PENGUJIAN_1') }}">
         <input type="hidden" name="parent_qc_id" value="{{ old('parent_qc_id', $qc->parent_qc_id) }}">
@@ -535,9 +554,12 @@
         </div>
 
         {{-- TOMBOL SUBMIT FIXED BOTTOM --}}
-        <div class="qc-mobile-bottom-bar">
-            <button type="submit" id="btnEditSubmit" class="qc-btn-mobile-edit" style="font-size: 0.95rem; padding: 0.8rem 1rem;">
-                <span>💾 Simpan Perubahan Uji Mutu</span>
+        <div class="qc-mobile-bottom-bar" style="display: flex; gap: 0.65rem; align-items: center;">
+            <a href="{{ $backUrl }}" style="flex: 1; padding: 0.8rem 0.5rem; font-size: 0.88rem; font-weight: 700; border-radius: 10px; text-align: center; text-decoration: none; background: #f1f5f9; color: #475569; border: 1.5px solid #cbd5e1; display: inline-flex; align-items: center; justify-content: center; min-height: 44px;">
+                ✕ Batal
+            </a>
+            <button type="submit" id="btnEditSubmit" class="qc-btn-mobile-edit" style="flex: 2; font-size: 0.92rem; padding: 0.8rem 1rem;">
+                <span>💾 Simpan Perubahan</span>
             </button>
         </div>
 

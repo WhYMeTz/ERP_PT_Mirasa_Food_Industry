@@ -3,7 +3,7 @@
 @section('title', 'Pemeriksaan Mutu (QC) Inbound & HACCP - PT Mirasa')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/gudang/qc/qc-admin-index.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/gudang/qc/web/qc-admin-index.css') }}">
 @endpush
 
 @section('content')
@@ -550,12 +550,12 @@
                                 {{-- 6. EDIT DOKUMEN QC --}}
                                 @if (Auth::user()?->canEditQc())
                                     @if (!$isLocked)
-                                        <a href="{{ route('qc.inbound.edit', $qc->qc_id) }}" class="action-dropdown-item">
+                                        <a href="{{ route('qc.inbound.edit', [$qc->qc_id, 'ref' => 'index']) }}" class="action-dropdown-item">
                                             <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                                             <span>{{ $isSingkong ? 'Edit QC Uji 1' : 'Edit Dokumen QC' }}</span>
                                         </a>
                                         @if ($p2)
-                                            <a href="{{ route('qc.inbound.edit', $p2->qc_id) }}" class="action-dropdown-item">
+                                            <a href="{{ route('qc.inbound.edit', [$p2->qc_id, 'ref' => 'index']) }}" class="action-dropdown-item">
                                                 <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                                                 <span>Edit QC Uji 2</span>
                                             </a>
@@ -580,7 +580,7 @@
                     </tr>
 
                     {{-- SUB-ROW ACCORDION DRAWER DETAIL AUDIT TRUK --}}
-                    @include('gudang.qc.partials.drawer-detail')
+                    @include('gudang.qc.partials.common.drawer-detail')
 
                 @empty
                     <tr>
@@ -605,15 +605,15 @@
 </div>
 
 {{-- MODAL KONFIRMASI HAPUS --}}
-@include('gudang.qc.partials.modal-delete')
+@include('gudang.qc.partials.common.modal-delete')
 
 {{-- MODAL POPUP PREVIEW DOKUMEN HACCP --}}
-@include('gudang.qc.partials.modal-preview-haccp')
+@include('gudang.qc.partials.common.modal-preview-haccp')
 
 @endsection
 
 @push('scripts')
-    <script src="{{ asset('js/gudang/qc/qc-admin-index.js') }}"></script>
+    <script src="{{ asset('js/gudang/qc/web/qc-admin-index.js') }}"></script>
     @if (request('direct_print'))
         <script>
             window.addEventListener('DOMContentLoaded', () => {

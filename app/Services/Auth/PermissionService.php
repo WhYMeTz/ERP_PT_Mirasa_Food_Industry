@@ -10,320 +10,272 @@ use Illuminate\Support\Facades\DB;
 class PermissionService
 {
     /**
-     * Seluruh daftar hak akses dan menu yang dapat diatur oleh Superadmin
+     * Matriks Hak Akses Berbasis Modul Alur Kerja Pabrik (Domain / Module-Based Matrix)
      */
-    public const MODULES = [
-        'AKSI_EDIT' => [
-            'title'        => '✏️ Hak Akses Edit & Koreksi Data (Revisi Transaksi)',
-            'desc'         => 'Wewenang mengoreksi transaksi yang salah ketik atau penyesuaian timbangan/lab.',
-            'category_key' => 'edit',
-            'theme_color'  => '#d97706',
+    public const MODULE_GROUPS = [
+        'INBOUND' => [
+            'group_key'    => 'INBOUND',
+            'group_title'  => '🚚 Pengadaan & Inbound (Bahan Masuk)',
+            'group_desc'   => 'Pesanan PO pembelian, pemeriksaan mutu QC HACCP, penerimaan GRN, dan retur vendor.',
+            'badge'        => 'INBOUND',
+            'badge_color'  => '#d97706',
             'bg_color'     => '#fffbeb',
             'border_color' => '#fde68a',
-            'badge'        => '✏️ EDIT',
-            'badge_bg'     => '#fef3c7',
-            'badge_text'   => '#b45309',
-            'items'        => [
-                'qc_edit' => [
-                    'label'  => 'Edit & Koreksi Tiket QC',
-                    'desc'   => 'Mengubah data tiket QC yang salah ketik atau revisi timbangan/lab.',
-                    'action' => 'EDIT',
+            'modules'      => [
+                'PO' => [
+                    'label'   => 'Purchase Order (PO Beli)',
+                    'desc'    => 'Pemesanan bahan baku singkong dan bahan penolong ke pemasok.',
+                    'actions' => [
+                        'view'   => ['key' => 'po_view',   'label' => 'Lihat Data'],
+                        'create' => ['key' => 'po_create', 'label' => 'Buat PO Baru'],
+                        'edit'   => ['key' => 'po_edit',   'label' => 'Edit / Koreksi'],
+                        'delete' => ['key' => 'po_delete', 'label' => 'Hapus / Batal'],
+                    ],
                 ],
-                'po_edit' => [
-                    'label'  => 'Edit & Koreksi Purchase Order (PO)',
-                    'desc'   => 'Mengubah tanggal, supplier, gudang, catatan, atau rincian item pesanan PO yang belum diterima.',
-                    'action' => 'EDIT',
+                'QC' => [
+                    'label'   => 'Pengujian Mutu (QC & HACCP)',
+                    'desc'    => 'Inspeksi kedatangan sampling, uji laboratorium goreng, dan verifikasi checklist.',
+                    'actions' => [
+                        'view'   => ['key' => 'qc_view',   'label' => 'Lihat Tiket QC'],
+                        'create' => ['key' => 'qc_create', 'label' => 'Input Uji QC'],
+                        'edit'   => ['key' => 'qc_edit',   'label' => 'Edit / Koreksi'],
+                        'delete' => ['key' => 'qc_delete', 'label' => 'Hapus / Batal'],
+                    ],
                 ],
-                'terima_edit' => [
-                    'label'  => 'Edit & Koreksi Penerimaan Barang',
-                    'desc'   => 'Mengubah data penerimaan barang, nomor surat jalan, tanggal, nomor batch, dan rincian fisik komoditas.',
-                    'action' => 'EDIT',
+                'TERIMA' => [
+                    'label'   => 'Penerimaan Barang (GRN)',
+                    'desc'    => 'Bongkar muat fisik barang, nomor batch kedatangan, dan penimbangan akhir.',
+                    'actions' => [
+                        'view'   => ['key' => 'terima_view',   'label' => 'Lihat Penerimaan'],
+                        'create' => ['key' => 'terima_create', 'label' => 'Catat Penerimaan'],
+                        'edit'   => ['key' => 'terima_edit',   'label' => 'Edit / Koreksi'],
+                        'delete' => ['key' => 'terima_delete', 'label' => 'Hapus / Batal'],
+                    ],
                 ],
-                'master_barang_edit' => [
-                    'label'  => 'Edit & Koreksi Master Barang',
-                    'desc'   => 'Mengubah kode, nama, jenis, satuan, konversi, batas minimum stok, dan harga standar barang.',
-                    'action' => 'EDIT',
-                ],
-                'master_satuan_edit' => [
-                    'label'  => 'Edit Data Master Satuan',
-                    'desc'   => 'Mengubah kode dan nama unit satuan barang.',
-                    'action' => 'EDIT',
-                ],
-                'master_jenis_edit' => [
-                    'label'  => 'Edit Master Jenis Barang',
-                    'desc'   => 'Mengubah kode dan nama jenis/kategori barang (RAW, WIP, FG, PACK).',
-                    'action' => 'EDIT',
-                ],
-                'master_supplier_edit' => [
-                    'label'  => 'Edit & Koreksi Master Supplier',
-                    'desc'   => 'Mengubah data mitra pemasok, kontak telepon, alamat, dan jenis supplier.',
-                    'action' => 'EDIT',
-                ],
-                'master_jenis_supplier_edit' => [
-                    'label'  => 'Edit Master Jenis Supplier',
-                    'desc'   => 'Mengubah kode dan nama kategori mitra pemasok (RAW, BUMBU, PACK, dll).',
-                    'action' => 'EDIT',
-                ],
-                'master_customer_edit' => [
-                    'label'  => 'Edit & Koreksi Master Customer',
-                    'desc'   => 'Mengubah data klien B2B, kontak PIC, dan alamat pengiriman customer.',
-                    'action' => 'EDIT',
-                ],
-                'master_perusahaan_edit' => [
-                    'label'  => 'Edit Data Master Perusahaan',
-                    'desc'   => 'Mengubah kode, nama PT/CV, jenis entitas, alamat, dan nomor telepon perusahaan.',
-                    'action' => 'EDIT',
-                ],
-                'master_karyawan_edit' => [
-                    'label'  => 'Edit & Koreksi Data Karyawan',
-                    'desc'   => 'Mengubah profil staf, departemen, jabatan, dan nomor kontak karyawan.',
-                    'action' => 'EDIT',
-                ],
-                'master_resep_edit' => [
-                    'label'  => 'Edit & Koreksi Formula Resep (BOM)',
-                    'desc'   => 'Mengubah takaran komposisi bahan baku & penolong per batch formula resep.',
-                    'action' => 'EDIT',
+                'RETUR' => [
+                    'label'   => 'Retur Pembelian ke Vendor',
+                    'desc'    => 'Pengembalian barang reject atau tidak sesuai spesifikasi kembali ke supplier.',
+                    'actions' => [
+                        'view'   => ['key' => 'retur_view',   'label' => 'Lihat Retur'],
+                        'create' => ['key' => 'retur_create', 'label' => 'Catat Retur Baru'],
+                        'delete' => ['key' => 'retur_delete', 'label' => 'Hapus / Batal'],
+                    ],
                 ],
             ],
         ],
-        'AKSI_DELETE' => [
-            'title'        => '🗑️ Hak Akses Hapus & Batalkan Data (Void / Pembatalan)',
-            'desc'         => 'Wewenang menghapus atau membatalkan dokumen operasional.',
-            'category_key' => 'delete',
-            'theme_color'  => '#dc2626',
-            'bg_color'     => '#fef2f2',
-            'border_color' => '#fecaca',
-            'badge'        => '🗑️ HAPUS',
-            'badge_bg'     => '#fee2e2',
-            'badge_text'   => '#b91c1c',
-            'items'        => [
-                'qc_delete' => [
-                    'label'  => 'Hapus / Batalkan Tiket QC',
-                    'desc'   => 'Menghapus tiket QC yang batal atau salah input.',
-                    'action' => 'DELETE',
-                ],
-                'po_delete' => [
-                    'label'  => 'Hapus Purchase Order (PO)',
-                    'desc'   => 'Menghapus dokumen Purchase Order (khusus Super Admin / wewenang khusus).',
-                    'action' => 'DELETE',
-                ],
-                'terima_delete' => [
-                    'label'  => 'Hapus / Batalkan Penerimaan Barang',
-                    'desc'   => 'Menghapus transaksi penerimaan barang dan membatalkan mutasi stok masuk terkait.',
-                    'action' => 'DELETE',
-                ],
-                'master_barang_delete' => [
-                    'label'  => 'Hapus / Nonaktifkan Master Barang',
-                    'desc'   => 'Menonaktifkan data master barang agar tidak dapat digunakan dalam transaksi baru.',
-                    'action' => 'DELETE',
-                ],
-                'master_satuan_delete' => [
-                    'label'  => 'Hapus / Nonaktifkan Master Satuan',
-                    'desc'   => 'Menonaktifkan data unit satuan ukuran.',
-                    'action' => 'DELETE',
-                ],
-                'master_jenis_delete' => [
-                    'label'  => 'Hapus / Nonaktifkan Jenis Barang',
-                    'desc'   => 'Menonaktifkan jenis/kategori klasifikasi barang.',
-                    'action' => 'DELETE',
-                ],
-                'master_supplier_delete' => [
-                    'label'  => 'Hapus / Nonaktifkan Master Supplier',
-                    'desc'   => 'Menonaktifkan mitra pemasok agar tidak dapat dipilih dalam pembuatan PO baru.',
-                    'action' => 'DELETE',
-                ],
-                'master_jenis_supplier_delete' => [
-                    'label'  => 'Hapus / Nonaktifkan Jenis Supplier',
-                    'desc'   => 'Menonaktifkan klasifikasi jenis supplier dari sistem.',
-                    'action' => 'DELETE',
-                ],
-                'master_customer_delete' => [
-                    'label'  => 'Hapus / Nonaktifkan Master Customer',
-                    'desc'   => 'Menonaktifkan klien / customer dari sistem penjualan.',
-                    'action' => 'DELETE',
-                ],
-                'master_perusahaan_delete' => [
-                    'label'  => 'Hapus / Nonaktifkan Entitas Perusahaan',
-                    'desc'   => 'Menonaktifkan kantor cabang / anak perusahaan dari sistem operasional.',
-                    'action' => 'DELETE',
-                ],
-                'master_karyawan_delete' => [
-                    'label'  => 'Hapus / Nonaktifkan Karyawan',
-                    'desc'   => 'Menonaktifkan data staf/karyawan dari daftar aktif perusahaan.',
-                    'action' => 'DELETE',
-                ],
-                'master_resep_delete' => [
-                    'label'  => 'Hapus / Nonaktifkan Formula Resep',
-                    'desc'   => 'Menghapus atau menonaktifkan formula resep BOM dari sistem.',
-                    'action' => 'DELETE',
-                ],
-            ],
-        ],
-        'AKSI_CREATE' => [
-            'title'        => '➕ Hak Akses Input & Transaksi Baru (Entry Operasional)',
-            'desc'         => 'Wewenang mencatat dokumen baru untuk transaksi harian.',
-            'category_key' => 'create',
-            'theme_color'  => '#15803d',
+        'GUDANG' => [
+            'group_key'    => 'GUDANG',
+            'group_title'  => '📦 Stok Gudang Bahan Baku & Penolong',
+            'group_desc'   => 'Saldo fisik singkong, minyak, bumbu & kemasan, mutasi kartu stok, dan koreksi opname.',
+            'badge'        => 'GUDANG BAHAN',
+            'badge_color'  => '#059669',
             'bg_color'     => '#f0fdf4',
-            'border_color' => '#bbf7d0',
-            'badge'        => '➕ INPUT',
-            'badge_bg'     => '#dcfce7',
-            'badge_text'   => '#15803d',
-            'items'        => [
-                'po_create' => [
-                    'label'  => 'Buat & Kelola PO',
-                    'desc'   => 'Membuat PO baru, mengubah, membatalkan, atau menutup PO.',
-                    'action' => 'CREATE',
+            'border_color' => '#a7f3d0',
+            'modules'      => [
+                'STOK_BAHAN' => [
+                    'label'   => 'Lacak Stok & Kartu Stok Bahan',
+                    'desc'    => 'Monitoring saldo fisik real-time, buku mutasi kartu stok ledger, dan rekap aset.',
+                    'actions' => [
+                        'view' => ['key' => 'stok_view', 'label' => 'Buka / Lihat Stok'],
+                    ],
                 ],
-                'qc_create' => [
-                    'label'  => 'Input Inspeksi QC (Mobile)',
-                    'desc'   => 'Mencatat hasil uji kadar air, refraksi kotoran, dan timbangan sampling.',
-                    'action' => 'CREATE',
-                ],
-                'terima_create' => [
-                    'label'  => 'Catat Penerimaan Barang & Batch',
-                    'desc'   => 'Mencatat fisik bongkar muat, no batch baru, dan harga masuk.',
-                    'action' => 'CREATE',
-                ],
-                'pemakaian_create' => [
-                    'label'  => 'Catat Pengeluaran Bahan Produksi',
-                    'desc'   => 'Mengeluarkan bahan baku/bumbu per batch untuk SPK pabrik.',
-                    'action' => 'CREATE',
-                ],
-                'produksi_create' => [
-                    'label'  => 'Input Hasil Produksi & HPP',
-                    'desc'   => 'Mencatat hasil timbangan WIP harian, absensi tenaga kerja, dan gas.',
-                    'action' => 'CREATE',
-                ],
-                'retur_create' => [
-                    'label'  => 'Catat Retur Pembelian',
-                    'desc'   => 'Membuat retur pengembalian barang fisik dan update kuota PO/tagihan.',
-                    'action' => 'CREATE',
-                ],
-                'master_barang_create' => [
-                    'label'  => 'Tambah Master Barang Baru',
-                    'desc'   => 'Mendaftarkan barang baru ke dalam katalog sistem.',
-                    'action' => 'CREATE',
-                ],
-                'master_satuan_create' => [
-                    'label'  => 'Tambah Master Satuan Baru',
-                    'desc'   => 'Mendaftarkan unit satuan ukuran baru ke sistem.',
-                    'action' => 'CREATE',
-                ],
-                'master_jenis_create' => [
-                    'label'  => 'Tambah Jenis Barang Baru',
-                    'desc'   => 'Mendaftarkan kategori / jenis klasifikasi barang baru.',
-                    'action' => 'CREATE',
-                ],
-                'master_supplier_create' => [
-                    'label'  => 'Tambah Master Supplier Baru',
-                    'desc'   => 'Mendaftarkan mitra supplier petani singkong atau vendor industri baru.',
-                    'action' => 'CREATE',
-                ],
-                'master_jenis_supplier_create' => [
-                    'label'  => 'Tambah Jenis Supplier Baru',
-                    'desc'   => 'Mendaftarkan jenis klasifikasi supplier baru ke katalog referensi.',
-                    'action' => 'CREATE',
-                ],
-                'master_customer_create' => [
-                    'label'  => 'Tambah Master Customer Baru',
-                    'desc'   => 'Mendaftarkan klien / customer pembeli B2B baru.',
-                    'action' => 'CREATE',
-                ],
-                'master_perusahaan_create' => [
-                    'label'  => 'Tambah Master Perusahaan Baru',
-                    'desc'   => 'Mendaftarkan entitas bisnis, cabang, atau anak perusahaan baru ke dalam sistem.',
-                    'action' => 'CREATE',
-                ],
-                'master_karyawan_create' => [
-                    'label'  => 'Tambah Karyawan Baru',
-                    'desc'   => 'Mendaftarkan karyawan baru ke dalam sistem sumber daya manusia perusahaan.',
-                    'action' => 'CREATE',
-                ],
-                'master_resep_create' => [
-                    'label'  => 'Buat Formula Resep Baru',
-                    'desc'   => 'Membuat standar formula resep komposisi bahan baku (Bill of Materials) baru.',
-                    'action' => 'CREATE',
+                'ADJUSTMENT' => [
+                    'label'   => 'Adjustment Stok (Koreksi Opname)',
+                    'desc'    => 'Penyesuaian selisih fisik stok, susut timbangan, dan opname persediaan bahan.',
+                    'actions' => [
+                        'view'   => ['key' => 'adjustment_view',   'label' => 'Lihat Koreksi'],
+                        'create' => ['key' => 'adjustment_create', 'label' => 'Input Penyesuaian'],
+                        'delete' => ['key' => 'adjustment_void',   'label' => 'Batalkan / Void'],
+                    ],
                 ],
             ],
         ],
-        'AKSI_VIEW' => [
-            'title'        => '👁️ Hak Akses Lihat Menu & Monitoring (Read-Only)',
-            'desc'         => 'Wewenang membuka menu untuk memantau data tanpa izin mengubah.',
-            'category_key' => 'view',
-            'theme_color'  => '#0284c7',
-            'bg_color'     => '#f0f9ff',
-            'border_color' => '#bae6fd',
-            'badge'        => '👁️ LIHAT',
-            'badge_bg'     => '#e0f2fe',
-            'badge_text'   => '#0369a1',
-            'items'        => [
-                'po_view' => [
-                    'label'  => 'Lihat Purchase Order (PO)',
-                    'desc'   => 'Membuka menu dan melihat daftar dokumen pemesanan bahan.',
-                    'action' => 'VIEW',
+        'PRODUKSI' => [
+            'group_key'    => 'PRODUKSI',
+            'group_title'  => '🏭 Operasional Produksi Pabrik',
+            'group_desc'   => 'Pengeluaran bahan ke dapur penggorengan, input hasil masak olahan, dan buku HPP.',
+            'badge'        => 'PRODUKSI',
+            'badge_color'  => '#ea580c',
+            'bg_color'     => '#fff7ed',
+            'border_color' => '#fed7aa',
+            'modules'      => [
+                'SPK' => [
+                    'label'   => 'Pemakaian Bahan (SPK Masak)',
+                    'desc'    => 'Permintaan dan pengeluaran bahan baku / penolong ke dapur produksi.',
+                    'actions' => [
+                        'view'   => ['key' => 'pemakaian_view',   'label' => 'Lihat SPK'],
+                        'create' => ['key' => 'pemakaian_create', 'label' => 'Catat Pengeluaran'],
+                    ],
                 ],
-                'qc_view' => [
-                    'label'  => 'Lihat Tiket QC Masuk',
-                    'desc'   => 'Melihat daftar dan riwayat hasil inspeksi mutu bahan baku dari QC.',
-                    'action' => 'VIEW',
-                ],
-                'terima_view' => [
-                    'label'  => 'Lihat Penerimaan Barang & Bahan Baku (GRN)',
-                    'desc'   => 'Membuka menu penerimaan fisik bahan masuk dari supplier.',
-                    'action' => 'VIEW',
-                ],
-                'pemakaian_view' => [
-                    'label'  => 'Lihat Barang Keluar (OUT)',
-                    'desc'   => 'Membuka menu pemakaian bahan keluar untuk lini produksi.',
-                    'action' => 'VIEW',
-                ],
-                'produksi_view' => [
-                    'label'  => 'Lihat Laporan HPP & Produksi',
-                    'desc'   => 'Melihat buku rekap HPP harian, rendemen, dan hasil WIP.',
-                    'action' => 'VIEW',
-                ],
-                'retur_view' => [
-                    'label'  => 'Lihat Retur Pembelian',
-                    'desc'   => 'Melihat daftar dokumen pengembalian barang cacat/rusak ke supplier.',
-                    'action' => 'VIEW',
-                ],
-                'stok_view' => [
-                    'label'  => 'Lacak Stok & Kartu Stok',
-                    'desc'   => 'Memantau sisa kuantitas batch (Tersedia/Habis) dan buku mutasi.',
-                    'action' => 'VIEW',
+                'HASIL_PRODUKSI' => [
+                    'label'   => 'Hasil Olahan & Rekapitulasi HPP',
+                    'desc'    => 'Pencatatan batch masak/kemas, borongan pekerja, gas LPG, dan evaluasi biaya HPP.',
+                    'actions' => [
+                        'view'   => ['key' => 'produksi_view',   'label' => 'Lihat Hasil & HPP'],
+                        'create' => ['key' => 'produksi_create', 'label' => 'Input Hasil Masak'],
+                    ],
                 ],
             ],
         ],
-        'MASTER_DATA' => [
-            'title'        => '📁 Master Data & Keamanan Sistem',
-            'desc'         => 'Wewenang mengelola katalog referensi dan akun sistem.',
-            'category_key' => 'master',
-            'theme_color'  => '#7c3aed',
+        'STOK_PRODUKSI' => [
+            'group_key'    => 'STOK_PRODUKSI',
+            'group_title'  => '🗃️ Stok Hasil Produksi (WIP & FG)',
+            'group_desc'   => 'Persediaan keripik olahan setengah jadi (WIP) dan produk jadi siap jual (Finished Goods).',
+            'badge'        => 'HASIL PRODUKSI',
+            'badge_color'  => '#0891b2',
+            'bg_color'     => '#ecfeff',
+            'border_color' => '#a5f3fc',
+            'modules'      => [
+                'STOK_FG' => [
+                    'label'   => 'Lacak Stok WIP & Barang Jadi (FG)',
+                    'desc'    => 'Saldo fisik olahan keripik matang dan mutasi kartu stok keluar-masuk barang jadi.',
+                    'actions' => [
+                        'view' => ['key' => 'stok_fg_view', 'label' => 'Buka / Lihat Stok WIP/FG'],
+                    ],
+                ],
+            ],
+        ],
+        'PENJUALAN' => [
+            'group_key'    => 'PENJUALAN',
+            'group_title'  => '🛒 Penjualan (Sales Order & Outbound)',
+            'group_desc'   => 'Pesanan pembelian produk keripik jadi dari mitra customer, agen toko, dan distributor.',
+            'badge'        => 'PENJUALAN',
+            'badge_color'  => '#2563eb',
+            'bg_color'     => '#eff6ff',
+            'border_color' => '#bfdbfe',
+            'modules'      => [
+                'SO' => [
+                    'label'   => 'PO Penjualan (SO Customer)',
+                    'desc'    => 'Pencatatan pesanan produk jadi dari customer dan pengiriman barang.',
+                    'actions' => [
+                        'view'   => ['key' => 'so_view',   'label' => 'Lihat Pesanan'],
+                        'create' => ['key' => 'so_create', 'label' => 'Buat SO Baru'],
+                        'edit'   => ['key' => 'so_edit',   'label' => 'Edit Pesanan'],
+                        'delete' => ['key' => 'so_delete', 'label' => 'Hapus / Batal'],
+                    ],
+                ],
+            ],
+        ],
+        'MASTER' => [
+            'group_key'    => 'MASTER',
+            'group_title'  => '🗂️ Master Data & Konfigurasi Pabrik',
+            'group_desc'   => 'Katalog material barang, formula resep BOM, tarif upah/FOH, relasi mitra, dan fasilitas.',
+            'badge'        => 'MASTER DATA',
+            'badge_color'  => '#7c3aed',
             'bg_color'     => '#faf5ff',
             'border_color' => '#e9d5ff',
-            'badge'        => '⚙️ KELOLA',
-            'badge_bg'     => '#f3e8ff',
-            'badge_text'   => '#6b21a8',
-            'items'        => [
-                'master_barang_view'     => ['label' => 'Lihat Katalog Barang', 'desc' => 'Melihat daftar master singkong, minyak, bumbu, dan kemasan.', 'action' => 'VIEW'],
-                'master_barang_manage'   => ['label' => 'Kelola Master Barang', 'desc' => 'Menambah barang baru, mengatur batas minimum stok & harga beli.', 'action' => 'MANAGE'],
-                'master_supplier_view'   => ['label' => 'Lihat Master Supplier', 'desc' => 'Melihat daftar mitra supplier petani singkong & vendor.', 'action' => 'VIEW'],
-                'master_supplier_manage' => ['label' => 'Kelola Master Supplier', 'desc' => 'Menambah dan mengedit mitra rekanan supplier.', 'action' => 'MANAGE'],
-                'master_jenis_supplier_view' => ['label' => 'Lihat Master Jenis Supplier', 'desc' => 'Melihat daftar klasifikasi jenis supplier.', 'action' => 'VIEW'],
-                'master_customer_view'   => ['label' => 'Lihat Master Customer', 'desc' => 'Melihat daftar klien B2B dan distributor pembeli.', 'action' => 'VIEW'],
-                'master_customer_manage' => ['label' => 'Kelola Master Customer', 'desc' => 'Menambah dan mengedit profil klien customer B2B.', 'action' => 'MANAGE'],
-                'master_perusahaan_view' => ['label' => 'Lihat Master Perusahaan', 'desc' => 'Melihat daftar entitas bisnis, pusat, cabang, dan anak perusahaan.', 'action' => 'VIEW'],
-                'master_perusahaan_manage' => ['label' => 'Kelola Master Perusahaan', 'desc' => 'Menambah dan mengedit data entitas perusahaan dan cabang.', 'action' => 'MANAGE'],
-                'master_karyawan_view'   => ['label' => 'Lihat Master Karyawan', 'desc' => 'Melihat daftar profil karyawan, jabatan, dan penugasan departemen.', 'action' => 'VIEW'],
-                'master_karyawan_manage' => ['label' => 'Kelola Master Karyawan', 'desc' => 'Menambah, mengedit, dan mengelola profil karyawan.', 'action' => 'MANAGE'],
-                'master_resep_view'      => ['label' => 'Lihat Formula Resep (BOM)', 'desc' => 'Melihat daftar formula dan komposisi standar resep produksi.', 'action' => 'VIEW'],
-                'master_resep_manage'    => ['label' => 'Kelola Formula Resep (BOM)', 'desc' => 'Membuat, mengubah, dan mengelola formula resep produksi.', 'action' => 'MANAGE'],
-                'master_gudang_manage'   => ['label' => 'Kelola Gudang & Satuan', 'desc' => 'Menambah dan mengedit daftar gudang unit dan satuan barang.', 'action' => 'MANAGE'],
-                'user_manage'            => ['label' => 'Manajemen Pengguna & Hak Akses', 'desc' => 'Mengelola user login, password, dan mengubah hak akses peran.', 'action' => 'MANAGE'],
+            'modules'      => [
+                'BARANG' => [
+                    'label'   => 'Katalog Barang & Bahan',
+                    'desc'    => 'Master singkong, minyak, bumbu, kemasan, WIP & barang jadi.',
+                    'actions' => [
+                        'view'   => ['key' => 'master_barang_view',   'label' => 'Lihat Data'],
+                        'create' => ['key' => 'master_barang_create', 'label' => 'Tambah'],
+                        'edit'   => ['key' => 'master_barang_edit',   'label' => 'Edit'],
+                        'delete' => ['key' => 'master_barang_delete', 'label' => 'Nonaktifkan'],
+                    ],
+                ],
+                'RESEP' => [
+                    'label'   => 'Formula Resep (BOM Pabrik)',
+                    'desc'    => 'Standar komposisi bahan baku & penolong per batch keripik.',
+                    'actions' => [
+                        'view'   => ['key' => 'master_resep_view',   'label' => 'Lihat Resep'],
+                        'create' => ['key' => 'master_resep_create', 'label' => 'Tambah'],
+                        'edit'   => ['key' => 'master_resep_edit',   'label' => 'Edit'],
+                        'delete' => ['key' => 'master_resep_delete', 'label' => 'Hapus'],
+                    ],
+                ],
+                'TARIF' => [
+                    'label'   => 'Standar Tarif Produksi & FOH',
+                    'desc'    => 'Tarif upah borongan masak, bumbu racik, gas LPG, dan FOH pabrik.',
+                    'actions' => [
+                        'view'   => ['key' => 'tarif_produksi_view',   'label' => 'Lihat Tarif'],
+                        'create' => ['key' => 'tarif_produksi_manage', 'label' => 'Kelola Tarif'],
+                    ],
+                ],
+                'LINI' => [
+                    'label'   => 'Lini Produksi / Lokasi Masak',
+                    'desc'    => 'Dapur penggorengan, stasiun perajangan, dan lini pengemasan.',
+                    'actions' => [
+                        'view'   => ['key' => 'master_lini_view',   'label' => 'Lihat Data'],
+                        'create' => ['key' => 'master_lini_create', 'label' => 'Tambah'],
+                        'edit'   => ['key' => 'master_lini_edit',   'label' => 'Edit'],
+                        'delete' => ['key' => 'master_lini_delete', 'label' => 'Hapus'],
+                    ],
+                ],
+                'SUPPLIER' => [
+                    'label'   => 'Mitra Supplier & Petani',
+                    'desc'    => 'Data kontak, alamat, dan klasifikasi supplier pemasok.',
+                    'actions' => [
+                        'view'   => ['key' => 'master_supplier_view',   'label' => 'Lihat Data'],
+                        'create' => ['key' => 'master_supplier_create', 'label' => 'Tambah'],
+                        'edit'   => ['key' => 'master_supplier_edit',   'label' => 'Edit'],
+                        'delete' => ['key' => 'master_supplier_delete', 'label' => 'Nonaktifkan'],
+                    ],
+                ],
+                'CUSTOMER' => [
+                    'label'   => 'Mitra Customer (Toko / Agen)',
+                    'desc'    => 'Data klien pembeli produk keripik dan kontak toko.',
+                    'actions' => [
+                        'view'   => ['key' => 'master_customer_view',   'label' => 'Lihat Data'],
+                        'create' => ['key' => 'master_customer_create', 'label' => 'Tambah'],
+                        'edit'   => ['key' => 'master_customer_edit',   'label' => 'Edit'],
+                        'delete' => ['key' => 'master_customer_delete', 'label' => 'Nonaktifkan'],
+                    ],
+                ],
+                'KARYAWAN' => [
+                    'label'   => 'Data Karyawan & Operator',
+                    'desc'    => 'Profil staf, jabatan, departemen, dan data absensi.',
+                    'actions' => [
+                        'view'   => ['key' => 'master_karyawan_view',   'label' => 'Lihat Data'],
+                        'create' => ['key' => 'master_karyawan_create', 'label' => 'Tambah'],
+                        'edit'   => ['key' => 'master_karyawan_edit',   'label' => 'Edit'],
+                        'delete' => ['key' => 'master_karyawan_delete', 'label' => 'Nonaktifkan'],
+                    ],
+                ],
+                'PERUSAHAAN' => [
+                    'label'   => 'Master Perusahaan / Cabang',
+                    'desc'    => 'Entitas badan usaha PT / CV dalam grup Mirasa.',
+                    'actions' => [
+                        'view' => ['key' => 'master_perusahaan_view', 'label' => 'Lihat Data'],
+                        'edit' => ['key' => 'master_perusahaan_edit', 'label' => 'Edit Data'],
+                    ],
+                ],
+                'SATUAN' => [
+                    'label'   => 'Satuan Ukur Barang',
+                    'desc'    => 'Unit ukuran standar (kg, roll, bal, pack, liter, sak).',
+                    'actions' => [
+                        'view'   => ['key' => 'master_satuan_view',   'label' => 'Lihat Data'],
+                        'create' => ['key' => 'master_satuan_create', 'label' => 'Tambah'],
+                        'edit'   => ['key' => 'master_satuan_edit',   'label' => 'Edit'],
+                        'delete' => ['key' => 'master_satuan_delete', 'label' => 'Hapus'],
+                    ],
+                ],
+                'JENIS' => [
+                    'label'   => 'Kategori / Jenis Barang',
+                    'desc'    => 'Klasifikasi kelompok barang (RAW, WIP, FG, PACK).',
+                    'actions' => [
+                        'view'   => ['key' => 'master_jenis_view',   'label' => 'Lihat Data'],
+                        'create' => ['key' => 'master_jenis_create', 'label' => 'Tambah'],
+                        'edit'   => ['key' => 'master_jenis_edit',   'label' => 'Edit'],
+                        'delete' => ['key' => 'master_jenis_delete', 'label' => 'Hapus'],
+                    ],
+                ],
+                'USERS' => [
+                    'label'   => 'Hak Akses & Pengguna Sistem',
+                    'desc'    => 'Wewenang akun login, role pengguna, dan matriks hak akses.',
+                    'actions' => [
+                        'view' => ['key' => 'user_manage', 'label' => 'Kelola Hak Akses'],
+                    ],
+                ],
             ],
         ],
     ];
+
+    /**
+     * Alias backwards compatibility
+     */
+    public const MODULES = self::MODULE_GROUPS;
 
     /**
      * Konfigurasi hak akses bawaan (default) saat database pertama kali diinisialisasi
@@ -331,47 +283,37 @@ class PermissionService
     public const DEFAULT_PERMISSIONS = [
         'ADMIN_GUDANG' => [
             'qc_view',
-            'qc_create',
-            'qc_edit',
             'terima_view',
             'terima_create',
             'terima_edit',
             'terima_delete',
             'retur_view',
             'retur_create',
+            'retur_delete',
+            'stok_view',
+            'adjustment_view',
+            'adjustment_create',
             'pemakaian_view',
             'pemakaian_create',
-            'produksi_view',
-            'produksi_create',
-            'stok_view',
             'master_barang_view',
-            'master_barang_create',
-            'master_barang_edit',
-            'master_satuan_create',
-            'master_satuan_edit',
-            'master_jenis_create',
-            'master_jenis_edit',
-            'master_jenis_supplier_view',
-            'master_perusahaan_view',
-            'master_resep_view',
-            'master_gudang_manage',
+            'master_satuan_view',
+            'master_jenis_view',
         ],
         'STAFF_PRODUKSI' => [
             'pemakaian_view',
             'pemakaian_create',
             'produksi_view',
             'produksi_create',
-            'stok_view',
+            'stok_fg_view',
             'master_barang_view',
             'master_resep_view',
-            'master_resep_create',
-            'master_resep_edit',
-            'master_resep_manage',
+            'master_lini_view',
         ],
         'PURCHASING' => [
             'po_view',
             'po_create',
             'po_edit',
+            'po_delete',
             'qc_view',
             'terima_view',
             'retur_view',
@@ -381,25 +323,30 @@ class PermissionService
             'master_supplier_view',
             'master_supplier_create',
             'master_supplier_edit',
-            'master_supplier_manage',
-            'master_jenis_supplier_view',
-            'master_jenis_supplier_create',
-            'master_jenis_supplier_edit',
         ],
         'FINANCE' => [
             'po_view',
             'qc_view',
             'terima_view',
             'retur_view',
+            'stok_view',
+            'adjustment_view',
             'pemakaian_view',
             'produksi_view',
-            'stok_view',
+            'stok_fg_view',
+            'so_view',
+            'so_create',
+            'so_edit',
+            'tarif_produksi_view',
+            'tarif_produksi_manage',
             'master_barang_view',
+            'master_customer_view',
         ],
         'QC' => [
             'qc_view',
             'qc_create',
             'qc_edit',
+            'qc_delete',
             'po_view',
             'terima_view',
             'retur_view',
@@ -478,12 +425,14 @@ class PermissionService
     public static function getAllPermissionKeys(): array
     {
         $keys = [];
-        foreach (self::MODULES as $module) {
-            foreach (array_keys($module['items']) as $key) {
-                $keys[] = $key;
+        foreach (self::MODULE_GROUPS as $group) {
+            foreach ($group['modules'] as $module) {
+                foreach ($module['actions'] as $act) {
+                    $keys[] = $act['key'];
+                }
             }
         }
-        return $keys;
+        return array_values(array_unique($keys));
     }
 
     /**
@@ -542,6 +491,14 @@ class PermissionService
             }
         });
 
+        $this->clearCache();
+    }
+
+    /**
+     * Hapus cache hak akses peran
+     */
+    public function clearCache(): void
+    {
         Cache::forget('mirasa_role_permissions');
     }
 

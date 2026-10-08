@@ -3,7 +3,7 @@
 @section('title', 'Riwayat & Tiket QC Bahan Masuk - PT Mirasa')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/gudang/qc/qc-index.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/gudang/qc/mobile/qc-index.css') }}">
 @endpush
 
 @section('content')
@@ -273,7 +273,7 @@
                     {{-- TOMBOL EDIT KHUSUS SAMPLING QC --}}
                     @if (Auth::user()?->canEditQc())
                         @if (!$isLocked)
-                            <a href="{{ route('qc.inbound.edit', [$qc->qc_id, 'view' => 'mobile']) }}" class="qc-btn-action qc-btn-edit" title="Edit / Koreksi Parameter Mutu Sampling">
+                            <a href="{{ route('qc.inbound.edit', [$qc->qc_id, 'view' => 'mobile', 'ref' => 'index']) }}" class="qc-btn-action qc-btn-edit" title="Edit / Koreksi Parameter Mutu Sampling">
                                 <span>✏️ Edit</span>
                             </a>
                         @else
@@ -311,13 +311,13 @@
 </div>
 
 {{-- MODAL KONFIRMASI HAPUS --}}
-@include('gudang.qc.partials.modal-delete')
+@include('gudang.qc.partials.common.modal-delete')
 
 {{-- MODAL UJI GORENG FRYER --}}
-@include('gudang.qc.partials.modal-uji-fryer')
+@include('gudang.qc.partials.singkong.modal-uji-fryer')
 
 @endsection
 
 @push('scripts')
-    <script src="{{ asset('js/gudang/qc/qc-index.js') }}"></script>
+    <script src="{{ asset('js/gudang/qc/mobile/qc-index.js') }}"></script>
 @endpush

@@ -1,0 +1,18 @@
+/* ==========================================================================
+   QC KARTON BOX SPECIFIC STYLES - PT MIRASA FOOD INDUSTRY
+   Styling Parameter & Uji Mutu Karton Box (Dimensi PxLxT & Burst Test)
+   ========================================================================== */
+
+.karton-param-card {
+    background: #ffffff;
+    border: 1.5px solid #fed7aa;
+    border-radius: 10px;
+    padding: 1.15rem;
+    box-shadow: 0 1px 3px rgba(180, 83, 9, 0.05);
+}
+
+.karton-dimensi-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+}

@@ -356,7 +356,7 @@
                     <span id="labelModalRoleName" style="background: rgba(255,255,255,0.2); padding: 0.2rem 0.75rem; border-radius: 8px; font-weight: 800;">Admin Gudang</span>
                 </h2>
                 <p style="font-size: 0.8rem; color: rgba(255,255,255,0.85); margin-top: 0.25rem;">
-                    Pemisahan terstruktur: Hak akses <strong>Edit</strong>, <strong>Hapus</strong>, <strong>Input</strong>, dan <strong>Lihat</strong> dikelompokkan secara mandiri.
+                    Matriks Alur Kerja Pabrik: Setiap fitur terpadu dalam satu baris dengan kontrol <strong>Lihat</strong>, <strong>Input</strong>, <strong>Edit</strong>, dan <strong>Hapus</strong>.
                 </p>
             </div>
             <button type="button" class="modal-close" onclick="closeModal('modalAturIzinPeran')" style="color: #ffffff; font-size: 1.75rem;">&times;</button>
@@ -392,25 +392,28 @@
                     </div>
                 </div>
 
-                {{-- FILTER KATEGORI AKSI (EDIT SENDIRI, HAPUS SENDIRI, INPUT, LIHAT) --}}
+                {{-- FILTER KATEGORI MODUL ALUR KERJA --}}
                 <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; padding-top: 0.4rem; border-top: 1px dashed #e2e8f0;">
-                    <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;" id="permCategoryFilterNav">
+                    <div style="display: flex; gap: 0.35rem; flex-wrap: wrap;" id="permCategoryFilterNav">
                         <button type="button" onclick="filterModalCategory('ALL', this)" class="cat-filter-btn" style="font-size: 0.775rem; font-weight: 800; padding: 0.35rem 0.75rem; border-radius: 6px; border: 1.5px solid #0284c7; background: #0284c7; color: #ffffff; cursor: pointer; transition: all 0.15s;">
-                            ✨ Semua Kategori
+                            ✨ Semua Modul
                         </button>
-                        <button type="button" onclick="filterModalCategory('edit', this)" class="cat-filter-btn" style="font-size: 0.775rem; font-weight: 800; padding: 0.35rem 0.75rem; border-radius: 6px; border: 1.5px solid #fcd34d; background: #fffbeb; color: #b45309; cursor: pointer; transition: all 0.15s;">
-                            ✏️ Edit &amp; Koreksi
+                        <button type="button" onclick="filterModalCategory('INBOUND', this)" class="cat-filter-btn" style="font-size: 0.775rem; font-weight: 800; padding: 0.35rem 0.75rem; border-radius: 6px; border: 1.5px solid #cbd5e1; background: #ffffff; color: #475569; cursor: pointer; transition: all 0.15s;">
+                            🚚 Inbound
                         </button>
-                        <button type="button" onclick="filterModalCategory('delete', this)" class="cat-filter-btn" style="font-size: 0.775rem; font-weight: 800; padding: 0.35rem 0.75rem; border-radius: 6px; border: 1.5px solid #fca5a5; background: #fef2f2; color: #dc2626; cursor: pointer; transition: all 0.15s;">
-                            🗑️ Hapus &amp; Batal
+                        <button type="button" onclick="filterModalCategory('GUDANG', this)" class="cat-filter-btn" style="font-size: 0.775rem; font-weight: 800; padding: 0.35rem 0.75rem; border-radius: 6px; border: 1.5px solid #cbd5e1; background: #ffffff; color: #475569; cursor: pointer; transition: all 0.15s;">
+                            📦 Gudang Bahan
                         </button>
-                        <button type="button" onclick="filterModalCategory('create', this)" class="cat-filter-btn" style="font-size: 0.775rem; font-weight: 800; padding: 0.35rem 0.75rem; border-radius: 6px; border: 1.5px solid #86efac; background: #f0fdf4; color: #15803d; cursor: pointer; transition: all 0.15s;">
-                            ➕ Input &amp; Transaksi
+                        <button type="button" onclick="filterModalCategory('PRODUKSI', this)" class="cat-filter-btn" style="font-size: 0.775rem; font-weight: 800; padding: 0.35rem 0.75rem; border-radius: 6px; border: 1.5px solid #cbd5e1; background: #ffffff; color: #475569; cursor: pointer; transition: all 0.15s;">
+                            🏭 Produksi Pabrik
                         </button>
-                        <button type="button" onclick="filterModalCategory('view', this)" class="cat-filter-btn" style="font-size: 0.775rem; font-weight: 800; padding: 0.35rem 0.75rem; border-radius: 6px; border: 1.5px solid #7dd3fc; background: #f0f9ff; color: #0284c7; cursor: pointer; transition: all 0.15s;">
-                            👁️ Lihat / Read-Only
+                        <button type="button" onclick="filterModalCategory('STOK_PRODUKSI', this)" class="cat-filter-btn" style="font-size: 0.775rem; font-weight: 800; padding: 0.35rem 0.75rem; border-radius: 6px; border: 1.5px solid #cbd5e1; background: #ffffff; color: #475569; cursor: pointer; transition: all 0.15s;">
+                            🗃️ Stok Hasil Produksi
                         </button>
-                        <button type="button" onclick="filterModalCategory('master', this)" class="cat-filter-btn" style="font-size: 0.775rem; font-weight: 800; padding: 0.35rem 0.75rem; border-radius: 6px; border: 1.5px solid #d8b4fe; background: #faf5ff; color: #7c3aed; cursor: pointer; transition: all 0.15s;">
+                        <button type="button" onclick="filterModalCategory('PENJUALAN', this)" class="cat-filter-btn" style="font-size: 0.775rem; font-weight: 800; padding: 0.35rem 0.75rem; border-radius: 6px; border: 1.5px solid #cbd5e1; background: #ffffff; color: #475569; cursor: pointer; transition: all 0.15s;">
+                            🛒 Penjualan
+                        </button>
+                        <button type="button" onclick="filterModalCategory('MASTER', this)" class="cat-filter-btn" style="font-size: 0.775rem; font-weight: 800; padding: 0.35rem 0.75rem; border-radius: 6px; border: 1.5px solid #cbd5e1; background: #ffffff; color: #475569; cursor: pointer; transition: all 0.15s;">
                             📁 Master Data
                         </button>
                     </div>
@@ -427,61 +430,140 @@
                 </div>
             </div>
 
-            {{-- SCROLLABLE PERMISSIONS CONTAINER --}}
+            {{-- SCROLLABLE PERMISSIONS CONTAINER (MODULE-BASED MATRIX TABLES) --}}
             <div class="modal-body" style="padding: 1.25rem 1.75rem; flex: 1 1 auto; overflow-y: auto; max-height: calc(100vh - 290px); background: #f8fafc;">
-                <div style="display: flex; flex-direction: column; gap: 1.15rem;">
-                    @foreach ($modules as $modKey => $module)
-                        <div class="perm-category-block" data-category="{{ $module['category_key'] ?? 'other' }}" style="background: #ffffff; border: 1.5px solid {{ $module['border_color'] ?? '#e2e8f0' }}; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
-                            {{-- HEADER KATEGORI DENGAN WARNA KHUSUS --}}
-                            <div style="background: {{ $module['bg_color'] ?? '#f8fafc' }}; padding: 0.65rem 1rem; border-bottom: 1px solid {{ $module['border_color'] ?? '#e2e8f0' }}; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+                    @foreach ($modules as $modKey => $group)
+                        <div class="perm-category-block" data-category="{{ $group['group_key'] ?? $modKey }}" style="background: #ffffff; border: 1.5px solid {{ $group['border_color'] ?? '#e2e8f0' }}; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+                            {{-- HEADER DOMAIN GRUP --}}
+                            <div style="background: {{ $group['bg_color'] ?? '#f8fafc' }}; padding: 0.75rem 1.15rem; border-bottom: 1.5px solid {{ $group['border_color'] ?? '#e2e8f0' }}; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
                                 <div>
-                                    <span style="font-weight: 800; font-size: 0.875rem; color: {{ $module['theme_color'] ?? '#0f172a' }};">
-                                        {{ $module['title'] }}
-                                    </span>
-                                    <div style="font-size: 0.725rem; color: #64748b; margin-top: 0.15rem;">
-                                        {{ $module['desc'] ?? '' }}
+                                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                        <span style="font-weight: 800; font-size: 0.925rem; color: #0f172a;">
+                                            {{ $group['group_title'] ?? $modKey }}
+                                        </span>
+                                        <span style="font-size: 0.675rem; font-weight: 800; background: #ffffff; color: {{ $group['badge_color'] ?? '#334155' }}; padding: 0.15rem 0.5rem; border-radius: 6px; border: 1px solid {{ $group['border_color'] ?? '#cbd5e1' }};">
+                                            {{ count($group['modules'] ?? []) }} Fitur
+                                        </span>
+                                    </div>
+                                    <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.15rem;">
+                                        {{ $group['group_desc'] ?? '' }}
                                     </div>
                                 </div>
-                                <span style="font-size: 0.7rem; font-weight: 800; background: {{ $module['badge_bg'] ?? '#e2e8f0' }}; color: {{ $module['badge_text'] ?? '#334155' }}; padding: 0.2rem 0.55rem; border-radius: 6px; border: 1px solid {{ $module['border_color'] ?? '#cbd5e1' }};">
-                                    {{ count($module['items']) }} Izin Fitur
-                                </span>
+                                <button type="button" 
+                                        onclick="toggleGroupPermissions('{{ $group['group_key'] ?? $modKey }}')" 
+                                        class="btn btn-secondary btn-sm" 
+                                        style="font-size: 0.725rem; padding: 0.2rem 0.65rem; border-radius: 6px; font-weight: 700; background: #ffffff;">
+                                    ⚡ Toggle Grup Ini
+                                </button>
                             </div>
 
-                            {{-- CHECKBOX ITEMS GRID --}}
-                            <div style="padding: 0.85rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 0.65rem;">
-                                @foreach ($module['items'] as $itemKey => $item)
-                                    @php
-                                        $itemAction = $item['action'] ?? 'OTHER';
-                                        $badgeStyle = 'background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1;';
-                                        if ($itemAction === 'EDIT') $badgeStyle = 'background: #fffbeb; color: #b45309; border: 1px solid #fde68a;';
-                                        elseif ($itemAction === 'DELETE') $badgeStyle = 'background: #fef2f2; color: #dc2626; border: 1px solid #fca5a5;';
-                                        elseif ($itemAction === 'CREATE') $badgeStyle = 'background: #f0fdf4; color: #15803d; border: 1px solid #86efac;';
-                                        elseif ($itemAction === 'VIEW') $badgeStyle = 'background: #f0f9ff; color: #0284c7; border: 1px solid #7dd3fc;';
-                                        elseif ($itemAction === 'MANAGE') $badgeStyle = 'background: #faf5ff; color: #7c3aed; border: 1px solid #d8b4fe;';
-                                    @endphp
-                                    <label class="perm-item-label" style="display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.65rem 0.85rem; border-radius: 8px; border: 1px solid #e2e8f0; background: #ffffff; cursor: pointer; transition: all 0.15s; position: relative;" onmouseover="this.style.borderColor='#94a3b8'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.03)';" onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none';">
-                                        <input type="checkbox" 
-                                               class="modal-perm-checkbox" 
-                                               id="chk_perm_{{ $itemKey }}" 
-                                               name="permissions[]" 
-                                               value="{{ $itemKey }}" 
-                                               style="width: 18px; height: 18px; accent-color: #0284c7; margin-top: 0.15rem; cursor: pointer; flex-shrink: 0;">
-                                        <div style="flex: 1 1 auto;">
-                                            <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.4rem; margin-bottom: 0.2rem;">
-                                                <strong style="color: #0f172a; font-size: 0.825rem;">{{ $item['label'] }}</strong>
-                                                <span style="font-size: 0.65rem; font-weight: 800; padding: 0.1rem 0.45rem; border-radius: 4px; {{ $badgeStyle }} flex-shrink: 0;">
-                                                    {{ $itemAction }}
-                                                </span>
-                                            </div>
-                                            <div style="color: #64748b; font-size: 0.725rem; line-height: 1.35;">
-                                                {{ $item['desc'] }}
-                                            </div>
-                                            <div style="font-size: 0.675rem; color: #94a3b8; font-family: monospace; margin-top: 0.2rem;">
-                                                key: {{ $itemKey }}
-                                            </div>
-                                        </div>
-                                    </label>
-                                @endforeach
+                            {{-- TABEL MATRIKS FITUR DENGAN AKSI LENGKAP --}}
+                            <div style="overflow-x: auto;">
+                                <table style="width: 100%; border-collapse: collapse; font-size: 0.8125rem;">
+                                    <thead>
+                                        <tr style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; color: #475569; font-size: 0.725rem; text-transform: uppercase; letter-spacing: 0.04em;">
+                                            <th style="padding: 0.6rem 1rem; text-align: left; font-weight: 700;">Fitur &amp; Keterangan Modul</th>
+                                            <th style="padding: 0.6rem 0.5rem; text-align: center; width: 90px; font-weight: 700; color: #0284c7;">👁️ Lihat</th>
+                                            <th style="padding: 0.6rem 0.5rem; text-align: center; width: 90px; font-weight: 700; color: #16a34a;">➕ Input</th>
+                                            <th style="padding: 0.6rem 0.5rem; text-align: center; width: 90px; font-weight: 700; color: #d97706;">✏️ Edit</th>
+                                            <th style="padding: 0.6rem 0.5rem; text-align: center; width: 90px; font-weight: 700; color: #dc2626;">🗑️ Hapus</th>
+                                            <th style="padding: 0.6rem 0.75rem; text-align: center; width: 95px; font-weight: 700;">Aksi Baris</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach ($group['modules'] ?? [] as $subKey => $subMod)
+                                            <tr style="border-bottom: 1px solid #f1f5f9; transition: background 0.15s;" onmouseover="this.style.backgroundColor='#fafafa';" onmouseout="this.style.backgroundColor='#ffffff';">
+                                                <td style="padding: 0.65rem 1rem;">
+                                                    <div style="font-weight: 700; color: #0f172a; font-size: 0.835rem;">
+                                                        {{ $subMod['label'] }}
+                                                    </div>
+                                                    <div style="font-size: 0.72rem; color: #64748b; margin-top: 0.15rem; line-height: 1.35;">
+                                                        {{ $subMod['desc'] }}
+                                                    </div>
+                                                </td>
+
+                                                {{-- 1. LIHAT (VIEW) --}}
+                                                @php $actView = $subMod['actions']['view'] ?? null; @endphp
+                                                <td style="padding: 0.45rem 0.5rem; text-align: center; vertical-align: middle;">
+                                                    @if ($actView)
+                                                        <label style="display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0.2rem;" title="{{ $actView['label'] }} ({{ $actView['key'] }})">
+                                                            <input type="checkbox" 
+                                                                   class="modal-perm-checkbox perm-sub-{{ $subKey }}" 
+                                                                   id="chk_perm_{{ $actView['key'] }}" 
+                                                                   name="permissions[]" 
+                                                                   value="{{ $actView['key'] }}" 
+                                                                   style="width: 18px; height: 18px; accent-color: #0284c7; cursor: pointer;">
+                                                        </label>
+                                                    @else
+                                                        <span style="color: #cbd5e1; font-weight: bold;">—</span>
+                                                    @endif
+                                                </td>
+
+                                                {{-- 2. INPUT / CREATE --}}
+                                                @php $actCreate = $subMod['actions']['create'] ?? null; @endphp
+                                                <td style="padding: 0.45rem 0.5rem; text-align: center; vertical-align: middle;">
+                                                    @if ($actCreate)
+                                                        <label style="display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0.2rem;" title="{{ $actCreate['label'] }} ({{ $actCreate['key'] }})">
+                                                            <input type="checkbox" 
+                                                                   class="modal-perm-checkbox perm-sub-{{ $subKey }}" 
+                                                                   id="chk_perm_{{ $actCreate['key'] }}" 
+                                                                   name="permissions[]" 
+                                                                   value="{{ $actCreate['key'] }}" 
+                                                                   style="width: 18px; height: 18px; accent-color: #16a34a; cursor: pointer;">
+                                                        </label>
+                                                    @else
+                                                        <span style="color: #cbd5e1; font-weight: bold;">—</span>
+                                                    @endif
+                                                </td>
+
+                                                {{-- 3. EDIT --}}
+                                                @php $actEdit = $subMod['actions']['edit'] ?? null; @endphp
+                                                <td style="padding: 0.45rem 0.5rem; text-align: center; vertical-align: middle;">
+                                                    @if ($actEdit)
+                                                        <label style="display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0.2rem;" title="{{ $actEdit['label'] }} ({{ $actEdit['key'] }})">
+                                                            <input type="checkbox" 
+                                                                   class="modal-perm-checkbox perm-sub-{{ $subKey }}" 
+                                                                   id="chk_perm_{{ $actEdit['key'] }}" 
+                                                                   name="permissions[]" 
+                                                                   value="{{ $actEdit['key'] }}" 
+                                                                   style="width: 18px; height: 18px; accent-color: #d97706; cursor: pointer;">
+                                                        </label>
+                                                    @else
+                                                        <span style="color: #cbd5e1; font-weight: bold;">—</span>
+                                                    @endif
+                                                </td>
+
+                                                {{-- 4. HAPUS / DELETE / VOID --}}
+                                                @php $actDelete = $subMod['actions']['delete'] ?? null; @endphp
+                                                <td style="padding: 0.45rem 0.5rem; text-align: center; vertical-align: middle;">
+                                                    @if ($actDelete)
+                                                        <label style="display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0.2rem;" title="{{ $actDelete['label'] }} ({{ $actDelete['key'] }})">
+                                                            <input type="checkbox" 
+                                                                   class="modal-perm-checkbox perm-sub-{{ $subKey }}" 
+                                                                   id="chk_perm_{{ $actDelete['key'] }}" 
+                                                                   name="permissions[]" 
+                                                                   value="{{ $actDelete['key'] }}" 
+                                                                   style="width: 18px; height: 18px; accent-color: #dc2626; cursor: pointer;">
+                                                        </label>
+                                                    @else
+                                                        <span style="color: #cbd5e1; font-weight: bold;">—</span>
+                                                    @endif
+                                                </td>
+
+                                                {{-- AKSI TOGGLE BARIS --}}
+                                                <td style="padding: 0.45rem 0.75rem; text-align: center; vertical-align: middle;">
+                                                    <button type="button" 
+                                                            onclick="toggleRowPermissions('{{ $subKey }}')" 
+                                                            class="btn btn-secondary btn-sm" 
+                                                            style="font-size: 0.7rem; padding: 0.2rem 0.55rem; border-radius: 5px; font-weight: 700; white-space: nowrap;">
+                                                        Pilih Baris
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     @endforeach
@@ -571,6 +653,22 @@
                 });
             }
         });
+    }
+
+    function toggleRowPermissions(subKey) {
+        const checkboxes = document.querySelectorAll('.perm-sub-' + subKey);
+        if (checkboxes.length === 0) return;
+        const anyUnchecked = Array.from(checkboxes).some(c => !c.checked);
+        checkboxes.forEach(c => c.checked = anyUnchecked);
+    }
+
+    function toggleGroupPermissions(groupKey) {
+        const block = document.querySelector('.perm-category-block[data-category="' + groupKey + '"]');
+        if (!block) return;
+        const checkboxes = block.querySelectorAll('.modal-perm-checkbox');
+        if (checkboxes.length === 0) return;
+        const anyUnchecked = Array.from(checkboxes).some(c => !c.checked);
+        checkboxes.forEach(c => c.checked = anyUnchecked);
     }
 
     function autoFillKaryawan(selectElem) {

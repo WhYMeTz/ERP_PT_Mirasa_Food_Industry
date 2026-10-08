@@ -193,7 +193,7 @@
                             </button>
                         </div>
                         @if (!$isLocked && Auth::user()?->canEditQc())
-                            <a href="{{ route('qc.inbound.edit', $qc->qc_id) }}" style="font-size: 0.75rem; font-weight: 600; color: #64748b; text-decoration: none;">
+                            <a href="{{ route('qc.inbound.edit', [$qc->qc_id, 'ref' => 'index']) }}" style="font-size: 0.75rem; font-weight: 600; color: #64748b; text-decoration: none;">
                                 ✏ Edit Data
                             </a>
                         @endif
@@ -296,7 +296,7 @@
                                 </button>
                             </div>
                             @if (!$isLocked && Auth::user()?->canEditQc())
-                                <a href="{{ route('qc.inbound.edit', $p2->qc_id) }}" style="font-size: 0.75rem; font-weight: 600; color: #64748b; text-decoration: none;">
+                                <a href="{{ route('qc.inbound.edit', [$p2->qc_id, 'ref' => 'index']) }}" style="font-size: 0.75rem; font-weight: 600; color: #64748b; text-decoration: none;">
                                     ✏ Edit Data
                                 </a>
                             @endif

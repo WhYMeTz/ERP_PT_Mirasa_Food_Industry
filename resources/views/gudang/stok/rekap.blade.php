@@ -446,7 +446,8 @@
                                 <button type="button" 
                                         class="btn-action-trigger" 
                                         onclick="toggleSmartActionDropdown(this, event, '{{ $menuId }}')">
-                                    Aksi &#9660;
+                                    <span>Aksi</span>
+                                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                                 </button>
                                 <div id="{{ $menuId }}" class="action-dropdown-menu">
                                     <a href="{{ route('gudang.stok.ledger', ['barang_id' => $item->barang_id, 'gudang_id' => $gudangId]) }}" class="action-dropdown-item">

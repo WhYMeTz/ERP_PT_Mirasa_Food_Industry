@@ -46,27 +46,29 @@
     white-space: nowrap;
 }
 
-/* Smart Action Dropdown Button */
+/* Smart Action Dropdown Button (Sama Persis dengan Standar Modul PO) */
 .btn-action-trigger {
     background: #ffffff;
-    border: 1px solid #cbd5e1;
-    color: #334155;
-    padding: 0.3rem 0.6rem;
+    border: 1.5px solid #cbd5e1;
+    color: #1e293b;
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 0.32rem 0.75rem;
     border-radius: 6px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    cursor: pointer;
     display: inline-flex;
     align-items: center;
     gap: 0.35rem;
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
     transition: all 0.15s ease;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    white-space: nowrap;
 }
 
-.btn-action-trigger:hover {
-    background: #f8fafc;
-    border-color: #94a3b8;
-    color: #0f172a;
+.btn-action-trigger:hover,
+.btn-action-trigger.active {
+    background: #f0fdf4;
+    border-color: #059669;
+    color: #059669;
 }
 
 /* Smart Action Dropdown Menu (Fixed Position to avoid table scroll clipping) */
@@ -116,8 +118,8 @@
 }
 
 .action-dropdown-item:hover {
-    background: #f1f5f9;
-    color: #0284c7;
+    background: #f0fdf4;
+    color: #059669;
 }
 
 .action-dropdown-item.danger-item {
@@ -126,7 +128,7 @@
 
 .action-dropdown-item.danger-item:hover {
     background: #fef2f2;
-    color: #b91c1c;
+    color: #dc2626;
 }
 
 .action-dropdown-divider {
@@ -574,33 +576,34 @@
     color: #1e293b;
 }
 
-/* Accordion Toggle Button (Enterprise Minimalist) */
+/* Accordion Toggle Button (Audit Rincian Biaya HPP - Standar PO) */
 .btn-accordion-toggle {
     display: inline-flex;
     align-items: center;
     gap: 0.35rem;
     background: #ffffff;
-    border: 1px solid #cbd5e1;
-    color: #334155;
-    font-size: 0.725rem;
-    font-weight: 600;
-    padding: 0.25rem 0.5rem;
-    border-radius: 4px;
+    border: 1.5px solid #cbd5e1;
+    color: #1e293b;
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 0.32rem 0.65rem;
+    border-radius: 6px;
     cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
     transition: all 0.15s ease;
     white-space: nowrap;
 }
 
 .btn-accordion-toggle:hover {
-    background: #f1f5f9;
-    color: #0f172a;
-    border-color: #94a3b8;
+    background: #f0fdf4;
+    color: #059669;
+    border-color: #059669;
 }
 
 .btn-accordion-toggle.active {
-    background: #0f172a;
+    background: #059669;
     color: #ffffff;
-    border-color: #0f172a;
+    border-color: #059669;
 }
 
 .btn-accordion-toggle svg {

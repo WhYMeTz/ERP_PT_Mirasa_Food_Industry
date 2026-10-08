@@ -1,0 +1,497 @@
+/* ═══════════════════════════════════════════════════════════════
+   STYLESHEET MODUL ADJUSTMENT
+   ERP PT Mirasa Food Industry - High Readability & No Horizontal Scroll
+   ═══════════════════════════════════════════════════════════════ */
+
+.adj-container {
+    width: 100%;
+    max-width: 100%;
+    margin: 0 auto;
+    padding-bottom: 2.5rem;
+}
+
+/* 1. Header Halaman */
+.adj-header-wrap {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+    background: #ffffff;
+    padding: 1.25rem 1.5rem;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.adj-title-area h1 {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0 0 0.25rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+}
+
+.adj-subtitle {
+    font-size: 0.825rem;
+    color: #64748b;
+    margin: 0;
+}
+
+.adj-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.btn-adj-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: #0284c7;
+    color: #ffffff;
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 0.6rem 1.125rem;
+    border-radius: 6px;
+    text-decoration: none;
+    border: 1px solid #0284c7;
+    transition: all 0.18s ease;
+    cursor: pointer;
+}
+
+.btn-adj-primary:hover {
+    background: #0369a1;
+    border-color: #0369a1;
+    color: #ffffff;
+}
+
+.btn-adj-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: #f8fafc;
+    color: #475569;
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 0.6rem 1rem;
+    border-radius: 6px;
+    text-decoration: none;
+    border: 1px solid #cbd5e1;
+    transition: all 0.18s ease;
+    cursor: pointer;
+}
+
+.btn-adj-secondary:hover {
+    background: #f1f5f9;
+    color: #1e293b;
+}
+
+/* 2. KPI Metrics Grid */
+.adj-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+}
+
+.adj-metric-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+    position: relative;
+    overflow: hidden;
+}
+
+.adj-metric-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+}
+
+.adj-metric-card.blue::before { background: #0284c7; }
+.adj-metric-card.indigo::before { background: #6366f1; }
+.adj-metric-card.red::before { background: #ef4444; }
+.adj-metric-card.emerald::before { background: #10b981; }
+
+.adj-metric-label {
+    font-size: 0.725rem;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-bottom: 0.35rem;
+}
+
+.adj-metric-val {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: #0f172a;
+    font-family: 'Consolas', 'Courier New', monospace;
+}
+
+.adj-metric-sub {
+    font-size: 0.725rem;
+    color: #94a3b8;
+    margin-top: 0.25rem;
+}
+
+/* 3. Filter Box Sesuai Blueprint */
+.adj-filter-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1.125rem 1.25rem;
+    margin-bottom: 1.25rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.adj-filter-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.875rem;
+    align-items: flex-end;
+}
+
+.adj-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.adj-form-group label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #475569;
+}
+
+.adj-form-control {
+    width: 100%;
+    padding: 0.45rem 0.65rem;
+    font-size: 0.825rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #1e293b;
+    outline: none;
+    transition: border-color 0.15s ease;
+}
+
+.adj-form-control:focus {
+    border-color: #0284c7;
+    box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.15);
+}
+
+.adj-filter-buttons {
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   4. TABEL ADJUSTMENT TANPA SCROLL KANAN-KIRI (FIT 100% CONTAINER)
+   ═══════════════════════════════════════════════════════════════ */
+.adj-table-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+/* Hilangkan overflow horizontal, tabel pas 100% */
+.adj-table-responsive {
+    width: 100%;
+    overflow-x: hidden;
+}
+
+.adj-table-compact {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.825rem;
+    table-layout: auto;
+}
+
+.adj-table-compact th {
+    background: #f8fafc;
+    color: #334155;
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.725rem;
+    letter-spacing: 0.03em;
+    padding: 0.75rem 0.875rem;
+    border-bottom: 2px solid #cbd5e1;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.adj-table-compact td {
+    padding: 0.75rem 0.875rem;
+    border-bottom: 1px solid #f1f5f9;
+    color: #1e293b;
+    vertical-align: middle;
+}
+
+.adj-table-compact tbody tr {
+    transition: background-color 0.12s ease;
+}
+
+.adj-table-compact tbody tr:hover {
+    background-color: #f8fafc;
+}
+
+/* Cell Stacking Styles for High Readability */
+.cell-doc-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.cell-doc-no {
+    font-family: 'Consolas', monospace;
+    font-weight: 700;
+    color: #0284c7;
+    font-size: 0.825rem;
+    text-decoration: none;
+}
+
+.cell-doc-no:hover {
+    text-decoration: underline;
+}
+
+.cell-badge-gudang {
+    display: inline-block;
+    padding: 0.12rem 0.4rem;
+    font-size: 0.675rem;
+    font-weight: 600;
+    background: #f1f5f9;
+    color: #475569;
+    border-radius: 4px;
+    width: fit-content;
+}
+
+.cell-barang-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.cell-barang-nm {
+    font-weight: 700;
+    color: #0f172a;
+    font-size: 0.85rem;
+}
+
+.cell-barang-meta {
+    font-size: 0.725rem;
+    color: #64748b;
+    font-family: 'Consolas', monospace;
+}
+
+/* Komparasi Stok (Sistem vs Fisik) */
+.cell-stock-compare {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    font-size: 0.8rem;
+    background: #fafaf9;
+    padding: 0.45rem 0.65rem;
+    border-radius: 6px;
+    border: 1px solid #e7e5e4;
+}
+
+.stock-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.stock-line-label {
+    font-size: 0.7rem;
+    color: #78716c;
+    font-weight: 600;
+}
+
+.stock-line-val {
+    font-family: 'Consolas', monospace;
+    font-weight: 600;
+}
+
+.stock-line.fisik .stock-line-label {
+    color: #0f766e;
+    font-weight: 700;
+}
+
+.stock-line.fisik .stock-line-val {
+    color: #0f766e;
+    font-weight: 700;
+}
+
+/* Selisih Badge & Nominal */
+.cell-selisih-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.2rem;
+}
+
+.badge-adj-defisit {
+    display: inline-block;
+    padding: 0.2rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #b91c1c;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 4px;
+    font-family: 'Consolas', 'Courier New', monospace;
+}
+
+.badge-adj-surplus {
+    display: inline-block;
+    padding: 0.2rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #15803d;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 4px;
+    font-family: 'Consolas', 'Courier New', monospace;
+}
+
+.badge-adj-match {
+    display: inline-block;
+    padding: 0.2rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #64748b;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    font-family: 'Consolas', 'Courier New', monospace;
+}
+
+.val-selisih-rp {
+    font-size: 0.8rem;
+    font-family: 'Consolas', monospace;
+    font-weight: 700;
+}
+
+/* Keterangan & Alasan */
+.cell-alasan-text {
+    font-size: 0.775rem;
+    color: #475569;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.cell-kategori-tag {
+    display: inline-block;
+    font-size: 0.675rem;
+    font-weight: 700;
+    color: #0284c7;
+    background: #e0f2fe;
+    padding: 0.1rem 0.35rem;
+    border-radius: 3px;
+    margin-bottom: 0.2rem;
+    text-transform: uppercase;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   5. SMART ACTION DROPDOWN STANDAR ERP MIRASA (Position: Fixed)
+   ═══════════════════════════════════════════════════════════════ */
+.btn-action-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    color: #334155;
+    padding: 0.35rem 0.65rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+}
+
+.btn-action-trigger:hover {
+    background: #f1f5f9;
+    border-color: #94a3b8;
+}
+
+.action-dropdown-menu {
+    display: none;
+    position: fixed;
+    z-index: 9999;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    min-width: 160px;
+    padding: 0.35rem 0;
+}
+
+.action-dropdown-menu.show {
+    display: block;
+}
+
+.action-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.85rem;
+    font-size: 0.8rem;
+    color: #334155;
+    text-decoration: none;
+    background: transparent;
+    border: none;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.action-dropdown-item:hover {
+    background: #f8fafc;
+    color: #0f172a;
+}
+
+.action-dropdown-item.danger {
+    color: #dc2626;
+}
+
+.action-dropdown-item.danger:hover {
+    background: #fef2f2;
+    color: #b91c1c;
+}
+
+/* 6. Empty State & Pagination */
+.adj-empty-state {
+    padding: 3rem 1.5rem;
+    text-align: center;
+    color: #64748b;
+}
+
+.adj-pagination-wrap {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.875rem 1.25rem;
+    border-top: 1px solid #e2e8f0;
+    background: #ffffff;
+}

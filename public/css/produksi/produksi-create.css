@@ -399,7 +399,245 @@
     margin-top: 0.25rem;
 }
 
+/* ========================================================
+   SECTION 6: FACTORY OVERHEAD (FOH) ENTERPRISE LAYOUT
+   ======================================================== */
+.foh-header-wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.foh-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.btn-foh-manage {
+    font-size: 0.75rem;
+    padding: 0.35rem 0.75rem;
+    font-weight: 700;
+    border: 1px solid #0284c7;
+    color: #0284c7;
+    background: #f0f9ff;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    transition: all 0.15s ease;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.btn-foh-manage:hover {
+    background: #0284c7;
+    color: #ffffff;
+    box-shadow: 0 2px 4px rgba(2, 132, 199, 0.2);
+}
+
+.btn-foh-reset {
+    font-size: 0.75rem;
+    padding: 0.35rem 0.75rem;
+    font-weight: 700;
+    border: 1px solid #cbd5e1;
+    color: #475569;
+    background: #ffffff;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    transition: all 0.15s ease;
+    cursor: pointer;
+}
+
+.btn-foh-reset:hover {
+    background: #f8fafc;
+    border-color: #94a3b8;
+    color: #0f172a;
+}
+
+.badge-foh-subtotal {
+    font-size: 0.8125rem;
+    font-weight: 800;
+    color: #0f172a;
+    background: #f1f5f9;
+    border: 1.5px solid #cbd5e1;
+    padding: 0.35rem 0.75rem;
+    border-radius: 6px;
+    letter-spacing: 0.01em;
+}
+
+.foh-subpanel {
+    border-radius: 8px;
+    padding: 1rem 1.15rem;
+    margin-bottom: 0.85rem;
+    border: 1px solid #e2e8f0;
+}
+
+.foh-subpanel:last-child {
+    margin-bottom: 0;
+}
+
+.foh-subpanel-variable {
+    background: #ffffff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.foh-subpanel-fixed {
+    background: #f8fafc;
+}
+
+.foh-subpanel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.85rem;
+    padding-bottom: 0.45rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.foh-subpanel-title {
+    font-size: 0.75rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.foh-subpanel-variable .foh-subpanel-title {
+    color: #0369a1;
+}
+
+.foh-subpanel-fixed .foh-subpanel-title {
+    color: #475569;
+}
+
+.foh-subpanel-meta {
+    font-size: 0.7rem;
+    color: #64748b;
+    font-weight: 600;
+}
+
+.foh-grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.85rem;
+}
+
+.foh-field-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 0.7rem 0.85rem;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.foh-field-card:focus-within {
+    border-color: #0284c7;
+    box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.12);
+}
+
+.foh-field-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.35rem;
+}
+
+.foh-field-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #334155;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.foh-rate-pill {
+    font-size: 0.675rem;
+    font-weight: 700;
+    color: #0284c7;
+    background: #f0f9ff;
+    border: 1px solid #bae6fd;
+    padding: 0.1rem 0.45rem;
+    border-radius: 4px;
+    white-space: nowrap;
+}
+
+.foh-rate-pill.pill-flat {
+    color: #047857;
+    background: #ecfdf5;
+    border-color: #a7f3d0;
+}
+
+.foh-rate-pill.pill-nota {
+    color: #64748b;
+    background: #f8fafc;
+    border-color: #cbd5e1;
+}
+
+.foh-input-group {
+    display: flex;
+    align-items: stretch;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.foh-input-addon {
+    background: #f1f5f9;
+    color: #64748b;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0 0.55rem;
+    display: flex;
+    align-items: center;
+    border: 1px solid #cbd5e1;
+    border-right: none;
+    border-radius: 6px 0 0 6px;
+    user-select: none;
+}
+
+.foh-input-group .form-control {
+    border-radius: 0 6px 6px 0;
+    border: 1px solid #cbd5e1;
+    font-weight: 700;
+    font-size: 0.875rem;
+    color: #0f172a;
+    text-align: right;
+    padding: 0.35rem 0.65rem;
+    width: 100%;
+}
+
+.foh-input-group .form-control:focus {
+    border-color: #0284c7;
+    outline: none;
+    z-index: 2;
+}
+
+.foh-field-help {
+    font-size: 0.685rem;
+    color: #64748b;
+    display: block;
+    margin-top: 0.3rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 /* Responsive */
+@media (max-width: 1024px) {
+    .foh-grid-3 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
 @media (max-width: 900px) {
     .shift-workspace-grid {
         grid-template-columns: 1fr;
@@ -414,3 +652,18 @@
         grid-template-columns: 1fr;
     }
 }
+
+@media (max-width: 640px) {
+    .foh-grid-3 {
+        grid-template-columns: 1fr;
+    }
+    .foh-header-wrapper {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .foh-toolbar {
+        width: 100%;
+        justify-content: space-between;
+    }
+}
+

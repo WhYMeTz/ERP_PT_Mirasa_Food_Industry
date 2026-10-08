@@ -130,19 +130,92 @@
         return `${expYear}-${expMonth}-${expDay}`;
     }
 
+    // Helper: Dapatkan format batch tanggal (DD MM YYYY) dari field tanggal produksi
+    function getDateBatch() {
+        const tgl = document.getElementById('produksi_tgl')?.value || '';
+        if (!tgl) return '-';
+        const parts = tgl.split('-');
+        if (parts.length === 3) {
+            return `${parts[2]} ${parts[1]} ${parts[0]}`;
+        }
+        return '-';
+    }
+
+    // Helper: Tentukan apakah produk adalah WIP Curah (perlu format batch tanggal, bukan range karton)
+    // WIP Curah = Berko, Asin Barco, Asin Sawit, No Salt, Balo Gelombang — semua produk curah timbangan
+    function isCurahWipProduct(cd, nm) {
+        const c = (cd || '').toUpperCase();
+        const n = (nm || '').toUpperCase();
+        return (
+            c.includes('BRK') || n.includes('BERKO') ||
+            c.includes('ASB') || n.includes('ASIN BARCO') ||
+            c.includes('ASW') || n.includes('ASIN SAWIT') ||
+            c.includes('NSL') || n.includes('NO SALT') ||
+            c.includes('BLQ') || n.includes('BALO') || n.includes('GELOMBANG') ||
+            // WIP curah lain yang tidak berkode FCC/IFL = curah
+            (c.startsWith('WIP-') && !c.includes('FCC') && !c.includes('IFL') && !c.includes('IFM'))
+        );
+    }
+
+    // Helper: Terapkan badge batch yang tepat ke satu baris tabel output (idx)
+    function applyBatchBadgeToRow(idx, sel) {
+        const opt = sel?.selectedOptions?.[0];
+        const cd = opt?.dataset?.cd || '';
+        const nm = opt?.dataset?.nm || '';
+
+        const isCurah = isCurahWipProduct(cd, nm);
+        const batchForItem = isCurah
+            ? getDateBatch()                                               // Curah → tanggal
+            : (document.getElementById('batch_wip_no')?.value || '-');    // Kemasan → range karton
+
+        const badgeFgBatch = document.getElementById(`badgeFgBatch_${idx}`);
+        const batchFgInput = document.getElementById(`batchFg_${idx}`);
+
+        if (badgeFgBatch) {
+            badgeFgBatch.textContent = batchForItem;
+            if (isCurah) {
+                // Hijau = curah/Berko → format tanggal
+                badgeFgBatch.style.background = '#f0fdf4';
+                badgeFgBatch.style.color = '#065f46';
+                badgeFgBatch.style.borderColor = '#a7f3d0';
+                badgeFgBatch.title = 'Batch Curah: Format Tanggal (DD MM YYYY)';
+            } else if (batchForItem && batchForItem !== '-') {
+                // Biru = kemasan karton IFM → format range
+                badgeFgBatch.style.background = '#f0f9ff';
+                badgeFgBatch.style.color = '#0369a1';
+                badgeFgBatch.style.borderColor = '#bae6fd';
+                badgeFgBatch.title = 'Batch Karton: Format Range Shift [NoAwal]-[NoAkhir]';
+            } else {
+                // Abu-abu = belum ada batch
+                badgeFgBatch.style.background = '#f8fafc';
+                badgeFgBatch.style.color = '#64748b';
+                badgeFgBatch.style.borderColor = '#cbd5e1';
+                badgeFgBatch.title = 'Kode Batch otomatis setelah Lini dipilih';
+            }
+        }
+        if (batchFgInput) batchFgInput.value = batchForItem;
+    }
+
     // Helper: Sinkronisasi Kode Batch Bagian 2 ke seluruh Baris Output Barang Jadi (Bagian 7)
+    // Per baris: kemasan IFM → range, WIP curah → tanggal
     window.syncBatchToOutputItems = function () {
-        const batchCode = document.getElementById('batch_wip_no')?.value || document.getElementById('liveBatchCode')?.textContent?.trim() || '';
-        if (!batchCode) return;
+        const tbody = document.getElementById('tbodyOutputFg');
+        if (!tbody) return;
 
-        document.querySelectorAll('input[id^="batchFg_"]').forEach(inp => {
-            inp.value = batchCode;
-        });
+        tbody.querySelectorAll('.row-output-fg').forEach(tr => {
+            const sel = tr.querySelector('.select-fg-barang');
+            if (!sel) return;
 
-        document.querySelectorAll('span[id^="badgeFgBatch_"]').forEach(badge => {
-            badge.textContent = batchCode;
+            // Ambil idx dari id row (fgRow_N)
+            const rowId = tr.id || '';
+            const idxMatch = rowId.match(/fgRow_(\d+)/);
+            if (!idxMatch) return;
+            const idx = idxMatch[1];
+
+            applyBatchBadgeToRow(idx, sel);
         });
     };
+
 
     // 3. Kalkulasi Rentang Karton & Kode Batch WIP / Barang Jadi
     window.updateKartonRangeAndBatch = function (skipSyncTable = false) {
@@ -157,8 +230,17 @@
         const selectedCd = selectedOpt?.getAttribute('data-cd') || '';
         const tgl = document.getElementById('produksi_tgl')?.value || '';
 
-        // Cek apakah Lini adalah Standar Indofood IFM (WIP-FCC berkarton urut 6 kg)
-        const isIfm = Boolean(lini && (selectedTipe === 'IFM' || lini.toUpperCase().includes('IFM') || selectedCd === 'IFM'));
+        // Cek apakah Lini adalah Standar Indofood IFM / IFL (WIP-FCC berkarton urut 6 kg)
+        const isIfm = Boolean(
+            lini && (
+                selectedTipe === 'IFM' || 
+                lini.toUpperCase().includes('IFM') || 
+                lini.toUpperCase().includes('IFL') || 
+                lini.toUpperCase().includes('INDOFOOD') || 
+                selectedCd === 'IFM' || 
+                selectedCd === 'IFL'
+            )
+        );
 
         // Cek apakah Lini adalah Olahan Curah WIP (Penggorengan / Keripik)
         const isWip = Boolean(
@@ -193,7 +275,7 @@
             if (colQtyKarton) colQtyKarton.style.display = 'block';
             if (rowShiftKartonGrid) rowShiftKartonGrid.style.gridTemplateColumns = '1.2fr 1fr 1fr 1fr';
 
-            if (cardHeaderTitle) cardHeaderTitle.textContent = '2. Shift Kerja, Penomoran Batch & Kemasan Karton (Standar Indofood IFM)';
+            if (cardHeaderTitle) cardHeaderTitle.textContent = '2. Shift Kerja, Penomoran Batch & Kemasan Karton (Standar Indofood IFL / IFM)';
             if (cardHeaderBadge) {
                 cardHeaderBadge.innerHTML = 'Format Batch Karton: [Shift][NoAwal] - [Shift][NoAkhir]';
                 cardHeaderBadge.style.background = '#f1f5f9';
@@ -320,22 +402,22 @@
     };
 
     // Handler Interaktif saat Lini Produksi Berubah:
-    // Otomatis menyesuaikan nomor batch, kartu kemasan, dan produk default di tabel hasil produksi
+    // Otomatis menyesuaikan produk default di tabel hasil produksi, nomor batch, dan kartu kemasan
     window.onLiniProduksiChange = function () {
-        window.updateKartonRangeAndBatch();
-
         const liniSelect = document.getElementById('lini_produksi');
         const lini = liniSelect?.value || '';
-        if (!lini) return;
 
         // Auto-select baris pertama di tabel hasil produksi sesuai lini yang dipilih
         const tbody = document.getElementById('tbodyOutputFg');
-        if (tbody && tbody.children.length === 0) {
-            window.addFgRow();
-        } else if (tbody && tbody.children.length > 0) {
-            autoSelectLiniBarang(0);
+        if (tbody) {
+            if (tbody.querySelectorAll('.row-output-fg').length === 0) {
+                window.addFgRow();
+            } else {
+                autoSelectLiniBarang(0);
+            }
         }
 
+        window.updateKartonRangeAndBatch();
         window.syncBatchToOutputItems();
     };
 
@@ -348,9 +430,17 @@
         const jam = document.getElementById('jam_produksi')?.value || '14:03';
         const varietas = document.getElementById('varietas_singkong')?.value || 'STP / MGU';
         const liniSelect = document.getElementById('lini_produksi');
+        const selectedOpt = liniSelect?.selectedOptions?.[0];
         const lini = liniSelect?.value || '';
-        const selectedTipe = liniSelect?.selectedOptions?.[0]?.getAttribute('data-tipe');
-        const isIfm = Boolean(lini && (selectedTipe === 'IFM' || lini.toUpperCase().includes('IFM')));
+        const selectedTipe = selectedOpt?.getAttribute('data-tipe');
+        const isIfm = Boolean(
+            lini && (
+                selectedTipe === 'IFM' || 
+                lini.toUpperCase().includes('IFM') || 
+                lini.toUpperCase().includes('IFL') || 
+                lini.toUpperCase().includes('INDOFOOD')
+            )
+        );
 
         // Format tanggal sticker DD MMM YYYY (cth: 19 AUG 2022 / 02 OKT 2026)
         const monthNamesUpper = ['JAN', 'FEB', 'MAR', 'APR', 'MEI', 'JUN', 'JUL', 'AUG', 'SEP', 'OKT', 'NOV', 'DES'];
@@ -483,6 +573,172 @@
         window.calcAll();
     };
 
+    // Standar Tarif Alokasi Biaya Overhead Pabrik (FOH) Dinamis dari Master Data
+    const initialFoh = window.appConfig?.initialFohRates || {};
+    window.FOH_RATES = {
+        QC: parseFloat(initialFoh.qc) || 49.97,
+        LISTRIK: parseFloat(initialFoh.listrik) || 223.80,
+        PEMELIHARAAN: parseFloat(initialFoh.pemeliharaan) || 23.34,
+        PENYUSUTAN: parseFloat(initialFoh.penyusutan) || 66.44,
+        KIMIA: parseFloat(initialFoh.kimia) || 45.09,
+        FOTOCOPY: parseFloat(initialFoh.fotocopy) || 28.00,
+        LIMBAH_PADAT_SHIFT: parseFloat(initialFoh.limbah_padat) || 180000.00
+    };
+
+    // Quick Modal Handlers
+    window.openQuickTarifModal = function () {
+        const modal = document.getElementById('modalQuickTarif');
+        if (modal) {
+            modal.style.display = 'flex';
+        }
+    };
+
+    window.closeQuickTarifModal = function () {
+        const modal = document.getElementById('modalQuickTarif');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+    };
+
+    window.submitQuickTarif = function () {
+        const btn = document.getElementById('btnSaveQuickTarif');
+        const form = document.getElementById('formQuickTarif');
+        if (!form) return;
+
+        const formData = new FormData(form);
+        const url = window.appConfig?.quickUpdateTarifUrl;
+        if (!url) return;
+
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<span>Menyimpan...</span>';
+        }
+
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                'Accept': 'application/json'
+            },
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>Simpan &amp; Terapkan ke Form</span>';
+            }
+
+            if (data.success) {
+                // Update window.FOH_RATES
+                if (data.foh_rates) {
+                    window.FOH_RATES.QC = parseFloat(data.foh_rates.qc) || window.FOH_RATES.QC;
+                    window.FOH_RATES.LISTRIK = parseFloat(data.foh_rates.listrik) || window.FOH_RATES.LISTRIK;
+                    window.FOH_RATES.PEMELIHARAAN = parseFloat(data.foh_rates.pemeliharaan) || window.FOH_RATES.PEMELIHARAAN;
+                    window.FOH_RATES.PENYUSUTAN = parseFloat(data.foh_rates.penyusutan) || window.FOH_RATES.PENYUSUTAN;
+                    window.FOH_RATES.KIMIA = parseFloat(data.foh_rates.kimia) || window.FOH_RATES.KIMIA;
+                    window.FOH_RATES.FOTOCOPY = parseFloat(data.foh_rates.fotocopy) || window.FOH_RATES.FOTOCOPY;
+                    window.FOH_RATES.LIMBAH_PADAT_SHIFT = parseFloat(data.foh_rates.limbah_padat) || window.FOH_RATES.LIMBAH_PADAT_SHIFT;
+                }
+
+                // Update UI Badges & Labels
+                const updateBadge = (id, text) => {
+                    const el = document.getElementById(id);
+                    if (el) el.textContent = text;
+                };
+
+                updateBadge('badge_foh_fotocopy', 'x ' + formatNumber(window.FOH_RATES.FOTOCOPY, 2));
+                updateBadge('sublabel_foh_fotocopy', 'Rp ' + formatNumber(window.FOH_RATES.FOTOCOPY, 2) + ' / Kg WIP');
+                updateBadge('badge_foh_qc', 'x ' + formatNumber(window.FOH_RATES.QC, 2));
+                updateBadge('sublabel_foh_qc', 'Rp ' + formatNumber(window.FOH_RATES.QC, 2) + ' / Kg WIP');
+                updateBadge('badge_foh_listrik', 'x ' + formatNumber(window.FOH_RATES.LISTRIK, 2));
+                updateBadge('sublabel_foh_listrik', 'Rp ' + formatNumber(window.FOH_RATES.LISTRIK, 2) + ' / Kg WIP');
+                updateBadge('badge_foh_pemeliharaan', 'x ' + formatNumber(window.FOH_RATES.PEMELIHARAAN, 2));
+                updateBadge('sublabel_foh_pemeliharaan', 'Rp ' + formatNumber(window.FOH_RATES.PEMELIHARAAN, 2) + ' / Kg WIP');
+                updateBadge('badge_foh_penyusutan', 'x ' + formatNumber(window.FOH_RATES.PENYUSUTAN, 2));
+                updateBadge('sublabel_foh_penyusutan', 'Rp ' + formatNumber(window.FOH_RATES.PENYUSUTAN, 2) + ' / Kg WIP');
+                updateBadge('badge_foh_kimia', 'x ' + formatNumber(window.FOH_RATES.KIMIA, 2));
+                updateBadge('sublabel_foh_kimia', 'Rp ' + formatNumber(window.FOH_RATES.KIMIA, 2) + ' / Kg WIP (IPAL)');
+                updateBadge('badge_foh_limbah_padat', 'Flat Rp ' + Math.round(window.FOH_RATES.LIMBAH_PADAT_SHIFT).toLocaleString('id-ID'));
+
+                // Update CNG & TK rates if returned
+                if (data.energi_tk) {
+                    if (data.energi_tk.cng_tarif) {
+                        const elCng = document.getElementById('cng_tarif');
+                        if (elCng) elCng.value = data.energi_tk.cng_tarif;
+                        window.calcCng();
+                    }
+                    if (data.energi_tk.tk_tarif_per_org) {
+                        const elTk = document.getElementById('tk_tarif_per_org');
+                        if (elTk) elTk.value = data.energi_tk.tk_tarif_per_org;
+                        const elLabelTk = document.getElementById('label_tk_tarif');
+                        if (elLabelTk) elLabelTk.textContent = Math.round(data.energi_tk.tk_tarif_per_org).toLocaleString('id-ID');
+                        window.calcTk();
+                    }
+                }
+
+                // Recalculate FOH with new rates
+                window.recalcFohStandard(true);
+                window.calcAll();
+
+                closeQuickTarifModal();
+
+                if (window.Swal) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Tarif Berhasil Diperbarui!',
+                        text: 'Standar pengali FOH dan tarif acuan langsung diterapkan ke formulir.',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                }
+            } else {
+                alert('Gagal menyimpan tarif: ' + (data.message || 'Terjadi kesalahan sistem'));
+            }
+        })
+        .catch(err => {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>Simpan &amp; Terapkan ke Form</span>';
+            }
+            alert('Terjadi kesalahan jaringan: ' + err.message);
+        });
+    };
+
+    // Fungsi untuk mereset dan menghitung ulang seluruh nilai FOH berdasarkan Total Output KG WIP
+    window.recalcFohStandard = function (forceReset = false) {
+        let totalOutputKg = 0;
+        document.querySelectorAll('.input-fg-qty-kg').forEach(inp => {
+            totalOutputKg += parseFloat(inp.value) || 0;
+        });
+
+        const syncField = (id, val) => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            if (forceReset || !el.dataset.userModified || el.value === '' || parseFloat(el.value) === 0) {
+                el.value = (val > 0 ? Math.round(val) : (forceReset ? '0' : el.value));
+                if (forceReset) delete el.dataset.userModified;
+            }
+        };
+
+        if (totalOutputKg > 0 || forceReset) {
+            syncField('qc_pengawasan_nilai', totalOutputKg * window.FOH_RATES.QC);
+            syncField('listrik_air_telp_nilai', totalOutputKg * window.FOH_RATES.LISTRIK);
+            syncField('pemeliharaan_mesin_nilai', totalOutputKg * window.FOH_RATES.PEMELIHARAAN);
+            syncField('penyusutan_mesin_nilai', totalOutputKg * window.FOH_RATES.PENYUSUTAN);
+            syncField('limbah_kimia_nilai', totalOutputKg * window.FOH_RATES.KIMIA);
+            syncField('fotocopy_nilai', totalOutputKg * window.FOH_RATES.FOTOCOPY);
+
+            const elLimbahP = document.getElementById('limbah_padat_nilai');
+            if (elLimbahP && (forceReset || !elLimbahP.dataset.userModified || elLimbahP.value === '' || parseFloat(elLimbahP.value) === 0)) {
+                elLimbahP.value = Math.round(window.FOH_RATES.LIMBAH_PADAT_SHIFT);
+                if (forceReset) delete elLimbahP.dataset.userModified;
+            }
+        }
+
+        window.calcAll();
+    };
+
     // 9. Kalkulasi Menyeluruh (All Fields, Rendemen, HPP)
     window.calcAll = function () {
         // 1. Bahan
@@ -513,7 +769,40 @@
         const cngNilai = parseFloat(document.getElementById('cng_nilai')?.value) || 0;
         const tkNilai = parseFloat(document.getElementById('tk_total_nilai')?.value) || 0;
 
-        // 3. FOH Overhead
+        // 3. Output Hasil Produksi (Tabel Terpadu FG & WIP)
+        let totalOutputKg = 0;
+        document.querySelectorAll('.input-fg-qty-kg').forEach(inp => {
+            totalOutputKg += parseFloat(inp.value) || 0;
+        });
+
+        const badgeTotalOutput = document.getElementById('badgeTotalOutputKg');
+        if (badgeTotalOutput) {
+            badgeTotalOutput.textContent = 'Total Output: ' + formatNumber(totalOutputKg, 2) + ' kg';
+        }
+
+        // 4. Kalkulasi Otomatis Standar FOH Sesuai Pengali Excel Asli PT Mirasa
+        // Rumus: Total KG WIP × Tarif Standar Pengali (jika field belum diedit manual oleh user)
+        if (totalOutputKg > 0 && typeof window.FOH_RATES === 'object') {
+            const autoSyncFoh = (id, val) => {
+                const el = document.getElementById(id);
+                if (el && (!el.dataset.userModified || el.value === '' || parseFloat(el.value) === 0)) {
+                    el.value = Math.round(val);
+                }
+            };
+            autoSyncFoh('qc_pengawasan_nilai', totalOutputKg * window.FOH_RATES.QC);
+            autoSyncFoh('listrik_air_telp_nilai', totalOutputKg * window.FOH_RATES.LISTRIK);
+            autoSyncFoh('pemeliharaan_mesin_nilai', totalOutputKg * window.FOH_RATES.PEMELIHARAAN);
+            autoSyncFoh('penyusutan_mesin_nilai', totalOutputKg * window.FOH_RATES.PENYUSUTAN);
+            autoSyncFoh('limbah_kimia_nilai', totalOutputKg * window.FOH_RATES.KIMIA);
+            autoSyncFoh('fotocopy_nilai', totalOutputKg * window.FOH_RATES.FOTOCOPY);
+
+            const elLimbahP = document.getElementById('limbah_padat_nilai');
+            if (elLimbahP && (!elLimbahP.dataset.userModified || elLimbahP.value === '' || parseFloat(elLimbahP.value) === 0)) {
+                elLimbahP.value = Math.round(window.FOH_RATES.LIMBAH_PADAT_SHIFT);
+            }
+        }
+
+        // 5. FOH Overhead
         const fc = parseFloat(document.getElementById('fotocopy_nilai')?.value) || 0;
         const stP = parseFloat(document.getElementById('sarung_tangan_plastik_nilai')?.value) || 0;
         const stK = parseFloat(document.getElementById('sarung_tangan_kain_nilai')?.value) || 0;
@@ -533,18 +822,7 @@
         const elTotalBiaya = document.getElementById('liveTotalBiaya');
         if (elTotalBiaya) elTotalBiaya.textContent = formatRupiah(totalBiaya);
 
-        // 4. Output Hasil Produksi (Tabel Terpadu FG & WIP)
-        let totalOutputKg = 0;
-        document.querySelectorAll('.input-fg-qty-kg').forEach(inp => {
-            totalOutputKg += parseFloat(inp.value) || 0;
-        });
-
-        const badgeTotalOutput = document.getElementById('badgeTotalOutputKg');
-        if (badgeTotalOutput) {
-            badgeTotalOutput.textContent = 'Total Output: ' + formatNumber(totalOutputKg, 2) + ' kg';
-        }
-
-        // 5. Rendemen & HPP
+        // 6. Rendemen & HPP
         const rendemen = singkongQty > 0 ? (totalOutputKg / singkongQty) * 100 : 0;
         const hppPerKg = totalOutputKg > 0 ? (totalBiaya / totalOutputKg) : 0;
 
@@ -624,12 +902,90 @@
         }
     };
 
+    // Helper: Mencocokkan teks tujuan pemakaian BPPB dengan opsi dropdown lini_produksi
+    function findMatchingLiniIndex(elLini, targetRaw) {
+        if (!elLini || !targetRaw) return -1;
+        const target = targetRaw.trim().toUpperCase();
+        const targetClean = target.replace(/^PRODUKSI\s+/, '').trim();
+
+        // 1. Pencocokan langsung (exact match)
+        for (let i = 0; i < elLini.options.length; i++) {
+            const opt = elLini.options[i];
+            const val = (opt.value || '').trim().toUpperCase();
+            if (val && val === target) return i;
+        }
+
+        // 2. Pencocokan tanpa prefix 'PRODUKSI ' atau berdasarkan kode lini (data-cd)
+        for (let i = 0; i < elLini.options.length; i++) {
+            const opt = elLini.options[i];
+            const val = (opt.value || '').trim().toUpperCase();
+            const cd = (opt.getAttribute('data-cd') || '').trim().toUpperCase();
+            const valClean = val.replace(/^PRODUKSI\s+/, '').trim();
+            if (valClean && (valClean === targetClean || cd === target || cd === targetClean)) {
+                return i;
+            }
+        }
+
+        // 3. Pencocokan kata kunci prioritas IFM, IFL, atau MANUAL
+        if (target.includes('IFM') || target.includes('IFL') || target.includes('INDOFOOD')) {
+            for (let i = 0; i < elLini.options.length; i++) {
+                const opt = elLini.options[i];
+                const val = (opt.value || '').trim().toUpperCase();
+                const cd = (opt.getAttribute('data-cd') || '').trim().toUpperCase();
+                if (val.includes('IFM') || cd === 'IFM') return i;
+            }
+            for (let i = 0; i < elLini.options.length; i++) {
+                const opt = elLini.options[i];
+                const val = (opt.value || '').trim().toUpperCase();
+                const cd = (opt.getAttribute('data-cd') || '').trim().toUpperCase();
+                if (val.includes('IFL') || cd === 'IFL') return i;
+            }
+        }
+
+        if (target.includes('MANUAL')) {
+            for (let i = 0; i < elLini.options.length; i++) {
+                const opt = elLini.options[i];
+                const val = (opt.value || '').trim().toUpperCase();
+                const cd = (opt.getAttribute('data-cd') || '').trim().toUpperCase();
+                if (val.includes('MANUAL') || cd === 'MANUAL') return i;
+            }
+        }
+
+        // 4. Fallback substring
+        for (let i = 0; i < elLini.options.length; i++) {
+            const opt = elLini.options[i];
+            const val = (opt.value || '').trim().toUpperCase();
+            if (!val) continue;
+            const valClean = val.replace(/^PRODUKSI\s+/, '').trim();
+            if (targetClean && (valClean.includes(targetClean) || targetClean.includes(valClean))) {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
     // 11. Load Pemakaian Data dari Dokumen Gudang (AJAX)
     window.loadPakaiData = function (pakaiId) {
         if (!pakaiId) {
             const noticeEl = document.getElementById('pakaiMatchNotice');
             if (noticeEl) noticeEl.style.display = 'none';
             return;
+        }
+
+        // Sinkronisasi instan lini produksi dari atribut data-tujuan option terpilih
+        const pakaiSelect = document.getElementById('pakai_id');
+        const selectedPakaiOpt = pakaiSelect?.querySelector(`option[value="${pakaiId}"]`);
+        const quickTujuan = selectedPakaiOpt?.getAttribute('data-tujuan');
+        if (quickTujuan) {
+            const elLini = document.getElementById('lini_produksi');
+            if (elLini) {
+                const qIdx = findMatchingLiniIndex(elLini, quickTujuan);
+                if (qIdx !== -1 && elLini.selectedIndex !== qIdx) {
+                    elLini.selectedIndex = qIdx;
+                    elLini.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+            }
         }
 
         const loading = document.getElementById('pakaiLoading');
@@ -664,20 +1020,8 @@
                         if (d.tujuan_pemakaian) {
                             const elLini = document.getElementById('lini_produksi');
                             if (elLini) {
-                                const target = d.tujuan_pemakaian.trim().toUpperCase();
-                                let matchedIndex = -1;
-                                for (let i = 0; i < elLini.options.length; i++) {
-                                    const val = (elLini.options[i].value || '').trim().toUpperCase();
-                                    if (!val) continue; // Lewati placeholder kosong agar target.includes("") tidak selalu true
-                                    if (val === target) {
-                                        matchedIndex = i;
-                                        break;
-                                    }
-                                    if (matchedIndex === -1 && (val.includes(target) || target.includes(val))) {
-                                        matchedIndex = i;
-                                    }
-                                }
-                                if (matchedIndex !== -1) {
+                                const matchedIndex = findMatchingLiniIndex(elLini, d.tujuan_pemakaian);
+                                if (matchedIndex !== -1 && elLini.selectedIndex !== matchedIndex) {
                                     elLini.selectedIndex = matchedIndex;
                                     elLini.dispatchEvent(new Event('change', { bubbles: true }));
                                 }
@@ -730,7 +1074,15 @@
                         // Notifikasi sukses tarik data
                         const noticeEl = document.getElementById('pakaiMatchNotice');
                         if (noticeEl) {
-                            noticeEl.innerHTML = `Dokumen <strong>[${d.pakai_no || ''}]</strong> berhasil ditarik: Lini disinkronkan ke <strong>${d.tujuan_pemakaian || '-'}</strong> dan seluruh bahan terisi otomatis.`;
+                            const isNoticeManual = d.tujuan_pemakaian && d.tujuan_pemakaian.toUpperCase().includes('MANUAL');
+                            const isNoticeIfm = d.tujuan_pemakaian && (d.tujuan_pemakaian.toUpperCase().includes('IFM') || d.tujuan_pemakaian.toUpperCase().includes('IFL'));
+                            if (isNoticeManual) {
+                                noticeEl.innerHTML = `Dokumen <strong>[${d.pakai_no || ''}]</strong> berhasil ditarik: Lini disinkronkan ke <strong>${d.tujuan_pemakaian}</strong>. Silakan tentukan barang hasil produksi secara manual.`;
+                            } else if (isNoticeIfm) {
+                                noticeEl.innerHTML = `Dokumen <strong>[${d.pakai_no || ''}]</strong> berhasil ditarik: Lini disinkronkan ke <strong>${d.tujuan_pemakaian}</strong> dan barang hasil produksi IFM terisi otomatis.`;
+                            } else {
+                                noticeEl.innerHTML = `Dokumen <strong>[${d.pakai_no || ''}]</strong> berhasil ditarik: Lini disinkronkan ke <strong>${d.tujuan_pemakaian || '-'}</strong> dan seluruh bahan terisi otomatis.`;
+                            }
                             noticeEl.style.color = '#0284c7';
                             noticeEl.style.display = 'block';
                         }
@@ -798,7 +1150,7 @@
     };
 
     // 13. Logika Baris Dinamis Output Barang Hasil Produksi (Tabel Terpadu)
-    let fgRowCounter = 0;
+    let fgRowCounter = document.querySelectorAll('.row-output-fg').length || 1;
     window.addFgRow = function (initial) {
         const tbody = document.getElementById('tbodyOutputFg');
         if (!tbody) return;
@@ -855,10 +1207,10 @@
                 ${tbody.children.length + 1}
             </td>
             <td style="padding: 0.5rem 0.75rem; text-align: center;">
-                <span id="badgeJenis_${idx}" style="background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; padding: 0.2rem 0.45rem; border-radius: 4px; font-weight: 700; font-size: 0.75rem;">
-                    FG
+                <span id="badgeJenis_${idx}" style="background: #f1f5f9; color: #64748b; border: 1px solid #cbd5e1; padding: 0.2rem 0.45rem; border-radius: 4px; font-weight: 700; font-size: 0.75rem;">
+                    ${initial?.jenis_cd || '-'}
                 </span>
-                <input type="hidden" name="output_items[${idx}][jenis_cd]" id="inputJenis_${idx}" value="FG">
+                <input type="hidden" name="output_items[${idx}][jenis_cd]" id="inputJenis_${idx}" value="${initial?.jenis_cd || ''}">
             </td>
             <td style="padding: 0.5rem 0.75rem;">
                 <select name="output_items[${idx}][barang_id]" class="form-control select-fg-barang" style="font-size: 0.8rem; font-weight: 600;" onchange="onFgBarangChange(this, ${idx})">
@@ -869,8 +1221,8 @@
                 <input type="number" step="0.0001" min="0" name="output_items[${idx}][qty_hasil]" id="qtyHasil_${idx}" class="form-control calc-trigger" style="text-align: right; font-weight: 700; color: #0f172a;" placeholder="0" value="${initial?.qty_hasil || (currentQtyKarton > 0 ? currentQtyKarton : '')}" oninput="onQtyHasilInput(${idx})">
             </td>
             <td style="padding: 0.5rem 0.75rem; text-align: center;">
-                <span id="labelSatuan_${idx}" style="font-weight: 600; color: #475569; font-size: 0.775rem;">KARTON</span>
-                <input type="hidden" name="output_items[${idx}][satuan_cd]" id="inputSatuan_${idx}" value="KARTON">
+                <span id="labelSatuan_${idx}" style="font-weight: 600; color: #475569; font-size: 0.775rem;">${initial?.satuan_cd || '-'}</span>
+                <input type="hidden" name="output_items[${idx}][satuan_cd]" id="inputSatuan_${idx}" value="${initial?.satuan_cd || ''}">
             </td>
             <td style="padding: 0.5rem 0.75rem;">
                 <input type="number" step="0.0001" min="0" name="output_items[${idx}][qty_kg]" id="qtyKg_${idx}" class="form-control input-fg-qty-kg calc-trigger" style="text-align: right; font-weight: 700; color: #0f172a; background: #ffffff;" placeholder="0" value="${initial?.qty_kg || ''}" oninput="calcAll()">
@@ -882,7 +1234,7 @@
                 <input type="hidden" name="output_items[${idx}][batch_no]" id="batchFg_${idx}" value="${initial?.batch_no || currentBatch}">
             </td>
             <td style="padding: 0.5rem 0.75rem; text-align: center;">
-                <button type="button" onclick="removeFgRow(${idx})" class="btn btn-sm" style="padding: 0.2rem 0.45rem; font-size: 0.75rem; background: #ffffff; border: 1px solid #cbd5e1; color: #dc2626; font-weight: 600;" title="Hapus baris ini">
+                <button type="button" onclick="removeFgRow(${idx})" class="btn btn-sm btn-remove-fg" id="btnRemoveFg_${idx}" style="padding: 0.2rem 0.45rem; font-size: 0.75rem; background: #ffffff; border: 1px solid #cbd5e1; color: #dc2626; font-weight: 600;" title="Hapus baris ini">
                     Hapus
                 </button>
             </td>
@@ -895,23 +1247,31 @@
             autoSelectLiniBarang(idx);
         }
 
+        // Sinkronkan batch per jenis produk (range karton vs tanggal) setelah baris ditambahkan
+        window.syncBatchToOutputItems();
+
         renumberFgRows();
         window.calcAll();
     };
+
 
     window.removeFgRow = function (idx) {
         const tbody = document.getElementById('tbodyOutputFg');
         const rows = tbody ? tbody.querySelectorAll('.row-output-fg') : [];
         if (rows.length <= 1) {
-            alert('Minimal harus ada 1 baris item barang hasil produksi dan tidak dapat dihapus.');
-            return;
+            return; // Minimal 1 baris utama dan tidak dapat dihapus
         }
         const row = document.getElementById(`fgRow_${idx}`);
-        if (row) {
-            row.remove();
-            renumberFgRows();
-            window.calcAll();
+        if (!row) return;
+
+        // Proteksi mutlak: Baris pertama di tabel tidak boleh dihapus
+        if (rows[0] === row) {
+            return;
         }
+
+        row.remove();
+        renumberFgRows();
+        window.calcAll();
     };
 
     function renumberFgRows() {
@@ -922,26 +1282,59 @@
             const numEl = tr.querySelector('.fg-row-number');
             if (numEl) numEl.textContent = i + 1;
             
-            const btnRemove = tr.querySelector('button[onclick^="removeFgRow"]');
+            const btnRemove = tr.querySelector('.btn-remove-fg') || tr.querySelector('button[onclick^="removeFgRow"]');
             if (btnRemove) {
-                if (rows.length <= 1) {
-                    btnRemove.title = 'Baris default tidak dapat dihapus (minimal 1 baris)';
-                    btnRemove.style.opacity = '0.5';
+                if (i === 0) {
+                    btnRemove.title = 'Baris utama tidak dapat dihapus';
+                    btnRemove.style.opacity = '0.4';
                     btnRemove.style.cursor = 'not-allowed';
                     btnRemove.style.color = '#94a3b8';
+                    btnRemove.disabled = true;
                 } else {
                     btnRemove.title = 'Hapus baris ini';
                     btnRemove.style.opacity = '1';
                     btnRemove.style.cursor = 'pointer';
                     btnRemove.style.color = '#dc2626';
+                    btnRemove.disabled = false;
                 }
             }
         });
     }
 
+    // Helper untuk mereset satu baris tabel hasil barang produksi ke status default kosong
+    function resetFgBarangRow(selBarang, idx) {
+        if (!selBarang) return;
+        selBarang.selectedIndex = 0;
+        selBarang.value = '';
+
+        const badgeJenis = document.getElementById(`badgeJenis_${idx}`) || selBarang.closest('tr')?.querySelector('[id^="badgeJenis_"]');
+        const inputJenis = document.getElementById(`inputJenis_${idx}`) || selBarang.closest('tr')?.querySelector('[id^="inputJenis_"]');
+        const labelSatuan = document.getElementById(`labelSatuan_${idx}`) || selBarang.closest('tr')?.querySelector('[id^="labelSatuan_"]');
+        const inputSatuan = document.getElementById(`inputSatuan_${idx}`) || selBarang.closest('tr')?.querySelector('[id^="inputSatuan_"]');
+        const badgeFgBatch = document.getElementById(`badgeFgBatch_${idx}`) || selBarang.closest('tr')?.querySelector('[id^="badgeFgBatch_"]');
+        const batchFg = document.getElementById(`batchFg_${idx}`) || selBarang.closest('tr')?.querySelector('[id^="batchFg_"]');
+
+        if (badgeJenis) {
+            badgeJenis.textContent = '-';
+            badgeJenis.style.background = '#f1f5f9';
+            badgeJenis.style.color = '#64748b';
+            badgeJenis.style.borderColor = '#cbd5e1';
+        }
+        if (inputJenis) inputJenis.value = '';
+        if (labelSatuan) labelSatuan.textContent = '-';
+        if (inputSatuan) inputSatuan.value = '';
+        if (badgeFgBatch) badgeFgBatch.textContent = '-';
+        if (batchFg) batchFg.value = '';
+
+        window.calcAll();
+    }
+
     window.onFgBarangChange = function (sel, idx) {
         const opt = sel.selectedOptions[0];
-        if (!opt || !opt.value) return;
+        if (!opt || !opt.value) {
+            resetFgBarangRow(sel, idx);
+            return;
+        }
 
         const jenis = opt.dataset.jenis || 'FG';
         const satuan = opt.dataset.satuan || 'KARTON';
@@ -967,10 +1360,15 @@
         if (labelSatuan) labelSatuan.textContent = satuan;
         if (inputSatuan) inputSatuan.value = satuan;
 
+        // ── Auto-assign batch format berdasarkan jenis produk:
+        // Kemasan karton (IFM/FCC) → format range (A0001 - A0243)
+        // WIP Curah / Berko dll    → format tanggal (07 10 2026)
+        applyBatchBadgeToRow(idx, sel);
+
         window.onQtyHasilInput(idx);
     };
 
-    window.onQtyHasilInput = function (idx) {
+    window.onQtyHasilInput = function (idx, skipSyncKarton = false) {
         const qtyInp = document.getElementById(`qtyHasil_${idx}`);
         const kgInp = document.getElementById(`qtyKg_${idx}`);
         const selBarang = document.querySelector(`select[name="output_items[${idx}][barang_id]"]`);
@@ -1039,18 +1437,53 @@
 
     function autoSelectLiniBarang(idx) {
         const selectLini = document.getElementById('lini_produksi');
-        const selBarang = document.querySelector(`select[name="output_items[${idx}][barang_id]"]`);
+        const selBarang = document.querySelector(`select[name="output_items[${idx}][barang_id]"]`) 
+            || document.querySelector('#tableOutputFg tbody tr:first-child .select-fg-barang');
         if (!selectLini || !selBarang) return;
 
         const currentLini = (selectLini.value || '').trim().toUpperCase();
-        if (!currentLini) return;
+        const selectedOpt = selectLini.selectedOptions?.[0];
+        const currentCd = (selectedOpt?.getAttribute('data-cd') || '').trim().toUpperCase();
+        const currentTipe = (selectedOpt?.getAttribute('data-tipe') || '').trim().toUpperCase();
+
+        if (!currentLini) {
+            // Jika user memilih kembali placeholder "-- Pilih Lini Produksi --", reset pilihan barang
+            resetFgBarangRow(selBarang, idx);
+            return;
+        }
+
+        const isManual = currentLini.includes('MANUAL') || currentCd === 'MANUAL';
+        if (isManual) {
+            // Sesuai aturan: jika lini produksinya manual, tabel hasil barang produksi tetap tampilan default "pilih barang hasil produksi"
+            resetFgBarangRow(selBarang, idx);
+            return;
+        }
+
+        const isIfm = currentLini.includes('IFM') || 
+                      currentLini.includes('IFL') || 
+                      currentLini.includes('INDOFOOD') || 
+                      currentCd === 'IFM' || 
+                      currentCd === 'IFL' || 
+                      currentTipe === 'IFM';
 
         for (let i = 0; i < selBarang.options.length; i++) {
             const opt = selBarang.options[i];
-            const nm = (opt.dataset.nm || '').toUpperCase();
-            const cd = (opt.dataset.cd || '').toUpperCase();
+            const nm = (opt.dataset.nm || opt.getAttribute('data-nm') || '').toUpperCase();
+            const cd = (opt.dataset.cd || opt.getAttribute('data-cd') || '').toUpperCase();
+            const txt = (opt.text || opt.textContent || '').toUpperCase();
 
-            if (currentLini.includes('PING-PING') && nm.includes('PING-PING')) {
+            if (isIfm) {
+                // Sesuai aturan: jika lini IFM, otomatis terisi barang hasil produksi IFM (WIP-FCC Keripik Singkong Tanpa Bumbu IFL)
+                if (cd.includes('FCC') || cd.includes('IFM') || cd.includes('IFL') || 
+                    nm.includes('IFM') || nm.includes('IFL') || nm.includes('INDOFOOD') || 
+                    nm.includes('TANPA BUMBU') || txt.includes('FCC') || txt.includes('IFM') || txt.includes('IFL')) {
+                    selBarang.value = opt.value;
+                    selBarang.selectedIndex = i;
+                    opt.selected = true;
+                    window.onFgBarangChange(selBarang, idx);
+                    break;
+                }
+            } else if (currentLini.includes('PING-PING') && nm.includes('PING-PING')) {
                 selBarang.selectedIndex = i;
                 window.onFgBarangChange(selBarang, idx);
                 break;
@@ -1063,10 +1496,6 @@
                 window.onFgBarangChange(selBarang, idx);
                 break;
             } else if (currentLini.includes('EKSPOR') && nm.includes('EKSPOR')) {
-                selBarang.selectedIndex = i;
-                window.onFgBarangChange(selBarang, idx);
-                break;
-            } else if (currentLini.includes('IFM') && (nm.includes('IFM') || cd.includes('FCC'))) {
                 selBarang.selectedIndex = i;
                 window.onFgBarangChange(selBarang, idx);
                 break;
@@ -1106,9 +1535,8 @@
         window.calcCng();
         window.calcAll();
         window.highlightMatchingPakai();
-        window.onLiniProduksiChange();
 
-        // Pastikan default untuk tabel inputan hasil barang produksi sudah ada 1 baris
+        // Pastikan default untuk tabel inputan hasil barang produksi sudah ada minimal 1 baris
         const tbodyFg = document.getElementById('tbodyOutputFg');
         if (tbodyFg && tbodyFg.querySelectorAll('.row-output-fg').length === 0) {
             const oldItems = window.appConfig?.oldOutputItems;
@@ -1117,6 +1545,16 @@
             } else {
                 window.addFgRow();
             }
+        }
+
+        renumberFgRows();
+
+        // Cek apakah ada dokumen BPPB yang sudah terpilih (dari old input atau query param)
+        const elPakai = document.getElementById('pakai_id');
+        if (elPakai && elPakai.value) {
+            window.loadPakaiData(elPakai.value);
+        } else {
+            window.onLiniProduksiChange();
         }
 
         // Event listener jika user mengedit tanggal kedaluwarsa secara manual
@@ -1137,6 +1575,17 @@
                 window.updateKartonRangeAndBatch();
             });
         }
+
+        // Event listener jika user mengedit nilai FOH secara manual
+        document.querySelectorAll('.input-foh-auto').forEach(inp => {
+            inp.addEventListener('input', () => {
+                if (inp.value === '') {
+                    delete inp.dataset.userModified;
+                } else {
+                    inp.dataset.userModified = 'true';
+                }
+            });
+        });
     });
 
 })();

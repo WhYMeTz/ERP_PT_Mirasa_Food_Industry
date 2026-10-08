@@ -35,7 +35,7 @@
                     <th rowspan="3" class="th-orange" style="position: sticky; left: 85px; z-index: 25; background-color: #f4b084 !important; color: #000000 !important; border: 1px solid #7f1d1d !important; padding: 0.5rem 0.6rem; min-width: 80px; font-weight: 800; text-align: center !important; vertical-align: middle !important;">TANGGAL</th>
                     <th colspan="28" class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.6rem 0.5rem; font-weight: 900; font-size: 0.85rem; letter-spacing: 0.15em; text-align: center !important; vertical-align: middle !important;">TOTAL BIAYA PRODUKSI / KG</th>
                     <th rowspan="3" class="th-yellow" style="background-color: #ffc000 !important; color: #000000 !important; border: 1px solid #ca8a04 !important; padding: 0.5rem 0.75rem; min-width: 110px; font-weight: 900; font-size: 0.8rem; line-height: 1.2; text-align: center !important; vertical-align: middle !important;">TOTAL<br>BIAYA</th>
-                    <th colspan="2" class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.6rem 0.5rem; font-weight: 900; font-size: 0.8rem; text-align: center !important; vertical-align: middle !important;">TOTAL WIP</th>
+                    <th colspan="11" class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.6rem 0.5rem; font-weight: 900; font-size: 0.85rem; letter-spacing: 0.1em; text-align: center !important; vertical-align: middle !important;">TOTAL WIP</th>
                     <th rowspan="3" class="th-grey" style="background-color: #f2f2f2 !important; color: #000000 !important; border: 1px solid #94a3b8 !important; padding: 0.5rem 0.6rem; min-width: 85px; font-weight: 900; font-size: 0.75rem; line-height: 1.2; text-align: center !important; vertical-align: middle !important;">HARGA POKOK<br>PRODUKSI</th>
                     <th rowspan="3" class="th-blue-action" style="position: sticky; right: 0; z-index: 25; background-color: #0284c7 !important; color: #ffffff !important; border: 1px solid #0369a1 !important; padding: 0.5rem 0.65rem; min-width: 75px; font-weight: 800; text-align: center !important; vertical-align: middle !important;">AKSI</th>
                 </tr>
@@ -59,9 +59,12 @@
                     <th rowspan="2" class="th-green" style="background-color: #92d050 !important; color: #c00000 !important; border: 1px solid #3f6212 !important; padding: 0.35rem 0.4rem; min-width: 80px; line-height: 1.2; text-align: center !important; vertical-align: middle !important; font-weight: 900;">PENYS<br>MESIN</th>
                     <th colspan="2" class="th-green" style="background-color: #92d050 !important; color: #c00000 !important; border: 1px solid #3f6212 !important; padding: 0.35rem 0.4rem; text-align: center !important; vertical-align: middle !important; font-weight: 900;">B. PNGOLHN LIMBAH</th>
 
-                    {{-- Under TOTAL WIP --}}
-                    <th rowspan="2" class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.35rem 0.4rem; min-width: 85px; line-height: 1.2; text-align: center !important; vertical-align: middle !important; font-weight: 800;">TOTAL<br>KG</th>
-                    <th rowspan="2" class="th-green" style="background-color: #92d050 !important; color: #002060 !important; border: 1px solid #3f6212 !important; padding: 0.35rem 0.4rem; min-width: 85px; line-height: 1.2; text-align: center !important; vertical-align: middle !important; font-weight: 900;">RENDE<br>MEN %</th>
+                    {{-- Under TOTAL WIP Sesuai Format Asli Excel Mirasa --}}
+                    <th class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.35rem 0.4rem; min-width: 70px; text-align: center !important; vertical-align: middle !important;">IFL</th>
+                    <th colspan="4" class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.35rem 0.4rem; text-align: center !important; vertical-align: middle !important;">MANUAL</th>
+                    <th colspan="4" class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.35rem 0.4rem; text-align: center !important; vertical-align: middle !important;">BERKO + BERKO ME</th>
+                    <th rowspan="2" class="th-green" style="background-color: #92d050 !important; color: #002060 !important; border: 1px solid #3f6212 !important; padding: 0.35rem 0.4rem; min-width: 85px; line-height: 1.2; text-align: center !important; vertical-align: middle !important; font-weight: 900;">TOTAL<br>KG</th>
+                    <th rowspan="2" class="th-green" style="background-color: #92d050 !important; color: #002060 !important; border: 1px solid #3f6212 !important; padding: 0.35rem 0.4rem; min-width: 80px; line-height: 1.2; text-align: center !important; vertical-align: middle !important; font-weight: 900;">RENDE<br>MEN %</th>
                 </tr>
 
                 {{-- ROW 3: SUB-KOLOM SPESIFIK --}}
@@ -101,6 +104,17 @@
                     {{-- B. Pngolhn Limbah --}}
                     <th class="th-green" style="background-color: #92d050 !important; color: #c00000 !important; border: 1px solid #3f6212 !important; padding: 0.3rem 0.4rem; min-width: 80px; line-height: 1.1; text-align: center !important; vertical-align: middle !important; font-weight: 800;">LIMBAH<br>PADAT</th>
                     <th class="th-green" style="background-color: #92d050 !important; color: #c00000 !important; border: 1px solid #3f6212 !important; padding: 0.3rem 0.4rem; min-width: 80px; line-height: 1.1; text-align: center !important; vertical-align: middle !important; font-weight: 800;">BAHAN<br>KIMIA</th>
+
+                    {{-- Sub-kolom TOTAL WIP Sesuai Format Asli Excel Mirasa --}}
+                    <th class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.3rem 0.4rem; min-width: 70px; text-align: center !important; vertical-align: middle !important;">KG</th>
+                    <th class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.3rem 0.4rem; min-width: 75px; text-align: center !important; vertical-align: middle !important;">ASIN BARC</th>
+                    <th class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.3rem 0.4rem; min-width: 75px; text-align: center !important; vertical-align: middle !important;">ASIN SAWT</th>
+                    <th class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.3rem 0.4rem; min-width: 75px; text-align: center !important; vertical-align: middle !important;">NO SALT</th>
+                    <th class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.3rem 0.4rem; min-width: 75px; text-align: center !important; vertical-align: middle !important;">BALQI</th>
+                    <th class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.3rem 0.4rem; min-width: 70px; text-align: center !important; vertical-align: middle !important;">BERKO</th>
+                    <th class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.3rem 0.4rem; min-width: 75px; text-align: center !important; vertical-align: middle !important;">BERKO ME</th>
+                    <th class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.3rem 0.4rem; min-width: 75px; text-align: center !important; vertical-align: middle !important; font-weight: 800;">TOTAL</th>
+                    <th class="th-green" style="background-color: #92d050 !important; color: #002060 !important; border: 1px solid #3f6212 !important; padding: 0.3rem 0.4rem; min-width: 60px; text-align: center !important; vertical-align: middle !important; font-weight: 900;">%</th>
                 </tr>
             </thead>
 
@@ -224,7 +238,52 @@
                             {{ $d['has_data'] && $d['total_biaya_produksi'] > 0 ? number_format($d['total_biaya_produksi'], 0, ',', '.') : '-' }}
                         </td>
 
-                        {{-- TOTAL WIP (KG) (Teks Biru Tebal Seperti Excel) --}}
+                        {{-- IFL (KG) --}}
+                        <td style="border: {{ $cellBorder }}; padding: 0.45rem 0.5rem;">
+                            {{ $d['has_data'] && $d['ifl_qty'] > 0 ? number_format($d['ifl_qty'], 2, ',', '.') : '-' }}
+                        </td>
+
+                        {{-- MANUAL: ASIN BARC --}}
+                        <td style="border: {{ $cellBorder }}; padding: 0.45rem 0.5rem;">
+                            {{ $d['has_data'] && $d['asin_barco_qty'] > 0 ? number_format($d['asin_barco_qty'], 2, ',', '.') : '-' }}
+                        </td>
+
+                        {{-- MANUAL: ASIN SAWT --}}
+                        <td style="border: {{ $cellBorder }}; padding: 0.45rem 0.5rem;">
+                            {{ $d['has_data'] && $d['asin_sawit_qty'] > 0 ? number_format($d['asin_sawit_qty'], 2, ',', '.') : '-' }}
+                        </td>
+
+                        {{-- MANUAL: NO SALT --}}
+                        <td style="border: {{ $cellBorder }}; padding: 0.45rem 0.5rem;">
+                            {{ $d['has_data'] && $d['no_salt_qty'] > 0 ? number_format($d['no_salt_qty'], 2, ',', '.') : '-' }}
+                        </td>
+
+                        {{-- MANUAL: BALQI --}}
+                        <td style="border: {{ $cellBorder }}; padding: 0.45rem 0.5rem;">
+                            {{ $d['has_data'] && $d['balo_gelombang_qty'] > 0 ? number_format($d['balo_gelombang_qty'], 2, ',', '.') : '-' }}
+                        </td>
+
+                        {{-- BERKO --}}
+                        <td style="border: {{ $cellBorder }}; padding: 0.45rem 0.5rem;">
+                            {{ $d['has_data'] && $d['berko_qty'] > 0 ? number_format($d['berko_qty'], 2, ',', '.') : '-' }}
+                        </td>
+
+                        {{-- BERKO ME --}}
+                        <td style="border: {{ $cellBorder }}; padding: 0.45rem 0.5rem;">
+                            {{ $d['has_data'] && $d['berko_me_qty'] > 0 ? number_format($d['berko_me_qty'], 2, ',', '.') : '-' }}
+                        </td>
+
+                        {{-- TOTAL BERKO --}}
+                        <td style="border: {{ $cellBorder }}; padding: 0.45rem 0.5rem; font-weight: 700;">
+                            {{ $d['has_data'] && $d['total_berko_qty'] > 0 ? number_format($d['total_berko_qty'], 2, ',', '.') : '-' }}
+                        </td>
+
+                        {{-- BERKO % --}}
+                        <td style="border: {{ $cellBorder }}; padding: 0.45rem 0.5rem; text-align: center; color: #002060; font-weight: 800;">
+                            {{ $d['has_data'] && $d['berko_persen'] > 0 ? number_format($d['berko_persen'], 2, ',', '.') . '%' : '-' }}
+                        </td>
+
+                        {{-- TOTAL KG (WIP) (Teks Biru Tebal Seperti Excel) --}}
                         <td style="border: {{ $cellBorder }}; font-weight: 800; color: #002060; padding: 0.45rem 0.65rem;">
                             {{ $d['has_data'] && $d['total_wip_qty'] > 0 ? number_format($d['total_wip_qty'], 2, ',', '.') : '-' }}
                         </td>
@@ -244,13 +303,16 @@
                             @if($d['has_data'] && !empty($d['produksi_id']))
                                 @php $rekapMenuId = 'menu-rekap-' . $d['produksi_id']; @endphp
                                 <button type="button" class="btn-action-trigger" onclick="toggleSmartActionDropdown(this, event, '{{ $rekapMenuId }}')">
-                                    Aksi ▼
+                                    <span>Aksi</span>
+                                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                                 </button>
                                 <div id="{{ $rekapMenuId }}" class="action-dropdown-menu">
                                     <a href="{{ route('produksi.show', $d['produksi_id']) }}" class="action-dropdown-item">
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                                         <span>Detail Dokumen</span>
                                     </a>
                                     <a href="{{ route('produksi.cetak-stiker', $d['produksi_id']) }}" class="action-dropdown-item" target="_blank">
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
                                         <span>Cetak Stiker Karton</span>
                                     </a>
                                     <div class="action-dropdown-divider"></div>
@@ -258,6 +320,7 @@
                                         $tglSpreadsheet = sprintf('%02d/%02d/%04d', $d['day'], $month, $year);
                                     @endphp
                                     <button type="button" class="action-dropdown-item danger-item" onclick="openDeleteProduksiModal({{ $d['produksi_id'] }}, '{{ $d['produksi_no'] }}', '{{ $tglSpreadsheet }}', '{{ $d['shift_cd'] }}', '{{ $d['batch_wip_no'] }}')">
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                                         <span>Hapus Produksi</span>
                                     </button>
                                 </div>
@@ -321,6 +384,35 @@
                         {{-- Total Biaya Grand --}}
                         <td style="background: #ffeb3b; color: #002060; font-weight: 900; border: 1px solid #ca8a04; padding: 0.55rem 0.65rem;">
                             {{ number_format($tot['total_biaya_produksi'], 0, ',', '.') }}
+                        </td>
+
+                        {{-- Total IFL (KG) --}}
+                        <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['ifl_qty'], 2, ',', '.') }}</td>
+
+                        {{-- Total ASIN BARC --}}
+                        <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['asin_barco_qty'], 2, ',', '.') }}</td>
+
+                        {{-- Total ASIN SAWT --}}
+                        <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['asin_sawit_qty'], 2, ',', '.') }}</td>
+
+                        {{-- Total NO SALT --}}
+                        <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['no_salt_qty'], 2, ',', '.') }}</td>
+
+                        {{-- Total BALQI --}}
+                        <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['balo_gelombang_qty'], 2, ',', '.') }}</td>
+
+                        {{-- Total BERKO --}}
+                        <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['berko_qty'], 2, ',', '.') }}</td>
+
+                        {{-- Total BERKO ME --}}
+                        <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['berko_me_qty'], 2, ',', '.') }}</td>
+
+                        {{-- Grand TOTAL BERKO --}}
+                        <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem; font-weight: 900;">{{ number_format($tot['total_berko_qty'], 2, ',', '.') }}</td>
+
+                        {{-- Weighted BERKO % --}}
+                        <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem; text-align: center; color: #002060; font-weight: 900;">
+                            {{ number_format($tot['berko_persen'], 2, ',', '.') }}%
                         </td>
 
                         {{-- Grand Total WIP --}}

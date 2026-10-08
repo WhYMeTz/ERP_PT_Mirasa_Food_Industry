@@ -32,3 +32,7 @@ AI_Agent/
 
 # Migration yang hanya digunakan di environment lokal (tidak di-push ke GitHub)
 database/migrations/2026_09_25_000002_create_mst_bom_tables.php
+
+# Seeder dummy lokal pengujian QC (tidak di-push ke GitHub)
+database/seeders/QcDummySeeder.php
+

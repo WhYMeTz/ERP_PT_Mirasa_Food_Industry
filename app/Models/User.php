@@ -628,6 +628,27 @@ class User extends Authenticatable
             || $this->canDo('master_lini_manage');
     }
 
+    /**
+     * Hak akses Master Standar Tarif Produksi & FOH
+     */
+    public function canAccessTarifProduksi(): bool
+    {
+        return $this->isSuperAdmin() 
+            || $this->isProduksi()
+            || $this->isFinance()
+            || $this->canDo('produksi_view')
+            || $this->canDo('master_view');
+    }
+
+    public function canManageTarifProduksi(): bool
+    {
+        return $this->isSuperAdmin() 
+            || $this->isProduksi()
+            || $this->isFinance()
+            || $this->canDo('produksi_create')
+            || $this->canDo('master_manage');
+    }
+
     public function canDeleteMasterLiniProduksi(): bool
     {
         return $this->isSuperAdmin() 

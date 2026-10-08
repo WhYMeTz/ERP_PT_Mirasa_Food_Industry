@@ -20,7 +20,7 @@
         }
 
         const rect = triggerEl.getBoundingClientRect();
-        const menuWidth = 175;
+        const menuWidth = 195;
         const menuHeight = 90;
 
         let left = rect.right - menuWidth;

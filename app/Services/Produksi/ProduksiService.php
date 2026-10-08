@@ -19,7 +19,8 @@ class ProduksiService
 {
     public function __construct(
         protected CodeGeneratorService $codeGenerator,
-        protected StokService $stokService
+        protected StokService $stokService,
+        protected TarifProduksiService $tarifService
     ) {}
 
     /**
@@ -77,7 +78,8 @@ class ProduksiService
             'limbah_kimia_nilai'          => (float) $records->sum('limbah_kimia_nilai'),
             'total_biaya_produksi'        => (float) $records->sum('total_biaya_produksi'),
 
-            // Hasil Output WIP (Kg)
+            // Hasil Output WIP (Kg) Sesuai Format Asli Excel
+            'ifl_qty'                     => (float) $records->sum('ifl_qty'),
             'asin_barco_qty'              => (float) $records->sum('asin_barco_qty'),
             'asin_sawit_qty'              => (float) $records->sum('asin_sawit_qty'),
             'no_salt_qty'                 => (float) $records->sum('no_salt_qty'),
@@ -142,6 +144,17 @@ class ProduksiService
                         $recRendemen = round(($recWip / (float) $rec->singkong_qty) * 100, 2);
                     }
 
+                    $recIfl = (float) $rec->ifl_qty;
+                    if ($recIfl <= 0) {
+                        $liniUpper = strtoupper($rec->lini_produksi ?? '');
+                        if (str_contains($liniUpper, 'IFL') || str_contains($liniUpper, 'IFM')) {
+                            $manualSum = (float) $rec->asin_barco_qty + (float) $rec->asin_sawit_qty + (float) $rec->no_salt_qty + (float) $rec->balo_gelombang_qty;
+                            if ($manualSum == 0 && $recWip > 0) {
+                                $recIfl = max(0, $recWip - (float) $rec->total_berko_qty);
+                            }
+                        }
+                    }
+
                     $days[] = [
                         'day'                         => $day,
                         'date'                        => $dateObj->format('Y-m-d'),
@@ -180,6 +193,7 @@ class ProduksiService
                         'limbah_padat_nilai'          => (float) $rec->limbah_padat_nilai,
                         'limbah_kimia_nilai'          => (float) $rec->limbah_kimia_nilai,
                         'total_biaya_produksi'        => (float) $rec->total_biaya_produksi,
+                        'ifl_qty'                     => $recIfl,
                         'asin_barco_qty'              => (float) $rec->asin_barco_qty,
                         'asin_sawit_qty'              => (float) $rec->asin_sawit_qty,
                         'no_salt_qty'                 => (float) $rec->no_salt_qty,
@@ -232,6 +246,7 @@ class ProduksiService
                     'limbah_padat_nilai'          => 0,
                     'limbah_kimia_nilai'          => 0,
                     'total_biaya_produksi'        => 0,
+                    'ifl_qty'                     => 0,
                     'asin_barco_qty'              => 0,
                     'asin_sawit_qty'              => 0,
                     'no_salt_qty'                 => 0,
@@ -246,6 +261,9 @@ class ProduksiService
                 ];
             }
         }
+
+        // Sinkronisasi total ifl_qty dari daftar baris
+        $totals['ifl_qty'] = (float) collect($days)->where('has_data', true)->sum('ifl_qty');
 
         return [
             'year'    => $year,
@@ -545,16 +563,18 @@ class ProduksiService
         $totalBahanNilai = $singkongNilai + $berkoBahanNilai + $minyakNilai + $bumbuNilai + $kartonBaruNilai +
             $kartonBekasNilai + $plastikHdNilai + $lakbanBesarNilai + $lakbanKecilNilai + $taliRafiaNilai;
 
+        $energiTkRates = $this->tarifService->getEnergiLaborRates();
+
         // Gas CNG
         $cngMmbtu = (float) ($data['cng_mmbtu'] ?? 0);
-        $cngTarif = (float) ($data['cng_tarif'] ?? 0);
+        $cngTarif = (float) ($data['cng_tarif'] ?? $energiTkRates['cng_tarif']);
         $cngNilai = (float) ($data['cng_nilai'] ?? ($cngMmbtu * $cngTarif));
 
         // Tenaga Kerja
         $tkLangsung = (int) ($data['tk_langsung_org'] ?? 0);
         $tkTidakLangsung = (int) ($data['tk_tidak_langsung_org'] ?? 0);
         $tkTraining = (int) ($data['tk_training_org'] ?? 0);
-        $tkTarif = (float) ($data['tk_tarif_per_org'] ?? 91300.00);
+        $tkTarif = (float) ($data['tk_tarif_per_org'] ?? $energiTkRates['tk_tarif_per_org']);
         $tkTotalNilai = isset($data['tk_total_nilai']) && (float) $data['tk_total_nilai'] > 0
             ? (float) $data['tk_total_nilai']
             : (($tkLangsung + $tkTidakLangsung + $tkTraining) * $tkTarif);
@@ -576,7 +596,8 @@ class ProduksiService
         // Total Biaya Produksi (Kolom Kuning)
         $totalBiayaProduksi = $totalBahanNilai + $cngNilai + $tkTotalNilai + $totalOverheadNilai;
 
-        // Output WIP & Barang Jadi (Tabel Terpadu)
+        // Output WIP & Barang Jadi (Tabel Terpadu Sesuai Format Asli Excel Mirasa)
+        $iflQty = (float) ($data['ifl_qty'] ?? 0);
         $asinBarcoQty = (float) ($data['asin_barco_qty'] ?? 0);
         $asinSawitQty = (float) ($data['asin_sawit_qty'] ?? 0);
         $noSaltQty = (float) ($data['no_salt_qty'] ?? 0);
@@ -600,7 +621,8 @@ class ProduksiService
                     if ($b) {
                         $cd = strtoupper($b->barang_cd);
                         $nm = strtoupper($b->barang_nm);
-                        if (str_contains($cd, 'ASB') || str_contains($nm, 'BARCO')) { $asinBarcoQty += $itemKg; $isMatched = true; }
+                        if (str_contains($cd, 'IFL') || str_contains($nm, 'IFL') || str_contains($nm, 'INDOFOOD') || str_contains($cd, 'IFM') || str_contains($cd, 'FCC')) { $iflQty += $itemKg; $isMatched = true; }
+                        elseif (str_contains($cd, 'ASB') || str_contains($nm, 'BARCO')) { $asinBarcoQty += $itemKg; $isMatched = true; }
                         elseif (str_contains($cd, 'ASW') || str_contains($nm, 'SAWIT')) { $asinSawitQty += $itemKg; $isMatched = true; }
                         elseif (str_contains($cd, 'NSL') || str_contains($nm, 'NO SALT')) { $noSaltQty += $itemKg; $isMatched = true; }
                         elseif (str_contains($cd, 'BLQ') || str_contains($nm, 'BALO') || str_contains($nm, 'BALQI')) { $baloQty += $itemKg; $isMatched = true; }
@@ -615,10 +637,55 @@ class ProduksiService
         }
 
         $totalBerkoQty = $berkoQty + $berkoMeQty;
-        $totalWipQty = $asinBarcoQty + $asinSawitQty + $noSaltQty + $baloQty + $totalBerkoQty + $uncategorizedQty;
+        $totalManualQty = $asinBarcoQty + $asinSawitQty + $noSaltQty + $baloQty;
+
+        // Fallback jika lini IFL/IFM dipilih tapi kolom spesifik belum terisi
+        $liniUpper = strtoupper($data['lini_produksi'] ?? '');
+        if ($iflQty <= 0 && (str_contains($liniUpper, 'IFL') || str_contains($liniUpper, 'IFM'))) {
+            if ($totalManualQty == 0) {
+                if ($totalOutputKg > 0) {
+                    $iflQty = max(0, $totalOutputKg - $totalBerkoQty);
+                } elseif (!empty($data['total_wip_qty']) && (float)$data['total_wip_qty'] > 0) {
+                    $iflQty = max(0, (float)$data['total_wip_qty'] - $totalBerkoQty);
+                }
+            }
+        }
+
+        $totalWipQty = $iflQty + $totalManualQty + $totalBerkoQty + $uncategorizedQty;
         $effectiveOutputKg = $totalOutputKg > 0 ? $totalOutputKg : $totalWipQty;
         if ($totalWipQty <= 0 && $effectiveOutputKg > 0) {
             $totalWipQty = $effectiveOutputKg;
+        }
+
+        // Penerapan tarif standar pengali FOH per Kg WIP (berbasis database master dinamis mst_tarif_produksi)
+        if ($effectiveOutputKg > 0) {
+            $fohRates = $this->tarifService->getFohRates();
+
+            if ($qc <= 0 && (!isset($data['qc_pengawasan_nilai']) || $data['qc_pengawasan_nilai'] === '')) {
+                $qc = round($effectiveOutputKg * $fohRates['qc'], 2);
+            }
+            if ($listrik <= 0 && (!isset($data['listrik_air_telp_nilai']) || $data['listrik_air_telp_nilai'] === '')) {
+                $listrik = round($effectiveOutputKg * $fohRates['listrik'], 2);
+            }
+            if ($pemeliharaan <= 0 && (!isset($data['pemeliharaan_mesin_nilai']) || $data['pemeliharaan_mesin_nilai'] === '')) {
+                $pemeliharaan = round($effectiveOutputKg * $fohRates['pemeliharaan'], 2);
+            }
+            if ($penyusutan <= 0 && (!isset($data['penyusutan_mesin_nilai']) || $data['penyusutan_mesin_nilai'] === '')) {
+                $penyusutan = round($effectiveOutputKg * $fohRates['penyusutan'], 2);
+            }
+            if ($limbahKimia <= 0 && (!isset($data['limbah_kimia_nilai']) || $data['limbah_kimia_nilai'] === '')) {
+                $limbahKimia = round($effectiveOutputKg * $fohRates['kimia'], 2);
+            }
+            if ($fotocopy <= 0 && (!isset($data['fotocopy_nilai']) || $data['fotocopy_nilai'] === '')) {
+                $fotocopy = round($effectiveOutputKg * $fohRates['fotocopy'], 2);
+            }
+            if ($limbahPadat <= 0 && (!isset($data['limbah_padat_nilai']) || $data['limbah_padat_nilai'] === '')) {
+                $limbahPadat = $fohRates['limbah_padat'];
+            }
+
+            $totalOverheadNilai = $fotocopy + $sarungPlastik + $sarungKain + $qc + $listrik +
+                $pemeliharaan + $penyusutan + $limbahPadat + $limbahKimia;
+            $totalBiayaProduksi = $totalBahanNilai + $cngNilai + $tkTotalNilai + $totalOverheadNilai;
         }
 
         $berkoPersen = $totalWipQty > 0 ? ($totalBerkoQty / $totalWipQty) * 100 : 0;
@@ -659,6 +726,7 @@ class ProduksiService
             'limbah_kimia_nilai'          => $limbahKimia,
             'total_overhead_nilai'        => $totalOverheadNilai,
             'total_biaya_produksi'        => $totalBiayaProduksi,
+            'ifl_qty'                     => $iflQty,
             'asin_barco_qty'              => $asinBarcoQty,
             'asin_sawit_qty'              => $asinSawitQty,
             'no_salt_qty'                 => $noSaltQty,
@@ -687,7 +755,7 @@ class ProduksiService
             }
 
             // Normalisasi Shift & Karton
-            $lini = strtoupper($data['lini_produksi'] ?? 'PRODUKSI IFM');
+            $lini = strtoupper($data['lini_produksi'] ?? 'PRODUKSI IFL');
             $shift = strtoupper(trim($data['shift_cd'] ?? 'A'));
             $shift = in_array($shift, ['A', 'B']) ? $shift : 'A';
             $noAwal = !empty($data['no_karton_awal']) ? (int) $data['no_karton_awal'] : 1;
@@ -701,7 +769,7 @@ class ProduksiService
             $data['jam_produksi'] = !empty($data['jam_produksi']) ? trim($data['jam_produksi']) : date('H:i');
             $data['varietas_singkong'] = !empty($data['varietas_singkong']) ? trim($data['varietas_singkong']) : 'STP / MGU';
 
-            $isIfm = str_contains(strtoupper($lini), 'IFM');
+            $isIfm = str_contains(strtoupper($lini), 'IFM') || str_contains(strtoupper($lini), 'IFL');
 
             // Generate Batch No jika belum ada
             if (empty($data['batch_wip_no'])) {
@@ -728,8 +796,9 @@ class ProduksiService
             // Simpan Header Produksi Harian
             $produksi = DatProduksiHdr::create($calculated);
 
-            // Mapping Master Barang WIP
+            // Mapping Master Barang WIP Sesuai Standar Pabrik
             $wipMap = [
+                'IFL'             => ['code' => 'WIP-FCC', 'fallback' => 'WIP-IFL', 'qty' => (float) $produksi->ifl_qty],
                 'ASIN_BARCO'      => ['code' => 'WIP-ASB', 'qty' => (float) $produksi->asin_barco_qty],
                 'ASIN_SAWIT'      => ['code' => 'WIP-ASW', 'qty' => (float) $produksi->asin_sawit_qty],
                 'NO_SALT'         => ['code' => 'WIP-NSL', 'qty' => (float) $produksi->no_salt_qty],
@@ -754,15 +823,25 @@ class ProduksiService
                     if ($info['qty'] <= 0) continue;
 
                     $barang = MstBarang::where('barang_cd', $info['code'])->first();
+                    if (!$barang && !empty($info['fallback'])) {
+                        $barang = MstBarang::where('barang_cd', $info['fallback'])->first();
+                    }
                     if (!$barang) {
                         $barang = MstBarang::where('barang_nm', 'LIKE', "%{$info['code']}%")->first();
                     }
+                    if (!$barang && $kategori === 'IFL') {
+                        $barang = MstBarang::where('barang_cd', 'LIKE', '%IFL%')->orWhere('barang_nm', 'LIKE', '%IFL%')->first();
+                    }
 
                     if ($barang) {
-                        // Untuk IFM beri suffix varian, untuk Reguler gunakan No. Batch murni (cth: 02 01 2026)
-                        $batchVarian = $isIfm
-                            ? $produksi->batch_wip_no . '-' . substr($info['code'], 4)
-                            : $produksi->batch_wip_no;
+                        // Aturan Batch Per Jenis Output:
+                        // - Kemasan Karton (FCC/IFL/IFM) → range karton (A0001 - A0243)
+                        // - WIP Curah (Berko, Asin, No Salt, dll) → selalu tanggal (07 10 2026)
+                        //   sebab produk curah tidak memiliki nomor karton fisik
+                        $isCurahWip = in_array($kategori, ['BERKO', 'ASIN_BARCO', 'ASIN_SAWIT', 'NO_SALT', 'BALO_GELOMBANG']);
+                        $batchVarian = ($isIfm && !$isCurahWip)
+                            ? $produksi->batch_wip_no
+                            : Carbon::parse($tgl)->format('d m Y');
 
                         $subtotalNilai = round($info['qty'] * $hppPerKg, 2);
 
@@ -813,7 +892,20 @@ class ProduksiService
 
                     $jenisCd = !empty($item['jenis_cd']) ? strtoupper($item['jenis_cd']) : ($barang->jenisBarang->jenis_barang_cd ?? 'FG');
                     $satuanCd = !empty($item['satuan_cd']) ? $item['satuan_cd'] : ($barang->satuanDasar->satuan_cd ?? 'KARTON');
-                    $batchItem = !empty($item['batch_no']) ? $item['batch_no'] : $produksi->batch_wip_no;
+
+                    // Deteksi produk curah (Berko, Asin Barco/Sawit, No Salt, Balo) vs kemasan karton urut (IFM)
+                    $barangCdUpper = strtoupper($barang->barang_cd);
+                    $barangNmUpper = strtoupper($barang->barang_nm);
+                    $isCurahItem = str_contains($barangCdUpper, 'BRK') || str_contains($barangNmUpper, 'BERKO')
+                        || str_contains($barangCdUpper, 'ASB') || str_contains($barangNmUpper, 'BARCO')
+                        || str_contains($barangCdUpper, 'ASW') || str_contains($barangNmUpper, 'SAWIT')
+                        || str_contains($barangCdUpper, 'NSL') || str_contains($barangNmUpper, 'NO SALT')
+                        || str_contains($barangCdUpper, 'BLQ') || str_contains($barangNmUpper, 'BALO')
+                        || ($barangCdUpper !== 'WIP-FCC' && str_starts_with($barangCdUpper, 'WIP-') && !str_contains($barangCdUpper, 'IFL') && !str_contains($barangCdUpper, 'IFM'));
+
+                    $defaultBatch = $isCurahItem ? Carbon::parse($tgl)->format('d m Y') : $produksi->batch_wip_no;
+                    $batchItem = (!empty($item['batch_no']) && $item['batch_no'] !== '-') ? $item['batch_no'] : $defaultBatch;
+
                     $hppItem = isset($item['hpp_satuan']) && (float)$item['hpp_satuan'] > 0 ? (float)$item['hpp_satuan'] : $hppPerKg;
 
                     $finalQtyHasil = $qtyHasil > 0 ? $qtyHasil : $qtyKg;

@@ -81,6 +81,7 @@ class DatProduksiHdr extends Model
         'total_biaya_produksi',
 
         // Output Timbangan WIP (Kg)
+        'ifl_qty',
         'asin_barco_qty',
         'asin_sawit_qty',
         'no_salt_qty',
@@ -145,6 +146,7 @@ class DatProduksiHdr extends Model
         'limbah_kimia_nilai'          => 'decimal:2',
         'total_overhead_nilai'        => 'decimal:2',
         'total_biaya_produksi'        => 'decimal:2',
+        'ifl_qty'                     => 'decimal:4',
         'asin_barco_qty'              => 'decimal:4',
         'asin_sawit_qty'              => 'decimal:4',
         'no_salt_qty'                 => 'decimal:4',

@@ -1,0 +1,155 @@
+/* ═══════════════════════════════════════════════════════════════
+   STYLESHEET FORMULIR INPUT PENYESUAIAN STOK (CREATE & SHOW)
+   ERP PT Mirasa Food Industry - Standar Korporat & Separation of Concerns
+   ═══════════════════════════════════════════════════════════════ */
+
+.adj-form-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.adj-section-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0 0 1rem 0;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #f1f5f9;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.adj-header-fields-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 1.5rem;
+}
+
+/* Tabel Input Dinamis Barang */
+.adj-items-table-wrap {
+    width: 100%;
+    overflow-x: auto;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    margin-bottom: 1.25rem;
+}
+
+.adj-items-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.825rem;
+}
+
+.adj-items-table th {
+    background: #f8fafc;
+    color: #334155;
+    font-weight: 700;
+    font-size: 0.725rem;
+    text-transform: uppercase;
+    padding: 0.75rem 0.625rem;
+    border-bottom: 2px solid #cbd5e1;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.adj-items-table td {
+    padding: 0.625rem 0.5rem;
+    border-bottom: 1px solid #e2e8f0;
+    vertical-align: middle;
+}
+
+.adj-items-table tr:last-child td {
+    border-bottom: none;
+}
+
+.adj-items-table .td-input {
+    min-width: 110px;
+}
+
+.adj-input-compact {
+    width: 100%;
+    padding: 0.4rem 0.5rem;
+    font-size: 0.825rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    outline: none;
+    font-family: 'Consolas', 'Courier New', monospace;
+    text-align: right;
+}
+
+.adj-input-compact:focus {
+    border-color: #0284c7;
+    box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.15);
+}
+
+.adj-input-readonly {
+    background: #f8fafc;
+    color: #475569;
+    border-color: #e2e8f0;
+    cursor: not-allowed;
+}
+
+.btn-remove-row {
+    background: transparent;
+    border: none;
+    color: #ef4444;
+    cursor: pointer;
+    padding: 0.35rem;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+}
+
+.btn-remove-row:hover {
+    background: #fee2e2;
+}
+
+/* Ringkasan Akumulasi Bawah */
+.adj-summary-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    background: #f8fafc;
+    padding: 1rem 1.25rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+}
+
+.adj-summary-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.adj-summary-label {
+    font-size: 0.725rem;
+    color: #64748b;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.adj-summary-val {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #0f172a;
+    font-family: 'Consolas', 'Courier New', monospace;
+}
+
+/* Form Actions */
+.adj-form-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    padding-top: 1rem;
+    border-top: 1px solid #f1f5f9;
+}

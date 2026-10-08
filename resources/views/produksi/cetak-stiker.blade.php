@@ -8,7 +8,7 @@
 </head>
 <body>
     @php
-        $isIfm = str_contains(strtoupper($produksi->lini_produksi), 'IFM');
+        $isIfm = str_contains(strtoupper($produksi->lini_produksi), 'IFM') || str_contains(strtoupper($produksi->lini_produksi), 'IFL');
         $title = $isIfm ? 'WIP-FCC' : strtoupper(str_replace('PRODUKSI ', '', $produksi->lini_produksi ?: 'FINISHED GOODS'));
         $expDateObj = !empty($produksi->exp_date)
             ? Carbon\Carbon::parse($produksi->exp_date)

@@ -124,9 +124,41 @@ class RekapHppImport
                 $bahanKimiaRp = (float) $this->cleanNum($sheet->getCell('AD' . $r)->getValue());
 
                 $totalBiaya   = (float) $this->cleanNum($sheet->getCell('AE' . $r)->getValue());
-                $totalWipQty  = (float) $this->cleanNum($sheet->getCell('AF' . $r)->getValue());
-                $rendemenPct  = (float) $this->cleanPercent($sheet->getCell('AG' . $r)->getValue(), $singkongQty, $totalWipQty);
-                $hppPerKg     = (float) $this->cleanNum($sheet->getCell('AH' . $r)->getValue());
+
+                // Deteksi format: 43 Kolom Asli Excel (AF s/d AQ) vs Legacy 34 Kolom (AF s/d AH)
+                $valAO = $sheet->getCell('AO' . $r)->getValue();
+                $hasExtendedWip = ($valAO !== null && trim((string)$valAO) !== '' && trim((string)$valAO) !== '-');
+
+                if ($hasExtendedWip) {
+                    $iflQty       = (float) $this->cleanNum($sheet->getCell('AF' . $r)->getValue());
+                    $asinBarcoQty = (float) $this->cleanNum($sheet->getCell('AG' . $r)->getValue());
+                    $asinSawitQty = (float) $this->cleanNum($sheet->getCell('AH' . $r)->getValue());
+                    $noSaltQty    = (float) $this->cleanNum($sheet->getCell('AI' . $r)->getValue());
+                    $baloQty      = (float) $this->cleanNum($sheet->getCell('AJ' . $r)->getValue());
+                    $berkoQty     = (float) $this->cleanNum($sheet->getCell('AK' . $r)->getValue());
+                    $berkoMeQty   = (float) $this->cleanNum($sheet->getCell('AL' . $r)->getValue());
+                    $totalBerkoQty= (float) $this->cleanNum($sheet->getCell('AM' . $r)->getValue());
+                    if ($totalBerkoQty <= 0 && ($berkoQty > 0 || $berkoMeQty > 0)) {
+                        $totalBerkoQty = $berkoQty + $berkoMeQty;
+                    }
+                    $berkoPct     = (float) $this->cleanPercent($sheet->getCell('AN' . $r)->getValue(), 1, 1);
+                    $totalWipQty  = (float) $this->cleanNum($sheet->getCell('AO' . $r)->getValue());
+                    $rendemenPct  = (float) $this->cleanPercent($sheet->getCell('AP' . $r)->getValue(), $singkongQty, $totalWipQty);
+                    $hppPerKg     = (float) $this->cleanNum($sheet->getCell('AQ' . $r)->getValue());
+                } else {
+                    $iflQty       = 0;
+                    $asinBarcoQty = 0;
+                    $asinSawitQty = 0;
+                    $noSaltQty    = 0;
+                    $baloQty      = 0;
+                    $berkoQty     = 0;
+                    $berkoMeQty   = 0;
+                    $totalBerkoQty= 0;
+                    $berkoPct     = 0;
+                    $totalWipQty  = (float) $this->cleanNum($sheet->getCell('AF' . $r)->getValue());
+                    $rendemenPct  = (float) $this->cleanPercent($sheet->getCell('AG' . $r)->getValue(), $singkongQty, $totalWipQty);
+                    $hppPerKg     = (float) $this->cleanNum($sheet->getCell('AH' . $r)->getValue());
+                }
 
                 // Lewati baris hari libur / tanpa produksi sama sekali
                 if ($singkongQty <= 0 && $totalWipQty <= 0 && $totalBiaya <= 0) {
@@ -156,6 +188,8 @@ class RekapHppImport
                     ->where('deleted_st', false)
                     ->first();
 
+                $liniName = $iflQty > 0 ? 'PRODUKSI IFL' : 'PRODUKSI MANUAL';
+
                 if (!$produksi) {
                     $noProduksi = $this->codeGenerator->generateKodeProduksi($tgl);
                     $produksi = new DatProduksiHdr();
@@ -163,10 +197,14 @@ class RekapHppImport
                     $produksi->produksi_tgl  = $tgl;
                     $produksi->gudang_id     = $gudang->gudang_id;
                     $produksi->shift_cd      = 'A';
-                    $produksi->lini_produksi = 'Lini Penggorengan & Keripik';
+                    $produksi->lini_produksi = $liniName;
                     $produksi->batch_wip_no  = 'A / ' . sprintf('%04d', $this->successCount + 1);
                     $produksi->status_cd     = 'POSTED';
                     $produksi->created_by    = $username;
+                } else {
+                    if (empty($produksi->lini_produksi) || $produksi->lini_produksi === 'Lini Penggorengan & Keripik') {
+                        $produksi->lini_produksi = $liniName;
+                    }
                 }
 
                 // Update kolom data
@@ -204,6 +242,15 @@ class RekapHppImport
                 $produksi->limbah_kimia_nilai          = $bahanKimiaRp;
 
                 $produksi->total_biaya_produksi        = $totalBiaya;
+                $produksi->ifl_qty                     = $iflQty;
+                $produksi->asin_barco_qty              = $asinBarcoQty;
+                $produksi->asin_sawit_qty              = $asinSawitQty;
+                $produksi->no_salt_qty                 = $noSaltQty;
+                $produksi->balo_gelombang_qty          = $baloQty;
+                $produksi->berko_qty                   = $berkoQty;
+                $produksi->berko_me_qty                = $berkoMeQty;
+                $produksi->total_berko_qty             = $totalBerkoQty;
+                $produksi->berko_persen                = $berkoPct;
                 $produksi->total_wip_qty               = $totalWipQty;
                 $produksi->rendemen_persen             = $rendemenPct;
                 $produksi->hpp_per_kg                  = $hppPerKg;

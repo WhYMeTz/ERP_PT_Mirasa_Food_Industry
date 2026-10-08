@@ -330,7 +330,7 @@ class MasterBarangExcelSeeder extends Seeder
             // --- WORK IN PROCESS (WIP) ---
             [
                 'barang_cd' => 'WIP-FCC',
-                'barang_nm' => 'KERIPIK SINGKONG TANPA BUMBU',
+                'barang_nm' => 'KERIPIK SINGKONG TANPA BUMBU (IFL)',
                 'jenis_cd'  => 'WIP',
                 'satuan_cd' => 'KARTON 6KG',
                 'harga'     => 0,

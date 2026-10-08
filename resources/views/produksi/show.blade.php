@@ -91,7 +91,7 @@
     </div>
 
     @php
-        $isIfm = str_contains(strtoupper($produksi->lini_produksi), 'IFM');
+        $isIfm = str_contains(strtoupper($produksi->lini_produksi), 'IFM') || str_contains(strtoupper($produksi->lini_produksi), 'IFL');
         $expDate = !empty($produksi->exp_date)
             ? Carbon\Carbon::parse($produksi->exp_date)->format('d/m/Y')
             : ($isIfm

@@ -557,6 +557,97 @@
             border-top: 1px solid #e2e8f0;
             margin-top: auto;
         }
+
+        /* ══════════════════════════════════════════════════════════
+           GLOBAL STANDARD SMART ACTION DROPDOWN (MIRASA ERP)
+           ══════════════════════════════════════════════════════════ */
+        .btn-action-trigger {
+            background: #ffffff;
+            border: 1.5px solid #cbd5e1;
+            color: #1e293b;
+            font-size: 0.8rem;
+            font-weight: 700;
+            padding: 0.32rem 0.75rem;
+            border-radius: 6px;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            cursor: pointer;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+            transition: all 0.15s ease;
+            white-space: nowrap;
+        }
+
+        .btn-action-trigger:hover,
+        .btn-action-trigger.active {
+            background: #f0fdf4;
+            border-color: #059669;
+            color: #059669;
+        }
+
+        .action-dropdown-menu {
+            display: none;
+            position: fixed;
+            z-index: 999999 !important;
+            min-width: 195px;
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+            padding: 0.35rem 0;
+            text-align: left;
+            overflow: hidden;
+            animation: fadeInSmartDropdown 0.12s ease-out;
+        }
+
+        @keyframes fadeInSmartDropdown {
+            from {
+                opacity: 0;
+                transform: scale(0.96);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .action-dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.55rem 0.95rem;
+            font-size: 0.8125rem;
+            font-weight: 500;
+            color: #1e293b;
+            text-decoration: none;
+            transition: background 0.12s ease, color 0.12s ease;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            width: 100%;
+            text-align: left;
+            box-sizing: border-box;
+        }
+
+        .action-dropdown-item:hover {
+            background: #f0fdf4;
+            color: #059669;
+        }
+
+        .action-dropdown-item.danger-item {
+            color: #dc2626;
+        }
+
+        .action-dropdown-item.danger-item:hover {
+            background: #fef2f2;
+            color: #dc2626;
+        }
+
+        .action-dropdown-divider {
+            height: 1px;
+            background: #f1f5f9;
+            margin: 0.3rem 0;
+        }
     </style>
     @stack('styles')
 </head>
@@ -714,7 +805,7 @@
                     @if (Auth::user()->canAccessStok())
                         <div class="pill-dropdown" id="navDropdownStok">
                             <button type="button" 
-                                    class="pill-dropdown-btn {{ request()->routeIs('gudang.stok.*') ? 'active' : '' }}" 
+                                    class="pill-dropdown-btn {{ request()->routeIs('gudang.stok.*', 'gudang.adjustment.*') ? 'active' : '' }}" 
                                     onclick="toggleNavDropdown('navDropdownStok', event)">
                                 <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #059669;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2 1.5 3 3.5 3h9c2 0 3.5-1 3.5-3V7M4 7c0-2 1.5-3 3.5-3h9c2 0 3.5 1 3.5 3M4 7h16m-8 4v6"/></svg>
                                 <span>Stok Gudang (Bahan)</span>
@@ -740,6 +831,13 @@
                                     <div style="display: flex; flex-direction: column;">
                                         <span style="font-weight: 600;">Buku Kartu Stok Bahan (Ledger)</span>
                                         <span style="font-size: 0.6875rem; color: #64748b;">Mutasi penerimaan supplier &amp; pemakaian SPK</span>
+                                    </div>
+                                </a>
+                                <a href="{{ route('gudang.adjustment.index') }}" class="mega-item {{ request()->routeIs('gudang.adjustment.*') ? 'active' : '' }}">
+                                    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                    <div style="display: flex; flex-direction: column;">
+                                        <span style="font-weight: 600;">Adjustment</span>
+                                        <span style="font-size: 0.6875rem; color: #64748b;">Koreksi selisih, susut fisik &amp; opname</span>
                                     </div>
                                 </a>
                             </div>
@@ -777,6 +875,12 @@
                                             <a href="{{ route('master.lini_produksi.index') }}" class="mega-item {{ request()->routeIs('master.lini_produksi.*') ? 'active' : '' }}">
                                                 <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
                                                 <span>Lini Produksi / Tujuan</span>
+                                            </a>
+                                        @endif
+                                        @if (Auth::user()->canAccessTarifProduksi())
+                                            <a href="{{ route('master.tarif_produksi.index') }}" class="mega-item {{ request()->routeIs('master.tarif_produksi.*') ? 'active' : '' }}">
+                                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                                <span>Standar Tarif Produksi &amp; FOH</span>
                                             </a>
                                         @endif
                                         @if (Auth::user()->isSuperAdmin() || Auth::user()->isGudang())
@@ -1050,6 +1154,69 @@
                 }
             }, 500);
         }
+
+        // Global Standar Smart Action Dropdown (Auto-fallback ke seluruh modul ERP)
+        let globalActiveActionDropdown = null;
+        window.toggleSmartActionDropdown = function(button, event, menuId) {
+            if (event) {
+                event.stopPropagation();
+                event.preventDefault();
+            }
+            const menu = document.getElementById(menuId);
+            if (!menu) return;
+
+            if (globalActiveActionDropdown === menu) {
+                menu.style.display = 'none';
+                button.classList.remove('active');
+                globalActiveActionDropdown = null;
+                return;
+            }
+
+            if (globalActiveActionDropdown) {
+                globalActiveActionDropdown.style.display = 'none';
+                document.querySelectorAll('.btn-action-trigger.active').forEach(b => b.classList.remove('active'));
+            }
+
+            const rect = button.getBoundingClientRect();
+            const menuWidth = 195;
+            const windowWidth = window.innerWidth;
+            const windowHeight = window.innerHeight;
+
+            let left = rect.right - menuWidth;
+            if (left < 10) left = 10;
+            if (left + menuWidth > windowWidth - 10) {
+                left = windowWidth - menuWidth - 10;
+            }
+
+            let top = rect.bottom + 4;
+            const estimatedHeight = 130;
+            if (top + estimatedHeight > windowHeight - 10 && rect.top > estimatedHeight) {
+                top = rect.top - estimatedHeight - 4;
+            }
+
+            menu.style.position = 'fixed';
+            menu.style.top = top + 'px';
+            menu.style.left = left + 'px';
+            menu.style.display = 'block';
+            button.classList.add('active');
+            globalActiveActionDropdown = menu;
+        };
+
+        document.addEventListener('click', function(e) {
+            if (globalActiveActionDropdown && !globalActiveActionDropdown.contains(e.target) && !e.target.closest('.btn-action-trigger')) {
+                globalActiveActionDropdown.style.display = 'none';
+                document.querySelectorAll('.btn-action-trigger.active').forEach(b => b.classList.remove('active'));
+                globalActiveActionDropdown = null;
+            }
+        });
+
+        window.addEventListener('scroll', function() {
+            if (globalActiveActionDropdown) {
+                globalActiveActionDropdown.style.display = 'none';
+                document.querySelectorAll('.btn-action-trigger.active').forEach(b => b.classList.remove('active'));
+                globalActiveActionDropdown = null;
+            }
+        }, true);
     </script>
     @stack('scripts')
 </body>

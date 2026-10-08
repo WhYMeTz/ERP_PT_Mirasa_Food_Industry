@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\RoleController;
 use App\Http\Controllers\Auth\UserController;
 use App\Http\Controllers\Common\CodeGeneratorController;
+use App\Http\Controllers\Gudang\AdjustmentController;
 use App\Http\Controllers\Gudang\PemakaianController;
 use App\Http\Controllers\Gudang\PoController;
 use App\Http\Controllers\Gudang\QcInboundController;
@@ -19,6 +20,7 @@ use App\Http\Controllers\MasterData\KaryawanController;
 use App\Http\Controllers\MasterData\LiniProduksiController;
 use App\Http\Controllers\MasterData\SatuanController;
 use App\Http\Controllers\MasterData\SupplierController;
+use App\Http\Controllers\MasterData\TarifProduksiController;
 use App\Http\Controllers\Penjualan\SoController;
 use App\Http\Controllers\Produksi\BomController;
 use App\Http\Controllers\Produksi\ProduksiController;
@@ -86,6 +88,16 @@ Route::middleware('auth')->group(function () {
         ->middleware('role:SUPERADMIN,STAFF_PRODUKSI,master_resep_view,master_resep_manage');
     Route::resource('master-lini-produksi', LiniProduksiController::class)
         ->names('master.lini_produksi');
+
+    // Master Standar Tarif Produksi & FOH Pabrik
+    Route::get('master-tarif-produksi/api-rates', [TarifProduksiController::class, 'apiRates'])
+        ->name('master.tarif_produksi.api-rates');
+    Route::post('master-tarif-produksi/quick-update', [TarifProduksiController::class, 'quickUpdate'])
+        ->name('master.tarif_produksi.quick-update');
+    Route::get('master-tarif-produksi', [TarifProduksiController::class, 'index'])
+        ->name('master.tarif_produksi.index');
+    Route::put('master-tarif-produksi/{id}', [TarifProduksiController::class, 'update'])
+        ->name('master.tarif_produksi.update');
 
     // Master Supplier
     Route::resource('master-jenis-supplier', JenisSupplierController::class)->names('master.jenis_supplier');
@@ -214,6 +226,14 @@ Route::middleware('auth')->group(function () {
         Route::get('stok/rekap/export-pdf', [StokController::class, 'exportRekapPdf'])->name('stok.rekap.export-pdf')->middleware('role:stok_view');
         Route::get('stok/ledger', [StokController::class, 'ledger'])->name('stok.ledger')->middleware('role:stok_view');
         Route::get('stok/batch-detail/{batch_no}', [StokController::class, 'batchDetail'])->name('stok.batch-detail')->middleware('role:stok_view');
+
+        // Penyesuaian Persediaan (Stock Adjustment / Opname)
+        Route::get('adjustment/ajax-item-info', [AdjustmentController::class, 'ajaxItemInfo'])->name('adjustment.ajax-item-info')->middleware('role:stok_view,gudang');
+        Route::get('adjustment', [AdjustmentController::class, 'index'])->name('adjustment.index')->middleware('role:stok_view,gudang');
+        Route::get('adjustment/create', [AdjustmentController::class, 'create'])->name('adjustment.create')->middleware('role:stok_view,gudang');
+        Route::post('adjustment', [AdjustmentController::class, 'store'])->name('adjustment.store')->middleware('role:stok_view,gudang');
+        Route::get('adjustment/{id}', [AdjustmentController::class, 'show'])->name('adjustment.show')->middleware('role:stok_view,gudang');
+        Route::post('adjustment/{id}/void', [AdjustmentController::class, 'void'])->name('adjustment.void')->middleware('role:stok_view,gudang');
     });
 
     // Produksi & HPP Harian (Sesuai Excel Asli PT Mirasa)

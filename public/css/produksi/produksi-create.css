@@ -667,3 +667,375 @@
     }
 }
 
+/* ========================================================
+   MODAL QUICK TARIF - EXECUTIVE ENTERPRISE REDESIGN
+   ======================================================== */
+.modal-backdrop-custom {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(15, 23, 42, 0.65);
+    backdrop-filter: blur(4px);
+    z-index: 999999;
+    align-items: center;
+    justify-content: center;
+}
+
+.quick-tarif-dialog {
+    background: #ffffff;
+    border-radius: 12px;
+    width: 95%;
+    max-width: 760px;
+    max-height: 94vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25), 0 0 0 1px rgba(15, 23, 42, 0.05);
+    overflow: hidden;
+    animation: modalSlideUp 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.quick-tarif-header {
+    background: #ffffff;
+    padding: 0.95rem 1.25rem;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.quick-tarif-header-left {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.quick-tarif-header-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+    background: #ecfdf5;
+    color: #059669;
+    border: 1px solid #a7f3d0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.quick-tarif-header-title {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1.25;
+}
+
+.quick-tarif-header-subtitle {
+    font-size: 0.725rem;
+    color: #64748b;
+    margin-top: 0.1rem;
+}
+
+.quick-tarif-btn-close {
+    width: 30px;
+    height: 30px;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: #64748b;
+    font-size: 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.quick-tarif-btn-close:hover {
+    background: #f1f5f9;
+    color: #0f172a;
+}
+
+.quick-tarif-body {
+    padding: 1rem 1.25rem;
+    overflow-y: auto;
+    overflow-x: hidden;
+    flex: 1;
+    box-sizing: border-box;
+}
+
+.quick-tarif-notice {
+    background: #f0f9ff;
+    border: 1px solid #bae6fd;
+    border-radius: 8px;
+    padding: 0.55rem 0.85rem;
+    margin-bottom: 0.85rem;
+    font-size: 0.75rem;
+    color: #0369a1;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    line-height: 1.35;
+}
+
+.quick-tarif-section {
+    margin-bottom: 0.85rem;
+}
+
+.quick-tarif-sec-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.55rem;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 0.3rem;
+}
+
+.quick-tarif-sec-title {
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: #0f172a;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.quick-tarif-sec-badge {
+    font-size: 0.675rem;
+    color: #0284c7;
+    background: #f0f9ff;
+    border: 1px solid #bae6fd;
+    padding: 0.1rem 0.45rem;
+    border-radius: 4px;
+    font-weight: 700;
+}
+
+.quick-tarif-sec-badge-flat {
+    color: #065f46;
+    background: #ecfdf5;
+    border-color: #a7f3d0;
+}
+
+.quick-tarif-grid-2 {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.6rem;
+}
+
+.quick-tarif-grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.6rem;
+}
+
+.quick-tarif-card {
+    border: 1.5px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0.55rem 0.75rem;
+    background: #ffffff;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-width: 0;
+    box-sizing: border-box;
+    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.quick-tarif-card:hover {
+    border-color: #cbd5e1;
+    background: #f8fafc;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
+}
+
+.quick-tarif-card-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.35rem;
+    margin-bottom: 0.15rem;
+}
+
+.quick-tarif-card-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #1e293b;
+    line-height: 1.25;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.quick-tarif-pill {
+    font-size: 0.625rem;
+    font-weight: 700;
+    color: #0284c7;
+    background: #f0f9ff;
+    border: 1px solid #bae6fd;
+    padding: 0.05rem 0.35rem;
+    border-radius: 4px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.quick-tarif-pill.pill-green {
+    color: #059669;
+    background: #ecfdf5;
+    border-color: #a7f3d0;
+}
+
+.quick-tarif-card-desc {
+    font-size: 0.675rem;
+    color: #64748b;
+    margin-bottom: 0.35rem;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.quick-tarif-input-box {
+    display: flex;
+    align-items: stretch;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 6px;
+    overflow: hidden;
+    background: #ffffff;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.quick-tarif-input-box:focus-within {
+    border-color: #059669;
+    box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.15);
+}
+
+.quick-tarif-addon {
+    background: #f8fafc;
+    color: #475569;
+    font-weight: 700;
+    font-size: 0.725rem;
+    padding: 0.35rem 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+    flex-shrink: 0;
+}
+
+.quick-tarif-addon-left {
+    border-right: 1px solid #e2e8f0;
+}
+
+.quick-tarif-addon-right {
+    border-left: 1px solid #e2e8f0;
+    color: #64748b;
+    font-size: 0.685rem;
+    font-weight: 600;
+    padding: 0.35rem 0.45rem;
+}
+
+.quick-tarif-input {
+    flex: 1;
+    border: none;
+    padding: 0.35rem 0.5rem;
+    font-size: 0.9rem;
+    font-weight: 800;
+    color: #0f172a;
+    text-align: right;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    outline: none;
+    width: 100%;
+    min-width: 0;
+    background: transparent;
+    box-sizing: border-box;
+}
+
+.quick-tarif-input::-webkit-inner-spin-button,
+.quick-tarif-input::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.quick-tarif-input {
+    -moz-appearance: textfield;
+}
+
+.quick-tarif-footer {
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+    padding: 0.75rem 1.25rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.quick-tarif-footer-link {
+    font-size: 0.775rem;
+    color: #0284c7;
+    text-decoration: none;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    transition: color 0.15s;
+}
+
+.quick-tarif-footer-link:hover {
+    color: #0369a1;
+    text-decoration: underline;
+}
+
+.quick-tarif-btn-cancel {
+    background: #ffffff;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 0.5rem 1rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #475569;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.quick-tarif-btn-cancel:hover {
+    background: #f1f5f9;
+    border-color: #94a3b8;
+    color: #0f172a;
+}
+
+.quick-tarif-btn-save {
+    background: #059669;
+    border: 1px solid #047857;
+    border-radius: 6px;
+    padding: 0.5rem 1.25rem;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: #ffffff;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+    transition: all 0.15s ease;
+}
+
+.quick-tarif-btn-save:hover {
+    background: #047857;
+    box-shadow: 0 3px 8px rgba(5, 150, 105, 0.25);
+    transform: translateY(-1px);
+}
+
+@media (max-width: 680px) {
+    .quick-tarif-grid-2,
+    .quick-tarif-grid-3 {
+        grid-template-columns: 1fr;
+    }
+}
+
+

@@ -125,16 +125,39 @@ class RekapHppImport
 
                 $totalBiaya   = (float) $this->cleanNum($sheet->getCell('AE' . $r)->getValue());
 
-                // Deteksi format: 43 Kolom Asli Excel (AF s/d AQ) vs Legacy 34 Kolom (AF s/d AH)
+                // Deteksi format: 45 Kolom Asli Excel (AF s/d AS) vs 43 Kolom vs Legacy 34 Kolom
+                $valAS = $sheet->getCell('AS' . $r)->getValue();
+                $valAQ = $sheet->getCell('AQ' . $r)->getValue();
                 $valAO = $sheet->getCell('AO' . $r)->getValue();
-                $hasExtendedWip = ($valAO !== null && trim((string)$valAO) !== '' && trim((string)$valAO) !== '-');
+                $has45Cols = ($valAS !== null && trim((string)$valAS) !== '' && trim((string)$valAS) !== '-');
+                $has43Cols = !$has45Cols && ($valAQ !== null && trim((string)$valAQ) !== '' && trim((string)$valAQ) !== '-');
 
-                if ($hasExtendedWip) {
+                if ($has45Cols) {
                     $iflQty       = (float) $this->cleanNum($sheet->getCell('AF' . $r)->getValue());
                     $asinBarcoQty = (float) $this->cleanNum($sheet->getCell('AG' . $r)->getValue());
                     $asinSawitQty = (float) $this->cleanNum($sheet->getCell('AH' . $r)->getValue());
                     $noSaltQty    = (float) $this->cleanNum($sheet->getCell('AI' . $r)->getValue());
+                    $ucampQty     = (float) $this->cleanNum($sheet->getCell('AJ' . $r)->getValue());
+                    $baloQty      = (float) $this->cleanNum($sheet->getCell('AK' . $r)->getValue());
+                    $balqiQty     = (float) $this->cleanNum($sheet->getCell('AL' . $r)->getValue());
+                    $berkoQty     = (float) $this->cleanNum($sheet->getCell('AM' . $r)->getValue());
+                    $berkoMeQty   = (float) $this->cleanNum($sheet->getCell('AN' . $r)->getValue());
+                    $totalBerkoQty= (float) $this->cleanNum($sheet->getCell('AO' . $r)->getValue());
+                    if ($totalBerkoQty <= 0 && ($berkoQty > 0 || $berkoMeQty > 0)) {
+                        $totalBerkoQty = $berkoQty + $berkoMeQty;
+                    }
+                    $berkoPct     = (float) $this->cleanPercent($sheet->getCell('AP' . $r)->getValue(), 1, 1);
+                    $totalWipQty  = (float) $this->cleanNum($sheet->getCell('AQ' . $r)->getValue());
+                    $rendemenPct  = (float) $this->cleanPercent($sheet->getCell('AR' . $r)->getValue(), $singkongQty, $totalWipQty);
+                    $hppPerKg     = (float) $this->cleanNum($sheet->getCell('AS' . $r)->getValue());
+                } elseif ($has43Cols || ($valAO !== null && trim((string)$valAO) !== '')) {
+                    $iflQty       = (float) $this->cleanNum($sheet->getCell('AF' . $r)->getValue());
+                    $asinBarcoQty = (float) $this->cleanNum($sheet->getCell('AG' . $r)->getValue());
+                    $asinSawitQty = (float) $this->cleanNum($sheet->getCell('AH' . $r)->getValue());
+                    $noSaltQty    = (float) $this->cleanNum($sheet->getCell('AI' . $r)->getValue());
+                    $ucampQty     = 0;
                     $baloQty      = (float) $this->cleanNum($sheet->getCell('AJ' . $r)->getValue());
+                    $balqiQty     = 0;
                     $berkoQty     = (float) $this->cleanNum($sheet->getCell('AK' . $r)->getValue());
                     $berkoMeQty   = (float) $this->cleanNum($sheet->getCell('AL' . $r)->getValue());
                     $totalBerkoQty= (float) $this->cleanNum($sheet->getCell('AM' . $r)->getValue());
@@ -150,7 +173,9 @@ class RekapHppImport
                     $asinBarcoQty = 0;
                     $asinSawitQty = 0;
                     $noSaltQty    = 0;
+                    $ucampQty     = 0;
                     $baloQty      = 0;
+                    $balqiQty     = 0;
                     $berkoQty     = 0;
                     $berkoMeQty   = 0;
                     $totalBerkoQty= 0;
@@ -246,7 +271,9 @@ class RekapHppImport
                 $produksi->asin_barco_qty              = $asinBarcoQty;
                 $produksi->asin_sawit_qty              = $asinSawitQty;
                 $produksi->no_salt_qty                 = $noSaltQty;
+                $produksi->ucamp_qty                   = $ucampQty;
                 $produksi->balo_gelombang_qty          = $baloQty;
+                $produksi->balqi_qty                   = $balqiQty;
                 $produksi->berko_qty                   = $berkoQty;
                 $produksi->berko_me_qty                = $berkoMeQty;
                 $produksi->total_berko_qty             = $totalBerkoQty;

@@ -111,13 +111,13 @@
                         <div class="quick-tarif-card">
                             <div class="quick-tarif-card-head">
                                 <label class="quick-tarif-card-title" for="quick_FOH_FOTOCOPY">Fotocopy &amp; ATK</label>
-                                <span class="quick-tarif-pill">× / Kg</span>
+                                <span class="quick-tarif-pill">Rp / Lembar</span>
                             </div>
-                            <div class="quick-tarif-card-desc">Log sheet shift, form cetak &amp; alat tulis</div>
+                            <div class="quick-tarif-card-desc">2 stiker label per box karton (Rp/lembar)</div>
                             <div class="quick-tarif-input-box">
-                                <span class="quick-tarif-addon quick-tarif-addon-left">x</span>
+                                <span class="quick-tarif-addon quick-tarif-addon-left">Rp</span>
                                 <input type="number" step="0.01" min="0" name="rates[FOH_FOTOCOPY]" id="quick_FOH_FOTOCOPY" class="quick-tarif-input" value="{{ $fohRates['fotocopy'] ?? 28.00 }}">
-                                <span class="quick-tarif-addon quick-tarif-addon-right">/ Kg</span>
+                                <span class="quick-tarif-addon quick-tarif-addon-right">/ Lbr</span>
                             </div>
                         </div>
                     </div>

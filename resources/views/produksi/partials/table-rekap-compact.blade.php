@@ -39,7 +39,7 @@
                 <th style="width: 14%;">Tanggal &amp; Shift</th>
                 <th style="width: 12%;">Lini &amp; Batch</th>
                 <th style="width: 13%; text-align: right;">Bahan Baku (Kg)</th>
-                <th style="width: 13%; text-align: right;">Output WIP (Kg)</th>
+                <th style="width: 13%; text-align: right;">Total WIP (Kg)</th>
                 <th style="width: 10%; text-align: center;">Rendemen</th>
                 <th style="width: 14%; text-align: right;">Total Biaya (Rp)</th>
                 <th style="width: 11%; text-align: right;">HPP / Kg</th>
@@ -76,9 +76,15 @@
                             </div>
                             <div style="display: flex; gap: 0.35rem; align-items: center; margin-top: 0.2rem;">
                                 @if(!empty($d['shift_cd']))
-                                    <span style="font-size: 0.65rem; font-weight: 700; padding: 0.1rem 0.35rem; border-radius: 3px; {{ $d['shift_cd'] === 'A' ? 'background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe;' : 'background: #fdf4ff; color: #86198f; border: 1px solid #f5d0fe;' }}">
-                                        Shift {{ $d['shift_cd'] }}
-                                    </span>
+                                    @if(($d['shift_count'] ?? 1) > 1)
+                                        <span style="font-size: 0.65rem; font-weight: 700; padding: 0.1rem 0.35rem; border-radius: 3px; background: #e0e7ff; color: #3730a3; border: 1px solid #c7d2fe;" title="{{ $d['shift_count'] }} shift tercatat pada tanggal ini">
+                                            {{ $d['shift_count'] }} Shift ({{ $d['shift_cd'] }})
+                                        </span>
+                                    @else
+                                        <span style="font-size: 0.65rem; font-weight: 700; padding: 0.1rem 0.35rem; border-radius: 3px; {{ $d['shift_cd'] === 'A' ? 'background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe;' : 'background: #fdf4ff; color: #86198f; border: 1px solid #f5d0fe;' }}">
+                                            Shift {{ $d['shift_cd'] }}
+                                        </span>
+                                    @endif
                                 @endif
                                 <span style="font-size: 0.7rem; color: #64748b;">
                                     Tgl {{ $d['day'] }}
@@ -115,7 +121,7 @@
                             </div>
                             @if(!empty($d['berko_persen']) && $d['berko_persen'] > 0)
                                 <div style="color: #94a3b8; font-size: 0.65rem;">
-                                    Remukan: {{ number_format($d['berko_persen'], 1) }}%
+                                    Berko: {{ number_format($d['berko_persen'], 1) }}%
                                 </div>
                             @endif
                         </td>
@@ -167,19 +173,40 @@
                                     <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                                 </button>
                                 <div id="{{ $compactMenuId }}" class="action-dropdown-menu">
-                                    <a href="{{ route('produksi.show', $d['produksi_id']) }}" class="action-dropdown-item">
-                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                                        <span>Detail Dokumen</span>
-                                    </a>
-                                    <a href="{{ route('produksi.cetak-stiker', $d['produksi_id']) }}" class="action-dropdown-item" target="_blank">
-                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-                                        <span>Cetak Stiker Karton</span>
-                                    </a>
-                                    <div class="action-dropdown-divider"></div>
-                                    <button type="button" class="action-dropdown-item danger-item" onclick="openDeleteProduksiModal({{ $d['produksi_id'] }}, '{{ $d['produksi_no'] }}', '{{ $formattedDate }}', '{{ $d['shift_cd'] }}', '{{ $d['batch_wip_no'] }}')">
-                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                        <span>Hapus Produksi</span>
-                                    </button>
+                                    @if(($d['shift_count'] ?? 1) > 1 && !empty($d['shift_records']))
+                                        <div style="padding: 0.35rem 0.75rem; font-size: 0.675rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; background: #f8fafc; border-bottom: 1px solid #f1f5f9;">
+                                            Rincian Shift ({{ $d['shift_count'] }} Dokumen)
+                                        </div>
+                                        @foreach($d['shift_records'] as $sRec)
+                                            <a href="{{ route('produksi.show', $sRec['produksi_id']) }}" class="action-dropdown-item">
+                                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                                <span>Detail Shift {{ $sRec['shift_cd'] }} ({{ $sRec['produksi_no'] }})</span>
+                                            </a>
+                                            <a href="{{ route('produksi.cetak-stiker', $sRec['produksi_id']) }}" class="action-dropdown-item" target="_blank" style="padding-left: 1.75rem; font-size: 0.75rem; color: #475569;">
+                                                <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                                                <span>Cetak Stiker Shift {{ $sRec['shift_cd'] }}</span>
+                                            </a>
+                                        @endforeach
+                                        <div class="action-dropdown-divider"></div>
+                                        <button type="button" class="action-dropdown-item danger-item" onclick="openDeleteProduksiModal({{ $d['produksi_id'] }}, '{{ $d['produksi_no'] }}', '{{ $formattedDate }}', '{{ $d['shift_cd'] }}', '{{ $d['batch_wip_no'] }}')">
+                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                            <span>Hapus Data Produksi</span>
+                                        </button>
+                                    @else
+                                        <a href="{{ route('produksi.show', $d['produksi_id']) }}" class="action-dropdown-item">
+                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                            <span>Detail Dokumen</span>
+                                        </a>
+                                        <a href="{{ route('produksi.cetak-stiker', $d['produksi_id']) }}" class="action-dropdown-item" target="_blank">
+                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                                            <span>Cetak Stiker Karton</span>
+                                        </a>
+                                        <div class="action-dropdown-divider"></div>
+                                        <button type="button" class="action-dropdown-item danger-item" onclick="openDeleteProduksiModal({{ $d['produksi_id'] }}, '{{ $d['produksi_no'] }}', '{{ $formattedDate }}', '{{ $d['shift_cd'] }}', '{{ $d['batch_wip_no'] }}')">
+                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                            <span>Hapus Produksi</span>
+                                        </button>
+                                    @endif
                                 </div>
                             @else
                                 <span style="color: #cbd5e1;">-</span>
@@ -361,10 +388,6 @@
                                         <span class="mini-cost-badge" style="background: #ca8a04; color: #ffffff; font-weight: 700;">HPP Final</span>
                                     </div>
                                     <div class="mini-cost-list">
-                                        <div class="mini-cost-row">
-                                            <span>Total Output WIP:</span>
-                                            <strong style="color: #0369a1; font-size: 0.85rem;">{{ number_format($d['total_wip_qty'], 2, ',', '.') }} kg</strong>
-                                        </div>
                                         @if(!empty($d['ifl_qty']) && $d['ifl_qty'] > 0)
                                             <div class="mini-cost-row">
                                                 <span style="color: #0369a1;">• Lini IFL (Indofood):</span>
@@ -372,7 +395,7 @@
                                             </div>
                                         @endif
                                         @php
-                                            $manualQty = (float)($d['asin_barco_qty'] ?? 0) + (float)($d['asin_sawit_qty'] ?? 0) + (float)($d['no_salt_qty'] ?? 0) + (float)($d['balo_gelombang_qty'] ?? 0);
+                                            $manualQty = (float)($d['asin_barco_qty'] ?? 0) + (float)($d['asin_sawit_qty'] ?? 0) + (float)($d['no_salt_qty'] ?? 0) + (float)($d['ucamp_qty'] ?? 0) + (float)($d['balo_gelombang_qty'] ?? 0) + (float)($d['balqi_qty'] ?? 0);
                                         @endphp
                                         @if($manualQty > 0)
                                             <div class="mini-cost-row">
@@ -380,12 +403,32 @@
                                                 <strong style="color: #475569;">{{ number_format($manualQty, 2, ',', '.') }} kg</strong>
                                             </div>
                                         @endif
-                                        @if($d['total_berko_qty'] > 0)
+                                        @if(!empty($d['berko_me_qty']) && $d['berko_me_qty'] > 0)
                                             <div class="mini-cost-row">
-                                                <span style="color: #b91c1c;">• Remukan (Berko):</span>
+                                                <span style="color: #b91c1c;">• Berko:</span>
+                                                <strong style="color: #b91c1c;">{{ number_format($d['berko_qty'], 2, ',', '.') }} kg</strong>
+                                            </div>
+                                            <div class="mini-cost-row">
+                                                <span style="color: #b91c1c;">• Berko ME:</span>
+                                                <strong style="color: #b91c1c;">{{ number_format($d['berko_me_qty'], 2, ',', '.') }} kg</strong>
+                                            </div>
+                                            <div class="mini-cost-row">
+                                                <span style="color: #b91c1c; font-weight: 700;">• Total Berko:</span>
+                                                <strong style="color: #b91c1c;">{{ number_format($d['total_berko_qty'], 2, ',', '.') }} kg ({{ number_format($d['berko_persen'], 1) }}%)</strong>
+                                            </div>
+                                        @elseif($d['total_berko_qty'] > 0)
+                                            <div class="mini-cost-row">
+                                                <span style="color: #b91c1c;">• Berko:</span>
                                                 <strong style="color: #b91c1c;">{{ number_format($d['total_berko_qty'], 2, ',', '.') }} kg ({{ number_format($d['berko_persen'], 1) }}%)</strong>
                                             </div>
                                         @endif
+
+                                        {{-- TOTAL WIP (AKUMULASI HASIL PRODUKSI) --}}
+                                        <div class="mini-cost-row" style="background: #e0f2fe; padding: 0.35rem 0.5rem; border-radius: 4px; border: 1px solid #bae6fd; margin: 0.25rem 0;">
+                                            <span style="font-weight: 800; color: #0369a1; font-size: 0.775rem;">Total WIP (Akumulasi):</span>
+                                            <strong style="color: #0284c7; font-size: 0.9rem; font-family: monospace;">{{ number_format($d['total_wip_qty'], 2, ',', '.') }} kg</strong>
+                                        </div>
+
                                         <div class="mini-cost-row">
                                             <span>Rendemen Bersih:</span>
                                             <strong style="color: {{ $rBadgeColor }};">{{ number_format($rendemen, 2, ',', '.') }}%</strong>

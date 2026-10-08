@@ -83,7 +83,9 @@ class ProduksiService
             'asin_barco_qty'              => (float) $records->sum('asin_barco_qty'),
             'asin_sawit_qty'              => (float) $records->sum('asin_sawit_qty'),
             'no_salt_qty'                 => (float) $records->sum('no_salt_qty'),
+            'ucamp_qty'                   => (float) $records->sum('ucamp_qty'),
             'balo_gelombang_qty'          => (float) $records->sum('balo_gelombang_qty'),
+            'balqi_qty'                   => (float) $records->sum('balqi_qty'),
             'berko_qty'                   => (float) $records->sum('berko_qty'),
             'berko_me_qty'                => (float) $records->sum('berko_me_qty'),
             'total_berko_qty'             => (float) $records->sum('total_berko_qty'),
@@ -130,83 +132,154 @@ class ProduksiService
             });
 
             if ($dayRecords->isNotEmpty()) {
+                // KONSOLIDASI HARIAN (AKUMULASI SHIFT A + B KE DALAM 1 BARIS TANGGAL SESUAI SPREADSHEET EXCEL)
+                $daySingkongQty = (float) $dayRecords->sum('singkong_qty');
+                $daySingkongNilai = (float) $dayRecords->sum('singkong_nilai');
+                $daySawitQty = (float) $dayRecords->sum('minyak_sawit_qty');
+                $dayKelapaQty = (float) $dayRecords->sum('minyak_kelapa_qty');
+                $dayMinyakNilai = (float) $dayRecords->sum('minyak_nilai');
+                $dayMinyakRasio = $daySingkongQty > 0 ? (($daySawitQty + $dayKelapaQty) / $daySingkongQty) * 100 : 0;
+
+                $dayCngMmbtu = (float) $dayRecords->sum('cng_mmbtu');
+                $dayCngNilai = (float) $dayRecords->sum('cng_nilai');
+
+                $dayTkLangsung = (int) $dayRecords->sum('tk_langsung_org');
+                $dayTkTidakLangsung = (int) $dayRecords->sum('tk_tidak_langsung_org');
+                $dayTkTraining = (int) $dayRecords->sum('tk_training_org');
+                $dayTkTotalNilai = (float) $dayRecords->sum('tk_total_nilai');
+
+                $dayBumbuNilai = (float) $dayRecords->sum('bumbu_nilai');
+                $dayKartonBaru = (float) $dayRecords->sum('karton_baru_nilai');
+                $dayKartonBekas = (float) $dayRecords->sum('karton_bekas_nilai');
+                $dayPlastikHd = (float) $dayRecords->sum('plastik_hd_nilai');
+                $dayLakbanBesar = (float) $dayRecords->sum('lakban_besar_nilai');
+                $dayLakbanKecil = (float) $dayRecords->sum('lakban_kecil_nilai');
+                $dayTaliRafia = (float) $dayRecords->sum('tali_rafia_nilai');
+
+                $dayFotocopy = (float) $dayRecords->sum('fotocopy_nilai');
+                $daySarungPlastik = (float) $dayRecords->sum('sarung_tangan_plastik_nilai');
+                $daySarungKain = (float) $dayRecords->sum('sarung_tangan_kain_nilai');
+                $dayQc = (float) $dayRecords->sum('qc_pengawasan_nilai');
+                $dayListrik = (float) $dayRecords->sum('listrik_air_telp_nilai');
+                $dayPemeliharaan = (float) $dayRecords->sum('pemeliharaan_mesin_nilai');
+                $dayPenyusutan = (float) $dayRecords->sum('penyusutan_mesin_nilai');
+                $dayLimbahPadat = (float) $dayRecords->sum('limbah_padat_nilai');
+                $dayLimbahKimia = (float) $dayRecords->sum('limbah_kimia_nilai');
+                $dayTotalBiaya = (float) $dayRecords->sum('total_biaya_produksi');
+
+                // Output Hasil Produksi WIP (Total Akumulatif)
+                $dayIfl = 0;
+                $dayAsinBarco = (float) $dayRecords->sum('asin_barco_qty');
+                $dayAsinSawit = (float) $dayRecords->sum('asin_sawit_qty');
+                $dayNoSalt = (float) $dayRecords->sum('no_salt_qty');
+                $dayUcamp = (float) $dayRecords->sum('ucamp_qty');
+                $dayBalo = (float) $dayRecords->sum('balo_gelombang_qty');
+                $dayBalqi = (float) $dayRecords->sum('balqi_qty');
+                $dayBerko = (float) $dayRecords->sum('berko_qty');
+                $dayBerkoMe = (float) $dayRecords->sum('berko_me_qty');
+                $dayTotalBerko = (float) $dayRecords->sum('total_berko_qty');
+                if ($dayTotalBerko <= 0 && ($dayBerko > 0 || $dayBerkoMe > 0)) {
+                    $dayTotalBerko = $dayBerko + $dayBerkoMe;
+                }
+
+                $dayTotalWip = 0;
                 foreach ($dayRecords as $rec) {
                     $recWip = (float) $rec->total_wip_qty;
                     if ($recWip <= 0 && $rec->outputs && $rec->outputs->isNotEmpty()) {
                         $recWip = (float) $rec->outputs->sum('qty_kg');
                     }
-                    $recHpp = (float) $rec->hpp_per_kg;
-                    if ($recHpp <= 0 && $recWip > 0 && (float) $rec->total_biaya_produksi > 0) {
-                        $recHpp = round((float) $rec->total_biaya_produksi / $recWip, 2);
-                    }
-                    $recRendemen = (float) $rec->rendemen_persen;
-                    if ($recRendemen <= 0 && (float) $rec->singkong_qty > 0 && $recWip > 0) {
-                        $recRendemen = round(($recWip / (float) $rec->singkong_qty) * 100, 2);
-                    }
+                    $dayTotalWip += $recWip;
 
                     $recIfl = (float) $rec->ifl_qty;
                     if ($recIfl <= 0) {
                         $liniUpper = strtoupper($rec->lini_produksi ?? '');
                         if (str_contains($liniUpper, 'IFL') || str_contains($liniUpper, 'IFM')) {
-                            $manualSum = (float) $rec->asin_barco_qty + (float) $rec->asin_sawit_qty + (float) $rec->no_salt_qty + (float) $rec->balo_gelombang_qty;
+                            $manualSum = (float) $rec->asin_barco_qty + (float) $rec->asin_sawit_qty + (float) $rec->no_salt_qty + (float) $rec->balo_gelombang_qty + (float) $rec->ucamp_qty + (float) $rec->balqi_qty;
                             if ($manualSum == 0 && $recWip > 0) {
                                 $recIfl = max(0, $recWip - (float) $rec->total_berko_qty);
                             }
                         }
                     }
-
-                    $days[] = [
-                        'day'                         => $day,
-                        'date'                        => $dateObj->format('Y-m-d'),
-                        'hari_nm'                     => $hariNm,
-                        'has_data'                    => true,
-                        'produksi_id'                 => $rec->produksi_id,
-                        'produksi_no'                 => $rec->produksi_no,
-                        'shift_cd'                    => $rec->shift_cd ?? 'A',
-                        'batch_wip_no'                => $rec->batch_wip_no ?? '-',
-                        'singkong_qty'                => (float) $rec->singkong_qty,
-                        'singkong_nilai'              => (float) $rec->singkong_nilai,
-                        'minyak_sawit_qty'            => (float) $rec->minyak_sawit_qty,
-                        'minyak_kelapa_qty'           => (float) $rec->minyak_kelapa_qty,
-                        'minyak_nilai'                => (float) $rec->minyak_nilai,
-                        'minyak_rasio_persen'         => (float) $rec->minyak_rasio_persen,
-                        'cng_mmbtu'                   => (float) $rec->cng_mmbtu,
-                        'cng_nilai'                   => (float) $rec->cng_nilai,
-                        'tk_langsung_org'             => (int) $rec->tk_langsung_org,
-                        'tk_tidak_langsung_org'       => (int) $rec->tk_tidak_langsung_org,
-                        'tk_training_org'             => (int) $rec->tk_training_org,
-                        'tk_total_nilai'              => (float) $rec->tk_total_nilai,
-                        'bumbu_nilai'                 => (float) $rec->bumbu_nilai,
-                        'karton_baru_nilai'           => (float) $rec->karton_baru_nilai,
-                        'karton_bekas_nilai'          => (float) $rec->karton_bekas_nilai,
-                        'plastik_hd_nilai'            => (float) $rec->plastik_hd_nilai,
-                        'lakban_besar_nilai'          => (float) $rec->lakban_besar_nilai,
-                        'lakban_kecil_nilai'          => (float) $rec->lakban_kecil_nilai,
-                        'tali_rafia_nilai'            => (float) $rec->tali_rafia_nilai,
-                        'fotocopy_nilai'              => (float) $rec->fotocopy_nilai,
-                        'sarung_tangan_plastik_nilai' => (float) $rec->sarung_tangan_plastik_nilai,
-                        'sarung_tangan_kain_nilai'    => (float) $rec->sarung_tangan_kain_nilai,
-                        'qc_pengawasan_nilai'         => (float) $rec->qc_pengawasan_nilai,
-                        'listrik_air_telp_nilai'      => (float) $rec->listrik_air_telp_nilai,
-                        'pemeliharaan_mesin_nilai'    => (float) $rec->pemeliharaan_mesin_nilai,
-                        'penyusutan_mesin_nilai'      => (float) $rec->penyusutan_mesin_nilai,
-                        'limbah_padat_nilai'          => (float) $rec->limbah_padat_nilai,
-                        'limbah_kimia_nilai'          => (float) $rec->limbah_kimia_nilai,
-                        'total_biaya_produksi'        => (float) $rec->total_biaya_produksi,
-                        'ifl_qty'                     => $recIfl,
-                        'asin_barco_qty'              => (float) $rec->asin_barco_qty,
-                        'asin_sawit_qty'              => (float) $rec->asin_sawit_qty,
-                        'no_salt_qty'                 => (float) $rec->no_salt_qty,
-                        'balo_gelombang_qty'          => (float) $rec->balo_gelombang_qty,
-                        'berko_qty'                   => (float) $rec->berko_qty,
-                        'berko_me_qty'                => (float) $rec->berko_me_qty,
-                        'total_berko_qty'             => (float) $rec->total_berko_qty,
-                        'berko_persen'                => (float) $rec->berko_persen,
-                        'total_wip_qty'               => $recWip,
-                        'rendemen_persen'             => $recRendemen,
-                        'hpp_per_kg'                  => $recHpp,
-                    ];
+                    $dayIfl += $recIfl;
                 }
+
+                if ($dayTotalWip <= 0) {
+                    $dayTotalWip = $dayIfl + $dayAsinBarco + $dayAsinSawit + $dayNoSalt + $dayUcamp + $dayBalo + $dayBalqi + $dayTotalBerko;
+                }
+
+                $dayBerkoPersen = $dayTotalWip > 0 ? round(($dayTotalBerko / $dayTotalWip) * 100, 2) : 0;
+                $dayRendemen = $daySingkongQty > 0 && $dayTotalWip > 0 ? round(($dayTotalWip / $daySingkongQty) * 100, 2) : 0;
+                $dayHpp = $dayTotalWip > 0 && $dayTotalBiaya > 0 ? round($dayTotalBiaya / $dayTotalWip, 2) : 0;
+
+                // Shift Metadata
+                $shiftCodes = $dayRecords->pluck('shift_cd')->filter()->unique()->values()->all();
+                $shiftCodeStr = !empty($shiftCodes) ? implode(' + ', $shiftCodes) : 'A';
+                $shiftCount = $dayRecords->count();
+                $firstRec = $dayRecords->first();
+
+                $days[] = [
+                    'day'                         => $day,
+                    'date'                        => $dateObj->format('Y-m-d'),
+                    'hari_nm'                     => $hariNm,
+                    'has_data'                    => true,
+                    'produksi_id'                 => $firstRec->produksi_id,
+                    'produksi_ids'                => $dayRecords->pluck('produksi_id')->toArray(),
+                    'produksi_no'                 => $shiftCount > 1 ? ($firstRec->produksi_no . " (+{$shiftCount} Shift)") : $firstRec->produksi_no,
+                    'shift_cd'                    => $shiftCodeStr,
+                    'shift_count'                 => $shiftCount,
+                    'shift_records'               => $dayRecords->map(fn($r) => [
+                        'produksi_id'  => $r->produksi_id,
+                        'produksi_no'  => $r->produksi_no,
+                        'shift_cd'     => $r->shift_cd ?? 'A',
+                        'total_biaya'  => (float) $r->total_biaya_produksi,
+                        'total_wip'    => (float) $r->total_wip_qty,
+                        'hpp_per_kg'   => (float) $r->hpp_per_kg,
+                    ])->toArray(),
+                    'batch_wip_no'                => $dayRecords->pluck('batch_wip_no')->filter()->unique()->implode(', ') ?: '-',
+                    'singkong_qty'                => $daySingkongQty,
+                    'singkong_nilai'              => $daySingkongNilai,
+                    'minyak_sawit_qty'            => $daySawitQty,
+                    'minyak_kelapa_qty'           => $dayKelapaQty,
+                    'minyak_nilai'                => $dayMinyakNilai,
+                    'minyak_rasio_persen'         => $dayMinyakRasio,
+                    'cng_mmbtu'                   => $dayCngMmbtu,
+                    'cng_nilai'                   => $dayCngNilai,
+                    'tk_langsung_org'             => $dayTkLangsung,
+                    'tk_tidak_langsung_org'       => $dayTkTidakLangsung,
+                    'tk_training_org'             => $dayTkTraining,
+                    'tk_total_nilai'              => $dayTkTotalNilai,
+                    'bumbu_nilai'                 => $dayBumbuNilai,
+                    'karton_baru_nilai'           => $dayKartonBaru,
+                    'karton_bekas_nilai'          => $dayKartonBekas,
+                    'plastik_hd_nilai'            => $dayPlastikHd,
+                    'lakban_besar_nilai'          => $dayLakbanBesar,
+                    'lakban_kecil_nilai'          => $dayLakbanKecil,
+                    'tali_rafia_nilai'            => $dayTaliRafia,
+                    'fotocopy_nilai'              => $dayFotocopy,
+                    'sarung_tangan_plastik_nilai' => $daySarungPlastik,
+                    'sarung_tangan_kain_nilai'    => $daySarungKain,
+                    'qc_pengawasan_nilai'         => $dayQc,
+                    'listrik_air_telp_nilai'      => $dayListrik,
+                    'pemeliharaan_mesin_nilai'    => $dayPemeliharaan,
+                    'penyusutan_mesin_nilai'      => $dayPenyusutan,
+                    'limbah_padat_nilai'          => $dayLimbahPadat,
+                    'limbah_kimia_nilai'          => $dayLimbahKimia,
+                    'total_biaya_produksi'        => $dayTotalBiaya,
+                    'ifl_qty'                     => $dayIfl,
+                    'asin_barco_qty'              => $dayAsinBarco,
+                    'asin_sawit_qty'              => $dayAsinSawit,
+                    'no_salt_qty'                 => $dayNoSalt,
+                    'ucamp_qty'                   => $dayUcamp,
+                    'balo_gelombang_qty'          => $dayBalo,
+                    'balqi_qty'                   => $dayBalqi,
+                    'berko_qty'                   => $dayBerko,
+                    'berko_me_qty'                => $dayBerkoMe,
+                    'total_berko_qty'             => $dayTotalBerko,
+                    'berko_persen'                => $dayBerkoPersen,
+                    'total_wip_qty'               => $dayTotalWip,
+                    'rendemen_persen'             => $dayRendemen,
+                    'hpp_per_kg'                  => $dayHpp,
+                ];
             } else {
                 $days[] = [
                     'day'                         => $day,
@@ -214,8 +287,11 @@ class ProduksiService
                     'hari_nm'                     => $hariNm,
                     'has_data'                    => false,
                     'produksi_id'                 => null,
+                    'produksi_ids'                => [],
                     'produksi_no'                 => null,
                     'shift_cd'                    => null,
+                    'shift_count'                 => 0,
+                    'shift_records'               => [],
                     'batch_wip_no'                => null,
                     'singkong_qty'                => 0,
                     'singkong_nilai'              => 0,
@@ -250,7 +326,9 @@ class ProduksiService
                     'asin_barco_qty'              => 0,
                     'asin_sawit_qty'              => 0,
                     'no_salt_qty'                 => 0,
+                    'ucamp_qty'                   => 0,
                     'balo_gelombang_qty'          => 0,
+                    'balqi_qty'                   => 0,
                     'berko_qty'                   => 0,
                     'berko_me_qty'                => 0,
                     'total_berko_qty'             => 0,
@@ -262,8 +340,18 @@ class ProduksiService
             }
         }
 
-        // Sinkronisasi total ifl_qty dari daftar baris
+        // Sinkronisasi total output WIP dari daftar baris
         $totals['ifl_qty'] = (float) collect($days)->where('has_data', true)->sum('ifl_qty');
+        $totals['asin_barco_qty'] = (float) collect($days)->where('has_data', true)->sum('asin_barco_qty');
+        $totals['asin_sawit_qty'] = (float) collect($days)->where('has_data', true)->sum('asin_sawit_qty');
+        $totals['no_salt_qty'] = (float) collect($days)->where('has_data', true)->sum('no_salt_qty');
+        $totals['ucamp_qty'] = (float) collect($days)->where('has_data', true)->sum('ucamp_qty');
+        $totals['balo_gelombang_qty'] = (float) collect($days)->where('has_data', true)->sum('balo_gelombang_qty');
+        $totals['balqi_qty'] = (float) collect($days)->where('has_data', true)->sum('balqi_qty');
+        $totals['berko_qty'] = (float) collect($days)->where('has_data', true)->sum('berko_qty');
+        $totals['berko_me_qty'] = (float) collect($days)->where('has_data', true)->sum('berko_me_qty');
+        $totals['total_berko_qty'] = (float) collect($days)->where('has_data', true)->sum('total_berko_qty');
+        $totals['total_wip_qty'] = (float) collect($days)->where('has_data', true)->sum('total_wip_qty');
 
         return [
             'year'    => $year,
@@ -601,7 +689,9 @@ class ProduksiService
         $asinBarcoQty = (float) ($data['asin_barco_qty'] ?? 0);
         $asinSawitQty = (float) ($data['asin_sawit_qty'] ?? 0);
         $noSaltQty = (float) ($data['no_salt_qty'] ?? 0);
+        $ucampQty = (float) ($data['ucamp_qty'] ?? 0);
         $baloQty = (float) ($data['balo_gelombang_qty'] ?? 0);
+        $balqiQty = (float) ($data['balqi_qty'] ?? 0);
         $berkoQty = (float) ($data['berko_qty'] ?? 0);
         $berkoMeQty = (float) ($data['berko_me_qty'] ?? 0);
 
@@ -624,8 +714,10 @@ class ProduksiService
                         if (str_contains($cd, 'IFL') || str_contains($nm, 'IFL') || str_contains($nm, 'INDOFOOD') || str_contains($cd, 'IFM') || str_contains($cd, 'FCC')) { $iflQty += $itemKg; $isMatched = true; }
                         elseif (str_contains($cd, 'ASB') || str_contains($nm, 'BARCO')) { $asinBarcoQty += $itemKg; $isMatched = true; }
                         elseif (str_contains($cd, 'ASW') || str_contains($nm, 'SAWIT')) { $asinSawitQty += $itemKg; $isMatched = true; }
-                        elseif (str_contains($cd, 'NSL') || str_contains($nm, 'NO SALT')) { $noSaltQty += $itemKg; $isMatched = true; }
-                        elseif (str_contains($cd, 'BLQ') || str_contains($nm, 'BALO') || str_contains($nm, 'BALQI')) { $baloQty += $itemKg; $isMatched = true; }
+                        elseif (str_contains($cd, 'NSL') || str_contains($nm, 'NO SALT') || str_contains($nm, 'TAWAR')) { $noSaltQty += $itemKg; $isMatched = true; }
+                        elseif (str_contains($cd, 'UCM') || str_contains($nm, 'UCAMP') || str_contains($nm, 'U/CAMP') || str_contains($nm, 'CAMPUR')) { $ucampQty += $itemKg; $isMatched = true; }
+                        elseif (str_contains($cd, 'BLQ') || str_contains($nm, 'BALQI') || str_contains($nm, 'BAL Q') || str_contains($nm, 'BAL-Q')) { $balqiQty += $itemKg; $isMatched = true; }
+                        elseif (str_contains($nm, 'BALO') || str_contains($nm, 'GELOMBANG')) { $baloQty += $itemKg; $isMatched = true; }
                         elseif (str_contains($cd, 'BRK-ME') || str_contains($nm, 'BERKO ME')) { $berkoMeQty += $itemKg; $isMatched = true; }
                         elseif (str_contains($cd, 'BRK') || str_contains($nm, 'BERKO')) { $berkoQty += $itemKg; $isMatched = true; }
                     }
@@ -637,7 +729,7 @@ class ProduksiService
         }
 
         $totalBerkoQty = $berkoQty + $berkoMeQty;
-        $totalManualQty = $asinBarcoQty + $asinSawitQty + $noSaltQty + $baloQty;
+        $totalManualQty = $asinBarcoQty + $asinSawitQty + $noSaltQty + $ucampQty + $baloQty + $balqiQty;
 
         // Fallback jika lini IFL/IFM dipilih tapi kolom spesifik belum terisi
         $liniUpper = strtoupper($data['lini_produksi'] ?? '');
@@ -677,7 +769,15 @@ class ProduksiService
                 $limbahKimia = round($effectiveOutputKg * $fohRates['kimia'], 2);
             }
             if ($fotocopy <= 0 && (!isset($data['fotocopy_nilai']) || $data['fotocopy_nilai'] === '')) {
-                $fotocopy = round($effectiveOutputKg * $fohRates['fotocopy'], 2);
+                // Rumus Asli Excel PT Mirasa: =(AF/6)*2*$V$2
+                // AF adalah Kilogram IFL. (AF/6) adalah Jumlah Karton IFL (karena 1 karton = 6 kg).
+                // Dikali 2 lembar stiker/kertas fotocopy per box karton, dikali tarif per lembar ($V$2 = Rp 28).
+                $kartonCount = (float) ($data['qty_karton'] ?? 0);
+                if ($kartonCount <= 0 && $iflQty > 0) {
+                    $kartonCount = $iflQty / 6.0;
+                }
+                $tarifFotocopy = (float) ($fohRates['fotocopy'] ?? 28.00);
+                $fotocopy = round($kartonCount * 2 * $tarifFotocopy, 2);
             }
             if ($limbahPadat <= 0 && (!isset($data['limbah_padat_nilai']) || $data['limbah_padat_nilai'] === '')) {
                 $limbahPadat = $fohRates['limbah_padat'];
@@ -730,7 +830,9 @@ class ProduksiService
             'asin_barco_qty'              => $asinBarcoQty,
             'asin_sawit_qty'              => $asinSawitQty,
             'no_salt_qty'                 => $noSaltQty,
+            'ucamp_qty'                   => $ucampQty,
             'balo_gelombang_qty'          => $baloQty,
+            'balqi_qty'                   => $balqiQty,
             'berko_qty'                   => $berkoQty,
             'berko_me_qty'                => $berkoMeQty,
             'total_berko_qty'             => $totalBerkoQty,

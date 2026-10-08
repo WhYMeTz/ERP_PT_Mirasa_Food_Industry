@@ -15,7 +15,6 @@
         .sticky-action-sidebar { position: static !important; top: auto !important; }
     }
 
-    /* Excel Table Styling */
     .excel-grid-table {
         width: 100%;
         border-collapse: collapse;

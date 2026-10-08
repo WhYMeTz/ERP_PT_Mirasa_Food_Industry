@@ -142,60 +142,96 @@
         </div>
     </div>
 
-    {{-- EXECUTIVE FINANCIAL METRIC STRIP (4 INDIKATOR KUNCI BULANAN) --}}
+    {{-- 4 KARTU METRIK OPERASIONAL & HPP (SERAGAM DENGAN MODUL LAIN) --}}
     @php
         $tot = $report['totals'];
         $rendemenLolos = $tot['rendemen_persen'] >= 33.0;
-        $cardRendemenClass = $rendemenLolos ? 'card-success' : ($tot['rendemen_persen'] >= 30.0 ? 'card-warning' : 'card-neutral');
+        $rendemenWarning = $tot['rendemen_persen'] >= 30.0;
+        $rendemenColor = $rendemenLolos ? '#059669' : ($rendemenWarning ? '#d97706' : '#dc2626');
+        $rendemenBg = $rendemenLolos ? '#d1fae5' : ($rendemenWarning ? '#fef3c7' : '#fee2e2');
     @endphp
 
     <div class="executive-stat-grid">
         {{-- METRIK 1: TOTAL BIAYA OPERASIONAL --}}
-        <div class="executive-stat-card card-primary">
-            <div>
-                <div class="executive-stat-label">Total Biaya Operasional</div>
-                <div class="executive-stat-value">
-                    Rp {{ number_format($tot['total_biaya_produksi'], 0, ',', '.') }}
+        <div class="executive-stat-card">
+            <div class="executive-stat-card-header">
+                <div>
+                    <span class="executive-stat-label" style="color: #64748b;">
+                        Total Biaya Operasional
+                    </span>
+                    <div class="executive-stat-value">
+                        Rp {{ number_format($tot['total_biaya_produksi'], 0, ',', '.') }}
+                    </div>
+                </div>
+                <div class="executive-stat-icon-box" style="background: #e0f2fe; color: #0284c7;">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
                 </div>
             </div>
             <div class="executive-stat-subtext">
-                <span>Akumulasi Bahan, Gas CNG, Upah &amp; FOH ({{ $report['count'] }} Hari)</span>
+                Akumulasi Bahan, Gas CNG, Upah &amp; FOH ({{ $report['count'] }} Hari)
             </div>
         </div>
 
         {{-- METRIK 2: TOTAL OUTPUT WIP JADI --}}
-        <div class="executive-stat-card card-neutral">
-            <div>
-                <div class="executive-stat-label">Total Output Barang Jadi (WIP)</div>
-                <div class="executive-stat-value">
-                    {{ number_format($tot['total_wip_qty'], 2, ',', '.') }} <span style="font-size: 0.85rem; font-weight: 600; color: #64748b;">kg</span>
+        <div class="executive-stat-card">
+            <div class="executive-stat-card-header">
+                <div>
+                    <span class="executive-stat-label" style="color: #64748b;">
+                        Total Output Barang Jadi (WIP)
+                    </span>
+                    <div class="executive-stat-value">
+                        {{ number_format($tot['total_wip_qty'], 2, ',', '.') }} <span style="font-size: 0.85rem; font-weight: 600; color: #64748b;">kg</span>
+                    </div>
+                </div>
+                <div class="executive-stat-icon-box" style="background: #f1f5f9; color: #475569;">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
                 </div>
             </div>
             <div class="executive-stat-subtext">
-                <span>Dari input {{ number_format($tot['singkong_qty'], 0, ',', '.') }} kg singkong mentah</span>
+                Dari input {{ number_format($tot['singkong_qty'], 0, ',', '.') }} kg singkong mentah
             </div>
         </div>
 
         {{-- METRIK 3: RENDEMEN RATA-RATA --}}
-        <div class="executive-stat-card {{ $cardRendemenClass }}">
-            <div>
-                <div class="executive-stat-label">Rasio Rendemen Efektif</div>
-                <div class="executive-stat-value" style="color: {{ $rendemenLolos ? '#059669' : ($tot['rendemen_persen'] >= 30.0 ? '#d97706' : '#dc2626') }};">
-                    {{ number_format($tot['rendemen_persen'], 2, ',', '.') }}%
+        <div class="executive-stat-card">
+            <div class="executive-stat-card-header">
+                <div>
+                    <span class="executive-stat-label" style="color: {{ $rendemenColor }};">
+                        Rasio Rendemen Efektif
+                    </span>
+                    <div class="executive-stat-value" style="color: {{ $rendemenColor }};">
+                        {{ number_format($tot['rendemen_persen'], 2, ',', '.') }}%
+                    </div>
+                </div>
+                <div class="executive-stat-icon-box" style="background: {{ $rendemenBg }}; color: {{ $rendemenColor }};">
+                    @if($rendemenLolos)
+                        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    @elseif($rendemenWarning)
+                        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    @else
+                        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"/></svg>
+                    @endif
                 </div>
             </div>
             <div class="executive-stat-subtext">
-                <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: {{ $rendemenLolos ? '#059669' : ($tot['rendemen_persen'] >= 30.0 ? '#d97706' : '#dc2626') }};"></span>
-                <span>Standar Toleransi Pabrik: Min. 33.00%</span>
+                <span style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: {{ $rendemenColor }};"></span>
+                Standar Toleransi Pabrik: Min. 33.00%
             </div>
         </div>
 
         {{-- METRIK 4: HPP RATA-RATA PER KG --}}
-        <div class="executive-stat-card card-success">
-            <div>
-                <div class="executive-stat-label">Harga Pokok Produksi (HPP)</div>
-                <div class="executive-stat-value" style="color: #0f172a; font-family: monospace;">
-                    Rp {{ number_format($tot['hpp_per_kg'], 0, ',', '.') }}
+        <div class="executive-stat-card">
+            <div class="executive-stat-card-header">
+                <div>
+                    <span class="executive-stat-label" style="color: #059669;">
+                        Harga Pokok Produksi (HPP)
+                    </span>
+                    <div class="executive-stat-value" style="font-family: monospace;">
+                        Rp {{ number_format($tot['hpp_per_kg'], 0, ',', '.') }}
+                    </div>
+                </div>
+                <div class="executive-stat-icon-box" style="background: #d1fae5; color: #059669;">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
                 </div>
             </div>
             <div class="executive-stat-subtext">
@@ -248,60 +284,96 @@
         </div>
     </div>
 
-    {{-- EXECUTIVE FINANCIAL METRIC STRIP (4 INDIKATOR KUNCI TAHUNAN) --}}
+    {{-- 4 KARTU METRIK OPERASIONAL & HPP TAHUNAN (SERAGAM DENGAN MODUL LAIN) --}}
     @php
         $an = $yearlyReport['annual_totals'];
         $anRendemenLolos = $an['rendemen'] >= 33.0;
-        $anCardRendemenClass = $anRendemenLolos ? 'card-success' : ($an['rendemen'] >= 30.0 ? 'card-warning' : 'card-neutral');
+        $anRendemenWarning = $an['rendemen'] >= 30.0;
+        $anRendemenColor = $anRendemenLolos ? '#059669' : ($anRendemenWarning ? '#d97706' : '#dc2626');
+        $anRendemenBg = $anRendemenLolos ? '#d1fae5' : ($anRendemenWarning ? '#fef3c7' : '#fee2e2');
     @endphp
 
     <div class="executive-stat-grid">
         {{-- METRIK 1: TOTAL BIAYA TAHUNAN --}}
-        <div class="executive-stat-card card-primary">
-            <div>
-                <div class="executive-stat-label">Total Biaya Operasional (Tahun {{ $year }})</div>
-                <div class="executive-stat-value">
-                    Rp {{ number_format($an['total_biaya'], 0, ',', '.') }}
+        <div class="executive-stat-card">
+            <div class="executive-stat-card-header">
+                <div>
+                    <span class="executive-stat-label" style="color: #64748b;">
+                        Total Biaya Operasional (Tahun {{ $year }})
+                    </span>
+                    <div class="executive-stat-value">
+                        Rp {{ number_format($an['total_biaya'], 0, ',', '.') }}
+                    </div>
+                </div>
+                <div class="executive-stat-icon-box" style="background: #e0f2fe; color: #0284c7;">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
                 </div>
             </div>
             <div class="executive-stat-subtext">
-                <span>Total akumulasi seluruh biaya pabrik ({{ $an['total_work_days'] }} Hari Kerja)</span>
+                Total akumulasi seluruh biaya pabrik ({{ $an['total_work_days'] }} Hari Kerja)
             </div>
         </div>
 
         {{-- METRIK 2: TOTAL OUTPUT WIP TAHUNAN --}}
-        <div class="executive-stat-card card-neutral">
-            <div>
-                <div class="executive-stat-label">Total Output Barang Jadi (WIP)</div>
-                <div class="executive-stat-value">
-                    {{ number_format($an['total_wip_qty'], 2, ',', '.') }} <span style="font-size: 0.85rem; font-weight: 600; color: #64748b;">kg</span>
+        <div class="executive-stat-card">
+            <div class="executive-stat-card-header">
+                <div>
+                    <span class="executive-stat-label" style="color: #64748b;">
+                        Total Output Barang Jadi (WIP)
+                    </span>
+                    <div class="executive-stat-value">
+                        {{ number_format($an['total_wip_qty'], 2, ',', '.') }} <span style="font-size: 0.85rem; font-weight: 600; color: #64748b;">kg</span>
+                    </div>
+                </div>
+                <div class="executive-stat-icon-box" style="background: #f1f5f9; color: #475569;">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
                 </div>
             </div>
             <div class="executive-stat-subtext">
-                <span>Dari input {{ number_format($an['singkong_qty'], 0, ',', '.') }} kg singkong mentah</span>
+                Dari input {{ number_format($an['singkong_qty'], 0, ',', '.') }} kg singkong mentah
             </div>
         </div>
 
         {{-- METRIK 3: RENDEMEN RATA-RATA TAHUNAN --}}
-        <div class="executive-stat-card {{ $anCardRendemenClass }}">
-            <div>
-                <div class="executive-stat-label">Rasio Rendemen Rata-Rata Tahunan</div>
-                <div class="executive-stat-value" style="color: {{ $anRendemenLolos ? '#059669' : ($an['rendemen'] >= 30.0 ? '#d97706' : '#dc2626') }};">
-                    {{ number_format($an['rendemen'], 2, ',', '.') }}%
+        <div class="executive-stat-card">
+            <div class="executive-stat-card-header">
+                <div>
+                    <span class="executive-stat-label" style="color: {{ $anRendemenColor }};">
+                        Rasio Rendemen Rata-Rata Tahunan
+                    </span>
+                    <div class="executive-stat-value" style="color: {{ $anRendemenColor }};">
+                        {{ number_format($an['rendemen'], 2, ',', '.') }}%
+                    </div>
+                </div>
+                <div class="executive-stat-icon-box" style="background: {{ $anRendemenBg }}; color: {{ $anRendemenColor }};">
+                    @if($anRendemenLolos)
+                        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    @elseif($anRendemenWarning)
+                        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    @else
+                        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"/></svg>
+                    @endif
                 </div>
             </div>
             <div class="executive-stat-subtext">
-                <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: {{ $anRendemenLolos ? '#059669' : ($an['rendemen'] >= 30.0 ? '#d97706' : '#dc2626') }};"></span>
-                <span>Standar Target Pabrik: Min. 33.00%</span>
+                <span style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: {{ $anRendemenColor }};"></span>
+                Standar Target Pabrik: Min. 33.00%
             </div>
         </div>
 
         {{-- METRIK 4: HPP RATA-RATA TAHUNAN PER KG --}}
-        <div class="executive-stat-card card-success">
-            <div>
-                <div class="executive-stat-label">HPP Rata-Rata per Kg (Tahun {{ $year }})</div>
-                <div class="executive-stat-value" style="color: #0f172a; font-family: monospace;">
-                    Rp {{ number_format($an['hpp_per_kg'], 0, ',', '.') }}
+        <div class="executive-stat-card">
+            <div class="executive-stat-card-header">
+                <div>
+                    <span class="executive-stat-label" style="color: #059669;">
+                        HPP Rata-Rata per Kg (Tahun {{ $year }})
+                    </span>
+                    <div class="executive-stat-value" style="font-family: monospace;">
+                        Rp {{ number_format($an['hpp_per_kg'], 0, ',', '.') }}
+                    </div>
+                </div>
+                <div class="executive-stat-icon-box" style="background: #d1fae5; color: #059669;">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
                 </div>
             </div>
             <div class="executive-stat-subtext">

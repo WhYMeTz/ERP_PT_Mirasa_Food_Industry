@@ -89,14 +89,14 @@ class RekapHppExport
         $sheet->mergeCells('AE1:AE3');
         $sheet->getStyle('AE1:AE3')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB(self::COLOR_YELLOW_HEADER);
 
-        // Total WIP (AF1:AP1) - 11 Kolom Sesuai Excel Asli Mirasa
+        // Total WIP (AF1:AR1) - 13 Kolom Sesuai Excel Asli Mirasa
         $sheet->setCellValue('AF1', 'TOTAL WIP');
-        $sheet->mergeCells('AF1:AP1');
+        $sheet->mergeCells('AF1:AR1');
 
-        // Harga Pokok Produksi (AQ1:AQ3)
-        $sheet->setCellValue('AQ1', "HARGA POKOK\nPRODUKSI");
-        $sheet->mergeCells('AQ1:AQ3');
-        $sheet->getStyle('AQ1:AQ3')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB(self::COLOR_GREY_HEADER);
+        // Harga Pokok Produksi (AS1:AS3)
+        $sheet->setCellValue('AS1', "HARGA POKOK\nPRODUKSI");
+        $sheet->mergeCells('AS1:AS3');
+        $sheet->getStyle('AS1:AS3')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB(self::COLOR_GREY_HEADER);
 
         // ROW 2: KATEGORI BIAYA & SUB-MEGA
         $sheet->setCellValue('C2', 'SINGKONG');
@@ -151,16 +151,16 @@ class RekapHppExport
         $sheet->setCellValue('AF2', 'IFL');
         
         $sheet->setCellValue('AG2', 'MANUAL');
-        $sheet->mergeCells('AG2:AJ2');
+        $sheet->mergeCells('AG2:AL2');
 
-        $sheet->setCellValue('AK2', 'BERKO + BERKO ME');
-        $sheet->mergeCells('AK2:AN2');
+        $sheet->setCellValue('AM2', 'BERKO + BERKO ME');
+        $sheet->mergeCells('AM2:AP2');
 
-        $sheet->setCellValue('AO2', "TOTAL\nKG");
-        $sheet->mergeCells('AO2:AO3');
+        $sheet->setCellValue('AQ2', "TOTAL\nKG");
+        $sheet->mergeCells('AQ2:AQ3');
 
-        $sheet->setCellValue('AP2', "RENDEMEN\n%");
-        $sheet->mergeCells('AP2:AP3');
+        $sheet->setCellValue('AR2', "RENDEMEN\n%");
+        $sheet->mergeCells('AR2:AR3');
 
         // ROW 3: SUB-KOLOM SPESIFIK
         $sheet->setCellValue('C3', 'KG');
@@ -191,20 +191,22 @@ class RekapHppExport
         $sheet->setCellValue('AC3', "LIMBAH\nPADAT");
         $sheet->setCellValue('AD3', "BAHAN\nKIMIA");
 
-        // WIP Sub-kolom Row 3
+        // WIP Sub-kolom Row 3 Sesuai Excel Asli Mirasa
         $sheet->setCellValue('AF3', 'KG');
         $sheet->setCellValue('AG3', 'ASIN BARC');
         $sheet->setCellValue('AH3', 'ASIN SAWT');
         $sheet->setCellValue('AI3', 'NO SALT');
-        $sheet->setCellValue('AJ3', 'BALQI');
-        $sheet->setCellValue('AK3', 'BERKO');
-        $sheet->setCellValue('AL3', 'BERKO ME');
-        $sheet->setCellValue('AM3', 'TOTAL');
-        $sheet->setCellValue('AN3', '%');
+        $sheet->setCellValue('AJ3', 'U/CAMP');
+        $sheet->setCellValue('AK3', 'D/LM GELOMBA');
+        $sheet->setCellValue('AL3', 'BAL Q');
+        $sheet->setCellValue('AM3', 'BERKO');
+        $sheet->setCellValue('AN3', 'BERKO ME');
+        $sheet->setCellValue('AO3', 'TOTAL');
+        $sheet->setCellValue('AP3', '%');
 
-        // Fills untuk seluruh Header Hijau (C1:AD3 dan AF1:AP3)
+        // Fills untuk seluruh Header Hijau (C1:AD3 dan AF1:AR3)
         $sheet->getStyle('C1:AD3')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB(self::COLOR_GREEN_HEADER);
-        $sheet->getStyle('AF1:AP3')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB(self::COLOR_GREEN_HEADER);
+        $sheet->getStyle('AF1:AR3')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB(self::COLOR_GREEN_HEADER);
 
         // Teks Merah untuk Pos FOH
         $sheet->getStyle('V2:V3')->getFont()->getColor()->setARGB(self::COLOR_RED_TEXT);
@@ -213,13 +215,13 @@ class RekapHppExport
 
         // Teks Biru untuk Persentase
         $sheet->getStyle('H3')->getFont()->getColor()->setARGB(self::COLOR_BLUE_TEXT);
-        $sheet->getStyle('AN3')->getFont()->getColor()->setARGB(self::COLOR_BLUE_TEXT);
-        $sheet->getStyle('AP2:AP3')->getFont()->getColor()->setARGB(self::COLOR_BLUE_TEXT);
+        $sheet->getStyle('AP3')->getFont()->getColor()->setARGB(self::COLOR_BLUE_TEXT);
+        $sheet->getStyle('AR2:AR3')->getFont()->getColor()->setARGB(self::COLOR_BLUE_TEXT);
 
         // Styling Umum Header Rows 1 to 3
-        $sheet->getStyle('A1:AQ3')->getFont()->setBold(true)->setSize(8);
-        $sheet->getStyle('A1:AQ3')->getAlignment()->setVertical(Alignment::VERTICAL_CENTER)->setHorizontal(Alignment::HORIZONTAL_CENTER)->setWrapText(true);
-        $sheet->getStyle('A1:AQ3')->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN)->getColor()->setARGB(self::COLOR_BORDER);
+        $sheet->getStyle('A1:AS3')->getFont()->setBold(true)->setSize(8);
+        $sheet->getStyle('A1:AS3')->getAlignment()->setVertical(Alignment::VERTICAL_CENTER)->setHorizontal(Alignment::HORIZONTAL_CENTER)->setWrapText(true);
+        $sheet->getStyle('A1:AS3')->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN)->getColor()->setARGB(self::COLOR_BORDER);
 
         $sheet->getRowDimension(1)->setRowHeight(26);
         $sheet->getRowDimension(2)->setRowHeight(28);
@@ -282,21 +284,23 @@ class RekapHppExport
                 // Total Biaya
                 $sheet->setCellValue('AE' . $row, (float) $d['total_biaya_produksi']);
 
-                // WIP: IFL, MANUAL, BERKO, TOTAL KG, RENDEMEN %
+                // WIP: IFL, MANUAL (6), BERKO (4), TOTAL KG, RENDEMEN %, HPP
                 $sheet->setCellValue('AF' . $row, (float) $d['ifl_qty']);
                 $sheet->setCellValue('AG' . $row, (float) $d['asin_barco_qty']);
                 $sheet->setCellValue('AH' . $row, (float) $d['asin_sawit_qty']);
                 $sheet->setCellValue('AI' . $row, (float) $d['no_salt_qty']);
-                $sheet->setCellValue('AJ' . $row, (float) $d['balo_gelombang_qty']);
-                $sheet->setCellValue('AK' . $row, (float) $d['berko_qty']);
-                $sheet->setCellValue('AL' . $row, (float) $d['berko_me_qty']);
-                $sheet->setCellValue('AM' . $row, (float) $d['total_berko_qty']);
-                $sheet->setCellValue('AN' . $row, ((float) $d['berko_persen']) / 100);
-                $sheet->setCellValue('AO' . $row, (float) $d['total_wip_qty']);
-                $sheet->setCellValue('AP' . $row, ((float) $d['rendemen_persen']) / 100);
+                $sheet->setCellValue('AJ' . $row, (float) $d['ucamp_qty']);
+                $sheet->setCellValue('AK' . $row, (float) $d['balo_gelombang_qty']);
+                $sheet->setCellValue('AL' . $row, (float) $d['balqi_qty']);
+                $sheet->setCellValue('AM' . $row, (float) $d['berko_qty']);
+                $sheet->setCellValue('AN' . $row, (float) $d['berko_me_qty']);
+                $sheet->setCellValue('AO' . $row, (float) $d['total_berko_qty']);
+                $sheet->setCellValue('AP' . $row, ((float) $d['berko_persen']) / 100);
+                $sheet->setCellValue('AQ' . $row, (float) $d['total_wip_qty']);
+                $sheet->setCellValue('AR' . $row, ((float) $d['rendemen_persen']) / 100);
 
                 // HPP / Kg
-                $sheet->setCellValue('AQ' . $row, (float) $d['hpp_per_kg']);
+                $sheet->setCellValue('AS' . $row, (float) $d['hpp_per_kg']);
             } else {
                 // Hari tanpa produksi
                 foreach (range('C', 'Z') as $col) $sheet->setCellValue($col . $row, '-');
@@ -317,12 +321,14 @@ class RekapHppExport
                 $sheet->setCellValue('AO' . $row, '-');
                 $sheet->setCellValue('AP' . $row, '-');
                 $sheet->setCellValue('AQ' . $row, '-');
+                $sheet->setCellValue('AR' . $row, '-');
+                $sheet->setCellValue('AS' . $row, '-');
             }
 
             // Formatting
             $sheet->getStyle("A{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
             $sheet->getStyle("B{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-            $sheet->getStyle("C{$row}:AQ{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+            $sheet->getStyle("C{$row}:AS{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
             $sheet->getStyle("K{$row}:M{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
             // Numbers Format
@@ -335,32 +341,32 @@ class RekapHppExport
             $sheet->getStyle("J{$row}")->getNumberFormat()->setFormatCode('#,##0');
             $sheet->getStyle("N{$row}:AD{$row}")->getNumberFormat()->setFormatCode('#,##0');
             $sheet->getStyle("AE{$row}")->getNumberFormat()->setFormatCode('#,##0');
-            $sheet->getStyle("AF{$row}:AM{$row}")->getNumberFormat()->setFormatCode('#,##0.00');
-            $sheet->getStyle("AN{$row}")->getNumberFormat()->setFormatCode('0.00%');
-            $sheet->getStyle("AO{$row}")->getNumberFormat()->setFormatCode('#,##0.00');
+            $sheet->getStyle("AF{$row}:AO{$row}")->getNumberFormat()->setFormatCode('#,##0.00');
             $sheet->getStyle("AP{$row}")->getNumberFormat()->setFormatCode('0.00%');
-            $sheet->getStyle("AQ{$row}")->getNumberFormat()->setFormatCode('#,##0');
+            $sheet->getStyle("AQ{$row}")->getNumberFormat()->setFormatCode('#,##0.00');
+            $sheet->getStyle("AR{$row}")->getNumberFormat()->setFormatCode('0.00%');
+            $sheet->getStyle("AS{$row}")->getNumberFormat()->setFormatCode('#,##0');
 
             // Warna Sel Tertentu Sesuai Screenshot Asli
             $sheet->getStyle("H{$row}")->getFont()->getColor()->setARGB(self::COLOR_BLUE_TEXT);
-            $sheet->getStyle("AN{$row}")->getFont()->getColor()->setARGB(self::COLOR_BLUE_TEXT);
             $sheet->getStyle("AP{$row}")->getFont()->getColor()->setARGB(self::COLOR_BLUE_TEXT);
+            $sheet->getStyle("AR{$row}")->getFont()->getColor()->setARGB(self::COLOR_BLUE_TEXT);
 
             if ($hasData && (float) $d['total_biaya_produksi'] > 0) {
                 $sheet->getStyle("AE{$row}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB(self::COLOR_YELLOW_CELL);
                 $sheet->getStyle("AE{$row}")->getFont()->getColor()->setARGB(self::COLOR_BLUE_TEXT);
                 $sheet->getStyle("AE{$row}")->getFont()->setBold(true);
 
-                $sheet->getStyle("AO{$row}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB(self::COLOR_YELLOW_CELL);
-                $sheet->getStyle("AO{$row}")->getFont()->getColor()->setARGB(self::COLOR_BLUE_TEXT);
-                $sheet->getStyle("AO{$row}")->getFont()->setBold(true);
+                $sheet->getStyle("AQ{$row}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB(self::COLOR_YELLOW_CELL);
+                $sheet->getStyle("AQ{$row}")->getFont()->getColor()->setARGB(self::COLOR_BLUE_TEXT);
+                $sheet->getStyle("AQ{$row}")->getFont()->setBold(true);
             }
 
             if ($isSunday) {
-                $sheet->getStyle("A{$row}:AQ{$row}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFFCE4D6');
+                $sheet->getStyle("A{$row}:AS{$row}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFFCE4D6');
             }
 
-            $sheet->getStyle("A{$row}:AQ{$row}")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN)->getColor()->setARGB(self::COLOR_BORDER);
+            $sheet->getStyle("A{$row}:AS{$row}")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN)->getColor()->setARGB(self::COLOR_BORDER);
             $sheet->getStyle("A{$row}:AQ{$row}")->getFont()->setSize(8);
             $sheet->getRowDimension($row)->setRowHeight(18);
 
@@ -417,12 +423,14 @@ class RekapHppExport
         $sheet->setCellValue('AK' . $rowTotal, "=SUM(AK{$startDataRow}:AK{$endDataRow})");
         $sheet->setCellValue('AL' . $rowTotal, "=SUM(AL{$startDataRow}:AL{$endDataRow})");
         $sheet->setCellValue('AM' . $rowTotal, "=SUM(AM{$startDataRow}:AM{$endDataRow})");
-        $sheet->setCellValue('AN' . $rowTotal, "=IF(AO{$rowTotal}>0,AM{$rowTotal}/AO{$rowTotal},0)");
+        $sheet->setCellValue('AN' . $rowTotal, "=SUM(AN{$startDataRow}:AN{$endDataRow})");
         $sheet->setCellValue('AO' . $rowTotal, "=SUM(AO{$startDataRow}:AO{$endDataRow})");
-        $sheet->setCellValue('AP' . $rowTotal, "=IF(C{$rowTotal}>0,AO{$rowTotal}/C{$rowTotal},0)");
-        $sheet->setCellValue('AQ' . $rowTotal, "=IF(AO{$rowTotal}>0,AE{$rowTotal}/AO{$rowTotal},0)");
+        $sheet->setCellValue('AP' . $rowTotal, "=IF(AQ{$rowTotal}>0,AO{$rowTotal}/AQ{$rowTotal},0)");
+        $sheet->setCellValue('AQ' . $rowTotal, "=SUM(AQ{$startDataRow}:AQ{$endDataRow})");
+        $sheet->setCellValue('AR' . $rowTotal, "=IF(C{$rowTotal}>0,AQ{$rowTotal}/C{$rowTotal},0)");
+        $sheet->setCellValue('AS' . $rowTotal, "=IF(AQ{$rowTotal}>0,AE{$rowTotal}/AQ{$rowTotal},0)");
 
-        $sheet->getStyle("A{$rowTotal}:AQ{$rowTotal}")->applyFromArray([
+        $sheet->getStyle("A{$rowTotal}:AS{$rowTotal}")->applyFromArray([
             'font'      => ['bold' => true, 'size' => 8],
             'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => self::COLOR_YELLOW_HEADER]],
             'borders'   => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['argb' => self::COLOR_BORDER]]],
@@ -430,8 +438,8 @@ class RekapHppExport
         ]);
         $sheet->getStyle("A{$rowTotal}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         $sheet->getStyle("H{$rowTotal}")->getFont()->getColor()->setARGB(self::COLOR_BLUE_TEXT);
-        $sheet->getStyle("AN{$rowTotal}")->getFont()->getColor()->setARGB(self::COLOR_BLUE_TEXT);
         $sheet->getStyle("AP{$rowTotal}")->getFont()->getColor()->setARGB(self::COLOR_BLUE_TEXT);
+        $sheet->getStyle("AR{$rowTotal}")->getFont()->getColor()->setARGB(self::COLOR_BLUE_TEXT);
 
         // 2. BARIS RATA - RATA
         $rowRata = $rowTotal + 1;
@@ -475,12 +483,14 @@ class RekapHppExport
         $sheet->setCellValue('AK' . $rowRata, "=AVERAGEIF(AK{$startDataRow}:AK{$endDataRow},\">0\")");
         $sheet->setCellValue('AL' . $rowRata, "=AVERAGEIF(AL{$startDataRow}:AL{$endDataRow},\">0\")");
         $sheet->setCellValue('AM' . $rowRata, "=AVERAGEIF(AM{$startDataRow}:AM{$endDataRow},\">0\")");
-        $sheet->setCellValue('AN' . $rowRata, "=AN{$rowTotal}");
+        $sheet->setCellValue('AN' . $rowRata, "=AVERAGEIF(AN{$startDataRow}:AN{$endDataRow},\">0\")");
         $sheet->setCellValue('AO' . $rowRata, "=AVERAGEIF(AO{$startDataRow}:AO{$endDataRow},\">0\")");
         $sheet->setCellValue('AP' . $rowRata, "=AP{$rowTotal}");
-        $sheet->setCellValue('AQ' . $rowRata, "=AQ{$rowTotal}");
+        $sheet->setCellValue('AQ' . $rowRata, "=AVERAGEIF(AQ{$startDataRow}:AQ{$endDataRow},\">0\")");
+        $sheet->setCellValue('AR' . $rowRata, "=AR{$rowTotal}");
+        $sheet->setCellValue('AS' . $rowRata, "=AS{$rowTotal}");
 
-        $sheet->getStyle("A{$rowRata}:AQ{$rowRata}")->applyFromArray([
+        $sheet->getStyle("A{$rowRata}:AS{$rowRata}")->applyFromArray([
             'font'      => ['bold' => true, 'size' => 8],
             'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => self::COLOR_YELLOW_HEADER]],
             'borders'   => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['argb' => self::COLOR_BORDER]]],
@@ -488,8 +498,8 @@ class RekapHppExport
         ]);
         $sheet->getStyle("A{$rowRata}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         $sheet->getStyle("H{$rowRata}")->getFont()->getColor()->setARGB(self::COLOR_BLUE_TEXT);
-        $sheet->getStyle("AN{$rowRata}")->getFont()->getColor()->setARGB(self::COLOR_BLUE_TEXT);
         $sheet->getStyle("AP{$rowRata}")->getFont()->getColor()->setARGB(self::COLOR_BLUE_TEXT);
+        $sheet->getStyle("AR{$rowRata}")->getFont()->getColor()->setARGB(self::COLOR_BLUE_TEXT);
 
         // Format angka baris total & rata-rata
         foreach ([$rowTotal, $rowRata] as $r) {
@@ -499,11 +509,11 @@ class RekapHppExport
             $sheet->getStyle("J{$r}")->getNumberFormat()->setFormatCode('#,##0');
             $sheet->getStyle("K{$r}:M{$r}")->getNumberFormat()->setFormatCode('#,##0');
             $sheet->getStyle("N{$r}:AE{$r}")->getNumberFormat()->setFormatCode('#,##0');
-            $sheet->getStyle("AF{$r}:AM{$r}")->getNumberFormat()->setFormatCode('#,##0.00');
-            $sheet->getStyle("AN{$r}")->getNumberFormat()->setFormatCode('0.00%');
-            $sheet->getStyle("AO{$r}")->getNumberFormat()->setFormatCode('#,##0.00');
+            $sheet->getStyle("AF{$r}:AO{$r}")->getNumberFormat()->setFormatCode('#,##0.00');
             $sheet->getStyle("AP{$r}")->getNumberFormat()->setFormatCode('0.00%');
-            $sheet->getStyle("AQ{$r}")->getNumberFormat()->setFormatCode('#,##0');
+            $sheet->getStyle("AQ{$r}")->getNumberFormat()->setFormatCode('#,##0.00');
+            $sheet->getStyle("AR{$r}")->getNumberFormat()->setFormatCode('0.00%');
+            $sheet->getStyle("AS{$r}")->getNumberFormat()->setFormatCode('#,##0');
             $sheet->getRowDimension($r)->setRowHeight(20);
         }
 
@@ -526,6 +536,8 @@ class RekapHppExport
         $sheet->getColumnDimension('AO')->setAutoSize(true);
         $sheet->getColumnDimension('AP')->setAutoSize(true);
         $sheet->getColumnDimension('AQ')->setAutoSize(true);
+        $sheet->getColumnDimension('AR')->setAutoSize(true);
+        $sheet->getColumnDimension('AS')->setAutoSize(true);
 
         return $spreadsheet;
     }

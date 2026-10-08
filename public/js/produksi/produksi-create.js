@@ -399,6 +399,10 @@
 
         // Update highlight dokumen pengeluaran gudang yang cocok
         window.highlightMatchingPakai();
+
+        if (typeof window.calcAll === 'function') {
+            window.calcAll();
+        }
     };
 
     // Handler Interaktif saat Lini Produksi Berubah:
@@ -647,8 +651,8 @@
                     if (el) el.textContent = text;
                 };
 
-                updateBadge('badge_foh_fotocopy', 'x ' + formatNumber(window.FOH_RATES.FOTOCOPY, 2));
-                updateBadge('sublabel_foh_fotocopy', 'Rp ' + formatNumber(window.FOH_RATES.FOTOCOPY, 2) + ' / Kg WIP');
+                updateBadge('badge_foh_fotocopy', '2 lbr × Rp ' + formatNumber(window.FOH_RATES.FOTOCOPY, 0));
+                updateBadge('sublabel_foh_fotocopy', '(Karton × 2 lbr) × Rp ' + formatNumber(window.FOH_RATES.FOTOCOPY, 0));
                 updateBadge('badge_foh_qc', 'x ' + formatNumber(window.FOH_RATES.QC, 2));
                 updateBadge('sublabel_foh_qc', 'Rp ' + formatNumber(window.FOH_RATES.QC, 2) + ' / Kg WIP');
                 updateBadge('badge_foh_listrik', 'x ' + formatNumber(window.FOH_RATES.LISTRIK, 2));
@@ -705,6 +709,39 @@
         });
     };
 
+    // Helper: Hitung kuantitas Karton IFL/IFM untuk dasar FOH Fotocopy (Rumus Excel: =(AF/6)*2*$V$2)
+    function getKartonIflCount(totalOutputKg = 0) {
+        let count = parseFloat(document.getElementById('qty_karton')?.value) || 0;
+        if (count <= 0) {
+            let foundIfl = false;
+            document.querySelectorAll('.row-output-fg').forEach(tr => {
+                const sel = tr.querySelector('.select-fg-barang');
+                const opt = sel?.selectedOptions?.[0];
+                const cd = (opt?.dataset?.cd || '').toUpperCase();
+                const nm = (opt?.dataset?.nm || '').toUpperCase();
+                const st = (opt?.dataset?.satuan || '').toUpperCase();
+                const qtyInp = tr.querySelector('[id^="qtyHasil_"]');
+                const kgInp = tr.querySelector('[id^="qtyKg_"]');
+                if (cd.includes('FCC') || cd.includes('IFL') || cd.includes('IFM') || nm.includes('IFL') || nm.includes('IFM') || st.includes('KARTON')) {
+                    foundIfl = true;
+                    if (qtyInp && parseFloat(qtyInp.value) > 0) {
+                        count += parseFloat(qtyInp.value);
+                    } else if (kgInp && parseFloat(kgInp.value) > 0) {
+                        count += (parseFloat(kgInp.value) / 6.0);
+                    }
+                }
+            });
+            // Fallback jika lini IFL/IFM dipilih dan ada output Kg
+            if (!foundIfl && totalOutputKg > 0) {
+                const lini = (document.getElementById('lini_produksi')?.value || '').toUpperCase();
+                if (lini.includes('IFL') || lini.includes('IFM') || lini.includes('INDOFOOD')) {
+                    count = totalOutputKg / 6.0;
+                }
+            }
+        }
+        return count;
+    }
+
     // Fungsi untuk mereset dan menghitung ulang seluruh nilai FOH berdasarkan Total Output KG WIP
     window.recalcFohStandard = function (forceReset = false) {
         let totalOutputKg = 0;
@@ -727,7 +764,10 @@
             syncField('pemeliharaan_mesin_nilai', totalOutputKg * window.FOH_RATES.PEMELIHARAAN);
             syncField('penyusutan_mesin_nilai', totalOutputKg * window.FOH_RATES.PENYUSUTAN);
             syncField('limbah_kimia_nilai', totalOutputKg * window.FOH_RATES.KIMIA);
-            syncField('fotocopy_nilai', totalOutputKg * window.FOH_RATES.FOTOCOPY);
+
+            // Fotocopy & ATK: Rumus Excel Asli PT Mirasa =(AF/6)*2*$V$2 -> (Karton IFL x 2 lbr stiker) x Rp 28
+            const kartonIflCount = getKartonIflCount(totalOutputKg);
+            syncField('fotocopy_nilai', kartonIflCount * 2 * (window.FOH_RATES.FOTOCOPY || 28.00));
 
             const elLimbahP = document.getElementById('limbah_padat_nilai');
             if (elLimbahP && (forceReset || !elLimbahP.dataset.userModified || elLimbahP.value === '' || parseFloat(elLimbahP.value) === 0)) {
@@ -781,7 +821,8 @@
         }
 
         // 4. Kalkulasi Otomatis Standar FOH Sesuai Pengali Excel Asli PT Mirasa
-        // Rumus: Total KG WIP × Tarif Standar Pengali (jika field belum diedit manual oleh user)
+        // Rumus Umum: Total KG WIP × Tarif Standar Pengali (jika field belum diedit manual oleh user)
+        // Khusus Fotocopy: (Jumlah Karton IFL × 2 Lembar Stiker) × Rp 28/Lembar
         if (totalOutputKg > 0 && typeof window.FOH_RATES === 'object') {
             const autoSyncFoh = (id, val) => {
                 const el = document.getElementById(id);
@@ -794,7 +835,10 @@
             autoSyncFoh('pemeliharaan_mesin_nilai', totalOutputKg * window.FOH_RATES.PEMELIHARAAN);
             autoSyncFoh('penyusutan_mesin_nilai', totalOutputKg * window.FOH_RATES.PENYUSUTAN);
             autoSyncFoh('limbah_kimia_nilai', totalOutputKg * window.FOH_RATES.KIMIA);
-            autoSyncFoh('fotocopy_nilai', totalOutputKg * window.FOH_RATES.FOTOCOPY);
+
+            // Rumus Excel Asli Fotocopy: =(AF/6)*2*$V$2
+            const kartonIflCount = getKartonIflCount(totalOutputKg);
+            autoSyncFoh('fotocopy_nilai', kartonIflCount * 2 * (window.FOH_RATES.FOTOCOPY || 28.00));
 
             const elLimbahP = document.getElementById('limbah_padat_nilai');
             if (elLimbahP && (!elLimbahP.dataset.userModified || elLimbahP.value === '' || parseFloat(elLimbahP.value) === 0)) {

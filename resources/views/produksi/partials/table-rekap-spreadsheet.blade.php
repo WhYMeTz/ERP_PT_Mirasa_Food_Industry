@@ -24,8 +24,8 @@
         </div>
     </div>
 
-    {{-- CONTAINER SCROLLABLE HORIZONTAL --}}
-    <div style="overflow-x: auto; max-height: calc(100vh - 300px); position: relative; border-radius: 0 0 12px 12px;">
+    {{-- CONTAINER SCROLLABLE HORIZONTAL (HANYA SCROLL KIRI-KANAN) --}}
+    <div style="overflow-x: auto; position: relative; border-radius: 0 0 12px 12px;">
         <table class="table-rekap-mirasa" style="width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.75rem; white-space: nowrap;">
             {{-- HEADER LEVEL 1, 2, & 3 MENGIKUTI 100% SPREADSHEET EXCEL MIRASA --}}
             <thead style="position: sticky; top: 0; z-index: 20;">
@@ -35,7 +35,7 @@
                     <th rowspan="3" class="th-orange" style="position: sticky; left: 85px; z-index: 25; background-color: #f4b084 !important; color: #000000 !important; border: 1px solid #7f1d1d !important; padding: 0.5rem 0.6rem; min-width: 80px; font-weight: 800; text-align: center !important; vertical-align: middle !important;">TANGGAL</th>
                     <th colspan="28" class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.6rem 0.5rem; font-weight: 900; font-size: 0.85rem; letter-spacing: 0.15em; text-align: center !important; vertical-align: middle !important;">TOTAL BIAYA PRODUKSI / KG</th>
                     <th rowspan="3" class="th-yellow" style="background-color: #ffc000 !important; color: #000000 !important; border: 1px solid #ca8a04 !important; padding: 0.5rem 0.75rem; min-width: 110px; font-weight: 900; font-size: 0.8rem; line-height: 1.2; text-align: center !important; vertical-align: middle !important;">TOTAL<br>BIAYA</th>
-                    <th colspan="11" class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.6rem 0.5rem; font-weight: 900; font-size: 0.85rem; letter-spacing: 0.1em; text-align: center !important; vertical-align: middle !important;">TOTAL WIP</th>
+                    <th colspan="13" class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.6rem 0.5rem; font-weight: 900; font-size: 0.85rem; letter-spacing: 0.1em; text-align: center !important; vertical-align: middle !important;">TOTAL WIP</th>
                     <th rowspan="3" class="th-grey" style="background-color: #f2f2f2 !important; color: #000000 !important; border: 1px solid #94a3b8 !important; padding: 0.5rem 0.6rem; min-width: 85px; font-weight: 900; font-size: 0.75rem; line-height: 1.2; text-align: center !important; vertical-align: middle !important;">HARGA POKOK<br>PRODUKSI</th>
                     <th rowspan="3" class="th-blue-action" style="position: sticky; right: 0; z-index: 25; background-color: #0284c7 !important; color: #ffffff !important; border: 1px solid #0369a1 !important; padding: 0.5rem 0.65rem; min-width: 75px; font-weight: 800; text-align: center !important; vertical-align: middle !important;">AKSI</th>
                 </tr>
@@ -59,9 +59,9 @@
                     <th rowspan="2" class="th-green" style="background-color: #92d050 !important; color: #c00000 !important; border: 1px solid #3f6212 !important; padding: 0.35rem 0.4rem; min-width: 80px; line-height: 1.2; text-align: center !important; vertical-align: middle !important; font-weight: 900;">PENYS<br>MESIN</th>
                     <th colspan="2" class="th-green" style="background-color: #92d050 !important; color: #c00000 !important; border: 1px solid #3f6212 !important; padding: 0.35rem 0.4rem; text-align: center !important; vertical-align: middle !important; font-weight: 900;">B. PNGOLHN LIMBAH</th>
 
-                    {{-- Under TOTAL WIP Sesuai Format Asli Excel Mirasa --}}
+                    {{-- Under TOTAL WIP Sesuai Format Asli Excel Mirasa (13 Kolom) --}}
                     <th class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.35rem 0.4rem; min-width: 70px; text-align: center !important; vertical-align: middle !important;">IFL</th>
-                    <th colspan="4" class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.35rem 0.4rem; text-align: center !important; vertical-align: middle !important;">MANUAL</th>
+                    <th colspan="6" class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.35rem 0.4rem; text-align: center !important; vertical-align: middle !important;">MANUAL</th>
                     <th colspan="4" class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.35rem 0.4rem; text-align: center !important; vertical-align: middle !important;">BERKO + BERKO ME</th>
                     <th rowspan="2" class="th-green" style="background-color: #92d050 !important; color: #002060 !important; border: 1px solid #3f6212 !important; padding: 0.35rem 0.4rem; min-width: 85px; line-height: 1.2; text-align: center !important; vertical-align: middle !important; font-weight: 900;">TOTAL<br>KG</th>
                     <th rowspan="2" class="th-green" style="background-color: #92d050 !important; color: #002060 !important; border: 1px solid #3f6212 !important; padding: 0.35rem 0.4rem; min-width: 80px; line-height: 1.2; text-align: center !important; vertical-align: middle !important; font-weight: 900;">RENDE<br>MEN %</th>
@@ -105,12 +105,14 @@
                     <th class="th-green" style="background-color: #92d050 !important; color: #c00000 !important; border: 1px solid #3f6212 !important; padding: 0.3rem 0.4rem; min-width: 80px; line-height: 1.1; text-align: center !important; vertical-align: middle !important; font-weight: 800;">LIMBAH<br>PADAT</th>
                     <th class="th-green" style="background-color: #92d050 !important; color: #c00000 !important; border: 1px solid #3f6212 !important; padding: 0.3rem 0.4rem; min-width: 80px; line-height: 1.1; text-align: center !important; vertical-align: middle !important; font-weight: 800;">BAHAN<br>KIMIA</th>
 
-                    {{-- Sub-kolom TOTAL WIP Sesuai Format Asli Excel Mirasa --}}
+                    {{-- Sub-kolom TOTAL WIP Sesuai Format Asli Excel Mirasa (13 Kolom) --}}
                     <th class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.3rem 0.4rem; min-width: 70px; text-align: center !important; vertical-align: middle !important;">KG</th>
                     <th class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.3rem 0.4rem; min-width: 75px; text-align: center !important; vertical-align: middle !important;">ASIN BARC</th>
                     <th class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.3rem 0.4rem; min-width: 75px; text-align: center !important; vertical-align: middle !important;">ASIN SAWT</th>
                     <th class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.3rem 0.4rem; min-width: 75px; text-align: center !important; vertical-align: middle !important;">NO SALT</th>
-                    <th class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.3rem 0.4rem; min-width: 75px; text-align: center !important; vertical-align: middle !important;">BALQI</th>
+                    <th class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.3rem 0.4rem; min-width: 75px; text-align: center !important; vertical-align: middle !important;">U/CAMP</th>
+                    <th class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.3rem 0.4rem; min-width: 85px; text-align: center !important; vertical-align: middle !important;">D/LM GELOMBA</th>
+                    <th class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.3rem 0.4rem; min-width: 70px; text-align: center !important; vertical-align: middle !important;">BAL Q</th>
                     <th class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.3rem 0.4rem; min-width: 70px; text-align: center !important; vertical-align: middle !important;">BERKO</th>
                     <th class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.3rem 0.4rem; min-width: 75px; text-align: center !important; vertical-align: middle !important;">BERKO ME</th>
                     <th class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.3rem 0.4rem; min-width: 75px; text-align: center !important; vertical-align: middle !important; font-weight: 800;">TOTAL</th>
@@ -132,7 +134,18 @@
                             {{ \Carbon\Carbon::parse($d['date'])->format('l') }}
                         </td>
                         <td style="position: sticky; left: 85px; z-index: 10; background: {{ $rowBg }}; border: {{ $cellBorder }}; padding: 0.45rem 0.6rem; text-align: center; font-weight: 600;">
-                            {{ \Carbon\Carbon::parse($d['date'])->format('d/m/y') }}
+                            <div>{{ \Carbon\Carbon::parse($d['date'])->format('d/m/y') }}</div>
+                            @if($d['has_data'] && !empty($d['shift_cd']))
+                                @if(($d['shift_count'] ?? 1) > 1)
+                                    <span style="display: inline-block; font-size: 0.625rem; background: #e0e7ff; color: #3730a3; padding: 1px 5px; border-radius: 4px; font-weight: 700; margin-top: 2px;" title="{{ $d['shift_count'] }} shift tercatat pada tanggal ini">
+                                        {{ $d['shift_count'] }} Shift ({{ $d['shift_cd'] }})
+                                    </span>
+                                @else
+                                    <span style="display: inline-block; font-size: 0.625rem; background: #f1f5f9; color: #475569; padding: 1px 4px; border-radius: 4px; font-weight: 600; margin-top: 2px;">
+                                        Shift {{ $d['shift_cd'] }}
+                                    </span>
+                                @endif
+                            @endif
                         </td>
 
                         {{-- Singkong --}}
@@ -258,9 +271,19 @@
                             {{ $d['has_data'] && $d['no_salt_qty'] > 0 ? number_format($d['no_salt_qty'], 2, ',', '.') : '-' }}
                         </td>
 
-                        {{-- MANUAL: BALQI --}}
+                        {{-- MANUAL: U/CAMP --}}
+                        <td style="border: {{ $cellBorder }}; padding: 0.45rem 0.5rem;">
+                            {{ $d['has_data'] && $d['ucamp_qty'] > 0 ? number_format($d['ucamp_qty'], 2, ',', '.') : '-' }}
+                        </td>
+
+                        {{-- MANUAL: D/LM GELOMBA --}}
                         <td style="border: {{ $cellBorder }}; padding: 0.45rem 0.5rem;">
                             {{ $d['has_data'] && $d['balo_gelombang_qty'] > 0 ? number_format($d['balo_gelombang_qty'], 2, ',', '.') : '-' }}
+                        </td>
+
+                        {{-- MANUAL: BAL Q --}}
+                        <td style="border: {{ $cellBorder }}; padding: 0.45rem 0.5rem;">
+                            {{ $d['has_data'] && $d['balqi_qty'] > 0 ? number_format($d['balqi_qty'], 2, ',', '.') : '-' }}
                         </td>
 
                         {{-- BERKO --}}
@@ -307,22 +330,46 @@
                                     <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                                 </button>
                                 <div id="{{ $rekapMenuId }}" class="action-dropdown-menu">
-                                    <a href="{{ route('produksi.show', $d['produksi_id']) }}" class="action-dropdown-item">
-                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                                        <span>Detail Dokumen</span>
-                                    </a>
-                                    <a href="{{ route('produksi.cetak-stiker', $d['produksi_id']) }}" class="action-dropdown-item" target="_blank">
-                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-                                        <span>Cetak Stiker Karton</span>
-                                    </a>
-                                    <div class="action-dropdown-divider"></div>
-                                    @php
-                                        $tglSpreadsheet = sprintf('%02d/%02d/%04d', $d['day'], $month, $year);
-                                    @endphp
-                                    <button type="button" class="action-dropdown-item danger-item" onclick="openDeleteProduksiModal({{ $d['produksi_id'] }}, '{{ $d['produksi_no'] }}', '{{ $tglSpreadsheet }}', '{{ $d['shift_cd'] }}', '{{ $d['batch_wip_no'] }}')">
-                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                        <span>Hapus Produksi</span>
-                                    </button>
+                                    @if(($d['shift_count'] ?? 1) > 1 && !empty($d['shift_records']))
+                                        <div style="padding: 0.35rem 0.75rem; font-size: 0.675rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; background: #f8fafc; border-bottom: 1px solid #f1f5f9;">
+                                            Rincian Shift ({{ $d['shift_count'] }} Dokumen)
+                                        </div>
+                                        @foreach($d['shift_records'] as $sRec)
+                                            <a href="{{ route('produksi.show', $sRec['produksi_id']) }}" class="action-dropdown-item">
+                                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                                <span>Detail Shift {{ $sRec['shift_cd'] }} ({{ $sRec['produksi_no'] }})</span>
+                                            </a>
+                                            <a href="{{ route('produksi.cetak-stiker', $sRec['produksi_id']) }}" class="action-dropdown-item" target="_blank" style="padding-left: 1.75rem; font-size: 0.75rem; color: #475569;">
+                                                <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                                                <span>Cetak Stiker Shift {{ $sRec['shift_cd'] }}</span>
+                                            </a>
+                                        @endforeach
+                                        <div class="action-dropdown-divider"></div>
+                                        @php
+                                            $tglSpreadsheet = sprintf('%02d/%02d/%04d', $d['day'], $month, $year);
+                                        @endphp
+                                        <button type="button" class="action-dropdown-item danger-item" onclick="openDeleteProduksiModal({{ $d['produksi_id'] }}, '{{ $d['produksi_no'] }}', '{{ $tglSpreadsheet }}', '{{ $d['shift_cd'] }}', '{{ $d['batch_wip_no'] }}')">
+                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                            <span>Hapus Data Produksi</span>
+                                        </button>
+                                    @else
+                                        <a href="{{ route('produksi.show', $d['produksi_id']) }}" class="action-dropdown-item">
+                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                            <span>Detail Dokumen</span>
+                                        </a>
+                                        <a href="{{ route('produksi.cetak-stiker', $d['produksi_id']) }}" class="action-dropdown-item" target="_blank">
+                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                                            <span>Cetak Stiker Karton</span>
+                                        </a>
+                                        <div class="action-dropdown-divider"></div>
+                                        @php
+                                            $tglSpreadsheet = sprintf('%02d/%02d/%04d', $d['day'], $month, $year);
+                                        @endphp
+                                        <button type="button" class="action-dropdown-item danger-item" onclick="openDeleteProduksiModal({{ $d['produksi_id'] }}, '{{ $d['produksi_no'] }}', '{{ $tglSpreadsheet }}', '{{ $d['shift_cd'] }}', '{{ $d['batch_wip_no'] }}')">
+                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                            <span>Hapus Produksi</span>
+                                        </button>
+                                    @endif
                                 </div>
                             @else
                                 <span style="color: #cbd5e1;">-</span>
@@ -398,8 +445,14 @@
                         {{-- Total NO SALT --}}
                         <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['no_salt_qty'], 2, ',', '.') }}</td>
 
-                        {{-- Total BALQI --}}
+                        {{-- Total U/CAMP --}}
+                        <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['ucamp_qty'], 2, ',', '.') }}</td>
+
+                        {{-- Total D/LM GELOMBA --}}
                         <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['balo_gelombang_qty'], 2, ',', '.') }}</td>
+
+                        {{-- Total BAL Q --}}
+                        <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['balqi_qty'], 2, ',', '.') }}</td>
 
                         {{-- Total BERKO --}}
                         <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['berko_qty'], 2, ',', '.') }}</td>

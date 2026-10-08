@@ -328,14 +328,14 @@
                     </div>
                     <div class="foh-toolbar">
                         @if(Auth::user()?->canManageTarifProduksi())
-                            <button type="button" class="btn-foh-manage" onclick="openQuickTarifModal()">
-                                <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                                <span>⚙️ Kelola Standar Tarif</span>
+                            <button type="button" class="btn-foh-manage" onclick="openQuickTarifModal()" title="Konfigurasi standar pengali FOH & tarif utilitas">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                <span>Standar Tarif</span>
                             </button>
                         @endif
-                        <button type="button" class="btn-foh-reset" onclick="recalcFohStandard(true)">
-                            <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                            <span>Reset Standar FOH</span>
+                        <button type="button" class="btn-foh-reset" onclick="recalcFohStandard(true)" title="Hitung ulang nilai FOH sesuai standar pengali">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                            <span>Hitung Ulang Standar</span>
                         </button>
                         <span id="badgeSubtotalOverhead" class="badge-foh-subtotal">
                             Subtotal FOH: Rp 0
@@ -423,13 +423,13 @@
                         <div class="foh-field-card">
                             <div class="foh-field-head">
                                 <label class="foh-field-label">Fotocopy / ATK</label>
-                                <span id="badge_foh_fotocopy" class="foh-rate-pill" title="Standar: Total KG WIP × Pengali">x {{ number_format($fohRates['fotocopy'] ?? 28.00, 2, ',', '.') }}</span>
+                                <span id="badge_foh_fotocopy" class="foh-rate-pill" title="Standar: (Jumlah Karton × 2 Lembar Stiker) × Tarif">2 lbr × Rp {{ number_format($fohRates['fotocopy'] ?? 28.00, 0, ',', '.') }}</span>
                             </div>
                             <div class="foh-input-group">
                                 <span class="foh-input-addon">Rp</span>
                                 <input type="number" step="0.01" min="0" name="fotocopy_nilai" id="fotocopy_nilai" class="form-control calc-trigger input-foh-auto" value="{{ old('fotocopy_nilai', 0) }}" oninput="calcAll()">
                             </div>
-                            <small id="sublabel_foh_fotocopy" class="foh-field-help">Rp {{ number_format($fohRates['fotocopy'] ?? 28.00, 2, ',', '.') }} / Kg WIP</small>
+                            <small id="sublabel_foh_fotocopy" class="foh-field-help">(Karton × 2 lbr) × Rp {{ number_format($fohRates['fotocopy'] ?? 28.00, 0, ',', '.') }}</small>
                         </div>
                     </div>
                 </div>

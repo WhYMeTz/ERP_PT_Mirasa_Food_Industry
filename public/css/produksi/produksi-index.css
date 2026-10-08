@@ -643,10 +643,10 @@
     }
 }
 
-/* Executive Stat Metric Cards (Financial Strip) */
+/* Executive Stat Metric Cards (Standardized with PO, GRN, QC, Stok Rekap) */
 .executive-stat-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 1rem;
     margin-bottom: 1.5rem;
 }
@@ -656,50 +656,46 @@
     border: 1px solid #e2e8f0;
     border-radius: 8px;
     padding: 1rem 1.25rem;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
-    position: relative;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.executive-stat-card-header {
     display: flex;
-    flex-direction: column;
     justify-content: space-between;
+    align-items: flex-start;
 }
-
-.executive-stat-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 3px;
-    background: #cbd5e1;
-    border-radius: 8px 8px 0 0;
-}
-
-.executive-stat-card.card-primary::before { background: #0284c7; }
-.executive-stat-card.card-success::before { background: #059669; }
-.executive-stat-card.card-warning::before { background: #d97706; }
-.executive-stat-card.card-neutral::before { background: #475569; }
 
 .executive-stat-label {
-    font-size: 0.7rem;
+    font-size: 0.75rem;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.05em;
     color: #64748b;
-    margin-bottom: 0.35rem;
+}
+
+.executive-stat-icon-box {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
 }
 
 .executive-stat-value {
-    font-size: 1.45rem;
-    font-weight: 800;
+    font-size: 1.5rem;
+    font-weight: 700;
     color: #0f172a;
-    font-variant-numeric: tabular-nums;
+    margin-top: 0.25rem;
     line-height: 1.2;
+    font-variant-numeric: tabular-nums;
 }
 
 .executive-stat-subtext {
-    font-size: 0.725rem;
+    font-size: 0.75rem;
     color: #64748b;
-    margin-top: 0.45rem;
+    margin-top: 0.4rem;
     display: flex;
     align-items: center;
     gap: 0.35rem;

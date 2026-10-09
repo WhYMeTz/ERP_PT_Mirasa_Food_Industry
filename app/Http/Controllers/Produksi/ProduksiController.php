@@ -16,7 +16,6 @@ use App\Models\MasterData\MstLiniProduksi;
 use App\Services\Common\CodeGeneratorService;
 use App\Services\Gudang\StokService;
 use App\Services\Produksi\ProduksiService;
-use App\Services\Produksi\TarifProduksiService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Exception;
@@ -32,8 +31,7 @@ class ProduksiController extends Controller
     public function __construct(
         protected ProduksiService $produksiService,
         protected CodeGeneratorService $codeGenerator,
-        protected StokService $stokService,
-        protected TarifProduksiService $tarifService
+        protected StokService $stokService
     ) {}
 
     /**
@@ -149,19 +147,14 @@ class ProduksiController extends Controller
             ->orderBy('barang_nm')
             ->get();
 
-        // Standar Pengali FOH & Tarif Dinamis dari Master Data
-        $fohRates = $this->tarifService->getFohRates();
-        $energiTkRates = $this->tarifService->getEnergiLaborRates();
-        $allTarif = $this->tarifService->getAllTarif();
+        $defaultCngTarif = 226800.00;
 
         return view('produksi.create', compact(
             'gudangList',
             'pakaiList',
             'liniList',
             'barangHasilList',
-            'fohRates',
-            'energiTkRates',
-            'allTarif'
+            'defaultCngTarif'
         ));
     }
 
@@ -207,6 +200,27 @@ class ProduksiController extends Controller
     }
 
     /**
+     * Endpoint AJAX: Tarik data jumlah tenaga kerja hadir dan total upah dari Modul Karyawan berdasarkan tanggal.
+     */
+    public function getKaryawanDataByDate(Request $request): JsonResponse
+    {
+        try {
+            $tgl = $request->input('tgl', date('Y-m-d'));
+            $data = $this->produksiService->getLaborDataFromKaryawan($tgl);
+
+            return response()->json([
+                'status' => 'success',
+                'data'   => $data,
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Gagal memeriksa data karyawan: ' . $e->getMessage(),
+            ], 422);
+        }
+    }
+
+    /**
      * Simpan data hasil produksi harian & suntik stok fisik WIP jika POSTED.
      */
     public function store(Request $request): RedirectResponse
@@ -246,6 +260,7 @@ class ProduksiController extends Controller
             'cng_nilai'                   => 'nullable|numeric|min:0',
 
             // Tenaga Kerja
+            'tk_jumlah_org'               => 'nullable|integer|min:0',
             'tk_langsung_org'             => 'nullable|integer|min:0',
             'tk_tidak_langsung_org'       => 'nullable|integer|min:0',
             'tk_training_org'             => 'nullable|integer|min:0',

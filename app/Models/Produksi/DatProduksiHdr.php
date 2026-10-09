@@ -59,6 +59,7 @@ class DatProduksiHdr extends Model
         'cng_nilai',
 
         // Tenaga Kerja
+        'tk_jumlah_org',
         'tk_langsung_org',
         'tk_tidak_langsung_org',
         'tk_training_org',
@@ -132,6 +133,7 @@ class DatProduksiHdr extends Model
         'cng_mmbtu'                   => 'decimal:4',
         'cng_tarif'                   => 'decimal:2',
         'cng_nilai'                   => 'decimal:2',
+        'tk_jumlah_org'               => 'integer',
         'tk_langsung_org'             => 'integer',
         'tk_tidak_langsung_org'       => 'integer',
         'tk_training_org'             => 'integer',
@@ -197,5 +199,16 @@ class DatProduksiHdr extends Model
     public function outputs(): HasMany
     {
         return $this->details();
+    }
+
+    /**
+     * Accessor jumlah total tenaga kerja harian (fallback ke sum jika tk_jumlah_org kosong).
+     */
+    public function getTkJumlahOrgAttribute($value): int
+    {
+        if ($value !== null && (int) $value > 0) {
+            return (int) $value;
+        }
+        return (int) (($this->attributes['tk_langsung_org'] ?? 0) + ($this->attributes['tk_tidak_langsung_org'] ?? 0) + ($this->attributes['tk_training_org'] ?? 0));
     }
 }

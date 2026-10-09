@@ -20,7 +20,6 @@ use App\Http\Controllers\MasterData\KaryawanController;
 use App\Http\Controllers\MasterData\LiniProduksiController;
 use App\Http\Controllers\MasterData\SatuanController;
 use App\Http\Controllers\MasterData\SupplierController;
-use App\Http\Controllers\MasterData\TarifProduksiController;
 use App\Http\Controllers\Penjualan\SoController;
 use App\Http\Controllers\Produksi\BomController;
 use App\Http\Controllers\Produksi\ProduksiController;
@@ -88,16 +87,6 @@ Route::middleware('auth')->group(function () {
         ->middleware('role:SUPERADMIN,STAFF_PRODUKSI,master_resep_view,master_resep_manage');
     Route::resource('master-lini-produksi', LiniProduksiController::class)
         ->names('master.lini_produksi');
-
-    // Master Standar Tarif Produksi & FOH Pabrik
-    Route::get('master-tarif-produksi/api-rates', [TarifProduksiController::class, 'apiRates'])
-        ->name('master.tarif_produksi.api-rates');
-    Route::post('master-tarif-produksi/quick-update', [TarifProduksiController::class, 'quickUpdate'])
-        ->name('master.tarif_produksi.quick-update');
-    Route::get('master-tarif-produksi', [TarifProduksiController::class, 'index'])
-        ->name('master.tarif_produksi.index');
-    Route::put('master-tarif-produksi/{id}', [TarifProduksiController::class, 'update'])
-        ->name('master.tarif_produksi.update');
 
     // Master Supplier
     Route::resource('master-jenis-supplier', JenisSupplierController::class)->names('master.jenis_supplier');
@@ -255,6 +244,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/', [ProduksiController::class, 'store'])->name('store')->middleware('role:produksi_create');
         Route::get('/pakai-data/{pakaiId}', [ProduksiController::class, 'getPakaiData'])->name('pakai-data');
         Route::get('/next-karton', [ProduksiController::class, 'getNextKarton'])->name('next-karton');
+        Route::get('/sync-karyawan', [ProduksiController::class, 'getKaryawanDataByDate'])->name('sync-karyawan');
         Route::get('/{id}', [ProduksiController::class, 'show'])->name('show')->whereNumber('id');
         Route::get('/{id}/cetak-stiker', [ProduksiController::class, 'cetakStiker'])->name('cetak-stiker')->whereNumber('id');
         Route::delete('/{id}', [ProduksiController::class, 'destroy'])->name('destroy')->middleware('role:produksi_create')->whereNumber('id');

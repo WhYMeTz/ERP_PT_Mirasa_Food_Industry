@@ -566,216 +566,74 @@
         window.calcAll();
     };
 
-    // 8. Hitung Biaya Tenaga Kerja
+    // 8. Sinkronisasi Data Tenaga Kerja & Gaji dari Modul Karyawan
+    window.syncLaborFromKaryawan = async function (isManualClick = false) {
+        const tglInput = document.getElementById('produksi_tgl');
+        const tgl = tglInput?.value || new Date().toISOString().split('T')[0];
+        const syncUrl = window.appConfig?.syncKaryawanUrl;
+        if (!syncUrl) return;
+
+        const syncStatusText = document.getElementById('tkSyncText');
+        const syncIndicator = document.getElementById('tkSyncIndicator');
+        const btnSync = document.getElementById('btnSyncKaryawan');
+
+        if (syncIndicator) syncIndicator.style.display = 'inline';
+        if (btnSync) btnSync.disabled = true;
+
+        try {
+            const res = await fetch(`${syncUrl}?tgl=${encodeURIComponent(tgl)}`, {
+                headers: { 'Accept': 'application/json' }
+            });
+            const json = await res.json();
+
+            if (json.status === 'success' && json.data) {
+                const data = json.data;
+                const inputJml = document.getElementById('tk_jumlah_org');
+                const inputNilai = document.getElementById('tk_total_nilai');
+                const inputLangsung = document.getElementById('tk_langsung_org');
+
+                if (data.is_synced) {
+                    if (inputJml) inputJml.value = data.jumlah_orang;
+                    if (inputLangsung) inputLangsung.value = data.jumlah_orang;
+                    if (inputNilai) inputNilai.value = data.total_upah;
+                    if (syncStatusText) {
+                        syncStatusText.innerHTML = `Presensi tersinkronisasi: ${data.jumlah_orang} orang hadir, Total upah Rp ${Math.round(data.total_upah).toLocaleString('id-ID')}`;
+                        syncStatusText.style.color = '#047857';
+                    }
+                    window.calcAll();
+                } else {
+                    if (syncStatusText) {
+                        syncStatusText.innerHTML = `${data.message || 'Data presensi belum tersedia.'} Kuantitas hadir dan total upah dapat diinput manual.`;
+                        syncStatusText.style.color = '#64748b';
+                    }
+                }
+            }
+        } catch (err) {
+            console.warn('Gagal sinkronisasi data presensi:', err);
+            if (syncStatusText && isManualClick) {
+                syncStatusText.innerHTML = 'Koneksi ke data presensi tidak merespons. Nilai dapat diinput manual.';
+                syncStatusText.style.color = '#b45309';
+            }
+        } finally {
+            if (syncIndicator) syncIndicator.style.display = 'none';
+            if (btnSync) btnSync.disabled = false;
+        }
+    };
+
+    window.onTkJumlahChange = function () {
+        const jml = parseInt(document.getElementById('tk_jumlah_org')?.value) || 0;
+        const inputLangsung = document.getElementById('tk_langsung_org');
+        if (inputLangsung) inputLangsung.value = jml;
+    };
+
+    // Backward compatibility jika ada trigger kalkulasi lama
     window.calcTk = function () {
-        const lgs = parseInt(document.getElementById('tk_langsung_org')?.value) || 0;
-        const tdk = parseInt(document.getElementById('tk_tidak_langsung_org')?.value) || 0;
-        const trn = parseInt(document.getElementById('tk_training_org')?.value) || 0;
-        const tarif = parseFloat(document.getElementById('tk_tarif_per_org')?.value) || 91300;
-        const el = document.getElementById('tk_total_nilai');
-        if (el) el.value = Math.round((lgs + tdk + trn) * tarif);
+        window.onTkJumlahChange();
         window.calcAll();
     };
 
-    // Standar Tarif Alokasi Biaya Overhead Pabrik (FOH) Dinamis dari Master Data
-    const initialFoh = window.appConfig?.initialFohRates || {};
-    window.FOH_RATES = {
-        QC: parseFloat(initialFoh.qc) || 49.97,
-        LISTRIK: parseFloat(initialFoh.listrik) || 223.80,
-        PEMELIHARAAN: parseFloat(initialFoh.pemeliharaan) || 23.34,
-        PENYUSUTAN: parseFloat(initialFoh.penyusutan) || 66.44,
-        KIMIA: parseFloat(initialFoh.kimia) || 45.09,
-        FOTOCOPY: parseFloat(initialFoh.fotocopy) || 28.00,
-        LIMBAH_PADAT_SHIFT: parseFloat(initialFoh.limbah_padat) || 180000.00
-    };
-
-    // Quick Modal Handlers
-    window.openQuickTarifModal = function () {
-        const modal = document.getElementById('modalQuickTarif');
-        if (modal) {
-            modal.style.display = 'flex';
-        }
-    };
-
-    window.closeQuickTarifModal = function () {
-        const modal = document.getElementById('modalQuickTarif');
-        if (modal) {
-            modal.style.display = 'none';
-        }
-    };
-
-    window.submitQuickTarif = function () {
-        const btn = document.getElementById('btnSaveQuickTarif');
-        const form = document.getElementById('formQuickTarif');
-        if (!form) return;
-
-        const formData = new FormData(form);
-        const url = window.appConfig?.quickUpdateTarifUrl;
-        if (!url) return;
-
-        if (btn) {
-            btn.disabled = true;
-            btn.innerHTML = '<span>Menyimpan...</span>';
-        }
-
-        fetch(url, {
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-                'Accept': 'application/json'
-            },
-            body: formData
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (btn) {
-                btn.disabled = false;
-                btn.innerHTML = '<svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>Simpan &amp; Terapkan ke Form</span>';
-            }
-
-            if (data.success) {
-                // Update window.FOH_RATES
-                if (data.foh_rates) {
-                    window.FOH_RATES.QC = parseFloat(data.foh_rates.qc) || window.FOH_RATES.QC;
-                    window.FOH_RATES.LISTRIK = parseFloat(data.foh_rates.listrik) || window.FOH_RATES.LISTRIK;
-                    window.FOH_RATES.PEMELIHARAAN = parseFloat(data.foh_rates.pemeliharaan) || window.FOH_RATES.PEMELIHARAAN;
-                    window.FOH_RATES.PENYUSUTAN = parseFloat(data.foh_rates.penyusutan) || window.FOH_RATES.PENYUSUTAN;
-                    window.FOH_RATES.KIMIA = parseFloat(data.foh_rates.kimia) || window.FOH_RATES.KIMIA;
-                    window.FOH_RATES.FOTOCOPY = parseFloat(data.foh_rates.fotocopy) || window.FOH_RATES.FOTOCOPY;
-                    window.FOH_RATES.LIMBAH_PADAT_SHIFT = parseFloat(data.foh_rates.limbah_padat) || window.FOH_RATES.LIMBAH_PADAT_SHIFT;
-                }
-
-                // Update UI Badges & Labels
-                const updateBadge = (id, text) => {
-                    const el = document.getElementById(id);
-                    if (el) el.textContent = text;
-                };
-
-                updateBadge('badge_foh_fotocopy', '2 lbr × Rp ' + formatNumber(window.FOH_RATES.FOTOCOPY, 0));
-                updateBadge('sublabel_foh_fotocopy', '(Karton × 2 lbr) × Rp ' + formatNumber(window.FOH_RATES.FOTOCOPY, 0));
-                updateBadge('badge_foh_qc', 'x ' + formatNumber(window.FOH_RATES.QC, 2));
-                updateBadge('sublabel_foh_qc', 'Rp ' + formatNumber(window.FOH_RATES.QC, 2) + ' / Kg WIP');
-                updateBadge('badge_foh_listrik', 'x ' + formatNumber(window.FOH_RATES.LISTRIK, 2));
-                updateBadge('sublabel_foh_listrik', 'Rp ' + formatNumber(window.FOH_RATES.LISTRIK, 2) + ' / Kg WIP');
-                updateBadge('badge_foh_pemeliharaan', 'x ' + formatNumber(window.FOH_RATES.PEMELIHARAAN, 2));
-                updateBadge('sublabel_foh_pemeliharaan', 'Rp ' + formatNumber(window.FOH_RATES.PEMELIHARAAN, 2) + ' / Kg WIP');
-                updateBadge('badge_foh_penyusutan', 'x ' + formatNumber(window.FOH_RATES.PENYUSUTAN, 2));
-                updateBadge('sublabel_foh_penyusutan', 'Rp ' + formatNumber(window.FOH_RATES.PENYUSUTAN, 2) + ' / Kg WIP');
-                updateBadge('badge_foh_kimia', 'x ' + formatNumber(window.FOH_RATES.KIMIA, 2));
-                updateBadge('sublabel_foh_kimia', 'Rp ' + formatNumber(window.FOH_RATES.KIMIA, 2) + ' / Kg WIP (IPAL)');
-                updateBadge('badge_foh_limbah_padat', 'Flat Rp ' + Math.round(window.FOH_RATES.LIMBAH_PADAT_SHIFT).toLocaleString('id-ID'));
-
-                // Update CNG & TK rates if returned
-                if (data.energi_tk) {
-                    if (data.energi_tk.cng_tarif) {
-                        const elCng = document.getElementById('cng_tarif');
-                        if (elCng) elCng.value = data.energi_tk.cng_tarif;
-                        window.calcCng();
-                    }
-                    if (data.energi_tk.tk_tarif_per_org) {
-                        const elTk = document.getElementById('tk_tarif_per_org');
-                        if (elTk) elTk.value = data.energi_tk.tk_tarif_per_org;
-                        const elLabelTk = document.getElementById('label_tk_tarif');
-                        if (elLabelTk) elLabelTk.textContent = Math.round(data.energi_tk.tk_tarif_per_org).toLocaleString('id-ID');
-                        window.calcTk();
-                    }
-                }
-
-                // Recalculate FOH with new rates
-                window.recalcFohStandard(true);
-                window.calcAll();
-
-                closeQuickTarifModal();
-
-                if (window.Swal) {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Tarif Berhasil Diperbarui!',
-                        text: 'Standar pengali FOH dan tarif acuan langsung diterapkan ke formulir.',
-                        timer: 2000,
-                        showConfirmButton: false
-                    });
-                }
-            } else {
-                alert('Gagal menyimpan tarif: ' + (data.message || 'Terjadi kesalahan sistem'));
-            }
-        })
-        .catch(err => {
-            if (btn) {
-                btn.disabled = false;
-                btn.innerHTML = '<svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>Simpan &amp; Terapkan ke Form</span>';
-            }
-            alert('Terjadi kesalahan jaringan: ' + err.message);
-        });
-    };
-
-    // Helper: Hitung kuantitas Karton IFL/IFM untuk dasar FOH Fotocopy (Rumus Excel: =(AF/6)*2*$V$2)
-    function getKartonIflCount(totalOutputKg = 0) {
-        let count = parseFloat(document.getElementById('qty_karton')?.value) || 0;
-        if (count <= 0) {
-            let foundIfl = false;
-            document.querySelectorAll('.row-output-fg').forEach(tr => {
-                const sel = tr.querySelector('.select-fg-barang');
-                const opt = sel?.selectedOptions?.[0];
-                const cd = (opt?.dataset?.cd || '').toUpperCase();
-                const nm = (opt?.dataset?.nm || '').toUpperCase();
-                const st = (opt?.dataset?.satuan || '').toUpperCase();
-                const qtyInp = tr.querySelector('[id^="qtyHasil_"]');
-                const kgInp = tr.querySelector('[id^="qtyKg_"]');
-                if (cd.includes('FCC') || cd.includes('IFL') || cd.includes('IFM') || nm.includes('IFL') || nm.includes('IFM') || st.includes('KARTON')) {
-                    foundIfl = true;
-                    if (qtyInp && parseFloat(qtyInp.value) > 0) {
-                        count += parseFloat(qtyInp.value);
-                    } else if (kgInp && parseFloat(kgInp.value) > 0) {
-                        count += (parseFloat(kgInp.value) / 6.0);
-                    }
-                }
-            });
-            // Fallback jika lini IFL/IFM dipilih dan ada output Kg
-            if (!foundIfl && totalOutputKg > 0) {
-                const lini = (document.getElementById('lini_produksi')?.value || '').toUpperCase();
-                if (lini.includes('IFL') || lini.includes('IFM') || lini.includes('INDOFOOD')) {
-                    count = totalOutputKg / 6.0;
-                }
-            }
-        }
-        return count;
-    }
-
-    // Fungsi untuk mereset dan menghitung ulang seluruh nilai FOH berdasarkan Total Output KG WIP
+    // Fungsi untuk mereset dan menghitung ulang FOH (Hanya sarung tangan yang diinputkan)
     window.recalcFohStandard = function (forceReset = false) {
-        let totalOutputKg = 0;
-        document.querySelectorAll('.input-fg-qty-kg').forEach(inp => {
-            totalOutputKg += parseFloat(inp.value) || 0;
-        });
-
-        const syncField = (id, val) => {
-            const el = document.getElementById(id);
-            if (!el) return;
-            if (forceReset || !el.dataset.userModified || el.value === '' || parseFloat(el.value) === 0) {
-                el.value = (val > 0 ? Math.round(val) : (forceReset ? '0' : el.value));
-                if (forceReset) delete el.dataset.userModified;
-            }
-        };
-
-        if (totalOutputKg > 0 || forceReset) {
-            syncField('qc_pengawasan_nilai', totalOutputKg * window.FOH_RATES.QC);
-            syncField('listrik_air_telp_nilai', totalOutputKg * window.FOH_RATES.LISTRIK);
-            syncField('pemeliharaan_mesin_nilai', totalOutputKg * window.FOH_RATES.PEMELIHARAAN);
-            syncField('penyusutan_mesin_nilai', totalOutputKg * window.FOH_RATES.PENYUSUTAN);
-            syncField('limbah_kimia_nilai', totalOutputKg * window.FOH_RATES.KIMIA);
-
-            // Fotocopy & ATK: Rumus Excel Asli PT Mirasa =(AF/6)*2*$V$2 -> (Karton IFL x 2 lbr stiker) x Rp 28
-            const kartonIflCount = getKartonIflCount(totalOutputKg);
-            syncField('fotocopy_nilai', kartonIflCount * 2 * (window.FOH_RATES.FOTOCOPY || 28.00));
-
-            const elLimbahP = document.getElementById('limbah_padat_nilai');
-            if (elLimbahP && (forceReset || !elLimbahP.dataset.userModified || elLimbahP.value === '' || parseFloat(elLimbahP.value) === 0)) {
-                elLimbahP.value = Math.round(window.FOH_RATES.LIMBAH_PADAT_SHIFT);
-                if (forceReset) delete elLimbahP.dataset.userModified;
-            }
-        }
-
         window.calcAll();
     };
 
@@ -820,46 +678,13 @@
             badgeTotalOutput.textContent = 'Total Output: ' + formatNumber(totalOutputKg, 2) + ' kg';
         }
 
-        // 4. Kalkulasi Otomatis Standar FOH Sesuai Pengali Excel Asli PT Mirasa
-        // Rumus Umum: Total KG WIP × Tarif Standar Pengali (jika field belum diedit manual oleh user)
-        // Khusus Fotocopy: (Jumlah Karton IFL × 2 Lembar Stiker) × Rp 28/Lembar
-        if (totalOutputKg > 0 && typeof window.FOH_RATES === 'object') {
-            const autoSyncFoh = (id, val) => {
-                const el = document.getElementById(id);
-                if (el && (!el.dataset.userModified || el.value === '' || parseFloat(el.value) === 0)) {
-                    el.value = Math.round(val);
-                }
-            };
-            autoSyncFoh('qc_pengawasan_nilai', totalOutputKg * window.FOH_RATES.QC);
-            autoSyncFoh('listrik_air_telp_nilai', totalOutputKg * window.FOH_RATES.LISTRIK);
-            autoSyncFoh('pemeliharaan_mesin_nilai', totalOutputKg * window.FOH_RATES.PEMELIHARAAN);
-            autoSyncFoh('penyusutan_mesin_nilai', totalOutputKg * window.FOH_RATES.PENYUSUTAN);
-            autoSyncFoh('limbah_kimia_nilai', totalOutputKg * window.FOH_RATES.KIMIA);
-
-            // Rumus Excel Asli Fotocopy: =(AF/6)*2*$V$2
-            const kartonIflCount = getKartonIflCount(totalOutputKg);
-            autoSyncFoh('fotocopy_nilai', kartonIflCount * 2 * (window.FOH_RATES.FOTOCOPY || 28.00));
-
-            const elLimbahP = document.getElementById('limbah_padat_nilai');
-            if (elLimbahP && (!elLimbahP.dataset.userModified || elLimbahP.value === '' || parseFloat(elLimbahP.value) === 0)) {
-                elLimbahP.value = Math.round(window.FOH_RATES.LIMBAH_PADAT_SHIFT);
-            }
-        }
-
-        // 5. FOH Overhead
-        const fc = parseFloat(document.getElementById('fotocopy_nilai')?.value) || 0;
+        // 4 & 5. FOH Overhead - Khusus Sarung Tangan Sesuai Ketentuan Mentor
         const stP = parseFloat(document.getElementById('sarung_tangan_plastik_nilai')?.value) || 0;
         const stK = parseFloat(document.getElementById('sarung_tangan_kain_nilai')?.value) || 0;
-        const qc = parseFloat(document.getElementById('qc_pengawasan_nilai')?.value) || 0;
-        const listrik = parseFloat(document.getElementById('listrik_air_telp_nilai')?.value) || 0;
-        const pemlhr = parseFloat(document.getElementById('pemeliharaan_mesin_nilai')?.value) || 0;
-        const penys = parseFloat(document.getElementById('penyusutan_mesin_nilai')?.value) || 0;
-        const lmbP = parseFloat(document.getElementById('limbah_padat_nilai')?.value) || 0;
-        const lmbK = parseFloat(document.getElementById('limbah_kimia_nilai')?.value) || 0;
 
-        const subtotalOverhead = fc + stP + stK + qc + listrik + pemlhr + penys + lmbP + lmbK;
+        const subtotalOverhead = stP + stK;
         const badgeFoh = document.getElementById('badgeSubtotalOverhead');
-        if (badgeFoh) badgeFoh.textContent = 'Subtotal FOH: ' + formatRupiah(subtotalOverhead);
+        if (badgeFoh) badgeFoh.textContent = 'Subtotal: ' + formatRupiah(subtotalOverhead);
 
         // Total Biaya Produksi (Kolom Kuning Emas Excel)
         const totalBiaya = subtotalBahan + cngNilai + tkNilai + subtotalOverhead;
@@ -1611,12 +1436,13 @@
             });
         }
 
-        // Jika tanggal produksi diubah, reset flag user modified agar exp date menghitung ulang dari tanggal baru
+        // Jika tanggal produksi diubah, reset flag user modified agar exp date menghitung ulang dari tanggal baru & sinkronkan karyawan
         const elTglProd = document.getElementById('produksi_tgl');
         if (elTglProd) {
             elTglProd.addEventListener('change', () => {
                 window._expDateUserModified = false;
                 window.updateKartonRangeAndBatch();
+                window.syncLaborFromKaryawan();
             });
         }
 
@@ -1630,6 +1456,13 @@
                 }
             });
         });
+
+        // Inisialisasi sinkronisasi data tenaga kerja dari modul karyawan jika data masih kosong/default
+        const valTkJml = document.getElementById('tk_jumlah_org')?.value;
+        const valTkNilai = document.getElementById('tk_total_nilai')?.value;
+        if ((!valTkJml || valTkJml === '0') && (!valTkNilai || valTkNilai === '0')) {
+            window.syncLaborFromKaryawan();
+        }
     });
 
 })();

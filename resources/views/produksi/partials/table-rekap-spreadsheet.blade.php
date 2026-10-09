@@ -33,7 +33,7 @@
                 <tr style="text-align: center; font-weight: 800; font-size: 0.75rem;">
                     <th rowspan="3" class="th-orange" style="position: sticky; left: 0; z-index: 25; background-color: #f4b084 !important; color: #000000 !important; border: 1px solid #7f1d1d !important; padding: 0.5rem 0.6rem; min-width: 85px; font-weight: 800; text-align: center !important; vertical-align: middle !important;">HARI</th>
                     <th rowspan="3" class="th-orange" style="position: sticky; left: 85px; z-index: 25; background-color: #f4b084 !important; color: #000000 !important; border: 1px solid #7f1d1d !important; padding: 0.5rem 0.6rem; min-width: 80px; font-weight: 800; text-align: center !important; vertical-align: middle !important;">TANGGAL</th>
-                    <th colspan="28" class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.6rem 0.5rem; font-weight: 900; font-size: 0.85rem; letter-spacing: 0.15em; text-align: center !important; vertical-align: middle !important;">TOTAL BIAYA PRODUKSI / KG</th>
+                    <th colspan="19" class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.6rem 0.5rem; font-weight: 900; font-size: 0.85rem; letter-spacing: 0.15em; text-align: center !important; vertical-align: middle !important;">TOTAL BIAYA PRODUKSI / KG</th>
                     <th rowspan="3" class="th-yellow" style="background-color: #ffc000 !important; color: #000000 !important; border: 1px solid #ca8a04 !important; padding: 0.5rem 0.75rem; min-width: 110px; font-weight: 900; font-size: 0.8rem; line-height: 1.2; text-align: center !important; vertical-align: middle !important;">TOTAL<br>BIAYA</th>
                     <th colspan="13" class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.6rem 0.5rem; font-weight: 900; font-size: 0.85rem; letter-spacing: 0.1em; text-align: center !important; vertical-align: middle !important;">TOTAL WIP</th>
                     <th rowspan="3" class="th-grey" style="background-color: #f2f2f2 !important; color: #000000 !important; border: 1px solid #94a3b8 !important; padding: 0.5rem 0.6rem; min-width: 85px; font-weight: 900; font-size: 0.75rem; line-height: 1.2; text-align: center !important; vertical-align: middle !important;">HARGA POKOK<br>PRODUKSI</th>
@@ -45,19 +45,13 @@
                     <th colspan="2" class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.35rem 0.4rem; text-align: center !important; vertical-align: middle !important;">SINGKONG</th>
                     <th colspan="4" class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.35rem 0.4rem; text-align: center !important; vertical-align: middle !important;">MINYAK GORENG</th>
                     <th colspan="2" class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.35rem 0.4rem; text-align: center !important; vertical-align: middle !important;">CNG</th>
-                    <th colspan="4" class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.35rem 0.4rem; text-align: center !important; vertical-align: middle !important;">TENAGA KERJA</th>
+                    <th colspan="2" class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.35rem 0.4rem; text-align: center !important; vertical-align: middle !important;">TENAGA KERJA</th>
                     <th rowspan="2" class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.35rem 0.4rem; min-width: 85px; line-height: 1.2; text-align: center !important; vertical-align: middle !important;">BUMBU<br>PERENYAH</th>
                     <th colspan="2" class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.35rem 0.4rem; text-align: center !important; vertical-align: middle !important;">KARTON FL</th>
                     <th rowspan="2" class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.35rem 0.4rem; min-width: 80px; line-height: 1.2; text-align: center !important; vertical-align: middle !important;">PLASTIK HD<br>90x100</th>
                     <th colspan="2" class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.35rem 0.4rem; text-align: center !important; vertical-align: middle !important;">LAKBAN</th>
                     <th rowspan="2" class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.35rem 0.4rem; min-width: 70px; line-height: 1.2; text-align: center !important; vertical-align: middle !important;">TALI<br>RAFIA</th>
-                    <th rowspan="2" class="th-green" style="background-color: #92d050 !important; color: #c00000 !important; border: 1px solid #3f6212 !important; padding: 0.35rem 0.4rem; min-width: 70px; line-height: 1.2; text-align: center !important; vertical-align: middle !important; font-weight: 900;">FOTO<br>COPY</th>
                     <th colspan="2" class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.35rem 0.4rem; text-align: center !important; vertical-align: middle !important;">SARUNG TANGAN</th>
-                    <th rowspan="2" class="th-green" style="background-color: #92d050 !important; color: #c00000 !important; border: 1px solid #3f6212 !important; padding: 0.35rem 0.4rem; min-width: 85px; line-height: 1.2; text-align: center !important; vertical-align: middle !important; font-weight: 900;">PENGAWASAN<br>MUTU</th>
-                    <th rowspan="2" class="th-green" style="background-color: #92d050 !important; color: #c00000 !important; border: 1px solid #3f6212 !important; padding: 0.35rem 0.4rem; min-width: 90px; line-height: 1.2; text-align: center !important; vertical-align: middle !important; font-weight: 900;">LISTRIK &amp;<br>AIR - TELP</th>
-                    <th rowspan="2" class="th-green" style="background-color: #92d050 !important; color: #c00000 !important; border: 1px solid #3f6212 !important; padding: 0.35rem 0.4rem; min-width: 80px; line-height: 1.2; text-align: center !important; vertical-align: middle !important; font-weight: 900;">PEMLHR<br>MESIN</th>
-                    <th rowspan="2" class="th-green" style="background-color: #92d050 !important; color: #c00000 !important; border: 1px solid #3f6212 !important; padding: 0.35rem 0.4rem; min-width: 80px; line-height: 1.2; text-align: center !important; vertical-align: middle !important; font-weight: 900;">PENYS<br>MESIN</th>
-                    <th colspan="2" class="th-green" style="background-color: #92d050 !important; color: #c00000 !important; border: 1px solid #3f6212 !important; padding: 0.35rem 0.4rem; text-align: center !important; vertical-align: middle !important; font-weight: 900;">B. PNGOLHN LIMBAH</th>
 
                     {{-- Under TOTAL WIP Sesuai Format Asli Excel Mirasa (13 Kolom) --}}
                     <th class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.35rem 0.4rem; min-width: 70px; text-align: center !important; vertical-align: middle !important;">IFL</th>
@@ -84,9 +78,7 @@
                     <th class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.3rem 0.4rem; min-width: 95px; text-align: center !important; vertical-align: middle !important;">Rp</th>
 
                     {{-- Tenaga Kerja --}}
-                    <th class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.3rem 0.35rem; min-width: 65px; text-align: center !important; vertical-align: middle !important;">LANGSUNG</th>
-                    <th class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.3rem 0.35rem; min-width: 65px; line-height: 1.1; text-align: center !important; vertical-align: middle !important;">TIDAK<br>LANGSUNG</th>
-                    <th class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.3rem 0.35rem; min-width: 60px; text-align: center !important; vertical-align: middle !important;">TRAINING</th>
+                    <th class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.3rem 0.4rem; min-width: 65px; text-align: center !important; vertical-align: middle !important;">ORANG</th>
                     <th class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.3rem 0.4rem; min-width: 95px; text-align: center !important; vertical-align: middle !important;">Rp</th>
 
                     {{-- Karton FL --}}
@@ -100,10 +92,6 @@
                     {{-- Sarung Tangan --}}
                     <th class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.3rem 0.35rem; min-width: 65px; text-align: center !important; vertical-align: middle !important;">PLASTIK</th>
                     <th class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.3rem 0.35rem; min-width: 60px; text-align: center !important; vertical-align: middle !important;">KAIN</th>
-
-                    {{-- B. Pngolhn Limbah --}}
-                    <th class="th-green" style="background-color: #92d050 !important; color: #c00000 !important; border: 1px solid #3f6212 !important; padding: 0.3rem 0.4rem; min-width: 80px; line-height: 1.1; text-align: center !important; vertical-align: middle !important; font-weight: 800;">LIMBAH<br>PADAT</th>
-                    <th class="th-green" style="background-color: #92d050 !important; color: #c00000 !important; border: 1px solid #3f6212 !important; padding: 0.3rem 0.4rem; min-width: 80px; line-height: 1.1; text-align: center !important; vertical-align: middle !important; font-weight: 800;">BAHAN<br>KIMIA</th>
 
                     {{-- Sub-kolom TOTAL WIP Sesuai Format Asli Excel Mirasa (13 Kolom) --}}
                     <th class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.3rem 0.4rem; min-width: 70px; text-align: center !important; vertical-align: middle !important;">KG</th>
@@ -182,13 +170,7 @@
 
                         {{-- Tenaga Kerja --}}
                         <td style="border: {{ $cellBorder }}; padding: 0.45rem 0.35rem; text-align: center;">
-                            {{ $d['has_data'] && $d['tk_langsung_org'] > 0 ? $d['tk_langsung_org'] : '-' }}
-                        </td>
-                        <td style="border: {{ $cellBorder }}; padding: 0.45rem 0.35rem; text-align: center;">
-                            {{ $d['has_data'] && $d['tk_tidak_langsung_org'] > 0 ? $d['tk_tidak_langsung_org'] : '-' }}
-                        </td>
-                        <td style="border: {{ $cellBorder }}; padding: 0.45rem 0.35rem; text-align: center;">
-                            {{ $d['has_data'] && $d['tk_training_org'] > 0 ? $d['tk_training_org'] : '-' }}
+                            {{ $d['has_data'] && ($d['tk_jumlah_org'] ?? $d['tk_langsung_org']) > 0 ? ($d['tk_jumlah_org'] ?? $d['tk_langsung_org']) : '-' }}
                         </td>
                         <td style="border: {{ $cellBorder }}; padding: 0.45rem 0.5rem;">
                             {{ $d['has_data'] && $d['tk_total_nilai'] > 0 ? number_format($d['tk_total_nilai'], 0, ',', '.') : '-' }}
@@ -216,34 +198,11 @@
                         <td style="border: {{ $cellBorder }}; padding: 0.45rem 0.5rem;">
                             {{ $d['has_data'] && $d['tali_rafia_nilai'] > 0 ? number_format($d['tali_rafia_nilai'], 0, ',', '.') : '-' }}
                         </td>
-                        <td style="border: {{ $cellBorder }}; padding: 0.45rem 0.5rem;">
-                            {{ $d['has_data'] && $d['fotocopy_nilai'] > 0 ? number_format($d['fotocopy_nilai'], 0, ',', '.') : '-' }}
-                        </td>
                         <td style="border: {{ $cellBorder }}; padding: 0.45rem 0.35rem;">
                             {{ $d['has_data'] && $d['sarung_tangan_plastik_nilai'] > 0 ? number_format($d['sarung_tangan_plastik_nilai'], 0, ',', '.') : '-' }}
                         </td>
                         <td style="border: {{ $cellBorder }}; padding: 0.45rem 0.35rem;">
                             {{ $d['has_data'] && $d['sarung_tangan_kain_nilai'] > 0 ? number_format($d['sarung_tangan_kain_nilai'], 0, ',', '.') : '-' }}
-                        </td>
-
-                        {{-- FOH & Operasional --}}
-                        <td style="border: {{ $cellBorder }}; padding: 0.45rem 0.5rem;">
-                            {{ $d['has_data'] && $d['qc_pengawasan_nilai'] > 0 ? number_format($d['qc_pengawasan_nilai'], 0, ',', '.') : '-' }}
-                        </td>
-                        <td style="border: {{ $cellBorder }}; padding: 0.45rem 0.5rem;">
-                            {{ $d['has_data'] && $d['listrik_air_telp_nilai'] > 0 ? number_format($d['listrik_air_telp_nilai'], 0, ',', '.') : '-' }}
-                        </td>
-                        <td style="border: {{ $cellBorder }}; padding: 0.45rem 0.5rem;">
-                            {{ $d['has_data'] && $d['pemeliharaan_mesin_nilai'] > 0 ? number_format($d['pemeliharaan_mesin_nilai'], 0, ',', '.') : '-' }}
-                        </td>
-                        <td style="border: {{ $cellBorder }}; padding: 0.45rem 0.5rem;">
-                            {{ $d['has_data'] && $d['penyusutan_mesin_nilai'] > 0 ? number_format($d['penyusutan_mesin_nilai'], 0, ',', '.') : '-' }}
-                        </td>
-                        <td style="border: {{ $cellBorder }}; padding: 0.45rem 0.5rem;">
-                            {{ $d['has_data'] && $d['limbah_padat_nilai'] > 0 ? number_format($d['limbah_padat_nilai'], 0, ',', '.') : '-' }}
-                        </td>
-                        <td style="border: {{ $cellBorder }}; padding: 0.45rem 0.5rem;">
-                            {{ $d['has_data'] && $d['limbah_kimia_nilai'] > 0 ? number_format($d['limbah_kimia_nilai'], 0, ',', '.') : '-' }}
                         </td>
 
                         {{-- TOTAL BIAYA (Warna Kuning Stabilo Seperti Excel, Nilai Tebal Biru) --}}
@@ -405,9 +364,7 @@
                         <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['cng_mmbtu'], 2, ',', '.') }}</td>
                         <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['cng_nilai'], 0, ',', '.') }}</td>
 
-                        <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.35rem; text-align: center;">{{ $tot['tk_langsung_org'] }}</td>
-                        <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.35rem; text-align: center;">{{ $tot['tk_tidak_langsung_org'] }}</td>
-                        <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.35rem; text-align: center;">{{ $tot['tk_training_org'] }}</td>
+                        <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.35rem; text-align: center;">{{ $tot['tk_jumlah_org'] ?? $tot['tk_langsung_org'] }}</td>
                         <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['tk_total_nilai'], 0, ',', '.') }}</td>
 
                         <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['bumbu_nilai'], 0, ',', '.') }}</td>
@@ -417,16 +374,8 @@
                         <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['lakban_besar_nilai'], 0, ',', '.') }}</td>
                         <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['lakban_kecil_nilai'], 0, ',', '.') }}</td>
                         <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['tali_rafia_nilai'], 0, ',', '.') }}</td>
-                        <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['fotocopy_nilai'], 0, ',', '.') }}</td>
                         <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.35rem;">{{ number_format($tot['sarung_tangan_plastik_nilai'], 0, ',', '.') }}</td>
                         <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.35rem;">{{ number_format($tot['sarung_tangan_kain_nilai'], 0, ',', '.') }}</td>
-
-                        <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['qc_pengawasan_nilai'], 0, ',', '.') }}</td>
-                        <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['listrik_air_telp_nilai'], 0, ',', '.') }}</td>
-                        <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['pemeliharaan_mesin_nilai'], 0, ',', '.') }}</td>
-                        <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['penyusutan_mesin_nilai'], 0, ',', '.') }}</td>
-                        <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['limbah_padat_nilai'], 0, ',', '.') }}</td>
-                        <td style="border: 1px solid #cbd5e1; padding: 0.45rem 0.5rem;">{{ number_format($tot['limbah_kimia_nilai'], 0, ',', '.') }}</td>
 
                         {{-- Total Biaya Grand --}}
                         <td style="background: #ffeb3b; color: #002060; font-weight: 900; border: 1px solid #ca8a04; padding: 0.55rem 0.65rem;">

@@ -14,13 +14,13 @@ use Exception;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class ProduksiService
 {
     public function __construct(
         protected CodeGeneratorService $codeGenerator,
-        protected StokService $stokService,
-        protected TarifProduksiService $tarifService
+        protected StokService $stokService
     ) {}
 
     /**
@@ -56,6 +56,9 @@ class ProduksiService
             'minyak_nilai'                => (float) $records->sum('minyak_nilai'),
             'cng_mmbtu'                   => (float) $records->sum('cng_mmbtu'),
             'cng_nilai'                   => (float) $records->sum('cng_nilai'),
+            'tk_jumlah_org'               => (int) $records->sum(function ($r) {
+                return $r->tk_jumlah_org ?: ($r->tk_langsung_org + $r->tk_tidak_langsung_org + $r->tk_training_org);
+            }),
             'tk_langsung_org'             => (int) $records->sum('tk_langsung_org'),
             'tk_tidak_langsung_org'       => (int) $records->sum('tk_tidak_langsung_org'),
             'tk_training_org'             => (int) $records->sum('tk_training_org'),
@@ -143,6 +146,9 @@ class ProduksiService
                 $dayCngMmbtu = (float) $dayRecords->sum('cng_mmbtu');
                 $dayCngNilai = (float) $dayRecords->sum('cng_nilai');
 
+                $dayTkJumlah = (int) $dayRecords->sum(function ($r) {
+                    return $r->tk_jumlah_org ?: ($r->tk_langsung_org + $r->tk_tidak_langsung_org + $r->tk_training_org);
+                });
                 $dayTkLangsung = (int) $dayRecords->sum('tk_langsung_org');
                 $dayTkTidakLangsung = (int) $dayRecords->sum('tk_tidak_langsung_org');
                 $dayTkTraining = (int) $dayRecords->sum('tk_training_org');
@@ -244,6 +250,7 @@ class ProduksiService
                     'minyak_rasio_persen'         => $dayMinyakRasio,
                     'cng_mmbtu'                   => $dayCngMmbtu,
                     'cng_nilai'                   => $dayCngNilai,
+                    'tk_jumlah_org'               => $dayTkJumlah,
                     'tk_langsung_org'             => $dayTkLangsung,
                     'tk_tidak_langsung_org'       => $dayTkTidakLangsung,
                     'tk_training_org'             => $dayTkTraining,
@@ -301,6 +308,7 @@ class ProduksiService
                     'minyak_rasio_persen'         => 0,
                     'cng_mmbtu'                   => 0,
                     'cng_nilai'                   => 0,
+                    'tk_jumlah_org'               => 0,
                     'tk_langsung_org'             => 0,
                     'tk_tidak_langsung_org'       => 0,
                     'tk_training_org'             => 0,
@@ -405,14 +413,6 @@ class ProduksiService
             );
 
             $fohNilai = (float) (
-                $monthRecords->sum('bumbu_nilai') +
-                $monthRecords->sum('listrik_air_telp_nilai') +
-                $monthRecords->sum('pemeliharaan_mesin_nilai') +
-                $monthRecords->sum('penyusutan_mesin_nilai') +
-                $monthRecords->sum('qc_pengawasan_nilai') +
-                $monthRecords->sum('limbah_padat_nilai') +
-                $monthRecords->sum('limbah_kimia_nilai') +
-                $monthRecords->sum('fotocopy_nilai') +
                 $monthRecords->sum('sarung_tangan_plastik_nilai') +
                 $monthRecords->sum('sarung_tangan_kain_nilai')
             );
@@ -514,6 +514,84 @@ class ProduksiService
             'last_no_akhir' => 0,
             'source_desc'   => "Awal batch baru (Karton 1)",
         ];
+    }
+
+    /**
+     * Sinkronisasi data tenaga kerja (kehadiran & total upah) dari modul Karyawan berdasarkan tanggal.
+     * Siap diintegrasikan langsung dengan tabel presensi/absensi & penggajian yang sedang dibuat mentor.
+     */
+    public function getLaborDataFromKaryawan(string $tgl): array
+    {
+        $parsedDate = Carbon::parse($tgl);
+        $tglFormatted = $parsedDate->format('d/m/Y');
+
+        $result = [
+            'tgl'          => $tgl,
+            'is_synced'    => false,
+            'jumlah_orang' => 0,
+            'total_upah'   => 0,
+            'source'       => 'none',
+            'message'      => "Data presensi per {$tglFormatted} belum tersedia.",
+        ];
+
+        // Daftar tabel presensi / absensi / payroll potensial dari modul Karyawan
+        $possibleTables = [
+            'dat_absensi', 'dat_presensi', 'dat_kehadiran', 'dat_absensi_karyawan',
+            'dat_gaji_karyawan', 'dat_payroll', 'dat_payroll_harian'
+        ];
+
+        foreach ($possibleTables as $tableName) {
+            if (Schema::hasTable($tableName)) {
+                try {
+                    $q = DB::table($tableName);
+                    $dateCol = Schema::hasColumn($tableName, 'tanggal') ? 'tanggal'
+                        : (Schema::hasColumn($tableName, 'tgl') ? 'tgl'
+                        : (Schema::hasColumn($tableName, 'presensi_tgl') ? 'presensi_tgl'
+                        : (Schema::hasColumn($tableName, 'absensi_tgl') ? 'absensi_tgl' : null)));
+
+                    if ($dateCol) {
+                        $records = $q->whereDate($dateCol, $tgl);
+
+                        if (Schema::hasColumn($tableName, 'deleted_st')) {
+                            $records->where('deleted_st', false);
+                        }
+
+                        if (Schema::hasColumn($tableName, 'status')) {
+                            $records->whereIn('status', ['HADIR', 'H', 'MASUK', 'PRESENT']);
+                        } elseif (Schema::hasColumn($tableName, 'status_kehadiran')) {
+                            $records->whereIn('status_kehadiran', ['HADIR', 'H', 'MASUK', 'PRESENT']);
+                        }
+
+                        $count = (int) $records->count();
+
+                        $wageCol = null;
+                        foreach (['total_gaji', 'gaji_harian', 'upah', 'nominal_upah', 'nominal_gaji', 'total_upah'] as $col) {
+                            if (Schema::hasColumn($tableName, $col)) {
+                                $wageCol = $col;
+                                break;
+                            }
+                        }
+
+                        $totalUpah = $wageCol ? (float) $records->sum($wageCol) : 0;
+
+                        if ($count > 0 || $totalUpah > 0) {
+                            return [
+                                'tgl'          => $tgl,
+                                'is_synced'    => true,
+                                'jumlah_orang' => $count,
+                                'total_upah'   => $totalUpah,
+                                'source'       => $tableName,
+                                'message'      => "Data presensi tersinkronisasi ({$count} orang hadir, total Rp " . number_format($totalUpah, 0, ',', '.') . ").",
+                            ];
+                        }
+                    }
+                } catch (\Throwable $e) {
+                    // Graceful fallback jika terjadi exception saat akses tabel dinamis
+                }
+            }
+        }
+
+        return $result;
     }
 
     /**
@@ -651,35 +729,35 @@ class ProduksiService
         $totalBahanNilai = $singkongNilai + $berkoBahanNilai + $minyakNilai + $bumbuNilai + $kartonBaruNilai +
             $kartonBekasNilai + $plastikHdNilai + $lakbanBesarNilai + $lakbanKecilNilai + $taliRafiaNilai;
 
-        $energiTkRates = $this->tarifService->getEnergiLaborRates();
-
         // Gas CNG
         $cngMmbtu = (float) ($data['cng_mmbtu'] ?? 0);
-        $cngTarif = (float) ($data['cng_tarif'] ?? $energiTkRates['cng_tarif']);
+        $cngTarif = (float) ($data['cng_tarif'] ?? 226800.00);
         $cngNilai = (float) ($data['cng_nilai'] ?? ($cngMmbtu * $cngTarif));
 
-        // Tenaga Kerja
-        $tkLangsung = (int) ($data['tk_langsung_org'] ?? 0);
+        // Tenaga Kerja (Pencatatan HPP Harian Terpadu Sesuai Arahan Mentor)
+        // Jumlah orang dari absensi & total rupiah akumulasi gaji aktual (tiap orang beda jam kerja & gaji)
+        $tkJumlah = (int) ($data['tk_jumlah_org'] ?? ($data['tk_langsung_org'] ?? 0));
+        if ($tkJumlah === 0 && (!empty($data['tk_tidak_langsung_org']) || !empty($data['tk_training_org']))) {
+            $tkJumlah = (int) (($data['tk_langsung_org'] ?? 0) + ($data['tk_tidak_langsung_org'] ?? 0) + ($data['tk_training_org'] ?? 0));
+        }
+        $tkLangsung = $tkJumlah;
         $tkTidakLangsung = (int) ($data['tk_tidak_langsung_org'] ?? 0);
         $tkTraining = (int) ($data['tk_training_org'] ?? 0);
-        $tkTarif = (float) ($data['tk_tarif_per_org'] ?? $energiTkRates['tk_tarif_per_org']);
-        $tkTotalNilai = isset($data['tk_total_nilai']) && (float) $data['tk_total_nilai'] > 0
-            ? (float) $data['tk_total_nilai']
-            : (($tkLangsung + $tkTidakLangsung + $tkTraining) * $tkTarif);
+        $tkTotalNilai = isset($data['tk_total_nilai']) ? (float) $data['tk_total_nilai'] : 0;
+        $tkTarif = $tkJumlah > 0 ? round($tkTotalNilai / $tkJumlah, 2) : 0;
 
-        // Overhead Pabrik (FOH)
-        $fotocopy = (float) ($data['fotocopy_nilai'] ?? 0);
+        // Overhead Pabrik (FOH) - Khusus Sarung Tangan Sesuai Ketentuan Mentor
         $sarungPlastik = (float) ($data['sarung_tangan_plastik_nilai'] ?? 0);
         $sarungKain = (float) ($data['sarung_tangan_kain_nilai'] ?? 0);
-        $qc = (float) ($data['qc_pengawasan_nilai'] ?? 0);
-        $listrik = (float) ($data['listrik_air_telp_nilai'] ?? 0);
-        $pemeliharaan = (float) ($data['pemeliharaan_mesin_nilai'] ?? 0);
-        $penyusutan = (float) ($data['penyusutan_mesin_nilai'] ?? 0);
-        $limbahPadat = (float) ($data['limbah_padat_nilai'] ?? 0);
-        $limbahKimia = (float) ($data['limbah_kimia_nilai'] ?? 0);
+        $fotocopy = 0;
+        $qc = 0;
+        $listrik = 0;
+        $pemeliharaan = 0;
+        $penyusutan = 0;
+        $limbahPadat = 0;
+        $limbahKimia = 0;
 
-        $totalOverheadNilai = $fotocopy + $sarungPlastik + $sarungKain + $qc + $listrik +
-            $pemeliharaan + $penyusutan + $limbahPadat + $limbahKimia;
+        $totalOverheadNilai = $sarungPlastik + $sarungKain;
 
         // Total Biaya Produksi (Kolom Kuning)
         $totalBiayaProduksi = $totalBahanNilai + $cngNilai + $tkTotalNilai + $totalOverheadNilai;
@@ -749,44 +827,8 @@ class ProduksiService
             $totalWipQty = $effectiveOutputKg;
         }
 
-        // Penerapan tarif standar pengali FOH per Kg WIP (berbasis database master dinamis mst_tarif_produksi)
-        if ($effectiveOutputKg > 0) {
-            $fohRates = $this->tarifService->getFohRates();
-
-            if ($qc <= 0 && (!isset($data['qc_pengawasan_nilai']) || $data['qc_pengawasan_nilai'] === '')) {
-                $qc = round($effectiveOutputKg * $fohRates['qc'], 2);
-            }
-            if ($listrik <= 0 && (!isset($data['listrik_air_telp_nilai']) || $data['listrik_air_telp_nilai'] === '')) {
-                $listrik = round($effectiveOutputKg * $fohRates['listrik'], 2);
-            }
-            if ($pemeliharaan <= 0 && (!isset($data['pemeliharaan_mesin_nilai']) || $data['pemeliharaan_mesin_nilai'] === '')) {
-                $pemeliharaan = round($effectiveOutputKg * $fohRates['pemeliharaan'], 2);
-            }
-            if ($penyusutan <= 0 && (!isset($data['penyusutan_mesin_nilai']) || $data['penyusutan_mesin_nilai'] === '')) {
-                $penyusutan = round($effectiveOutputKg * $fohRates['penyusutan'], 2);
-            }
-            if ($limbahKimia <= 0 && (!isset($data['limbah_kimia_nilai']) || $data['limbah_kimia_nilai'] === '')) {
-                $limbahKimia = round($effectiveOutputKg * $fohRates['kimia'], 2);
-            }
-            if ($fotocopy <= 0 && (!isset($data['fotocopy_nilai']) || $data['fotocopy_nilai'] === '')) {
-                // Rumus Asli Excel PT Mirasa: =(AF/6)*2*$V$2
-                // AF adalah Kilogram IFL. (AF/6) adalah Jumlah Karton IFL (karena 1 karton = 6 kg).
-                // Dikali 2 lembar stiker/kertas fotocopy per box karton, dikali tarif per lembar ($V$2 = Rp 28).
-                $kartonCount = (float) ($data['qty_karton'] ?? 0);
-                if ($kartonCount <= 0 && $iflQty > 0) {
-                    $kartonCount = $iflQty / 6.0;
-                }
-                $tarifFotocopy = (float) ($fohRates['fotocopy'] ?? 28.00);
-                $fotocopy = round($kartonCount * 2 * $tarifFotocopy, 2);
-            }
-            if ($limbahPadat <= 0 && (!isset($data['limbah_padat_nilai']) || $data['limbah_padat_nilai'] === '')) {
-                $limbahPadat = $fohRates['limbah_padat'];
-            }
-
-            $totalOverheadNilai = $fotocopy + $sarungPlastik + $sarungKain + $qc + $listrik +
-                $pemeliharaan + $penyusutan + $limbahPadat + $limbahKimia;
-            $totalBiayaProduksi = $totalBahanNilai + $cngNilai + $tkTotalNilai + $totalOverheadNilai;
-        }
+        // FOH hanya Sarung Tangan (Plastik & Kain) yang diinput sesuai nota belanja fisik.
+        // Komponen FOH lainnya (QC, Listrik, Pemeliharaan, Penyusutan, Limbah, Fotocopy) ditiadakan.
 
         $berkoPersen = $totalWipQty > 0 ? ($totalBerkoQty / $totalWipQty) * 100 : 0;
         $rendemenPersen = $singkongQty > 0 ? ($effectiveOutputKg / $singkongQty) * 100 : 0;
@@ -810,20 +852,21 @@ class ProduksiService
             'cng_mmbtu'                   => $cngMmbtu,
             'cng_tarif'                   => $cngTarif,
             'cng_nilai'                   => $cngNilai,
+            'tk_jumlah_org'               => $tkJumlah,
             'tk_langsung_org'             => $tkLangsung,
             'tk_tidak_langsung_org'       => $tkTidakLangsung,
             'tk_training_org'             => $tkTraining,
             'tk_tarif_per_org'            => $tkTarif,
             'tk_total_nilai'              => $tkTotalNilai,
-            'fotocopy_nilai'              => $fotocopy,
+            'fotocopy_nilai'              => 0,
             'sarung_tangan_plastik_nilai' => $sarungPlastik,
             'sarung_tangan_kain_nilai'    => $sarungKain,
-            'qc_pengawasan_nilai'         => $qc,
-            'listrik_air_telp_nilai'      => $listrik,
-            'pemeliharaan_mesin_nilai'    => $pemeliharaan,
-            'penyusutan_mesin_nilai'      => $penyusutan,
-            'limbah_padat_nilai'          => $limbahPadat,
-            'limbah_kimia_nilai'          => $limbahKimia,
+            'qc_pengawasan_nilai'         => 0,
+            'listrik_air_telp_nilai'      => 0,
+            'pemeliharaan_mesin_nilai'    => 0,
+            'penyusutan_mesin_nilai'      => 0,
+            'limbah_padat_nilai'          => 0,
+            'limbah_kimia_nilai'          => 0,
             'total_overhead_nilai'        => $totalOverheadNilai,
             'total_biaya_produksi'        => $totalBiayaProduksi,
             'ifl_qty'                     => $iflQty,
@@ -1357,16 +1400,9 @@ class ProduksiService
                     }
                 }
 
-                // 3. Rekalkulasi Biaya Overhead Pabrik
-                $record->total_overhead_nilai = (float) $record->fotocopy_nilai +
-                    (float) $record->sarung_tangan_plastik_nilai +
-                    (float) $record->sarung_tangan_kain_nilai +
-                    (float) $record->qc_pengawasan_nilai +
-                    (float) $record->listrik_air_telp_nilai +
-                    (float) $record->pemeliharaan_mesin_nilai +
-                    (float) $record->penyusutan_mesin_nilai +
-                    (float) $record->limbah_padat_nilai +
-                    (float) $record->limbah_kimia_nilai;
+                // 3. Rekalkulasi Biaya Overhead Pabrik (Hanya Sarung Tangan)
+                $record->total_overhead_nilai = (float) $record->sarung_tangan_plastik_nilai +
+                    (float) $record->sarung_tangan_kain_nilai;
 
                 // 4. Rekalkulasi Total Biaya Produksi (Bahan + CNG + TK + FOH)
                 $record->total_biaya_produksi = (float) $record->total_bahan_nilai +

@@ -313,16 +313,8 @@
                                             <strong>Rp {{ number_format($d['cng_nilai'], 0, ',', '.') }}</strong>
                                         </div>
                                         <div class="mini-cost-row">
-                                            <span>TK Langsung:</span>
-                                            <strong>{{ $d['tk_langsung_org'] }} Orang</strong>
-                                        </div>
-                                        <div class="mini-cost-row">
-                                            <span>TK Tdk Langsung:</span>
-                                            <strong>{{ $d['tk_tidak_langsung_org'] }} Orang</strong>
-                                        </div>
-                                        <div class="mini-cost-row">
-                                            <span>TK Training:</span>
-                                            <strong>{{ $d['tk_training_org'] }} Orang</strong>
+                                            <span>Tenaga Kerja Hadir:</span>
+                                            <strong>{{ $d['tk_jumlah_org'] ?? ($d['tk_langsung_org'] + $d['tk_tidak_langsung_org'] + $d['tk_training_org']) }} Orang</strong>
                                         </div>
                                         <div class="mini-cost-row">
                                             <span>Total Upah Kerja:</span>
@@ -331,19 +323,15 @@
                                     </div>
                                 </div>
 
-                                {{-- KOMPARTEMEN 4: OVERHEAD PABRIK (FOH) & LIMBAH --}}
+                                {{-- KOMPARTEMEN 4: OVERHEAD PABRIK (FOH) --}}
                                 <div class="mini-cost-card">
                                     <div class="mini-cost-header">
                                         <div class="mini-cost-title">
-                                            <span>4. FOH &amp; Pengolahan Limbah</span>
+                                            <span>4. Perlengkapan / FOH (Sarung Tangan)</span>
                                         </div>
                                         <span class="mini-cost-badge" style="background: #fdf2f8; color: #9d174d; border: 1px solid #fbcfe8;">Overhead</span>
                                     </div>
                                     <div class="mini-cost-list">
-                                        <div class="mini-cost-row">
-                                            <span>Foto Copy / ATK:</span>
-                                            <strong>Rp {{ number_format($d['fotocopy_nilai'], 0, ',', '.') }}</strong>
-                                        </div>
                                         <div class="mini-cost-row">
                                             <span>Sarung Tangan Plastik:</span>
                                             <strong>Rp {{ number_format($d['sarung_tangan_plastik_nilai'], 0, ',', '.') }}</strong>
@@ -352,29 +340,9 @@
                                             <span>Sarung Tangan Kain:</span>
                                             <strong>Rp {{ number_format($d['sarung_tangan_kain_nilai'], 0, ',', '.') }}</strong>
                                         </div>
-                                        <div class="mini-cost-row">
-                                            <span>Pengawasan Mutu (QC):</span>
-                                            <strong>Rp {{ number_format($d['qc_pengawasan_nilai'], 0, ',', '.') }}</strong>
-                                        </div>
-                                        <div class="mini-cost-row">
-                                            <span>Listrik &amp; Air - Telp:</span>
-                                            <strong>Rp {{ number_format($d['listrik_air_telp_nilai'], 0, ',', '.') }}</strong>
-                                        </div>
-                                        <div class="mini-cost-row">
-                                            <span>Pemeliharaan Mesin:</span>
-                                            <strong>Rp {{ number_format($d['pemeliharaan_mesin_nilai'], 0, ',', '.') }}</strong>
-                                        </div>
-                                        <div class="mini-cost-row">
-                                            <span>Penyusutan Mesin:</span>
-                                            <strong>Rp {{ number_format($d['penyusutan_mesin_nilai'], 0, ',', '.') }}</strong>
-                                        </div>
-                                        <div class="mini-cost-row">
-                                            <span>Limbah Padat:</span>
-                                            <strong>Rp {{ number_format($d['limbah_padat_nilai'], 0, ',', '.') }}</strong>
-                                        </div>
-                                        <div class="mini-cost-row">
-                                            <span>Bahan Kimia Limbah:</span>
-                                            <strong>Rp {{ number_format($d['limbah_kimia_nilai'], 0, ',', '.') }}</strong>
+                                        <div class="mini-cost-row" style="margin-top: 0.25rem; padding-top: 0.25rem; border-top: 1px dashed #e2e8f0;">
+                                            <span style="font-weight: 700;">Subtotal FOH:</span>
+                                            <strong style="color: #059669;">Rp {{ number_format($d['sarung_tangan_plastik_nilai'] + $d['sarung_tangan_kain_nilai'], 0, ',', '.') }}</strong>
                                         </div>
                                     </div>
                                 </div>

@@ -442,16 +442,11 @@
                     </tr>
                     <tr>
                         <td style="padding: 0.6rem 1rem; font-weight: 700; color: #0f172a;">Upah Tenaga Kerja</td>
-                        <td style="padding: 0.6rem 1rem;">Langsung: {{ $produksi->tk_langsung_org }} org | Tdk Langsung: {{ $produksi->tk_tidak_langsung_org }} org | Training: {{ $produksi->tk_training_org }} org (Tarif: Rp {{ number_format($produksi->tk_tarif_per_org, 0, ',', '.') }})</td>
+                        <td style="padding: 0.6rem 1rem;">Tenaga Kerja Hadir: {{ $produksi->tk_jumlah_org ?? ($produksi->tk_langsung_org + $produksi->tk_tidak_langsung_org + $produksi->tk_training_org) }} Orang</td>
                         <td style="padding: 0.6rem 1rem; text-align: right; font-weight: 700;">Rp {{ number_format($produksi->tk_total_nilai, 0, ',', '.') }}</td>
                     </tr>
 
                     {{-- 4. OVERHEAD PABRIK (FOH) --}}
-                    <tr>
-                        <td style="padding: 0.6rem 1rem;">Foto Copy / ATK</td>
-                        <td style="padding: 0.6rem 1rem;">Dokumentasi &amp; label produksi</td>
-                        <td style="padding: 0.6rem 1rem; text-align: right;">Rp {{ number_format($produksi->fotocopy_nilai, 0, ',', '.') }}</td>
-                    </tr>
                     <tr>
                         <td style="padding: 0.6rem 1rem;">Sarung Tangan Plastik</td>
                         <td style="padding: 0.6rem 1rem;">Perlengkapan sanitasi food-grade</td>
@@ -461,36 +456,6 @@
                         <td style="padding: 0.6rem 1rem;">Sarung Tangan Kain</td>
                         <td style="padding: 0.6rem 1rem;">Perlengkapan proteksi operator</td>
                         <td style="padding: 0.6rem 1rem; text-align: right;">Rp {{ number_format($produksi->sarung_tangan_kain_nilai, 0, ',', '.') }}</td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 0.6rem 1rem;">Pengawasan Mutu (QC)</td>
-                        <td style="padding: 0.6rem 1rem;">Inspeksi standar mutu &amp; lab</td>
-                        <td style="padding: 0.6rem 1rem; text-align: right;">Rp {{ number_format($produksi->qc_pengawasan_nilai, 0, ',', '.') }}</td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 0.6rem 1rem;">Listrik &amp; Air - Telp</td>
-                        <td style="padding: 0.6rem 1rem;">Utilitas operasional pabrik</td>
-                        <td style="padding: 0.6rem 1rem; text-align: right;">Rp {{ number_format($produksi->listrik_air_telp_nilai, 0, ',', '.') }}</td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 0.6rem 1rem;">Pemeliharaan Mesin</td>
-                        <td style="padding: 0.6rem 1rem;">Perawatan preventif &amp; perbaikan mesin fryer/boiler</td>
-                        <td style="padding: 0.6rem 1rem; text-align: right;">Rp {{ number_format($produksi->pemeliharaan_mesin_nilai, 0, ',', '.') }}</td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 0.6rem 1rem;">Penyusutan Mesin</td>
-                        <td style="padding: 0.6rem 1rem;">Amortisasi aset mesin manufaktur</td>
-                        <td style="padding: 0.6rem 1rem; text-align: right;">Rp {{ number_format($produksi->penyusutan_mesin_nilai, 0, ',', '.') }}</td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 0.6rem 1rem;">Pengolahan Limbah Padat</td>
-                        <td style="padding: 0.6rem 1rem;">Penanganan limbah padat singkong / kulit</td>
-                        <td style="padding: 0.6rem 1rem; text-align: right;">Rp {{ number_format($produksi->limbah_padat_nilai, 0, ',', '.') }}</td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 0.6rem 1rem;">Bahan Kimia Limbah</td>
-                        <td style="padding: 0.6rem 1rem;">Treatment kimia air limbah IPAL</td>
-                        <td style="padding: 0.6rem 1rem; text-align: right;">Rp {{ number_format($produksi->limbah_kimia_nilai, 0, ',', '.') }}</td>
                     </tr>
                 </tbody>
                 <tfoot style="background: #fef9c3; font-weight: 800; border-top: 2px solid #ca8a04;">

@@ -25,7 +25,7 @@
         header {
             background: #ffffff;
             border-bottom: 1px solid #e2e8f0;
-            padding: 0.65rem 1.75rem;
+            padding: 0.45rem 1.25rem;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -33,24 +33,31 @@
             top: 0;
             z-index: 100;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
-            gap: 1.5rem;
+            gap: 0.75rem;
+            flex-wrap: nowrap;
+            min-width: 0;
+            width: 100%;
         }
         .header-left {
             display: flex;
             align-items: center;
-            gap: 1.25rem;
-            flex-wrap: wrap;
+            gap: 0.65rem;
+            flex-wrap: nowrap;
+            min-width: 0;
+            flex: 1 1 auto;
+            overflow: hidden;
         }
         .brand {
             display: flex;
             align-items: center;
-            gap: 0.65rem;
+            gap: 0.55rem;
             text-decoration: none;
             color: #0f172a;
             font-weight: 800;
-            font-size: 1.1rem;
+            font-size: 1.05rem;
             letter-spacing: -0.01em;
             white-space: nowrap;
+            flex-shrink: 0;
         }
         .brand-badge {
             background: #0284c7;
@@ -67,20 +74,29 @@
             display: inline-flex;
             align-items: center;
             background: #f1f5f9;
-            padding: 0.25rem;
-            border-radius: 10px;
-            gap: 0.25rem;
-            flex-wrap: wrap;
+            padding: 0.2rem;
+            border-radius: 9px;
+            gap: 0.2rem;
+            flex-wrap: nowrap;
+            min-width: 0;
+            overflow-x: auto;
+            overflow-y: hidden;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            -webkit-overflow-scrolling: touch;
+        }
+        .pill-nav::-webkit-scrollbar {
+            display: none;
         }
         .pill-item, .pill-dropdown-btn {
             display: inline-flex;
             align-items: center;
-            gap: 0.4rem;
+            gap: 0.35rem;
             text-decoration: none;
             color: #475569;
             font-weight: 600;
-            font-size: 0.825rem;
-            padding: 0.4rem 0.8rem;
+            font-size: 0.785rem;
+            padding: 0.32rem 0.55rem;
             border-radius: 7px;
             border: none;
             background: transparent;
@@ -89,6 +105,7 @@
             white-space: nowrap;
             line-height: 1.2;
             user-select: none;
+            flex-shrink: 0;
         }
         .pill-item:hover, .pill-dropdown-btn:hover {
             color: #0f172a;
@@ -102,10 +119,11 @@
         }
         .pill-dropdown-arrow {
             display: inline-block;
-            font-size: 0.6rem;
+            font-size: 0.55rem;
             color: #94a3b8;
-            margin-left: 3px;
+            margin-left: 2px;
             transition: transform 0.2s ease, color 0.2s ease;
+            line-height: 1;
         }
         .pill-dropdown.active .pill-dropdown-arrow {
             transform: rotate(180deg);
@@ -125,21 +143,20 @@
         /* Click-Based Dropdown */
         .pill-dropdown {
             position: relative;
-            display: inline-block;
+            display: inline-flex;
+            flex-shrink: 0;
         }
         .dropdown-menu {
             display: none;
-            position: absolute;
-            left: 0;
-            top: 100%;
-            margin-top: 0.45rem;
+            position: fixed;
             background-color: #ffffff;
             min-width: 240px;
+            max-height: calc(100vh - 65px);
+            overflow-y: auto;
             box-shadow: 0 15px 30px -5px rgba(15, 23, 42, 0.18), 0 4px 6px -2px rgba(15, 23, 42, 0.05);
             border-radius: 10px;
             border: 1px solid #cbd5e1;
-            z-index: 1000;
-            overflow: hidden;
+            z-index: 9999;
             animation: menuFadeIn 0.15s ease-out;
         }
         @keyframes menuFadeIn {
@@ -151,7 +168,7 @@
             right: 0;
         }
         .pill-dropdown.active .dropdown-menu {
-            display: block !important;
+            display: block;
         }
         .dropdown-menu a {
             display: flex;
@@ -240,23 +257,32 @@
         .header-right {
             display: flex;
             align-items: center;
-            gap: 0.65rem;
+            gap: 0.5rem;
+            flex-shrink: 0;
+            margin-left: auto;
         }
         .user-chip-btn {
             display: inline-flex;
             align-items: center;
-            gap: 0.65rem;
+            gap: 0.5rem;
             background: #f8fafc;
             border: 1px solid #e2e8f0;
-            padding: 0.35rem 0.75rem;
+            padding: 0.28rem 0.65rem;
             border-radius: 9px;
             cursor: pointer;
             transition: all 0.15s;
             text-align: left;
+            flex-shrink: 0;
         }
         .user-chip-btn:hover, .pill-dropdown.active .user-chip-btn {
             background: #f1f5f9;
             border-color: #cbd5e1;
+        }
+        .user-chip-details {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            text-align: left;
         }
         main {
             flex: 1;
@@ -266,13 +292,69 @@
             padding: 0 1.75rem;
         }
 
+        /* Responsive Navbar: Selalu 1 Baris Presisi di Semua Ukuran Layar */
+        .nav-text-short {
+            display: none;
+        }
+        @media (max-width: 1400px) {
+            .nav-text-full {
+                display: none !important;
+            }
+            .nav-text-short {
+                display: inline !important;
+            }
+            header {
+                padding: 0.4rem 1rem;
+                gap: 0.5rem;
+            }
+            .header-left {
+                gap: 0.5rem;
+            }
+            .pill-item, .pill-dropdown-btn {
+                padding: 0.3rem 0.48rem;
+                font-size: 0.775rem;
+                gap: 0.25rem;
+            }
+        }
+        @media (max-width: 1100px) {
+            .pill-item, .pill-dropdown-btn {
+                padding: 0.28rem 0.42rem;
+                font-size: 0.75rem;
+            }
+            .user-chip-details {
+                max-width: 100px;
+            }
+        }
         @media (max-width: 768px) {
             header {
-                padding: 0.65rem 1rem;
+                padding: 0.35rem 0.75rem;
+                gap: 0.35rem;
+            }
+            .header-left {
+                gap: 0.35rem;
+            }
+            .brand span:last-child {
+                display: none;
+            }
+            .brand img {
+                width: 30px !important;
+                height: 30px !important;
+            }
+            .user-chip-details {
+                max-width: 75px;
             }
             main {
-                padding: 0 1rem;
-                margin: 1rem 0;
+                padding: 0 0.85rem;
+                margin: 0.85rem 0;
+            }
+        }
+        @media (max-width: 520px) {
+            .dropdown-mega {
+                min-width: min(450px, calc(100vw - 20px)) !important;
+                max-width: calc(100vw - 20px) !important;
+            }
+            .mega-grid {
+                grid-template-columns: 1fr;
             }
         }
         .table-compact th, .table-compact td {
@@ -654,10 +736,10 @@
 <body>
     <header>
         <div class="header-left">
-            <a href="{{ Auth::check() ? route(Auth::user()->getDashboardRoute()) : url('/') }}" class="brand" style="text-decoration: none; display: flex; align-items: center; gap: 0.65rem;">
+            <a href="{{ Auth::check() ? route(Auth::user()->getDashboardRoute()) : url('/') }}" class="brand">
                 <img src="{{ asset('images/logo.png') }}" 
                      alt="Logo Cap Payung PT Mirasa" 
-                     style="width: 36px; height: 36px; object-fit: contain; border-radius: 8px; flex-shrink: 0; background: #ffffff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08); padding: 1px;">
+                     style="width: 34px; height: 34px; object-fit: contain; border-radius: 8px; flex-shrink: 0; background: #ffffff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08); padding: 1px;">
                 <div style="display: flex; flex-direction: column; line-height: 1.15;">
                     <span style="font-weight: 800; font-size: 0.95rem; color: #0f172a; letter-spacing: -0.01em;">MIRASA</span>
                     <span style="font-size: 0.65rem; color: #64748b; font-weight: 700; letter-spacing: 0.04em;">FOOD ERP</span>
@@ -678,8 +760,9 @@
                             <button type="button" 
                                     class="pill-dropdown-btn {{ $isInboundActive ? 'active' : '' }}" 
                                     onclick="toggleNavDropdown('navDropdownInbound', event)">
-                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #0284c7;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
-                                <span>Pengadaan &amp; Inbound</span>
+                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #0284c7; flex-shrink: 0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                                <span class="nav-text-full">Pengadaan &amp; Inbound</span>
+                                <span class="nav-text-short">Pengadaan</span>
                                 <span class="pill-dropdown-arrow">▼</span>
                             </button>
                             <div class="dropdown-menu" style="min-width: 250px; padding: 0.45rem;">
@@ -687,8 +770,8 @@
                                     <a href="{{ route('gudang.po.index') }}" class="mega-item {{ request()->routeIs('gudang.po.*') ? 'active' : '' }}">
                                         <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
                                         <div style="display: flex; flex-direction: column;">
-                                            <span style="font-weight: 600;">Purchase Order (PO Beli)</span>
-                                            <span style="font-size: 0.6875rem; color: #64748b;">Pemesanan bahan ke supplier</span>
+                                             <span style="font-weight: 600;">Purchase Order (PO Beli)</span>
+                                             <span style="font-size: 0.6875rem; color: #64748b;">Pemesanan bahan ke supplier</span>
                                         </div>
                                     </a>
                                 @endif
@@ -698,8 +781,8 @@
                                     <a href="{{ route('qc.inbound.index') }}" class="mega-item {{ ((request()->routeIs('qc.inbound.index') && request('view') !== 'mobile') || request()->routeIs('qc.inbound.show') || request()->routeIs('qc.inbound.edit')) ? 'active' : '' }}">
                                         <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                                         <div style="display: flex; flex-direction: column;">
-                                            <span style="font-weight: 600;">Pemeriksaan Mutu (QC &amp; HACCP)</span>
-                                            <span style="font-size: 0.6875rem; color: #64748b;">Monitoring sampling &amp; dokumen HACCP</span>
+                                             <span style="font-weight: 600;">Pemeriksaan Mutu (QC &amp; HACCP)</span>
+                                             <span style="font-size: 0.6875rem; color: #64748b;">Monitoring sampling &amp; dokumen HACCP</span>
                                         </div>
                                     </a>
                                 @endif
@@ -709,8 +792,8 @@
                                     <a href="{{ route('gudang.terima.index') }}" class="mega-item {{ request()->routeIs('gudang.terima.*') ? 'active' : '' }}">
                                         <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
                                         <div style="display: flex; flex-direction: column;">
-                                            <span style="font-weight: 600;">Penerimaan Barang (GRN)</span>
-                                            <span style="font-size: 0.6875rem; color: #64748b;">Bongkar muat fisik &amp; nomor batch</span>
+                                             <span style="font-weight: 600;">Penerimaan Barang (GRN)</span>
+                                             <span style="font-size: 0.6875rem; color: #64748b;">Bongkar muat fisik &amp; nomor batch</span>
                                         </div>
                                     </a>
                                 @endif
@@ -720,8 +803,8 @@
                                     <a href="{{ route('gudang.retur.index') }}" class="mega-item {{ request()->routeIs('gudang.retur.*') ? 'active' : '' }}">
                                         <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
                                         <div style="display: flex; flex-direction: column;">
-                                            <span style="font-weight: 600;">Retur Pembelian</span>
-                                            <span style="font-size: 0.6875rem; color: #64748b;">Pengembalian barang reject ke vendor</span>
+                                             <span style="font-weight: 600;">Retur Pembelian</span>
+                                             <span style="font-size: 0.6875rem; color: #64748b;">Pengembalian barang reject ke vendor</span>
                                         </div>
                                     </a>
                                 @endif
@@ -735,8 +818,9 @@
                             <button type="button" 
                                     class="pill-dropdown-btn {{ request()->routeIs('gudang.stok.*', 'gudang.adjustment.*') ? 'active' : '' }}" 
                                     onclick="toggleNavDropdown('navDropdownStok', event)">
-                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #059669;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2 1.5 3 3.5 3h9c2 0 3.5-1 3.5-3V7M4 7c0-2 1.5-3 3.5-3h9c2 0 3.5 1 3.5 3M4 7h16m-8 4v6"/></svg>
-                                <span>Stok Gudang (Bahan)</span>
+                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #059669; flex-shrink: 0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2 1.5 3 3.5 3h9c2 0 3.5-1 3.5-3V7M4 7c0-2 1.5-3 3.5-3h9c2 0 3.5 1 3.5 3M4 7h16m-8 4v6"/></svg>
+                                <span class="nav-text-full">Stok Gudang (Bahan)</span>
+                                <span class="nav-text-short">Gudang Bahan</span>
                                 <span class="pill-dropdown-arrow">▼</span>
                             </button>
                             <div class="dropdown-menu" style="min-width: 250px; padding: 0.45rem;">
@@ -787,8 +871,9 @@
                             <button type="button" 
                                     class="pill-dropdown-btn {{ $isProduksiActive ? 'active' : '' }}" 
                                     onclick="toggleNavDropdown('navDropdownProduksi', event)">
-                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #ea580c;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
-                                <span>Produksi Pabrik</span>
+                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #ea580c; flex-shrink: 0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+                                <span class="nav-text-full">Produksi Pabrik</span>
+                                <span class="nav-text-short">Produksi</span>
                                 <span class="pill-dropdown-arrow">▼</span>
                             </button>
                             <div class="dropdown-menu" style="min-width: 250px; padding: 0.45rem;">
@@ -842,8 +927,9 @@
                             <button type="button" 
                                     class="pill-dropdown-btn {{ $isStokProduksiActive ? 'active' : '' }}" 
                                     onclick="toggleNavDropdown('navDropdownStokProduksi', event)">
-                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #0891b2;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
-                                <span>Stok Hasil Produksi</span>
+                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #0891b2; flex-shrink: 0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                                <span class="nav-text-full">Stok Hasil Produksi</span>
+                                <span class="nav-text-short">Hasil Produksi</span>
                                 <span class="pill-dropdown-arrow">▼</span>
                             </button>
                             <div class="dropdown-menu" style="min-width: 250px; padding: 0.45rem;">
@@ -999,13 +1085,14 @@
                     {{-- 7. HAK AKSES SISTEM & ALAT KHUSUS SUPERADMIN --}}
                     @if (Auth::user()->canManageUsers())
                         <a href="{{ route('admin.users.index') }}" class="pill-item {{ request()->routeIs('admin.users.*') ? 'active' : '' }}">
-                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #64748b;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
-                            <span>Hak Akses User</span>
+                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #64748b; flex-shrink: 0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                            <span class="nav-text-full">Hak Akses User</span>
+                            <span class="nav-text-short">Hak Akses</span>
                         </a>
                     @endif
                     @if (Auth::user()->isSuperAdmin())
                         <a href="{{ route('qc.inbound.index', ['view' => 'mobile']) }}" class="pill-item {{ request()->routeIs('qc.inbound.*') ? 'active' : '' }}" title="Buka Aplikasi Web Mobile QC Lapangan">
-                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #0284c7;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #0284c7; flex-shrink: 0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
                             <span style="color: #0284c7; font-weight: 700;">QC Mobile</span>
                         </a>
                     @endif
@@ -1024,12 +1111,12 @@
                 @endphp
                 <div class="pill-dropdown" id="navDropdownUser">
                     <button type="button" class="user-chip-btn" onclick="toggleNavDropdown('navDropdownUser', event)" title="Klik untuk ganti peran">
-                        <span style="width: 10px; height: 10px; border-radius: 50%; background: {{ $roleBg }}; display: inline-block;"></span>
-                        <div>
-                            <div style="font-size: 0.8125rem; font-weight: 700; color: #0f172a; line-height: 1.2;">
+                        <span style="width: 9px; height: 9px; border-radius: 50%; background: {{ $roleBg }}; display: inline-block; flex-shrink: 0;"></span>
+                        <div class="user-chip-details">
+                            <div style="font-size: 0.8125rem; font-weight: 700; color: #0f172a; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                                 {{ Auth::user()->name }}
                             </div>
-                            <div style="font-size: 0.6875rem; color: #64748b;">
+                            <div style="font-size: 0.675rem; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                                 <strong style="color: {{ $roleBg }};">{{ Auth::user()->role_cd }}</strong>
                                 @if (Auth::user()->gudang)
                                     • {{ Auth::user()->gudang->gudang_nm }}
@@ -1108,7 +1195,9 @@
     </footer>
 
     <script>
-        // Nav Dropdown Click Toggle (Hanya terbuka saat diklik, TIDAK hilang saat kursor bergerak)
+        let currentNavDropdown = null;
+
+        // Nav Dropdown Click Toggle dengan posisi Fixed (Anti-terpotong overflow scrollbar)
         function toggleNavDropdown(id, event) {
             if (event) {
                 event.stopPropagation();
@@ -1120,14 +1209,57 @@
             
             // Tutup semua dropdown navigasi lain
             document.querySelectorAll('.pill-dropdown').forEach(d => {
-                if (d !== target) d.classList.remove('active');
+                if (d !== target) {
+                    d.classList.remove('active');
+                    const m = d.querySelector('.dropdown-menu');
+                    if (m) m.style.display = 'none';
+                }
             });
             
-            // Toggle dropdown yang ditarget
+            const menu = target.querySelector('.dropdown-menu');
+            const triggerBtn = target.querySelector('.pill-dropdown-btn, .user-chip-btn') || target;
+
             if (wasActive) {
                 target.classList.remove('active');
+                if (menu) menu.style.display = 'none';
+                currentNavDropdown = null;
             } else {
                 target.classList.add('active');
+                if (menu) {
+                    const rect = triggerBtn.getBoundingClientRect();
+                    const winWidth = window.innerWidth;
+                    const winHeight = window.innerHeight;
+
+                    menu.style.display = 'block';
+                    menu.style.position = 'fixed';
+                    menu.style.top = (rect.bottom + 6) + 'px';
+                    menu.style.zIndex = '9999';
+
+                    const isRight = menu.classList.contains('dropdown-right');
+                    const menuWidth = Math.min(menu.offsetWidth || 260, winWidth - 20);
+
+                    if (isRight) {
+                        let right = winWidth - rect.right;
+                        if (right < 10) right = 10;
+                        menu.style.right = right + 'px';
+                        menu.style.left = 'auto';
+                    } else {
+                        let left = rect.left;
+                        if (left + menuWidth > winWidth - 10) {
+                            left = winWidth - menuWidth - 10;
+                        }
+                        if (left < 10) left = 10;
+                        menu.style.left = left + 'px';
+                        menu.style.right = 'auto';
+                    }
+
+                    // Proteksi jika meluap dari batas bawah layar
+                    const menuHeight = menu.offsetHeight || 300;
+                    if (rect.bottom + 6 + menuHeight > winHeight - 10 && rect.top > menuHeight) {
+                        menu.style.top = (rect.top - menuHeight - 6) + 'px';
+                    }
+                }
+                currentNavDropdown = target;
             }
         }
 
@@ -1149,7 +1281,12 @@
         window.addEventListener('click', function(e) {
             // Tutup pill-dropdown jika klik di luar elemen dropdown
             if (!e.target.closest('.pill-dropdown')) {
-                document.querySelectorAll('.pill-dropdown').forEach(d => d.classList.remove('active'));
+                document.querySelectorAll('.pill-dropdown').forEach(d => {
+                    d.classList.remove('active');
+                    const m = d.querySelector('.dropdown-menu');
+                    if (m) m.style.display = 'none';
+                });
+                currentNavDropdown = null;
             }
 
             // Tutup modal backdrop jika diklik
@@ -1161,8 +1298,51 @@
         // Close dropdown & modal saat tombol ESC ditekan
         window.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
-                document.querySelectorAll('.pill-dropdown').forEach(d => d.classList.remove('active'));
+                document.querySelectorAll('.pill-dropdown').forEach(d => {
+                    d.classList.remove('active');
+                    const m = d.querySelector('.dropdown-menu');
+                    if (m) m.style.display = 'none';
+                });
+                currentNavDropdown = null;
                 document.querySelectorAll('.modal-backdrop.show').forEach(m => m.classList.remove('show'));
+            }
+        });
+
+        // Close dropdown saat scroll atau resize layar
+        window.addEventListener('scroll', function() {
+            if (currentNavDropdown) {
+                currentNavDropdown.classList.remove('active');
+                const m = currentNavDropdown.querySelector('.dropdown-menu');
+                if (m) m.style.display = 'none';
+                currentNavDropdown = null;
+            }
+        }, true);
+
+        window.addEventListener('resize', function() {
+            if (currentNavDropdown) {
+                currentNavDropdown.classList.remove('active');
+                const m = currentNavDropdown.querySelector('.dropdown-menu');
+                if (m) m.style.display = 'none';
+                currentNavDropdown = null;
+            }
+        });
+
+        // Horizontal mouse-wheel scroll untuk navbar jika melebihi lebar layar
+        document.addEventListener('DOMContentLoaded', function() {
+            const pillNav = document.querySelector('.pill-nav');
+            if (pillNav) {
+                pillNav.addEventListener('wheel', function(e) {
+                    if (e.deltaY !== 0 && pillNav.scrollWidth > pillNav.clientWidth) {
+                        e.preventDefault();
+                        pillNav.scrollLeft += e.deltaY;
+                        if (currentNavDropdown && currentNavDropdown.closest('.pill-nav')) {
+                            currentNavDropdown.classList.remove('active');
+                            const m = currentNavDropdown.querySelector('.dropdown-menu');
+                            if (m) m.style.display = 'none';
+                            currentNavDropdown = null;
+                        }
+                    }
+                }, { passive: false });
             }
         });
 

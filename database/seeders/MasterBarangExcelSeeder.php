@@ -343,6 +343,13 @@ class MasterBarangExcelSeeder extends Seeder
                 'harga'     => 0,
             ],
             [
+                'barang_cd' => 'WIP-LGT',
+                'barang_nm' => 'KS BERKO LENGKET',
+                'jenis_cd'  => 'WIP',
+                'satuan_cd' => 'KG',
+                'harga'     => 0,
+            ],
+            [
                 'barang_cd' => 'WIP-ASB',
                 'barang_nm' => 'KS ASIN BARCO',
                 'jenis_cd'  => 'WIP',

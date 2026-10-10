@@ -178,6 +178,11 @@
                 <div class="kpi-box" style="border-left: 3px solid #0284c7;">
                     <div class="kpi-label">Total WIP Jadi</div>
                     <div class="kpi-val">{{ number_format($tot['total_wip_qty'], 2, ',', '.') }} kg</div>
+                    @if(!empty($tot['total_berko_qty']) && $tot['total_berko_qty'] > 0)
+                        <div style="font-size: 5pt; color: #b45309; margin-top: 1px;">
+                            Berko: {{ number_format($tot['total_berko_qty'], 1, ',', '.') }} kg ({{ number_format($tot['berko_persen'], 1) }}%)@if(!empty($tot['berko_me_qty']) && $tot['berko_me_qty'] > 0) &bull; Lgt: {{ number_format($tot['berko_me_qty'], 1, ',', '.') }} kg ({{ number_format($tot['berko_me_persen'] ?? 0, 1) }}%)@endif
+                        </div>
+                    @endif
                 </div>
             </td>
             <td style="width: 25%; padding-right: 4px; padding-left: 4px;">
@@ -202,7 +207,7 @@
             <tr>
                 <th rowspan="3" class="th-orange">HARI</th>
                 <th rowspan="3" class="th-orange">TANGGAL</th>
-                <th colspan="19" class="th-green" style="letter-spacing: 0.1em; font-size: 6.5pt;">TOTAL BIAYA PRODUKSI / KG</th>
+                <th colspan="26" class="th-green" style="letter-spacing: 0.1em; font-size: 6.5pt;">TOTAL BIAYA PRODUKSI / KG</th>
                 <th rowspan="3" class="th-yellow">TOTAL<br>BIAYA</th>
                 <th colspan="2" class="th-green">TOTAL WIP</th>
                 <th rowspan="3" class="th-grey">HARGA POKOK<br>PRODUKSI</th>
@@ -218,7 +223,13 @@
                 <th rowspan="2" class="th-green">PLASTIK HD<br>90x100</th>
                 <th colspan="2" class="th-green">LAKBAN</th>
                 <th rowspan="2" class="th-green">TALI<br>RAFIA</th>
+                <th rowspan="2" class="th-green text-red">FOTO<br>COPY</th>
                 <th colspan="2" class="th-green">SARUNG TANGAN</th>
+                <th rowspan="2" class="th-green text-red">PENGAWASAN<br>MUTU</th>
+                <th rowspan="2" class="th-green text-red">LISTRIK &amp;<br>AIR - TELP</th>
+                <th rowspan="2" class="th-green text-red">PEMLHR<br>MESIN</th>
+                <th rowspan="2" class="th-green text-red">PENYS<br>MESIN</th>
+                <th colspan="2" class="th-green text-red">B. PNGOLHN LIMBAH</th>
 
                 {{-- TOTAL WIP --}}
                 <th rowspan="2" class="th-green">TOTAL<br>KG</th>
@@ -255,6 +266,10 @@
                 {{-- Sarung Tangan --}}
                 <th class="th-green">PLSTK</th>
                 <th class="th-green">KAIN</th>
+
+                {{-- Limbah --}}
+                <th class="th-green text-red">PADAT</th>
+                <th class="th-green text-red">KIMIA</th>
             </tr>
         </thead>
         <tbody>
@@ -293,8 +308,17 @@
                     <td>{{ $d['has_data'] && $d['lakban_besar_nilai'] > 0 ? number_format($d['lakban_besar_nilai'], 0, ',', '.') : '-' }}</td>
                     <td>{{ $d['has_data'] && $d['lakban_kecil_nilai'] > 0 ? number_format($d['lakban_kecil_nilai'], 0, ',', '.') : '-' }}</td>
                     <td>{{ $d['has_data'] && $d['tali_rafia_nilai'] > 0 ? number_format($d['tali_rafia_nilai'], 0, ',', '.') : '-' }}</td>
+                    <td>{{ $d['has_data'] && $d['fotocopy_nilai'] > 0 ? number_format($d['fotocopy_nilai'], 0, ',', '.') : '-' }}</td>
                     <td>{{ $d['has_data'] && $d['sarung_tangan_plastik_nilai'] > 0 ? number_format($d['sarung_tangan_plastik_nilai'], 0, ',', '.') : '-' }}</td>
                     <td>{{ $d['has_data'] && $d['sarung_tangan_kain_nilai'] > 0 ? number_format($d['sarung_tangan_kain_nilai'], 0, ',', '.') : '-' }}</td>
+
+                    {{-- FOH --}}
+                    <td>{{ $d['has_data'] && $d['qc_pengawasan_nilai'] > 0 ? number_format($d['qc_pengawasan_nilai'], 0, ',', '.') : '-' }}</td>
+                    <td>{{ $d['has_data'] && $d['listrik_air_telp_nilai'] > 0 ? number_format($d['listrik_air_telp_nilai'], 0, ',', '.') : '-' }}</td>
+                    <td>{{ $d['has_data'] && $d['pemeliharaan_mesin_nilai'] > 0 ? number_format($d['pemeliharaan_mesin_nilai'], 0, ',', '.') : '-' }}</td>
+                    <td>{{ $d['has_data'] && $d['penyusutan_mesin_nilai'] > 0 ? number_format($d['penyusutan_mesin_nilai'], 0, ',', '.') : '-' }}</td>
+                    <td>{{ $d['has_data'] && $d['limbah_padat_nilai'] > 0 ? number_format($d['limbah_padat_nilai'], 0, ',', '.') : '-' }}</td>
+                    <td>{{ $d['has_data'] && $d['limbah_kimia_nilai'] > 0 ? number_format($d['limbah_kimia_nilai'], 0, ',', '.') : '-' }}</td>
 
                     {{-- Total Biaya --}}
                     <td class="font-bold text-blue" style="background:#ffeb3b;">{{ $d['has_data'] && $d['total_biaya_produksi'] > 0 ? number_format($d['total_biaya_produksi'], 0, ',', '.') : '-' }}</td>
@@ -306,7 +330,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="25" class="text-center" style="padding: 10px;">Tidak ada catatan produksi pada bulan ini.</td>
+                    <td colspan="32" class="text-center" style="padding: 10px;">Tidak ada catatan produksi pada bulan ini.</td>
                 </tr>
             @endforelse
 
@@ -335,8 +359,16 @@
                 <td>{{ number_format($tot['lakban_besar_nilai'], 0, ',', '.') }}</td>
                 <td>{{ number_format($tot['lakban_kecil_nilai'], 0, ',', '.') }}</td>
                 <td>{{ number_format($tot['tali_rafia_nilai'], 0, ',', '.') }}</td>
+                <td>{{ number_format($tot['fotocopy_nilai'], 0, ',', '.') }}</td>
                 <td>{{ number_format($tot['sarung_tangan_plastik_nilai'], 0, ',', '.') }}</td>
                 <td>{{ number_format($tot['sarung_tangan_kain_nilai'], 0, ',', '.') }}</td>
+
+                <td>{{ number_format($tot['qc_pengawasan_nilai'], 0, ',', '.') }}</td>
+                <td>{{ number_format($tot['listrik_air_telp_nilai'], 0, ',', '.') }}</td>
+                <td>{{ number_format($tot['pemeliharaan_mesin_nilai'], 0, ',', '.') }}</td>
+                <td>{{ number_format($tot['penyusutan_mesin_nilai'], 0, ',', '.') }}</td>
+                <td>{{ number_format($tot['limbah_padat_nilai'], 0, ',', '.') }}</td>
+                <td>{{ number_format($tot['limbah_kimia_nilai'], 0, ',', '.') }}</td>
 
                 <td class="font-bold text-blue" style="background:#ffeb3b;">Rp {{ number_format($tot['total_biaya_produksi'], 0, ',', '.') }}</td>
 

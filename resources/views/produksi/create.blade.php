@@ -315,58 +315,174 @@
         {{-- BAGIAN 6: HASIL BARANG PRODUKSI (diisi lebih dulu agar FOH dapat auto-hitung dari Total KG WIP) --}}
         @include('produksi.partials.card-output-dinamis')
 
-        {{-- BAGIAN 7: BIAYA PERLENGKAPAN KERJA / FOH (SARUNG TANGAN) --}}
+        {{-- BAGIAN 7: BIAYA OVERHEAD PABRIK (FOH) --}}
         <div class="card" style="margin-bottom: 1.25rem;">
-            <div class="card-header" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0.875rem 1.25rem; display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 1rem;">
-                <div>
-                    <strong style="color: #0f172a; font-size: 0.95rem; display: flex; align-items: center; gap: 0.4rem;">
-                        <span>7. Biaya Perlengkapan Kerja / FOH (Sarung Tangan)</span>
-                    </strong>
-                    <small style="color: #64748b; font-size: 0.725rem; display: block; margin-top: 0.15rem;">
-                        Biaya operasional sanitasi &amp; proteksi operator sarung tangan (sesuai bon / nota fisik belanja).
-                    </small>
-                </div>
-                <div>
-                    <span id="badgeSubtotalOverhead" class="badge-foh-subtotal">
-                        Subtotal: Rp 0
-                    </span>
+            <div class="card-header" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0.875rem 1.25rem;">
+                <div class="foh-header-wrapper">
+                    <div>
+                        <strong style="color: #0f172a; font-size: 0.95rem; display: flex; align-items: center; gap: 0.4rem;">
+                            <span>7. Biaya Overhead Pabrik (FOH)</span>
+                        </strong>
+                        <small style="color: #64748b; font-size: 0.725rem; display: block; margin-top: 0.15rem;">
+                            Alokasi FOH variabel otomatis (× Total KG WIP dari Bagian 6) dan biaya operasional flat per shift.
+                        </small>
+                    </div>
+                    <div class="foh-toolbar">
+                        @if(Auth::user()?->canManageTarifProduksi())
+                            <button type="button" class="btn-foh-manage" onclick="openQuickTarifModal()" title="Konfigurasi standar pengali FOH & tarif utilitas">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                <span>Standar Tarif</span>
+                            </button>
+                        @endif
+                        <button type="button" class="btn-foh-reset" onclick="recalcFohStandard(true)" title="Hitung ulang nilai FOH sesuai standar pengali">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                            <span>Hitung Ulang Standar</span>
+                        </button>
+                        <span id="badgeSubtotalOverhead" class="badge-foh-subtotal">
+                            Subtotal FOH: Rp 0
+                        </span>
+                    </div>
                 </div>
             </div>
             <div style="padding: 1.15rem 1.25rem;">
-                {{-- Fallback nilai 0 untuk kompatibilitas skema database --}}
-                <input type="hidden" name="qc_pengawasan_nilai" id="qc_pengawasan_nilai" value="0">
-                <input type="hidden" name="listrik_air_telp_nilai" id="listrik_air_telp_nilai" value="0">
-                <input type="hidden" name="pemeliharaan_mesin_nilai" id="pemeliharaan_mesin_nilai" value="0">
-                <input type="hidden" name="penyusutan_mesin_nilai" id="penyusutan_mesin_nilai" value="0">
-                <input type="hidden" name="limbah_kimia_nilai" id="limbah_kimia_nilai" value="0">
-                <input type="hidden" name="fotocopy_nilai" id="fotocopy_nilai" value="0">
-                <input type="hidden" name="limbah_padat_nilai" id="limbah_padat_nilai" value="0">
-
-                <div class="foh-grid-2">
-                    {{-- 1. Sarung Tangan Plastik --}}
-                    <div class="foh-field-card">
-                        <div class="foh-field-head">
-                            <label class="foh-field-label">Sarung Tangan Plastik</label>
-                            <span class="foh-rate-pill pill-nota">Nota Fisik</span>
+                {{-- SUB-PANEL 1: FOH VARIABEL (6 ITEM: 3 KOLOM x 2 BARIS SIMETRIS) --}}
+                <div class="foh-subpanel foh-subpanel-variable">
+                    <div class="foh-subpanel-header">
+                        <div class="foh-subpanel-title">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                            <span>Alokasi Biaya Variabel (Otomatis per KG WIP)</span>
                         </div>
-                        <div class="foh-input-group">
-                            <span class="foh-input-addon">Rp</span>
-                            <input type="number" step="0.01" min="0" name="sarung_tangan_plastik_nilai" id="sarung_tangan_plastik_nilai" class="form-control calc-trigger" value="{{ old('sarung_tangan_plastik_nilai', 0) }}" oninput="calcAll()">
-                        </div>
-                        <small class="foh-field-help">Sesuai bon / nota fisik belanja</small>
+                        <span class="foh-subpanel-meta">Standar Pengali × Total KG WIP (dari Bagian 6)</span>
                     </div>
+                    <div class="foh-grid-3">
+                        {{-- 1. QC --}}
+                        <div class="foh-field-card">
+                            <div class="foh-field-head">
+                                <label class="foh-field-label">Pengawasan Mutu (QC)</label>
+                                <span id="badge_foh_qc" class="foh-rate-pill" title="Standar: Total KG WIP × Pengali">x {{ number_format($fohRates['qc'] ?? 49.97, 2, ',', '.') }}</span>
+                            </div>
+                            <div class="foh-input-group">
+                                <span class="foh-input-addon">Rp</span>
+                                <input type="number" step="0.01" min="0" name="qc_pengawasan_nilai" id="qc_pengawasan_nilai" class="form-control calc-trigger input-foh-auto" value="{{ old('qc_pengawasan_nilai', 0) }}" oninput="calcAll()">
+                            </div>
+                            <small id="sublabel_foh_qc" class="foh-field-help">Rp {{ number_format($fohRates['qc'] ?? 49.97, 2, ',', '.') }} / Kg WIP</small>
+                        </div>
 
-                    {{-- 2. Sarung Tangan Kain --}}
-                    <div class="foh-field-card">
-                        <div class="foh-field-head">
-                            <label class="foh-field-label">Sarung Tangan Kain</label>
-                            <span class="foh-rate-pill pill-nota">Nota Fisik</span>
+                        {{-- 2. Listrik & Air + Telp --}}
+                        <div class="foh-field-card">
+                            <div class="foh-field-head">
+                                <label class="foh-field-label">Listrik &amp; Air + Telp</label>
+                                <span id="badge_foh_listrik" class="foh-rate-pill" title="Standar: Total KG WIP × Pengali">x {{ number_format($fohRates['listrik'] ?? 223.80, 2, ',', '.') }}</span>
+                            </div>
+                            <div class="foh-input-group">
+                                <span class="foh-input-addon">Rp</span>
+                                <input type="number" step="0.01" min="0" name="listrik_air_telp_nilai" id="listrik_air_telp_nilai" class="form-control calc-trigger input-foh-auto" value="{{ old('listrik_air_telp_nilai', 0) }}" oninput="calcAll()">
+                            </div>
+                            <small id="sublabel_foh_listrik" class="foh-field-help">Rp {{ number_format($fohRates['listrik'] ?? 223.80, 2, ',', '.') }} / Kg WIP</small>
                         </div>
-                        <div class="foh-input-group">
-                            <span class="foh-input-addon">Rp</span>
-                            <input type="number" step="0.01" min="0" name="sarung_tangan_kain_nilai" id="sarung_tangan_kain_nilai" class="form-control calc-trigger" value="{{ old('sarung_tangan_kain_nilai', 0) }}" oninput="calcAll()">
+
+                        {{-- 3. Pemeliharaan Mesin --}}
+                        <div class="foh-field-card">
+                            <div class="foh-field-head">
+                                <label class="foh-field-label">Pemeliharaan Mesin</label>
+                                <span id="badge_foh_pemeliharaan" class="foh-rate-pill" title="Standar: Total KG WIP × Pengali">x {{ number_format($fohRates['pemeliharaan'] ?? 23.34, 2, ',', '.') }}</span>
+                            </div>
+                            <div class="foh-input-group">
+                                <span class="foh-input-addon">Rp</span>
+                                <input type="number" step="0.01" min="0" name="pemeliharaan_mesin_nilai" id="pemeliharaan_mesin_nilai" class="form-control calc-trigger input-foh-auto" value="{{ old('pemeliharaan_mesin_nilai', 0) }}" oninput="calcAll()">
+                            </div>
+                            <small id="sublabel_foh_pemeliharaan" class="foh-field-help">Rp {{ number_format($fohRates['pemeliharaan'] ?? 23.34, 2, ',', '.') }} / Kg WIP</small>
                         </div>
-                        <small class="foh-field-help">Sesuai bon / nota fisik belanja</small>
+
+                        {{-- 4. Penyusutan Mesin & Gedung --}}
+                        <div class="foh-field-card">
+                            <div class="foh-field-head">
+                                <label class="foh-field-label">Penyusutan Mesin &amp; Gedung</label>
+                                <span id="badge_foh_penyusutan" class="foh-rate-pill" title="Standar: Total KG WIP × Pengali">x {{ number_format($fohRates['penyusutan'] ?? 66.44, 2, ',', '.') }}</span>
+                            </div>
+                            <div class="foh-input-group">
+                                <span class="foh-input-addon">Rp</span>
+                                <input type="number" step="0.01" min="0" name="penyusutan_mesin_nilai" id="penyusutan_mesin_nilai" class="form-control calc-trigger input-foh-auto" value="{{ old('penyusutan_mesin_nilai', 0) }}" oninput="calcAll()">
+                            </div>
+                            <small id="sublabel_foh_penyusutan" class="foh-field-help">Rp {{ number_format($fohRates['penyusutan'] ?? 66.44, 2, ',', '.') }} / Kg WIP</small>
+                        </div>
+
+                        {{-- 5. Kimia Limbah (IPAL) --}}
+                        <div class="foh-field-card">
+                            <div class="foh-field-head">
+                                <label class="foh-field-label">Bahan Kimia Limbah (IPAL)</label>
+                                <span id="badge_foh_kimia" class="foh-rate-pill" title="Standar: Total KG WIP × Pengali">x {{ number_format($fohRates['kimia'] ?? 45.09, 2, ',', '.') }}</span>
+                            </div>
+                            <div class="foh-input-group">
+                                <span class="foh-input-addon">Rp</span>
+                                <input type="number" step="0.01" min="0" name="limbah_kimia_nilai" id="limbah_kimia_nilai" class="form-control calc-trigger input-foh-auto" value="{{ old('limbah_kimia_nilai', 0) }}" oninput="calcAll()">
+                            </div>
+                            <small id="sublabel_foh_kimia" class="foh-field-help">Rp {{ number_format($fohRates['kimia'] ?? 45.09, 2, ',', '.') }} / Kg WIP</small>
+                        </div>
+
+                        {{-- 6. Fotocopy / ATK --}}
+                        <div class="foh-field-card">
+                            <div class="foh-field-head">
+                                <label class="foh-field-label">Fotocopy / ATK</label>
+                                <span id="badge_foh_fotocopy" class="foh-rate-pill" title="Standar: (Jumlah Karton × 2 Lembar Stiker) × Tarif">2 lbr × Rp {{ number_format($fohRates['fotocopy'] ?? 28.00, 0, ',', '.') }}</span>
+                            </div>
+                            <div class="foh-input-group">
+                                <span class="foh-input-addon">Rp</span>
+                                <input type="number" step="0.01" min="0" name="fotocopy_nilai" id="fotocopy_nilai" class="form-control calc-trigger input-foh-auto" value="{{ old('fotocopy_nilai', 0) }}" oninput="calcAll()">
+                            </div>
+                            <small id="sublabel_foh_fotocopy" class="foh-field-help">(Karton × 2 lbr) × Rp {{ number_format($fohRates['fotocopy'] ?? 28.00, 0, ',', '.') }}</small>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- SUB-PANEL 2: OVERHEAD TETAP & PERLENGKAPAN FISIK (3 ITEM: 3 KOLOM x 1 BARIS SIMETRIS) --}}
+                <div class="foh-subpanel foh-subpanel-fixed">
+                    <div class="foh-subpanel-header">
+                        <div class="foh-subpanel-title">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                            <span>Overhead Tetap &amp; Perlengkapan Operasional</span>
+                        </div>
+                        <span class="foh-subpanel-meta">Biaya flat per shift &amp; belanja nota fisik</span>
+                    </div>
+                    <div class="foh-grid-3">
+                        {{-- 1. Limbah Padat --}}
+                        <div class="foh-field-card">
+                            <div class="foh-field-head">
+                                <label class="foh-field-label">Retribusi Limbah Padat</label>
+                                <span id="badge_foh_limbah_padat" class="foh-rate-pill pill-flat" title="Standar: Flat per shift">Flat Rp {{ number_format($fohRates['limbah_padat'] ?? 180000, 0, ',', '.') }}</span>
+                            </div>
+                            <div class="foh-input-group">
+                                <span class="foh-input-addon">Rp</span>
+                                <input type="number" step="0.01" min="0" name="limbah_padat_nilai" id="limbah_padat_nilai" class="form-control calc-trigger input-foh-auto" value="{{ old('limbah_padat_nilai', $fohRates['limbah_padat'] ?? 180000.00) }}" oninput="calcAll()">
+                            </div>
+                            <small id="sublabel_foh_limbah_padat" class="foh-field-help">Retribusi limbah flat per shift</small>
+                        </div>
+
+                        {{-- 2. Sarung Tangan Plastik --}}
+                        <div class="foh-field-card">
+                            <div class="foh-field-head">
+                                <label class="foh-field-label">Sarung Tangan Plastik</label>
+                                <span class="foh-rate-pill pill-nota">Nota Fisik</span>
+                            </div>
+                            <div class="foh-input-group">
+                                <span class="foh-input-addon">Rp</span>
+                                <input type="number" step="0.01" min="0" name="sarung_tangan_plastik_nilai" id="sarung_tangan_plastik_nilai" class="form-control calc-trigger" value="{{ old('sarung_tangan_plastik_nilai', 0) }}" oninput="calcAll()">
+                            </div>
+                            <small id="sublabel_foh_sarung_plastik" class="foh-field-help">Sesuai bon / nota fisik belanja</small>
+                        </div>
+
+                        {{-- 3. Sarung Tangan Kain --}}
+                        <div class="foh-field-card">
+                            <div class="foh-field-head">
+                                <label class="foh-field-label">Sarung Tangan Kain</label>
+                                <span class="foh-rate-pill pill-nota">Nota Fisik</span>
+                            </div>
+                            <div class="foh-input-group">
+                                <span class="foh-input-addon">Rp</span>
+                                <input type="number" step="0.01" min="0" name="sarung_tangan_kain_nilai" id="sarung_tangan_kain_nilai" class="form-control calc-trigger" value="{{ old('sarung_tangan_kain_nilai', 0) }}" oninput="calcAll()">
+                            </div>
+                            <small id="sublabel_foh_sarung_kain" class="foh-field-help">Sesuai bon / nota fisik belanja</small>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -421,6 +537,9 @@
     </form>
 </div>
 
+{{-- MODAL PENGATURAN CEPAT STANDAR TARIF & FOH --}}
+@include('produksi.partials.modal-quick-tarif')
+
 @push('scripts')
     <script>
         window.appConfig = {
@@ -428,7 +547,10 @@
             pakaiDataUrl: "{{ url('produksi/pakai-data') }}",
             syncKaryawanUrl: "{{ route('produksi.sync-karyawan') }}",
             barangHasilList: @json($barangHasilList ?? []),
-            oldOutputItems: @json(old('output_items', []))
+            oldOutputItems: @json(old('output_items', [])),
+            initialFohRates: @json($fohRates ?? []),
+            initialEnergiTkRates: @json($energiTkRates ?? []),
+            quickUpdateTarifUrl: "{{ route('master.tarif_produksi.quick-update') }}"
         };
     </script>
     <script src="{{ asset('js/produksi/produksi-create.js') }}?v={{ time() }}"></script>

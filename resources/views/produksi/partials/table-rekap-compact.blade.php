@@ -36,15 +36,15 @@
     <table class="table-compact-hpp">
         <thead>
             <tr>
-                <th style="width: 14%;">Tanggal &amp; Shift</th>
-                <th style="width: 12%;">Lini &amp; Batch</th>
-                <th style="width: 13%; text-align: right;">Bahan Baku (Kg)</th>
-                <th style="width: 13%; text-align: right;">Total WIP (Kg)</th>
-                <th style="width: 10%; text-align: center;">Rendemen</th>
+                <th style="width: 13%;">Tanggal &amp; Shift</th>
+                <th style="width: 15%;">Lini &amp; Batch</th>
+                <th style="width: 12%; text-align: right;">Bahan Baku (Kg)</th>
+                <th style="width: 12%; text-align: right;">Total WIP (Kg)</th>
+                <th style="width: 9%; text-align: center;">Rendemen</th>
                 <th style="width: 14%; text-align: right;">Total Biaya (Rp)</th>
                 <th style="width: 11%; text-align: right;">HPP / Kg</th>
                 <th style="width: 6%; text-align: center;">Audit</th>
-                <th style="width: 7%; text-align: center;">Aksi</th>
+                <th style="width: 8%; text-align: center;">Aksi</th>
             </tr>
         </thead>
         <tbody>
@@ -76,15 +76,9 @@
                             </div>
                             <div style="display: flex; gap: 0.35rem; align-items: center; margin-top: 0.2rem;">
                                 @if(!empty($d['shift_cd']))
-                                    @if(($d['shift_count'] ?? 1) > 1)
-                                        <span style="font-size: 0.65rem; font-weight: 700; padding: 0.1rem 0.35rem; border-radius: 3px; background: #e0e7ff; color: #3730a3; border: 1px solid #c7d2fe;" title="{{ $d['shift_count'] }} shift tercatat pada tanggal ini">
-                                            {{ $d['shift_count'] }} Shift ({{ $d['shift_cd'] }})
-                                        </span>
-                                    @else
-                                        <span style="font-size: 0.65rem; font-weight: 700; padding: 0.1rem 0.35rem; border-radius: 3px; {{ $d['shift_cd'] === 'A' ? 'background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe;' : 'background: #fdf4ff; color: #86198f; border: 1px solid #f5d0fe;' }}">
-                                            Shift {{ $d['shift_cd'] }}
-                                        </span>
-                                    @endif
+                                    <span style="font-size: 0.65rem; font-weight: 700; padding: 0.1rem 0.35rem; border-radius: 3px; {{ str_contains($d['shift_cd'], 'B') && !str_contains($d['shift_cd'], 'A') ? 'background: #fdf4ff; color: #86198f; border: 1px solid #f5d0fe;' : 'background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe;' }}" title="Shift {{ $d['shift_cd'] }}">
+                                        Shift {{ $d['shift_cd'] }}
+                                    </span>
                                 @endif
                                 <span style="font-size: 0.7rem; color: #64748b;">
                                     Tgl {{ $d['day'] }}
@@ -94,12 +88,50 @@
 
                         {{-- Lini Produksi & No Batch --}}
                         <td>
-                            <div style="font-size: 0.75rem; font-weight: 700; color: #1e293b;">
-                                {{ $d['lini_produksi'] ?? 'Produksi Reguler' }}
+                            {{-- Nama Lini Produksi --}}
+                            @if(count($d['lini_list'] ?? []) > 1)
+                                <div style="font-size: 0.775rem; font-weight: 700; color: #0f172a; line-height: 1.25;" title="{{ implode(', ', $d['lini_list']) }}">
+                                    {{ $d['lini_list'][0] }}
+                                    <span style="font-size: 0.65rem; font-weight: 600; color: #475569; background: #f1f5f9; border: 1px solid #e2e8f0; padding: 0.5px 4px; border-radius: 3px; margin-left: 2px;">
+                                        +{{ count($d['lini_list']) - 1 }}
+                                    </span>
+                                </div>
+                            @else
+                                <div style="font-size: 0.775rem; font-weight: 700; color: #0f172a; line-height: 1.25;">
+                                    {{ $d['lini_produksi'] ?? 'Lini Penggorengan & Keripik' }}
+                                </div>
+                            @endif
+
+                            {{-- Daftar Batch: Batch WIP Utama & Batch Berko Fisik --}}
+                            <div style="display: flex; flex-wrap: wrap; gap: 0.25rem; align-items: center; margin-top: 0.25rem;">
+                                {{-- 1. Batch WIP Utama --}}
+                                @foreach($d['main_batches'] ?? [] as $mb)
+                                    @if(!empty($mb) && $mb !== '-')
+                                        <span style="display: inline-flex; align-items: center; gap: 0.25rem; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.685rem; font-weight: 700; color: #0369a1; background: #f0f9ff; border: 1px solid #bae6fd; padding: 1.5px 6px; border-radius: 4px; white-space: nowrap; line-height: 1.2;" title="Nomor Batch WIP Utama">
+                                            <svg width="9" height="9" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #0284c7; flex-shrink: 0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                                            <span>{{ $mb }}</span>
+                                        </span>
+                                    @endif
+                                @endforeach
+
+                                {{-- 2. Batch Berko (WIP Curah) --}}
+                                @foreach($d['berko_batches'] ?? [] as $bb)
+                                    @if(!empty($bb) && $bb !== '-')
+                                        <span style="display: inline-flex; align-items: center; gap: 0.25rem; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.685rem; font-weight: 700; color: #92400e; background: #fffbeb; border: 1px solid #fde68a; padding: 1.5px 6px; border-radius: 4px; white-space: nowrap; line-height: 1.2;" title="Nomor Batch Fisik Berko (Curah)">
+                                            <span style="color: #b45309; font-size: 0.625rem; font-weight: 800; text-transform: uppercase;">BRK:</span>
+                                            <span>{{ $bb }}</span>
+                                        </span>
+                                    @endif
+                                @endforeach
                             </div>
-                            @if(!empty($d['produksi_no']))
-                                <div style="font-family: monospace; font-size: 0.675rem; color: #64748b; margin-top: 0.15rem;">
-                                    {{ $d['produksi_no'] }}
+
+                            {{-- Nomor Dokumen Transaksi Sistem (Ringkas Bersih) --}}
+                            @if(!empty($d['primary_produksi_no'] ?? $d['produksi_no']))
+                                <div style="margin-top: 0.25rem; display: flex; align-items: center; gap: 0.25rem;">
+                                    <a href="{{ route('produksi.show', $d['produksi_id']) }}" style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.65rem; color: #64748b; text-decoration: none; display: inline-flex; align-items: center; gap: 0.2rem; white-space: nowrap;" title="Lihat Dokumen Transaksi {{ $d['primary_produksi_no'] ?? $d['produksi_no'] }}">
+                                        <span style="color: #94a3b8;">#</span>
+                                        <span style="font-weight: 600; color: #475569;">{{ $d['primary_produksi_no'] ?? $d['produksi_no'] }}</span>
+                                    </a>
                                 </div>
                             @endif
                         </td>
@@ -119,7 +151,16 @@
                             <div style="font-weight: 700; font-size: 0.875rem; color: #0284c7; font-variant-numeric: tabular-nums;">
                                 {{ number_format($d['total_wip_qty'], 2, ',', '.') }} <span style="font-size: 0.7rem; color: #64748b; font-weight: 400;">kg</span>
                             </div>
-                            @if(!empty($d['berko_persen']) && $d['berko_persen'] > 0)
+                            @if(!empty($d['total_berko_qty']) && $d['total_berko_qty'] > 0)
+                                <div style="color: #b45309; font-size: 0.65rem; font-weight: 600;" title="Hasil Berko: {{ number_format($d['total_berko_qty'], 2, ',', '.') }} kg ({{ number_format($d['berko_persen'], 1) }}%) @if(!empty($d['berko_me_qty']) && $d['berko_me_qty'] > 0)&#10;Biasa: {{ number_format($d['berko_qty'], 1, ',', '.') }} kg ({{ number_format($d['berko_biasa_persen'] ?? 0, 1) }}%)&#10;Lengket: {{ number_format($d['berko_me_qty'], 1, ',', '.') }} kg ({{ number_format($d['berko_me_persen'] ?? 0, 1) }}%)@endif">
+                                    Berko: {{ number_format($d['total_berko_qty'], 1, ',', '.') }} kg ({{ number_format($d['berko_persen'], 1) }}%)
+                                    @if(!empty($d['berko_me_qty']) && $d['berko_me_qty'] > 0)
+                                        <div style="font-size: 0.62rem; color: #9a3412; font-weight: 500;">
+                                            (Lgt: {{ number_format($d['berko_me_qty'], 1, ',', '.') }} kg / {{ number_format($d['berko_me_persen'] ?? 0, 1) }}%)
+                                        </div>
+                                    @endif
+                                </div>
+                            @elseif(!empty($d['berko_persen']) && $d['berko_persen'] > 0)
                                 <div style="color: #94a3b8; font-size: 0.65rem;">
                                     Berko: {{ number_format($d['berko_persen'], 1) }}%
                                 </div>
@@ -180,7 +221,7 @@
                                         @foreach($d['shift_records'] as $sRec)
                                             <a href="{{ route('produksi.show', $sRec['produksi_id']) }}" class="action-dropdown-item">
                                                 <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                                                <span>Detail Shift {{ $sRec['shift_cd'] }} ({{ $sRec['produksi_no'] }})</span>
+                                                <span>Shift {{ $sRec['shift_cd'] }} &bull; {{ $sRec['batch_wip_no'] !== '-' ? 'Batch ' . $sRec['batch_wip_no'] : $sRec['produksi_no'] }}</span>
                                             </a>
                                             <a href="{{ route('produksi.cetak-stiker', $sRec['produksi_id']) }}" class="action-dropdown-item" target="_blank" style="padding-left: 1.75rem; font-size: 0.75rem; color: #475569;">
                                                 <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
@@ -327,22 +368,45 @@
                                 <div class="mini-cost-card">
                                     <div class="mini-cost-header">
                                         <div class="mini-cost-title">
-                                            <span>4. Perlengkapan / FOH (Sarung Tangan)</span>
+                                            <span>4. Biaya Overhead Pabrik (FOH)</span>
                                         </div>
                                         <span class="mini-cost-badge" style="background: #fdf2f8; color: #9d174d; border: 1px solid #fbcfe8;">Overhead</span>
                                     </div>
                                     <div class="mini-cost-list">
                                         <div class="mini-cost-row">
-                                            <span>Sarung Tangan Plastik:</span>
-                                            <strong>Rp {{ number_format($d['sarung_tangan_plastik_nilai'], 0, ',', '.') }}</strong>
+                                            <span>QC &amp; Pengawasan Mutu:</span>
+                                            <strong>Rp {{ number_format($d['qc_pengawasan_nilai'], 0, ',', '.') }}</strong>
                                         </div>
                                         <div class="mini-cost-row">
-                                            <span>Sarung Tangan Kain:</span>
-                                            <strong>Rp {{ number_format($d['sarung_tangan_kain_nilai'], 0, ',', '.') }}</strong>
+                                            <span>Listrik, Air &amp; Telp:</span>
+                                            <strong>Rp {{ number_format($d['listrik_air_telp_nilai'], 0, ',', '.') }}</strong>
                                         </div>
+                                        <div class="mini-cost-row">
+                                            <span>Pemeliharaan Mesin:</span>
+                                            <strong>Rp {{ number_format($d['pemeliharaan_mesin_nilai'], 0, ',', '.') }}</strong>
+                                        </div>
+                                        <div class="mini-cost-row">
+                                            <span>Penyusutan Mesin/Gdg:</span>
+                                            <strong>Rp {{ number_format($d['penyusutan_mesin_nilai'], 0, ',', '.') }}</strong>
+                                        </div>
+                                        <div class="mini-cost-row">
+                                            <span>Retribusi &amp; Kimia Limbah:</span>
+                                            <strong>Rp {{ number_format($d['limbah_padat_nilai'] + $d['limbah_kimia_nilai'], 0, ',', '.') }}</strong>
+                                        </div>
+                                        <div class="mini-cost-row">
+                                            <span>Sarung Tangan (Plastik/Kain):</span>
+                                            <strong>Rp {{ number_format($d['sarung_tangan_plastik_nilai'] + $d['sarung_tangan_kain_nilai'], 0, ',', '.') }}</strong>
+                                        </div>
+                                        <div class="mini-cost-row">
+                                            <span>Fotocopy &amp; Label Box:</span>
+                                            <strong>Rp {{ number_format($d['fotocopy_nilai'], 0, ',', '.') }}</strong>
+                                        </div>
+                                        @php
+                                            $totalFohDay = $d['fotocopy_nilai'] + $d['sarung_tangan_plastik_nilai'] + $d['sarung_tangan_kain_nilai'] + $d['qc_pengawasan_nilai'] + $d['listrik_air_telp_nilai'] + $d['pemeliharaan_mesin_nilai'] + $d['penyusutan_mesin_nilai'] + $d['limbah_padat_nilai'] + $d['limbah_kimia_nilai'];
+                                        @endphp
                                         <div class="mini-cost-row" style="margin-top: 0.25rem; padding-top: 0.25rem; border-top: 1px dashed #e2e8f0;">
                                             <span style="font-weight: 700;">Subtotal FOH:</span>
-                                            <strong style="color: #059669;">Rp {{ number_format($d['sarung_tangan_plastik_nilai'] + $d['sarung_tangan_kain_nilai'], 0, ',', '.') }}</strong>
+                                            <strong style="color: #059669;">Rp {{ number_format($totalFohDay, 0, ',', '.') }}</strong>
                                         </div>
                                     </div>
                                 </div>
@@ -370,15 +434,51 @@
                                                 <span style="color: #475569;">• Lini Manual:</span>
                                                 <strong style="color: #475569;">{{ number_format($manualQty, 2, ',', '.') }} kg</strong>
                                             </div>
+                                            @if(($d['asin_barco_qty'] ?? 0) > 0)
+                                                <div class="mini-cost-row" style="padding-left: 0.75rem; font-size: 0.72rem; color: #64748b;">
+                                                    <span>– Asin Barco:</span>
+                                                    <span>{{ number_format($d['asin_barco_qty'], 2, ',', '.') }} kg</span>
+                                                </div>
+                                            @endif
+                                            @if(($d['asin_sawit_qty'] ?? 0) > 0)
+                                                <div class="mini-cost-row" style="padding-left: 0.75rem; font-size: 0.72rem; color: #64748b;">
+                                                    <span>– Asin Sawit:</span>
+                                                    <span>{{ number_format($d['asin_sawit_qty'], 2, ',', '.') }} kg</span>
+                                                </div>
+                                            @endif
+                                            @if(($d['no_salt_qty'] ?? 0) > 0)
+                                                <div class="mini-cost-row" style="padding-left: 0.75rem; font-size: 0.72rem; color: #64748b;">
+                                                    <span>– No Salt:</span>
+                                                    <span>{{ number_format($d['no_salt_qty'], 2, ',', '.') }} kg</span>
+                                                </div>
+                                            @endif
+                                            @if(($d['ucamp_qty'] ?? 0) > 0)
+                                                <div class="mini-cost-row" style="padding-left: 0.75rem; font-size: 0.72rem; color: #64748b;">
+                                                    <span>– U/Campur:</span>
+                                                    <span>{{ number_format($d['ucamp_qty'], 2, ',', '.') }} kg</span>
+                                                </div>
+                                            @endif
+                                            @if(($d['balo_gelombang_qty'] ?? 0) > 0)
+                                                <div class="mini-cost-row" style="padding-left: 0.75rem; font-size: 0.72rem; color: #64748b;">
+                                                    <span>– Balo Gelombang:</span>
+                                                    <span>{{ number_format($d['balo_gelombang_qty'], 2, ',', '.') }} kg</span>
+                                                </div>
+                                            @endif
+                                            @if(($d['balqi_qty'] ?? 0) > 0)
+                                                <div class="mini-cost-row" style="padding-left: 0.75rem; font-size: 0.72rem; color: #64748b;">
+                                                    <span>– Bal Q:</span>
+                                                    <span>{{ number_format($d['balqi_qty'], 2, ',', '.') }} kg</span>
+                                                </div>
+                                            @endif
                                         @endif
                                         @if(!empty($d['berko_me_qty']) && $d['berko_me_qty'] > 0)
                                             <div class="mini-cost-row">
-                                                <span style="color: #b91c1c;">• Berko:</span>
-                                                <strong style="color: #b91c1c;">{{ number_format($d['berko_qty'], 2, ',', '.') }} kg</strong>
+                                                <span style="color: #b91c1c;">• Berko Biasa:</span>
+                                                <strong style="color: #b91c1c;">{{ number_format($d['berko_qty'], 2, ',', '.') }} kg ({{ number_format($d['berko_biasa_persen'] ?? 0, 1) }}%)</strong>
                                             </div>
                                             <div class="mini-cost-row">
-                                                <span style="color: #b91c1c;">• Berko ME:</span>
-                                                <strong style="color: #b91c1c;">{{ number_format($d['berko_me_qty'], 2, ',', '.') }} kg</strong>
+                                                <span style="color: #b91c1c;">• Berko Lengket:</span>
+                                                <strong style="color: #b91c1c;">{{ number_format($d['berko_me_qty'], 2, ',', '.') }} kg ({{ number_format($d['berko_me_persen'] ?? 0, 1) }}%)</strong>
                                             </div>
                                             <div class="mini-cost-row">
                                                 <span style="color: #b91c1c; font-weight: 700;">• Total Berko:</span>
@@ -386,7 +486,7 @@
                                             </div>
                                         @elseif($d['total_berko_qty'] > 0)
                                             <div class="mini-cost-row">
-                                                <span style="color: #b91c1c;">• Berko:</span>
+                                                <span style="color: #b91c1c;">• Berko @if(!empty($d['berko_batch_no']))<small style="font-family: monospace; color: #9a3412;">(Batch: {{ $d['berko_batch_no'] }})</small>@endif:</span>
                                                 <strong style="color: #b91c1c;">{{ number_format($d['total_berko_qty'], 2, ',', '.') }} kg ({{ number_format($d['berko_persen'], 1) }}%)</strong>
                                             </div>
                                         @endif

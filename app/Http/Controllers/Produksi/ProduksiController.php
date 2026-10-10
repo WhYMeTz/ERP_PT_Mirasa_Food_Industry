@@ -16,6 +16,7 @@ use App\Models\MasterData\MstLiniProduksi;
 use App\Services\Common\CodeGeneratorService;
 use App\Services\Gudang\StokService;
 use App\Services\Produksi\ProduksiService;
+use App\Services\Produksi\TarifProduksiService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Exception;
@@ -31,7 +32,8 @@ class ProduksiController extends Controller
     public function __construct(
         protected ProduksiService $produksiService,
         protected CodeGeneratorService $codeGenerator,
-        protected StokService $stokService
+        protected StokService $stokService,
+        protected TarifProduksiService $tarifService
     ) {}
 
     /**
@@ -147,14 +149,21 @@ class ProduksiController extends Controller
             ->orderBy('barang_nm')
             ->get();
 
-        $defaultCngTarif = 226800.00;
+        // Standar Pengali FOH & Tarif Dinamis dari Master Data
+        $fohRates = $this->tarifService->getFohRates();
+        $energiTkRates = $this->tarifService->getEnergiLaborRates();
+        $allTarif = $this->tarifService->getAllTarif();
+        $defaultCngTarif = $energiTkRates['cng_tarif'] ?? 226800.00;
 
         return view('produksi.create', compact(
             'gudangList',
             'pakaiList',
             'liniList',
             'barangHasilList',
-            'defaultCngTarif'
+            'defaultCngTarif',
+            'fohRates',
+            'energiTkRates',
+            'allTarif'
         ));
     }
 

@@ -185,6 +185,14 @@ class PermissionService
                         'delete' => ['key' => 'master_resep_delete', 'label' => 'Hapus'],
                     ],
                 ],
+                'TARIF' => [
+                    'label'   => 'Standar Tarif Produksi & FOH',
+                    'desc'    => 'Tarif upah borongan masak, bumbu racik, gas LPG, dan FOH pabrik.',
+                    'actions' => [
+                        'view'   => ['key' => 'tarif_produksi_view',   'label' => 'Lihat Tarif'],
+                        'create' => ['key' => 'tarif_produksi_manage', 'label' => 'Kelola Tarif'],
+                    ],
+                ],
                 'LINI' => [
                     'label'   => 'Lini Produksi / Lokasi Masak',
                     'desc'    => 'Dapur penggorengan, stasiun perajangan, dan lini pengemasan.',
@@ -329,6 +337,8 @@ class PermissionService
             'so_view',
             'so_create',
             'so_edit',
+            'tarif_produksi_view',
+            'tarif_produksi_manage',
             'master_barang_view',
             'master_customer_view',
         ],

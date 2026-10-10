@@ -9,6 +9,7 @@ use App\Models\Produksi\DatProduksiHdr;
 use App\Models\Produksi\DatProduksiDtl;
 use App\Services\Common\CodeGeneratorService;
 use App\Services\Gudang\StokService;
+use App\Services\Produksi\TarifProduksiService;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -20,7 +21,8 @@ class ProduksiService
 {
     public function __construct(
         protected CodeGeneratorService $codeGenerator,
-        protected StokService $stokService
+        protected StokService $stokService,
+        protected TarifProduksiService $tarifService
     ) {}
 
     /**
@@ -102,6 +104,14 @@ class ProduksiService
 
         $totals['berko_persen'] = $totals['total_wip_qty'] > 0
             ? ($totals['total_berko_qty'] / $totals['total_wip_qty']) * 100
+            : 0;
+
+        $totals['berko_biasa_persen'] = $totals['total_wip_qty'] > 0
+            ? ($totals['berko_qty'] / $totals['total_wip_qty']) * 100
+            : 0;
+
+        $totals['berko_me_persen'] = $totals['total_wip_qty'] > 0
+            ? ($totals['berko_me_qty'] / $totals['total_wip_qty']) * 100
             : 0;
 
         $totals['rendemen_persen'] = $totals['singkong_qty'] > 0
@@ -214,6 +224,8 @@ class ProduksiService
                 }
 
                 $dayBerkoPersen = $dayTotalWip > 0 ? round(($dayTotalBerko / $dayTotalWip) * 100, 2) : 0;
+                $dayBerkoBiasaPersen = $dayTotalWip > 0 ? round(($dayBerko / $dayTotalWip) * 100, 2) : 0;
+                $dayBerkoMePersen = $dayTotalWip > 0 ? round(($dayBerkoMe / $dayTotalWip) * 100, 2) : 0;
                 $dayRendemen = $daySingkongQty > 0 && $dayTotalWip > 0 ? round(($dayTotalWip / $daySingkongQty) * 100, 2) : 0;
                 $dayHpp = $dayTotalWip > 0 && $dayTotalBiaya > 0 ? round($dayTotalBiaya / $dayTotalWip, 2) : 0;
 
@@ -223,6 +235,56 @@ class ProduksiService
                 $shiftCount = $dayRecords->count();
                 $firstRec = $dayRecords->first();
 
+                // Lini & Batch Metadata
+                $liniList = $dayRecords->pluck('lini_produksi')->filter()->unique()->values()->all();
+                $liniStr = !empty($liniList) ? implode(', ', $liniList) : 'Produksi Reguler';
+
+                // Ekstraksi Batch: Pisahkan Batch WIP Utama dan Batch Berko (Curah)
+                $mainBatches = [];
+                $berkoBatches = [];
+
+                foreach ($dayRecords as $rec) {
+                    if ($rec->outputs && $rec->outputs->isNotEmpty()) {
+                        foreach ($rec->outputs as $out) {
+                            $bNo = trim($out->batch_no ?? '');
+                            if (empty($bNo) || $bNo === '-') continue;
+
+                            $barangNmUpper = strtoupper($out->barang?->barang_nm ?? '');
+                            $barangCdUpper = strtoupper($out->barang?->barang_cd ?? '');
+                            $kategoriUpper = strtoupper($out->kategori_output ?? '');
+
+                            $isBerko = str_contains($barangNmUpper, 'BERKO') 
+                                || str_contains($barangNmUpper, 'LENGKET') 
+                                || str_contains($barangCdUpper, 'BRK') 
+                                || str_contains($barangCdUpper, 'LGT') 
+                                || str_contains($kategoriUpper, 'BERKO') 
+                                || str_contains($kategoriUpper, 'BRK')
+                                || str_contains($kategoriUpper, 'LGT')
+                                || str_contains($kategoriUpper, 'LENGKET');
+
+                            if ($isBerko) {
+                                $berkoBatches[] = $bNo;
+                            } else {
+                                $mainBatches[] = $bNo;
+                            }
+                        }
+                    }
+
+                    // Fallback batch utama dari header jika outputs kosong
+                    if (empty($mainBatches) && !empty($rec->batch_wip_no) && $rec->batch_wip_no !== '-') {
+                        $mainBatches[] = $rec->batch_wip_no;
+                    }
+
+                    // Jika ada produksi Berko pada hari itu tetapi batch di output belum tercatat, ambil dari tanggal fisik
+                    if ((float)$rec->total_berko_qty > 0 && empty($berkoBatches)) {
+                        $berkoBatches[] = Carbon::parse($rec->produksi_tgl)->format('d m Y');
+                    }
+                }
+
+                $mainBatches = array_values(array_unique(array_filter($mainBatches)));
+                $berkoBatches = array_values(array_unique(array_filter($berkoBatches)));
+                $allBatches = array_values(array_unique(array_merge($mainBatches, $berkoBatches)));
+
                 $days[] = [
                     'day'                         => $day,
                     'date'                        => $dateObj->format('Y-m-d'),
@@ -231,17 +293,27 @@ class ProduksiService
                     'produksi_id'                 => $firstRec->produksi_id,
                     'produksi_ids'                => $dayRecords->pluck('produksi_id')->toArray(),
                     'produksi_no'                 => $shiftCount > 1 ? ($firstRec->produksi_no . " (+{$shiftCount} Shift)") : $firstRec->produksi_no,
+                    'primary_produksi_no'         => $firstRec->produksi_no,
                     'shift_cd'                    => $shiftCodeStr,
                     'shift_count'                 => $shiftCount,
+                    'lini_produksi'               => $liniStr,
+                    'lini_list'                   => $liniList,
+                    'batch_wip_no'                => !empty($allBatches) ? implode(', ', $allBatches) : '-',
+                    'batch_list'                  => $allBatches,
+                    'main_batches'                => $mainBatches,
+                    'berko_batches'               => $berkoBatches,
+                    'berko_batch_no'              => !empty($berkoBatches) ? implode(', ', $berkoBatches) : null,
                     'shift_records'               => $dayRecords->map(fn($r) => [
                         'produksi_id'  => $r->produksi_id,
                         'produksi_no'  => $r->produksi_no,
                         'shift_cd'     => $r->shift_cd ?? 'A',
+                        'lini_produksi'=> $r->lini_produksi ?? 'Produksi Reguler',
+                        'batch_wip_no' => $r->batch_wip_no ?? '-',
+                        'total_berko_qty' => (float) $r->total_berko_qty,
                         'total_biaya'  => (float) $r->total_biaya_produksi,
                         'total_wip'    => (float) $r->total_wip_qty,
                         'hpp_per_kg'   => (float) $r->hpp_per_kg,
                     ])->toArray(),
-                    'batch_wip_no'                => $dayRecords->pluck('batch_wip_no')->filter()->unique()->implode(', ') ?: '-',
                     'singkong_qty'                => $daySingkongQty,
                     'singkong_nilai'              => $daySingkongNilai,
                     'minyak_sawit_qty'            => $daySawitQty,
@@ -283,6 +355,8 @@ class ProduksiService
                     'berko_me_qty'                => $dayBerkoMe,
                     'total_berko_qty'             => $dayTotalBerko,
                     'berko_persen'                => $dayBerkoPersen,
+                    'berko_biasa_persen'          => $dayBerkoBiasaPersen,
+                    'berko_me_persen'             => $dayBerkoMePersen,
                     'total_wip_qty'               => $dayTotalWip,
                     'rendemen_persen'             => $dayRendemen,
                     'hpp_per_kg'                  => $dayHpp,
@@ -299,7 +373,14 @@ class ProduksiService
                     'shift_cd'                    => null,
                     'shift_count'                 => 0,
                     'shift_records'               => [],
+                    'lini_produksi'               => null,
+                    'lini_list'                   => [],
                     'batch_wip_no'                => null,
+                    'batch_list'                  => [],
+                    'main_batches'                => [],
+                    'berko_batches'               => [],
+                    'berko_batch_no'              => null,
+                    'primary_produksi_no'         => null,
                     'singkong_qty'                => 0,
                     'singkong_nilai'              => 0,
                     'minyak_sawit_qty'            => 0,
@@ -341,6 +422,8 @@ class ProduksiService
                     'berko_me_qty'                => 0,
                     'total_berko_qty'             => 0,
                     'berko_persen'                => 0,
+                    'berko_biasa_persen'          => 0,
+                    'berko_me_persen'             => 0,
                     'total_wip_qty'               => 0,
                     'rendemen_persen'             => 0,
                     'hpp_per_kg'                  => 0,
@@ -360,6 +443,15 @@ class ProduksiService
         $totals['berko_me_qty'] = (float) collect($days)->where('has_data', true)->sum('berko_me_qty');
         $totals['total_berko_qty'] = (float) collect($days)->where('has_data', true)->sum('total_berko_qty');
         $totals['total_wip_qty'] = (float) collect($days)->where('has_data', true)->sum('total_wip_qty');
+        $totals['berko_persen'] = $totals['total_wip_qty'] > 0
+            ? ($totals['total_berko_qty'] / $totals['total_wip_qty']) * 100
+            : 0;
+        $totals['berko_biasa_persen'] = $totals['total_wip_qty'] > 0
+            ? ($totals['berko_qty'] / $totals['total_wip_qty']) * 100
+            : 0;
+        $totals['berko_me_persen'] = $totals['total_wip_qty'] > 0
+            ? ($totals['berko_me_qty'] / $totals['total_wip_qty']) * 100
+            : 0;
 
         return [
             'year'    => $year,
@@ -615,14 +707,18 @@ class ProduksiService
             'bumbu_nilai'        => 0,
             'berko_bahan_qty'    => 0,
             'berko_bahan_nilai'  => 0,
-            'karton_baru_nilai'  => 0,
-            'karton_bekas_nilai' => 0,
-            'plastik_hd_nilai'   => 0,
-            'lakban_besar_nilai' => 0,
-            'lakban_kecil_nilai' => 0,
-            'tali_rafia_nilai'   => 0,
-            'varietas_singkong'  => 'STP / MGU',
-            'karton_estimasi'    => 0,
+            'karton_baru_nilai'           => 0,
+            'karton_bekas_nilai'          => 0,
+            'plastik_hd_nilai'            => 0,
+            'lakban_besar_nilai'          => 0,
+            'lakban_kecil_nilai'          => 0,
+            'tali_rafia_nilai'            => 0,
+            'sarung_tangan_plastik_nilai' => 0,
+            'sarung_tangan_plastik_qty'   => 0,
+            'sarung_tangan_kain_nilai'    => 0,
+            'sarung_tangan_kain_qty'       => 0,
+            'varietas_singkong'           => 'STP / MGU',
+            'karton_estimasi'             => 0,
         ];
 
         $varietasList = [];
@@ -653,7 +749,7 @@ class ProduksiService
                 'sisa_stok'  => $sisaStok,
             ];
 
-            if (str_contains($nm, 'BERKO') || str_starts_with($cd, 'WIP-BRK') || str_starts_with($cd, 'WIP-B')) {
+            if (str_contains($nm, 'BERKO') || str_contains($nm, 'LENGKET') || str_starts_with($cd, 'WIP-BRK') || str_starts_with($cd, 'WIP-LGT') || str_starts_with($cd, 'WIP-B')) {
                 $summary['berko_bahan_qty'] += $qty;
                 $summary['berko_bahan_nilai'] += $subtotal;
             } elseif (str_contains($nm, 'SINGKONG') || str_starts_with($cd, 'BB-SK')) {
@@ -680,6 +776,14 @@ class ProduksiService
                     $summary['karton_baru_nilai'] += $subtotal;
                 }
                 $kartonCount += (int) $qty;
+            } elseif (str_contains($nm, 'SARUNG') || str_contains($nm, 'GLOVE') || str_starts_with($cd, 'STP') || str_starts_with($cd, 'STK') || str_starts_with($cd, 'ST-')) {
+                if (str_contains($nm, 'KAIN') || str_starts_with($cd, 'STK')) {
+                    $summary['sarung_tangan_kain_nilai'] += $subtotal;
+                    $summary['sarung_tangan_kain_qty'] += $qty;
+                } else {
+                    $summary['sarung_tangan_plastik_nilai'] += $subtotal;
+                    $summary['sarung_tangan_plastik_qty'] += $qty;
+                }
             } elseif (str_contains($nm, 'PLASTIK') || str_contains($nm, 'HD')) {
                 $summary['plastik_hd_nilai'] += $subtotal;
             } elseif (str_contains($nm, 'LAKBAN')) {
@@ -746,18 +850,19 @@ class ProduksiService
         $tkTotalNilai = isset($data['tk_total_nilai']) ? (float) $data['tk_total_nilai'] : 0;
         $tkTarif = $tkJumlah > 0 ? round($tkTotalNilai / $tkJumlah, 2) : 0;
 
-        // Overhead Pabrik (FOH) - Khusus Sarung Tangan Sesuai Ketentuan Mentor
+        // Overhead Pabrik (FOH)
+        $fotocopy = (float) ($data['fotocopy_nilai'] ?? 0);
         $sarungPlastik = (float) ($data['sarung_tangan_plastik_nilai'] ?? 0);
         $sarungKain = (float) ($data['sarung_tangan_kain_nilai'] ?? 0);
-        $fotocopy = 0;
-        $qc = 0;
-        $listrik = 0;
-        $pemeliharaan = 0;
-        $penyusutan = 0;
-        $limbahPadat = 0;
-        $limbahKimia = 0;
+        $qc = (float) ($data['qc_pengawasan_nilai'] ?? 0);
+        $listrik = (float) ($data['listrik_air_telp_nilai'] ?? 0);
+        $pemeliharaan = (float) ($data['pemeliharaan_mesin_nilai'] ?? 0);
+        $penyusutan = (float) ($data['penyusutan_mesin_nilai'] ?? 0);
+        $limbahPadat = (float) ($data['limbah_padat_nilai'] ?? 0);
+        $limbahKimia = (float) ($data['limbah_kimia_nilai'] ?? 0);
 
-        $totalOverheadNilai = $sarungPlastik + $sarungKain;
+        $totalOverheadNilai = $fotocopy + $sarungPlastik + $sarungKain + $qc + $listrik +
+            $pemeliharaan + $penyusutan + $limbahPadat + $limbahKimia;
 
         // Total Biaya Produksi (Kolom Kuning)
         $totalBiayaProduksi = $totalBahanNilai + $cngNilai + $tkTotalNilai + $totalOverheadNilai;
@@ -796,7 +901,7 @@ class ProduksiService
                         elseif (str_contains($cd, 'UCM') || str_contains($nm, 'UCAMP') || str_contains($nm, 'U/CAMP') || str_contains($nm, 'CAMPUR')) { $ucampQty += $itemKg; $isMatched = true; }
                         elseif (str_contains($cd, 'BLQ') || str_contains($nm, 'BALQI') || str_contains($nm, 'BAL Q') || str_contains($nm, 'BAL-Q')) { $balqiQty += $itemKg; $isMatched = true; }
                         elseif (str_contains($nm, 'BALO') || str_contains($nm, 'GELOMBANG')) { $baloQty += $itemKg; $isMatched = true; }
-                        elseif (str_contains($cd, 'BRK-ME') || str_contains($nm, 'BERKO ME')) { $berkoMeQty += $itemKg; $isMatched = true; }
+                        elseif (str_contains($cd, 'BRK-ME') || str_contains($nm, 'BERKO ME') || str_contains($cd, 'LGT') || str_contains($nm, 'LENGKET')) { $berkoMeQty += $itemKg; $isMatched = true; }
                         elseif (str_contains($cd, 'BRK') || str_contains($nm, 'BERKO')) { $berkoQty += $itemKg; $isMatched = true; }
                     }
                 }
@@ -827,10 +932,46 @@ class ProduksiService
             $totalWipQty = $effectiveOutputKg;
         }
 
-        // FOH hanya Sarung Tangan (Plastik & Kain) yang diinput sesuai nota belanja fisik.
-        // Komponen FOH lainnya (QC, Listrik, Pemeliharaan, Penyusutan, Limbah, Fotocopy) ditiadakan.
+        // Penerapan tarif standar pengali FOH per Kg WIP (berbasis database master dinamis mst_tarif_produksi)
+        if ($effectiveOutputKg > 0) {
+            $fohRates = $this->tarifService->getFohRates();
+
+            if ($qc <= 0 && (!isset($data['qc_pengawasan_nilai']) || $data['qc_pengawasan_nilai'] === '')) {
+                $qc = round($effectiveOutputKg * $fohRates['qc'], 2);
+            }
+            if ($listrik <= 0 && (!isset($data['listrik_air_telp_nilai']) || $data['listrik_air_telp_nilai'] === '')) {
+                $listrik = round($effectiveOutputKg * $fohRates['listrik'], 2);
+            }
+            if ($pemeliharaan <= 0 && (!isset($data['pemeliharaan_mesin_nilai']) || $data['pemeliharaan_mesin_nilai'] === '')) {
+                $pemeliharaan = round($effectiveOutputKg * $fohRates['pemeliharaan'], 2);
+            }
+            if ($penyusutan <= 0 && (!isset($data['penyusutan_mesin_nilai']) || $data['penyusutan_mesin_nilai'] === '')) {
+                $penyusutan = round($effectiveOutputKg * $fohRates['penyusutan'], 2);
+            }
+            if ($limbahKimia <= 0 && (!isset($data['limbah_kimia_nilai']) || $data['limbah_kimia_nilai'] === '')) {
+                $limbahKimia = round($effectiveOutputKg * $fohRates['kimia'], 2);
+            }
+            if ($fotocopy <= 0 && (!isset($data['fotocopy_nilai']) || $data['fotocopy_nilai'] === '')) {
+                // Rumus Asli Excel PT Mirasa: =(AF/6)*2*$V$2
+                $kartonCount = (float) ($data['qty_karton'] ?? 0);
+                if ($kartonCount <= 0 && $iflQty > 0) {
+                    $kartonCount = $iflQty / 6.0;
+                }
+                $tarifFotocopy = (float) ($fohRates['fotocopy'] ?? 28.00);
+                $fotocopy = round($kartonCount * 2 * $tarifFotocopy, 2);
+            }
+            if ($limbahPadat <= 0 && (!isset($data['limbah_padat_nilai']) || $data['limbah_padat_nilai'] === '')) {
+                $limbahPadat = $fohRates['limbah_padat'];
+            }
+
+            $totalOverheadNilai = $fotocopy + $sarungPlastik + $sarungKain + $qc + $listrik +
+                $pemeliharaan + $penyusutan + $limbahPadat + $limbahKimia;
+            $totalBiayaProduksi = $totalBahanNilai + $cngNilai + $tkTotalNilai + $totalOverheadNilai;
+        }
 
         $berkoPersen = $totalWipQty > 0 ? ($totalBerkoQty / $totalWipQty) * 100 : 0;
+        $berkoBiasaPersen = $totalWipQty > 0 ? ($berkoQty / $totalWipQty) * 100 : 0;
+        $berkoMePersen = $totalWipQty > 0 ? ($berkoMeQty / $totalWipQty) * 100 : 0;
         $rendemenPersen = $singkongQty > 0 ? ($effectiveOutputKg / $singkongQty) * 100 : 0;
         $hppPerKg = $effectiveOutputKg > 0 ? ($totalBiayaProduksi / $effectiveOutputKg) : 0;
 
@@ -858,15 +999,15 @@ class ProduksiService
             'tk_training_org'             => $tkTraining,
             'tk_tarif_per_org'            => $tkTarif,
             'tk_total_nilai'              => $tkTotalNilai,
-            'fotocopy_nilai'              => 0,
+            'fotocopy_nilai'              => $fotocopy,
             'sarung_tangan_plastik_nilai' => $sarungPlastik,
             'sarung_tangan_kain_nilai'    => $sarungKain,
-            'qc_pengawasan_nilai'         => 0,
-            'listrik_air_telp_nilai'      => 0,
-            'pemeliharaan_mesin_nilai'    => 0,
-            'penyusutan_mesin_nilai'      => 0,
-            'limbah_padat_nilai'          => 0,
-            'limbah_kimia_nilai'          => 0,
+            'qc_pengawasan_nilai'         => $qc,
+            'listrik_air_telp_nilai'      => $listrik,
+            'pemeliharaan_mesin_nilai'    => $pemeliharaan,
+            'penyusutan_mesin_nilai'      => $penyusutan,
+            'limbah_padat_nilai'          => $limbahPadat,
+            'limbah_kimia_nilai'          => $limbahKimia,
             'total_overhead_nilai'        => $totalOverheadNilai,
             'total_biaya_produksi'        => $totalBiayaProduksi,
             'ifl_qty'                     => $iflQty,
@@ -880,6 +1021,8 @@ class ProduksiService
             'berko_me_qty'                => $berkoMeQty,
             'total_berko_qty'             => $totalBerkoQty,
             'berko_persen'                => round($berkoPersen, 2),
+            'berko_biasa_persen'          => round($berkoBiasaPersen, 2),
+            'berko_me_persen'             => round($berkoMePersen, 2),
             'total_wip_qty'               => $totalWipQty,
             'rendemen_persen'             => round($rendemenPersen, 2),
             'hpp_per_kg'                  => round($hppPerKg, 2),
@@ -1042,6 +1185,7 @@ class ProduksiService
                     $barangCdUpper = strtoupper($barang->barang_cd);
                     $barangNmUpper = strtoupper($barang->barang_nm);
                     $isCurahItem = str_contains($barangCdUpper, 'BRK') || str_contains($barangNmUpper, 'BERKO')
+                        || str_contains($barangCdUpper, 'LGT') || str_contains($barangNmUpper, 'LENGKET')
                         || str_contains($barangCdUpper, 'ASB') || str_contains($barangNmUpper, 'BARCO')
                         || str_contains($barangCdUpper, 'ASW') || str_contains($barangNmUpper, 'SAWIT')
                         || str_contains($barangCdUpper, 'NSL') || str_contains($barangNmUpper, 'NO SALT')
@@ -1400,9 +1544,16 @@ class ProduksiService
                     }
                 }
 
-                // 3. Rekalkulasi Biaya Overhead Pabrik (Hanya Sarung Tangan)
-                $record->total_overhead_nilai = (float) $record->sarung_tangan_plastik_nilai +
-                    (float) $record->sarung_tangan_kain_nilai;
+                // 3. Rekalkulasi Biaya Overhead Pabrik
+                $record->total_overhead_nilai = (float) $record->fotocopy_nilai +
+                    (float) $record->sarung_tangan_plastik_nilai +
+                    (float) $record->sarung_tangan_kain_nilai +
+                    (float) $record->qc_pengawasan_nilai +
+                    (float) $record->listrik_air_telp_nilai +
+                    (float) $record->pemeliharaan_mesin_nilai +
+                    (float) $record->penyusutan_mesin_nilai +
+                    (float) $record->limbah_padat_nilai +
+                    (float) $record->limbah_kimia_nilai;
 
                 // 4. Rekalkulasi Total Biaya Produksi (Bahan + CNG + TK + FOH)
                 $record->total_biaya_produksi = (float) $record->total_bahan_nilai +

@@ -257,6 +257,22 @@
                     </div>
                 </div>
 
+                {{-- BANNER PERINGATAN OVER PO TERPADU --}}
+                <div id="bannerTerimaOverPo" style="display: none; background: #fffbeb; border: 1.5px solid #f59e0b; border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1rem; align-items: flex-start; gap: 0.75rem; box-shadow: 0 1px 3px rgba(245, 158, 11, 0.1);">
+                    <div style="width: 28px; height: 28px; border-radius: 50%; background: #fef3c7; color: #b45309; display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; font-weight: 700;">
+                        ⚠️
+                    </div>
+                    <div style="flex: 1; font-size: 0.8125rem; color: #92400e;">
+                        <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                            <strong style="color: #78350f; font-size: 0.85rem;">Peringatan: Kuantitas Fisik Melebihi Sisa Pesanan PO (Over-Delivery)</strong>
+                            <span id="badgeOverPoCount" class="badge" style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a; font-size: 0.7rem; font-weight: 700;">1 Item Over</span>
+                        </div>
+                        <div id="bannerTerimaOverPoText" style="margin-top: 3px; line-height: 1.4;">
+                            Terdapat barang dengan kuantitas terima fisik melebihi sisa pesanan PO. Stok fisik tetap akan dicatat 100% akurat sesuai barang riil.
+                        </div>
+                    </div>
+                </div>
+
                 <div>
                     <table class="excel-grid-table" id="tableTerimaItems" style="width: 100%;">
                         <thead>
@@ -290,15 +306,20 @@
                                             );
                                             $batchPrefix = ($acronym ?: 'BRG') . '-';
                                         @endphp
-                                        <tr class="terima-row" data-index="{{ $idx }}" data-sisa="{{ (float) $pdtl->sisa_qty }}">
+                                        <tr class="terima-row" data-index="{{ $idx }}" data-sisa="{{ (float) $pdtl->sisa_qty }}" data-pesan="{{ (float) $pdtl->pesan_qty }}" data-barang-nm="{{ $pdtl->barang?->barang_nm }}">
                                             <td class="row-num" style="font-weight: 700; text-align: center; color: #475569; background: #f1f5f9;">{{ $idx + 1 }}</td>
                                             <td>
                                                 <input type="hidden" name="items[{{ $idx }}][podtl_id]" value="{{ $pdtl->podtl_id }}">
                                                 <input type="hidden" name="items[{{ $idx }}][barang_id]" value="{{ $pdtl->barang_id }}" class="item-barang-id">
-                                                <strong style="color: #0f172a; display: block; font-size: 0.85rem;">{{ $pdtl->barang?->barang_nm }}</strong>
+                                                <strong style="color: #0f172a; display: block; font-size: 0.85rem;" class="item-barang-name">{{ $pdtl->barang?->barang_nm }}</strong>
                                                 <span style="font-size: 0.725rem; color: #64748b;">
                                                     Pesanan: {{ number_format((float) $pdtl->pesan_qty, 2) }} | <strong>Sisa: {{ number_format((float) $pdtl->sisa_qty, 2) }}</strong>
                                                 </span>
+                                                <div class="row-over-po-badge" style="display: none; margin-top: 3px;">
+                                                    <span class="badge" style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a; font-size: 0.7rem; font-weight: 700; padding: 1px 5px; border-radius: 4px; display: inline-flex; align-items: center; gap: 3px;">
+                                                        ⚠️ Over PO (<span class="over-diff-text">+0</span>)
+                                                    </span>
+                                                </div>
                                             </td>
                                             <td>
                                                 <input type="text" name="items[{{ $idx }}][batch_no]" value="{{ old("items.{$idx}.batch_no", $batchPrefix) }}" placeholder="{{ $batchPrefix }}... (ketik nomor batch dari faktur supplier)" class="form-control item-batch" style="font-family: monospace; font-weight: 700; color: #0284c7; width: 100%;" required>
@@ -314,7 +335,7 @@
                                                 </select>
                                             </td>
                                             <td>
-                                                <input type="number" step="0.0001" min="0" max="{{ $pdtl->sisa_qty }}" name="items[{{ $idx }}][terima_qty]" value="{{ (float) $pdtl->sisa_qty }}" class="form-control item-terima-qty" style="text-align: right; font-weight: 700;" oninput="calculateTotalTerima()" required>
+                                                <input type="number" step="0.0001" min="0" name="items[{{ $idx }}][terima_qty]" value="{{ (float) $pdtl->sisa_qty }}" class="form-control item-terima-qty" style="text-align: right; font-weight: 700;" oninput="calculateTotalTerima()" required>
                                             </td>
                                             <td>
                                                 <input type="number" step="0.0001" min="0" name="items[{{ $idx }}][reject_qty]" value="0" class="form-control item-reject-qty" placeholder="0" style="text-align: right;" oninput="calculateTotalTerima()">
@@ -408,9 +429,9 @@
                                     </td>
                                     <td>
                                         <select name="items[0][grade_cd]" class="form-control" style="font-size: 0.8rem;">
-                                            <option value="A" selected>Grade A Super</option>
-                                            <option value="B">Grade B Standar</option>
-                                            <option value="REJECT">Reject / Afkir</option>
+                                                <option value="A" selected>Grade A Super</option>
+                                                <option value="B">Grade B Standar</option>
+                                                <option value="REJECT">Reject / Afkir</option>
                                         </select>
                                     </td>
                                     <td>
@@ -543,6 +564,7 @@
 
 @include('gudang.terima.partials.modal-supplier-picker')
 @include('gudang.terima.partials.modal-qc-picker')
+@include('gudang.terima.partials.modal-confirm-over-po')
 
 @php
     $suppliersJson = $supplierList->map(function($sup) {
@@ -568,10 +590,13 @@
     @if(old('supplier_id', $selectedPo?->supplier_id))
         window.oldSupplierId = {{ old('supplier_id', $selectedPo?->supplier_id) }};
     @endif
+    @if(old('qc_id', request('qc_id')))
+        window.initialQcId = {{ (int) old('qc_id', request('qc_id')) }};
+    @endif
 </script>
 <script src="{{ asset('js/gudang/terima/terima-create.js') }}"></script>
 <script>
-    if (window.oldSupplierId) {
+    if (window.oldSupplierId && !window.initialQcId) {
         selectSupplier(window.oldSupplierId);
     }
 </script>

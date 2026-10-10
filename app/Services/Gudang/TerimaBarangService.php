@@ -136,6 +136,9 @@ class TerimaBarangService
                     continue; // Skip jika terima dan reject sama-sama 0
                 }
 
+                // Kuantitas Netto bersih yang lolos & masuk gudang
+                $nettoQty = max(0, round($terimaQty - $rejectQty, 4));
+
                 $barangId = (int) $item['barang_id'];
                 $hargaNominal = (float) ($item['harga_nominal'] ?? 0);
                 $diskonPersen = (float) ($item['diskon_persen'] ?? 0);
@@ -145,10 +148,10 @@ class TerimaBarangService
                 // Potongan khusus per-item (Rp)
                 $potonganItem = max(0, (float) ($item['potongan_nominal'] ?? 0));
                 
-                // Subtotal Netto = (Qty * Harga setelah diskon) - Potongan Item (hanya dari kuantitas yang diterima)
-                $subtotalNetto = max(0, round(($terimaQty * $hargaSetelahDiskon) - $potonganItem, 4));
+                // Subtotal Netto = (Netto Qty * Harga setelah diskon) - Potongan Item (hanya dari kuantitas bersih yang diterima)
+                $subtotalNetto = max(0, round(($nettoQty * $hargaSetelahDiskon) - $potonganItem, 4));
                 // Harga perolehan bersih unit untuk HPP Kartu Stok FIFO
-                $hargaNetto = $terimaQty > 0 ? round($subtotalNetto / $terimaQty, 4) : 0;
+                $hargaNetto = $nettoQty > 0 ? round($subtotalNetto / $nettoQty, 4) : 0;
 
                 // Pajak PPN per item (Bisa NON_PPN atau PPN_11)
                 $itemPpnTipe = ($item['ppn_tipe'] ?? 'NON_PPN') === 'PPN_11' ? 'PPN_11' : 'NON_PPN';
@@ -156,7 +159,7 @@ class TerimaBarangService
                 $itemPpnNominal = ($itemPpnTipe === 'PPN_11') ? round($subtotalNetto * 0.11, 2) : 0.00;
                 $subtotalTagihan = round($subtotalNetto + $itemPpnNominal, 2);
 
-                if ($terimaQty > 0) {
+                if ($nettoQty > 0) {
                     if ($itemPpnTipe === 'PPN_11') {
                         $hasPpn = true;
                         $totalDppPpn += $subtotalNetto;
@@ -166,7 +169,7 @@ class TerimaBarangService
                     }
 
                     $subtotalNominal += $subtotalNetto;
-                    $totalDiskonNominal += round($terimaQty * $diskonNominalUnit, 4);
+                    $totalDiskonNominal += round($nettoQty * $diskonNominalUnit, 4);
                     $totalItemPotongan += $potonganItem;
                     $totalPpnNominal += $itemPpnNominal;
                 }
@@ -282,13 +285,14 @@ class TerimaBarangService
                     'catatan_txt'      => $row['catatan_txt'],
                 ]);
 
-                // Suntik stok fisik & kartu stok HANYA jika kuantitas terima > 0
-                if ($row['terima_qty'] > 0) {
+                // Suntik stok fisik & kartu stok HANYA jika kuantitas netto > 0 (barang afkir/reject tidak masuk stok)
+                $nettoQtyRow = max(0, (float) $row['terima_qty'] - (float) ($row['reject_qty'] ?? 0));
+                if ($nettoQtyRow > 0) {
                     $this->stokService->addStock(
                         $gudangId,
                         $barangId,
                         $batchNo,
-                        $row['terima_qty'],
+                        $nettoQtyRow,
                         $row['expired_tgl'],
                         $terimaNo,
                         "Penerimaan Barang Fisik No {$terimaNo}",
@@ -300,7 +304,7 @@ class TerimaBarangService
                     if (!empty($dtl->podtl_id)) {
                         $poDtl = DatPoDtl::find($dtl->podtl_id);
                         if ($poDtl) {
-                            $poDtl->terima_qty = (float) $poDtl->terima_qty + $row['terima_qty'];
+                            $poDtl->terima_qty = (float) $poDtl->terima_qty + $nettoQtyRow;
                             $poDtl->save();
                         }
                     }
@@ -372,22 +376,25 @@ class TerimaBarangService
 
             // 1. Rollback stok lama untuk setiap item detail
             foreach ($terima->details as $dtl) {
-                $this->stokService->deductStock(
-                    $terima->gudang_id,
-                    $dtl->barang_id,
-                    $dtl->batch_no,
-                    (float) $dtl->terima_qty,
-                    $terima->terima_no,
-                    "Penyesuaian (Rollback Edit) Dokumen Penerimaan {$terima->terima_no}",
-                    $dtl->grade_cd ?? 'A'
-                );
+                $oldNetto = max(0, (float) $dtl->terima_qty - (float) ($dtl->reject_qty ?? 0));
+                if ($oldNetto > 0) {
+                    $this->stokService->deductStock(
+                        $terima->gudang_id,
+                        $dtl->barang_id,
+                        $dtl->batch_no,
+                        $oldNetto,
+                        $terima->terima_no,
+                        "Penyesuaian (Rollback Edit) Dokumen Penerimaan {$terima->terima_no}",
+                        $dtl->grade_cd ?? 'A'
+                    );
 
-                // Kembalikan terima_qty di PO Detail jika terkait PO lama
-                if (!empty($dtl->podtl_id)) {
-                    $poDtl = DatPoDtl::find($dtl->podtl_id);
-                    if ($poDtl) {
-                        $poDtl->terima_qty = max(0, (float) $poDtl->terima_qty - (float) $dtl->terima_qty);
-                        $poDtl->save();
+                    // Kembalikan terima_qty di PO Detail jika terkait PO lama
+                    if (!empty($dtl->podtl_id)) {
+                        $poDtl = DatPoDtl::find($dtl->podtl_id);
+                        if ($poDtl) {
+                            $poDtl->terima_qty = max(0, (float) $poDtl->terima_qty - $oldNetto);
+                            $poDtl->save();
+                        }
                     }
                 }
             }
@@ -422,6 +429,9 @@ class TerimaBarangService
                     continue;
                 }
 
+                // Kuantitas Netto bersih yang lolos & masuk gudang
+                $nettoQty = max(0, round($terimaQty - $rejectQty, 4));
+
                 $barangId = (int) $item['barang_id'];
                 $hargaNominal = (float) ($item['harga_nominal'] ?? 0);
                 $diskonPersen = (float) ($item['diskon_persen'] ?? 0);
@@ -429,15 +439,15 @@ class TerimaBarangService
                 $hargaSetelahDiskon = max(0, $hargaNominal - $diskonNominalUnit);
 
                 $potonganItem = max(0, (float) ($item['potongan_nominal'] ?? 0));
-                $subtotalNetto = max(0, round(($terimaQty * $hargaSetelahDiskon) - $potonganItem, 4));
-                $hargaNetto = $terimaQty > 0 ? round($subtotalNetto / $terimaQty, 4) : 0;
+                $subtotalNetto = max(0, round(($nettoQty * $hargaSetelahDiskon) - $potonganItem, 4));
+                $hargaNetto = $nettoQty > 0 ? round($subtotalNetto / $nettoQty, 4) : 0;
 
                 $itemPpnTipe = ($item['ppn_tipe'] ?? 'NON_PPN') === 'PPN_11' ? 'PPN_11' : 'NON_PPN';
                 $itemPpnPersen = ($itemPpnTipe === 'PPN_11') ? 11.00 : 0.00;
                 $itemPpnNominal = ($itemPpnTipe === 'PPN_11') ? round($subtotalNetto * 0.11, 2) : 0.00;
                 $subtotalTagihan = round($subtotalNetto + $itemPpnNominal, 2);
 
-                if ($terimaQty > 0) {
+                if ($nettoQty > 0) {
                     if ($itemPpnTipe === 'PPN_11') {
                         $hasPpn = true;
                         $totalDppPpn += $subtotalNetto;
@@ -447,7 +457,7 @@ class TerimaBarangService
                     }
 
                     $subtotalNominal += $subtotalNetto;
-                    $totalDiskonNominal += round($terimaQty * $diskonNominalUnit, 4);
+                    $totalDiskonNominal += round($nettoQty * $diskonNominalUnit, 4);
                     $totalItemPotongan += $potonganItem;
                     $totalPpnNominal += $itemPpnNominal;
                 }
@@ -557,13 +567,14 @@ class TerimaBarangService
                     'catatan_txt'      => $row['catatan_txt'],
                 ]);
 
-                // Suntik stok fisik & kartu stok HANYA jika kuantitas terima > 0
-                if ($row['terima_qty'] > 0) {
+                // Suntik stok fisik & kartu stok HANYA jika kuantitas netto > 0
+                $nettoQtyRow = max(0, (float) $row['terima_qty'] - (float) ($row['reject_qty'] ?? 0));
+                if ($nettoQtyRow > 0) {
                     $this->stokService->addStock(
                         $gudangId,
                         $barangId,
                         $batchNo,
-                        $row['terima_qty'],
+                        $nettoQtyRow,
                         $row['expired_tgl'],
                         $terima->terima_no,
                         "Penerimaan Barang Fisik No {$terima->terima_no} (Update)",
@@ -575,7 +586,7 @@ class TerimaBarangService
                     if (!empty($dtl->podtl_id)) {
                         $poDtl = DatPoDtl::find($dtl->podtl_id);
                         if ($poDtl) {
-                            $poDtl->terima_qty = (float) $poDtl->terima_qty + $row['terima_qty'];
+                            $poDtl->terima_qty = (float) $poDtl->terima_qty + $nettoQtyRow;
                             $poDtl->save();
                         }
                     }
@@ -639,22 +650,25 @@ class TerimaBarangService
 
             // 1. Kurangi kembali stok untuk setiap item detail (validasi ketersediaan batch otomatis oleh deductStock)
             foreach ($terima->details as $dtl) {
-                $this->stokService->deductStock(
-                    $terima->gudang_id,
-                    $dtl->barang_id,
-                    $dtl->batch_no,
-                    (float) $dtl->terima_qty,
-                    $terima->terima_no,
-                    "Pembatalan Dokumen Penerimaan Barang No {$terima->terima_no}",
-                    $dtl->grade_cd ?? 'A'
-                );
+                $dtlNetto = max(0, (float) $dtl->terima_qty - (float) ($dtl->reject_qty ?? 0));
+                if ($dtlNetto > 0) {
+                    $this->stokService->deductStock(
+                        $terima->gudang_id,
+                        $dtl->barang_id,
+                        $dtl->batch_no,
+                        $dtlNetto,
+                        $terima->terima_no,
+                        "Pembatalan Dokumen Penerimaan Barang No {$terima->terima_no}",
+                        $dtl->grade_cd ?? 'A'
+                    );
 
-                // 2. Kembalikan terima_qty di PO Detail jika terkait PO
-                if (!empty($dtl->podtl_id)) {
-                    $poDtl = DatPoDtl::find($dtl->podtl_id);
-                    if ($poDtl) {
-                        $poDtl->terima_qty = max(0, (float) $poDtl->terima_qty - (float) $dtl->terima_qty);
-                        $poDtl->save();
+                    // 2. Kembalikan terima_qty di PO Detail jika terkait PO
+                    if (!empty($dtl->podtl_id)) {
+                        $poDtl = DatPoDtl::find($dtl->podtl_id);
+                        if ($poDtl) {
+                            $poDtl->terima_qty = max(0, (float) $poDtl->terima_qty - $dtlNetto);
+                            $poDtl->save();
+                        }
                     }
                 }
             }

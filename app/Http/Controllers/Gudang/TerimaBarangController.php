@@ -99,10 +99,16 @@ class TerimaBarangController extends Controller
     public function create(Request $request): View
     {
         $selectedPoId = $request->query('po_id');
+        $selectedQcId = $request->query('qc_id');
         $selectedPo = null;
 
         if ($selectedPoId) {
             $selectedPo = $this->poService->getById((int) $selectedPoId);
+        } elseif ($selectedQcId) {
+            $qcHdr = \App\Models\Gudang\DatQcInboundHdr::find((int) $selectedQcId);
+            if ($qcHdr && $qcHdr->po_id) {
+                $selectedPo = $this->poService->getById((int) $qcHdr->po_id);
+            }
         }
 
         $supplierList = MstSupplier::active()->with('jenisSupplier')->orderBy('supplier_nm')->get();

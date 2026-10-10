@@ -220,7 +220,8 @@
                         $diskonPct = (float) ($item->diskon_persen ?? 0);
                         $potonganItem = (float) ($item->potongan_nominal ?? 0);
                         $hargaNet = (float) ($item->harga_netto ?: ($hargaAwal * (1 - ($diskonPct / 100))));
-                        $subNet = (float) ($item->subtotal_netto ?: max(0, ((float) $item->terima_qty * $hargaNet) - $potonganItem));
+                        $itemNetto = max(0, (float) $item->terima_qty - (float) ($item->reject_qty ?? 0));
+                        $subNet = (float) ($item->subtotal_netto ?: max(0, ($itemNetto * $hargaNet) - $potonganItem));
                         $isItemPpn = ($item->ppn_tipe === 'PPN_11');
                         $tagihanItem = (float) ($item->subtotal_tagihan ?: ($subNet + ($isItemPpn ? round($subNet * 0.11) : 0)));
                     @endphp
@@ -248,10 +249,10 @@
                             </span>
                         </td>
                         <td style="text-align: right; font-weight: 700; font-size: 0.95rem; color: #047857;">
-                            + {{ number_format((float) $item->terima_qty, 2, ',', '.') }}
+                            + {{ number_format($itemNetto, 2, ',', '.') }}
                             @if ((float) $item->reject_qty > 0)
                                 <div style="font-size: 0.725rem; color: #dc2626; font-weight: 700; margin-top: 2px;">
-                                    Ditolak: {{ number_format((float) $item->reject_qty, 2, ',', '.') }}
+                                    Afkir: {{ number_format((float) $item->reject_qty, 2, ',', '.') }} (Bruto: {{ number_format((float) $item->terima_qty, 2, ',', '.') }})
                                 </div>
                             @endif
                         </td>

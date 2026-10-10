@@ -22,6 +22,8 @@ class StorePemakaianRequest extends FormRequest
             'items'            => ['required', 'array', 'min:1'],
             'items.*.barang_id'=> ['required', 'exists:mst_barang,barang_id'],
             'items.*.batch_no' => ['required', 'string', 'max:100'],
+            'items.*.grade_cd' => ['nullable', 'string', 'max:10'],
+            'items.*.stok_id'  => ['nullable', 'integer'],
             'items.*.qty_keluar' => ['required', 'numeric', 'min:0.0001'],
             'items.*.harga_satuan' => ['nullable', 'numeric', 'min:0'],
             'items.*.keterangan_txt' => ['nullable', 'string', 'max:255'],

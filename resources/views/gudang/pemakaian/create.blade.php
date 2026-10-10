@@ -80,6 +80,16 @@
         border-color: #0284c7;
         box-shadow: 0 1px 2px rgba(2, 132, 199, 0.2);
     }
+    .btn-chip-grade-a.active {
+        background: #059669 !important;
+        color: #ffffff !important;
+        border-color: #059669 !important;
+    }
+    .btn-chip-grade-b.active {
+        background: #d97706 !important;
+        color: #ffffff !important;
+        border-color: #d97706 !important;
+    }
 </style>
 
 @section('content')
@@ -282,7 +292,7 @@
                             <tr>
                                 <th style="width: 35px; text-align: center;">No</th>
                                 <th style="min-width: 240px;">Kategori &amp; Nama Bahan Produksi <span style="color:#ef4444;">*</span></th>
-                                <th style="min-width: 220px;">Pilih Batch (Sisa Stok FIFO) <span style="color:#ef4444;">*</span></th>
+                                <th style="min-width: 240px;">Pilihan Grade &amp; Batch (FIFO) <span style="color:#ef4444;">*</span></th>
                                 <th style="width: 115px; text-align: right;">Qty Keluar <span style="color:#ef4444;">*</span></th>
                                 <th style="width: 65px; text-align: center;">Satuan</th>
                                 <th style="width: 125px; text-align: right;">Harga Satuan (Rp)</th>
@@ -297,6 +307,14 @@
                             <tr style="border-top: 2px solid #cbd5e1; font-weight: 700; background: #f8fafc;">
                                 <td colspan="3" style="padding: 0.65rem 0.75rem; text-align: right; color: #475569; font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.05em;">
                                     Total Akumulasi Fisik &amp; HPP:
+                                    <span style="margin-left: 0.65rem; text-transform: none; font-size: 0.75rem; display: inline-flex; gap: 0.35rem; vertical-align: middle;">
+                                        <span style="background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; padding: 2px 7px; border-radius: 4px; font-weight: 700;">
+                                            🟢 Grade A: <strong id="footGradeAQty" style="font-family: monospace;">0,00</strong>
+                                        </span>
+                                        <span style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a; padding: 2px 7px; border-radius: 4px; font-weight: 700;">
+                                            🟡 Grade B: <strong id="footGradeBQty" style="font-family: monospace;">0,00</strong>
+                                        </span>
+                                    </span>
                                 </td>
                                 <td style="padding: 0.65rem 0.5rem; text-align: right; color: #dc2626; font-family: monospace; font-size: 0.95rem; font-weight: 700;" id="grandTotalQty">
                                     0,00
@@ -351,6 +369,28 @@
                         <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 0.4rem; border-top: 1px dashed #e2e8f0;">
                             <span style="color: #64748b;">Tujuan / SPK:</span>
                             <strong id="sideTujuanName" style="color: #0f172a; font-size: 0.8rem; max-width: 150px; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">-</strong>
+                        </div>
+
+                        {{-- BREAKDOWN REKAPITULASI GRADE A & GRADE B --}}
+                        <div style="padding: 0.55rem 0.65rem; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 5px; margin-top: 0.2rem;">
+                            <div style="font-size: 0.7rem; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.35rem; display: flex; justify-content: space-between;">
+                                <span>Pemakaian per Grade:</span>
+                                <span style="color: #94a3b8; font-weight: normal;">(Bahan Baku)</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; padding: 0.2rem 0; border-bottom: 1px dashed #f1f5f9;">
+                                <span style="display: inline-flex; align-items: center; gap: 0.3rem; color: #065f46; font-weight: 600;">
+                                    <span style="width: 7px; height: 7px; border-radius: 50%; background: #10b981; display: inline-block;"></span>
+                                    Grade A (Super)
+                                </span>
+                                <strong id="sideGradeAQty" style="color: #065f46; font-family: monospace;">0,00 Kg</strong>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; padding-top: 0.2rem;">
+                                <span style="display: inline-flex; align-items: center; gap: 0.3rem; color: #b45309; font-weight: 600;">
+                                    <span style="width: 7px; height: 7px; border-radius: 50%; background: #f59e0b; display: inline-block;"></span>
+                                    Grade B (Standar)
+                                </span>
+                                <strong id="sideGradeBQty" style="color: #b45309; font-family: monospace;">0,00 Kg</strong>
+                            </div>
                         </div>
 
                         {{-- HIGHLIGHT TOTAL QTY KELUAR --}}
@@ -549,6 +589,47 @@
         });
     }
 
+    function setRowGradeFilter(btn, grade) {
+        const group = btn.closest('.grade-pill-group');
+        if (group) {
+            group.querySelectorAll('.btn-chip').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }
+
+        const row = btn.closest('tr');
+        const batchSelect = row.querySelector('.batch-select');
+        const batches = row._allBatches || [];
+
+        if (batches.length === 0) return;
+
+        // Filter batches berdasarkan grade
+        const filtered = grade ? batches.filter(b => (b.grade_cd || 'A') === grade) : batches;
+
+        if (filtered.length === 0) {
+            batchSelect.innerHTML = `<option value="">(Tidak ada stok Grade ${grade} aktif di gudang)</option>`;
+            row.querySelector('.batch-info').innerHTML = `<span style="color: #dc2626; font-weight: 700; background: #fee2e2; padding: 0.2rem 0.5rem; border-radius: 4px;">Tidak ada stok fisik Grade ${grade} di gudang ini.</span>`;
+            row.querySelector('.grade-input').value = grade;
+            row.querySelector('.stok-id-input').value = '';
+            calcRow(batchSelect);
+            return;
+        }
+
+        let html = '';
+        filtered.forEach((b, idx) => {
+            const isTop = (idx === 0);
+            const prefix = isTop ? '⭐ [FIFO] ' : '';
+            const gCd = (b.grade_cd || 'A').toUpperCase();
+            const gradeBadge = (gCd === 'A') ? '🟢 Grade A' : ((gCd === 'B') ? '🟡 Grade B' : `Grade ${gCd}`);
+            const expInfo = b.expired_tgl ? ` | Exp: ${b.expired_tgl}` : '';
+            const tglTerima = b.tgl_terima ? ` | Masuk: ${b.tgl_terima}` : '';
+            html += `<option value="${b.batch_no}" data-stok-id="${b.stok_id || ''}" data-grade="${gCd}" data-sisa="${b.sisa_qty}" data-harga="${b.harga_satuan || 0}" data-masuk="${b.tgl_terima}" data-exp="${b.expired_tgl || '-'}" ${isTop ? 'selected' : ''}>
+                ${prefix}${b.batch_no} • [${gradeBadge}] (Sisa: ${parseFloat(b.sisa_qty).toLocaleString('id-ID')})${tglTerima}${expInfo}
+            </option>`;
+        });
+        batchSelect.innerHTML = html;
+        onBatchSelect(batchSelect);
+    }
+
     function addRow(initialCategory = '') {
         const tbody = document.getElementById('itemsBody');
         const tr = document.createElement('tr');
@@ -572,6 +653,11 @@
                 </select>
             </td>
             <td style="padding: 0.45rem 0.5rem;">
+                <div class="grade-pill-group" style="display: flex; gap: 0.25rem; margin-bottom: 0.35rem; align-items: center; flex-wrap: nowrap;">
+                    <button type="button" class="btn-chip active" onclick="setRowGradeFilter(this, '')">Semua</button>
+                    <button type="button" class="btn-chip btn-chip-grade-a" onclick="setRowGradeFilter(this, 'A')">🟢 Grade A</button>
+                    <button type="button" class="btn-chip btn-chip-grade-b" onclick="setRowGradeFilter(this, 'B')">🟡 Grade B</button>
+                </div>
                 <input type="hidden" name="items[${rowIndex}][grade_cd]" class="grade-input" value="A">
                 <input type="hidden" name="items[${rowIndex}][stok_id]" class="stok-id-input" value="">
                 <select name="items[${rowIndex}][batch_no]" class="form-control batch-select" style="font-size: 0.85rem;" required onchange="onBatchSelect(this)">
@@ -633,35 +719,51 @@
         const itemCat = itemObj?.kategori_kelompok || '';
         const barangOptions = renderBarangOptions(item.barang_id, itemCat);
 
+        tr._allBatches = item.all_batches || [];
+
+        const curGrade = (item.grade_cd || 'A').toUpperCase();
+
         let batchOptions = '';
         if (!item.all_batches || item.all_batches.length === 0) {
             batchOptions = '<option value="">(Stok Fisik Habis di Gudang ini)</option>';
         } else {
             item.all_batches.forEach(b => {
-                const isSelected = (b.batch_no === item.batch_no && (b.grade_cd || 'A') === (item.grade_cd || 'A')) ? 'selected' : '';
-                const prefix = b.is_fifo_top ? '[FIFO Prioritas] ' : '';
-                const gradeBadge = b.grade_cd ? ` [Grade ${b.grade_cd}]` : '';
+                const isSelected = (b.batch_no === item.batch_no && (b.grade_cd || 'A') === curGrade) ? 'selected' : '';
+                const prefix = b.is_fifo_top ? '⭐ [FIFO] ' : '';
+                const gCd = (b.grade_cd || 'A').toUpperCase();
+                const gradeBadge = (gCd === 'A') ? '🟢 Grade A' : ((gCd === 'B') ? '🟡 Grade B' : `Grade ${gCd}`);
                 const expInfo = b.expired_tgl ? ` | Exp: ${b.expired_tgl}` : '';
                 const tglTerima = b.tgl_terima ? ` | Masuk: ${b.tgl_terima}` : '';
-                batchOptions += `<option value="${b.batch_no}" data-stok-id="${b.stok_id || ''}" data-grade="${b.grade_cd || 'A'}" data-sisa="${b.sisa_qty}" data-harga="${b.harga_satuan || 0}" data-masuk="${b.tgl_terima}" data-exp="${b.expired_tgl || '-'}" ${isSelected}>
-                    ${prefix}${b.batch_no}${gradeBadge} (Sisa: ${parseFloat(b.sisa_qty).toLocaleString('id-ID')})${tglTerima}${expInfo}
+                batchOptions += `<option value="${b.batch_no}" data-stok-id="${b.stok_id || ''}" data-grade="${gCd}" data-sisa="${b.sisa_qty}" data-harga="${b.harga_satuan || 0}" data-masuk="${b.tgl_terima}" data-exp="${b.expired_tgl || '-'}" ${isSelected}>
+                    ${prefix}${b.batch_no} • [${gradeBadge}] (Sisa: ${parseFloat(b.sisa_qty).toLocaleString('id-ID')})${tglTerima}${expInfo}
                 </option>`;
             });
         }
 
         let badgeHtml = '';
+        const gradeBadgeItem = (curGrade === 'A')
+            ? `<span style="background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; font-weight: 700; padding: 1px 6px; border-radius: 4px; font-size: 0.72rem;">🟢 Grade A (Super)</span>`
+            : ((curGrade === 'B')
+                ? `<span style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a; font-weight: 700; padding: 1px 6px; border-radius: 4px; font-size: 0.72rem;">🟡 Grade B (Standar)</span>`
+                : `<span style="background: #f1f5f9; color: #334155; font-weight: 600; padding: 1px 6px; border-radius: 4px; font-size: 0.72rem;">Grade ${curGrade}</span>`);
+
         if (item.is_allocated) {
             const badgeBg = item.is_split ? '#fef3c7' : '#ecfdf5';
             const badgeColor = item.is_split ? '#92400e' : '#065f46';
             const badgeBorder = item.is_split ? '#fde68a' : '#a7f3d0';
-            const gradeInfo = item.grade_cd ? ` • Grade ${item.grade_cd}` : '';
-            badgeHtml = `<span style="color: ${badgeColor}; font-weight: 700; background: ${badgeBg}; padding: 0.15rem 0.5rem; border-radius: 4px; border: 1px solid ${badgeBorder}; display: inline-flex; align-items: center; gap: 0.25rem;">
-                ${item.catatan_fifo}${gradeInfo} • Sisa: ${item.sisa_batch.toLocaleString('id-ID')} unit
-            </span>`;
+            badgeHtml = `<div style="display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;">
+                ${gradeBadgeItem}
+                <span style="color: ${badgeColor}; font-weight: 700; background: ${badgeBg}; padding: 0.15rem 0.5rem; border-radius: 4px; border: 1px solid ${badgeBorder}; display: inline-flex; align-items: center; gap: 0.25rem;">
+                    ${item.catatan_fifo} • Sisa: ${item.sisa_batch.toLocaleString('id-ID')} unit
+                </span>
+            </div>`;
         } else {
-            badgeHtml = `<span style="color: #dc2626; font-weight: 700; background: #fee2e2; padding: 0.15rem 0.5rem; border-radius: 4px; border: 1px solid #fecaca; display: inline-block;">
-                ${item.catatan_fifo}
-            </span>`;
+            badgeHtml = `<div style="display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;">
+                ${gradeBadgeItem}
+                <span style="color: #dc2626; font-weight: 700; background: #fee2e2; padding: 0.15rem 0.5rem; border-radius: 4px; border: 1px solid #fecaca; display: inline-block;">
+                    ${item.catatan_fifo}
+                </span>
+            </div>`;
         }
 
         const subtotal = (parseFloat(item.qty_keluar) || 0) * (parseFloat(item.harga_satuan) || 0);
@@ -682,6 +784,11 @@
                 </select>
             </td>
             <td style="padding: 0.45rem 0.5rem;">
+                <div class="grade-pill-group" style="display: flex; gap: 0.25rem; margin-bottom: 0.35rem; align-items: center; flex-wrap: nowrap;">
+                    <button type="button" class="btn-chip ${curGrade !== 'A' && curGrade !== 'B' ? 'active' : ''}" onclick="setRowGradeFilter(this, '')">Semua</button>
+                    <button type="button" class="btn-chip btn-chip-grade-a ${curGrade === 'A' ? 'active' : ''}" onclick="setRowGradeFilter(this, 'A')">🟢 Grade A</button>
+                    <button type="button" class="btn-chip btn-chip-grade-b ${curGrade === 'B' ? 'active' : ''}" onclick="setRowGradeFilter(this, 'B')">🟡 Grade B</button>
+                </div>
                 <input type="hidden" name="items[${rowIndex}][grade_cd]" class="grade-input" value="${item.grade_cd || 'A'}">
                 <input type="hidden" name="items[${rowIndex}][stok_id]" class="stok-id-input" value="${item.stok_id || ''}">
                 <select name="items[${rowIndex}][batch_no]" class="form-control batch-select" style="font-size: 0.85rem;" required onchange="onBatchSelect(this)">
@@ -857,6 +964,7 @@
             const batchSelect = row.querySelector('.batch-select');
             batchSelect.innerHTML = '<option value="">-- Pilih Barang Dulu --</option>';
             row.querySelector('.batch-info').textContent = '';
+            row._allBatches = [];
             if (satuanEl) satuanEl.textContent = '-';
         }
 
@@ -881,20 +989,45 @@
             .then(res => res.json())
             .then(res => {
                 if (res.status === 'success') {
+                    row._allBatches = res.batches || [];
+
                     if (!res.batches || res.batches.length === 0) {
                         batchSelect.innerHTML = '<option value="">(Stok Fisik Habis di Gudang ini)</option>';
                         batchInfo.innerHTML = '<span style="color: #dc2626; font-weight: 700; background: #fee2e2; padding: 0.2rem 0.5rem; border-radius: 4px;">Stok fisik habis total di gudang ini.</span>';
                         row.querySelector('.harga-input').value = 0;
+                        row.querySelector('.stok-id-input').value = '';
                     } else {
+                        // Cek apakah ada filter grade yang aktif di row ini
+                        const activeGradeBtn = row.querySelector('.grade-pill-group .btn-chip.active');
+                        let currentGradeFilter = '';
+                        if (activeGradeBtn) {
+                            if (activeGradeBtn.classList.contains('btn-chip-grade-a')) currentGradeFilter = 'A';
+                            else if (activeGradeBtn.classList.contains('btn-chip-grade-b')) currentGradeFilter = 'B';
+                        }
+
+                        let filtered = currentGradeFilter 
+                            ? res.batches.filter(b => (b.grade_cd || 'A') === currentGradeFilter)
+                            : res.batches;
+
+                        if (filtered.length === 0) {
+                            filtered = res.batches;
+                            const group = row.querySelector('.grade-pill-group');
+                            if (group) {
+                                group.querySelectorAll('.btn-chip').forEach(b => b.classList.remove('active'));
+                                group.children[0]?.classList.add('active');
+                            }
+                        }
+
                         let html = '';
-                        res.batches.forEach((b, idx) => {
+                        filtered.forEach((b, idx) => {
                             const isTop = (idx === 0);
-                            const prefix = isTop ? '[FIFO Prioritas] ' : '';
-                            const gradeBadge = b.grade_cd ? ` [Grade ${b.grade_cd}]` : '';
+                            const prefix = isTop ? '⭐ [FIFO] ' : '';
+                            const gCd = (b.grade_cd || 'A').toUpperCase();
+                            const gradeBadge = (gCd === 'A') ? '🟢 Grade A' : ((gCd === 'B') ? '🟡 Grade B' : `Grade ${gCd}`);
                             const expInfo = b.expired_tgl ? ` | Exp: ${b.expired_tgl}` : '';
                             const tglTerima = b.tgl_terima ? ` | Masuk: ${b.tgl_terima}` : '';
-                            html += `<option value="${b.batch_no}" data-stok-id="${b.stok_id || ''}" data-grade="${b.grade_cd || 'A'}" data-sisa="${b.sisa_qty}" data-harga="${b.harga_satuan || 0}" data-masuk="${b.tgl_terima}" data-exp="${b.expired_tgl || '-'}" ${isTop ? 'selected' : ''}>
-                                ${prefix}${b.batch_no}${gradeBadge} (Sisa: ${parseFloat(b.sisa_qty).toLocaleString('id-ID')})${tglTerima}${expInfo}
+                            html += `<option value="${b.batch_no}" data-stok-id="${b.stok_id || ''}" data-grade="${gCd}" data-sisa="${b.sisa_qty}" data-harga="${b.harga_satuan || 0}" data-masuk="${b.tgl_terima}" data-exp="${b.expired_tgl || '-'}" ${isTop ? 'selected' : ''}>
+                                ${prefix}${b.batch_no} • [${gradeBadge}] (Sisa: ${parseFloat(b.sisa_qty).toLocaleString('id-ID')})${tglTerima}${expInfo}
                             </option>`;
                         });
                         batchSelect.innerHTML = html;
@@ -919,7 +1052,7 @@
         const sisa = parseFloat(selectedOpt.getAttribute('data-sisa') || 0);
         const harga = parseFloat(selectedOpt.getAttribute('data-harga') || 0);
         const tglMasuk = selectedOpt.getAttribute('data-masuk') || '-';
-        const grade = selectedOpt.getAttribute('data-grade') || 'A';
+        const grade = (selectedOpt.getAttribute('data-grade') || 'A').toUpperCase();
         const stokId = selectedOpt.getAttribute('data-stok-id') || '';
 
         const gradeInput = row.querySelector('.grade-input');
@@ -927,18 +1060,76 @@
         const stokIdInput = row.querySelector('.stok-id-input');
         if (stokIdInput) stokIdInput.value = stokId;
 
+        // Sinkronkan highlight button filter grade di baris jika user memilih batch manual
+        const gradeButtons = row.querySelectorAll('.grade-pill-group .btn-chip');
+        gradeButtons.forEach(b => {
+            if ((grade === 'A' && b.classList.contains('btn-chip-grade-a')) ||
+                (grade === 'B' && b.classList.contains('btn-chip-grade-b'))) {
+                b.classList.add('active');
+            } else if (!b.classList.contains('btn-chip-grade-a') && !b.classList.contains('btn-chip-grade-b') && grade !== 'A' && grade !== 'B') {
+                b.classList.add('active');
+            } else {
+                b.classList.remove('active');
+            }
+        });
+
         const batchInfo = row.querySelector('.batch-info');
         const isFirstBatch = (selectEl.selectedIndex === 0);
-        const gradeDisplay = grade ? ` • Grade ${grade}` : '';
+
+        const gradeBadge = (grade === 'A')
+            ? `<span style="background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; font-weight: 700; padding: 1px 6px; border-radius: 4px; font-size: 0.725rem;">🟢 Grade A (Super)</span>`
+            : ((grade === 'B')
+                ? `<span style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a; font-weight: 700; padding: 1px 6px; border-radius: 4px; font-size: 0.725rem;">🟡 Grade B (Standar)</span>`
+                : `<span style="background: #f1f5f9; color: #334155; font-weight: 600; padding: 1px 6px; border-radius: 4px; font-size: 0.725rem;">Grade ${grade}</span>`);
+
+        const oldestOpt = (selectEl.options.length > 0 && selectEl.options[0].value) ? selectEl.options[0] : null;
+        const oldestSisa = oldestOpt ? parseFloat(oldestOpt.getAttribute('data-sisa') || 0) : 0;
+        const oldestBatchNo = oldestOpt ? oldestOpt.value : '-';
+        const oldestMasuk = oldestOpt ? (oldestOpt.getAttribute('data-masuk') || '-') : '-';
 
         if (isFirstBatch) {
-            batchInfo.innerHTML = `<span style="color: #065f46; font-weight: 700; background: #ecfdf5; padding: 0.15rem 0.5rem; border-radius: 4px; border: 1px solid #a7f3d0; display: inline-flex; align-items: center; gap: 0.25rem;">
-                Rekomendasi FIFO: Masuk ${tglMasuk}${gradeDisplay} • Maks: ${sisa.toLocaleString('id-ID')} unit
-            </span>`;
+            selectEl.style.borderColor = '#cbd5e1';
+            selectEl.style.backgroundColor = '#ffffff';
+            batchInfo.innerHTML = `<div style="display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;">
+                ${gradeBadge}
+                <span style="color: #065f46; font-weight: 600; background: #ecfdf5; padding: 0.15rem 0.5rem; border-radius: 4px; border: 1px solid #a7f3d0; font-size: 0.75rem;">
+                    ⭐ FIFO Prioritas: Masuk ${tglMasuk} • Maks: ${sisa.toLocaleString('id-ID')} unit
+                </span>
+            </div>`;
+        } else if (oldestOpt && oldestSisa > 0) {
+            // Operator memilih batch yang lebih baru padahal batch terlama masih ada sisa
+            selectEl.style.borderColor = '#f59e0b';
+            selectEl.style.backgroundColor = '#fffdf5';
+            batchInfo.innerHTML = `
+                <div style="background: #fffbeb; border: 1.5px solid #f59e0b; border-radius: 6px; padding: 0.45rem 0.65rem; margin-top: 0.25rem; color: #92400e;">
+                    <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap;">
+                        <div>
+                            <div style="display: flex; align-items: center; gap: 0.35rem; margin-bottom: 0.2rem;">
+                                ${gradeBadge}
+                                <strong style="color: #b45309; font-size: 0.775rem; display: inline-flex; align-items: center; gap: 0.25rem;">
+                                    ⚠️ Melompati Batch Tertua!
+                                </strong>
+                            </div>
+                            <div style="font-size: 0.735rem; color: #78350f; line-height: 1.35;">
+                                Batch <strong>${selectedOpt.value}</strong> lebih baru. Masih ada Batch Terlama <strong>[${oldestBatchNo}]</strong> (Sisa: <strong>${oldestSisa.toLocaleString('id-ID')} unit</strong> • Masuk: <strong>${oldestMasuk}</strong>) yang harus dihabiskan dahulu!
+                            </div>
+                        </div>
+                        <button type="button" onclick="selectOldestBatchInRow(this)" style="background: #059669; color: #ffffff; font-weight: 700; font-size: 0.725rem; padding: 3px 8px; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.25rem; box-shadow: 0 1px 2px rgba(5,150,105,0.25);" title="Otomatis pilih batch tertua">
+                            <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                            <span>Pakai Terlama</span>
+                        </button>
+                    </div>
+                </div>
+            `;
         } else {
-            batchInfo.innerHTML = `<span style="color: #0369a1; font-weight: 600; background: #f0f9ff; padding: 0.15rem 0.5rem; border-radius: 4px; border: 1px solid #bae6fd;">
-                Pilihan Manual: Masuk ${tglMasuk}${gradeDisplay} • Maks: ${sisa.toLocaleString('id-ID')} unit
-            </span>`;
+            selectEl.style.borderColor = '#cbd5e1';
+            selectEl.style.backgroundColor = '#ffffff';
+            batchInfo.innerHTML = `<div style="display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;">
+                ${gradeBadge}
+                <span style="color: #0369a1; font-weight: 600; background: #f0f9ff; padding: 0.15rem 0.5rem; border-radius: 4px; border: 1px solid #bae6fd; font-size: 0.75rem;">
+                    Pilihan Manual • Masuk ${tglMasuk} • Maks: ${sisa.toLocaleString('id-ID')} unit
+                </span>
+            </div>`;
         }
 
         const hargaInput = row.querySelector('.harga-input');
@@ -947,6 +1138,15 @@
         }
 
         calcRow(selectEl);
+    }
+
+    function selectOldestBatchInRow(btn) {
+        const row = btn.closest('tr');
+        const batchSelect = row.querySelector('.batch-select');
+        if (batchSelect && batchSelect.options.length > 0) {
+            batchSelect.selectedIndex = 0;
+            onBatchSelect(batchSelect);
+        }
     }
 
     function calcRow(el) {
@@ -960,28 +1160,27 @@
         const qty = parseFloat(qtyInput.value) || 0;
         const harga = parseFloat(hargaInput.value) || 0;
         const sisa = selectedBatchOpt ? parseFloat(selectedBatchOpt.getAttribute('data-sisa') || 0) : Infinity;
+        const grade = (selectedBatchOpt?.getAttribute('data-grade') || row.querySelector('.grade-input')?.value || 'A').toUpperCase();
+
+        const gradeBadge = (grade === 'A')
+            ? `<span style="background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; font-weight: 700; padding: 1px 6px; border-radius: 4px; font-size: 0.725rem;">🟢 Grade A</span>`
+            : ((grade === 'B')
+                ? `<span style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a; font-weight: 700; padding: 1px 6px; border-radius: 4px; font-size: 0.725rem;">🟡 Grade B</span>`
+                : `<span style="background: #f1f5f9; color: #334155; font-weight: 600; padding: 1px 6px; border-radius: 4px; font-size: 0.725rem;">Grade ${grade}</span>`);
 
         // Warning jika qty yang diminta melebihi sisa fisik batch
         if (selectedBatchOpt && selectedBatchOpt.value && qty > sisa) {
             qtyInput.style.borderColor = '#dc2626';
             qtyInput.style.backgroundColor = '#fef2f2';
-            batchInfo.innerHTML = `<span style="color: #dc2626; font-weight: 700; background: #fee2e2; padding: 0.2rem 0.5rem; border-radius: 4px; border: 1px solid #fecaca; display: inline-block;">
-                Melebihi sisa batch (${sisa.toLocaleString('id-ID')}). Ambil ${sisa.toLocaleString('id-ID')} di baris ini, lalu klik "+ Tambah Baris" untuk sisa ${(qty - sisa).toLocaleString('id-ID')} dari batch berikutnya.
-            </span>`;
+            batchInfo.innerHTML = `<div style="display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;">
+                ${gradeBadge}
+                <span style="color: #dc2626; font-weight: 700; background: #fee2e2; padding: 0.2rem 0.5rem; border-radius: 4px; border: 1px solid #fecaca; display: inline-block;">
+                    Melebihi sisa batch (${sisa.toLocaleString('id-ID')}). Ambil ${sisa.toLocaleString('id-ID')} di baris ini, lalu tambah baris untuk sisa ${(qty - sisa).toLocaleString('id-ID')} dari batch lain.
+                </span>
+            </div>`;
         } else if (selectedBatchOpt && selectedBatchOpt.value) {
             qtyInput.style.borderColor = '#cbd5e1';
             qtyInput.style.backgroundColor = '#ffffff';
-            const tglMasuk = selectedBatchOpt.getAttribute('data-masuk') || '-';
-            const isFirstBatch = (batchSelect.selectedIndex === 0);
-            if (isFirstBatch) {
-                batchInfo.innerHTML = `<span style="color: #065f46; font-weight: 700; background: #ecfdf5; padding: 0.15rem 0.5rem; border-radius: 4px; border: 1px solid #a7f3d0;">
-                    Rekomendasi FIFO: Batch masuk paling awal (${tglMasuk}) • Maks: ${sisa.toLocaleString('id-ID')} unit
-                </span>`;
-            } else {
-                batchInfo.innerHTML = `<span style="color: #0369a1; font-weight: 600; background: #f0f9ff; padding: 0.15rem 0.5rem; border-radius: 4px; border: 1px solid #bae6fd;">
-                    Pilihan Manual: Masuk ${tglMasuk} • Maks: ${sisa.toLocaleString('id-ID')} unit
-                </span>`;
-            }
         }
 
         const subtotal = qty * harga;
@@ -994,6 +1193,8 @@
         let totalQty = 0;
         let totalNilai = 0;
         let activeItems = 0;
+        let totalGradeAQty = 0;
+        let totalGradeBQty = 0;
 
         document.querySelectorAll('#itemsBody tr').forEach(row => {
             const barangSelect = row.querySelector('.barang-select');
@@ -1002,8 +1203,16 @@
             }
             const qty = parseFloat(row.querySelector('.qty-input')?.value) || 0;
             const harga = parseFloat(row.querySelector('.harga-input')?.value) || 0;
+            const grade = (row.querySelector('.grade-input')?.value || '').toUpperCase();
+
             totalQty += qty;
             totalNilai += (qty * harga);
+
+            if (grade === 'A') {
+                totalGradeAQty += qty;
+            } else if (grade === 'B') {
+                totalGradeBQty += qty;
+            }
         });
 
         const grandTotalQty = document.getElementById('grandTotalQty');
@@ -1011,12 +1220,141 @@
         if (grandTotalQty) grandTotalQty.textContent = totalQty.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         if (grandTotalNilai) grandTotalNilai.textContent = 'Rp ' + totalNilai.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+        // Total per Grade di Footer
+        const footGradeA = document.getElementById('footGradeAQty');
+        const footGradeB = document.getElementById('footGradeBQty');
+        if (footGradeA) footGradeA.textContent = totalGradeAQty.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        if (footGradeB) footGradeB.textContent = totalGradeBQty.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+        // Total per Grade di Sidebar Kanan
         const sideGrandTotal = document.getElementById('sideGrandTotal');
         const sideTotalQty = document.getElementById('sideTotalQty');
         const sideTotalItems = document.getElementById('sideTotalItems');
+        const sideGradeA = document.getElementById('sideGradeAQty');
+        const sideGradeB = document.getElementById('sideGradeBQty');
         if (sideGrandTotal) sideGrandTotal.textContent = 'Rp ' + totalNilai.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         if (sideTotalQty) sideTotalQty.textContent = totalQty.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         if (sideTotalItems) sideTotalItems.textContent = activeItems;
+        if (sideGradeA) sideGradeA.textContent = totalGradeAQty.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' Kg';
+        if (sideGradeB) sideGradeB.textContent = totalGradeBQty.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' Kg';
+    }
+
+    {{-- LOGIKA VALIDASI & MODAL PERINGATAN FIFO --}}
+    let allowFifoOverride = false;
+
+    function checkFifoViolations() {
+        const violations = [];
+        document.querySelectorAll('#itemsBody tr').forEach(row => {
+            const barangSelect = row.querySelector('.barang-select');
+            const batchSelect = row.querySelector('.batch-select');
+            const qtyInput = row.querySelector('.qty-input');
+
+            if (!barangSelect || !barangSelect.value || !batchSelect || !batchSelect.value) return;
+
+            const qty = parseFloat(qtyInput?.value || 0);
+            if (qty <= 0) return;
+
+            if (batchSelect.selectedIndex > 0 && batchSelect.options.length > 1) {
+                const chosenOpt = batchSelect.selectedOptions[0];
+                const oldestOpt = batchSelect.options[0];
+                const oldestSisa = parseFloat(oldestOpt?.getAttribute('data-sisa') || 0);
+
+                if (oldestSisa > 0) {
+                    const barangOpt = barangSelect.selectedOptions[0];
+                    const barangNm = barangOpt ? barangOpt.textContent.trim() : 'Bahan Produksi';
+                    const grade = chosenOpt.getAttribute('data-grade') || 'A';
+
+                    violations.push({
+                        barangNm: barangNm,
+                        grade: grade,
+                        chosenBatch: chosenOpt.value,
+                        chosenMasuk: chosenOpt.getAttribute('data-masuk') || '-',
+                        oldestBatch: oldestOpt.value,
+                        oldestMasuk: oldestOpt.getAttribute('data-masuk') || '-',
+                        oldestSisa: oldestSisa.toLocaleString('id-ID')
+                    });
+                }
+            }
+        });
+        return violations;
+    }
+
+    function openWarningFifoModal(violations) {
+        const tbody = document.getElementById('fifoWarningListBody');
+        if (!tbody) return;
+
+        let html = '';
+        violations.forEach((v, idx) => {
+            const gradeBadge = (v.grade === 'A')
+                ? `<span style="background:#ecfdf5; color:#065f46; border:1px solid #a7f3d0; padding:1px 5px; border-radius:3px; font-weight:700; font-size:0.7rem;">🟢 Grade A</span>`
+                : ((v.grade === 'B')
+                    ? `<span style="background:#fffbeb; color:#b45309; border:1px solid #fde68a; padding:1px 5px; border-radius:3px; font-weight:700; font-size:0.7rem;">🟡 Grade B</span>`
+                    : `Grade ${v.grade}`);
+
+            html += `
+                <tr style="border-bottom: 1px solid #e2e8f0; ${idx % 2 === 1 ? 'background:#fafafa;' : ''}">
+                    <td style="padding: 0.55rem 0.65rem;">
+                        <div style="font-weight: 600; color: #0f172a;">${v.barangNm}</div>
+                        <div style="margin-top: 2px;">${gradeBadge}</div>
+                    </td>
+                    <td style="padding: 0.55rem 0.65rem;">
+                        <strong style="color: #b45309; font-family: monospace;">${v.chosenBatch}</strong>
+                        <div style="font-size: 0.72rem; color: #64748b;">Masuk: ${v.chosenMasuk}</div>
+                    </td>
+                    <td style="padding: 0.55rem 0.65rem; background: #f0fdf4;">
+                        <strong style="color: #065f46; font-family: monospace;">⭐ ${v.oldestBatch}</strong>
+                        <div style="font-size: 0.72rem; color: #047857;">Sisa: ${v.oldestSisa} unit • Masuk: ${v.oldestMasuk}</div>
+                    </td>
+                </tr>
+            `;
+        });
+        tbody.innerHTML = html;
+
+        const modal = document.getElementById('modalWarningFifo');
+        if (modal) {
+            modal.style.display = 'flex';
+        }
+    }
+
+    function closeWarningFifoModal() {
+        const modal = document.getElementById('modalWarningFifo');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+    }
+
+    function applyFixAllToOldestBatch() {
+        document.querySelectorAll('#itemsBody tr').forEach(row => {
+            const batchSelect = row.querySelector('.batch-select');
+            if (batchSelect && batchSelect.options.length > 0 && batchSelect.selectedIndex > 0) {
+                batchSelect.selectedIndex = 0;
+                onBatchSelect(batchSelect);
+            }
+        });
+
+        closeWarningFifoModal();
+        calculateGrandTotal();
+    }
+
+    function proceedOverrideFifoSubmit() {
+        const reasonInput = document.getElementById('override_reason_input');
+        const reason = reasonInput ? reasonInput.value.trim() : '';
+
+        if (!reason) {
+            alert('Harap tuliskan alasan singkat mengapa melompati batch terlama (misal: batch lama rusak / di-karantina).');
+            reasonInput?.focus();
+            return;
+        }
+
+        const catatanInput = document.getElementById('catatan_txt');
+        if (catatanInput) {
+            const prev = catatanInput.value.trim();
+            catatanInput.value = prev ? `${prev} [OVERRIDE FIFO: ${reason}]` : `[OVERRIDE FIFO: ${reason}]`;
+        }
+
+        allowFifoOverride = true;
+        closeWarningFifoModal();
+        document.getElementById('pemakaianForm').submit();
     }
 
     // Inisialisasi awal saat halaman selesai dimuat
@@ -1029,6 +1367,22 @@
             updateSidebarInfo();
             onGudangChanged();
         });
+
+        // Intercept form submit untuk pemeriksaan pelanggaran urutan FIFO
+        document.getElementById('pemakaianForm')?.addEventListener('submit', function(e) {
+            if (allowFifoOverride) {
+                return;
+            }
+
+            const violations = checkFifoViolations();
+            if (violations.length > 0) {
+                e.preventDefault();
+                openWarningFifoModal(violations);
+                return false;
+            }
+        });
     });
 </script>
+
+@include('gudang.pemakaian.partials.modal-warning-fifo')
 @endsection

@@ -1173,6 +1173,16 @@
             </div>
         @endif
 
+        @if (session('warning'))
+            <div class="alert" style="background: #fffbeb; border: 1.5px solid #fde68a; color: #92400e; padding: 0.85rem 1.25rem; border-radius: 8px; margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                <div style="display: flex; align-items: center; gap: 0.65rem; font-weight: 600; font-size: 0.875rem;">
+                    <span style="font-size: 1.25rem;">⚠️</span>
+                    <span>{{ session('warning') }}</span>
+                </div>
+                <button onclick="this.closest('.alert').remove()" style="background:none;border:none;cursor:pointer;color:#92400e;font-size:1.2rem;line-height:1;">&times;</button>
+            </div>
+        @endif
+
         @if (isset($errors) && $errors->any())
             <div class="alert alert-error" style="display: flex; flex-direction: column; align-items: flex-start; gap: 0.35rem;">
                 <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">

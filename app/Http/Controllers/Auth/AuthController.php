@@ -17,7 +17,13 @@ class AuthController extends Controller
     public function showLogin(): View|RedirectResponse
     {
         if (Auth::check()) {
-            return redirect()->route(Auth::user()->getDashboardRoute());
+            return redirect()->intended(route(Auth::user()->getDashboardRoute()));
+        }
+
+        // Simpan halaman terakhir ke intended session agar saat relog tetap berada di halaman tersebut
+        $prev = url()->previous();
+        if (!session()->has('url.intended') && $prev && !str_contains($prev, '/login')) {
+            session(['url.intended' => $prev]);
         }
 
         $demoUsers = User::with(['karyawan', 'gudang'])
@@ -63,7 +69,7 @@ class AuthController extends Controller
         Auth::login($user);
         $request->session()->regenerate();
 
-        return redirect()->route($user->getDashboardRoute())
+        return redirect()->intended(route($user->getDashboardRoute()))
             ->with('success', "Beralih akun berhasil! Anda sekarang masuk sebagai {$user->name} ({$user->role_cd}).");
     }
 

@@ -248,7 +248,22 @@ class QcInboundController extends Controller
             ->orderBy('expired_tgl', 'asc')
             ->get();
 
-        return view('gudang.qc.mobile.create', compact(
+        $viewMap = [
+            'SINGKONG' => 'gudang.qc.mobile.singkong.create',
+            'MINYAK'   => 'gudang.qc.mobile.minyak.create',
+            'PLASTIK'  => 'gudang.qc.mobile.plastik.create',
+            'KARTON'   => 'gudang.qc.mobile.karton.create',
+            'MSG'      => 'gudang.qc.mobile.bahan-penolong.create',
+            'GARAM'    => 'gudang.qc.mobile.bahan-penolong.create',
+            'PERENYAH' => 'gudang.qc.mobile.bahan-penolong.create',
+        ];
+
+        $targetView = $viewMap[$initialKomoditas] ?? 'gudang.qc.mobile.create';
+        if (!view()->exists($targetView)) {
+            $targetView = 'gudang.qc.mobile.create';
+        }
+
+        return view($targetView, compact(
             'suppliers',
             'gudangs',
             'barangs',

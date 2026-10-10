@@ -10,6 +10,27 @@
     $totalGross = $qc->details->sum('qty_timbang_gross');
     $totalNetto = $qc->details->sum('qty_netto_lolos');
     $totalReject = $qc->details->sum('qty_reject');
+
+    // Deteksi Satuan: Liter vs Kg
+    $satuanRaw = $firstDetail?->barang?->satuanDasar?->satuan_nm
+        ?: ($firstDetail?->barang?->satuanDasar?->satuan_cd
+        ?: ($qc->po?->details?->firstWhere('barang_id', $firstDetail?->barang_id)?->barang?->satuanDasar?->satuan_nm
+        ?: ($qc->po?->details?->first()?->barang?->satuanDasar?->satuan_nm ?? '')));
+
+    $isLiter = false;
+    if ($satuanRaw) {
+        $isLiter = (stripos($satuanRaw, 'liter') !== false || stripos($satuanRaw, 'ltr') !== false || strtoupper(trim($satuanRaw)) === 'L');
+    }
+    if (!$isLiter) {
+        $namaItem = strtoupper(($firstDetail?->barang?->barang_nm ?? '') . ' ' . ($qc->nama_jenis ?? ''));
+        if (str_contains($namaItem, 'KELAPA') && !str_contains($namaItem, 'SAWIT')) {
+            $isLiter = true;
+        }
+    }
+
+    $satuan = $isLiter ? 'Liter' : 'Kg';
+    $satuanUpper = $isLiter ? 'LITER' : 'KG';
+    $satuanLower = $isLiter ? 'liter' : 'kg';
 @endphp
 
 <div class="excel-doc-sheet" style="width: 100%; max-width: 860px; margin: 0 auto 1.5rem; background: #ffffff; border: 2px solid #000000; padding: 0.75rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.06); font-family: Arial, sans-serif; font-size: 0.76rem; color: #000000;">
@@ -59,44 +80,37 @@
         </table>
     </div>
 
-    {{-- 2. TABEL IDENTITAS KEDATANGAN MINYAK --}}
+    {{-- 2. TABEL IDENTITAS KEDATANGAN MINYAK (PERSIS FORMAT EXCEL HACCP PT MIRASA) --}}
     <div style="border: 2px solid #000000; margin-bottom: 0.5rem;">
         <table style="width: 100%; border-collapse: collapse; font-size: 0.78rem;">
             <tr>
-                {{-- SISI KIRI: JUDUL BESAR --}}
-                <td style="width: 38%; vertical-align: middle; text-align: center; padding: 0.85rem 0.5rem; border-right: 2px solid #000000; border-bottom: 2px solid #000000;">
+                {{-- SISI KIRI: JUDUL BESAR LAPORAN KEDATANGAN MINYAK GORENG --}}
+                <td style="width: 32%; vertical-align: middle; text-align: center; padding: 0.85rem 0.5rem; border-right: 2px solid #000000; border-bottom: 1px solid #000000;">
                     <div style="font-size: 0.75rem; font-weight: 700; color: #334155; letter-spacing: 0.05em;">MIRASA FOOD INDUSTRY</div>
                     <div style="font-size: 0.8rem; font-weight: 700; margin-top: 2px;">LAPORAN KEDATANGAN</div>
                     <div style="font-size: 1.45rem; font-weight: 900; margin-top: 3px; color: #000000; letter-spacing: 0.04em;">
                         MINYAK GORENG
                     </div>
                 </td>
-                {{-- SISI KANAN: FORM IDENTITAS --}}
-                <td style="width: 62%; padding: 0; vertical-align: top; border-bottom: 2px solid #000000;">
+
+                {{-- SISI TENGAH: DETAIL TABEL IDENTITAS --}}
+                <td style="width: 53%; padding: 0; vertical-align: top; border-right: 2px solid #000000; border-bottom: 1px solid #000000;">
                     <table style="width: 100%; border-collapse: collapse; font-size: 0.78rem;">
                         <tr style="border-bottom: 1px solid #000000;">
-                            <td style="padding: 4px 8px; width: 120px; font-weight: 700; border-right: 1px solid #000000;">Nama Bahan</td>
-                            <td style="padding: 4px 8px;">
+                            <td style="padding: 5px 8px; width: 100px; font-weight: 700; border-right: 1px solid #000000;">Nama Bahan</td>
+                            <td colspan="3" style="padding: 5px 8px; font-weight: 700;">
                                 @if($isEdit)
-                                    <input type="text" name="items[{{ $qcdtlId }}][nama_bahan]" value="{{ old('items.'.$qcdtlId.'.nama_bahan', $firstDetail?->barang?->barang_nm ?? $qc->nama_jenis) }}" class="excel-cell-input" placeholder="Minyak Goreng Kelapa Sawit">
+                                    <input type="text" name="items[{{ $qcdtlId }}][nama_bahan]" value="{{ old('items.'.$qcdtlId.'.nama_bahan', $firstDetail?->barang?->barang_nm ?? ($qc->nama_jenis ?: 'Minyak Goreng Kelapa Sawit')) }}" class="excel-cell-input" placeholder="Minyak Goreng Kelapa Sawit">
                                 @else
                                     : {{ $firstDetail?->barang?->barang_nm ?: ($qc->nama_jenis ?: 'Minyak Goreng Kelapa Sawit') }}
                                 @endif
                             </td>
-                            <td style="padding: 4px 8px; width: 110px; font-weight: 700; border-left: 1px solid #000000; border-right: 1px solid #000000;">NAMA JENIS :</td>
-                            <td style="padding: 4px 8px; width: 130px;">
-                                @if($isEdit)
-                                    <input type="text" name="nama_jenis" value="{{ old('nama_jenis', $qc->nama_jenis) }}" class="excel-cell-input" placeholder="Minyak Sawit">
-                                @else
-                                    {{ $qc->nama_jenis ?: '-' }}
-                                @endif
-                            </td>
                         </tr>
                         <tr style="border-bottom: 1px solid #000000; background: #f8fafc; text-align: center; font-weight: 700;">
-                            <td style="padding: 4px 6px; border-right: 1px solid #000000;">Nama Produsen</td>
-                            <td style="padding: 4px 6px; border-right: 1px solid #000000;">Negara Produsen</td>
-                            <td style="padding: 4px 6px; border-right: 1px solid #000000;">Jumlah Surat Jalan</td>
-                            <td style="padding: 4px 6px;">Jumlah di Pabrik</td>
+                            <td style="padding: 4px 6px; border-right: 1px solid #000000; width: 25%;">Nama Produsen</td>
+                            <td style="padding: 4px 6px; border-right: 1px solid #000000; width: 25%;">Negara Produsen</td>
+                            <td style="padding: 4px 6px; border-right: 1px solid #000000; width: 25%;">Jumlah Surat Jalan ({{ $satuan }})</td>
+                            <td style="padding: 4px 6px; width: 25%;">Jumlah di Pabrik ({{ $satuan }})</td>
                         </tr>
                         <tr style="border-bottom: 1px solid #000000; text-align: center;">
                             <td style="padding: 4px 6px; border-right: 1px solid #000000;">
@@ -138,7 +152,7 @@
                                 @endif
                             </td>
                         </tr>
-                        <tr>
+                        <tr style="border-bottom: 1px solid #000000;">
                             <td style="padding: 4px 8px; font-weight: 700; border-right: 1px solid #000000;">Tanggal Periksa</td>
                             <td colspan="3" style="padding: 4px 8px;">
                                 @if($isEdit)
@@ -148,26 +162,52 @@
                                 @endif
                             </td>
                         </tr>
+                        <tr>
+                            <td style="padding: 4px 8px; font-weight: 700; border-right: 1px solid #000000;">Nomor DO</td>
+                            <td colspan="3" style="padding: 4px 8px;">
+                                @if($isEdit)
+                                    <input type="text" name="nomor_do" value="{{ old('nomor_do', $qc->nomor_do ?? $qc->surat_jalan_supplier) }}" class="excel-cell-input">
+                                @else
+                                    : {{ $qc->nomor_do ?: ($qc->surat_jalan_supplier ?: '-') }}
+                                @endif
+                            </td>
+                        </tr>
                     </table>
                 </td>
-            </tr>
-            <tr>
-                <td style="padding: 5px 10px; border-right: 2px solid #000000;">
-                    <strong>Jumlah Sample (gr):</strong>
-                    @if($isEdit)
-                        <input type="number" step="any" name="jumlah_sample_gr" value="{{ old('jumlah_sample_gr', $qc->jumlah_sample_gr ?? 250) }}" style="width: 90px; border: 1px solid #94a3b8; padding: 2px 6px; font-size: 0.8rem; font-weight: 700;"> gr
-                    @else
-                        : {{ $qc->jumlah_sample_gr ? $qc->jumlah_sample_gr . ' gr' : ($qc->jumlah_sample_kg ? $qc->jumlah_sample_kg . ' kg' : '250 gr') }}
-                    @endif
+
+                {{-- SISI KANAN: KOTAK VERTIKAL NAMA JENIS : (PERSIS FORM EXCEL HACCP) --}}
+                <td style="width: 15%; vertical-align: top; padding: 0; border-bottom: 1px solid #000000; background: #ffffff;">
+                    <div style="padding: 5px 8px; font-weight: 900; font-size: 0.8rem; border-bottom: 1px solid #000000; text-align: left; background: #f8fafc; letter-spacing: 0.03em;">
+                        NAMA JENIS :
+                    </div>
+                    <div style="padding: 12px 6px; text-align: center; font-weight: 800; font-size: 0.95rem; color: #0f172a; min-height: 120px; display: flex; align-items: center; justify-content: center; line-height: 1.35;">
+                        @if($isEdit)
+                            <textarea name="nama_jenis" rows="5" class="excel-cell-input text-center" style="font-weight: 800; resize: vertical; width: 100%; font-size: 0.85rem;" placeholder="RBD Palm Olein / Curah Sawit / Filma">{{ old('nama_jenis', $qc->nama_jenis) }}</textarea>
+                        @else
+                            <span>{{ $qc->nama_jenis ?: '-' }}</span>
+                        @endif
+                    </div>
                 </td>
-                <td style="padding: 5px 10px;">
-                    <strong>Nomor DO :</strong>
-                    @if($isEdit)
-                        <input type="text" name="nomor_do" value="{{ old('nomor_do', $qc->nomor_do ?? $qc->surat_jalan_supplier) }}" style="width: 140px; border: 1px solid #94a3b8; padding: 2px 6px; font-size: 0.8rem; font-weight: 700;">
-                        &bull; Plat: <input type="text" name="plat_nomor_truk" value="{{ old('plat_nomor_truk', $qc->plat_nomor_truk) }}" style="width: 100px; border: 1px solid #94a3b8; padding: 2px 6px; font-size: 0.8rem; text-transform: uppercase;">
-                        &bull; Sopir: <input type="text" name="sopir_nama" value="{{ old('sopir_nama', $qc->sopir_nama) }}" style="width: 110px; border: 1px solid #94a3b8; padding: 2px 6px; font-size: 0.8rem;">
-                    @else
-                        : {{ $qc->nomor_do ?: ($qc->surat_jalan_supplier ?: '-') }} &bull; Plat: {{ $qc->plat_nomor_truk ?: '-' }} ({{ $qc->sopir_nama ?: '-' }})
+            </tr>
+
+            {{-- BARIS BAWAH: JUMLAH SAMPLE (GR) & INFO LOGISTIK ARMADA --}}
+            <tr>
+                <td style="padding: 6px 10px; border-right: 2px solid #000000; vertical-align: middle;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.4rem;">
+                        <span style="font-weight: 700;">Jumlah Sample (gr):</span>
+                        @if($isEdit)
+                            <input type="number" step="any" name="jumlah_sample_gr" value="{{ old('jumlah_sample_gr', $qc->jumlah_sample_gr ?? 250) }}" style="width: 75px; border: 1px solid #94a3b8; padding: 2px 6px; font-size: 0.8rem; font-weight: 700; text-align: center;">
+                        @else
+                            <span style="font-weight: 800; font-size: 0.85rem;">: {{ $qc->jumlah_sample_gr ? $qc->jumlah_sample_gr . ' gr' : ($qc->jumlah_sample_kg ? $qc->jumlah_sample_kg . ' kg' : '250 gr') }}</span>
+                        @endif
+                    </div>
+                </td>
+                <td colspan="2" style="padding: 6px 10px; font-size: 0.78rem; vertical-align: middle; background: #fafafa;">
+                    <span style="font-weight: 700;">Armada:</span>
+                    No Plat: <strong>{{ $qc->plat_nomor_truk ?: '-' }}</strong>
+                    &bull; Sopir: <strong>{{ $qc->sopir_nama ?: '-' }}</strong>
+                    @if($qc->po)
+                        &bull; PO: <strong>{{ $qc->po->po_no }}</strong>
                     @endif
                 </td>
             </tr>
@@ -446,30 +486,46 @@
     </div>
 
     {{-- 6. KESIMPULAN --}}
-    <div style="border: 2px solid #000000; margin-bottom: 0.5rem; padding: 8px 12px; display: flex; align-items: center; gap: 2.5rem; font-size: 0.825rem;">
-        <span style="font-weight: 900; letter-spacing: 0.04em;">KESIMPULAN</span>
-        <label style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer;">
-            @if($isEdit)
-                <input type="radio" name="kesimpulan_qc" value="TERIMA" {{ old('kesimpulan_qc', $qc->status_qc !== 'DITOLAK_TOTAL' ? 'TERIMA' : '') === 'TERIMA' ? 'checked' : '' }} class="excel-checkbox">
-            @else
-                <span class="excel-box-check">{{ $qc->status_qc !== 'DITOLAK_TOTAL' ? '✔' : '' }}</span>
-            @endif
-            <strong style="font-size: 0.9rem;">TERIMA</strong>
-            @if(!$isEdit && $qc->status_qc !== 'DITOLAK_TOTAL')
-                <span style="color: #0284c7; font-weight: 800; margin-left: 0.25rem;">({{ number_format($totalNetto, 2, ',', '.') }} kg)</span>
-            @endif
-        </label>
-        <label style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer;">
-            @if($isEdit)
-                <input type="radio" name="kesimpulan_qc" value="TOLAK" {{ old('kesimpulan_qc', $qc->status_qc === 'DITOLAK_TOTAL' ? 'TOLAK' : '') === 'TOLAK' ? 'checked' : '' }} class="excel-checkbox">
-            @else
-                <span class="excel-box-check">{{ $qc->status_qc === 'DITOLAK_TOTAL' ? '✔' : '' }}</span>
-            @endif
-            <strong style="font-size: 0.9rem; color: #dc2626;">TOLAK</strong>
-            @if(!$isEdit && $qc->status_qc === 'DITOLAK_TOTAL')
-                <span style="color: #dc2626; font-weight: 800; margin-left: 0.25rem;">({{ number_format($totalReject, 2, ',', '.') }} kg)</span>
-            @endif
-        </label>
+    <div style="border: 2px solid #000000; margin-bottom: 0.5rem; padding: 6px 14px; display: flex; align-items: center; flex-wrap: wrap; gap: 2rem; font-size: 0.85rem; font-family: 'Segoe UI', Arial, sans-serif;">
+        <span style="font-weight: 900; letter-spacing: 0.04em; color: #000000;">KESIMPULAN</span>
+
+        @if($isEdit)
+            <div style="display: inline-flex; align-items: center; gap: 2.5rem; flex-wrap: wrap;">
+                <label style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
+                    <input type="radio" name="kesimpulan_qc" value="TERIMA" {{ old('kesimpulan_qc', $qc->status_qc !== 'DITOLAK_TOTAL' ? 'TERIMA' : '') === 'TERIMA' ? 'checked' : '' }} class="excel-checkbox">
+                    <strong style="font-weight: 800; color: #000000;">TERIMA :</strong>
+                    <u style="font-weight: 700; margin-left: 2px; text-underline-offset: 3px;">{{ number_format($totalNetto, 2, ',', '.') }}</u>
+                    <span style="margin-left: 2px;">{{ $satuanLower }}</span>
+                </label>
+
+                <label style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer; color: #dc2626;">
+                    <input type="radio" name="kesimpulan_qc" value="TOLAK" {{ old('kesimpulan_qc', $qc->status_qc === 'DITOLAK_TOTAL' ? 'TOLAK' : '') === 'TOLAK' ? 'checked' : '' }} class="excel-checkbox">
+                    <strong style="font-weight: 800; color: #dc2626;">TOLAK :</strong>
+                    <u style="font-weight: 700; margin-left: 2px; text-underline-offset: 3px; color: #dc2626;">{{ number_format($totalReject, 2, ',', '.') }}</u>
+                    <span style="margin-left: 2px; color: #dc2626;">{{ $satuanLower }}</span>
+                </label>
+            </div>
+        @else
+            <div style="display: inline-flex; align-items: center; gap: 2.5rem; flex-wrap: wrap;">
+                <div style="display: inline-flex; align-items: center;">
+                    @if($qc->status_qc !== 'DITOLAK_TOTAL')
+                        <span style="font-weight: 900; font-size: 1rem; margin-right: 6px; color: #000000;">✓</span>
+                    @endif
+                    <strong style="font-weight: 800; color: #000000;">TERIMA :</strong>
+                    <u style="font-weight: 700; margin-left: 6px; margin-right: 4px; text-underline-offset: 3px;">{{ number_format($totalNetto, 2, ',', '.') }}</u>
+                    <span>{{ $satuanLower }}</span>
+                </div>
+
+                <div style="display: inline-flex; align-items: center; color: #dc2626;">
+                    @if($qc->status_qc === 'DITOLAK_TOTAL')
+                        <span style="font-weight: 900; font-size: 1rem; margin-right: 6px; color: #dc2626;">✓</span>
+                    @endif
+                    <strong style="font-weight: 800; color: #dc2626;">TOLAK :</strong>
+                    <u style="font-weight: 700; margin-left: 6px; margin-right: 4px; text-underline-offset: 3px; color: #dc2626;">{{ number_format($totalReject, 2, ',', '.') }}</u>
+                    <span style="color: #dc2626;">{{ $satuanLower }}</span>
+                </div>
+            </div>
+        @endif
     </div>
 
     {{-- 7. TANDA TANGAN DUA KOLOM RESMI --}}
@@ -477,20 +533,10 @@
         <table style="width: 100%; border-collapse: collapse; text-align: center;">
             <tr style="border-bottom: 1px solid #000000; background: #f8fafc; font-weight: 700;">
                 <td style="padding: 4px; width: 50%; border-right: 2px solid #000000;">
-                    QC RAW MATERIAL : 
-                    @if($isEdit)
-                        <input type="text" name="petugas_qc_nama" value="{{ old('petugas_qc_nama', $qc->petugas_qc_nama) }}" style="width: 150px; border: 1px solid #cbd5e1; padding: 2px 6px; font-weight: 700; font-size: 0.78rem;">
-                    @else
-                        {{ $qc->petugas_qc_nama }}
-                    @endif
+                    QC RAW MATERIAL
                 </td>
                 <td style="padding: 4px; width: 50%;">
-                    QC Supervisor : 
-                    @if($isEdit)
-                        <input type="text" name="qc_supervisor_nama" value="{{ old('qc_supervisor_nama', $qc->qc_supervisor_nama) }}" style="width: 150px; border: 1px solid #cbd5e1; padding: 2px 6px; font-weight: 700; font-size: 0.78rem;" placeholder="Supervisor QC">
-                    @else
-                        {{ $qc->qc_supervisor_nama ?: 'Supervisor QC' }}
-                    @endif
+                    QC Supervisor
                 </td>
             </tr>
             <tr style="border-bottom: 1px solid #000000; background: #f1f5f9; font-weight: 700; font-size: 0.72rem;">

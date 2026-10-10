@@ -1,181 +1,230 @@
 {{-- ========================================================================= --}}
-{{-- PARTIAL: FORM INSPEKSI QC KHUSUS MINYAK GORENG                            --}}
+{{-- PARTIAL: FORM INSPEKSI QC KHUSUS MINYAK GORENG (TAHAP 2)                  --}}
+{{-- SESUAI GAMBAR 3: UJI FISIK & KIMIA + KOMENTAR & KESIMPULAN AKHIR          --}}
 {{-- NO DOKUMEN: MFI/HACCP-04/FRM-03/029/VIII/2021                             --}}
 {{-- ========================================================================= --}}
 
-{{-- WIDGET INFORMASI STOK GUDANG MINYAK GORENG (REAL-TIME) --}}
-<div id="minyakStockWidget" style="display: {{ old('kategori_barang', $initialKomoditas ?? 'SINGKONG') === 'MINYAK' ? 'block' : 'none' }}; margin: 0 0 1.25rem 0; background: #fffdf5; border: 1.5px solid #fde047; border-radius: 12px; padding: 0.85rem 1.15rem; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem; flex-wrap: wrap; gap: 0.4rem;">
-        <div style="font-size: 0.8rem; font-weight: 800; color: #78350f; display: flex; align-items: center; gap: 0.4rem;">
-            <span>🛢️</span> <span>STATUS STOK GUDANG MINYAK GORENG SAAT INI (REAL-TIME):</span>
-        </div>
-        <span style="font-size: 0.7rem; color: #b45309; font-weight: 700; background: #fef3c7; padding: 2px 7px; border-radius: 4px;">
-            Data Riil Gudang Persediaan
-        </span>
-    </div>
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.75rem;">
-        {{-- MINYAK SAWIT --}}
-        <div style="background: #ffffff; border: 1.5px solid #fde68a; border-radius: 8px; padding: 0.65rem 0.85rem; display: flex; align-items: center; justify-content: space-between;">
+{{-- CARD 3: UJI FISIK & KIMIA RAW MATERIAL (SESUAI GAMBAR 3) --}}
+<div class="card" style="border-radius: 12px; border: 1.5px solid #fed7aa; box-shadow: 0 2px 6px rgba(0,0,0,0.03); overflow: hidden; background: #ffffff;">
+    <div class="card-header" style="background: #fffbeb; padding: 1rem 1.25rem; border-bottom: 1px solid #fef3c7; display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+        <div style="display: flex; align-items: center; gap: 0.65rem;">
+            <span class="card-step-badge amber">3</span>
             <div>
-                <span style="font-size: 0.725rem; font-weight: 800; color: #92400e; text-transform: uppercase;">🛢️ Minyak Sawit (MSW00G-BP2)</span>
-                <div style="font-size: 1.2rem; font-weight: 900; color: #b45309;">
-                    {{ number_format($stokMinyakSawit ?? 0, 0, ',', '.') }} <span style="font-size: 0.75rem; font-weight: 700; color: #92400e;">KG</span>
+                <h2 style="font-size: 1.05rem; font-weight: 800; color: #92400e; margin: 0; line-height: 1.25;">Uji Fisik &amp; Kimia Raw Material</h2>
+                <span style="font-size: 0.725rem; color: #b45309; font-weight: 700;">Spesifikasi Penerimaan Laboratorium</span>
+            </div>
+        </div>
+        <span style="font-size: 1.25rem;">🧪</span>
+    </div>
+
+    <div style="padding: 1.25rem; display: flex; flex-direction: column; gap: 1rem;">
+        {{-- KONDISI TANGKI / JERIGEN PENGANGKUT --}}
+        <div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.45rem; flex-wrap: wrap; gap: 0.35rem;">
+                <label class="form-label" style="font-size: 0.875rem; font-weight: 800; color: #0f172a; margin: 0;">
+                    Kondisi Tangki / Jerigen Pengangkut
+                </label>
+                <div style="display: flex; gap: 0.65rem; font-size: 0.75rem; font-weight: 700;">
+                    <label style="cursor: pointer; display: flex; align-items: center; gap: 0.25rem; color: #334155;">
+                        <input type="radio" name="minyak_tipe_wadah" value="TANGKI" {{ old('minyak_tipe_wadah', 'TANGKI') === 'TANGKI' ? 'checked' : '' }} onchange="if(typeof updateWadahChoice === 'function') updateWadahChoice(this)"> 🚚 Tangki
+                    </label>
+                    <label style="cursor: pointer; display: flex; align-items: center; gap: 0.25rem; color: #334155;">
+                        <input type="radio" name="minyak_tipe_wadah" value="JERIGEN" {{ old('minyak_tipe_wadah') === 'JERIGEN' ? 'checked' : '' }} onchange="if(typeof updateWadahChoice === 'function') updateWadahChoice(this)"> 🛢️ Jerigen
+                    </label>
                 </div>
             </div>
-            <span style="font-size: 0.7rem; font-weight: 700; color: {{ ($stokMinyakSawit ?? 0) <= 200 ? '#b91c1c' : '#15803d' }}; background: {{ ($stokMinyakSawit ?? 0) <= 200 ? '#fee2e2' : '#dcfce7' }}; padding: 3px 8px; border-radius: 6px;">
-                {{ ($stokMinyakSawit ?? 0) <= 200 ? '⚠️ Menipis' : 'Stok Tersedia' }}
-            </span>
+
+            <div class="big-choice-grid">
+                {{-- OK (Standar) --}}
+                <label class="big-choice-btn {{ old('minyak_kondisi_wadah', 'OK') === 'OK' ? 'active-ok' : '' }}" id="cardKondisiOk">
+                    <input type="radio" name="minyak_kondisi_wadah" value="OK" {{ old('minyak_kondisi_wadah', 'OK') === 'OK' ? 'checked' : '' }} onchange="updateKondisiWadahCard(this)" style="display: none;">
+                    <span style="font-weight: 900;">✔</span>
+                    <span>OK (Standar)</span>
+                </label>
+                {{-- TIDAK STANDAR --}}
+                <label class="big-choice-btn {{ old('minyak_kondisi_wadah') === 'TIDAK_STANDARD' ? 'active-danger' : '' }}" id="cardKondisiTdkStd">
+                    <input type="radio" name="minyak_kondisi_wadah" value="TIDAK_STANDARD" {{ old('minyak_kondisi_wadah') === 'TIDAK_STANDARD' ? 'checked' : '' }} onchange="updateKondisiWadahCard(this)" style="display: none;">
+                    <span style="font-weight: 900;">✖</span>
+                    <span>TIDAK STANDAR</span>
+                </label>
+            </div>
+            <input type="hidden" name="minyak_status_raw_material" id="minyakStatusRawMaterialHidden" value="{{ old('minyak_status_raw_material', 'OK') }}">
         </div>
-        {{-- MINYAK KELAPA --}}
-        <div style="background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 0.65rem 0.85rem; display: flex; align-items: center; justify-content: space-between;">
-            <div>
-                <span style="font-size: 0.725rem; font-weight: 800; color: #334155; text-transform: uppercase;">🥥 Minyak Kelapa (MKP00G-BP1)</span>
-                <div style="font-size: 1.2rem; font-weight: 900; color: #1e293b;">
-                    {{ number_format($stokMinyakKelapa ?? 0, 0, ',', '.') }} <span style="font-size: 0.75rem; font-weight: 700; color: #475569;">Liter</span>
+
+        {{-- 2 CHECKBOX CARDS (MINYAK JERNIH & TANGKI BERSIH) --}}
+        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+            {{-- Minyak Jernih --}}
+            <label class="minyak-check-card" id="cardCheckJernih">
+                <div class="minyak-check-left">
+                    <input type="checkbox" name="minyak_jernih_st" value="1" {{ old('minyak_jernih_st', '1') == '1' ? 'checked' : '' }} onchange="updateCheckCard(this)">
+                    <span>Minyak Jernih</span>
                 </div>
-            </div>
-            <span style="font-size: 0.7rem; font-weight: 700; color: {{ ($stokMinyakKelapa ?? 0) <= 100 ? '#b91c1c' : '#0284c7' }}; background: {{ ($stokMinyakKelapa ?? 0) <= 100 ? '#fee2e2' : '#e0f2fe' }}; padding: 3px 8px; border-radius: 6px;">
-                {{ ($stokMinyakKelapa ?? 0) <= 100 ? '⚠️ Menipis' : 'Stok Tersedia' }}
-            </span>
-        </div>
-        {{-- TOTAL GUDANG --}}
-        <div style="background: #ffffff; border: 1.5px solid #86efac; border-radius: 8px; padding: 0.65rem 0.85rem; display: flex; align-items: center; justify-content: space-between;">
-            <div>
-                <span style="font-size: 0.725rem; font-weight: 800; color: #166534; text-transform: uppercase;">📊 Total Stok Minyak</span>
-                <div style="font-size: 1.2rem; font-weight: 900; color: #15803d;">
-                    {{ number_format($stokMinyakTotal ?? 0, 0, ',', '.') }} <span style="font-size: 0.75rem; font-weight: 700; color: #166534;">KG/L</span>
-                </div>
-            </div>
-            <span style="font-size: 0.7rem; font-weight: 700; color: #166534; background: #dcfce7; padding: 3px 8px; border-radius: 6px;">
-                Gudang Bahan
-            </span>
-        </div>
-    </div>
-    <div style="font-size: 0.725rem; color: #92400e; margin-top: 0.45rem; line-height: 1.35; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.35rem;">
-        <span>💡 <em>Pedoman QC: Periksa hasil uji asam lemak bebas (FFA) pada COA dan uji lab. Minyak yang lolos QC akan menambah persediaan tangki/jerigen di atas saat penerimaan barang (GRN).</em></span>
-        @if(isset($stokMinyakBatches) && $stokMinyakBatches->isNotEmpty())
-            <span style="font-weight: 700; color: #78350f;">{{ $stokMinyakBatches->count() }} Batch Aktif Tersedia</span>
-        @endif
-    </div>
-    @if(isset($stokMinyakBatches) && $stokMinyakBatches->isNotEmpty())
-        <div style="margin-top: 0.5rem; padding-top: 0.45rem; border-top: 1px dashed #fde047; font-size: 0.725rem; color: #78350f; display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center;">
-            <span style="font-weight: 700;">📦 Batch Aktif di Gudang:</span>
-            @foreach($stokMinyakBatches as $b)
-                <span style="background: #ffffff; border: 1px solid #fde68a; padding: 2px 6px; border-radius: 4px; font-family: monospace;">
-                    {{ $b->batch_no }}: <strong>{{ number_format($b->sisa_qty, 0, ',', '.') }}</strong> {{ $b->barang?->satuanDasar?->satuan_cd ?? 'KG' }} (Exp: {{ $b->expired_tgl ? date('d/m/Y', strtotime($b->expired_tgl)) : '-' }})
-                </span>
-            @endforeach
-        </div>
-    @endif
-</div>
-
-{{-- FORM INPUT KHUSUS MINYAK GORENG --}}
-<div id="minyakContainer" style="display: {{ old('kategori_barang', $initialKomoditas ?? 'SINGKONG') === 'MINYAK' ? 'flex' : 'none' }}; flex-direction: column; gap: 1.25rem;">
-    {{-- 1. PILIH MASTER ITEM MINYAK GORENG --}}
-    <div class="form-group" style="margin-bottom: 0;">
-        <label class="form-label" style="font-weight: 800; color: #0f172a;">Komoditas Minyak Goreng <span style="color:red;">*</span></label>
-        <select name="minyak_barang_id" id="minyakBarangSelect" class="form-control" style="font-weight: 700;" onchange="syncNamaRmFromSelect(this)">
-            @foreach ($barangs as $b)
-                @if (stripos($b->barang_nm, 'minyak') !== false)
-                    <option value="{{ $b->barang_id }}" data-nama="{{ $b->barang_nm }}">{{ $b->barang_cd }} - {{ $b->barang_nm }} ({{ $b->satuanDasar?->satuan_nm ?? 'KG' }})</option>
-                @endif
-            @endforeach
-        </select>
-    </div>
-
-    {{-- 2. ISI RAW MATERIAL & KONDISI WADAH --}}
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem;">
-        <div style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 10px; padding: 1rem;">
-            <span style="font-weight: 800; font-size: 0.85rem; color: #0f172a;">2. ISI RAW MATERIAL :</span>
-            <div style="display: flex; gap: 1.25rem; margin-top: 0.5rem;">
-                <label style="display: flex; align-items: center; gap: 0.35rem; font-weight: 700; color: #15803d; cursor: pointer;">
-                    <input type="radio" name="minyak_status_raw_material" value="OK" checked> OK
-                </label>
-                <label style="display: flex; align-items: center; gap: 0.35rem; font-weight: 700; color: #dc2626; cursor: pointer;">
-                    <input type="radio" name="minyak_status_raw_material" value="TDK_STD"> TDK STD
-                </label>
-            </div>
-        </div>
-
-        <div style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 10px; padding: 1rem;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
-                <span style="font-weight: 800; font-size: 0.85rem; color: #0f172a;">KONDISI WADAH :</span>
-                <div style="display: flex; gap: 0.75rem; font-size: 0.8rem; font-weight: 700;">
-                    <label style="cursor: pointer;"><input type="radio" name="minyak_tipe_wadah" value="TANGKI" checked> TANGKI</label>
-                    <label style="cursor: pointer;"><input type="radio" name="minyak_tipe_wadah" value="JERIGEN"> JERIGEN</label>
-                </div>
-            </div>
-            <div style="display: flex; gap: 1.25rem; margin-top: 0.5rem;">
-                <label style="display: flex; align-items: center; gap: 0.35rem; font-weight: 700; color: #15803d; cursor: pointer;">
-                    <input type="radio" name="minyak_kondisi_wadah" value="OK" checked> OK
-                </label>
-                <label style="display: flex; align-items: center; gap: 0.35rem; font-weight: 700; color: #dc2626; cursor: pointer;">
-                    <input type="radio" name="minyak_kondisi_wadah" value="TIDAK_STANDARD"> TIDAK STANDARD
-                </label>
-            </div>
-        </div>
-    </div>
-
-    {{-- 3. PEMERIKSAAN ASAM LEMAK BEBAS (FFA) & KEBERSIHAN FISIK --}}
-    <div style="background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 10px; padding: 1rem;">
-        <div style="font-weight: 800; font-size: 0.85rem; color: #0f172a; margin-bottom: 0.75rem;">
-            🔬 HASIL PEMERIKSAAN ASAM LEMAK BEBAS (FFA) &amp; FISIK
-        </div>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; align-items: center;">
-            <div>
-                <label class="form-label" style="font-weight: 700;">FFA DI COA (Pabrik Produsen)</label>
-                <input type="number" step="0.001" min="0" max="100" name="minyak_ffa_coa" class="form-control" placeholder="Contoh: 0.080" value="{{ old('minyak_ffa_coa') }}">
-            </div>
-            <div>
-                <label class="form-label" style="font-weight: 700; color: #0284c7;">FFA CEK QC MIRASA (Lab)</label>
-                <input type="number" step="0.001" min="0" max="100" name="minyak_ffa_qc" class="form-control" placeholder="Contoh: 0.085" value="{{ old('minyak_ffa_qc') }}" style="font-weight: 800; color: #0f172a;">
-            </div>
-        </div>
-
-        <div style="display: flex; gap: 1.5rem; margin-top: 1rem; padding-top: 0.75rem; border-top: 1px dashed #cbd5e1; flex-wrap: wrap;">
-            <label style="display: flex; align-items: center; gap: 0.45rem; font-weight: 700; color: #15803d; cursor: pointer;">
-                <input type="checkbox" name="minyak_jernih_st" value="1" checked> MINYAK JERNIH
+                <span class="minyak-check-badge">Bebas Endapan</span>
             </label>
-            <label style="display: flex; align-items: center; gap: 0.45rem; font-weight: 700; color: #15803d; cursor: pointer;">
-                <input type="checkbox" name="minyak_tangki_bersih_st" value="1" checked> TANGKI BAGIAN DALAM BERSIH
+
+            {{-- Tangki Bagian Dalam Bersih --}}
+            <label class="minyak-check-card" id="cardCheckTangki">
+                <div class="minyak-check-left">
+                    <input type="checkbox" name="minyak_tangki_bersih_st" value="1" {{ old('minyak_tangki_bersih_st', '1') == '1' ? 'checked' : '' }} onchange="updateCheckCard(this)">
+                    <span>Tangki Bagian Dalam Bersih</span>
+                </div>
+                <span class="minyak-check-badge">Saniter</span>
             </label>
         </div>
-    </div>
 
-    {{-- 4. KUANTITAS & TIMBANGAN NETTO --}}
-    <div style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 10px; padding: 1rem;">
-        <div style="font-weight: 800; font-size: 0.85rem; color: #0f172a; margin-bottom: 0.5rem;">
-            ⚖️ KUANTITAS &amp; HASIL PENIMBANGAN
-        </div>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.75rem;">
-            <div>
-                <label class="form-label" style="font-weight: 700;">Timbangan Netto (KG)</label>
-                <input type="number" step="0.01" min="0" name="minyak_qty_gross" id="minyakQtyGross" class="form-control" placeholder="0.00" value="{{ old('minyak_qty_gross') }}">
+        {{-- PARAMETER FFA (FREE FATTY ACID) (SESUAI GAMBAR 3) --}}
+        <div class="ffa-parameter-box">
+            <div class="ffa-param-header">
+                <div class="ffa-param-title">PARAMETER FFA (FREE FATTY ACID)</div>
+                <div class="ffa-param-badge">Std Max: ≤ 0.20%</div>
             </div>
-            <div>
-                <label class="form-label" style="color: #dc2626; font-weight: 700;">Qty Reject / Tolak (KG)</label>
-                <input type="number" step="0.01" min="0" name="minyak_qty_reject" id="minyakQtyReject" class="form-control" placeholder="0.00" value="{{ old('minyak_qty_reject', 0) }}">
+
+            <div class="qc-grid-2col">
+                <div class="ffa-param-card">
+                    <div class="qc-field-header" style="min-height: 1.8rem;">
+                        <label class="qc-field-label" style="font-size: 0.75rem; color: #475569;">FFA di COA (Vendor)</label>
+                    </div>
+                    <div class="input-suffix-wrap">
+                        <input type="number" step="0.001" min="0" max="100" name="minyak_ffa_coa" id="inputMinyakFfaCoa" class="form-control" placeholder="0.05" value="{{ old('minyak_ffa_coa') }}" style="font-weight: 800;">
+                        <span class="input-suffix-text">%</span>
+                    </div>
+                </div>
+
+                <div class="ffa-param-card">
+                    <div class="qc-field-header" style="min-height: 1.8rem;">
+                        <label class="qc-field-label" style="font-size: 0.75rem; color: #0284c7;">FFA Cek QC Mirasa <span style="color:#ef4444;">*</span></label>
+                    </div>
+                    <div class="input-suffix-wrap">
+                        <input type="number" step="0.001" min="0" max="100" name="minyak_ffa_qc" id="inputMinyakFfaQc" class="form-control" placeholder="0.06" value="{{ old('minyak_ffa_qc') }}" style="font-weight: 800; border-color: #0284c7;" oninput="checkMinyakAcceptance()">
+                        <span class="input-suffix-text">%</span>
+                    </div>
+                </div>
             </div>
-        </div>
-    </div>
 
-    {{-- 5. KOMENTAR PEMERIKSAAN & KESIMPULAN QC --}}
-    <div style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 10px; padding: 1rem;">
-        <div class="form-group" style="margin-bottom: 0.75rem;">
-            <label class="form-label" style="font-weight: 700;">KOMENTAR PEMERIKSAAN :</label>
-            <textarea name="minyak_komentar" rows="2" class="form-control" placeholder="Komentar hasil uji minyak goreng...">{{ old('minyak_komentar') }}</textarea>
-        </div>
-
-        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; border-top: 1px solid #e2e8f0; padding-top: 0.75rem;">
-            <span style="font-weight: 900; font-size: 0.95rem; color: #0f172a;">KESIMPULAN QC :</span>
-            <div style="display: flex; gap: 1.5rem;">
-                <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 1rem; font-weight: 800; color: #15803d; cursor: pointer;">
-                    <input type="radio" name="minyak_kesimpulan" value="TERIMA" checked> ✅ TERIMA
-                </label>
-                <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 1rem; font-weight: 800; color: #dc2626; cursor: pointer;">
-                    <input type="radio" name="minyak_kesimpulan" value="TOLAK"> ❌ TOLAK
-                </label>
+            <div class="ffa-status-row">
+                <span style="font-size: 0.8rem; font-weight: 700; color: #475569;">Status Pengujian Kimia:</span>
+                <div class="ffa-status-badge" id="badgeFfaStatus">
+                    <span id="badgeFfaIcon">✔</span>
+                    <span id="badgeFfaText">Sesuai Standar (≤0.20%)</span>
+                </div>
             </div>
         </div>
     </div>
 </div>
+
+{{-- CARD 4: KOMENTAR & KESIMPULAN AKHIR (SESUAI GAMBAR 3) --}}
+<div class="card" style="border-radius: 12px; border: 1.5px solid #e2e8f0; box-shadow: 0 2px 6px rgba(0,0,0,0.03); overflow: hidden; background: #ffffff;">
+    <div class="card-header" style="background: #ffffff; padding: 1rem 1.25rem; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+        <div style="display: flex; align-items: center; gap: 0.65rem;">
+            <span class="card-step-badge">4</span>
+            <div>
+                <h2 style="font-size: 1.05rem; font-weight: 800; color: #0f172a; margin: 0; line-height: 1.25;">Komentar &amp; Kesimpulan Akhir</h2>
+            </div>
+        </div>
+        <span style="font-size: 1.25rem;">📋</span>
+    </div>
+
+    <div style="padding: 1.25rem; display: flex; flex-direction: column; gap: 1rem;">
+        {{-- SINKRONISASI HASIL TIMBANGAN & NETTO (SEJAJAR SEMPURNA) --}}
+        <div class="qc-grid-2col">
+            <div class="form-group">
+                <div class="qc-field-header">
+                    <label class="qc-field-label">Timbangan Gross (<span class="label-satuan-text">KG</span>) <span style="color:#ef4444;">*</span></label>
+                </div>
+                <div class="input-suffix-wrap">
+                    <input type="number" step="0.01" min="0" name="minyak_qty_gross" id="minyakQtyGross" class="form-control" placeholder="15985" value="{{ old('minyak_qty_gross') }}" oninput="syncMinyakQuantity('gross')" style="font-weight: 800; font-size: 0.95rem;">
+                    <span class="input-suffix-text suffix-satuan-text">KG</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="qc-field-header">
+                    <label class="qc-field-label" style="color: #dc2626;">Qty Reject / Tolak (<span class="label-satuan-text">KG</span>)</label>
+                </div>
+                <div class="input-suffix-wrap">
+                    <input type="number" step="0.01" min="0" name="minyak_qty_reject" id="minyakQtyReject" class="form-control" placeholder="0" value="{{ old('minyak_qty_reject', 0) }}" oninput="syncMinyakQuantity('reject')" style="font-weight: 800; font-size: 0.95rem;">
+                    <span class="input-suffix-text suffix-satuan-text">KG</span>
+                </div>
+            </div>
+        </div>
+
+        <div style="background: #ecfdf5; border: 1.5px solid #a7f3d0; border-radius: 10px; padding: 0.75rem 1rem; display: flex; flex-direction: column; gap: 0.25rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 0.825rem; font-weight: 800; color: #065f46;">Netto Lolos Diterima Pabrik:</span>
+                <strong id="labelMinyakNetto" style="font-size: 1.25rem; font-weight: 900; color: #059669;">0,00 KG</strong>
+            </div>
+            <span id="labelMinyakNettoFormula" style="font-size: 0.725rem; color: #047857; font-weight: 700;">
+                Sesuai timbangan datang (tanpa reject)
+            </span>
+        </div>
+
+        {{-- KOMENTAR / CATATAN KHUSUS QC (GAMBAR 3) --}}
+        <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label" style="font-weight: 800; font-size: 0.85rem; color: #0f172a;">Komentar / Catatan Khusus QC</label>
+            <textarea name="minyak_komentar" rows="3" class="form-control" placeholder="Kondisi segel tangki utuh dan sesuai dokumen DO. Suhu penerimaan kamar normal, minyak jernih kuning keemasan, FFA aman.">{{ old('minyak_komentar') }}</textarea>
+        </div>
+
+        {{-- KESIMPULAN AKHIR QC --}}
+        <div>
+            <label class="form-label" style="font-weight: 800; font-size: 0.85rem; color: #0f172a; margin-bottom: 0.45rem; display: block;">
+                Keputusan Akhir Inspeksi QC:
+            </label>
+            <div class="big-choice-grid">
+                <label class="big-choice-btn {{ old('minyak_kesimpulan', 'TERIMA') === 'TERIMA' ? 'active-ok' : '' }}" id="cardTerima">
+                    <input type="radio" name="minyak_kesimpulan" id="minyakRadioTerima" value="TERIMA" {{ old('minyak_kesimpulan', 'TERIMA') === 'TERIMA' ? 'checked' : '' }} onchange="updateKesimpulanCard(this)" style="display: none;">
+                    <span style="font-weight: 900;">✔</span>
+                    <span>TERIMA (LOLOS)</span>
+                </label>
+                <label class="big-choice-btn {{ old('minyak_kesimpulan') === 'TOLAK' ? 'active-danger' : '' }}" id="cardTolak">
+                    <input type="radio" name="minyak_kesimpulan" id="minyakRadioTolak" value="TOLAK" {{ old('minyak_kesimpulan') === 'TOLAK' ? 'checked' : '' }} onchange="updateKesimpulanCard(this)" style="display: none;">
+                    <span style="font-weight: 900;">✖</span>
+                    <span>TOLAK (REJECT)</span>
+                </label>
+            </div>
+        </div>
+
+        {{-- OTORISASI & PEMERIKSA (BISA DITAMBAHKAN/DIEDIT LANGSUNG SESUAI PERMINTAAN USER) --}}
+        <div style="border-top: 1px dashed #cbd5e1; padding-top: 0.85rem; margin-top: 0.35rem; display: flex; flex-direction: column; gap: 0.75rem;">
+            {{-- PETUGAS QC RAW MATERIAL --}}
+            <div class="qc-auth-card">
+                <div class="qc-auth-header">
+                    <div>
+                        <div class="qc-auth-title">Petugas QC Raw Material</div>
+                        <div class="qc-auth-sub">Pemeriksa kedatangan langsung</div>
+                    </div>
+                    <span class="qc-auth-badge verified">Terverifikasi ID</span>
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <div class="qc-field-header">
+                        <label class="qc-field-label">Nama Petugas QC (Bisa Diedit/Ketik Langsung)</label>
+                    </div>
+                    <input type="text" name="petugas_qc_nama" id="inputPetugasQc" class="form-control" placeholder="Nama Petugas QC" value="{{ old('petugas_qc_nama', auth()->user()?->name ?? 'Petugas QC') }}" style="font-weight: 800; color: #0f172a;">
+                </div>
+            </div>
+
+            {{-- QC SUPERVISOR / LAB HEAD --}}
+            <div class="qc-auth-card">
+                <div class="qc-auth-header">
+                    <div>
+                        <div class="qc-auth-title">QC Supervisor / Lab Head</div>
+                        <div class="qc-auth-sub">Peninjau &amp; Persetujuan Rilis Bahan</div>
+                    </div>
+                    <span class="qc-auth-badge pending">Menunggu Review</span>
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <div class="qc-field-header">
+                        <label class="qc-field-label">Tugaskan Supervisor Peninjau (Bisa Diedit/Ketik Langsung)</label>
+                    </div>
+                    <input type="text" name="qc_supervisor_nama" id="inputSupervisorQc" list="listSupervisorQc" class="form-control" placeholder="Pilih atau ketik nama Supervisor..." value="{{ old('qc_supervisor_nama', 'Hendrawan, S.TP (SPV QC Shift Pagi)') }}" style="font-weight: 800; color: #0f172a;">
+                    <datalist id="listSupervisorQc">
+                        <option value="Hendrawan, S.TP (SPV QC Shift Pagi)">
+                        <option value="Rina Wijaya, S.Si (Supervisor QC Lab)">
+                        <option value="Dedi (QC Bahan Baku)">
+                        <option value="Bambang (Produksi Magelang)">
+                        <option value="Super Administrator">
+                    </datalist>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+

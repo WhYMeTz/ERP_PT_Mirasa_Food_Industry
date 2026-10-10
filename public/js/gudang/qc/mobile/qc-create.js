@@ -118,11 +118,49 @@
         const titleHaccp = document.getElementById('titleFormHaccp');
         const descHaccp = document.getElementById('descFormHaccp');
         const labelNamaJenis = document.getElementById('labelNamaJenis');
+        const labelPabrik = document.getElementById('labelJumlahPabrik');
+        const hintPabrik = document.getElementById('hintJumlahPabrik');
+        const btnNextTab2 = document.getElementById('btnNextToTab2');
 
-        if (badgeDoc) badgeDoc.innerText = 'No. Dok: ' + cfg.docNo;
+        if (badgeDoc) {
+            badgeDoc.style.display = (type === 'SINGKONG' && !cfg.docNo) ? 'none' : 'inline-block';
+            badgeDoc.innerText = 'No. Dok: ' + cfg.docNo;
+        }
         if (titleHaccp) titleHaccp.innerText = cfg.title;
         if (descHaccp) descHaccp.innerText = cfg.desc;
-        if (labelNamaJenis) labelNamaJenis.innerText = cfg.labelNamaJenis;
+        if (labelNamaJenis) {
+            labelNamaJenis.innerText = (type === 'MINYAK') ? 'NAMA JENIS (Varian / Fraksi Minyak) :' : cfg.labelNamaJenis;
+        }
+        if (labelPabrik) {
+            labelPabrik.innerText = (type === 'MINYAK') ? 'Jumlah di Pabrik (Netto Masuk Pabrik)' : 'Jumlah di Pabrik (Muatan Uji Ini)';
+        }
+        if (hintPabrik) {
+            if (type === 'MINYAK') {
+                hintPabrik.innerHTML = 'Timbangan muatan tangki / jerigen minyak yang masuk pabrik (KG).';
+            } else if (type === 'SINGKONG') {
+                const curTahap = document.getElementById('tahapUjiInput')?.value || 'PENGUJIAN_1';
+                hintPabrik.innerHTML = (curTahap === 'PENGUJIAN_2')
+                    ? 'Pengujian 2: Sisa muatan setengah bak yang dibongkar tuntas (contoh: <strong>4.000 KG</strong>).'
+                    : 'Pengujian 1: Muatan setengah bak pertama yang turun (contoh: <strong>3.000 KG</strong>).';
+            } else {
+                hintPabrik.innerHTML = 'Kuantitas fisik riil yang diterima di pabrik.';
+            }
+        }
+        if (btnNextTab2) {
+            btnNextTab2.innerText = (type === 'MINYAK') ? 'Lanjut ke Mutu Minyak & FFA \u2192' : 'Lanjut ke Pemeriksaan Parameter \u2192';
+        }
+
+        // Auto filter PO & Supplier saat komoditas dipilih
+        if (type === 'MINYAK') {
+            window.setPoCategoryFilter('MINYAK');
+            window.setSupplierCategoryFilter('VENDOR');
+        } else if (type === 'SINGKONG') {
+            window.setPoCategoryFilter('SINGKONG');
+            window.setSupplierCategoryFilter('RAW');
+        } else {
+            window.setPoCategoryFilter('AUTO');
+            window.setSupplierCategoryFilter('AUTO');
+        }
 
         // Toggle Tahap Pengujian 1 & 2 (HANYA UNTUK SINGKONG)
         const groupTahap = document.getElementById('groupTahapPengujian');
@@ -149,19 +187,24 @@
         if (grpUmur) grpUmur.style.display = displayPanen;
         if (grpTgl) grpTgl.style.display = displayPanen;
 
-        // Toggle pertanyaan audit halal tambahan
+        // Toggle pertanyaan audit halal tambahan & Produsen Pabrik
         const halalCertGroup = document.getElementById('auditHalalNonSingkong');
         if (halalCertGroup) {
             halalCertGroup.style.display = (type === 'SINGKONG') ? 'none' : 'flex';
+        }
+
+        const wrapProdusenNegara = document.getElementById('wrapProdusenNegara');
+        if (wrapProdusenNegara) {
+            wrapProdusenNegara.style.display = (type === 'SINGKONG') ? 'none' : 'grid';
         }
 
         // Toggle sample input unit (KG vs gr vs pcs)
         const grpSampleKg = document.getElementById('groupSampleKg');
         const grpSampleGr = document.getElementById('groupSampleGr');
         const grpSamplePcs = document.getElementById('groupSamplePcs');
-        if (grpSampleKg) grpSampleKg.style.display = (cfg.sampleUnit === 'KG') ? 'block' : 'none';
-        if (grpSampleGr) grpSampleGr.style.display = (cfg.sampleUnit === 'gr') ? 'block' : 'none';
-        if (grpSamplePcs) grpSamplePcs.style.display = (cfg.sampleUnit === 'pcs') ? 'block' : 'none';
+        if (grpSampleKg) grpSampleKg.style.setProperty('display', (cfg.sampleUnit === 'KG') ? 'flex' : 'none', 'important');
+        if (grpSampleGr) grpSampleGr.style.setProperty('display', (cfg.sampleUnit === 'gr') ? 'flex' : 'none', 'important');
+        if (grpSamplePcs) grpSamplePcs.style.setProperty('display', (cfg.sampleUnit === 'pcs') ? 'flex' : 'none', 'important');
 
         // Toggle Tab 3 (Fryer) & Navigation
         const tabBtn3 = document.getElementById('tabBtn3');
@@ -205,9 +248,13 @@
                     ? 'Tahap 2: Sampling Mutu Minyak Goreng & FFA' 
                     : 'Tahap 2: Pemeriksaan Mutu & Parameter Kedatangan';
             }
-            if (sec2Sub) sec2Sub.innerText = 'Formulir Cheklist HACCP PT Mirasa Food Industry';
+            if (sec2Sub) {
+                sec2Sub.innerText = (type === 'MINYAK')
+                    ? 'Formulir Cheklist HACCP PT Mirasa Food Industry (FFA, Wadah & Netto)'
+                    : 'Formulir Cheklist HACCP PT Mirasa Food Industry';
+            }
             if (tabBtn2) {
-                tabBtn2.innerText = (type === 'MINYAK') ? '🧪 2. Mutu Fisik & FFA' : '🔬 2. Mutu & Parameter';
+                tabBtn2.innerText = (type === 'MINYAK') ? '🛢️ 2. Mutu Minyak & FFA' : '🔬 2. Mutu & Parameter';
             }
         }
 
@@ -225,9 +272,32 @@
         const cPlastik = document.getElementById('plastikContainer');
         const cKarton = document.getElementById('kartonContainer');
         const cBP = document.getElementById('bahanPenolongContainer');
+        const fContainer = document.getElementById('fryerParamsContainer');
 
-        if (cSingkong) cSingkong.style.display = (type === 'SINGKONG') ? 'flex' : 'none';
-        if (cMinyak) cMinyak.style.display = (type === 'MINYAK') ? 'flex' : 'none';
+        if (cSingkong) {
+            cSingkong.style.display = (type === 'SINGKONG') ? 'flex' : 'none';
+            cSingkong.querySelectorAll('input, select, textarea').forEach(el => {
+                el.disabled = (type !== 'SINGKONG');
+            });
+            if (type === 'SINGKONG') {
+                const itemCards = cSingkong.querySelectorAll('.qc-item-card');
+                if (itemCards.length === 0 && typeof window.createItemCard === 'function') {
+                    window.createItemCard();
+                }
+            }
+        }
+        if (fContainer) {
+            fContainer.querySelectorAll('input, select, textarea').forEach(el => {
+                el.disabled = (type !== 'SINGKONG');
+            });
+        }
+
+        if (cMinyak) {
+            cMinyak.style.display = (type === 'MINYAK') ? 'flex' : 'none';
+            if (type === 'MINYAK' && typeof syncMinyakQuantity === 'function') {
+                syncMinyakQuantity();
+            }
+        }
         if (cPlastik) cPlastik.style.display = (type === 'PLASTIK') ? 'flex' : 'none';
         if (cKarton) cKarton.style.display = (type === 'KARTON') ? 'flex' : 'none';
         if (cBP) cBP.style.display = isBP ? 'flex' : 'none';
@@ -613,7 +683,10 @@
             }
         } else if (currentKomoditas === 'MINYAK') {
             const el = document.getElementById('minyakQtyGross');
-            if (el && (!el.value || el.value == 0)) el.value = pabrik > 0 ? pabrik : '';
+            if (el && (!el.value || el.value == 0)) {
+                el.value = pabrik > 0 ? pabrik : '';
+            }
+            if (typeof syncMinyakQuantity === 'function') syncMinyakQuantity();
         } else if (currentKomoditas === 'PLASTIK') {
             const el = document.getElementById('plastikQtyGross');
             if (el && (!el.value || el.value == 0)) el.value = pabrik > 0 ? Math.round(pabrik) : '';
@@ -644,16 +717,33 @@
         const dockNext = document.getElementById('dockNextText');
         const hintPabrik = document.getElementById('hintJumlahPabrik');
 
+        const labelSJ = document.getElementById('labelJumlahSJ');
+        const hintSJ = document.getElementById('hintJumlahSJ');
+        const labelPabrik = document.getElementById('labelJumlahPabrik');
+        const hintSample = document.getElementById('hintSampleKg');
+        const badgeTab1 = document.getElementById('badgeTab1Step');
+
         if (tahap === 'PENGUJIAN_2') {
-            if (hintPabrik) {
-                hintPabrik.innerHTML = 'Pengujian 2: Sisa muatan setengah bak yang dibongkar tuntas (contoh: <strong>4.000 KG</strong>).';
+            if (badgeTab1) {
+                badgeTab1.innerText = 'PENGUJIAN 2 • LANJUTAN';
+                badgeTab1.style.background = '#f3e8ff';
+                badgeTab1.style.color = '#7e22ce';
             }
+            if (labelSJ) labelSJ.innerHTML = '📄 Jumlah di Surat Jalan (KG) <span style="font-size:0.75rem; color:#7e22ce; font-weight:normal;">(Auto Uji 1)</span>';
+            if (hintSJ) hintSJ.innerHTML = 'Total muatan Surat Jalan truk terisi dari Pengujian 1.';
+            if (labelPabrik) labelPabrik.innerHTML = '⚖️ Muatan Uji 2 / Sisa Bak (KG) <span style="color:#ef4444;">*</span>';
+            if (hintPabrik) {
+                hintPabrik.innerHTML = 'Pengujian 2: Sisa muatan setengah bak yang dibongkar tuntas (contoh: <strong>3.500 KG</strong>).';
+            }
+            if (hintSample) hintSample.innerHTML = 'Cuplikan sampel ~7.0 kg dari lapisan dalam/bawah bak yang tersisa.';
             if (btn1) {
+                btn1.classList.remove('active', 'blue');
                 btn1.style.background = '#ffffff';
                 btn1.style.borderColor = '#cbd5e1';
                 btn1.style.color = '#334155';
             }
             if (btn2) {
+                btn2.classList.add('active', 'purple');
                 btn2.style.background = '#9333ea';
                 btn2.style.borderColor = '#9333ea';
                 btn2.style.color = '#ffffff';
@@ -664,7 +754,8 @@
                 badge.style.background = '#f3e8ff';
             }
             if (desc) {
-                desc.innerHTML = '🍟 <strong>Pengujian 2:</strong> Pengujian lanjutan setelah setengah bak diturunkan. Petugas mengambil sampel gabungan ~7 kg dari lapisan dalam/bawah bak untuk verifikasi sebelum bongkar tuntas.';
+                desc.innerHTML = '🍟 <strong>Pengujian 2:</strong> Pengujian lanjutan saat pembongkaran sisa setengah bak kedua. Sampel cuplikan ~7 kg dari lapisan bawah/dalam bak untuk verifikasi sebelum bongkar tuntas.';
+                desc.style.borderLeftColor = '#9333ea';
             }
             if (wrapPending) wrapPending.style.display = 'block';
             if (currentKomoditas === 'SINGKONG') {
@@ -680,15 +771,26 @@
                 }
             }
         } else {
-            if (hintPabrik) {
-                hintPabrik.innerHTML = 'Pengujian 1: Muatan setengah bak pertama yang turun (contoh: <strong>3.000 KG</strong>). Sisa (4.000 KG) akan otomatis di Pengujian 2.';
+            if (badgeTab1) {
+                badgeTab1.innerText = 'PENGUJIAN 1 • AWAL';
+                badgeTab1.style.background = '#e0f2fe';
+                badgeTab1.style.color = '#0284c7';
             }
+            if (labelSJ) labelSJ.innerHTML = '📄 Jumlah di Surat Jalan (KG) <span style="color:#ef4444;">*</span>';
+            if (hintSJ) hintSJ.innerHTML = 'Total muatan seluruh armada pada Surat Jalan (contoh: <strong>7.000 KG</strong>).';
+            if (labelPabrik) labelPabrik.innerHTML = '⚖️ Muatan Uji 1 / Setengah Bak 1 (KG) <span style="color:#ef4444;">*</span>';
+            if (hintPabrik) {
+                hintPabrik.innerHTML = 'Pengujian 1: Muatan setengah bak pertama yang turun ditimbang (contoh: <strong>3.500 KG</strong>). Sisa muatan akan diuji pada Pengujian 2.';
+            }
+            if (hintSample) hintSample.innerHTML = 'Format standar <strong>7.0 KG</strong> (sampel gabungan cuplikan bak depan, tengah, belakang).';
             if (btn1) {
+                btn1.classList.add('active', 'blue');
                 btn1.style.background = '#0284c7';
                 btn1.style.borderColor = '#0284c7';
                 btn1.style.color = '#ffffff';
             }
             if (btn2) {
+                btn2.classList.remove('active', 'purple');
                 btn2.style.background = '#ffffff';
                 btn2.style.borderColor = '#cbd5e1';
                 btn2.style.color = '#334155';
@@ -699,7 +801,8 @@
                 badge.style.background = '#e0f2fe';
             }
             if (desc) {
-                desc.innerHTML = '🚛 <strong>Pengujian 1:</strong> Pengujian awal saat truk singkong tiba di pos penerimaan (sebelum bongkar muatan). Sampel gabungan ~7 kg diambil dari bak belakang, tengah, depan.';
+                desc.innerHTML = '🚛 <strong>Pengujian 1:</strong> Pengujian awal saat truk singkong tiba di pos penerimaan. Sampel cuplikan ~7 kg dari lapisan awal/atas bak sebelum mulai pembongkaran.';
+                desc.style.borderLeftColor = '#0284c7';
             }
             if (wrapPending) wrapPending.style.display = 'none';
             if (currentKomoditas === 'SINGKONG') {
@@ -715,6 +818,13 @@
                 }
             }
         }
+
+        try {
+            sessionStorage.setItem('qc_singkong_tahap', tahap);
+            const url = new URL(window.location.href);
+            url.searchParams.set('tahap', (tahap === 'PENGUJIAN_2') ? '2' : '1');
+            window.history.replaceState({}, '', url.toString());
+        } catch (e) {}
     };
 
     window.setTahapUji = function (tahap) {
@@ -794,8 +904,21 @@
 
         const totalSJ = parseFloat(d.sj_qty || 0);
         const p1Gross = parseFloat(d.gross || 0);
-        const sisaSetengahBak = Math.max(0, totalSJ - p1Gross);
-        const estimasiGrossUji2 = sisaSetengahBak > 0 ? sisaSetengahBak : (p1Gross > 0 ? p1Gross : (totalSJ > 0 ? totalSJ / 2 : 4000));
+        
+        let estimasiGrossUji2 = 0;
+        let isFullUnloaded = false;
+
+        if (totalSJ > 0 && p1Gross >= totalSJ) {
+            // Muatan sudah turun 100% atau bahkan lebih di Pengujian 1
+            isFullUnloaded = true;
+            estimasiGrossUji2 = 0;
+        } else if (totalSJ > 0 && p1Gross < totalSJ) {
+            // Masih ada sisa setengah bak
+            estimasiGrossUji2 = Math.max(0, totalSJ - p1Gross);
+        } else {
+            // totalSJ tidak diisi atau 0: fallback ke estimasi p1Gross atau default
+            estimasiGrossUji2 = p1Gross > 0 ? p1Gross : 4000;
+        }
 
         const inputPabrik = document.getElementById('inputJumlahPabrik');
         if (inputPabrik) inputPabrik.value = estimasiGrossUji2;
@@ -828,10 +951,18 @@
         if (banner) banner.style.display = 'flex';
         if (descBanner) {
             const p1GradeLabel = d.grade_cd === 'B' ? '🟡 Grade B' : '🟢 Grade A';
-            descBanner.innerHTML = `<strong>#${d.qc_no}</strong> &bull; 🚛 ${d.plat || 'Plat -'} &bull; Hasil Uji 1: <span style="background:#e0f2fe; color:#0369a1; padding:1px 6px; border-radius:4px; font-weight:800;">${p1GradeLabel} (${p1Gross.toLocaleString('id-ID')} KG)</span> &bull; Muatan Uji 2: <span style="background:#f3e8ff; color:#7e22ce; padding:1px 6px; border-radius:4px; font-weight:800;">Sisa Setengah Bak (${estimasiGrossUji2.toLocaleString('id-ID')} KG)</span>`;
+            if (isFullUnloaded) {
+                descBanner.innerHTML = `<strong>#${d.qc_no}</strong> &bull; 🚛 ${d.plat || 'Plat -'} &bull; Hasil Uji 1: <span style="background:#e0f2fe; color:#0369a1; padding:1px 6px; border-radius:4px; font-weight:800;">${p1GradeLabel} (${p1Gross.toLocaleString('id-ID')} KG)</span> &bull; Muatan Uji 2: <span style="background:#dcfce7; color:#15803d; padding:1px 6px; border-radius:4px; font-weight:800;">✅ Muatan Sudah Turun Penuh (Sisa 0 KG)</span>`;
+            } else {
+                descBanner.innerHTML = `<strong>#${d.qc_no}</strong> &bull; 🚛 ${d.plat || 'Plat -'} &bull; Hasil Uji 1: <span style="background:#e0f2fe; color:#0369a1; padding:1px 6px; border-radius:4px; font-weight:800;">${p1GradeLabel} (${p1Gross.toLocaleString('id-ID')} KG)</span> &bull; Muatan Uji 2: <span style="background:#f3e8ff; color:#7e22ce; padding:1px 6px; border-radius:4px; font-weight:800;">Sisa Setengah Bak (${estimasiGrossUji2.toLocaleString('id-ID')} KG)</span>`;
+            }
         }
 
-        window.showQcToast('Data Pengujian 1 Terisi', `Data kedatangan #${d.qc_no} dimuat. Sisa muatan bak: ${estimasiGrossUji2.toLocaleString('id-ID')} KG.`, null, 1);
+        if (isFullUnloaded) {
+            window.showQcToast('Muatan Sudah Turun Penuh', `Truk #${d.qc_no} sudah membongkar seluruh muatan (${p1Gross.toLocaleString('id-ID')} KG) pada Pengujian 1. Tidak perlu Pengujian 2 lagi, tiket ini sudah bisa langsung diterima Gudang!`, null, 1);
+        } else {
+            window.showQcToast('Data Pengujian 1 Terisi', `Data kedatangan #${d.qc_no} dimuat. Sisa muatan bak: ${estimasiGrossUji2.toLocaleString('id-ID')} KG.`, null, 1);
+        }
     };
 
     window.clearSelectedPendingArrival = function () {
@@ -862,35 +993,47 @@
             btnBack.style.display = 'none';
             btnNext.style.display = 'inline-flex';
             btnNext.className = 'btn-dock-next btn-primary-state';
-            if (nextText) nextText.innerText = 'Lanjut ke 2. Parameter';
+            btnNext.style.background = '';
+            btnNext.style.borderColor = '';
+            if (nextText) {
+                nextText.innerText = (currentKomoditas === 'MINYAK') ? 'Lanjut ke Tahap 2' : 'Lanjut ke 2. Parameter';
+            }
             if (nextIcon) nextIcon.style.display = 'inline-block';
             btnNext.onclick = function () { window.switchQcTab(2); };
         } else if (tabNumber === 2) {
             btnBack.style.display = 'inline-flex';
-            if (backText) backText.innerText = 'Tahap 1';
+            if (backText) backText.innerText = 'Kembali';
             btnBack.onclick = function () { window.switchQcTab(1); };
 
             if (currentKomoditas === 'SINGKONG') {
                 btnNext.style.display = 'inline-flex';
                 btnNext.className = 'btn-dock-next btn-primary-state';
+                btnNext.style.background = '';
+                btnNext.style.borderColor = '';
                 if (nextText) nextText.innerText = 'Lanjut ke 3. Uji Fryer';
                 if (nextIcon) nextIcon.style.display = 'inline-block';
                 btnNext.onclick = function () { window.switchQcTab(3); };
             } else {
                 btnNext.style.display = 'inline-flex';
                 btnNext.className = 'btn-dock-next btn-success-state';
-                if (nextText) nextText.innerText = '💾 Simpan & Teruskan ke Gudang';
+                btnNext.style.background = '';
+                btnNext.style.borderColor = '';
+                if (nextText) {
+                    nextText.innerText = (currentKomoditas === 'MINYAK') ? '💾 Simpan QC Minyak' : '💾 Simpan & Teruskan ke Gudang';
+                }
                 if (nextIcon) nextIcon.style.display = 'none';
                 btnNext.onclick = function () { window.submitNonSingkong(); };
             }
         } else if (tabNumber === 3) {
             btnBack.style.display = 'inline-flex';
-            if (backText) backText.innerText = 'Tahap 2';
+            if (backText) backText.innerText = 'Kembali';
             btnBack.onclick = function () { window.switchQcTab(2); };
 
             btnNext.style.display = 'inline-flex';
             btnNext.className = 'btn-dock-next btn-success-state';
-            if (nextText) nextText.innerText = '💾 Simpan Pengujian I (Selesai)';
+            btnNext.style.background = '';
+            btnNext.style.borderColor = '';
+            if (nextText) nextText.innerText = '💾 Simpan Pengujian (Selesai)';
             if (nextIcon) nextIcon.style.display = 'none';
             btnNext.onclick = function () {
                 const subBtn = document.getElementById('btnSubmitPengujian1');
@@ -904,9 +1047,18 @@
         const sec2 = document.getElementById('qcSection2');
         const sec3 = document.getElementById('qcSection3');
 
-        if (sec1) sec1.style.display = (tabNumber === 1) ? 'block' : 'none';
-        if (sec2) sec2.style.display = (tabNumber === 2) ? 'block' : 'none';
-        if (sec3) sec3.style.display = (tabNumber === 3) ? 'block' : 'none';
+        if (sec1) {
+            sec1.style.setProperty('display', (tabNumber === 1) ? 'flex' : 'none', 'important');
+            sec1.style.setProperty('flex-direction', 'column', 'important');
+        }
+        if (sec2) {
+            sec2.style.setProperty('display', (tabNumber === 2) ? 'flex' : 'none', 'important');
+            sec2.style.setProperty('flex-direction', 'column', 'important');
+        }
+        if (sec3) {
+            sec3.style.setProperty('display', (tabNumber === 3) ? 'flex' : 'none', 'important');
+            sec3.style.setProperty('flex-direction', 'column', 'important');
+        }
 
         for (let i = 1; i <= 3; i++) {
             const btn = document.getElementById(`tabBtn${i}`);
@@ -923,6 +1075,14 @@
         }
 
         window.updateFloatingDock(tabNumber);
+
+        try {
+            sessionStorage.setItem('qc_active_tab', tabNumber);
+            const url = new URL(window.location.href);
+            url.hash = 'tab' + tabNumber;
+            window.history.replaceState({}, '', url.toString());
+        } catch (e) {}
+
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
@@ -1034,8 +1194,15 @@
             }
         } else if (currentKomoditas === 'MINYAK') {
             const minyakSelect = document.getElementById('minyakBarangSelect');
-            if (minyakSelect && !minyakSelect.value) {
+            if (!minyakSelect || !minyakSelect.value) {
                 window.showQcToast('Item Minyak Kosong', 'Pilih item komoditas minyak goreng yang diuji!', minyakSelect, 2);
+                return false;
+            }
+            const grossInput = document.getElementById('minyakQtyGross');
+            const grossVal = parseFloat(grossInput?.value || 0);
+            const pabrikVal = parseFloat(document.getElementById('inputJumlahPabrik')?.value || 0);
+            if ((isNaN(grossVal) || grossVal <= 0) && (isNaN(pabrikVal) || pabrikVal <= 0)) {
+                window.showQcToast('Timbangan Netto Minyak Kosong', 'Kuantitas timbangan netto kedatangan minyak wajib diisi lebih dari 0!', grossInput, 2);
                 return false;
             }
         }
@@ -1078,13 +1245,14 @@
             const bNm = bOpt ? (bOpt.getAttribute('data-nama') || bOpt.text.split(' - ')[1]?.split(' (')[0] || bOpt.text) : 'Minyak Goreng Kelapa Sawit';
             injectHiddenInput('nama_jenis', curNamaJenis || bNm);
 
-            const gross = parseFloat(document.getElementById('minyakQtyGross').value) || parseFloat(document.getElementById('inputJumlahPabrik').value) || 0;
-            const reject = parseFloat(document.getElementById('minyakQtyReject').value) || 0;
+            const gross = parseFloat(document.getElementById('minyakQtyGross')?.value) || parseFloat(document.getElementById('inputJumlahPabrik')?.value) || 0;
+            const reject = parseFloat(document.getElementById('minyakQtyReject')?.value) || 0;
             const kesimpulan = document.querySelector('input[name="minyak_kesimpulan"]:checked')?.value || 'TERIMA';
 
             injectHiddenInput('items[0][barang_id]', bId);
             injectHiddenInput('items[0][qty_timbang_gross]', gross);
             injectHiddenInput('items[0][qty_reject]', reject);
+            injectHiddenInput('items[0][qty_netto_lolos]', Math.max(0, gross - reject));
             injectHiddenInput('items[0][keputusan_qc]', kesimpulan === 'TERIMA' ? 'PASSED' : 'REJECT_TOTAL');
             injectHiddenInput('items[0][status_raw_material]', document.querySelector('input[name="minyak_status_raw_material"]:checked')?.value || 'OK');
             injectHiddenInput('items[0][tipe_wadah_minyak]', document.querySelector('input[name="minyak_tipe_wadah"]:checked')?.value || 'TANGKI');
@@ -1095,6 +1263,18 @@
             injectHiddenInput('items[0][tangki_bersih_st]', document.querySelector('input[name="minyak_tangki_bersih_st"]')?.checked ? 1 : 0);
             injectHiddenInput('items[0][catatan_dtl]', document.querySelector('textarea[name="minyak_komentar"]')?.value || '');
             injectHiddenInput('catatan_umum', document.querySelector('textarea[name="minyak_komentar"]')?.value || '');
+
+            // Header-level inputs
+            injectHiddenInput('kesimpulan_qc', kesimpulan);
+            injectHiddenInput('jumlah_di_pabrik', gross);
+            const inSJ = document.getElementById('inputJumlahSJ');
+            if (inSJ && inSJ.value) {
+                injectHiddenInput('jumlah_surat_jalan', parseFloat(inSJ.value) || gross);
+            }
+            const sampleGr = document.querySelector('input[name="jumlah_sample_gr"]');
+            if (sampleGr && sampleGr.value) {
+                injectHiddenInput('jumlah_sample_gr', parseFloat(sampleGr.value) || 250);
+            }
         } else if (currentKomoditas === 'PLASTIK') {
             const bId = document.getElementById('plastikBarangSelect').value;
             const bOpt = document.getElementById('plastikBarangSelect')?.selectedOptions[0];
@@ -1201,17 +1381,92 @@
     };
 
     // 12. Uji Rasa Fryer & Kesimpulan Singkong
+    // 12. Uji Rasa Fryer & Kesimpulan Singkong (Sensori & Defect Frying)
+    window.setFryerRasa = function (idx, val) {
+        const input = document.getElementById(`fryer_rasa_${idx}`);
+        if (input) input.value = val;
+
+        const btnTidak = document.getElementById(`btn_rasa_tidak_${idx}`);
+        const btnAgak = document.getElementById(`btn_rasa_agak_${idx}`);
+        const btnPahit = document.getElementById(`btn_rasa_pahit_${idx}`);
+
+        btnTidak?.classList.remove('active', 'pass', 'warn', 'fail');
+        btnAgak?.classList.remove('active', 'pass', 'warn', 'fail');
+        btnPahit?.classList.remove('active', 'pass', 'warn', 'fail');
+
+        if (val === 'TIDAK_PAHIT') {
+            btnTidak?.classList.add('active', 'pass');
+        } else if (val === 'AGAK_PAHIT') {
+            btnAgak?.classList.add('active', 'warn');
+        } else if (val === 'PAHIT') {
+            btnPahit?.classList.add('active', 'fail');
+        }
+
+        window.onFryerRasaChanged(val);
+    };
+
+    window.setFryerTekstur = function (idx, val) {
+        const input = document.getElementById(`fryer_tekstur_${idx}`);
+        if (input) input.value = val;
+
+        const btnRenyah = document.getElementById(`btn_tekstur_renyah_${idx}`);
+        const btnKeras = document.getElementById(`btn_tekstur_keras_${idx}`);
+        const btnLembek = document.getElementById(`btn_tekstur_lembek_${idx}`);
+
+        btnRenyah?.classList.remove('active', 'pass', 'warn', 'fail');
+        btnKeras?.classList.remove('active', 'pass', 'warn', 'fail');
+        btnLembek?.classList.remove('active', 'pass', 'warn', 'fail');
+
+        if (val === 'RENYAH') {
+            btnRenyah?.classList.add('active', 'pass');
+        } else if (val === 'KERAS') {
+            btnKeras?.classList.add('active', 'warn');
+        } else if (val === 'LEMBEK') {
+            btnLembek?.classList.add('active', 'warn');
+        }
+    };
+
+    window.setFryerPenampakan = function (idx, val) {
+        const input = document.getElementById(`fryer_penampakan_${idx}`);
+        if (input) input.value = val;
+
+        const btnBersih = document.getElementById(`btn_penampakan_bersih_${idx}`);
+        const btnGelap = document.getElementById(`btn_penampakan_gelap_${idx}`);
+        const btnOil = document.getElementById(`btn_penampakan_oil_${idx}`);
+
+        btnBersih?.classList.remove('active', 'pass', 'warn', 'fail');
+        btnGelap?.classList.remove('active', 'pass', 'warn', 'fail');
+        btnOil?.classList.remove('active', 'pass', 'warn', 'fail');
+
+        if (val === 'TIDAK_OILSOAKED') {
+            btnBersih?.classList.add('active', 'pass');
+        } else if (val === 'AGAK_GELAP') {
+            btnGelap?.classList.add('active', 'warn');
+        } else if (val === 'OILSOAKED') {
+            btnOil?.classList.add('active', 'fail');
+        }
+    };
+
+    window.onDefectFryingChanged = function (idx) {
+        const b = parseFloat(document.getElementById(`defect_breakage_${idx}`)?.value || 0);
+        const c = parseFloat(document.getElementById(`defect_cluster_${idx}`)?.value || 0);
+        const f = parseFloat(document.getElementById(`defect_foldover_${idx}`)?.value || 0);
+        const o = parseFloat(document.getElementById(`defect_oilsoaked_${idx}`)?.value || 0);
+        const g = parseFloat(document.getElementById(`defect_gambos_${idx}`)?.value || 0);
+        const total = b + c + f + o + g;
+        const badge = document.getElementById(`defect_total_badge_${idx}`);
+        if (badge) {
+            badge.innerText = `Total: ${total.toFixed(1)}%`;
+        }
+    };
+
     window.onFryerRasaChanged = function (val) {
         const curTahap = document.getElementById('tahapUjiInput')?.value || 'PENGUJIAN_1';
-        const radioTerima = document.getElementById('radioTerima');
-        const radioTolak = document.getElementById('radioTolak');
         const bannerWarning = document.getElementById('bannerPahitWarning');
         const textWarning = document.getElementById('textPahitWarning');
         const boxDiskusi = document.getElementById('boxDiskusiAtasan');
-        const btnSubmit = document.getElementById('btnSubmitPengujian1');
 
         if (val === 'PAHIT') {
-            if (radioTolak) radioTolak.checked = true;
             if (bannerWarning) bannerWarning.style.display = 'block';
             if (boxDiskusi && curTahap === 'PENGUJIAN_2') boxDiskusi.style.display = 'block';
 
@@ -1220,42 +1475,88 @@
                     ? 'Singkong terdeteksi rasa <strong>PAHIT</strong> pada lapisan dalam bak! Sesuai instruksi Direktur, sisa muatan di atas truk <strong>DITOLAK TOTAL</strong>. Pembongkaran dihentikan segera dan lakukan koordinasi/diskusi dengan atasan (QC Supervisor).'
                     : 'Singkong beracun sianida / tidak layak konsumsi pabrik. Keputusan otomatis dialihkan ke <strong>TOLAK TOTAL</strong>. Truk tidak diizinkan bongkar ke gudang dan Admin Gudang akan menerbitkan Berita Acara Penolakan.';
             }
-
-            if (btnSubmit) {
-                btnSubmit.style.background = '#dc2626';
-                btnSubmit.innerHTML = (curTahap === 'PENGUJIAN_2')
-                    ? '❌ Simpan Penolakan Pengujian 2 (Diskusi Atasan)'
-                    : '❌ Simpan Keputusan Penolakan (Ditolak Total)';
-            }
-            window.onKesimpulanChange('TOLAK');
+            window.selectDisposisi('TOLAK');
         } else {
             let hasAnyPahit = false;
-            document.querySelectorAll('select[name$="[fryer_rasa]"]').forEach(sel => {
-                if (sel.value === 'PAHIT') hasAnyPahit = true;
+            document.querySelectorAll('input[id^="fryer_rasa_"]').forEach(inp => {
+                if (inp.value === 'PAHIT') hasAnyPahit = true;
             });
 
             if (!hasAnyPahit) {
-                if (radioTerima) radioTerima.checked = true;
                 if (bannerWarning) bannerWarning.style.display = 'none';
                 if (boxDiskusi) boxDiskusi.style.display = 'none';
-                if (btnSubmit) {
-                    btnSubmit.style.background = '#059669';
-                    btnSubmit.innerHTML = (curTahap === 'PENGUJIAN_2')
-                        ? '💾 Simpan Pengujian 2 (Lolos &amp; Bongkar Tuntas ke Gudang)'
-                        : '💾 Simpan Pengujian 1 (Selesai Inspeksi &amp; Siap Bongkar Setengah Bak)';
-                }
-                window.onKesimpulanChange('TERIMA');
+                window.selectDisposisi('TERIMA');
             }
         }
     };
 
-    window.onKesimpulanChange = function (val) {
+    window.setHalalToggle = function (field, value) {
+        const hidden = document.getElementById(`input_${field}`);
+        if (hidden) hidden.value = value;
+
+        if (field === 'bebas_cemaran') {
+            const btnTidak = document.getElementById('btnBebasCemaranTidak');
+            const btnYa = document.getElementById('btnBebasCemaranYa');
+            if (value == 1) {
+                btnYa?.classList.add('active', 'ok');
+                btnYa?.classList.remove('danger');
+                btnTidak?.classList.remove('active', 'ok', 'danger');
+            } else {
+                btnTidak?.classList.add('active', 'danger');
+                btnTidak?.classList.remove('ok');
+                btnYa?.classList.remove('active', 'ok', 'danger');
+            }
+        } else if (field === 'angkut_barang_haram') {
+            const btnTidak = document.getElementById('btnHaramTidak');
+            const btnYa = document.getElementById('btnHaramYa');
+            if (value == 0) {
+                btnTidak?.classList.add('active', 'ok');
+                btnTidak?.classList.remove('danger');
+                btnYa?.classList.remove('active', 'ok', 'danger');
+            } else {
+                btnYa?.classList.add('active', 'danger');
+                btnYa?.classList.remove('ok');
+                btnTidak?.classList.remove('active', 'ok', 'danger');
+            }
+        }
+    };
+
+    window.updateTransportCard = function (radio) {
+        const cardBebas = document.getElementById('cardTransportBebas');
+        const cardCemar = document.getElementById('cardTransportCemar');
+        const val = typeof radio === 'string' ? radio : radio.value;
+        if (val === '1') {
+            cardBebas?.classList.add('active');
+            cardCemar?.classList.remove('active');
+        } else {
+            cardCemar?.classList.add('active');
+            cardBebas?.classList.remove('active');
+        }
+    };
+
+    window.selectDisposisi = function (val) {
+        const hidden = document.getElementById('inputKesimpulanQc');
+        if (hidden) hidden.value = val;
+
+        const cardTerima = document.getElementById('cardDisposisiTerima');
+        const cardTolak = document.getElementById('cardDisposisiTolak');
         const curTahap = document.getElementById('tahapUjiInput')?.value || 'PENGUJIAN_1';
         const btnSubmit = document.getElementById('btnSubmitPengujian1');
-        const bannerWarning = document.getElementById('bannerPahitWarning');
         const boxDiskusi = document.getElementById('boxDiskusiAtasan');
 
-        if (val === 'TOLAK') {
+        if (val === 'TERIMA') {
+            cardTerima?.classList.add('active', 'terima');
+            cardTolak?.classList.remove('active', 'tolak');
+            if (boxDiskusi) boxDiskusi.style.display = 'none';
+            if (btnSubmit) {
+                btnSubmit.style.background = '#059669';
+                btnSubmit.innerHTML = (curTahap === 'PENGUJIAN_2')
+                    ? '💾 Simpan Pengujian 2 (Lolos &amp; Bongkar Tuntas ke Gudang)'
+                    : '💾 Simpan Pengujian 1 (Selesai Inspeksi &amp; Siap Bongkar Setengah Bak)';
+            }
+        } else {
+            cardTolak?.classList.add('active', 'tolak');
+            cardTerima?.classList.remove('active', 'terima');
             if (btnSubmit) {
                 btnSubmit.style.background = '#dc2626';
                 btnSubmit.innerHTML = (curTahap === 'PENGUJIAN_2')
@@ -1265,17 +1566,18 @@
             if (boxDiskusi && curTahap === 'PENGUJIAN_2') {
                 boxDiskusi.style.display = 'block';
             }
-        } else {
-            if (bannerWarning) bannerWarning.style.display = 'none';
-            if (boxDiskusi) boxDiskusi.style.display = 'none';
-            if (btnSubmit) {
-                btnSubmit.style.background = '#059669';
-                btnSubmit.innerHTML = (curTahap === 'PENGUJIAN_2')
-                    ? '💾 Simpan Pengujian 2 (Lolos &amp; Bongkar Tuntas ke Gudang)'
-                    : '💾 Simpan Pengujian 1 (Selesai Inspeksi &amp; Siap Bongkar Setengah Bak)';
-            }
         }
+
         window.calculateAll();
+    };
+
+    window.updateKesimpulanCard = function (el) {
+        const val = typeof el === 'string' ? el : el.value;
+        window.selectDisposisi(val);
+    };
+
+    window.onKesimpulanChange = function (val) {
+        window.selectDisposisi(val);
     };
 
     window.recalculateAllCards = function () {
@@ -1333,8 +1635,26 @@
         }
     };
 
-    // 13. Dynamic Item Card Builder untuk Singkong
+    // 13. Dynamic Item Card Builder untuk Singkong (Tunggal / Single Commodity)
     window.createItemCard = function (data = {}) {
+        const sContainer = document.getElementById('singkongContainer');
+        if (currentKomoditas === 'SINGKONG' && sContainer) {
+            const existingCards = sContainer.querySelectorAll('.qc-item-card');
+            if (existingCards.length >= 1) {
+                // Singkong Pengujian 1 SELALU TEPAT 1 KOMODITAS: Jangan tambah kartu kedua!
+                if (data.barang_id) {
+                    const sel = existingCards[0].querySelector('.item-barang-select');
+                    if (sel) sel.value = data.barang_id;
+                }
+                if (data.gross) {
+                    const gInp = existingCards[0].querySelector('input[name*="[qty_timbang_gross]"]');
+                    if (gInp) gInp.value = data.gross;
+                }
+                window.calculateCard(0);
+                return;
+            }
+        }
+
         const idx = itemIndex++;
         const card = document.createElement('div');
         card.className = 'qc-item-card';
@@ -1371,156 +1691,303 @@
 
         card.innerHTML = `
             <input type="hidden" name="items[${idx}][podtl_id]" value="${podtlId}">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem;">
-                <span style="font-weight: 800; font-size: 0.825rem; color: #0284c7; background: #e0f2fe; padding: 0.25rem 0.65rem; border-radius: 6px;">
-                    Komoditas #${idx + 1}
-                </span>
-                <button type="button" onclick="removeItemCard(${idx})" style="background: none; border: none; color: #ef4444; font-size: 0.8rem; font-weight: 700; cursor: pointer;">
-                    ✕ Hapus
-                </button>
+
+            <!-- 1. KONDISI FISIK RAW MATERIAL & PARAMETER DIAMETER SINGKONG -->
+            <div class="qc-kondisi-card" style="margin-bottom: 1.15rem;">
+                <input type="hidden" name="items[${idx}][status_raw_material]" id="status_raw_material_${idx}" value="OK">
+                <div class="qc-kondisi-header">
+                    <div class="qc-kondisi-title-wrap">
+                        <span class="qc-kondisi-badge-num">1</span>
+                        <span class="qc-kondisi-title-main">KONDISI FISIK RAW MATERIAL</span>
+                    </div>
+                    <div class="qc-kondisi-toggle">
+                        <button type="button" class="qc-kondisi-toggle-btn active ok" id="btn_kondisi_ok_${idx}" onclick="setKondisiRawMaterial(${idx}, 'OK')">
+                            OK
+                        </button>
+                        <button type="button" class="qc-kondisi-toggle-btn" id="btn_kondisi_tdk_${idx}" onclick="setKondisiRawMaterial(${idx}, 'TDK_STD')">
+                            TDK STD
+                        </button>
+                    </div>
+                </div>
+
+                <div class="qc-checklist-section-title">Checklist Karakteristik Fisik Batang Singkong:</div>
+
+                <div class="qc-check-grid">
+                    <!-- Kiri: Segar -->
+                    <label class="qc-check-pill" id="pill_segar_${idx}">
+                        <input type="checkbox" name="items[${idx}][kondisi_segar]" value="1" checked onchange="onSingkongCheckChanged(${idx}, this, 'pill_segar_${idx}')">
+                        <span>🍃 SEGAR</span>
+                    </label>
+
+                    <!-- Kanan: Busuk -->
+                    <label class="qc-check-pill is-danger" id="pill_busuk_${idx}">
+                        <input type="checkbox" name="items[${idx}][kondisi_busuk]" value="1" onchange="onSingkongCheckChanged(${idx}, this, 'pill_busuk_${idx}', true)">
+                        <span>☠️ BUSUK</span>
+                    </label>
+
+                    <!-- Kiri: Layu -->
+                    <label class="qc-check-pill" id="pill_layu_${idx}">
+                        <input type="checkbox" name="items[${idx}][kondisi_layu]" value="1" onchange="onSingkongCheckChanged(${idx}, this, 'pill_layu_${idx}')">
+                        <span>💨 LAYU</span>
+                    </label>
+
+                    <!-- Kanan: Berjamur -->
+                    <label class="qc-check-pill is-danger" id="pill_berjamur_${idx}">
+                        <input type="checkbox" name="items[${idx}][kondisi_berjamur]" value="1" onchange="onSingkongCheckChanged(${idx}, this, 'pill_berjamur_${idx}', true)">
+                        <span>🧫 BERJAMUR</span>
+                    </label>
+
+                    <!-- Kiri: Basah -->
+                    <label class="qc-check-pill" id="pill_basah_${idx}">
+                        <input type="checkbox" name="items[${idx}][kondisi_basah]" value="1" onchange="onSingkongCheckChanged(${idx}, this, 'pill_basah_${idx}')">
+                        <span>💧 BASAH</span>
+                    </label>
+
+                    <!-- Kanan: Lembek -->
+                    <label class="qc-check-pill is-danger" id="pill_lembek_${idx}">
+                        <input type="checkbox" name="items[${idx}][kondisi_lembek]" value="1" onchange="onSingkongCheckChanged(${idx}, this, 'pill_lembek_${idx}', true)">
+                        <span>✋ LEMBEK</span>
+                    </label>
+
+                    <!-- Full Width: Kulit Terkelupas (Ringan) -->
+                    <label class="qc-check-pill full-width" id="pill_terkelupas_${idx}">
+                        <div style="display: flex; align-items: center; gap: 0.55rem;">
+                            <input type="checkbox" name="items[${idx}][kondisi_terkelupas]" value="1" checked onchange="onSingkongCheckChanged(${idx}, this, 'pill_terkelupas_${idx}')">
+                            <span>KULIT TERKELUPAS (Ringan)</span>
+                        </div>
+                        <span class="qc-check-subtext">Normal bongkar</span>
+                    </label>
+                </div>
+
+                <!-- Uji Parameter Diameter Singkong Box -->
+                <div class="qc-diameter-box">
+                    <div class="qc-diameter-header">
+                        <div class="qc-diameter-title">Uji Parameter Diameter Singkong:</div>
+                        <div class="qc-diameter-sample" id="diameter_sample_label_${idx}">Sample 50 kg</div>
+                    </div>
+                    <table class="qc-diameter-table">
+                        <thead>
+                            <tr>
+                                <th>PARAMETER</th>
+                                <th class="col-center">STANDAR</th>
+                                <th class="col-right">HASIL UJI</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <div class="qc-diameter-name">1. Diameter &lt; 4 cm</div>
+                                    <div class="qc-diameter-desc">Ukuran terlalu kecil</div>
+                                </td>
+                                <td class="col-center">
+                                    <span class="qc-diameter-std">Max 5.0%</span>
+                                </td>
+                                <td class="col-right">
+                                    <div class="qc-diameter-input-wrap">
+                                        <input type="number" step="0.1" min="0" max="100" name="items[${idx}][diameter_kurang_4cm_persen]" id="diameter_kecil_${idx}" value="2.8" class="qc-diameter-input" oninput="onDiameterChanged(${idx})">
+                                        <span class="qc-diameter-unit">%</span>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="qc-diameter-name">2. Diameter &ge; 4 cm</div>
+                                    <div class="qc-diameter-desc">Ukuran standar pabrik</div>
+                                </td>
+                                <td class="col-center">
+                                    <span class="qc-diameter-std">Min 95.0%</span>
+                                </td>
+                                <td class="col-right">
+                                    <div class="qc-diameter-input-wrap">
+                                        <input type="number" step="0.1" min="0" max="100" name="items[${idx}][diameter_lebih_4cm_persen]" id="diameter_standar_${idx}" value="97.2" class="qc-diameter-input" oninput="onDiameterChanged(${idx})" style="font-weight: 800; color: #15803d;">
+                                        <span class="qc-diameter-unit">%</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="qc-diameter-footer" id="diameter_status_footer_${idx}">
+                        <span id="diameter_status_text_${idx}">✓ Lolos Uji Diameter</span>
+                        <span id="diameter_total_text_${idx}">Total: 100% Valid</span>
+                    </div>
+                </div>
             </div>
 
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 0.75rem; margin-bottom: 1rem;">
-                <div>
-                    <label class="form-label" style="font-size: 0.825rem; font-weight: 700;">Nama Bahan Baku <span style="color:red;">*</span></label>
-                    <select name="items[${idx}][barang_id]" id="barang_select_${idx}" class="form-control item-barang-select" required onchange="onItemBarangChanged(${idx})">
-                        ${barangOptions}
-                    </select>
+            <!-- 2. PENENTUAN GRADE MUTU SINGKONG & BAHAN BAKU -->
+            <div style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 1rem; margin-bottom: 1.15rem;">
+                <div class="qc-kondisi-header" style="margin-bottom: 0.85rem;">
+                    <div class="qc-kondisi-title-wrap">
+                        <span class="qc-kondisi-badge-num" style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a;">2</span>
+                        <span class="qc-kondisi-title-main">PENENTUAN GRADE MUTU SINGKONG</span>
+                    </div>
+                    <span style="font-size: 0.72rem; color: #64748b; font-weight: 700;">Berdasarkan Hasil Uji Fisik &amp; Diameter</span>
                 </div>
-                <div>
-                    <label class="form-label" style="font-size: 0.825rem; font-weight: 700;">Grade Mutu Singkong <span style="color:red;">*</span></label>
-                    <select name="items[${idx}][grade_cd]" id="grade_select_${idx}" class="form-control" style="font-weight: 800; color: #0f172a;" onchange="onGradeChanged(${idx}, this.value)">
-                        <option value="A" selected>🟢 Grade A (Super / Renyah)</option>
-                        <option value="B">🟡 Grade B (Standar / Campur)</option>
-                    </select>
-                </div>
-            </div>
 
-            <div id="gradeB_warning_${idx}" style="display: none; background: #fffbeb; border: 1.5px solid #fcd34d; border-radius: 8px; padding: 0.75rem 0.85rem; margin-bottom: 1rem; color: #92400e; font-size: 0.8rem;">
-                <div style="font-weight: 800; display: flex; align-items: center; justify-content: space-between; gap: 0.4rem; margin-bottom: 0.35rem; flex-wrap: wrap;">
-                    <span style="display: flex; align-items: center; gap: 0.35rem;">
-                        <span>⚠️</span> <span>PERINGATAN OPERASIONAL: SINGKONG GRADE B TERPILIH</span>
-                    </span>
-                    <span style="font-size: 0.7rem; font-weight: 700; background: #fef3c7; color: #b45309; padding: 2px 7px; border-radius: 4px;">
-                        Stok Gudang: ${STOK_GRADE_B.toLocaleString('id-ID')} KG
-                    </span>
-                </div>
-                <div style="line-height: 1.4;">
-                    Stok Grade B di gudang saat ini tercatat <strong>${STOK_GRADE_B.toLocaleString('id-ID')} KG</strong>. 
-                    Jika stok Grade B di gudang sudah banyak/menumpuk, instruksi atasan adalah <strong>MENOLAK KEDATANGAN INI</strong> atau meminta konfirmasi QC Supervisor terlebih dahulu sebelum dibongkar.
-                </div>
-                <div style="margin-top: 0.5rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                    <button type="button" onclick="quickRejectGradeB(${idx})" style="background: #dc2626; color: #ffffff; border: none; font-size: 0.75rem; font-weight: 800; padding: 0.35rem 0.65rem; border-radius: 6px; cursor: pointer;">
-                        🚨 Tolak Truk Ini (Stok Grade B Penuh)
-                    </button>
-                    <button type="button" onclick="document.getElementById('grade_select_${idx}').value='A'; onGradeChanged(${idx}, 'A');" style="background: #ffffff; color: #15803d; border: 1px solid #86efac; font-size: 0.75rem; font-weight: 700; padding: 0.35rem 0.65rem; border-radius: 6px; cursor: pointer;">
-                        Kembalikan ke Grade A
-                    </button>
-                </div>
-            </div>
-
-            <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 0.85rem; margin-bottom: 1rem;">
-                <div style="font-weight: 800; font-size: 0.825rem; color: #0f172a; margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center;">
-                    <span>📐 1. Parameter Diameter Singkong</span>
-                    <span style="font-size: 0.75rem; color: #64748b;">Standar Kebeterimaan</span>
-                </div>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.75rem;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.85rem; margin-bottom: 0.5rem;">
                     <div>
-                        <label class="form-label" style="font-size: 0.775rem;">Diameter < 4 cm (Max 5.0%)</label>
-                        <div style="position: relative;">
-                            <input type="number" step="0.1" min="0" max="100" name="items[${idx}][diameter_kurang_4cm_persen]" value="2.0" class="form-control" style="font-size: 0.85rem;">
-                            <span style="position: absolute; right: 10px; top: 7px; font-size: 0.75rem; color: #94a3b8; font-weight: 700;">%</span>
+                        <label class="form-label" style="font-size: 0.8rem; font-weight: 800; color: #0f172a; margin-bottom: 0.35rem; display: block;">
+                            Nama Bahan Baku <span style="color:red;">*</span>
+                        </label>
+                        <select name="items[${idx}][barang_id]" id="barang_select_${idx}" class="form-control item-barang-select" required onchange="onItemBarangChanged(${idx})" style="font-weight: 700;">
+                            ${barangOptions}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label" style="font-size: 0.8rem; font-weight: 800; color: #0f172a; margin-bottom: 0.35rem; display: block;">
+                            Grade Mutu Singkong <span style="color:red;">*</span>
+                        </label>
+                        <input type="hidden" name="items[${idx}][grade_cd]" id="grade_input_${idx}" value="A">
+                        <div class="qc-grade-pills">
+                            <button type="button" class="qc-grade-btn grade-a active" id="btn_grade_a_${idx}" onclick="selectItemGrade(${idx}, 'A')">
+                                <span class="qc-grade-dot green"></span>
+                                <div class="qc-grade-text">
+                                    <div class="qc-grade-title">Grade A</div>
+                                    <div class="qc-grade-sub">Super / Renyah</div>
+                                </div>
+                            </button>
+                            <button type="button" class="qc-grade-btn grade-b" id="btn_grade_b_${idx}" onclick="selectItemGrade(${idx}, 'B')">
+                                <span class="qc-grade-dot yellow"></span>
+                                <div class="qc-grade-text">
+                                    <div class="qc-grade-title">Grade B</div>
+                                    <div class="qc-grade-sub">Standar / Campur</div>
+                                </div>
+                            </button>
                         </div>
                     </div>
-                    <div>
-                        <label class="form-label" style="font-size: 0.775rem;">Diameter &ge; 4 cm (Min 95.0%)</label>
-                        <div style="position: relative;">
-                            <input type="number" step="0.1" min="0" max="100" name="items[${idx}][diameter_lebih_4cm_persen]" value="98.0" class="form-control" style="font-size: 0.85rem; font-weight: 700; color: #15803d;">
-                            <span style="position: absolute; right: 10px; top: 7px; font-size: 0.75rem; color: #94a3b8; font-weight: 700;">%</span>
+                </div>
+
+                <div id="gradeB_warning_${idx}" style="display: none; background: #fffbeb; border: 1.5px solid #fcd34d; border-radius: 8px; padding: 0.75rem 0.85rem; margin-top: 0.75rem; color: #92400e; font-size: 0.8rem;">
+                    <div style="font-weight: 800; display: flex; align-items: center; justify-content: space-between; gap: 0.4rem; margin-bottom: 0.35rem; flex-wrap: wrap;">
+                        <span style="display: flex; align-items: center; gap: 0.35rem;">
+                            <span>⚠️</span> <span>PERINGATAN OPERASIONAL: SINGKONG GRADE B TERPILIH</span>
+                        </span>
+                        <span style="font-size: 0.7rem; font-weight: 700; background: #fef3c7; color: #b45309; padding: 2px 7px; border-radius: 4px;">
+                            Stok Gudang: ${STOK_GRADE_B.toLocaleString('id-ID')} KG
+                        </span>
+                    </div>
+                    <div style="line-height: 1.4;">
+                        Stok Grade B di gudang saat ini tercatat <strong>${STOK_GRADE_B.toLocaleString('id-ID')} KG</strong>. 
+                        Jika stok Grade B di gudang sudah banyak/menumpuk, instruksi atasan adalah <strong>MENOLAK KEDATANGAN INI</strong> atau meminta konfirmasi QC Supervisor terlebih dahulu sebelum dibongkar.
+                    </div>
+                    <div style="margin-top: 0.5rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                        <button type="button" onclick="quickRejectGradeB(${idx})" style="background: #dc2626; color: #ffffff; border: none; font-size: 0.75rem; font-weight: 800; padding: 0.35rem 0.65rem; border-radius: 6px; cursor: pointer;">
+                            🚨 Tolak Truk Ini (Stok Grade B Penuh)
+                        </button>
+                        <button type="button" onclick="selectItemGrade(${idx}, 'A')" style="background: #ffffff; color: #15803d; border: 1px solid #86efac; font-size: 0.75rem; font-weight: 700; padding: 0.35rem 0.65rem; border-radius: 6px; cursor: pointer;">
+                            Kembalikan ke Grade A
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. HASIL TIMBANGAN & REFRAKSI -->
+            <div class="qc-timbangan-card">
+                <div class="qc-kondisi-header">
+                    <div class="qc-kondisi-title-wrap">
+                        <span class="qc-kondisi-badge-num" style="background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd;">3</span>
+                        <span class="qc-kondisi-title-main">HASIL TIMBANGAN &amp; REFRAKSI</span>
+                    </div>
+                    <div class="satuan-toggle-pills" style="margin: 0;">
+                        <div class="btn-satuan-pill active" style="padding: 0.25rem 0.75rem; font-size: 0.725rem; cursor: default;">
+                            <span class="pill-icon">⚖️</span>
+                            <span class="pill-text">Satuan KG</span>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 0.85rem; margin-bottom: 1rem;">
-                <div style="font-weight: 800; font-size: 0.825rem; color: #0f172a; margin-bottom: 0.5rem;">
-                    👁️ 2. Pemeriksaan Visual Singkong (Pilih yang sesuai):
-                </div>
-                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 0.5rem; font-size: 0.8rem;">
-                    <label style="display: flex; align-items: center; gap: 0.35rem; cursor: pointer; color: #15803d; font-weight: 700;">
-                        <input type="checkbox" name="items[${idx}][kondisi_segar]" value="1" checked> SEGAR
-                    </label>
-                    <label style="display: flex; align-items: center; gap: 0.35rem; cursor: pointer;">
-                        <input type="checkbox" name="items[${idx}][kondisi_layu]" value="1"> LAYU
-                    </label>
-                    <label style="display: flex; align-items: center; gap: 0.35rem; cursor: pointer;">
-                        <input type="checkbox" name="items[${idx}][kondisi_basah]" value="1"> BASAH
-                    </label>
-                    <label style="display: flex; align-items: center; gap: 0.35rem; cursor: pointer;">
-                        <input type="checkbox" name="items[${idx}][kondisi_terkelupas]" value="1"> TERKELUPAS
-                    </label>
-                    <label style="display: flex; align-items: center; gap: 0.35rem; cursor: pointer; color: #dc2626; font-weight: 700;">
-                        <input type="checkbox" name="items[${idx}][kondisi_busuk]" value="1"> BUSUK
-                    </label>
-                    <label style="display: flex; align-items: center; gap: 0.35rem; cursor: pointer; color: #b45309; font-weight: 700;">
-                        <input type="checkbox" name="items[${idx}][kondisi_berjamur]" value="1"> BERJAMUR
-                    </label>
-                    <label style="display: flex; align-items: center; gap: 0.35rem; cursor: pointer;">
-                        <input type="checkbox" name="items[${idx}][kondisi_lembek]" value="1"> TEKSTUR LEMBEK
-                    </label>
-                </div>
-            </div>
-
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.75rem; margin-bottom: 0.85rem;">
-                <div>
-                    <label class="form-label" style="font-size: 0.8rem; font-weight: 700; color: #0f172a;">
-                        Timbangan Kotor (Gross) <span style="color:red;">*</span>
-                    </label>
-                    <div style="position: relative;">
-                        <input type="number" step="0.01" min="0.01" name="items[${idx}][qty_timbang_gross]" id="gross_${idx}" value="${grossVal}" class="form-control" placeholder="0.00" required oninput="calculateCard(${idx})" style="font-weight: 800; font-size: 1rem;">
-                        <span style="position: absolute; right: 10px; top: 8px; font-size: 0.75rem; color: #94a3b8; font-weight: 700;">KG</span>
+                <!-- BOX PANEL UTAMA TIMBANGAN & REFRAKSI -->
+                <div class="qc-diameter-box" style="margin-top: 0; border: 1.5px solid #cbd5e1; border-radius: 10px;">
+                    <div class="qc-diameter-header" style="background: #f8fafc; border-bottom: 1.5px solid #e2e8f0; padding: 0.75rem 1rem;">
+                        <div style="display: flex; align-items: center; gap: 0.45rem;">
+                            <span style="font-size: 0.95rem;">⚖️</span>
+                            <span class="qc-diameter-title" style="font-size: 0.825rem; font-weight: 800; color: #0f172a;">Input Timbangan &amp; Analisa Sortir Lapangan</span>
+                        </div>
+                        <span class="qc-diameter-sample" style="color: #0284c7; background: #e0f2fe; padding: 2px 8px; border-radius: 6px; font-weight: 800; font-size: 0.7rem;">
+                            Formula Otomatis
+                        </span>
                     </div>
-                </div>
 
-                <div>
-                    <label class="form-label" style="font-size: 0.8rem; font-weight: 700; color: #0f172a;">
-                        Kadar Air (%)
-                    </label>
-                    <div style="position: relative;">
-                        <input type="number" step="0.1" min="0" max="100" name="items[${idx}][kadar_air_persen]" id="kadar_air_${idx}" value="${kadarAirVal}" class="form-control" placeholder="12.0" oninput="calculateCard(${idx})">
-                        <span style="position: absolute; right: 10px; top: 8px; font-size: 0.75rem; color: #94a3b8; font-weight: 700;">%</span>
+                    <div style="padding: 0.85rem 1rem; display: flex; flex-direction: column; gap: 0.75rem;">
+                        <!-- BARIS 1: Timbangan Kotor (Gross) & Kadar Air -->
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                            <div style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 0.65rem 0.75rem; display: flex; flex-direction: column; justify-content: space-between;">
+                                <div>
+                                    <label class="form-label" style="font-size: 0.775rem; font-weight: 800; color: #0f172a; margin-bottom: 0.35rem; display: block;">
+                                        Timbangan Kotor (Gross) <span style="color:#ef4444;">*</span>
+                                    </label>
+                                    <div style="position: relative;">
+                                        <input type="number" step="0.01" min="0.01" name="items[${idx}][qty_timbang_gross]" id="gross_${idx}" value="${grossVal}" class="form-control" placeholder="0.00" required oninput="calculateCard(${idx})" style="font-weight: 900; font-size: 1.15rem; padding-right: 38px; color: #0f172a; background: #ffffff;">
+                                        <span style="position: absolute; right: 10px; top: 9px; font-size: 0.75rem; color: #64748b; font-weight: 800;">KG</span>
+                                    </div>
+                                </div>
+                                <div style="font-size: 0.68rem; color: #64748b; margin-top: 0.35rem;">Muatan truk saat timbang pabrik</div>
+                            </div>
+
+                            <div style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 0.65rem 0.75rem; display: flex; flex-direction: column; justify-content: space-between;">
+                                <div>
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                                        <label class="form-label" style="font-size: 0.775rem; font-weight: 800; color: #0f172a; margin: 0;">
+                                            Kadar Air (%)
+                                        </label>
+                                        <span style="font-size: 0.68rem; color: #0284c7; background: #e0f2fe; padding: 1px 6px; border-radius: 4px; font-weight: 700;">Std &le;14%</span>
+                                    </div>
+                                    <div style="position: relative;">
+                                        <input type="number" step="0.1" min="0" max="100" name="items[${idx}][kadar_air_persen]" id="kadar_air_${idx}" value="${kadarAirVal}" class="form-control" placeholder="12.0" oninput="calculateCard(${idx})" style="font-weight: 900; font-size: 1.15rem; padding-right: 30px; color: #0284c7; background: #ffffff;">
+                                        <span style="position: absolute; right: 10px; top: 9px; font-size: 0.75rem; color: #64748b; font-weight: 800;">%</span>
+                                    </div>
+                                </div>
+                                <div style="font-size: 0.68rem; color: #64748b; margin-top: 0.35rem;">Hasil analisa oven / moisture lab</div>
+                            </div>
+                        </div>
+
+                        <!-- BARIS 2: Refraksi Tanah & Afkir Reject -->
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                            <div style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 0.65rem 0.75rem; display: flex; flex-direction: column; justify-content: space-between;">
+                                <div>
+                                    <label class="form-label" style="font-size: 0.775rem; font-weight: 800; color: #0f172a; margin-bottom: 0.35rem; display: block;">
+                                        Refraksi Tanah / Kotoran
+                                    </label>
+                                    <div style="position: relative;">
+                                        <input type="number" step="0.05" min="0" max="100" name="items[${idx}][refraksi_persen]" id="refraksi_${idx}" value="${refraksiPersenVal}" class="form-control" placeholder="0.0" oninput="calculateCard(${idx})" style="font-weight: 900; font-size: 1.15rem; padding-right: 30px; color: #b45309; background: #ffffff;">
+                                        <span style="position: absolute; right: 10px; top: 9px; font-size: 0.75rem; color: #64748b; font-weight: 800;">%</span>
+                                    </div>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; font-size: 0.68rem; color: #64748b; margin-top: 0.35rem;">
+                                    <span>Potongan:</span>
+                                    <strong id="label_qty_refraksi_${idx}" style="color: #b45309; font-weight: 800;">0.00 KG</strong>
+                                </div>
+                            </div>
+
+                            <div style="background: #fef2f2; border: 1.5px solid #fecaca; border-radius: 8px; padding: 0.65rem 0.75rem; display: flex; flex-direction: column; justify-content: space-between;">
+                                <div>
+                                    <label class="form-label" style="font-size: 0.775rem; font-weight: 800; color: #dc2626; margin-bottom: 0.35rem; display: block;">
+                                        Afkir / Busuk (Reject)
+                                    </label>
+                                    <div style="position: relative;">
+                                        <input type="number" step="0.01" min="0" name="items[${idx}][qty_reject]" id="reject_${idx}" value="${rejectVal}" class="form-control" placeholder="0.00" oninput="calculateCard(${idx})" style="font-weight: 900; font-size: 1.15rem; padding-right: 38px; color: #dc2626; border-color: #fca5a5; background: #ffffff;">
+                                        <span style="position: absolute; right: 10px; top: 9px; font-size: 0.75rem; color: #dc2626; font-weight: 800;">KG</span>
+                                    </div>
+                                </div>
+                                <div style="font-size: 0.68rem; color: #ef4444; margin-top: 0.35rem;">Singkong afkir dibuang / tolak</div>
+                            </div>
+                        </div>
                     </div>
-                </div>
 
-                <div>
-                    <label class="form-label" style="font-size: 0.8rem; font-weight: 700; color: #0f172a;">
-                        Refraksi Kotoran / Tanah
-                    </label>
-                    <div style="position: relative;">
-                        <input type="number" step="0.05" min="0" max="100" name="items[${idx}][refraksi_persen]" id="refraksi_${idx}" value="${refraksiPersenVal}" class="form-control" placeholder="0.0" oninput="calculateCard(${idx})">
-                        <span style="position: absolute; right: 10px; top: 8px; font-size: 0.75rem; color: #94a3b8; font-weight: 700;">%</span>
+                    <!-- FOOTER STATUS BANNER: RINGKASAN NETTO GUDANG -->
+                    <div class="qc-diameter-footer" style="padding: 0.75rem 1rem; border-top: 1.5px solid #bbf7d0; background: #f0fdf4; display: flex; justify-content: space-between; align-items: center; gap: 0.5rem;">
+                        <div style="display: flex; flex-direction: column; gap: 2px;">
+                            <div style="font-size: 0.75rem; font-weight: 800; color: #166534; text-transform: uppercase; letter-spacing: 0.04em; display: flex; align-items: center; gap: 0.35rem;">
+                                <span>✓</span> <span>Netto Lolos Diterima Pabrik</span>
+                            </div>
+                            <div style="font-size: 0.68rem; color: #475569;">
+                                Formula: Gross - Refraksi Tanah - Afkir
+                            </div>
+                        </div>
+                        <div style="text-align: right;">
+                            <strong id="label_netto_${idx}" style="color: #15803d; font-size: 1.35rem; font-weight: 900; letter-spacing: -0.02em; display: block; line-height: 1.1;">0.00 KG</strong>
+                            <span style="font-size: 0.68rem; color: #166534; font-weight: 700;">Masuk Stok Gudang</span>
+                        </div>
                     </div>
-                </div>
-
-                <div>
-                    <label class="form-label" style="font-size: 0.8rem; font-weight: 700; color: #ef4444;">
-                        Afkir / Busuk (Reject)
-                    </label>
-                    <div style="position: relative;">
-                        <input type="number" step="0.01" min="0" name="items[${idx}][qty_reject]" id="reject_${idx}" value="${rejectVal}" class="form-control" placeholder="0.00" oninput="calculateCard(${idx})">
-                        <span style="position: absolute; right: 10px; top: 8px; font-size: 0.75rem; color: #94a3b8; font-weight: 700;">KG</span>
-                    </div>
-                </div>
-            </div>
-
-            <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 0.65rem 0.85rem; font-size: 0.825rem; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 0.5rem;">
-                <div>
-                    <span style="color: #64748b;">Potongan Refraksi Tanah:</span> 
-                    <strong id="label_qty_refraksi_${idx}" style="color: #b45309;">0.00 KG</strong>
-                </div>
-                <div>
-                    <span style="color: #166534; font-weight: 700;">Netto Lolos Diterima:</span> 
-                    <strong id="label_netto_${idx}" style="color: #15803d; font-size: 0.95rem;">0.00 KG</strong>
                 </div>
             </div>
         `;
@@ -1535,6 +2002,94 @@
             const namaEl = document.getElementById('namaJenisInput');
             if (namaEl && chosenMat && (idx === 0 || !namaEl.value || namaEl.value === 'Singkong Basah Curah')) {
                 namaEl.value = chosenMat.barang_nm;
+            }
+        }
+    };
+
+    window.selectItemGrade = function (idx, grade) {
+        const inputEl = document.getElementById(`grade_input_${idx}`);
+        if (inputEl) inputEl.value = grade;
+
+        const btnA = document.getElementById(`btn_grade_a_${idx}`);
+        const btnB = document.getElementById(`btn_grade_b_${idx}`);
+        if (btnA && btnB) {
+            if (grade === 'A') {
+                btnA.classList.add('active');
+                btnB.classList.remove('active');
+            } else {
+                btnA.classList.remove('active');
+                btnB.classList.add('active');
+            }
+        }
+        window.onGradeChanged(idx, grade);
+    };
+
+    window.setKondisiRawMaterial = function (idx, status) {
+        const inputEl = document.getElementById(`status_raw_material_${idx}`);
+        if (inputEl) inputEl.value = status;
+
+        const btnOk = document.getElementById(`btn_kondisi_ok_${idx}`);
+        const btnTdk = document.getElementById(`btn_kondisi_tdk_${idx}`);
+        if (btnOk && btnTdk) {
+            if (status === 'OK') {
+                btnOk.className = 'qc-kondisi-toggle-btn active ok';
+                btnTdk.className = 'qc-kondisi-toggle-btn';
+            } else {
+                btnOk.className = 'qc-kondisi-toggle-btn';
+                btnTdk.className = 'qc-kondisi-toggle-btn active tdk-std';
+            }
+        }
+    };
+
+    window.onSingkongCheckChanged = function (idx, el, pillId, isDanger) {
+        const pill = document.getElementById(pillId);
+        if (pill) {
+            if (el.checked) {
+                if (isDanger) {
+                    pill.classList.add('active-danger');
+                } else {
+                    pill.classList.add('active-ok');
+                }
+            } else {
+                pill.classList.remove('active-ok', 'active-danger');
+            }
+        }
+
+        if (isDanger && el.checked) {
+            window.setKondisiRawMaterial(idx, 'TDK_STD');
+        }
+    };
+
+    window.onDiameterChanged = function (idx) {
+        const kecilEl = document.getElementById(`diameter_kecil_${idx}`);
+        const standarEl = document.getElementById(`diameter_standar_${idx}`);
+        const footerEl = document.getElementById(`diameter_status_footer_${idx}`);
+        const statusTextEl = document.getElementById(`diameter_status_text_${idx}`);
+        const totalTextEl = document.getElementById(`diameter_total_text_${idx}`);
+
+        if (!kecilEl || !standarEl) return;
+
+        const valKecil = parseFloat(kecilEl.value) || 0;
+        const valStandar = parseFloat(standarEl.value) || 0;
+        const total = valKecil + valStandar;
+
+        const isStandardOk = (valKecil <= 5.0) && (valStandar >= 95.0);
+        const isTotalValid = Math.abs(total - 100) < 0.2;
+
+        if (footerEl) {
+            if (isStandardOk && isTotalValid) {
+                footerEl.className = 'qc-diameter-footer';
+                if (statusTextEl) statusTextEl.textContent = '✓ Lolos Uji Diameter';
+                if (totalTextEl) totalTextEl.textContent = `Total: ${total.toFixed(1).replace('.0', '')}% Valid`;
+            } else {
+                footerEl.className = 'qc-diameter-footer is-warning';
+                let reason = '⚠️ Menyimpang dari Standar';
+                if (valKecil > 5.0) reason = `⚠️ Diameter < 4cm Tinggi (${valKecil}%)`;
+                else if (valStandar < 95.0) reason = `⚠️ Diameter ≥ 4cm Rendah (${valStandar}%)`;
+                else if (!isTotalValid) reason = `⚠️ Total Persentase (${total.toFixed(1)}%) ≠ 100%`;
+
+                if (statusTextEl) statusTextEl.textContent = reason;
+                if (totalTextEl) totalTextEl.textContent = `Total: ${total.toFixed(1)}%`;
             }
         }
     };
@@ -1574,73 +2129,147 @@
             block = document.createElement('div');
             block.id = `fryer_block_${idx}`;
             block.className = 'fryer-param-card';
-            block.style.cssText = 'background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 1.1rem;';
+            block.style.cssText = 'display: flex; flex-direction: column; gap: 0.85rem;';
             container.appendChild(block);
         }
 
         const sel = document.getElementById(`barang_select_${idx}`);
-        const barangNm = sel && sel.selectedOptions[0] ? sel.selectedOptions[0].text : `Item #${idx + 1}`;
+        const barangNm = sel && sel.selectedOptions[0] ? sel.selectedOptions[0].text : `Item Singkong`;
 
         block.innerHTML = `
-            <div style="font-weight: 800; font-size: 0.9rem; color: #0284c7; margin-bottom: 0.75rem; border-bottom: 1px solid #f1f5f9; padding-bottom: 0.35rem;">
-                🍟 Uji Cepat Rasa Fryer (Di Depan) &bull; ${barangNm}
-            </div>
-
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.85rem; margin-bottom: 1rem;">
-                <div>
-                    <label class="form-label" style="font-size: 0.8rem; font-weight: 700;">RASA (Standar: Wajib Tidak Pahit)</label>
-                    <select name="items[${idx}][fryer_rasa]" class="form-control" onchange="onFryerRasaChanged(this.value)" style="font-size: 0.85rem; font-weight: 700;">
-                        <option value="TIDAK_PAHIT" selected>✅ Gurih / Tidak Pahit (Standar)</option>
-                        <option value="PAHIT">❌ Pahit (Reject / Tolak Total)</option>
-                    </select>
+            <!-- 1. PARAMETER RASA (Standar: Tidak Pahit) -->
+            <div class="qc-fryer-group">
+                <input type="hidden" name="items[${idx}][fryer_rasa]" id="fryer_rasa_${idx}" value="TIDAK_PAHIT">
+                <div class="qc-fryer-group-header">
+                    <div class="qc-fryer-label-wrap">
+                        <span class="qc-fryer-dot"></span>
+                        <span>RASA</span>
+                    </div>
+                    <span class="qc-fryer-std-badge">Standar: Tidak Pahit</span>
                 </div>
-
-                <div>
-                    <label class="form-label" style="font-size: 0.8rem; font-weight: 700;">TEKSTUR (Standar: Renyah)</label>
-                    <select name="items[${idx}][fryer_tekstur]" class="form-control" style="font-size: 0.85rem; font-weight: 600;">
-                        <option value="RENYAH" selected>✅ Renyah (Lolos)</option>
-                        <option value="ALOT">❌ Alot / Keras (Tolak)</option>
-                        <option value="LEMBEK">⚠️ Kurang Kering / Lembek</option>
-                    </select>
-                </div>
-
-                <div>
-                    <label class="form-label" style="font-size: 0.8rem; font-weight: 700;">PENAMPAKAN (Standar: Tidak Oilsoaked)</label>
-                    <select name="items[${idx}][fryer_penampakan]" class="form-control" style="font-size: 0.85rem; font-weight: 600;">
-                        <option value="TIDAK_OILSOAKED" selected>✅ Tidak Oilsoaked (Bagus)</option>
-                        <option value="OILSOAKED">❌ Oilsoaked (Serap Minyak)</option>
-                    </select>
+                <div class="qc-fryer-pills">
+                    <button type="button" class="qc-fryer-btn active pass" id="btn_rasa_tidak_${idx}" onclick="setFryerRasa(${idx}, 'TIDAK_PAHIT')">
+                        <span class="qc-fryer-btn-title">Tidak Pahit</span>
+                        <span class="qc-fryer-btn-sub">PASS</span>
+                    </button>
+                    <button type="button" class="qc-fryer-btn" id="btn_rasa_agak_${idx}" onclick="setFryerRasa(${idx}, 'AGAK_PAHIT')">
+                        <span class="qc-fryer-btn-title">Agak Pahit</span>
+                        <span class="qc-fryer-btn-sub">Warning</span>
+                    </button>
+                    <button type="button" class="qc-fryer-btn" id="btn_rasa_pahit_${idx}" onclick="setFryerRasa(${idx}, 'PAHIT')">
+                        <span class="qc-fryer-btn-title">Pahit</span>
+                        <span class="qc-fryer-btn-sub" style="color: #dc2626;">Fail</span>
+                    </button>
                 </div>
             </div>
 
-            <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 0.85rem;">
-                <div style="font-weight: 800; font-size: 0.8rem; color: #b45309; margin-bottom: 0.5rem;">
-                    DEFECT FRYING (%) CACAT PENGGORENGAN:
+            <!-- 2. PARAMETER TEKSTUR (Standar: Renyah) -->
+            <div class="qc-fryer-group">
+                <input type="hidden" name="items[${idx}][fryer_tekstur]" id="fryer_tekstur_${idx}" value="RENYAH">
+                <div class="qc-fryer-group-header">
+                    <div class="qc-fryer-label-wrap">
+                        <span class="qc-fryer-dot"></span>
+                        <span>TEKSTUR</span>
+                    </div>
+                    <span class="qc-fryer-std-badge">Standar: Renyah</span>
                 </div>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 0.6rem; font-size: 0.775rem;">
-                    <div>
-                        <label class="form-label" style="font-size: 0.725rem;">Breakage (Patah)</label>
-                        <input type="number" step="0.1" name="items[${idx}][defect_breakage_persen]" value="0.0" class="form-control" style="font-size: 0.8rem;">
+                <div class="qc-fryer-pills">
+                    <button type="button" class="qc-fryer-btn active pass" id="btn_tekstur_renyah_${idx}" onclick="setFryerTekstur(${idx}, 'RENYAH')">
+                        <span class="qc-fryer-btn-title">Renyah</span>
+                        <span class="qc-fryer-btn-sub">PASS</span>
+                    </button>
+                    <button type="button" class="qc-fryer-btn" id="btn_tekstur_keras_${idx}" onclick="setFryerTekstur(${idx}, 'KERAS')">
+                        <span class="qc-fryer-btn-title">Keras</span>
+                        <span class="qc-fryer-btn-sub">Keras/Ulet</span>
+                    </button>
+                    <button type="button" class="qc-fryer-btn" id="btn_tekstur_lembek_${idx}" onclick="setFryerTekstur(${idx}, 'LEMBEK')">
+                        <span class="qc-fryer-btn-title">Lembek</span>
+                        <span class="qc-fryer-btn-sub">Bantat</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 3. PARAMETER PENAMPAKAN (Standar: Tidak Oilsoaked) -->
+            <div class="qc-fryer-group">
+                <input type="hidden" name="items[${idx}][fryer_penampakan]" id="fryer_penampakan_${idx}" value="TIDAK_OILSOAKED">
+                <div class="qc-fryer-group-header">
+                    <div class="qc-fryer-label-wrap">
+                        <span class="qc-fryer-dot"></span>
+                        <span>PENAMPAKAN</span>
                     </div>
+                    <span class="qc-fryer-std-badge">Standar: Tidak Oilsoaked</span>
+                </div>
+                <div class="qc-fryer-pills">
+                    <button type="button" class="qc-fryer-btn active pass" id="btn_penampakan_bersih_${idx}" onclick="setFryerPenampakan(${idx}, 'TIDAK_OILSOAKED')">
+                        <span class="qc-fryer-btn-title">Tidak Oilsoaked</span>
+                        <span class="qc-fryer-btn-sub">Cerah/Kering</span>
+                    </button>
+                    <button type="button" class="qc-fryer-btn" id="btn_penampakan_gelap_${idx}" onclick="setFryerPenampakan(${idx}, 'AGAK_GELAP')">
+                        <span class="qc-fryer-btn-title">Agak Gelap</span>
+                        <span class="qc-fryer-btn-sub">Kecokelatan</span>
+                    </button>
+                    <button type="button" class="qc-fryer-btn" id="btn_penampakan_oil_${idx}" onclick="setFryerPenampakan(${idx}, 'OILSOAKED')">
+                        <span class="qc-fryer-btn-title">Oilsoaked</span>
+                        <span class="qc-fryer-btn-sub" style="color: #dc2626;">Menyerap Minyak</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 4. DEFECT FRYING ANALYSIS (%) -->
+            <div class="qc-defect-box">
+                <div class="qc-defect-header">
                     <div>
-                        <label class="form-label" style="font-size: 0.725rem;">Cluster (Gumpal)</label>
-                        <input type="number" step="0.1" name="items[${idx}][defect_cluster_persen]" value="0.0" class="form-control" style="font-size: 0.8rem;">
+                        <div class="qc-defect-title">DEFECT FRYING ANALYSIS (%)</div>
+                        <div class="qc-defect-sub">Persentase cacat penggorengan per sampel</div>
                     </div>
-                    <div>
-                        <label class="form-label" style="font-size: 0.725rem;">Foldover (Terlipat)</label>
-                        <input type="number" step="0.1" name="items[${idx}][defect_foldover_persen]" value="0.0" class="form-control" style="font-size: 0.8rem;">
+                    <span class="qc-defect-total-badge" id="defect_total_badge_${idx}">Total: 4.8%</span>
+                </div>
+
+                <div class="qc-defect-grid">
+                    <div class="qc-defect-item">
+                        <label class="qc-defect-label">Breakage (Remuk)</label>
+                        <div class="input-suffix-wrap">
+                            <input type="number" step="0.1" min="0" max="100" name="items[${idx}][defect_breakage_persen]" id="defect_breakage_${idx}" value="1.2" class="form-control" oninput="onDefectFryingChanged(${idx})" style="font-weight: 800; text-align: right;">
+                            <span class="input-suffix-text">%</span>
+                        </div>
                     </div>
-                    <div>
-                        <label class="form-label" style="font-size: 0.725rem;">Oilsoaked Polos</label>
-                        <input type="number" step="0.1" name="items[${idx}][defect_oilsoaked_persen]" value="0.0" class="form-control" style="font-size: 0.8rem;">
+                    <div class="qc-defect-item">
+                        <label class="qc-defect-label">Cluster (Nempel)</label>
+                        <div class="input-suffix-wrap">
+                            <input type="number" step="0.1" min="0" max="100" name="items[${idx}][defect_cluster_persen]" id="defect_cluster_${idx}" value="0.8" class="form-control" oninput="onDefectFryingChanged(${idx})" style="font-weight: 800; text-align: right;">
+                            <span class="input-suffix-text">%</span>
+                        </div>
                     </div>
+                    <div class="qc-defect-item">
+                        <label class="qc-defect-label">Foldover (Terlipat)</label>
+                        <div class="input-suffix-wrap">
+                            <input type="number" step="0.1" min="0" max="100" name="items[${idx}][defect_foldover_persen]" id="defect_foldover_${idx}" value="1.5" class="form-control" oninput="onDefectFryingChanged(${idx})" style="font-weight: 800; text-align: right;">
+                            <span class="input-suffix-text">%</span>
+                        </div>
+                    </div>
+                    <div class="qc-defect-item">
+                        <label class="qc-defect-label">Oilsoaked - Polos</label>
+                        <div class="input-suffix-wrap">
+                            <input type="number" step="0.1" min="0" max="100" name="items[${idx}][defect_oilsoaked_persen]" id="defect_oilsoaked_${idx}" value="0.9" class="form-control" oninput="onDefectFryingChanged(${idx})" style="font-weight: 800; text-align: right;">
+                            <span class="input-suffix-text">%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="qc-defect-full">
                     <div>
-                        <label class="form-label" style="font-size: 0.725rem;">Gambos / Kopong (%)</label>
-                        <input type="number" step="0.1" name="items[${idx}][defect_gambos_persen]" value="0.0" class="form-control" style="font-size: 0.8rem;">
+                        <div class="qc-defect-label">Gambos / Gabus (%)</div>
+                        <div class="qc-defect-sub">Tekstur spon tidak padat</div>
+                    </div>
+                    <div class="input-suffix-wrap" style="max-width: 140px;">
+                        <input type="number" step="0.1" min="0" max="100" name="items[${idx}][defect_gambos_persen]" id="defect_gambos_${idx}" value="0.4" class="form-control" oninput="onDefectFryingChanged(${idx})" style="font-weight: 800; text-align: right;">
+                        <span class="input-suffix-text">%</span>
                     </div>
                 </div>
             </div>
         `;
+
+        window.onDefectFryingChanged(idx);
     }
 
     window.onItemBarangChanged = function (idx) {
@@ -1727,13 +2356,16 @@
             }
         });
 
-        const kesimpulanEl = document.querySelector('input[name="kesimpulan_qc"]:checked');
-        const isTolakTotal = kesimpulanEl && kesimpulanEl.value === 'TOLAK';
+        const kesimpulanVal = document.getElementById('inputKesimpulanQc')?.value || document.querySelector('input[name="kesimpulan_qc"]:checked')?.value || 'TERIMA';
+        const isTolakTotal = (kesimpulanVal === 'TOLAK');
 
         const sumGross = document.getElementById('summaryGross');
         const sumRef = document.getElementById('summaryRefraksi');
         const sumRej = document.getElementById('summaryReject');
         const sumNet = document.getElementById('summaryNetto');
+
+        const inputQtyTerima = document.getElementById('inputQtyTerima');
+        const inputQtyTolak = document.getElementById('inputQtyTolak');
 
         if (isTolakTotal) {
             if (sumGross) sumGross.innerText = `${totalGross.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} KG`;
@@ -1743,6 +2375,8 @@
                 sumNet.innerText = `0.00 KG (DITOLAK)`;
                 sumNet.style.color = '#dc2626';
             }
+            if (inputQtyTerima) inputQtyTerima.value = 0;
+            if (inputQtyTolak) inputQtyTolak.value = Math.round(totalGross);
         } else {
             if (sumGross) sumGross.innerText = `${totalGross.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} KG`;
             if (sumRef) sumRef.innerText = `- ${totalRefraksi.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} KG`;
@@ -1751,6 +2385,48 @@
                 sumNet.innerText = `${totalNetto.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} KG`;
                 sumNet.style.color = '#15803d';
             }
+            if (inputQtyTerima) inputQtyTerima.value = Math.round(totalNetto);
+            if (inputQtyTolak) inputQtyTolak.value = Math.round(totalReject);
+        }
+
+        const subcardNetto = document.getElementById('labelSubcardNetto');
+        if (subcardNetto) {
+            subcardNetto.innerText = `Netto: ${totalNetto.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} KG`;
+        }
+    };
+
+    window.setCurrentDateTime = function () {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const formatted = `${year}-${month}-${day}T${hours}:${minutes}`;
+
+        const inputTgl = document.getElementById('inputTglDatang');
+        if (inputTgl) inputTgl.value = formatted;
+        const textBar = document.getElementById('textInspectionBarTime');
+        if (textBar) {
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+            textBar.innerText = `${day} ${months[now.getMonth()]} ${year} • ${hours}:${minutes} WIB`;
+        }
+    };
+
+    window.onSingkongBarangChanged = function (select) {
+        if (!select) return;
+        const opt = select.options[select.selectedIndex];
+        const barangId = select.value;
+        const barangNm = opt ? opt.getAttribute('data-nama') : '';
+        
+        const bSelect0 = document.getElementById('barang_select_0');
+        if (bSelect0) {
+            bSelect0.value = barangId;
+        }
+        
+        const namaJenis = document.getElementById('namaJenisInput');
+        if (namaJenis && (!namaJenis.value || namaJenis.value === 'Singkong Basah Curah')) {
+            namaJenis.value = barangNm;
         }
     };
 
@@ -1869,7 +2545,10 @@
                 if (sContainer) sContainer.innerHTML = '';
                 if (fContainer) fContainer.innerHTML = '';
                 itemIndex = 0;
-                po.items.forEach(it => {
+
+                // Singkong Pengujian 1: Tepat 1 komoditas singkong yang diperiksa
+                const it = (po.items && po.items.length > 0) ? po.items[0] : null;
+                if (it) {
                     window.createItemCard({
                         podtl_id: it.podtl_id,
                         barang_id: it.barang_id,
@@ -1878,7 +2557,9 @@
                         refraksi_persen: '0.0',
                         reject: '0',
                     });
-                });
+                } else {
+                    window.createItemCard();
+                }
             }
 
             if (namaEl && firstItemBarangNm) {
@@ -1913,6 +2594,11 @@
                 tahapUji.value = 'PENGUJIAN_1';
             }
 
+            try {
+                sessionStorage.removeItem('qc_active_tab');
+                sessionStorage.removeItem('qc_singkong_tahap');
+            } catch (e) {}
+
             const isTolak = document.querySelector('input[name="kesimpulan_qc"]:checked')?.value === 'TOLAK';
             showSubmitLoading(isTolak ? 'Menyimpan Keputusan Penolakan...' : 'Menyimpan Pengujian I & Menyiapkan Gudang...');
         });
@@ -1920,28 +2606,57 @@
 
     // 16. Inisialisasi Saat Halaman Selesai Dimuat
     document.addEventListener('DOMContentLoaded', function () {
-        const defTahap = config.defaultTahap || 'PENGUJIAN_1';
+        const urlParams = new URLSearchParams(window.location.search);
+        let defTahap = config.defaultTahap || 'PENGUJIAN_1';
+        if (urlParams.get('tahap') === '2') {
+            defTahap = 'PENGUJIAN_2';
+        } else if (urlParams.get('tahap') === '1') {
+            defTahap = 'PENGUJIAN_1';
+        } else {
+            const savedTahap = sessionStorage.getItem('qc_singkong_tahap');
+            if (savedTahap) defTahap = savedTahap;
+        }
         window.selectTahapUji(defTahap);
 
         const initKomoditas = config.initialKomoditas || 'SINGKONG';
         window.selectKomoditas(initKomoditas);
-        window.updateFloatingDock(1);
 
-        if (config.hasParentQc) {
-            const p1Select = document.getElementById('selectPendingP1');
-            if (p1Select && p1Select.value) {
-                window.onSelectPendingArrival(p1Select);
-            } else if (config.parentQcItem) {
-                window.createItemCard(config.parentQcItem);
+        // Pulihkan tab aktif terakhir agar saat refresh tidak kembali paksa ke Tab 1
+        let activeTab = 1;
+        const hashMatch = window.location.hash.match(/tab(\d+)/);
+        if (hashMatch) {
+            activeTab = parseInt(hashMatch[1], 10);
+        } else {
+            const savedTab = sessionStorage.getItem('qc_active_tab');
+            if (savedTab) activeTab = parseInt(savedTab, 10);
+        }
+        window.switchQcTab(activeTab || 1);
+
+        if (initKomoditas === 'SINGKONG') {
+            const sContainer = document.getElementById('singkongContainer');
+            const hasCard = sContainer && sContainer.querySelectorAll('.qc-item-card').length > 0;
+
+            if (config.hasParentQc) {
+                const p1Select = document.getElementById('selectPendingP1');
+                if (p1Select && p1Select.value) {
+                    window.onSelectPendingArrival(p1Select);
+                } else if (config.parentQcItem && !hasCard) {
+                    window.createItemCard(config.parentQcItem);
+                } else if (!hasCard) {
+                    window.createItemCard();
+                }
             } else {
-                window.createItemCard();
+                const poSelect = document.getElementById('poSelect');
+                if (poSelect && poSelect.value) {
+                    window.onPoSelected(poSelect);
+                } else if (!hasCard) {
+                    window.createItemCard();
+                }
             }
         } else {
             const poSelect = document.getElementById('poSelect');
             if (poSelect && poSelect.value) {
                 window.onPoSelected(poSelect);
-            } else {
-                window.createItemCard();
             }
         }
     });

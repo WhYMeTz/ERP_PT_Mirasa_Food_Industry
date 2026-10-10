@@ -82,6 +82,25 @@
     $totalNetto = $qc->details->sum('qty_netto_lolos');
     $isLocked = !empty($qc->terima) && !Auth::user()?->isSuperAdmin() && !Auth::user()?->isGudang();
 
+    // Deteksi Satuan
+    $satuanRaw = $firstDetail?->barang?->satuanDasar?->satuan_nm
+        ?: ($firstDetail?->barang?->satuanDasar?->satuan_cd
+        ?: ($qc->po?->details?->firstWhere('barang_id', $firstDetail?->barang_id)?->barang?->satuanDasar?->satuan_nm
+        ?: ($qc->po?->details?->first()?->barang?->satuanDasar?->satuan_nm ?? '')));
+
+    $isLiter = false;
+    if ($satuanRaw) {
+        $isLiter = (stripos($satuanRaw, 'liter') !== false || stripos($satuanRaw, 'ltr') !== false || strtoupper(trim($satuanRaw)) === 'L');
+    }
+    if (!$isLiter && $kat === 'MINYAK') {
+        $namaItem = strtoupper(($firstDetail?->barang?->barang_nm ?? '') . ' ' . ($qc->nama_jenis ?? ''));
+        if (str_contains($namaItem, 'KELAPA') && !str_contains($namaItem, 'SAWIT')) {
+            $isLiter = true;
+        }
+    }
+
+    $satuanDtlUpper = $isLiter ? 'LITER' : ($kat === 'SINGKONG' ? 'KG' : strtoupper($firstDetail?->barang?->satuanDasar?->satuan_cd ?? 'KG'));
+
     $revisi = '1';
     $tglTerbit = '11-09-2023';
 
@@ -178,6 +197,13 @@
                     </a>
                 @endif
 
+                @if (!$qc->terima && ($qc->status_qc === 'SIAP_GUDANG' || in_array($qc->status_qc, ['PASSED', 'DITERIMA_GUDANG'])) && Auth::user()?->canAccessTerima())
+                    <a href="{{ route('gudang.terima.create', ['qc_id' => $qc->qc_id]) }}" class="btn btn-sm" style="background: #059669; color: #ffffff; border: none; font-weight: 800; border-radius: 8px; box-shadow: 0 2px 4px rgba(5, 150, 105, 0.3); display: inline-flex; align-items: center; gap: 4px;">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                        <span>Tarik ke GRN Gudang</span>
+                    </a>
+                @endif
+
                 @if (Auth::user()?->canEditQc() && !$isLocked)
                     <a href="{{ route('qc.inbound.edit', [$qc->qc_id, 'ref' => 'detail']) }}" class="btn btn-sm" style="background: #0284c7; color: #ffffff; border: none; font-weight: 800; border-radius: 8px; box-shadow: 0 2px 4px rgba(2, 132, 199, 0.3);">
                         ✏️ Edit Seluruh Dokumen
@@ -210,7 +236,7 @@
             <div style="display: flex; gap: 0.75rem; align-items: center;">
                 <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink: 0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
                 <div style="font-size: 0.85rem; line-height: 1.4;">
-                    <strong style="font-size: 0.95rem; color: #b91c1c;">PENOLAKAN SEBAGIAN ({{ number_format($qc->details->sum('qty_reject'), 2, ',', '.') }} KG REJECT)</strong><br>
+                    <strong style="font-size: 0.95rem; color: #b91c1c;">PENOLAKAN SEBAGIAN ({{ number_format($qc->details->sum('qty_reject'), 2, ',', '.') }} {{ $satuanDtlUpper }} REJECT)</strong><br>
                     Terdapat bagian muatan (Grade B / afkir) yang ditolak dan tidak masuk stok pabrik. Berita Acara Penolakan resmi telah disiapkan.
                 </div>
             </div>

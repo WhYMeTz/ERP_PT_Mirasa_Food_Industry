@@ -87,70 +87,96 @@
     color: #0f172a;
 }
 
-/* 4. FLOATING DOCK */
+/* 4. ACTION DOCK (STATIS DI BAGIAN BAWAH FORMULIR - CAPSULE PILL) */
 .qc-form-floating-dock {
-    position: fixed;
-    bottom: 58px;
-    left: 0;
-    right: 0;
-    margin: 0 auto;
-    max-width: 880px;
-    padding: 0.65rem 1rem;
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(8px);
-    border-top: 1px solid #e2e8f0;
-    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.06);
+    position: static;
+    margin: -1.0rem auto 1.25rem auto;
+    padding: 0 0.5rem;
+    max-width: 480px;
+    width: 100%;
+    background: transparent;
+    border: none;
+    box-shadow: none;
     display: flex;
     gap: 0.75rem;
     align-items: center;
-    justify-content: space-between;
-    z-index: 1000;
+    justify-content: center;
+    z-index: 10;
+    pointer-events: auto;
 }
 .btn-dock-back {
-    background: #f1f5f9;
+    pointer-events: auto;
+    background: #ffffff;
     border: 1.5px solid #cbd5e1;
-    color: #475569;
+    color: #334155;
     font-weight: 700;
     font-size: 0.825rem;
-    border-radius: 8px;
-    padding: 0.65rem 0.95rem;
+    border-radius: 9999px;
+    padding: 0.65rem 1.15rem;
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
     cursor: pointer;
-    transition: all 0.15s ease;
+    box-shadow: 0 6px 16px -2px rgba(15, 23, 42, 0.12), 0 2px 4px rgba(0, 0, 0, 0.04);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    min-height: 44px;
+    flex-shrink: 0;
+}
+.btn-dock-back[style*="display: none"],
+.btn-dock-back[style*="display:none"] {
+    display: none !important;
 }
 .btn-dock-back:hover {
-    background: #e2e8f0;
+    background: #f8fafc;
+    border-color: #94a3b8;
     color: #0f172a;
+    transform: translateY(-1px);
+}
+.btn-dock-back:active {
+    transform: scale(0.96);
 }
 .btn-dock-next {
+    pointer-events: auto;
     flex: 1;
+    max-width: 360px;
     border: none;
     color: #ffffff;
     font-weight: 800;
-    font-size: 0.925rem;
-    border-radius: 8px;
-    padding: 0.7rem 1.25rem;
+    font-size: 0.9rem;
+    letter-spacing: 0.01em;
+    border-radius: 9999px;
+    padding: 0.725rem 1.4rem;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
     cursor: pointer;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-    transition: all 0.15s ease;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    min-height: 44px;
 }
 .btn-dock-next.btn-primary-state {
-    background: #0284c7;
+    background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+    box-shadow: 0 8px 20px -3px rgba(2, 132, 199, 0.46), 0 2px 6px rgba(15, 23, 42, 0.08);
 }
 .btn-dock-next.btn-primary-state:hover {
-    background: #0369a1;
+    background: linear-gradient(135deg, #0369a1 0%, #075985 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 10px 24px -3px rgba(2, 132, 199, 0.55);
+}
+.btn-dock-next.btn-primary-state:active {
+    transform: scale(0.97);
 }
 .btn-dock-next.btn-success-state {
-    background: #059669;
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    box-shadow: 0 8px 20px -3px rgba(5, 150, 105, 0.46), 0 2px 6px rgba(15, 23, 42, 0.08);
 }
 .btn-dock-next.btn-success-state:hover {
-    background: #047857;
+    background: linear-gradient(135deg, #047857 0%, #065f46 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 10px 24px -3px rgba(5, 150, 105, 0.55);
+}
+.btn-dock-next.btn-success-state:active {
+    transform: scale(0.97);
 }
 
 /* 5. TOAST NOTIFICATIONS */
@@ -205,11 +231,11 @@
 /* 6. RESPONSIVE BREAKPOINT TWEAKS */
 @media (max-width: 640px) {
     .qc-form-floating-dock {
-        bottom: 54px;
-        padding: 0.5rem 0.75rem;
+        margin: -1.0rem auto 1rem auto;
+        padding: 0 0.25rem;
     }
     .btn-dock-next {
-        font-size: 0.85rem;
-        padding: 0.6rem 0.85rem;
+        font-size: 0.9rem;
+        padding: 0.725rem 1.15rem;
     }
 }

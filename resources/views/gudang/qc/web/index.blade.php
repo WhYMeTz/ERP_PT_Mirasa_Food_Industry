@@ -249,6 +249,21 @@
                         // Terima GRN
                         $terimaObj = $qc->terima ?: ($p2?->terima);
                         $isLocked = !empty($terimaObj) && !Auth::user()?->isSuperAdmin() && !Auth::user()?->isGudang();
+
+                        // Cek Over-Delivery terhadap PO
+                        $poObj = $qc->po;
+                        $poTotalPesan = $poObj ? (float) $poObj->details->sum('pesan_qty') : 0;
+                        $isOverPo = false;
+                        $selisihLebihPo = 0;
+                        $persenLebihPo = 0;
+                        if ($poObj && $poTotalPesan > 0) {
+                            $muatanAcuan = max((float)$qc->jumlah_surat_jalan, (float)$totalGross);
+                            if ($muatanAcuan > $poTotalPesan) {
+                                $isOverPo = true;
+                                $selisihLebihPo = $muatanAcuan - $poTotalPesan;
+                                $persenLebihPo = round(($selisihLebihPo / $poTotalPesan) * 100, 1);
+                            }
+                        }
                     @endphp
 
                     {{-- BARIS UTAMA TRUK (SUPER BERSIH, LEGA, & TERATUR) --}}
@@ -296,12 +311,23 @@
 
                         {{-- 3. ARMADA & REKANAN --}}
                         <td>
-                            <div style="font-weight: 800; color: #0f172a; display: flex; align-items: center; gap: 0.35rem;">
+                            <div style="font-weight: 800; color: #0f172a; display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;">
                                 <span>🚛 {{ $qc->plat_nomor_truk ?: '-' }}</span>
+                                @if ($isOverPo)
+                                    <span class="badge" style="background: #fffbeb; color: #b45309; border: 1px solid #fcd34d; font-weight: 800; font-size: 0.65rem; padding: 1px 5px; border-radius: 4px;" title="Kuantitas muatan melebihi pesanan PO #{{ $poObj?->po_no }} (PO: {{ number_format($poTotalPesan, 0, ',', '.') }} kg, Selisih Lebih: +{{ number_format($selisihLebihPo, 0, ',', '.') }} kg)">
+                                        ⚠️ Over PO (+{{ number_format($selisihLebihPo, 0, ',', '.') }} {{ $isBahanBaku ? 'kg' : $satuanCd }})
+                                    </span>
+                                @endif
                             </div>
                             <div style="font-size: 0.75rem; color: #475569; margin-top: 0.1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 190px;" title="{{ $qc->supplier?->supplier_nm ?: '-' }}">
                                 {{ $qc->supplier?->supplier_nm ?: '-' }}
                             </div>
+                            @if ($poObj)
+                                <div style="font-size: 0.68rem; color: #64748b; margin-top: 0.1rem;">
+                                    PO: <strong style="color: #0284c7;">{{ $poObj->po_no }}</strong>
+                                    <span style="color: #94a3b8;">({{ number_format($poTotalPesan, 0, ',', '.') }} {{ $isBahanBaku ? 'kg' : $satuanCd }})</span>
+                                </div>
+                            @endif
                         </td>
 
                         {{-- 4. MUATAN SURAT JALAN --}}

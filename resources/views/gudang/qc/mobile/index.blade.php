@@ -170,6 +170,20 @@
                             @else
                                 <span class="badge-status-lab" style="background: #dcfce7; color: #15803d; border: 1px solid #86efac; font-weight: 800;">🟢 Grade A</span>
                             @endif
+                        @elseif ($kat === 'MINYAK')
+                            @php
+                                $firstDtl = $qc->details->first();
+                            @endphp
+                            @if ($firstDtl && $firstDtl->ffa_qc !== null)
+                                @if ((float)$firstDtl->ffa_qc <= 0.20)
+                                    <span class="badge-status-lab" style="background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; font-weight: 800;">🧪 FFA {{ number_format((float)$firstDtl->ffa_qc, 2) }}% (OK)</span>
+                                @else
+                                    <span class="badge-status-reject" style="font-weight: 800;">⚠️ FFA {{ number_format((float)$firstDtl->ffa_qc, 2) }}% (>0.20%)</span>
+                                @endif
+                            @endif
+                            @if ($firstDtl && $firstDtl->tipe_wadah_minyak)
+                                <span class="badge-status-lab" style="background: #f8fafc; color: #475569; border: 1px solid #cbd5e1; font-weight: 700;">📦 {{ $firstDtl->tipe_wadah_minyak }}</span>
+                            @endif
                         @endif
                     </div>
                 </div>
@@ -199,27 +213,61 @@
                                 Sopir: {{ $qc->sopir_nama ?: '-' }}
                             </span>
                         </div>
+
+                        @php
+                            $cardItemDtl = $qc->details->first();
+                        @endphp
+                        @if ($cardItemDtl && ($cardItemDtl->barang || $qc->nama_jenis))
+                            <div class="qc-meta-item" style="grid-column: 1 / -1; margin-top: -0.25rem; padding-top: 0.25rem; border-top: 1px dashed #f1f5f9;">
+                                <span class="qc-meta-label">Barang / Komoditas</span>
+                                <span class="qc-meta-value strong" style="color: #334155; font-size: 0.8rem;">
+                                    {{ $cardItemDtl->barang?->barang_nm ?? $qc->nama_jenis }}
+                                </span>
+                            </div>
+                        @endif
                     </div>
 
                     {{-- RINGKASAN METRIK TIMBANGAN SAMPLING --}}
-                    <div class="qc-metric-box">
-                        <div class="qc-metric-col">
-                            <span class="qc-metric-label">Gross</span>
-                            <span class="qc-metric-val">{{ number_format($totalGross, 0, ',', '.') }}</span>
+                    @if ($kat === 'MINYAK')
+                        @php
+                            $satRawMinyak = $cardItemDtl?->barang?->satuanDasar?->satuan_cd ?: ($cardItemDtl?->barang?->satuanDasar?->satuan_nm ?: '');
+                            $isLiterMinyak = (stripos($satRawMinyak, 'liter') !== false || stripos($satRawMinyak, 'ltr') !== false || strtoupper(trim($satRawMinyak)) === 'L' || (str_contains(strtoupper($cardItemDtl?->barang?->barang_nm ?? ''), 'KELAPA') && !str_contains(strtoupper($cardItemDtl?->barang?->barang_nm ?? ''), 'SAWIT')));
+                            $satuanMinyak = $isLiterMinyak ? 'Liter' : 'kg';
+                        @endphp
+                        <div class="qc-metric-box" style="grid-template-columns: repeat(3, 1fr);">
+                            <div class="qc-metric-col">
+                                <span class="qc-metric-label">Bruto/Gross</span>
+                                <span class="qc-metric-val">{{ number_format($totalGross, 0, ',', '.') }} <small style="font-size: 0.65rem;">{{ $satuanMinyak }}</small></span>
+                            </div>
+                            <div class="qc-metric-col">
+                                <span class="qc-metric-label">Reject</span>
+                                <span class="qc-metric-val reject">{{ number_format($totalReject, 0, ',', '.') }} <small style="font-size: 0.65rem;">{{ $satuanMinyak }}</small></span>
+                            </div>
+                            <div class="qc-metric-col">
+                                <span class="qc-metric-label">Netto Masuk</span>
+                                <span class="qc-metric-val netto">{{ number_format($totalNetto, 0, ',', '.') }} <small style="font-size: 0.65rem;">{{ $satuanMinyak }}</small></span>
+                            </div>
                         </div>
-                        <div class="qc-metric-col">
-                            <span class="qc-metric-label">Refraksi</span>
-                            <span class="qc-metric-val refraksi">{{ number_format($totalRefraksi, 0, ',', '.') }}</span>
+                    @else
+                        <div class="qc-metric-box">
+                            <div class="qc-metric-col">
+                                <span class="qc-metric-label">Gross</span>
+                                <span class="qc-metric-val">{{ number_format($totalGross, 0, ',', '.') }}</span>
+                            </div>
+                            <div class="qc-metric-col">
+                                <span class="qc-metric-label">Refraksi</span>
+                                <span class="qc-metric-val refraksi">{{ number_format($totalRefraksi, 0, ',', '.') }}</span>
+                            </div>
+                            <div class="qc-metric-col">
+                                <span class="qc-metric-label">Reject</span>
+                                <span class="qc-metric-val reject">{{ number_format($totalReject, 0, ',', '.') }}</span>
+                            </div>
+                            <div class="qc-metric-col">
+                                <span class="qc-metric-label">Netto Lolos</span>
+                                <span class="qc-metric-val netto">{{ number_format($totalNetto, 0, ',', '.') }} <small style="font-size: 0.65rem;">kg</small></span>
+                            </div>
                         </div>
-                        <div class="qc-metric-col">
-                            <span class="qc-metric-label">Reject</span>
-                            <span class="qc-metric-val reject">{{ number_format($totalReject, 0, ',', '.') }}</span>
-                        </div>
-                        <div class="qc-metric-col">
-                            <span class="qc-metric-label">Netto Lolos</span>
-                            <span class="qc-metric-val netto">{{ number_format($totalNetto, 0, ',', '.') }} <small style="font-size: 0.65rem;">kg</small></span>
-                        </div>
-                    </div>
+                    @endif
 
                     {{-- STATUS INTEGRASI GUDANG PERSIMPANGAN --}}
                     @if ($kat === 'SINGKONG' && $qc->status_uji_goreng === 'MENUNGGU_LAB')

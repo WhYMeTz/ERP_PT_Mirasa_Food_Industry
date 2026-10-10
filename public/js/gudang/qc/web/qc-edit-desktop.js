@@ -64,11 +64,48 @@ document.addEventListener('DOMContentLoaded', function () {
         if (inlineTotal) inlineTotal.textContent = Math.round(totalAkumulasi).toLocaleString('id-ID') + ' kg';
         if (sidebarNettoUji2) sidebarNettoUji2.textContent = Math.round(netto).toLocaleString('id-ID') + ' kg';
         if (sidebarTotal) sidebarTotal.textContent = Math.round(totalAkumulasi).toLocaleString('id-ID') + ' kg';
+
+        // Periksa Over PO secara real-time
+        checkOverPoLive();
+    }
+
+    const sjInput = document.getElementById('inputJumlahSj');
+
+    function checkOverPoLive() {
+        if (!window.poData || !window.poData.hasPo) return;
+
+        const gross = parseFloat(grossInput?.value) || 0;
+        const sj = parseFloat(sjInput?.value) || 0;
+        // Prioritaskan tonase gross timbangan fisik jika ada; jika non-timbangan gunakan surat jalan
+        const muatanAcuan = gross > 0 ? gross : sj;
+        const poBatas = typeof window.poData.poSisaKuota !== 'undefined' ? window.poData.poSisaKuota : window.poData.poTotalPesan;
+        const poTotal = window.poData.poTotalPesan || 0;
+        const banner = document.getElementById('bannerOverPoAlert');
+        const badge = document.getElementById('badgeOverPoField');
+        const textEl = document.getElementById('bannerOverPoText');
+        const satuan = window.poData.satuan || 'kg';
+
+        if (poTotal > 0 && muatanAcuan > poBatas) {
+            const selisih = muatanAcuan - poBatas;
+            const persen = poBatas > 0 ? ((selisih / poBatas) * 100).toFixed(1) : '100.0';
+
+            if (banner) {
+                banner.style.display = 'flex';
+                if (textEl) {
+                    textEl.innerHTML = `Tonase muatan fisik yang diinput (<strong>${Math.round(muatanAcuan).toLocaleString('id-ID')} ${satuan}</strong>) melebihi sisa kuota pesanan <strong>PO #${window.poData.poNo}</strong> (<strong>${Math.round(poBatas).toLocaleString('id-ID')} ${satuan}</strong> dari total PO ${Math.round(poTotal).toLocaleString('id-ID')} ${satuan}). Selisih lebih: <strong style="color: #b45309;">+${Math.round(selisih).toLocaleString('id-ID')} ${satuan} (+${persen}%)</strong>.`;
+                }
+            }
+            if (badge) badge.style.display = 'inline-block';
+        } else {
+            if (banner) banner.style.display = 'none';
+            if (badge) badge.style.display = 'none';
+        }
     }
 
     if (grossInput) grossInput.addEventListener('input', calculateNetto);
     if (refraksiInput) refraksiInput.addEventListener('input', calculateNetto);
     if (rejectInput) rejectInput.addEventListener('input', calculateNetto);
+    if (sjInput) sjInput.addEventListener('input', checkOverPoLive);
 
     if (statusSelect && sidebarStatusBadge) {
         statusSelect.addEventListener('change', function () {
@@ -89,14 +126,89 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    // Form submission & Over PO confirmation dialog
+    const desktopForm = document.getElementById('qcEditDesktopForm');
+    let lastSubmitter = null;
+    let allowOverPoSubmit = false;
+
+    if (desktopForm) {
+        desktopForm.addEventListener('submit', function (e) {
+            if (allowOverPoSubmit) return; // Sudah dikonfirmasi user
+
+            if (!window.poData || !window.poData.hasPo) {
+                return; // Non-PO, langsung izinkan submit
+            }
+
+            const gross = parseFloat(grossInput?.value) || 0;
+            const sj = parseFloat(sjInput?.value) || 0;
+            const muatanAcuan = gross > 0 ? gross : sj;
+            const poBatas = typeof window.poData.poSisaKuota !== 'undefined' ? window.poData.poSisaKuota : window.poData.poTotalPesan;
+            const poTotal = window.poData.poTotalPesan || 0;
+
+            if (poTotal > 0 && muatanAcuan > poBatas) {
+                e.preventDefault();
+                lastSubmitter = e.submitter;
+
+                const selisih = muatanAcuan - poBatas;
+                const persen = poBatas > 0 ? ((selisih / poBatas) * 100).toFixed(1) : '100.0';
+                const satuan = window.poData.satuan || 'kg';
+
+                const modal = document.getElementById('modalConfirmOverPo');
+                const modalMuatan = document.getElementById('modalOverPoMuatan');
+                const modalPoNo = document.getElementById('modalOverPoPoNo');
+                const modalKuota = document.getElementById('modalOverPoKuota');
+                const modalSelisih = document.getElementById('modalOverPoSelisih');
+                const modalPersen = document.getElementById('modalOverPoPersen');
+
+                if (modalMuatan) modalMuatan.textContent = `${Math.round(muatanAcuan).toLocaleString('id-ID')} ${satuan}`;
+                if (modalPoNo) modalPoNo.textContent = `PO #${window.poData.poNo}`;
+                if (modalKuota) modalKuota.textContent = `Sisa Kuota: ${Math.round(poBatas).toLocaleString('id-ID')} ${satuan} (dari Total PO ${Math.round(poTotal).toLocaleString('id-ID')} ${satuan})`;
+                if (modalSelisih) modalSelisih.textContent = `+${Math.round(selisih).toLocaleString('id-ID')} ${satuan}`;
+                if (modalPersen) modalPersen.textContent = `+${persen}%`;
+
+                if (modal) {
+                    modal.style.display = 'flex';
+                    document.body.style.overflow = 'hidden';
+                }
+            }
+        });
+    }
+
+    const btnConfirmSubmit = document.getElementById('btnConfirmOverPoSubmit');
+    if (btnConfirmSubmit && desktopForm) {
+        btnConfirmSubmit.addEventListener('click', function () {
+            allowOverPoSubmit = true;
+            closeOverPoModal();
+
+            if (lastSubmitter && lastSubmitter.name) {
+                const hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.name = lastSubmitter.name;
+                hiddenInput.value = lastSubmitter.value;
+                desktopForm.appendChild(hiddenInput);
+            }
+            desktopForm.submit();
+        });
+    }
+
     // Initial calculation on load
     calculateNetto();
+    checkOverPoLive();
 });
+
+function closeOverPoModal() {
+    const modal = document.getElementById('modalConfirmOverPo');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+    }
+}
 
 // Tutup dengan Escape key
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
         closeHaccpModal();
+        closeOverPoModal();
     }
 });
 

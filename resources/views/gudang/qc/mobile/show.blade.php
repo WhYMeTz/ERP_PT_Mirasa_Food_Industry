@@ -5,6 +5,7 @@
 
 @push('styles')
     <link rel="stylesheet" href="{{ asset('css/gudang/qc/mobile/qc-mobile-detail.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/gudang/qc/minyak/minyak.css') }}">
 @endpush
 
 @php
@@ -15,6 +16,26 @@
     $totalReject = $qc->details->sum('qty_reject');
     $totalNetto = $qc->details->sum('qty_netto_lolos');
     $isLocked = !empty($qc->terima) && !Auth::user()?->isSuperAdmin();
+
+    // Deteksi Satuan: Liter vs Kg
+    $satuanRaw = $firstDetail?->barang?->satuanDasar?->satuan_nm
+        ?: ($firstDetail?->barang?->satuanDasar?->satuan_cd
+        ?: ($qc->po?->details?->firstWhere('barang_id', $firstDetail?->barang_id)?->barang?->satuanDasar?->satuan_nm
+        ?: ($qc->po?->details?->first()?->barang?->satuanDasar?->satuan_nm ?? '')));
+
+    $isLiter = false;
+    if ($satuanRaw) {
+        $isLiter = (stripos($satuanRaw, 'liter') !== false || stripos($satuanRaw, 'ltr') !== false || strtoupper(trim($satuanRaw)) === 'L');
+    }
+    if (!$isLiter && $kat === 'MINYAK') {
+        $namaItem = strtoupper(($firstDetail?->barang?->barang_nm ?? '') . ' ' . ($qc->nama_jenis ?? ''));
+        if (str_contains($namaItem, 'KELAPA') && !str_contains($namaItem, 'SAWIT')) {
+            $isLiter = true;
+        }
+    }
+
+    $satuanDtl = $isLiter ? 'Liter' : ($kat === 'SINGKONG' ? 'kg' : ($firstDetail?->barang?->satuanDasar?->satuan_cd ?? 'kg'));
+    $satuanDtlLower = strtolower($satuanDtl);
 @endphp
 
 @section('content')
@@ -125,6 +146,30 @@
         </h2>
         <div class="qc-info-grid">
             <div class="qc-info-item">
+                <span class="qc-info-label">Nama Bahan (Master)</span>
+                <span class="qc-info-value" style="font-weight: 800; color: #0284c7;">
+                    {{ $firstDetail?->barang?->barang_nm ?: ($qc->nama_jenis ?: '-') }}
+                </span>
+            </div>
+            <div class="qc-info-item">
+                <span class="qc-info-label">NAMA JENIS :</span>
+                <span class="qc-info-value" style="font-weight: 800; color: #0f172a;">
+                    {{ $qc->nama_jenis ?: '-' }}
+                </span>
+            </div>
+            <div class="qc-info-item">
+                <span class="qc-info-label">Produsen &amp; Negara</span>
+                <span class="qc-info-value">
+                    {{ $qc->nama_produsen ?: ($qc->supplier?->supplier_nm ?? '-') }} ({{ $qc->negara_produsen ?: 'Indonesia' }})
+                </span>
+            </div>
+            <div class="qc-info-item">
+                <span class="qc-info-label">Sampel Uji</span>
+                <span class="qc-info-value" style="font-weight: 700;">
+                    {{ $qc->jumlah_sample_gr ? $qc->jumlah_sample_gr . ' gr' : ($qc->jumlah_sample_kg ? $qc->jumlah_sample_kg . ' kg' : '250 gr') }}
+                </span>
+            </div>
+            <div class="qc-info-item">
                 <span class="qc-info-label">Mitra Supplier</span>
                 <span class="qc-info-value">{{ $qc->supplier?->supplier_nm ?? '-' }}</span>
             </div>
@@ -160,26 +205,28 @@
         <h2 class="qc-card-title">
             <span>⚖️</span> <span>Hasil Timbangan &amp; Tonase</span>
         </h2>
-        <div class="qc-metrics-grid">
+        <div class="qc-metrics-grid" style="grid-template-columns: repeat({{ $kat === 'MINYAK' ? 3 : 4 }}, 1fr);">
             <div class="qc-metric-box">
                 <div class="qc-metric-title">Gross (Bruto)</div>
                 <div class="qc-metric-number">{{ number_format($totalGross, 0, ',', '.') }}</div>
-                <div class="qc-metric-sub">kg timbang</div>
+                <div class="qc-metric-sub">{{ $satuanDtlLower }} timbang</div>
             </div>
+            @if ($kat !== 'MINYAK')
             <div class="qc-metric-box">
                 <div class="qc-metric-title">Refraksi</div>
                 <div class="qc-metric-number" style="color: #d97706;">{{ number_format($totalRefraksi, 0, ',', '.') }}</div>
                 <div class="qc-metric-sub">{{ number_format($firstDetail?->refraksi_persen ?? 0, 1) }}% potongan</div>
             </div>
+            @endif
             <div class="qc-metric-box">
                 <div class="qc-metric-title">Reject (Afkir)</div>
                 <div class="qc-metric-number" style="color: #dc2626;">{{ number_format($totalReject, 0, ',', '.') }}</div>
-                <div class="qc-metric-sub">kg ditolak</div>
+                <div class="qc-metric-sub">{{ $satuanDtlLower }} ditolak</div>
             </div>
             <div class="qc-metric-box highlight">
                 <div class="qc-metric-title" style="color: #059669;">Netto Lolos</div>
                 <div class="qc-metric-number">{{ number_format($totalNetto, 0, ',', '.') }}</div>
-                <div class="qc-metric-sub" style="color: #059669; font-weight: 700;">kg diterima pabrik</div>
+                <div class="qc-metric-sub" style="color: #059669; font-weight: 700;">{{ $satuanDtlLower }} diterima pabrik</div>
             </div>
         </div>
     </div>
@@ -349,22 +396,51 @@
         @elseif ($kat === 'MINYAK')
             <div class="qc-param-list">
                 <div class="qc-param-row">
-                    <span class="qc-param-name">FFA di COA Supplier</span>
-                    <span class="qc-param-val">{{ $firstDetail?->ffa_coa ? number_format($firstDetail->ffa_coa, 3) : '-' }}</span>
+                    <span class="qc-param-name">Komoditas Minyak</span>
+                    <span class="qc-param-val" style="font-weight: 800; color: #0284c7;">
+                        {{ $firstDetail?->barang?->barang_nm ?: ($qc->nama_jenis ?: 'Minyak Goreng') }}
+                    </span>
                 </div>
                 <div class="qc-param-row">
-                    <span class="qc-param-name">FFA Uji QC Mirasa (Max 0,100%)</span>
-                    <span class="qc-param-val {{ (float)($firstDetail?->ffa_qc ?? 0) <= 0.1 ? 'pass' : 'fail' }}">
-                        {{ $firstDetail?->ffa_qc ? number_format($firstDetail->ffa_qc, 3) : '-' }}
+                    <span class="qc-param-name">FFA di COA Supplier</span>
+                    <span class="qc-param-val">{{ $firstDetail?->ffa_coa !== null ? number_format((float)$firstDetail->ffa_coa, 3) . '%' : '-' }}</span>
+                </div>
+                <div class="qc-param-row">
+                    <span class="qc-param-name">FFA Uji QC Mirasa (Max 0,200%)</span>
+                    <span class="qc-param-val {{ (float)($firstDetail?->ffa_qc ?? 0) <= 0.20 ? 'pass' : 'fail' }}">
+                        {{ $firstDetail?->ffa_qc !== null ? number_format((float)$firstDetail->ffa_qc, 3) . '%' : '-' }}
+                        @if((float)($firstDetail?->ffa_qc ?? 0) > 0.20) ⚠️ Melebihi Batas @endif
+                    </span>
+                </div>
+                <div class="qc-param-row">
+                    <span class="qc-param-name">Tipe Wadah Minyak</span>
+                    <span class="qc-param-val">
+                        {{ $firstDetail?->tipe_wadah_minyak ?: 'TANGKI' }}
+                    </span>
+                </div>
+                <div class="qc-param-row">
+                    <span class="qc-param-name">Kondisi Wadah</span>
+                    <span class="qc-param-val {{ ($firstDetail?->kondisi_tangki_jerigen ?? 'OK') === 'OK' ? 'pass' : 'fail' }}">
+                        {{ ($firstDetail?->kondisi_tangki_jerigen ?? 'OK') === 'OK' ? '✔ OK (Standar)' : '✖ Tidak Standar' }}
+                    </span>
+                </div>
+                <div class="qc-param-row">
+                    <span class="qc-param-name">Isi Raw Material</span>
+                    <span class="qc-param-val {{ ($firstDetail?->status_raw_material ?? 'OK') === 'OK' ? 'pass' : 'fail' }}">
+                        {{ ($firstDetail?->status_raw_material ?? 'OK') === 'OK' ? '✔ OK' : '✖ Tidak Standar' }}
                     </span>
                 </div>
                 <div class="qc-param-row">
                     <span class="qc-param-name">Kejernihan Minyak</span>
-                    <span class="qc-param-val pass">✔ Bebas Endapan / Jernih</span>
+                    <span class="qc-param-val {{ $firstDetail?->minyak_jernih_st ? 'pass' : 'fail' }}">
+                        {{ $firstDetail?->minyak_jernih_st ? '✔ Bebas Endapan / Jernih' : '✖ Keruh / Ada Endapan' }}
+                    </span>
                 </div>
                 <div class="qc-param-row">
                     <span class="qc-param-name">Kebersihan Tangki</span>
-                    <span class="qc-param-val pass">✔ Bersih</span>
+                    <span class="qc-param-val {{ $firstDetail?->tangki_bersih_st ? 'pass' : 'fail' }}">
+                        {{ $firstDetail?->tangki_bersih_st ? '✔ Bersih' : '✖ Tangki Kotor' }}
+                    </span>
                 </div>
             </div>
 
@@ -393,7 +469,7 @@
             <span class="qc-info-label">Status Keputusan Akhir:</span>
             <div style="font-size: 1.05rem; font-weight: 900; margin-top: 0.2rem; color: {{ $qc->status_qc !== 'DITOLAK_TOTAL' ? '#16a34a' : '#dc2626' }};">
                 @if ($qc->status_qc !== 'DITOLAK_TOTAL')
-                    ✔ DITERIMA ({{ number_format($totalNetto, 0, ',', '.') }} kg Lolos)
+                    ✔ DITERIMA ({{ number_format($totalNetto, 0, ',', '.') }} {{ $satuanDtlLower }} Lolos)
                 @else
                     ✖ DITOLAK TOTAL
                 @endif

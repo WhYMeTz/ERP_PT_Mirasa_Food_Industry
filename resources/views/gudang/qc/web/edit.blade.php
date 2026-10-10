@@ -54,6 +54,31 @@
         $backUrl = route('qc.inbound.index');
         $backLabel = 'Kembali ke Riwayat QC';
     }
+
+    // Perhitungan Over-PO (Memperhitungkan Parsial yang Sudah Diterima Gudang)
+    $poObj = $qc->po;
+    $poTotalPesan = $poObj ? (float) $poObj->details->sum('pesan_qty') : 0;
+    
+    // Kuantitas yang sudah diterima gudang dari dokumen lain selain dokumen QC ini
+    $qtyTerimaDokumenIni = $qc->terima ? (float) $qc->terima->details->sum('terima_qty') : 0;
+    $poSudahMasukGudang = $poObj ? max(0, (float) $poObj->details->sum('terima_qty') - $qtyTerimaDokumenIni) : 0;
+    $poSisaKuota = $poObj ? max(0, $poTotalPesan - $poSudahMasukGudang) : 0;
+
+    $isOverPo = false;
+    $selisihLebihPo = 0;
+    $persenLebihPo = 0;
+    $satuanCd = $kat === 'SINGKONG' ? 'kg' : ($firstDetail?->barang?->satuanDasar?->satuan_cd ?? 'kg');
+    
+    // Muatan fisik aktual: prioritaskan timbangan gross fisik jika ada, atau muatan turun di pabrik / surat jalan
+    $muatanAcuan = $totalGross > 0 ? (float) $totalGross : (float) ($qc->jumlah_di_pabrik ?: $qc->jumlah_surat_jalan);
+
+    if ($poObj && $poTotalPesan > 0) {
+        if ($muatanAcuan > $poSisaKuota) {
+            $isOverPo = true;
+            $selisihLebihPo = $muatanAcuan - $poSisaKuota;
+            $persenLebihPo = $poSisaKuota > 0 ? round(($selisihLebihPo / $poSisaKuota) * 100, 1) : 100;
+        }
+    }
 @endphp
 
 @section('content')
@@ -172,6 +197,26 @@
     </div>
 @endif
 
+{{-- BANNER PERINGATAN OVER PO (INTERAKTIF & REAL-TIME) --}}
+@if ($poObj)
+    <div id="bannerOverPoAlert" style="{{ $isOverPo ? 'display: flex;' : 'display: none;' }} margin-bottom: 1.25rem; background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 8px; padding: 0.85rem 1.15rem; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
+        <div style="display: flex; align-items: center; gap: 0.65rem;">
+            <span style="font-size: 1.35rem;">⚠️</span>
+            <div>
+                <div style="font-weight: 800; color: #92400e; font-size: 0.875rem;">
+                    Peringatan: Muatan Fisik Melebihi Sisa Kuota Pesanan (Over-Delivery dari PO)
+                </div>
+                <div style="font-size: 0.785rem; color: #78350f; margin-top: 0.2rem;" id="bannerOverPoText">
+                    Tonase muatan fisik yang diinput (<strong id="overPoMuatanVal">{{ number_format($muatanAcuan, 0, ',', '.') }} {{ $satuanCd }}</strong>) melebihi sisa kuota pesanan <strong>PO #{{ $poObj->po_no }}</strong> (<strong id="overPoKuotaVal">{{ number_format($poSisaKuota, 0, ',', '.') }} {{ $satuanCd }}</strong> dari total PO {{ number_format($poTotalPesan, 0, ',', '.') }} {{ $satuanCd }}). Selisih lebih: <strong style="color: #b45309;" id="overPoSelisihVal">+{{ number_format($selisihLebihPo, 0, ',', '.') }} {{ $satuanCd }} (+{{ $persenLebihPo }}%)</strong>.
+                </div>
+            </div>
+        </div>
+        <span style="font-size: 0.72rem; font-weight: 800; background: #fef3c7; color: #92400e; padding: 4px 10px; border-radius: 6px; border: 1px solid #fcd34d;">
+            Status: Melebihi Sisa Kuota PO
+        </span>
+    </div>
+@endif
+
 {{-- FORMULIR UTAMA WEB DESKTOP --}}
 <form action="{{ route('qc.inbound.update', $qc->qc_id) }}" method="POST" id="qcEditDesktopForm">
     @csrf
@@ -244,7 +289,28 @@
                         <div class="form-group" style="margin-bottom: 0;">
                             <label class="form-label">Referensi Dokumen PO</label>
                             @if ($qc->po)
-                                <input type="text" class="form-control" value="{{ $qc->po->po_no }}" readonly style="background: #f1f5f9; color: #475569;">
+                                <div style="display: flex; gap: 0.35rem; align-items: center;">
+                                    <input type="text" class="form-control" value="{{ $qc->po->po_no }}" readonly style="background: #f1f5f9; color: #0284c7; font-weight: 700;">
+                                    <span id="badgeOverPoField" class="badge" style="{{ $isOverPo ? 'display: inline-block;' : 'display: none;' }} background: #fffbeb; color: #b45309; border: 1px solid #fcd34d; font-weight: 800; font-size: 0.68rem; padding: 4px 6px; border-radius: 4px; white-space: nowrap;" title="Muatan melebihi sisa kuota pesanan PO">
+                                        ⚠️ Over PO
+                                    </span>
+                                </div>
+                                <div style="font-size: 0.72rem; color: #64748b; margin-top: 4px; line-height: 1.45; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 5px 8px;">
+                                    <div style="display: flex; justify-content: space-between;">
+                                        <span>Total Pesanan PO:</span>
+                                        <strong style="color: #0f172a;">{{ number_format($poTotalPesan, 0, ',', '.') }} {{ $satuanCd }}</strong>
+                                    </div>
+                                    @if ($poSudahMasukGudang > 0)
+                                        <div style="display: flex; justify-content: space-between; color: #0284c7;">
+                                            <span>Sudah Masuk Gudang:</span>
+                                            <strong>{{ number_format($poSudahMasukGudang, 0, ',', '.') }} {{ $satuanCd }}</strong>
+                                        </div>
+                                    @endif
+                                    <div style="display: flex; justify-content: space-between; color: {{ $poSisaKuota > 0 ? '#15803d' : '#b45309' }};">
+                                        <span>Sisa Kuota Tersedia:</span>
+                                        <strong id="displaySisaKuotaPo">{{ number_format($poSisaKuota, 0, ',', '.') }} {{ $satuanCd }}</strong>
+                                    </div>
+                                </div>
                             @else
                                 <input type="text" class="form-control" value="Non-PO / Pembelian Langsung" readonly style="background: #f1f5f9; color: #64748b; font-style: italic;">
                             @endif
@@ -304,7 +370,7 @@
                         <div class="qc-grid-2" style="padding-bottom: 0.85rem; border-bottom: 1px dashed #e2e8f0;">
                             <div class="form-group" style="margin-bottom: 0;">
                                 <label class="form-label" style="font-weight: 700;">Muatan di Surat Jalan (kg)</label>
-                                <input type="number" step="0.01" min="0" name="jumlah_surat_jalan" value="{{ old('jumlah_surat_jalan', $qc->jumlah_surat_jalan ?: ($qc->parentQc?->jumlah_surat_jalan ?? '')) }}" class="form-control" placeholder="0.00" style="font-weight: 600;">
+                                <input type="number" step="0.01" min="0" name="jumlah_surat_jalan" id="inputJumlahSj" value="{{ old('jumlah_surat_jalan', $qc->jumlah_surat_jalan ?: ($qc->parentQc?->jumlah_surat_jalan ?? '')) }}" class="form-control" placeholder="0.00" style="font-weight: 600;">
                                 <small style="color: #64748b; font-size: 0.72rem;">Total muatan seluruh truk pada surat jalan supplier.</small>
                             </div>
                             <div class="form-group" style="margin-bottom: 0;">
@@ -557,11 +623,61 @@
 
 {{-- MODAL POPUP PREVIEW DOKUMEN HACCP --}}
 @include('gudang.qc.partials.common.modal-preview-haccp')
+
+{{-- MODAL KONFIRMASI OVER PO SEBELUM SIMPAN --}}
+<div id="modalConfirmOverPo" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); z-index: 99999; align-items: center; justify-content: center; backdrop-filter: blur(2px);">
+    <div style="background: #ffffff; border-radius: 12px; width: 90%; max-width: 490px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.25), 0 10px 10px -5px rgba(0, 0, 0, 0.1); overflow: hidden; border: 1.5px solid #fde68a;">
+        <div style="background: #fffbeb; padding: 1.25rem 1.5rem; border-bottom: 1.5px solid #fde68a; display: flex; align-items: center; gap: 0.75rem;">
+            <div style="width: 42px; height: 42px; border-radius: 50%; background: #fef3c7; border: 1.5px solid #fcd34d; display: flex; align-items: center; justify-content: center; font-size: 1.35rem; flex-shrink: 0;">
+                ⚠️
+            </div>
+            <div>
+                <h3 style="margin: 0; font-size: 1.05rem; font-weight: 800; color: #92400e;">Peringatan Kelebihan Muatan PO</h3>
+                <span style="font-size: 0.75rem; color: #b45309; font-weight: 600;">Over-Delivery Confirmation Alert</span>
+            </div>
+        </div>
+        <div style="padding: 1.25rem 1.5rem; color: #334155; font-size: 0.875rem; line-height: 1.5;">
+            <p style="margin-top: 0; margin-bottom: 0.75rem;">
+                Tonase muatan fisik yang Anda ubah menjadi <strong id="modalOverPoMuatan" style="color: #0f172a;">-</strong>, yang <strong>melebihi kuota pesanan</strong> pada referensi <strong id="modalOverPoPoNo" style="color: #0284c7;">-</strong> (<span id="modalOverPoKuota">-</span>).
+            </p>
+            <div style="background: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1rem;">
+                <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: #64748b;">
+                    <span>Selisih Kelebihan Muatan:</span>
+                    <strong style="color: #dc2626; font-size: 0.95rem;" id="modalOverPoSelisih">+0 kg</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: #64748b; margin-top: 0.25rem;">
+                    <span>Persentase Over-Delivery:</span>
+                    <strong style="color: #dc2626; font-size: 0.95rem;" id="modalOverPoPersen">+0%</strong>
+                </div>
+            </div>
+            <p style="margin-bottom: 0; font-size: 0.8rem; color: #64748b;">
+                Apakah Anda yakin ingin tetap menyimpan perubahan data ini sebagai <strong>status Over PO</strong>?
+            </p>
+        </div>
+        <div style="padding: 1rem 1.5rem; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 0.75rem;">
+            <button type="button" onclick="closeOverPoModal()" class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.85rem; font-weight: 600;">
+                Batal &amp; Koreksi Angka
+            </button>
+            <button type="button" id="btnConfirmOverPoSubmit" class="btn btn-primary" style="background: #d97706; border: none; padding: 0.5rem 1.15rem; font-size: 0.85rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.35rem; box-shadow: 0 1px 3px rgba(217, 119, 6, 0.3);">
+                <span>Ya, Tetap Simpan (Over PO)</span>
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+            </button>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('scripts')
     <script>
         window.p1Netto = {{ (float) ($qc->parentQc?->details?->sum('qty_netto_lolos') ?? 0) }};
+        window.poData = {
+            hasPo: {{ $poObj ? 'true' : 'false' }},
+            poNo: "{{ $poObj?->po_no ?? '' }}",
+            poTotalPesan: {{ $poTotalPesan }},
+            poSudahMasukGudang: {{ $poSudahMasukGudang }},
+            poSisaKuota: {{ $poSisaKuota }},
+            satuan: "{{ $satuanCd }}"
+        };
     </script>
     <script src="{{ asset('js/gudang/qc/web/qc-edit-desktop.js') }}"></script>
 @endpush

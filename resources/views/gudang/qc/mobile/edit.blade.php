@@ -6,6 +6,7 @@
 @push('styles')
     <link rel="stylesheet" href="{{ asset('css/gudang/qc/mobile/qc-form.css') }}">
     <link rel="stylesheet" href="{{ asset('css/gudang/qc/mobile/qc-mobile-detail.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/gudang/qc/minyak/minyak.css') }}">
 @endpush
 
 @php
@@ -202,12 +203,41 @@
                         @foreach ($filteredPos as $po)
                             @php
                                 $itemNames = $po->details->map(fn($d) => $d->barang?->barang_nm)->filter()->unique()->implode(', ');
+                                $totPesan = (float) $po->details->sum('pesan_qty');
+                                $terimaIni = ($po->po_id == $qc->po_id && $qc->terima) ? (float) $qc->terima->details->sum('terima_qty') : 0;
+                                $sudahMsk = max(0, (float) $po->details->sum('terima_qty') - $terimaIni);
+                                $sisaKta = max(0, $totPesan - $sudahMsk);
                             @endphp
                             <option value="{{ $po->po_id }}" {{ old('po_id', $qc->po_id) == $po->po_id ? 'selected' : '' }}>
-                                {{ $po->po_no }} - {{ $po->supplier?->supplier_nm }} ({{ $itemNames ?: ($po->po_tgl ? $po->po_tgl->format('d/m/Y') : 'PO') }})
+                                {{ $po->po_no }} - {{ $po->supplier?->supplier_nm }} (Sisa: {{ number_format($sisaKta, 0, ',', '.') }})
                             </option>
                         @endforeach
                     </select>
+                    @if ($qc->po)
+                        @php
+                            $curPo = $qc->po;
+                            $curTotalPesan = (float) $curPo->details->sum('pesan_qty');
+                            $curTerimaIni = $qc->terima ? (float) $qc->terima->details->sum('terima_qty') : 0;
+                            $curSudahGudang = max(0, (float) $curPo->details->sum('terima_qty') - $curTerimaIni);
+                            $curSisaKuota = max(0, $curTotalPesan - $curSudahGudang);
+                        @endphp
+                        <div style="font-size: 0.72rem; color: #64748b; margin-top: 6px; line-height: 1.45; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 5px 8px;">
+                            <div style="display: flex; justify-content: space-between;">
+                                <span>Total Pesanan PO:</span>
+                                <strong style="color: #0f172a;">{{ number_format($curTotalPesan, 0, ',', '.') }} kg</strong>
+                            </div>
+                            @if ($curSudahGudang > 0)
+                                <div style="display: flex; justify-content: space-between; color: #0284c7;">
+                                    <span>Sudah Masuk Gudang:</span>
+                                    <strong>{{ number_format($curSudahGudang, 0, ',', '.') }} kg</strong>
+                                </div>
+                            @endif
+                            <div style="display: flex; justify-content: space-between; color: {{ $curSisaKuota > 0 ? '#15803d' : '#b45309' }};">
+                                <span>Sisa Kuota Tersedia:</span>
+                                <strong>{{ number_format($curSisaKuota, 0, ',', '.') }} kg</strong>
+                            </div>
+                        </div>
+                    @endif
                 </div>
 
                 {{-- SUPPLIER & GUDANG --}}
@@ -238,7 +268,17 @@
                                 </option>
                             @endforeach
                         </select>
-                        <input type="hidden" name="nama_produsen" id="editNamaProdusen" value="{{ old('nama_produsen', $qc->nama_produsen) }}">
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem;">
+                        <div>
+                            <label class="qc-info-label" style="font-weight: 700; margin-bottom: 0.25rem;">Nama Produsen (Pabrik)</label>
+                            <input type="text" name="nama_produsen" id="editNamaProdusen" value="{{ old('nama_produsen', $qc->nama_produsen ?? $qc->supplier?->supplier_nm) }}" class="form-control" placeholder="Nama Pabrik Produsen" style="width: 100%; border-radius: 8px;">
+                        </div>
+                        <div>
+                            <label class="qc-info-label" style="font-weight: 700; margin-bottom: 0.25rem;">Negara Produsen</label>
+                            <input type="text" name="negara_produsen" value="{{ old('negara_produsen', $qc->negara_produsen ?? 'Indonesia') }}" class="form-control" style="width: 100%; border-radius: 8px;">
+                        </div>
                     </div>
 
                     <div>
@@ -264,17 +304,44 @@
                     </div>
                 </div>
 
-                {{-- PILIH BARANG / KOMODITAS --}}
-                <div>
-                    <label class="qc-info-label" style="display: block; font-weight: 700; margin-bottom: 0.25rem;">Komoditas / Nama Barang *</label>
-                    <select name="items[{{ $qcdtlId }}][barang_id]" id="editBarangSelect" class="form-control" style="width: 100%; border-radius: 8px; font-weight: 800; color: #0284c7;" required onchange="onEditBarangChanged(this)">
-                        @foreach ($filteredBarangs as $b)
-                            <option value="{{ $b->barang_id }}" data-nama="{{ $b->barang_nm }}" {{ old('items.'.$qcdtlId.'.barang_id', $barangId) == $b->barang_id ? 'selected' : '' }}>
-                                {{ $b->barang_cd }} - {{ $b->barang_nm }} ({{ $b->satuanDasar?->satuan_nm ?? 'kg' }})
-                            </option>
-                        @endforeach
-                    </select>
-                    <input type="hidden" name="nama_jenis" id="editNamaJenis" value="{{ old('nama_jenis', $qc->nama_jenis) }}">
+                {{-- PILIH BARANG / KOMODITAS & NAMA JENIS --}}
+                <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                    <div>
+                        <label class="qc-info-label" style="display: block; font-weight: 700; margin-bottom: 0.25rem;">Komoditas / Nama Bahan *</label>
+                        <select name="items[{{ $qcdtlId }}][barang_id]" id="editBarangSelect" class="form-control" style="width: 100%; border-radius: 8px; font-weight: 800; color: #0284c7;" required onchange="onEditBarangChanged(this)">
+                            @foreach ($filteredBarangs as $b)
+                                <option value="{{ $b->barang_id }}" data-nama="{{ $b->barang_nm }}" {{ old('items.'.$qcdtlId.'.barang_id', $barangId) == $b->barang_id ? 'selected' : '' }}>
+                                    {{ $b->barang_cd }} - {{ $b->barang_nm }} ({{ $b->satuanDasar?->satuan_nm ?? 'kg' }})
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+                            <label class="qc-info-label" style="font-weight: 800; margin: 0;">NAMA JENIS :</label>
+                            <span style="font-size: 0.7rem; font-weight: 700; color: #0284c7; background: #e0f2fe; padding: 1px 6px; border-radius: 4px;">Form HACCP MFI</span>
+                        </div>
+                        <input type="text" name="nama_jenis" id="editNamaJenis" list="listEditNamaJenis" value="{{ old('nama_jenis', $qc->nama_jenis) }}" class="form-control" style="width: 100%; border-radius: 8px; font-weight: 800;" placeholder="Contoh: RBD Palm Olein / Curah Sawit / Filma">
+                        <datalist id="listEditNamaJenis">
+                            @if ($kat === 'MINYAK')
+                                <option value="RBD Palm Olein (CP8)">
+                                <option value="RBD Palm Olein (CP10)">
+                                <option value="Minyak Curah Kelapa Sawit">
+                                <option value="Minyak Kelapa (RBD CNO)">
+                                <option value="Minyak Sawit Super (Filma)">
+                                <option value="Minyak Sawit Jerigen Sania">
+                                <option value="Minyak Goreng SunCo">
+                                <option value="Minyak Goreng Bimoli">
+                                <option value="Minyak Goreng Kunci Mas">
+                            @else
+                                <option value="Singkong Basah Curah">
+                                <option value="Singkong Ketan">
+                                <option value="Singkong Gajah">
+                            @endif
+                        </datalist>
+                        <span style="font-size: 0.7rem; color: #64748b; margin-top: 2px; display: block;">Spesifikasi teknis, grade fraksinasi, atau merk fisik kemasan</span>
+                    </div>
                 </div>
 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem;">
@@ -361,15 +428,19 @@
                     </div>
                 </div>
 
-                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem;">
+                <div style="display: grid; grid-template-columns: repeat({{ $kat === 'MINYAK' ? 2 : 3 }}, 1fr); gap: 0.5rem;">
                     <div>
                         <label class="qc-info-label" style="display: block; font-weight: 700; margin-bottom: 0.25rem;">Bruto (kg) *</label>
                         <input type="number" step="any" name="items[{{ $qcdtlId }}][qty_timbang_gross]" id="inputGross" value="{{ old('items.'.$qcdtlId.'.qty_timbang_gross', $firstDetail?->qty_timbang_gross ?? ($qc->jumlah_di_pabrik ?? $totalGross)) }}" class="form-control" style="width: 100%; border-radius: 8px; font-weight: 800;" oninput="syncMobilePabrikFromGross(this.value)" required>
                     </div>
+                    @if ($kat !== 'MINYAK')
                     <div>
                         <label class="qc-info-label" style="display: block; font-weight: 700; margin-bottom: 0.25rem;">Refraksi (%)</label>
                         <input type="number" step="0.1" name="items[{{ $qcdtlId }}][refraksi_persen]" id="inputRefraksiPersen" value="{{ old('items.'.$qcdtlId.'.refraksi_persen', $firstDetail?->refraksi_persen ?? 0) }}" class="form-control" style="width: 100%; border-radius: 8px; color: #d97706; font-weight: 700;" oninput="recalcMobileNetto()">
                     </div>
+                    @else
+                    <input type="hidden" name="items[{{ $qcdtlId }}][refraksi_persen]" id="inputRefraksiPersen" value="0">
+                    @endif
                     <div>
                         <label class="qc-info-label" style="display: block; font-weight: 700; margin-bottom: 0.25rem;">Reject (kg)</label>
                         <input type="number" step="any" name="items[{{ $qcdtlId }}][qty_reject]" id="inputReject" value="{{ old('items.'.$qcdtlId.'.qty_reject', $firstDetail?->qty_reject ?? $totalReject) }}" class="form-control" style="width: 100%; border-radius: 8px; color: #dc2626; font-weight: 700;" oninput="recalcMobileNetto()">
@@ -501,14 +572,68 @@
                 </div>
 
             @elseif ($kat === 'MINYAK')
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem;">
-                    <div>
-                        <label class="qc-info-label" style="display: block; font-weight: 700; margin-bottom: 0.25rem;">FFA COA</label>
-                        <input type="number" step="0.001" name="items[{{ $qcdtlId }}][ffa_coa]" value="{{ old('items.'.$qcdtlId.'.ffa_coa', $firstDetail?->ffa_coa ?? '') }}" class="form-control" style="width: 100%; border-radius: 8px;">
+                <div style="display: flex; flex-direction: column; gap: 0.85rem;">
+                    {{-- 1. ISI RAW MATERIAL & KONDISI WADAH --}}
+                    <div style="background: #ffffff; border: 1.5px solid #fed7aa; border-radius: 10px; padding: 0.85rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.4rem;">
+                            <span style="font-weight: 800; font-size: 0.82rem; color: #9a3412;">2. ISI RAW MATERIAL :</span>
+                            <div style="display: flex; gap: 1rem; font-size: 0.82rem; font-weight: 700;">
+                                <label style="display: flex; align-items: center; gap: 4px; color: #15803d; cursor: pointer;">
+                                    <input type="radio" name="items[{{ $qcdtlId }}][status_raw_material]" value="OK" {{ old('items.'.$qcdtlId.'.status_raw_material', $firstDetail?->status_raw_material ?? 'OK') === 'OK' ? 'checked' : '' }}> OK
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 4px; color: #dc2626; cursor: pointer;">
+                                    <input type="radio" name="items[{{ $qcdtlId }}][status_raw_material]" value="TDK_STD" {{ old('items.'.$qcdtlId.'.status_raw_material', $firstDetail?->status_raw_material ?? '') === 'TDK_STD' ? 'checked' : '' }}> TDK STD
+                                </label>
+                            </div>
+                        </div>
+
+                        <div style="border-top: 1px dashed #fdba74; padding-top: 0.5rem; display: flex; flex-direction: column; gap: 0.4rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.35rem;">
+                                <span style="font-weight: 800; font-size: 0.8rem; color: #0f172a;">KONDISI WADAH :</span>
+                                <div style="display: flex; gap: 0.65rem; font-size: 0.78rem; font-weight: 700;">
+                                    <label style="cursor: pointer;"><input type="radio" name="items[{{ $qcdtlId }}][tipe_wadah_minyak]" value="TANGKI" {{ old('items.'.$qcdtlId.'.tipe_wadah_minyak', $firstDetail?->tipe_wadah_minyak ?? 'TANGKI') === 'TANGKI' ? 'checked' : '' }}> TANGKI</label>
+                                    <label style="cursor: pointer;"><input type="radio" name="items[{{ $qcdtlId }}][tipe_wadah_minyak]" value="JERIGEN" {{ old('items.'.$qcdtlId.'.tipe_wadah_minyak', $firstDetail?->tipe_wadah_minyak ?? '') === 'JERIGEN' ? 'checked' : '' }}> JERIGEN</label>
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 1rem; font-size: 0.8rem; font-weight: 700; margin-top: 0.2rem;">
+                                <label style="display: flex; align-items: center; gap: 4px; color: #15803d; cursor: pointer;">
+                                    <input type="radio" name="items[{{ $qcdtlId }}][kondisi_tangki_jerigen]" value="OK" {{ old('items.'.$qcdtlId.'.kondisi_tangki_jerigen', $firstDetail?->kondisi_tangki_jerigen ?? 'OK') === 'OK' ? 'checked' : '' }}> OK (Standard)
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 4px; color: #dc2626; cursor: pointer;">
+                                    <input type="radio" name="items[{{ $qcdtlId }}][kondisi_tangki_jerigen]" value="TIDAK_STANDARD" {{ old('items.'.$qcdtlId.'.kondisi_tangki_jerigen', $firstDetail?->kondisi_tangki_jerigen ?? '') === 'TIDAK_STANDARD' ? 'checked' : '' }}> TIDAK STANDARD
+                                </label>
+                            </div>
+                        </div>
                     </div>
-                    <div>
-                        <label class="qc-info-label" style="display: block; font-weight: 700; margin-bottom: 0.25rem;">FFA Cek QC Mirasa</label>
-                        <input type="number" step="0.001" name="items[{{ $qcdtlId }}][ffa_qc]" value="{{ old('items.'.$qcdtlId.'.ffa_qc', $firstDetail?->ffa_qc ?? '') }}" class="form-control" style="width: 100%; border-radius: 8px; font-weight: 700; color: #0284c7;">
+
+                    {{-- 2. FFA COA & FFA QC LAB --}}
+                    <div style="background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 10px; padding: 0.85rem;">
+                        <div style="font-size: 0.8rem; font-weight: 800; color: #0284c7; margin-bottom: 0.45rem;">
+                            🔬 ASAM LEMAK BEBAS (FFA):
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem;">
+                            <div>
+                                <label class="qc-info-label" style="display: block; font-weight: 700; margin-bottom: 0.25rem;">FFA COA Supplier</label>
+                                <input type="number" step="0.001" min="0" max="100" name="items[{{ $qcdtlId }}][ffa_coa]" id="inputMinyakFfaCoa" value="{{ old('items.'.$qcdtlId.'.ffa_coa', $firstDetail?->ffa_coa ?? '') }}" class="form-control" style="width: 100%; border-radius: 8px;" placeholder="0.080">
+                            </div>
+                            <div>
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+                                    <label class="qc-info-label" style="font-weight: 700; margin: 0; color: #0284c7;">FFA Cek QC Mirasa</label>
+                                    <span style="font-size: 0.68rem; font-weight: 700; color: #9a3412; background: #ffedd5; padding: 1px 5px; border-radius: 4px;">Max 0.20%</span>
+                                </div>
+                                <input type="number" step="0.001" min="0" max="100" name="items[{{ $qcdtlId }}][ffa_qc]" id="inputMinyakFfaQc" value="{{ old('items.'.$qcdtlId.'.ffa_qc', $firstDetail?->ffa_qc ?? '') }}" class="form-control" style="width: 100%; border-radius: 8px; font-weight: 800; color: #0f172a;" placeholder="0.085" oninput="if(typeof checkMinyakAcceptance === 'function') checkMinyakAcceptance();">
+                            </div>
+                        </div>
+
+                        {{-- CHECKLIST JERNIH & TANGKI BERSIH --}}
+                        <div style="display: flex; gap: 1.25rem; margin-top: 0.65rem; padding-top: 0.5rem; border-top: 1px dashed #cbd5e1; flex-wrap: wrap;">
+                            <label style="display: flex; align-items: center; gap: 5px; font-size: 0.8rem; font-weight: 700; color: #15803d; cursor: pointer;">
+                                <input type="checkbox" name="items[{{ $qcdtlId }}][minyak_jernih_st]" value="1" {{ old('items.'.$qcdtlId.'.minyak_jernih_st', $firstDetail?->minyak_jernih_st ? '1' : ($firstDetail === null ? '1' : '0')) == '1' ? 'checked' : '' }}> MINYAK JERNIH
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 5px; font-size: 0.8rem; font-weight: 700; color: #15803d; cursor: pointer;">
+                                <input type="checkbox" name="items[{{ $qcdtlId }}][tangki_bersih_st]" value="1" {{ old('items.'.$qcdtlId.'.tangki_bersih_st', $firstDetail?->tangki_bersih_st ? '1' : ($firstDetail === null ? '1' : '0')) == '1' ? 'checked' : '' }}> TANGKI BAGIAN DALAM BERSIH
+                            </label>
+                        </div>
                     </div>
                 </div>
             @endif
@@ -581,102 +706,6 @@
 @endsection
 
 @push('scripts')
-<script>
-    function syncMobileGrossFromPabrik(val) {
-        const grossEl = document.getElementById('inputGross');
-        if (grossEl) {
-            grossEl.value = val;
-        }
-        recalcMobileNetto();
-    }
-
-    function syncMobileGrossFromSJ(val) {
-        const pabrikEl = document.getElementById('inputJumlahPabrik');
-        if (pabrikEl && (!pabrikEl.value || parseFloat(pabrikEl.value) === 0)) {
-            pabrikEl.value = val;
-            syncMobileGrossFromPabrik(val);
-        }
-    }
-
-    function syncMobilePabrikFromGross(val) {
-        const pabrikEl = document.getElementById('inputJumlahPabrik');
-        if (pabrikEl) {
-            pabrikEl.value = val;
-        }
-        recalcMobileNetto();
-    }
-
-    function recalcMobileNetto() {
-        const gross = parseFloat(document.getElementById('inputGross')?.value) || 0;
-        const refPersen = parseFloat(document.getElementById('inputRefraksiPersen')?.value) || 0;
-        const reject = parseFloat(document.getElementById('inputReject')?.value) || 0;
-
-        const refKg = (gross * refPersen) / 100;
-        let netto = gross - refKg - reject;
-        if (netto < 0) netto = 0;
-
-        const displayEl = document.getElementById('displayNettoText');
-        const hiddenEl = document.getElementById('inputNettoLolos');
-
-        if (displayEl) {
-            displayEl.innerText = (netto % 1 === 0 ? netto : netto.toFixed(2)).toLocaleString('id-ID') + ' kg';
-        }
-        if (hiddenEl) {
-            hiddenEl.value = (netto % 1 === 0 ? netto : netto.toFixed(2));
-        }
-    }
-
-    function onEditSupplierChange(select) {
-        const opt = select.options[select.selectedIndex];
-        if (opt && opt.value) {
-            const supNm = opt.getAttribute('data-supplier-nm') || opt.text.split('(')[0].trim();
-            const produsenInput = document.getElementById('editNamaProdusen');
-            if (produsenInput) produsenInput.value = supNm;
-        }
-    }
-
-    function filterEditSuppliers(query) {
-        const q = (query || '').toLowerCase().trim();
-        const select = document.getElementById('editSupplierSelect');
-        if (!select) return;
-
-        for (let i = 0; i < select.options.length; i++) {
-            const opt = select.options[i];
-            const text = (opt.text || '').toLowerCase();
-            if (!q || text.includes(q)) {
-                opt.style.display = '';
-                opt.disabled = false;
-            } else {
-                opt.style.display = 'none';
-                opt.disabled = true;
-            }
-        }
-    }
-
-    function onEditBarangChanged(select) {
-        const opt = select.options[select.selectedIndex];
-        if (opt && opt.value) {
-            const bNm = opt.getAttribute('data-nama') || opt.text.split(' - ')[1]?.split(' (')[0] || opt.text;
-            const namaEl = document.getElementById('editNamaJenis');
-            if (namaEl) namaEl.value = bNm.trim();
-        }
-    }
-
-    let isSubmitting = false;
-    document.getElementById('qcEditMobileForm')?.addEventListener('submit', function (e) {
-        if (isSubmitting) {
-            e.preventDefault();
-            return false;
-        }
-        isSubmitting = true;
-        const overlay = document.getElementById('qcSubmitOverlay');
-        if (overlay) overlay.style.display = 'flex';
-        const btn = document.getElementById('btnEditSubmit');
-        if (btn) {
-            btn.disabled = true;
-            btn.style.opacity = '0.5';
-            btn.style.pointerEvents = 'none';
-        }
-    });
-</script>
+    <script src="{{ asset('js/gudang/qc/minyak/minyak.js') }}"></script>
+    <script src="{{ asset('js/gudang/qc/mobile/qc-edit.js') }}"></script>
 @endpush

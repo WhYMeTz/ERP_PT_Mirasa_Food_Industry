@@ -26,7 +26,7 @@ class QcInboundService
         $query = DatQcInboundHdr::with([
             'supplier', 
             'gudang', 
-            'po', 
+            'po.details', 
             'details.barang.satuanDasar', 
             'terima', 
             'pengujian2List.details.barang.satuanDasar',
@@ -145,7 +145,12 @@ class QcInboundService
         ])
             ->where('deleted_st', false)
             ->whereNull('parent_qc_id')
-            ->where('status_qc', 'SIAP_GUDANG')
+            ->where(function ($q) {
+                $q->whereIn('status_qc', ['SIAP_GUDANG', 'PASSED'])
+                  ->orWhereHas('pengujian2List', function ($pq) {
+                      $pq->where('deleted_st', false)->whereIn('status_qc', ['SIAP_GUDANG', 'PASSED']);
+                  });
+            })
             ->whereDoesntHave('terima', function ($q) {
                 $q->where('deleted_st', false);
             })
@@ -255,6 +260,12 @@ class QcInboundService
             $labelSuffix = $hasP2 ? ' (Uji 1 - 1/2 Bak)' : '';
             $poDtl = $d->poDetail;
             $hargaPo = $poDtl ? (float) $poDtl->harga_nominal : (float) ($barang?->harga_beli_standar ?? 0);
+            
+            $batchNo = $d->batch_no ?: $qc->batch_no;
+            if (empty($batchNo) && $barang) {
+                $tglFisik = $qc->tgl_periksa ? $qc->tgl_periksa->format('Y-m-d') : date('Y-m-d');
+                $batchNo = app(CodeGeneratorService::class)->generateBatchNo($barang->barang_cd, $tglFisik, $barang->barang_nm);
+            }
 
             $items[] = [
                 'qcdtl_id'                   => $d->qcdtl_id,
@@ -264,6 +275,7 @@ class QcInboundService
                 'barang_nm'                  => ($barang?->barang_nm ?? 'SINGKONG') . $labelSuffix,
                 'satuan_nm'                  => $barang?->satuanDasar?->satuan_nm ?? 'KG',
                 'batch_prefix'               => $batchPrefix,
+                'batch_no'                   => $batchNo,
                 'gross_qty'                  => (float) $d->qty_timbang_gross,
                 'kadar_air'                  => (float) $d->kadar_air_persen,
                 'refraksi_persen'            => (float) $d->refraksi_persen,
@@ -283,6 +295,8 @@ class QcInboundService
                 'std_harga'                  => $hargaPo,
                 'diskon_persen'              => (float) ($poDtl?->diskon_persen ?? 0),
                 'ppn_tipe'                   => $poDtl?->ppn_tipe ?? 'NON_PPN',
+                'pesan_qty'                  => $poDtl ? (float) $poDtl->pesan_qty : 0,
+                'sisa_po'                    => $poDtl ? (float) $poDtl->sisa_qty : 0,
             ];
         }
 
@@ -298,6 +312,12 @@ class QcInboundService
                 $poDtl2 = $d2->poDetail ?: $qc->details->first()?->poDetail;
                 $hargaPo2 = $poDtl2 ? (float) $poDtl2->harga_nominal : (float) ($barang2?->harga_beli_standar ?? 0);
 
+                $batchNo2 = $d2->batch_no ?: ($p2->batch_no ?: $qc->batch_no);
+                if (empty($batchNo2) && $barang2) {
+                    $tglFisik2 = $p2->tgl_periksa ? $p2->tgl_periksa->format('Y-m-d') : date('Y-m-d');
+                    $batchNo2 = app(CodeGeneratorService::class)->generateBatchNo($barang2->barang_cd, $tglFisik2, $barang2->barang_nm);
+                }
+
                 $items[] = [
                     'qcdtl_id'                   => $d2->qcdtl_id,
                     'podtl_id'                   => $d2->podtl_id ?: $qc->details->first()?->podtl_id,
@@ -306,6 +326,7 @@ class QcInboundService
                     'barang_nm'                  => ($barang2?->barang_nm ?? 'SINGKONG') . ' (Uji 2 - Sisa Bak)',
                     'satuan_nm'                  => $barang2?->satuanDasar?->satuan_nm ?? 'KG',
                     'batch_prefix'               => $batchPrefix2,
+                    'batch_no'                   => $batchNo2,
                     'gross_qty'                  => (float) $d2->qty_timbang_gross,
                     'kadar_air'                  => (float) $d2->kadar_air_persen,
                     'refraksi_persen'            => (float) $d2->refraksi_persen,
@@ -325,6 +346,8 @@ class QcInboundService
                     'std_harga'                  => $hargaPo2,
                     'diskon_persen'              => (float) ($poDtl2?->diskon_persen ?? 0),
                     'ppn_tipe'                   => $poDtl2?->ppn_tipe ?? 'NON_PPN',
+                    'pesan_qty'                  => $poDtl2 ? (float) $poDtl2->pesan_qty : 0,
+                    'sisa_po'                    => $poDtl2 ? (float) $poDtl2->sisa_qty : 0,
                 ];
             }
         }
@@ -874,18 +897,21 @@ class QcInboundService
                         $rQty = round($maxPossibleNetto - $tQty, 4);
                     }
 
-                    $dtl->qty_netto_lolos = $tQty;
+                    $nettoLolosSync = max(0, round($tQty - $rQty, 4));
+                    $satuanNm = $dtl->barang?->satuanDasar?->satuan_nm ?? 'KG';
+
+                    $dtl->qty_netto_lolos = $nettoLolosSync;
                     $dtl->qty_reject = $rQty;
 
-                    if ($tQty <= 0) {
+                    if ($nettoLolosSync <= 0) {
                         $dtl->keputusan_qc = 'TOLAK_TOTAL';
-                        $catatanGdg = "Ditolak total oleh gudang ({$rQty} KG reject). Tidak masuk stok pabrik.";
+                        $catatanGdg = "Ditolak total oleh gudang ({$rQty} {$satuanNm} reject). Tidak masuk stok pabrik.";
                     } elseif ($rQty > 0) {
                         $dtl->keputusan_qc = 'REJECT_PARTIAL';
-                        $catatanGdg = "Diterima sebagian: {$tQty} KG, ditolak: {$rQty} KG (Grade {$dtl->grade_cd}).";
+                        $catatanGdg = "Diterima sebagian: {$nettoLolosSync} {$satuanNm}, ditolak: {$rQty} {$satuanNm} (Grade {$dtl->grade_cd}).";
                     } else {
                         $dtl->keputusan_qc = 'PASSED';
-                        $catatanGdg = "Diterima penuh ke gudang: {$tQty} KG.";
+                        $catatanGdg = "Diterima penuh ke gudang: {$nettoLolosSync} {$satuanNm}.";
                     }
 
                     // Bersihkan catatan lama dari rekonsiliasi sebelumnya agar tidak menumpuk

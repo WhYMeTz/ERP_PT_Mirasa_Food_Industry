@@ -57,6 +57,41 @@
                 </div>
             </div>
 
+            @php
+                $poObjDrawer = $qc->po;
+                $poTotalPesanDrawer = $poObjDrawer ? (float) $poObjDrawer->details->sum('pesan_qty') : 0;
+                $isOverPoDrawer = false;
+                $selisihLebihDrawer = 0;
+                $persenLebihDrawer = 0;
+                if ($poObjDrawer && $poTotalPesanDrawer > 0) {
+                    $muatanAcuanDrawer = max((float)$qc->jumlah_surat_jalan, (float)$totalGross);
+                    if ($muatanAcuanDrawer > $poTotalPesanDrawer) {
+                        $isOverPoDrawer = true;
+                        $selisihLebihDrawer = $muatanAcuanDrawer - $poTotalPesanDrawer;
+                        $persenLebihDrawer = round(($selisihLebihDrawer / $poTotalPesanDrawer) * 100, 1);
+                    }
+                }
+            @endphp
+
+            @if ($isOverPoDrawer)
+                <div style="background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 8px; padding: 0.75rem 1.15rem; margin-bottom: 0.85rem; display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 0.65rem;">
+                        <span style="font-size: 1.25rem;">⚠️</span>
+                        <div>
+                            <div style="font-weight: 800; color: #92400e; font-size: 0.8125rem;">
+                                Peringatan Kelebihan Muatan Fisik (Over-Delivery dari PO)
+                            </div>
+                            <div style="font-size: 0.75rem; color: #78350f; margin-top: 0.2rem;">
+                                Total muatan fisik truk ini (<strong>{{ number_format($totalGross, 0, ',', '.') }} {{ $isBahanBaku ? 'kg' : $satuanCd }}</strong>) melebihi kuantitas pesanan pada <strong>PO #{{ $poObjDrawer->po_no }}</strong> (<strong>{{ number_format($poTotalPesanDrawer, 0, ',', '.') }} {{ $isBahanBaku ? 'kg' : $satuanCd }}</strong>). Selisih lebih: <strong style="color: #b45309;">+{{ number_format($selisihLebihDrawer, 0, ',', '.') }} {{ $isBahanBaku ? 'kg' : $satuanCd }} (+{{ $persenLebihDrawer }}%)</strong>.
+                            </div>
+                        </div>
+                    </div>
+                    <span style="font-size: 0.72rem; font-weight: 800; background: #fef3c7; color: #92400e; padding: 4px 10px; border-radius: 6px; border: 1px solid #fcd34d;">
+                        Status PO: Kuota Terpenuhi 100%+
+                    </span>
+                </div>
+            @endif
+
             {{-- 2. GRID KOMPARASI PENGUJIAN --}}
             <div class="qc-stages-grid">
                 {{-- KARTU TAHAP 1: PENGUJIAN 1 (ATAU PENGUJIAN TUNGGAL BAHAN PENOLONG) --}}

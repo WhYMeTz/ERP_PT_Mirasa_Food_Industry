@@ -318,6 +318,22 @@
                         <td style="padding: 4px; text-align: center;">Min 95%</td>
                     </tr>
                     <tr style="border-bottom: 1px solid #000000;">
+                        <td colspan="3" style="padding: 3px 6px; font-weight: 700; background: #f8fafc;">2. Kadar Air</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #000000;">
+                        <td style="padding: 4px 8px; border-right: 1px solid #000000;">- Kadar Air (%)</td>
+                        <td style="padding: 4px; text-align: center; font-weight: 800; border-right: 1px solid #000000;">
+                            @if($isEdit)
+                                <input type="number" step="0.1" name="items[{{ $qcdtlId }}][kadar_air_persen]" value="{{ old('items.'.$qcdtlId.'.kadar_air_persen', $firstDetail?->kadar_air_persen ?? 12.0) }}" class="excel-cell-input text-center"> %
+                            @else
+                                <span style="color: {{ (float)($firstDetail?->kadar_air_persen ?? 0) > 14 ? '#dc2626' : '#059669' }};">
+                                    {{ $firstDetail?->kadar_air_persen !== null ? number_format($firstDetail->kadar_air_persen, 1) . '%' : '12.0%' }}
+                                </span>
+                            @endif
+                        </td>
+                        <td style="padding: 4px; text-align: center;">Max 14.0%</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #000000;">
                         <td colspan="3" style="padding: 3px 6px; font-weight: 700; background: #f8fafc;">3. Hasil Fryer (Uji Rasa &amp; Tekstur)</td>
                     </tr>
                     <tr style="border-bottom: 1px solid #000000;">
@@ -500,6 +516,7 @@
 
             <div style="font-size: 0.75rem; color: #475569;">
                 Bruto: <strong>{{ number_format($totalGross, 0, ',', '.') }} kg</strong> &bull; 
+                Kadar Air: <strong>{{ number_format($firstDetail?->kadar_air_persen ?? 12, 1) }}%</strong> &bull; 
                 Refraksi: <strong>{{ number_format($firstDetail?->refraksi_persen ?? 0, 1) }}%</strong>
             </div>
         </div>

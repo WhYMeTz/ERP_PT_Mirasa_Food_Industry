@@ -152,6 +152,7 @@ function onHaccpIframeLoaded() {
         loading.style.display = 'none';
     }
 }
+window.onHaccpIframeLoaded = onHaccpIframeLoaded;
 
 function printHaccpModalIframe() {
     const iframe = document.getElementById('haccpPreviewIframe');

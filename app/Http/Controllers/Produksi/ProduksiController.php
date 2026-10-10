@@ -522,6 +522,27 @@ class ProduksiController extends Controller
     }
 
     /**
+     * Halaman Khusus Penyesuaian / Rekonsiliasi Biaya Utilitas Bulanan (Listrik & Gas).
+     */
+    public function adjustUtilitasPage(Request $request): View
+    {
+        $year = (int) $request->input('tahun', date('Y'));
+        $month = (int) $request->input('bulan', date('n'));
+
+        $report = $this->produksiService->getMonthlyReport($year, $month);
+        $fohRates = $this->tarifService->getFohRates();
+        $allTarif = $this->tarifService->getAllTarif();
+
+        $monthsList = [
+            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
+            5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
+            9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+        ];
+
+        return view('produksi.adjust-utilitas', compact('year', 'month', 'report', 'fohRates', 'allTarif', 'monthsList'));
+    }
+
+    /**
      * Penyesuaian Biaya Utilitas Bulanan (Listrik, Air & Gas CNG).
      */
     public function adjustUtilitas(Request $request): RedirectResponse
@@ -529,6 +550,7 @@ class ProduksiController extends Controller
         $request->validate([
             'tahun'                 => 'required|integer|min:2020|max:2099',
             'bulan'                 => 'required|integer|min:1|max:12',
+            'redirect_to'           => 'nullable|string|in:rekap,adjust',
             'adjust_listrik'        => 'nullable',
             'mode_alokasi_listrik'  => 'nullable|in:tarif_per_kg,total_tagihan,bagi_rata,proporsional_wip',
             'listrik_tarif_per_kg'  => 'nullable|numeric|min:0',
@@ -547,7 +569,8 @@ class ProduksiController extends Controller
                 Auth::user()?->username ?? 'SYSTEM'
             );
 
-            return redirect()->route('produksi.rekap', [
+            $targetRoute = $request->input('redirect_to') === 'adjust' ? 'produksi.adjust-utilitas' : 'produksi.rekap';
+            return redirect()->route($targetRoute, [
                 'mode'  => 'harian',
                 'tahun' => $request->input('tahun'),
                 'bulan' => $request->input('bulan'),

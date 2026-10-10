@@ -43,7 +43,7 @@
                     Tidak ada catatan produksi pada periode <strong>{{ $monthsList[$month] ?? '' }} {{ $year }}</strong>.
                 </div>
             @else
-                <form id="formAdjustUtilitas" action="{{ route('produksi.adjust-utilitas') }}" method="POST">
+                <form id="formAdjustUtilitas" action="{{ route('produksi.adjust-utilitas.store') }}" method="POST">
                     @csrf
                     <input type="hidden" name="tahun" value="{{ $year }}">
                     <input type="hidden" name="bulan" value="{{ $month }}">
@@ -51,11 +51,8 @@
                     {{-- KARTU 1: LISTRIK & AIR --}}
                     <div class="utilitas-card">
                         <div class="utilitas-card-header">
-                            <label class="utilitas-card-title" for="chk_adjust_listrik" style="cursor:pointer; margin:0;">
-                                <div class="custom-switch">
-                                    <input type="checkbox" name="adjust_listrik" id="chk_adjust_listrik" value="1" checked onchange="toggleListrikSection()">
-                                    <span class="switch-slider"></span>
-                                </div>
+                            <label class="utilitas-card-title" for="chk_adjust_listrik" style="cursor:pointer; margin:0; display:flex; align-items:center; gap:0.5rem;">
+                                <input type="checkbox" name="adjust_listrik" id="chk_adjust_listrik" value="1" checked onchange="toggleListrikSection()" style="width:16px; height:16px; accent-color:#0284c7; cursor:pointer;">
                                 <span>1. Beban Listrik &amp; Air (PLN / PDAM)</span>
                             </label>
                             <span class="utilitas-badge-pill">Otomatis Tiap Hari</span>
@@ -107,11 +104,8 @@
                     {{-- KARTU 2: GAS ALAM (CNG) --}}
                     <div class="utilitas-card">
                         <div class="utilitas-card-header">
-                            <label class="utilitas-card-title" for="chk_adjust_cng" style="cursor:pointer; margin:0;">
-                                <div class="custom-switch">
-                                    <input type="checkbox" name="adjust_cng" id="chk_adjust_cng" value="1" onchange="toggleCngSection()">
-                                    <span class="switch-slider"></span>
-                                </div>
+                            <label class="utilitas-card-title" for="chk_adjust_cng" style="cursor:pointer; margin:0; display:flex; align-items:center; gap:0.5rem;">
+                                <input type="checkbox" name="adjust_cng" id="chk_adjust_cng" value="1" onchange="toggleCngSection()" style="width:16px; height:16px; accent-color:#d97706; cursor:pointer;">
                                 <span>2. Beban Gas Alam / CNG (Boiler &amp; Fryer)</span>
                             </label>
                             <span class="utilitas-badge-pill">Otomatis Tiap Hari</span>

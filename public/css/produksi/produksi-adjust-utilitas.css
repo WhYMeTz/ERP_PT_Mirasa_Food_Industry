@@ -1,0 +1,254 @@
+/* ═══════════════════════════════════════════════════════════════
+   HALAMAN PENYESUAIAN UTILITAS BULANAN (LISTRIK PLN & GAS CNG)
+   ERP PT Mirasa Food Industry - Modul Produksi
+   Standar Desain Enterprise Konsisten
+   ═══════════════════════════════════════════════════════════════ */
+
+/* 1. Grid Form Input 2 Kolom (Listrik vs Gas) */
+.utilitas-forms-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+    margin-bottom: 1.25rem;
+}
+
+@media (max-width: 900px) {
+    .utilitas-forms-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.utilitas-card-box {
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+    overflow: hidden;
+    background: #ffffff;
+    transition: border-color 0.15s ease-in-out;
+}
+
+/* Custom Corporate Toggler Switch */
+.custom-switch {
+    position: relative;
+    display: inline-block;
+    width: 40px;
+    height: 22px;
+    flex-shrink: 0;
+}
+
+.custom-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+    position: absolute;
+}
+
+.switch-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #cbd5e1;
+    transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: 22px;
+}
+
+.switch-slider:before {
+    position: absolute;
+    content: "";
+    height: 16px;
+    width: 16px;
+    left: 3px;
+    bottom: 3px;
+    background-color: #ffffff;
+    transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+/* Aktif (Checked) States */
+input:checked + .switch-slider {
+    background-color: #059669;
+}
+
+input:checked + .switch-slider.switch-slider-blue {
+    background-color: #0284c7;
+}
+
+input:checked + .switch-slider.switch-slider-amber {
+    background-color: #d97706;
+}
+
+input:checked + .switch-slider:before {
+    transform: translateX(18px);
+}
+
+.toggle-card-label {
+    user-select: none;
+    transition: opacity 0.15s ease-in-out;
+}
+
+.toggle-card-label:hover {
+    opacity: 0.9;
+}
+
+/* 2. Segmented Pill Mode Selector (Sesuai Standar View-Mode Pill Mirasa) */
+.mode-pill-container {
+    display: inline-flex;
+    background: #f1f5f9;
+    padding: 3px;
+    border-radius: 6px;
+    gap: 3px;
+    width: 100%;
+}
+
+.mode-pill-item {
+    flex: 1;
+    text-align: center;
+    padding: 0.4rem 0.65rem;
+    font-size: 0.775rem;
+    font-weight: 600;
+    color: #64748b;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s ease-in-out;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mode-pill-item:hover {
+    color: #0f172a;
+}
+
+.mode-pill-item.active {
+    background: #ffffff;
+    color: #0f172a;
+    font-weight: 700;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+/* 3. Input Addon Group */
+.input-addon-group {
+    display: flex;
+    align-items: stretch;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 6px;
+    background: #ffffff;
+    overflow: hidden;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.input-addon-group:focus-within {
+    border-color: #0284c7;
+    box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.12);
+}
+
+.addon-prefix,
+.addon-suffix {
+    background: #f8fafc;
+    color: #64748b;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    padding: 0.5rem 0.85rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+}
+
+.addon-prefix {
+    border-right: 1px solid #e2e8f0;
+}
+
+.addon-suffix {
+    border-left: 1px solid #e2e8f0;
+}
+
+.addon-input-field {
+    border: none !important;
+    outline: none !important;
+    padding: 0.5rem 0.85rem !important;
+    font-size: 0.925rem !important;
+    font-weight: 700 !important;
+    color: #0f172a !important;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+    width: 100% !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+.addon-input-field:focus {
+    box-shadow: none !important;
+    border: none !important;
+}
+
+/* 4. Tabel Simulasi & Interaksi */
+.sim-data-row {
+    transition: background 0.15s ease-in-out;
+}
+
+.sim-data-row:hover {
+    background: #f8fafc;
+}
+
+.sim-data-row td {
+    padding: 0.65rem 0.85rem;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 0.8125rem;
+    vertical-align: middle;
+}
+
+.table-compact-hpp th {
+    background: #f8fafc;
+    border-bottom: 2px solid #cbd5e1;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #475569;
+    padding: 0.75rem 0.85rem;
+    white-space: nowrap;
+}
+
+/* 5. Modal Dialog Konfirmasi (Standar AGENTS.md Rule 2) */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(2px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    animation: fadeIn 0.15s ease-out;
+}
+
+.modal-dialog-custom {
+    background: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    overflow: hidden;
+    width: 100%;
+    animation: slideDown 0.18s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideDown {
+    from {
+        transform: translateY(-8px) scale(0.98);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+}

@@ -801,14 +801,16 @@
 
     // 9. Validasi & Submit Form Khusus Minyak
     function injectHiddenInput(name, value) {
-        let el = document.querySelector(`input[type="hidden"][name="${name}"]`);
-        if (!el) {
-            el = document.createElement('input');
-            el.type = 'hidden';
-            el.name = name;
-            document.getElementById('qcMinyakForm').appendChild(el);
+        let el = document.querySelector(`input[name="${name}"]`);
+        if (el) {
+            el.value = value;
+            return;
         }
+        el = document.createElement('input');
+        el.type = 'hidden';
+        el.name = name;
         el.value = value;
+        document.getElementById('qcMinyakForm').appendChild(el);
     }
 
     function showSubmitLoading(title = 'Menyimpan Data QC Minyak...') {
@@ -861,15 +863,23 @@
             return;
         }
 
+        const pabrikInput = document.getElementById('inputJumlahPabrik');
+        const pabrikVal = parseFloat(pabrikInput?.value || 0);
         const grossInput = document.getElementById('minyakQtyGross');
         const grossVal = parseFloat(grossInput?.value || 0);
-        const pabrikVal = parseFloat(document.getElementById('inputJumlahPabrik')?.value || 0);
         if ((isNaN(grossVal) || grossVal <= 0) && (isNaN(pabrikVal) || pabrikVal <= 0)) {
-            alert('Kuantitas timbangan netto kedatangan minyak wajib diisi lebih dari 0 KG!');
+            alert(`Kuantitas timbangan netto kedatangan minyak wajib diisi lebih dari 0 ${currentMinyakSatuan}!`);
             window.switchMinyakTab(2);
             grossInput?.focus();
             return;
         }
+
+        // Kuantitas kedatangan pabrik: prioritas input pabrik jika diisi > 0 oleh pengguna
+        const finalPabrik = (pabrikVal > 0) ? pabrikVal : (grossVal > 0 ? grossVal : sjVal);
+        const finalGross = (grossVal > 0 && pabrikVal <= 0) ? grossVal : finalPabrik;
+
+        if (pabrikInput) pabrikInput.value = finalPabrik;
+        if (grossInput) grossInput.value = finalGross;
 
         // Siapkan Payload khusus Minyak
         const bId = minyakSelect.value;
@@ -877,7 +887,6 @@
         const bNm = bOpt ? (bOpt.getAttribute('data-nama') || bOpt.text.split(' - ')[1]?.split(' (')[0] || bOpt.text) : 'Minyak Goreng Kelapa Sawit';
         const curNamaJenis = document.getElementById('minyakNamaJenisInput')?.value?.trim() || document.getElementById('namaJenisInput')?.value?.trim() || bNm;
 
-        const gross = grossVal > 0 ? grossVal : pabrikVal;
         const reject = parseFloat(document.getElementById('minyakQtyReject')?.value || 0) || 0;
         const kesimpulan = document.querySelector('input[name="minyak_kesimpulan"]:checked')?.value || 'TERIMA';
 
@@ -886,9 +895,9 @@
         injectHiddenInput('satuan', currentMinyakSatuan);
         injectHiddenInput('items[0][satuan]', currentMinyakSatuan);
         injectHiddenInput('items[0][barang_id]', bId);
-        injectHiddenInput('items[0][qty_timbang_gross]', gross);
+        injectHiddenInput('items[0][qty_timbang_gross]', finalGross);
         injectHiddenInput('items[0][qty_reject]', reject);
-        injectHiddenInput('items[0][qty_netto_lolos]', Math.max(0, gross - reject));
+        injectHiddenInput('items[0][qty_netto_lolos]', Math.max(0, finalGross - reject));
         injectHiddenInput('items[0][keputusan_qc]', kesimpulan === 'TERIMA' ? 'PASSED' : 'REJECT_TOTAL');
         injectHiddenInput('items[0][status_raw_material]', document.querySelector('input[name="minyak_status_raw_material"]:checked')?.value || 'OK');
         injectHiddenInput('items[0][tipe_wadah_minyak]', document.querySelector('input[name="minyak_tipe_wadah"]:checked')?.value || 'TANGKI');
@@ -902,8 +911,8 @@
 
         // Header level
         injectHiddenInput('kesimpulan_qc', kesimpulan);
-        injectHiddenInput('jumlah_di_pabrik', gross);
-        injectHiddenInput('jumlah_surat_jalan', sjVal > 0 ? sjVal : gross);
+        injectHiddenInput('jumlah_di_pabrik', finalPabrik);
+        injectHiddenInput('jumlah_surat_jalan', sjVal > 0 ? sjVal : finalPabrik);
         const sampleGr = document.querySelector('input[name="jumlah_sample_gr"]');
         injectHiddenInput('jumlah_sample_gr', parseFloat(sampleGr?.value || 250) || 250);
 
@@ -956,6 +965,41 @@
         } else {
             const bSel = document.getElementById('minyakBarangSelect');
             if (bSel) window.onMinyakBarangChanged(bSel);
+        }
+
+        const inPabrik = document.getElementById('inputJumlahPabrik');
+        const grossInput = document.getElementById('minyakQtyGross');
+        const inSJ = document.getElementById('inputJumlahSJ');
+
+        if (inPabrik) {
+            inPabrik.addEventListener('input', function () {
+                this.dataset.autoFilled = 'false';
+                if (grossInput) {
+                    grossInput.value = this.value;
+                    grossInput.dataset.autoFilled = 'false';
+                }
+                window.syncMinyakQuantity('pabrik');
+            });
+        }
+        if (grossInput) {
+            grossInput.addEventListener('input', function () {
+                this.dataset.autoFilled = 'false';
+                if (inPabrik) {
+                    inPabrik.value = this.value;
+                    inPabrik.dataset.autoFilled = 'false';
+                }
+                window.syncMinyakQuantity('gross');
+            });
+        }
+        if (inSJ) {
+            inSJ.addEventListener('input', function () {
+                this.dataset.autoFilled = 'false';
+                if (inPabrik && (!inPabrik.value || inPabrik.value == 0 || inPabrik.dataset.autoFilled === 'true')) {
+                    inPabrik.value = this.value;
+                    if (grossInput) grossInput.value = this.value;
+                    window.syncMinyakQuantity();
+                }
+            });
         }
 
         window.syncMinyakQuantity();

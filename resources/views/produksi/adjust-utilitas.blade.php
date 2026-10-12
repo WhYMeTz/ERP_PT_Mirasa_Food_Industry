@@ -22,11 +22,7 @@
     $tarifCngDefault = 232500.00;
 @endphp
 
-{{-- ═════════════════════════════════════════════════════════════
-     HEADER MODUL PRODUKSI & MANUFAKTUR (STANDAR ERP MIRASA)
-     ═════════════════════════════════════════════════════════════ --}}
 <div style="margin-bottom: 1.25rem;">
-    {{-- TOMBOL KEMBALI DI ATAS SEBELAH KIRI (SESUAI STANDAR HALAMAN LAIN) --}}
     <a href="{{ route('produksi.rekap', ['tahun' => $year, 'bulan' => $month]) }}" 
        style="color: #64748b; text-decoration: none; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.35rem; margin-bottom: 0.45rem; font-weight: 600; transition: color 0.15s ease-in-out;"
        onmouseover="this.style.color='#0f172a'" 
@@ -47,7 +43,7 @@
         </div>
 
         <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
-            {{-- Filter Periode Kalender Terpadu (Format Standar Rekap HPP) --}}
+            {{-- Filter Periode Kalender Terpadu --}}
             <form action="{{ route('produksi.adjust-utilitas') }}" method="GET" style="display: flex; gap: 0.35rem; align-items: center; background: #ffffff; padding: 0.2rem 0.5rem; border-radius: 6px; border: 1px solid #cbd5e1; box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
                 <select name="bulan" class="form-control" style="font-size: 0.8rem; padding: 0.25rem 0.5rem; height: 30px; border: none; font-weight: 700; color: #1e293b;" onchange="this.form.submit()">
                     @foreach ($monthsList as $num => $nm)
@@ -79,9 +75,6 @@
     </div>
 @endif
 
-{{-- ═════════════════════════════════════════════════════════════
-     4 KARTU METRIK OPERASIONAL & HPP (STANDAR EXECUTIVE-STAT-GRID)
-     ═════════════════════════════════════════════════════════════ --}}
 <div class="executive-stat-grid">
     {{-- METRIK 1: HARI KERJA & DOKUMEN PRODUKSI --}}
     <div class="executive-stat-card">
@@ -191,9 +184,6 @@
         <input type="hidden" name="bulan" value="{{ $month }}">
         <input type="hidden" name="redirect_to" value="adjust">
 
-        {{-- ═════════════════════════════════════════════════════════════
-             GRID FORM INPUT 2 SISI (LISTRIK PLN & GAS CNG)
-             ═════════════════════════════════════════════════════════════ --}}
         <div class="utilitas-forms-grid">
 
             {{-- KARTU 1: LISTRIK & AIR --}}
@@ -212,7 +202,6 @@
                 </div>
 
                 <div class="card-body" id="section_body_listrik" style="padding: 1.25rem;">
-                    {{-- Mode Selector (Segmented Pills Standar) --}}
                     <div class="mode-pill-container" style="margin-bottom: 1.15rem;">
                         <label class="mode-pill-item active">
                             <input type="radio" name="mode_alokasi_listrik" value="total_tagihan" checked style="display: none;">
@@ -281,7 +270,6 @@
                 </div>
 
                 <div class="card-body" id="section_body_cng" style="padding: 1.25rem; opacity: 0.45;">
-                    {{-- Mode Selector --}}
                     <div class="mode-pill-container" style="margin-bottom: 1.15rem;">
                         <label class="mode-pill-item active">
                             <input type="radio" name="mode_cng" value="update_tarif" checked style="display: none;">
@@ -336,9 +324,6 @@
 
         </div>
 
-        {{-- ═════════════════════════════════════════════════════════════
-             TABEL SIMULASI PRATINJAU INTERAKTIF (STANDAR ERP ENTERPRISE)
-             ═════════════════════════════════════════════════════════════ --}}
         <div class="card" style="margin-bottom: 1.25rem; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); overflow: hidden;">
             <div class="card-header" style="background: #ffffff; padding: 0.85rem 1.25rem; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
                 <div>

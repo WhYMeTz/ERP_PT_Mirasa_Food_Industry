@@ -44,11 +44,15 @@ function toggleSmartActionDropdown(btn, event, menuId) {
 
     if (!isShown) {
         const rect = btn.getBoundingClientRect();
-        const menuWidth = 170;
+        const menuWidth = 185;
         let left = rect.right - menuWidth;
         let top = rect.bottom + 4;
 
         if (left < 10) left = 10;
+        if (left + menuWidth > window.innerWidth - 10) {
+            left = window.innerWidth - menuWidth - 10;
+        }
+
         if (top + 160 > window.innerHeight) {
             top = rect.top - 140;
         }

@@ -73,9 +73,7 @@
 </div>
 
 @if ($mode === 'harian')
-    {{-- BARIS KONTROL BULAN/TAHUN & EXPORT REKAP HPP --}}
     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1.25rem;">
-        {{-- TITLE & PERIOD PICKER BAR --}}
         <div>
             <span style="font-weight: 700; font-size: 1.05rem; color: #0f172a; letter-spacing: -0.01em;">Rekapitulasi Produksi Harian</span>
             <span style="font-size: 0.8rem; color: #64748b; margin-left: 0.5rem;">Audit kalkulasi biaya bahan, energi CNG, upah kerja, FOH, rendemen &amp; HPP/kg.</span>

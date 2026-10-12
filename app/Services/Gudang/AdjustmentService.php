@@ -94,6 +94,49 @@ class AdjustmentService
     }
 
     /**
+     * Mengambil query daftar dokumen berita acara adjustment (Level Header).
+     */
+    public function getHeadersQuery(array $filters = []): Builder
+    {
+        $query = DatAdjustmentHdr::with(['gudang', 'details.barang'])
+            ->where('deleted_st', false);
+
+        if (!empty($filters['search'])) {
+            $search = trim($filters['search']);
+            $query->where(function (Builder $q) use ($search) {
+                $q->where('adj_no', 'ILIKE', "%{$search}%")
+                  ->orWhere('catatan_txt', 'ILIKE', "%{$search}%")
+                  ->orWhereHas('details.barang', function (Builder $bq) use ($search) {
+                      $bq->where('barang_nm', 'ILIKE', "%{$search}%")
+                         ->orWhere('barang_cd', 'ILIKE', "%{$search}%");
+                  });
+            });
+        }
+
+        if (!empty($filters['gudang_id'])) {
+            $query->where('gudang_id', $filters['gudang_id']);
+        }
+
+        if (!empty($filters['tgl_mulai']) && !empty($filters['tgl_selesai'])) {
+            $query->whereBetween('adj_tgl', [$filters['tgl_mulai'], $filters['tgl_selesai']]);
+        } elseif (!empty($filters['adj_tgl'])) {
+            $query->whereDate('adj_tgl', $filters['adj_tgl']);
+        }
+
+        if (!empty($filters['tipe_selisih'])) {
+            if ($filters['tipe_selisih'] === 'DEFISIT') {
+                $query->where('total_selisih_qty', '<', 0);
+            } elseif ($filters['tipe_selisih'] === 'SURPLUS') {
+                $query->where('total_selisih_qty', '>', 0);
+            } elseif ($filters['tipe_selisih'] === 'MATCH') {
+                $query->where('total_selisih_qty', '=', 0);
+            }
+        }
+
+        return $query->orderByDesc('adj_tgl')->orderByDesc('created_at');
+    }
+
+    /**
      * Mengambil ringkasan metrik statistik Adjustment.
      */
     public function getMetrics(array $filters = []): array
@@ -105,12 +148,15 @@ class AdjustmentService
             }
             if (!empty($filters['tgl_mulai']) && !empty($filters['tgl_selesai'])) {
                 $q->whereBetween('adj_tgl', [$filters['tgl_mulai'], $filters['tgl_selesai']]);
+            } elseif (!empty($filters['adj_tgl'])) {
+                $q->whereDate('adj_tgl', $filters['adj_tgl']);
             }
         });
 
         $totalDokumen = DatAdjustmentHdr::active()
             ->when(!empty($filters['gudang_id']), fn($q) => $q->where('gudang_id', $filters['gudang_id']))
             ->when(!empty($filters['tgl_mulai']) && !empty($filters['tgl_selesai']), fn($q) => $q->whereBetween('adj_tgl', [$filters['tgl_mulai'], $filters['tgl_selesai']]))
+            ->when(!empty($filters['adj_tgl']), fn($q) => $q->whereDate('adj_tgl', $filters['adj_tgl']))
             ->count();
 
         $totalItem = (clone $base)->count();
@@ -176,6 +222,112 @@ class AdjustmentService
     }
 
     /**
+     * Mengambil daftar komoditas/barang yang relevan dan memiliki stok di gudang tertentu.
+     * Mengelompokkan komoditas sesuai peruntukan gudang dan menampilkan sisa stok on-hand.
+     */
+    public function getBarangListByGudang(int $gudangId): array
+    {
+        $gudang = MstGudang::findOrFail($gudangId);
+
+        // Ambil ID barang yang memiliki catatan stok fisik/batch di gudang ini
+        $existingBarangIds = DatStokBatch::where('gudang_id', $gudangId)
+            ->where('deleted_st', false)
+            ->pluck('barang_id')
+            ->unique()
+            ->toArray();
+
+        $query = MstBarang::with(['satuanDasar', 'jenisBarang'])
+            ->where(function ($q) use ($existingBarangIds) {
+                $q->where(function ($aq) {
+                    $aq->where('active_st', true)->where('deleted_st', false);
+                })->orWhereIn('barang_id', $existingBarangIds);
+            });
+
+        if ($gudang->tipe_gudang_cd === 'FG') {
+            // Khusus Gudang Barang Jadi: HANYA Finished Goods (FG) atau WIP
+            $query->where(function ($q) use ($existingBarangIds) {
+                $q->whereHas('jenisBarang', function ($jq) {
+                    $jq->whereIn('jenis_barang_cd', ['FG', 'WIP']);
+                })->orWhereIn('barang_id', $existingBarangIds);
+            });
+        } elseif ($gudang->tipe_gudang_cd === 'RAW') {
+            // Khusus Gudang Bahan Baku: RAW / BB
+            $query->where(function ($q) use ($existingBarangIds) {
+                $q->whereHas('jenisBarang', function ($jq) {
+                    $jq->whereIn('jenis_barang_cd', ['RAW', 'BB']);
+                })->orWhereIn('barang_id', $existingBarangIds);
+            });
+        } elseif ($gudang->tipe_gudang_cd === 'WIP') {
+            // Khusus Gudang WIP / Produksi
+            $query->where(function ($q) use ($existingBarangIds) {
+                $q->whereHas('jenisBarang', function ($jq) {
+                    $jq->whereIn('jenis_barang_cd', ['WIP', 'BP']);
+                })->orWhereIn('barang_id', $existingBarangIds);
+            });
+        } else {
+            // Gudang Terpadu Pabrik / Pusat / Cabang: bahan baku, penolong, kemasan, atau barang dengan mutasi
+            $query->where(function ($q) use ($existingBarangIds) {
+                $q->whereHas('jenisBarang', function ($jq) {
+                    $jq->whereIn('jenis_barang_cd', ['RAW', 'BB', 'BP', 'PACK', 'SUPP']);
+                })->orWhereIn('barang_id', $existingBarangIds);
+            });
+        }
+
+        $barangList = $query->orderBy('barang_nm')->get();
+
+        // Hitung stok on-hand aktif per barang di gudang ini
+        $stockMap = DatStokBatch::where('gudang_id', $gudangId)
+            ->where('deleted_st', false)
+            ->select('barang_id', DB::raw('SUM(sisa_qty) as total_sisa'))
+            ->groupBy('barang_id')
+            ->pluck('total_sisa', 'barang_id')
+            ->toArray();
+
+        $rawItems = [];
+        $suppItems = [];
+        $packItems = [];
+        $fgItems = [];
+
+        foreach ($barangList as $b) {
+            $stok = (float) ($stockMap[$b->barang_id] ?? 0);
+            $satuan = $b->satuanDasar?->satuan_nm ?? $b->satuanDasar?->satuan_cd ?? 'KG';
+            $itemData = [
+                'barang_id'   => $b->barang_id,
+                'barang_cd'   => $b->barang_cd,
+                'barang_nm'   => $b->barang_nm,
+                'satuan'      => $satuan,
+                'stok_sistem' => $stok,
+                'stok_label'  => number_format($stok, 2, ',', '.') . ' ' . $satuan,
+            ];
+
+            $jenisCd = $b->jenisBarang?->jenis_barang_cd ?? '';
+            if (in_array($jenisCd, ['RAW', 'BB'])) {
+                $rawItems[] = $itemData;
+            } elseif (in_array($jenisCd, ['PACK']) || (in_array($jenisCd, ['BP']) && preg_match('/(PLASTIK|KARTON|ROLL|LAKBAN|SARUNG|RAFIA)/i', $b->barang_nm))) {
+                $packItems[] = $itemData;
+            } elseif (in_array($jenisCd, ['SUPP', 'BUMBU', 'BP'])) {
+                $suppItems[] = $itemData;
+            } else {
+                $fgItems[] = $itemData;
+            }
+        }
+
+        $grouped = [];
+        if (!empty($rawItems)) $grouped['BAHAN BAKU (RAW MATERIAL)'] = $rawItems;
+        if (!empty($suppItems)) $grouped['BUMBU & BAHAN PENOLONG'] = $suppItems;
+        if (!empty($packItems)) $grouped['BAHAN KEMASAN & PACKAGING'] = $packItems;
+        if (!empty($fgItems)) $grouped['PRODUK JADI / HASIL PRODUKSI'] = $fgItems;
+
+        return [
+            'gudang_id'     => $gudang->gudang_id,
+            'gudang_nm'     => $gudang->gudang_nm,
+            'tipe_gudang'   => $gudang->tipe_gudang_cd,
+            'total_barang'  => count($barangList),
+            'grouped_items' => $grouped,
+        ];
+    }
+
+    /**
      * Membuat dan memposting dokumen Penyesuaian Stok (Adjustment).
      * Wajib DB::transaction() sesuai AGENTS.md.
      */
@@ -190,6 +342,17 @@ class AdjustmentService
 
             if (empty($items)) {
                 throw new Exception("Minimal harus ada satu barang yang disesuaikan.");
+            }
+
+            // Validasi peruntukan gudang (Gudang Barang Jadi hanya untuk Finished Goods)
+            $gudang = MstGudang::findOrFail($gudangId);
+            if ($gudang->tipe_gudang_cd === 'FG') {
+                foreach ($items as $item) {
+                    $brg = MstBarang::with('jenisBarang')->find($item['barang_id']);
+                    if ($brg && $brg->jenisBarang && !in_array($brg->jenisBarang->jenis_barang_cd, ['FG', 'WIP'])) {
+                        throw new Exception("Barang '{$brg->barang_nm}' adalah {$brg->jenisBarang->jenis_barang_nm}. Gudang Barang Jadi (FG) hanya diperuntukkan bagi produk jadi / hasil produksi.");
+                    }
+                }
             }
 
             // Generate Nomor Dokumen: ADJ-YYYYMM-0001

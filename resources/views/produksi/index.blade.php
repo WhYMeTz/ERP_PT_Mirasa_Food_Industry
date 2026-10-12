@@ -7,9 +7,6 @@
 @endpush
 
 @section('content')
-{{-- ═════════════════════════════════════════════════════════════
-     HEADER MODUL PRODUKSI & MANUFAKTUR
-     ═════════════════════════════════════════════════════════════ --}}
 <div style="margin-bottom: 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
     <div>
         <div style="font-size: 0.75rem; font-weight: 700; color: #0284c7; text-transform: uppercase; letter-spacing: 0.06em; display: flex; align-items: center; gap: 0.35rem;">
@@ -81,7 +78,6 @@
     </div>
 @endif
     
-    {{-- BARIS FILTER PILLS & AKSI IMPORT / EXPORT (BLUEPRINT 9.B) --}}
     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 0.75rem;">
         <div class="filter-pills-bar">
             <a href="{{ route('produksi.index', array_merge(request()->except('jenis_cd', 'page'))) }}" 
@@ -122,7 +118,6 @@
         </div>
     </div>
 
-    {{-- FORM FILTER PENCARIAN (BLUEPRINT POINT 2: GUDANG, NAMA BARANG, KODE BARANG, KODE BATCH) --}}
     <div class="filter-card">
         <form method="GET" action="{{ route('produksi.index') }}">
             @if(request('jenis_cd'))

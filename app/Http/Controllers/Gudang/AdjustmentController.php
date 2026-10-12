@@ -25,6 +25,8 @@ class AdjustmentController extends Controller
      */
     public function index(Request $request): View
     {
+        $viewType = $request->input('view', 'item'); // 'item' (rincian komoditas) atau 'header' (daftar berita acara)
+
         $filters = [
             'search'       => $request->input('search'),
             'barang_nm'    => $request->input('barang_nm'),
@@ -39,10 +41,15 @@ class AdjustmentController extends Controller
         $user = auth()->user();
         $gudangList = $user ? $user->getAllowedGudangList() : MstGudang::active()->get();
 
-        $details = $this->adjustmentService->getDetailsQuery($filters)->paginate(15)->withQueryString();
+        if ($viewType === 'header') {
+            $dataList = $this->adjustmentService->getHeadersQuery($filters)->paginate(15)->withQueryString();
+        } else {
+            $dataList = $this->adjustmentService->getDetailsQuery($filters)->paginate(15)->withQueryString();
+        }
+
         $metrics = $this->adjustmentService->getMetrics($filters);
 
-        return view('gudang.adjustment.index', compact('details', 'metrics', 'gudangList', 'filters'));
+        return view('gudang.adjustment.index', compact('dataList', 'viewType', 'metrics', 'gudangList', 'filters'));
     }
 
     /**
@@ -54,7 +61,7 @@ class AdjustmentController extends Controller
         $gudangList = $user ? $user->getAllowedGudangList() : MstGudang::active()->get();
 
         // Ambil daftar barang aktif untuk dropdown autocomplete/select
-        $barangList = MstBarang::with('satuanDasar')
+        $barangList = MstBarang::with(['satuanDasar', 'jenisBarang'])
             ->active()
             ->orderBy('barang_nm')
             ->get();
@@ -70,7 +77,7 @@ class AdjustmentController extends Controller
         $validated = $request->validate([
             'gudang_id'             => 'required|exists:mst_gudang,gudang_id',
             'adj_tgl'               => 'required|date',
-            'kategori_adj'          => 'required|string|max:50',
+            'kategori_adj'          => 'nullable|string|max:50',
             'catatan_txt'           => 'nullable|string',
             'items'                 => 'required|array|min:1',
             'items.*.barang_id'     => 'required|exists:mst_barang,barang_id',
@@ -136,6 +143,26 @@ class AdjustmentController extends Controller
             $info = $this->adjustmentService->getStokAndHargaInfo($gudangId, $barangId);
 
             return response()->json(['success' => true, 'data' => $info]);
+        } catch (Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * AJAX endpoint untuk mengambil daftar komoditas/barang yang relevan dan memiliki stok di gudang tertentu.
+     */
+    public function ajaxBarangByGudang(Request $request): JsonResponse
+    {
+        $gudangId = (int) $request->input('gudang_id');
+
+        if (!$gudangId) {
+            return response()->json(['success' => false, 'message' => 'Parameter gudang_id wajib diisi.'], 400);
+        }
+
+        try {
+            $data = $this->adjustmentService->getBarangListByGudang($gudangId);
+
+            return response()->json(['success' => true, 'data' => $data]);
         } catch (Exception $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }

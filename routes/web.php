@@ -229,6 +229,7 @@ Route::middleware('auth')->group(function () {
 
         // Penyesuaian Persediaan (Stock Adjustment / Opname)
         Route::get('adjustment/ajax-item-info', [AdjustmentController::class, 'ajaxItemInfo'])->name('adjustment.ajax-item-info')->middleware('role:stok_view,gudang');
+        Route::get('adjustment/ajax-barang-by-gudang', [AdjustmentController::class, 'ajaxBarangByGudang'])->name('adjustment.ajax-barang-by-gudang')->middleware('role:stok_view,gudang');
         Route::get('adjustment', [AdjustmentController::class, 'index'])->name('adjustment.index')->middleware('role:stok_view,gudang');
         Route::get('adjustment/create', [AdjustmentController::class, 'create'])->name('adjustment.create')->middleware('role:stok_view,gudang');
         Route::post('adjustment', [AdjustmentController::class, 'store'])->name('adjustment.store')->middleware('role:stok_view,gudang');

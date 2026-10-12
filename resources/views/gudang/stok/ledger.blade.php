@@ -204,7 +204,8 @@
                                 <button type="button" 
                                         class="btn-action-trigger" 
                                         onclick="toggleSmartActionDropdown(this, event, '{{ $menuId }}')">
-                                    Aksi &#9660;
+                                    <span>Aksi</span>
+                                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                                 </button>
                                 <div id="{{ $menuId }}" class="action-dropdown-menu">
                                     <button type="button" class="action-dropdown-item" onclick="showBatchDetailModal('{{ $row->batch_no }}', {{ $row->barang_id }})">
@@ -220,6 +221,11 @@
                                         <a href="{{ route('gudang.pemakaian.index', ['search' => $row->dokumen_no]) }}" class="action-dropdown-item">
                                             <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                                             <span>Lihat Pemakaian</span>
+                                        </a>
+                                    @elseif (str_starts_with($row->dokumen_no, 'ADJ-'))
+                                        <a href="{{ route('gudang.adjustment.index', ['search' => $row->dokumen_no]) }}" class="action-dropdown-item">
+                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                            <span>Lihat Adjustment</span>
                                         </a>
                                     @endif
                                 </div>

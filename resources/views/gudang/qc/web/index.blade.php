@@ -543,16 +543,16 @@
 
                                 {{-- 3. CETAK BERITA ACARA PENOLAKAN --}}
                                 @if ($qc->status_qc === 'DITOLAK_TOTAL' || $qc->details->sum('qty_reject') > 0)
-                                    <a href="{{ route('qc.inbound.berita_acara', $qc->qc_id) }}" class="action-dropdown-item" style="color: #dc2626; font-weight: 700;">
+                                    <button type="button" class="action-dropdown-item" style="color: #dc2626; font-weight: 700;" onclick="openBeritaAcaraModal('{{ $qc->qc_id }}', '{{ $qc->qc_no }}')">
                                         <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                                         <span>Berita Acara Penolakan</span>
-                                    </a>
+                                    </button>
                                 @endif
                                 @if ($p2 && ($p2->status_qc === 'DITOLAK_TOTAL' || $p2->details->sum('qty_reject') > 0))
-                                    <a href="{{ route('qc.inbound.berita_acara', $p2->qc_id) }}" class="action-dropdown-item" style="color: #dc2626; font-weight: 700;">
+                                    <button type="button" class="action-dropdown-item" style="color: #dc2626; font-weight: 700;" onclick="openBeritaAcaraModal('{{ $p2->qc_id }}', '{{ $p2->qc_no }}')">
                                         <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                                         <span>Berita Acara Penolakan (Uji 2)</span>
-                                    </a>
+                                    </button>
                                 @endif
 
                                 {{-- 4. TARIK KE GRN GUDANG --}}
@@ -564,7 +564,7 @@
                                 @endif
 
                                 {{-- 5. CATAT PENGUJIAN II (KHUSUS SINGKONG) --}}
-                                @if ($isSingkong && !$p2 && $qc->status_qc !== 'DITOLAK_TOTAL' && Auth::user()?->canCreateQc())
+                                @if ($isSingkong && !$p2 && $qc->status_qc !== 'DITOLAK_TOTAL' && (Auth::user()?->canCreateQcMobile() || Auth::user()?->canCreateQc()))
                                     <a href="{{ route('qc.inbound.create', ['parent_qc_id' => $qc->qc_id, 'tahap' => 2, 'po_id' => $qc->po_id, 'supplier_id' => $qc->supplier_id]) }}" class="action-dropdown-item" style="color: #7e22ce; font-weight: 700;">
                                         <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                                         <span>🍟 Catat Pengujian II</span>
@@ -574,7 +574,7 @@
                                 <div class="action-dropdown-divider"></div>
 
                                 {{-- 6. EDIT DOKUMEN QC --}}
-                                @if (Auth::user()?->canEditQc())
+                                @if (Auth::user()?->canEditQcWeb())
                                     @if (!$isLocked)
                                         <a href="{{ route('qc.inbound.edit', [$qc->qc_id, 'ref' => 'index']) }}" class="action-dropdown-item">
                                             <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
@@ -595,7 +595,7 @@
                                 @endif
 
                                 {{-- 7. BATALKAN / HAPUS TIKET QC --}}
-                                @if (Auth::user()?->canDeleteQc() && !$isLocked)
+                                @if (Auth::user()?->canDeleteQcWeb() && !$isLocked)
                                     <button type="button" class="action-dropdown-item danger-item" onclick="openDeleteQcModal('{{ $qc->qc_id }}', '{{ $qc->qc_no }}')">
                                         <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                                         <span>Batalkan Tiket QC</span>
@@ -635,6 +635,9 @@
 
 {{-- MODAL POPUP PREVIEW DOKUMEN HACCP --}}
 @include('gudang.qc.partials.common.modal-preview-haccp')
+
+{{-- MODAL POPUP PREVIEW BERITA ACARA PENOLAKAN --}}
+@include('gudang.qc.partials.common.modal-preview-berita-acara')
 
 @endsection
 

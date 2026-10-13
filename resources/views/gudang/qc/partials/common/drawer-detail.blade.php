@@ -227,7 +227,7 @@
                                 <span>Cetak A4</span>
                             </button>
                         </div>
-                        @if (!$isLocked && Auth::user()?->canEditQc())
+                        @if (!$isLocked && Auth::user()?->canEditQcWeb())
                             <a href="{{ route('qc.inbound.edit', [$qc->qc_id, 'ref' => 'index']) }}" style="font-size: 0.75rem; font-weight: 600; color: #64748b; text-decoration: none;">
                                 ✏ Edit Data
                             </a>
@@ -330,7 +330,7 @@
                                     <span>Cetak A4</span>
                                 </button>
                             </div>
-                            @if (!$isLocked && Auth::user()?->canEditQc())
+                            @if (!$isLocked && Auth::user()?->canEditQcWeb())
                                 <a href="{{ route('qc.inbound.edit', [$p2->qc_id, 'ref' => 'index']) }}" style="font-size: 0.75rem; font-weight: 600; color: #64748b; text-decoration: none;">
                                     ✏ Edit Data
                                 </a>
@@ -360,7 +360,7 @@
                                     Estimasi Sisa Muatan: <strong style="color: #7e22ce;">{{ number_format(max(0, (float)$qc->jumlah_surat_jalan - $p1Gross), 0, ',', '.') }} kg</strong>
                                 </div>
 
-                                @if (Auth::user()?->canCreateQc())
+                                @if (Auth::user()?->canCreateQcMobile() || Auth::user()?->canCreateQc())
                                     <div style="margin-top: 1rem;">
                                         <a href="{{ route('qc.inbound.create', ['parent_qc_id' => $qc->qc_id, 'tahap' => 2, 'po_id' => $qc->po_id, 'supplier_id' => $qc->supplier_id]) }}" 
                                            style="background: #7e22ce; color: #ffffff; font-size: 0.8rem; font-weight: 700; padding: 6px 14px; border-radius: 6px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 5px rgba(126,34,206,0.3);">

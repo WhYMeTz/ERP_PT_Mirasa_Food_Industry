@@ -86,6 +86,47 @@
         }
     };
 
+    /**
+     * REAKTIF RASA FRYER (PAHIT = REJECT & TOLAK TOTAL)
+     */
+    window.onRasaGorengChanged = function (val) {
+        const banner = document.getElementById('bannerPahitWarning');
+        const radioTolak = document.getElementById('radioTolak');
+        const radioTerima = document.getElementById('radioTerima');
+        const selectGrade = document.getElementById('selectGradeCd');
+
+        if (val === 'PAHIT') {
+            if (banner) banner.style.display = 'block';
+            if (radioTolak) radioTolak.checked = true;
+            if (selectGrade) selectGrade.value = 'REJECT';
+        } else {
+            if (banner) banner.style.display = 'none';
+            if (selectGrade && selectGrade.value === 'REJECT') {
+                selectGrade.value = 'A';
+            }
+            if (radioTerima && (!selectGrade || selectGrade.value !== 'REJECT')) {
+                radioTerima.checked = true;
+            }
+        }
+    };
+
+    /**
+     * REAKTIF PENETAPAN GRADE MUTU
+     */
+    window.onGradeChanged = function (val) {
+        const radioTolak = document.getElementById('radioTolak');
+        const radioTerima = document.getElementById('radioTerima');
+        const rasa = document.getElementById('selectFryerRasa')?.value;
+
+        if (val === 'REJECT') {
+            if (radioTolak) radioTolak.checked = true;
+        } else {
+            if (rasa !== 'PAHIT' && radioTerima) {
+                radioTerima.checked = true;
+            }
+        }
+    };
+
     let isSubmitting = false;
     document.addEventListener('DOMContentLoaded', function () {
         const form = document.getElementById('qcEditMobileForm');

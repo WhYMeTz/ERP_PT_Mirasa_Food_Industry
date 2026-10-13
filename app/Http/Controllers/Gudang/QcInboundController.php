@@ -51,7 +51,17 @@ class QcInboundController extends Controller
 
         // Jika mode mobile smartphone
         if ($isMobileReq) {
+            if (!$user->canAccessQcMobile()) {
+                return redirect()->route($user->getDashboardRoute())
+                    ->with('error', "Akses Ditolak: Peran akun Anda saat ini belum memiliki izin untuk membuka modul QC Mobile Lapangan.");
+            }
             return view('gudang.qc.mobile.index', compact('inspeksiList', 'suppliers', 'filters'));
+        }
+
+        // Web Admin Desktop
+        if (!$user->canAccessQcWeb()) {
+            return redirect()->route($user->getDashboardRoute())
+                ->with('error', "Akses Ditolak: Peran akun Anda saat ini belum memiliki izin untuk membuka modul QC Web Desktop.");
         }
 
         // Metrik Statistik Operasional Gudang & QC Inbound (Khusus Web Admin Desktop, difilter hak akses perusahaan)
@@ -173,7 +183,9 @@ class QcInboundController extends Controller
             ->when(!empty($allowedGudangIds), fn($q) => $q->whereIn('gudang_id', $allowedGudangIds))
             ->orderBy('created_at', 'desc')
             ->take(20)
-            ->get();
+            ->get()
+            ->filter(fn($p1) => !$p1->isPengujian2Done())
+            ->values();
 
         $initialKomoditas = $request->input('kategori_barang');
         if (!$initialKomoditas && $selectedPo) {
@@ -188,8 +200,10 @@ class QcInboundController extends Controller
                 $initialKomoditas = 'MSG';
             } elseif (str_contains($firstItemNm, 'GARAM') || str_contains($firstItemNm, 'SALT')) {
                 $initialKomoditas = 'GARAM';
-            } elseif (str_contains($firstItemNm, 'PERENYAH') || str_contains($firstItemNm, 'BUMBU')) {
+            } elseif (str_contains($firstItemNm, 'PERENYAH') || str_contains($firstItemNm, 'STPP')) {
                 $initialKomoditas = 'PERENYAH';
+            } elseif (str_contains($firstItemNm, 'BUMBU') || str_contains($firstItemNm, 'SEASONING') || str_contains($firstItemNm, 'BALADO') || str_contains($firstItemNm, 'BARBEQUE')) {
+                $initialKomoditas = 'BUMBU';
             } else {
                 $initialKomoditas = 'SINGKONG';
             }
@@ -256,6 +270,7 @@ class QcInboundController extends Controller
             'MSG'      => 'gudang.qc.mobile.bahan-penolong.create',
             'GARAM'    => 'gudang.qc.mobile.bahan-penolong.create',
             'PERENYAH' => 'gudang.qc.mobile.bahan-penolong.create',
+            'BUMBU'    => 'gudang.qc.mobile.bahan-penolong.create',
         ];
 
         $targetView = $viewMap[$initialKomoditas] ?? 'gudang.qc.mobile.create';
@@ -387,6 +402,16 @@ class QcInboundController extends Controller
 
         // Jika mode mobile smartphone
         if ($isMobileReq) {
+            $katView = strtolower(str_replace('_', '-', $qc->kategori_barang ?? ''));
+            $bpList = ['MSG', 'GARAM', 'PERENYAH', 'BUMBU', 'BAHAN_PENOLONG'];
+            $katNorm = strtoupper($qc->kategori_barang ?? '');
+            if (in_array($katNorm, $bpList) && view()->exists("gudang.qc.mobile.bahan-penolong.show")) {
+                $katView = 'bahan-penolong';
+            }
+
+            if ($katView && view()->exists("gudang.qc.mobile.{$katView}.show")) {
+                return view("gudang.qc.mobile.{$katView}.show", compact('qc'));
+            }
             return view('gudang.qc.mobile.show', compact('qc'));
         }
 
@@ -405,6 +430,9 @@ class QcInboundController extends Controller
             'gudang',
             'po',
             'details.barang.satuanDasar',
+            'details.barang.jenisBarang',
+            'pengujian2List.details.barang',
+            'terima',
         ])->where('deleted_st', false)->findOrFail($id);
 
         return view('gudang.qc.web.berita_acara', compact('qc'));
@@ -466,15 +494,65 @@ class QcInboundController extends Controller
             ->orderBy('po_tgl', 'desc')
             ->get();
 
+        $pendingPengujian1 = collect();
+        if ($qc->kategori_barang === 'SINGKONG') {
+            $testedParentIds = DatQcInboundHdr::where('deleted_st', false)
+                ->where('tahap_uji', 'PENGUJIAN_2')
+                ->where('qc_id', '!=', $qc->qc_id)
+                ->pluck('parent_qc_id')
+                ->filter()
+                ->unique()
+                ->toArray();
+
+            $pendingPengujian1 = DatQcInboundHdr::with(['supplier', 'po', 'details.barang'])
+                ->where('deleted_st', false)
+                ->where('kategori_barang', 'SINGKONG')
+                ->where('tahap_uji', 'PENGUJIAN_1')
+                ->where('qc_id', '!=', $qc->qc_id)
+                ->whereIn('status_qc', ['SIAP_GUDANG', 'DITERIMA_GUDANG'])
+                ->whereNotIn('qc_id', $testedParentIds)
+                ->where('created_at', '>=', now()->subDays(7))
+                ->when(!$user->isSuperAdmin(), fn($q) => $q->whereIn('gudang_id', $allowedGudangIds))
+                ->orderBy('created_at', 'desc')
+                ->take(30)
+                ->get()
+                ->filter(fn($p1) => !$p1->isPengujian2Done())
+                ->values();
+
+            if ($qc->parentQc && !$pendingPengujian1->contains('qc_id', $qc->parent_qc_id)) {
+                $pendingPengujian1->prepend($qc->parentQc);
+            }
+        }
+
         $isMobileReq = $request->input('view') === 'mobile' || ($user?->isQc() && !$user?->isSuperAdmin() && !$user?->isGudang() && $request->input('view') !== 'desktop');
+
+        if ($isMobileReq && !$user->canEditQcMobile()) {
+            return redirect()->route('qc.inbound.show', array_merge(['inbound' => $id], ['view' => 'mobile']))
+                ->with('error', "Akses Ditolak: Peran akun Anda belum memiliki izin untuk mengedit hasil sampling di QC Mobile Lapangan.");
+        }
+
+        if (!$isMobileReq && !$user->canEditQcWeb()) {
+            return redirect()->route('qc.inbound.show', $id)
+                ->with('error', "Akses Ditolak: Peran akun Anda belum memiliki izin untuk mengedit dokumen QC di Web Desktop.");
+        }
 
         // Jika mode mobile smartphone
         if ($isMobileReq) {
-            return view('gudang.qc.mobile.edit', compact('qc', 'suppliers', 'gudangs', 'barangs', 'pos'));
+            $katView = strtolower(str_replace('_', '-', $qc->kategori_barang ?? ''));
+            $bpList = ['MSG', 'GARAM', 'PERENYAH', 'BUMBU', 'BAHAN_PENOLONG'];
+            $katNorm = strtoupper($qc->kategori_barang ?? '');
+            if (in_array($katNorm, $bpList) && view()->exists("gudang.qc.mobile.bahan-penolong.edit")) {
+                $katView = 'bahan-penolong';
+            }
+
+            if ($katView && view()->exists("gudang.qc.mobile.{$katView}.edit")) {
+                return view("gudang.qc.mobile.{$katView}.edit", compact('qc', 'suppliers', 'gudangs', 'barangs', 'pos', 'pendingPengujian1'));
+            }
+            return view('gudang.qc.mobile.edit', compact('qc', 'suppliers', 'gudangs', 'barangs', 'pos', 'pendingPengujian1'));
         }
 
         // Web Admin Desktop: Formulir Dokumen HACCP Interaktif (Semua Kolom Bisa Diedit)
-        return view('gudang.qc.web.edit', compact('qc', 'suppliers', 'gudangs', 'barangs', 'pos'));
+        return view('gudang.qc.web.edit', compact('qc', 'suppliers', 'gudangs', 'barangs', 'pos', 'pendingPengujian1'));
     }
 
     /**
@@ -501,6 +579,15 @@ class QcInboundController extends Controller
         try {
             $qc = \App\Models\Gudang\DatQcInboundHdr::where('deleted_st', false)->findOrFail($id);
             $user = Auth::user();
+
+            $isMobileReq = $request->input('view') === 'mobile' || ($user?->isQc() && !$user?->isSuperAdmin() && !$user?->isGudang());
+            if ($isMobileReq && !$user->canEditQcMobile()) {
+                return redirect()->back()->with('error', "Akses Ditolak: Peran akun Anda belum memiliki izin untuk memperbarui tiket QC Mobile.");
+            }
+            if (!$isMobileReq && !$user->canEditQcWeb()) {
+                return redirect()->back()->with('error', "Akses Ditolak: Peran akun Anda belum memiliki izin untuk memperbarui dokumen QC Web Desktop.");
+            }
+
             $updatedQc = $this->qcService->update($qc, $request->all(), $user);
 
             $msg = "Tiket QC {$updatedQc->qc_no} berhasil diperbarui.";
@@ -551,9 +638,17 @@ class QcInboundController extends Controller
         try {
             $qc = \App\Models\Gudang\DatQcInboundHdr::where('deleted_st', false)->findOrFail($id);
             $user = Auth::user();
-            $this->qcService->destroy($qc, $user);
 
             $isMobile = request('view') === 'mobile';
+            if ($isMobile && !$user->canDeleteQcMobile()) {
+                return redirect()->back()->with('error', "Akses Ditolak: Peran akun Anda belum memiliki izin membatalkan tiket di QC Mobile.");
+            }
+            if (!$isMobile && !$user->canDeleteQcWeb()) {
+                return redirect()->back()->with('error', "Akses Ditolak: Peran akun Anda belum memiliki izin membatalkan tiket di QC Web Desktop.");
+            }
+
+            $this->qcService->destroy($qc, $user);
+
             $redirectParams = $isMobile ? ['view' => 'mobile'] : [];
 
             return redirect()->route('qc.inbound.index', $redirectParams)

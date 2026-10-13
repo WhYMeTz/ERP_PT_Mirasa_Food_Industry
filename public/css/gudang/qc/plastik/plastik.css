@@ -533,4 +533,122 @@
     box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.15) !important;
 }
 
+/* ==========================================================================
+   PO MULTI-ITEM SELECTOR (TEMA KHUSUS PLASTIK KEMASAN: EMERALD TEAL)
+   ========================================================================== */
+.po-items-list-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+}
+
+.po-item-card {
+    background: #ffffff;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 10px;
+    padding: 0.7rem 0.85rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    user-select: none;
+}
+
+.po-item-card:hover {
+    border-color: #94a3b8;
+    background: #f8fafc;
+    transform: translateY(-1px);
+}
+
+.po-item-card.is-active {
+    border-color: #0d9488;
+    background: #f0fdfa;
+    box-shadow: 0 3px 10px rgba(13, 148, 136, 0.18);
+}
+
+.po-item-card-left {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    flex: 1;
+    min-width: 0;
+}
+
+.po-item-radio-circle {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid #94a3b8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+}
+
+.po-item-card.is-active .po-item-radio-circle {
+    border-color: #0d9488;
+}
+
+.po-item-radio-circle::after {
+    content: '';
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: transparent;
+    transition: background 0.2s ease;
+}
+
+.po-item-card.is-active .po-item-radio-circle::after {
+    background: #0d9488;
+}
+
+.po-item-info {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.po-item-nama {
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: #1e293b;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.po-item-card.is-active .po-item-nama {
+    color: #0f766e;
+}
+
+.po-item-sub {
+    font-size: 0.725rem;
+    color: #64748b;
+    margin-top: 2px;
+}
+
+.po-item-badge-sisa {
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: #0f766e;
+    background: #ccfbf1;
+    border: 1px solid #99f6e4;
+    padding: 0.3rem 0.7rem;
+    border-radius: 8px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+}
+
+.po-item-card.is-active .po-item-badge-sisa {
+    background: #0d9488;
+    border-color: #0d9488;
+    color: #ffffff;
+    box-shadow: 0 2px 6px rgba(13, 148, 136, 0.3);
+}
+
+
 

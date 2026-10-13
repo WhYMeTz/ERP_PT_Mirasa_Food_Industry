@@ -32,14 +32,23 @@ class PermissionService
                         'delete' => ['key' => 'po_delete', 'label' => 'Hapus / Batal'],
                     ],
                 ],
-                'QC' => [
-                    'label'   => 'Pengujian Mutu (QC & HACCP)',
-                    'desc'    => 'Inspeksi kedatangan sampling, uji laboratorium goreng, dan verifikasi checklist.',
+                'QC_MOBILE' => [
+                    'label'   => '📱 QC Mobile (Sampling & Lapangan HP)',
+                    'desc'    => 'Pemeriksaan sampling kedatangan truk di gerbang, checklist hygiene, dan uji wajan fryer via smartphone/tablet.',
                     'actions' => [
-                        'view'   => ['key' => 'qc_view',   'label' => 'Lihat Tiket QC'],
-                        'create' => ['key' => 'qc_create', 'label' => 'Input Uji QC'],
-                        'edit'   => ['key' => 'qc_edit',   'label' => 'Edit / Koreksi'],
-                        'delete' => ['key' => 'qc_delete', 'label' => 'Hapus / Batal'],
+                        'view'   => ['key' => 'qc_mobile_view',   'label' => 'Buka Riwayat Mobile'],
+                        'create' => ['key' => 'qc_mobile_create', 'label' => 'Input Uji Baru (+QC 1 / +QC 2)'],
+                        'edit'   => ['key' => 'qc_mobile_edit',   'label' => 'Edit / Koreksi di HP'],
+                        'delete' => ['key' => 'qc_mobile_delete', 'label' => 'Hapus / Batal di HP'],
+                    ],
+                ],
+                'QC_WEB' => [
+                    'label'   => '🖥️ QC Web (Portal HACCP, Dokumen & Cetak Desktop)',
+                    'desc'    => 'Monitoring portal web desktop, audit lembar dokumen HACCP resmi A4, Berita Acara, dan audit muatan truk.',
+                    'actions' => [
+                        'view'   => ['key' => 'qc_web_view',   'label' => 'Buka Riwayat & Dokumen Web'],
+                        'edit'   => ['key' => 'qc_web_edit',   'label' => 'Edit Dokumen HACCP di Web'],
+                        'delete' => ['key' => 'qc_web_delete', 'label' => 'Batalkan Tiket di Web'],
                     ],
                 ],
                 'TERIMA' => [
@@ -282,7 +291,8 @@ class PermissionService
      */
     public const DEFAULT_PERMISSIONS = [
         'ADMIN_GUDANG' => [
-            'qc_view',
+            'qc_mobile_view',
+            'qc_web_view',
             'terima_view',
             'terima_create',
             'terima_edit',
@@ -314,7 +324,7 @@ class PermissionService
             'po_create',
             'po_edit',
             'po_delete',
-            'qc_view',
+            'qc_web_view',
             'terima_view',
             'retur_view',
             'retur_create',
@@ -326,7 +336,7 @@ class PermissionService
         ],
         'FINANCE' => [
             'po_view',
-            'qc_view',
+            'qc_web_view',
             'terima_view',
             'retur_view',
             'stok_view',
@@ -343,10 +353,11 @@ class PermissionService
             'master_customer_view',
         ],
         'QC' => [
-            'qc_view',
-            'qc_create',
-            'qc_edit',
-            'qc_delete',
+            'qc_mobile_view',
+            'qc_mobile_create',
+            'qc_mobile_edit',
+            'qc_web_view',
+            'qc_web_edit',
             'po_view',
             'terima_view',
             'retur_view',

@@ -1,18 +1,662 @@
 /* ==========================================================================
    QC KARTON BOX SPECIFIC STYLES - PT MIRASA FOOD INDUSTRY
-   Styling Parameter & Uji Mutu Karton Box (Dimensi PxLxT & Burst Test)
+   Tema Visual: Modern Warm Amber / Industrial Corrugated Box Quality (#d97706)
+   Desain Card-Based Modern & Touch-Friendly Sesuai Standar HACCP MFI
    ========================================================================== */
 
-.karton-param-card {
-    background: #ffffff;
-    border: 1.5px solid #fed7aa;
-    border-radius: 10px;
-    padding: 1.15rem;
-    box-shadow: 0 1px 3px rgba(180, 83, 9, 0.05);
+/* 1. Inspection Time Bar Khusus Karton */
+.karton-inspection-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #fffbeb;
+    border: 1.5px solid #fde68a;
+    border-radius: 12px;
+    padding: 0.75rem 1rem;
+    box-shadow: 0 1px 3px rgba(217, 119, 6, 0.05);
 }
 
+.karton-inspection-bar .inspection-bar-left {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.karton-inspection-bar .inspection-bar-icon {
+    font-size: 1.35rem;
+}
+
+.karton-inspection-bar .inspection-bar-label {
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: #92400e;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.karton-inspection-bar .inspection-bar-val {
+    font-size: 0.875rem;
+    font-weight: 800;
+    color: #451a03;
+}
+
+.karton-inspection-bar .inspection-bar-badge {
+    background: #fef3c7;
+    color: #b45309;
+    border: 1px solid #fcd34d;
+    font-size: 0.725rem;
+    font-weight: 800;
+    padding: 0.25rem 0.65rem;
+    border-radius: 20px;
+    letter-spacing: 0.04em;
+}
+
+/* 2. Subcard Kelompok Field Khusus Karton */
+.karton-subcard {
+    background: #f8fafc;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 0.95rem 1.15rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+}
+
+.karton-subcard.amber-accent {
+    background: #fffbeb;
+    border-color: #fde68a;
+}
+
+.karton-subcard-title {
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: #b45309;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+}
+
+/* 3. Card Step Badge Warna Amber */
+.card-step-badge.amber {
+    background: #d97706;
+    color: #ffffff;
+}
+
+/* ==========================================================================
+   4. STANDAR TRANSPORTASI & JAMINAN HALAL CARDS
+   ========================================================================== */
+
+/* Radio Card Transportasi */
+.transport-radio-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.85rem;
+    background: #ffffff;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 0.85rem 1rem;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    user-select: none;
+}
+
+.transport-radio-card:hover {
+    border-color: #cbd5e1;
+    background: #fafafa;
+}
+
+.transport-radio-card.active {
+    background: #fffbeb;
+    border-color: #d97706;
+    box-shadow: 0 0 0 1px #d97706, 0 2px 4px rgba(217, 119, 6, 0.08);
+}
+
+.transport-radio-card.active.is-danger {
+    background: #fef2f2;
+    border-color: #ef4444;
+    box-shadow: 0 0 0 1px #ef4444, 0 2px 4px rgba(239, 68, 68, 0.08);
+}
+
+.transport-card-text {
+    flex: 1;
+}
+
+.transport-card-title {
+    font-size: 0.9rem;
+    font-weight: 800;
+    line-height: 1.3;
+    margin-bottom: 0.2rem;
+}
+
+.transport-card-desc {
+    font-size: 0.775rem;
+    color: #64748b;
+    line-height: 1.35;
+}
+
+/* 5. HALAL Q&A ROW CARDS */
+.halal-qa-row {
+    background: #ffffff;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 1.05rem 1.15rem;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0.75rem !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+    transition: all 0.2s ease;
+}
+
+.halal-qa-row:hover {
+    border-color: #cbd5e1;
+}
+
+.halal-qa-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.85rem;
+}
+
+.halal-qa-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    flex: 1;
+}
+
+.halal-qa-title {
+    font-size: 0.875rem;
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1.35;
+}
+
+.halal-qa-sub {
+    font-size: 0.75rem;
+    color: #64748b;
+    line-height: 1.3;
+}
+
+/* Segmented Toggle Pill [ Tidak ] [ Ya ] */
+.segmented-toggle {
+    display: inline-flex;
+    background: #f1f5f9;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 3px;
+    gap: 3px;
+    flex-shrink: 0;
+}
+
+.segmented-toggle-btn {
+    border: none;
+    background: transparent;
+    padding: 0.4rem 0.85rem;
+    border-radius: 8px;
+    font-size: 0.825rem;
+    font-weight: 800;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.segmented-toggle-btn.active.ok {
+    background: #d97706;
+    color: #ffffff;
+    box-shadow: 0 2px 4px rgba(217, 119, 6, 0.25);
+}
+
+.segmented-toggle-btn.active.danger {
+    background: #dc2626;
+    color: #ffffff;
+    box-shadow: 0 2px 4px rgba(220, 38, 38, 0.25);
+}
+
+/* ==========================================================================
+   6. CHECKLIST MODERN KHUSUS TAB 2 (RAW MATERIAL, KEMASAN & CACAT)
+   ========================================================================== */
+
+/* Modern Choice Buttons (OK vs TDK STD) */
+.modern-choice-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+}
+
+.modern-choice-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    border-radius: 12px;
+    border: 1.5px solid #cbd5e1;
+    background: #ffffff;
+    color: #475569;
+    font-size: 0.875rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    user-select: none;
+}
+
+.modern-choice-btn:hover {
+    border-color: #94a3b8;
+    background: #f8fafc;
+}
+
+.modern-choice-btn.active.ok {
+    background: #f0fdf4;
+    border-color: #059669;
+    color: #059669;
+    box-shadow: 0 0 0 1px #059669, 0 2px 4px rgba(5, 150, 105, 0.12);
+}
+
+.modern-choice-btn.active.danger {
+    background: #fef2f2;
+    border-color: #dc2626;
+    color: #dc2626;
+    box-shadow: 0 0 0 1px #dc2626, 0 2px 4px rgba(220, 38, 38, 0.12);
+}
+
+/* Modern Checkbox Cards untuk Cacat Kemasan: KOTOR, APEK, BASAH, JAMUR, SOBEK / PENYOK */
+.modern-checklist-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+}
+
+@media (min-width: 640px) {
+    .modern-checklist-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (min-width: 820px) {
+    .modern-checklist-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+.modern-check-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #ffffff;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 12px;
+    padding: 0.85rem 1rem;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    user-select: none;
+}
+
+.modern-check-card:hover {
+    border-color: #94a3b8;
+    background: #fafafa;
+}
+
+.modern-check-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 800;
+    color: #1e293b;
+}
+
+.modern-check-indicator {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    border: 1.5px solid #94a3b8;
+    background: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+    color: transparent;
+}
+
+.modern-check-indicator svg {
+    width: 14px;
+    height: 14px;
+    stroke-width: 3;
+}
+
+.modern-check-card.is-checked {
+    background: #fef2f2;
+    border-color: #ef4444;
+    box-shadow: 0 0 0 1px #ef4444, 0 2px 4px rgba(239, 68, 68, 0.1);
+}
+
+.modern-check-card.is-checked .modern-check-label {
+    color: #b91c1c;
+}
+
+.modern-check-card.is-checked .modern-check-indicator {
+    background: #dc2626;
+    border-color: #dc2626;
+    color: #ffffff;
+}
+
+/* Kesimpulan Card Radio Modern */
+.kesimpulan-radio-wrap {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.85rem;
+}
+
+.kesimpulan-radio-card {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.65rem;
+    padding: 0.95rem 1.25rem;
+    border-radius: 12px;
+    border: 2px solid #cbd5e1;
+    background: #ffffff;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 900;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    user-select: none;
+}
+
+.kesimpulan-radio-card:hover {
+    border-color: #94a3b8;
+}
+
+.kesimpulan-radio-card.active.terima {
+    background: #f0fdf4;
+    border-color: #059669;
+    color: #059669;
+    box-shadow: 0 0 0 1px #059669, 0 3px 8px rgba(5, 150, 105, 0.15);
+}
+
+.kesimpulan-radio-card.active.tolak {
+    background: #fef2f2;
+    border-color: #dc2626;
+    color: #dc2626;
+    box-shadow: 0 0 0 1px #dc2626, 0 3px 8px rgba(220, 38, 38, 0.15);
+}
+
+/* 7. Parameter Analysis Spacious Mobile Cards */
+.param-analysis-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+}
+
+.param-item-card {
+    background: #ffffff;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 12px;
+    padding: 0.85rem 1rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+    transition: all 0.2s ease;
+}
+
+.param-item-card:focus-within {
+    border-color: #d97706;
+    box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.12);
+}
+
+.param-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.65rem;
+    flex-wrap: wrap;
+}
+
+.param-item-name {
+    font-weight: 800;
+    font-size: 0.85rem;
+    color: #0f172a;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    letter-spacing: 0.02em;
+}
+
+.param-std-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #b45309;
+    background: #fef3c7;
+    border: 1px solid #fde68a;
+    padding: 3px 8px;
+    border-radius: 6px;
+}
+
+.param-chip-row {
+    display: flex;
+    gap: 0.45rem;
+    margin-bottom: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.param-chip-btn {
+    border: 1px solid #cbd5e1;
+    background: #f8fafc;
+    color: #334155;
+    font-size: 0.775rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.param-chip-btn:hover, .param-chip-btn:active {
+    background: #fef3c7;
+    border-color: #d97706;
+    color: #b45309;
+}
+
+.param-input-spacious {
+    width: 100% !important;
+    height: 44px !important;
+    font-size: 0.925rem !important;
+    font-weight: 700 !important;
+    color: #0f172a !important;
+    padding: 8px 12px !important;
+    border: 1.5px solid #cbd5e1 !important;
+    border-radius: 8px !important;
+    background: #ffffff !important;
+    box-sizing: border-box !important;
+}
+
+.param-input-spacious:focus {
+    border-color: #d97706 !important;
+    outline: none !important;
+    box-shadow: 0 0 0 2px rgba(217, 119, 6, 0.15) !important;
+}
+
+/* 8. Satuan Toggle Pills Khusus Karton (PCS vs DUS) */
+#satuanToggleGroupKarton {
+    display: inline-flex;
+    background: #e2e8f0;
+    padding: 3px;
+    border-radius: 9999px;
+    gap: 2px;
+}
+
+#satuanToggleGroupKarton .btn-satuan-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.85rem;
+    border: none;
+    border-radius: 9999px;
+    font-size: 0.775rem;
+    font-weight: 800;
+    color: #64748b;
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    user-select: none;
+    line-height: 1.2;
+}
+
+#satuanToggleGroupKarton .btn-satuan-pill:hover {
+    color: #0f172a;
+}
+
+#satuanToggleGroupKarton .btn-satuan-pill.active {
+    background: linear-gradient(135deg, #d97706 0%, #b45309 100%) !important;
+    color: #ffffff !important;
+    font-weight: 900;
+    box-shadow: 0 2px 6px rgba(217, 119, 6, 0.35), 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Compatibility aliases so .plastik- styles also match cleanly */
 .karton-dimensi-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 0.5rem;
 }
+
+/* 9. Docking Capsule Pill Buttons Khusus Karton (Warm Amber Industrial) */
+#qcFloatingDock .btn-dock-next.btn-primary-state {
+    background: linear-gradient(135deg, #d97706 0%, #b45309 100%) !important;
+    box-shadow: 0 8px 20px -3px rgba(217, 119, 6, 0.46), 0 2px 6px rgba(15, 23, 42, 0.08) !important;
+}
+
+#qcFloatingDock .btn-dock-next.btn-primary-state:hover {
+    background: linear-gradient(135deg, #b45309 0%, #92400e 100%) !important;
+    transform: translateY(-1px);
+    box-shadow: 0 10px 24px -3px rgba(217, 119, 6, 0.55) !important;
+}
+
+#qcFloatingDock .btn-dock-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+/* 10. PO Multi-Item Selector Cards (Khusus PO > 1 Barang) */
+.po-items-list-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+}
+
+.po-item-card {
+    background: #ffffff;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 10px;
+    padding: 0.7rem 0.85rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    user-select: none;
+}
+
+.po-item-card:hover {
+    border-color: #94a3b8;
+    background: #f8fafc;
+    transform: translateY(-1px);
+}
+
+.po-item-card.is-active {
+    border-color: #d97706;
+    background: #fffbeb;
+    box-shadow: 0 3px 10px rgba(217, 119, 6, 0.18);
+}
+
+.po-item-card-left {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    flex: 1;
+    min-width: 0;
+}
+
+.po-item-radio-circle {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid #94a3b8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+}
+
+.po-item-card.is-active .po-item-radio-circle {
+    border-color: #d97706;
+}
+
+.po-item-radio-circle::after {
+    content: '';
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: transparent;
+    transition: background 0.2s ease;
+}
+
+.po-item-card.is-active .po-item-radio-circle::after {
+    background: #d97706;
+}
+
+.po-item-info {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.po-item-nama {
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: #1e293b;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.po-item-card.is-active .po-item-nama {
+    color: #92400e;
+}
+
+.po-item-sub {
+    font-size: 0.725rem;
+    color: #64748b;
+    margin-top: 2px;
+}
+
+.po-item-badge-sisa {
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: #b45309;
+    background: #fef3c7;
+    border: 1px solid #fde68a;
+    padding: 0.3rem 0.7rem;
+    border-radius: 8px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+}
+
+.po-item-card.is-active .po-item-badge-sisa {
+    background: #d97706;
+    border-color: #d97706;
+    color: #ffffff;
+    box-shadow: 0 2px 6px rgba(217, 119, 6, 0.3);
+}
+
+

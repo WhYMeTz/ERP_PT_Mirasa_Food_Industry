@@ -267,16 +267,16 @@ Route::middleware('auth')->group(function () {
     Route::prefix('qc')->name('qc.')->group(function () {
         Route::get('inbound/siap-gudang', [QcInboundController::class, 'getSiapGudang'])->name('inbound.siap_gudang');
         Route::get('inbound/ticket-data/{id}', [QcInboundController::class, 'getTicketData'])->name('inbound.ticket_data');
-        Route::get('inbound/pengujian-2', [QcInboundController::class, 'createPengujian2'])->name('inbound.create_pengujian_2')->middleware('role:qc_create');
-        Route::post('inbound/pengujian-2', [QcInboundController::class, 'storePengujian2'])->name('inbound.store_pengujian_2')->middleware('role:qc_create');
-        Route::get('inbound/create', [QcInboundController::class, 'create'])->name('inbound.create')->middleware('role:qc_create');
-        Route::post('inbound', [QcInboundController::class, 'store'])->name('inbound.store')->middleware('role:qc_create');
-        Route::get('inbound/{id}/edit', [QcInboundController::class, 'edit'])->name('inbound.edit')->middleware('role:qc_edit,GUDANG,QC');
-        Route::put('inbound/{id}', [QcInboundController::class, 'update'])->name('inbound.update')->middleware('role:qc_edit,GUDANG,QC');
-        Route::delete('inbound/{id}', [QcInboundController::class, 'destroy'])->name('inbound.destroy')->middleware('role:qc_delete');
-        Route::get('inbound/{id}/berita-acara', [QcInboundController::class, 'beritaAcara'])->name('inbound.berita_acara')->middleware('role:qc_view');
-        Route::post('inbound/{id}/uji-goreng', [QcInboundController::class, 'updateUjiGoreng'])->name('inbound.update_uji_goreng')->middleware('role:qc_create');
-        Route::resource('inbound', QcInboundController::class)->only(['index', 'show'])->names('inbound')->middleware('role:qc_view');
+        Route::get('inbound/pengujian-2', [QcInboundController::class, 'createPengujian2'])->name('inbound.create_pengujian_2')->middleware('role:qc_mobile_create,qc_create');
+        Route::post('inbound/pengujian-2', [QcInboundController::class, 'storePengujian2'])->name('inbound.store_pengujian_2')->middleware('role:qc_mobile_create,qc_create');
+        Route::get('inbound/create', [QcInboundController::class, 'create'])->name('inbound.create')->middleware('role:qc_mobile_create,qc_create');
+        Route::post('inbound', [QcInboundController::class, 'store'])->name('inbound.store')->middleware('role:qc_mobile_create,qc_create');
+        Route::get('inbound/{id}/edit', [QcInboundController::class, 'edit'])->name('inbound.edit')->middleware('role:qc_mobile_edit,qc_web_edit,qc_edit');
+        Route::put('inbound/{id}', [QcInboundController::class, 'update'])->name('inbound.update')->middleware('role:qc_mobile_edit,qc_web_edit,qc_edit');
+        Route::delete('inbound/{id}', [QcInboundController::class, 'destroy'])->name('inbound.destroy')->middleware('role:qc_mobile_delete,qc_web_delete,qc_delete');
+        Route::get('inbound/{id}/berita-acara', [QcInboundController::class, 'beritaAcara'])->name('inbound.berita_acara')->middleware('role:qc_web_view,qc_view');
+        Route::post('inbound/{id}/uji-goreng', [QcInboundController::class, 'updateUjiGoreng'])->name('inbound.update_uji_goreng')->middleware('role:qc_mobile_create,qc_create');
+        Route::resource('inbound', QcInboundController::class)->only(['index', 'show'])->names('inbound')->middleware('role:qc_mobile_view,qc_web_view,qc_view');
     });
 
     // Modul Transaksi Penjualan (PO Penjualan / Sales Order)

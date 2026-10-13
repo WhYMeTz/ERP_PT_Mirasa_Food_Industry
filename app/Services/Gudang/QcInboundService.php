@@ -1137,6 +1137,7 @@ class QcInboundService
                 'komentar_sertifikat'         => !empty($data['komentar_sertifikat']) ? trim($data['komentar_sertifikat']) : $qc->komentar_sertifikat,
                 'sertifikat_halal_berlaku_st' => isset($data['sertifikat_halal_berlaku_st']) ? (bool)$data['sertifikat_halal_berlaku_st'] : $qc->sertifikat_halal_berlaku_st,
                 'komentar_berlaku'            => !empty($data['komentar_berlaku']) ? trim($data['komentar_berlaku']) : $qc->komentar_berlaku,
+                'tgl_periksa'                 => !empty($data['tgl_periksa']) ? $data['tgl_periksa'] : $qc->tgl_periksa,
                 'petugas_qc_nama'             => !empty($data['petugas_qc_nama']) ? trim($data['petugas_qc_nama']) : $qc->petugas_qc_nama,
                 'qc_supervisor_nama'          => !empty($data['qc_supervisor_nama']) ? trim($data['qc_supervisor_nama']) : $qc->qc_supervisor_nama,
                 'catatan_umum'                => !empty($data['catatan_umum']) ? trim($data['catatan_umum']) : $qc->catatan_umum,
@@ -1318,15 +1319,8 @@ class QcInboundService
                                     ->where('barang_id', $tDtl->barang_id)
                                     ->first();
                                 if ($batch) {
-                                    $batch->masuk_qty = max(0, (float)$batch->masuk_qty + $diff);
+                                    $batch->qty_awal = max(0, (float)$batch->qty_awal + $diff);
                                     $batch->sisa_qty = max(0, (float)$batch->sisa_qty + $diff);
-                                    if ($batch->sisa_qty <= 0) {
-                                        $batch->status_batch = 'HABIS';
-                                    } elseif ($batch->sisa_qty < $batch->masuk_qty) {
-                                        $batch->status_batch = 'DIGUNAKAN';
-                                    } else {
-                                        $batch->status_batch = 'TERSEDIA';
-                                    }
                                     $batch->save();
                                 }
                             }

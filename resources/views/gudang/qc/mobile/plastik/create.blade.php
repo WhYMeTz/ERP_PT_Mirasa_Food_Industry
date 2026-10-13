@@ -69,7 +69,14 @@
     });
 
     // Mapping Data PO Lengkap ke Format JSON untuk Auto-Fill Instan Tanpa Delay
-    $poListData = $plastikPos->mapWithKeys(function ($p) use ($getPoCommodities) {
+    $poListData = $plastikPos->mapWithKeys(function ($p) use ($getPoCommodities, $classifyBarang) {
+        $plastikItems = $p->details->filter(function ($d) use ($classifyBarang) {
+            return $classifyBarang($d) === 'PLASTIK';
+        });
+        if ($plastikItems->isEmpty()) {
+            $plastikItems = $p->details;
+        }
+
         return [
             $p->po_id => [
                 'po_id'       => $p->po_id,
@@ -78,7 +85,7 @@
                 'supplier_nm' => $p->supplier?->supplier_nm,
                 'gudang_id'   => $p->gudang_id,
                 'komoditas'   => $getPoCommodities($p),
-                'items'       => $p->details->map(function ($d) {
+                'items'       => $plastikItems->map(function ($d) {
                     return [
                         'podtl_id'  => $d->podtl_id,
                         'barang_id' => $d->barang_id,
@@ -164,6 +171,9 @@
             </a>
             <a href="{{ route('qc.inbound.create', ['kategori_barang' => 'PERENYAH']) }}" class="btn komoditas-btn" style="font-size: 0.8rem; font-weight: 800; padding: 0.5rem 0.4rem; border-radius: 8px; border: 1.5px solid #cbd5e1; background: #ffffff; color: #334155; text-align: center; text-decoration: none;">
                 ✨ Perenyah
+            </a>
+            <a href="{{ route('qc.inbound.create', ['kategori_barang' => 'BUMBU']) }}" class="btn komoditas-btn" style="font-size: 0.8rem; font-weight: 800; padding: 0.5rem 0.4rem; border-radius: 8px; border: 1.5px solid #cbd5e1; background: #ffffff; color: #334155; text-align: center; text-decoration: none;">
+                🌶️ Bumbu
             </a>
         </div>
     </div>
@@ -307,26 +317,66 @@
                             </select>
                         </div>
 
-                        {{-- NAMA BAHAN BAKU (MASTER BARANG PLASTIK KEMASAN) --}}
-                        <div class="form-group" style="margin-bottom: 0;">
-                            <div class="qc-field-header">
-                                <label class="qc-field-label" style="font-weight: 800; color: #0f172a;">
-                                    Nama Bahan Baku Kemasan <span style="color:#ef4444;">*</span>
+                        {{-- SELECTOR ITEM BARANG DARI PO (JIKA PO MEMILIKI MULTI-ITEM) --}}
+                        <input type="hidden" name="podtl_id" id="inputSelectedPodtlId" value="{{ old('podtl_id') }}">
+                        <div id="boxPoItemsSelector" style="display: none; background: #f0fdfa; border: 1.5px solid #99f6e4; border-radius: 12px; padding: 0.85rem 1rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.45rem; flex-wrap: wrap; gap: 0.25rem;">
+                                <label style="font-size: 0.8rem; font-weight: 800; color: #0f766e; margin: 0; display: flex; align-items: center; gap: 0.4rem;">
+                                    <span>📦</span> <span>Item Barang dalam PO Ini (<span id="countPoItemsBadge">0</span> Item):</span>
                                 </label>
+                                <span style="font-size: 0.7rem; font-weight: 700; color: #0f766e; background: #ccfbf1; padding: 2px 7px; border-radius: 6px;">
+                                    1 Dokumen QC per Item
+                                </span>
                             </div>
-                            <select name="plastik_barang_id" id="plastikBarangSelect" class="form-control" style="font-weight: 700;" onchange="onPlastikBarangChanged(this)" required>
-                                @foreach ($barangs as $b)
-                                    @if (stripos($b->barang_nm, 'plastik') !== false || stripos($b->barang_nm, 'kemasan') !== false || stripos($b->barang_nm, 'opp') !== false || stripos($b->barang_nm, 'pp') !== false || stripos($b->barang_nm, 'roll') !== false || stripos($b->barang_cd, 'BP-PL') !== false)
-                                        <option value="{{ $b->barang_id }}"
-                                                data-nama="{{ $b->barang_nm }}"
-                                                data-satuan="{{ $b->satuanDasar?->satuan_nm ?? 'PCS' }}"
-                                                data-satuan-cd="{{ strtoupper($b->satuanDasar?->satuan_cd ?? 'PCS') }}"
-                                                {{ $loop->first ? 'selected' : '' }}>
-                                            {{ $b->barang_nm }} ({{ $b->barang_cd }}) &bull; Satuan: {{ $b->satuanDasar?->satuan_nm ?? 'PCS' }}
-                                        </option>
-                                    @endif
-                                @endforeach
-                            </select>
+                            <p style="font-size: 0.725rem; color: #115e59; margin: 0 0 0.65rem 0; line-height: 1.35;">
+                                Silakan pilih item yang sedang dibongkar/diperiksa. Item lainnya dapat dibuatkan dokumen QC tersendiri setelah ini.
+                            </p>
+                            <div id="poItemsCardsList" class="po-items-list-grid">
+                                {{-- Di-render secara dinamis oleh JS saat PO dipilih --}}
+                            </div>
+                        </div>
+
+                        {{-- IDENTITAS BAHAN BAKU & NAMA JENIS SPESIFIKASI KEMASAN --}}
+                        <div class="qc-grid-2col">
+                            {{-- NAMA BAHAN BAKU (MASTER BARANG PLASTIK KEMASAN) --}}
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <div class="qc-field-header">
+                                    <label class="qc-field-label" style="font-weight: 800; color: #0f172a;">
+                                        Nama Bahan Baku Kemasan <span style="color:#ef4444;">*</span>
+                                    </label>
+                                </div>
+                                <select name="plastik_barang_id" id="plastikBarangSelect" class="form-control" style="font-weight: 700;" onchange="onPlastikBarangChanged(this)" required>
+                                    @foreach ($barangs as $b)
+                                        @if (stripos($b->barang_nm, 'plastik') !== false || stripos($b->barang_nm, 'kemasan') !== false || stripos($b->barang_nm, 'opp') !== false || stripos($b->barang_nm, 'pp') !== false || stripos($b->barang_nm, 'roll') !== false || stripos($b->barang_cd, 'BP-PL') !== false)
+                                            <option value="{{ $b->barang_id }}"
+                                                    data-nama="{{ $b->barang_nm }}"
+                                                    data-satuan="{{ $b->satuanDasar?->satuan_nm ?? 'PCS' }}"
+                                                    data-satuan-cd="{{ strtoupper($b->satuanDasar?->satuan_cd ?? 'PCS') }}"
+                                                    {{ $loop->first ? 'selected' : '' }}>
+                                                {{ $b->barang_nm }} ({{ $b->barang_cd }}) &bull; Satuan: {{ $b->satuanDasar?->satuan_nm ?? 'PCS' }}
+                                            </option>
+                                        @endif
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            {{-- NAMA JENIS (SPESIFIKASI / VARIAN KEMASAN) --}}
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <div class="qc-field-header">
+                                    <label class="qc-field-label" style="font-weight: 800; color: #0f766e;">
+                                        Nama Jenis (Spesifikasi Kemasan) <span style="font-size: 0.72rem; color: #0d9488; font-weight: normal;">(Bisa diedit/ketik)</span>
+                                    </label>
+                                </div>
+                                <input type="text" name="nama_jenis" id="plastikNamaJenisInput" list="listPlastikJenis" class="form-control" placeholder="Contoh: Plastik OPP Roll 250g (Tebal 0.08mm)" value="{{ old('nama_jenis', 'Plastik Kemasan Keripik Cap Payung 250g') }}" style="font-weight: 700;">
+                                <datalist id="listPlastikJenis">
+                                    <option value="Plastik Kemasan Keripik Cap Payung 250g">
+                                    <option value="Plastik OPP Roll 250g (Tebal 0.08mm)">
+                                    <option value="Plastik OPP Roll 500g">
+                                    <option value="Standing Pouch Cap Payung 250g">
+                                    <option value="Standing Pouch Zipper 500g Metalized">
+                                    <option value="Plastik PP Tebal 0.08mm Seal Rapi">
+                                </datalist>
+                            </div>
                         </div>
 
                         <div class="qc-grid-2col">
@@ -413,19 +463,6 @@
                             <span id="labelSubcardNetto" style="font-size: 0.775rem; font-weight: 800; color: #0d9488; background: #ffffff; padding: 3px 8px; border-radius: 6px; border: 1px solid #99f6e4;">
                                 Netto Lolos: 0 Pcs
                             </span>
-                        </div>
-
-                        {{-- NAMA JENIS : (Spesifikasi Fraksi / Jenis Kemasan) --}}
-                        <div class="form-group" style="margin-top: 0.65rem; margin-bottom: 0;">
-                            <label class="form-label" style="font-weight: 800; font-size: 0.775rem; color: #0f766e;">NAMA JENIS : (Spesifikasi Kemasan)</label>
-                            <input type="text" name="nama_jenis" id="plastikNamaJenisInput" list="listPlastikJenis" class="form-control" placeholder="Plastik Kemasan Keripik Cap Payung / Standing Pouch" value="{{ old('nama_jenis', 'Plastik Kemasan Keripik Cap Payung') }}" style="font-weight: 700;">
-                            <datalist id="listPlastikJenis">
-                                <option value="Plastik Kemasan Keripik Cap Payung">
-                                <option value="Plastik OPP Roll 250g">
-                                <option value="Plastik OPP Roll 500g">
-                                <option value="Standing Pouch Cap Payung">
-                                <option value="Plastik PP Tebal 0.08mm">
-                            </datalist>
                         </div>
                     </div>
                 </div>
@@ -550,6 +587,18 @@
             </div>
 
             <div style="padding: 1.25rem; display: flex; flex-direction: column; gap: 1.15rem;">
+                {{-- INFO STRIP ITEM & SPESIFIKASI JENIS --}}
+                <div style="background: #f0fdfa; border: 1.5px solid #99f6e4; border-radius: 10px; padding: 0.65rem 0.95rem; display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem;">
+                        <span style="font-weight: 800; color: #0f766e;">📦 Bahan Baku:</span>
+                        <span id="tab2InfoBarang" style="font-weight: 700; color: #1e293b;">-</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem;">
+                        <span style="font-weight: 800; color: #0d9488;">🏷️ Nama Jenis:</span>
+                        <span id="tab2InfoJenis" style="font-weight: 800; color: #0f766e;">-</span>
+                    </div>
+                </div>
+
                 {{-- SUBCARD 1: ISI RAW MATERIAL & KEMASAN STATUS (MODERN CHOICE BUTTONS) --}}
                 <div class="plastik-subcard">
                     <span class="plastik-subcard-title">
@@ -709,24 +758,55 @@
                     </div>
                 </div>
 
-                {{-- SUBCARD 5: KOMENTAR & KESIMPULAN AKHIR --}}
+                {{-- SUBCARD 5: KESIMPULAN & KOMENTAR PEMERIKSAAN (SESUAI GAMBAR STANDAR QC) --}}
                 <div class="plastik-subcard">
-                    <div class="form-group" style="margin-bottom: 0.75rem;">
-                        <label class="form-label" style="font-weight: 800; color: #0f172a;">KOMENTAR PEMERIKSAAN :</label>
-                        <textarea name="plastik_komentar" id="inputPlastikKomentar" rows="2" class="form-control" placeholder="Catatan kondisi kualitas plastik kemasan...">{{ old('plastik_komentar') }}</textarea>
-                    </div>
+                    <input type="hidden" name="plastik_kesimpulan" id="inputPlastikKesimpulan" value="{{ old('plastik_kesimpulan', 'TERIMA') }}">
+                    <input type="hidden" name="kesimpulan_qc" id="inputKesimpulanQc" value="{{ old('plastik_kesimpulan', 'TERIMA') }}">
 
-                    <div style="border-top: 1px solid #e2e8f0; padding-top: 0.85rem;">
-                        <label class="form-label" style="font-weight: 900; color: #0f172a; margin-bottom: 0.5rem;">KESIMPULAN QC :</label>
-                        <div class="kesimpulan-radio-wrap">
-                            <div class="kesimpulan-radio-card active terima" id="cardKesimpulanTerima" onclick="setKesimpulanPlastik('TERIMA')">
-                                <span>✅</span> <span>TERIMA</span>
+                    <div class="qc-disposisi-grid">
+                        <!-- KARTU TERIMA -->
+                        <div class="qc-disposisi-card active terima" id="cardDisposisiTerima" onclick="setKesimpulanPlastik('TERIMA')">
+                            <div class="qc-disposisi-head">
+                                <div class="qc-disposisi-title-wrap">
+                                    <span class="qc-disposisi-radio-icon"></span>
+                                    <span class="qc-disposisi-title">TERIMA</span>
+                                </div>
+                                <span class="qc-disposisi-status-badge">✓</span>
                             </div>
-                            <div class="kesimpulan-radio-card tolak" id="cardKesimpulanTolak" onclick="setKesimpulanPlastik('TOLAK')">
-                                <span>❌</span> <span>TOLAK</span>
+                            <div class="qc-disposisi-qty-wrap">
+                                <span class="qc-disposisi-qty-label">Kuantitas Diterima:</span>
+                                <div class="qc-disposisi-input-box">
+                                    <input type="number" step="any" min="0" name="qty_terima" id="inputQtyTerima" class="qc-disposisi-input" value="0" readonly>
+                                    <span class="qc-disposisi-unit unit-label-disposisi-plastik">pcs</span>
+                                </div>
                             </div>
                         </div>
-                        <input type="hidden" name="plastik_kesimpulan" id="inputKesimpulanQc" value="TERIMA">
+
+                        <!-- KARTU TOLAK -->
+                        <div class="qc-disposisi-card tolak" id="cardDisposisiTolak" onclick="setKesimpulanPlastik('TOLAK')">
+                            <div class="qc-disposisi-head">
+                                <div class="qc-disposisi-title-wrap">
+                                    <span class="qc-disposisi-radio-icon"></span>
+                                    <span class="qc-disposisi-title">TOLAK</span>
+                                </div>
+                                <span class="qc-disposisi-status-badge">✕</span>
+                            </div>
+                            <div class="qc-disposisi-qty-wrap">
+                                <span class="qc-disposisi-qty-label">Kuantitas Ditolak:</span>
+                                <div class="qc-disposisi-input-box">
+                                    <input type="number" step="any" min="0" name="qty_tolak" id="inputQtyTolak" class="qc-disposisi-input" value="0" readonly>
+                                    <span class="qc-disposisi-unit unit-label-disposisi-plastik">pcs</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- CATATAN / KOMENTAR PENGUJIAN --}}
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label class="form-label" style="font-weight: 800; font-size: 0.825rem; color: #0f172a; margin-bottom: 0.35rem; display: block;">
+                            Catatan / Komentar Pengujian:
+                        </label>
+                        <textarea name="plastik_komentar" id="inputPlastikKomentar" rows="3" class="form-control" placeholder="Catatan kondisi kualitas plastik kemasan..." style="font-size: 0.85rem; line-height: 1.45;">{{ old('plastik_komentar') }}</textarea>
                     </div>
                 </div>
 
@@ -806,7 +886,8 @@
     <script>
         window.appConfig = {
             poDetailsUrl: "{{ url('gudang/qc/inbound/po') }}",
-            poList: {!! json_encode($poListData) !!}
+            poList: {!! json_encode($poListData) !!},
+            poListData: {!! json_encode($poListData) !!}
         };
         window.qcConfig = window.appConfig;
     </script>

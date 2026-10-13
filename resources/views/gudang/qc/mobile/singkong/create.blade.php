@@ -88,6 +88,9 @@
             <a href="{{ route('qc.inbound.create', ['kategori_barang' => 'PERENYAH']) }}" class="btn komoditas-btn" style="font-size: 0.8rem; font-weight: 800; padding: 0.5rem 0.4rem; border-radius: 8px; border: 1.5px solid #cbd5e1; background: #ffffff; color: #334155; text-align: center; text-decoration: none;">
                 ✨ Perenyah
             </a>
+            <a href="{{ route('qc.inbound.create', ['kategori_barang' => 'BUMBU']) }}" class="btn komoditas-btn" style="font-size: 0.8rem; font-weight: 800; padding: 0.5rem 0.4rem; border-radius: 8px; border: 1.5px solid #cbd5e1; background: #ffffff; color: #334155; text-align: center; text-decoration: none;">
+                🌶️ Bumbu
+            </a>
         </div>
     </div>
 
@@ -354,6 +357,25 @@
                             </select>
                         </div>
 
+                        {{-- SELECTOR ITEM BARANG DARI PO (JIKA PO MEMILIKI MULTI-ITEM) --}}
+                        <input type="hidden" name="podtl_id" id="inputSelectedPodtlId" value="{{ old('podtl_id') }}">
+                        <div id="boxPoItemsSelector" style="display: none; background: #f0f9ff; border: 1.5px solid #bae6fd; border-radius: 12px; padding: 0.85rem 1rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.45rem; flex-wrap: wrap; gap: 0.25rem;">
+                                <label style="font-size: 0.8rem; font-weight: 800; color: #0369a1; margin: 0; display: flex; align-items: center; gap: 0.4rem;">
+                                    <span>🥔</span> <span>Item Barang dalam PO Ini (<span id="countPoItemsBadge">0</span> Item):</span>
+                                </label>
+                                <span style="font-size: 0.7rem; font-weight: 700; color: #0284c7; background: #e0f2fe; padding: 2px 7px; border-radius: 6px;">
+                                    1 Dokumen QC per Item
+                                </span>
+                            </div>
+                            <p style="font-size: 0.725rem; color: #075985; margin: 0 0 0.65rem 0; line-height: 1.35;">
+                                Silakan pilih varian/item singkong yang sedang dibongkar & diperiksa. Item lainnya dapat diperiksa terpisah dengan memilih PO ini kembali.
+                            </p>
+                            <div id="poItemsCardsList" class="po-items-list-grid">
+                                {{-- Di-render secara dinamis oleh JS saat PO dipilih --}}
+                            </div>
+                        </div>
+
                         {{-- NAMA BAHAN BAKU (MASTER BARANG SINGKONG SATUAN KILOGRAM) --}}
                         <div class="form-group" style="margin-bottom: 0;">
                             <div class="qc-field-header">
@@ -617,7 +639,7 @@
         ];
     })->values();
 
-    $poListData = $pos->mapWithKeys(function ($p) use ($getPoCommodities) {
+    $poListData = $pos->mapWithKeys(function ($p) use ($getPoCommodities, $classifyBarang) {
         return [
             $p->po_id => [
                 'po_id'       => $p->po_id,
@@ -625,7 +647,9 @@
                 'supplier_id' => $p->supplier_id,
                 'gudang_id'   => $p->gudang_id,
                 'komoditas'   => $getPoCommodities($p),
-                'items'       => $p->details->map(function ($d) {
+                'items'       => $p->details->filter(function ($d) use ($classifyBarang) {
+                    return $classifyBarang($d->barang?->barang_nm, $d->barang?->barang_cd) === 'SINGKONG';
+                })->map(function ($d) {
                     return [
                         'podtl_id'  => $d->podtl_id,
                         'barang_id' => $d->barang_id,
@@ -658,8 +682,11 @@
                 refraksi_persen: '{{ (float) ($parentQc->details->first()?->refraksi_persen ?? 0) }}',
             } @else null @endif,
         };
+        window.appConfig = {
+            poListData: {!! json_encode($poListData) !!}
+        };
     </script>
-    <script src="{{ asset('js/gudang/qc/singkong/singkong.js') }}"></script>
     <script src="{{ asset('js/gudang/qc/mobile/qc-create.js') }}"></script>
+    <script src="{{ asset('js/gudang/qc/singkong/singkong.js') }}"></script>
 @endpush
 @endsection

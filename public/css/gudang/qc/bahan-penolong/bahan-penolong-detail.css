@@ -1,0 +1,782 @@
+/* ==========================================================================
+   QC BAHAN PENOLONG (MSG, GARAM, PERENYAH, BUMBU) MODERN MOBILE DETAIL VIEW
+   PT MIRASA FOOD INDUSTRY
+   Royal Violet & Slate Enterprise Design System
+   Konsisten 100% dengan Pola Tampilan Plastik, Minyak & Karton
+   ========================================================================== */
+
+:root {
+    --bp-primary: #7c3aed;
+    --bp-primary-dark: #6d28d9;
+    --bp-primary-light: #faf5ff;
+    --bp-accent: #0284c7;
+    --bp-accent-light: #e0f2fe;
+    --bp-success: #16a34a;
+    --bp-success-bg: #dcfce7;
+    --bp-danger: #dc2626;
+    --bp-danger-bg: #fee2e2;
+    --bp-card-bg: #ffffff;
+    --bp-border: #e2e8f0;
+    --bp-text-main: #0f172a;
+    --bp-text-muted: #64748b;
+}
+
+.bp-detail-wrap {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 0.5rem 0.75rem 6.5rem;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--bp-text-main);
+    box-sizing: border-box;
+}
+
+/* TOP APP BAR */
+.bp-top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.85rem;
+}
+
+.bp-back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.825rem;
+    font-weight: 700;
+    color: #475569;
+    text-decoration: none;
+    background: #ffffff;
+    border: 1.5px solid #cbd5e1;
+    padding: 0.45rem 0.85rem;
+    border-radius: 10px;
+    transition: all 0.15s ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.bp-back-btn:hover {
+    background: #f8fafc;
+    color: #0f172a;
+    border-color: #94a3b8;
+}
+
+.bp-action-btn-edit {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.825rem;
+    font-weight: 800;
+    color: #ffffff;
+    background: #7c3aed;
+    border: 1.5px solid #7c3aed;
+    padding: 0.45rem 0.95rem;
+    border-radius: 10px;
+    text-decoration: none;
+    box-shadow: 0 3px 6px -1px rgba(124, 58, 237, 0.35);
+    transition: all 0.15s ease;
+}
+
+.bp-action-btn-edit:hover {
+    background: #6d28d9;
+    color: #ffffff;
+    transform: translateY(-1px);
+}
+
+/* HERO CARD */
+.bp-hero {
+    background: linear-gradient(135deg, #0f172a 0%, #4c1d95 60%, #7c3aed 100%);
+    border-radius: 16px;
+    padding: 1.25rem 1.35rem;
+    color: #ffffff;
+    margin-bottom: 1rem;
+    box-shadow: 0 8px 20px -4px rgba(124, 58, 237, 0.25), 0 4px 6px -2px rgba(15, 23, 42, 0.15);
+    position: relative;
+    overflow: hidden;
+}
+
+.bp-hero::after {
+    content: "";
+    position: absolute;
+    top: -40px;
+    right: -40px;
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(167, 139, 250, 0.3) 0%, rgba(167, 139, 250, 0) 70%);
+    pointer-events: none;
+}
+
+.bp-hero-badges {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.5rem;
+}
+
+.bp-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.72rem;
+    font-weight: 800;
+    padding: 3px 9px;
+    border-radius: 20px;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+}
+
+.bp-pill-commodity {
+    background: rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.bp-pill-doc {
+    background: rgba(124, 58, 237, 0.4);
+    color: #ede9fe;
+    border: 1px solid rgba(221, 214, 254, 0.4);
+}
+
+.bp-hero-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.85rem;
+}
+
+.bp-hero-ticket-no {
+    font-size: 1.45rem;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    margin: 0;
+}
+
+.bp-hero-status {
+    font-size: 0.78rem;
+    font-weight: 800;
+    padding: 4px 11px;
+    border-radius: 20px;
+}
+
+.bp-hero-status.siap {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.bp-hero-status.parsial {
+    background: #ffedd5;
+    color: #c2410c;
+}
+
+.bp-hero-status.diterima {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.bp-hero-status.tolak {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.bp-hero-meta-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 0.5rem 0.85rem;
+    font-size: 0.78rem;
+    opacity: 0.95;
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    padding-top: 0.75rem;
+}
+
+.bp-hero-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.bp-hero-grn-box {
+    margin-top: 0.75rem;
+    background: rgba(109, 40, 217, 0.45);
+    border: 1px solid rgba(221, 214, 254, 0.4);
+    border-radius: 8px;
+    padding: 0.45rem 0.75rem;
+    font-size: 0.78rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* SECTION CARDS */
+.bp-card {
+    background: #ffffff;
+    border-radius: 14px;
+    border: 1.5px solid var(--bp-border);
+    padding: 1.15rem 1.25rem;
+    margin-bottom: 0.95rem;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+}
+
+.bp-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.95rem;
+    padding-bottom: 0.55rem;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.bp-card-title {
+    font-size: 0.925rem;
+    font-weight: 800;
+    color: var(--bp-text-main);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+}
+
+.bp-card-badge-right {
+    font-size: 0.7rem;
+    font-weight: 800;
+    background: var(--bp-primary-light);
+    color: var(--bp-primary-dark);
+    padding: 2px 7px;
+    border-radius: 6px;
+}
+
+/* METRICS / KUANTITAS GRID */
+.bp-metrics-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 0.65rem;
+    margin-bottom: 0.85rem;
+}
+
+.bp-metric-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 0.75rem 0.85rem;
+    text-align: center;
+}
+
+.bp-metric-card.highlight {
+    background: #faf5ff;
+    border-color: #ddd6fe;
+}
+
+.bp-metric-title {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--bp-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    margin-bottom: 0.25rem;
+}
+
+.bp-metric-val {
+    font-size: 1.25rem;
+    font-weight: 900;
+    color: var(--bp-text-main);
+}
+
+.bp-metric-val.violet {
+    color: #7c3aed;
+}
+
+.bp-metric-val.danger {
+    color: #dc2626;
+}
+
+.bp-metric-sub {
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: var(--bp-text-muted);
+    margin-top: 0.15rem;
+}
+
+/* PARAMETER FISIK KONDISI ISI & KEMASAN GRID */
+.bp-param-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+    margin-bottom: 0.85rem;
+}
+
+.bp-param-card {
+    background: #f8fafc;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 0.85rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.bp-param-label {
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.bp-param-value {
+    font-size: 1.15rem;
+    font-weight: 900;
+    color: #6d28d9;
+}
+
+.bp-param-std {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #475569;
+    background: #e2e8f0;
+    padding: 2px 6px;
+    border-radius: 4px;
+    align-self: flex-start;
+}
+
+/* DEFECT / CHECKLIST GRID */
+.bp-defect-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.5rem;
+    margin-bottom: 0.65rem;
+}
+
+.bp-defect-item {
+    border-radius: 8px;
+    padding: 0.5rem 0.4rem;
+    text-align: center;
+    font-size: 0.72rem;
+    font-weight: 800;
+    border: 1.5px solid #e2e8f0;
+    background: #f8fafc;
+    color: #64748b;
+}
+
+.bp-defect-item.detected {
+    background: #fee2e2;
+    border-color: #fca5a5;
+    color: #dc2626;
+}
+
+.bp-defect-item.clean {
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+    color: #16a34a;
+}
+
+/* STATUS WADAH & RAW MATERIAL PILLS */
+.bp-status-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.65rem;
+    margin-bottom: 0.75rem;
+}
+
+.bp-status-box {
+    border-radius: 10px;
+    padding: 0.75rem 0.85rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border: 1.5px solid #e2e8f0;
+}
+
+.bp-status-box.pass {
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+}
+
+.bp-status-box.fail {
+    background: #fef2f2;
+    border-color: #fecaca;
+}
+
+.bp-status-title {
+    font-size: 0.78rem;
+    font-weight: 800;
+    color: #1e293b;
+}
+
+.bp-status-badge {
+    font-size: 0.75rem;
+    font-weight: 800;
+    padding: 2px 7px;
+    border-radius: 6px;
+}
+
+.bp-status-badge.pass {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.bp-status-badge.fail {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+/* GENERAL GRID & CELLS */
+.bp-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+}
+
+.bp-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.bp-cell-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--bp-text-muted);
+    text-transform: uppercase;
+}
+
+.bp-cell-value {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--bp-text-main);
+    word-break: break-word;
+}
+
+.bp-cell-value.highlight-violet {
+    color: #6d28d9;
+    font-weight: 800;
+}
+
+.bp-cell-value.highlight-blue {
+    color: #0284c7;
+    font-weight: 800;
+}
+
+/* AUDIT HALAL LIST */
+.bp-halal-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+}
+
+.bp-halal-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.65rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 0.65rem 0.85rem;
+}
+
+.bp-halal-left {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.bp-halal-title {
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: var(--bp-text-main);
+}
+
+.bp-halal-sub {
+    font-size: 0.7rem;
+    color: var(--bp-text-muted);
+}
+
+.bp-halal-badge {
+    font-size: 0.72rem;
+    font-weight: 800;
+    padding: 3px 8px;
+    border-radius: 6px;
+    flex-shrink: 0;
+}
+
+.bp-halal-badge.pass {
+    background: var(--bp-success-bg);
+    color: var(--bp-success);
+}
+
+.bp-halal-badge.fail {
+    background: var(--bp-danger-bg);
+    color: var(--bp-danger);
+}
+
+/* BOTTOM FIXED BAR */
+.bp-bottom-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #ffffff;
+    border-top: 1.5px solid #e2e8f0;
+    padding: 0.75rem 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    z-index: 50;
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.bp-bottom-btn {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    padding: 0.7rem 1rem;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    font-weight: 800;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.bp-bottom-btn.btn-edit {
+    background: #7c3aed;
+    color: #ffffff;
+    box-shadow: 0 2px 6px rgba(124, 58, 237, 0.35);
+}
+
+.bp-bottom-btn.btn-edit:hover {
+    background: #6d28d9;
+}
+
+.bp-bottom-btn.btn-back {
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+}
+
+.bp-bottom-btn.btn-back:hover {
+    background: #e2e8f0;
+    color: #0f172a;
+}
+
+@media (max-width: 480px) {
+    .bp-defect-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .bp-status-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ==========================================================================
+   DISPOSISI STATUS KEPUTUSAN GRID (TERIMA VS TOLAK)
+   ========================================================================== */
+.qc-disposisi-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.85rem;
+    margin-bottom: 0.85rem;
+}
+
+.qc-disposisi-card {
+    background: #ffffff;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 0.85rem 1rem;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    user-select: none;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.qc-disposisi-card:hover {
+    border-color: #cbd5e1;
+    transform: translateY(-1px);
+}
+
+.qc-disposisi-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.qc-disposisi-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.qc-disposisi-radio-icon {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid #94a3b8;
+    position: relative;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.qc-disposisi-radio-icon::after {
+    content: '';
+    position: absolute;
+    inset: 3px;
+    border-radius: 50%;
+    background: transparent;
+    transition: background 0.2s ease;
+}
+
+.qc-disposisi-title {
+    font-size: 0.95rem;
+    font-weight: 900;
+    color: #1e293b;
+    letter-spacing: 0.02em;
+}
+
+.qc-disposisi-status-badge {
+    font-size: 0.75rem;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 20px;
+    background: #f1f5f9;
+    color: #64748b;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Card Disposisi TERIMA Active */
+.qc-disposisi-card.terima.active,
+.qc-disposisi-card.active.terima {
+    background: #f0fdf4 !important;
+    border-color: #16a34a !important;
+    box-shadow: 0 4px 14px rgba(22, 163, 74, 0.18) !important;
+}
+
+.qc-disposisi-card.terima.active .qc-disposisi-radio-icon,
+.qc-disposisi-card.active.terima .qc-disposisi-radio-icon {
+    border-color: #16a34a;
+}
+
+.qc-disposisi-card.terima.active .qc-disposisi-radio-icon::after,
+.qc-disposisi-card.active.terima .qc-disposisi-radio-icon::after {
+    background: #16a34a;
+}
+
+.qc-disposisi-card.terima.active .qc-disposisi-title,
+.qc-disposisi-card.active.terima .qc-disposisi-title {
+    color: #15803d;
+}
+
+.qc-disposisi-card.terima.active .qc-disposisi-status-badge,
+.qc-disposisi-card.active.terima .qc-disposisi-status-badge {
+    background: #16a34a;
+    color: #ffffff;
+}
+
+/* Card Disposisi TOLAK Active */
+.qc-disposisi-card.tolak.active,
+.qc-disposisi-card.active.tolak {
+    background: #fef2f2 !important;
+    border-color: #dc2626 !important;
+    box-shadow: 0 4px 14px rgba(220, 38, 38, 0.18) !important;
+}
+
+.qc-disposisi-card.tolak.active .qc-disposisi-radio-icon,
+.qc-disposisi-card.active.tolak .qc-disposisi-radio-icon {
+    border-color: #dc2626;
+}
+
+.qc-disposisi-card.tolak.active .qc-disposisi-radio-icon::after,
+.qc-disposisi-card.active.tolak .qc-disposisi-radio-icon::after {
+    background: #dc2626;
+}
+
+.qc-disposisi-card.tolak.active .qc-disposisi-title,
+.qc-disposisi-card.active.tolak .qc-disposisi-title {
+    color: #dc2626;
+}
+
+.qc-disposisi-card.tolak.active .qc-disposisi-status-badge,
+.qc-disposisi-card.active.tolak .qc-disposisi-status-badge {
+    background: #dc2626;
+    color: #ffffff;
+}
+
+.qc-disposisi-qty-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    border-top: 1px dashed #e2e8f0;
+    padding-top: 0.5rem;
+}
+
+.qc-disposisi-qty-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+}
+
+.qc-disposisi-input-box {
+    display: flex;
+    align-items: center;
+    background: #ffffff;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 8px;
+    overflow: hidden;
+    padding: 0 0.5rem;
+}
+
+.qc-disposisi-card.terima.active .qc-disposisi-input-box,
+.qc-disposisi-card.active.terima .qc-disposisi-input-box {
+    border-color: #86efac;
+}
+
+.qc-disposisi-card.tolak.active .qc-disposisi-input-box,
+.qc-disposisi-card.active.tolak .qc-disposisi-input-box {
+    border-color: #fca5a5;
+}
+
+.qc-disposisi-input {
+    width: 100%;
+    border: none !important;
+    background: transparent !important;
+    font-size: 1.15rem;
+    font-weight: 900;
+    color: #0f172a;
+    padding: 0.35rem 0.25rem;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+.qc-disposisi-card.terima.active .qc-disposisi-input,
+.qc-disposisi-card.active.terima .qc-disposisi-input {
+    color: #15803d;
+}
+
+.qc-disposisi-card.tolak.active .qc-disposisi-input,
+.qc-disposisi-card.active.tolak .qc-disposisi-input {
+    color: #dc2626;
+}
+
+.qc-disposisi-unit {
+    font-size: 0.78rem;
+    font-weight: 800;
+    color: #64748b;
+    text-transform: uppercase;
+    padding-left: 0.25rem;
+}
+

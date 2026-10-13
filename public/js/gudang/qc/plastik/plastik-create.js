@@ -13,6 +13,8 @@
     const ACTIVE_TAB_KEY = 'qc_plastik_active_tab';
     let currentTab = 1;
     let currentPlastikSatuan = 'PCS';
+    let originalBarangOptionsHTML = null;
+    let currentPodtlId = null;
     let isSubmitting = false;
     let draftSaveTimer = null;
 
@@ -94,6 +96,17 @@
                 btn2.style.color = '#ffffff';
             }
             updateDockingButtons(2);
+
+            // Sinkronkan Nama Barang & Nama Jenis ke Info Strip Tab 2
+            const bSel = document.getElementById('plastikBarangSelect');
+            const opt = bSel?.selectedOptions?.[0];
+            const barangNm = opt ? (opt.getAttribute('data-nama') || opt.text.split(' • ')[0]) : '-';
+            const jenisNm = document.getElementById('plastikNamaJenisInput')?.value || '-';
+            const tab2Barang = document.getElementById('tab2InfoBarang');
+            const tab2Jenis = document.getElementById('tab2InfoJenis');
+            if (tab2Barang) tab2Barang.innerText = barangNm;
+            if (tab2Jenis) tab2Jenis.innerText = jenisNm;
+
             if (!skipValidation) {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             }
@@ -317,20 +330,24 @@
 
     // 6. Kesimpulan QC Toggle
     window.setKesimpulanPlastik = function (val) {
-        const input = document.getElementById('inputKesimpulanQc');
-        const cardTerima = document.getElementById('cardKesimpulanTerima');
-        const cardTolak = document.getElementById('cardKesimpulanTolak');
-        if (input) input.value = val;
+        const inputPlastik = document.getElementById('inputPlastikKesimpulan');
+        const inputQc = document.getElementById('inputKesimpulanQc');
+        if (inputPlastik) inputPlastik.value = val;
+        if (inputQc) inputQc.value = val;
+
+        const cardTerima = document.getElementById('cardDisposisiTerima') || document.getElementById('cardKesimpulanTerima');
+        const cardTolak = document.getElementById('cardDisposisiTolak') || document.getElementById('cardKesimpulanTolak');
 
         if (cardTerima && cardTolak) {
             if (val === 'TERIMA') {
-                cardTerima.classList.add('active');
-                cardTolak.classList.remove('active');
+                cardTerima.classList.add('active', 'terima');
+                cardTolak.classList.remove('active', 'tolak');
             } else {
-                cardTolak.classList.add('active');
-                cardTerima.classList.remove('active');
+                cardTolak.classList.add('active', 'tolak');
+                cardTerima.classList.remove('active', 'terima');
             }
         }
+        window.syncPlastikQuantity();
         triggerSaveDraftDebounced();
     };
 
@@ -368,43 +385,75 @@
             if (el) el.step = stepVal;
         });
 
-        // 4. Update semua label dan suffix di DOM
-        const suffixText = currentPlastikSatuan;
+        // 4. Update label satuan pada kartu disposisi (Kuantitas Diterima / Ditolak)
+        document.querySelectorAll('.unit-label-disposisi-plastik').forEach(el => {
+            el.innerText = currentPlastikSatuan.toLowerCase();
+        });
+
+        // 5. Update teks label & suffix pada form
         document.querySelectorAll('.label-satuan-plastik').forEach(el => {
             el.innerText = currentPlastikSatuan;
         });
         document.querySelectorAll('.suffix-satuan-plastik').forEach(el => {
-            el.innerText = suffixText;
+            el.innerText = currentPlastikSatuan;
         });
 
-        // 5. Kalkulasi ulang kuantitas real-time
         window.syncPlastikQuantity();
         triggerSaveDraftDebounced();
     };
+
 
     // 8. Auto-suggest Nama Jenis & Satuan berdasarkan Master Barang Plastik
     window.onPlastikBarangChanged = function (select) {
         if (!select) return;
         const opt = select.selectedOptions ? select.selectedOptions[0] : select.options[select.selectedIndex];
         if (opt) {
+            const podtlId = opt.getAttribute('data-podtl-id');
+            if (podtlId) {
+                currentPodtlId = podtlId;
+                const hiddenPodtl = document.getElementById('inputSelectedPodtlId');
+                if (hiddenPodtl) hiddenPodtl.value = podtlId;
+
+                // Sync kartu aktif
+                document.querySelectorAll('.po-item-card').forEach(c => c.classList.remove('is-active'));
+                const activeCard = document.getElementById(`poItemCard_${podtlId}`);
+                if (activeCard) activeCard.classList.add('is-active');
+
+                // Auto-fill quantity dari sisa PO
+                const sisa = parseFloat(opt.getAttribute('data-sisa-qty') || 0);
+                const pesan = parseFloat(opt.getAttribute('data-pesan-qty') || 0);
+                const targetQty = sisa > 0 ? sisa : pesan;
+
+                const inSJ = document.getElementById('inputJumlahSJ');
+                const inPabrik = document.getElementById('inputJumlahPabrik');
+                const grossInput = document.getElementById('plastikQtyGross');
+
+                if (inSJ && (!inSJ.value || inSJ.dataset.autoFilled === 'true')) {
+                    inSJ.value = targetQty;
+                    inSJ.dataset.autoFilled = 'true';
+                }
+                if (inPabrik && (!inPabrik.value || inPabrik.dataset.autoFilled === 'true')) {
+                    inPabrik.value = targetQty;
+                    inPabrik.dataset.autoFilled = 'true';
+                }
+                if (grossInput && (!grossInput.value || grossInput.dataset.autoFilled === 'true')) {
+                    grossInput.value = targetQty;
+                    grossInput.dataset.autoFilled = 'true';
+                }
+                window.syncPlastikQuantity();
+            }
+
             // Deteksi Satuan Dasar Barang (KG vs PCS)
             const satCd = opt.getAttribute('data-satuan-cd') || opt.getAttribute('data-satuan') || '';
             if (satCd) {
                 window.setPlastikSatuan(satCd);
             }
 
-            const nama = (opt.getAttribute('data-nama') || opt.text.split(' - ')[1]?.split(' (')[0] || opt.text).trim();
-            const inputs = [
-                document.getElementById('plastikNamaJenisInput'),
-                document.getElementById('namaJenisInput')
-            ];
-
-            inputs.forEach(input => {
-                if (input && (!input.value || input.dataset.autoFilled === 'true')) {
-                    input.value = nama;
-                    input.dataset.autoFilled = 'true';
-                }
-            });
+            // Nama Jenis adalah spesifikasi/varian kemasan tersendiri yang berbeda dengan Nama Master Barang
+            const input = document.getElementById('plastikNamaJenisInput');
+            if (input && !input.value) {
+                input.value = 'Plastik Kemasan Keripik Cap Payung 250g';
+            }
         }
         triggerSaveDraftDebounced();
     };
@@ -434,15 +483,180 @@
 
         if (labelNetto) labelNetto.innerText = formatted;
         if (labelSubcardNetto) labelSubcardNetto.innerText = `Netto Lolos: ${formatted}`;
+
+        // Sinkronisasi Kuantitas Diterima & Ditolak pada Kartu Disposisi
+        const kesimpulan = document.getElementById('inputKesimpulanQc')?.value || 'TERIMA';
+        const inputQtyTerima = document.getElementById('inputQtyTerima');
+        const inputQtyTolak = document.getElementById('inputQtyTolak');
+
+        if (kesimpulan === 'TOLAK') {
+            if (inputQtyTerima) inputQtyTerima.value = 0;
+            if (inputQtyTolak) {
+                inputQtyTolak.value = (currentPlastikSatuan === 'KG')
+                    ? gross.toFixed(2).replace(/\.00$/, '')
+                    : Math.round(gross);
+            }
+        } else {
+            if (inputQtyTerima) {
+                inputQtyTerima.value = (currentPlastikSatuan === 'KG')
+                    ? netto.toFixed(2).replace(/\.00$/, '')
+                    : Math.round(netto);
+            }
+            if (inputQtyTolak) {
+                inputQtyTolak.value = (currentPlastikSatuan === 'KG')
+                    ? reject.toFixed(2).replace(/\.00$/, '')
+                    : Math.round(reject);
+            }
+        }
     };
 
-    // 10. Handle PO Terpilih (Auto-Fill Instan Tanpa Delay & Bisa Diedit)
+    // 10. PO Multi-Item Selector & Selection Auto-fill
+    function renderPoItemsCards(items, selectedPodtlId) {
+        const box = document.getElementById('boxPoItemsSelector');
+        const list = document.getElementById('poItemsCardsList');
+        const badgeCount = document.getElementById('countPoItemsBadge');
+        const bSel = document.getElementById('plastikBarangSelect');
+
+        if (!items || items.length === 0) {
+            if (box) box.style.display = 'none';
+            if (bSel && originalBarangOptionsHTML) {
+                bSel.innerHTML = originalBarangOptionsHTML;
+            }
+            currentPodtlId = null;
+            const hiddenPodtl = document.getElementById('inputSelectedPodtlId');
+            if (hiddenPodtl) hiddenPodtl.value = '';
+            return;
+        }
+
+        if (box) box.style.display = 'block';
+        if (badgeCount) badgeCount.innerText = items.length;
+
+        // Tentukan podtl_id aktif
+        let activeId = selectedPodtlId;
+        if (!activeId || !items.some(it => String(it.podtl_id) === String(activeId))) {
+            activeId = items[0].podtl_id;
+        }
+        currentPodtlId = activeId;
+        const hiddenPodtl = document.getElementById('inputSelectedPodtlId');
+        if (hiddenPodtl) hiddenPodtl.value = activeId;
+
+        // Filter dropdown plastikBarangSelect agar berisi item-item PO ini
+        if (bSel) {
+            bSel.innerHTML = '';
+            items.forEach(it => {
+                const opt = document.createElement('option');
+                opt.value = it.barang_id;
+                opt.text = `${it.barang_nm} • Sisa PO: ${it.sisa_qty.toLocaleString('id-ID')} ${it.satuan_cd}`;
+                opt.setAttribute('data-nama', it.barang_nm);
+                opt.setAttribute('data-satuan', it.satuan);
+                opt.setAttribute('data-satuan-cd', it.satuan_cd);
+                opt.setAttribute('data-podtl-id', it.podtl_id);
+                opt.setAttribute('data-sisa-qty', it.sisa_qty);
+                opt.setAttribute('data-pesan-qty', it.pesan_qty);
+                if (String(it.podtl_id) === String(activeId)) {
+                    opt.selected = true;
+                }
+                bSel.appendChild(opt);
+            });
+        }
+
+        // Render Kartu Interaktif
+        if (list) {
+            list.innerHTML = '';
+            items.forEach((it) => {
+                const isActive = (String(it.podtl_id) === String(activeId));
+                const sisa = it.sisa_qty > 0 ? it.sisa_qty : it.pesan_qty;
+                const card = document.createElement('div');
+                card.className = `po-item-card ${isActive ? 'is-active' : ''}`;
+                card.id = `poItemCard_${it.podtl_id}`;
+                card.onclick = function () {
+                    window.selectPoItem(it.podtl_id);
+                };
+
+                card.innerHTML = `
+                    <div class="po-item-card-left">
+                        <span class="po-item-radio-circle"></span>
+                        <div class="po-item-info">
+                            <span class="po-item-nama">${it.barang_nm}</span>
+                            <span class="po-item-sub">Pesan: ${it.pesan_qty.toLocaleString('id-ID')} ${it.satuan_cd} • Masuk: ${it.terima_qty.toLocaleString('id-ID')}</span>
+                        </div>
+                    </div>
+                    <span class="po-item-badge-sisa">
+                        Sisa: ${sisa.toLocaleString('id-ID')} ${it.satuan_cd}
+                    </span>
+                `;
+                list.appendChild(card);
+            });
+        }
+    }
+
+    window.selectPoItem = function (podtlId) {
+        currentPodtlId = podtlId;
+        const hiddenPodtl = document.getElementById('inputSelectedPodtlId');
+        if (hiddenPodtl) hiddenPodtl.value = podtlId;
+
+        const poId = document.getElementById('poSelect')?.value;
+        const poData = window.appConfig?.poListData?.[poId] || window.qcConfig?.poList?.[poId] || window.appConfig?.poList?.[poId];
+        if (!poData || !poData.items) return;
+
+        const targetItem = poData.items.find(it => String(it.podtl_id) === String(podtlId));
+        if (!targetItem) return;
+
+        // Update class is-active pada kartu
+        document.querySelectorAll('.po-item-card').forEach(c => c.classList.remove('is-active'));
+        const activeCard = document.getElementById(`poItemCard_${podtlId}`);
+        if (activeCard) activeCard.classList.add('is-active');
+
+        // Update select barang
+        const bSel = document.getElementById('plastikBarangSelect');
+        if (bSel) {
+            bSel.value = targetItem.barang_id;
+            window.onPlastikBarangChanged(bSel);
+        }
+
+        // Update satuan
+        if (targetItem.satuan_cd) {
+            window.setPlastikSatuan(targetItem.satuan_cd);
+        }
+
+        // Update kuantitas
+        const sisaQty = targetItem.sisa_qty > 0 ? targetItem.sisa_qty : targetItem.pesan_qty;
+        const inSJ = document.getElementById('inputJumlahSJ');
+        const inPabrik = document.getElementById('inputJumlahPabrik');
+        const grossInput = document.getElementById('plastikQtyGross');
+
+        if (inSJ) {
+            inSJ.value = sisaQty;
+            inSJ.dataset.autoFilled = 'true';
+        }
+        if (inPabrik) {
+            inPabrik.value = sisaQty;
+            inPabrik.dataset.autoFilled = 'true';
+        }
+        if (grossInput) {
+            grossInput.value = sisaQty;
+            grossInput.dataset.autoFilled = 'true';
+        }
+
+        // Pertahankan Nama Jenis spesifikasi kemasan (jangan ditimpa nama master barang)
+        const inputNamaJenis = document.getElementById('plastikNamaJenisInput');
+        if (inputNamaJenis && !inputNamaJenis.value) {
+            inputNamaJenis.value = 'Plastik Kemasan Keripik Cap Payung 250g';
+        }
+
+        window.syncPlastikQuantity();
+        triggerSaveDraftDebounced();
+    };
+
     window.onPoSelected = function (select) {
-        if (!select || !select.value) return;
+        if (!select || !select.value) {
+            renderPoItemsCards([], null);
+            return;
+        }
         const poId = select.value;
 
         // Cek data PO preloaded di window.qcConfig / window.appConfig
-        const poData = window.qcConfig?.poList?.[poId] || window.appConfig?.poList?.[poId];
+        const poData = window.appConfig?.poListData?.[poId] || window.qcConfig?.poList?.[poId] || window.appConfig?.poList?.[poId];
         if (poData) {
             applyPoDetailData(poData);
             return;
@@ -487,7 +701,10 @@
     };
 
     function applyPoDetailData(poData) {
-        if (!poData) return;
+        if (!poData) {
+            renderPoItemsCards([], null);
+            return;
+        }
 
         // 1. Pilih Mitra Vendor & Auto-fill Nama Produsen (Bisa diedit)
         if (poData.supplier_id) {
@@ -518,53 +735,12 @@
             if (gudangSelect) gudangSelect.value = poData.gudang_id;
         }
 
-        // 3. Auto-fill Item: Barang Master, Satuan, Spesifikasi Jenis & Kuantitas dari PO
+        // 3. Render kartu item PO dan pilih item pertama secara default
         if (poData.items && poData.items.length > 0) {
-            const firstItem = poData.items[0];
-            const bSel = document.getElementById('plastikBarangSelect');
-            if (bSel && firstItem.barang_id) {
-                bSel.value = firstItem.barang_id;
-                window.onPlastikBarangChanged(bSel);
-            }
-
-            // Sinkronkan Satuan dari Item PO (KG vs PCS)
-            if (firstItem.satuan_cd || firstItem.satuan) {
-                window.setPlastikSatuan(firstItem.satuan_cd || firstItem.satuan);
-            }
-
-            // Nama Jenis / Spesifikasi Kemasan (Bisa diedit)
-            const namaJenisInputs = [
-                document.getElementById('plastikNamaJenisInput'),
-                document.getElementById('namaJenisInput')
-            ];
-            namaJenisInputs.forEach(input => {
-                if (input && (!input.value || input.dataset.autoFilled === 'true')) {
-                    input.value = firstItem.barang_nm || 'Plastik Kemasan Keripik Cap Payung';
-                    input.dataset.autoFilled = 'true';
-                }
-            });
-
-            // Kuantitas: Sisa Qty atau Pesan Qty (Langsung terisi & tetap bisa diedit)
-            const sisaQty = firstItem.sisa_qty > 0 ? firstItem.sisa_qty : (firstItem.pesan_qty || 0);
-            if (sisaQty > 0) {
-                const inSJ = document.getElementById('inputJumlahSJ');
-                const inPabrik = document.getElementById('inputJumlahPabrik');
-                const grossInput = document.getElementById('plastikQtyGross');
-
-                if (inSJ && (!inSJ.value || inSJ.dataset.autoFilled === 'true')) {
-                    inSJ.value = sisaQty;
-                    inSJ.dataset.autoFilled = 'true';
-                }
-                if (inPabrik && (!inPabrik.value || inPabrik.dataset.autoFilled === 'true')) {
-                    inPabrik.value = sisaQty;
-                    inPabrik.dataset.autoFilled = 'true';
-                }
-                if (grossInput && (!grossInput.value || grossInput.dataset.autoFilled === 'true')) {
-                    grossInput.value = sisaQty;
-                    grossInput.dataset.autoFilled = 'true';
-                }
-                window.syncPlastikQuantity();
-            }
+            renderPoItemsCards(poData.items, poData.items[0].podtl_id);
+            window.selectPoItem(poData.items[0].podtl_id);
+        } else {
+            renderPoItemsCards([], null);
         }
         triggerSaveDraftDebounced();
     }
@@ -578,6 +754,7 @@
 
             const draft = {
                 po_id: document.getElementById('poSelect')?.value || '',
+                podtl_id: currentPodtlId || document.getElementById('inputSelectedPodtlId')?.value || '',
                 gudang_id: document.getElementById('gudangSelect')?.value || '',
                 supplier_id: document.getElementById('supplierSelect')?.value || '',
                 surat_jalan_no: document.getElementById('inputNoSJ')?.value || '',
@@ -638,9 +815,18 @@
             if (!draft || typeof draft !== 'object') return false;
 
             // 1. Text & Select fields
+            if (draft.podtl_id) {
+                currentPodtlId = draft.podtl_id;
+                const hiddenPodtl = document.getElementById('inputSelectedPodtlId');
+                if (hiddenPodtl) hiddenPodtl.value = draft.podtl_id;
+            }
             if (draft.po_id) {
                 const el = document.getElementById('poSelect');
                 if (el) el.value = draft.po_id;
+                const poData = window.appConfig?.poListData?.[draft.po_id] || window.qcConfig?.poList?.[draft.po_id] || window.appConfig?.poList?.[draft.po_id];
+                if (poData && poData.items && poData.items.length > 0) {
+                    renderPoItemsCards(poData.items, draft.podtl_id || poData.items[0].podtl_id);
+                }
             }
             if (draft.gudang_id) {
                 const el = document.getElementById('gudangSelect');
@@ -949,6 +1135,11 @@
         const supervisorQc = document.getElementById('inputSupervisorQc')?.value?.trim();
         if (supervisorQc) injectHiddenInput('qc_supervisor_nama', supervisorQc);
 
+        if (currentPodtlId) {
+            injectHiddenInput('items[0][podtl_id]', currentPodtlId);
+            injectHiddenInput('podtl_id', currentPodtlId);
+        }
+
         showSubmitLoading(kesimpulan === 'TOLAK' ? 'Menyimpan Penolakan Plastik Kemasan...' : 'Menyimpan QC Plastik & Menyiapkan Gudang...');
         
         // Hapus draft tersimpan saat berhasil submit agar tidak tersisa untuk form berikutnya
@@ -959,6 +1150,12 @@
 
     // 12. Inisialisasi Saat Dokumen Dimuat
     document.addEventListener('DOMContentLoaded', function () {
+        // 0. Simpan opsi asli dropdown barang master
+        const bSelInit = document.getElementById('plastikBarangSelect');
+        if (bSelInit) {
+            originalBarangOptionsHTML = bSelInit.innerHTML;
+        }
+
         // 1. Inisialisasi Satuan Default jika ada input hidden
         const initSatuanInput = document.getElementById('inputPlastikSatuan');
         if (initSatuanInput && initSatuanInput.value) {

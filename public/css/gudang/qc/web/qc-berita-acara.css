@@ -1,0 +1,506 @@
+/* ==========================================================================
+   BERITA ACARA PENOLAKAN BAHAN BAKU - PT MIRASA FOOD INDUSTRY
+   Stylesheet Resmi Sesuai Format Standar HACCP & Presisi 1 Lembar A4
+   ========================================================================== */
+
+/* Mode Tampilan Layar */
+body.ba-standalone-page {
+    background-color: #f1f5f9;
+    color: #000000;
+    font-family: 'Times New Roman', Times, serif;
+    margin: 0;
+    padding: 1.5rem 1rem;
+}
+
+body.ba-popup-body {
+    background-color: #f8fafc;
+    margin: 0;
+    padding: 1rem;
+    display: flex;
+    justify-content: center;
+    font-family: 'Times New Roman', Times, serif;
+    color: #000000;
+}
+
+.ba-container {
+    max-width: 800px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+/* Toolbar Atas (Hanya Muncul di Layar) */
+.ba-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    background: #ffffff;
+    padding: 0.85rem 1.25rem;
+    border-radius: 10px;
+    border: 1px solid #cbd5e1;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.ba-toolbar-left {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+}
+
+.ba-toolbar-title {
+    font-size: 0.9rem;
+    font-weight: 800;
+    color: #0f172a;
+}
+
+.ba-toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Tombol Modern Enterprise Toolbar */
+.ba-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.45rem 0.85rem;
+    border-radius: 8px;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+    border: 1.5px solid transparent;
+    outline: none;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    line-height: 1.25;
+}
+
+.ba-btn svg {
+    flex-shrink: 0;
+}
+
+.ba-btn-secondary {
+    background: #ffffff;
+    color: #334155;
+    border-color: #cbd5e1;
+}
+
+.ba-btn-secondary:hover {
+    background: #f8fafc;
+    color: #0f172a;
+    border-color: #94a3b8;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+}
+
+.ba-btn-danger, .ba-btn-primary {
+    background: #dc2626;
+    color: #ffffff;
+    border-color: #dc2626;
+}
+
+.ba-btn-danger:hover, .ba-btn-primary:hover {
+    background: #b91c1c;
+    border-color: #b91c1c;
+    color: #ffffff;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(220, 38, 38, 0.3);
+}
+
+.ba-btn-outline {
+    background: #f8fafc;
+    color: #475569;
+    border-color: #e2e8f0;
+}
+
+.ba-btn-outline:hover {
+    background: #f1f5f9;
+    color: #0f172a;
+    border-color: #cbd5e1;
+    transform: translateY(-1px);
+}
+
+.ba-btn-success {
+    background: #ecfdf5;
+    color: #059669;
+    border-color: #a7f3d0;
+}
+
+.ba-btn-success:hover {
+    background: #d1fae5;
+    color: #047857;
+    border-color: #6ee7b7;
+    transform: translateY(-1px);
+}
+
+/* Lembar Fisik Surat Resmi */
+.ba-sheet {
+    background: #ffffff;
+    padding: 2.25rem 2.75rem;
+    font-family: 'Times New Roman', Times, serif;
+    color: #000000;
+    line-height: 1.45;
+    font-size: 11pt;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    position: relative;
+    box-sizing: border-box;
+}
+
+/* ==========================================================================
+   KOP SURAT RESMI (SESUAI DOKUMEN ASLI)
+   Logo di kiri (rowspan 2), PT Mirasa di atas (colspan 2),
+   Form Berita Acara di tengah, Kotak Dokumen di kanan.
+   ========================================================================== */
+.ba-kop-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1.5px solid #000000;
+    margin-bottom: 1.25rem;
+}
+
+.ba-kop-logo-td {
+    width: 120px;
+    text-align: center;
+    vertical-align: middle;
+    padding: 0.4rem 0.5rem;
+    border: 1.5px solid #000000;
+}
+
+.ba-kop-logo-img {
+    width: 68px;
+    height: 68px;
+    object-fit: contain;
+    display: block;
+    margin: 0 auto;
+}
+
+.ba-kop-slogan {
+    font-family: Arial, sans-serif;
+    font-size: 7.5pt;
+    font-weight: 800;
+    color: #dc2626;
+    margin-top: 3px;
+    letter-spacing: 0.5px;
+}
+
+.ba-kop-company-td {
+    text-align: center;
+    vertical-align: middle;
+    padding: 0.5rem 0.75rem;
+    border: 1.5px solid #000000;
+}
+
+.ba-company-name {
+    font-family: Arial, sans-serif;
+    font-size: 13pt;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    color: #000000;
+}
+
+.ba-kop-form-td {
+    text-align: center;
+    vertical-align: middle;
+    padding: 0.5rem 0.75rem;
+    border: 1.5px solid #000000;
+}
+
+.ba-form-name {
+    font-family: Arial, sans-serif;
+    font-size: 12pt;
+    font-weight: 800;
+    line-height: 1.35;
+    color: #000000;
+}
+
+.ba-kop-docinfo-td {
+    width: 230px;
+    vertical-align: top;
+    padding: 0;
+    border: 1.5px solid #000000;
+    font-family: Arial, sans-serif;
+    font-size: 8pt;
+}
+
+.ba-docinfo-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: none;
+}
+
+.ba-docinfo-table td {
+    padding: 3.5px 6px;
+    border: none;
+    line-height: 1.2;
+}
+
+.ba-docinfo-table tr:not(:last-child) {
+    border-bottom: 1px solid #000000;
+}
+
+/* ==========================================================================
+   JUDUL & ISI BERITA ACARA
+   ========================================================================== */
+.ba-title-box {
+    text-align: center;
+    margin-bottom: 1.15rem;
+}
+
+.ba-title-text {
+    font-size: 12.5pt;
+    font-weight: 800;
+    text-decoration: underline;
+    letter-spacing: 0.5px;
+}
+
+.ba-subtitle-no {
+    font-size: 11pt;
+    margin-top: 0.2rem;
+}
+
+/* Paragraf Pembuka */
+.ba-p-opening {
+    margin-bottom: 0.95rem;
+    text-align: justify;
+    text-indent: 2.25rem;
+    font-size: 11pt;
+    line-height: 1.45;
+}
+
+/* Tabel Rincian */
+.ba-details-table {
+    margin-left: 2.25rem;
+    margin-bottom: 1.15rem;
+    border-collapse: collapse;
+    border: none;
+    font-size: 11pt;
+    width: 85%;
+}
+
+.ba-details-table td {
+    padding: 3px 0;
+    border: none;
+    vertical-align: top;
+}
+
+.ba-details-label {
+    width: 145px;
+}
+
+.ba-details-colon {
+    width: 18px;
+    text-align: center;
+}
+
+.ba-details-val {
+    font-weight: 400;
+}
+
+/* Paragraf Keterangan / Alasan Cacat Mutu */
+.ba-p-reason {
+    margin-bottom: 0.95rem;
+    text-align: justify;
+    text-indent: 2.25rem;
+    line-height: 1.5;
+    font-size: 11pt;
+}
+
+.ba-p-thanks {
+    margin-bottom: 1rem;
+    font-size: 11pt;
+}
+
+/* Tanggal Surat Tengah */
+.ba-date-center {
+    text-align: center;
+    margin-bottom: 1.5rem;
+    font-size: 11pt;
+}
+
+/* Grid Tanda Tangan 4 Pihak */
+.ba-signatures-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem 3rem;
+    text-align: center;
+    font-size: 11pt;
+    padding: 0 0.5rem;
+}
+
+.ba-sig-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.ba-sig-role {
+    font-weight: 800;
+    margin-bottom: 0.25rem;
+}
+
+.ba-sig-space {
+    height: 60px; /* Ruang leluasa tanda tangan & stempel */
+    width: 100%;
+}
+
+.ba-sig-name {
+    font-weight: 800;
+    text-decoration: underline;
+    display: inline-block;
+}
+
+/* ==========================================================================
+   MODE EDIT VISUAL
+   ========================================================================== */
+.ba-edit-banner {
+    display: none;
+    background: #eff6ff;
+    border: 1.5px solid #93c5fd;
+    color: #1e40af;
+    padding: 0.65rem 1rem;
+    border-radius: 8px;
+    font-size: 0.825rem;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    margin-bottom: 1rem;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.edit-mode-active .ba-edit-banner {
+    display: flex;
+}
+
+.ba-editable {
+    transition: all 0.15s ease;
+    border-radius: 3px;
+    display: inline-block;
+    min-width: 15px;
+}
+
+.edit-mode-active .ba-editable {
+    background: #fefce8;
+    border-bottom: 1.5px dashed #ca8a04;
+    cursor: text;
+    padding: 0 3px;
+}
+
+.edit-mode-active .ba-editable:focus {
+    outline: none;
+    background: #fef08a;
+    border-bottom: 2px solid #a16207;
+    box-shadow: 0 0 0 2px rgba(234, 179, 8, 0.25);
+}
+
+/* ==========================================================================
+   STRICT 1 LEMBAR A4 CETAK PRINT
+   ========================================================================== */
+@media print {
+    @page {
+        size: A4 portrait;
+        margin: 12mm 15mm 12mm 15mm;
+    }
+
+    .no-print,
+    .ba-toolbar,
+    .ba-edit-banner,
+    header,
+    footer,
+    nav,
+    .navbar,
+    .sidebar {
+        display: none !important;
+    }
+
+    html, body {
+        background: #ffffff !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+        height: auto !important;
+        color: #000000 !important;
+        font-size: 11pt !important;
+        font-family: 'Times New Roman', Times, serif !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    .ba-container {
+        max-width: 100% !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    .ba-sheet {
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        page-break-inside: avoid !important;
+        page-break-after: avoid !important;
+    }
+
+    .ba-kop-table {
+        margin-bottom: 1rem !important;
+        page-break-inside: avoid !important;
+    }
+
+    .ba-title-box {
+        margin-bottom: 0.85rem !important;
+    }
+
+    .ba-p-opening {
+        margin-bottom: 0.65rem !important;
+        font-size: 11pt !important;
+    }
+
+    .ba-details-table {
+        margin-bottom: 0.85rem !important;
+        font-size: 11pt !important;
+        page-break-inside: avoid !important;
+    }
+
+    .ba-p-reason {
+        margin-bottom: 0.65rem !important;
+        font-size: 11pt !important;
+    }
+
+    .ba-p-thanks {
+        margin-bottom: 0.65rem !important;
+        font-size: 11pt !important;
+    }
+
+    .ba-date-center {
+        margin-bottom: 1.15rem !important;
+        font-size: 11pt !important;
+    }
+
+    .ba-signatures-grid {
+        gap: 1.15rem 2.5rem !important;
+        page-break-inside: avoid !important;
+    }
+
+    .ba-sig-space {
+        height: 52px !important;
+    }
+
+    .ba-editable {
+        background: transparent !important;
+        border-bottom: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+    }
+
+    * {
+        page-break-inside: avoid !important;
+    }
+}

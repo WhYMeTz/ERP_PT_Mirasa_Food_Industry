@@ -1,0 +1,581 @@
+/* ==========================================================================
+   QC KARTON BOX MODERN MOBILE DETAIL VIEW - PT MIRASA FOOD INDUSTRY
+   Warm Amber & Industrial Slate Enterprise Design System
+   Konsisten 100% dengan Pola Tampilan Plastik & Minyak
+   ========================================================================== */
+
+:root {
+    --kt-primary: #d97706;
+    --kt-primary-dark: #b45309;
+    --kt-primary-light: #fffbeb;
+    --kt-accent: #0284c7;
+    --kt-accent-light: #e0f2fe;
+    --kt-success: #16a34a;
+    --kt-success-bg: #dcfce7;
+    --kt-danger: #dc2626;
+    --kt-danger-bg: #fee2e2;
+    --kt-card-bg: #ffffff;
+    --kt-border: #e2e8f0;
+    --kt-text-main: #0f172a;
+    --kt-text-muted: #64748b;
+}
+
+.kt-detail-wrap {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 0.5rem 0.75rem 6.5rem;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--kt-text-main);
+    box-sizing: border-box;
+}
+
+/* TOP APP BAR */
+.kt-top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.85rem;
+}
+
+.kt-back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.825rem;
+    font-weight: 700;
+    color: #475569;
+    text-decoration: none;
+    background: #ffffff;
+    border: 1.5px solid #cbd5e1;
+    padding: 0.45rem 0.85rem;
+    border-radius: 10px;
+    transition: all 0.15s ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.kt-back-btn:hover {
+    background: #f8fafc;
+    color: #0f172a;
+    border-color: #94a3b8;
+}
+
+.kt-action-btn-edit {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.825rem;
+    font-weight: 800;
+    color: #ffffff;
+    background: #d97706;
+    border: 1.5px solid #d97706;
+    padding: 0.45rem 0.95rem;
+    border-radius: 10px;
+    text-decoration: none;
+    box-shadow: 0 3px 6px -1px rgba(217, 119, 6, 0.35);
+    transition: all 0.15s ease;
+}
+
+.kt-action-btn-edit:hover {
+    background: #b45309;
+    color: #ffffff;
+    transform: translateY(-1px);
+}
+
+/* HERO CARD */
+.kt-hero {
+    background: linear-gradient(135deg, #0f172a 0%, #78350f 60%, #d97706 100%);
+    border-radius: 16px;
+    padding: 1.25rem 1.35rem;
+    color: #ffffff;
+    margin-bottom: 1rem;
+    box-shadow: 0 8px 20px -4px rgba(217, 119, 6, 0.25), 0 4px 6px -2px rgba(15, 23, 42, 0.15);
+    position: relative;
+    overflow: hidden;
+}
+
+.kt-hero::after {
+    content: "";
+    position: absolute;
+    top: -40px;
+    right: -40px;
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(217, 119, 6, 0.35) 0%, rgba(217, 119, 6, 0) 70%);
+    pointer-events: none;
+}
+
+.kt-hero-badges {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.5rem;
+}
+
+.kt-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.72rem;
+    font-weight: 800;
+    padding: 3px 9px;
+    border-radius: 20px;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+}
+
+.kt-pill-commodity {
+    background: rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.kt-pill-doc {
+    background: rgba(217, 119, 6, 0.4);
+    color: #fef3c7;
+    border: 1px solid rgba(253, 230, 138, 0.4);
+}
+
+.kt-hero-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.85rem;
+}
+
+.kt-hero-ticket-no {
+    font-size: 1.45rem;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    margin: 0;
+}
+
+.kt-hero-status {
+    font-size: 0.78rem;
+    font-weight: 800;
+    padding: 4px 11px;
+    border-radius: 20px;
+}
+
+.kt-hero-status.siap {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.kt-hero-status.parsial {
+    background: #ffedd5;
+    color: #c2410c;
+}
+
+.kt-hero-status.diterima {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.kt-hero-status.tolak {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.kt-hero-meta-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 0.5rem 0.85rem;
+    font-size: 0.78rem;
+    opacity: 0.95;
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    padding-top: 0.75rem;
+}
+
+.kt-hero-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.kt-hero-grn-box {
+    margin-top: 0.75rem;
+    background: rgba(180, 83, 9, 0.45);
+    border: 1px solid rgba(253, 230, 138, 0.4);
+    border-radius: 8px;
+    padding: 0.45rem 0.75rem;
+    font-size: 0.78rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* SECTION CARDS */
+.kt-card {
+    background: #ffffff;
+    border-radius: 14px;
+    border: 1.5px solid var(--kt-border);
+    padding: 1.15rem 1.25rem;
+    margin-bottom: 0.95rem;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+}
+
+.kt-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.95rem;
+    padding-bottom: 0.55rem;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.kt-card-title {
+    font-size: 0.925rem;
+    font-weight: 800;
+    color: var(--kt-text-main);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+}
+
+.kt-card-badge-right {
+    font-size: 0.7rem;
+    font-weight: 800;
+    background: var(--kt-primary-light);
+    color: var(--kt-primary-dark);
+    padding: 2px 7px;
+    border-radius: 6px;
+}
+
+/* METRICS / KUANTITAS GRID */
+.kt-metrics-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 0.65rem;
+    margin-bottom: 0.85rem;
+}
+
+.kt-metric-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 0.75rem 0.85rem;
+    text-align: center;
+}
+
+.kt-metric-card.highlight {
+    background: #fffbeb;
+    border-color: #fde68a;
+}
+
+.kt-metric-title {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--kt-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    margin-bottom: 0.25rem;
+}
+
+.kt-metric-val {
+    font-size: 1.25rem;
+    font-weight: 900;
+    color: var(--kt-text-main);
+}
+
+.kt-metric-val.amber {
+    color: #d97706;
+}
+
+.kt-metric-val.danger {
+    color: #dc2626;
+}
+
+.kt-metric-sub {
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: var(--kt-text-muted);
+    margin-top: 0.15rem;
+}
+
+/* PARAMETER ANALYSIS DISPLAY (DIMENSI P x L x T & SPESIFIKASI) */
+.kt-param-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+    margin-bottom: 0.85rem;
+}
+
+.kt-param-card {
+    background: #f8fafc;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 0.85rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.kt-param-label {
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.kt-param-value {
+    font-size: 1.15rem;
+    font-weight: 900;
+    color: #b45309;
+}
+
+.kt-param-std {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #475569;
+    background: #e2e8f0;
+    padding: 2px 6px;
+    border-radius: 4px;
+    align-self: flex-start;
+}
+
+/* CACAT KEMASAN CHECKLIST DISPLAY */
+.kt-defect-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.5rem;
+    margin-bottom: 0.65rem;
+}
+
+.kt-defect-item {
+    border-radius: 8px;
+    padding: 0.5rem 0.4rem;
+    text-align: center;
+    font-size: 0.72rem;
+    font-weight: 800;
+    border: 1.5px solid #e2e8f0;
+    background: #f8fafc;
+    color: #64748b;
+}
+
+.kt-defect-item.detected {
+    background: #fee2e2;
+    border-color: #fca5a5;
+    color: #dc2626;
+}
+
+.kt-defect-item.clean {
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+    color: #16a34a;
+}
+
+/* STATUS WADAH & RAW MATERIAL PILLS */
+.kt-status-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.65rem;
+    margin-bottom: 0.75rem;
+}
+
+.kt-status-box {
+    border-radius: 10px;
+    padding: 0.75rem 0.85rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border: 1.5px solid #e2e8f0;
+}
+
+.kt-status-box.pass {
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+}
+
+.kt-status-box.fail {
+    background: #fef2f2;
+    border-color: #fecaca;
+}
+
+.kt-status-title {
+    font-size: 0.78rem;
+    font-weight: 800;
+    color: #1e293b;
+}
+
+.kt-status-badge {
+    font-size: 0.75rem;
+    font-weight: 800;
+    padding: 2px 7px;
+    border-radius: 6px;
+}
+
+.kt-status-badge.pass {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.kt-status-badge.fail {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+/* GENERAL GRID & CELLS */
+.kt-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+}
+
+.kt-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.kt-cell-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--kt-text-muted);
+    text-transform: uppercase;
+}
+
+.kt-cell-value {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--kt-text-main);
+    word-break: break-word;
+}
+
+.kt-cell-value.highlight-amber {
+    color: #b45309;
+    font-weight: 800;
+}
+
+.kt-cell-value.highlight-blue {
+    color: #0284c7;
+    font-weight: 800;
+}
+
+/* AUDIT HALAL LIST */
+.kt-halal-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+}
+
+.kt-halal-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.65rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 0.65rem 0.85rem;
+}
+
+.kt-halal-left {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.kt-halal-title {
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: var(--kt-text-main);
+}
+
+.kt-halal-sub {
+    font-size: 0.7rem;
+    color: var(--kt-text-muted);
+}
+
+.kt-halal-badge {
+    font-size: 0.72rem;
+    font-weight: 800;
+    padding: 3px 8px;
+    border-radius: 6px;
+    flex-shrink: 0;
+}
+
+.kt-halal-badge.pass {
+    background: var(--kt-success-bg);
+    color: var(--kt-success);
+}
+
+.kt-halal-badge.fail {
+    background: var(--kt-danger-bg);
+    color: var(--kt-danger);
+}
+
+/* BOTTOM FIXED BAR */
+.kt-bottom-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #ffffff;
+    border-top: 1.5px solid #e2e8f0;
+    padding: 0.75rem 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    z-index: 50;
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.kt-bottom-btn {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    padding: 0.7rem 1rem;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    font-weight: 800;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.kt-bottom-btn.btn-edit {
+    background: #d97706;
+    color: #ffffff;
+    box-shadow: 0 2px 6px rgba(217, 119, 6, 0.35);
+}
+
+.kt-bottom-btn.btn-edit:hover {
+    background: #b45309;
+}
+
+.kt-bottom-btn.btn-back {
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+}
+
+.kt-bottom-btn.btn-back:hover {
+    background: #e2e8f0;
+    color: #0f172a;
+}
+
+@media (max-width: 480px) {
+    .kt-param-grid {
+        grid-template-columns: 1fr;
+    }
+    .kt-defect-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .kt-status-row {
+        grid-template-columns: 1fr;
+    }
+}

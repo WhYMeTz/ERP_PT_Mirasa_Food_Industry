@@ -711,24 +711,83 @@ class User extends Authenticatable
     /**
      * Hak akses QC Inbound Bahan Baku
      */
+    /**
+     * Hak akses QC Mobile (Smartphone / Lapangan)
+     */
+    public function canAccessQcMobile(): bool
+    {
+        return $this->isSuperAdmin() 
+            || $this->canDo('qc_mobile_view') 
+            || $this->canDo('qc_mobile_create')
+            || $this->canDo('qc_view');
+    }
+
+    public function canCreateQcMobile(): bool
+    {
+        return $this->isSuperAdmin() 
+            || $this->canDo('qc_mobile_create') 
+            || $this->canDo('qc_create');
+    }
+
+    public function canEditQcMobile(): bool
+    {
+        return $this->isSuperAdmin() 
+            || $this->canDo('qc_mobile_edit') 
+            || $this->canDo('qc_edit');
+    }
+
+    public function canDeleteQcMobile(): bool
+    {
+        return $this->isSuperAdmin() 
+            || $this->canDo('qc_mobile_delete') 
+            || $this->canDo('qc_delete');
+    }
+
+    /**
+     * Hak akses QC Web (Desktop Admin & Dokumen HACCP)
+     */
+    public function canAccessQcWeb(): bool
+    {
+        return $this->isSuperAdmin() 
+            || $this->canDo('qc_web_view') 
+            || $this->canDo('qc_view');
+    }
+
+    public function canEditQcWeb(): bool
+    {
+        return $this->isSuperAdmin() 
+            || $this->canDo('qc_web_edit') 
+            || $this->canDo('qc_edit');
+    }
+
+    public function canDeleteQcWeb(): bool
+    {
+        return $this->isSuperAdmin() 
+            || $this->canDo('qc_web_delete') 
+            || $this->canDo('qc_delete');
+    }
+
+    /**
+     * Hak akses QC Umum (Fallback & backward compatibility)
+     */
     public function canAccessQc(): bool
     {
-        return $this->isSuperAdmin() || $this->canDo('qc_view') || $this->canDo('qc_create');
+        return $this->canAccessQcMobile() || $this->canAccessQcWeb();
     }
 
     public function canCreateQc(): bool
     {
-        return $this->isSuperAdmin() || $this->canDo('qc_create');
+        return $this->canCreateQcMobile();
     }
 
     public function canEditQc(): bool
     {
-        return $this->isSuperAdmin() || $this->canDo('qc_edit');
+        return $this->canEditQcMobile() || $this->canEditQcWeb();
     }
 
     public function canDeleteQc(): bool
     {
-        return $this->isSuperAdmin() || $this->canDo('qc_delete');
+        return $this->canDeleteQcMobile() || $this->canDeleteQcWeb();
     }
 
     /**

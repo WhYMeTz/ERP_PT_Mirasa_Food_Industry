@@ -1783,5 +1783,14 @@ input[type="radio"] {
     color: #64748b;
 }
 
+.qc-disposisi-card.active.terima .qc-disposisi-unit {
+    color: #047857;
+}
+
+.qc-disposisi-card.active.tolak .qc-disposisi-unit {
+    color: #b91c1c;
+}
+
+
 
 

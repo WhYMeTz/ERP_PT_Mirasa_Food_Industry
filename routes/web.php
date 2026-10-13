@@ -23,6 +23,7 @@ use App\Http\Controllers\MasterData\SupplierController;
 use App\Http\Controllers\MasterData\TarifProduksiController;
 use App\Http\Controllers\Penjualan\SoController;
 use App\Http\Controllers\Produksi\BomController;
+use App\Http\Controllers\Produksi\PackagingController;
 use App\Http\Controllers\Produksi\ProduksiController;
 use App\Http\Controllers\Produksi\ProduksiStokController;
 use Illuminate\Support\Facades\Auth;
@@ -259,8 +260,20 @@ Route::middleware('auth')->group(function () {
         Route::get('/next-karton', [ProduksiController::class, 'getNextKarton'])->name('next-karton');
         Route::get('/sync-karyawan', [ProduksiController::class, 'getKaryawanDataByDate'])->name('sync-karyawan');
         Route::get('/{id}', [ProduksiController::class, 'show'])->name('show')->whereNumber('id');
+        Route::post('/{id}/adjust-hpp', [ProduksiController::class, 'adjustHpp'])->name('adjust-hpp')->middleware('role:produksi_create')->whereNumber('id');
         Route::get('/{id}/cetak-stiker', [ProduksiController::class, 'cetakStiker'])->name('cetak-stiker')->whereNumber('id');
         Route::delete('/{id}', [ProduksiController::class, 'destroy'])->name('destroy')->middleware('role:produksi_create')->whereNumber('id');
+
+        // Pengemasan Barang Jadi & HPP (Packaging)
+        Route::get('/packaging/ajax-bom-preview', [PackagingController::class, 'ajaxBomPreview'])->name('packaging.ajax-bom-preview');
+        Route::get('/packaging', [PackagingController::class, 'index'])->name('packaging.index');
+        Route::get('/packaging/rekap', [PackagingController::class, 'rekap'])->name('packaging.rekap');
+        Route::get('/packaging/export-rekap-excel', [PackagingController::class, 'exportRekapExcel'])->name('packaging.export-rekap-excel');
+        Route::get('/packaging/export-rekap-pdf', [PackagingController::class, 'exportRekapPdf'])->name('packaging.export-rekap-pdf');
+        Route::get('/packaging/create', [PackagingController::class, 'create'])->name('packaging.create')->middleware('role:produksi_create');
+        Route::post('/packaging', [PackagingController::class, 'store'])->name('packaging.store')->middleware('role:produksi_create');
+        Route::get('/packaging/{id}', [PackagingController::class, 'show'])->name('packaging.show')->whereNumber('id');
+        Route::post('/packaging/{id}/void', [PackagingController::class, 'void'])->name('packaging.void')->middleware('role:produksi_create')->whereNumber('id');
     });
 
     // Quality Control (QC) Inbound Bahan Baku (Mobile-First / Google Form Style)

@@ -363,6 +363,19 @@ class User extends Authenticatable
     }
 
     /**
+     * Hak akses Pengemasan Barang Jadi & Kalkulasi HPP (Packaging)
+     */
+    public function canAccessPackaging(): bool
+    {
+        return $this->isSuperAdmin() || $this->canDo('packaging_view') || $this->canAccessProduksi();
+    }
+
+    public function canCreatePackaging(): bool
+    {
+        return $this->isSuperAdmin() || $this->canDo('packaging_create') || $this->canCreateProduksi();
+    }
+
+    /**
      * Hak akses Lacak Stok Hasil Produksi (WIP & Barang Jadi)
      */
     public function canAccessStokProduksi(): bool

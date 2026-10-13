@@ -9,12 +9,7 @@
 @section('content')
 <div style="margin-bottom: 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
     <div>
-        <div style="font-size: 0.75rem; font-weight: 700; color: #0284c7; text-transform: uppercase; letter-spacing: 0.06em; display: flex; align-items: center; gap: 0.35rem;">
-            <span>Produksi &amp; Manufaktur</span>
-            <span>&bull;</span>
-            <span>PT Mirasa Food Industry</span>
-        </div>
-        <h1 style="font-size: 1.45rem; font-weight: 800; color: #0f172a; margin: 0.2rem 0 0 0; letter-spacing: -0.02em;">
+        <h1 style="font-size: 1.45rem; font-weight: 800; color: #0f172a; margin: 0; letter-spacing: -0.02em;">
             Hasil Barang Produksi Pabrik
         </h1>
         <p style="margin: 0.25rem 0 0 0; font-size: 0.825rem; color: #64748b;">

@@ -29,7 +29,13 @@
             </h1>
         </div>
 
-        <div style="display: flex; gap: 0.5rem; align-items: center;">
+        <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+            @if(Auth::user()->canCreateProduksi())
+                <button type="button" id="btnOpenModalAdjustHpp" onclick="openModalAdjustHpp()" class="btn" style="font-size: 0.85rem; padding: 0.5rem 0.95rem; font-weight: 700; background: #fef3c7; color: #92400e; border: 1.5px solid #fde68a; display: inline-flex; align-items: center; gap: 0.4rem; border-radius: 6px; cursor: pointer; transition: all 0.15s ease;" title="Koreksi / Adjustment HPP dengan Standar Audit Trail Akuntansi">
+                    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                    <span>Adjustment HPP</span>
+                </button>
+            @endif
             <button type="button" onclick="window.print()" class="btn btn-secondary" style="font-size: 0.85rem; padding: 0.5rem 0.85rem;">
                 🖨️ Cetak Lembar HPP
             </button>
@@ -504,9 +510,125 @@
             </table>
         </div>
     </div>
+
+    {{-- KARTU 4: RIWAYAT ADJUSTMENT & AUDIT TRAIL HPP (STANDAR AKUNTANSI BIAYA) --}}
+    <div class="card" style="margin-bottom: 1.5rem; border: 1px solid #cbd5e1; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+        <div class="card-header" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0.875rem 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #64748b;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <strong style="color: #0f172a; font-size: 0.95rem;">Riwayat Adjustment &amp; Audit Trail HPP</strong>
+                <span class="badge" style="background: #e2e8f0; color: #475569; font-size: 0.725rem; padding: 0.15rem 0.45rem; border-radius: 4px; font-weight: 700;">
+                    Versi Dokumen: v{{ $produksi->version_no ?? 1 }}
+                </span>
+            </div>
+            <span style="font-size: 0.75rem; color: #64748b;">
+                Catatan resmi setiap revisi/adjustment HPP produksi harian.
+            </span>
+        </div>
+
+        <div style="padding: 0; overflow-x: auto;">
+            <table class="table" style="width: 100%; border-collapse: collapse; margin: 0; font-size: 0.825rem;">
+                <thead style="background: #f8fafc; border-bottom: 1.5px solid #e2e8f0; color: #475569; font-weight: 700;">
+                    <tr>
+                        <th style="padding: 0.65rem 1rem; text-align: left; width: 140px;">NO. BERITA ACARA</th>
+                        <th style="padding: 0.65rem 1rem; text-align: left; width: 110px;">TANGGAL</th>
+                        <th style="padding: 0.65rem 1rem; text-align: left; width: 110px;">KOMPONEN</th>
+                        <th style="padding: 0.65rem 1rem; text-align: right; width: 170px;">PERUBAHAN BIAYA</th>
+                        <th style="padding: 0.65rem 1rem; text-align: right; width: 170px;">DAMPAK HPP / KG</th>
+                        <th style="padding: 0.65rem 1rem; text-align: left;">ALASAN / DASAR DOKUMEN</th>
+                        <th style="padding: 0.65rem 1rem; text-align: left; width: 130px;">OPERATOR</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($produksi->adjustmentLogs as $log)
+                        @php
+                            $isNaik = (float) $log->selisih_hpp > 0;
+                            $isTurun = (float) $log->selisih_hpp < 0;
+                        @endphp
+                        <tr style="border-bottom: 1px solid #f1f5f9;">
+                            <td style="padding: 0.75rem 1rem; font-family: monospace; font-weight: 700; color: #0284c7;">
+                                {{ $log->adj_no }}
+                            </td>
+                            <td style="padding: 0.75rem 1rem; color: #334155;">
+                                {{ Carbon\Carbon::parse($log->adj_tgl)->format('d/m/Y') }}
+                                <div style="font-size: 0.7rem; color: #94a3b8;">{{ $log->created_at?->format('H:i') }} WIB</div>
+                            </td>
+                            <td style="padding: 0.75rem 1rem;">
+                                <span style="background: #f1f5f9; color: #334155; padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 700; font-size: 0.7rem;">
+                                    {{ $log->kategori_komponen }}
+                                </span>
+                            </td>
+                            <td style="padding: 0.75rem 1rem; text-align: right; font-family: monospace;">
+                                <div style="font-size: 0.75rem; color: #64748b;">
+                                    Rp {{ number_format($log->total_biaya_sebelum, 0, ',', '.') }} &rarr;
+                                </div>
+                                <div style="font-weight: 700; color: #0f172a;">
+                                    Rp {{ number_format($log->total_biaya_sesudah, 0, ',', '.') }}
+                                </div>
+                                <div style="font-size: 0.7rem; font-weight: 700; color: {{ (float)$log->selisih_biaya >= 0 ? '#dc2626' : '#16a34a' }};">
+                                    {{ (float)$log->selisih_biaya >= 0 ? '+' : '' }}Rp {{ number_format($log->selisih_biaya, 0, ',', '.') }}
+                                </div>
+                            </td>
+                            <td style="padding: 0.75rem 1rem; text-align: right; font-family: monospace;">
+                                <div style="font-size: 0.75rem; color: #64748b;">
+                                    Rp {{ number_format($log->hpp_sebelum, 2, ',', '.') }} &rarr;
+                                </div>
+                                <div style="font-weight: 800; color: #0284c7;">
+                                    Rp {{ number_format($log->hpp_sesudah, 2, ',', '.') }}
+                                </div>
+                                <div style="font-size: 0.7rem; font-weight: 700; color: {{ $isNaik ? '#dc2626' : ($isTurun ? '#16a34a' : '#64748b') }};">
+                                    {{ $isNaik ? '+' : '' }}Rp {{ number_format($log->selisih_hpp, 2, ',', '.') }}
+                                </div>
+                            </td>
+                            <td style="padding: 0.75rem 1rem; color: #334155;">
+                                <div style="font-weight: 600;">{{ $log->alasan_txt }}</div>
+                                @if(!empty($log->perubahan_field_json))
+                                    <div style="font-size: 0.7rem; color: #64748b; margin-top: 0.2rem;">
+                                        Rincian: 
+                                        @foreach($log->perubahan_field_json as $fKey => $fVal)
+                                            <span style="background: #f8fafc; padding: 1px 4px; border: 1px solid #e2e8f0; border-radius: 3px; margin-right: 3px;">
+                                                {{ $fVal['label'] ?? $fKey }}: Rp {{ number_format($fVal['old'], 0, ',', '.') }} &rarr; Rp {{ number_format($fVal['new'], 0, ',', '.') }}
+                                            </span>
+                                        @endforeach
+                                    </div>
+                                @endif
+                            </td>
+                            <td style="padding: 0.75rem 1rem; color: #475569;">
+                                <span style="font-weight: 600;">{{ $log->created_by ?? 'System' }}</span>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="7" style="padding: 2rem 1rem; text-align: center; color: #94a3b8;">
+                                <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin: 0 auto 0.35rem auto; color: #cbd5e1;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                <div style="font-weight: 700; color: #64748b; font-size: 0.85rem;">Belum Pernah Ada Adjustment HPP</div>
+                                <div style="font-size: 0.75rem;">Dokumen ini masih mencatat nilai kalkulasi produksi orisinal (Versi v1).</div>
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
+
+{{-- MODAL ADJUSTMENT HPP --}}
+@include('produksi.partials.modal-adjust-hpp')
 @endsection
 
 @push('scripts')
+    <script>
+        window.adjProdConfig = {
+            totalWipQty: {{ (float) $produksi->total_wip_qty }},
+            totalBiayaAwal: {{ (float) $produksi->total_biaya_produksi }},
+            hppAwal: {{ (float) $produksi->hpp_per_kg }},
+            singkongAwal: {{ (float) $produksi->singkong_nilai }},
+            minyakAwal: {{ (float) $produksi->minyak_nilai }},
+            bumbuAwal: {{ (float) $produksi->bumbu_nilai }},
+            tkAwal: {{ (float) $produksi->tk_total_nilai }},
+            listrikAwal: {{ (float) $produksi->listrik_air_telp_nilai }},
+            cngAwal: {{ (float) $produksi->cng_nilai }},
+        };
+    </script>
     <script src="{{ asset('js/produksi/produksi-show.js') }}"></script>
 @endpush

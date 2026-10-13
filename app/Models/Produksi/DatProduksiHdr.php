@@ -211,4 +211,14 @@ class DatProduksiHdr extends Model
         }
         return (int) (($this->attributes['tk_langsung_org'] ?? 0) + ($this->attributes['tk_tidak_langsung_org'] ?? 0) + ($this->attributes['tk_training_org'] ?? 0));
     }
+
+    /**
+     * Relasi ke Log Riwayat Penyesuaian HPP (Audit Trail)
+     */
+    public function adjustmentLogs(): HasMany
+    {
+        return $this->hasMany(DatProduksiAdjustmentLog::class, 'produksi_id', 'produksi_id')
+            ->where('deleted_st', false)
+            ->orderBy('created_at', 'desc');
+    }
 }

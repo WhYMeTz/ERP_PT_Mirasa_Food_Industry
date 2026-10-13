@@ -7,6 +7,7 @@ use App\Models\Gudang\DatStokBatch;
 use App\Models\MasterData\MstBarang;
 use App\Models\Produksi\DatProduksiHdr;
 use App\Models\Produksi\DatProduksiDtl;
+use App\Models\Produksi\DatProduksiAdjustmentLog;
 use App\Services\Common\CodeGeneratorService;
 use App\Services\Gudang\StokService;
 use App\Services\Produksi\TarifProduksiService;
@@ -1239,7 +1240,7 @@ class ProduksiService
      */
     public function getById(int $id): DatProduksiHdr
     {
-        return DatProduksiHdr::with(['pemakaianBahan', 'gudang', 'outputs.barang'])
+        return DatProduksiHdr::with(['pemakaianBahan', 'gudang', 'outputs.barang', 'adjustmentLogs'])
             ->where('produksi_id', $id)
             ->firstOrFail();
     }
@@ -1570,11 +1571,34 @@ class ProduksiService
                         $record->total_wip_qty = $detailWip;
                     }
                 }
-                $record->hpp_per_kg = $effectiveWip > 0
+                $newHppPerKg = $effectiveWip > 0
                     ? round($record->total_biaya_produksi / $effectiveWip, 2)
                     : 0;
+                $record->hpp_per_kg = $newHppPerKg;
 
-                // 6. Audit Trail
+                // 6. Sinkronisasi Otomatis ke Detail Output Produksi & Saldo Batch Gudang
+                $outputDetails = DatProduksiDtl::where('produksi_id', $record->produksi_id)
+                    ->where('deleted_st', false)
+                    ->get();
+
+                foreach ($outputDetails as $outDtl) {
+                    $outDtl->hpp_satuan = $newHppPerKg;
+                    $outDtl->total_nilai = round($outDtl->qty_hasil * $newHppPerKg, 2);
+                    $outDtl->save();
+
+                    // Perbarui harga satuan di DatStokBatch gudang jika batch cocok
+                    if (!empty($outDtl->batch_no)) {
+                        DatStokBatch::where('barang_id', $outDtl->barang_id)
+                            ->where('batch_no', $outDtl->batch_no)
+                            ->where('deleted_st', false)
+                            ->update([
+                                'harga_satuan' => $newHppPerKg,
+                                'updated_by'   => $userId,
+                            ]);
+                    }
+                }
+
+                // 7. Audit Trail
                 $record->updated_by = $userId;
                 $record->save();
             }
@@ -1586,6 +1610,192 @@ class ProduksiService
                 'adjust_cng'          => $adjustCng,
                 'effective_cng_tarif' => $modeCng === 'total_tagihan' ? $effectiveCngTarif : $cngTarifBaru,
             ];
+        });
+    }
+
+    /**
+     * Penyesuaian / Koreksi Biaya Harian Dokumen Tertentu (Audit Trail HPP Standar Akuntansi).
+     * Menerapkan prinsip akuntansi: mencatat log berita acara, menghitung selisih,
+     * mengupdate lembar kerja, dan mensinkronkan nilai HPP pada kartu stok gudang.
+     */
+    public function adjustSingleProductionHpp(int $produksiId, array $data, string $userId): DatProduksiAdjustmentLog
+    {
+        return DB::transaction(function () use ($produksiId, $data, $userId) {
+            $produksi = DatProduksiHdr::with(['outputs.barang'])->findOrFail($produksiId);
+
+            $oldTotalBiaya = (float) $produksi->total_biaya_produksi;
+            $oldHppPerKg = (float) $produksi->hpp_per_kg;
+
+            $alasan = trim($data['alasan_txt'] ?? '');
+            if (strlen($alasan) < 5) {
+                throw new Exception("Alasan adjustment / dasar dokumen wajib diisi minimal 5 karakter untuk keperluan audit trail akuntansi.");
+            }
+
+            // Catat snapshot field lama vs baru
+            $changedFields = [];
+            $kategoriList = [];
+
+            // 1. Cek Komponen Biaya Bahan Baku & Penolong
+            if (isset($data['singkong_nilai']) && abs((float) $data['singkong_nilai'] - (float) $produksi->singkong_nilai) > 0.01) {
+                $changedFields['singkong_nilai'] = [
+                    'label' => 'Biaya Singkong Mentah',
+                    'old'   => (float) $produksi->singkong_nilai,
+                    'new'   => (float) $data['singkong_nilai']
+                ];
+                $produksi->singkong_nilai = (float) $data['singkong_nilai'];
+                $kategoriList[] = 'SINGKONG';
+            }
+
+            if (isset($data['minyak_nilai']) && abs((float) $data['minyak_nilai'] - (float) $produksi->minyak_nilai) > 0.01) {
+                $changedFields['minyak_nilai'] = [
+                    'label' => 'Biaya Minyak Goreng',
+                    'old'   => (float) $produksi->minyak_nilai,
+                    'new'   => (float) $data['minyak_nilai']
+                ];
+                $produksi->minyak_nilai = (float) $data['minyak_nilai'];
+                $kategoriList[] = 'MINYAK';
+            }
+
+            if (isset($data['bumbu_nilai']) && abs((float) $data['bumbu_nilai'] - (float) $produksi->bumbu_nilai) > 0.01) {
+                $changedFields['bumbu_nilai'] = [
+                    'label' => 'Biaya Bumbu Masak',
+                    'old'   => (float) $produksi->bumbu_nilai,
+                    'new'   => (float) $data['bumbu_nilai']
+                ];
+                $produksi->bumbu_nilai = (float) $data['bumbu_nilai'];
+                $kategoriList[] = 'BUMBU';
+            }
+
+            // 2. Cek Komponen Biaya Tenaga Kerja (BTKL)
+            if (isset($data['tk_total_nilai']) && abs((float) $data['tk_total_nilai'] - (float) $produksi->tk_total_nilai) > 0.01) {
+                $changedFields['tk_total_nilai'] = [
+                    'label' => 'Upah Tenaga Kerja',
+                    'old'   => (float) $produksi->tk_total_nilai,
+                    'new'   => (float) $data['tk_total_nilai']
+                ];
+                $produksi->tk_total_nilai = (float) $data['tk_total_nilai'];
+                $kategoriList[] = 'UPAH_TK';
+            }
+
+            // 3. Cek Komponen Utilitas / Overhead FOH Lain
+            if (isset($data['listrik_air_telp_nilai']) && abs((float) $data['listrik_air_telp_nilai'] - (float) $produksi->listrik_air_telp_nilai) > 0.01) {
+                $changedFields['listrik_air_telp_nilai'] = [
+                    'label' => 'Listrik & Air (PLN)',
+                    'old'   => (float) $produksi->listrik_air_telp_nilai,
+                    'new'   => (float) $data['listrik_air_telp_nilai']
+                ];
+                $produksi->listrik_air_telp_nilai = (float) $data['listrik_air_telp_nilai'];
+                $kategoriList[] = 'LISTRIK';
+            }
+
+            if (isset($data['cng_nilai']) && abs((float) $data['cng_nilai'] - (float) $produksi->cng_nilai) > 0.01) {
+                $changedFields['cng_nilai'] = [
+                    'label' => 'Biaya Gas CNG',
+                    'old'   => (float) $produksi->cng_nilai,
+                    'new'   => (float) $data['cng_nilai']
+                ];
+                $produksi->cng_nilai = (float) $data['cng_nilai'];
+                $kategoriList[] = 'GAS_CNG';
+            }
+
+            if (isset($data['pemeliharaan_mesin_nilai']) && abs((float) $data['pemeliharaan_mesin_nilai'] - (float) $produksi->pemeliharaan_mesin_nilai) > 0.01) {
+                $changedFields['pemeliharaan_mesin_nilai'] = [
+                    'label' => 'Pemeliharaan Mesin',
+                    'old'   => (float) $produksi->pemeliharaan_mesin_nilai,
+                    'new'   => (float) $data['pemeliharaan_mesin_nilai']
+                ];
+                $produksi->pemeliharaan_mesin_nilai = (float) $data['pemeliharaan_mesin_nilai'];
+                $kategoriList[] = 'MAINTENANCE';
+            }
+
+            if (empty($changedFields)) {
+                throw new Exception("Tidak ada perubahan nilai nominal biaya yang terdeteksi.");
+            }
+
+            // Hitung akumulasi total selisih biaya dari seluruh komponen yang disesuaikan
+            $selisihBiaya = 0;
+            foreach ($changedFields as $cf) {
+                $selisihBiaya += ((float) $cf['new'] - (float) $cf['old']);
+            }
+
+            // Update total bahan nilai jika ada komponen bahan yang berubah
+            $deltaBahan = 0;
+            foreach (['singkong_nilai', 'minyak_nilai', 'bumbu_nilai'] as $bKey) {
+                if (isset($changedFields[$bKey])) {
+                    $deltaBahan += ((float) $changedFields[$bKey]['new'] - (float) $changedFields[$bKey]['old']);
+                }
+            }
+            $produksi->total_bahan_nilai = max(0, (float) $produksi->total_bahan_nilai + $deltaBahan);
+
+            // Update total overhead jika ada komponen overhead yang berubah
+            $deltaOverhead = 0;
+            foreach (['listrik_air_telp_nilai', 'pemeliharaan_mesin_nilai'] as $oKey) {
+                if (isset($changedFields[$oKey])) {
+                    $deltaOverhead += ((float) $changedFields[$oKey]['new'] - (float) $changedFields[$oKey]['old']);
+                }
+            }
+            $produksi->total_overhead_nilai = max(0, (float) $produksi->total_overhead_nilai + $deltaOverhead);
+
+            // Rekalkulasi Total Biaya Produksi: Biaya Lama + Akumulasi Selisih Komponen
+            $newTotalBiaya = round($oldTotalBiaya + $selisihBiaya, 2);
+            $produksi->total_biaya_produksi = $newTotalBiaya;
+
+            // Rekalkulasi HPP per Kg
+            $effectiveWip = (float) $produksi->total_wip_qty;
+            if ($effectiveWip <= 0 && $produksi->outputs) {
+                $effectiveWip = (float) $produksi->outputs->sum('qty_kg');
+            }
+            $newHppPerKg = $effectiveWip > 0 ? round($newTotalBiaya / $effectiveWip, 2) : 0;
+            $produksi->hpp_per_kg = $newHppPerKg;
+
+            // Update version_no & audit
+            $produksi->version_no = ((int) $produksi->version_no) + 1;
+            $produksi->updated_by = $userId;
+            $produksi->save();
+
+            // Generate Nomor Berita Acara Penyesuaian: ADJ-HPP-YYYYMM-0001
+            $prefix = 'ADJ-HPP-' . date('Ym') . '-';
+            $adjNo = $this->codeGenerator->generate('dat_produksi_adjustment_log', 'adj_no', $prefix, 4);
+
+            $kategoriStr = count($kategoriList) === 1 ? $kategoriList[0] : (count($kategoriList) > 1 ? 'MULTI' : 'LAINNYA');
+            $selisihHpp = $newHppPerKg - $oldHppPerKg;
+
+            // Simpan ke Log Audit Trail Akuntansi
+            $log = DatProduksiAdjustmentLog::create([
+                'adj_no'               => $adjNo,
+                'produksi_id'          => $produksi->produksi_id,
+                'adj_tgl'              => now()->format('Y-m-d'),
+                'kategori_komponen'    => $kategoriStr,
+                'total_biaya_sebelum'  => $oldTotalBiaya,
+                'total_biaya_sesudah'  => $newTotalBiaya,
+                'selisih_biaya'        => $selisihBiaya,
+                'hpp_sebelum'          => $oldHppPerKg,
+                'hpp_sesudah'          => $newHppPerKg,
+                'selisih_hpp'          => $selisihHpp,
+                'alasan_txt'           => $alasan,
+                'perubahan_field_json' => $changedFields,
+                'created_by'           => $userId,
+                'updated_by'           => $userId,
+            ]);
+
+            // Sinkronisasi otomatis ke detail output dan kartu stok gudang
+            foreach ($produksi->outputs as $out) {
+                $out->hpp_satuan = $newHppPerKg;
+                $out->total_nilai = round((float) $out->qty_hasil * $newHppPerKg, 2);
+                $out->save();
+
+                if (!empty($out->batch_no)) {
+                    DatStokBatch::where('barang_id', $out->barang_id)
+                        ->where('batch_no', $out->batch_no)
+                        ->where('deleted_st', false)
+                        ->update([
+                            'harga_satuan' => $newHppPerKg,
+                            'updated_by'   => $userId,
+                        ]);
+                }
+            }
+
+            return $log;
         });
     }
 }

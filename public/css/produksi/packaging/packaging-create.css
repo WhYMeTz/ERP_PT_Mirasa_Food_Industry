@@ -1,0 +1,90 @@
+/**
+ * =========================================================================
+ * ERP PT MIRASA - PENGEMASAN BARANG JADI & HPP (PACKAGING) CREATE CSS
+ * Diseragamkan 100% dengan Standar Desain HPP Produksi (produksi-create.css)
+ * =========================================================================
+ */
+
+@import url('/css/produksi/produksi-create.css');
+
+.create-packaging-container {
+    max-width: 1300px;
+    margin: 0 auto;
+}
+
+/* Banner Info Resep BOM */
+.bom-banner {
+    background: #f0fdf4;
+    border: 1.5px solid #86efac;
+    border-radius: 8px;
+    padding: 0.85rem 1.15rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.bom-banner-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.bom-banner-badge {
+    background: #dcfce7;
+    color: #15803d;
+    font-weight: 800;
+    font-size: 0.7rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 6px;
+    border: 1px solid #86efac;
+}
+
+/* Badges Kategori Bahan */
+.cat-badge {
+    display: inline-block;
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+    font-size: 0.675rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+}
+
+.cat-wip { background: #ffedd5; color: #c2410c; }
+.cat-kemasan { background: #e0f2fe; color: #0369a1; }
+.cat-bumbu { background: #fef3c7; color: #b45309; }
+.cat-lain { background: #f1f5f9; color: #475569; }
+
+.stock-tag-ok {
+    font-size: 0.6875rem;
+    color: #16a34a;
+    font-weight: 600;
+}
+
+.stock-tag-warn {
+    font-size: 0.6875rem;
+    color: #dc2626;
+    font-weight: 700;
+}
+
+/* Badge Asal HPP Satuan Bahan */
+.wip-origin-tag {
+    font-size: 0.675rem;
+    color: #059669;
+    font-weight: 700;
+    margin-top: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 3px;
+}
+
+.pack-origin-tag {
+    font-size: 0.675rem;
+    color: #64748b;
+    font-weight: 600;
+    margin-top: 3px;
+    text-align: right;
+}

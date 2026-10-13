@@ -1,0 +1,99 @@
+/**
+ * =========================================================================
+ * ERP PT MIRASA - PENGEMASAN BARANG JADI & HPP (PACKAGING) SHOW CSS
+ * Diseragamkan 100% dengan Standar Desain HPP Produksi Pabrik
+ * =========================================================================
+ */
+
+@import url('/css/produksi/produksi-show.css');
+
+.packaging-show-container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.packaging-show-container .sticker-preview-box {
+    width: 440px;
+}
+.packaging-show-container .sticker-preview-box .st-left-col {
+    width: 230px;
+}
+.packaging-show-container .sticker-preview-box .st-right-col {
+    width: 190px;
+}
+.packaging-show-container .sticker-preview-box .st-val.st-batch-num {
+    font-size: 12.5px;
+}
+
+/* Modal Konfirmasi Batal / Danger */
+.modal-danger-header {
+    background: #fef2f2;
+    border-bottom: 1px solid #fee2e2;
+    padding: 1.15rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.modal-danger-title {
+    color: #991b1b;
+    font-weight: 700;
+    font-size: 1.05rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Badges */
+.badge-posted {
+    font-size: 0.75rem;
+    background: #ecfdf5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+    padding: 0.2rem 0.65rem;
+    border-radius: 9999px;
+    font-weight: 700;
+}
+
+.badge-void {
+    font-size: 0.75rem;
+    background: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+    padding: 0.2rem 0.65rem;
+    border-radius: 9999px;
+    font-weight: 700;
+}
+
+.cat-badge {
+    display: inline-block;
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+    font-size: 0.675rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+}
+
+.cat-wip { background: #ffedd5; color: #c2410c; }
+.cat-kemasan { background: #e0f2fe; color: #0369a1; }
+.cat-bumbu { background: #fef3c7; color: #b45309; }
+.cat-lain { background: #f1f5f9; color: #475569; }
+
+/* Print Media */
+@media print {
+    header, footer, .no-print {
+        display: none !important;
+    }
+    body {
+        background: #ffffff !important;
+    }
+    .card {
+        box-shadow: none !important;
+        border: 1px solid #cbd5e1 !important;
+        margin-bottom: 1.25rem !important;
+    }
+    .sticker-preview-box {
+        border: 2px solid #000000 !important;
+        page-break-inside: avoid;
+    }
+}

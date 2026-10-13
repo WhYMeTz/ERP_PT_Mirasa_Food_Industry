@@ -1,8 +1,3 @@
-{{-- ════════════════════════════════════════════════════════════════ --}}
-{{--  TABEL REKAPITULASI HPP FORMAT SPREADSHEET EXCEL LENGKAP (30 KOLOM) --}}
-{{--  ERP PT Mirasa Food Industry - 100% Mengikuti Format Lembar Excel  --}}
-{{-- ════════════════════════════════════════════════════════════════ --}}
-
 <div class="card" style="margin-bottom: 2rem;">
     <div class="card-header" style="background: #ffffff; padding: 0.875rem 1.25rem; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
         <div style="display: flex; align-items: center; gap: 0.5rem;">
@@ -13,7 +8,7 @@
                 {{ $report['count'] }} Hari Produksi
             </span>
         </div>
-        {{-- Switch Mode Kembali ke Ringkas --}}
+
         <div class="view-mode-pill-group">
             <button type="button" class="btn-view-mode" onclick="switchHppViewMode('compact')" title="Tampilan modern 7 kolom pas di layar tanpa scroll">
                 <span>Mode Ringkas</span>

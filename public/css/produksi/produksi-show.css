@@ -5,7 +5,7 @@
    ========================================================================== */
 
 .show-container {
-    max-width: 1280px;
+    max-width: 1400px;
     margin: 0 auto;
     padding-bottom: 2.5rem;
 }
@@ -94,23 +94,23 @@
 .btn-adjust-hpp {
     font-size: 0.85rem;
     font-weight: 700;
-    padding: 0.5rem 1rem;
-    background: #fef3c7;
-    color: #92400e;
-    border: 1.5px solid #fde68a;
+    padding: 0.5rem 0.95rem;
+    background: #ffffff;
+    color: #b45309;
+    border: 1.5px solid #f59e0b;
     border-radius: 6px;
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
     cursor: pointer;
-    transition: all 0.15s ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+    transition: all 0.15s ease-in-out;
 }
 
 .btn-adjust-hpp:hover {
-    background: #fde68a;
-    border-color: #f59e0b;
-    color: #78350f;
-    box-shadow: 0 2px 4px rgba(245, 158, 11, 0.2);
+    background: #fffbeb;
+    border-color: #d97706;
+    color: #92400e;
 }
 
 .btn-print-doc {
@@ -125,7 +125,8 @@
     align-items: center;
     gap: 0.4rem;
     cursor: pointer;
-    transition: all 0.15s ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+    transition: all 0.15s ease-in-out;
 }
 
 .btn-print-doc:hover {
@@ -133,64 +134,44 @@
     border-color: #94a3b8;
 }
 
-/* 2. Executive Metric KPI Cards Grid */
-.kpi-grid {
+/* 2. Standard Executive Stat Metric Cards (Consistent with Rekap, PO, GRN) */
+.executive-stat-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 1rem;
-    margin-bottom: 1.25rem;
+    margin-bottom: 1.5rem;
 }
 
-.kpi-card {
+.executive-stat-card {
     background: #ffffff;
     border: 1px solid #e2e8f0;
-    border-radius: 10px;
-    padding: 1.15rem 1.25rem;
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-    position: relative;
-    overflow: hidden;
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    transition: box-shadow 0.15s ease;
 }
 
-.kpi-card:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.06);
+.executive-stat-card:hover {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.06);
 }
 
-.kpi-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    width: 4px;
-}
-
-.kpi-card.kpi-rendemen-emerald::before { background: #059669; }
-.kpi-card.kpi-rendemen-amber::before { background: #d97706; }
-.kpi-card.kpi-rendemen-red::before { background: #dc2626; }
-.kpi-card.kpi-hpp::before { background: #0284c7; }
-.kpi-card.kpi-wip::before { background: #10b981; }
-.kpi-card.kpi-cost::before { background: #d97706; }
-
-.kpi-header {
+.executive-stat-card-header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    margin-bottom: 0.4rem;
+    align-items: flex-start;
 }
 
-.kpi-label {
+.executive-stat-label {
     font-size: 0.75rem;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.05em;
     color: #64748b;
 }
 
-.kpi-icon-badge {
-    width: 28px;
-    height: 28px;
+.executive-stat-icon-box {
+    width: 32px;
+    height: 32px;
     border-radius: 6px;
     display: flex;
     align-items: center;
@@ -198,59 +179,195 @@
     flex-shrink: 0;
 }
 
-.kpi-value {
-    font-size: 1.6rem;
-    font-weight: 800;
+.executive-stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
     color: #0f172a;
-    line-height: 1.15;
-    margin-bottom: 0.25rem;
+    margin-top: 0.25rem;
+    line-height: 1.2;
+    font-variant-numeric: tabular-nums;
 }
 
-.kpi-subtext {
+.executive-stat-subtext {
     font-size: 0.75rem;
     color: #64748b;
-    font-weight: 500;
+    margin-top: 0.4rem;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
 }
 
-/* 3. Specification 2-Column Grid */
-.spec-grid {
+/* 3. Master-Detail Workspace: 2-Column Responsive Grid */
+.show-workspace {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
-    gap: 1.25rem;
-    margin-bottom: 1.5rem;
+    grid-template-columns: 2.2fr 1fr;
+    gap: 1.5rem;
+    align-items: start;
+    margin-bottom: 2rem;
 }
 
-.spec-card {
+.show-workspace-main {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.show-workspace-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    position: sticky;
+    top: 1rem;
+}
+
+@media (max-width: 1024px) {
+    .show-workspace {
+        grid-template-columns: 1fr;
+    }
+    .show-workspace-sidebar {
+        position: static;
+    }
+}
+
+/* 4. Enterprise Cards */
+.card-enterprise {
     background: #ffffff;
     border: 1px solid #e2e8f0;
-    border-radius: 10px;
+    border-radius: 8px;
     overflow: hidden;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
-.spec-card-header {
+.card-enterprise-header {
     background: #ffffff;
-    padding: 0.85rem 1.25rem;
+    padding: 0.875rem 1.25rem;
     border-bottom: 1px solid #e2e8f0;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-wrap: wrap;
     gap: 0.5rem;
 }
 
-.spec-card-title {
-    font-weight: 800;
-    font-size: 0.875rem;
+.card-enterprise-title {
+    font-weight: 700;
+    font-size: 0.95rem;
     color: #0f172a;
     display: flex;
     align-items: center;
     gap: 0.45rem;
 }
 
-.spec-card-body {
-    padding: 1.15rem 1.25rem;
+/* 5. Enterprise Tables */
+.table-enterprise {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0;
+    font-size: 0.84rem;
 }
 
+.table-enterprise thead {
+    background: #f8fafc;
+    color: #475569;
+    font-weight: 700;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.table-enterprise thead th {
+    padding: 0.75rem 1rem;
+    letter-spacing: 0.02em;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+}
+
+.table-enterprise tbody tr {
+    border-bottom: 1px solid #f1f5f9;
+    transition: background 0.1s ease;
+}
+
+.table-enterprise tbody tr:hover {
+    background: #f8fafc;
+}
+
+.table-enterprise td {
+    padding: 0.65rem 1rem;
+    vertical-align: middle;
+}
+
+/* Category Groups in Cost Table */
+.cost-group-header {
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.cost-group-header td {
+    padding: 0.6rem 1rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #1e293b;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+}
+
+.cost-group-subtotal {
+    background: #fafaf9;
+    border-top: 1px dashed #cbd5e1;
+    border-bottom: 1px solid #e2e8f0;
+    font-weight: 700;
+}
+
+.cost-group-subtotal td {
+    padding: 0.55rem 1rem;
+    font-size: 0.825rem;
+}
+
+.cost-total-footer {
+    background: #f8fafc;
+    border-top: 2px solid #cbd5e1;
+    font-weight: 800;
+}
+
+.cost-total-footer td {
+    padding: 0.85rem 1rem;
+    color: #0f172a;
+}
+
+/* 6. Cost Summary Bar (Clean Enterprise Metrics) */
+.cost-summary-bar {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.75rem;
+    padding: 0.85rem 1.25rem;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.cost-summary-pill {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.cost-summary-pill .cost-pill-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #64748b;
+    margin-bottom: 0.2rem;
+}
+
+.cost-summary-pill .cost-pill-val {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #0f172a;
+    font-variant-numeric: tabular-nums;
+}
+
+/* 7. Sidebar Specification Table */
 .spec-table {
     width: 100%;
     border-collapse: collapse;
@@ -282,8 +399,8 @@
 
 .badge-batch-pill {
     font-family: monospace;
-    font-size: 0.875rem;
-    font-weight: 800;
+    font-size: 0.85rem;
+    font-weight: 700;
     color: #0284c7;
     background: #f0f9ff;
     border: 1px solid #bae6fd;
@@ -312,143 +429,7 @@
     border: 1px solid #d8b4fe;
 }
 
-/* 4. Enterprise Tables & Containers */
-.card-enterprise {
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 10px;
-    overflow: hidden;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
-    margin-bottom: 1.5rem;
-}
-
-.card-enterprise-header {
-    background: #ffffff;
-    padding: 0.875rem 1.25rem;
-    border-bottom: 1px solid #e2e8f0;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-}
-
-.card-enterprise-title {
-    font-weight: 800;
-    font-size: 0.9rem;
-    color: #0f172a;
-    display: flex;
-    align-items: center;
-    gap: 0.45rem;
-}
-
-.table-enterprise {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 0;
-    font-size: 0.84rem;
-}
-
-.table-enterprise thead {
-    background: #f8fafc;
-    color: #475569;
-    font-weight: 700;
-    border-bottom: 1.5px solid #e2e8f0;
-}
-
-.table-enterprise thead th {
-    padding: 0.7rem 1rem;
-    letter-spacing: 0.02em;
-    font-size: 0.775rem;
-    text-transform: uppercase;
-}
-
-.table-enterprise tbody tr {
-    border-bottom: 1px solid #f1f5f9;
-    transition: background 0.1s ease;
-}
-
-.table-enterprise tbody tr:hover {
-    background: #f8fafc;
-}
-
-.table-enterprise td {
-    padding: 0.65rem 1rem;
-    vertical-align: middle;
-}
-
-/* Category Groups in Cost Table */
-.cost-group-header {
-    background: #f8fafc;
-    border-top: 1.5px solid #e2e8f0;
-    border-bottom: 1px solid #e2e8f0;
-}
-
-.cost-group-header td {
-    padding: 0.6rem 1rem;
-    font-size: 0.78rem;
-    font-weight: 800;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-}
-
-.cost-group-subtotal {
-    background: #fafaf9;
-    border-top: 1px dashed #cbd5e1;
-    border-bottom: 1.5px solid #e2e8f0;
-    font-weight: 700;
-}
-
-.cost-group-subtotal td {
-    padding: 0.55rem 1rem;
-    font-size: 0.825rem;
-}
-
-.cost-total-footer {
-    background: #fefce8;
-    border-top: 2px solid #eab308;
-    font-weight: 800;
-}
-
-.cost-total-footer td {
-    padding: 0.85rem 1rem;
-    color: #854d0e;
-}
-
-/* 5. Cost Summary Badges Top Bar */
-.cost-summary-bar {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 0.75rem;
-    padding: 0.85rem 1.25rem;
-    background: #f8fafc;
-    border-bottom: 1px solid #e2e8f0;
-}
-
-.cost-summary-pill {
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
-    padding: 0.5rem 0.75rem;
-    display: flex;
-    flex-direction: column;
-}
-
-.cost-summary-pill .cost-pill-label {
-    font-size: 0.6875rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    color: #64748b;
-}
-
-.cost-summary-pill .cost-pill-val {
-    font-size: 0.95rem;
-    font-weight: 800;
-    color: #0f172a;
-    font-family: monospace;
-}
-
-/* 6. Print Stylesheet */
+/* 8. Print Stylesheet */
 .print-only {
     display: none;
 }
@@ -473,10 +454,15 @@
         padding: 0 !important;
     }
 
-    .card-enterprise, .spec-card, .kpi-card {
+    .show-workspace {
+        display: block !important;
+    }
+
+    .card-enterprise, .executive-stat-card {
         box-shadow: none !important;
         border: 1px solid #cbd5e1 !important;
         page-break-inside: avoid;
+        margin-bottom: 1rem !important;
     }
 
     .table-enterprise th, .table-enterprise td {

@@ -22,15 +22,25 @@ class TerimaBarangService
     /**
      * Mengambil riwayat penerimaan barang dengan pagination.
      */
-    public function getAllPaginated(int $perPage = 15, ?string $search = null, int|array|null $gudangId = null): LengthAwarePaginator
+    public function getAllPaginated(int $perPage = 15, ?string $search = null, int|array|null $gudangId = null, bool $hasReject = false): LengthAwarePaginator
     {
-        $query = DatTerimaHdr::with(['supplier', 'gudang', 'po', 'details.barang'])
+        $query = DatTerimaHdr::with(['supplier', 'gudang', 'po', 'details.barang', 'qc.details'])
             ->where('deleted_st', false);
 
         if (is_array($gudangId)) {
             $query->whereIn('gudang_id', $gudangId);
         } elseif ($gudangId !== null) {
             $query->where('gudang_id', $gudangId);
+        }
+
+        if ($hasReject) {
+            $query->where(function ($q) {
+                $q->whereHas('details', function ($dq) {
+                    $dq->where('reject_qty', '>', 0);
+                })->orWhereHas('qc.details', function ($qq) {
+                    $qq->where('qty_reject', '>', 0);
+                });
+            });
         }
 
         if (!empty($search)) {
@@ -52,9 +62,9 @@ class TerimaBarangService
      * Mengambil daftar per-item barang masuk sesuai Sheet "Barang Masuk" di Excel operasional:
      * Kolom: Tanggal | Kode Batch | Kode Barang | Nama Barang | Jenis | Keterangan | Qty Masuk | Satuan | Harga Satuan | Total Harga
      */
-    public function getBarangMasukListPaginated(int $perPage = 25, ?string $search = null, int|array|null $gudangId = null): LengthAwarePaginator
+    public function getBarangMasukListPaginated(int $perPage = 25, ?string $search = null, int|array|null $gudangId = null, bool $hasReject = false): LengthAwarePaginator
     {
-        $query = DatTerimaDtl::with(['header.supplier', 'header.gudang', 'header.po', 'barang.jenisBarang', 'barang.satuanDasar'])
+        $query = DatTerimaDtl::with(['header.supplier', 'header.gudang', 'header.po', 'header.qc.details', 'barang.jenisBarang', 'barang.satuanDasar'])
             ->whereHas('header', function ($q) use ($gudangId) {
                 $q->where('deleted_st', false);
                 if (is_array($gudangId)) {
@@ -63,6 +73,15 @@ class TerimaBarangService
                     $q->where('gudang_id', $gudangId);
                 }
             });
+
+        if ($hasReject) {
+            $query->where(function ($q) {
+                $q->where('reject_qty', '>', 0)
+                  ->orWhereHas('header.qc.details', function ($qq) {
+                      $qq->where('qty_reject', '>', 0);
+                  });
+            });
+        }
 
         if (!empty($search)) {
             $query->where(function ($q) use ($search) {

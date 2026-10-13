@@ -110,5 +110,109 @@ document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
         closeAllActionDropdowns();
         closeDeleteTerimaModal();
+        closeBeritaAcaraModal();
     }
 });
+
+/**
+ * =========================================================================
+ * MODAL POPUP PREVIEW BERITA ACARA PENOLAKAN
+ * =========================================================================
+ */
+function openBeritaAcaraModal(qcId, docNo) {
+    closeAllActionDropdowns();
+
+    const modal = document.getElementById('modalBeritaAcaraPreview');
+    const iframe = document.getElementById('beritaAcaraPreviewIframe');
+    const title = document.getElementById('modalBeritaAcaraTitle');
+    const loading = document.getElementById('modalBeritaAcaraLoading');
+    const editLabel = document.getElementById('modalBaEditBtnLabel');
+
+    if (!modal || !iframe) {
+        window.location.href = `/qc/inbound/${qcId}/berita-acara`;
+        return;
+    }
+
+    if (title) title.textContent = `Berita Acara Penolakan: #${docNo || qcId}`;
+    if (editLabel) editLabel.textContent = 'Mode Edit Dokumen';
+    if (loading) loading.style.display = 'flex';
+
+    // Set source iframe ke dokumen Berita Acara dengan layout popup
+    iframe.src = `/qc/inbound/${qcId}/berita-acara?popup=1`;
+
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+
+function closeBeritaAcaraModal() {
+    const modal = document.getElementById('modalBeritaAcaraPreview');
+    const iframe = document.getElementById('beritaAcaraPreviewIframe');
+
+    if (modal) modal.style.display = 'none';
+    if (iframe) iframe.src = 'about:blank';
+    document.body.style.overflow = '';
+}
+
+function onBeritaAcaraIframeLoaded() {
+    const loading = document.getElementById('modalBeritaAcaraLoading');
+    const iframe = document.getElementById('beritaAcaraPreviewIframe');
+    if (loading && iframe && iframe.src !== 'about:blank') {
+        loading.style.display = 'none';
+    }
+}
+
+function printBeritaAcaraModalIframe() {
+    const iframe = document.getElementById('beritaAcaraPreviewIframe');
+    if (iframe && iframe.contentWindow) {
+        try {
+            iframe.contentWindow.focus();
+            iframe.contentWindow.print();
+        } catch (e) {
+            console.error('Print modal iframe error:', e);
+        }
+    }
+}
+
+function toggleBeritaAcaraModalEdit() {
+    const iframe = document.getElementById('beritaAcaraPreviewIframe');
+    if (iframe && iframe.contentWindow && typeof iframe.contentWindow.toggleBaEditMode === 'function') {
+        iframe.contentWindow.toggleBaEditMode();
+    } else if (iframe && iframe.contentWindow) {
+        iframe.contentWindow.postMessage({ action: 'toggle_edit' }, '*');
+    }
+}
+
+function resetBeritaAcaraModalIframe() {
+    const iframe = document.getElementById('beritaAcaraPreviewIframe');
+    if (iframe && iframe.contentWindow && typeof iframe.contentWindow.resetBaDefaults === 'function') {
+        iframe.contentWindow.resetBaDefaults();
+    } else if (iframe && iframe.contentWindow) {
+        iframe.contentWindow.postMessage({ action: 'reset_default' }, '*');
+    }
+}
+
+// Listener pesan status edit mode dari iframe
+window.addEventListener('message', function(event) {
+    if (!event.data || typeof event.data !== 'object') return;
+    if (event.data.type === 'ba_edit_mode_changed') {
+        const editLabel = document.getElementById('modalBaEditBtnLabel');
+        const editBtn = document.getElementById('modalBaEditBtn');
+        if (editLabel) {
+            editLabel.textContent = event.data.isEditMode ? 'Selesai Edit' : 'Mode Edit Dokumen';
+        }
+        if (editBtn) {
+            if (event.data.isEditMode) {
+                editBtn.classList.add('is-active');
+            } else {
+                editBtn.classList.remove('is-active');
+            }
+        }
+    }
+});
+
+window.openBeritaAcaraModal = openBeritaAcaraModal;
+window.closeBeritaAcaraModal = closeBeritaAcaraModal;
+window.onBeritaAcaraIframeLoaded = onBeritaAcaraIframeLoaded;
+window.printBeritaAcaraModalIframe = printBeritaAcaraModalIframe;
+window.toggleBeritaAcaraModalEdit = toggleBeritaAcaraModalEdit;
+window.resetBeritaAcaraModalIframe = resetBeritaAcaraModalIframe;

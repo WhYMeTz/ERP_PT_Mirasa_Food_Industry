@@ -125,12 +125,12 @@
 <div class="card">
     <div class="card-header" style="background: #ffffff; padding: 0.875rem 1.25rem; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
         {{-- Form Filter & Pencarian Fleksibel --}}
-        <form action="{{ route('gudang.terima.index') }}" method="GET" style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; max-width: 650px; width: 100%;">
+        <form action="{{ route('gudang.terima.index') }}" method="GET" style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; max-width: 800px; width: 100%;">
             <input type="hidden" name="view" value="{{ $viewType }}">
-            <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Cari No GRN, SJ, supplier, batch, atau bahan..." class="form-control" style="padding: 0.45rem 0.75rem; max-width: 300px; font-size: 0.85rem;">
+            <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Cari No GRN, SJ, supplier, batch, atau bahan..." class="form-control" style="padding: 0.45rem 0.75rem; max-width: 260px; font-size: 0.85rem;">
             
-            <select name="gudang_id" class="form-control" style="padding: 0.45rem 0.75rem; max-width: 180px; font-size: 0.85rem;" onchange="this.form.submit()">
-                <option value="">-- Semua Perusahaan / Cabang --</option>
+            <select name="gudang_id" class="form-control" style="padding: 0.45rem 0.75rem; max-width: 170px; font-size: 0.85rem;" onchange="this.form.submit()">
+                <option value="">-- Semua Perusahaan --</option>
                 @foreach ($gudangList as $gdg)
                     <option value="{{ $gdg->gudang_id }}" {{ ($gudangId == $gdg->gudang_id) ? 'selected' : '' }}>
                         {{ $gdg->display_name }}
@@ -138,8 +138,13 @@
                 @endforeach
             </select>
 
+            <label class="filter-reject-label" title="Tampilkan hanya penerimaan dengan barang reject">
+                <input type="checkbox" name="has_reject" value="1" {{ !empty($hasReject) ? 'checked' : '' }} onchange="this.form.submit()">
+                <span>⚠️ Ada Reject</span>
+            </label>
+
             <button type="submit" class="btn btn-secondary btn-sm" style="padding: 0.45rem 0.85rem;">Filter</button>
-            @if(!empty($search) || !empty($gudangId))
+            @if(!empty($search) || !empty($gudangId) || !empty($hasReject))
                 <a href="{{ route('gudang.terima.index', ['view' => $viewType]) }}" class="btn btn-secondary btn-sm" title="Reset Filter" style="padding: 0.45rem 0.65rem;">Reset</a>
             @endif
         </form>
@@ -184,6 +189,16 @@
                     @forelse ($dataList as $index => $row)
                         @php
                             $subtotal = (float) ($row->subtotal_netto ?: ((float) $row->terima_qty * (float) $row->harga_nominal));
+                            $dtlReject = (float) ($row->reject_qty ?? 0);
+                            $qcDtlReject = 0;
+                            if ($row->header?->qc) {
+                                $matchedQcDtl = $row->header->qc->details->firstWhere('barang_id', $row->barang_id);
+                                $qcDtlReject = (float) ($matchedQcDtl?->qty_reject ?? 0);
+                            }
+                            $totalItemReject = $dtlReject > 0 ? $dtlReject : $qcDtlReject;
+                            $satuan = $row->barang?->satuanDasar?->satuan_nm ?? '-';
+                            $qcId = $row->header?->qc_id;
+                            $qcNo = $row->header?->qc?->qc_no ?? $row->header?->terima_no;
                         @endphp
                         <tr style="border-bottom: 1px solid #f1f5f9;">
                             <td style="text-align: center; color: #64748b; font-size: 0.85rem;">
@@ -239,8 +254,26 @@
                                     {{ number_format((float) $row->terima_qty, 2, ',', '.') }}
                                 </span>
                                 <span style="font-size: 0.8rem; color: #64748b; margin-left: 0.2rem;">
-                                    {{ $row->barang?->satuanDasar?->satuan_nm ?? '-' }}
+                                    {{ $satuan }}
                                 </span>
+                                @if ($totalItemReject > 0)
+                                    <div style="margin-top: 0.25rem;">
+                                        @if ($qcId)
+                                            <button type="button" 
+                                                    onclick="openBeritaAcaraModal('{{ $qcId }}', '{{ $qcNo }}')"
+                                                    class="badge-reject-btn"
+                                                    title="Klik untuk membuka Berita Acara Penolakan">
+                                                <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                                                <span>Reject: {{ number_format($totalItemReject, 2, ',', '.') }} {{ $satuan }}</span>
+                                            </button>
+                                        @else
+                                            <span class="badge-reject-tag" title="Ada penolakan barang">
+                                                <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                                                <span>Reject: {{ number_format($totalItemReject, 2, ',', '.') }} {{ $satuan }}</span>
+                                            </span>
+                                        @endif
+                                    </div>
+                                @endif
                             </td>
                             <td>
                                 <span style="font-size: 0.85rem; color: #334155;">
@@ -272,6 +305,12 @@
                                         <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
                                         <span>Cetak PDF (GRN)</span>
                                     </a>
+                                    @if ($totalItemReject > 0 && $qcId)
+                                        <button type="button" class="action-dropdown-item warning-item" onclick="openBeritaAcaraModal('{{ $qcId }}', '{{ $qcNo }}')">
+                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                            <span style="font-weight: 700; color: #dc2626;">Berita Acara Penolakan</span>
+                                        </button>
+                                    @endif
                                     @if ($row->header?->po_id)
                                         <a href="{{ route('gudang.po.show', $row->header->po_id) }}" class="action-dropdown-item">
                                             <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
@@ -329,14 +368,44 @@
                 </thead>
                 <tbody>
                     @forelse ($dataList as $index => $item)
+                        @php
+                            $dtlReject = (float) $item->details->sum('reject_qty');
+                            $qcReject = (float) ($item->qc?->details->sum('qty_reject') ?? 0);
+                            $totalHdrReject = $dtlReject > 0 ? $dtlReject : $qcReject;
+                            $qcId = $item->qc_id;
+                            $qcNo = $item->qc?->qc_no ?? $item->terima_no;
+                        @endphp
                         <tr style="border-bottom: 1px solid #f1f5f9;">
                             <td style="text-align: center; color: #64748b; font-size: 0.85rem;">
                                 {{ $dataList->firstItem() + $index }}
                             </td>
                             <td>
-                                <a href="{{ route('gudang.terima.show', $item->terima_id) }}" style="font-weight: 700; color: #0284c7; text-decoration: none; font-size: 0.9rem;">
-                                    {{ $item->terima_no }}
-                                </a>
+                                <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                                    <a href="{{ route('gudang.terima.show', $item->terima_id) }}" style="font-weight: 700; color: #0284c7; text-decoration: none; font-size: 0.9rem;">
+                                        {{ $item->terima_no }}
+                                    </a>
+                                    @if ($totalHdrReject > 0)
+                                        @if ($qcId)
+                                            <button type="button" 
+                                                    onclick="openBeritaAcaraModal('{{ $qcId }}', '{{ $qcNo }}')"
+                                                    class="badge-reject-btn"
+                                                    title="Klik untuk membuka Berita Acara Penolakan">
+                                                <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                                                <span>Ada Reject ({{ number_format($totalHdrReject, 0, ',', '.') }})</span>
+                                            </button>
+                                        @else
+                                            <span class="badge-reject-tag" title="Ada penolakan barang">
+                                                <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                                                <span>Ada Reject ({{ number_format($totalHdrReject, 0, ',', '.') }})</span>
+                                            </span>
+                                        @endif
+                                    @endif
+                                </div>
+                                @if ($item->suratjalan_no)
+                                    <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.15rem;">
+                                        SJ: {{ $item->suratjalan_no }}
+                                    </div>
+                                @endif
                             </td>
                             <td>
                                 <span style="font-size: 0.85rem; color: #334155; font-weight: 600;">
@@ -385,6 +454,12 @@
                                         <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
                                         <span>Cetak PDF (GRN)</span>
                                     </a>
+                                    @if ($totalHdrReject > 0 && $qcId)
+                                        <button type="button" class="action-dropdown-item warning-item" onclick="openBeritaAcaraModal('{{ $qcId }}', '{{ $qcNo }}')">
+                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                            <span style="font-weight: 700; color: #dc2626;">Berita Acara Penolakan</span>
+                                        </button>
+                                    @endif
                                     @if ($item->po_id)
                                         <a href="{{ route('gudang.po.show', $item->po_id) }}" class="action-dropdown-item">
                                             <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
@@ -435,6 +510,7 @@
 
 @include('gudang.terima.partials.modal-import-excel')
 @include('gudang.terima.partials.modal-delete-confirm')
+@include('gudang.qc.partials.common.modal-preview-berita-acara')
 
 @push('scripts')
 <script src="{{ asset('js/gudang/terima/terima-index.js') }}"></script>

@@ -90,3 +90,13 @@
     background: #f1f5f9;
     margin: 0.3rem 0;
 }
+
+.action-dropdown-item.warning-item {
+    color: #dc2626;
+    background: #fff5f5;
+}
+
+.action-dropdown-item.warning-item:hover {
+    background: #fef2f2;
+    color: #991b1b;
+}

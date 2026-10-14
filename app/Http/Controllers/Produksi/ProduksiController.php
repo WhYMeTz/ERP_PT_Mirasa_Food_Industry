@@ -356,6 +356,35 @@ class ProduksiController extends Controller
     }
 
     /**
+     * Penyesuaian / Koreksi HPP Harian Dokumen Tertentu dengan Audit Trail Akuntansi.
+     */
+    public function adjustHpp(Request $request, int $id): RedirectResponse
+    {
+        $request->validate([
+            'alasan_txt'                => 'required|string|min:5',
+            'singkong_nilai'            => 'nullable|numeric|min:0',
+            'minyak_nilai'              => 'nullable|numeric|min:0',
+            'bumbu_nilai'               => 'nullable|numeric|min:0',
+            'tk_total_nilai'            => 'nullable|numeric|min:0',
+            'listrik_air_telp_nilai'    => 'nullable|numeric|min:0',
+            'cng_nilai'                 => 'nullable|numeric|min:0',
+            'pemeliharaan_mesin_nilai'  => 'nullable|numeric|min:0',
+        ]);
+
+        try {
+            $user = Auth::user()?->name ?? (Auth::user()?->username ?? 'SYSTEM');
+            $log = $this->produksiService->adjustSingleProductionHpp($id, $request->all(), $user);
+
+            $msg = "✅ Berhasil melakukan adjustment HPP (No. BA: {$log->adj_no})! ";
+            $msg .= "HPP baru: Rp " . number_format($log->hpp_sesudah, 2, ',', '.') . " / kg. Saldo batch stok di gudang telah disinkronkan.";
+
+            return redirect()->route('produksi.show', $id)->with('success', $msg);
+        } catch (Exception $e) {
+            return redirect()->back()->withInput()->with('error', 'Gagal melakukan adjustment HPP: ' . $e->getMessage());
+        }
+    }
+
+    /**
      * Export Excel Daftar Hasil Barang Produksi (.xlsx) (Point 9.B.4)
      */
     public function exportHasilProduksi(Request $request): StreamedResponse

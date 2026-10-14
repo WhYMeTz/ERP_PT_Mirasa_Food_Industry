@@ -1,8 +1,3 @@
-{{-- ════════════════════════════════════════════════════════════════ --}}
-{{--  TABEL REKAPITULASI HPP FORMAT SPREADSHEET EXCEL LENGKAP (30 KOLOM) --}}
-{{--  ERP PT Mirasa Food Industry - 100% Mengikuti Format Lembar Excel  --}}
-{{-- ════════════════════════════════════════════════════════════════ --}}
-
 <div class="card" style="margin-bottom: 2rem;">
     <div class="card-header" style="background: #ffffff; padding: 0.875rem 1.25rem; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
         <div style="display: flex; align-items: center; gap: 0.5rem;">
@@ -13,7 +8,7 @@
                 {{ $report['count'] }} Hari Produksi
             </span>
         </div>
-        {{-- Switch Mode Kembali ke Ringkas --}}
+
         <div class="view-mode-pill-group">
             <button type="button" class="btn-view-mode" onclick="switchHppViewMode('compact')" title="Tampilan modern 7 kolom pas di layar tanpa scroll">
                 <span>Mode Ringkas</span>
@@ -341,10 +336,6 @@
                                                 <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                                                 <span>Detail Shift {{ $sRec['shift_cd'] }} ({{ $sRec['produksi_no'] }})</span>
                                             </a>
-                                            <a href="{{ route('produksi.cetak-stiker', $sRec['produksi_id']) }}" class="action-dropdown-item" target="_blank" style="padding-left: 1.75rem; font-size: 0.75rem; color: #475569;">
-                                                <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-                                                <span>Cetak Stiker Shift {{ $sRec['shift_cd'] }}</span>
-                                            </a>
                                         @endforeach
                                         <div class="action-dropdown-divider"></div>
                                         @php
@@ -358,10 +349,6 @@
                                         <a href="{{ route('produksi.show', $d['produksi_id']) }}" class="action-dropdown-item">
                                             <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                                             <span>Detail Dokumen</span>
-                                        </a>
-                                        <a href="{{ route('produksi.cetak-stiker', $d['produksi_id']) }}" class="action-dropdown-item" target="_blank">
-                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-                                            <span>Cetak Stiker Karton</span>
                                         </a>
                                         <div class="action-dropdown-divider"></div>
                                         @php

@@ -853,8 +853,8 @@
                                     <a href="{{ route('gudang.adjustment.index') }}" class="mega-item {{ request()->routeIs('gudang.adjustment.*') ? 'active' : '' }}">
                                         <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                                         <div style="display: flex; flex-direction: column;">
-                                            <span style="font-weight: 600;">Adjustment Stok</span>
-                                            <span style="font-size: 0.6875rem; color: #64748b;">Koreksi selisih, susut fisik &amp; opname</span>
+                                            <span style="font-weight: 600;">Penyesuaian Stok Fisik (Opname)</span>
+                                            <span style="font-size: 0.6875rem; color: #64748b;">Koreksi selisih hitung fisik, barang rusak &amp; susut</span>
                                         </div>
                                     </a>
                                 @endif
@@ -899,8 +899,23 @@
                                     <a href="{{ route('produksi.rekap') }}" class="mega-item {{ request()->routeIs('produksi.rekap*') ? 'active' : '' }}">
                                         <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                                         <div style="display: flex; flex-direction: column;">
-                                            <span style="font-weight: 600;">Buku Rekapitulasi HPP</span>
-                                            <span style="font-size: 0.6875rem; color: #64748b;">Audit biaya harian &amp; tren bulanan</span>
+                                            <span style="font-weight: 600;">Buku Rekap HPP Curah (WIP)</span>
+                                            <span style="font-size: 0.6875rem; color: #64748b;">Audit biaya olahan curah &amp; rendemen</span>
+                                        </div>
+                                    </a>
+                                    <div style="height: 1px; background: #f1f5f9; margin: 0.3rem 0;"></div>
+                                    <a href="{{ route('produksi.packaging.index') }}" class="mega-item {{ request()->routeIs('produksi.packaging.index') || request()->routeIs('produksi.packaging.show') ? 'active' : '' }}">
+                                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg>
+                                        <div style="display: flex; flex-direction: column;">
+                                            <span style="font-weight: 600;">Riwayat Pengemasan (FG)</span>
+                                            <span style="font-size: 0.6875rem; color: #64748b;">Pencatatan konversi kemas ke barang jadi</span>
+                                        </div>
+                                    </a>
+                                    <a href="{{ route('produksi.packaging.rekap') }}" class="mega-item {{ request()->routeIs('produksi.packaging.rekap*') ? 'active' : '' }}">
+                                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                                        <div style="display: flex; flex-direction: column;">
+                                            <span style="font-weight: 600;">Buku Rekap HPP Kemas</span>
+                                            <span style="font-size: 0.6875rem; color: #64748b;">Audit biaya bahan kemasan &amp; HPP/karton</span>
                                         </div>
                                     </a>
                                     @if (Auth::user()->canCreateProduksi())
@@ -908,8 +923,15 @@
                                         <a href="{{ route('produksi.create') }}" class="mega-item {{ request()->routeIs('produksi.create') ? 'active' : '' }}">
                                             <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                                             <div style="display: flex; flex-direction: column;">
-                                                <span style="font-weight: 600;">+ Input Hasil Produksi</span>
-                                                <span style="font-size: 0.6875rem; color: #64748b;">Catat hasil masak, borongan &amp; gas</span>
+                                                <span style="font-weight: 600;">Input Hasil Produksi (WIP)</span>
+                                                <span style="font-size: 0.6875rem; color: #64748b;">Catat hasil masak &amp; olahan curah</span>
+                                            </div>
+                                        </a>
+                                        <a href="{{ route('produksi.packaging.create') }}" class="mega-item {{ request()->routeIs('produksi.packaging.create') ? 'active' : '' }}">
+                                            <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                            <div style="display: flex; flex-direction: column;">
+                                                <span style="font-weight: 600;">Catat Pengemasan (FG)</span>
+                                                <span style="font-size: 0.6875rem; color: #64748b;">Kemas curah ke karton barang jadi</span>
                                             </div>
                                         </a>
                                     @endif
@@ -977,7 +999,7 @@
                                     <a href="{{ route('penjualan.so.create') }}" class="mega-item {{ request()->routeIs('penjualan.so.create') ? 'active' : '' }}">
                                         <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                                         <div style="display: flex; flex-direction: column;">
-                                            <span style="font-weight: 600;">+ Buat PO Penjualan</span>
+                                            <span style="font-weight: 600;">Buat PO Penjualan</span>
                                             <span style="font-size: 0.6875rem; color: #64748b;">Input pesanan produk jadi baru</span>
                                         </div>
                                     </a>

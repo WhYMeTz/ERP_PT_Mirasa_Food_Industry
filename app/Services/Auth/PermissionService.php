@@ -165,6 +165,44 @@ class PermissionService
                 ],
             ],
         ],
+        'KEUANGAN' => [
+            'group_key'    => 'KEUANGAN',
+            'group_title'  => '💰 Keuangan, Hutang & Kas/Bank',
+            'group_desc'   => 'Pengelolaan hutang pembelian supplier, tagihan utilitas gas, pelunasan kas keluar (BKK), dan buku kas bank.',
+            'badge'        => 'KEUANGAN',
+            'badge_color'  => '#059669',
+            'bg_color'     => '#f0fdf4',
+            'border_color' => '#a7f3d0',
+            'modules'      => [
+                'HUTANG' => [
+                    'label'   => 'Hutang Usaha & Tagihan Supplier (AP)',
+                    'desc'    => 'Pencatatan faktur tagihan pembelian GRN, tagihan gas bulanan, jatuh tempo, dan potongan retur.',
+                    'actions' => [
+                        'view'   => ['key' => 'hutang_view',   'label' => 'Lihat Tagihan'],
+                        'create' => ['key' => 'hutang_create', 'label' => 'Catat Tagihan Baru'],
+                        'edit'   => ['key' => 'hutang_edit',   'label' => 'Edit / Koreksi Tagihan'],
+                        'delete' => ['key' => 'hutang_delete', 'label' => 'Hapus / Batalkan'],
+                    ],
+                ],
+                'BAYAR_HUTANG' => [
+                    'label'   => 'Pelunasan Hutang (Bukti Kas Keluar - BKK)',
+                    'desc'    => 'Eksekusi pembayaran tagihan secara tunai/cash, transfer bank, cicilan parsial, atau pelunasan batch.',
+                    'actions' => [
+                        'view'   => ['key' => 'bayar_hutang_view',   'label' => 'Lihat Bukti Bayar'],
+                        'create' => ['key' => 'bayar_hutang_create', 'label' => 'Input Pembayaran / BKK'],
+                        'delete' => ['key' => 'bayar_hutang_void',   'label' => 'Batalkan / Void Pembayaran'],
+                    ],
+                ],
+                'KAS_BANK' => [
+                    'label'   => 'Kas & Rekening Bank (Buku Mutasi)',
+                    'desc'    => 'Monitoring saldo kas kecil kantor pabrik, rekening BCA & Mandiri, serta riwayat mutasi arus kas.',
+                    'actions' => [
+                        'view'   => ['key' => 'kas_bank_view',   'label' => 'Lihat Saldo & Mutasi'],
+                        'create' => ['key' => 'kas_bank_manage', 'label' => 'Kelola Akun & Penyesuaian Saldo'],
+                    ],
+                ],
+            ],
+        ],
         'MASTER' => [
             'group_key'    => 'MASTER',
             'group_title'  => '🗂️ Master Data & Konfigurasi Pabrik',
@@ -349,8 +387,18 @@ class PermissionService
             'so_edit',
             'tarif_produksi_view',
             'tarif_produksi_manage',
+            'hutang_view',
+            'hutang_create',
+            'hutang_edit',
+            'hutang_delete',
+            'bayar_hutang_view',
+            'bayar_hutang_create',
+            'bayar_hutang_void',
+            'kas_bank_view',
+            'kas_bank_manage',
             'master_barang_view',
             'master_customer_view',
+            'master_supplier_view',
         ],
         'QC' => [
             'qc_mobile_view',

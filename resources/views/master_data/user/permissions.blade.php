@@ -68,6 +68,9 @@
                     <button type="button" onclick="filterMatrixCategory('PENJUALAN', this)" class="matrix-filter-btn" style="font-size: 0.75rem; font-weight: 800; padding: 0.25rem 0.65rem; border-radius: 6px; border: 1.5px solid #cbd5e1; background: #ffffff; color: #475569; cursor: pointer;">
                         🛒 Penjualan
                     </button>
+                    <button type="button" onclick="filterMatrixCategory('KEUANGAN', this)" class="matrix-filter-btn" style="font-size: 0.75rem; font-weight: 800; padding: 0.25rem 0.65rem; border-radius: 6px; border: 1.5px solid #cbd5e1; background: #ffffff; color: #475569; cursor: pointer;">
+                        💰 Keuangan &amp; Kas
+                    </button>
                     <button type="button" onclick="filterMatrixCategory('MASTER', this)" class="matrix-filter-btn" style="font-size: 0.75rem; font-weight: 800; padding: 0.25rem 0.65rem; border-radius: 6px; border: 1.5px solid #cbd5e1; background: #ffffff; color: #475569; cursor: pointer;">
                         📁 Master Data
                     </button>

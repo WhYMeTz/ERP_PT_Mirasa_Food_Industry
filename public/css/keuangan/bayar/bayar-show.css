@@ -1,0 +1,143 @@
+/* CSS Lembar Cetak Bukti Kas/Bank Keluar (BKK) - ERP PT Mirasa */
+
+.bkk-sheet-wrapper {
+    max-width: 820px;
+    margin: 0 auto;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 2.25rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.bkk-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding-bottom: 1.25rem;
+    border-bottom: 2px solid #0f172a;
+    margin-bottom: 1.25rem;
+}
+
+.company-title {
+    font-size: 1.25rem;
+    font-weight: 900;
+    color: #0f172a;
+    letter-spacing: -0.02em;
+    margin: 0;
+}
+
+.company-sub {
+    font-size: 0.775rem;
+    color: #475569;
+    margin: 2px 0 0 0;
+    line-height: 1.4;
+}
+
+.voucher-title {
+    text-align: right;
+}
+
+.voucher-title h2 {
+    font-size: 1.35rem;
+    font-weight: 900;
+    color: #0284c7;
+    margin: 0;
+    letter-spacing: -0.02em;
+}
+
+.voucher-no {
+    font-family: monospace;
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin-top: 3px;
+}
+
+.bkk-meta-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.25rem;
+    font-size: 0.8125rem;
+}
+
+.meta-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 3px 0;
+}
+
+.meta-row span:first-child {
+    color: #64748b;
+    font-weight: 600;
+}
+
+.meta-row span:last-child {
+    color: #0f172a;
+    font-weight: 700;
+}
+
+.terbilang-box {
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 6px;
+    padding: 0.75rem 1rem;
+    font-style: italic;
+    color: #1e40af;
+    font-size: 0.825rem;
+    margin-top: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.signatures-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-top: 2rem;
+    text-align: center;
+}
+
+.sign-box {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 120px;
+    border-bottom: 1.5px solid #0f172a;
+    padding-bottom: 4px;
+}
+
+.sign-role {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #475569;
+    text-transform: uppercase;
+}
+
+.sign-name {
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: #0f172a;
+}
+
+@media print {
+    body {
+        background: #ffffff !important;
+        padding: 0 !important;
+    }
+
+    .main-navbar, .sidebar, .btn, .no-print {
+        display: none !important;
+    }
+
+    .bkk-sheet-wrapper {
+        border: none !important;
+        box-shadow: none !important;
+        max-width: 100% !important;
+        padding: 0 !important;
+    }
+}

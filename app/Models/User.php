@@ -397,6 +397,62 @@ class User extends Authenticatable
     }
 
     /**
+     * Hak akses Modul Keuangan (Hutang, Pembayaran & Kas/Bank)
+     */
+    public function canAccessKeuangan(): bool
+    {
+        return $this->isSuperAdmin() 
+            || $this->canAccessHutang() 
+            || $this->canAccessBayarHutang() 
+            || $this->canAccessKasBank();
+    }
+
+    public function canAccessHutang(): bool
+    {
+        return $this->isSuperAdmin() || $this->canDo('hutang_view') || $this->canDo('hutang_create');
+    }
+
+    public function canCreateHutang(): bool
+    {
+        return $this->isSuperAdmin() || $this->canDo('hutang_create');
+    }
+
+    public function canEditHutang(): bool
+    {
+        return $this->isSuperAdmin() || $this->canDo('hutang_edit');
+    }
+
+    public function canDeleteHutang(): bool
+    {
+        return $this->isSuperAdmin() || $this->canDo('hutang_delete');
+    }
+
+    public function canAccessBayarHutang(): bool
+    {
+        return $this->isSuperAdmin() || $this->canDo('bayar_hutang_view') || $this->canDo('bayar_hutang_create');
+    }
+
+    public function canCreateBayarHutang(): bool
+    {
+        return $this->isSuperAdmin() || $this->canDo('bayar_hutang_create');
+    }
+
+    public function canVoidBayarHutang(): bool
+    {
+        return $this->isSuperAdmin() || $this->canDo('bayar_hutang_void');
+    }
+
+    public function canAccessKasBank(): bool
+    {
+        return $this->isSuperAdmin() || $this->canDo('kas_bank_view') || $this->canDo('kas_bank_manage');
+    }
+
+    public function canManageKasBank(): bool
+    {
+        return $this->isSuperAdmin() || $this->canDo('kas_bank_manage');
+    }
+
+    /**
      * Hak akses Master Data
      */
     public function canAccessMasterData(): bool

@@ -21,6 +21,9 @@ use App\Http\Controllers\MasterData\LiniProduksiController;
 use App\Http\Controllers\MasterData\SatuanController;
 use App\Http\Controllers\MasterData\SupplierController;
 use App\Http\Controllers\MasterData\TarifProduksiController;
+use App\Http\Controllers\Keuangan\BayarHutangController;
+use App\Http\Controllers\Keuangan\HutangController;
+use App\Http\Controllers\Keuangan\KasBankController;
 use App\Http\Controllers\Penjualan\SoController;
 use App\Http\Controllers\Produksi\BomController;
 use App\Http\Controllers\Produksi\ProduksiController;
@@ -285,5 +288,23 @@ Route::middleware('auth')->group(function () {
         Route::get('so/{id}/export-surat-jalan', [SoController::class, 'exportSuratJalanPdf'])->name('so.export-surat-jalan');
         Route::post('so/{id}/cancel', [SoController::class, 'cancel'])->name('so.cancel');
         Route::resource('so', SoController::class);
+    });
+
+    // Modul Keuangan: Hutang Usaha (AP), Pelunasan Kas Keluar & Rekening Bank
+    Route::prefix('keuangan')->name('keuangan.')->group(function () {
+        // 1. Hutang Usaha & Tagihan Pembelian (AP)
+        Route::get('hutang/ajax-unbilled-grn', [HutangController::class, 'ajaxUnbilledGrn'])->name('hutang.ajax-unbilled-grn')->middleware('role:hutang_view,hutang_create');
+        Route::get('hutang/ajax-gas-summary', [HutangController::class, 'ajaxGasSummary'])->name('hutang.ajax-gas-summary')->middleware('role:hutang_view,hutang_create');
+        Route::get('hutang/create-gas', [HutangController::class, 'createGas'])->name('hutang.create_gas')->middleware('role:hutang_create');
+        Route::post('hutang/store-gas', [HutangController::class, 'storeGas'])->name('hutang.store_gas')->middleware('role:hutang_create');
+        Route::resource('hutang', HutangController::class)->except(['edit', 'update']);
+
+        // 2. Pelunasan Hutang (Bukti Kas Keluar - BKK)
+        Route::post('bayar/{id}/void', [BayarHutangController::class, 'void'])->name('bayar.void')->middleware('role:bayar_hutang_void');
+        Route::resource('bayar', BayarHutangController::class)->only(['index', 'create', 'store', 'show']);
+
+        // 3. Kas & Rekening Bank
+        Route::get('kas-bank/mutasi', [KasBankController::class, 'mutasi'])->name('kas_bank.mutasi')->middleware('role:kas_bank_view');
+        Route::resource('kas-bank', KasBankController::class)->only(['index', 'store'])->names('kas_bank')->middleware('role:kas_bank_view');
     });
 });

@@ -260,6 +260,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/next-karton', [ProduksiController::class, 'getNextKarton'])->name('next-karton');
         Route::get('/sync-karyawan', [ProduksiController::class, 'getKaryawanDataByDate'])->name('sync-karyawan');
         Route::get('/{id}', [ProduksiController::class, 'show'])->name('show')->whereNumber('id');
+        Route::get('/{id}/adjust', [ProduksiController::class, 'adjustPage'])->name('adjust')->middleware('role:produksi_create')->whereNumber('id');
         Route::post('/{id}/adjust-hpp', [ProduksiController::class, 'adjustHpp'])->name('adjust-hpp')->middleware('role:produksi_create')->whereNumber('id');
         Route::get('/{id}/cetak-stiker', [ProduksiController::class, 'cetakStiker'])->name('cetak-stiker')->whereNumber('id');
         Route::delete('/{id}', [ProduksiController::class, 'destroy'])->name('destroy')->middleware('role:produksi_create')->whereNumber('id');

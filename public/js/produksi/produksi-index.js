@@ -5,6 +5,57 @@
  */
 
 let activeDropdownMenu = null;
+let activeTriggerButton = null;
+
+/**
+ * Hitung posisi dropdown secara dinamis dan responsif
+ */
+function positionActionDropdown(button, menu) {
+    if (!button || !menu) return;
+
+    const rect = button.getBoundingClientRect();
+    const menuWidth = menu.offsetWidth || 190;
+    const menuHeight = menu.offsetHeight || 135;
+    const windowWidth = window.innerWidth;
+    const windowHeight = window.innerHeight;
+
+    // Tentukan posisi horizontal (utamakan rata kanan tombol)
+    let left = rect.right - menuWidth;
+    if (left < 10) left = 10;
+    if (left + menuWidth > windowWidth - 10) {
+        left = windowWidth - menuWidth - 10;
+    }
+
+    // Tentukan posisi vertikal (bawah tombol, atau atas jika mepet bawah)
+    const spaceBelow = windowHeight - rect.bottom;
+    const spaceAbove = rect.top;
+
+    let top;
+    if (spaceBelow < menuHeight && spaceAbove > spaceBelow) {
+        top = rect.top - menuHeight - 4;
+    } else {
+        top = rect.bottom + 4;
+    }
+
+    menu.style.top = top + 'px';
+    menu.style.left = left + 'px';
+}
+
+/**
+ * Tutup seluruh dropdown aksi yang sedang aktif
+ */
+function closeAllActionDropdowns() {
+    if (activeDropdownMenu) {
+        activeDropdownMenu.classList.remove('show');
+        activeDropdownMenu = null;
+    }
+    if (activeTriggerButton) {
+        activeTriggerButton.classList.remove('active');
+        activeTriggerButton = null;
+    }
+    document.querySelectorAll('.action-dropdown-menu.show').forEach(m => m.classList.remove('show'));
+    document.querySelectorAll('.btn-action-trigger.active').forEach(b => b.classList.remove('active'));
+}
 
 /**
  * Smart Action Dropdown dengan Fixed Positioning
@@ -21,55 +72,43 @@ function toggleSmartActionDropdown(button, event, menuId) {
 
     // Jika menu ini sudah terbuka, tutup
     if (activeDropdownMenu === menu) {
-        menu.classList.remove('show');
-        activeDropdownMenu = null;
+        closeAllActionDropdowns();
         return;
     }
 
     // Tutup menu lain yang sedang aktif
-    if (activeDropdownMenu) {
-        activeDropdownMenu.classList.remove('show');
-    }
+    closeAllActionDropdowns();
 
-    // Hitung posisi tombol di layar
-    const rect = button.getBoundingClientRect();
-    const menuWidth = 190;
-    const windowWidth = window.innerWidth;
-    const windowHeight = window.innerHeight;
-
-    // Tentukan posisi horizontal (utamakan rata kanan tombol)
-    let left = rect.right - menuWidth;
-    if (left < 10) left = 10;
-    if (left + menuWidth > windowWidth - 10) {
-        left = windowWidth - menuWidth - 10;
-    }
-
-    // Tentukan posisi vertikal (bawah tombol, atau atas jika mepet bawah)
-    let top = rect.bottom + 4;
-    const estimatedHeight = 120;
-    if (top + estimatedHeight > windowHeight - 10 && rect.top > estimatedHeight) {
-        top = rect.top - estimatedHeight - 4;
-    }
-
-    menu.style.top = top + 'px';
-    menu.style.left = left + 'px';
-    menu.classList.add('show');
     activeDropdownMenu = menu;
+    activeTriggerButton = button;
+    button.classList.add('active');
+
+    menu.classList.add('show');
+    positionActionDropdown(button, menu);
 }
 
-// Tutup dropdown jika klik di luar atau saat scroll window
+// Global Event Listeners
 document.addEventListener('click', function (e) {
-    if (activeDropdownMenu && !activeDropdownMenu.contains(e.target)) {
-        activeDropdownMenu.classList.remove('show');
-        activeDropdownMenu = null;
+    if (!e.target.closest('.action-dropdown-menu') && !e.target.closest('.btn-action-trigger')) {
+        closeAllActionDropdowns();
     }
 });
 
-window.addEventListener('resize', function () {
-    if (activeDropdownMenu) {
-        activeDropdownMenu.classList.remove('show');
-        activeDropdownMenu = null;
+// Sesuaikan posisi jika window atau container tabel discroll secara real-time
+window.addEventListener('scroll', function () {
+    if (activeDropdownMenu && activeTriggerButton) {
+        const rect = activeTriggerButton.getBoundingClientRect();
+        // Jika tombol sudah tertutup/terscroll keluar dari area pandang viewport (atas/bawah), tutup dropdown
+        if (rect.bottom < 50 || rect.top > window.innerHeight - 30) {
+            closeAllActionDropdowns();
+        } else {
+            positionActionDropdown(activeTriggerButton, activeDropdownMenu);
+        }
     }
+}, true);
+
+window.addEventListener('resize', function () {
+    closeAllActionDropdowns();
 });
 
 /**

@@ -207,9 +207,6 @@
         </form>
     </div>
 
-    {{-- =========================================================================
-         TABEL 100% PAS LAYAR (SANGAT BERSIH, TERSTRUKTUR & TINGGI KETERBACAAN)
-         ========================================================================= --}}
     @if ($viewType === 'item')
         {{-- VIEW 1: BUKU REKAP PENYESUAIAN (KOLOM TUNGGAL TANPA TUMPUKAN TEKS) --}}
         <div style="overflow-x: auto;">

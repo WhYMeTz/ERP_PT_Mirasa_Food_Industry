@@ -329,14 +329,33 @@
                                 <div id="{{ $rekapMenuId }}" class="action-dropdown-menu">
                                     @if(($d['shift_count'] ?? 1) > 1 && !empty($d['shift_records']))
                                         <div style="padding: 0.35rem 0.75rem; font-size: 0.675rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; background: #f8fafc; border-bottom: 1px solid #f1f5f9;">
-                                            Rincian Shift ({{ $d['shift_count'] }} Dokumen)
+                                            Detail Dokumen Shift ({{ $d['shift_count'] }})
                                         </div>
                                         @foreach($d['shift_records'] as $sRec)
-                                            <a href="{{ route('produksi.show', $sRec['produksi_id']) }}" class="action-dropdown-item">
-                                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                                                <span>Detail Shift {{ $sRec['shift_cd'] }} ({{ $sRec['produksi_no'] }})</span>
+                                            <a href="{{ route('produksi.show', $sRec['produksi_id']) }}" class="action-dropdown-item" style="display: flex; align-items: flex-start; gap: 0.5rem; padding: 0.5rem 0.75rem;">
+                                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin-top: 2px; flex-shrink: 0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                                <div style="display: flex; flex-direction: column; text-align: left; line-height: 1.25;">
+                                                    <span style="font-weight: 700; color: #0f172a; font-size: 0.8rem;">{{ $sRec['produksi_no'] }} (Shift {{ $sRec['shift_cd'] }})</span>
+                                                    <span style="font-size: 0.72rem; color: #0284c7; font-weight: 600; margin-top: 0.15rem;">{{ $sRec['output_summary'] ?? 'Detail Dokumen' }}</span>
+                                                </div>
                                             </a>
                                         @endforeach
+
+                                        @if(Auth::user()->canCreateProduksi())
+                                            <div style="padding: 0.35rem 0.75rem; font-size: 0.675rem; font-weight: 800; color: #b45309; text-transform: uppercase; letter-spacing: 0.05em; background: #fffbeb; border-top: 1px solid #fef3c7; border-bottom: 1px solid #fef3c7;">
+                                                Adjustment HPP
+                                            </div>
+                                            @foreach($d['shift_records'] as $sRec)
+                                                <a href="{{ route('produksi.adjust', $sRec['produksi_id']) }}" class="action-dropdown-item" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.45rem 0.75rem;">
+                                                    <svg width="14" height="14" fill="none" stroke="#d97706" viewBox="0 0 24 24" style="flex-shrink: 0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                                    <div style="display: flex; flex-direction: column; text-align: left; line-height: 1.25;">
+                                                        <span style="font-weight: 700; color: #0f172a; font-size: 0.8rem;">Adjustment Shift {{ $sRec['shift_cd'] }}</span>
+                                                        <span style="font-size: 0.7rem; color: #64748b;">{{ $sRec['produksi_no'] }}</span>
+                                                    </div>
+                                                </a>
+                                            @endforeach
+                                        @endif
+
                                         <div class="action-dropdown-divider"></div>
                                         @php
                                             $tglSpreadsheet = sprintf('%02d/%02d/%04d', $d['day'], $month, $year);
@@ -350,6 +369,12 @@
                                             <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                                             <span>Detail Dokumen</span>
                                         </a>
+                                        @if(Auth::user()->canCreateProduksi())
+                                            <a href="{{ route('produksi.adjust', $d['produksi_id']) }}" class="action-dropdown-item">
+                                                <svg width="14" height="14" fill="none" stroke="#d97706" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                                <span>Adjustment HPP</span>
+                                            </a>
+                                        @endif
                                         <div class="action-dropdown-divider"></div>
                                         @php
                                             $tglSpreadsheet = sprintf('%02d/%02d/%04d', $d['day'], $month, $year);

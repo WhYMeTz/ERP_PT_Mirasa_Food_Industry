@@ -79,7 +79,7 @@ class ProduksiController extends Controller
      */
     public function rekap(Request $request): View
     {
-        $mode = $request->input('mode', 'harian'); // 'harian' atau 'bulanan'
+        $mode = $request->input('mode') === 'bulanan' ? 'bulanan' : 'harian';
         $year = (int) $request->input('tahun', date('Y'));
         $month = (int) $request->input('bulan', date('n'));
 

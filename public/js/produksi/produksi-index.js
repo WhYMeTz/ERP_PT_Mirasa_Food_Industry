@@ -240,18 +240,24 @@ function switchHppViewMode(mode) {
     const spreadsheetContainer = document.getElementById('spreadsheet-view-container');
     const btnCompact = document.getElementById('btn-mode-compact');
     const btnSpreadsheet = document.getElementById('btn-mode-spreadsheet');
+    const btnCompactSp = document.getElementById('btn-mode-compact-sp');
+    const btnSpreadsheetSp = document.getElementById('btn-mode-spreadsheet-sp');
 
     if (mode === 'compact') {
         if (compactContainer) compactContainer.style.display = 'block';
         if (spreadsheetContainer) spreadsheetContainer.style.display = 'none';
         if (btnCompact) btnCompact.classList.add('active');
         if (btnSpreadsheet) btnSpreadsheet.classList.remove('active');
+        if (btnCompactSp) btnCompactSp.classList.add('active');
+        if (btnSpreadsheetSp) btnSpreadsheetSp.classList.remove('active');
         localStorage.setItem('mirasa_hpp_view_mode', 'compact');
     } else {
         if (compactContainer) compactContainer.style.display = 'none';
         if (spreadsheetContainer) spreadsheetContainer.style.display = 'block';
         if (btnCompact) btnCompact.classList.remove('active');
         if (btnSpreadsheet) btnSpreadsheet.classList.add('active');
+        if (btnCompactSp) btnCompactSp.classList.remove('active');
+        if (btnSpreadsheetSp) btnSpreadsheetSp.classList.add('active');
         localStorage.setItem('mirasa_hpp_view_mode', 'spreadsheet');
     }
 }

@@ -17,6 +17,7 @@ class StorePemakaianRequest extends FormRequest
             'pakai_no'         => ['nullable', 'string', 'max:100', 'unique:dat_pakai_hdr,pakai_no'],
             'pakai_tgl'        => ['required', 'date'],
             'gudang_id'        => ['required', 'exists:mst_gudang,gudang_id'],
+            'produksi_id'      => ['nullable', 'exists:dat_produksi_hdr,produksi_id'],
             'tujuan_pemakaian' => ['required', 'string', 'max:150'],
             'catatan_txt'      => ['nullable', 'string', 'max:1000'],
             'items'            => ['required', 'array', 'min:1'],

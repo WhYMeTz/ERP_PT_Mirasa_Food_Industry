@@ -267,6 +267,8 @@ Route::middleware('auth')->group(function () {
 
         // Pengemasan Barang Jadi & HPP (Packaging)
         Route::get('/packaging/ajax-bom-preview', [PackagingController::class, 'ajaxBomPreview'])->name('packaging.ajax-bom-preview');
+        Route::get('/packaging/ajax-produksi-details', [PackagingController::class, 'ajaxProduksiDetails'])->name('packaging.ajax-produksi-details');
+        Route::get('/packaging/ajax-pakai-details', [PackagingController::class, 'ajaxPakaiDetails'])->name('packaging.ajax-pakai-details');
         Route::get('/packaging', [PackagingController::class, 'index'])->name('packaging.index');
         Route::get('/packaging/rekap', [PackagingController::class, 'rekap'])->name('packaging.rekap');
         Route::get('/packaging/export-rekap-excel', [PackagingController::class, 'exportRekapExcel'])->name('packaging.export-rekap-excel');

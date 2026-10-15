@@ -92,9 +92,14 @@ class PackagingService
      * Pratinjau Cerdas Resep Kemasan (BOM Smart Preview) & Auto-Kalkulasi HPP.
      * Secara otomatis menarik saldo stok fisik gudang & HPP riil keripik curah (FIFO).
      */
-    public function getBomPreview(int $barangJadiId, float $targetKartonQty): array
+    public function getBomPreview(int $barangJadiId, float $targetKartonQty, int $produksiId = 0): array
     {
         $barangJadi = MstBarang::with('satuanDasar')->findOrFail($barangJadiId);
+
+        $linkedProduksi = null;
+        if ($produksiId > 0) {
+            $linkedProduksi = DatProduksiHdr::where('deleted_st', false)->find($produksiId);
+        }
 
         // Cari Formula Resep (BOM) terkait produk jadi ini
         $bom = MstBomHdr::with(['details.barangMentah.satuanDasar', 'details.barangMentah.jenisBarang'])
@@ -158,7 +163,12 @@ class PackagingService
             $hargaSatuan = 0;
             $batchNo = $activeBatch?->batch_no ?? null;
 
-            if ($activeBatch && (float) $activeBatch->harga_satuan > 0) {
+            if ($kategori === 'WIP' && $linkedProduksi && (float) $linkedProduksi->hpp_per_kg > 0) {
+                // Prioritas Tertinggi: Sinkronisasi langsung dengan Dokumen HPP Produksi Hari Terkait
+                $hargaSatuan = (float) $linkedProduksi->hpp_per_kg;
+                $batchNo = $linkedProduksi->batch_wip_no 
+                    ?: ($linkedProduksi->produksi_tgl ? $linkedProduksi->produksi_tgl->format('d m Y') : $batchNo);
+            } elseif ($activeBatch && (float) $activeBatch->harga_satuan > 0) {
                 $hargaSatuan = (float) $activeBatch->harga_satuan;
             } else {
                 // Fallback: cek HPP produksi terakhir (untuk WIP) atau master harga beli standar
@@ -337,7 +347,9 @@ class PackagingService
                 }
             }
 
-            // 2. Buat Header Dokumen
+            $pakaiId = !empty($data['pakai_id']) ? (int) $data['pakai_id'] : null;
+
+            // 2. Buat Header Dokumen Pengemasan
             $header = DatPackagingHdr::create([
                 'pack_no'                  => $packNo,
                 'pack_tgl'                 => $packTgl,
@@ -348,6 +360,7 @@ class PackagingService
                 'target_karton_qty'        => $targetKarton,
                 'hasil_karton_qty'         => $hasilKarton,
                 'isi_per_karton_pcs'       => $isiPerKarton,
+                'gramatur_gr'              => (float) ($data['gramatur_gr'] ?? 0),
                 'hasil_pcs_qty'            => $hasilPcs,
                 'batch_no'                 => $batchNo,
                 'expired_tgl'              => $expiredTgl,
@@ -364,7 +377,7 @@ class PackagingService
                 'updated_by'               => $userName ?? auth()->user()?->name ?? 'System',
             ]);
 
-            // 3. Simpan Detail & Eksekusi Pemotongan Stok Bahan (Outbound)
+            // 3. Simpan Detail Konsumsi & Eksekusi Pemotongan Stok Bahan Fisik (Outbound)
             foreach ($processedDetails as $dtlData) {
                 DatPackagingDtl::create([
                     'pack_id'        => $header->pack_id,
@@ -383,7 +396,6 @@ class PackagingService
 
                 // Tentukan gudang sumber bahan yang dipotong
                 $brgTarget = MstBarang::with('jenisBarang')->find($dtlData['barang_id']);
-                $jenisTarget = strtoupper($brgTarget?->jenisBarang?->jenis_barang_cd ?? '');
                 
                 // Cari batch stok fisik di gudang terkait
                 $stokBatch = DatStokBatch::where('barang_id', $dtlData['barang_id'])
@@ -410,11 +422,49 @@ class PackagingService
                     );
                 } catch (Exception $e) {
                     // Fallback jika stok fisik kurang tapi operasional tetap mencatat konsumsi
-                    // Log or handle gracefully
                 }
             }
 
-            // 4. Tambah Stok Masuk Barang Jadi (FG) ke Gudang FG (Inbound)
+            // 4. OTOMATIS TERCATAT DI MENU "GUDANG -> PEMAKAIAN BAHAN" (AUTO-ISSUANCE)
+            // Memudahkan operasional: Orang gudang tidak perlu input manual, dokumen pengeluaran otomatis terbit!
+            try {
+                $prefixPakai = 'OUT-' . date('Ym', strtotime($packTgl)) . '-';
+                $pakaiNo = $this->codeGenerator->generate('dat_pakai_hdr', 'pakai_no', $prefixPakai, 4);
+                $targetBarang = MstBarang::find($barangJadiId);
+                $targetBarangNm = $targetBarang?->barang_nm ?? 'BARANG JADI';
+
+                $pakaiHdr = \App\Models\Gudang\DatPakaiHdr::create([
+                    'pakai_no'         => $pakaiNo,
+                    'pakai_tgl'        => $packTgl,
+                    'gudang_id'        => $gudangId,
+                    'produksi_id'      => $prodId,
+                    'tujuan_pemakaian' => 'PENGEMASAN ' . strtoupper($targetBarangNm),
+                    'catatan_txt'      => "Otomatis terbentuk dari Pengemasan No. {$packNo} ({$hasilKarton} Karton)",
+                    'created_by'       => $userName ?? auth()->user()?->name ?? 'System',
+                    'updated_by'       => $userName ?? auth()->user()?->name ?? 'System',
+                ]);
+
+                foreach ($processedDetails as $dtlData) {
+                    \App\Models\Gudang\DatPakaiDtl::create([
+                        'pakai_id'       => $pakaiHdr->pakai_id,
+                        'barang_id'      => $dtlData['barang_id'],
+                        'batch_no'       => $dtlData['batch_no'] ?: 'BATCH-DEF',
+                        'grade_cd'       => 'A',
+                        'qty_keluar'     => $dtlData['qty_aktual'],
+                        'harga_satuan'   => $dtlData['harga_satuan'],
+                        'total_harga'    => $dtlData['subtotal_nilai'],
+                        'keterangan_txt' => "Konsumsi Pengemasan {$packNo}: {$hasilKarton} Karton {$targetBarangNm}",
+                        'created_by'     => $userName ?? auth()->user()?->name ?? 'System',
+                        'updated_by'     => $userName ?? auth()->user()?->name ?? 'System',
+                    ]);
+                }
+
+                $header->update(['pakai_id' => $pakaiHdr->pakai_id]);
+            } catch (Exception $e) {
+                // Log atau lanjutkan jika tabel gudang memiliki kendala non-fatal
+            }
+
+            // 5. Tambah Stok Masuk Barang Jadi (FG) ke Gudang FG (Inbound)
             $ketIn = "Hasil Pengemasan Barang Jadi ({$packNo}) - HPP Rp " . number_format($hppPerKarton, 0, ',', '.') . "/Karton";
             $this->stokService->addStock(
                 gudangId: $gudangId,
@@ -471,6 +521,22 @@ class PackagingService
                     keterangan: $ketVoidBahan,
                     hargaSatuan: (float) $dtl->harga_satuan
                 );
+            }
+
+            // 3. Batalkan Dokumen Pemakaian Gudang yang otomatis terbentuk
+            if ($header->pakai_id) {
+                $pakaiHdr = \App\Models\Gudang\DatPakaiHdr::find($header->pakai_id);
+                if ($pakaiHdr) {
+                    $pakaiHdr->update([
+                        'deleted_st'  => true,
+                        'catatan_txt' => trim($pakaiHdr->catatan_txt . "\n[DIBATALKAN PENGEMASAN]: " . $reason),
+                        'updated_by'  => $userName ?? auth()->user()?->name ?? 'System',
+                    ]);
+                    $pakaiHdr->details()->update([
+                        'deleted_st' => true,
+                        'updated_by' => $userName ?? auth()->user()?->name ?? 'System',
+                    ]);
+                }
             }
 
             // 3. Update Status Header
@@ -537,28 +603,136 @@ class PackagingService
                 $hppKarton = $hasilKarton > 0 ? ($totalBiaya / $hasilKarton) : 0;
                 $hppPcs = $hasilPcs > 0 ? ($totalBiaya / $hasilPcs) : 0;
 
-                // Ekstrak rincian konsumsi bahan dari detail
+                // Ekstrak rincian konsumsi bahan dan output Ping-Ping & Maksi
                 $allDetails = collect();
                 $wipKgTotal = 0;
                 $kartonPcsTotal = 0;
                 $plastikPcsTotal = 0;
                 $lakbanRollTotal = 0;
 
+                $berkoKg = 0;
+                $wipKg = 0;
+                $bahanKeripikNilai = 0;
+
+                $kartonKkQty = 0;
+                $kartonMkQty = 0;
+                $kartonNilai = 0;
+
+                $baladoKg = 0;
+                $baladoNilai = 0;
+
+                $rollKkKg = 0;
+                $rollMkKg = 0;
+                $rollNilai = 0;
+
+                $lakbanJumlahGr = 0;
+                $lakbanNilai = 0;
+
+                $kertasExpQty = 0;
+                $kertasExpNilai = 0;
+
+                $kerusakanPlastikQty = 0;
+                $kerusakanPlastikNilai = 0;
+
+                $kerusakanKartonQty = 0;
+                $kerusakanKartonNilai = 0;
+
+                $hasilPingPing = 0;
+                $hasilMaksi = 0;
+
                 foreach ($dayRecords as $rec) {
+                    $targetNm = strtoupper($rec->barangJadi?->barang_nm ?? '');
+                    $isMaksi = str_contains($targetNm, 'MAKSI') || str_contains($targetNm, 'MK');
+
+                    if ($isMaksi) {
+                        $hasilMaksi += (float) $rec->hasil_pcs_qty;
+                    } else {
+                        $hasilPingPing += (float) $rec->hasil_pcs_qty;
+                    }
+
                     foreach ($rec->details as $dtl) {
                         $allDetails->push($dtl);
+                        $bNm = strtoupper($dtl->barang?->barang_nm ?? '');
                         $kat = strtoupper($dtl->kategori_bahan ?? '');
-                        if ($kat === 'WIP') {
-                            $wipKgTotal += (float) $dtl->qty_aktual;
-                        } elseif ($kat === 'KARTON') {
-                            $kartonPcsTotal += (float) $dtl->qty_aktual;
-                        } elseif ($kat === 'PLASTIK') {
-                            $plastikPcsTotal += (float) $dtl->qty_aktual;
-                        } elseif ($kat === 'LAKBAN') {
-                            $lakbanRollTotal += (float) $dtl->qty_aktual;
+                        $sub = (float) $dtl->subtotal_nilai;
+                        $qty = (float) $dtl->qty_aktual;
+
+                        if ($kat === 'WIP' || str_contains($bNm, 'KS') || str_contains($bNm, 'BERKO') || str_contains($bNm, 'KERIPIK')) {
+                            $wipKgTotal += $qty;
+                            if (str_contains($bNm, 'BERKO')) {
+                                $berkoKg += $qty;
+                            } else {
+                                $wipKg += $qty;
+                            }
+                            $bahanKeripikNilai += $sub;
+                        } elseif ($kat === 'KARTON' || str_contains($bNm, 'KARTON') || str_contains($bNm, 'BOX') || str_contains($bNm, 'DUS')) {
+                            $kartonPcsTotal += $qty;
+                            if (str_contains($bNm, 'MAKSI') || str_contains($bNm, 'MK')) {
+                                $kartonMkQty += $qty;
+                            } else {
+                                $kartonKkQty += $qty;
+                            }
+                            $kartonNilai += $sub;
+                        } elseif ($kat === 'BUMBU' || str_contains($bNm, 'BUMBU') || str_contains($bNm, 'BALADO')) {
+                            $baladoKg += $qty;
+                            $baladoNilai += $sub;
+                        } elseif (str_contains($bNm, 'ROLL') || $kat === 'PLASTIK') {
+                            $plastikPcsTotal += $qty;
+                            if (str_contains($bNm, 'MAKSI') || str_contains($bNm, 'MK')) {
+                                $rollMkKg += $qty;
+                            } else {
+                                $rollKkKg += $qty;
+                            }
+                            $rollNilai += $sub;
+                        } elseif (str_contains($bNm, 'LAKBAN') || $kat === 'LAKBAN') {
+                            $lakbanRollTotal += $qty;
+                            $lakbanJumlahGr += ($qty > 50 ? $qty : $qty * 100);
+                            $lakbanNilai += $sub;
+                        } elseif (str_contains($bNm, 'EXP') || str_contains($bNm, 'KERTAS')) {
+                            $kertasExpQty += $qty;
+                            $kertasExpNilai += $sub;
+                        } elseif (str_contains($bNm, 'RUSAK') || str_contains($bNm, 'REJECT') || str_contains($bNm, 'AFKIR')) {
+                            if (str_contains($bNm, 'KARTON')) {
+                                $kerusakanKartonQty += $qty;
+                                $kerusakanKartonNilai += $sub;
+                            } else {
+                                $kerusakanPlastikQty += $qty;
+                                $kerusakanPlastikNilai += $sub;
+                            }
+                        } else {
+                            $kartonNilai += $sub;
                         }
                     }
                 }
+
+                // Estimasi standar balado jika tidak diinput terpisah (5% dari Berko sesuai parameter Excel)
+                if ($baladoKg == 0 && $berkoKg > 0) {
+                    $baladoKg = round($berkoKg * 0.05, 2);
+                    $baladoNilai = round($baladoKg * 39450, 0);
+                }
+
+                // Perhitungan lakban atas & bawah (masing-masing 50% dari total pemakaian)
+                $lakbanAtasGr = round($lakbanJumlahGr / 2, 1);
+                $lakbanBawahGr = round($lakbanJumlahGr / 2, 1);
+
+                $hasilJumlah = $hasilPingPing + $hasilMaksi;
+                if ($hasilJumlah == 0 && $hasilPcs > 0) {
+                    $hasilPingPing = $hasilPcs;
+                    $hasilJumlah = $hasilPcs;
+                }
+
+                // Gramasi bersih hasil kemasan (Kg) berdasarkan gramatur aktual dokumen
+                $gramasiTotalKg = 0;
+                foreach ($dayRecords as $rec) {
+                    $grPcs = (float) $rec->gramatur_gr > 0 ? (float) $rec->gramatur_gr : 16.0;
+                    $gramasiTotalKg += ((float) $rec->hasil_pcs_qty * ($grPcs / 1000));
+                }
+                $gramasiTotalKg = round($gramasiTotalKg, 2);
+                if ($gramasiTotalKg == 0 && $wipKgTotal > 0) {
+                    $gramasiTotalKg = $wipKgTotal;
+                }
+
+                $hppPerUnit = $hasilJumlah > 0 ? ($totalBiaya / $hasilJumlah) : 0;
 
                 $productNames = $dayRecords->map(fn($r) => $r->barangJadi?->barang_nm)->unique()->filter()->values()->toArray();
                 $batchList = $dayRecords->pluck('batch_no')->unique()->filter()->values()->toArray();
@@ -575,9 +749,9 @@ class PackagingService
                     'primary_pack_no'         => $dayRecords->first()->pack_no,
                     'pack_no_list'            => $packNoList,
                     'product_names'           => $productNames,
-                    'primary_product_nm'      => !empty($productNames) ? $productNames[0] : '-',
+                    'primary_product_nm'      => !empty($productNames) ? implode(', ', $productNames) : '-',
                     'batch_list'              => $batchList,
-                    'primary_batch_no'        => !empty($batchList) ? $batchList[0] : '-',
+                    'primary_batch_no'        => !empty($batchList) ? implode(', ', $batchList) : '-',
                     'target_karton'           => $targetKarton,
                     'hasil_karton'            => $hasilKarton,
                     'hasil_pcs'               => $hasilPcs,
@@ -592,6 +766,35 @@ class PackagingService
                     'karton_pcs_total'        => $kartonPcsTotal,
                     'plastik_pcs_total'       => $plastikPcsTotal,
                     'lakban_roll_total'       => $lakbanRollTotal,
+
+                    // 28 Atribut Kolom Spesifik Ping-Ping & Maksi
+                    'berko_kg'                => $berkoKg,
+                    'wip_kg'                  => $wipKg,
+                    'bahan_keripik_nilai'     => $bahanKeripikNilai ?: $totalWipNilai,
+                    'karton_kk_qty'           => $kartonKkQty,
+                    'karton_mk_qty'           => $kartonMkQty,
+                    'karton_nilai'            => $kartonNilai,
+                    'balado_kg'               => $baladoKg,
+                    'balado_nilai'            => $baladoNilai,
+                    'roll_kk_kg'              => $rollKkKg,
+                    'roll_mk_kg'              => $rollMkKg,
+                    'roll_nilai'              => $rollNilai,
+                    'lakban_atas_gr'          => $lakbanAtasGr,
+                    'lakban_bawah_gr'         => $lakbanBawahGr,
+                    'lakban_jumlah_gr'        => $lakbanJumlahGr,
+                    'lakban_nilai'            => $lakbanNilai,
+                    'kertas_exp_qty'          => $kertasExpQty,
+                    'kertas_exp_nilai'        => $kertasExpNilai,
+                    'kerusakan_plastik_qty'   => $kerusakanPlastikQty,
+                    'kerusakan_plastik_nilai' => $kerusakanPlastikNilai,
+                    'kerusakan_karton_qty'    => $kerusakanKartonQty,
+                    'kerusakan_karton_nilai'  => $kerusakanKartonNilai,
+                    'hasil_ping_ping'         => $hasilPingPing,
+                    'hasil_maksi'             => $hasilMaksi,
+                    'hasil_jumlah'            => $hasilJumlah,
+                    'gramasi_kg'              => $gramasiTotalKg,
+                    'hpp_per_unit'            => $hppPerUnit ?: $hppPcs,
+
                     'details'                 => $allDetails,
                 ];
             } else {
@@ -623,12 +826,41 @@ class PackagingService
                     'karton_pcs_total'        => 0,
                     'plastik_pcs_total'       => 0,
                     'lakban_roll_total'       => 0,
+
+                    // 28 Atribut Kolom Spesifik Ping-Ping & Maksi (Kosong)
+                    'berko_kg'                => 0,
+                    'wip_kg'                  => 0,
+                    'bahan_keripik_nilai'     => 0,
+                    'karton_kk_qty'           => 0,
+                    'karton_mk_qty'           => 0,
+                    'karton_nilai'            => 0,
+                    'balado_kg'               => 0,
+                    'balado_nilai'            => 0,
+                    'roll_kk_kg'              => 0,
+                    'roll_mk_kg'              => 0,
+                    'roll_nilai'              => 0,
+                    'lakban_atas_gr'          => 0,
+                    'lakban_bawah_gr'         => 0,
+                    'lakban_jumlah_gr'        => 0,
+                    'lakban_nilai'            => 0,
+                    'kertas_exp_qty'          => 0,
+                    'kertas_exp_nilai'        => 0,
+                    'kerusakan_plastik_qty'   => 0,
+                    'kerusakan_plastik_nilai' => 0,
+                    'kerusakan_karton_qty'    => 0,
+                    'kerusakan_karton_nilai'  => 0,
+                    'hasil_ping_ping'         => 0,
+                    'hasil_maksi'             => 0,
+                    'hasil_jumlah'            => 0,
+                    'gramasi_kg'              => 0,
+                    'hpp_per_unit'            => 0,
+
                     'details'                 => collect(),
                 ];
             }
         }
 
-        // Totals
+        // Totals & Averages
         $activeDays = collect($days)->where('has_data', true);
         $totalWip = (float) $activeDays->sum('total_biaya_wip');
         $totalKemasan = (float) $activeDays->sum('total_biaya_kemasan');
@@ -643,6 +875,62 @@ class PackagingService
         $rataHppPcs = $totalPcs > 0 ? round($totalBiaya / $totalPcs, 2) : 0;
         $biayaKemasPerKarton = $totalKarton > 0 ? round($totalKemasan / $totalKarton, 2) : 0;
 
+        // Akumulasi Matriks Ping-Ping & Maksi
+        $totBerkoKg = (float) $activeDays->sum('berko_kg');
+        $totWipKg = (float) $activeDays->sum('wip_kg');
+        $totBahanKeripikNilai = (float) $activeDays->sum('bahan_keripik_nilai');
+        $totKartonKk = (float) $activeDays->sum('karton_kk_qty');
+        $totKartonMk = (float) $activeDays->sum('karton_mk_qty');
+        $totKartonNilai = (float) $activeDays->sum('karton_nilai');
+        $totBaladoKg = (float) $activeDays->sum('balado_kg');
+        $totBaladoNilai = (float) $activeDays->sum('balado_nilai');
+        $totRollKkKg = (float) $activeDays->sum('roll_kk_kg');
+        $totRollMkKg = (float) $activeDays->sum('roll_mk_kg');
+        $totRollNilai = (float) $activeDays->sum('roll_nilai');
+        $totLakbanAtas = (float) $activeDays->sum('lakban_atas_gr');
+        $totLakbanBawah = (float) $activeDays->sum('lakban_bawah_gr');
+        $totLakbanJumlah = (float) $activeDays->sum('lakban_jumlah_gr');
+        $totLakbanNilai = (float) $activeDays->sum('lakban_nilai');
+        $totKertasExpQty = (float) $activeDays->sum('kertas_exp_qty');
+        $totKertasExpNilai = (float) $activeDays->sum('kertas_exp_nilai');
+        $totKerusakanPlastikQty = (float) $activeDays->sum('kerusakan_plastik_qty');
+        $totKerusakanPlastikNilai = (float) $activeDays->sum('kerusakan_plastik_nilai');
+        $totKerusakanKartonQty = (float) $activeDays->sum('kerusakan_karton_qty');
+        $totKerusakanKartonNilai = (float) $activeDays->sum('kerusakan_karton_nilai');
+        $totHasilPingPing = (float) $activeDays->sum('hasil_ping_ping');
+        $totHasilMaksi = (float) $activeDays->sum('hasil_maksi');
+        $totHasilJumlah = (float) $activeDays->sum('hasil_jumlah');
+        $totGramasiKg = (float) $activeDays->sum('gramasi_kg');
+
+        $activeCount = $activeDays->count();
+        $avgBerkoKg = $activeCount > 0 ? round($totBerkoKg / $activeCount, 2) : 0;
+        $avgBahanNilai = $activeCount > 0 ? round($totBahanKeripikNilai / $activeCount, 0) : 0;
+        $avgKartonNilai = $activeCount > 0 ? round($totKartonNilai / $activeCount, 0) : 0;
+        $avgTotalBiaya = $activeCount > 0 ? round($totalBiaya / $activeCount, 0) : 0;
+        $avgHasilJumlah = $activeCount > 0 ? round($totHasilJumlah / $activeCount, 0) : 0;
+        $avgGramasiKg = $activeCount > 0 ? round($totGramasiKg / $activeCount, 2) : 0;
+        $rataHppUnit = $totHasilJumlah > 0 ? round($totalBiaya / $totHasilJumlah, 2) : 0;
+
+        // Parameter Standar Acuan Harga (Daftar Harga Atas Excel)
+        $daftarHarga = [
+            'harga_wip'      => 29500,
+            'tgl_wip'        => '20/01/2026',
+            'karton_kk'      => 1358.30,
+            'karton_mk'      => 1350.00,
+            'bumbu_balado'   => 39450,
+            'bumbu_rasio'    => '5% Berko',
+            'roll_kk_unit'   => 364839,
+            'roll_mk_unit'   => 384471,
+            'out_3_kk'       => 353894,
+            'out_3_mk'       => 372937,
+            'roll_per_kg'    => 43482,
+            'roll_per_gr'    => 43.48,
+            'lakban_roll'    => 45000,
+            'lakban_per_gr'  => 106.63,
+            'kertas_exp_lbr' => 100,
+            'kerusakan_gr'   => 43.48,
+        ];
+
         return [
             'year'                   => $year,
             'month'                  => $month,
@@ -651,6 +939,7 @@ class PackagingService
             'total_dokumen'          => $records->count(),
             'records'                => $records,
             'days'                   => $days,
+            'daftar_harga'           => $daftarHarga,
             'totals'                 => [
                 'total_biaya_wip'          => $totalWip,
                 'total_biaya_kemasan'      => $totalKemasan,
@@ -663,6 +952,43 @@ class PackagingService
                 'rata_hpp_karton'          => $rataHppKarton,
                 'rata_hpp_pcs'             => $rataHppPcs,
                 'biaya_kemas_per_karton'   => $biayaKemasPerKarton,
+
+                // Akumulasi Matriks Ping-Ping & Maksi
+                'tot_berko_kg'             => $totBerkoKg,
+                'tot_wip_kg'               => $totWipKg,
+                'tot_bahan_keripik_nilai'  => $totBahanKeripikNilai,
+                'tot_karton_kk'            => $totKartonKk,
+                'tot_karton_mk'            => $totKartonMk,
+                'tot_karton_nilai'         => $totKartonNilai,
+                'tot_balado_kg'            => $totBaladoKg,
+                'tot_balado_nilai'         => $totBaladoNilai,
+                'tot_roll_kk_kg'           => $totRollKkKg,
+                'tot_roll_mk_kg'           => $totRollMkKg,
+                'tot_roll_nilai'           => $totRollNilai,
+                'tot_lakban_atas'          => $totLakbanAtas,
+                'tot_lakban_bawah'         => $totLakbanBawah,
+                'tot_lakban_jumlah'        => $totLakbanJumlah,
+                'tot_lakban_nilai'         => $totLakbanNilai,
+                'tot_kertas_exp_qty'       => $totKertasExpQty,
+                'tot_kertas_exp_nilai'     => $totKertasExpNilai,
+                'tot_kerusakan_plastik_qty'=> $totKerusakanPlastikQty,
+                'tot_kerusakan_plastik_nilai'=> $totKerusakanPlastikNilai,
+                'tot_kerusakan_karton_qty' => $totKerusakanKartonQty,
+                'tot_kerusakan_karton_nilai'=> $totKerusakanKartonNilai,
+                'tot_hasil_ping_ping'      => $totHasilPingPing,
+                'tot_hasil_maksi'          => $totHasilMaksi,
+                'tot_hasil_jumlah'         => $totHasilJumlah,
+                'tot_gramasi_kg'           => $totGramasiKg,
+                'rata_hpp_unit'            => $rataHppUnit,
+            ],
+            'averages'               => [
+                'avg_berko_kg'             => $avgBerkoKg,
+                'avg_bahan_nilai'          => $avgBahanNilai,
+                'avg_karton_nilai'         => $avgKartonNilai,
+                'avg_total_biaya'          => $avgTotalBiaya,
+                'avg_hasil_jumlah'         => $avgHasilJumlah,
+                'avg_gramasi_kg'           => $avgGramasiKg,
+                'avg_hpp_unit'             => $rataHppUnit,
             ],
         ];
     }

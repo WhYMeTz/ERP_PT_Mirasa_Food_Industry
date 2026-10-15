@@ -244,7 +244,7 @@
 {{-- ═════════════════════════════════════════════════════════════
      TAMPILAN 2: REKAPITULASI BULANAN (TREN 12 BULAN DALAM 1 TAHUN)
      ═════════════════════════════════════════════════════════════ --}}
-@else
+@elseif ($mode === 'bulanan' && $yearlyReport)
     <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; margin-bottom: 1.25rem;">
         <div style="display: flex; flex-direction: column; min-width: 0; flex: 1;">
             <span style="font-weight: 800; font-size: 1.15rem; color: #0f172a; letter-spacing: -0.01em; white-space: nowrap;">Konsolidasi Tren Produksi &amp; HPP Tahunan</span>
@@ -277,9 +277,10 @@
 
     {{-- 4 KARTU METRIK OPERASIONAL & HPP TAHUNAN (SERAGAM DENGAN MODUL LAIN) --}}
     @php
-        $an = $yearlyReport['annual_totals'];
-        $anRendemenLolos = $an['rendemen'] >= 33.0;
-        $anRendemenWarning = $an['rendemen'] >= 30.0;
+        $an = $yearlyReport['annual_totals'] ?? [];
+        $anRendemen = (float) ($an['rendemen'] ?? 0);
+        $anRendemenLolos = $anRendemen >= 33.0;
+        $anRendemenWarning = $anRendemen >= 30.0;
         $anRendemenColor = $anRendemenLolos ? '#059669' : ($anRendemenWarning ? '#d97706' : '#dc2626');
         $anRendemenBg = $anRendemenLolos ? '#d1fae5' : ($anRendemenWarning ? '#fef3c7' : '#fee2e2');
     @endphp

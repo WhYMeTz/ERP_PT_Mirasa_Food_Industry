@@ -259,3 +259,92 @@ body.packaging-mobile-body {
     gap: 6px;
     text-decoration: none;
 }
+
+/* ==========================================================================
+   NAVIGATION BARS (TOP TABS & BOTTOM MOBILE BAR)
+   ========================================================================== */
+
+/* Top Sub-Navbar Tabs */
+.pkg-top-nav-tabs {
+    display: flex;
+    background: #ffffff;
+    border-top: 1px solid #f1f5f9;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.pkg-nav-tab {
+    flex: 1;
+    padding: 0.65rem 0.5rem;
+    text-align: center;
+    text-decoration: none;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--pkg-text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border-bottom: 2.5px solid transparent;
+    transition: all 0.15s ease;
+}
+
+.pkg-nav-tab:hover {
+    color: var(--pkg-primary);
+    background: #f0fdf4;
+}
+
+.pkg-nav-tab.active {
+    color: var(--pkg-primary);
+    border-bottom-color: var(--pkg-primary);
+    background: #ecfdf5;
+}
+
+/* Bottom Navigation Bar for Mobile */
+.pkg-bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #ffffff;
+    border-top: 1px solid var(--pkg-border);
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+    z-index: 999;
+}
+
+.pkg-bottom-nav-inner {
+    max-width: 600px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    height: 56px;
+    padding: 0 0.5rem;
+}
+
+.pkg-bottom-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    color: #64748b;
+    text-decoration: none;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 6px 0;
+    transition: all 0.15s ease;
+}
+
+.pkg-bottom-item:hover, .pkg-bottom-item.active {
+    color: var(--pkg-primary);
+}
+
+.pkg-bottom-item.active svg {
+    stroke-width: 2.4;
+}
+

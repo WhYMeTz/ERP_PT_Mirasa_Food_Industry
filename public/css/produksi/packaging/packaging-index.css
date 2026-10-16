@@ -122,3 +122,111 @@
     align-items: center;
     gap: 0.5rem;
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   DAFTAR HARGA ACUAN PACKAGING (PARAMETER HEADER SEPERTI EXCEL MIRASA)
+   ══════════════════════════════════════════════════════════════════════════ */
+.daftar-harga-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.25rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.daftar-harga-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.daftar-harga-title {
+    font-size: 0.875rem;
+    font-weight: 800;
+    color: #0f172a;
+    letter-spacing: -0.01em;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.daftar-harga-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.75rem;
+}
+
+.price-ref-box {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 0.65rem 0.85rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.price-ref-label {
+    font-size: 0.675rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #64748b;
+    margin-bottom: 0.25rem;
+}
+
+.price-ref-val {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #0f172a;
+    font-family: monospace;
+}
+
+.price-ref-sub {
+    font-size: 0.7rem;
+    color: #94a3b8;
+    margin-top: 0.2rem;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   TABEL SPREADSHEET MATRIKS HARGA POKOK PRODUKSI PING-PING & MAKSI
+   ══════════════════════════════════════════════════════════════════════════ */
+.table-packaging-spreadsheet {
+    width: 100%;
+    min-width: 1950px;
+    border-collapse: collapse;
+    font-size: 0.775rem;
+}
+
+.table-packaging-spreadsheet th {
+    padding: 0.45rem 0.5rem;
+    font-size: 0.72rem;
+    font-weight: 800;
+    border: 1px solid #cbd5e1;
+    text-align: center;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+.table-packaging-spreadsheet td {
+    padding: 0.4rem 0.5rem;
+    border: 1px solid #e2e8f0;
+    vertical-align: middle;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.table-packaging-spreadsheet tbody tr:hover {
+    background: #f0fdf4 !important;
+}
+
+.table-packaging-spreadsheet tfoot td {
+    padding: 0.55rem 0.5rem;
+    border: 1px solid #cbd5e1;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}

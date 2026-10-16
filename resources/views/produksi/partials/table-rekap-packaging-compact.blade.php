@@ -1,8 +1,3 @@
-{{-- ════════════════════════════════════════════════════════════════ --}}
-{{--  TABEL REKAPITULASI HPP PENGEMASAN (PACKAGING) - RINGKAS & MODERN --}}
-{{--  ERP PT Mirasa Food Industry - Standar Enterprise NetSuite / SAP   --}}
-{{-- ════════════════════════════════════════════════════════════════ --}}
-
 <div class="card" style="margin-bottom: 2rem; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); overflow: hidden;">
     <div class="card-header" style="background: #ffffff; padding: 0.85rem 1.25rem; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
         <div style="display: flex; align-items: center; gap: 0.65rem;">
@@ -201,32 +196,36 @@
                         <td colspan="10" class="accordion-detail-cell">
                             <div class="cost-breakdown-grid">
                                 
-                                {{-- KOMPARTEMEN 1: BAHAN CURAH (WIP) TERPAKAI --}}
+                                {{-- KOMPARTEMEN 1: BAHAN KERIPIK & BUMBU BALADO --}}
                                 <div class="mini-cost-card">
                                     <div class="mini-cost-header">
                                         <div class="mini-cost-title">
-                                            <span>1. Bahan Baku Curah (WIP)</span>
+                                            <span>1. Bahan Keripik &amp; Bumbu Balado</span>
                                         </div>
-                                        <span class="mini-cost-badge" style="background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0;">Bahan Baku Utama</span>
+                                        <span class="mini-cost-badge" style="background: #fefce8; color: #854d0e; border: 1px solid #fef08a;">Bahan Baku</span>
                                     </div>
                                     <div class="mini-cost-list">
                                         <div class="mini-cost-row">
-                                            <span>Total Konsumsi WIP:</span>
-                                            <strong>{{ number_format($d['wip_kg_total'], 2, ',', '.') }} kg</strong>
+                                            <span>Konsumsi Berko:</span>
+                                            <strong>{{ number_format($d['berko_kg'], 2, ',', '.') }} kg</strong>
                                         </div>
                                         <div class="mini-cost-row">
-                                            <span>Total Nilai WIP:</span>
-                                            <strong style="color: #059669;">Rp {{ number_format($d['total_biaya_wip'], 0, ',', '.') }}</strong>
+                                            <span>Konsumsi WIP Curah:</span>
+                                            <strong>{{ number_format($d['wip_kg'], 2, ',', '.') }} kg</strong>
                                         </div>
                                         <div class="mini-cost-row">
-                                            <span>Rata-Rata Nilai WIP / Kg:</span>
-                                            <strong>Rp {{ $d['wip_kg_total'] > 0 ? number_format($d['total_biaya_wip'] / $d['wip_kg_total'], 0, ',', '.') : 0 }} / kg</strong>
+                                            <span>Nilai Bahan Keripik:</span>
+                                            <strong style="color: #854d0e;">Rp {{ number_format($d['bahan_keripik_nilai'], 0, ',', '.') }}</strong>
                                         </div>
                                         <div class="mini-cost-row">
-                                            <span>Rasio WIP per Karton:</span>
-                                            <strong>{{ $d['hasil_karton'] > 0 ? number_format($d['wip_kg_total'] / $d['hasil_karton'], 2, ',', '.') : 0 }} kg/ktn</strong>
+                                            <span>Bumbu Balado (5% Berko):</span>
+                                            <strong style="color: #9a3412;">{{ number_format($d['balado_kg'], 2, ',', '.') }} kg (Rp {{ number_format($d['balado_nilai'], 0, ',', '.') }})</strong>
                                         </div>
-                                        <div class="mini-cost-row">
+                                        <div class="mini-cost-row" style="border-top: 1px dashed #e2e8f0; padding-top: 3px; margin-top: 2px;">
+                                            <span>Subtotal Bahan &amp; Bumbu:</span>
+                                            <strong style="color: #0f172a;">Rp {{ number_format($d['bahan_keripik_nilai'] + $d['balado_nilai'], 0, ',', '.') }}</strong>
+                                        </div>
+                                        <div class="mini-cost-row" style="margin-top: 2px;">
                                             <span>Sumber Biaya:</span>
                                             <span style="font-size: 0.675rem; font-weight: 700; color: #166534; background: #dcfce7; padding: 1px 6px; border-radius: 4px; border: 1px solid #86efac;">
                                                 ✓ Ditarik dari HPP Produksi WIP
@@ -235,67 +234,79 @@
                                     </div>
                                 </div>
 
-                                {{-- KOMPARTEMEN 2: BAHAN KEMASAN (DUS, PLASTIK, LAKBAN) --}}
+                                {{-- KOMPARTEMEN 2: KEMASAN (DUS KARTON, ROLL, LAKBAN, EXP) --}}
                                 <div class="mini-cost-card">
                                     <div class="mini-cost-header">
                                         <div class="mini-cost-title">
                                             <span>2. Bahan Kemasan (Packaging)</span>
                                         </div>
-                                        <span class="mini-cost-badge" style="background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe;">Packaging Box &amp; Plastic</span>
+                                        <span class="mini-cost-badge" style="background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe;">Dus &amp; Roll</span>
                                     </div>
                                     <div class="mini-cost-list">
                                         <div class="mini-cost-row">
-                                            <span>Karton Box Terpakai:</span>
-                                            <strong>{{ number_format($d['karton_pcs_total'], 0, ',', '.') }} Pcs</strong>
+                                            <span>Karton KK / MK:</span>
+                                            <strong>KK: {{ number_format($d['karton_kk_qty'], 0, ',', '.') }} | MK: {{ number_format($d['karton_mk_qty'], 0, ',', '.') }} dus</strong>
                                         </div>
                                         <div class="mini-cost-row">
-                                            <span>Plastik Primer Terpakai:</span>
-                                            <strong>{{ number_format($d['plastik_pcs_total'], 0, ',', '.') }} Pcs</strong>
+                                            <span>Nilai Karton Dus:</span>
+                                            <strong style="color: #92400e;">Rp {{ number_format($d['karton_nilai'], 0, ',', '.') }}</strong>
                                         </div>
                                         <div class="mini-cost-row">
-                                            <span>Lakban Segel Box:</span>
-                                            <strong>{{ number_format($d['lakban_roll_total'], 1, ',', '.') }} Roll</strong>
+                                            <span>Roll Plastik (Kg):</span>
+                                            <strong>KK: {{ number_format($d['roll_kk_kg'], 2, ',', '.') }}kg | MK: {{ number_format($d['roll_mk_kg'], 2, ',', '.') }}kg</strong>
                                         </div>
                                         <div class="mini-cost-row">
-                                            <span>Total Biaya Kemasan:</span>
+                                            <span>Nilai Roll Kemasan:</span>
+                                            <strong style="color: #065f46;">Rp {{ number_format($d['roll_nilai'], 0, ',', '.') }}</strong>
+                                        </div>
+                                        <div class="mini-cost-row">
+                                            <span>Lakban Segel (Gram):</span>
+                                            <strong>Atas {{ number_format($d['lakban_atas_gr'], 0, ',', '.') }}g | Bwh {{ number_format($d['lakban_bawah_gr'], 0, ',', '.') }}g (Rp {{ number_format($d['lakban_nilai'], 0, ',', '.') }})</strong>
+                                        </div>
+                                        <div class="mini-cost-row">
+                                            <span>Kertas Expired:</span>
+                                            <strong>{{ number_format($d['kertas_exp_qty'], 0, ',', '.') }} bks (Rp {{ number_format($d['kertas_exp_nilai'], 0, ',', '.') }})</strong>
+                                        </div>
+                                        <div class="mini-cost-row" style="border-top: 1px dashed #e2e8f0; padding-top: 3px; margin-top: 2px;">
+                                            <span>Subtotal Biaya Kemasan:</span>
                                             <strong style="color: #0284c7;">Rp {{ number_format($d['total_biaya_kemasan'], 0, ',', '.') }}</strong>
-                                        </div>
-                                        <div class="mini-cost-row">
-                                            <span>Beban Kemasan / Karton:</span>
-                                            <strong>Rp {{ $d['hasil_karton'] > 0 ? number_format($d['total_biaya_kemasan'] / $d['hasil_karton'], 0, ',', '.') : 0 }}</strong>
                                         </div>
                                     </div>
                                 </div>
 
-                                {{-- KOMPARTEMEN 3: UPAH TENAGA KERJA PACKING --}}
+                                {{-- KOMPARTEMEN 3: KERUSAKAN BAHAN & UPAH PACKING --}}
                                 <div class="mini-cost-card">
                                     <div class="mini-cost-header">
                                         <div class="mini-cost-title">
-                                            <span>3. Upah &amp; Biaya Overhead Kemas</span>
+                                            <span>3. Reject &amp; Biaya Kemas</span>
                                         </div>
-                                        <span class="mini-cost-badge" style="background: #fefce8; color: #854d0e; border: 1px solid #fef08a;">Tenaga Kerja</span>
+                                        <span class="mini-cost-badge" style="background: #fef2f2; color: #991b1b; border: 1px solid #fecaca;">Reject &amp; Upah</span>
                                     </div>
                                     <div class="mini-cost-list">
+                                        <div class="mini-cost-row">
+                                            <span>Kerusakan Plastik:</span>
+                                            <strong style="color: #991b1b;">{{ number_format($d['kerusakan_plastik_qty'], 1, ',', '.') }} gr (Rp {{ number_format($d['kerusakan_plastik_nilai'], 0, ',', '.') }})</strong>
+                                        </div>
+                                        <div class="mini-cost-row">
+                                            <span>Kerusakan Karton:</span>
+                                            <strong style="color: #9f1239;">{{ number_format($d['kerusakan_karton_qty'], 0, ',', '.') }} pcs (Rp {{ number_format($d['kerusakan_karton_nilai'], 0, ',', '.') }})</strong>
+                                        </div>
                                         <div class="mini-cost-row">
                                             <span>Upah Operator Packing:</span>
                                             <strong style="color: #b45309;">Rp {{ number_format($d['total_biaya_tenaga_kerja'], 0, ',', '.') }}</strong>
                                         </div>
                                         <div class="mini-cost-row">
-                                            <span>Biaya Overhead / Utilitas Lain:</span>
+                                            <span>Biaya Overhead/Lain:</span>
                                             <strong>Rp {{ number_format($d['total_biaya_lain'], 0, ',', '.') }}</strong>
                                         </div>
-                                        <div class="mini-cost-row">
-                                            <span>Beban Upah / Karton:</span>
-                                            <strong>Rp {{ $d['hasil_karton'] > 0 ? number_format($d['total_biaya_tenaga_kerja'] / $d['hasil_karton'], 0, ',', '.') : 0 }}</strong>
-                                        </div>
-                                        <div class="mini-cost-row">
-                                            <span>Status Dokumen:</span>
-                                            <span style="font-size: 0.7rem; font-weight: 700; color: #059669;">POSTED &bull; Lulus QC</span>
+                                        <div class="mini-cost-row" style="border-top: 1px dashed #e2e8f0; padding-top: 3px; margin-top: 2px;">
+                                            <span>Subtotal Reject &amp; Upah:</span>
+                                            <strong style="color: #0f172a;">Rp {{ number_format($d['kerusakan_plastik_nilai'] + $d['kerusakan_karton_nilai'] + $d['total_biaya_tenaga_kerja'] + $d['total_biaya_lain'], 0, ',', '.') }}</strong>
                                         </div>
                                     </div>
                                 </div>
 
-                                {{-- KOMPARTEMEN 4: REKAPITULASI BIAYA & HPP UNIT --}}
+                                {{-- KOMPARTEMEN 4: REKAPITULASI OUTPUT & HPP UNIT --}}
                                 <div class="mini-cost-card" style="background: #fafaf9; border-color: #d6d3d1;">
                                     <div class="mini-cost-header">
                                         <div class="mini-cost-title">
@@ -305,24 +316,32 @@
                                     </div>
                                     <div class="mini-cost-list">
                                         <div class="mini-cost-row">
-                                            <span>Target Rencana:</span>
-                                            <strong>{{ number_format($d['target_karton'], 0, ',', '.') }} Karton</strong>
+                                            <span>Hasil Ping-Ping:</span>
+                                            <strong style="color: #6b21a8;">{{ number_format($d['hasil_ping_ping'], 0, ',', '.') }} Pcs</strong>
                                         </div>
                                         <div class="mini-cost-row">
-                                            <span>Hasil Aktual:</span>
-                                            <strong style="color: #059669;">{{ number_format($d['hasil_karton'], 0, ',', '.') }} Karton ({{ number_format($d['hasil_pcs'], 0, ',', '.') }} Pcs)</strong>
+                                            <span>Hasil Maksi:</span>
+                                            <strong style="color: #6b21a8;">{{ number_format($d['hasil_maksi'], 0, ',', '.') }} Pcs</strong>
+                                        </div>
+                                        <div class="mini-cost-row">
+                                            <span>Total Output Jadi:</span>
+                                            <strong style="color: #059669;">{{ number_format($d['hasil_jumlah'], 0, ',', '.') }} Pcs ({{ number_format($d['hasil_karton'], 0, ',', '.') }} Karton)</strong>
+                                        </div>
+                                        <div class="mini-cost-row">
+                                            <span>Gramasi Bersih:</span>
+                                            <strong>{{ number_format($d['gramasi_kg'], 2, ',', '.') }} kg</strong>
                                         </div>
                                         <div class="mini-cost-row">
                                             <span>Total Biaya Pengemasan:</span>
-                                            <strong style="font-size: 0.9rem; color: #0f172a;">Rp {{ number_format($d['total_biaya_produksi'], 0, ',', '.') }}</strong>
+                                            <strong style="font-size: 0.875rem; color: #713f12; background: #fef9c3; padding: 1px 4px; border-radius: 3px;">Rp {{ number_format($d['total_biaya_produksi'], 0, ',', '.') }}</strong>
                                         </div>
                                         <div class="mini-cost-row" style="border-top: 1.5px dashed #cbd5e1; padding-top: 4px; margin-top: 4px;">
-                                            <span style="font-weight: 800; color: #059669;">HPP Riil per Karton:</span>
-                                            <strong style="font-family: monospace; font-size: 0.95rem; color: #059669;">Rp {{ number_format($d['hpp_per_karton'], 0, ',', '.') }}</strong>
+                                            <span style="font-weight: 800; color: #059669;">HPP Riil per Pcs:</span>
+                                            <strong style="font-family: monospace; font-size: 0.95rem; color: #059669;">Rp {{ number_format($d['hpp_per_unit'], 0, ',', '.') }}</strong>
                                         </div>
                                         <div class="mini-cost-row">
-                                            <span style="font-weight: 800; color: #0369a1;">HPP Riil per Pcs:</span>
-                                            <strong style="font-family: monospace; font-size: 0.85rem; color: #0369a1;">Rp {{ number_format($d['hpp_per_pcs'], 0, ',', '.') }}</strong>
+                                            <span style="font-weight: 700; color: #64748b; font-size: 0.72rem;">Setara per Karton:</span>
+                                            <strong style="font-family: monospace; font-size: 0.8rem; color: #64748b;">Rp {{ number_format($d['hpp_per_karton'], 0, ',', '.') }}</strong>
                                         </div>
                                     </div>
                                 </div>

@@ -305,15 +305,18 @@ class ProduksiService
                     'berko_batches'               => $berkoBatches,
                     'berko_batch_no'              => !empty($berkoBatches) ? implode(', ', $berkoBatches) : null,
                     'shift_records'               => $dayRecords->map(fn($r) => [
-                        'produksi_id'  => $r->produksi_id,
-                        'produksi_no'  => $r->produksi_no,
-                        'shift_cd'     => $r->shift_cd ?? 'A',
-                        'lini_produksi'=> $r->lini_produksi ?? 'Produksi Reguler',
-                        'batch_wip_no' => $r->batch_wip_no ?? '-',
+                        'produksi_id'     => $r->produksi_id,
+                        'produksi_no'     => $r->produksi_no,
+                        'shift_cd'        => $r->shift_cd ?? 'A',
+                        'lini_produksi'   => $r->lini_produksi ?? 'Produksi Reguler',
+                        'batch_wip_no'    => $r->batch_wip_no ?? '-',
                         'total_berko_qty' => (float) $r->total_berko_qty,
-                        'total_biaya'  => (float) $r->total_biaya_produksi,
-                        'total_wip'    => (float) $r->total_wip_qty,
-                        'hpp_per_kg'   => (float) $r->hpp_per_kg,
+                        'total_biaya'     => (float) $r->total_biaya_produksi,
+                        'total_wip'       => (float) $r->total_wip_qty,
+                        'hpp_per_kg'      => (float) $r->hpp_per_kg,
+                        'output_summary'  => $r->outputs && $r->outputs->isNotEmpty()
+                            ? $r->outputs->map(fn($o) => ($o->barang?->barang_nm ?? $o->kategori_output) . ' (' . number_format($o->qty_kg, 0, ',', '.') . ' kg)')->implode(', ')
+                            : ($r->total_wip_qty > 0 ? number_format($r->total_wip_qty, 0, ',', '.') . ' kg' : 'Produksi WIP'),
                     ])->toArray(),
                     'singkong_qty'                => $daySingkongQty,
                     'singkong_nilai'              => $daySingkongNilai,
@@ -1635,77 +1638,56 @@ class ProduksiService
             $changedFields = [];
             $kategoriList = [];
 
-            // 1. Cek Komponen Biaya Bahan Baku & Penolong
-            if (isset($data['singkong_nilai']) && abs((float) $data['singkong_nilai'] - (float) $produksi->singkong_nilai) > 0.01) {
-                $changedFields['singkong_nilai'] = [
-                    'label' => 'Biaya Singkong Mentah',
-                    'old'   => (float) $produksi->singkong_nilai,
-                    'new'   => (float) $data['singkong_nilai']
-                ];
-                $produksi->singkong_nilai = (float) $data['singkong_nilai'];
-                $kategoriList[] = 'SINGKONG';
-            }
+            // Definisi 20 Seluruh Komponen Biaya Pabrik (Standar Akuntansi Biaya Manufaktur PT Mirasa)
+            $fieldDefinitions = [
+                // 1. Biaya Bahan Baku Langsung (BBL)
+                'singkong_nilai'              => ['label' => 'Bahan Baku Singkong Mentah', 'group' => 'BBL'],
+                'minyak_nilai'                => ['label' => 'Minyak Goreng (Sawit & Kelapa)', 'group' => 'BBL'],
+                'bumbu_nilai'                 => ['label' => 'Bumbu Masak & Perenyah', 'group' => 'BBL'],
 
-            if (isset($data['minyak_nilai']) && abs((float) $data['minyak_nilai'] - (float) $produksi->minyak_nilai) > 0.01) {
-                $changedFields['minyak_nilai'] = [
-                    'label' => 'Biaya Minyak Goreng',
-                    'old'   => (float) $produksi->minyak_nilai,
-                    'new'   => (float) $data['minyak_nilai']
-                ];
-                $produksi->minyak_nilai = (float) $data['minyak_nilai'];
-                $kategoriList[] = 'MINYAK';
-            }
+                // 2. Biaya Kemasan & Pembantu
+                'karton_baru_nilai'           => ['label' => 'Karton Box Baru', 'group' => 'KEMASAN'],
+                'karton_bekas_nilai'          => ['label' => 'Karton Box Bekas', 'group' => 'KEMASAN'],
+                'plastik_hd_nilai'            => ['label' => 'Plastik HD / Inner Bag', 'group' => 'KEMASAN'],
+                'lakban_besar_nilai'          => ['label' => 'Lakban Coklat Besar', 'group' => 'KEMASAN'],
+                'lakban_kecil_nilai'          => ['label' => 'Lakban Kecil', 'group' => 'KEMASAN'],
+                'tali_rafia_nilai'            => ['label' => 'Tali Rafia / Strapping Band', 'group' => 'KEMASAN'],
 
-            if (isset($data['bumbu_nilai']) && abs((float) $data['bumbu_nilai'] - (float) $produksi->bumbu_nilai) > 0.01) {
-                $changedFields['bumbu_nilai'] = [
-                    'label' => 'Biaya Bumbu Masak',
-                    'old'   => (float) $produksi->bumbu_nilai,
-                    'new'   => (float) $data['bumbu_nilai']
-                ];
-                $produksi->bumbu_nilai = (float) $data['bumbu_nilai'];
-                $kategoriList[] = 'BUMBU';
-            }
+                // 3. Tenaga Kerja Langsung (BTKL)
+                'tk_total_nilai'              => ['label' => 'Upah Tenaga Kerja Langsung (BTKL)', 'group' => 'BTKL'],
 
-            // 2. Cek Komponen Biaya Tenaga Kerja (BTKL)
-            if (isset($data['tk_total_nilai']) && abs((float) $data['tk_total_nilai'] - (float) $produksi->tk_total_nilai) > 0.01) {
-                $changedFields['tk_total_nilai'] = [
-                    'label' => 'Upah Tenaga Kerja',
-                    'old'   => (float) $produksi->tk_total_nilai,
-                    'new'   => (float) $data['tk_total_nilai']
-                ];
-                $produksi->tk_total_nilai = (float) $data['tk_total_nilai'];
-                $kategoriList[] = 'UPAH_TK';
-            }
+                // 4. Biaya Utilitas & Energi
+                'cng_nilai'                   => ['label' => 'Bahan Bakar Gas Alam (CNG)', 'group' => 'ENERGI'],
+                'listrik_air_telp_nilai'      => ['label' => 'Listrik PLN, Air & Utilitas', 'group' => 'UTILITAS'],
 
-            // 3. Cek Komponen Utilitas / Overhead FOH Lain
-            if (isset($data['listrik_air_telp_nilai']) && abs((float) $data['listrik_air_telp_nilai'] - (float) $produksi->listrik_air_telp_nilai) > 0.01) {
-                $changedFields['listrik_air_telp_nilai'] = [
-                    'label' => 'Listrik & Air (PLN)',
-                    'old'   => (float) $produksi->listrik_air_telp_nilai,
-                    'new'   => (float) $data['listrik_air_telp_nilai']
-                ];
-                $produksi->listrik_air_telp_nilai = (float) $data['listrik_air_telp_nilai'];
-                $kategoriList[] = 'LISTRIK';
-            }
+                // 5. Biaya Overhead Pabrik (FOH / BOP)
+                'pemeliharaan_mesin_nilai'    => ['label' => 'Pemeliharaan Mesin & Genset', 'group' => 'FOH'],
+                'qc_pengawasan_nilai'         => ['label' => 'Pengawasan Mutu (QC)', 'group' => 'FOH'],
+                'penyusutan_mesin_nilai'      => ['label' => 'Penyusutan Mesin Pabrik', 'group' => 'FOH'],
+                'sarung_tangan_plastik_nilai' => ['label' => 'Sarung Tangan Plastik Operator', 'group' => 'FOH'],
+                'sarung_tangan_kain_nilai'    => ['label' => 'Sarung Tangan Kain Operator', 'group' => 'FOH'],
+                'fotocopy_nilai'              => ['label' => 'Dokumen & ATK Produksi', 'group' => 'FOH'],
+                'limbah_padat_nilai'          => ['label' => 'Pengolahan Limbah Padat', 'group' => 'FOH'],
+                'limbah_kimia_nilai'          => ['label' => 'Pengolahan Limbah Kimia Pabrik', 'group' => 'FOH'],
+            ];
 
-            if (isset($data['cng_nilai']) && abs((float) $data['cng_nilai'] - (float) $produksi->cng_nilai) > 0.01) {
-                $changedFields['cng_nilai'] = [
-                    'label' => 'Biaya Gas CNG',
-                    'old'   => (float) $produksi->cng_nilai,
-                    'new'   => (float) $data['cng_nilai']
-                ];
-                $produksi->cng_nilai = (float) $data['cng_nilai'];
-                $kategoriList[] = 'GAS_CNG';
-            }
+            // Deteksi perubahan pada seluruh komponen
+            foreach ($fieldDefinitions as $fieldKey => $fDef) {
+                if (isset($data[$fieldKey])) {
+                    $newVal = round((float) $data[$fieldKey], 2);
+                    $oldVal = round((float) ($produksi->$fieldKey ?? 0), 2);
 
-            if (isset($data['pemeliharaan_mesin_nilai']) && abs((float) $data['pemeliharaan_mesin_nilai'] - (float) $produksi->pemeliharaan_mesin_nilai) > 0.01) {
-                $changedFields['pemeliharaan_mesin_nilai'] = [
-                    'label' => 'Pemeliharaan Mesin',
-                    'old'   => (float) $produksi->pemeliharaan_mesin_nilai,
-                    'new'   => (float) $data['pemeliharaan_mesin_nilai']
-                ];
-                $produksi->pemeliharaan_mesin_nilai = (float) $data['pemeliharaan_mesin_nilai'];
-                $kategoriList[] = 'MAINTENANCE';
+                    if (abs($newVal - $oldVal) > 0.01) {
+                        $changedFields[$fieldKey] = [
+                            'label' => $fDef['label'],
+                            'old'   => $oldVal,
+                            'new'   => $newVal,
+                            'group' => $fDef['group'],
+                        ];
+                        $produksi->$fieldKey = $newVal;
+                        $kategoriList[] = $fDef['group'];
+                    }
+                }
             }
 
             if (empty($changedFields)) {
@@ -1718,26 +1700,36 @@ class ProduksiService
                 $selisihBiaya += ((float) $cf['new'] - (float) $cf['old']);
             }
 
-            // Update total bahan nilai jika ada komponen bahan yang berubah
-            $deltaBahan = 0;
-            foreach (['singkong_nilai', 'minyak_nilai', 'bumbu_nilai'] as $bKey) {
-                if (isset($changedFields[$bKey])) {
-                    $deltaBahan += ((float) $changedFields[$bKey]['new'] - (float) $changedFields[$bKey]['old']);
-                }
-            }
-            $produksi->total_bahan_nilai = max(0, (float) $produksi->total_bahan_nilai + $deltaBahan);
+            // Rekalkulasi Subtotal Bahan Baku & Kemasan
+            $produksi->total_bahan_nilai = (float) $produksi->singkong_nilai +
+                (float) $produksi->minyak_nilai +
+                (float) $produksi->bumbu_nilai +
+                (float) $produksi->karton_baru_nilai +
+                (float) $produksi->karton_bekas_nilai +
+                (float) $produksi->plastik_hd_nilai +
+                (float) $produksi->lakban_besar_nilai +
+                (float) $produksi->lakban_kecil_nilai +
+                (float) $produksi->tali_rafia_nilai;
 
-            // Update total overhead jika ada komponen overhead yang berubah
-            $deltaOverhead = 0;
-            foreach (['listrik_air_telp_nilai', 'pemeliharaan_mesin_nilai'] as $oKey) {
-                if (isset($changedFields[$oKey])) {
-                    $deltaOverhead += ((float) $changedFields[$oKey]['new'] - (float) $changedFields[$oKey]['old']);
-                }
-            }
-            $produksi->total_overhead_nilai = max(0, (float) $produksi->total_overhead_nilai + $deltaOverhead);
+            // Rekalkulasi Subtotal Overhead Pabrik (FOH)
+            $produksi->total_overhead_nilai = (float) $produksi->fotocopy_nilai +
+                (float) $produksi->sarung_tangan_plastik_nilai +
+                (float) $produksi->sarung_tangan_kain_nilai +
+                (float) $produksi->qc_pengawasan_nilai +
+                (float) $produksi->listrik_air_telp_nilai +
+                (float) $produksi->pemeliharaan_mesin_nilai +
+                (float) $produksi->penyusutan_mesin_nilai +
+                (float) $produksi->limbah_padat_nilai +
+                (float) $produksi->limbah_kimia_nilai;
 
-            // Rekalkulasi Total Biaya Produksi: Biaya Lama + Akumulasi Selisih Komponen
-            $newTotalBiaya = round($oldTotalBiaya + $selisihBiaya, 2);
+            // Rekalkulasi Total Biaya Produksi: Bahan + CNG + TK + FOH
+            $newTotalBiaya = round(
+                (float) $produksi->total_bahan_nilai +
+                (float) $produksi->cng_nilai +
+                (float) $produksi->tk_total_nilai +
+                (float) $produksi->total_overhead_nilai,
+                2
+            );
             $produksi->total_biaya_produksi = $newTotalBiaya;
 
             // Rekalkulasi HPP per Kg
@@ -1753,11 +1745,18 @@ class ProduksiService
             $produksi->updated_by = $userId;
             $produksi->save();
 
+            // Lampirkan nomor referensi faktur/memo jika diisi
+            if (!empty($data['no_referensi_txt'])) {
+                $refNo = trim($data['no_referensi_txt']);
+                $alasan = "[Ref: {$refNo}] " . $alasan;
+            }
+
             // Generate Nomor Berita Acara Penyesuaian: ADJ-HPP-YYYYMM-0001
             $prefix = 'ADJ-HPP-' . date('Ym') . '-';
             $adjNo = $this->codeGenerator->generate('dat_produksi_adjustment_log', 'adj_no', $prefix, 4);
 
-            $kategoriStr = count($kategoriList) === 1 ? $kategoriList[0] : (count($kategoriList) > 1 ? 'MULTI' : 'LAINNYA');
+            $kategoriUnique = array_values(array_unique($kategoriList));
+            $kategoriStr = count($kategoriUnique) === 1 ? $kategoriUnique[0] : (count($kategoriUnique) > 1 ? 'MULTI' : 'LAINNYA');
             $selisihHpp = $newHppPerKg - $oldHppPerKg;
 
             // Simpan ke Log Audit Trail Akuntansi

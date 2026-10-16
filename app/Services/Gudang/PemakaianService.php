@@ -338,6 +338,7 @@ class PemakaianService
                 'pakai_no'         => $pakaiNo,
                 'pakai_tgl'        => $data['pakai_tgl'] ?? date('Y-m-d'),
                 'gudang_id'        => $gudangId,
+                'produksi_id'      => !empty($data['produksi_id']) ? (int) $data['produksi_id'] : null,
                 'tujuan_pemakaian' => $tujuanPemakaian,
                 'catatan_txt'      => $data['catatan_txt'] ?? null,
             ]);

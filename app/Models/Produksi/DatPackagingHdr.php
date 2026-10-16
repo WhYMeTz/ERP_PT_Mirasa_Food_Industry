@@ -24,9 +24,11 @@ class DatPackagingHdr extends Model
         'barang_jadi_id',
         'bom_id',
         'produksi_id',
+        'pakai_id',
         'target_karton_qty',
         'hasil_karton_qty',
         'isi_per_karton_pcs',
+        'gramatur_gr',
         'hasil_pcs_qty',
         'batch_no',
         'expired_tgl',
@@ -53,6 +55,7 @@ class DatPackagingHdr extends Model
         'target_karton_qty'        => 'decimal:4',
         'hasil_karton_qty'         => 'decimal:4',
         'isi_per_karton_pcs'       => 'decimal:4',
+        'gramatur_gr'              => 'decimal:4',
         'hasil_pcs_qty'            => 'decimal:4',
         'total_biaya_wip'          => 'decimal:4',
         'total_biaya_kemasan'      => 'decimal:4',
@@ -96,6 +99,14 @@ class DatPackagingHdr extends Model
     public function produksi(): BelongsTo
     {
         return $this->belongsTo(DatProduksiHdr::class, 'produksi_id', 'produksi_id');
+    }
+
+    /**
+     * Relasi ke Dokumen Pengeluaran Bahan Kemas dari Gudang
+     */
+    public function pemakaian(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Gudang\DatPakaiHdr::class, 'pakai_id', 'pakai_id');
     }
 
     /**

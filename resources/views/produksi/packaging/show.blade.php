@@ -93,6 +93,9 @@
             </div>
             <div style="font-size: 0.75rem; color: #059669; font-weight: 700;">
                 📦 {{ number_format($header->hasil_pcs_qty, 0, ',', '.') }} Pcs ({{ number_format($header->isi_per_karton_pcs, 0) }} Pcs/Ktn)
+                @if($header->gramatur_gr > 0)
+                    &bull; {{ number_format($header->gramatur_gr, 1, ',', '.') }} gr/pcs
+                @endif
             </div>
         </div>
 
@@ -168,6 +171,30 @@
                                 {{ $header->batch_no ?: '-' }}
                             </td>
                         </tr>
+                        @if($header->produksi)
+                        <tr style="border-bottom: 1px solid #f1f5f9;">
+                            <td style="padding: 0.6rem 0; color: #64748b;">Tiket Goreng Berko</td>
+                            <td style="padding: 0.6rem 0;">
+                                <a href="{{ route('produksi.show', $header->produksi_id) }}" style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.35rem; color: #059669; font-weight: 700;">
+                                    <span>{{ $header->produksi->produksi_no }}</span>
+                                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                                </a>
+                                <span style="font-size: 0.725rem; color: #64748b;">({{ Carbon\Carbon::parse($header->produksi->produksi_tgl)->format('d/m/Y') }} - HPP Rp {{ number_format($header->produksi->hpp_per_kg, 0, ',', '.') }}/Kg)</span>
+                            </td>
+                        </tr>
+                        @endif
+                        @if($header->pemakaian)
+                        <tr style="border-bottom: 1px solid #f1f5f9;">
+                            <td style="padding: 0.6rem 0; color: #64748b;">Bukti Pengeluaran Gudang</td>
+                            <td style="padding: 0.6rem 0;">
+                                <a href="{{ route('gudang.pemakaian.show', $header->pakai_id) }}" style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.35rem; color: #0284c7; font-weight: 700;">
+                                    <span>{{ $header->pemakaian->pakai_no }}</span>
+                                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                                </a>
+                                <span style="font-size: 0.725rem; color: #059669; font-weight: 600;">(Tercatat Otomatis di Menu Pemakaian Bahan Gudang)</span>
+                            </td>
+                        </tr>
+                        @endif
                         <tr style="border-bottom: 1px solid #f1f5f9;">
                             <td style="padding: 0.6rem 0; color: #64748b;">Masa Kedaluwarsa (Exp)</td>
                             <td style="padding: 0.6rem 0; font-weight: 800; color: #059669;">

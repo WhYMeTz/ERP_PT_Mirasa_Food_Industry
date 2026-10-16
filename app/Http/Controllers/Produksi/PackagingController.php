@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\MasterData\MstBarang;
 use App\Models\MasterData\MstGudang;
 use App\Models\Produksi\DatPackagingHdr;
+use App\Models\Produksi\DatProduksiHdr;
 use App\Services\Produksi\PackagingService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
@@ -48,16 +49,13 @@ class PackagingController extends Controller
     }
 
     /**
-     * Form tambah pencatatan pengemasan baru (Smart Backflush BOM).
+     * Form tambah pencatatan pengemasan baru (Smart Backflush BOM - Satu Pintu Input).
      */
     public function create(): View
     {
         $user = auth()->user();
         $gudangList = $user ? $user->getAllowedGudangList() : MstGudang::active()->get();
 
-        // Cari Gudang FG sebagai rekomendasi default
-        $defaultGudang = MstGudang::where('tipe_gudang_cd', 'FG')->active()->first()
-            ?? MstGudang::active()->first();
 
         // Ambil daftar barang jadi untuk dropdown target kemas
         $barangJadiList = MstBarang::with(['satuanDasar', 'jenisBarang'])
@@ -66,7 +64,179 @@ class PackagingController extends Controller
             ->orderBy('barang_nm')
             ->get();
 
-        return view('produksi.packaging.create', compact('gudangList', 'defaultGudang', 'barangJadiList'));
+        // Ambil daftar barang kemasan, bumbu, penolong & curah untuk komponen manual / tambahan
+        $kemasanBarangList = MstBarang::active()
+            ->with(['satuanDasar', 'jenisBarang'])
+            ->where(function ($q) {
+                $q->whereHas('jenisBarang', fn($j) => $j->whereIn('jenis_barang_cd', ['PACK', 'BP', 'BUMBU', 'WIP', 'SUPP']))
+                  ->orWhere('barang_nm', 'ILIKE', '%KARTON%')
+                  ->orWhere('barang_nm', 'ILIKE', '%ROLL%')
+                  ->orWhere('barang_nm', 'ILIKE', '%LAKBAN%')
+                  ->orWhere('barang_nm', 'ILIKE', '%PLASTIK%')
+                  ->orWhere('barang_nm', 'ILIKE', '%RAFIA%')
+                  ->orWhere('barang_nm', 'ILIKE', '%SARUNG TANGAN%')
+                  ->orWhere('barang_nm', 'ILIKE', '%BERKO%');
+            })
+            ->orderBy('barang_nm')
+            ->get()
+            ->map(function ($b) {
+                $cd = strtoupper($b->jenisBarang->jenis_barang_cd ?? '');
+                $nm = strtoupper($b->barang_nm ?? '');
+
+                if ($cd === 'WIP' || str_contains($nm, 'BERKO') || str_contains($nm, 'CURAH')) {
+                    $kategori = 'WIP';
+                    $kategoriLabel = 'Keripik Curah (WIP)';
+                } elseif (str_contains($nm, 'BUMBU') || $cd === 'BUMBU') {
+                    $kategori = 'BUMBU';
+                    $kategoriLabel = 'Bumbu & Perasa';
+                } elseif (str_contains($nm, 'KARTON') || str_contains($nm, 'ROLL') || str_contains($nm, 'LAKBAN') || str_contains($nm, 'PLASTIK') || $cd === 'PACK') {
+                    $kategori = 'KEMASAN';
+                    $kategoriLabel = 'Bahan Kemasan';
+                } else {
+                    $kategori = 'LAIN';
+                    $kategoriLabel = 'Bahan Penolong / Lainnya';
+                }
+
+                return [
+                    'barang_id'      => $b->barang_id,
+                    'barang_cd'      => $b->barang_cd,
+                    'barang_nm'      => $b->barang_nm,
+                    'satuan_cd'      => $b->satuanDasar?->satuan_cd ?? 'PCS',
+                    'satuan_nm'      => $b->satuanDasar?->satuan_nm ?? 'Pcs',
+                    'harga_standar'  => (float) ($b->harga_beli_standar ?? 0),
+                    'kategori'       => $kategori,
+                    'kategori_label' => $kategoriLabel,
+                ];
+            });
+
+        // Ambil daftar dokumen HPP Produksi (WIP) aktif untuk opsi sinkronisasi HPP curah
+        $produksiList = DatProduksiHdr::where('deleted_st', false)
+            ->latest('produksi_tgl')
+            ->take(50)
+            ->get(['produksi_id', 'produksi_no', 'produksi_tgl', 'shift_cd', 'batch_wip_no', 'exp_date', 'total_berko_qty', 'berko_qty', 'hpp_per_kg']);
+
+        return view('produksi.packaging.create', compact('gudangList', 'barangJadiList', 'kemasanBarangList', 'produksiList'));
+    }
+
+    /**
+     * AJAX endpoint untuk mengambil detail tiket produksi (PRD) & dokumen kemasan gudang terkait.
+     */
+    public function ajaxProduksiDetails(Request $request): JsonResponse
+    {
+        $produksiId = (int) $request->input('produksi_id');
+        if (!$produksiId) {
+            return response()->json(['success' => false, 'message' => 'Tiket produksi wajib dipilih.'], 400);
+        }
+
+        $produksi = \App\Models\Produksi\DatProduksiHdr::with(['pengeluaranKemasan.details.barang.satuanDasar'])
+            ->where('deleted_st', false)
+            ->find($produksiId);
+
+        if (!$produksi) {
+            return response()->json(['success' => false, 'message' => 'Data tiket produksi tidak ditemukan.'], 404);
+        }
+
+        // Cari master barang KS BERKO (WIP)
+        $berkoBarang = MstBarang::with('satuanDasar')
+            ->where('barang_nm', 'ILIKE', '%KS BERKO%')
+            ->orWhere('barang_cd', 'WIP-BRK')
+            ->first();
+
+        // Cari dokumen pemakaian gudang yang ditautkan ke produksi ini
+        $linkedPakai = $produksi->pengeluaranKemasan()
+            ->where('deleted_st', false)
+            ->latest('pakai_id')
+            ->first();
+
+        $batchTgl = $produksi->batch_wip_no 
+            ?: ($produksi->produksi_tgl ? $produksi->produksi_tgl->format('d m Y') : date('d m Y'));
+
+        $expDateStr = $produksi->exp_date 
+            ? $produksi->exp_date->format('Y-m-d') 
+            : ($produksi->produksi_tgl ? $produksi->produksi_tgl->copy()->addMonths(6)->format('Y-m-d') : date('Y-m-d', strtotime('+6 months')));
+
+        $berkoQty = (float) ($produksi->total_berko_qty > 0 ? $produksi->total_berko_qty : $produksi->berko_qty);
+
+        return response()->json([
+            'success' => true,
+            'data'    => [
+                'produksi_id'      => $produksi->produksi_id,
+                'produksi_no'      => $produksi->produksi_no,
+                'produksi_tgl'     => $produksi->produksi_tgl?->format('Y-m-d'),
+                'batch_wip_no'     => $batchTgl,
+                'exp_date'         => $expDateStr,
+                'total_berko_qty'  => $berkoQty,
+                'hpp_per_kg'       => (float) $produksi->hpp_per_kg,
+                'berko_barang'     => $berkoBarang ? [
+                    'barang_id'  => $berkoBarang->barang_id,
+                    'barang_cd'  => $berkoBarang->barang_cd,
+                    'barang_nm'  => $berkoBarang->barang_nm,
+                    'satuan_cd'  => $berkoBarang->satuanDasar?->satuan_cd ?? 'KG',
+                ] : null,
+                'linked_pakai_id'  => $linkedPakai?->pakai_id,
+                'linked_pakai_no'  => $linkedPakai?->pakai_no,
+            ]
+        ]);
+    }
+
+    /**
+     * AJAX endpoint untuk menarik rincian barang keluar dari dokumen pemakaian gudang (PKI/OUT).
+     */
+    public function ajaxPakaiDetails(Request $request): JsonResponse
+    {
+        $pakaiId = (int) $request->input('pakai_id');
+        if (!$pakaiId) {
+            return response()->json(['success' => false, 'message' => 'Dokumen gudang wajib dipilih.'], 400);
+        }
+
+        $pakai = \App\Models\Gudang\DatPakaiHdr::with(['details.barang.satuanDasar', 'details.barang.jenisBarang'])
+            ->where('deleted_st', false)
+            ->find($pakaiId);
+
+        if (!$pakai) {
+            return response()->json(['success' => false, 'message' => 'Data dokumen pemakaian gudang tidak ditemukan.'], 404);
+        }
+
+        $items = [];
+        foreach ($pakai->details as $dtl) {
+            $b = $dtl->barang;
+            if (!$b) continue;
+
+            $jenisCd = strtoupper($b->jenisBarang?->jenis_barang_cd ?? '');
+            $kategori = 'KEMASAN';
+            if (in_array($jenisCd, ['BUMBU', 'BMB'])) {
+                $kategori = 'BUMBU';
+            } elseif (in_array($jenisCd, ['WIP', 'SETENGAH_JADI'])) {
+                $kategori = 'WIP';
+            }
+
+            $items[] = [
+                'barang_id'        => $b->barang_id,
+                'barang_cd'        => $b->barang_cd,
+                'barang_nm'        => $b->barang_nm,
+                'satuan_cd'        => $b->satuanDasar?->satuan_cd ?? 'PCS',
+                'kategori_bahan'   => $kategori,
+                'is_wip'           => ($kategori === 'WIP'),
+                'from_gudang'      => true,
+                'qty_standar'      => (float) $dtl->qty_keluar,
+                'qty_aktual'       => (float) $dtl->qty_keluar,
+                'harga_satuan'     => (float) $dtl->harga_satuan,
+                'subtotal_nilai'   => (float) ($dtl->total_harga > 0 ? $dtl->total_harga : ($dtl->qty_keluar * $dtl->harga_satuan)),
+                'batch_no'         => $dtl->batch_no ?? '',
+                'stok_tersedia'    => (float) $dtl->qty_keluar,
+                'cukup_stok'       => true,
+            ];
+        }
+
+        return response()->json([
+            'success' => true,
+            'data'    => [
+                'pakai_id'   => $pakai->pakai_id,
+                'pakai_no'   => $pakai->pakai_no,
+                'pakai_tgl'  => $pakai->pakai_tgl?->format('Y-m-d'),
+                'items'      => $items,
+            ]
+        ]);
     }
 
     /**
@@ -76,6 +246,7 @@ class PackagingController extends Controller
     {
         $barangJadiId = (int) $request->input('barang_jadi_id');
         $targetKartonQty = (float) $request->input('target_karton_qty', 100);
+        $produksiId = (int) $request->input('produksi_id', 0);
 
         if (!$barangJadiId) {
             return response()->json(['success' => false, 'message' => 'Barang jadi target wajib dipilih.'], 400);
@@ -86,7 +257,7 @@ class PackagingController extends Controller
         }
 
         try {
-            $preview = $this->packagingService->getBomPreview($barangJadiId, $targetKartonQty);
+            $preview = $this->packagingService->getBomPreview($barangJadiId, $targetKartonQty, $produksiId);
             return response()->json(['success' => true, 'data' => $preview]);
         } catch (Exception $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
@@ -104,9 +275,11 @@ class PackagingController extends Controller
             'gudang_id'                => 'required|exists:mst_gudang,gudang_id',
             'bom_id'                   => 'nullable|exists:mst_bom_hdr,bom_id',
             'produksi_id'              => 'nullable|exists:dat_produksi_hdr,produksi_id',
-            'target_karton_qty'        => 'required|numeric|min:0.01',
+            'pakai_id'                 => 'nullable|exists:dat_pakai_hdr,pakai_id',
+            'target_karton_qty'        => 'nullable|numeric|min:0.01',
             'hasil_karton_qty'         => 'required|numeric|min:0.01',
             'isi_per_karton_pcs'       => 'nullable|numeric|min:1',
+            'gramatur_gr'              => 'nullable|numeric|min:0',
             'batch_no'                 => 'nullable|string|max:100',
             'expired_tgl'              => 'nullable|date',
             'total_biaya_tenaga_kerja' => 'nullable|numeric|min:0',
@@ -128,6 +301,8 @@ class PackagingController extends Controller
             'items.required'           => 'Minimal harus ada 1 komponen bahan kemasan/WIP yang dikonsumsi.',
         ]);
 
+        $validated['target_karton_qty'] = $validated['target_karton_qty'] ?? $validated['hasil_karton_qty'];
+
         try {
             $header = $this->packagingService->storePackaging($validated, auth()->user()?->name);
 
@@ -143,7 +318,14 @@ class PackagingController extends Controller
      */
     public function show(int $id): View
     {
-        $header = DatPackagingHdr::with(['barangJadi.satuanDasar', 'gudang', 'details.barang.satuanDasar', 'bom'])->findOrFail($id);
+        $header = DatPackagingHdr::with([
+            'barangJadi.satuanDasar', 
+            'gudang', 
+            'details.barang.satuanDasar', 
+            'bom',
+            'produksi',
+            'pemakaian.details.barang'
+        ])->findOrFail($id);
 
         return view('produksi.packaging.show', compact('header'));
     }
@@ -176,7 +358,7 @@ class PackagingController extends Controller
      */
     public function rekap(Request $request): View
     {
-        $mode = $request->input('mode', 'harian'); // 'harian' atau 'bulanan'
+        $mode = $request->input('mode') === 'bulanan' ? 'bulanan' : 'harian';
         $year = (int) $request->input('tahun', date('Y'));
         $month = (int) $request->input('bulan', date('n'));
         $barangJadiId = $request->filled('barang_jadi_id') ? (int) $request->input('barang_jadi_id') : null;

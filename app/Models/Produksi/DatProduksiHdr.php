@@ -221,4 +221,22 @@ class DatProduksiHdr extends Model
             ->where('deleted_st', false)
             ->orderBy('created_at', 'desc');
     }
+
+    /**
+     * Relasi ke Dokumen Pengeluaran Bahan Kemas Gudang yang ditautkan ke produksi ini
+     */
+    public function pengeluaranKemasan(): HasMany
+    {
+        return $this->hasMany(\App\Models\Gudang\DatPakaiHdr::class, 'produksi_id', 'produksi_id')
+            ->where('deleted_st', false);
+    }
+
+    /**
+     * Relasi ke Dokumen Pengemasan (Packaging) dari hasil produksi Berko ini
+     */
+    public function packagings(): HasMany
+    {
+        return $this->hasMany(DatPackagingHdr::class, 'produksi_id', 'produksi_id')
+            ->where('deleted_st', false);
+    }
 }

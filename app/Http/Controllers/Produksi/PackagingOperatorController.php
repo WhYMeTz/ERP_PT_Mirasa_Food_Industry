@@ -132,7 +132,7 @@ class PackagingOperatorController extends Controller
         try {
             $laporan = $this->operatorService->storeLaporan($request->all(), Auth::user());
 
-            return redirect()->route('produksi.packaging_operator.show', $laporan->laporan_id)
+            return redirect()->route('produksi.packaging.mobile.show', $laporan->laporan_id)
                 ->with('success', "Laporan Pengemasan {$laporan->laporan_no} berhasil dikirim ke Admin Office!");
         } catch (Exception $e) {
             return redirect()->back()

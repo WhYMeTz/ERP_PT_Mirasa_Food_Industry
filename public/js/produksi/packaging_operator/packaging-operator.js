@@ -5,10 +5,30 @@
 
 document.addEventListener('DOMContentLoaded', function () {
     initShiftButtons();
+    initWipSatuanButtons();
     initSatuanButtons();
     initKaryawanSync();
     initProduksiSync();
 });
+
+/**
+ * Handle Satuan WIP Segmented Buttons (KG / KARTON)
+ */
+function initWipSatuanButtons() {
+    const wipSatuanBtns = document.querySelectorAll('.pkg-wip-satuan-btn');
+    const wipSatuanInput = document.getElementById('inputWipSatuan');
+    const suffix = document.getElementById('wipSatuanSuffix');
+
+    wipSatuanBtns.forEach(btn => {
+        btn.addEventListener('click', function () {
+            wipSatuanBtns.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            const val = this.getAttribute('data-satuan');
+            if (wipSatuanInput) wipSatuanInput.value = val;
+            if (suffix) suffix.textContent = val;
+        });
+    });
+}
 
 /**
  * Handle Shift Segmented Buttons

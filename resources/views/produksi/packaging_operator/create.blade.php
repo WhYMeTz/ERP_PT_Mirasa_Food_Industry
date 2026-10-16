@@ -102,12 +102,34 @@
             </div>
         </div>
 
-        {{-- Jumlah Kg WIP yang Dituang/Dikemas --}}
+        {{-- Jumlah WIP & Pilihan Satuan (Kg / Karton) --}}
         <div class="pkg-form-group">
-            <label class="pkg-label" for="wip_qty_kg">Jumlah Keripik Curah yang Dikemas (Kg) <span style="color: #ef4444;">*</span></label>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+                <label class="pkg-label" for="wip_qty_kg" style="margin-bottom: 0;">
+                    Jumlah Keripik Curah (WIP) <span style="color: #ef4444;">*</span>
+                </label>
+                <span style="font-size: 0.725rem; color: #64748b; font-weight: 600;">Satuan Ambil Curah</span>
+            </div>
+
+            {{-- Segmented Toggle Satuan WIP (Kg / Karton) --}}
+            <input type="hidden" name="wip_satuan" id="inputWipSatuan" value="{{ old('wip_satuan', 'KG') }}">
+            <div class="pkg-wip-satuan-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.5rem;">
+                <button type="button" class="pkg-wip-satuan-btn {{ old('wip_satuan', 'KG') == 'KG' ? 'active' : '' }}" data-satuan="KG">
+                    ⚖️ Kilogram (Kg)
+                </button>
+                <button type="button" class="pkg-wip-satuan-btn {{ old('wip_satuan') == 'KARTON' ? 'active' : '' }}" data-satuan="KARTON">
+                    📦 Dus / Karton
+                </button>
+            </div>
+
             <div style="position: relative;">
-                <input type="number" step="any" min="0.1" id="wip_qty_kg" name="wip_qty_kg" class="pkg-input" value="{{ old('wip_qty_kg', 100) }}" required style="padding-right: 45px;">
-                <span style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-weight: 700; color: #64748b; font-size: 0.85rem;">Kg</span>
+                <input type="number" step="any" min="0.01" id="wip_qty_kg" name="wip_qty_kg" class="pkg-input" value="{{ old('wip_qty_kg', 100) }}" required style="padding-right: 75px; font-weight: 700;">
+                <span id="wipSatuanSuffix" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-weight: 800; color: #059669; font-size: 0.825rem; font-family: ui-monospace, monospace;">
+                    {{ old('wip_satuan', 'KG') == 'KARTON' ? 'KARTON' : 'KG' }}
+                </span>
+            </div>
+            <div style="font-size: 0.725rem; color: #64748b; margin-top: 4px;">
+                <span>Pilih satuan: bisa timbangan Kg atau hitungan Dus / Karton penampungan.</span>
             </div>
         </div>
     </div>

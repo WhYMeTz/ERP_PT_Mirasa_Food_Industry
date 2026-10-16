@@ -838,7 +838,7 @@ function renderPullOperatorTable(list) {
             <td style="padding: 0.65rem 0.75rem;">
                 <div style="font-weight: 700; color: #0f172a;">${barangNm}</div>
                 <div style="font-size: 0.725rem; color: #64748b; margin-top: 2px;">
-                    ${item.bumbu_barang ? 'Bumbu: ' + item.bumbu_barang.barang_nm + ' (' + formatNumber(item.bumbu_qty_kg) + ' Kg)' : 'Tanpa Bumbu'}
+                    Curah: ${formatNumber(item.wip_qty_kg)} ${item.wip_satuan || 'Kg'} &bull; ${item.bumbu_barang ? 'Bumbu: ' + item.bumbu_barang.barang_nm + ' (' + formatNumber(item.bumbu_qty_kg) + ' Kg)' : 'Tanpa Bumbu'}
                 </div>
             </td>
             <td style="padding: 0.65rem 0.75rem; text-align: right;">
@@ -890,7 +890,7 @@ function applyOperatorLaporan(idx) {
     const subtitle = document.getElementById('operatorSyncSubtitle');
     if (badge && title && subtitle) {
         title.textContent = `Data Terhubung dengan Laporan Operator: ${item.laporan_no}`;
-        subtitle.textContent = `Leader: ${item.operator_nama} &bull; Shift ${item.shift} (${item.jumlah_personil || 1} Personil &bull; ${item.jumlah_mesin || 1} Mesin) &bull; Output: ${formatRupiah(item.hasil_karton_qty)} ${item.satuan_hasil || 'Karton'}`;
+        subtitle.textContent = `Leader: ${item.operator_nama} &bull; Shift ${item.shift} &bull; Curah: ${formatNumber(item.wip_qty_kg)} ${item.wip_satuan || 'Kg'} &bull; Output: ${formatRupiah(item.hasil_karton_qty)} ${item.satuan_hasil || 'Karton'}`;
         badge.style.display = 'flex';
     }
 
@@ -935,6 +935,10 @@ function applyMaterialQuantitiesFromLaporan(item) {
             const kategoriInput = row.querySelector('input[name*="[kategori_bahan]"]');
             if (kategoriInput && kategoriInput.value === 'WIP') {
                 qtyAktualInput.value = item.wip_qty_kg;
+                const satuanSpan = row.querySelector('.row-satuan-label');
+                if (satuanSpan && item.wip_satuan) {
+                    satuanSpan.textContent = item.wip_satuan;
+                }
             }
         }
     });

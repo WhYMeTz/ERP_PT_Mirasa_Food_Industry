@@ -48,10 +48,13 @@
                 <strong style="color: #0f172a;">{{ $laporan->operator_nama }} ({{ $laporan->jumlah_personil }} Org &bull; {{ $laporan->jumlah_mesin }} Mesin)</strong>
             </div>
 
-            @if ($laporan->produksi)
+            @if ($laporan->wip_qty_kg > 0)
                 <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f1f5f9;">
-                    <span style="color: #64748b;">Batch WIP Curah:</span>
-                    <strong style="color: #0f172a;">{{ $laporan->produksi->produksi_no }} ({{ number_format($laporan->wip_qty_kg, 1, ',', '.') }} Kg)</strong>
+                    <span style="color: #64748b;">Curah WIP Dikemas:</span>
+                    <strong style="color: #0f172a;">
+                        @if ($laporan->produksi) [{{ $laporan->produksi->produksi_no }}] @endif
+                        {{ number_format($laporan->wip_qty_kg, 2, ',', '.') }} {{ $laporan->wip_satuan ?: 'Kg' }}
+                    </strong>
                 </div>
             @endif
 

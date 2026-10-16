@@ -26,6 +26,7 @@ class DatLaporanKemasOperator extends Model
         'jumlah_mesin',
         'produksi_id',
         'wip_qty_kg',
+        'wip_satuan',
         'barang_jadi_id',
         'hasil_karton_qty',
         'hasil_pack_qty',

@@ -162,10 +162,22 @@ class User extends Authenticatable
 
 
     /**
+     * Cek apakah pengguna adalah Operator Pengemasan Lapangan (Mobile Shopfloor)
+     */
+    public function isOperatorPackaging(): bool
+    {
+        return str_contains(strtoupper((string) $this->role_cd), 'OPERATOR_PACKAGING')
+            || str_contains(strtoupper((string) $this->role_cd), 'OPERATOR_KEMAS');
+    }
+
+    /**
      * Cek apakah pengguna adalah Staf / Kepala Bagian Produksi
      */
     public function isProduksi(): bool
     {
+        if ($this->isOperatorPackaging()) {
+            return false;
+        }
         return str_contains(strtoupper((string) $this->role_cd), 'PRODUKSI');
     }
 
@@ -880,6 +892,10 @@ class User extends Authenticatable
      */
     public function getDashboardRoute(): string
     {
+        if ($this->isOperatorPackaging()) {
+            return 'produksi.packaging.mobile';
+        }
+
         if ($this->isQc()) {
             return 'qc.inbound.create';
         }

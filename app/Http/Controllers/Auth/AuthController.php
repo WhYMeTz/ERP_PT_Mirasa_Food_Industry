@@ -100,9 +100,11 @@ class AuthController extends Controller
             ->where('active_st', true)
             ->where('deleted_st', false)
             ->where(function ($q) {
-                $q->where('role_cd', 'STAFF_PRODUKSI')
+                $q->where('role_cd', 'OPERATOR_PACKAGING')
+                  ->orWhere('role_cd', 'STAFF_PRODUKSI')
                   ->orWhere('role_cd', 'SUPERADMIN');
             })
+            ->orderByRaw("CASE WHEN role_cd = 'OPERATOR_PACKAGING' THEN 1 WHEN role_cd = 'STAFF_PRODUKSI' THEN 2 ELSE 3 END")
             ->get();
 
         return view('auth.mobile-login', compact('operatorUsers'));

@@ -271,18 +271,12 @@
         </div>
     </div>
 
-    {{-- BOTTOM BAR FLOATING SUBMIT --}}
-    <div class="pkg-bottom-bar">
-        <div class="pkg-bottom-bar-inner">
-            <a href="{{ route('produksi.packaging.mobile.index') }}" class="pkg-btn-history" title="Lihat Riwayat Laporan Hari Ini">
-                <span>📋</span>
-                <span>Riwayat</span>
-            </a>
-            <button type="submit" class="pkg-btn-submit" onclick="return confirm('Kirimkan laporan pengemasan ini ke Admin Office?');">
-                <span>🚀</span>
-                <span>Kirim Laporan ke Office</span>
-            </button>
-        </div>
+    {{-- TOMBOL SIMPAN DI PALING BAWAH FORM (TIDAK NGAMBANG) --}}
+    <div class="pkg-submit-wrapper">
+        <button type="submit" class="pkg-btn-submit" onclick="return confirm('Kirimkan laporan pengemasan ini ke Admin Office?');">
+            <span>🚀</span>
+            <span>Kirim Laporan ke Office</span>
+        </button>
     </div>
 </form>
 @endsection

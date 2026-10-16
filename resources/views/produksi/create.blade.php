@@ -39,7 +39,7 @@
         <div class="card" style="margin-bottom: 1.25rem;">
             <div class="card-header" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0.875rem 1.25rem;">
                 <strong style="color: #0f172a; font-size: 0.95rem; display: flex; align-items: center; gap: 0.4rem;">
-                    <span>1. Dokumen Pengeluaran Gudang &amp; Parameter Lini Produksi</span>
+                    <span>1. Dokumen Pengeluaran Gudang &amp; Parameter Operasional Produksi</span>
                 </strong>
             </div>
             <div style="padding: 1.25rem;">
@@ -79,8 +79,9 @@
                     @include('produksi.partials.card-pemakaian-table')
                 </div>
 
-                {{-- PARAMETER PRODUKSI (OTOMATIS TERISI & DAPAT DISESUAIKAN) --}}
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem;">
+                {{-- PARAMETER OPERASIONAL PRODUKSI (TANGGAL, SHIFT, LINI, GUDANG) --}}
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; align-items: start;">
+                    {{-- 1. Tanggal Produksi --}}
                     <div>
                         <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">
                             Tanggal Produksi <span style="color: #ef4444;">*</span>
@@ -89,31 +90,52 @@
                         <div id="hariLabel" style="font-size: 0.75rem; color: #0284c7; font-weight: 600; margin-top: 0.25rem;"></div>
                     </div>
 
+                    {{-- 2. Shift Kerja Produksi --}}
+                    <div id="sectionShiftSelection">
+                        <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">
+                            Shift Kerja Produksi <span style="color: #ef4444;">*</span>
+                        </label>
+                        {{-- Hidden Input Shift & Jam --}}
+                        <input type="hidden" name="shift_cd" id="shift_cd" value="{{ old('shift_cd', 'A') }}">
+                        <input type="hidden" name="jam_produksi" id="jam_produksi" value="{{ old('jam_produksi', date('H:i')) }}">
+                        <div style="display: flex; background: #f1f5f9; padding: 3px; border-radius: 8px; border: 1px solid #cbd5e1; gap: 3px; height: 38px;">
+                            <button type="button" id="btnShiftA" onclick="selectShift('A')" 
+                                style="flex: 1; padding: 0.4rem 0.75rem; font-weight: 800; font-size: 0.85rem; border: none; border-radius: 6px; cursor: pointer; transition: all 0.2s ease;"
+                                class="{{ old('shift_cd', 'A') === 'A' ? 'shift-segmented-active active-a' : 'shift-segmented-inactive' }}">
+                                Shift A
+                            </button>
+                            <button type="button" id="btnShiftB" onclick="selectShift('B')" 
+                                style="flex: 1; padding: 0.4rem 0.75rem; font-weight: 800; font-size: 0.85rem; border: none; border-radius: 6px; cursor: pointer; transition: all 0.2s ease;"
+                                class="{{ old('shift_cd', 'A') === 'B' ? 'shift-segmented-active active-b' : 'shift-segmented-inactive' }}">
+                                Shift B
+                            </button>
+                        </div>
+                        <small style="color: #64748b; font-size: 0.725rem; margin-top: 0.25rem; display: block;">Regu operasional lantai pabrik.</small>
+                    </div>
+
+                    {{-- 3. Lini Produksi --}}
                     <div>
                         <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">
-                            Lini Produksi / Tujuan <span style="color: #ef4444;">*</span>
+                            Lini Produksi <span style="color: #ef4444;">*</span>
                         </label>
                         <select name="lini_produksi" id="lini_produksi" class="form-control" required onchange="onLiniProduksiChange()">
-                            <option value="">-- Pilih Lini Produksi / Tujuan --</option>
+                            <option value="">-- Pilih Lini Produksi --</option>
                             @if(isset($liniList) && $liniList->isNotEmpty())
-                                @foreach($liniList->groupBy(fn($item) => $item->kategori_lini ?: 'UMUM') as $kategori => $items)
-                                    <optgroup label="{{ $kategori }}">
-                                        @foreach($items as $lini)
-                                            <option value="{{ $lini->lini_nm }}" 
-                                                data-tipe="{{ $lini->tipe_batch }}" 
-                                                data-kategori="{{ $lini->kategori_lini }}" 
-                                                data-cd="{{ $lini->lini_cd }}" 
-                                                {{ old('lini_produksi') === $lini->lini_nm ? 'selected' : '' }}>
-                                                {{ $lini->lini_nm }} {{ $lini->keterangan ? '('.$lini->keterangan.')' : '' }}
-                                            </option>
-                                        @endforeach
-                                    </optgroup>
+                                @foreach($liniList as $lini)
+                                    <option value="{{ $lini->lini_nm }}" 
+                                        data-tipe="{{ $lini->tipe_batch }}" 
+                                        data-kategori="{{ $lini->kategori_lini }}" 
+                                        data-cd="{{ $lini->lini_cd }}" 
+                                        {{ old('lini_produksi') === $lini->lini_nm ? 'selected' : '' }}>
+                                        {{ $lini->lini_nm }}
+                                    </option>
                                 @endforeach
                             @endif
                         </select>
-                        <small style="color: #64748b; font-size: 0.725rem;">Otomatis sinkron dari BPPB atau dapat dipilih manual.</small>
+                        <small style="color: #64748b; font-size: 0.725rem; margin-top: 0.25rem; display: block;">Pilih lini mesin penggorengan.</small>
                     </div>
 
+                    {{-- 4. Gudang Penerima Hasil Produksi --}}
                     <div>
                         <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">
                             Gudang Penerima Hasil Produksi <span style="color: #ef4444;">*</span>
@@ -126,20 +148,23 @@
                                 </option>
                             @endforeach
                         </select>
-                        <small style="color: #64748b; font-size: 0.725rem;">Lokasi gudang fisik tempat penyetoran barang jadi atau WIP.</small>
+                        <small style="color: #64748b; font-size: 0.725rem; margin-top: 0.25rem; display: block;">Lokasi gudang fisik tempat penyetoran barang jadi/WIP.</small>
                     </div>
                 </div>
             </div>
         </div>
 
-        {{-- BAGIAN 2: SHIFT KERJA, PENOMORAN BATCH & KEMASAN KARTON --}}
+        {{-- BAGIAN 2: HASIL BARANG PRODUKSI (BARANG JADI & OLAHAN CURAH) --}}
+        @include('produksi.partials.card-output-dinamis')
+
+        {{-- BAGIAN 3: PENOMORAN BATCH, KEMASAN & KEDALUWARSA PRODUK --}}
         @include('produksi.partials.card-shift-karton')
 
-        {{-- BAGIAN 3: BIAYA BAHAN BAKU & KEMASAN (DIRECT MATERIALS) --}}
+        {{-- BAGIAN 4: BIAYA BAHAN BAKU & KEMASAN (DIRECT MATERIALS) --}}
         <div class="card" style="margin-bottom: 1.25rem;">
             <div class="card-header" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0.875rem 1.25rem; display: flex; justify-content: space-between; align-items: center;">
                 <strong style="color: #0f172a; font-size: 0.95rem; display: flex; align-items: center; gap: 0.4rem;">
-                    <span>3. Biaya Bahan Baku &amp; Kemasan (Direct Materials)</span>
+                    <span>4. Biaya Bahan Baku &amp; Kemasan (Direct Materials)</span>
                 </strong>
                 <span id="badgeSubtotalBahan" style="font-size: 0.8rem; font-weight: 700; color: #334155; background: #f1f5f9; border: 1px solid #cbd5e1; padding: 0.2rem 0.6rem; border-radius: 4px;">
                     Subtotal Bahan: Rp 0
@@ -231,12 +256,12 @@
             </div>
         </div>
 
-        {{-- BAGIAN 4 & 5: ENERGI (CNG) & TENAGA KERJA --}}
+        {{-- BAGIAN 5 & 6: ENERGI (CNG) & TENAGA KERJA --}}
         <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 1.25rem; margin-bottom: 1.25rem;">
             {{-- ENERGI GAS CNG --}}
             <div class="card">
                 <div class="card-header" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0.875rem 1.25rem; display: flex; justify-content: space-between; align-items: center;">
-                    <strong style="color: #0f172a; font-size: 0.95rem;">4. Gas Alam / CNG (Boiler &amp; Fryer)</strong>
+                    <strong style="color: #0f172a; font-size: 0.95rem;">5. Gas Alam / CNG (Boiler &amp; Fryer)</strong>
                     <span style="font-size: 0.7rem; color: #475569; background: #f1f5f9; border: 1px solid #cbd5e1; padding: 0.15rem 0.45rem; border-radius: 4px; font-weight: 700;">Flow Meter Harian</span>
                 </div>
                 <div style="padding: 1.25rem;">
@@ -269,7 +294,7 @@
             {{-- TENAGA KERJA --}}
             <div class="card">
                 <div class="card-header" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0.875rem 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
-                    <strong style="color: #0f172a; font-size: 0.95rem;">5. Tenaga Kerja Produksi</strong>
+                    <strong style="color: #0f172a; font-size: 0.95rem;">6. Tenaga Kerja Produksi</strong>
                     <div style="display: flex; align-items: center; gap: 0.4rem;">
                         <button type="button" id="btnSyncKaryawan" class="btn btn-sm btn-outline-primary" onclick="syncLaborFromKaryawan(true)" style="font-size: 0.725rem; padding: 0.2rem 0.6rem; display: inline-flex; align-items: center; gap: 0.25rem; border-radius: 4px; font-weight: 600; cursor: pointer;">
                             <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
@@ -311,9 +336,6 @@
             </div>
         </div>
 
-
-        {{-- BAGIAN 6: HASIL BARANG PRODUKSI (diisi lebih dulu agar FOH dapat auto-hitung dari Total KG WIP) --}}
-        @include('produksi.partials.card-output-dinamis')
 
         {{-- BAGIAN 7: BIAYA OVERHEAD PABRIK (FOH) --}}
         <div class="card" style="margin-bottom: 1.25rem;">

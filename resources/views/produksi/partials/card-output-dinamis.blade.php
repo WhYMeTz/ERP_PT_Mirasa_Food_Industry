@@ -2,7 +2,7 @@
     <div class="card-header" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0.875rem 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
         <div>
             <strong style="color: #0f172a; font-size: 0.95rem; display: flex; align-items: center; gap: 0.4rem;">
-                <span>6. Hasil Barang Produksi (Barang Jadi &amp; Olahan Curah)</span>
+                <span>2. Hasil Barang Produksi (Barang Jadi &amp; Olahan Curah)</span>
             </strong>
             <span style="font-size: 0.775rem; color: #64748b; display: block; margin-top: 0.15rem;">
                 Pencatatan rincian output barang yang dihasilkan (kemasan barang jadi FG maupun timbangan olahan curah WIP).

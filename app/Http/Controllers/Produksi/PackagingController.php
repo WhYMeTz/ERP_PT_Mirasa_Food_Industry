@@ -39,9 +39,9 @@ class PackagingController extends Controller
         $dataList = $this->packagingService->getAllPaginated(15, $filters);
         $metrics = $this->packagingService->getMetrics($filters);
 
-        // Ambil daftar barang jadi aktif untuk filter
+        // Ambil daftar barang jadi aktif untuk filter (Khusus FG)
         $barangJadiList = MstBarang::active()
-            ->whereHas('jenisBarang', fn($q) => $q->whereIn('jenis_barang_cd', ['FG', 'WIP']))
+            ->whereHas('jenisBarang', fn($q) => $q->where('jenis_barang_cd', 'FG'))
             ->orderBy('barang_nm')
             ->get(['barang_id', 'barang_cd', 'barang_nm']);
 
@@ -56,11 +56,10 @@ class PackagingController extends Controller
         $user = auth()->user();
         $gudangList = $user ? $user->getAllowedGudangList() : MstGudang::active()->get();
 
-
-        // Ambil daftar barang jadi untuk dropdown target kemas
+        // Ambil daftar barang jadi untuk dropdown target kemas (Khusus Finished Goods / FG, bukan WIP/Curah)
         $barangJadiList = MstBarang::with(['satuanDasar', 'jenisBarang'])
             ->active()
-            ->whereHas('jenisBarang', fn($q) => $q->whereIn('jenis_barang_cd', ['FG', 'WIP']))
+            ->whereHas('jenisBarang', fn($q) => $q->where('jenis_barang_cd', 'FG'))
             ->orderBy('barang_nm')
             ->get();
 

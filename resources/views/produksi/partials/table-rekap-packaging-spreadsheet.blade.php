@@ -35,9 +35,9 @@
         <div class="price-ref-box" style="border-left: 3px solid #f97316;">
             <span class="price-ref-label">Harga Karton / Dus</span>
             <div class="price-ref-val" style="font-size: 0.85rem; color: #9a3412;">
-                KK: Rp {{ number_format($dh['karton_kk'] ?? 1358.3, 1, ',', '.') }}
+                XX: Rp {{ number_format($dh['karton_kk'] ?? 1358.3, 1, ',', '.') }}
             </div>
-            <span class="price-ref-sub">MK: Rp {{ number_format($dh['karton_mk'] ?? 1350, 1, ',', '.') }} / dus</span>
+            <span class="price-ref-sub">MX: Rp {{ number_format($dh['karton_mk'] ?? 1350, 1, ',', '.') }} / dus</span>
         </div>
 
         {{-- Parameter 3: Harga Bumbu Balado --}}
@@ -53,9 +53,9 @@
         <div class="price-ref-box" style="border-left: 3px solid #10b981;">
             <span class="price-ref-label">Harga Roll Kemasan</span>
             <div class="price-ref-val" style="font-size: 0.85rem; color: #065f46;">
-                KK: Rp {{ number_format($dh['roll_kk_unit'] ?? 364839, 0, ',', '.') }}
+                XX: Rp {{ number_format($dh['roll_kk_unit'] ?? 364839, 0, ',', '.') }}
             </div>
-            <span class="price-ref-sub">MK: Rp {{ number_format($dh['roll_mk_unit'] ?? 384471, 0, ',', '.') }} &bull; Rp {{ number_format($dh['roll_per_kg'] ?? 43482, 0, ',', '.') }}/kg</span>
+            <span class="price-ref-sub">MX: Rp {{ number_format($dh['roll_mk_unit'] ?? 384471, 0, ',', '.') }} &bull; Rp {{ number_format($dh['roll_per_kg'] ?? 43482, 0, ',', '.') }}/kg</span>
         </div>
 
         {{-- Parameter 5: Harga Lakban --}}
@@ -175,8 +175,8 @@
                     <th style="width: 105px; background: #fefce8; color: #854d0e;">RUPIAH</th>
 
                     {{-- Sub-Kolom Karton --}}
-                    <th style="width: 65px; background: #fffbeb; color: #92400e;">KK</th>
-                    <th style="width: 65px; background: #fffbeb; color: #92400e;">MK</th>
+                    <th style="width: 65px; background: #fffbeb; color: #92400e;">XX</th>
+                    <th style="width: 65px; background: #fffbeb; color: #92400e;">MX</th>
                     <th style="width: 105px; background: #fffbeb; color: #92400e;">RUPIAH</th>
 
                     {{-- Sub-Kolom Bumbu Balado --}}
@@ -184,8 +184,8 @@
                     <th style="width: 105px; background: #fff7ed; color: #9a3412;">RUPIAH</th>
 
                     {{-- Sub-Kolom Penggunaan Roll --}}
-                    <th style="width: 65px; background: #f0fdf4; color: #065f46;">ROLL KK</th>
-                    <th style="width: 65px; background: #f0fdf4; color: #065f46;">ROLL MK</th>
+                    <th style="width: 65px; background: #f0fdf4; color: #065f46;">ROLL XX</th>
+                    <th style="width: 65px; background: #f0fdf4; color: #065f46;">ROLL MX</th>
                     <th style="width: 105px; background: #f0fdf4; color: #065f46;">RUPIAH</th>
 
                     {{-- Sub-Kolom Lakban (gr) --}}

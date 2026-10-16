@@ -642,7 +642,7 @@ class PackagingService
 
                 foreach ($dayRecords as $rec) {
                     $targetNm = strtoupper($rec->barangJadi?->barang_nm ?? '');
-                    $isMaksi = str_contains($targetNm, 'MAKSI') || str_contains($targetNm, 'MK');
+                    $isMaksi = str_contains($targetNm, 'MAKSI') || str_contains($targetNm, 'MX') || str_contains($targetNm, 'MK');
 
                     if ($isMaksi) {
                         $hasilMaksi += (float) $rec->hasil_pcs_qty;
@@ -667,7 +667,7 @@ class PackagingService
                             $bahanKeripikNilai += $sub;
                         } elseif ($kat === 'KARTON' || str_contains($bNm, 'KARTON') || str_contains($bNm, 'BOX') || str_contains($bNm, 'DUS')) {
                             $kartonPcsTotal += $qty;
-                            if (str_contains($bNm, 'MAKSI') || str_contains($bNm, 'MK')) {
+                            if (str_contains($bNm, 'MAKSI') || str_contains($bNm, 'MX') || str_contains($bNm, 'MK')) {
                                 $kartonMkQty += $qty;
                             } else {
                                 $kartonKkQty += $qty;
@@ -678,7 +678,7 @@ class PackagingService
                             $baladoNilai += $sub;
                         } elseif (str_contains($bNm, 'ROLL') || $kat === 'PLASTIK') {
                             $plastikPcsTotal += $qty;
-                            if (str_contains($bNm, 'MAKSI') || str_contains($bNm, 'MK')) {
+                            if (str_contains($bNm, 'MAKSI') || str_contains($bNm, 'MX') || str_contains($bNm, 'MK')) {
                                 $rollMkKg += $qty;
                             } else {
                                 $rollKkKg += $qty;
@@ -773,11 +773,15 @@ class PackagingService
                     'bahan_keripik_nilai'     => $bahanKeripikNilai ?: $totalWipNilai,
                     'karton_kk_qty'           => $kartonKkQty,
                     'karton_mk_qty'           => $kartonMkQty,
+                    'karton_xx_qty'           => $kartonKkQty,
+                    'karton_mx_qty'           => $kartonMkQty,
                     'karton_nilai'            => $kartonNilai,
                     'balado_kg'               => $baladoKg,
                     'balado_nilai'            => $baladoNilai,
                     'roll_kk_kg'              => $rollKkKg,
                     'roll_mk_kg'              => $rollMkKg,
+                    'roll_xx_kg'              => $rollKkKg,
+                    'roll_mx_kg'              => $rollMkKg,
                     'roll_nilai'              => $rollNilai,
                     'lakban_atas_gr'          => $lakbanAtasGr,
                     'lakban_bawah_gr'         => $lakbanBawahGr,
@@ -833,11 +837,15 @@ class PackagingService
                     'bahan_keripik_nilai'     => 0,
                     'karton_kk_qty'           => 0,
                     'karton_mk_qty'           => 0,
+                    'karton_xx_qty'           => 0,
+                    'karton_mx_qty'           => 0,
                     'karton_nilai'            => 0,
                     'balado_kg'               => 0,
                     'balado_nilai'            => 0,
                     'roll_kk_kg'              => 0,
                     'roll_mk_kg'              => 0,
+                    'roll_xx_kg'              => 0,
+                    'roll_mx_kg'              => 0,
                     'roll_nilai'              => 0,
                     'lakban_atas_gr'          => 0,
                     'lakban_bawah_gr'         => 0,
@@ -917,12 +925,18 @@ class PackagingService
             'tgl_wip'        => '20/01/2026',
             'karton_kk'      => 1358.30,
             'karton_mk'      => 1350.00,
+            'karton_xx'      => 1358.30,
+            'karton_mx'      => 1350.00,
             'bumbu_balado'   => 39450,
             'bumbu_rasio'    => '5% Berko',
             'roll_kk_unit'   => 364839,
             'roll_mk_unit'   => 384471,
+            'roll_xx_unit'   => 364839,
+            'roll_mx_unit'   => 384471,
             'out_3_kk'       => 353894,
             'out_3_mk'       => 372937,
+            'out_3_xx'       => 353894,
+            'out_3_mx'       => 372937,
             'roll_per_kg'    => 43482,
             'roll_per_gr'    => 43.48,
             'lakban_roll'    => 45000,
@@ -959,11 +973,15 @@ class PackagingService
                 'tot_bahan_keripik_nilai'  => $totBahanKeripikNilai,
                 'tot_karton_kk'            => $totKartonKk,
                 'tot_karton_mk'            => $totKartonMk,
+                'tot_karton_xx'            => $totKartonKk,
+                'tot_karton_mx'            => $totKartonMk,
                 'tot_karton_nilai'         => $totKartonNilai,
                 'tot_balado_kg'            => $totBaladoKg,
                 'tot_balado_nilai'         => $totBaladoNilai,
                 'tot_roll_kk_kg'           => $totRollKkKg,
                 'tot_roll_mk_kg'           => $totRollMkKg,
+                'tot_roll_xx_kg'           => $totRollKkKg,
+                'tot_roll_mx_kg'           => $totRollMkKg,
                 'tot_roll_nilai'           => $totRollNilai,
                 'tot_lakban_atas'          => $totLakbanAtas,
                 'tot_lakban_bawah'         => $totLakbanBawah,

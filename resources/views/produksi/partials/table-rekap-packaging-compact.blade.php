@@ -244,8 +244,8 @@
                                     </div>
                                     <div class="mini-cost-list">
                                         <div class="mini-cost-row">
-                                            <span>Karton KK / MK:</span>
-                                            <strong>KK: {{ number_format($d['karton_kk_qty'], 0, ',', '.') }} | MK: {{ number_format($d['karton_mk_qty'], 0, ',', '.') }} dus</strong>
+                                            <span>Karton XX / MX:</span>
+                                            <strong>XX: {{ number_format($d['karton_kk_qty'], 0, ',', '.') }} | MX: {{ number_format($d['karton_mk_qty'], 0, ',', '.') }} dus</strong>
                                         </div>
                                         <div class="mini-cost-row">
                                             <span>Nilai Karton Dus:</span>
@@ -253,7 +253,7 @@
                                         </div>
                                         <div class="mini-cost-row">
                                             <span>Roll Plastik (Kg):</span>
-                                            <strong>KK: {{ number_format($d['roll_kk_kg'], 2, ',', '.') }}kg | MK: {{ number_format($d['roll_mk_kg'], 2, ',', '.') }}kg</strong>
+                                            <strong>XX: {{ number_format($d['roll_kk_kg'], 2, ',', '.') }}kg | MX: {{ number_format($d['roll_mk_kg'], 2, ',', '.') }}kg</strong>
                                         </div>
                                         <div class="mini-cost-row">
                                             <span>Nilai Roll Kemasan:</span>

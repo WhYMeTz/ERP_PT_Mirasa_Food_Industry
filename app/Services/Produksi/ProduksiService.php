@@ -1046,13 +1046,40 @@ class ProduksiService
                 $data['produksi_no'] = $this->codeGenerator->generateProduksiNo($tgl);
             }
 
-            // Normalisasi Shift & Karton
+            // Cek apakah produk utama yang dihasilkan adalah standar Indofood IFM / WIP-FCC
             $lini = strtoupper($data['lini_produksi'] ?? 'PRODUKSI IFL');
+            $isIfm = false;
+            if (!empty($data['output_items']) && is_array($data['output_items'])) {
+                $firstItemId = (int) ($data['output_items'][0]['barang_id'] ?? 0);
+                if ($firstItemId > 0) {
+                    $firstBarang = MstBarang::find($firstItemId);
+                    if ($firstBarang) {
+                        $bCd = strtoupper($firstBarang->barang_cd ?? '');
+                        $bNm = strtoupper($firstBarang->barang_nm ?? '');
+                        $isIfm = str_contains($bCd, 'FCC') || str_contains($bCd, 'IFM') || str_contains($bNm, 'WIP-FCC') || (str_contains($bNm, 'IFM') && !str_contains($bNm, 'MANUAL'));
+                    }
+                }
+            }
+            if (!$isIfm && !empty($lini) && str_contains(strtoupper($lini), 'IFM')) {
+                $isIfm = true;
+            }
+
+            // Normalisasi Shift & Karton
             $shift = strtoupper(trim($data['shift_cd'] ?? 'A'));
             $shift = in_array($shift, ['A', 'B']) ? $shift : 'A';
-            $noAwal = !empty($data['no_karton_awal']) ? (int) $data['no_karton_awal'] : 1;
             $qtyKarton = !empty($data['qty_karton']) ? (int) $data['qty_karton'] : 0;
-            $noAkhir = !empty($data['no_karton_akhir']) ? (int) $data['no_karton_akhir'] : ($qtyKarton > 0 ? ($noAwal + $qtyKarton - 1) : $noAwal);
+            $hasKartonInput = !empty($data['no_karton_awal']) && (int) $data['no_karton_awal'] > 0;
+
+            if ($isIfm && $hasKartonInput) {
+                $noAwal = (int) $data['no_karton_awal'];
+                $noAkhir = !empty($data['no_karton_akhir']) ? (int) $data['no_karton_akhir'] : ($qtyKarton > 0 ? ($noAwal + $qtyKarton - 1) : $noAwal);
+            } elseif ($isIfm && $qtyKarton > 0) {
+                $noAwal = 1;
+                $noAkhir = $qtyKarton;
+            } else {
+                $noAwal = $hasKartonInput ? (int) $data['no_karton_awal'] : null;
+                $noAkhir = (!empty($data['no_karton_akhir']) && (int) $data['no_karton_akhir'] > 0) ? (int) $data['no_karton_akhir'] : null;
+            }
 
             $data['shift_cd'] = $shift;
             $data['no_karton_awal'] = $noAwal;
@@ -1061,11 +1088,9 @@ class ProduksiService
             $data['jam_produksi'] = !empty($data['jam_produksi']) ? trim($data['jam_produksi']) : date('H:i');
             $data['varietas_singkong'] = !empty($data['varietas_singkong']) ? trim($data['varietas_singkong']) : 'STP / MGU';
 
-            $isIfm = str_contains(strtoupper($lini), 'IFM') || str_contains(strtoupper($lini), 'IFL');
-
             // Generate Batch No jika belum ada
             if (empty($data['batch_wip_no'])) {
-                if ($isIfm && $qtyKarton > 0) {
+                if ($isIfm && $qtyKarton > 0 && !empty($noAwal) && !empty($noAkhir)) {
                     $padAwal = str_pad((string) $noAwal, 4, '0', STR_PAD_LEFT);
                     $padAkhir = str_pad((string) $noAkhir, 4, '0', STR_PAD_LEFT);
                     $data['batch_wip_no'] = "{$shift}{$padAwal} - {$shift}{$padAkhir}";

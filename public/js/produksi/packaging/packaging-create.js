@@ -19,6 +19,27 @@ document.addEventListener('DOMContentLoaded', function () {
         fetchBomPreview();
     }
 
+    const packTglInput = document.getElementById('pack_tgl');
+    packTglInput?.addEventListener('change', function () {
+        const prodSelect = document.getElementById('produksi_id');
+        // Jika belum sinkron dengan tiket curah WIP, sesuaikan nomor batch default & expired
+        if (!prodSelect || !prodSelect.value) {
+            updateBatchNumber();
+            const expInput = document.getElementById('expired_tgl');
+            if (expInput && packTglInput.value) {
+                const parts = packTglInput.value.split('-');
+                if (parts.length === 3) {
+                    const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+                    d.setMonth(d.getMonth() + 6);
+                    const yyyy = d.getFullYear();
+                    const mm = String(d.getMonth() + 1).padStart(2, '0');
+                    const dd = String(d.getDate()).padStart(2, '0');
+                    expInput.value = `${yyyy}-${mm}-${dd}`;
+                }
+            }
+        }
+    });
+
     // Event listener pemilihan produk jadi
     barangSelect?.addEventListener('change', function () {
         updateBatchNumber();

@@ -121,13 +121,13 @@ class RekapHppPackagingExport
         // Sub-Tabel Parameter 4: Harga Roll Kemasan
         $sheet->setCellValue('J4', 'Harga ROLL');
         $sheet->mergeCells('J4:K4');
-        $sheet->setCellValue('J5', 'per roll KK');
+        $sheet->setCellValue('J5', 'per roll XX');
         $sheet->setCellValue('K5', (float) ($dh['roll_kk_unit'] ?? 364839));
-        $sheet->setCellValue('J7', 'per roll MK');
+        $sheet->setCellValue('J7', 'per roll MX');
         $sheet->setCellValue('K7', (float) ($dh['roll_mk_unit'] ?? 384471));
-        $sheet->setCellValue('J8', 'out 3% per roll KK');
+        $sheet->setCellValue('J8', 'out 3% per roll XX');
         $sheet->setCellValue('K8', (float) ($dh['roll_kk_out3'] ?? 353894));
-        $sheet->setCellValue('J9', 'out 3% per roll MK');
+        $sheet->setCellValue('J9', 'out 3% per roll MX');
         $sheet->setCellValue('K9', (float) ($dh['roll_mk_out3'] ?? 372937));
 
         // Sub-Tabel Parameter 5: Lakban
@@ -143,8 +143,8 @@ class RekapHppPackagingExport
         $sheet->setCellValue('P5', 'per lembar');
         $sheet->setCellValue('Q5', (float) ($dh['kertas_exp_lbr'] ?? 100));
 
-        // Sub-Tabel Parameter 7: Roll KK + MK
-        $sheet->setCellValue('S4', 'ROLL KK + MK');
+        // Sub-Tabel Parameter 7: Roll XX + MX
+        $sheet->setCellValue('S4', 'ROLL XX + MX');
         $sheet->setCellValue('S5', 'per kg');
         $sheet->setCellValue('T5', (float) ($dh['roll_per_kg'] ?? 43482));
         $sheet->setCellValue('S6', 'per gr');
@@ -225,13 +225,13 @@ class RekapHppPackagingExport
             'C13'  => "BERKO (KG)",
             'D13'  => "WIP (KG)",
             'E13'  => "Rupiah",
-            'F13'  => "KK",
-            'G13'  => "MK",
+            'F13'  => "XX",
+            'G13'  => "MX",
             'H13'  => "Rupiah",
             'I13'  => "BALADO",
             'J13'  => "Rupiah",
-            'K13'  => "KK",
-            'L13'  => "MK",
+            'K13'  => "XX",
+            'L13'  => "MX",
             'M13'  => "Rupiah",
             'N13'  => "ATAS",
             'O13'  => "BAWAH",
@@ -500,13 +500,13 @@ class RekapHppPackagingExport
             'C'  => 12,  // BERKO (KG)
             'D'  => 12,  // WIP (KG)
             'E'  => 15,  // RUPIAH
-            'F'  => 9,   // KK
-            'G'  => 9,   // MK
+            'F'  => 9,   // XX
+            'G'  => 9,   // MX
             'H'  => 14,  // RUPIAH
             'I'  => 11,  // BALADO
             'J'  => 14,  // RUPIAH
-            'K'  => 9,   // ROLL KK
-            'L'  => 9,   // ROLL MK
+            'K'  => 9,   // ROLL XX
+            'L'  => 9,   // ROLL MX
             'M'  => 14,  // RUPIAH
             'N'  => 9,   // ATAS
             'O'  => 9,   // BAWAH

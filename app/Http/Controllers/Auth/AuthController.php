@@ -86,4 +86,77 @@ class AuthController extends Controller
         return redirect()->route('login')
             ->with('success', 'Anda telah berhasil keluar dari sistem.');
     }
+
+    /**
+     * Tampilkan formulir login khusus Mobile Shopfloor / Operator Kemas
+     */
+    public function showMobileLogin(): View|RedirectResponse
+    {
+        if (Auth::check()) {
+            return redirect()->route('produksi.packaging.mobile');
+        }
+
+        $operatorUsers = User::with(['karyawan'])
+            ->where('active_st', true)
+            ->where('deleted_st', false)
+            ->where(function ($q) {
+                $q->where('role_cd', 'STAFF_PRODUKSI')
+                  ->orWhere('role_cd', 'SUPERADMIN');
+            })
+            ->get();
+
+        return view('auth.mobile-login', compact('operatorUsers'));
+    }
+
+    /**
+     * Proses autentikasi login khusus Mobile Shopfloor
+     */
+    public function mobileLogin(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'email'    => ['required', 'string'],
+            'password' => ['required', 'string'],
+        ], [
+            'email.required'    => 'Akun / Email wajib diisi.',
+            'password.required' => 'Kata sandi wajib diisi.',
+        ]);
+
+        $input = $request->input('email');
+        $field = filter_var($input, FILTER_VALIDATE_EMAIL) ? 'email' : 'name';
+        $credentials = [
+            $field     => $input,
+            'password' => $request->input('password'),
+            'active_st' => true,
+            'deleted_st' => false,
+        ];
+
+        $remember = $request->boolean('remember');
+
+        if (Auth::attempt($credentials, $remember)) {
+            $request->session()->regenerate();
+            $user = Auth::user();
+
+            return redirect()->intended(route('produksi.packaging.mobile'))
+                ->with('success', "Selamat bertugas, {$user->name}! Anda berhasil masuk ke Portal Kemas.");
+        }
+
+        return back()->withInput($request->only('email', 'remember'))->withErrors([
+            'email' => 'Akun atau kata sandi operator yang Anda masukkan salah.',
+        ]);
+    }
+
+    /**
+     * Keluar dari sesi Mobile Shopfloor
+     */
+    public function mobileLogout(Request $request): RedirectResponse
+    {
+        Auth::logout();
+
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return redirect()->route('mobile.login')
+            ->with('success', 'Sesi kerja Anda telah diakhiri. Silakan login kembali saat memulai shift baru.');
+    }
 }
+

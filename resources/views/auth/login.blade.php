@@ -244,5 +244,12 @@
     @endif
 </div>
 
+<div style="text-align: center; margin-top: 1.25rem;">
+    <a href="{{ route('mobile.login') }}" style="color: #94a3b8; font-size: 0.825rem; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; transition: color 0.15s ease;">
+        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+        <span>Operator Pabrik? Masuk ke Portal Lapangan (HP)</span>
+    </a>
+</div>
+
 </body>
 </html>

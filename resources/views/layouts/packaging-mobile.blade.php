@@ -29,10 +29,20 @@
             </a>
 
             <div style="display: flex; gap: 6px; align-items: center;">
-                <a href="{{ route('produksi.packaging.index') }}" title="Masuk ke Web Office ERP" style="padding: 6px 10px; background: #f1f5f9; border-radius: 6px; font-size: 0.75rem; color: #475569; text-decoration: none; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
-                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                    <span>Office</span>
-                </a>
+                @if(Auth::check() && (Auth::user()->isSuperAdmin() || Auth::user()->isProduksi()))
+                    <a href="{{ route('produksi.packaging.index') }}" title="Masuk ke Web Office ERP" style="padding: 6px 9px; background: #f1f5f9; border-radius: 6px; font-size: 0.75rem; color: #475569; text-decoration: none; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                        <span>Office</span>
+                    </a>
+                @endif
+
+                <form action="{{ route('mobile.logout') }}" method="POST" style="margin: 0;">
+                    @csrf
+                    <button type="submit" title="Keluar / Ganti Shift" style="padding: 6px 9px; background: #fee2e2; border: 1px solid #fecaca; border-radius: 6px; font-size: 0.75rem; color: #dc2626; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; cursor: pointer;">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                        <span>Keluar</span>
+                    </button>
+                </form>
             </div>
         </div>
     </header>

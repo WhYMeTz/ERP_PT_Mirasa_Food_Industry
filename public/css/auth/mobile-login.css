@@ -1,0 +1,297 @@
+/* ==========================================================================
+   MOBILE SHOPFLOOR LOGIN - PT MIRASA FOOD INDUSTRY
+   Theme: Emerald Green & Slate (Touch-First Mobile Experience)
+   ========================================================================== */
+
+:root {
+    --pkg-green-50: #f0fdf4;
+    --pkg-green-100: #dcfce7;
+    --pkg-green-500: #10b981;
+    --pkg-green-600: #059669;
+    --pkg-green-700: #047857;
+    --pkg-dark-bg: #0f172a;
+    --pkg-card-bg: #ffffff;
+    --pkg-text-main: #0f172a;
+    --pkg-text-muted: #64748b;
+    --pkg-border: #cbd5e1;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body.pkg-login-body {
+    background: linear-gradient(180deg, #064e3b 0%, #022c22 45%, #0f172a 100%);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 1.25rem;
+    color: var(--pkg-text-main);
+}
+
+.pkg-login-container {
+    width: 100%;
+    max-width: 420px;
+    margin: 0 auto;
+}
+
+/* Header Branding */
+.pkg-login-header {
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.pkg-login-logo {
+    height: 52px;
+    width: auto;
+    margin-bottom: 0.75rem;
+    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.25));
+}
+
+.pkg-login-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(16, 185, 129, 0.2);
+    border: 1px solid rgba(52, 211, 153, 0.4);
+    color: #6ee7b7;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.35rem 0.75rem;
+    border-radius: 9999px;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+}
+
+.pkg-login-title {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: #ffffff;
+    line-height: 1.25;
+    margin-bottom: 0.35rem;
+}
+
+.pkg-login-subtitle {
+    font-size: 0.825rem;
+    color: #a7f3d0;
+    line-height: 1.4;
+}
+
+/* Login Card */
+.pkg-login-card {
+    background: var(--pkg-card-bg);
+    border-radius: 16px;
+    padding: 1.75rem 1.5rem;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+/* Form Groups */
+.pkg-form-group {
+    margin-bottom: 1.15rem;
+}
+
+.pkg-form-label {
+    display: block;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: #334155;
+    margin-bottom: 0.4rem;
+}
+
+.pkg-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.pkg-input-icon {
+    position: absolute;
+    left: 1rem;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    pointer-events: none;
+}
+
+.pkg-input-field {
+    width: 100%;
+    height: 48px;
+    background: #f8fafc;
+    border: 1.5px solid var(--pkg-border);
+    border-radius: 10px;
+    padding: 0.65rem 1rem 0.65rem 2.75rem;
+    font-size: 0.95rem;
+    color: #0f172a;
+    font-family: inherit;
+    transition: all 0.2s ease;
+}
+
+.pkg-input-field:focus {
+    outline: none;
+    background: #ffffff;
+    border-color: var(--pkg-green-600);
+    box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.18);
+}
+
+.pkg-toggle-pwd {
+    position: absolute;
+    right: 0.85rem;
+    background: none;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    padding: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pkg-toggle-pwd:hover {
+    color: var(--pkg-green-600);
+}
+
+/* Remember Me Checkbox */
+.pkg-remember-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+}
+
+.pkg-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.8125rem;
+    color: #475569;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.pkg-checkbox-label input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--pkg-green-600);
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+/* Submit Button */
+.pkg-btn-submit {
+    width: 100%;
+    height: 50px;
+    background: var(--pkg-green-600);
+    color: #ffffff;
+    border: none;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+    box-shadow: 0 4px 6px -1px rgba(5, 150, 105, 0.3), 0 2px 4px -1px rgba(5, 150, 105, 0.15);
+    transition: all 0.2s ease;
+}
+
+.pkg-btn-submit:hover {
+    background: var(--pkg-green-700);
+    transform: translateY(-1px);
+}
+
+.pkg-btn-submit:active {
+    transform: translateY(1px);
+}
+
+/* Error Alert */
+.pkg-alert-error {
+    background: #fef2f2;
+    border: 1.5px solid #fecaca;
+    color: #991b1b;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Quick Operator Test Switcher (Helper Dev) */
+.pkg-quick-login-section {
+    margin-top: 1.25rem;
+    padding-top: 1rem;
+    border-top: 1px dashed #e2e8f0;
+}
+
+.pkg-quick-title {
+    font-size: 0.75rem;
+    color: #64748b;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.pkg-quick-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.pkg-quick-user-btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.55rem 0.75rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 0.775rem;
+    font-weight: 700;
+    color: #334155;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.15s ease;
+}
+
+.pkg-quick-user-btn:hover {
+    background: #f0fdf4;
+    border-color: #86efac;
+    color: var(--pkg-green-700);
+}
+
+/* Bottom Nav Link to Office */
+.pkg-login-footer {
+    text-align: center;
+    margin-top: 1.5rem;
+}
+
+.pkg-link-office {
+    color: #94a3b8;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: color 0.15s ease;
+}
+
+.pkg-link-office:hover {
+    color: #ffffff;
+    text-decoration: underline;
+}

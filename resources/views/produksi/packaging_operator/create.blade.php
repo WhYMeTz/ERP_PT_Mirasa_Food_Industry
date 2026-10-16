@@ -30,19 +30,16 @@
             <input type="date" id="tgl_kemas" name="tgl_kemas" class="pkg-input" value="{{ old('tgl_kemas', date('Y-m-d')) }}" required>
         </div>
 
-        {{-- Shift Pilihan Tombol --}}
+        {{-- Shift Pilihan Tombol (Shift A & Shift B) --}}
         <div class="pkg-form-group">
-            <label class="pkg-label">Pilih Shift <span style="color: #ef4444;">*</span></label>
-            <input type="hidden" name="shift" id="inputShift" value="{{ old('shift', '1') }}">
+            <label class="pkg-label">Pilih Shift Kerja <span style="color: #ef4444;">*</span></label>
+            <input type="hidden" name="shift" id="inputShift" value="{{ old('shift', 'A') }}">
             <div class="pkg-shift-grid">
-                <button type="button" class="pkg-shift-btn {{ old('shift', '1') == '1' ? 'active' : '' }}" data-shift="1">
-                    Shift 1 (Pagi)
+                <button type="button" class="pkg-shift-btn {{ old('shift', 'A') == 'A' ? 'active' : '' }}" data-shift="A">
+                    Shift A
                 </button>
-                <button type="button" class="pkg-shift-btn {{ old('shift') == '2' ? 'active' : '' }}" data-shift="2">
-                    Shift 2 (Siang)
-                </button>
-                <button type="button" class="pkg-shift-btn {{ old('shift') == '3' ? 'active' : '' }}" data-shift="3">
-                    Shift 3 (Malam)
+                <button type="button" class="pkg-shift-btn {{ old('shift') == 'B' ? 'active' : '' }}" data-shift="B">
+                    Shift B
                 </button>
             </div>
         </div>

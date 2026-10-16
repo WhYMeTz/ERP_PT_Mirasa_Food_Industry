@@ -163,6 +163,28 @@ class HutangController extends Controller
     }
 
     /**
+     * Perbarui No. Faktur Supplier dan Tanggal Jatuh Tempo oleh tim Keuangan
+     */
+    public function updateTempo(Request $request, int $id): RedirectResponse
+    {
+        $request->validate([
+            'tgl_jatuh_tempo'    => 'required|date',
+            'no_faktur_supplier' => 'nullable|string|max:100',
+            'catatan'            => 'nullable|string|max:255',
+        ]);
+
+        try {
+            $this->hutangService->updateTempoDanFaktur($id, $request->all(), Auth::user());
+
+            return redirect()->route('keuangan.hutang.show', $id)
+                ->with('success', "Informasi Faktur & Tanggal Jatuh Tempo berhasil diperbarui.");
+        } catch (Exception $e) {
+            return redirect()->back()
+                ->with('error', 'Gagal memperbarui: ' . $e->getMessage());
+        }
+    }
+
+    /**
      * Hapus / Batalkan Tagihan
      */
     public function destroy(int $id): RedirectResponse

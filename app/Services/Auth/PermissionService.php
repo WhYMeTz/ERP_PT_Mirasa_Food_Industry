@@ -193,6 +193,15 @@ class PermissionService
                         'delete' => ['key' => 'bayar_hutang_void',   'label' => 'Batalkan / Void Pembayaran'],
                     ],
                 ],
+                'KAS_MASUK' => [
+                    'label'   => 'Penerimaan Kas & Bank (Bukti Kas Masuk - BKM)',
+                    'desc'    => 'Pencatatan uang masuk dari penjualan limbah, modal owner, pelunasan piutang, dan pendapatan lain.',
+                    'actions' => [
+                        'view'   => ['key' => 'kas_masuk_view',   'label' => 'Lihat Bukti Kas Masuk'],
+                        'create' => ['key' => 'kas_masuk_create', 'label' => 'Input Kas Masuk (BKM)'],
+                        'delete' => ['key' => 'kas_masuk_void',   'label' => 'Batalkan / Void BKM'],
+                    ],
+                ],
                 'KAS_BANK' => [
                     'label'   => 'Kas & Rekening Bank (Buku Mutasi)',
                     'desc'    => 'Monitoring saldo kas kecil kantor pabrik, rekening BCA & Mandiri, serta riwayat mutasi arus kas.',
@@ -394,6 +403,9 @@ class PermissionService
             'bayar_hutang_view',
             'bayar_hutang_create',
             'bayar_hutang_void',
+            'kas_masuk_view',
+            'kas_masuk_create',
+            'kas_masuk_void',
             'kas_bank_view',
             'kas_bank_manage',
             'master_barang_view',

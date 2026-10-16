@@ -57,11 +57,10 @@ class BayarHutangController extends Controller
             }
         }
 
-        // Ambil semua tagihan yang belum lunas
+        // Ambil semua tagihan yang belum lunas (agar chip filter supplier instan di frontend)
         $unpaidHutang = DatHutangHdr::with('supplier')
             ->where('deleted_st', false)
             ->whereIn('status_pembayaran', ['BELUM_LUNAS', 'SEBAGIAN'])
-            ->when($supplierId, fn($q) => $q->where('supplier_id', $supplierId))
             ->orderBy('tgl_jatuh_tempo', 'asc')
             ->get();
 
@@ -70,7 +69,7 @@ class BayarHutangController extends Controller
 
         $unpaidCounts = DatHutangHdr::where('deleted_st', false)
             ->whereIn('status_pembayaran', ['BELUM_LUNAS', 'SEBAGIAN'])
-            ->selectRaw('supplier_id, count(*) as count_tagihan, sum(sisa_hutang) as total_sisa')
+            ->selectRaw('supplier_id, count(*) as count_tagihan, sum(sisa_hutang) as total_sisa, min(tgl_jatuh_tempo) as min_tempo')
             ->groupBy('supplier_id')
             ->get()
             ->keyBy('supplier_id');
@@ -83,16 +82,29 @@ class BayarHutangController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
+        // Filter hanya baris alokasi tagihan yang dipilih dan memiliki nominal > 0
+        $rawAllocations = $request->input('allocations', []);
+        $filteredAllocations = collect($rawAllocations)
+            ->filter(function ($item) {
+                return isset($item['nominal_bayar']) && (float)$item['nominal_bayar'] > 0;
+            })
+            ->values()
+            ->all();
+
+        $request->merge(['allocations' => $filteredAllocations]);
+
         $request->validate([
-            'kas_bank_id'    => 'required|exists:mst_kas_bank,kas_bank_id',
-            'tgl_bayar'      => 'required|date',
-            'metode_bayar'   => 'required|string',
-            'allocations'    => 'required|array|min:1',
+            'kas_bank_id'                 => 'required|exists:mst_kas_bank,kas_bank_id',
+            'tgl_bayar'                   => 'required|date',
+            'metode_bayar'                => 'required|string',
+            'allocations'                 => 'required|array|min:1',
             'allocations.*.hutang_id'     => 'required|exists:dat_hutang_hdr,hutang_id',
             'allocations.*.nominal_bayar' => 'required|numeric|min:0.01',
         ], [
-            'kas_bank_id.required' => 'Silakan pilih rekening/kas sumber pembayaran.',
-            'allocations.required' => 'Pilih minimal 1 tagihan untuk dibayar.',
+            'kas_bank_id.required'                 => 'Silakan pilih rekening/kas sumber pembayaran.',
+            'allocations.required'                 => 'Pilih minimal 1 tagihan dengan mencentang atau mengisi nominal bayar.',
+            'allocations.min'                      => 'Pilih minimal 1 tagihan dengan mencentang atau mengisi nominal bayar.',
+            'allocations.*.nominal_bayar.min'      => 'Nominal pembayaran tagihan minimal Rp 1.',
         ]);
 
         try {

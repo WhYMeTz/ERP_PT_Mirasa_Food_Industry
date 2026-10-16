@@ -409,6 +409,187 @@ class HutangService
     }
 
     /**
+     * Otomatis membuat Faktur Tagihan Hutang (AP) saat Penerimaan Barang (GRN) tuntas.
+     * Menggunakan tanggal jatuh tempo dari Surat Jalan jika ada, atau default TOP supplier, atau fallback 14 hari.
+     */
+    public function createAutoFromGrn(DatTerimaHdr $header, ?string $manualTempo = null): ?DatHutangHdr
+    {
+        return DB::transaction(function () use ($header, $manualTempo) {
+            // 1. Cek apakah GRN ini sudah pernah ditagihkan di dat_hutang_dtl
+            $alreadyInvoiced = DatHutangDtl::where('deleted_st', false)
+                ->where('terima_id', $header->terima_id)
+                ->exists();
+
+            if ($alreadyInvoiced) {
+                return null;
+            }
+
+            // 2. Muat relasi yang dibutuhkan
+            $header->loadMissing([
+                'supplier',
+                'details.barang.satuanDasar',
+                'details.poDetail'
+            ]);
+
+            // 3. Filter item yang memiliki kuantitas netto diterima > 0 (tidak termasuk afkir/reject)
+            $itemsToInvoice = [];
+            $totalBruto = 0;
+            $totalDiskon = 0;
+            $totalPpn = 0;
+            $totalNetto = 0;
+
+            foreach ($header->details as $dtl) {
+                $nettoQty = max(0, (float)$dtl->terima_qty - (float)($dtl->reject_qty ?? 0));
+                if ($nettoQty <= 0) {
+                    continue;
+                }
+
+                // Ambil harga satuan acuan
+                $harga = (float)($dtl->harga_nominal ?? 0);
+                if ($harga <= 0 && $dtl->poDetail && (float)$dtl->poDetail->harga_nominal > 0) {
+                    $harga = (float)$dtl->poDetail->harga_nominal;
+                }
+                if ($harga <= 0 && $dtl->barang && (float)$dtl->barang->harga_beli_standar > 0) {
+                    $harga = (float)$dtl->barang->harga_beli_standar;
+                }
+                if ($harga <= 0 && (float)($dtl->harga_netto ?? 0) > 0) {
+                    $harga = (float)$dtl->harga_netto;
+                }
+
+                $subtotal = round($nettoQty * $harga, 2);
+                $diskon = 0;
+                if ((float)($dtl->diskon_persen ?? 0) > 0) {
+                    $diskon = round($subtotal * ((float)$dtl->diskon_persen / 100), 2);
+                } elseif ((float)($dtl->diskon_nominal ?? 0) > 0) {
+                    $diskon = round((float)$dtl->diskon_nominal * $nettoQty, 2);
+                }
+
+                $potongan = (float)($dtl->potongan_nominal ?? 0);
+                $diskonDanPotongan = $diskon + $potongan;
+
+                $dpp = max(0, $subtotal - $diskonDanPotongan);
+                $ppn = ($dtl->ppn_tipe === 'PPN_11') ? round($dpp * 0.11, 2) : 0;
+                $netto = round($dpp + $ppn, 2);
+
+                $totalBruto += $subtotal;
+                $totalDiskon += $diskonDanPotongan;
+                $totalPpn += $ppn;
+                $totalNetto += $netto;
+
+                $itemsToInvoice[] = [
+                    'dtl'            => $dtl,
+                    'netto_qty'      => $nettoQty,
+                    'satuan'         => $dtl->barang?->satuanDasar?->satuan_nm ?? 'KG',
+                    'harga_satuan'   => $harga,
+                    'subtotal'       => $subtotal,
+                    'diskon_nominal' => $diskonDanPotongan,
+                    'ppn_nominal'    => $ppn,
+                    'total_netto'    => $netto,
+                ];
+            }
+
+            // Jika tidak ada barang yang lolos fisik (misal seluruhnya ditolak/afkir)
+            if (empty($itemsToInvoice)) {
+                return null;
+            }
+
+            // Potongan tambahan GRN jika ada
+            $potonganGlobal = max(0, (float)($header->potongan_nominal ?? 0) - $totalDiskon);
+            $totalNettoAkhir = max(0, $totalNetto - $potonganGlobal);
+
+            // 4. Hitung Tanggal Jatuh Tempo
+            // Prioritas 1: Manual param jika dioper
+            // Prioritas 2: Dari Surat Jalan fisik (terima->tgl_jatuh_tempo)
+            // Prioritas 3: Tanggal GRN + TOP Master Supplier (top_hari)
+            // Prioritas 4: Tanggal GRN + 14 hari
+            $terimaTgl = $header->terima_tgl ? \Carbon\Carbon::parse($header->terima_tgl) : now();
+
+            if (!empty($manualTempo)) {
+                $tglTempo = \Carbon\Carbon::parse($manualTempo)->toDateString();
+            } elseif (!empty($header->tgl_jatuh_tempo)) {
+                $tglTempo = \Carbon\Carbon::parse($header->tgl_jatuh_tempo)->toDateString();
+            } elseif (!empty($header->supplier?->top_hari) && (int)$header->supplier->top_hari > 0) {
+                $tglTempo = (clone $terimaTgl)->addDays((int)$header->supplier->top_hari)->toDateString();
+            } else {
+                $tglTempo = (clone $terimaTgl)->addDays(14)->toDateString();
+            }
+
+            // 5. Buat Header Hutang AP
+            $userNm = auth()->user()?->name ?? 'SYSTEM_AUTO_GRN';
+            $hutangNo = $this->generateHutangNo();
+            $noFakturSupp = $header->suratjalan_no ? 'SJ-' . $header->suratjalan_no : null;
+
+            $hdr = DatHutangHdr::create([
+                'hutang_no'            => $hutangNo,
+                'no_faktur_supplier'   => $noFakturSupp,
+                'supplier_id'          => $header->supplier_id,
+                'gudang_id'            => $header->gudang_id,
+                'tgl_tagihan'          => $terimaTgl->toDateString(),
+                'tgl_jatuh_tempo'      => $tglTempo,
+                'tipe_hutang'          => 'PEMBELIAN_GRN',
+                'total_bruto'          => $totalBruto,
+                'total_diskon'         => $totalDiskon,
+                'total_potongan_retur' => $potonganGlobal,
+                'total_ppn'            => $totalPpn,
+                'total_tagihan'        => $totalNettoAkhir,
+                'total_dibayar'        => 0,
+                'sisa_hutang'          => $totalNettoAkhir,
+                'status_pembayaran'    => 'BELUM_LUNAS',
+                'catatan'              => "Auto-generated dari GRN {$header->terima_no}" . ($header->suratjalan_no ? " (SJ: {$header->suratjalan_no})" : ''),
+                'created_by'           => $userNm,
+                'updated_by'           => $userNm,
+            ]);
+
+            // 6. Buat Detail Hutang AP
+            foreach ($itemsToInvoice as $row) {
+                $dtl = $row['dtl'];
+                DatHutangDtl::create([
+                    'hutang_id'      => $hdr->hutang_id,
+                    'terima_id'      => $header->terima_id,
+                    'terima_dtl_id'  => $dtl->terimadtl_id,
+                    'barang_id'      => $dtl->barang_id,
+                    'deskripsi'      => ($dtl->barang?->barang_nm ?? 'Barang') . " (GRN {$header->terima_no})",
+                    'qty'            => $row['netto_qty'],
+                    'satuan'         => $row['satuan'],
+                    'harga_satuan'   => $row['harga_satuan'],
+                    'subtotal'       => $row['subtotal'],
+                    'diskon_nominal' => $row['diskon_nominal'],
+                    'ppn_nominal'    => $row['ppn_nominal'],
+                    'total_netto'    => $row['total_netto'],
+                    'catatan'        => $dtl->catatan_txt ?? null,
+                    'created_by'     => $userNm,
+                    'updated_by'     => $userNm,
+                ]);
+            }
+
+            return $hdr;
+        });
+    }
+
+    /**
+     * Perbarui No Faktur Supplier dan Tanggal Jatuh Tempo oleh tim Keuangan
+     */
+    public function updateTempoDanFaktur(int $hutangId, array $data, ?User $user = null): DatHutangHdr
+    {
+        $hutang = DatHutangHdr::where('deleted_st', false)->findOrFail($hutangId);
+
+        if (!empty($data['tgl_jatuh_tempo'])) {
+            $hutang->tgl_jatuh_tempo = $data['tgl_jatuh_tempo'];
+        }
+        if (array_key_exists('no_faktur_supplier', $data)) {
+            $hutang->no_faktur_supplier = $data['no_faktur_supplier'];
+        }
+        if (!empty($data['catatan'])) {
+            $hutang->catatan = trim(($hutang->catatan ? $hutang->catatan . ' | ' : '') . $data['catatan']);
+        }
+
+        $hutang->updated_by = $user->name ?? (auth()->user()?->name ?? 'SYSTEM');
+        $hutang->save();
+
+        return $hutang;
+    }
+
+    /**
      * Hapus / Batalkan Tagihan Hutang
      */
     public function destroy(DatHutangHdr $hutang, User $user): void

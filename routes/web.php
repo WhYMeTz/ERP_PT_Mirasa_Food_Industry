@@ -24,6 +24,7 @@ use App\Http\Controllers\MasterData\TarifProduksiController;
 use App\Http\Controllers\Keuangan\BayarHutangController;
 use App\Http\Controllers\Keuangan\HutangController;
 use App\Http\Controllers\Keuangan\KasBankController;
+use App\Http\Controllers\Keuangan\KasMasukController;
 use App\Http\Controllers\Penjualan\SoController;
 use App\Http\Controllers\Produksi\BomController;
 use App\Http\Controllers\Produksi\PackagingController;
@@ -310,6 +311,7 @@ Route::middleware('auth')->group(function () {
         Route::get('hutang/ajax-gas-summary', [HutangController::class, 'ajaxGasSummary'])->name('hutang.ajax-gas-summary')->middleware('role:hutang_view,hutang_create');
         Route::get('hutang/create-gas', [HutangController::class, 'createGas'])->name('hutang.create_gas')->middleware('role:hutang_create');
         Route::post('hutang/store-gas', [HutangController::class, 'storeGas'])->name('hutang.store_gas')->middleware('role:hutang_create');
+        Route::patch('hutang/{id}/update-tempo', [HutangController::class, 'updateTempo'])->name('hutang.update-tempo')->middleware('role:hutang_create');
         Route::resource('hutang', HutangController::class)->except(['edit', 'update']);
 
         // 2. Pelunasan Hutang (Bukti Kas Keluar - BKK)
@@ -318,6 +320,15 @@ Route::middleware('auth')->group(function () {
 
         // 3. Kas & Rekening Bank
         Route::get('kas-bank/mutasi', [KasBankController::class, 'mutasi'])->name('kas_bank.mutasi')->middleware('role:kas_bank_view');
-        Route::resource('kas-bank', KasBankController::class)->only(['index', 'store'])->names('kas_bank')->middleware('role:kas_bank_view');
+        Route::get('kas-bank', [KasBankController::class, 'index'])->name('kas_bank.index')->middleware('role:kas_bank_view');
+        Route::post('kas-bank', [KasBankController::class, 'store'])->name('kas_bank.store')->middleware('role:kas_bank_manage');
+        Route::put('kas-bank/{id}', [KasBankController::class, 'update'])->name('kas_bank.update')->middleware('role:kas_bank_manage');
+        Route::delete('kas-bank/{id}', [KasBankController::class, 'destroy'])->name('kas_bank.destroy')->middleware('role:kas_bank_manage');
+        Route::post('kas-bank/transfer', [KasBankController::class, 'transfer'])->name('kas_bank.transfer')->middleware('role:kas_bank_manage');
+        Route::post('kas-bank/penyesuaian', [KasBankController::class, 'penyesuaian'])->name('kas_bank.penyesuaian')->middleware('role:kas_bank_manage');
+
+        // 4. Penerimaan Kas & Bank (Bukti Kas Masuk - BKM)
+        Route::post('kas-masuk/{id}/void', [KasMasukController::class, 'void'])->name('kas_masuk.void')->middleware('role:kas_masuk_void');
+        Route::resource('kas-masuk', KasMasukController::class)->names('kas_masuk')->only(['index', 'create', 'store', 'show']);
     });
 });

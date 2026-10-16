@@ -43,168 +43,167 @@
     </div>
 </div>
 
-{{-- 4 KARTU METRIK OPERASIONAL AP --}}
-<div class="keuangan-metrics-grid">
-    <div class="keuangan-metric-card">
-        <div class="keuangan-metric-icon" style="background: #eff6ff; color: #2563eb;">
-            📋
+{{-- 4 KARTU METRIK OPERASIONAL (INFORMATIF & SERAGAM DENGAN PO & TERIMA BARANG) --}}
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+    {{-- TOTAL HUTANG AKTIF --}}
+    <div style="background: #ffffff; border-radius: 8px; border: 1px solid #e2e8f0; padding: 1rem 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div>
+                <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #0284c7;">
+                    Total Hutang Aktif (AP)
+                </span>
+                <div style="font-size: 1.35rem; font-weight: 800; color: #0f172a; margin-top: 0.25rem; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;">
+                    Rp {{ number_format($metrics['total_hutang_aktif'] ?? 0, 0, ',', '.') }}
+                </div>
+            </div>
+            <div style="width: 32px; height: 32px; border-radius: 6px; background: #e0f2fe; display: flex; align-items: center; justify-content: center; color: #0284c7;">
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            </div>
         </div>
-        <div class="keuangan-metric-info">
-            <span class="keuangan-metric-label">Total Hutang Aktif</span>
-            <span class="keuangan-metric-val" style="color: #1e3a8a;">
-                Rp {{ number_format($metrics['total_hutang_aktif'] ?? 0, 0, ',', '.') }}
-            </span>
-            <span class="keuangan-metric-sub">
-                {{ $metrics['count_belum_lunas'] ?? 0 }} tagihan belum lunas
-            </span>
-        </div>
-    </div>
-
-    <div class="keuangan-metric-card" style="{{ ($metrics['count_jatuh_tempo'] ?? 0) > 0 ? 'border-color: #fca5a5; background: #fff5f5;' : '' }}">
-        <div class="keuangan-metric-icon" style="background: #fee2e2; color: #dc2626;">
-            ⚠️
-        </div>
-        <div class="keuangan-metric-info">
-            <span class="keuangan-metric-label" style="{{ ($metrics['count_jatuh_tempo'] ?? 0) > 0 ? 'color: #b91c1c;' : '' }}">
-                Sudah Jatuh Tempo
-            </span>
-            <span class="keuangan-metric-val" style="color: #dc2626;">
-                Rp {{ number_format($metrics['total_jatuh_tempo'] ?? 0, 0, ',', '.') }}
-            </span>
-            <span class="keuangan-metric-sub" style="{{ ($metrics['count_jatuh_tempo'] ?? 0) > 0 ? 'color: #ef4444; font-weight: 700;' : '' }}">
-                {{ $metrics['count_jatuh_tempo'] ?? 0 }} tagihan lewat batas tempo!
-            </span>
+        <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.4rem;">
+            {{ $metrics['count_belum_lunas'] ?? 0 }} dokumen tagihan belum lunas
         </div>
     </div>
 
-    <div class="keuangan-metric-card">
-        <div class="keuangan-metric-icon" style="background: #f0fdf4; color: #16a34a;">
-            💸
+    {{-- LEWAT JATUH TEMPO --}}
+    <div style="background: #ffffff; border-radius: 8px; border: 1px solid {{ ($metrics['count_jatuh_tempo'] ?? 0) > 0 ? '#fca5a5' : '#e2e8f0' }}; padding: 1rem 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div>
+                <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #dc2626;">
+                    Lewat Jatuh Tempo
+                </span>
+                <div style="font-size: 1.35rem; font-weight: 800; color: #dc2626; margin-top: 0.25rem; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;">
+                    Rp {{ number_format($metrics['total_jatuh_tempo'] ?? 0, 0, ',', '.') }}
+                </div>
+            </div>
+            <div style="width: 32px; height: 32px; border-radius: 6px; background: #fee2e2; display: flex; align-items: center; justify-content: center; color: #dc2626;">
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+            </div>
         </div>
-        <div class="keuangan-metric-info">
-            <span class="keuangan-metric-label">Terbayar Bulan Ini</span>
-            <span class="keuangan-metric-val" style="color: #15803d;">
-                Rp {{ number_format($metrics['total_bayar_bulan_ini'] ?? 0, 0, ',', '.') }}
-            </span>
-            <span class="keuangan-metric-sub">
-                Realisasi kas/bank keluar periode {{ date('F Y') }}
-            </span>
+        <div style="font-size: 0.75rem; color: {{ ($metrics['count_jatuh_tempo'] ?? 0) > 0 ? '#dc2626; font-weight: 700;' : '#64748b;' }} margin-top: 0.4rem;">
+            {{ $metrics['count_jatuh_tempo'] ?? 0 }} tagihan butuh pembayaran segera
         </div>
     </div>
 
-    <div class="keuangan-metric-card">
-        <div class="keuangan-metric-icon" style="background: #f8fafc; color: #475569;">
-            🏦
+    {{-- TERBAYAR BULAN INI --}}
+    <div style="background: #ffffff; border-radius: 8px; border: 1px solid #e2e8f0; padding: 1rem 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div>
+                <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #059669;">
+                    Terbayar Bulan Ini
+                </span>
+                <div style="font-size: 1.35rem; font-weight: 800; color: #059669; margin-top: 0.25rem; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;">
+                    Rp {{ number_format($metrics['total_bayar_bulan_ini'] ?? 0, 0, ',', '.') }}
+                </div>
+            </div>
+            <div style="width: 32px; height: 32px; border-radius: 6px; background: #d1fae5; display: flex; align-items: center; justify-content: center; color: #059669;">
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
         </div>
-        <div class="keuangan-metric-info">
-            <span class="keuangan-metric-label">Akun Kas &amp; Bank</span>
-            <span class="keuangan-metric-val" style="font-size: 1.05rem;">
-                {{ count($kasBanks) }} Rekening
-            </span>
-            <span class="keuangan-metric-sub">
-                <a href="{{ route('keuangan.kas_bank.index') }}" style="color: #0284c7; text-decoration: underline; font-weight: 600;">Lihat Saldo Rekening &rarr;</a>
-            </span>
+        <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.4rem;">
+            Realisasi kas keluar periode {{ date('F Y') }}
+        </div>
+    </div>
+
+    {{-- KAS & BANK TERSEDIA --}}
+    <div style="background: #ffffff; border-radius: 8px; border: 1px solid #e2e8f0; padding: 1rem 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div>
+                <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #475569;">
+                    Kas &amp; Bank Tersedia
+                </span>
+                <div style="font-size: 1.35rem; font-weight: 800; color: #0f172a; margin-top: 0.25rem; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;">
+                    Rp {{ number_format($kasBanks->sum('saldo_berjalan'), 0, ',', '.') }}
+                </div>
+            </div>
+            <div style="width: 32px; height: 32px; border-radius: 6px; background: #f1f5f9; display: flex; align-items: center; justify-content: center; color: #475569;">
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+            </div>
+        </div>
+        <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.4rem;">
+            {{ count($kasBanks) }} Rekening aktif operasional
         </div>
     </div>
 </div>
 
-{{-- FILTER CARD --}}
-<div class="card" style="margin-bottom: 1.25rem; padding: 1rem 1.25rem; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px;">
-    <form method="GET" action="{{ route('keuangan.hutang.index') }}" id="filterForm">
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem; align-items: flex-end;">
-            <div>
-                <label style="display: block; font-size: 0.75rem; font-weight: 700; color: #475569; margin-bottom: 0.25rem;">
-                    Status Pembayaran
-                </label>
-                <select name="status_pembayaran" class="form-control" style="font-size: 0.8125rem; height: 36px;" onchange="this.form.submit()">
-                    <option value="">Semua Status</option>
-                    <option value="BELUM_LUNAS" {{ ($filters['status_pembayaran'] ?? '') === 'BELUM_LUNAS' ? 'selected' : '' }}>🔴 Belum Lunas (Unpaid)</option>
-                    <option value="SEBAGIAN" {{ ($filters['status_pembayaran'] ?? '') === 'SEBAGIAN' ? 'selected' : '' }}>🟡 Cicilan / Parsial</option>
-                    <option value="LUNAS" {{ ($filters['status_pembayaran'] ?? '') === 'LUNAS' ? 'selected' : '' }}>🟢 Lunas</option>
-                    <option value="JATUH_TEMPO" {{ ($filters['status_pembayaran'] ?? '') === 'JATUH_TEMPO' ? 'selected' : '' }}>⚠️ Lewat Jatuh Tempo (Overdue)</option>
-                </select>
-            </div>
+{{-- KARTU TABEL UTAMA (PERSIS FORMAT PO & PENERIMAAN BARANG) --}}
+<div class="card">
+    <div class="card-header" style="background: #ffffff; padding: 0.875rem 1.25rem; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+        <form method="GET" action="{{ route('keuangan.hutang.index') }}" id="filterForm" style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; flex: 1; max-width: 900px;">
+            <input type="text" 
+                   name="search" 
+                   class="form-control" 
+                   placeholder="Cari No. Tagihan / Faktur Supplier..." 
+                   value="{{ $filters['search'] ?? '' }}" 
+                   style="padding: 0.45rem 0.75rem; max-width: 250px; font-size: 0.85rem; height: 36px;">
+            
+            <select name="status_pembayaran" class="form-control" style="padding: 0.45rem 0.75rem; max-width: 175px; font-size: 0.85rem; height: 36px;" onchange="this.form.submit()">
+                <option value="">-- Semua Status --</option>
+                <option value="BELUM_LUNAS" {{ ($filters['status_pembayaran'] ?? '') === 'BELUM_LUNAS' ? 'selected' : '' }}>🔴 Belum Lunas</option>
+                <option value="SEBAGIAN" {{ ($filters['status_pembayaran'] ?? '') === 'SEBAGIAN' ? 'selected' : '' }}>🟡 Cicilan / Parsial</option>
+                <option value="LUNAS" {{ ($filters['status_pembayaran'] ?? '') === 'LUNAS' ? 'selected' : '' }}>🟢 Lunas</option>
+                <option value="JATUH_TEMPO" {{ ($filters['status_pembayaran'] ?? '') === 'JATUH_TEMPO' ? 'selected' : '' }}>⚠️ Lewat Jatuh Tempo</option>
+            </select>
 
-            <div>
-                <label style="display: block; font-size: 0.75rem; font-weight: 700; color: #475569; margin-bottom: 0.25rem;">
-                    Pemasok / Rekanan
-                </label>
-                <select name="supplier_id" class="form-control" style="font-size: 0.8125rem; height: 36px;" onchange="this.form.submit()">
-                    <option value="">Semua Supplier</option>
-                    @foreach ($suppliers as $supp)
-                        <option value="{{ $supp->supplier_id }}" {{ ($filters['supplier_id'] ?? '') == $supp->supplier_id ? 'selected' : '' }}>
-                            {{ $supp->supplier_nm }}
-                        </option>
-                    @endforeach
-                </select>
-            </div>
+            <select name="supplier_id" class="form-control" style="padding: 0.45rem 0.75rem; max-width: 180px; font-size: 0.85rem; height: 36px;" onchange="this.form.submit()">
+                <option value="">-- Semua Supplier --</option>
+                @foreach ($suppliers as $supp)
+                    <option value="{{ $supp->supplier_id }}" {{ ($filters['supplier_id'] ?? '') == $supp->supplier_id ? 'selected' : '' }}>
+                        {{ $supp->supplier_nm }}
+                    </option>
+                @endforeach
+            </select>
 
-            <div>
-                <label style="display: block; font-size: 0.75rem; font-weight: 700; color: #475569; margin-bottom: 0.25rem;">
-                    Tipe Tagihan
-                </label>
-                <select name="tipe_hutang" class="form-control" style="font-size: 0.8125rem; height: 36px;" onchange="this.form.submit()">
-                    <option value="">Semua Tipe</option>
-                    <option value="PEMBELIAN_GRN" {{ ($filters['tipe_hutang'] ?? '') === 'PEMBELIAN_GRN' ? 'selected' : '' }}>🌾 Pembelian Bahan (GRN)</option>
-                    <option value="GAS_UTILITAS" {{ ($filters['tipe_hutang'] ?? '') === 'GAS_UTILITAS' ? 'selected' : '' }}>🔥 Gas Utilitas Bulanan</option>
-                    <option value="OPERASIONAL_UMUM" {{ ($filters['tipe_hutang'] ?? '') === 'OPERASIONAL_UMUM' ? 'selected' : '' }}>📦 Operasional Umum</option>
-                </select>
-            </div>
+            <select name="tipe_hutang" class="form-control" style="padding: 0.45rem 0.75rem; max-width: 165px; font-size: 0.85rem; height: 36px;" onchange="this.form.submit()">
+                <option value="">-- Semua Tipe --</option>
+                <option value="PEMBELIAN_GRN" {{ ($filters['tipe_hutang'] ?? '') === 'PEMBELIAN_GRN' ? 'selected' : '' }}>🌾 Pembelian Bahan</option>
+                <option value="GAS_UTILITAS" {{ ($filters['tipe_hutang'] ?? '') === 'GAS_UTILITAS' ? 'selected' : '' }}>🔥 Gas Utilitas</option>
+                <option value="OPERASIONAL_UMUM" {{ ($filters['tipe_hutang'] ?? '') === 'OPERASIONAL_UMUM' ? 'selected' : '' }}>📦 Operasional</option>
+            </select>
 
-            <div>
-                <label style="display: block; font-size: 0.75rem; font-weight: 700; color: #475569; margin-bottom: 0.25rem;">
-                    Cari No. Tagihan / Faktur
-                </label>
-                <input type="text" 
-                       name="search" 
-                       class="form-control" 
-                       placeholder="AP-xxxx / No Invoice..." 
-                       value="{{ $filters['search'] ?? '' }}" 
-                       style="font-size: 0.8125rem; height: 36px;">
-            </div>
+            <button type="submit" class="btn btn-secondary btn-sm" style="padding: 0.45rem 0.85rem; height: 36px;">Filter</button>
+            @if (!empty($filters['status_pembayaran']) || !empty($filters['supplier_id']) || !empty($filters['tipe_hutang']) || !empty($filters['search']))
+                <a href="{{ route('keuangan.hutang.index') }}" class="btn btn-secondary btn-sm" title="Reset Filter" style="padding: 0.45rem 0.65rem; height: 36px;">Reset</a>
+            @endif
+        </form>
 
-            <div style="display: flex; gap: 0.4rem;">
-                <button type="submit" class="btn btn-primary" style="font-size: 0.8125rem; font-weight: 700; height: 36px; padding: 0 1rem;">
-                    Filter
-                </button>
-                @if (!empty($filters['status_pembayaran']) || !empty($filters['supplier_id']) || !empty($filters['tipe_hutang']) || !empty($filters['search']))
-                    <a href="{{ route('keuangan.hutang.index') }}" class="btn btn-secondary" style="font-size: 0.8125rem; font-weight: 700; height: 36px; padding: 0 0.85rem;" title="Reset Filter">
-                        ✕
-                    </a>
-                @endif
-            </div>
-        </div>
-    </form>
-</div>
+        <span style="color: #64748b; font-size: 0.85rem; white-space: nowrap;">
+            Total Tagihan: <strong style="color: #0f172a;">{{ $hutangList->total() }}</strong> dokumen
+        </span>
+    </div>
 
-{{-- TABEL DAFTAR TAGIHAN HUTANG --}}
-<div class="card" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
     <div style="overflow-x: auto;">
-        <table class="table-compact" style="width: 100%; border-collapse: collapse; text-align: left;">
+        <table style="width: 100%; border-collapse: collapse;">
             <thead>
                 <tr style="background: #f8fafc; border-bottom: 1.5px solid #e2e8f0; font-size: 0.75rem; color: #475569; text-transform: uppercase; letter-spacing: 0.03em;">
-                    <th style="padding: 0.85rem 1rem;">No. Tagihan &amp; Tgl</th>
-                    <th style="padding: 0.85rem 0.75rem;">No. Faktur Supplier</th>
-                    <th style="padding: 0.85rem 0.75rem;">Pemasok / Rekanan</th>
-                    <th style="padding: 0.85rem 0.75rem;">Tipe</th>
-                    <th style="padding: 0.85rem 0.75rem;">Jatuh Tempo</th>
-                    <th style="padding: 0.85rem 0.75rem; text-align: right;">Total Tagihan</th>
-                    <th style="padding: 0.85rem 0.75rem; text-align: right;">Terbayar</th>
-                    <th style="padding: 0.85rem 0.75rem; text-align: right;">Sisa Hutang</th>
-                    <th style="padding: 0.85rem 0.75rem; text-align: center;">Status</th>
-                    <th style="padding: 0.85rem 1rem; text-align: center; width: 90px;">Aksi</th>
+                    <th style="width: 45px; text-align: center; padding: 0.85rem 0.5rem;">No</th>
+                    <th style="min-width: 150px; padding: 0.85rem 0.75rem;">No. Tagihan &amp; Tgl</th>
+                    <th style="min-width: 140px; padding: 0.85rem 0.75rem;">No. Faktur Supplier</th>
+                    <th style="min-width: 170px; padding: 0.85rem 0.75rem;">Pemasok / Rekanan</th>
+                    <th style="min-width: 120px; padding: 0.85rem 0.75rem;">Tipe</th>
+                    <th style="min-width: 120px; padding: 0.85rem 0.75rem;">Jatuh Tempo</th>
+                    <th style="min-width: 130px; padding: 0.85rem 0.75rem; text-align: right;">Total Tagihan</th>
+                    <th style="min-width: 120px; padding: 0.85rem 0.75rem; text-align: right;">Terbayar</th>
+                    <th style="min-width: 130px; padding: 0.85rem 0.75rem; text-align: right;">Sisa Hutang</th>
+                    <th style="min-width: 120px; padding: 0.85rem 0.75rem; text-align: center;">Status</th>
+                    <th style="width: 90px; padding: 0.85rem 1rem; text-align: center;">Aksi</th>
                 </tr>
             </thead>
-            <tbody style="font-size: 0.8125rem; color: #1e293b; divide-y: 1px solid #f1f5f9;">
-                @forelse ($hutangList as $h)
+            <tbody style="font-size: 0.8125rem; color: #1e293b;">
+                @forelse ($hutangList as $index => $h)
                     @php
                         $menuId = 'menuHutang_' . $h->hutang_id;
                         $isOverdue = $h->isOverdue();
                         $diffDays = now()->startOfDay()->diffInDays(\Carbon\Carbon::parse($h->tgl_jatuh_tempo)->startOfDay(), false);
                     @endphp
-                    <tr style="border-bottom: 1px solid #f1f5f9; transition: background 0.12s; {{ $isOverdue ? 'background: #fff8f8;' : '' }}" onmouseover="this.style.background='{{ $isOverdue ? '#fee2e2' : '#f8fafc' }}'" onmouseout="this.style.background='{{ $isOverdue ? '#fff8f8' : '#ffffff' }}'">
+                    <tr style="border-bottom: 1px solid #f1f5f9; transition: background 0.15s ease; {{ $isOverdue ? 'background: #fff8f8;' : '' }}" onmouseover="this.style.background='{{ $isOverdue ? '#fee2e2' : '#f8fafc' }}'" onmouseout="this.style.background='{{ $isOverdue ? '#fff8f8' : '#ffffff' }}'">
+                        {{-- 0. NOMOR URUT --}}
+                        <td style="padding: 0.75rem 0.5rem; text-align: center; color: #64748b; font-size: 0.8rem;">
+                            {{ $hutangList->firstItem() + $index }}
+                        </td>
+
                         {{-- 1. NO TAGIHAN & TGL --}}
-                        <td style="padding: 0.75rem 1rem;">
+                        <td style="padding: 0.75rem 0.75rem;">
                             <a href="{{ route('keuangan.hutang.show', $h->hutang_id) }}" style="font-weight: 800; color: #0284c7; text-decoration: none; font-family: monospace;">
                                 {{ $h->hutang_no }}
                             </a>
@@ -328,9 +327,23 @@
 
                                 @if ($h->sisa_hutang > 0 && Auth::user()->canCreateBayarHutang())
                                     <div class="action-dropdown-divider"></div>
-                                    <a href="{{ route('keuangan.bayar.create', ['hutang_id' => $h->hutang_id, 'supplier_id' => $h->supplier_id]) }}" class="action-dropdown-item" style="color: #059669; font-weight: 700;">
+                                    @php
+                                        $qpData = json_encode([
+                                            'hutang_id'     => $h->hutang_id,
+                                            'hutang_no'     => $h->hutang_no,
+                                            'supplier_nm'   => $h->supplier->supplier_nm ?? '-',
+                                            'sisa_hutang'   => (float)$h->sisa_hutang,
+                                            'total_tagihan' => (float)$h->total_tagihan,
+                                            'tgl_tagihan'   => $h->tgl_tagihan,
+                                        ]);
+                                    @endphp
+                                    <button type="button" class="action-dropdown-item" style="color: #059669; font-weight: 800;" onclick='openQuickPayModal({!! $qpData !!})'>
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                                        <span>Bayar Cepat (Pop-up)</span>
+                                    </button>
+                                    <a href="{{ route('keuangan.bayar.create', ['hutang_id' => $h->hutang_id, 'supplier_id' => $h->supplier_id]) }}" class="action-dropdown-item" style="color: #475569; font-weight: 500;">
                                         <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-                                        <span>💳 Bayar Tagihan Ini</span>
+                                        <span>Form Kas Keluar Penuh</span>
                                     </a>
                                 @endif
 
@@ -348,7 +361,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="10" style="padding: 3.5rem 1.5rem; text-align: center; color: #64748b;">
+                        <td colspan="11" style="padding: 3.5rem 1.5rem; text-align: center; color: #64748b;">
                             <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">💳</div>
                             <div style="font-weight: 700; font-size: 1rem; color: #0f172a;">Belum Ada Tagihan Hutang</div>
                             <div style="font-size: 0.85rem; margin-top: 0.25rem;">
@@ -362,7 +375,7 @@
     </div>
 
     @if ($hutangList->hasPages())
-        <div style="padding: 1rem 1.25rem; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+        <div style="padding: 1rem 1.25rem; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
             <div style="font-size: 0.8rem; color: #64748b;">
                 Menampilkan {{ $hutangList->firstItem() }} - {{ $hutangList->lastItem() }} dari {{ $hutangList->total() }} tagihan
             </div>
@@ -373,8 +386,9 @@
     @endif
 </div>
 
-{{-- MODAL PEMBATALAN TAGIHAN --}}
+{{-- MODAL PEMBATALAN TAGIHAN & BAYAR CEPAT --}}
 @include('keuangan.hutang.partials.modal-delete-hutang')
+@include('keuangan.hutang.partials.modal-quick-pay')
 
 @endsection
 

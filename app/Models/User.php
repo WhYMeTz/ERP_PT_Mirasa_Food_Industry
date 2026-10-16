@@ -417,7 +417,23 @@ class User extends Authenticatable
         return $this->isSuperAdmin() 
             || $this->canAccessHutang() 
             || $this->canAccessBayarHutang() 
+            || $this->canAccessKasMasuk()
             || $this->canAccessKasBank();
+    }
+
+    public function canAccessKasMasuk(): bool
+    {
+        return $this->isSuperAdmin() || $this->canDo('kas_masuk_view') || $this->canDo('kas_masuk_create');
+    }
+
+    public function canCreateKasMasuk(): bool
+    {
+        return $this->isSuperAdmin() || $this->canDo('kas_masuk_create');
+    }
+
+    public function canVoidKasMasuk(): bool
+    {
+        return $this->isSuperAdmin() || $this->canDo('kas_masuk_void');
     }
 
     public function canAccessHutang(): bool

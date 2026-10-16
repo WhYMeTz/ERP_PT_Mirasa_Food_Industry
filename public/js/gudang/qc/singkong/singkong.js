@@ -19,15 +19,20 @@
     };
 
     window.quickRejectGradeB = function (idx) {
-        const radioTolak = document.getElementById('radioTolak');
-        if (radioTolak) {
-            radioTolak.checked = true;
-            if (typeof window.onKesimpulanChange === 'function') {
-                window.onKesimpulanChange('TOLAK');
+        if (typeof window.selectDisposisi === 'function') {
+            window.selectDisposisi('TOLAK');
+        } else {
+            const radioTolak = document.getElementById('radioTolak');
+            if (radioTolak) {
+                radioTolak.checked = true;
+                if (typeof window.onKesimpulanChange === 'function') {
+                    window.onKesimpulanChange('TOLAK');
+                }
             }
         }
         if (typeof window.showQcToast === 'function') {
-            window.showQcToast('Truk Singkong Ditolak', 'Keputusan dialihkan ke TOLAK TOTAL karena stok Grade B gudang sudah penuh.', radioTolak, 3, true);
+            const cardTolak = document.getElementById('cardDisposisiTolak') || document.getElementById('radioTolak');
+            window.showQcToast('Truk Singkong Ditolak', 'Keputusan dialihkan ke TOLAK TOTAL karena stok Grade B gudang sudah penuh.', cardTolak, 3, true);
         }
     };
 
@@ -35,8 +40,8 @@
         const grossInput = document.getElementById(`gross_${idx}`);
         const refraksiInput = document.getElementById(`refraksi_${idx}`);
         const rejectInput = document.getElementById(`reject_${idx}`);
-        const nettoDisplay = document.getElementById(`netto_display_${idx}`);
-        const potonganKgDisplay = document.getElementById(`potongan_kg_display_${idx}`);
+        const labelRefraksi = document.getElementById(`label_qty_refraksi_${idx}`) || document.getElementById(`potongan_kg_display_${idx}`);
+        const labelNetto = document.getElementById(`label_netto_${idx}`) || document.getElementById(`netto_display_${idx}`);
 
         if (!grossInput) return;
 
@@ -48,15 +53,30 @@
         let netto = gross - potonganKg - reject;
         if (netto < 0) netto = 0;
 
-        if (potonganKgDisplay) {
-            potonganKgDisplay.innerText = potonganKg.toLocaleString('id-ID', { maximumFractionDigits: 1 }) + ' kg';
+        if (labelRefraksi) {
+            labelRefraksi.innerText = `${potonganKg.toFixed(2)} KG`;
         }
-        if (nettoDisplay) {
-            nettoDisplay.innerText = netto.toLocaleString('id-ID', { maximumFractionDigits: 1 }) + ' kg';
+        if (labelNetto) {
+            labelNetto.innerText = `${netto.toFixed(2)} KG`;
         }
 
-        if (typeof window.updateTotalCalculations === 'function') {
+        if (idx === 0) {
+            const inputPabrik = document.getElementById('inputJumlahPabrik');
+            if (inputPabrik && gross > 0 && document.activeElement === grossInput) {
+                inputPabrik.value = gross;
+            }
+        }
+
+        if (typeof window.calculateAll === 'function') {
+            window.calculateAll();
+        } else if (typeof window.updateTotalCalculations === 'function') {
             window.updateTotalCalculations();
+        }
+    };
+
+    window.updateTotalCalculations = function () {
+        if (typeof window.calculateAll === 'function') {
+            window.calculateAll();
         }
     };
 

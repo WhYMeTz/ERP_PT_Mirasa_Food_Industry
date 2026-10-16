@@ -78,6 +78,14 @@
                         </div>
 
                         <div class="form-group" style="margin-bottom: 0;">
+                            <label for="tgl_jatuh_tempo" class="form-label" style="font-weight: 600; font-size: 0.85rem;">
+                                Jatuh Tempo Surat Jalan <span style="font-weight: 400; color: #64748b; font-size: 0.725rem;">(Opsional)</span>
+                            </label>
+                            <input type="date" id="tgl_jatuh_tempo" name="tgl_jatuh_tempo" value="{{ old('tgl_jatuh_tempo') }}" class="form-control" style="height: 38px; border-radius: 6px; font-size: 0.85rem;">
+                            <small style="color: #64748b; font-size: 0.725rem;">Diisi jika ada tgl tempo di Surat Jalan fisik.</small>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 0;">
                             <label for="po_id" class="form-label" style="font-weight: 600; font-size: 0.85rem;">Referensi Purchase Order</label>
                             <select id="po_id" name="po_id" class="form-control" onchange="onPoSelected(this.value)" style="height: 38px; border-radius: 6px; font-size: 0.85rem;">
                                 <option value="">-- Non-PO / Pembelian Langsung --</option>

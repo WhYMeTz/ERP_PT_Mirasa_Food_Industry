@@ -35,6 +35,12 @@ class StoreSupplierRequest extends FormRequest
                 'string',
                 'max:50',
             ],
+            'top_hari' => [
+                'nullable',
+                'integer',
+                'min:0',
+                'max:365',
+            ],
             'alamat_txt' => [
                 'nullable',
                 'string',

@@ -798,6 +798,8 @@
                 barang_id: '{{ $parentQc->details->first()?->barang_id }}',
                 grade_cd: '{{ $parentQc->details->first()?->grade_cd ?? "A" }}',
                 refraksi_persen: '{{ (float) ($parentQc->details->first()?->refraksi_persen ?? 0) }}',
+                reject: {{ (float) ($parentQc->details->first()?->qty_reject ?? 0) }},
+                netto: {{ (float) ($parentQc->details->first()?->qty_netto_lolos ?? 0) }},
             } @else null @endif,
         };
     </script>

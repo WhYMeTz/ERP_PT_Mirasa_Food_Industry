@@ -1044,6 +1044,17 @@
                                     </a>
                                 @endif
 
+                                @if (Auth::user()->canAccessKasMasuk())
+                                    <div style="height: 1px; background: #f1f5f9; margin: 0.3rem 0;"></div>
+                                    <a href="{{ route('keuangan.kas_masuk.index') }}" class="mega-item {{ request()->routeIs('keuangan.kas_masuk.*') ? 'active' : '' }}">
+                                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                        <div style="display: flex; flex-direction: column;">
+                                            <span style="font-weight: 600;">Penerimaan (Bukti Kas Masuk)</span>
+                                            <span style="font-size: 0.6875rem; color: #64748b;">Uang masuk limbah, modal &amp; piutang BKM</span>
+                                        </div>
+                                    </a>
+                                @endif
+
                                 @if (Auth::user()->canAccessKasBank())
                                     <div style="height: 1px; background: #f1f5f9; margin: 0.3rem 0;"></div>
                                     <a href="{{ route('keuangan.kas_bank.index') }}" class="mega-item {{ request()->routeIs('keuangan.kas_bank.*') ? 'active' : '' }}">

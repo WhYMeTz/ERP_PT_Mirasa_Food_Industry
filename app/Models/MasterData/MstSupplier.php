@@ -21,6 +21,7 @@ class MstSupplier extends Model
         'jenis_supplier_id',
         'kontak_no',
         'alamat_txt',
+        'top_hari',
         'created_by',
         'updated_by',
         'deleted_by',
@@ -29,8 +30,9 @@ class MstSupplier extends Model
     ];
 
     protected $casts = [
+        'top_hari'   => 'integer',
         'deleted_st' => 'boolean',
-        'active_st' => 'boolean',
+        'active_st'  => 'boolean',
     ];
 
     /**

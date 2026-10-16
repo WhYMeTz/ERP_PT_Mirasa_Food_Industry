@@ -71,6 +71,26 @@
                 </div>
             </div>
 
+            {{-- BANNER INFORMASI AKUMULASI PENGUJIAN 1 + PENGUJIAN 2 --}}
+            <div id="bannerAkumulasiPengujian2" style="display: none; background: #faf5ff; border: 1.5px solid #d8b4fe; border-radius: 10px; padding: 0.75rem 1rem; margin-top: 0.15rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                    <div>
+                        <div style="font-size: 0.75rem; font-weight: 800; color: #6b21a8; display: flex; align-items: center; gap: 0.35rem;">
+                            <span>📦</span> <span>AKUMULASI NETTO GUDANG (UJI 1 + UJI 2):</span>
+                        </div>
+                        <div style="font-size: 0.775rem; color: #7e22ce; margin-top: 2px;">
+                            Netto Uji 1: <strong id="lblAkumulasiNettoUji1">0.00 KG</strong> + Netto Uji 2: <strong id="lblAkumulasiNettoUji2">0.00 KG</strong>
+                        </div>
+                    </div>
+                    <div style="text-align: right;">
+                        <span style="font-size: 0.7rem; color: #7e22ce; font-weight: 700; text-transform: uppercase;">Total Gabungan Diterima:</span>
+                        <div style="font-size: 1.15rem; font-weight: 900; color: #6b21a8; font-family: monospace;" id="lblAkumulasiNettoTotal">
+                            0.00 KG
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             {{-- 2 PILIHAN DISPOSISI: TERIMA vs TOLAK (SESUAI GAMBAR 2) --}}
             <input type="hidden" name="kesimpulan_qc" id="inputKesimpulanQc" value="TERIMA">
             

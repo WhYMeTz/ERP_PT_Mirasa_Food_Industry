@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Keuangan;
 
 use App\Http\Controllers\Controller;
+use App\Models\Keuangan\DatKasMutasi;
 use App\Models\Keuangan\MstKasBank;
 use App\Services\Keuangan\KasBankService;
 use Illuminate\Http\RedirectResponse;
@@ -21,16 +22,29 @@ class KasBankController extends Controller
     }
 
     /**
-     * Halaman Saldo Akun Kas & Rekening Bank
+     * Halaman Utama Saldo Akun Kas & Rekening Bank
      */
     public function index(): View
     {
         $kasBanks = $this->kasBankService->getAllKasBank();
-        $totalSaldo = $kasBanks->sum('saldo_berjalan');
-        $totalKas = $kasBanks->where('tipe_akun', 'KAS')->sum('saldo_berjalan');
-        $totalBank = $kasBanks->where('tipe_akun', 'BANK')->sum('saldo_berjalan');
+        $totalSaldo = (float) $kasBanks->sum('saldo_berjalan');
+        $totalKas = (float) $kasBanks->where('tipe_akun', 'KAS')->sum('saldo_berjalan');
+        $totalBank = (float) $kasBanks->where('tipe_akun', 'BANK')->sum('saldo_berjalan');
+        $totalAkun = $kasBanks->count();
 
-        return view('keuangan.kas_bank.index', compact('kasBanks', 'totalSaldo', 'totalKas', 'totalBank'));
+        // Mutasi hari ini
+        $mutasiHariIni = DatKasMutasi::where('deleted_st', false)
+            ->whereDate('tgl_mutasi', now()->toDateString())
+            ->count();
+
+        return view('keuangan.kas_bank.index', compact(
+            'kasBanks',
+            'totalSaldo',
+            'totalKas',
+            'totalBank',
+            'totalAkun',
+            'mutasiHariIni'
+        ));
     }
 
     /**
@@ -47,33 +61,135 @@ class KasBankController extends Controller
             'atas_nama'      => 'nullable|string|max:150',
             'bank_nama'      => 'nullable|string|max:100',
             'cabang'         => 'nullable|string|max:100',
+            'keterangan'     => 'nullable|string|max:255',
         ]);
 
         try {
-            $saldoAwal = (float)($request->input('saldo_awal', 0));
             $user = Auth::user();
-
-            $kasBank = MstKasBank::create([
-                'kode_akun'      => strtoupper(trim($request->kode_akun)),
-                'nama_akun'      => trim($request->nama_akun),
-                'tipe_akun'      => $request->tipe_akun,
-                'nomor_rekening' => $request->nomor_rekening,
-                'atas_nama'      => $request->atas_nama,
-                'bank_nama'      => $request->bank_nama ? strtoupper(trim($request->bank_nama)) : null,
-                'cabang'         => $request->cabang,
-                'saldo_awal'     => $saldoAwal,
-                'saldo_berjalan' => $saldoAwal,
-                'keterangan'     => $request->keterangan,
-                'created_by'     => $user->name ?? 'SYSTEM',
-                'updated_by'     => $user->name ?? 'SYSTEM',
-            ]);
+            $kasBank = $this->kasBankService->createKasBank($request->all(), $user);
 
             return redirect()->route('keuangan.kas_bank.index')
-                ->with('success', "Akun Kas/Bank {$kasBank->nama_akun} berhasil ditambahkan.");
+                ->with('success', "Akun Kas/Bank '{$kasBank->nama_akun}' ({$kasBank->kode_akun}) berhasil ditambahkan.");
         } catch (Exception $e) {
             return redirect()->back()
                 ->withInput()
                 ->with('error', 'Gagal menambahkan akun: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Perbarui Data Akun Kas/Bank
+     */
+    public function update(Request $request, $id): RedirectResponse
+    {
+        $kasBank = MstKasBank::where('deleted_st', false)->findOrFail($id);
+
+        $request->validate([
+            'nama_akun'      => 'required|string|max:150',
+            'nomor_rekening' => 'nullable|string|max:100',
+            'atas_nama'      => 'nullable|string|max:150',
+            'bank_nama'      => 'nullable|string|max:100',
+            'cabang'         => 'nullable|string|max:100',
+            'keterangan'     => 'nullable|string|max:255',
+        ]);
+
+        try {
+            $user = Auth::user();
+            $this->kasBankService->updateKasBank($kasBank, $request->all(), $user);
+
+            return redirect()->route('keuangan.kas_bank.index')
+                ->with('success', "Informasi rekening '{$kasBank->nama_akun}' berhasil diperbarui.");
+        } catch (Exception $e) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Gagal memperbarui rekening: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Hapus / Nonaktifkan Akun Kas/Bank
+     */
+    public function destroy($id): RedirectResponse
+    {
+        $kasBank = MstKasBank::where('deleted_st', false)->findOrFail($id);
+
+        try {
+            $user = Auth::user();
+            $namaAkun = $kasBank->nama_akun;
+            $isSoftDeleted = $this->kasBankService->deleteKasBank($kasBank, $user);
+
+            if ($isSoftDeleted) {
+                return redirect()->route('keuangan.kas_bank.index')
+                    ->with('success', "Akun '{$namaAkun}' berhasil dihapus dari sistem.");
+            } else {
+                return redirect()->route('keuangan.kas_bank.index')
+                    ->with('info', "Akun '{$namaAkun}' memiliki riwayat transaksi/pembayaran, sehingga statusnya dinonaktifkan (diarsipkan) untuk menjaga integritas pembukuan.");
+            }
+        } catch (Exception $e) {
+            return redirect()->back()
+                ->with('error', 'Gagal menghapus akun: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Transfer Dana Antar Kas & Bank
+     */
+    public function transfer(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'kas_bank_asal_id'   => 'required|integer|exists:mst_kas_bank,kas_bank_id',
+            'kas_bank_tujuan_id' => 'required|integer|different:kas_bank_asal_id|exists:mst_kas_bank,kas_bank_id',
+            'nominal'            => 'required|numeric|min:1',
+            'tgl_mutasi'         => 'required|date',
+            'keterangan'         => 'nullable|string|max:255',
+        ]);
+
+        try {
+            $user = Auth::user();
+            $result = $this->kasBankService->transferDana($request->all(), $user);
+
+            $nominalFormat = 'Rp ' . number_format($result['nominal'], 0, ',', '.');
+            return redirect()->route('keuangan.kas_bank.index')
+                ->with('success', "Transfer dana {$nominalFormat} dari [{$result['kas_asal']->nama_akun}] ke [{$result['kas_tujuan']->nama_akun}] berhasil dibukukan (Ref: {$result['ref_no']}).");
+        } catch (Exception $e) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Transfer dana gagal: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Penyesuaian Saldo / Opname Fisik
+     */
+    public function penyesuaian(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'kas_bank_id'      => 'required|integer|exists:mst_kas_bank,kas_bank_id',
+            'saldo_fisik_baru' => 'required|numeric|min:0',
+            'tgl_mutasi'       => 'required|date',
+            'keterangan'       => 'required|string|max:255',
+        ]);
+
+        try {
+            $kasBank = MstKasBank::where('deleted_st', false)->findOrFail($request->kas_bank_id);
+            $user = Auth::user();
+
+            $mutasi = $this->kasBankService->penyesuaianSaldo(
+                $kasBank,
+                (float)$request->saldo_fisik_baru,
+                $request->tgl_mutasi,
+                $request->keterangan,
+                $user
+            );
+
+            $selisihFormat = 'Rp ' . number_format($mutasi->nominal, 0, ',', '.');
+            $simbol = ($mutasi->tipe_mutasi === 'MASUK') ? '+' : '-';
+            return redirect()->route('keuangan.kas_bank.index')
+                ->with('success', "Penyesuaian saldo akun [{$kasBank->nama_akun}] berhasil dibukukan dengan selisih {$simbol}{$selisihFormat} (Ref: {$mutasi->ref_no}).");
+        } catch (Exception $e) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Penyesuaian saldo gagal: ' . $e->getMessage());
         }
     }
 
@@ -93,6 +209,29 @@ class KasBankController extends Controller
         $mutasiList = $this->kasBankService->getMutasiPaginated($filters, 25);
         $kasBanks = $this->kasBankService->getAllKasBank();
 
-        return view('keuangan.kas_bank.mutasi', compact('mutasiList', 'kasBanks', 'filters'));
+        // Hitung total masuk & keluar berdasarkan filter periode/akun saat ini
+        $baseQuery = DatKasMutasi::where('deleted_st', false);
+        if (!empty($filters['kas_bank_id'])) {
+            $baseQuery->where('kas_bank_id', $filters['kas_bank_id']);
+        }
+        if (!empty($filters['tgl_mulai'])) {
+            $baseQuery->where('tgl_mutasi', '>=', $filters['tgl_mulai']);
+        }
+        if (!empty($filters['tgl_selesai'])) {
+            $baseQuery->where('tgl_mutasi', '<=', $filters['tgl_selesai']);
+        }
+
+        $totalMasuk = (float) (clone $baseQuery)->where('tipe_mutasi', 'MASUK')->sum('nominal');
+        $totalKeluar = (float) (clone $baseQuery)->where('tipe_mutasi', 'KELUAR')->sum('nominal');
+        $netFlow = $totalMasuk - $totalKeluar;
+
+        return view('keuangan.kas_bank.mutasi', compact(
+            'mutasiList',
+            'kasBanks',
+            'filters',
+            'totalMasuk',
+            'totalKeluar',
+            'netFlow'
+        ));
     }
 }

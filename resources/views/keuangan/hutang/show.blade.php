@@ -2,6 +2,10 @@
 
 @section('title', 'Detail Tagihan Hutang #' . $hutang->hutang_no)
 
+@push('styles')
+    <link rel="stylesheet" href="{{ asset('css/keuangan/hutang/hutang-index.css') }}">
+@endpush
+
 @section('content')
 <div class="content-header" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem;">
     <div>
@@ -41,9 +45,28 @@
             🖨️ Cetak Faktur
         </button>
 
+        @if ($hutang->status_pembayaran !== 'LUNAS' && Auth::user()->canCreateHutang())
+            <button type="button" onclick="openEditTempoModal()" class="btn btn-secondary" style="font-size: 0.8125rem; font-weight: 700; border-color: #cbd5e1; color: #334155; background: #ffffff;">
+                ✏️ Sesuaikan Tempo / Faktur
+            </button>
+        @endif
+
         @if ($hutang->sisa_hutang > 0 && Auth::user()->canCreateBayarHutang())
-            <a href="{{ route('keuangan.bayar.create', ['hutang_id' => $hutang->hutang_id, 'supplier_id' => $hutang->supplier_id]) }}" class="btn btn-primary" style="font-size: 0.8125rem; font-weight: 700; background: #059669; border-color: #059669; box-shadow: 0 2px 4px rgba(5,150,105,0.3);">
-                💳 Bayar Tagihan Ini (BKK)
+            @php
+                $qpData = json_encode([
+                    'hutang_id'     => $hutang->hutang_id,
+                    'hutang_no'     => $hutang->hutang_no,
+                    'supplier_nm'   => $hutang->supplier->supplier_nm ?? '-',
+                    'sisa_hutang'   => (float)$hutang->sisa_hutang,
+                    'total_tagihan' => (float)$hutang->total_tagihan,
+                    'tgl_tagihan'   => $hutang->tgl_tagihan,
+                ]);
+            @endphp
+            <button type="button" onclick='openQuickPayModal({!! $qpData !!})' class="btn btn-primary" style="font-size: 0.8125rem; font-weight: 800; background: #059669; border-color: #059669; box-shadow: 0 2px 4px rgba(5,150,105,0.3); display: inline-flex; align-items: center; gap: 0.35rem;">
+                <span>⚡</span> <span>Bayar Cepat (Pop-up)</span>
+            </button>
+            <a href="{{ route('keuangan.bayar.create', ['hutang_id' => $hutang->hutang_id, 'supplier_id' => $hutang->supplier_id]) }}" class="btn btn-secondary" style="font-size: 0.8125rem; font-weight: 700; color: #475569;">
+                💳 Form BKK Penuh
             </a>
         @endif
     </div>
@@ -65,14 +88,24 @@
                 </div>
 
                 <div>
-                    <span style="font-size: 0.75rem; color: #64748b; text-transform: uppercase; font-weight: 700;">No. Faktur Fisik Supplier</span>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 0.75rem; color: #64748b; text-transform: uppercase; font-weight: 700;">No. Faktur Fisik Supplier</span>
+                        @if ($hutang->status_pembayaran !== 'LUNAS' && Auth::user()->canCreateHutang())
+                            <a href="javascript:void(0)" onclick="openEditTempoModal()" style="font-size: 0.75rem; color: #0284c7; text-decoration: none; font-weight: 700;">✏️ Ubah</a>
+                        @endif
+                    </div>
                     <div style="font-weight: 800; font-size: 0.95rem; color: #0f172a; margin-top: 2px; font-family: monospace;">
                         {{ $hutang->no_faktur_supplier ?: '— (Tanpa No Faktur)' }}
                     </div>
                 </div>
 
                 <div>
-                    <span style="font-size: 0.75rem; color: #64748b; text-transform: uppercase; font-weight: 700;">Jatuh Tempo Pembayaran</span>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 0.75rem; color: #64748b; text-transform: uppercase; font-weight: 700;">Jatuh Tempo Pembayaran</span>
+                        @if ($hutang->status_pembayaran !== 'LUNAS' && Auth::user()->canCreateHutang())
+                            <a href="javascript:void(0)" onclick="openEditTempoModal()" style="font-size: 0.75rem; color: #0284c7; text-decoration: none; font-weight: 700;">✏️ Ubah</a>
+                        @endif
+                    </div>
                     <div style="font-weight: 800; font-size: 0.95rem; color: {{ $hutang->isOverdue() ? '#dc2626' : '#0f172a' }}; margin-top: 2px;">
                         {{ \Carbon\Carbon::parse($hutang->tgl_jatuh_tempo)->format('d F Y') }}
                     </div>
@@ -263,9 +296,12 @@
             </div>
 
             @if ($hutang->sisa_hutang > 0 && Auth::user()->canCreateBayarHutang())
-                <div style="margin-top: 1rem;">
-                    <a href="{{ route('keuangan.bayar.create', ['hutang_id' => $hutang->hutang_id, 'supplier_id' => $hutang->supplier_id]) }}" class="btn btn-primary" style="width: 100%; padding: 0.7rem; font-weight: 800; font-size: 0.875rem; background: #059669; border-color: #059669; text-align: center; border-radius: 8px;">
-                        💳 Bayar Tagihan Sekarang
+                <div style="margin-top: 1rem; display: flex; flex-direction: column; gap: 0.5rem;">
+                    <button type="button" onclick='openQuickPayModal({!! $qpData !!})' class="btn btn-primary" style="width: 100%; padding: 0.7rem; font-weight: 800; font-size: 0.875rem; background: #059669; border-color: #059669; text-align: center; border-radius: 8px; display: flex; align-items: center; justify-content: center; gap: 0.4rem; box-shadow: 0 2px 4px rgba(5,150,105,0.3);">
+                        <span>⚡</span> <span>Bayar Cepat (Pop-up)</span>
+                    </button>
+                    <a href="{{ route('keuangan.bayar.create', ['hutang_id' => $hutang->hutang_id, 'supplier_id' => $hutang->supplier_id]) }}" class="btn btn-secondary" style="width: 100%; padding: 0.55rem; font-weight: 700; font-size: 0.8rem; text-align: center; color: #64748b;">
+                        Form Kas Keluar Penuh (BKK)
                     </a>
                 </div>
             @endif
@@ -273,4 +309,17 @@
     </div>
 </div>
 
+@include('keuangan.hutang.partials.modal-edit-tempo')
+@include('keuangan.hutang.partials.modal-quick-pay')
+
 @endsection
+
+@push('scripts')
+    <script>
+        window.appConfig = {
+            baseUrl: '{{ url('') }}'
+        };
+    </script>
+    <script src="{{ asset('js/keuangan/hutang/hutang-show.js') }}"></script>
+    <script src="{{ asset('js/keuangan/hutang/hutang-index.js') }}"></script>
+@endpush

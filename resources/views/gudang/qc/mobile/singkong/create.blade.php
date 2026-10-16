@@ -171,6 +171,8 @@
                                 'grade_cd'     => $firstDtl?->grade_cd ?? 'A',
                                 'gross'        => (float) ($firstDtl?->qty_timbang_gross ?? $p1->jumlah_di_pabrik),
                                 'refraksi'     => (float) ($firstDtl?->refraksi_persen ?? 0),
+                                'reject'       => (float) ($firstDtl?->qty_reject ?? 0),
+                                'netto'        => (float) ($firstDtl?->qty_netto_lolos ?? 0),
                             ];
                             $optSjQty = (float) $p1->jumlah_surat_jalan;
                             $optGross = (float) ($firstDtl?->qty_timbang_gross ?? $p1->jumlah_di_pabrik);
@@ -680,6 +682,8 @@
                 barang_id: '{{ $parentQc->details->first()?->barang_id }}',
                 grade_cd: '{{ $parentQc->details->first()?->grade_cd ?? "A" }}',
                 refraksi_persen: '{{ (float) ($parentQc->details->first()?->refraksi_persen ?? 0) }}',
+                reject: {{ (float) ($parentQc->details->first()?->qty_reject ?? 0) }},
+                netto: {{ (float) ($parentQc->details->first()?->qty_netto_lolos ?? 0) }},
             } @else null @endif,
         };
         window.appConfig = {

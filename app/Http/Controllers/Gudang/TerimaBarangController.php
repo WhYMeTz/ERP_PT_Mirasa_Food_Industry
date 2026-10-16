@@ -221,6 +221,7 @@ class TerimaBarangController extends Controller
             'supplier_id'      => 'required|integer|exists:mst_supplier,supplier_id',
             'gudang_id'        => 'required|integer|exists:mst_gudang,gudang_id',
             'suratjalan_no'    => 'nullable|string|max:100',
+            'tgl_jatuh_tempo'  => 'nullable|date',
             'catatan_txt'      => 'nullable|string',
             'potongan_nominal' => 'nullable|numeric|min:0',
             'ppn_tipe'         => 'nullable|string|in:NON_PPN,PPN_11',

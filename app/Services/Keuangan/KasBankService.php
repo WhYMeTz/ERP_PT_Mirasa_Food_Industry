@@ -145,7 +145,16 @@ class KasBankService
 
             $bayarNo = $this->generateBayarNo();
             $tglBayar = $payload['tgl_bayar'] ?? now()->toDateString();
-            $supplierId = $payload['supplier_id'] ?? null;
+            $supplierId = !empty($payload['supplier_id']) ? $payload['supplier_id'] : null;
+
+            // Jika supplier_id belum terpilih (misal opsi Semua Supplier), ambil dari invoice hutang pertama yang dibayar
+            if (empty($supplierId) && !empty($allocations)) {
+                $firstHutangId = $allocations[0]['hutang_id'] ?? null;
+                if ($firstHutangId) {
+                    $firstHutang = DatHutangHdr::find($firstHutangId);
+                    $supplierId = $firstHutang?->supplier_id;
+                }
+            }
 
             // 1. Catat Header Pembayaran BKK
             $bkk = DatBayarHutangHdr::create([
@@ -285,6 +294,237 @@ class KasBankService
             $bkk->update([
                 'status_cd'  => 'VOID',
                 'updated_by' => $user->name ?? 'SYSTEM',
+            ]);
+        });
+    }
+
+    /**
+     * Buat Akun Kas & Bank Baru
+     */
+    public function createKasBank(array $payload, User $user): MstKasBank
+    {
+        return DB::transaction(function () use ($payload, $user) {
+            $saldoAwal = (float)($payload['saldo_awal'] ?? 0);
+
+            $kasBank = MstKasBank::create([
+                'kode_akun'      => strtoupper(trim($payload['kode_akun'])),
+                'nama_akun'      => trim($payload['nama_akun']),
+                'tipe_akun'      => $payload['tipe_akun'],
+                'nomor_rekening' => !empty($payload['nomor_rekening']) ? trim($payload['nomor_rekening']) : null,
+                'atas_nama'      => !empty($payload['atas_nama']) ? trim($payload['atas_nama']) : null,
+                'bank_nama'      => !empty($payload['bank_nama']) ? strtoupper(trim($payload['bank_nama'])) : ($payload['tipe_akun'] === 'KAS' ? 'TUNAI' : null),
+                'cabang'         => !empty($payload['cabang']) ? trim($payload['cabang']) : null,
+                'saldo_awal'     => $saldoAwal,
+                'saldo_berjalan' => $saldoAwal,
+                'keterangan'     => !empty($payload['keterangan']) ? trim($payload['keterangan']) : null,
+                'created_by'     => $user->name ?? 'SYSTEM',
+                'updated_by'     => $user->name ?? 'SYSTEM',
+                'active_st'      => true,
+                'deleted_st'     => false,
+                'version_no'     => 1,
+            ]);
+
+            // Jika ada saldo awal > 0, catat mutasi pembukaan saldo
+            if ($saldoAwal > 0) {
+                DatKasMutasi::create([
+                    'kas_bank_id'     => $kasBank->kas_bank_id,
+                    'tgl_mutasi'      => now()->toDateString(),
+                    'tipe_mutasi'     => 'MASUK',
+                    'nominal'         => $saldoAwal,
+                    'saldo_sebelum'   => 0,
+                    'saldo_sesudah'   => $saldoAwal,
+                    'jenis_transaksi' => 'SALDO_AWAL',
+                    'ref_no'          => 'INIT-' . $kasBank->kode_akun,
+                    'ref_id'          => $kasBank->kas_bank_id,
+                    'keterangan'      => "Saldo awal pembukuan akun {$kasBank->nama_akun}",
+                    'created_by'      => $user->name ?? 'SYSTEM',
+                    'updated_by'      => $user->name ?? 'SYSTEM',
+                ]);
+            }
+
+            return $kasBank;
+        });
+    }
+
+    /**
+     * Perbarui Akun Kas & Bank
+     */
+    public function updateKasBank(MstKasBank $kasBank, array $payload, User $user): MstKasBank
+    {
+        return DB::transaction(function () use ($kasBank, $payload, $user) {
+            $kasBank->update([
+                'nama_akun'      => trim($payload['nama_akun']),
+                'nomor_rekening' => !empty($payload['nomor_rekening']) ? trim($payload['nomor_rekening']) : null,
+                'atas_nama'      => !empty($payload['atas_nama']) ? trim($payload['atas_nama']) : null,
+                'bank_nama'      => !empty($payload['bank_nama']) ? strtoupper(trim($payload['bank_nama'])) : ($kasBank->tipe_akun === 'KAS' ? 'TUNAI' : null),
+                'cabang'         => !empty($payload['cabang']) ? trim($payload['cabang']) : null,
+                'keterangan'     => !empty($payload['keterangan']) ? trim($payload['keterangan']) : null,
+                'active_st'      => isset($payload['active_st']) ? (bool)$payload['active_st'] : $kasBank->active_st,
+                'updated_by'     => $user->name ?? 'SYSTEM',
+                'version_no'     => $kasBank->version_no + 1,
+            ]);
+
+            return $kasBank;
+        });
+    }
+
+    /**
+     * Hapus / Nonaktifkan Akun Kas & Bank
+     */
+    public function deleteKasBank(MstKasBank $kasBank, User $user): bool
+    {
+        return DB::transaction(function () use ($kasBank, $user) {
+            $hasMutasi = DatKasMutasi::where('kas_bank_id', $kasBank->kas_bank_id)
+                ->where('deleted_st', false)
+                ->where('jenis_transaksi', '!=', 'SALDO_AWAL')
+                ->exists();
+
+            $hasBayar = DatBayarHutangHdr::where('kas_bank_id', $kasBank->kas_bank_id)
+                ->where('deleted_st', false)
+                ->exists();
+
+            if ($hasMutasi || $hasBayar) {
+                // Jangan hapus permanen karena ada jejak audit transaksi moneter, nonaktifkan saja
+                $kasBank->update([
+                    'active_st'  => false,
+                    'updated_by' => $user->name ?? 'SYSTEM',
+                ]);
+                return false; // return false artinya dinonaktifkan bukan dihapus permanen
+            }
+
+            // Hapus soft delete
+            $kasBank->update([
+                'deleted_st' => true,
+                'active_st'  => false,
+                'deleted_by' => $user->name ?? 'SYSTEM',
+                'deleted_at' => now(),
+            ]);
+
+            return true;
+        });
+    }
+
+    /**
+     * Transfer Dana Antar Rekening Kas & Bank
+     */
+    public function transferDana(array $payload, User $user): array
+    {
+        return DB::transaction(function () use ($payload, $user) {
+            $asalId = (int)$payload['kas_bank_asal_id'];
+            $tujuanId = (int)$payload['kas_bank_tujuan_id'];
+            $nominal = (float)$payload['nominal'];
+            $tglMutasi = $payload['tgl_mutasi'] ?? now()->toDateString();
+            $keterangan = trim($payload['keterangan'] ?? 'Transfer antar kas/bank');
+
+            if ($asalId === $tujuanId) {
+                throw new Exception("Rekening sumber dan rekening tujuan tidak boleh sama.");
+            }
+
+            if ($nominal <= 0) {
+                throw new Exception("Nominal transfer harus lebih besar dari Rp 0.");
+            }
+
+            $kasAsal = MstKasBank::where('deleted_st', false)->where('active_st', true)->lockForUpdate()->findOrFail($asalId);
+            $kasTujuan = MstKasBank::where('deleted_st', false)->where('active_st', true)->lockForUpdate()->findOrFail($tujuanId);
+
+            if ((float)$kasAsal->saldo_berjalan < $nominal) {
+                $saldoFormat = 'Rp ' . number_format($kasAsal->saldo_berjalan, 0, ',', '.');
+                throw new Exception("Saldo rekening sumber {$kasAsal->nama_akun} tidak mencukupi ({$saldoFormat}).");
+            }
+
+            // Generate Ref No
+            $refNo = 'TRF-' . date('Ym') . '-' . strtoupper(substr(uniqid(), -5));
+
+            // 1. Kurangi Saldo Asal & Catat Mutasi Keluar
+            $saldoAsalSebelum = (float)$kasAsal->saldo_berjalan;
+            $saldoAsalSesudah = $saldoAsalSebelum - $nominal;
+            $kasAsal->update([
+                'saldo_berjalan' => $saldoAsalSesudah,
+                'updated_by'     => $user->name ?? 'SYSTEM',
+            ]);
+
+            $mutasiKeluar = DatKasMutasi::create([
+                'kas_bank_id'     => $kasAsal->kas_bank_id,
+                'tgl_mutasi'      => $tglMutasi,
+                'tipe_mutasi'     => 'KELUAR',
+                'nominal'         => $nominal,
+                'saldo_sebelum'   => $saldoAsalSebelum,
+                'saldo_sesudah'   => $saldoAsalSesudah,
+                'jenis_transaksi' => 'MUTASI_KAS',
+                'ref_no'          => $refNo,
+                'keterangan'      => "Transfer keluar ke {$kasTujuan->nama_akun}: {$keterangan}",
+                'created_by'      => $user->name ?? 'SYSTEM',
+                'updated_by'      => $user->name ?? 'SYSTEM',
+            ]);
+
+            // 2. Tambah Saldo Tujuan & Catat Mutasi Masuk
+            $saldoTujuanSebelum = (float)$kasTujuan->saldo_berjalan;
+            $saldoTujuanSesudah = $saldoTujuanSebelum + $nominal;
+            $kasTujuan->update([
+                'saldo_berjalan' => $saldoTujuanSesudah,
+                'updated_by'     => $user->name ?? 'SYSTEM',
+            ]);
+
+            $mutasiMasuk = DatKasMutasi::create([
+                'kas_bank_id'     => $kasTujuan->kas_bank_id,
+                'tgl_mutasi'      => $tglMutasi,
+                'tipe_mutasi'     => 'MASUK',
+                'nominal'         => $nominal,
+                'saldo_sebelum'   => $saldoTujuanSebelum,
+                'saldo_sesudah'   => $saldoTujuanSesudah,
+                'jenis_transaksi' => 'MUTASI_KAS',
+                'ref_no'          => $refNo,
+                'keterangan'      => "Transfer masuk dari {$kasAsal->nama_akun}: {$keterangan}",
+                'created_by'      => $user->name ?? 'SYSTEM',
+                'updated_by'      => $user->name ?? 'SYSTEM',
+            ]);
+
+            return [
+                'ref_no'        => $refNo,
+                'nominal'       => $nominal,
+                'kas_asal'      => $kasAsal,
+                'kas_tujuan'    => $kasTujuan,
+                'mutasi_keluar' => $mutasiKeluar,
+                'mutasi_masuk'  => $mutasiMasuk,
+            ];
+        });
+    }
+
+    /**
+     * Penyesuaian / Koreksi Saldo Fisik (Opname Kas & Rekonsiliasi Bank)
+     */
+    public function penyesuaianSaldo(MstKasBank $kasBank, float $saldoFisikBaru, string $tglMutasi, string $keterangan, User $user): DatKasMutasi
+    {
+        return DB::transaction(function () use ($kasBank, $saldoFisikBaru, $tglMutasi, $keterangan, $user) {
+            $kasBank = MstKasBank::lockForUpdate()->findOrFail($kasBank->kas_bank_id);
+            $saldoSebelum = (float)$kasBank->saldo_berjalan;
+            $selisih = $saldoFisikBaru - $saldoSebelum;
+
+            if ($selisih == 0) {
+                throw new Exception("Saldo fisik baru sama persis dengan saldo berjalan sistem saat ini. Tidak ada penyesuaian yang perlu dicatat.");
+            }
+
+            $tipeMutasi = ($selisih > 0) ? 'MASUK' : 'KELUAR';
+            $nominalAbs = abs($selisih);
+            $refNo = 'ADJ-' . date('Ym') . '-' . strtoupper(substr(uniqid(), -5));
+
+            $kasBank->update([
+                'saldo_berjalan' => $saldoFisikBaru,
+                'updated_by'     => $user->name ?? 'SYSTEM',
+            ]);
+
+            return DatKasMutasi::create([
+                'kas_bank_id'     => $kasBank->kas_bank_id,
+                'tgl_mutasi'      => $tglMutasi,
+                'tipe_mutasi'     => $tipeMutasi,
+                'nominal'         => $nominalAbs,
+                'saldo_sebelum'   => $saldoSebelum,
+                'saldo_sesudah'   => $saldoFisikBaru,
+                'jenis_transaksi' => 'PENYESUAIAN',
+                'ref_no'          => $refNo,
+                'keterangan'      => "Koreksi/Opname Saldo: {$keterangan} (Selisih: " . ($selisih > 0 ? '+' : '-') . "Rp " . number_format($nominalAbs, 0, ',', '.') . ")",
+                'created_by'      => $user->name ?? 'SYSTEM',
+                'updated_by'      => $user->name ?? 'SYSTEM',
             ]);
         });
     }

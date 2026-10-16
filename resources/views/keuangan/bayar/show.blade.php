@@ -75,19 +75,19 @@
             </div>
             <div class="meta-row">
                 <span>Nama Supplier</span>
-                <span>{{ $bkk->supplier->supplier_nm ?? '-' }}</span>
+                <span>{{ $bkk->supplier?->supplier_nm ?? ($bkk->details->first()?->hutang?->supplier?->supplier_nm ?? '-') }}</span>
             </div>
             <div class="meta-row">
                 <span>Kode Rekanan</span>
-                <span style="font-family: monospace;">{{ $bkk->supplier->supplier_cd ?? '-' }}</span>
+                <span style="font-family: monospace;">{{ $bkk->supplier?->supplier_cd ?? ($bkk->details->first()?->hutang?->supplier?->supplier_cd ?? '-') }}</span>
             </div>
             <div class="meta-row">
                 <span>Kontak Person</span>
-                <span>{{ $bkk->penerima_nama ?: ($bkk->supplier->kontak_no ?? '-') }}</span>
+                <span>{{ $bkk->penerima_nama ?: ($bkk->supplier?->kontak_no ?? ($bkk->details->first()?->hutang?->supplier?->kontak_no ?? '-')) }}</span>
             </div>
             <div class="meta-row">
                 <span>Alamat</span>
-                <span>{{ $bkk->supplier->alamat_txt ?: '-' }}</span>
+                <span>{{ $bkk->supplier?->alamat_txt ?? ($bkk->details->first()?->hutang?->supplier?->alamat_txt ?? '-') }}</span>
             </div>
         </div>
 
@@ -97,11 +97,11 @@
             </div>
             <div class="meta-row">
                 <span>Rekening Sumber</span>
-                <span>{{ $bkk->kasBank->nama_akun ?? '-' }}</span>
+                <span>{{ $bkk->kasBank?->nama_akun ?? '-' }}</span>
             </div>
             <div class="meta-row">
                 <span>No. Rekening</span>
-                <span style="font-family: monospace;">{{ $bkk->kasBank->no_rekening ?: 'KAS TUNAI' }}</span>
+                <span style="font-family: monospace;">{{ $bkk->kasBank?->nomor_rekening ?: ($bkk->kasBank?->no_rekening ?: 'KAS TUNAI') }}</span>
             </div>
             <div class="meta-row">
                 <span>Metode Bayar</span>
@@ -198,7 +198,7 @@
 
         <div class="sign-box">
             <span class="sign-role">Diterima Oleh,</span>
-            <span class="sign-name">{{ $bkk->penerima_nama ?: ($bkk->supplier->supplier_nm ?? 'Penerima') }}</span>
+            <span class="sign-name">{{ $bkk->penerima_nama ?: ($bkk->supplier?->supplier_nm ?? ($bkk->details->first()?->hutang?->supplier?->supplier_nm ?? 'Penerima')) }}</span>
         </div>
     </div>
 </div>

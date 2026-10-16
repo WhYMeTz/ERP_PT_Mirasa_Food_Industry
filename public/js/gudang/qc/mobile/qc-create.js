@@ -679,14 +679,29 @@
     }
 
     // 7. Sinkronisasi Kuantitas Muatan
-    window.syncQuantityFields = function () {
+    window.syncQuantityFields = function (source) {
         const inputSJ = document.getElementById('inputJumlahSJ');
         const inputPabrik = document.getElementById('inputJumlahPabrik');
+
+        if (source === 'sj' && inputSJ && inputPabrik) {
+            if (!inputPabrik.value || parseFloat(inputPabrik.value) === 0 || inputPabrik.dataset.autoFilled === 'true') {
+                inputPabrik.value = inputSJ.value;
+                inputPabrik.dataset.autoFilled = 'true';
+            }
+        } else if (source === 'pabrik' && inputPabrik) {
+            inputPabrik.dataset.autoFilled = 'false';
+        }
+
         const sj = parseFloat(inputSJ ? inputSJ.value : 0) || 0;
         const pabrik = parseFloat(inputPabrik ? inputPabrik.value : 0) || sj;
 
         if (currentKomoditas === 'SINGKONG') {
-            const gross0 = document.getElementById('gross_0');
+            let gross0 = document.getElementById('gross_0');
+            const sContainer = document.getElementById('singkongContainer');
+            if (!gross0 && sContainer && typeof window.createItemCard === 'function') {
+                window.createItemCard({ gross: pabrik });
+                gross0 = document.getElementById('gross_0');
+            }
             if (gross0 && inputPabrik && inputPabrik.value !== '') {
                 gross0.value = pabrik > 0 ? pabrik : '';
                 window.calculateCard(0);
@@ -835,6 +850,11 @@
             url.searchParams.set('tahap', (tahap === 'PENGUJIAN_2') ? '2' : '1');
             window.history.replaceState({}, '', url.toString());
         } catch (e) {}
+
+        window.currentTahapUji = (tahap === 'PENGUJIAN_2' || tahap === 2) ? 2 : 1;
+        if (typeof window.calculateAll === 'function') {
+            window.calculateAll();
+        }
     };
 
     window.setTahapUji = function (tahap) {
@@ -914,6 +934,10 @@
 
         const totalSJ = parseFloat(d.sj_qty || 0);
         const p1Gross = parseFloat(d.gross || 0);
+        const p1Reject = parseFloat(d.reject || 0);
+        const p1RefraksiPct = parseFloat(d.refraksi || 0);
+        const p1RefKg = p1Gross * (p1RefraksiPct / 100);
+        window.currentP1Netto = typeof d.netto === 'number' && d.netto > 0 ? d.netto : Math.max(0, p1Gross - p1RefKg - p1Reject);
         
         let estimasiGrossUji2 = 0;
         let isFullUnloaded = false;
@@ -934,6 +958,16 @@
         if (inputPabrik) inputPabrik.value = estimasiGrossUji2;
 
         // Auto-fill Singkong Item 0
+        const sContainer = document.getElementById('singkongContainer');
+        if (sContainer && sContainer.querySelectorAll('.qc-item-card').length === 0 && typeof window.createItemCard === 'function') {
+            window.createItemCard({
+                barang_id: d.barang_id,
+                gross: estimasiGrossUji2,
+                refraksi_persen: d.refraksi || 0,
+                grade_cd: d.grade_cd || 'A'
+            });
+        }
+
         if (d.barang_id) {
             const bSel = document.getElementById('barang_select_0');
             if (bSel) {
@@ -945,15 +979,17 @@
         const gross0 = document.getElementById('gross_0');
         if (gross0) {
             gross0.value = estimasiGrossUji2;
-            window.calculateCard(0);
         }
         if (d.refraksi) {
             const ref0 = document.getElementById('refraksi_0');
             if (ref0) {
                 ref0.value = d.refraksi;
-                window.calculateCard(0);
             }
         }
+        if (d.grade_cd && typeof window.selectItemGrade === 'function') {
+            window.selectItemGrade(0, d.grade_cd);
+        }
+        window.calculateCard(0);
 
         // Tampilkan banner informatif hasil Pengujian 1 vs Pengujian 2
         const banner = document.getElementById('bannerSelectedP1');
@@ -985,6 +1021,9 @@
         if (batchNo) batchNo.value = '';
         if (selectP1) selectP1.value = '';
         if (banner) banner.style.display = 'none';
+
+        window.currentP1Netto = 0;
+        window.calculateAll();
 
         window.showQcToast('Pilihan Direset', 'Mode input kedatangan Pengujian 2 mandiri diaktifkan.', null, 1, true);
     };
@@ -1085,6 +1124,10 @@
         }
 
         window.updateFloatingDock(tabNumber);
+
+        if (typeof window.calculateAll === 'function') {
+            window.calculateAll();
+        }
 
         try {
             sessionStorage.setItem('qc_active_tab', tabNumber);
@@ -2300,25 +2343,41 @@
         let totalReject = 0;
         let totalNetto = 0;
 
-        document.querySelectorAll('.qc-item-card').forEach(card => {
-            const grossInput = card.querySelector('input[id^="gross_"]');
-            const refraksiInput = card.querySelector('input[id^="refraksi_"]');
-            const rejectInput = card.querySelector('input[id^="reject_"]');
+        const cards = document.querySelectorAll('.qc-item-card');
+        if (cards.length > 0) {
+            cards.forEach(card => {
+                const grossInput = card.querySelector('input[id^="gross_"]');
+                const refraksiInput = card.querySelector('input[id^="refraksi_"]');
+                const rejectInput = card.querySelector('input[id^="reject_"]');
 
-            if (grossInput) {
-                const gross = parseFloat(grossInput.value) || 0;
-                const refraksiPersen = parseFloat(refraksiInput ? refraksiInput.value : 0) || 0;
-                const reject = parseFloat(rejectInput ? rejectInput.value : 0) || 0;
+                if (grossInput) {
+                    const gross = parseFloat(grossInput.value) || 0;
+                    const refraksiPersen = parseFloat(refraksiInput ? refraksiInput.value : 0) || 0;
+                    const reject = parseFloat(rejectInput ? rejectInput.value : 0) || 0;
 
-                const qtyRefraksi = (gross * (refraksiPersen / 100));
+                    const qtyRefraksi = (gross * (refraksiPersen / 100));
+                    const netto = Math.max(0, gross - qtyRefraksi - reject);
+
+                    totalGross += gross;
+                    totalRefraksi += qtyRefraksi;
+                    totalReject += reject;
+                    totalNetto += netto;
+                }
+            });
+        } else {
+            const gross0 = document.getElementById('gross_0');
+            if (gross0) {
+                const gross = parseFloat(gross0.value) || 0;
+                const refraksi = parseFloat(document.getElementById('refraksi_0')?.value) || 0;
+                const reject = parseFloat(document.getElementById('reject_0')?.value) || 0;
+                const qtyRefraksi = (gross * (refraksi / 100));
                 const netto = Math.max(0, gross - qtyRefraksi - reject);
-
                 totalGross += gross;
                 totalRefraksi += qtyRefraksi;
                 totalReject += reject;
                 totalNetto += netto;
             }
-        });
+        }
 
         const kesimpulanVal = document.getElementById('inputKesimpulanQc')?.value || document.querySelector('input[name="kesimpulan_qc"]:checked')?.value || 'TERIMA';
         const isTolakTotal = (kesimpulanVal === 'TOLAK');
@@ -2340,7 +2399,7 @@
                 sumNet.style.color = '#dc2626';
             }
             if (inputQtyTerima) inputQtyTerima.value = 0;
-            if (inputQtyTolak) inputQtyTolak.value = Math.round(totalGross);
+            if (inputQtyTolak) inputQtyTolak.value = parseFloat(totalGross.toFixed(2));
         } else {
             if (sumGross) sumGross.innerText = `${totalGross.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} KG`;
             if (sumRef) sumRef.innerText = `- ${totalRefraksi.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} KG`;
@@ -2349,13 +2408,32 @@
                 sumNet.innerText = `${totalNetto.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} KG`;
                 sumNet.style.color = '#15803d';
             }
-            if (inputQtyTerima) inputQtyTerima.value = Math.round(totalNetto);
-            if (inputQtyTolak) inputQtyTolak.value = Math.round(totalReject);
+            if (inputQtyTerima) inputQtyTerima.value = parseFloat(totalNetto.toFixed(2));
+            if (inputQtyTolak) inputQtyTolak.value = parseFloat(totalReject.toFixed(2));
         }
 
         const subcardNetto = document.getElementById('labelSubcardNetto');
         if (subcardNetto) {
             subcardNetto.innerText = `Netto: ${totalNetto.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} KG`;
+        }
+
+        // Akumulasi Pengujian 1 + Pengujian 2 (jika Pengujian 2)
+        const bannerAkumulasi = document.getElementById('bannerAkumulasiPengujian2');
+        if (bannerAkumulasi) {
+            const isTahap2 = (document.getElementById('tahapUjiInput')?.value === 'PENGUJIAN_2' || window.currentTahapUji === 2);
+            const p1Netto = parseFloat(window.currentP1Netto) || 0;
+            if (isTahap2 && p1Netto > 0) {
+                bannerAkumulasi.style.display = 'block';
+                const lblP1 = document.getElementById('lblAkumulasiNettoUji1');
+                const lblP2 = document.getElementById('lblAkumulasiNettoUji2');
+                const lblTot = document.getElementById('lblAkumulasiNettoTotal');
+                const nettoUji2 = isTolakTotal ? 0 : totalNetto;
+                if (lblP1) lblP1.innerText = `${p1Netto.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} KG`;
+                if (lblP2) lblP2.innerText = `${totalNetto.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} KG`;
+                if (lblTot) lblTot.innerText = `${(p1Netto + nettoUji2).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} KG`;
+            } else {
+                bannerAkumulasi.style.display = 'none';
+            }
         }
     };
 
@@ -2624,6 +2702,9 @@
             const hasCard = sContainer && sContainer.querySelectorAll('.qc-item-card').length > 0;
 
             if (config.hasParentQc) {
+                if (config.parentQcItem && config.parentQcItem.netto) {
+                    window.currentP1Netto = parseFloat(config.parentQcItem.netto) || 0;
+                }
                 const p1Select = document.getElementById('selectPendingP1');
                 if (p1Select && p1Select.value) {
                     window.onSelectPendingArrival(p1Select);

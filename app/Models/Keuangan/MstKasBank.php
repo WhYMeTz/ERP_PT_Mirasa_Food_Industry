@@ -45,6 +45,11 @@ class MstKasBank extends Model
         return $this->hasMany(DatKasMutasi::class, 'kas_bank_id', 'kas_bank_id')->orderBy('tgl_mutasi', 'desc')->orderBy('mutasi_id', 'desc');
     }
 
+    public function getKasBankNmAttribute(): string
+    {
+        return $this->nama_akun ?? '';
+    }
+
     public function bayarList(): HasMany
     {
         return $this->hasMany(DatBayarHutangHdr::class, 'kas_bank_id', 'kas_bank_id');

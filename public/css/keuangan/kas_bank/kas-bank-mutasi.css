@@ -1,0 +1,308 @@
+/* ==========================================================================
+   Buku Mutasi Kas & Rekening Bank - Stylesheet
+   ERP PT Mirasa Food Industry
+   ========================================================================== */
+
+:root {
+    --kb-primary: #059669;
+    --kb-primary-hover: #047857;
+    --kb-primary-light: #ecfdf5;
+    --kb-dark: #0f172a;
+    --kb-gray-50: #f8fafc;
+    --kb-gray-100: #f1f5f9;
+    --kb-gray-200: #e2e8f0;
+    --kb-gray-300: #cbd5e1;
+    --kb-gray-500: #64748b;
+    --kb-gray-700: #334155;
+    --kb-danger: #dc2626;
+    --kb-danger-light: #fef2f2;
+    --kb-blue: #2563eb;
+    --kb-blue-light: #eff6ff;
+    --kb-amber: #d97706;
+    --kb-amber-light: #fffbeb;
+    --kb-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+    --kb-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.07);
+    --kb-radius: 10px;
+}
+
+.kb-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.kb-title-group h1 {
+    font-size: 1.375rem;
+    font-weight: 800;
+    color: var(--kb-dark);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.kb-title-group p {
+    font-size: 0.8125rem;
+    color: var(--kb-gray-500);
+    margin: 0.25rem 0 0 0;
+}
+
+.kb-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.55rem 0.95rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    border-radius: 7px;
+    border: 1px solid var(--kb-gray-300);
+    background-color: #ffffff;
+    color: var(--kb-gray-700);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+}
+
+.kb-btn:hover {
+    background-color: var(--kb-gray-50);
+    color: var(--kb-dark);
+}
+
+/* KPI Summary Cards Grid */
+.kb-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.kb-kpi-card {
+    background: #ffffff;
+    border-radius: var(--kb-radius);
+    padding: 1.15rem 1.25rem;
+    border: 1px solid var(--kb-gray-200);
+    box-shadow: var(--kb-shadow-sm);
+    position: relative;
+    overflow: hidden;
+}
+
+.kb-kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+}
+
+.kb-kpi-masuk::before { background: var(--kb-primary); }
+.kb-kpi-keluar::before { background: var(--kb-danger); }
+.kb-kpi-net::before { background: var(--kb-blue); }
+
+.kb-kpi-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.kb-kpi-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--kb-gray-500);
+}
+
+.kb-kpi-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.kb-kpi-masuk .kb-kpi-icon { background: var(--kb-primary-light); color: var(--kb-primary); }
+.kb-kpi-keluar .kb-kpi-icon { background: var(--kb-danger-light); color: var(--kb-danger); }
+.kb-kpi-net .kb-kpi-icon { background: var(--kb-blue-light); color: var(--kb-blue); }
+
+.kb-kpi-value {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: var(--kb-dark);
+    line-height: 1.2;
+}
+
+/* Filter Card */
+.kb-filter-card {
+    background: #ffffff;
+    border-radius: var(--kb-radius);
+    border: 1px solid var(--kb-gray-200);
+    padding: 1.15rem 1.25rem;
+    box-shadow: var(--kb-shadow-sm);
+    margin-bottom: 1.5rem;
+}
+
+.kb-filter-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) auto;
+    gap: 0.85rem;
+    align-items: flex-end;
+}
+
+.kb-filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.kb-filter-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--kb-gray-700);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+.kb-filter-input,
+.kb-filter-select {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8125rem;
+    border: 1px solid var(--kb-gray-300);
+    border-radius: 6px;
+    background-color: #ffffff;
+    color: var(--kb-dark);
+    box-sizing: border-box;
+}
+
+.kb-filter-input:focus,
+.kb-filter-select:focus {
+    outline: none;
+    border-color: var(--kb-primary);
+    box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.15);
+}
+
+.kb-filter-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.kb-btn-filter {
+    background-color: var(--kb-primary);
+    color: #ffffff;
+    border-color: transparent;
+}
+
+.kb-btn-filter:hover {
+    background-color: var(--kb-primary-hover);
+    color: #ffffff;
+}
+
+/* Ledger Data Table */
+.kb-card-table {
+    background: #ffffff;
+    border-radius: var(--kb-radius);
+    border: 1px solid var(--kb-gray-200);
+    box-shadow: var(--kb-shadow-sm);
+    overflow: hidden;
+    margin-bottom: 2rem;
+}
+
+.kb-table-wrapper {
+    overflow-x: auto;
+    width: 100%;
+}
+
+.kb-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+    text-align: left;
+}
+
+.kb-table th {
+    background-color: var(--kb-gray-50);
+    color: var(--kb-gray-700);
+    font-weight: 700;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--kb-gray-200);
+    white-space: nowrap;
+    text-transform: uppercase;
+    font-size: 0.71875rem;
+    letter-spacing: 0.03em;
+}
+
+.kb-table td {
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid var(--kb-gray-100);
+    color: var(--kb-gray-700);
+    vertical-align: middle;
+}
+
+.kb-table tbody tr:hover {
+    background-color: #f8fafc;
+}
+
+.kb-badge-mutasi {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.25rem 0.6rem;
+    border-radius: 5px;
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
+.kb-mutasi-masuk {
+    background-color: var(--kb-primary-light);
+    color: var(--kb-primary);
+    border: 1px solid var(--kb-primary-border);
+}
+
+.kb-mutasi-keluar {
+    background-color: var(--kb-danger-light);
+    color: var(--kb-danger);
+    border: 1px solid #fecaca;
+}
+
+.kb-amount-masuk {
+    color: var(--kb-primary);
+    font-weight: 700;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.kb-amount-keluar {
+    color: var(--kb-danger);
+    font-weight: 700;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.kb-amount-balance {
+    color: var(--kb-dark);
+    font-weight: 700;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.kb-tag-jenis {
+    display: inline-block;
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+    background: var(--kb-gray-100);
+    color: var(--kb-gray-700);
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
+.kb-pagination-container {
+    padding: 1rem 1.25rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid var(--kb-gray-200);
+    background: var(--kb-gray-50);
+}

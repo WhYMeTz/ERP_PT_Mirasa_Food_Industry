@@ -36,54 +36,89 @@
     </div>
 </div>
 
-{{-- METRIC CARDS --}}
+{{-- 4 KARTU METRIK OPERASIONAL (INFORMATIF & SERAGAM DENGAN PO & TERIMA BARANG) --}}
 @php
     $totalBayarBulanIni = $bayarList->where('status_cd', 'POSTED')->sum('total_bayar');
     $totalSaldoKasBank = $kasBanks->sum('saldo_berjalan');
 @endphp
-<div class="bayar-metrics-grid">
-    <div class="bayar-metric-card">
-        <div class="bayar-metric-icon" style="background: #eff6ff; color: #2563eb;">
-            💳
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+    {{-- TOTAL DOKUMEN BKK --}}
+    <div style="background: #ffffff; border-radius: 8px; border: 1px solid #e2e8f0; padding: 1rem 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div>
+                <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b;">
+                    Semua Dokumen BKK
+                </span>
+                <div style="font-size: 1.5rem; font-weight: 700; color: #0f172a; margin-top: 0.25rem;">
+                    {{ number_format($bayarList->total()) }}
+                </div>
+            </div>
+            <div style="width: 32px; height: 32px; border-radius: 6px; background: #f1f5f9; display: flex; align-items: center; justify-content: center; color: #475569;">
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            </div>
         </div>
-        <div class="bayar-metric-info">
-            <span class="bayar-metric-label">Total Transaksi BKK</span>
-            <span class="bayar-metric-val" style="color: #1e3a8a;">
-                {{ $bayarList->total() }} Voucher
-            </span>
-            <span class="bayar-metric-sub">
-                Tercatat di sistem
-            </span>
-        </div>
-    </div>
-
-    <div class="bayar-metric-card">
-        <div class="bayar-metric-icon" style="background: #f0fdf4; color: #16a34a;">
-            💵
-        </div>
-        <div class="bayar-metric-info">
-            <span class="bayar-metric-label">Total Pengeluaran (Tampil)</span>
-            <span class="bayar-metric-val" style="color: #15803d;">
-                Rp {{ number_format($totalBayarBulanIni, 0, ',', '.') }}
-            </span>
-            <span class="bayar-metric-sub">
-                Dana teralokasi ke hutang
-            </span>
+        <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.4rem;">
+            Total transaksi kas keluar tercatat
         </div>
     </div>
 
-    <div class="bayar-metric-card">
-        <div class="bayar-metric-icon" style="background: #f8fafc; color: #0284c7; border: 1px solid #e2e8f0;">
-            🏦
+    {{-- TOTAL REALISASI KAS KELUAR --}}
+    <div style="background: #ffffff; border-radius: 8px; border: 1px solid #e2e8f0; padding: 1rem 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div>
+                <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #059669;">
+                    Total Kas Keluar
+                </span>
+                <div style="font-size: 1.35rem; font-weight: 800; color: #059669; margin-top: 0.25rem; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;">
+                    Rp {{ number_format($totalBayarBulanIni, 0, ',', '.') }}
+                </div>
+            </div>
+            <div style="width: 32px; height: 32px; border-radius: 6px; background: #d1fae5; display: flex; align-items: center; justify-content: center; color: #059669;">
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+            </div>
         </div>
-        <div class="bayar-metric-info">
-            <span class="bayar-metric-label">Total Saldo Kas &amp; Bank Aktif</span>
-            <span class="bayar-metric-val" style="color: #0369a1;">
-                Rp {{ number_format($totalSaldoKasBank, 0, ',', '.') }}
-            </span>
-            <span class="bayar-metric-sub">
-                {{ $kasBanks->count() }} Rekening pabrik &amp; bank
-            </span>
+        <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.4rem;">
+            Dana teralokasi pelunasan tagihan
+        </div>
+    </div>
+
+    {{-- TOTAL SALDO KAS & BANK --}}
+    <div style="background: #ffffff; border-radius: 8px; border: 1px solid #e2e8f0; padding: 1rem 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div>
+                <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #0284c7;">
+                    Total Saldo Kas &amp; Bank
+                </span>
+                <div style="font-size: 1.35rem; font-weight: 800; color: #0f172a; margin-top: 0.25rem; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;">
+                    Rp {{ number_format($totalSaldoKasBank, 0, ',', '.') }}
+                </div>
+            </div>
+            <div style="width: 32px; height: 32px; border-radius: 6px; background: #e0f2fe; display: flex; align-items: center; justify-content: center; color: #0284c7;">
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+            </div>
+        </div>
+        <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.4rem;">
+            {{ $kasBanks->count() }} Rekening aktif operasional
+        </div>
+    </div>
+
+    {{-- REKENING KAS UTAMA --}}
+    <div style="background: #ffffff; border-radius: 8px; border: 1px solid #e2e8f0; padding: 1rem 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div>
+                <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #d97706;">
+                    Rekening Kas Utama
+                </span>
+                <div style="font-size: 1.25rem; font-weight: 800; color: #0f172a; margin-top: 0.25rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 170px;" title="{{ $kasBanks->first()?->nama_akun ?? 'Kas Pabrik' }}">
+                    {{ $kasBanks->first()?->nama_akun ?? 'Kas Pabrik' }}
+                </div>
+            </div>
+            <div style="width: 32px; height: 32px; border-radius: 6px; background: #fef3c7; display: flex; align-items: center; justify-content: center; color: #d97706;">
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+            </div>
+        </div>
+        <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.4rem;">
+            Saldo: Rp {{ number_format($kasBanks->first()?->saldo_berjalan ?? 0, 0, ',', '.') }}
         </div>
     </div>
 </div>
@@ -166,30 +201,45 @@
 </div>
 
 {{-- TABEL DATA BKK --}}
-<div class="card" style="padding: 0; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden;">
+<div class="card" style="margin-bottom: 2rem;">
+    <div class="card-header" style="background: #ffffff; padding: 0.875rem 1.25rem; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+        <h3 style="font-size: 0.95rem; font-weight: 800; color: #0f172a; margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            <span>Daftar Riwayat Kas Keluar &amp; Pelunasan Tagihan</span>
+        </h3>
+        <span style="color: #64748b; font-size: 0.85rem;">
+            Total Voucher: <strong style="color: #0f172a;">{{ $bayarList->total() }}</strong> dokumen
+        </span>
+    </div>
+
     <div style="overflow-x: auto;">
-        <table class="table-compact" style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.8125rem;">
-            <thead style="background: #f8fafc; border-bottom: 1.5px solid #e2e8f0;">
-                <tr style="color: #475569; font-size: 0.725rem; text-transform: uppercase;">
-                    <th style="padding: 0.75rem 1rem;">No. Voucher (BKK)</th>
-                    <th style="padding: 0.75rem 0.75rem;">Tgl Bayar</th>
-                    <th style="padding: 0.75rem 0.75rem;">Supplier Penerima</th>
-                    <th style="padding: 0.75rem 0.75rem;">Rekening Sumber</th>
-                    <th style="padding: 0.75rem 0.75rem;">Metode &amp; Ref</th>
-                    <th style="padding: 0.75rem 1rem; text-align: right;">Total Bayar (Rp)</th>
-                    <th style="padding: 0.75rem 0.75rem; text-align: center;">Status</th>
-                    <th style="padding: 0.75rem 1rem; text-align: center; width: 100px;">Aksi</th>
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="background: #f8fafc; border-bottom: 1.5px solid #e2e8f0; font-size: 0.75rem; color: #475569; text-transform: uppercase; letter-spacing: 0.03em;">
+                    <th style="width: 45px; text-align: center; padding: 0.85rem 0.5rem;">No</th>
+                    <th style="min-width: 150px; padding: 0.85rem 0.75rem;">No. Voucher (BKK)</th>
+                    <th style="min-width: 110px; padding: 0.85rem 0.75rem;">Tgl Bayar</th>
+                    <th style="min-width: 170px; padding: 0.85rem 0.75rem;">Supplier Penerima</th>
+                    <th style="min-width: 150px; padding: 0.85rem 0.75rem;">Rekening Sumber</th>
+                    <th style="min-width: 130px; padding: 0.85rem 0.75rem;">Metode &amp; Ref</th>
+                    <th style="min-width: 130px; padding: 0.85rem 1rem; text-align: right;">Total Bayar (Rp)</th>
+                    <th style="min-width: 110px; padding: 0.85rem 0.75rem; text-align: center;">Status</th>
+                    <th style="width: 90px; padding: 0.85rem 1rem; text-align: center;">Aksi</th>
                 </tr>
             </thead>
-            <tbody>
-                @forelse ($bayarList as $bkk)
+            <tbody style="font-size: 0.8125rem; color: #1e293b;">
+                @forelse ($bayarList as $index => $bkk)
                     @php
                         $menuId = 'action_bkk_' . $bkk->bayar_id;
                         $metodeClass = strtolower($bkk->metode_bayar);
                         $statusClass = strtolower($bkk->status_cd);
                     @endphp
-                    <tr style="border-bottom: 1px solid #f1f5f9;">
-                        <td style="padding: 0.75rem 1rem;">
+                    <tr style="border-bottom: 1px solid #f1f5f9; transition: background 0.15s ease;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+                        <td style="padding: 0.75rem 0.5rem; text-align: center; color: #64748b; font-size: 0.8rem;">
+                            {{ $bayarList->firstItem() + $index }}
+                        </td>
+
+                        <td style="padding: 0.75rem 0.75rem;">
                             <a href="{{ route('keuangan.bayar.show', $bkk->bayar_id) }}" style="font-weight: 800; font-family: monospace; color: #0284c7; text-decoration: none; font-size: 0.85rem;">
                                 {{ $bkk->bayar_no }}
                             </a>
@@ -260,7 +310,7 @@
 
                                 @if ($bkk->status_cd === 'POSTED')
                                     <button type="button" 
-                                            class="action-dropdown-item danger-item"
+                                            class="action-dropdown-item danger-item" 
                                             onclick="openModalVoid({{ $bkk->bayar_id }}, '{{ $bkk->bayar_no }}', 'Rp {{ number_format($bkk->total_bayar, 0, ',', '.') }}')">
                                         <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                                         <span>Batalkan (VOID)</span>
@@ -271,7 +321,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="8" style="padding: 3rem 1rem; text-align: center; color: #94a3b8; font-size: 0.85rem;">
+                        <td colspan="9" style="padding: 3rem 1rem; text-align: center; color: #94a3b8; font-size: 0.85rem;">
                             Belum ada transaksi pembayaran hutang (BKK) yang tercatat.
                         </td>
                     </tr>
@@ -281,8 +331,13 @@
     </div>
 
     @if ($bayarList->hasPages())
-        <div style="padding: 1rem 1.25rem; border-top: 1px solid #e2e8f0; background: #f8fafc;">
-            {{ $bayarList->links() }}
+        <div style="padding: 1rem 1.25rem; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+            <div style="font-size: 0.8rem; color: #64748b;">
+                Menampilkan {{ $bayarList->firstItem() }} - {{ $bayarList->lastItem() }} dari {{ $bayarList->total() }} voucher
+            </div>
+            <div>
+                {{ $bayarList->links() }}
+            </div>
         </div>
     @endif
 </div>

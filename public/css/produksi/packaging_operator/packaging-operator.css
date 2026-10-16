@@ -256,42 +256,6 @@ body.packaging-mobile-body {
    NAVIGATION BARS (TOP TABS & BOTTOM MOBILE BAR)
    ========================================================================== */
 
-/* Top Sub-Navbar Tabs */
-.pkg-top-nav-tabs {
-    display: flex;
-    background: #ffffff;
-    border-top: 1px solid #f1f5f9;
-    max-width: 600px;
-    margin: 0 auto;
-}
-
-.pkg-nav-tab {
-    flex: 1;
-    padding: 0.65rem 0.5rem;
-    text-align: center;
-    text-decoration: none;
-    font-size: 0.8125rem;
-    font-weight: 700;
-    color: var(--pkg-text-muted);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    border-bottom: 2.5px solid transparent;
-    transition: all 0.15s ease;
-}
-
-.pkg-nav-tab:hover {
-    color: var(--pkg-primary);
-    background: #f0fdf4;
-}
-
-.pkg-nav-tab.active {
-    color: var(--pkg-primary);
-    border-bottom-color: var(--pkg-primary);
-    background: #ecfdf5;
-}
-
 /* Bottom Navigation Bar for Mobile */
 .pkg-bottom-nav {
     position: fixed;

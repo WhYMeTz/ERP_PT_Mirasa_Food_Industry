@@ -306,6 +306,15 @@ class PackagingController extends Controller
         try {
             $header = $this->packagingService->storePackaging($validated, auth()->user()?->name);
 
+            // Tautkan status laporan operator jika ditarik dari operator lapangan
+            if ($request->filled('laporan_operator_id')) {
+                app(\App\Services\Produksi\LaporanKemasOperatorService::class)->markAsProcessed(
+                    (int) $request->input('laporan_operator_id'),
+                    $header->pack_id,
+                    auth()->user()
+                );
+            }
+
             return redirect()->route('produksi.packaging.show', $header->pack_id)
                 ->with('success', "Proses pengemasan nomor {$header->pack_no} berhasil disimpan! HPP terbentuk: Rp " . number_format($header->hpp_per_karton, 0, ',', '.') . "/Karton.");
         } catch (Exception $e) {

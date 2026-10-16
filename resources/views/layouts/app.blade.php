@@ -934,6 +934,15 @@
                                                 <span style="font-size: 0.6875rem; color: #64748b;">Kemas curah ke karton barang jadi</span>
                                             </div>
                                         </a>
+
+                                        <div style="height: 1px; background: #f1f5f9; margin: 0.3rem 0;"></div>
+                                        <a href="{{ route('produksi.packaging.mobile') }}" target="_blank" class="mega-item">
+                                            <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #059669;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                                            <div style="display: flex; flex-direction: column;">
+                                                <span style="font-weight: 700; color: #059669;">📱 Form Kemas Lapangan (HP)</span>
+                                                <span style="font-size: 0.6875rem; color: #64748b;">Pengganti Google Form &bull; Operator</span>
+                                            </div>
+                                        </a>
                                     @endif
                                 @endif
                             </div>

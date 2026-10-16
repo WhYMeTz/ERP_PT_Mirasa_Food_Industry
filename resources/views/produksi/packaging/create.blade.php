@@ -24,6 +24,13 @@
                     Pencatatan konversi keripik curah (WIP) ke produk kemasan (FG), penarikan resep otomatis (BOM), upah borongan packing, dan pembentukan HPP/Karton.
                 </p>
             </div>
+
+            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                <button type="button" onclick="openPullOperatorModal()" class="btn" style="background: #ecfdf5; color: #047857; border: 1.5px solid #a7f3d0; font-weight: 700; font-size: 0.8125rem; padding: 0.55rem 1rem; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); cursor: pointer;">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                    <span>📥 Tarik Laporan Operator (HP)</span>
+                </button>
+            </div>
         </div>
     </div>
 
@@ -33,9 +40,26 @@
         </div>
     @endif
 
+    {{-- Banner Notifikasi Jika Data Ditarik dari Laporan Operator --}}
+    <div id="operatorSyncBadge" style="display: none; background: #ecfdf5; border: 1.5px solid #a7f3d0; border-radius: 8px; padding: 0.75rem 1.25rem; margin-bottom: 1.25rem; align-items: center; justify-content: space-between;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 1.25rem;">📱</span>
+            <div>
+                <strong style="color: #065f46; font-size: 0.875rem; display: block;" id="operatorSyncTitle">
+                    Data Terhubung dengan Laporan Operator Lapangan
+                </strong>
+                <span style="color: #047857; font-size: 0.775rem;" id="operatorSyncSubtitle">
+                    Bahan riil (bumbu, plastik, karton, lakban) terisi otomatis dari input operator HP.
+                </span>
+            </div>
+        </div>
+        <button type="button" onclick="clearOperatorSync()" style="background: none; border: none; color: #047857; text-decoration: underline; font-size: 0.75rem; font-weight: 700; cursor: pointer;">Lepas Tautan</button>
+    </div>
+
     <form method="POST" action="{{ route('produksi.packaging.store') }}" id="formPackagingCreate">
         @csrf
         <input type="hidden" name="bom_id" id="bom_id_hidden" value="">
+        <input type="hidden" name="laporan_operator_id" id="laporan_operator_id" value="">
 
         {{-- BAGIAN 1: INFORMASI DOKUMEN & IDENTITAS PRODUK KEMASAN --}}
         <div class="card" style="margin-bottom: 1.25rem;">
@@ -336,6 +360,9 @@
         </div>
     </form>
 </div>
+
+{{-- MODAL TARIK LAPORAN OPERATOR LAPANGAN --}}
+@include('produksi.packaging.partials.modal-pull-operator')
 @endsection
 
 @push('scripts')

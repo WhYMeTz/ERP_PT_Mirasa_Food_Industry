@@ -28,6 +28,7 @@ use App\Http\Controllers\Keuangan\KasMasukController;
 use App\Http\Controllers\Penjualan\SoController;
 use App\Http\Controllers\Produksi\BomController;
 use App\Http\Controllers\Produksi\PackagingController;
+use App\Http\Controllers\Produksi\PackagingOperatorController;
 use App\Http\Controllers\Produksi\ProduksiController;
 use App\Http\Controllers\Produksi\ProduksiStokController;
 use Illuminate\Support\Facades\Auth;
@@ -281,6 +282,13 @@ Route::middleware('auth')->group(function () {
         Route::post('/packaging', [PackagingController::class, 'store'])->name('packaging.store')->middleware('role:produksi_create');
         Route::get('/packaging/{id}', [PackagingController::class, 'show'])->name('packaging.show')->whereNumber('id');
         Route::post('/packaging/{id}/void', [PackagingController::class, 'void'])->name('packaging.void')->middleware('role:produksi_create')->whereNumber('id');
+
+        // Laporan Pengemasan Lapangan (Mobile-First Operator HP)
+        Route::get('/packaging/mobile', [PackagingOperatorController::class, 'create'])->name('packaging.mobile');
+        Route::post('/packaging/mobile', [PackagingOperatorController::class, 'store'])->name('packaging.mobile.store');
+        Route::get('/packaging/mobile/riwayat', [PackagingOperatorController::class, 'index'])->name('packaging.mobile.index');
+        Route::get('/packaging/mobile/{id}', [PackagingOperatorController::class, 'show'])->name('packaging.mobile.show')->whereNumber('id');
+        Route::get('/packaging/ajax-unprocessed-laporan', [PackagingOperatorController::class, 'ajaxUnprocessed'])->name('packaging.ajax-unprocessed-laporan');
     });
 
     // Quality Control (QC) Inbound Bahan Baku (Mobile-First / Google Form Style)

@@ -745,3 +745,185 @@ function formatRupiah(num) {
 function formatNumber(num) {
     return Number(num).toLocaleString('id-ID', { maximumFractionDigits: 4 });
 }
+
+/**
+ * =========================================================================
+ * INTEGRASI TARIK LAPORAN PENGEMASAN OPERATOR LAPANGAN (PENGGANTI GOOGLE FORM)
+ * =========================================================================
+ */
+let cachedOperatorLaporanList = [];
+
+function openPullOperatorModal() {
+    const modal = document.getElementById('modalPullOperator');
+    const loading = document.getElementById('pullOperatorLoading');
+    const emptyState = document.getElementById('pullOperatorEmpty');
+    const content = document.getElementById('pullOperatorContent');
+    const tbody = document.getElementById('pullOperatorTableBody');
+
+    if (!modal) return;
+
+    modal.style.display = 'flex';
+    if (loading) loading.style.display = 'block';
+    if (emptyState) emptyState.style.display = 'none';
+    if (content) content.style.display = 'none';
+    if (tbody) tbody.innerHTML = '';
+
+    fetch('/produksi/packaging/ajax-unprocessed-laporan')
+        .then(res => res.json())
+        .then(res => {
+            if (loading) loading.style.display = 'none';
+            if (res.status === 'success' && res.data && res.data.length > 0) {
+                cachedOperatorLaporanList = res.data;
+                renderPullOperatorTable(res.data);
+                if (content) content.style.display = 'block';
+            } else {
+                if (emptyState) emptyState.style.display = 'block';
+            }
+        })
+        .catch(err => {
+            if (loading) loading.style.display = 'none';
+            if (emptyState) emptyState.style.display = 'block';
+            console.error('Gagal mengambil laporan operator:', err);
+        });
+}
+
+function closePullOperatorModal() {
+    const modal = document.getElementById('modalPullOperator');
+    if (modal) modal.style.display = 'none';
+}
+
+function renderPullOperatorTable(list) {
+    const tbody = document.getElementById('pullOperatorTableBody');
+    if (!tbody) return;
+
+    tbody.innerHTML = '';
+    list.forEach((item, idx) => {
+        const tr = document.createElement('tr');
+        tr.style.borderBottom = '1px solid #f1f5f9';
+
+        const tglKemas = item.tgl_kemas ? new Date(item.tgl_kemas).toLocaleDateString('id-ID') : '-';
+        const barangNm = item.barang_jadi ? item.barang_jadi.barang_nm : '-';
+        const outputQty = `${formatRupiah(item.hasil_karton_qty)} ${item.satuan_hasil || 'KARTON'}`;
+
+        tr.innerHTML = `
+            <td style="padding: 0.65rem 0.75rem;">
+                <strong style="color: #0f172a; font-family: ui-monospace, monospace;">${item.laporan_no}</strong>
+                <div style="font-size: 0.725rem; color: #64748b; margin-top: 2px;">📅 ${tglKemas}</div>
+            </td>
+            <td style="padding: 0.65rem 0.75rem;">
+                <span style="display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; background: #eff6ff; color: #1d4ed8;">Shift ${item.shift}</span>
+                <div style="font-size: 0.775rem; font-weight: 600; color: #1e293b; margin-top: 2px;">${item.operator_nama} (${item.jumlah_personil || 1} Org)</div>
+            </td>
+            <td style="padding: 0.65rem 0.75rem;">
+                <div style="font-weight: 700; color: #0f172a;">${barangNm}</div>
+                <div style="font-size: 0.725rem; color: #64748b; margin-top: 2px;">
+                    ${item.bumbu_barang ? 'Bumbu: ' + item.bumbu_barang.barang_nm + ' (' + formatNumber(item.bumbu_qty_kg) + ' Kg)' : 'Tanpa Bumbu'}
+                </div>
+            </td>
+            <td style="padding: 0.65rem 0.75rem; text-align: right;">
+                <strong style="font-size: 0.95rem; font-weight: 900; color: #059669; font-family: ui-monospace, monospace;">${outputQty}</strong>
+            </td>
+            <td style="padding: 0.65rem 0.75rem; text-align: center;">
+                <button type="button" class="btn" onclick="applyOperatorLaporan(${idx})" style="background: #059669; color: #ffffff; border: none; font-size: 0.775rem; font-weight: 700; padding: 0.4rem 0.75rem; border-radius: 6px; cursor: pointer; box-shadow: 0 1px 2px rgba(5, 150, 105, 0.2);">
+                    Gunakan
+                </button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function applyOperatorLaporan(idx) {
+    const item = cachedOperatorLaporanList[idx];
+    if (!item) return;
+
+    // 1. Tautkan ID Laporan
+    const hiddenId = document.getElementById('laporan_operator_id');
+    if (hiddenId) hiddenId.value = item.laporan_id;
+
+    // 2. Set Tanggal & Produk Jadi
+    const packTgl = document.getElementById('pack_tgl');
+    if (packTgl && item.tgl_kemas) packTgl.value = item.tgl_kemas;
+
+    const barangSelect = document.getElementById('barang_jadi_id');
+    if (barangSelect && item.barang_jadi_id) {
+        barangSelect.value = item.barang_jadi_id;
+    }
+
+    // 3. Set Jumlah Hasil Kemas
+    const hasilInput = document.getElementById('hasil_karton_qty');
+    const targetInput = document.getElementById('target_karton_qty');
+    if (hasilInput) hasilInput.value = item.hasil_karton_qty;
+    if (targetInput) targetInput.value = item.hasil_karton_qty;
+
+    // 4. Set Produksi WIP jika ada
+    const prodSelect = document.getElementById('produksi_id');
+    if (prodSelect && item.produksi_id) {
+        prodSelect.value = item.produksi_id;
+        onProduksiSelect(prodSelect);
+    }
+
+    // 5. Tampilkan Banner Status Tarik Data
+    const badge = document.getElementById('operatorSyncBadge');
+    const title = document.getElementById('operatorSyncTitle');
+    const subtitle = document.getElementById('operatorSyncSubtitle');
+    if (badge && title && subtitle) {
+        title.textContent = `Data Terhubung dengan Laporan Operator: ${item.laporan_no}`;
+        subtitle.textContent = `Leader: ${item.operator_nama} &bull; Shift ${item.shift} (${item.jumlah_personil || 1} Personil &bull; ${item.jumlah_mesin || 1} Mesin) &bull; Output: ${formatRupiah(item.hasil_karton_qty)} ${item.satuan_hasil || 'Karton'}`;
+        badge.style.display = 'flex';
+    }
+
+    // 6. Tarik resep BOM dan timpa dengan kuantitas aktual dari laporan operator
+    fetchBomPreview();
+
+    // Berikan jeda sejenak untuk membiarkan BOM termuat lalu timpa kuantitas aktual
+    setTimeout(() => {
+        applyMaterialQuantitiesFromLaporan(item);
+    }, 600);
+
+    closePullOperatorModal();
+}
+
+function applyMaterialQuantitiesFromLaporan(item) {
+    // Timpa kuantitas aktual jika barang ditemukan di tabel
+    const rows = document.querySelectorAll('.material-item-row');
+    rows.forEach(row => {
+        const barangSelect = row.querySelector('.material-barang-select');
+        const qtyAktualInput = row.querySelector('.qty-aktual-input');
+        if (!barangSelect || !qtyAktualInput) return;
+
+        const bId = parseInt(barangSelect.value);
+
+        // Jika barang adalah Bumbu
+        if (item.bumbu_barang_id && bId === parseInt(item.bumbu_barang_id) && item.bumbu_qty_kg > 0) {
+            qtyAktualInput.value = item.bumbu_qty_kg;
+        }
+
+        // Jika barang adalah Plastik Utama
+        if (item.plastik_barang_id && bId === parseInt(item.plastik_barang_id) && item.plastik_qty > 0) {
+            qtyAktualInput.value = item.plastik_qty;
+        }
+
+        // Jika barang adalah Karton Dus
+        if (item.karton_barang_id && bId === parseInt(item.karton_barang_id) && item.karton_qty > 0) {
+            qtyAktualInput.value = item.karton_qty;
+        }
+
+        // Jika barang adalah WIP curah
+        if (item.wip_qty_kg > 0) {
+            const kategoriInput = row.querySelector('input[name*="[kategori_bahan]"]');
+            if (kategoriInput && kategoriInput.value === 'WIP') {
+                qtyAktualInput.value = item.wip_qty_kg;
+            }
+        }
+    });
+
+    recalculateTotals();
+}
+
+function clearOperatorSync() {
+    const hiddenId = document.getElementById('laporan_operator_id');
+    const badge = document.getElementById('operatorSyncBadge');
+    if (hiddenId) hiddenId.value = '';
+    if (badge) badge.style.display = 'none';
+}

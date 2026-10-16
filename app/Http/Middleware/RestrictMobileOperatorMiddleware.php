@@ -38,6 +38,11 @@ class RestrictMobileOperatorMiddleware
                 }
 
                 if (!$isAllowed) {
+                    $targetUrl = route('produksi.packaging.mobile');
+                    if ($request->url() === $targetUrl) {
+                        return $next($request);
+                    }
+
                     return redirect()->route('produksi.packaging.mobile')
                         ->with('error', 'Akses Terbatas: Akun Operator Kemas Lapangan khusus untuk penginputan laporan melalui portal mobile.');
                 }

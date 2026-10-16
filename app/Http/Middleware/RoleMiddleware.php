@@ -43,7 +43,12 @@ class RoleMiddleware
 
         // Jika akses ditolak, kembalikan ke dashboard default dengan notifikasi ramah
         $defaultRoute = route($user->getDashboardRoute());
-        
+
+        // Anti-Loop Guard: Jika request saat ini sama dengan defaultRoute, cegah infinite loop
+        if ($request->url() === $defaultRoute) {
+            abort(403, "Akses Ditolak: Peran akun Anda '{$user->role_cd}' saat ini belum memiliki izin untuk membuka fitur tersebut.");
+        }
+
         return redirect($defaultRoute)->with('error', "Akses Ditolak: Peran akun Anda '{$user->role_cd}' saat ini belum memiliki izin untuk membuka fitur tersebut. Pengaturan hak akses dapat disesuaikan oleh Super Administrator.");
     }
 }

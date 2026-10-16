@@ -287,8 +287,10 @@ Route::middleware('auth')->group(function () {
         Route::post('/packaging', [PackagingController::class, 'store'])->name('packaging.store')->middleware('role:produksi_create');
         Route::get('/packaging/{id}', [PackagingController::class, 'show'])->name('packaging.show')->whereNumber('id');
         Route::post('/packaging/{id}/void', [PackagingController::class, 'void'])->name('packaging.void')->middleware('role:produksi_create')->whereNumber('id');
+    });
 
-        // Laporan Pengemasan Lapangan (Mobile-First Operator HP)
+    // Laporan Pengemasan Lapangan (Mobile-First Operator HP & Admin Office)
+    Route::prefix('produksi')->name('produksi.')->group(function () {
         Route::get('/packaging/mobile', [PackagingOperatorController::class, 'create'])->name('packaging.mobile');
         Route::post('/packaging/mobile', [PackagingOperatorController::class, 'store'])->name('packaging.mobile.store');
         Route::get('/packaging/mobile/riwayat', [PackagingOperatorController::class, 'index'])->name('packaging.mobile.index');

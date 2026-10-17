@@ -7,7 +7,7 @@
     <link rel="icon" type="image/png" href="{{ asset('images/logo.png') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ asset('css/auth/mobile-login.css') }}">
 </head>
 <body class="pkg-login-body">
@@ -25,7 +25,7 @@
             <p class="pkg-login-subtitle">Silakan login untuk mencatat laporan kemas harian</p>
         </div>
 
-        {{-- KARTU FORM LOGIN MOBILE --}}
+        {{-- KARTU FORM LOGIN MOBILE (MODERN RED & WHITE) --}}
         <div class="pkg-login-card">
             @if (isset($errors) && $errors->any())
                 <div class="pkg-alert-error">
@@ -35,7 +35,7 @@
             @endif
 
             @if (session('success'))
-                <div style="background: #f0fdf4; border: 1.5px solid #bbf7d0; color: #166534; padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.8125rem; font-weight: 700; margin-bottom: 1rem; display: flex; align-items: center; gap: 8px;">
+                <div class="pkg-alert-success">
                     <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                     <div>{{ session('success') }}</div>
                 </div>
@@ -97,10 +97,10 @@
                         @foreach($operatorUsers as $op)
                             <button type="button" class="pkg-quick-user-btn" onclick="selectQuickOperator('{{ $op->email }}', 'password123')">
                                 <div>
-                                    <span style="display: block;">{{ $op->name }}</span>
-                                    <span style="font-size: 0.675rem; color: #64748b; font-weight: normal;">{{ $op->email }} ({{ $op->role_cd }})</span>
+                                    <span class="pkg-quick-name">{{ $op->name }}</span>
+                                    <span class="pkg-quick-meta">{{ $op->email }} ({{ $op->role_cd }})</span>
                                 </div>
-                                <span style="color: #059669; font-size: 0.75rem;">Login &rarr;</span>
+                                <span class="pkg-quick-arrow">Login &rarr;</span>
                             </button>
                         @endforeach
                     </div>

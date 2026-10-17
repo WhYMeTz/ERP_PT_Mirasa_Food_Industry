@@ -453,6 +453,7 @@
 @push('scripts')
     <script>
         window.masterKemasanList = @json($kemasanBarangList ?? []);
+        window.preloadedOperatorLaporan = @json($selectedLaporan ?? null);
     </script>
     <script src="{{ asset('js/produksi/packaging/packaging-create.js') }}"></script>
 @endpush

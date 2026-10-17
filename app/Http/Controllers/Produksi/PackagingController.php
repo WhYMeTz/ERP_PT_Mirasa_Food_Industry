@@ -21,7 +21,8 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class PackagingController extends Controller
 {
     public function __construct(
-        protected PackagingService $packagingService
+        protected PackagingService $packagingService,
+        protected \App\Services\Produksi\LaporanKemasOperatorService $operatorService
     ) {}
 
     /**
@@ -38,6 +39,9 @@ class PackagingController extends Controller
 
         $dataList = $this->packagingService->getAllPaginated(15, $filters);
         $metrics = $this->packagingService->getMetrics($filters);
+        $unprocessedCount = \App\Models\Produksi\DatLaporanKemasOperator::where('deleted_st', false)
+            ->where('status_cd', 'SUBMITTED')
+            ->count();
 
         // Ambil daftar barang jadi aktif untuk filter (Khusus FG)
         $barangJadiList = MstBarang::active()
@@ -45,16 +49,60 @@ class PackagingController extends Controller
             ->orderBy('barang_nm')
             ->get(['barang_id', 'barang_cd', 'barang_nm']);
 
-        return view('produksi.packaging.index', compact('dataList', 'metrics', 'filters', 'barangJadiList'));
+        return view('produksi.packaging.index', compact('dataList', 'metrics', 'filters', 'barangJadiList', 'unprocessedCount'));
+    }
+
+    /**
+     * Halaman web office: Riwayat Hasil Catatan dari Operator Packaging Lapangan
+     */
+    public function catatanOperator(Request $request): View
+    {
+        $filters = [
+            'search'         => $request->input('search'),
+            'tgl_kemas'      => $request->input('tgl_kemas'),
+            'shift'          => $request->input('shift'),
+            'status_cd'      => $request->input('status_cd'),
+            'barang_jadi_id' => $request->input('barang_jadi_id'),
+        ];
+
+        $dataList = $this->operatorService->getLaporanListPaginated($filters, 15);
+        $metrics = $this->operatorService->getMetrics($filters);
+        $unprocessedCount = $metrics['menunggu_office'] ?? 0;
+
+        $barangJadiList = MstBarang::active()
+            ->whereHas('jenisBarang', fn($q) => $q->where('jenis_barang_cd', 'FG'))
+            ->orderBy('barang_nm')
+            ->get(['barang_id', 'barang_cd', 'barang_nm']);
+
+        return view('produksi.packaging.catatan_operator.index', compact('dataList', 'metrics', 'filters', 'barangJadiList', 'unprocessedCount'));
+    }
+
+    /**
+     * Detail Lembar Bukti Laporan Catatan Operator Lapangan (Web Office)
+     */
+    public function showCatatanOperator(int $id): View
+    {
+        $laporan = $this->operatorService->getById($id);
+
+        return view('produksi.packaging.catatan_operator.show', compact('laporan'));
     }
 
     /**
      * Form tambah pencatatan pengemasan baru (Smart Backflush BOM - Satu Pintu Input).
      */
-    public function create(): View
+    public function create(Request $request): View
     {
         $user = auth()->user();
         $gudangList = $user ? $user->getAllowedGudangList() : MstGudang::active()->get();
+
+        $selectedLaporan = null;
+        if ($request->has('laporan_id')) {
+            try {
+                $selectedLaporan = $this->operatorService->getById((int) $request->input('laporan_id'));
+            } catch (Exception) {
+                $selectedLaporan = null;
+            }
+        }
 
         // Ambil daftar barang jadi untuk dropdown target kemas (Khusus Finished Goods / FG, bukan WIP/Curah)
         $barangJadiList = MstBarang::with(['satuanDasar', 'jenisBarang'])
@@ -74,7 +122,14 @@ class PackagingController extends Controller
                   ->orWhere('barang_nm', 'ILIKE', '%PLASTIK%')
                   ->orWhere('barang_nm', 'ILIKE', '%RAFIA%')
                   ->orWhere('barang_nm', 'ILIKE', '%SARUNG TANGAN%')
-                  ->orWhere('barang_nm', 'ILIKE', '%BERKO%');
+                  ->orWhere('barang_nm', 'ILIKE', '%BERKO%')
+                  ->orWhere('barang_nm', 'ILIKE', '%EXP%')
+                  ->orWhere('barang_cd', 'ILIKE', '%EXP%')
+                  ->orWhere('barang_nm', 'ILIKE', '%KADALUARSA%')
+                  ->orWhere('barang_nm', 'ILIKE', '%LABEL%')
+                  ->orWhere('barang_nm', 'ILIKE', '%STIKER%')
+                  ->orWhere('barang_nm', 'ILIKE', '%TALI%')
+                  ->orWhere('barang_nm', 'ILIKE', '%BAL%');
             })
             ->orderBy('barang_nm')
             ->get()
@@ -117,7 +172,7 @@ class PackagingController extends Controller
             ->orderBy('produksi_id', 'asc')
             ->get();
 
-        return view('produksi.packaging.create', compact('gudangList', 'barangJadiList', 'kemasanBarangList', 'produksiList'));
+        return view('produksi.packaging.create', compact('gudangList', 'barangJadiList', 'kemasanBarangList', 'produksiList', 'selectedLaporan'));
     }
 
     /**

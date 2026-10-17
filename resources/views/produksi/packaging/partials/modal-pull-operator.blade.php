@@ -38,7 +38,7 @@
                 <p style="font-size: 0.825rem; color: #64748b; margin: 0.25rem 0 1rem 0; max-width: 450px; margin-inline: auto;">
                     Semua laporan pengemasan lapangan yang dikirim operator sudah diproses ke HPP FG, atau belum ada laporan baru dari HP operator.
                 </p>
-                <a href="{{ route('produksi.packaging.mobile') }}" target="_blank" class="btn" style="background: #ecfdf5; color: #059669; border: 1.5px solid #a7f3d0; font-weight: 700; font-size: 0.8125rem; padding: 0.5rem 1rem; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+                <a href="{{ route('produksi.packaging.mobile') }}" target="_blank" class="btn" style="background: #fff1f2; color: #dc2626; border: 1.5px solid #fecdd3; font-weight: 700; font-size: 0.8125rem; padding: 0.5rem 1rem; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
                     <span>📱 Buka Form Input Operator Lapangan</span>
                 </a>
             </div>

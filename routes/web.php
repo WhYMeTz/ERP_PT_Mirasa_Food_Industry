@@ -288,6 +288,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/packaging/rekap', [PackagingController::class, 'rekap'])->name('packaging.rekap');
         Route::get('/packaging/export-rekap-excel', [PackagingController::class, 'exportRekapExcel'])->name('packaging.export-rekap-excel');
         Route::get('/packaging/export-rekap-pdf', [PackagingController::class, 'exportRekapPdf'])->name('packaging.export-rekap-pdf');
+        Route::get('/packaging/catatan-operator', [PackagingController::class, 'catatanOperator'])->name('packaging.catatan-operator');
+        Route::get('/packaging/catatan-operator/{id}', [PackagingController::class, 'showCatatanOperator'])->name('packaging.catatan-operator.show')->whereNumber('id');
         Route::get('/packaging/create', [PackagingController::class, 'create'])->name('packaging.create')->middleware('role:produksi_create');
         Route::post('/packaging', [PackagingController::class, 'store'])->name('packaging.store')->middleware('role:produksi_create');
         Route::get('/packaging/{id}', [PackagingController::class, 'show'])->name('packaging.show')->whereNumber('id');

@@ -46,8 +46,11 @@ class DatLaporanKemasOperator extends Model
         'lakban_bawah_gr',
         'lakban_barang_id',
         'lakban_qty',
+        'expired_barang_id',
+        'expired_qty',
         'kemasan_lain_barang_id',
         'kemasan_lain_qty',
+        'kemasan_tambahan_items',
         'catatan',
         'status_cd',
         'pack_id',
@@ -60,28 +63,35 @@ class DatLaporanKemasOperator extends Model
     ];
 
     protected $casts = [
-        'tgl_kemas'           => 'date',
-        'jumlah_personil'     => 'integer',
-        'jumlah_mesin'        => 'integer',
-        'wip_qty_kg'          => 'float',
-        'hasil_karton_qty'    => 'float',
-        'hasil_pack_qty'      => 'float',
-        'bumbu_qty_kg'        => 'float',
-        'plastik_qty'         => 'float',
-        'plastik_rusak_pcs'   => 'float',
-        'karton_qty'          => 'float',
-        'karton_rusak_lembar' => 'float',
-        'lakban_atas_gr'      => 'float',
-        'lakban_bawah_gr'     => 'float',
-        'lakban_qty'          => 'float',
-        'kemasan_lain_qty'    => 'float',
-        'deleted_st'          => 'boolean',
-        'active_st'           => 'boolean',
+        'tgl_kemas'              => 'date',
+        'jumlah_personil'        => 'integer',
+        'jumlah_mesin'           => 'integer',
+        'wip_qty_kg'             => 'float',
+        'hasil_karton_qty'       => 'float',
+        'hasil_pack_qty'         => 'float',
+        'bumbu_qty_kg'           => 'float',
+        'plastik_qty'            => 'float',
+        'plastik_rusak_pcs'      => 'float',
+        'karton_qty'             => 'float',
+        'karton_rusak_lembar'    => 'float',
+        'lakban_atas_gr'         => 'float',
+        'lakban_bawah_gr'        => 'float',
+        'lakban_qty'             => 'float',
+        'expired_qty'            => 'float',
+        'kemasan_lain_qty'       => 'float',
+        'kemasan_tambahan_items' => 'array',
+        'deleted_st'             => 'boolean',
+        'active_st'              => 'boolean',
     ];
 
     public function karyawan(): BelongsTo
     {
         return $this->belongsTo(MstKaryawan::class, 'karyawan_id', 'karyawan_id');
+    }
+
+    public function expiredBarang(): BelongsTo
+    {
+        return $this->belongsTo(MstBarang::class, 'expired_barang_id', 'barang_id');
     }
 
     public function produksi(): BelongsTo
@@ -134,6 +144,11 @@ class DatLaporanKemasOperator extends Model
         return $this->belongsTo(DatPackagingHdr::class, 'pack_id', 'pack_id');
     }
 
+    protected $appends = [
+        'status_badge',
+        'formatted_kemasan_tambahan',
+    ];
+
     public function getStatusBadgeAttribute(): array
     {
         return match ($this->status_cd) {
@@ -159,5 +174,47 @@ class DatLaporanKemasOperator extends Model
                 'icon'   => '📝',
             ],
         };
+    }
+
+    public function getFormattedKemasanTambahanAttribute(): array
+    {
+        $items = $this->kemasan_tambahan_items;
+        if (is_string($items)) {
+            $items = json_decode($items, true);
+            if (is_string($items)) {
+                $items = json_decode($items, true);
+            }
+        }
+
+        if (!is_array($items)) {
+            $items = [];
+        }
+
+        if (empty($items) && $this->kemasan_lain_barang_id && $this->kemasan_lain_qty > 0) {
+            $b = $this->kemasanLainBarang;
+            $items[] = [
+                'barang_id'     => $this->kemasan_lain_barang_id,
+                'barang_cd'     => $b?->barang_cd ?? '',
+                'barang_nm'     => $b?->barang_nm ?? 'Kemasan Tambahan',
+                'satuan_nm'     => $b?->satuanDasar?->satuan_nm ?? 'PCS',
+                'harga_standar' => (float) ($b?->harga_beli_standar ?? 0),
+                'qty'           => (float) $this->kemasan_lain_qty,
+                'catatan'       => '',
+            ];
+        } else {
+            foreach ($items as &$it) {
+                if (!empty($it['barang_id']) && (empty($it['barang_nm']) || empty($it['harga_standar']) || empty($it['satuan_nm']))) {
+                    $b = MstBarang::with('satuanDasar')->find($it['barang_id']);
+                    if ($b) {
+                        $it['barang_cd'] = $b->barang_cd;
+                        $it['barang_nm'] = $b->barang_nm;
+                        $it['satuan_nm'] = $b->satuanDasar?->satuan_nm ?? 'PCS';
+                        $it['harga_standar'] = (float) ($b->harga_beli_standar ?? 0);
+                    }
+                }
+            }
+        }
+
+        return $items;
     }
 }

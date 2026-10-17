@@ -9,13 +9,14 @@ document.addEventListener('DOMContentLoaded', function () {
     initSatuanButtons();
     initKaryawanSync();
     initProduksiSync();
+    initLakbanUnitSync();
     initLakbanSync();
 });
 
 /**
  * Handle Lakban Unit Suffix Update on selection
  */
-function initLakbanSync() {
+function initLakbanUnitSync() {
     const lakbanSelect = document.getElementById('lakban_barang_id');
     const lakbanUnitLabel = document.getElementById('lakban_unit_label');
 
@@ -71,19 +72,13 @@ function initLakbanSync() {
 function recalculateLakbanTotal() {
     const atas = parseFloat(document.getElementById('lakban_atas_gr')?.value) || 0;
     const bawah = parseFloat(document.getElementById('lakban_bawah_gr')?.value) || 0;
-    const total = atas + bawah;
+    const total = Math.round((atas + bawah) * 10) / 10;
 
     const hiddenQty = document.getElementById('lakban_qty');
     if (hiddenQty) hiddenQty.value = total;
 
     const lblTotal = document.getElementById('lbl_lakban_total');
     if (lblTotal) lblTotal.textContent = total.toLocaleString('id-ID');
-
-    // Tarif acuan lakban timbangan (Rp 35.10 / gram)
-    const tarifPerGram = 35.10;
-    const rupiah = Math.round(total * tarifPerGram);
-    const lblRp = document.getElementById('lbl_lakban_rp');
-    if (lblRp) lblRp.textContent = 'Rp ' + rupiah.toLocaleString('id-ID');
 }
 
 /**
@@ -208,5 +203,68 @@ function initProduksiSync() {
                 if (wipInfoBox) wipInfoBox.style.display = 'none';
             }
         });
+    }
+}
+
+/**
+ * Multi-Item Kemasan Tambahan (Dinamis Add/Remove Row)
+ */
+let kemasanTambahanIndex = 0;
+
+function addKemasanTambahanRow(selectedId = '', defaultQty = '') {
+    const container = document.getElementById('kemasanTambahanList');
+    if (!container) return;
+
+    const optionsData = window.kemasanLainOptions || [];
+    let optionsHtml = '<option value="">-- Pilih Kemasan Tambahan --</option>';
+
+    optionsData.forEach(item => {
+        const isSelected = selectedId && parseInt(selectedId) === parseInt(item.barang_id) ? 'selected' : '';
+        const satuan = item.satuan_nm ? ` (${item.satuan_nm})` : '';
+        optionsHtml += `<option value="${item.barang_id}" data-satuan="${item.satuan_nm || 'PCS'}" ${isSelected}>${item.barang_nm}${satuan}</option>`;
+    });
+
+    const rowId = `kemasan_row_${kemasanTambahanIndex}`;
+    const rowDiv = document.createElement('div');
+    rowDiv.className = 'pkg-dynamic-row';
+    rowDiv.id = rowId;
+
+    rowDiv.innerHTML = `
+        <div class="pkg-dynamic-row-select">
+            <select name="kemasan_tambahan[${kemasanTambahanIndex}][barang_id]" class="pkg-select" style="height: 42px; font-size: 0.825rem;" onchange="onKemasanTambahanSelect(this, '${rowId}')">
+                ${optionsHtml}
+            </select>
+        </div>
+        <div class="pkg-dynamic-row-qty">
+            <div class="pkg-input-suffix-wrapper" style="height: 42px;">
+                <input type="number" step="any" min="0" name="kemasan_tambahan[${kemasanTambahanIndex}][qty]" class="pkg-input" placeholder="Qty" value="${defaultQty}" style="height: 42px; font-size: 0.85rem; padding-right: 38px;">
+                <span class="pkg-input-suffix-muted unit-suffix" style="font-size: 0.7rem; right: 6px;">Pcs</span>
+            </div>
+        </div>
+        <button type="button" class="pkg-dynamic-row-remove" onclick="removeKemasanTambahanRow('${rowId}')" title="Hapus Baris">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+        </button>
+    `;
+
+    container.appendChild(rowDiv);
+    kemasanTambahanIndex++;
+}
+
+function removeKemasanTambahanRow(rowId) {
+    const row = document.getElementById(rowId);
+    if (row) {
+        row.remove();
+    }
+}
+
+function onKemasanTambahanSelect(selectElem, rowId) {
+    const row = document.getElementById(rowId);
+    if (!row) return;
+
+    const suffixSpan = row.querySelector('.unit-suffix');
+    const selectedOpt = selectElem.options[selectElem.selectedIndex];
+    if (suffixSpan && selectedOpt) {
+        const satuan = selectedOpt.getAttribute('data-satuan') || 'Pcs';
+        suffixSpan.textContent = satuan;
     }
 }

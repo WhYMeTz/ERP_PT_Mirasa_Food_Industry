@@ -122,18 +122,35 @@ class PackagingOperatorController extends Controller
             ->orderBy('barang_nm')
             ->get();
 
-        // 8. Kemasan Lainnya (Plastik Bal, Tali Rafia, Label Expired, Sarung Tangan, dll)
+        // 8. Plastik / Kertas Expired (Label Batch Kadaluarsa)
+        $expiredList = MstBarang::with('satuanDasar')
+            ->where(function ($q) {
+                $q->where('barang_nm', 'ILIKE', '%exp%')
+                  ->orWhere('barang_nm', 'ILIKE', '%kadaluarsa%')
+                  ->orWhere('barang_cd', 'ILIKE', '%exp%');
+            })
+            ->where('barang_nm', 'NOT ILIKE', '%export%')
+            ->where('active_st', true)
+            ->where('deleted_st', false)
+            ->orderBy('barang_nm')
+            ->get();
+
+        // 9. Kemasan Lainnya / Tambahan (Plastik Bal, Tali Rafia, Stiker, Sarung Tangan, dll)
         $kemasanLainList = MstBarang::with('satuanDasar')
             ->where(function ($q) {
-                $q->where('barang_nm', 'ILIKE', '%bal %')
-                  ->orWhere('barang_nm', 'ILIKE', '%bal')
-                  ->orWhere('barang_nm', 'ILIKE', '%expired%')
+                $q->where('barang_nm', 'ILIKE', '%bal%')
                   ->orWhere('barang_nm', 'ILIKE', '%rafia%')
+                  ->orWhere('barang_nm', 'ILIKE', '%tali%')
                   ->orWhere('barang_nm', 'ILIKE', '%label%')
-                  ->orWhere('barang_nm', 'ILIKE', '%sarung tangan%');
+                  ->orWhere('barang_nm', 'ILIKE', '%stiker%')
+                  ->orWhere('barang_nm', 'ILIKE', '%sarung tangan%')
+                  ->orWhere('barang_nm', 'ILIKE', '%plastik%')
+                  ->orWhere('barang_nm', 'ILIKE', '%klip%');
             })
             ->where('barang_nm', 'NOT ILIKE', '%bumbu%')
             ->where('barang_nm', 'NOT ILIKE', '%lakban%')
+            ->where('barang_nm', 'NOT ILIKE', '%karton%')
+            ->where('barang_nm', 'NOT ILIKE', '%keripik%')
             ->whereHas('jenisBarang', fn($q) => $q->whereNotIn('jenis_barang_cd', ['FG', 'WIP', 'BB', 'RAW']))
             ->where('active_st', true)
             ->where('deleted_st', false)
@@ -149,6 +166,7 @@ class PackagingOperatorController extends Controller
             'plastikList',
             'kartonList',
             'lakbanList',
+            'expiredList',
             'kemasanLainList'
         ));
     }
@@ -159,18 +177,23 @@ class PackagingOperatorController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $request->validate([
-            'tgl_kemas'              => 'required|date',
-            'shift'                  => 'required|string',
-            'operator_nama'          => 'required|string|max:150',
-            'output_id'              => 'nullable|exists:dat_produksi_dtl,output_id',
-            'wip_barang_id'          => 'nullable|exists:mst_barang,barang_id',
-            'produksi_id'            => 'nullable|exists:dat_produksi_hdr,produksi_id',
-            'barang_jadi_id'         => 'required|exists:mst_barang,barang_id',
-            'hasil_karton_qty'       => 'required|numeric|min:0.0001',
-            'lakban_barang_id'       => 'nullable|exists:mst_barang,barang_id',
-            'lakban_qty'             => 'nullable|numeric|min:0',
-            'kemasan_lain_barang_id' => 'nullable|exists:mst_barang,barang_id',
-            'kemasan_lain_qty'       => 'nullable|numeric|min:0',
+            'tgl_kemas'                    => 'required|date',
+            'shift'                        => 'required|string',
+            'operator_nama'                => 'required|string|max:150',
+            'output_id'                    => 'nullable|exists:dat_produksi_dtl,output_id',
+            'wip_barang_id'                => 'nullable|exists:mst_barang,barang_id',
+            'produksi_id'                  => 'nullable|exists:dat_produksi_hdr,produksi_id',
+            'barang_jadi_id'               => 'required|exists:mst_barang,barang_id',
+            'hasil_karton_qty'             => 'required|numeric|min:0.0001',
+            'lakban_barang_id'             => 'nullable|exists:mst_barang,barang_id',
+            'lakban_qty'                   => 'nullable|numeric|min:0',
+            'expired_barang_id'            => 'nullable|exists:mst_barang,barang_id',
+            'expired_qty'                  => 'nullable|numeric|min:0',
+            'kemasan_lain_barang_id'       => 'nullable|exists:mst_barang,barang_id',
+            'kemasan_lain_qty'             => 'nullable|numeric|min:0',
+            'kemasan_tambahan'             => 'nullable|array',
+            'kemasan_tambahan.*.barang_id' => 'nullable|exists:mst_barang,barang_id',
+            'kemasan_tambahan.*.qty'       => 'nullable|numeric|min:0',
         ], [
             'tgl_kemas.required'        => 'Tanggal kemas wajib diisi.',
             'operator_nama.required'    => 'Nama operator/leader wajib diisi.',

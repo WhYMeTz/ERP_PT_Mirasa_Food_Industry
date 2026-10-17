@@ -20,7 +20,21 @@
             </p>
         </div>
 
-        <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+            <a href="{{ route('produksi.packaging.catatan-operator') }}" 
+               class="btn btn-secondary" 
+               style="background: #ffffff; border: 1.5px solid #6366f1; color: #4f46e5; font-size: 0.85rem; font-weight: 700; padding: 0.55rem 0.95rem; box-shadow: 0 1px 2px rgba(0,0,0,0.03); display: inline-flex; align-items: center; gap: 0.45rem; transition: all 0.15s ease-in-out;"
+               onmouseover="this.style.background='#eef2ff'" 
+               onmouseout="this.style.background='#ffffff'" 
+               title="Buka daftar tiket catatan laporan pengemasan dari HP operator lapangan">
+                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
+                <span>Catatan Operator</span>
+                @if(!empty($unprocessedCount) && $unprocessedCount > 0)
+                    <span style="background: #ef4444; color: #ffffff; font-size: 0.675rem; font-weight: 800; padding: 1px 6px; border-radius: 999px;">
+                        {{ $unprocessedCount }} baru
+                    </span>
+                @endif
+            </a>
+
             <a href="{{ route('produksi.packaging.rekap') }}" 
                class="btn btn-secondary" 
                style="background: #ffffff; border: 1.5px solid #0284c7; color: #0284c7; font-size: 0.85rem; font-weight: 700; padding: 0.55rem 0.95rem; box-shadow: 0 1px 2px rgba(0,0,0,0.03); display: inline-flex; align-items: center; gap: 0.35rem; transition: all 0.15s ease-in-out;"

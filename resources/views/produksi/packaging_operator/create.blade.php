@@ -7,13 +7,15 @@
     @csrf
 
     {{-- JUDUL HALAMAN FORM --}}
-    <div style="margin-bottom: 1.25rem;">
-        <h1 style="font-size: 1.2rem; font-weight: 800; color: #0f172a; margin: 0; display: flex; align-items: center; gap: 8px;">
-            <span>📦</span>
-            <span>Laporan Pengemasan Lapangan</span>
-        </h1>
-        <p style="font-size: 0.8rem; color: #64748b; margin: 0.25rem 0 0 0;">
-            Pengganti Google Form &bull; Langsung tersambung ke Admin Produksi Office
+    <div class="pkg-page-header">
+        <div class="pkg-page-title-row">
+            <h1 class="pkg-page-title">
+                <span class="pkg-page-title-icon">📦</span>
+                <span>Laporan Pengemasan</span>
+            </h1>
+        </div>
+        <p class="pkg-page-subtitle">
+            Pencatatan real-time operator lapangan &bull; Langsung sinkron ke Admin Office
         </p>
     </div>
 
@@ -26,13 +28,13 @@
 
         {{-- Tanggal Kemas --}}
         <div class="pkg-form-group">
-            <label class="pkg-label" for="tgl_kemas">Tanggal Pelaksanaan <span style="color: #ef4444;">*</span></label>
+            <label class="pkg-label" for="tgl_kemas">Tanggal Pelaksanaan <span class="pkg-label-req">*</span></label>
             <input type="date" id="tgl_kemas" name="tgl_kemas" class="pkg-input" value="{{ old('tgl_kemas', date('Y-m-d')) }}" required>
         </div>
 
         {{-- Shift Pilihan Tombol (Shift A & Shift B) --}}
         <div class="pkg-form-group">
-            <label class="pkg-label">Pilih Shift Kerja <span style="color: #ef4444;">*</span></label>
+            <label class="pkg-label">Pilih Shift Kerja <span class="pkg-label-req">*</span></label>
             <input type="hidden" name="shift" id="inputShift" value="{{ old('shift', 'A') }}">
             <div class="pkg-shift-grid">
                 <button type="button" class="pkg-shift-btn {{ old('shift', 'A') == 'A' ? 'active' : '' }}" data-shift="A">
@@ -46,7 +48,7 @@
 
         {{-- Nama Leader / Operator --}}
         <div class="pkg-form-group">
-            <label class="pkg-label" for="karyawan_id">Nama Leader / Operator Kemas <span style="color: #ef4444;">*</span></label>
+            <label class="pkg-label" for="karyawan_id">Nama Leader / Operator Kemas <span class="pkg-label-req">*</span></label>
             <select id="karyawan_id" name="karyawan_id" class="pkg-select">
                 <option value="">-- Pilih dari Daftar Karyawan --</option>
                 @foreach ($karyawanList as $k)
@@ -59,7 +61,7 @@
         </div>
 
         {{-- Personil & Mesin --}}
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+        <div class="pkg-grid-2">
             <div class="pkg-form-group">
                 <label class="pkg-label" for="jumlah_personil">Jumlah Personil (Org)</label>
                 <input type="number" id="jumlah_personil" name="jumlah_personil" class="pkg-input" min="1" value="{{ old('jumlah_personil', 5) }}" required>
@@ -115,14 +117,14 @@
         <div class="pkg-form-group">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
                 <label class="pkg-label" for="wip_qty_kg" style="margin-bottom: 0;">
-                    Jumlah Keripik Curah (WIP) <span style="color: #ef4444;">*</span>
+                    Jumlah Keripik Curah (WIP) <span class="pkg-label-req">*</span>
                 </label>
-                <span style="font-size: 0.725rem; color: #64748b; font-weight: 600;">Satuan Ambil Curah</span>
+                <span style="font-size: 0.725rem; color: var(--pkg-text-muted); font-weight: 600;">Satuan Ambil Curah</span>
             </div>
 
             {{-- Segmented Toggle Satuan WIP (Kg / Karton) --}}
             <input type="hidden" name="wip_satuan" id="inputWipSatuan" value="{{ old('wip_satuan', 'KG') }}">
-            <div class="pkg-wip-satuan-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.5rem;">
+            <div class="pkg-wip-satuan-grid">
                 <button type="button" class="pkg-wip-satuan-btn {{ old('wip_satuan', 'KG') == 'KG' ? 'active' : '' }}" data-satuan="KG">
                     ⚖️ Kilogram (Kg)
                 </button>
@@ -131,14 +133,14 @@
                 </button>
             </div>
 
-            <div style="position: relative;">
+            <div class="pkg-input-suffix-wrapper">
                 <input type="number" step="any" min="0.01" id="wip_qty_kg" name="wip_qty_kg" class="pkg-input" value="{{ old('wip_qty_kg', 100) }}" required style="padding-right: 75px; font-weight: 700;">
-                <span id="wipSatuanSuffix" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-weight: 800; color: #059669; font-size: 0.825rem; font-family: ui-monospace, monospace;">
+                <span id="wipSatuanSuffix" class="pkg-input-suffix">
                     {{ old('wip_satuan', 'KG') == 'KARTON' ? 'KARTON' : 'KG' }}
                 </span>
             </div>
-            <div style="font-size: 0.725rem; color: #64748b; margin-top: 4px;">
-                <span>Pilih satuan: bisa timbangan Kg atau hitungan Dus / Karton penampungan.</span>
+            <div class="pkg-hint-text">
+                Pilih satuan: bisa timbangan Kg atau hitungan Dus / Karton penampungan.
             </div>
         </div>
     </div>
@@ -152,7 +154,7 @@
 
         {{-- Pilihan Barang Jadi --}}
         <div class="pkg-form-group">
-            <label class="pkg-label" for="barang_jadi_id">Nama Barang Jadi yang Dikemas <span style="color: #ef4444;">*</span></label>
+            <label class="pkg-label" for="barang_jadi_id">Nama Barang Jadi yang Dikemas <span class="pkg-label-req">*</span></label>
             <select id="barang_jadi_id" name="barang_jadi_id" class="pkg-select" required>
                 <option value="">-- Pilih Produk Jadi --</option>
                 @foreach ($barangJadiList as $b)
@@ -165,12 +167,12 @@
 
         {{-- Jumlah Hasil Jadi & Pilihan Satuan --}}
         <div class="pkg-form-group">
-            <label class="pkg-label" for="hasil_karton_qty">Jumlah Hasil Jadi Utama <span style="color: #ef4444;">*</span></label>
-            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 0.5rem;">
+            <label class="pkg-label" for="hasil_karton_qty">Jumlah Hasil Jadi Utama <span class="pkg-label-req">*</span></label>
+            <div class="pkg-grid-main-satuan">
                 <input type="number" step="any" min="0.0001" id="hasil_karton_qty" name="hasil_karton_qty" class="pkg-input" placeholder="Misal: 50" value="{{ old('hasil_karton_qty') }}" required>
                 <input type="hidden" name="satuan_hasil" id="inputSatuanHasil" value="{{ old('satuan_hasil', 'KARTON') }}">
-                <div style="display: flex; align-items: center; justify-content: center; background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: 8px; font-weight: 800; color: #1d4ed8; font-size: 0.85rem;" id="satuanDisplayLabel">
-                    KARTON
+                <div class="pkg-satuan-display-badge" id="satuanDisplayLabel">
+                    {{ old('satuan_hasil', 'KARTON') }}
                 </div>
             </div>
 
@@ -185,9 +187,9 @@
         {{-- Sisa Pack / Eceran (Opsional) --}}
         <div class="pkg-form-group">
             <label class="pkg-label" for="hasil_pack_qty">Sisa Eceran / Tambahan Pack (Jika Ada)</label>
-            <div style="position: relative;">
-                <input type="number" step="any" min="0" id="hasil_pack_qty" name="hasil_pack_qty" class="pkg-input" placeholder="0 jika pas kardus" value="{{ old('hasil_pack_qty', 0) }}" style="padding-right: 50px;">
-                <span style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-weight: 700; color: #64748b; font-size: 0.85rem;">Pack</span>
+            <div class="pkg-input-suffix-wrapper">
+                <input type="number" step="any" min="0" id="hasil_pack_qty" name="hasil_pack_qty" class="pkg-input" placeholder="0 jika pas kardus" value="{{ old('hasil_pack_qty', 0) }}" style="padding-right: 55px;">
+                <span class="pkg-input-suffix-muted">Pack</span>
             </div>
         </div>
     </div>
@@ -215,9 +217,9 @@
         {{-- Qty Bumbu Kg --}}
         <div class="pkg-form-group">
             <label class="pkg-label" for="bumbu_qty_kg">Berat Bumbu yang Terpakai (Kg)</label>
-            <div style="position: relative;">
-                <input type="number" step="any" min="0" id="bumbu_qty_kg" name="bumbu_qty_kg" class="pkg-input" placeholder="Misal: 12.5" value="{{ old('bumbu_qty_kg', 0) }}" style="padding-right: 45px;">
-                <span style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-weight: 700; color: #64748b; font-size: 0.85rem;">Kg</span>
+            <div class="pkg-input-suffix-wrapper">
+                <input type="number" step="any" min="0" id="bumbu_qty_kg" name="bumbu_qty_kg" class="pkg-input" placeholder="Misal: 12.5" value="{{ old('bumbu_qty_kg', 0) }}" style="padding-right: 48px;">
+                <span class="pkg-input-suffix-muted">Kg</span>
             </div>
         </div>
     </div>
@@ -230,10 +232,12 @@
         </h2>
 
         {{-- A. Plastik Roll / Pouch --}}
-        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.875rem; margin-bottom: 0.875rem;">
-            <span style="font-size: 0.8rem; font-weight: 800; color: #1e293b; display: block; margin-bottom: 0.5rem;">
-                A. Plastik Kemasan Utama (Roll / Pouch)
-            </span>
+        <div class="pkg-sub-card">
+            <div class="pkg-sub-card-header">
+                <span class="pkg-sub-card-title">
+                    A. Plastik Kemasan Utama (Roll / Pouch)
+                </span>
+            </div>
             <div class="pkg-form-group">
                 <select id="plastik_barang_id" name="plastik_barang_id" class="pkg-select">
                     <option value="">-- Pilih Plastik Kemasan --</option>
@@ -244,23 +248,25 @@
                     @endforeach
                 </select>
             </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem;">
+            <div class="pkg-grid-2">
                 <div>
                     <label class="pkg-label" for="plastik_qty">Jml Terpakai (Roll/Kg)</label>
                     <input type="number" step="any" min="0" id="plastik_qty" name="plastik_qty" class="pkg-input" value="{{ old('plastik_qty', 0) }}">
                 </div>
                 <div>
-                    <label class="pkg-label" for="plastik_rusak_pcs" style="color: #dc2626;">Plastik Rusak (Pcs)</label>
-                    <input type="number" step="any" min="0" id="plastik_rusak_pcs" name="plastik_rusak_pcs" class="pkg-input" placeholder="Afkir" value="{{ old('plastik_rusak_pcs', 0) }}" style="border-color: #fca5a5;">
+                    <label class="pkg-label pkg-label-req" for="plastik_rusak_pcs">Plastik Rusak (Pcs)</label>
+                    <input type="number" step="any" min="0" id="plastik_rusak_pcs" name="plastik_rusak_pcs" class="pkg-input pkg-input-danger" placeholder="Afkir" value="{{ old('plastik_rusak_pcs', 0) }}">
                 </div>
             </div>
         </div>
 
         {{-- B. Karton Box Dus --}}
-        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.875rem; margin-bottom: 0.875rem;">
-            <span style="font-size: 0.8rem; font-weight: 800; color: #1e293b; display: block; margin-bottom: 0.5rem;">
-                B. Karton Box (Dus Luar)
-            </span>
+        <div class="pkg-sub-card">
+            <div class="pkg-sub-card-header">
+                <span class="pkg-sub-card-title">
+                    B. Karton Box (Dus Luar)
+                </span>
+            </div>
             <div class="pkg-form-group">
                 <select id="karton_barang_id" name="karton_barang_id" class="pkg-select">
                     <option value="">-- Pilih Dus Karton --</option>
@@ -271,26 +277,26 @@
                     @endforeach
                 </select>
             </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem;">
+            <div class="pkg-grid-2">
                 <div>
                     <label class="pkg-label" for="karton_qty">Jml Dus (Lembar)</label>
                     <input type="number" step="any" min="0" id="karton_qty" name="karton_qty" class="pkg-input" value="{{ old('karton_qty', 0) }}">
                 </div>
                 <div>
-                    <label class="pkg-label" for="karton_rusak_lembar" style="color: #dc2626;">Dus Rusak (Lembar)</label>
-                    <input type="number" step="any" min="0" id="karton_rusak_lembar" name="karton_rusak_lembar" class="pkg-input" placeholder="Afkir" value="{{ old('karton_rusak_lembar', 0) }}" style="border-color: #fca5a5;">
+                    <label class="pkg-label pkg-label-req" for="karton_rusak_lembar">Dus Rusak (Lembar)</label>
+                    <input type="number" step="any" min="0" id="karton_rusak_lembar" name="karton_rusak_lembar" class="pkg-input pkg-input-danger" placeholder="Afkir" value="{{ old('karton_rusak_lembar', 0) }}">
                 </div>
             </div>
         </div>
 
         {{-- C. Lakban (Selotip / Tape Dus) --}}
-        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.875rem; margin-bottom: 0.875rem;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                <span style="font-size: 0.8rem; font-weight: 800; color: #1e293b;">
+        <div class="pkg-sub-card">
+            <div class="pkg-sub-card-header">
+                <span class="pkg-sub-card-title">
                     C. Lakban (Selotip / Tape Dus)
                 </span>
-                <span id="badgeLakbanTotal" style="font-size: 0.725rem; font-weight: 700; background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; padding: 2px 6px; border-radius: 4px;">
-                    Total: <span id="lbl_lakban_total">0</span> g (<span id="lbl_lakban_rp">Rp 0</span>)
+                <span id="badgeLakbanTotal" class="pkg-badge-ruby">
+                    Total: <span id="lbl_lakban_total">0</span> Gram
                 </span>
             </div>
             <div class="pkg-form-group">
@@ -305,7 +311,7 @@
                     @endforeach
                 </select>
             </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem;">
+            <div class="pkg-grid-2">
                 <div class="pkg-form-group">
                     <label class="pkg-label" for="lakban_atas_gr">Lakban Atas (Gram)</label>
                     <input type="number" step="any" min="0" id="lakban_atas_gr" name="lakban_atas_gr" class="pkg-input" placeholder="Misal: 1250" value="{{ old('lakban_atas_gr', 0) }}">
@@ -318,37 +324,61 @@
             <input type="hidden" id="lakban_qty" name="lakban_qty" value="{{ old('lakban_qty', 0) }}">
         </div>
 
-        {{-- D. Kemasan Tambahan (Plastik Bal / Tali / Label) --}}
-        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.875rem; margin-bottom: 0.875rem;">
-            <span style="font-size: 0.8rem; font-weight: 800; color: #1e293b; display: block; margin-bottom: 0.5rem;">
-                D. Kemasan Tambahan (Plastik Bal / Rafia / Label)
-            </span>
+        {{-- D. Plastik / Kertas Expired (Label Batch Kadaluarsa) --}}
+        <div class="pkg-sub-card">
+            <div class="pkg-sub-card-header">
+                <span class="pkg-sub-card-title">
+                    D. Plastik / Kertas Expired (Label Batch Kadaluarsa)
+                </span>
+            </div>
             <div class="pkg-form-group">
-                <select id="kemasan_lain_barang_id" name="kemasan_lain_barang_id" class="pkg-select">
-                    <option value="">-- Pilih Kemasan Tambahan (Opsional) --</option>
-                    @foreach ($kemasanLainList as $kml)
-                        <option value="{{ $kml->barang_id }}" {{ old('kemasan_lain_barang_id') == $kml->barang_id ? 'selected' : '' }}>
-                            {{ $kml->barang_nm }} ({{ $kml->satuanDasar?->satuan_nm ?? 'PCS' }})
+                <select id="expired_barang_id" name="expired_barang_id" class="pkg-select">
+                    <option value="">-- Pilih Kertas / Plastik Expired --</option>
+                    @foreach ($expiredList as $exp)
+                        <option value="{{ $exp->barang_id }}" {{ (old('expired_barang_id') == $exp->barang_id || (empty(old('expired_barang_id')) && $loop->first)) ? 'selected' : '' }}>
+                            {{ $exp->barang_nm }} ({{ $exp->satuanDasar?->satuan_nm ?? 'LEMBAR' }})
                         </option>
                     @endforeach
                 </select>
             </div>
             <div>
-                <label class="pkg-label" for="kemasan_lain_qty">Jumlah Pemakaian (Pcs / Bal)</label>
-                <input type="number" step="any" min="0" id="kemasan_lain_qty" name="kemasan_lain_qty" class="pkg-input" placeholder="0" value="{{ old('kemasan_lain_qty', 0) }}">
+                <label class="pkg-label" for="expired_qty">Jumlah Pemakaian (Lembar / Pcs)</label>
+                <div class="pkg-input-suffix-wrapper">
+                    <input type="number" step="any" min="0" id="expired_qty" name="expired_qty" class="pkg-input" placeholder="0" value="{{ old('expired_qty', 0) }}">
+                    <span class="pkg-input-suffix-muted">Lbr/Pcs</span>
+                </div>
             </div>
         </div>
 
+        {{-- E. Kemasan Tambahan (Dinamis Multi-Input: Plastik Bal / Rafia / Klip / Stiker) --}}
+        <div class="pkg-sub-card">
+            <div class="pkg-sub-card-header">
+                <span class="pkg-sub-card-title">
+                    E. Kemasan Tambahan (Plastik Bal / Rafia / Stiker)
+                </span>
+            </div>
+            
+            {{-- Wadah Baris Dinamis --}}
+            <div id="kemasanTambahanList" class="pkg-dynamic-list">
+                {{-- Injected dynamically by JS --}}
+            </div>
+
+            <button type="button" class="pkg-btn-add-item" onclick="addKemasanTambahanRow()">
+                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                <span>+ Tambah Kemasan Tambahan</span>
+            </button>
+        </div>
+
         {{-- Catatan Lapangan --}}
-        <div class="pkg-form-group" style="margin-top: 0.75rem;">
+        <div class="pkg-form-group" style="margin-top: 0.85rem;">
             <label class="pkg-label" for="catatan">Catatan / Kendala Lapangan (Opsional)</label>
             <textarea id="catatan" name="catatan" class="pkg-input" rows="2" style="height: auto; font-size: 0.85rem;" placeholder="Misal: Mesin sempat macet 15 menit, plastik sobek batch awal...">{{ old('catatan') }}</textarea>
         </div>
     </div>
 
-    {{-- TOMBOL SIMPAN DI PALING BAWAH FORM (TIDAK NGAMBANG) --}}
+    {{-- TOMBOL SIMPAN DI PALING BAWAH FORM --}}
     <div class="pkg-submit-wrapper">
-        <button type="submit" class="pkg-btn-submit" onclick="return confirm('Kirimkan laporan pengemasan ini ke Admin Office?');">
+        <button type="submit" class="pkg-btn-submit">
             <span>🚀</span>
             <span>Kirim Laporan ke Office</span>
         </button>
@@ -357,5 +387,24 @@
 @endsection
 
 @push('scripts')
+    <script>
+        window.kemasanLainOptions = [
+            @foreach ($kemasanLainList as $kml)
+                {
+                    barang_id: {{ $kml->barang_id }},
+                    barang_nm: @json($kml->barang_nm),
+                    satuan_nm: @json($kml->satuanDasar?->satuan_nm ?? 'PCS')
+                },
+            @endforeach
+        ];
+
+        document.addEventListener('DOMContentLoaded', function() {
+            @if(old('kemasan_tambahan') && is_array(old('kemasan_tambahan')))
+                @foreach(old('kemasan_tambahan') as $item)
+                    addKemasanTambahanRow('{{ $item['barang_id'] ?? '' }}', '{{ $item['qty'] ?? '' }}');
+                @endforeach
+            @endif
+        });
+    </script>
     <script src="{{ asset('js/produksi/packaging_operator/packaging-operator.js') }}"></script>
 @endpush

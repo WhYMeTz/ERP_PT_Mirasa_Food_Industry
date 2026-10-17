@@ -14,11 +14,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const upahTkInput = document.getElementById('total_biaya_tenaga_kerja');
     const biayaLainInput = document.getElementById('total_biaya_lain');
 
-    // Auto load jika barang sudah terpilih (misal form redirect back)
-    if (barangSelect && barangSelect.value) {
-        fetchBomPreview();
-    }
-
     const packTglInput = document.getElementById('pack_tgl');
     packTglInput?.addEventListener('change', function () {
         const prodSelect = document.getElementById('produksi_id');
@@ -43,14 +38,16 @@ document.addEventListener('DOMContentLoaded', function () {
     // Event listener pemilihan produk jadi
     barangSelect?.addEventListener('change', function () {
         updateBatchNumber();
-        if (hasilKartonInput && parseFloat(hasilKartonInput.value) > 0) {
+        const isOperatorLinked = !!document.getElementById('laporan_operator_id')?.value;
+        if (!isOperatorLinked && hasilKartonInput && parseFloat(hasilKartonInput.value) > 0) {
             fetchBomPreview();
         }
     });
 
     hasilKartonInput?.addEventListener('input', function () {
         recalculateTotals();
-        if (barangSelect && barangSelect.value) {
+        const isOperatorLinked = !!document.getElementById('laporan_operator_id')?.value;
+        if (!isOperatorLinked && barangSelect && barangSelect.value) {
             debounce(fetchBomPreview, 500)();
         }
     });
@@ -62,21 +59,32 @@ document.addEventListener('DOMContentLoaded', function () {
     // Format nomor batch default berupa tanggal
     updateBatchNumber();
 
-    // Auto-sync jika produksi sudah terpilih (misal form redirect back atau reload)
-    const prodSelect = document.getElementById('produksi_id');
-    if (prodSelect && prodSelect.value) {
-        onProduksiSelect(prodSelect);
-    }
-
-    // Hitung kalkulasi awal saat halaman dimuat
-    recalculateTotals();
-
     // Inisialisasi Timbangan Lakban
     const lakbanAtasIn = document.getElementById('lakban_atas_gr');
     const lakbanBawahIn = document.getElementById('lakban_bawah_gr');
     lakbanAtasIn?.addEventListener('input', onLakbanInputsChanged);
     lakbanBawahIn?.addEventListener('input', onLakbanInputsChanged);
     onLakbanInputsChanged();
+
+    // Auto prefill jika datang dari link "Proses Jadi HPP FG" di web catatan operator
+    if (window.preloadedOperatorLaporan) {
+        cachedOperatorLaporanList = [window.preloadedOperatorLaporan];
+        applyOperatorLaporan(window.preloadedOperatorLaporan);
+    } else {
+        // Auto-sync jika produksi sudah terpilih (misal form redirect back atau reload)
+        const prodSelect = document.getElementById('produksi_id');
+        if (prodSelect && prodSelect.value) {
+            onProduksiSelect(prodSelect);
+        }
+
+        // Auto load jika barang sudah terpilih (misal form redirect back)
+        if (barangSelect && barangSelect.value) {
+            fetchBomPreview();
+        }
+
+        // Hitung kalkulasi awal saat halaman dimuat
+        recalculateTotals();
+    }
 });
 
 /**
@@ -215,8 +223,9 @@ function fetchBomPreview() {
                 }
             }
 
-            // Render Tabel Komponen Bahan
-            if (tbody) {
+            // Render Tabel Komponen Bahan (Hanya jika TIDAK sedang terhubung dengan inputan aktual Operator HP)
+            const isOperatorLinked = !!document.getElementById('laporan_operator_id')?.value;
+            if (tbody && !isOperatorLinked) {
                 tbody.innerHTML = '';
                 itemIndexCounter = 0;
 
@@ -227,9 +236,8 @@ function fetchBomPreview() {
                 } else {
                     if (emptyRow) tbody.appendChild(emptyRow);
                 }
+                recalculateTotals();
             }
-
-            recalculateTotals();
         })
         .catch(err => {
             console.error('BOM fetch error:', err);
@@ -441,9 +449,7 @@ function addNewMaterialRow() {
     });
 }
 
-function addCustomMaterialRow() {
-    addNewMaterialRow();
-}
+
 
 /**
  * Tambah baris material ke tabel (Tepat 6 Kolom sesuai Thead)
@@ -879,8 +885,18 @@ function renderPullOperatorTable(list) {
     });
 }
 
-function applyOperatorLaporan(idx) {
-    const item = cachedOperatorLaporanList[idx];
+function findMasterKemasan(barangId) {
+    if (!barangId) return null;
+    return (window.masterKemasanList || []).find(m => parseInt(m.barang_id) === parseInt(barangId)) || null;
+}
+
+function applyOperatorLaporan(itemOrIdx) {
+    let item = null;
+    if (typeof itemOrIdx === 'object' && itemOrIdx !== null) {
+        item = itemOrIdx;
+    } else if (typeof itemOrIdx === 'number' || typeof itemOrIdx === 'string') {
+        item = cachedOperatorLaporanList[itemOrIdx];
+    }
     if (!item) return;
 
     // 1. Tautkan ID Laporan
@@ -889,18 +905,35 @@ function applyOperatorLaporan(idx) {
 
     // 2. Set Tanggal & Produk Jadi
     const packTgl = document.getElementById('pack_tgl');
-    if (packTgl && item.tgl_kemas) packTgl.value = item.tgl_kemas;
+    if (packTgl && item.tgl_kemas) {
+        packTgl.value = typeof item.tgl_kemas === 'string' ? item.tgl_kemas.split('T')[0] : item.tgl_kemas;
+    }
 
     const barangSelect = document.getElementById('barang_jadi_id');
     if (barangSelect && item.barang_jadi_id) {
         barangSelect.value = item.barang_jadi_id;
     }
 
-    // 3. Set Jumlah Hasil Kemas
+    // 3. Set Jumlah Hasil Kemas & Target
     const hasilInput = document.getElementById('hasil_karton_qty');
     const targetInput = document.getElementById('target_karton_qty');
     if (hasilInput) hasilInput.value = item.hasil_karton_qty;
     if (targetInput) targetInput.value = item.hasil_karton_qty;
+
+    // Set isi per karton jika ada
+    const isiPerKartonInput = document.getElementById('isi_per_karton_pcs');
+    if (isiPerKartonInput && item.hasil_pack_qty && item.hasil_karton_qty) {
+        const calculatedIsi = Math.round(parseFloat(item.hasil_pack_qty) / parseFloat(item.hasil_karton_qty));
+        if (calculatedIsi > 0) {
+            isiPerKartonInput.value = calculatedIsi;
+        }
+    }
+
+    // Nomor Batch dari WIP
+    const batchInput = document.getElementById('batch_no');
+    if (batchInput && item.wip_batch_no) {
+        batchInput.value = item.wip_batch_no;
+    }
 
     // 4. Set Produksi WIP jika ada
     const prodSelect = document.getElementById('produksi_id');
@@ -915,19 +948,289 @@ function applyOperatorLaporan(idx) {
     const subtitle = document.getElementById('operatorSyncSubtitle');
     if (badge && title && subtitle) {
         title.textContent = `Data Terhubung dengan Laporan Operator: ${item.laporan_no}`;
-        subtitle.textContent = `Leader: ${item.operator_nama} &bull; Shift ${item.shift} &bull; Curah: ${formatNumber(item.wip_qty_kg)} ${item.wip_satuan || 'Kg'} &bull; Output: ${formatRupiah(item.hasil_karton_qty)} ${item.satuan_hasil || 'Karton'}`;
+        subtitle.innerHTML = `Leader: <strong>${item.operator_nama || '-'}</strong> &bull; Shift <strong>${item.shift}</strong> &bull; Curah: <strong>${formatNumber(item.wip_qty_kg)} ${item.wip_satuan || 'Kg'}</strong> &bull; Output: <strong>${formatNumber(item.hasil_karton_qty)} ${item.satuan_hasil || 'Karton'}</strong>`;
         badge.style.display = 'flex';
     }
 
-    // 6. Tarik resep BOM dan timpa dengan kuantitas aktual dari laporan operator
+    // Tambah info ke catatan form jika ada afkir
+    const catatanInput = document.getElementById('catatan_txt');
+    if (catatanInput) {
+        const afkirParts = [];
+        if (parseFloat(item.plastik_rusak_pcs) > 0) afkirParts.push(`Plastik afkir: ${item.plastik_rusak_pcs} pcs`);
+        if (parseFloat(item.karton_rusak_lembar) > 0) afkirParts.push(`Dus afkir: ${item.karton_rusak_lembar} lbr`);
+        
+        let extraNote = `Ditarik dari Laporan Operator ${item.laporan_no} (Shift ${item.shift}, Operator: ${item.operator_nama || '-'}).`;
+        if (afkirParts.length > 0) {
+            extraNote += ` ${afkirParts.join(', ')}.`;
+        }
+        if (item.catatan) {
+            extraNote += ` Catatan: "${item.catatan}"`;
+        }
+        if (!catatanInput.value || catatanInput.value.includes('Ditarik dari Laporan Operator')) {
+            catatanInput.value = extraNote;
+        }
+    }
+
+    // 6. Sinkronkan Timbangan Lakban Atas & Bawah
+    const lakbanAtasInput = document.getElementById('lakban_atas_gr');
+    const lakbanBawahInput = document.getElementById('lakban_bawah_gr');
+    let atasGr = parseFloat(item.lakban_atas_gr) || 0;
+    let bawahGr = parseFloat(item.lakban_bawah_gr) || 0;
+    if (atasGr <= 0 && bawahGr <= 0 && parseFloat(item.lakban_qty) > 0) {
+        atasGr = Math.round((parseFloat(item.lakban_qty) / 2) * 10) / 10;
+        bawahGr = Math.round((parseFloat(item.lakban_qty) / 2) * 10) / 10;
+    }
+    if (lakbanAtasInput) lakbanAtasInput.value = atasGr;
+    if (lakbanBawahInput) lakbanBawahInput.value = bawahGr;
+    onLakbanInputsChanged();
+
+    // 7. Bangun baris-baris material LANGSUNG DARI DATA INPUT OPERATOR
+    buildMaterialRowsFromOperator(item);
+
+    // 8. Tetap ambil ID BOM secara pasif tanpa mereset tabel material
     fetchBomPreview();
 
-    // Berikan jeda sejenak untuk membiarkan BOM termuat lalu timpa kuantitas aktual
-    setTimeout(() => {
-        applyMaterialQuantitiesFromLaporan(item);
-    }, 600);
-
     closePullOperatorModal();
+}
+
+/**
+ * Bangun baris-baris material HPP FG tepat sesuai inputan aktual operator packaging di HP
+ */
+function buildMaterialRowsFromOperator(item) {
+    const tbody = document.getElementById('materialItemsTbody');
+    if (!tbody) return;
+
+    tbody.innerHTML = '';
+    itemIndexCounter = 0;
+
+    // Helper untuk mengambil harga HPP WIP Curah
+    let hppWip = 0;
+    if (item.produksi && parseFloat(item.produksi.hpp_per_kg) > 0) {
+        hppWip = parseFloat(item.produksi.hpp_per_kg);
+    } else {
+        const prodSelect = document.getElementById('produksi_id');
+        if (prodSelect && prodSelect.selectedIndex > 0) {
+            const opt = prodSelect.options[prodSelect.selectedIndex];
+            hppWip = parseFloat(opt.getAttribute('data-hpp')) || 0;
+        }
+    }
+
+    // 1. Bahan Keripik Curah (WIP)
+    if (item.wip_barang_id || (parseFloat(item.wip_qty_kg) > 0)) {
+        const wipMaster = findMasterKemasan(item.wip_barang_id);
+        const wipObj = item.wip_barang || wipMaster;
+        const bId = item.wip_barang_id || wipObj?.barang_id || 45;
+        const bNm = wipObj?.barang_nm || 'KS BERKO (Keripik Curah WIP)';
+        const bCd = wipObj?.barang_cd || 'WIP-BRK';
+        const satuan = item.wip_satuan || wipObj?.satuan_dasar?.satuan_cd || wipMaster?.satuan_cd || 'KG';
+        const qtyWip = parseFloat(item.wip_qty_kg) || 0;
+        const finalHppWip = hppWip > 0 ? hppWip : (parseFloat(wipMaster?.harga_standar) || 0);
+
+        addMaterialRow({
+            kategori_bahan: 'WIP',
+            barang_id: bId,
+            barang_nm: bNm,
+            barang_cd: bCd,
+            satuan_cd: satuan,
+            qty_standar: qtyWip,
+            qty_aktual: qtyWip,
+            harga_satuan: finalHppWip,
+            subtotal_nilai: qtyWip * finalHppWip,
+            batch_no: item.wip_batch_no || '',
+            is_wip: true,
+            sync_source: item.produksi?.produksi_no || 'Operator HP'
+        });
+    }
+
+    // 2. Bumbu Tabur (Seasoning)
+    if (item.bumbu_barang_id && parseFloat(item.bumbu_qty_kg) > 0) {
+        const bumbuMaster = findMasterKemasan(item.bumbu_barang_id);
+        const bumbuObj = item.bumbu_barang || bumbuMaster;
+        const qtyBumbu = parseFloat(item.bumbu_qty_kg);
+        const hargaBumbu = parseFloat(bumbuMaster?.harga_standar || bumbuObj?.harga_beli_standar || 0);
+
+        addMaterialRow({
+            kategori_bahan: 'BUMBU',
+            barang_id: item.bumbu_barang_id,
+            barang_nm: bumbuObj?.barang_nm || bumbuMaster?.barang_nm || 'Bumbu Tabur',
+            barang_cd: bumbuObj?.barang_cd || bumbuMaster?.barang_cd || 'BUMBU',
+            satuan_cd: bumbuObj?.satuan_dasar?.satuan_cd || bumbuMaster?.satuan_cd || 'KG',
+            qty_standar: qtyBumbu,
+            qty_aktual: qtyBumbu,
+            harga_satuan: hargaBumbu,
+            subtotal_nilai: qtyBumbu * hargaBumbu,
+            batch_no: '',
+            is_wip: false
+        });
+    }
+
+    // 3. Plastik Kemasan (Roll / Pouch)
+    if (item.plastik_barang_id && parseFloat(item.plastik_qty) > 0) {
+        const plastikMaster = findMasterKemasan(item.plastik_barang_id);
+        const plastikObj = item.plastik_barang || plastikMaster;
+        const qtyPlastik = parseFloat(item.plastik_qty);
+        const hargaPlastik = parseFloat(plastikMaster?.harga_standar || plastikObj?.harga_beli_standar || 0);
+
+        addMaterialRow({
+            kategori_bahan: 'KEMASAN',
+            barang_id: item.plastik_barang_id,
+            barang_nm: plastikObj?.barang_nm || plastikMaster?.barang_nm || 'Plastik Kemasan',
+            barang_cd: plastikObj?.barang_cd || plastikMaster?.barang_cd || 'PLASTIK',
+            satuan_cd: plastikObj?.satuan_dasar?.satuan_cd || plastikMaster?.satuan_cd || 'PCS',
+            qty_standar: qtyPlastik,
+            qty_aktual: qtyPlastik,
+            harga_satuan: hargaPlastik,
+            subtotal_nilai: qtyPlastik * hargaPlastik,
+            batch_no: '',
+            is_wip: false
+        });
+    }
+
+    // 4. Karton Dus (Box)
+    if (item.karton_barang_id && parseFloat(item.karton_qty) > 0) {
+        const kartonMaster = findMasterKemasan(item.karton_barang_id);
+        const kartonObj = item.karton_barang || kartonMaster;
+        const qtyKarton = parseFloat(item.karton_qty);
+        const hargaKarton = parseFloat(kartonMaster?.harga_standar || kartonObj?.harga_beli_standar || 0);
+
+        addMaterialRow({
+            kategori_bahan: 'KEMASAN',
+            barang_id: item.karton_barang_id,
+            barang_nm: kartonObj?.barang_nm || kartonMaster?.barang_nm || 'Karton Box (Dus)',
+            barang_cd: kartonObj?.barang_cd || kartonMaster?.barang_cd || 'KARTON',
+            satuan_cd: kartonObj?.satuan_dasar?.satuan_cd || kartonMaster?.satuan_cd || 'LEMBAR',
+            qty_standar: qtyKarton,
+            qty_aktual: qtyKarton,
+            harga_satuan: hargaKarton,
+            subtotal_nilai: qtyKarton * hargaKarton,
+            batch_no: '',
+            is_wip: false
+        });
+    }
+
+    // 5. Plastik / Kertas Expired (Kadaluarsa)
+    if (item.expired_barang_id && parseFloat(item.expired_qty) > 0) {
+        const expiredMaster = findMasterKemasan(item.expired_barang_id);
+        const expiredObj = item.expired_barang || expiredMaster;
+        const qtyExpired = parseFloat(item.expired_qty);
+        const hargaExpired = parseFloat(expiredMaster?.harga_standar || expiredObj?.harga_beli_standar || 0);
+
+        addMaterialRow({
+            kategori_bahan: 'KEMASAN',
+            barang_id: item.expired_barang_id,
+            barang_nm: expiredObj?.barang_nm || expiredMaster?.barang_nm || 'Label / Kertas Expired',
+            barang_cd: expiredObj?.barang_cd || expiredMaster?.barang_cd || 'EXP',
+            satuan_cd: expiredObj?.satuan_dasar?.satuan_cd || expiredMaster?.satuan_cd || 'LEMBAR',
+            qty_standar: qtyExpired,
+            qty_aktual: qtyExpired,
+            harga_satuan: hargaExpired,
+            subtotal_nilai: qtyExpired * hargaExpired,
+            batch_no: '',
+            is_wip: false
+        });
+    }
+
+    // 6. Lakban Timbangan (Atas & Bawah)
+    const lakbanAtas = parseFloat(item.lakban_atas_gr) || 0;
+    const lakbanBawah = parseFloat(item.lakban_bawah_gr) || 0;
+    let totalLakbanGr = Math.round((lakbanAtas + lakbanBawah) * 10) / 10;
+    if (totalLakbanGr <= 0 && parseFloat(item.lakban_qty) > 0) {
+        totalLakbanGr = parseFloat(item.lakban_qty);
+    }
+
+    if (totalLakbanGr > 0) {
+        // Cari master lakban
+        let lakbanMaster = findMasterKemasan(item.lakban_barang_id);
+        if (!lakbanMaster) {
+            lakbanMaster = (window.masterKemasanList || []).find(m => 
+                (m.barang_cd && m.barang_cd.includes('LKB')) || 
+                (m.barang_nm && m.barang_nm.toUpperCase().includes('LAKBAN'))
+            );
+        }
+        const lakbanObj = item.lakban_barang || lakbanMaster;
+        let tarifLakban = 35.10;
+        if (lakbanMaster && parseFloat(lakbanMaster.harga_standar) > 0) {
+            tarifLakban = parseFloat(lakbanMaster.harga_standar);
+        }
+
+        addMaterialRow({
+            kategori_bahan: 'LAKBAN',
+            barang_id: lakbanObj?.barang_id || lakbanMaster?.barang_id || '',
+            barang_nm: lakbanObj?.barang_nm || lakbanMaster?.barang_nm || 'Lakban Timbangan (Selotip)',
+            barang_cd: lakbanObj?.barang_cd || lakbanMaster?.barang_cd || 'LKB',
+            satuan_cd: 'GRAM',
+            qty_standar: totalLakbanGr,
+            qty_aktual: totalLakbanGr,
+            harga_satuan: tarifLakban,
+            subtotal_nilai: Math.round(totalLakbanGr * tarifLakban),
+            batch_no: '',
+            is_wip: false
+        });
+    }
+
+    // 7. Kemasan Tambahan (Multi Item - Support Bebas Berapa Saja Barang yang Diinput Operator)
+    let extraList = [];
+    if (item.formatted_kemasan_tambahan && Array.isArray(item.formatted_kemasan_tambahan)) {
+        extraList = item.formatted_kemasan_tambahan;
+    } else if (item.kemasan_tambahan_items) {
+        if (Array.isArray(item.kemasan_tambahan_items)) {
+            extraList = item.kemasan_tambahan_items;
+        } else if (typeof item.kemasan_tambahan_items === 'string') {
+            try {
+                let parsed = JSON.parse(item.kemasan_tambahan_items);
+                if (typeof parsed === 'string') parsed = JSON.parse(parsed);
+                if (Array.isArray(parsed)) extraList = parsed;
+            } catch (e) {
+                console.warn('Gagal parse kemasan_tambahan_items:', e);
+            }
+        }
+    }
+
+    if (extraList && extraList.length > 0) {
+        extraList.forEach(extra => {
+            const extraId = extra.barang_id || (extra.barang ? extra.barang.barang_id : null);
+            const extraQty = parseFloat(extra.qty) || 0;
+            if (extraId && extraQty > 0) {
+                const extraMaster = findMasterKemasan(extraId);
+                const extraHarga = parseFloat(extra.harga_standar || extraMaster?.harga_standar || 0);
+
+                addMaterialRow({
+                    kategori_bahan: 'KEMASAN',
+                    barang_id: extraId,
+                    barang_nm: extra.barang_nm || extraMaster?.barang_nm || 'Kemasan Tambahan',
+                    barang_cd: extra.barang_cd || extraMaster?.barang_cd || 'KEMASAN',
+                    satuan_cd: extra.satuan_nm || extraMaster?.satuan_cd || 'PCS',
+                    qty_standar: extraQty,
+                    qty_aktual: extraQty,
+                    harga_satuan: extraHarga,
+                    subtotal_nilai: extraQty * extraHarga,
+                    batch_no: '',
+                    is_wip: false
+                });
+            }
+        });
+    } else if (item.kemasan_lain_barang_id && parseFloat(item.kemasan_lain_qty) > 0) {
+        const lainMaster = findMasterKemasan(item.kemasan_lain_barang_id);
+        const lainObj = item.kemasanLainBarang || lainMaster;
+        const qtyLain = parseFloat(item.kemasan_lain_qty);
+        const hargaLain = parseFloat(lainMaster?.harga_standar || lainObj?.harga_beli_standar || 0);
+
+        addMaterialRow({
+            kategori_bahan: 'KEMASAN',
+            barang_id: item.kemasan_lain_barang_id,
+            barang_nm: lainObj?.barang_nm || lainMaster?.barang_nm || 'Kemasan Tambahan',
+            barang_cd: lainObj?.barang_cd || lainMaster?.barang_cd || 'KEMASAN',
+            satuan_cd: lainObj?.satuan_dasar?.satuan_cd || lainMaster?.satuan_cd || 'PCS',
+            qty_standar: qtyLain,
+            qty_aktual: qtyLain,
+            harga_satuan: hargaLain,
+            subtotal_nilai: qtyLain * hargaLain,
+            batch_no: '',
+            is_wip: false
+        });
+    }
+
+    recalculateTotals();
 }
 
 /**
@@ -984,72 +1287,12 @@ function onLakbanInputsChanged() {
     recalculateTotals();
 }
 
-function applyMaterialQuantitiesFromLaporan(item) {
-    // 1. Sinkronkan Timbangan Lakban Atas & Bawah dari Laporan Operator HP
-    const lakbanAtasInput = document.getElementById('lakban_atas_gr');
-    const lakbanBawahInput = document.getElementById('lakban_bawah_gr');
-
-    if (item.lakban_atas_gr !== undefined && parseFloat(item.lakban_atas_gr) > 0) {
-        if (lakbanAtasInput) lakbanAtasInput.value = parseFloat(item.lakban_atas_gr);
-    }
-    if (item.lakban_bawah_gr !== undefined && parseFloat(item.lakban_bawah_gr) > 0) {
-        if (lakbanBawahInput) lakbanBawahInput.value = parseFloat(item.lakban_bawah_gr);
-    }
-    if ((!item.lakban_atas_gr && !item.lakban_bawah_gr) && parseFloat(item.lakban_qty) > 0) {
-        const half = Math.round((parseFloat(item.lakban_qty) / 2) * 10) / 10;
-        if (lakbanAtasInput) lakbanAtasInput.value = half;
-        if (lakbanBawahInput) lakbanBawahInput.value = half;
-    }
-    onLakbanInputsChanged();
-
-    // 2. Timpa kuantitas aktual jika barang ditemukan di tabel
-    const rows = document.querySelectorAll('.material-row');
-    rows.forEach(row => {
-        const barangSelect = row.querySelector('.row-barang-select') || row.querySelector('input[name*="[barang_id]"]');
-        const qtyAktualInput = row.querySelector('.row-qty-input') || row.querySelector('.qty-aktual-input');
-        if (!barangSelect || !qtyAktualInput) return;
-
-        const bId = parseInt(barangSelect.value);
-
-        // Jika barang adalah Bumbu
-        if (item.bumbu_barang_id && bId === parseInt(item.bumbu_barang_id) && item.bumbu_qty_kg > 0) {
-            qtyAktualInput.value = item.bumbu_qty_kg;
-        }
-
-        // Jika barang adalah Plastik Utama
-        if (item.plastik_barang_id && bId === parseInt(item.plastik_barang_id) && item.plastik_qty > 0) {
-            qtyAktualInput.value = item.plastik_qty;
-        }
-
-        // Jika barang adalah Karton Dus
-        if (item.karton_barang_id && bId === parseInt(item.karton_barang_id) && item.karton_qty > 0) {
-            qtyAktualInput.value = item.karton_qty;
-        }
-
-        // Jika barang adalah WIP curah
-        if (item.wip_qty_kg > 0) {
-            const kategoriInput = row.querySelector('input[name*="[kategori_bahan]"]');
-            if (kategoriInput && kategoriInput.value === 'WIP') {
-                qtyAktualInput.value = item.wip_qty_kg;
-                const satuanSpan = row.querySelector('.row-satuan-label');
-                if (satuanSpan && item.wip_satuan) {
-                    satuanSpan.textContent = item.wip_satuan;
-                }
-            }
-        }
-
-        const rowIdParts = row.id.split('_');
-        if (rowIdParts.length > 1) {
-            recalculateRow(rowIdParts[1]);
-        }
-    });
-
-    recalculateTotals();
-}
-
 function clearOperatorSync() {
     const hiddenId = document.getElementById('laporan_operator_id');
     const badge = document.getElementById('operatorSyncBadge');
     if (hiddenId) hiddenId.value = '';
     if (badge) badge.style.display = 'none';
+
+    // Refresh formula BOM standar
+    fetchBomPreview();
 }

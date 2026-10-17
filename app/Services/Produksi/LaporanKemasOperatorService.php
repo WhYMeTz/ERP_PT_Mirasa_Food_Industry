@@ -2,6 +2,7 @@
 
 namespace App\Services\Produksi;
 
+use App\Models\MasterData\MstBarang;
 use App\Models\Produksi\DatLaporanKemasOperator;
 use App\Models\Produksi\DatProduksiDtl;
 use App\Models\User;
@@ -89,6 +90,34 @@ class LaporanKemasOperatorService
     }
 
     /**
+     * Hitung ringkasan metrik laporan operator lapangan
+     */
+    public function getMetrics(array $filters = []): array
+    {
+        $query = DatLaporanKemasOperator::where('deleted_st', false);
+
+        if (!empty($filters['tgl_kemas'])) {
+            $query->whereDate('tgl_kemas', $filters['tgl_kemas']);
+        }
+        if (!empty($filters['shift'])) {
+            $query->where('shift', $filters['shift']);
+        }
+        if (!empty($filters['barang_jadi_id'])) {
+            $query->where('barang_jadi_id', $filters['barang_jadi_id']);
+        }
+
+        $all = $query->get(['status_cd', 'hasil_karton_qty', 'wip_qty_kg']);
+
+        return [
+            'total_laporan'   => $all->count(),
+            'menunggu_office' => $all->where('status_cd', 'SUBMITTED')->count(),
+            'sudah_proses'    => $all->where('status_cd', 'PROCESSED')->count(),
+            'total_karton'    => (float) $all->sum('hasil_karton_qty'),
+            'total_curah_kg'  => (float) $all->sum('wip_qty_kg'),
+        ];
+    }
+
+    /**
      * Mengambil daftar laporan yang BELUM ditarik oleh Admin Office (Status: SUBMITTED)
      * Digunakan oleh form HPP FG (Packaging Office) untuk 1-click import.
      */
@@ -97,13 +126,14 @@ class LaporanKemasOperatorService
         return DatLaporanKemasOperator::with([
             'barangJadi.satuanDasar',
             'wipBarang.satuanDasar',
-            'produksi',
+            'produksi.details.barang.satuanDasar',
             'karyawan',
-            'bumbuBarang',
-            'plastikBarang',
-            'kartonBarang',
-            'lakbanBarang',
-            'kemasanLainBarang',
+            'bumbuBarang.satuanDasar',
+            'plastikBarang.satuanDasar',
+            'kartonBarang.satuanDasar',
+            'lakbanBarang.satuanDasar',
+            'expiredBarang.satuanDasar',
+            'kemasanLainBarang.satuanDasar',
         ])
         ->where('deleted_st', false)
         ->where('status_cd', 'SUBMITTED')
@@ -120,13 +150,14 @@ class LaporanKemasOperatorService
         return DatLaporanKemasOperator::with([
             'barangJadi.satuanDasar',
             'wipBarang.satuanDasar',
-            'produksi',
+            'produksi.details.barang.satuanDasar',
             'karyawan',
-            'bumbuBarang',
-            'plastikBarang',
-            'kartonBarang',
-            'lakbanBarang',
-            'kemasanLainBarang',
+            'bumbuBarang.satuanDasar',
+            'plastikBarang.satuanDasar',
+            'kartonBarang.satuanDasar',
+            'lakbanBarang.satuanDasar',
+            'expiredBarang.satuanDasar',
+            'kemasanLainBarang.satuanDasar',
             'packagingHdr',
         ])
         ->where('deleted_st', false)
@@ -168,6 +199,48 @@ class LaporanKemasOperatorService
                 }
             }
 
+            // Parse multi-kemasan tambahan jika ada
+            $kemasanTambahanList = [];
+            $firstKemasanLainId = !empty($payload['kemasan_lain_barang_id']) ? (int) $payload['kemasan_lain_barang_id'] : null;
+            $firstKemasanLainQty = (float) ($payload['kemasan_lain_qty'] ?? 0);
+
+            if (!empty($payload['kemasan_tambahan']) && is_array($payload['kemasan_tambahan'])) {
+                foreach ($payload['kemasan_tambahan'] as $item) {
+                    $bId = !empty($item['barang_id']) ? (int) $item['barang_id'] : null;
+                    $qty = (float) ($item['qty'] ?? 0);
+                    if ($bId && $qty > 0) {
+                        $barang = MstBarang::with('satuanDasar')->find($bId);
+                        $kemasanTambahanList[] = [
+                            'barang_id'     => $bId,
+                            'barang_cd'     => $barang?->barang_cd ?? '',
+                            'barang_nm'     => $barang?->barang_nm ?? '',
+                            'satuan_nm'     => $barang?->satuanDasar?->satuan_nm ?? 'PCS',
+                            'harga_standar' => (float) ($barang?->harga_beli_standar ?? 0),
+                            'qty'           => $qty,
+                            'catatan'       => !empty($item['catatan']) ? trim($item['catatan']) : '',
+                        ];
+                    }
+                }
+            }
+
+            if (!empty($kemasanTambahanList)) {
+                if (empty($firstKemasanLainId)) {
+                    $firstKemasanLainId = $kemasanTambahanList[0]['barang_id'];
+                    $firstKemasanLainQty = $kemasanTambahanList[0]['qty'];
+                }
+            } elseif ($firstKemasanLainId && $firstKemasanLainQty > 0) {
+                $barang = MstBarang::with('satuanDasar')->find($firstKemasanLainId);
+                $kemasanTambahanList[] = [
+                    'barang_id'     => $firstKemasanLainId,
+                    'barang_cd'     => $barang?->barang_cd ?? '',
+                    'barang_nm'     => $barang?->barang_nm ?? '',
+                    'satuan_nm'     => $barang?->satuanDasar?->satuan_nm ?? 'PCS',
+                    'harga_standar' => (float) ($barang?->harga_beli_standar ?? 0),
+                    'qty'           => $firstKemasanLainQty,
+                    'catatan'       => '',
+                ];
+            }
+
             $laporan = DatLaporanKemasOperator::create([
                 'laporan_no'             => $laporanNo,
                 'tgl_kemas'              => $tglKemas,
@@ -198,8 +271,11 @@ class LaporanKemasOperatorService
                 'lakban_bawah_gr'        => $lakbanBawahGr,
                 'lakban_barang_id'       => !empty($payload['lakban_barang_id']) ? $payload['lakban_barang_id'] : null,
                 'lakban_qty'             => $lakbanQty,
-                'kemasan_lain_barang_id' => !empty($payload['kemasan_lain_barang_id']) ? $payload['kemasan_lain_barang_id'] : null,
-                'kemasan_lain_qty'       => (float) ($payload['kemasan_lain_qty'] ?? 0),
+                'expired_barang_id'      => !empty($payload['expired_barang_id']) ? $payload['expired_barang_id'] : null,
+                'expired_qty'            => (float) ($payload['expired_qty'] ?? 0),
+                'kemasan_lain_barang_id' => $firstKemasanLainId,
+                'kemasan_lain_qty'       => $firstKemasanLainQty,
+                'kemasan_tambahan_items' => !empty($kemasanTambahanList) ? $kemasanTambahanList : null,
                 'catatan'                => !empty($payload['catatan']) ? trim($payload['catatan']) : null,
                 'status_cd'              => 'SUBMITTED',
                 'created_by'             => $user->name ?? 'OPERATOR',

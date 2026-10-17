@@ -349,6 +349,36 @@ class PackagingService
 
             $pakaiId = !empty($data['pakai_id']) ? (int) $data['pakai_id'] : null;
 
+            // Perhitungan Timbangan Lakban Atas & Bawah (Presisi Gramatur & Rupiah)
+            $lakbanAtasGr = (float) ($data['lakban_atas_gr'] ?? 0);
+            $lakbanBawahGr = (float) ($data['lakban_bawah_gr'] ?? 0);
+            $lakbanJumlahGr = (float) ($data['lakban_jumlah_gr'] ?? 0);
+            $lakbanNilai = (float) ($data['lakban_nilai'] ?? 0);
+
+            $lakbanDetailSub = 0;
+            $lakbanDetailQty = 0;
+            foreach ($processedDetails as $pd) {
+                $brg = MstBarang::find($pd['barang_id']);
+                $bNm = strtoupper($brg?->barang_nm ?? '');
+                if (str_contains($bNm, 'LAKBAN') || $pd['kategori_bahan'] === 'LAKBAN') {
+                    $lakbanDetailSub += (float) $pd['subtotal_nilai'];
+                    $lakbanDetailQty += (float) $pd['qty_aktual'];
+                }
+            }
+
+            if ($lakbanNilai <= 0) {
+                $lakbanNilai = $lakbanDetailSub;
+            }
+            if ($lakbanJumlahGr <= 0) {
+                if ($lakbanAtasGr > 0 || $lakbanBawahGr > 0) {
+                    $lakbanJumlahGr = $lakbanAtasGr + $lakbanBawahGr;
+                } else {
+                    $lakbanJumlahGr = ($lakbanDetailQty > 50 ? $lakbanDetailQty : $lakbanDetailQty * 100);
+                    $lakbanAtasGr = round($lakbanJumlahGr / 2, 1);
+                    $lakbanBawahGr = round($lakbanJumlahGr / 2, 1);
+                }
+            }
+
             // 2. Buat Header Dokumen Pengemasan
             $header = DatPackagingHdr::create([
                 'pack_no'                  => $packNo,
@@ -366,6 +396,10 @@ class PackagingService
                 'expired_tgl'              => $expiredTgl,
                 'total_biaya_wip'          => $totalWip,
                 'total_biaya_kemasan'      => $totalKemasan + $totalBumbu,
+                'lakban_atas_gr'           => $lakbanAtasGr,
+                'lakban_bawah_gr'          => $lakbanBawahGr,
+                'lakban_jumlah_gr'         => $lakbanJumlahGr,
+                'lakban_nilai'             => $lakbanNilai,
                 'total_biaya_tenaga_kerja' => $upahTk,
                 'total_biaya_lain'         => $biayaLain,
                 'total_biaya_produksi'     => $totalBiayaProduksi,
@@ -711,9 +745,22 @@ class PackagingService
                     $baladoNilai = round($baladoKg * 39450, 0);
                 }
 
-                // Perhitungan lakban atas & bawah (masing-masing 50% dari total pemakaian)
-                $lakbanAtasGr = round($lakbanJumlahGr / 2, 1);
-                $lakbanBawahGr = round($lakbanJumlahGr / 2, 1);
+                // Perhitungan lakban atas & bawah (Prioritaskan input timbangan riil Atas & Bawah)
+                $hdrAtas = (float) $dayRecords->sum('lakban_atas_gr');
+                $hdrBawah = (float) $dayRecords->sum('lakban_bawah_gr');
+                $hdrNilai = (float) $dayRecords->sum('lakban_nilai');
+
+                if ($hdrAtas > 0 || $hdrBawah > 0) {
+                    $lakbanAtasGr = $hdrAtas;
+                    $lakbanBawahGr = $hdrBawah;
+                    $lakbanJumlahGr = $hdrAtas + $hdrBawah;
+                    if ($hdrNilai > 0) {
+                        $lakbanNilai = $hdrNilai;
+                    }
+                } else {
+                    $lakbanAtasGr = round($lakbanJumlahGr / 2, 1);
+                    $lakbanBawahGr = round($lakbanJumlahGr / 2, 1);
+                }
 
                 $hasilJumlah = $hasilPingPing + $hasilMaksi;
                 if ($hasilJumlah == 0 && $hasilPcs > 0) {

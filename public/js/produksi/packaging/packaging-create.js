@@ -70,6 +70,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Hitung kalkulasi awal saat halaman dimuat
     recalculateTotals();
+
+    // Inisialisasi Timbangan Lakban
+    const lakbanAtasIn = document.getElementById('lakban_atas_gr');
+    const lakbanBawahIn = document.getElementById('lakban_bawah_gr');
+    lakbanAtasIn?.addEventListener('input', onLakbanInputsChanged);
+    lakbanBawahIn?.addEventListener('input', onLakbanInputsChanged);
+    onLakbanInputsChanged();
 });
 
 /**
@@ -269,6 +276,8 @@ function onProduksiSelect(selectEl) {
     const expVal = opt.getAttribute('data-exp') || '';
     const qtyVal = parseFloat(opt.getAttribute('data-qty')) || 0;
     const prodNo = opt.getAttribute('data-no') || '';
+    const barangNm = opt.getAttribute('data-barang-nm') || 'Keripik Curah';
+    const barangId = opt.getAttribute('data-barang-id') || '';
 
     // Isi batch_no & expired_tgl di Bagian 1
     if (batchInput && batchVal) {
@@ -282,7 +291,7 @@ function onProduksiSelect(selectEl) {
     // Tampilkan notifikasi sinkron ringkas & profesional
     if (syncBox && syncText) {
         syncBox.style.display = 'flex';
-        syncText.innerHTML = `Tersinkron dengan <strong>${prodNo}</strong>: Keripik Curah KS Berko &bull; Lot: <code>${batchVal}</code> &bull; Exp: <strong>${formatDateIndo(expVal)}</strong> (HPP: Rp ${formatRupiah(hppVal)}/Kg)`;
+        syncText.innerHTML = `Tersinkron dengan <strong>${prodNo}</strong>: <strong>${barangNm}</strong> &bull; Lot: <code>${batchVal}</code> &bull; Exp: <strong>${formatDateIndo(expVal)}</strong> (HPP: Rp ${formatRupiah(hppVal)}/Kg)`;
     }
 
     // Cek apakah di tabel material sudah ada baris WIP
@@ -303,7 +312,7 @@ function onProduksiSelect(selectEl) {
             if (originTag) {
                 originTag.innerHTML = `
                     <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                    ✓ HPP Produksi ${prodNo}
+                    ✓ HPP Produksi ${prodNo} (${barangNm})
                 `;
                 originTag.style.background = '#dcfce7';
                 originTag.style.color = '#15803d';
@@ -323,9 +332,10 @@ function onProduksiSelect(selectEl) {
         }
     });
 
-    // Jika belum ada baris WIP di tabel (misal belum ada produk FG/BOM), tarik detail master barang KS Berko via AJAX
+    // Jika belum ada baris WIP di tabel (misal belum ada produk FG/BOM), tarik detail master barang curah via AJAX
     if (!foundWip) {
-        fetch(`/produksi/packaging/ajax-produksi-details?produksi_id=${prodId}`)
+        const ajaxUrl = `/produksi/packaging/ajax-produksi-details?produksi_id=${prodId}` + (barangId ? `&barang_id=${barangId}` : '');
+        fetch(ajaxUrl)
             .then(res => res.json())
             .then(res => {
                 if (res.success && res.data) {
@@ -707,6 +717,21 @@ function recalculateTotals() {
         else totalLain += subtotal;
     });
 
+    // Periksa apakah nilai lakban sudah tercakup di baris tabel material
+    let hasLakbanRow = false;
+    rows.forEach(tr => {
+        const catInput = tr.querySelector('input[name*="[kategori_bahan]"]');
+        const text = tr.textContent.toUpperCase();
+        if ((catInput?.value || '').toUpperCase() === 'LAKBAN' || text.includes('LAKBAN') || text.includes('LKB')) {
+            hasLakbanRow = true;
+        }
+    });
+
+    const lakbanNilaiExtra = parseFloat(document.getElementById('lakban_nilai')?.value) || 0;
+    if (!hasLakbanRow && lakbanNilaiExtra > 0) {
+        totalKemasan += lakbanNilaiExtra;
+    }
+
     const upahTk = parseFloat(document.getElementById('total_biaya_tenaga_kerja')?.value) || 0;
     const overheadLain = parseFloat(document.getElementById('total_biaya_lain')?.value) || 0;
 
@@ -905,12 +930,83 @@ function applyOperatorLaporan(idx) {
     closePullOperatorModal();
 }
 
+/**
+ * Handler ketika input timbangan Lakban Atas atau Bawah diubah
+ */
+function onLakbanInputsChanged() {
+    const atas = parseFloat(document.getElementById('lakban_atas_gr')?.value) || 0;
+    const bawah = parseFloat(document.getElementById('lakban_bawah_gr')?.value) || 0;
+    const totalGr = Math.round((atas + bawah) * 10) / 10;
+
+    const totalInput = document.getElementById('lakban_jumlah_gr');
+    if (totalInput) totalInput.value = totalGr;
+
+    // Ambil harga standar lakban timbangan (per gram)
+    let tarif = 35.10;
+    const lakbanMaster = (window.masterKemasanList || []).find(m => 
+        (m.barang_cd && m.barang_cd.includes('LKB')) || 
+        (m.barang_nm && m.barang_nm.toUpperCase().includes('LAKBAN'))
+    );
+    if (lakbanMaster && parseFloat(lakbanMaster.harga_standar) > 0) {
+        tarif = parseFloat(lakbanMaster.harga_standar);
+    }
+    const tarifInfo = document.getElementById('tarifLakbanInfo');
+    if (tarifInfo) tarifInfo.textContent = formatRupiah(tarif);
+
+    const totalNilai = Math.round(totalGr * tarif);
+    const hiddenNilai = document.getElementById('lakban_nilai');
+    if (hiddenNilai) hiddenNilai.value = totalNilai;
+
+    const displayNilai = document.getElementById('lakbanNilaiDisplay');
+    if (displayNilai) displayNilai.textContent = 'Rp ' + formatRupiah(totalNilai);
+
+    // Sinkronkan ke baris tabel material jika ada baris komponen lakban
+    const rows = document.querySelectorAll('.material-row');
+    rows.forEach(tr => {
+        const catInput = tr.querySelector('input[name*="[kategori_bahan]"]');
+        const text = tr.textContent.toUpperCase();
+        const cat = (catInput?.value || '').toUpperCase();
+
+        if (cat === 'LAKBAN' || text.includes('LAKBAN') || text.includes('LKB')) {
+            const qtyInput = tr.querySelector('.row-qty-input');
+            const priceInput = tr.querySelector('.row-price-input');
+            if (qtyInput) qtyInput.value = totalGr;
+            if (priceInput && (!priceInput.value || parseFloat(priceInput.value) <= 0)) {
+                priceInput.value = tarif;
+            }
+            const rowIdParts = tr.id.split('_');
+            if (rowIdParts.length > 1) {
+                recalculateRow(rowIdParts[1]);
+            }
+        }
+    });
+
+    recalculateTotals();
+}
+
 function applyMaterialQuantitiesFromLaporan(item) {
-    // Timpa kuantitas aktual jika barang ditemukan di tabel
-    const rows = document.querySelectorAll('.material-item-row');
+    // 1. Sinkronkan Timbangan Lakban Atas & Bawah dari Laporan Operator HP
+    const lakbanAtasInput = document.getElementById('lakban_atas_gr');
+    const lakbanBawahInput = document.getElementById('lakban_bawah_gr');
+
+    if (item.lakban_atas_gr !== undefined && parseFloat(item.lakban_atas_gr) > 0) {
+        if (lakbanAtasInput) lakbanAtasInput.value = parseFloat(item.lakban_atas_gr);
+    }
+    if (item.lakban_bawah_gr !== undefined && parseFloat(item.lakban_bawah_gr) > 0) {
+        if (lakbanBawahInput) lakbanBawahInput.value = parseFloat(item.lakban_bawah_gr);
+    }
+    if ((!item.lakban_atas_gr && !item.lakban_bawah_gr) && parseFloat(item.lakban_qty) > 0) {
+        const half = Math.round((parseFloat(item.lakban_qty) / 2) * 10) / 10;
+        if (lakbanAtasInput) lakbanAtasInput.value = half;
+        if (lakbanBawahInput) lakbanBawahInput.value = half;
+    }
+    onLakbanInputsChanged();
+
+    // 2. Timpa kuantitas aktual jika barang ditemukan di tabel
+    const rows = document.querySelectorAll('.material-row');
     rows.forEach(row => {
-        const barangSelect = row.querySelector('.material-barang-select');
-        const qtyAktualInput = row.querySelector('.qty-aktual-input');
+        const barangSelect = row.querySelector('.row-barang-select') || row.querySelector('input[name*="[barang_id]"]');
+        const qtyAktualInput = row.querySelector('.row-qty-input') || row.querySelector('.qty-aktual-input');
         if (!barangSelect || !qtyAktualInput) return;
 
         const bId = parseInt(barangSelect.value);
@@ -940,6 +1036,11 @@ function applyMaterialQuantitiesFromLaporan(item) {
                     satuanSpan.textContent = item.wip_satuan;
                 }
             }
+        }
+
+        const rowIdParts = row.id.split('_');
+        if (rowIdParts.length > 1) {
+            recalculateRow(rowIdParts[1]);
         }
     });
 

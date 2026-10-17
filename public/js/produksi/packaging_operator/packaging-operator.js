@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', function () {
     initSatuanButtons();
     initKaryawanSync();
     initProduksiSync();
+    initLakbanSync();
 });
 
 /**
@@ -28,6 +29,38 @@ function initWipSatuanButtons() {
             if (suffix) suffix.textContent = val;
         });
     });
+}
+
+/**
+ * Handle Timbangan Lakban Dus (Atas, Bawah, Total & Rupiah Live)
+ */
+function initLakbanSync() {
+    const atasInput = document.getElementById('lakban_atas_gr');
+    const bawahInput = document.getElementById('lakban_bawah_gr');
+
+    if (atasInput && bawahInput) {
+        atasInput.addEventListener('input', recalculateLakbanTotal);
+        bawahInput.addEventListener('input', recalculateLakbanTotal);
+        recalculateLakbanTotal();
+    }
+}
+
+function recalculateLakbanTotal() {
+    const atas = parseFloat(document.getElementById('lakban_atas_gr')?.value) || 0;
+    const bawah = parseFloat(document.getElementById('lakban_bawah_gr')?.value) || 0;
+    const total = atas + bawah;
+
+    const hiddenQty = document.getElementById('lakban_qty');
+    if (hiddenQty) hiddenQty.value = total;
+
+    const lblTotal = document.getElementById('lbl_lakban_total');
+    if (lblTotal) lblTotal.textContent = total.toLocaleString('id-ID');
+
+    // Tarif acuan lakban timbangan (Rp 35.10 / gram)
+    const tarifPerGram = 35.10;
+    const rupiah = Math.round(total * tarifPerGram);
+    const lblRp = document.getElementById('lbl_lakban_rp');
+    if (lblRp) lblRp.textContent = 'Rp ' + rupiah.toLocaleString('id-ID');
 }
 
 /**
@@ -85,7 +118,7 @@ function initKaryawanSync() {
 }
 
 /**
- * Sync Produksi WIP Selection & show Berko info
+ * Sync Produksi WIP Selection & show Berko / Curah info
  */
 function initProduksiSync() {
     const produksiSelect = document.getElementById('produksi_id');
@@ -97,16 +130,19 @@ function initProduksiSync() {
         produksiSelect.addEventListener('change', function () {
             const opt = this.options[this.selectedIndex];
             if (opt && opt.value) {
-                const qtyBerko = opt.getAttribute('data-qty') || '0';
+                const qtyVal = opt.getAttribute('data-qty') || '0';
                 const batchNo = opt.getAttribute('data-batch') || '-';
+                const barangNm = opt.getAttribute('data-barang-nm') || 'Keripik Curah';
+                const prodNo = opt.getAttribute('data-no') || '';
+                const tglStr = opt.getAttribute('data-tgl') || '';
 
                 if (wipInfoBox && wipInfoText) {
-                    wipInfoText.textContent = `Batch WIP: ${batchNo} • Tersedia: ${qtyBerko} Kg keripik curah`;
+                    wipInfoText.innerHTML = `✓ <strong>${prodNo}</strong> (${tglStr}) &bull; <strong>${barangNm}</strong> &bull; Batch: <code>${batchNo}</code> &bull; Tersedia: <strong>${parseFloat(qtyVal).toLocaleString('id-ID')} Kg</strong>`;
                     wipInfoBox.style.display = 'block';
                 }
-                // Jika input masih kosong, beri nilai default stok berko yang tersedia
-                if (wipQtyInput && (!wipQtyInput.value || parseFloat(wipQtyInput.value) === 0)) {
-                    wipQtyInput.value = qtyBerko;
+                // Jika input masih kosong atau 100 default, beri nilai stok curah yang dipilih
+                if (wipQtyInput && (!wipQtyInput.value || parseFloat(wipQtyInput.value) === 0 || parseFloat(wipQtyInput.value) === 100)) {
+                    wipQtyInput.value = qtyVal;
                 }
             } else {
                 if (wipInfoBox) wipInfoBox.style.display = 'none';

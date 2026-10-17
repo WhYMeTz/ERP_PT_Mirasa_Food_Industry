@@ -134,6 +134,16 @@ class LaporanKemasOperatorService
             $tglKemas = $payload['tgl_kemas'] ?? now()->toDateString();
             $laporanNo = $this->generateLaporanNo($tglKemas);
 
+            $lakbanAtasGr = (float) ($payload['lakban_atas_gr'] ?? 0);
+            $lakbanBawahGr = (float) ($payload['lakban_bawah_gr'] ?? 0);
+            $lakbanQty = (float) ($payload['lakban_qty'] ?? 0);
+            if ($lakbanQty <= 0 && ($lakbanAtasGr > 0 || $lakbanBawahGr > 0)) {
+                $lakbanQty = $lakbanAtasGr + $lakbanBawahGr;
+            } elseif ($lakbanQty > 0 && $lakbanAtasGr <= 0 && $lakbanBawahGr <= 0) {
+                $lakbanAtasGr = round($lakbanQty / 2, 1);
+                $lakbanBawahGr = round($lakbanQty / 2, 1);
+            }
+
             $laporan = DatLaporanKemasOperator::create([
                 'laporan_no'             => $laporanNo,
                 'tgl_kemas'              => $tglKemas,
@@ -157,7 +167,9 @@ class LaporanKemasOperatorService
                 'karton_barang_id'       => !empty($payload['karton_barang_id']) ? $payload['karton_barang_id'] : null,
                 'karton_qty'             => (float) ($payload['karton_qty'] ?? 0),
                 'karton_rusak_lembar'    => (float) ($payload['karton_rusak_lembar'] ?? 0),
-                'lakban_qty'             => (float) ($payload['lakban_qty'] ?? 0),
+                'lakban_atas_gr'         => $lakbanAtasGr,
+                'lakban_bawah_gr'        => $lakbanBawahGr,
+                'lakban_qty'             => $lakbanQty,
                 'kemasan_lain_barang_id' => !empty($payload['kemasan_lain_barang_id']) ? $payload['kemasan_lain_barang_id'] : null,
                 'kemasan_lain_qty'       => (float) ($payload['kemasan_lain_qty'] ?? 0),
                 'catatan'                => !empty($payload['catatan']) ? trim($payload['catatan']) : null,

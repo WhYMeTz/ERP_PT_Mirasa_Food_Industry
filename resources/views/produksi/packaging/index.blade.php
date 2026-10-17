@@ -321,43 +321,7 @@
 </div>
 
 {{-- MODAL VOID DANGER --}}
-<div id="modalVoidPackaging" class="modal-backdrop">
-    <div class="modal-dialog">
-        <form id="formVoidPackaging" method="POST" action="">
-            @csrf
-            <div class="modal-danger-header">
-                <span class="modal-danger-title">
-                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-                    Konfirmasi Pembatalan Dokumen Packaging
-                </span>
-                <button type="button" class="modal-close" onclick="closeVoidPackagingModal()">&times;</button>
-            </div>
-            <div class="modal-body">
-                <p style="font-size: 0.875rem; color: #334155; margin-bottom: 0.75rem;">
-                    Anda akan membatalkan dokumen: <strong id="voidPackNoLabel" style="color: #0f172a;"></strong>.
-                </p>
-                <div style="background: #fff1f2; border: 1px solid #fecdd3; border-radius: 8px; padding: 0.75rem 1rem; font-size: 0.8rem; color: #9f1239; margin-bottom: 1rem; line-height: 1.4;">
-                    <strong>Dampak Operasional:</strong>
-                    <ul style="margin: 0.35rem 0 0 1.2rem; padding: 0;">
-                        <li>Stok barang jadi (FG) hasil pengemasan akan ditarik kembali dari sistem.</li>
-                        <li>Stok keripik curah (WIP) dan material kemasan akan dikembalikan ke saldo gudang.</li>
-                        <li>Status dokumen akan berubah menjadi VOID secara permanen.</li>
-                    </ul>
-                </div>
-                <div style="display: flex; flex-direction: column; gap: 0.35rem;">
-                    <label for="inputAlasanVoid" style="font-size: 0.8rem; font-weight: 600; color: #475569;">Alasan Pembatalan <span style="color: #dc2626;">*</span></label>
-                    <textarea id="inputAlasanVoid" name="alasan_batal" class="form-control" rows="3" required placeholder="Contoh: Kesalahan input quantity karton / salah nomor lot batch..."></textarea>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="closeVoidPackagingModal()">Tutup</button>
-                <button type="submit" class="btn btn-danger" style="font-weight: 700;">
-                    Ya, Batalkan Dokumen Ini
-                </button>
-            </div>
-        </form>
-    </div>
-</div>
+@include('produksi.packaging.partials.modal-void')
 @endsection
 
 @push('scripts')

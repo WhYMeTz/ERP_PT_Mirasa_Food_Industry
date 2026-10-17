@@ -509,7 +509,8 @@ class User extends Authenticatable
             || $this->canAccessCustomer()
             || $this->canAccessPerusahaan()
             || $this->canAccessSatuan()
-            || $this->canAccessJenis();
+            || $this->canAccessJenis()
+            || $this->canAccessMesin();
     }
 
     public function canManageMasterData(): bool
@@ -787,6 +788,41 @@ class User extends Authenticatable
         return $this->isSuperAdmin() 
             || $this->canDo('master_lini_delete') 
             || $this->canDo('master_lini_manage');
+    }
+
+    /**
+     * Hak akses Master Mesin Operasional Pabrik (Produksi & Packaging)
+     */
+    public function canAccessMesin(): bool
+    {
+        return $this->isSuperAdmin() 
+            || $this->isProduksi()
+            || $this->canDo('master_mesin_view') 
+            || $this->canDo('master_mesin_manage');
+    }
+
+    public function canCreateMasterMesin(): bool
+    {
+        return $this->isSuperAdmin() 
+            || $this->isProduksi()
+            || $this->canDo('master_mesin_create') 
+            || $this->canDo('master_mesin_manage');
+    }
+
+    public function canEditMasterMesin(): bool
+    {
+        return $this->isSuperAdmin() 
+            || $this->isProduksi()
+            || $this->canDo('master_mesin_edit') 
+            || $this->canDo('master_mesin_manage');
+    }
+
+    public function canDeleteMasterMesin(): bool
+    {
+        return $this->isSuperAdmin() 
+            || $this->isProduksi()
+            || $this->canDo('master_mesin_delete') 
+            || $this->canDo('master_mesin_manage');
     }
 
     /**

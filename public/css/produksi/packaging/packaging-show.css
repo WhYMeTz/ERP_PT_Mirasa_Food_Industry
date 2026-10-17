@@ -1,76 +1,52 @@
 /**
  * =========================================================================
  * ERP PT MIRASA - PENGEMASAN BARANG JADI & HPP (PACKAGING) SHOW CSS
- * Diseragamkan 100% dengan Standar Desain HPP Produksi Pabrik
+ * Diseragamkan 100% dengan Standar Desain HPP Produksi Pabrik & Clean Enterprise
  * =========================================================================
  */
 
 @import url('/css/produksi/produksi-show.css');
 
 .packaging-show-container {
-    max-width: 1200px;
+    max-width: 1400px;
     margin: 0 auto;
+    padding: 0.5rem 1rem 3rem 1rem;
 }
 
-.packaging-show-container .sticker-preview-box {
-    width: 440px;
-}
-.packaging-show-container .sticker-preview-box .st-left-col {
-    width: 230px;
-}
-.packaging-show-container .sticker-preview-box .st-right-col {
-    width: 190px;
-}
-.packaging-show-container .sticker-preview-box .st-val.st-batch-num {
-    font-size: 12.5px;
-}
-
-/* Modal Konfirmasi Batal / Danger */
-.modal-danger-header {
-    background: #fef2f2;
-    border-bottom: 1px solid #fee2e2;
-    padding: 1.15rem 1.5rem;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-
-.modal-danger-title {
-    color: #991b1b;
-    font-weight: 700;
-    font-size: 1.05rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-/* Badges */
+/* Badge Status Dokumen */
 .badge-posted {
-    font-size: 0.75rem;
+    font-size: 0.775rem;
     background: #ecfdf5;
     color: #065f46;
     border: 1px solid #a7f3d0;
-    padding: 0.2rem 0.65rem;
+    padding: 0.25rem 0.75rem;
     border-radius: 9999px;
     font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
 }
 
 .badge-void {
-    font-size: 0.75rem;
+    font-size: 0.775rem;
     background: #fef2f2;
     color: #991b1b;
     border: 1px solid #fecaca;
-    padding: 0.2rem 0.65rem;
+    padding: 0.25rem 0.75rem;
     border-radius: 9999px;
     font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
 }
 
+/* Kategori Bahan Badges */
 .cat-badge {
     display: inline-block;
-    padding: 0.15rem 0.45rem;
+    padding: 0.2rem 0.5rem;
     border-radius: 4px;
-    font-size: 0.675rem;
-    font-weight: 800;
+    font-size: 0.7rem;
+    font-weight: 700;
     letter-spacing: 0.02em;
 }
 
@@ -79,21 +55,240 @@
 .cat-bumbu { background: #fef3c7; color: #b45309; }
 .cat-lain { background: #f1f5f9; color: #475569; }
 
-/* Print Media */
-@media print {
-    header, footer, .no-print {
-        display: none !important;
+/* Pratinjau Stiker Dus Karton */
+.packaging-show-container .sticker-preview-box {
+    width: 100%;
+    max-width: 440px;
+    margin: 0 auto;
+    background: #ffffff;
+    border: 2px solid #0f172a;
+    border-radius: 6px;
+    padding: 1rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.packaging-show-container .sticker-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid #0f172a;
+    padding-bottom: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.packaging-show-container .sticker-title {
+    font-size: 1.15rem;
+    font-weight: 900;
+    color: #0f172a;
+    letter-spacing: -0.02em;
+}
+
+.packaging-show-container .halal-cert-id {
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: #0f172a;
+    text-align: center;
+    margin-top: 0.15rem;
+}
+
+.packaging-show-container .halal-cert-date {
+    font-size: 0.6rem;
+    color: #475569;
+    text-align: center;
+}
+
+.packaging-show-container .sticker-cols-container {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.packaging-show-container .st-left-col,
+.packaging-show-container .st-right-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.packaging-show-container .st-row {
+    display: flex;
+    align-items: baseline;
+    font-size: 0.775rem;
+}
+
+.packaging-show-container .st-lbl {
+    width: 75px;
+    color: #475569;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+.packaging-show-container .st-val {
+    color: #0f172a;
+    font-weight: 700;
+}
+
+.packaging-show-container .st-batch-num {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    color: #0284c7;
+    font-weight: 800;
+    font-size: 0.825rem;
+}
+
+.packaging-show-container .plant-code-box {
+    display: inline-block;
+    background: #0f172a;
+    color: #ffffff;
+    font-size: 0.65rem;
+    font-weight: 800;
+    padding: 0.2rem 0.5rem;
+    border-radius: 3px;
+    letter-spacing: 0.05em;
+    margin-top: 0.25rem;
+}
+
+/* Lembar Tanda Tangan Formal 4 Kolom */
+.signatures-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.25rem;
+    margin-top: 1.75rem;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1.5rem 1.5rem 1.25rem 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.sign-box {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    height: 125px;
+    border-bottom: 1.5px solid #0f172a;
+    padding-bottom: 6px;
+    text-align: center;
+}
+
+.sign-role {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.sign-name {
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: #0f172a;
+}
+
+.sign-sub {
+    font-size: 0.7rem;
+    color: #94a3b8;
+    margin-top: 1px;
+}
+
+/* Footer Audit Trail */
+.audit-trail-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 1.25rem;
+    padding: 0.75rem 1.25rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    color: #64748b;
+}
+
+.audit-trail-footer strong {
+    color: #334155;
+}
+
+/* Responsive Breakpoints */
+@media (max-width: 900px) {
+    .signatures-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.5rem 1rem;
     }
+}
+
+@media (max-width: 540px) {
+    .signatures-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Print Media Stylesheet */
+@media print {
     body {
         background: #ffffff !important;
+        font-size: 10pt !important;
+        color: #000000 !important;
     }
-    .card {
+
+    header, footer, nav, .no-print, .btn, .main-navbar, .sidebar {
+        display: none !important;
+    }
+
+    .print-only {
+        display: block !important;
+    }
+
+    .packaging-show-container {
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    .meta-cards-grid-2 {
+        display: grid !important;
+        grid-template-columns: repeat(2, 1fr) !important;
+        page-break-inside: avoid;
+    }
+
+    .card-enterprise,
+    .executive-stat-card {
         box-shadow: none !important;
-        border: 1px solid #cbd5e1 !important;
-        margin-bottom: 1.25rem !important;
+        border: 1px solid #94a3b8 !important;
+        page-break-inside: avoid;
+        margin-bottom: 1rem !important;
     }
+
     .sticker-preview-box {
         border: 2px solid #000000 !important;
+        page-break-inside: avoid;
+    }
+
+    .table-enterprise th,
+    .table-enterprise td {
+        padding: 4px 6px !important;
+        font-size: 8.5pt !important;
+    }
+
+    .signatures-grid {
+        box-shadow: none !important;
+        border: 1px solid #94a3b8 !important;
+        page-break-inside: avoid;
+        grid-template-columns: repeat(4, 1fr) !important;
+        margin-top: 1rem !important;
+        padding: 1rem !important;
+    }
+
+    .sign-box {
+        height: 100px !important;
+        border-bottom: 1.5px solid #000000 !important;
+    }
+
+    .audit-trail-footer {
+        border: 1px solid #94a3b8 !important;
         page-break-inside: avoid;
     }
 }

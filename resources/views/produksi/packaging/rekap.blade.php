@@ -340,11 +340,12 @@
 
 @endif
 
-{{-- MODAL DELETE CONFIRM --}}
-@include('produksi.partials.modal-delete-confirm')
+{{-- MODAL VOID DANGER --}}
+@include('produksi.packaging.partials.modal-void')
 
 @endsection
 
 @push('scripts')
     <script src="{{ asset('js/produksi/produksi-index.js') }}"></script>
+    <script src="{{ asset('js/produksi/packaging/packaging-index.js') }}"></script>
 @endpush

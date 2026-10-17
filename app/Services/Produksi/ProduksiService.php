@@ -1095,8 +1095,10 @@ class ProduksiService
                     $padAkhir = str_pad((string) $noAkhir, 4, '0', STR_PAD_LEFT);
                     $data['batch_wip_no'] = "{$shift}{$padAwal} - {$shift}{$padAkhir}";
                 } else {
-                    // Barang Jadi Reguler PT Mirasa: Format Tanggal 'd m Y' seperti di buku Excel persediaan (cth: 02 01 2026)
-                    $data['batch_wip_no'] = Carbon::parse($tgl)->format('d m Y');
+                    // Barang Jadi Reguler PT Mirasa: Format Tanggal Urut 'd m Y-XX'
+                    $baseDate = Carbon::parse($tgl)->format('d m Y');
+                    $seqNo = $this->getNextBatchSequence($tgl);
+                    $data['batch_wip_no'] = sprintf('%s-%02d', $baseDate, $seqNo);
                 }
             }
 
@@ -1136,6 +1138,7 @@ class ProduksiService
             $hasOutputItems = !empty($data['output_items']) && is_array($data['output_items']) && count(array_filter($data['output_items'], fn($it) => !empty($it['barang_id']))) > 0;
 
             if (!$hasOutputItems) {
+                $curahBatchCounter = $this->getNextBatchSequence($tgl);
                 foreach ($wipMap as $kategori => $info) {
                     if ($info['qty'] <= 0) continue;
 
@@ -1153,12 +1156,12 @@ class ProduksiService
                     if ($barang) {
                         // Aturan Batch Per Jenis Output:
                         // - Kemasan Karton (FCC/IFL/IFM) → range karton (A0001 - A0243)
-                        // - WIP Curah (Berko, Asin, No Salt, dll) → selalu tanggal (07 10 2026)
-                        //   sebab produk curah tidak memiliki nomor karton fisik
+                        // - WIP Curah (Berko, Asin, No Salt, dll) → format tanggal urut (DD MM YYYY-01, -02)
                         $isCurahWip = in_array($kategori, ['BERKO', 'ASIN_BARCO', 'ASIN_SAWIT', 'NO_SALT', 'BALO_GELOMBANG']);
+                        $baseDate = Carbon::parse($tgl)->format('d m Y');
                         $batchVarian = ($isIfm && !$isCurahWip)
                             ? $produksi->batch_wip_no
-                            : Carbon::parse($tgl)->format('d m Y');
+                            : sprintf('%s-%02d', $baseDate, $curahBatchCounter++);
 
                         $subtotalNilai = round($info['qty'] * $hppPerKg, 2);
 
@@ -1195,6 +1198,7 @@ class ProduksiService
 
             // Output Dinamis: Barang Jadi (Finish Good / FG) atau Varian Kustom (Sesuai Blueprint 9.B)
             if (!empty($data['output_items']) && is_array($data['output_items'])) {
+                $curahBatchCounter = $this->getNextBatchSequence($tgl);
                 foreach ($data['output_items'] as $item) {
                     $itemBarangId = (int) ($item['barang_id'] ?? 0);
                     $qtyHasil = (float) ($item['qty_hasil'] ?? 0);
@@ -1221,8 +1225,17 @@ class ProduksiService
                         || str_contains($barangCdUpper, 'BLQ') || str_contains($barangNmUpper, 'BALO')
                         || ($barangCdUpper !== 'WIP-FCC' && str_starts_with($barangCdUpper, 'WIP-') && !str_contains($barangCdUpper, 'IFL') && !str_contains($barangCdUpper, 'IFM'));
 
-                    $defaultBatch = $isCurahItem ? Carbon::parse($tgl)->format('d m Y') : $produksi->batch_wip_no;
-                    $batchItem = (!empty($item['batch_no']) && $item['batch_no'] !== '-') ? $item['batch_no'] : $defaultBatch;
+                    $baseDate = Carbon::parse($tgl)->format('d m Y');
+                    if ($isCurahItem) {
+                        // Jika batch_no belum ada, atau tanda hubung '-', atau tanggal polos tanpa akhiran, beri format urut harian
+                        if (empty($item['batch_no']) || $item['batch_no'] === '-' || $item['batch_no'] === $baseDate) {
+                            $batchItem = sprintf('%s-%02d', $baseDate, $curahBatchCounter++);
+                        } else {
+                            $batchItem = $item['batch_no'];
+                        }
+                    } else {
+                        $batchItem = (!empty($item['batch_no']) && $item['batch_no'] !== '-') ? $item['batch_no'] : $produksi->batch_wip_no;
+                    }
 
                     $hppItem = isset($item['hpp_satuan']) && (float)$item['hpp_satuan'] > 0 ? (float)$item['hpp_satuan'] : $hppPerKg;
 
@@ -1821,6 +1834,47 @@ class ProduksiService
 
             return $log;
         });
+    }
+
+    /**
+     * Menghitung nomor urut batch harian berikutnya pada tanggal tertentu.
+     * Format: 'DD MM YYYY-01', 'DD MM YYYY-02', dst.
+     */
+    public function getNextBatchSequence(string $tgl): int
+    {
+        $baseDate = Carbon::parse($tgl)->format('d m Y');
+        
+        $batches = DatProduksiDtl::where('batch_no', 'LIKE', "{$baseDate}%")
+            ->where('deleted_st', false)
+            ->pluck('batch_no');
+
+        $maxSeq = 0;
+        foreach ($batches as $b) {
+            if (preg_match('/-(\d+)$/', $b, $matches)) {
+                $seq = (int) $matches[1];
+                if ($seq > $maxSeq) {
+                    $maxSeq = $seq;
+                }
+            } elseif ($b === $baseDate) {
+                if ($maxSeq < 1) $maxSeq = 1;
+            }
+        }
+
+        $hdrBatches = DatProduksiHdr::where('batch_wip_no', 'LIKE', "{$baseDate}%")
+            ->where('deleted_st', false)
+            ->pluck('batch_wip_no');
+        foreach ($hdrBatches as $b) {
+            if (preg_match('/-(\d+)$/', $b, $matches)) {
+                $seq = (int) $matches[1];
+                if ($seq > $maxSeq) {
+                    $maxSeq = $seq;
+                }
+            } elseif ($b === $baseDate) {
+                if ($maxSeq < 1) $maxSeq = 1;
+            }
+        }
+
+        return $maxSeq + 1;
     }
 }
 

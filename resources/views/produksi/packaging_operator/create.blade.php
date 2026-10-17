@@ -80,21 +80,49 @@
 
         {{-- Sumber Batch WIP Produksi --}}
         <div class="pkg-form-group">
-            <label class="pkg-label" for="produksi_id">Batch / Lembar Produksi Goreng (WIP)</label>
+            <label class="pkg-label" for="produksi_id">Batch / Lembar Produksi Goreng (WIP) <span style="font-size: 0.75rem; color: #15803d; font-weight: 600;">(Prioritas FIFO)</span></label>
             <select id="produksi_id" name="produksi_id" class="pkg-select">
                 <option value="">-- Pilih Lembar Masak Dapur --</option>
                 @foreach ($produksiList as $p)
                     @php
-                        $qtyBerko = (float) ($p->total_berko_qty > 0 ? $p->total_berko_qty : $p->berko_qty);
                         $tglStr = $p->produksi_tgl ? $p->produksi_tgl->format('d/m/Y') : '-';
-                        $batchStr = $p->batch_wip_no ?: ($p->produksi_tgl ? $p->produksi_tgl->format('d m Y') : '-');
+                        $validDetails = $p->details->filter(fn($d) => (float) $d->qty_kg > 0);
                     @endphp
-                    <option value="{{ $p->produksi_id }}" 
-                            data-qty="{{ $qtyBerko }}" 
-                            data-batch="{{ $batchStr }}"
-                            {{ old('produksi_id') == $p->produksi_id ? 'selected' : '' }}>
-                        [{{ $p->produksi_no }}] {{ $tglStr }} &bull; Curah: {{ number_format($qtyBerko, 0, ',', '.') }} Kg
-                    </option>
+                    @if($validDetails->isNotEmpty())
+                        @foreach ($validDetails as $dtl)
+                            @php
+                                $qtyKg = (float) $dtl->qty_kg;
+                                $barangNm = $dtl->barang?->barang_nm ?? 'Keripik Curah';
+                                $batchStr = $dtl->batch_no ?: ($p->batch_wip_no ?: ($p->produksi_tgl ? $p->produksi_tgl->format('d m Y') : '-'));
+                            @endphp
+                            <option value="{{ $p->produksi_id }}" 
+                                    data-qty="{{ $qtyKg }}" 
+                                    data-batch="{{ $batchStr }}"
+                                    data-barang-nm="{{ $barangNm }}"
+                                    data-barang-id="{{ $dtl->barang_id }}"
+                                    data-no="{{ $p->produksi_no }}"
+                                    data-tgl="{{ $tglStr }}"
+                                    {{ old('produksi_id') == $p->produksi_id ? 'selected' : '' }}>
+                                [{{ $p->produksi_no }}] {{ $tglStr }} &bull; {{ $barangNm }} ({{ number_format($qtyKg, 0, ',', '.') }} Kg) &bull; Batch: {{ $batchStr }}
+                            </option>
+                        @endforeach
+                    @else
+                        @php
+                            $qtyBerko = (float) ($p->total_berko_qty > 0 ? $p->total_berko_qty : $p->berko_qty);
+                            $batchStr = $p->batch_wip_no ?: ($p->produksi_tgl ? $p->produksi_tgl->format('d m Y') : '-');
+                        @endphp
+                        @if($qtyBerko > 0)
+                            <option value="{{ $p->produksi_id }}" 
+                                    data-qty="{{ $qtyBerko }}" 
+                                    data-batch="{{ $batchStr }}"
+                                    data-barang-nm="KS BERKO"
+                                    data-no="{{ $p->produksi_no }}"
+                                    data-tgl="{{ $tglStr }}"
+                                    {{ old('produksi_id') == $p->produksi_id ? 'selected' : '' }}>
+                                [{{ $p->produksi_no }}] {{ $tglStr }} &bull; KS BERKO ({{ number_format($qtyBerko, 0, ',', '.') }} Kg) &bull; Batch: {{ $batchStr }}
+                            </option>
+                        @endif
+                    @endif
                 @endforeach
             </select>
             <div id="wipInfoBox" class="pkg-info-box" style="display: none;">
@@ -275,15 +303,29 @@
         </div>
 
         {{-- C. Lakban & Kemasan Tambahan --}}
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
-            <div class="pkg-form-group">
-                <label class="pkg-label" for="lakban_qty">Lakban (Gram/Roll)</label>
-                <input type="number" step="any" min="0" id="lakban_qty" name="lakban_qty" class="pkg-input" placeholder="Misal: 100" value="{{ old('lakban_qty', 0) }}">
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.75rem; margin-bottom: 0.75rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                <span style="font-size: 0.8rem; font-weight: 700; color: #0f172a;">🏷️ Timbangan Lakban Dus (Gram)</span>
+                <span id="badgeLakbanTotal" style="font-size: 0.725rem; font-weight: 700; background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; padding: 2px 6px; border-radius: 4px;">
+                    Total: <span id="lbl_lakban_total">0</span> g (<span id="lbl_lakban_rp">Rp 0</span>)
+                </span>
             </div>
-            <div class="pkg-form-group">
-                <label class="pkg-label" for="kemasan_lain_qty">Plastik Bal / Lainnya</label>
-                <input type="number" step="any" min="0" id="kemasan_lain_qty" name="kemasan_lain_qty" class="pkg-input" placeholder="Opsional" value="{{ old('kemasan_lain_qty', 0) }}">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem;">
+                <div class="pkg-form-group">
+                    <label class="pkg-label" for="lakban_atas_gr">Lakban Atas (Gram)</label>
+                    <input type="number" step="any" min="0" id="lakban_atas_gr" name="lakban_atas_gr" class="pkg-input" placeholder="Misal: 1250" value="{{ old('lakban_atas_gr', 0) }}">
+                </div>
+                <div class="pkg-form-group">
+                    <label class="pkg-label" for="lakban_bawah_gr">Lakban Bawah (Gram)</label>
+                    <input type="number" step="any" min="0" id="lakban_bawah_gr" name="lakban_bawah_gr" class="pkg-input" placeholder="Misal: 800" value="{{ old('lakban_bawah_gr', 0) }}">
+                </div>
             </div>
+            <input type="hidden" id="lakban_qty" name="lakban_qty" value="{{ old('lakban_qty', 0) }}">
+        </div>
+
+        <div class="pkg-form-group">
+            <label class="pkg-label" for="kemasan_lain_qty">Plastik Bal / Kemasan Tambahan (Opsional)</label>
+            <input type="number" step="any" min="0" id="kemasan_lain_qty" name="kemasan_lain_qty" class="pkg-input" placeholder="Jumlah / Lembar" value="{{ old('kemasan_lain_qty', 0) }}">
         </div>
 
         {{-- Catatan Lapangan --}}

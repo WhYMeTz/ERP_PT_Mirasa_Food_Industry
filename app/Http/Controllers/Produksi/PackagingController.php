@@ -108,11 +108,14 @@ class PackagingController extends Controller
                 ];
             });
 
-        // Ambil daftar dokumen HPP Produksi (WIP) aktif untuk opsi sinkronisasi HPP curah
-        $produksiList = DatProduksiHdr::where('deleted_st', false)
-            ->latest('produksi_tgl')
-            ->take(50)
-            ->get(['produksi_id', 'produksi_no', 'produksi_tgl', 'shift_cd', 'batch_wip_no', 'exp_date', 'total_berko_qty', 'berko_qty', 'hpp_per_kg']);
+        // Ambil daftar dokumen HPP Produksi (WIP) aktif untuk opsi sinkronisasi HPP curah - Prioritas FIFO
+        $produksiList = DatProduksiHdr::with(['details.barang.satuanDasar'])
+            ->where('deleted_st', false)
+            ->where('status_cd', '!=', 'VOID')
+            ->where('produksi_tgl', '>=', now()->subDays(30)->toDateString())
+            ->orderBy('produksi_tgl', 'asc')
+            ->orderBy('produksi_id', 'asc')
+            ->get();
 
         return view('produksi.packaging.create', compact('gudangList', 'barangJadiList', 'kemasanBarangList', 'produksiList'));
     }
@@ -127,7 +130,10 @@ class PackagingController extends Controller
             return response()->json(['success' => false, 'message' => 'Tiket produksi wajib dipilih.'], 400);
         }
 
-        $produksi = \App\Models\Produksi\DatProduksiHdr::with(['pengeluaranKemasan.details.barang.satuanDasar'])
+        $produksi = \App\Models\Produksi\DatProduksiHdr::with([
+            'details.barang.satuanDasar',
+            'pengeluaranKemasan.details.barang.satuanDasar'
+        ])
             ->where('deleted_st', false)
             ->find($produksiId);
 
@@ -135,11 +141,42 @@ class PackagingController extends Controller
             return response()->json(['success' => false, 'message' => 'Data tiket produksi tidak ditemukan.'], 404);
         }
 
-        // Cari master barang KS BERKO (WIP)
-        $berkoBarang = MstBarang::with('satuanDasar')
-            ->where('barang_nm', 'ILIKE', '%KS BERKO%')
-            ->orWhere('barang_cd', 'WIP-BRK')
-            ->first();
+        $barangIdReq = (int) $request->input('barang_id');
+
+        // Cari master barang WIP (prioritaskan barang_id dari request, atau rincian detail pertama, atau KS BERKO)
+        $wipBarang = null;
+        $wipQty = 0;
+        $wipHpp = (float) $produksi->hpp_per_kg;
+        $batchTgl = $produksi->batch_wip_no 
+            ?: ($produksi->produksi_tgl ? $produksi->produksi_tgl->format('d m Y') : date('d m Y'));
+
+        if ($barangIdReq > 0) {
+            $matchedDtl = $produksi->details->where('barang_id', $barangIdReq)->first();
+            if ($matchedDtl) {
+                $wipBarang = $matchedDtl->barang;
+                $wipQty = (float) $matchedDtl->qty_kg;
+                if ($matchedDtl->hpp_satuan > 0) $wipHpp = (float) $matchedDtl->hpp_satuan;
+                if (!empty($matchedDtl->batch_no)) $batchTgl = $matchedDtl->batch_no;
+            }
+        }
+
+        if (!$wipBarang && $produksi->details->isNotEmpty()) {
+            $firstDtl = $produksi->details->first(fn($d) => (float)$d->qty_kg > 0) ?: $produksi->details->first();
+            if ($firstDtl && $firstDtl->barang) {
+                $wipBarang = $firstDtl->barang;
+                $wipQty = (float) $firstDtl->qty_kg;
+                if ($firstDtl->hpp_satuan > 0) $wipHpp = (float) $firstDtl->hpp_satuan;
+                if (!empty($firstDtl->batch_no)) $batchTgl = $firstDtl->batch_no;
+            }
+        }
+
+        if (!$wipBarang) {
+            $wipBarang = MstBarang::with('satuanDasar')
+                ->where('barang_nm', 'ILIKE', '%KS BERKO%')
+                ->orWhere('barang_cd', 'WIP-BRK')
+                ->first();
+            $wipQty = (float) ($produksi->total_berko_qty > 0 ? $produksi->total_berko_qty : $produksi->berko_qty);
+        }
 
         // Cari dokumen pemakaian gudang yang ditautkan ke produksi ini
         $linkedPakai = $produksi->pengeluaranKemasan()
@@ -147,14 +184,9 @@ class PackagingController extends Controller
             ->latest('pakai_id')
             ->first();
 
-        $batchTgl = $produksi->batch_wip_no 
-            ?: ($produksi->produksi_tgl ? $produksi->produksi_tgl->format('d m Y') : date('d m Y'));
-
         $expDateStr = $produksi->exp_date 
             ? $produksi->exp_date->format('Y-m-d') 
             : ($produksi->produksi_tgl ? $produksi->produksi_tgl->copy()->addMonths(6)->format('Y-m-d') : date('Y-m-d', strtotime('+6 months')));
-
-        $berkoQty = (float) ($produksi->total_berko_qty > 0 ? $produksi->total_berko_qty : $produksi->berko_qty);
 
         return response()->json([
             'success' => true,
@@ -164,13 +196,13 @@ class PackagingController extends Controller
                 'produksi_tgl'     => $produksi->produksi_tgl?->format('Y-m-d'),
                 'batch_wip_no'     => $batchTgl,
                 'exp_date'         => $expDateStr,
-                'total_berko_qty'  => $berkoQty,
-                'hpp_per_kg'       => (float) $produksi->hpp_per_kg,
-                'berko_barang'     => $berkoBarang ? [
-                    'barang_id'  => $berkoBarang->barang_id,
-                    'barang_cd'  => $berkoBarang->barang_cd,
-                    'barang_nm'  => $berkoBarang->barang_nm,
-                    'satuan_cd'  => $berkoBarang->satuanDasar?->satuan_cd ?? 'KG',
+                'total_berko_qty'  => $wipQty,
+                'hpp_per_kg'       => $wipHpp,
+                'berko_barang'     => $wipBarang ? [
+                    'barang_id'  => $wipBarang->barang_id,
+                    'barang_cd'  => $wipBarang->barang_cd,
+                    'barang_nm'  => $wipBarang->barang_nm,
+                    'satuan_cd'  => $wipBarang->satuanDasar?->satuan_cd ?? 'KG',
                 ] : null,
                 'linked_pakai_id'  => $linkedPakai?->pakai_id,
                 'linked_pakai_no'  => $linkedPakai?->pakai_no,
@@ -281,6 +313,10 @@ class PackagingController extends Controller
             'gramatur_gr'              => 'nullable|numeric|min:0',
             'batch_no'                 => 'nullable|string|max:100',
             'expired_tgl'              => 'nullable|date',
+            'lakban_atas_gr'           => 'nullable|numeric|min:0',
+            'lakban_bawah_gr'          => 'nullable|numeric|min:0',
+            'lakban_jumlah_gr'         => 'nullable|numeric|min:0',
+            'lakban_nilai'             => 'nullable|numeric|min:0',
             'total_biaya_tenaga_kerja' => 'nullable|numeric|min:0',
             'total_biaya_lain'         => 'nullable|numeric|min:0',
             'catatan_txt'              => 'nullable|string|max:1000',

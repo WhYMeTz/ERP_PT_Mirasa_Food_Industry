@@ -114,28 +114,56 @@
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem;">
                     <div>
                         <label style="display: block; font-size: 0.8125rem; font-weight: 600; color: #334155; margin-bottom: 0.35rem;">
-                            Sumber HPP Produksi (WIP)
+                            Sumber HPP Produksi (WIP) <span style="font-size: 0.75rem; color: #15803d; font-weight: 600;">(Prioritas FIFO)</span>
                         </label>
                         <select id="produksi_id" name="produksi_id" class="form-control" style="height: 38px; border-radius: 6px; font-size: 0.85rem;" onchange="onProduksiSelect(this)">
                             <option value="">-- Pilih Lembar HPP Produksi / Curah --</option>
                             @foreach($produksiList as $p)
                                 @php
-                                    $qtyBerko = (float) ($p->total_berko_qty > 0 ? $p->total_berko_qty : $p->berko_qty);
                                     $tglStr = $p->produksi_tgl ? $p->produksi_tgl->format('d/m/Y') : '-';
-                                    $batchStr = $p->batch_wip_no ?: ($p->produksi_tgl ? $p->produksi_tgl->format('d m Y') : '-');
                                     $expDateStr = $p->exp_date 
                                         ? $p->exp_date->format('Y-m-d') 
                                         : ($p->produksi_tgl ? $p->produksi_tgl->copy()->addMonths(6)->format('Y-m-d') : date('Y-m-d', strtotime('+6 months')));
+                                    $validDetails = $p->details->filter(fn($d) => (float) $d->qty_kg > 0);
                                 @endphp
-                                <option value="{{ $p->produksi_id }}" 
-                                        data-hpp="{{ (float) $p->hpp_per_kg }}" 
-                                        data-batch="{{ $batchStr }}" 
-                                        data-exp="{{ $expDateStr }}"
-                                        data-qty="{{ $qtyBerko }}"
-                                        data-no="{{ $p->produksi_no }}"
-                                        {{ (old('produksi_id') == $p->produksi_id) ? 'selected' : '' }}>
-                                    [{{ $p->produksi_no }}] {{ $tglStr }} • KS Berko: {{ number_format($qtyBerko, 0, ',', '.') }} Kg (HPP: Rp {{ number_format($p->hpp_per_kg, 0, ',', '.') }}/Kg)
-                                </option>
+                                @if($validDetails->isNotEmpty())
+                                    @foreach($validDetails as $dtl)
+                                        @php
+                                            $qtyKg = (float) $dtl->qty_kg;
+                                            $barangNm = $dtl->barang?->barang_nm ?? 'Keripik Curah';
+                                            $batchStr = $dtl->batch_no ?: ($p->batch_wip_no ?: ($p->produksi_tgl ? $p->produksi_tgl->format('d m Y') : '-'));
+                                            $hppVal = (float) ($dtl->hpp_satuan > 0 ? $dtl->hpp_satuan : $p->hpp_per_kg);
+                                        @endphp
+                                        <option value="{{ $p->produksi_id }}" 
+                                                data-hpp="{{ $hppVal }}" 
+                                                data-batch="{{ $batchStr }}" 
+                                                data-exp="{{ $expDateStr }}"
+                                                data-qty="{{ $qtyKg }}"
+                                                data-no="{{ $p->produksi_no }}"
+                                                data-barang-id="{{ $dtl->barang_id }}"
+                                                data-barang-nm="{{ $barangNm }}"
+                                                {{ (old('produksi_id') == $p->produksi_id) ? 'selected' : '' }}>
+                                            [{{ $p->produksi_no }}] {{ $tglStr }} • {{ $barangNm }} ({{ number_format($qtyKg, 0, ',', '.') }} Kg) • Batch: {{ $batchStr }} (HPP: Rp {{ number_format($hppVal, 0, ',', '.') }}/Kg)
+                                        </option>
+                                    @endforeach
+                                @else
+                                    @php
+                                        $qtyBerko = (float) ($p->total_berko_qty > 0 ? $p->total_berko_qty : $p->berko_qty);
+                                        $batchStr = $p->batch_wip_no ?: ($p->produksi_tgl ? $p->produksi_tgl->format('d m Y') : '-');
+                                    @endphp
+                                    @if($qtyBerko > 0)
+                                        <option value="{{ $p->produksi_id }}" 
+                                                data-hpp="{{ (float) $p->hpp_per_kg }}" 
+                                                data-batch="{{ $batchStr }}" 
+                                                data-exp="{{ $expDateStr }}"
+                                                data-qty="{{ $qtyBerko }}"
+                                                data-no="{{ $p->produksi_no }}"
+                                                data-barang-nm="KS BERKO"
+                                                {{ (old('produksi_id') == $p->produksi_id) ? 'selected' : '' }}>
+                                            [{{ $p->produksi_no }}] {{ $tglStr }} • KS BERKO ({{ number_format($qtyBerko, 0, ',', '.') }} Kg) • Batch: {{ $batchStr }} (HPP: Rp {{ number_format($p->hpp_per_kg, 0, ',', '.') }}/Kg)
+                                        </option>
+                                    @endif
+                                @endif
                             @endforeach
                         </select>
                     </div>
@@ -215,6 +243,63 @@
                             </tr>
                         </tbody>
                     </table>
+                </div>
+
+                {{-- SUB-PANEL: TIMBANGAN KHUSUS LAKBAN SEGEL DUS (ATAS & BAWAH) --}}
+                <div style="background: #f0fdf4; border: 1.5px solid #bbf7d0; border-radius: 8px; padding: 1rem 1.25rem; margin-top: 1rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.85rem;">
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <span style="font-size: 1.15rem;">🏷️</span>
+                            <div>
+                                <strong style="color: #065f46; font-size: 0.875rem;">Timbangan Lakban Segel Karton (Atas, Bawah &amp; Rupiah)</strong>
+                                <span style="display: block; font-size: 0.725rem; color: #047857;">
+                                    Sesuai buku log timbangan packing: catat timbangan gram Atas dan Bawah secara presisi.
+                                </span>
+                            </div>
+                        </div>
+                        <div style="font-size: 0.75rem; background: #ffffff; padding: 0.25rem 0.65rem; border-radius: 6px; border: 1px solid #86efac; color: #166534; font-weight: 700;">
+                            Tarif Acuan: Rp <span id="tarifLakbanInfo">35</span> / gram
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; align-items: flex-end;">
+                        <div>
+                            <label style="display: block; font-size: 0.775rem; font-weight: 700; color: #166534; margin-bottom: 0.35rem;">
+                                Lakban Bagian Atas (Gram)
+                            </label>
+                            <input type="number" step="any" min="0" id="lakban_atas_gr" name="lakban_atas_gr"
+                                   class="form-control" style="height: 38px; border-radius: 6px; font-size: 0.9rem; font-weight: 700; text-align: right;" 
+                                   value="{{ old('lakban_atas_gr', 0) }}" placeholder="Contoh: 1250" oninput="onLakbanInputsChanged()">
+                        </div>
+
+                        <div>
+                            <label style="display: block; font-size: 0.775rem; font-weight: 700; color: #166534; margin-bottom: 0.35rem;">
+                                Lakban Bagian Bawah (Gram)
+                            </label>
+                            <input type="number" step="any" min="0" id="lakban_bawah_gr" name="lakban_bawah_gr"
+                                   class="form-control" style="height: 38px; border-radius: 6px; font-size: 0.9rem; font-weight: 700; text-align: right;" 
+                                   value="{{ old('lakban_bawah_gr', 0) }}" placeholder="Contoh: 800" oninput="onLakbanInputsChanged()">
+                        </div>
+
+                        <div>
+                            <label style="display: block; font-size: 0.775rem; font-weight: 700; color: #166534; margin-bottom: 0.35rem;">
+                                Total Timbangan (Gram)
+                            </label>
+                            <input type="number" step="any" min="0" id="lakban_jumlah_gr" name="lakban_jumlah_gr" readonly
+                                   class="form-control" style="height: 38px; border-radius: 6px; font-size: 0.95rem; font-weight: 800; text-align: right; background: #e2e8f0; color: #0f172a;" 
+                                   value="{{ old('lakban_jumlah_gr', 0) }}">
+                        </div>
+
+                        <div>
+                            <label style="display: block; font-size: 0.775rem; font-weight: 700; color: #166534; margin-bottom: 0.35rem;">
+                                Total Biaya Lakban (Rupiah)
+                            </label>
+                            <input type="hidden" id="lakban_nilai" name="lakban_nilai" value="{{ old('lakban_nilai', 0) }}">
+                            <div id="lakbanNilaiDisplay" style="height: 38px; border-radius: 6px; font-size: 1rem; font-weight: 800; color: #047857; background: #ffffff; border: 1.5px solid #10b981; display: flex; align-items: center; justify-content: flex-end; padding: 0 0.75rem;">
+                                Rp 0
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

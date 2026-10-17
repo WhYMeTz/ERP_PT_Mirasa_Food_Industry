@@ -159,14 +159,16 @@
     }
 
     // Helper: Terapkan badge batch yang tepat ke satu baris tabel output (idx)
-    function applyBatchBadgeToRow(idx, sel) {
+    function applyBatchBadgeToRow(idx, sel, curahSeq = null) {
         const opt = sel?.selectedOptions?.[0];
         const cd = opt?.dataset?.cd || '';
         const nm = opt?.dataset?.nm || '';
 
         const isCurah = isCurahWipProduct(cd, nm);
+        const baseDate = getDateBatch();
+        const seqSuffix = curahSeq ? '-' + String(curahSeq).padStart(2, '0') : '-01';
         const batchForItem = isCurah
-            ? getDateBatch()                                               // Curah → tanggal
+            ? (baseDate ? `${baseDate}${seqSuffix}` : '-')                  // Curah → tanggal urut (-01, -02)
             : (document.getElementById('batch_wip_no')?.value || '-');    // Kemasan → range karton
 
         const badgeFgBatch = document.getElementById(`badgeFgBatch_${idx}`);
@@ -179,7 +181,7 @@
                 badgeFgBatch.style.background = '#f0fdf4';
                 badgeFgBatch.style.color = '#065f46';
                 badgeFgBatch.style.borderColor = '#a7f3d0';
-                badgeFgBatch.title = 'Batch Curah: Format Tanggal (DD MM YYYY)';
+                badgeFgBatch.title = 'Batch Curah: Format Tanggal Urut (DD MM YYYY-01)';
             } else if (batchForItem && batchForItem !== '-') {
                 // Biru = kemasan karton IFM → format range
                 badgeFgBatch.style.background = '#f0f9ff';
@@ -198,11 +200,12 @@
     }
 
     // Helper: Sinkronisasi Kode Batch Bagian 2 ke seluruh Baris Output Barang Jadi (Bagian 7)
-    // Per baris: kemasan IFM → range, WIP curah → tanggal
+    // Per baris: kemasan IFM → range, WIP curah → tanggal urut harian (-01, -02, dst)
     window.syncBatchToOutputItems = function () {
         const tbody = document.getElementById('tbodyOutputFg');
         if (!tbody) return;
 
+        let curahSeqCounter = 1;
         tbody.querySelectorAll('.row-output-fg').forEach(tr => {
             const sel = tr.querySelector('.select-fg-barang');
             if (!sel) return;
@@ -213,7 +216,12 @@
             if (!idxMatch) return;
             const idx = idxMatch[1];
 
-            applyBatchBadgeToRow(idx, sel);
+            const opt = sel?.selectedOptions?.[0];
+            const cd = opt?.dataset?.cd || '';
+            const nm = opt?.dataset?.nm || '';
+            const isCurah = isCurahWipProduct(cd, nm);
+
+            applyBatchBadgeToRow(idx, sel, isCurah ? curahSeqCounter++ : null);
         });
     };
 
@@ -377,22 +385,22 @@
                 cardHeaderBadge.style.borderColor = '#cbd5e1';
             }
         } else {
-            // Format Batch Tanggal Persis Buku Persediaan Excel PT Mirasa: DD MM YYYY (cth: 02 01 2026)
+            // Format Batch Tanggal Urut: DD MM YYYY-01
             if (tgl) {
                 const parts = tgl.split('-');
                 if (parts.length === 3) {
-                    batchCode = `${parts[2]} ${parts[1]} ${parts[0]}`;
+                    batchCode = `${parts[2]} ${parts[1]} ${parts[0]}-01`;
                 }
             } else {
                 const now = new Date();
                 const d = String(now.getDate()).padStart(2, '0');
                 const m = String(now.getMonth() + 1).padStart(2, '0');
                 const y = now.getFullYear();
-                batchCode = `${d} ${m} ${y}`;
+                batchCode = `${d} ${m} ${y}-01`;
             }
 
             if (cardHeaderBadge && isIfm && !hasKartonInput) {
-                cardHeaderBadge.innerHTML = 'Format Batch: Tanggal (DD MM YYYY) <span style="font-weight: 500; font-size: 0.7rem; color: #64748b;">(No. Karton Dikosongkan)</span>';
+                cardHeaderBadge.innerHTML = 'Format Batch: Tanggal Urut (DD MM YYYY-01) <span style="font-weight: 500; font-size: 0.7rem; color: #64748b;">(No. Karton Dikosongkan)</span>';
                 cardHeaderBadge.style.background = '#f1f5f9';
                 cardHeaderBadge.style.color = '#334155';
                 cardHeaderBadge.style.borderColor = '#cbd5e1';

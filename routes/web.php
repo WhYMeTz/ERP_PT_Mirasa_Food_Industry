@@ -18,6 +18,7 @@ use App\Http\Controllers\MasterData\JenisBarangController;
 use App\Http\Controllers\MasterData\JenisSupplierController;
 use App\Http\Controllers\MasterData\KaryawanController;
 use App\Http\Controllers\MasterData\LiniProduksiController;
+use App\Http\Controllers\MasterData\MesinController;
 use App\Http\Controllers\MasterData\SatuanController;
 use App\Http\Controllers\MasterData\SupplierController;
 use App\Http\Controllers\MasterData\TarifProduksiController;
@@ -99,6 +100,10 @@ Route::middleware('auth')->group(function () {
         ->middleware('role:SUPERADMIN,STAFF_PRODUKSI,master_resep_view,master_resep_manage');
     Route::resource('master-lini-produksi', LiniProduksiController::class)
         ->names('master.lini_produksi');
+    Route::patch('master-mesin/{id}/toggle-status', [MesinController::class, 'toggleStatus'])
+        ->name('master.mesin.toggle_status');
+    Route::resource('master-mesin', MesinController::class)
+        ->names('master.mesin');
 
     // Master Standar Tarif Produksi & FOH Pabrik
     Route::get('master-tarif-produksi/api-rates', [TarifProduksiController::class, 'apiRates'])

@@ -39,11 +39,13 @@ class PackagingOperatorController extends Controller
             ->orderBy('barang_nm')
             ->get();
 
-        // 2. Lembar Masak WIP Curah (14 hari terakhir)
-        $produksiList = DatProduksiHdr::where('deleted_st', false)
-            ->where('produksi_tgl', '>=', now()->subDays(14)->toDateString())
-            ->orderByDesc('produksi_tgl')
-            ->orderByDesc('produksi_id')
+        // 2. Lembar Masak WIP Curah - Diurutkan FIFO (masakan terdahulu di atas) dengan eager loading detail output
+        $produksiList = DatProduksiHdr::with(['details.barang.satuanDasar'])
+            ->where('deleted_st', false)
+            ->where('status_cd', '!=', 'VOID')
+            ->where('produksi_tgl', '>=', now()->subDays(30)->toDateString())
+            ->orderBy('produksi_tgl', 'asc')
+            ->orderBy('produksi_id', 'asc')
             ->get();
 
         // 3. Karyawan (Operator)

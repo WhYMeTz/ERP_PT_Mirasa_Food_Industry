@@ -93,10 +93,16 @@
                 </div>
             @endif
 
-            @if ($laporan->lakban_qty > 0)
+            @if ($laporan->lakban_atas_gr > 0 || $laporan->lakban_bawah_gr > 0 || $laporan->lakban_qty > 0)
                 <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f1f5f9;">
-                    <span style="color: #64748b;">Lakban:</span>
-                    <strong style="color: #0f172a;">{{ number_format($laporan->lakban_qty, 0, ',', '.') }} Gram/Roll</strong>
+                    <span style="color: #64748b;">Lakban Dus:</span>
+                    <strong style="color: #0f172a;">
+                        @if ($laporan->lakban_atas_gr > 0 || $laporan->lakban_bawah_gr > 0)
+                            Atas {{ number_format($laporan->lakban_atas_gr, 0, ',', '.') }}g | Bwh {{ number_format($laporan->lakban_bawah_gr, 0, ',', '.') }}g (Total {{ number_format($laporan->lakban_qty, 0, ',', '.') }}g)
+                        @else
+                            {{ number_format($laporan->lakban_qty, 0, ',', '.') }} Gram/Roll
+                        @endif
+                    </strong>
                 </div>
             @endif
 

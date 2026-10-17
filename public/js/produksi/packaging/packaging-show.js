@@ -6,12 +6,24 @@
  */
 
 document.addEventListener('DOMContentLoaded', function () {
-    // Tombol Escape menutup modal
+    // Tombol Escape menutup modal void
     window.addEventListener('keydown', function (e) {
         if (e.key === 'Escape') {
-            closeVoidShowModal();
+            closeVoidPackagingModal();
         }
     });
+
+    // Delegated click handler untuk tombol void
+    const btnVoid = document.getElementById('btnVoidPackaging');
+    if (btnVoid) {
+        btnVoid.addEventListener('click', function (e) {
+            e.preventDefault();
+            const packId = this.getAttribute('data-pack-id');
+            const packNo = this.getAttribute('data-pack-no');
+            const targetNm = this.getAttribute('data-target-nm');
+            openVoidPackagingModal(packId, packNo, targetNm);
+        });
+    }
 });
 
 /**
@@ -24,24 +36,40 @@ function printPackagingDoc() {
 /**
  * Buka Modal Void pada halaman detail
  */
-function openVoidShowModal() {
-    const modal = document.getElementById('modalVoidPackagingShow');
-    if (modal) {
-        modal.style.display = 'flex';
-        const input = document.getElementById('inputAlasanVoidShow');
-        if (input) {
-            input.value = '';
-            setTimeout(() => input.focus(), 150);
-        }
+function openVoidPackagingModal(packId, packNo, targetNm) {
+    const modal = document.getElementById('modalVoidPackaging');
+    if (!modal) return;
+
+    const form = document.getElementById('formVoidPackaging');
+    if (form && packId) {
+        form.action = '/produksi/packaging/' + packId + '/void';
     }
+
+    const labelNo = document.getElementById('voidPackNoLabel');
+    if (labelNo && packNo) {
+        labelNo.textContent = packNo + (targetNm ? ' (' + targetNm + ')' : '');
+    }
+
+    const inputAlasan = document.getElementById('inputAlasanVoid');
+    if (inputAlasan) {
+        inputAlasan.value = '';
+        setTimeout(() => inputAlasan.focus(), 150);
+    }
+
+    modal.style.display = 'flex';
 }
 
 /**
  * Tutup Modal Void
  */
-function closeVoidShowModal() {
-    const modal = document.getElementById('modalVoidPackagingShow');
+function closeVoidPackagingModal() {
+    const modal = document.getElementById('modalVoidPackaging');
     if (modal) {
         modal.style.display = 'none';
     }
 }
+
+// Pasang secara eksplisit ke window global
+window.printPackagingDoc = printPackagingDoc;
+window.openVoidPackagingModal = openVoidPackagingModal;
+window.closeVoidPackagingModal = closeVoidPackagingModal;

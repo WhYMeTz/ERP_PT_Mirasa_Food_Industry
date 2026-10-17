@@ -139,7 +139,7 @@ class HasilProduksiImport
                             'produksi_tgl'        => $firstItem['tanggal'],
                             'gudang_id'           => $gudang->gudang_id,
                             'shift_cd'            => $shift,
-                            'lini_produksi'       => 'Lini Penggorengan & Keripik',
+                            'lini_produksi'       => 'PRODUKSI MANUAL',
                             'batch_wip_no'        => $batchWip,
                             'no_karton_awal'      => $firstItem['karton_awal'] ?? 1,
                             'no_karton_akhir'     => $firstItem['karton_akhir'] ?? count($items),

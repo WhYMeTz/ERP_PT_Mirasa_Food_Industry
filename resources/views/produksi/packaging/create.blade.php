@@ -258,7 +258,7 @@
                             </div>
                         </div>
                         <div style="font-size: 0.75rem; background: #ffffff; padding: 0.25rem 0.65rem; border-radius: 6px; border: 1px solid #86efac; color: #166534; font-weight: 700;">
-                            Tarif Acuan: Rp <span id="tarifLakbanInfo">35</span> / gram
+                            Tarif Acuan: Rp <span id="tarifLakbanInfo">{{ number_format($tarifLakbanDefault ?? 36.70, 2, ',', '.') }}</span> / gram
                         </div>
                     </div>
 
@@ -454,6 +454,7 @@
     <script>
         window.masterKemasanList = @json($kemasanBarangList ?? []);
         window.preloadedOperatorLaporan = @json($selectedLaporan ?? null);
+        window.tarifLakbanDefault = {{ (float) ($tarifLakbanDefault ?? 36.70) }};
     </script>
     <script src="{{ asset('js/produksi/packaging/packaging-create.js') }}"></script>
 @endpush

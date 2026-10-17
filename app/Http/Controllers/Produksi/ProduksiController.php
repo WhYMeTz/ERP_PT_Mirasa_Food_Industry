@@ -10,6 +10,7 @@ use App\Http\Controllers\Controller;
 use App\Imports\Produksi\HasilProduksiImport;
 use App\Imports\Produksi\RekapHppImport;
 use App\Models\Gudang\DatPakaiHdr;
+use App\Models\Produksi\DatProduksiHdr;
 use App\Models\MasterData\MstBarang;
 use App\Models\MasterData\MstGudang;
 use App\Models\MasterData\MstLiniProduksi;
@@ -329,7 +330,16 @@ class ProduksiController extends Controller
     public function show(int $id): View
     {
         $produksi = $this->produksiService->getById($id);
-        return view('produksi.show', compact('produksi'));
+
+        // Ambil seluruh dokumen produksi pada tanggal yang sama untuk Tab Switcher Split View per Lini
+        $sameDateProductions = DatProduksiHdr::whereDate('produksi_tgl', $produksi->produksi_tgl)
+            ->where('deleted_st', false)
+            ->where('status_cd', '!=', 'VOID')
+            ->orderBy('shift_cd', 'asc')
+            ->orderBy('produksi_id', 'asc')
+            ->get();
+
+        return view('produksi.show', compact('produksi', 'sameDateProductions'));
     }
 
     /**

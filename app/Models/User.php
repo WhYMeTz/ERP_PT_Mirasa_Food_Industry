@@ -504,6 +504,7 @@ class User extends Authenticatable
             || $this->canAccessResep()
             || $this->canAccessLiniProduksi()
             || $this->canAccessTarifProduksi()
+            || $this->canAccessTarifKemasan()
             || $this->canAccessSupplier()
             || $this->canAccessJenisSupplier()
             || $this->canAccessCustomer()
@@ -839,6 +840,26 @@ class User extends Authenticatable
     {
         return $this->isSuperAdmin() 
             || $this->canDo('tarif_produksi_manage');
+    }
+
+    /**
+     * Hak akses Master Standar Harga Kemasan & Packaging
+     */
+    public function canAccessTarifKemasan(): bool
+    {
+        return $this->isSuperAdmin() 
+            || $this->canDo('tarif_kemasan_view')
+            || $this->canDo('tarif_kemasan_manage')
+            || $this->canAccessTarifProduksi()
+            || $this->canAccessPackaging();
+    }
+
+    public function canManageTarifKemasan(): bool
+    {
+        return $this->isSuperAdmin() 
+            || $this->canDo('tarif_kemasan_manage')
+            || $this->canManageTarifProduksi()
+            || $this->canCreatePackaging();
     }
 
     /**

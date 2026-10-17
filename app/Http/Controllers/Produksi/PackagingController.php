@@ -9,6 +9,7 @@ use App\Models\MasterData\MstGudang;
 use App\Models\Produksi\DatPackagingHdr;
 use App\Models\Produksi\DatProduksiHdr;
 use App\Services\Produksi\PackagingService;
+use App\Services\Produksi\TarifKemasanService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Exception;
@@ -22,7 +23,8 @@ class PackagingController extends Controller
 {
     public function __construct(
         protected PackagingService $packagingService,
-        protected \App\Services\Produksi\LaporanKemasOperatorService $operatorService
+        protected \App\Services\Produksi\LaporanKemasOperatorService $operatorService,
+        protected TarifKemasanService $tarifKemasanService
     ) {}
 
     /**
@@ -172,7 +174,11 @@ class PackagingController extends Controller
             ->orderBy('produksi_id', 'asc')
             ->get();
 
-        return view('produksi.packaging.create', compact('gudangList', 'barangJadiList', 'kemasanBarangList', 'produksiList', 'selectedLaporan'));
+        // Ambil standar tarif lakban per gram dari Master Data Tarif Kemasan
+        $tarifMap = $this->tarifKemasanService->getTarifMap();
+        $tarifLakbanDefault = (float) ($tarifMap['LAKBAN_GRAM'] ?? 36.70);
+
+        return view('produksi.packaging.create', compact('gudangList', 'barangJadiList', 'kemasanBarangList', 'produksiList', 'selectedLaporan', 'tarifLakbanDefault'));
     }
 
     /**

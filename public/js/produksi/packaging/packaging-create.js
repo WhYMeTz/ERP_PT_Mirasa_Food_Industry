@@ -1244,8 +1244,11 @@ function onLakbanInputsChanged() {
     const totalInput = document.getElementById('lakban_jumlah_gr');
     if (totalInput) totalInput.value = totalGr;
 
-    // Ambil harga standar lakban timbangan (per gram)
-    let tarif = 35.10;
+    // Ambil harga standar lakban timbangan (per gram) dari Master Data Tarif Kemasan
+    let tarif = (typeof window.tarifLakbanDefault !== 'undefined' && window.tarifLakbanDefault > 0)
+        ? parseFloat(window.tarifLakbanDefault)
+        : 36.70;
+
     const lakbanMaster = (window.masterKemasanList || []).find(m => 
         (m.barang_cd && m.barang_cd.includes('LKB')) || 
         (m.barang_nm && m.barang_nm.toUpperCase().includes('LAKBAN'))

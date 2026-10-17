@@ -43,12 +43,6 @@
         </div>
 
         <div class="show-actions">
-            @if(Auth::user()->canCreateProduksi())
-                <a href="{{ route('produksi.adjust', $produksi->produksi_id) }}" id="btnGoToAdjustHpp" class="btn-adjust-hpp" style="text-decoration: none;" title="Koreksi / Adjustment HPP Lembar Kerja Penuh">
-                    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                    <span>Adjustment HPP</span>
-                </a>
-            @endif
             <button type="button" onclick="window.print()" class="btn-print-doc">
                 <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
                 <span>Cetak Lembar HPP</span>
@@ -97,6 +91,73 @@
         $pctEnergiBtkl = $totBiaya > 0 ? ($subtotalEnergiBtkl / $totBiaya) * 100 : 0;
         $pctFoh = $totBiaya > 0 ? ($subtotalFoh / $totBiaya) * 100 : 0;
     @endphp
+
+    {{-- TAB SWITCHER SPLIT DATA PER LINI (JIKA PADA TANGGAL INI TERDAPAT LEBIH DARI 1 LINI PRODUKSI) --}}
+    @if(isset($sameDateProductions) && $sameDateProductions->count() > 1)
+        <div class="line-split-tabs-wrapper no-print">
+            <div class="line-split-header">
+                <div class="line-split-title">
+                    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                    <span>Lini Produksi Hari Ini ({{ Carbon\Carbon::parse($produksi->produksi_tgl)->format('d/m/Y') }}):</span>
+                </div>
+                <div class="line-split-badge-info">
+                    <span>Lini IFM &amp; Lini Manual &bull; Klik Tab untuk Beralih Rincian Lini</span>
+                </div>
+            </div>
+
+            <div class="line-split-tabs-list">
+                @foreach($sameDateProductions as $pItem)
+                    @php
+                        $isActive = $pItem->produksi_id === $produksi->produksi_id;
+                        $rawUpper = strtoupper($pItem->lini_produksi ?? '');
+                        $isIfmTab = str_contains($rawUpper, 'IFM') || str_contains($rawUpper, 'IFL') || str_contains($rawUpper, 'INDOFOOD');
+                        $lineTitle = $isIfmTab ? 'Lini IFM' : 'Lini Manual';
+
+                        // Jika ada lebih dari 1 dokumen pada lini yang sama di hari itu, sertakan Shift & Urutan Batch
+                        $sameLineItems = $sameDateProductions->filter(function($x) use ($isIfmTab) {
+                            $u = strtoupper($x->lini_produksi ?? '');
+                            $xIfm = str_contains($u, 'IFM') || str_contains($u, 'IFL') || str_contains($u, 'INDOFOOD');
+                            return $xIfm === $isIfmTab;
+                        })->values();
+
+                        if ($sameLineItems->count() > 1) {
+                            $sameShiftItems = $sameLineItems->filter(function($x) use ($pItem) {
+                                return strtoupper($x->shift_cd ?? '') === strtoupper($pItem->shift_cd ?? '');
+                            })->values();
+
+                            if ($sameShiftItems->count() > 1) {
+                                $idx = $sameShiftItems->search(fn($x) => $x->produksi_id === $pItem->produksi_id);
+                                $lineTitle .= ' (Shift ' . strtoupper($pItem->shift_cd ?: 'A') . ' #' . ($idx + 1) . ')';
+                            } elseif (!empty($pItem->shift_cd)) {
+                                $lineTitle .= ' (Shift ' . strtoupper($pItem->shift_cd) . ')';
+                            }
+                        }
+                    @endphp
+                    <a href="{{ route('produksi.show', $pItem->produksi_id) }}" 
+                       class="line-split-tab-card {{ $isActive ? 'active' : '' }} {{ $isIfmTab ? 'tab-lini-ifm' : 'tab-lini-manual' }}">
+                        <div class="tab-card-top">
+                            <div class="tab-card-title-group">
+                                <span class="tab-card-dot"></span>
+                                <span class="tab-card-name">{{ $lineTitle }}</span>
+                            </div>
+                            @if($isActive)
+                                <span class="tab-card-active-pill">Sedang Ditampilkan</span>
+                            @else
+                                <span class="tab-card-switch-hint">Beralih ke Lini Ini &rarr;</span>
+                            @endif
+                        </div>
+                        <div class="tab-card-meta">
+                            <span class="meta-doc-no">#{{ $pItem->produksi_no }}</span>
+                            <span class="meta-sep">&bull;</span>
+                            <span class="meta-qty">{{ number_format($pItem->total_wip_qty, 0, ',', '.') }} kg WIP</span>
+                            <span class="meta-sep">&bull;</span>
+                            <span class="meta-hpp">HPP Rp {{ number_format($pItem->hpp_per_kg, 0, ',', '.') }}/kg</span>
+                        </div>
+                    </a>
+                @endforeach
+            </div>
+        </div>
+    @endif
 
     {{-- ═════════════════════════════════════════════════════════════════ --}}
     {{-- BARIS 1: 4 KARTU METRIK EKSEKUTIF UTAMA (EXECUTIVE STAT GRID)      --}}
@@ -219,16 +280,6 @@
                     <tr>
                         <td class="label-col">Lini Produksi Pabrik</td>
                         <td class="value-col">{{ $produksi->lini_produksi }}</td>
-                    </tr>
-                    <tr>
-                        <td class="label-col">Jam Mulai Pengerjaan</td>
-                        <td class="value-col">
-                            @if($produksi->jam_produksi)
-                                {{ $produksi->jam_produksi }} WIB
-                            @else
-                                <span style="color: #64748b;">- (Shift {{ $produksi->shift_cd ?: 'A' }})</span>
-                            @endif
-                        </td>
                     </tr>
                     <tr>
                         <td class="label-col">Varietas Singkong (RM)</td>

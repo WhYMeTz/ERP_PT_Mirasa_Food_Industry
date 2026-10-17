@@ -1047,7 +1047,7 @@ class ProduksiService
             }
 
             // Cek apakah produk utama yang dihasilkan adalah standar Indofood IFM / WIP-FCC
-            $lini = strtoupper($data['lini_produksi'] ?? 'PRODUKSI IFL');
+            $lini = strtoupper($data['lini_produksi'] ?? 'PRODUKSI IFM');
             $isIfm = false;
             if (!empty($data['output_items']) && is_array($data['output_items'])) {
                 $firstItemId = (int) ($data['output_items'][0]['barang_id'] ?? 0);

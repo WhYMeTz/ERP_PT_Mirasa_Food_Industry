@@ -1107,3 +1107,185 @@ a.btn-adjust-hpp:active {
     }
 }
 
+/* ==========================================================================
+   Tab Switcher Split View Lini Produksi (Multi-Lini di Hari yang Sama)
+   ========================================================================== */
+.line-split-tabs-wrapper {
+    background: #ffffff;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 10px;
+    padding: 0.9rem 1.15rem;
+    margin-bottom: 1.25rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.line-split-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.line-split-title {
+    font-size: 0.875rem;
+    font-weight: 800;
+    color: #0f172a;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.line-split-title svg {
+    color: #0284c7;
+}
+
+.line-split-badge-info {
+    font-size: 0.75rem;
+    color: #64748b;
+    font-weight: 600;
+    background: #f8fafc;
+    padding: 0.15rem 0.55rem;
+    border-radius: 4px;
+    border: 1px solid #e2e8f0;
+}
+
+.line-split-tabs-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 0.75rem;
+}
+
+.line-split-tab-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    border: 1.5px solid #e2e8f0;
+    background: #f8fafc;
+    text-decoration: none;
+    transition: all 0.15s ease-in-out;
+}
+
+.line-split-tab-card:hover {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+}
+
+.line-split-tab-card.active {
+    background: #ffffff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    cursor: default;
+    transform: none;
+}
+
+.line-split-tab-card.tab-lini-ifm.active {
+    border-color: #3b82f6;
+    background: #eff6ff;
+}
+
+.line-split-tab-card.tab-lini-manual.active {
+    border-color: #10b981;
+    background: #f0fdf4;
+}
+
+.tab-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.tab-card-title-group {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+}
+
+.tab-card-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #94a3b8;
+    flex-shrink: 0;
+}
+
+.tab-lini-ifm .tab-card-dot {
+    background: #3b82f6;
+}
+
+.tab-lini-manual .tab-card-dot {
+    background: #10b981;
+}
+
+.tab-card-name {
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: #0f172a;
+}
+
+.tab-card-active-pill {
+    font-size: 0.65rem;
+    font-weight: 800;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.tab-lini-ifm .tab-card-active-pill {
+    background: #2563eb;
+    color: #ffffff;
+}
+
+.tab-lini-manual .tab-card-active-pill {
+    background: #059669;
+    color: #ffffff;
+}
+
+.tab-card-switch-hint {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #64748b;
+}
+
+.line-split-tab-card:hover .tab-card-switch-hint {
+    color: #0284c7;
+}
+
+.tab-card-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.75rem;
+    color: #64748b;
+    margin-top: 0.1rem;
+}
+
+.meta-doc-no {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-weight: 700;
+    color: #334155;
+}
+
+.meta-sep {
+    color: #cbd5e1;
+}
+
+.meta-qty {
+    font-weight: 700;
+    color: #0284c7;
+}
+
+.meta-hpp {
+    font-weight: 800;
+    color: #059669;
+}
+
+

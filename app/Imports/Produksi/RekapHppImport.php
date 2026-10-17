@@ -213,7 +213,7 @@ class RekapHppImport
                     ->where('deleted_st', false)
                     ->first();
 
-                $liniName = $iflQty > 0 ? 'PRODUKSI IFL' : 'PRODUKSI MANUAL';
+                $liniName = $iflQty > 0 ? 'PRODUKSI IFM' : 'PRODUKSI MANUAL';
 
                 if (!$produksi) {
                     $noProduksi = $this->codeGenerator->generateKodeProduksi($tgl);

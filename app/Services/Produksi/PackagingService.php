@@ -18,11 +18,14 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 
+use App\Services\Produksi\TarifKemasanService;
+
 class PackagingService
 {
     public function __construct(
         protected StokService $stokService,
-        protected CodeGeneratorService $codeGenerator
+        protected CodeGeneratorService $codeGenerator,
+        protected TarifKemasanService $tarifKemasanService
     ) {}
 
     /**
@@ -966,31 +969,8 @@ class PackagingService
         $avgGramasiKg = $activeCount > 0 ? round($totGramasiKg / $activeCount, 2) : 0;
         $rataHppUnit = $totHasilJumlah > 0 ? round($totalBiaya / $totHasilJumlah, 2) : 0;
 
-        // Parameter Standar Acuan Harga (Daftar Harga Atas Excel)
-        $daftarHarga = [
-            'harga_wip'      => 29500,
-            'tgl_wip'        => '20/01/2026',
-            'karton_kk'      => 1358.30,
-            'karton_mk'      => 1350.00,
-            'karton_xx'      => 1358.30,
-            'karton_mx'      => 1350.00,
-            'bumbu_balado'   => 39450,
-            'bumbu_rasio'    => '5% Berko',
-            'roll_kk_unit'   => 364839,
-            'roll_mk_unit'   => 384471,
-            'roll_xx_unit'   => 364839,
-            'roll_mx_unit'   => 384471,
-            'out_3_kk'       => 353894,
-            'out_3_mk'       => 372937,
-            'out_3_xx'       => 353894,
-            'out_3_mx'       => 372937,
-            'roll_per_kg'    => 43482,
-            'roll_per_gr'    => 43.48,
-            'lakban_roll'    => 45000,
-            'lakban_per_gr'  => 106.63,
-            'kertas_exp_lbr' => 100,
-            'kerusakan_gr'   => 43.48,
-        ];
+        // Parameter Standar Acuan Harga (Daftar Harga Atas Excel) diambil dinamis dari Master Standar Harga Kemasan
+        $daftarHarga = $this->tarifKemasanService->getDaftarHargaPackaging();
 
         return [
             'year'                   => $year,

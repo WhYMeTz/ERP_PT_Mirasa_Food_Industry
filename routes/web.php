@@ -22,6 +22,7 @@ use App\Http\Controllers\MasterData\MesinController;
 use App\Http\Controllers\MasterData\SatuanController;
 use App\Http\Controllers\MasterData\SupplierController;
 use App\Http\Controllers\MasterData\TarifProduksiController;
+use App\Http\Controllers\MasterData\TarifKemasanController;
 use App\Http\Controllers\Keuangan\BayarHutangController;
 use App\Http\Controllers\Keuangan\HutangController;
 use App\Http\Controllers\Keuangan\KasBankController;
@@ -114,6 +115,16 @@ Route::middleware('auth')->group(function () {
         ->name('master.tarif_produksi.index');
     Route::put('master-tarif-produksi/{id}', [TarifProduksiController::class, 'update'])
         ->name('master.tarif_produksi.update');
+
+    // Master Standar Harga Kemasan & Packaging (Ping-Ping, Maksi, Lakban, Roll, Bumbu, dll)
+    Route::get('master-tarif-kemasan/api-rates', [TarifKemasanController::class, 'apiRates'])
+        ->name('master.tarif_kemasan.api-rates');
+    Route::post('master-tarif-kemasan/quick-update', [TarifKemasanController::class, 'quickUpdate'])
+        ->name('master.tarif_kemasan.quick-update');
+    Route::get('master-tarif-kemasan', [TarifKemasanController::class, 'index'])
+        ->name('master.tarif_kemasan.index');
+    Route::put('master-tarif-kemasan/{id}', [TarifKemasanController::class, 'update'])
+        ->name('master.tarif_kemasan.update');
 
     // Master Supplier
     Route::resource('master-jenis-supplier', JenisSupplierController::class)->names('master.jenis_supplier');

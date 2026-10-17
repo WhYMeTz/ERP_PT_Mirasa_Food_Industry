@@ -112,9 +112,9 @@
                     </span>
                 </div>
                 <div id="liveBatchCode" style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 1.25rem; font-weight: 800; color: #0f172a; letter-spacing: 0.03em; line-height: 1.2;">
-                    {{ old('batch_wip_no', 'A0001 - A0001') }}
+                    {{ old('batch_wip_no', date('d m Y')) }}
                 </div>
-                <input type="hidden" name="batch_wip_no" id="batch_wip_no" value="{{ old('batch_wip_no') }}">
+                <input type="hidden" name="batch_wip_no" id="batch_wip_no" value="{{ old('batch_wip_no', date('d m Y')) }}">
             </div>
         </div>
 

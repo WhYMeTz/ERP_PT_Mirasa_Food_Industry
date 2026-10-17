@@ -240,6 +240,18 @@
                         <td class="label-col">Input Singkong Mentah</td>
                         <td class="value-col" style="font-weight: 700;">{{ number_format($produksi->singkong_qty, 0, ',', '.') }} kg</td>
                     </tr>
+                    @if($produksi->pemakaianBahan)
+                    <tr>
+                        <td class="label-col">Dokumen Bahan Baku (BPPB)</td>
+                        <td class="value-col">
+                            <a href="{{ route('gudang.pemakaian.show', $produksi->pakai_id) }}" style="color: #0284c7; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 0.35rem;" title="Lihat Dokumen Pengeluaran Gudang (BPPB)">
+                                <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                                <span>{{ $produksi->pemakaianBahan->pakai_no }}</span>
+                            </a>
+                            <span style="font-size: 0.725rem; color: #64748b; margin-left: 0.25rem;">({{ $produksi->pemakaianBahan->tujuan_pemakaian }})</span>
+                        </td>
+                    </tr>
+                    @endif
                     <tr>
                         <td class="label-col">Jumlah Tenaga Kerja</td>
                         <td class="value-col">

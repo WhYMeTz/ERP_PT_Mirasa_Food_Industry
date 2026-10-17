@@ -159,16 +159,15 @@
     }
 
     // Helper: Terapkan badge batch yang tepat ke satu baris tabel output (idx)
-    function applyBatchBadgeToRow(idx, sel, curahSeq = null) {
+    function applyBatchBadgeToRow(idx, sel) {
         const opt = sel?.selectedOptions?.[0];
         const cd = opt?.dataset?.cd || '';
         const nm = opt?.dataset?.nm || '';
 
         const isCurah = isCurahWipProduct(cd, nm);
         const baseDate = getDateBatch();
-        const seqSuffix = curahSeq ? '-' + String(curahSeq).padStart(2, '0') : '-01';
         const batchForItem = isCurah
-            ? (baseDate ? `${baseDate}${seqSuffix}` : '-')                  // Curah → tanggal urut (-01, -02)
+            ? (baseDate && baseDate !== '-' ? baseDate : '-')              // Curah → format tanggal murni (DD MM YYYY)
             : (document.getElementById('batch_wip_no')?.value || '-');    // Kemasan → range karton
 
         const badgeFgBatch = document.getElementById(`badgeFgBatch_${idx}`);
@@ -177,11 +176,11 @@
         if (badgeFgBatch) {
             badgeFgBatch.textContent = batchForItem;
             if (isCurah) {
-                // Hijau = curah/Berko → format tanggal
+                // Hijau = curah/Berko → format tanggal murni
                 badgeFgBatch.style.background = '#f0fdf4';
                 badgeFgBatch.style.color = '#065f46';
                 badgeFgBatch.style.borderColor = '#a7f3d0';
-                badgeFgBatch.title = 'Batch Curah: Format Tanggal Urut (DD MM YYYY-01)';
+                badgeFgBatch.title = 'Batch Curah: Format Tanggal Murni (DD MM YYYY)';
             } else if (batchForItem && batchForItem !== '-') {
                 // Biru = kemasan karton IFM → format range
                 badgeFgBatch.style.background = '#f0f9ff';
@@ -200,12 +199,11 @@
     }
 
     // Helper: Sinkronisasi Kode Batch Bagian 2 ke seluruh Baris Output Barang Jadi (Bagian 7)
-    // Per baris: kemasan IFM → range, WIP curah → tanggal urut harian (-01, -02, dst)
+    // Per baris: kemasan IFM → range, WIP curah → tanggal murni harian (DD MM YYYY)
     window.syncBatchToOutputItems = function () {
         const tbody = document.getElementById('tbodyOutputFg');
         if (!tbody) return;
 
-        let curahSeqCounter = 1;
         tbody.querySelectorAll('.row-output-fg').forEach(tr => {
             const sel = tr.querySelector('.select-fg-barang');
             if (!sel) return;
@@ -216,12 +214,7 @@
             if (!idxMatch) return;
             const idx = idxMatch[1];
 
-            const opt = sel?.selectedOptions?.[0];
-            const cd = opt?.dataset?.cd || '';
-            const nm = opt?.dataset?.nm || '';
-            const isCurah = isCurahWipProduct(cd, nm);
-
-            applyBatchBadgeToRow(idx, sel, isCurah ? curahSeqCounter++ : null);
+            applyBatchBadgeToRow(idx, sel);
         });
     };
 
@@ -385,22 +378,22 @@
                 cardHeaderBadge.style.borderColor = '#cbd5e1';
             }
         } else {
-            // Format Batch Tanggal Urut: DD MM YYYY-01
+            // Format Batch Tanggal Murni: DD MM YYYY
             if (tgl) {
                 const parts = tgl.split('-');
                 if (parts.length === 3) {
-                    batchCode = `${parts[2]} ${parts[1]} ${parts[0]}-01`;
+                    batchCode = `${parts[2]} ${parts[1]} ${parts[0]}`;
                 }
             } else {
                 const now = new Date();
                 const d = String(now.getDate()).padStart(2, '0');
                 const m = String(now.getMonth() + 1).padStart(2, '0');
                 const y = now.getFullYear();
-                batchCode = `${d} ${m} ${y}-01`;
+                batchCode = `${d} ${m} ${y}`;
             }
 
             if (cardHeaderBadge && isIfm && !hasKartonInput) {
-                cardHeaderBadge.innerHTML = 'Format Batch: Tanggal Urut (DD MM YYYY-01) <span style="font-weight: 500; font-size: 0.7rem; color: #64748b;">(No. Karton Dikosongkan)</span>';
+                cardHeaderBadge.innerHTML = 'Format Batch: Tanggal Murni (DD MM YYYY) <span style="font-weight: 500; font-size: 0.7rem; color: #64748b;">(No. Karton Dikosongkan)</span>';
                 cardHeaderBadge.style.background = '#f1f5f9';
                 cardHeaderBadge.style.color = '#334155';
                 cardHeaderBadge.style.borderColor = '#cbd5e1';
@@ -1361,6 +1354,44 @@
         wrapper.style.display = 'block';
     };
 
+    // Helper: Proteksi Anti-Duplikat Barang Hasil Produksi
+    // Mencegah pemilihan barang yang sama di baris lain dalam 1 formulir dokumen produksi
+    window.updateFgDuplicateProtection = function () {
+        const tbody = document.getElementById('tbodyOutputFg');
+        if (!tbody) return;
+
+        const selects = Array.from(tbody.querySelectorAll('.select-fg-barang'));
+        const selectedValues = new Set();
+        selects.forEach(sel => {
+            if (sel.value) {
+                selectedValues.add(sel.value.toString());
+            }
+        });
+
+        selects.forEach(sel => {
+            const currentVal = sel.value ? sel.value.toString() : '';
+
+            Array.from(sel.options).forEach(opt => {
+                if (!opt.value) return; // Lewati placeholder
+                const optVal = opt.value.toString();
+
+                if (!opt.dataset.origText) {
+                    opt.dataset.origText = opt.textContent.trim().replace(/\s*──\s*\(Sudah Dipilih\)/g, '');
+                }
+
+                if (selectedValues.has(optVal) && optVal !== currentVal) {
+                    opt.disabled = true;
+                    if (!opt.textContent.includes('(Sudah Dipilih)')) {
+                        opt.textContent = `${opt.dataset.origText} ── (Sudah Dipilih)`;
+                    }
+                } else {
+                    opt.disabled = false;
+                    opt.textContent = opt.dataset.origText;
+                }
+            });
+        });
+    };
+
     // 13. Logika Baris Dinamis Output Barang Hasil Produksi (Tabel Terpadu)
     let fgRowCounter = document.querySelectorAll('.row-output-fg').length || 1;
     window.addFgRow = function (initial) {
@@ -1464,6 +1495,9 @@
 
         renumberFgRows();
         window.calcAll();
+        if (typeof window.updateFgDuplicateProtection === 'function') {
+            window.updateFgDuplicateProtection();
+        }
     };
 
 
@@ -1484,6 +1518,9 @@
         row.remove();
         renumberFgRows();
         window.calcAll();
+        if (typeof window.updateFgDuplicateProtection === 'function') {
+            window.updateFgDuplicateProtection();
+        }
     };
 
     function renumberFgRows() {
@@ -1545,7 +1582,27 @@
         const opt = sel.selectedOptions[0];
         if (!opt || !opt.value) {
             resetFgBarangRow(sel, idx);
+            if (typeof window.updateFgDuplicateProtection === 'function') {
+                window.updateFgDuplicateProtection();
+            }
             return;
+        }
+
+        // Proteksi Anti-Duplikat: Cek apakah barang ini sudah dipilih di baris lain
+        const currentVal = sel.value;
+        if (currentVal) {
+            const tbody = document.getElementById('tbodyOutputFg');
+            const otherSelects = Array.from(tbody?.querySelectorAll('.select-fg-barang') || []).filter(s => s !== sel);
+            const isDuplicate = otherSelects.some(s => s.value === currentVal);
+            if (isDuplicate) {
+                alert('⚠️ Barang ini sudah dipilih pada baris lain!\n\nUntuk produk yang sama dalam 1 dokumen produksi, silakan gabungkan jumlah kuantitasnya pada baris yang sudah ada.');
+                sel.value = '';
+                resetFgBarangRow(sel, idx);
+                if (typeof window.updateFgDuplicateProtection === 'function') {
+                    window.updateFgDuplicateProtection();
+                }
+                return;
+            }
         }
 
         const jenis = opt.dataset.jenis || 'FG';
@@ -1572,9 +1629,7 @@
         if (labelSatuan) labelSatuan.textContent = satuan;
         if (inputSatuan) inputSatuan.value = satuan;
 
-        // ── Auto-assign batch format berdasarkan jenis produk:
-        // Kemasan karton (IFM/FCC) → format range (A0001 - A0243)
-        // WIP Curah / Berko dll    → format tanggal (07 10 2026)
+        // Auto-assign batch format berdasarkan jenis produk
         window.onQtyHasilInput(idx);
 
         if (typeof window.updateKartonRangeAndBatch === 'function') {
@@ -1582,6 +1637,9 @@
         }
         if (typeof window.updateStickerPreview === 'function') {
             window.updateStickerPreview();
+        }
+        if (typeof window.updateFgDuplicateProtection === 'function') {
+            window.updateFgDuplicateProtection();
         }
     };
 
@@ -1814,6 +1872,11 @@
         const valTkNilai = document.getElementById('tk_total_nilai')?.value;
         if ((!valTkJml || valTkJml === '0') && (!valTkNilai || valTkNilai === '0')) {
             window.syncLaborFromKaryawan();
+        }
+
+        // Inisialisasi proteksi anti-duplikat pilihan barang hasil produksi
+        if (typeof window.updateFgDuplicateProtection === 'function') {
+            window.updateFgDuplicateProtection();
         }
     });
 

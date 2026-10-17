@@ -3,6 +3,7 @@
 namespace App\Services\Produksi;
 
 use App\Models\Produksi\DatLaporanKemasOperator;
+use App\Models\Produksi\DatProduksiDtl;
 use App\Models\User;
 use Carbon\Carbon;
 use Exception;
@@ -41,11 +42,14 @@ class LaporanKemasOperatorService
     {
         $query = DatLaporanKemasOperator::with([
             'barangJadi.satuanDasar',
+            'wipBarang.satuanDasar',
             'produksi',
             'karyawan',
             'bumbuBarang',
             'plastikBarang',
             'kartonBarang',
+            'lakbanBarang',
+            'kemasanLainBarang',
             'packagingHdr',
         ])->where('deleted_st', false);
 
@@ -92,11 +96,13 @@ class LaporanKemasOperatorService
     {
         return DatLaporanKemasOperator::with([
             'barangJadi.satuanDasar',
+            'wipBarang.satuanDasar',
             'produksi',
             'karyawan',
             'bumbuBarang',
             'plastikBarang',
             'kartonBarang',
+            'lakbanBarang',
             'kemasanLainBarang',
         ])
         ->where('deleted_st', false)
@@ -113,11 +119,13 @@ class LaporanKemasOperatorService
     {
         return DatLaporanKemasOperator::with([
             'barangJadi.satuanDasar',
+            'wipBarang.satuanDasar',
             'produksi',
             'karyawan',
             'bumbuBarang',
             'plastikBarang',
             'kartonBarang',
+            'lakbanBarang',
             'kemasanLainBarang',
             'packagingHdr',
         ])
@@ -144,6 +152,22 @@ class LaporanKemasOperatorService
                 $lakbanBawahGr = round($lakbanQty / 2, 1);
             }
 
+            $outputId = !empty($payload['output_id']) ? (int) $payload['output_id'] : null;
+            $produksiId = !empty($payload['produksi_id']) ? (int) $payload['produksi_id'] : null;
+            $wipBarangId = !empty($payload['wip_barang_id']) ? (int) $payload['wip_barang_id'] : null;
+            $wipBatchNo = !empty($payload['wip_batch_no']) ? trim($payload['wip_batch_no']) : null;
+
+            if ($outputId) {
+                $output = DatProduksiDtl::find($outputId);
+                if ($output) {
+                    $produksiId = $output->produksi_id;
+                    $wipBarangId = $output->barang_id;
+                    if (empty($wipBatchNo)) {
+                        $wipBatchNo = $output->batch_no;
+                    }
+                }
+            }
+
             $laporan = DatLaporanKemasOperator::create([
                 'laporan_no'             => $laporanNo,
                 'tgl_kemas'              => $tglKemas,
@@ -152,7 +176,10 @@ class LaporanKemasOperatorService
                 'operator_nama'          => trim($payload['operator_nama'] ?? $user->name ?? 'Operator Kemas'),
                 'jumlah_personil'        => (int) ($payload['jumlah_personil'] ?? 1),
                 'jumlah_mesin'           => (int) ($payload['jumlah_mesin'] ?? 1),
-                'produksi_id'            => !empty($payload['produksi_id']) ? $payload['produksi_id'] : null,
+                'produksi_id'            => $produksiId,
+                'wip_barang_id'          => $wipBarangId,
+                'output_id'              => $outputId,
+                'wip_batch_no'           => $wipBatchNo,
                 'wip_qty_kg'             => (float) ($payload['wip_qty_kg'] ?? 0),
                 'wip_satuan'             => strtoupper(trim($payload['wip_satuan'] ?? 'KG')),
                 'barang_jadi_id'         => (int) $payload['barang_jadi_id'],
@@ -169,6 +196,7 @@ class LaporanKemasOperatorService
                 'karton_rusak_lembar'    => (float) ($payload['karton_rusak_lembar'] ?? 0),
                 'lakban_atas_gr'         => $lakbanAtasGr,
                 'lakban_bawah_gr'        => $lakbanBawahGr,
+                'lakban_barang_id'       => !empty($payload['lakban_barang_id']) ? $payload['lakban_barang_id'] : null,
                 'lakban_qty'             => $lakbanQty,
                 'kemasan_lain_barang_id' => !empty($payload['kemasan_lain_barang_id']) ? $payload['kemasan_lain_barang_id'] : null,
                 'kemasan_lain_qty'       => (float) ($payload['kemasan_lain_qty'] ?? 0),

@@ -13,6 +13,29 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 /**
+ * Handle Lakban Unit Suffix Update on selection
+ */
+function initLakbanSync() {
+    const lakbanSelect = document.getElementById('lakban_barang_id');
+    const lakbanUnitLabel = document.getElementById('lakban_unit_label');
+
+    if (lakbanSelect && lakbanUnitLabel) {
+        function updateUnit() {
+            const opt = lakbanSelect.options[lakbanSelect.selectedIndex];
+            if (opt && opt.value) {
+                const satuan = opt.getAttribute('data-satuan') || 'ROLL';
+                lakbanUnitLabel.textContent = satuan;
+            } else {
+                lakbanUnitLabel.textContent = 'Roll / Gram';
+            }
+        }
+
+        lakbanSelect.addEventListener('change', updateUnit);
+        updateUnit();
+    }
+}
+
+/**
  * Handle Satuan WIP Segmented Buttons (KG / KARTON)
  */
 function initWipSatuanButtons() {
@@ -118,16 +141,53 @@ function initKaryawanSync() {
 }
 
 /**
- * Sync Produksi WIP Selection & show Berko / Curah info
+ * Sync Produksi WIP Selection & show Berko / Varian info
  */
 function initProduksiSync() {
-    const produksiSelect = document.getElementById('produksi_id');
+    const outputSelect = document.getElementById('output_id');
+    const legacyProdSelect = document.getElementById('produksi_id');
+    const hiddenProdId = document.getElementById('hidden_produksi_id');
+    const hiddenWipBarangId = document.getElementById('hidden_wip_barang_id');
+    const hiddenWipBatchNo = document.getElementById('hidden_wip_batch_no');
     const wipQtyInput = document.getElementById('wip_qty_kg');
     const wipInfoBox = document.getElementById('wipInfoBox');
     const wipInfoText = document.getElementById('wipInfoText');
 
-    if (produksiSelect) {
-        produksiSelect.addEventListener('change', function () {
+    if (outputSelect) {
+        function syncOutput() {
+            const opt = outputSelect.options[outputSelect.selectedIndex];
+            if (opt && opt.value) {
+                const prodId = opt.getAttribute('data-produksi-id') || '';
+                const barangId = opt.getAttribute('data-barang-id') || '';
+                const batchNo = opt.getAttribute('data-batch') || '-';
+                const barangNama = opt.getAttribute('data-barang-nama') || 'Keripik Curah';
+                const qtyKg = opt.getAttribute('data-qty') || '0';
+
+                if (hiddenProdId) hiddenProdId.value = prodId;
+                if (hiddenWipBarangId) hiddenWipBarangId.value = barangId;
+                if (hiddenWipBatchNo) hiddenWipBatchNo.value = batchNo;
+
+                if (wipInfoBox && wipInfoText) {
+                    wipInfoText.textContent = `Varian: ${barangNama} • Batch: ${batchNo} • Tersedia: ${qtyKg} Kg`;
+                    wipInfoBox.style.display = 'block';
+                }
+
+                // Jika input masih kosong, beri nilai default stok yang tersedia
+                if (wipQtyInput && (!wipQtyInput.value || parseFloat(wipQtyInput.value) === 0)) {
+                    wipQtyInput.value = qtyKg;
+                }
+            } else {
+                if (hiddenProdId) hiddenProdId.value = '';
+                if (hiddenWipBarangId) hiddenWipBarangId.value = '';
+                if (hiddenWipBatchNo) hiddenWipBatchNo.value = '';
+                if (wipInfoBox) wipInfoBox.style.display = 'none';
+            }
+        }
+
+        outputSelect.addEventListener('change', syncOutput);
+        syncOutput();
+    } else if (legacyProdSelect) {
+        legacyProdSelect.addEventListener('change', function () {
             const opt = this.options[this.selectedIndex];
             if (opt && opt.value) {
                 const qtyVal = opt.getAttribute('data-qty') || '0';

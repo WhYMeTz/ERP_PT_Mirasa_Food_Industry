@@ -25,6 +25,9 @@ class DatLaporanKemasOperator extends Model
         'jumlah_personil',
         'jumlah_mesin',
         'produksi_id',
+        'wip_barang_id',
+        'output_id',
+        'wip_batch_no',
         'wip_qty_kg',
         'wip_satuan',
         'barang_jadi_id',
@@ -41,6 +44,7 @@ class DatLaporanKemasOperator extends Model
         'karton_rusak_lembar',
         'lakban_atas_gr',
         'lakban_bawah_gr',
+        'lakban_barang_id',
         'lakban_qty',
         'kemasan_lain_barang_id',
         'kemasan_lain_qty',
@@ -85,6 +89,16 @@ class DatLaporanKemasOperator extends Model
         return $this->belongsTo(DatProduksiHdr::class, 'produksi_id', 'produksi_id');
     }
 
+    public function wipBarang(): BelongsTo
+    {
+        return $this->belongsTo(MstBarang::class, 'wip_barang_id', 'barang_id');
+    }
+
+    public function outputDtl(): BelongsTo
+    {
+        return $this->belongsTo(DatProduksiDtl::class, 'output_id', 'output_id');
+    }
+
     public function barangJadi(): BelongsTo
     {
         return $this->belongsTo(MstBarang::class, 'barang_jadi_id', 'barang_id');
@@ -103,6 +117,11 @@ class DatLaporanKemasOperator extends Model
     public function kartonBarang(): BelongsTo
     {
         return $this->belongsTo(MstBarang::class, 'karton_barang_id', 'barang_id');
+    }
+
+    public function lakbanBarang(): BelongsTo
+    {
+        return $this->belongsTo(MstBarang::class, 'lakban_barang_id', 'barang_id');
     }
 
     public function kemasanLainBarang(): BelongsTo

@@ -78,51 +78,32 @@
             <span>Bahan Keripik Curah (WIP Dapur)</span>
         </h2>
 
-        {{-- Sumber Batch WIP Produksi --}}
+        {{-- Sumber Varian WIP Hasil Produksi Dapur --}}
         <div class="pkg-form-group">
-            <label class="pkg-label" for="produksi_id">Batch / Lembar Produksi Goreng (WIP) <span style="font-size: 0.75rem; color: #15803d; font-weight: 600;">(Prioritas FIFO)</span></label>
-            <select id="produksi_id" name="produksi_id" class="pkg-select">
-                <option value="">-- Pilih Lembar Masak Dapur --</option>
-                @foreach ($produksiList as $p)
+            <label class="pkg-label" for="output_id">Varian Keripik WIP / Hasil Masak Dapur</label>
+            <input type="hidden" name="produksi_id" id="hidden_produksi_id" value="{{ old('produksi_id') }}">
+            <input type="hidden" name="wip_barang_id" id="hidden_wip_barang_id" value="{{ old('wip_barang_id') }}">
+            <input type="hidden" name="wip_batch_no" id="hidden_wip_batch_no" value="{{ old('wip_batch_no') }}">
+
+            <select id="output_id" name="output_id" class="pkg-select">
+                <option value="">-- Pilih Varian Keripik Curah Hasil Masak --</option>
+                @foreach ($wipList as $wip)
                     @php
-                        $tglStr = $p->produksi_tgl ? $p->produksi_tgl->format('d/m/Y') : '-';
-                        $validDetails = $p->details->filter(fn($d) => (float) $d->qty_kg > 0);
+                        $prodNo = $wip->produksi?->produksi_no ?? 'PROD';
+                        $tglStr = $wip->produksi?->produksi_tgl ? $wip->produksi->produksi_tgl->format('d/m/Y') : '-';
+                        $batchStr = $wip->batch_no ?: ($wip->produksi?->batch_wip_no ?: ($wip->produksi?->produksi_tgl ? $wip->produksi->produksi_tgl->format('d m Y') : '-'));
+                        $barangNm = $wip->barang?->barang_nm ?? 'Keripik Curah';
+                        $qtyKg = (float) $wip->qty_kg;
                     @endphp
-                    @if($validDetails->isNotEmpty())
-                        @foreach ($validDetails as $dtl)
-                            @php
-                                $qtyKg = (float) $dtl->qty_kg;
-                                $barangNm = $dtl->barang?->barang_nm ?? 'Keripik Curah';
-                                $batchStr = $dtl->batch_no ?: ($p->batch_wip_no ?: ($p->produksi_tgl ? $p->produksi_tgl->format('d m Y') : '-'));
-                            @endphp
-                            <option value="{{ $p->produksi_id }}" 
-                                    data-qty="{{ $qtyKg }}" 
-                                    data-batch="{{ $batchStr }}"
-                                    data-barang-nm="{{ $barangNm }}"
-                                    data-barang-id="{{ $dtl->barang_id }}"
-                                    data-no="{{ $p->produksi_no }}"
-                                    data-tgl="{{ $tglStr }}"
-                                    {{ old('produksi_id') == $p->produksi_id ? 'selected' : '' }}>
-                                [{{ $p->produksi_no }}] {{ $tglStr }} &bull; {{ $barangNm }} ({{ number_format($qtyKg, 0, ',', '.') }} Kg) &bull; Batch: {{ $batchStr }}
-                            </option>
-                        @endforeach
-                    @else
-                        @php
-                            $qtyBerko = (float) ($p->total_berko_qty > 0 ? $p->total_berko_qty : $p->berko_qty);
-                            $batchStr = $p->batch_wip_no ?: ($p->produksi_tgl ? $p->produksi_tgl->format('d m Y') : '-');
-                        @endphp
-                        @if($qtyBerko > 0)
-                            <option value="{{ $p->produksi_id }}" 
-                                    data-qty="{{ $qtyBerko }}" 
-                                    data-batch="{{ $batchStr }}"
-                                    data-barang-nm="KS BERKO"
-                                    data-no="{{ $p->produksi_no }}"
-                                    data-tgl="{{ $tglStr }}"
-                                    {{ old('produksi_id') == $p->produksi_id ? 'selected' : '' }}>
-                                [{{ $p->produksi_no }}] {{ $tglStr }} &bull; KS BERKO ({{ number_format($qtyBerko, 0, ',', '.') }} Kg) &bull; Batch: {{ $batchStr }}
-                            </option>
-                        @endif
-                    @endif
+                    <option value="{{ $wip->output_id }}"
+                            data-produksi-id="{{ $wip->produksi_id }}"
+                            data-barang-id="{{ $wip->barang_id }}"
+                            data-batch="{{ $batchStr }}"
+                            data-barang-nama="{{ $barangNm }}"
+                            data-qty="{{ $qtyKg }}"
+                            {{ old('output_id') == $wip->output_id ? 'selected' : '' }}>
+                        [{{ $prodNo }}] {{ $barangNm }} &bull; Batch: {{ $batchStr }} (Tersedia: {{ number_format($qtyKg, 0, ',', '.') }} Kg)
+                    </option>
                 @endforeach
             </select>
             <div id="wipInfoBox" class="pkg-info-box" style="display: none;">
@@ -302,13 +283,27 @@
             </div>
         </div>
 
-        {{-- C. Lakban & Kemasan Tambahan --}}
-        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.75rem; margin-bottom: 0.75rem;">
+        {{-- C. Lakban (Selotip / Tape Dus) --}}
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.875rem; margin-bottom: 0.875rem;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                <span style="font-size: 0.8rem; font-weight: 700; color: #0f172a;">🏷️ Timbangan Lakban Dus (Gram)</span>
+                <span style="font-size: 0.8rem; font-weight: 800; color: #1e293b;">
+                    C. Lakban (Selotip / Tape Dus)
+                </span>
                 <span id="badgeLakbanTotal" style="font-size: 0.725rem; font-weight: 700; background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; padding: 2px 6px; border-radius: 4px;">
                     Total: <span id="lbl_lakban_total">0</span> g (<span id="lbl_lakban_rp">Rp 0</span>)
                 </span>
+            </div>
+            <div class="pkg-form-group">
+                <select id="lakban_barang_id" name="lakban_barang_id" class="pkg-select">
+                    <option value="">-- Pilih Jenis Lakban --</option>
+                    @foreach ($lakbanList as $lkb)
+                        <option value="{{ $lkb->barang_id }}" 
+                            data-satuan="{{ $lkb->satuanDasar?->satuan_nm ?? 'ROLL' }}"
+                            {{ old('lakban_barang_id') == $lkb->barang_id ? 'selected' : '' }}>
+                            {{ $lkb->barang_nm }} ({{ $lkb->satuanDasar?->satuan_nm ?? 'ROLL' }})
+                        </option>
+                    @endforeach
+                </select>
             </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem;">
                 <div class="pkg-form-group">
@@ -323,9 +318,25 @@
             <input type="hidden" id="lakban_qty" name="lakban_qty" value="{{ old('lakban_qty', 0) }}">
         </div>
 
-        <div class="pkg-form-group">
-            <label class="pkg-label" for="kemasan_lain_qty">Plastik Bal / Kemasan Tambahan (Opsional)</label>
-            <input type="number" step="any" min="0" id="kemasan_lain_qty" name="kemasan_lain_qty" class="pkg-input" placeholder="Jumlah / Lembar" value="{{ old('kemasan_lain_qty', 0) }}">
+        {{-- D. Kemasan Tambahan (Plastik Bal / Tali / Label) --}}
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.875rem; margin-bottom: 0.875rem;">
+            <span style="font-size: 0.8rem; font-weight: 800; color: #1e293b; display: block; margin-bottom: 0.5rem;">
+                D. Kemasan Tambahan (Plastik Bal / Rafia / Label)
+            </span>
+            <div class="pkg-form-group">
+                <select id="kemasan_lain_barang_id" name="kemasan_lain_barang_id" class="pkg-select">
+                    <option value="">-- Pilih Kemasan Tambahan (Opsional) --</option>
+                    @foreach ($kemasanLainList as $kml)
+                        <option value="{{ $kml->barang_id }}" {{ old('kemasan_lain_barang_id') == $kml->barang_id ? 'selected' : '' }}>
+                            {{ $kml->barang_nm }} ({{ $kml->satuanDasar?->satuan_nm ?? 'PCS' }})
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+            <div>
+                <label class="pkg-label" for="kemasan_lain_qty">Jumlah Pemakaian (Pcs / Bal)</label>
+                <input type="number" step="any" min="0" id="kemasan_lain_qty" name="kemasan_lain_qty" class="pkg-input" placeholder="0" value="{{ old('kemasan_lain_qty', 0) }}">
+            </div>
         </div>
 
         {{-- Catatan Lapangan --}}

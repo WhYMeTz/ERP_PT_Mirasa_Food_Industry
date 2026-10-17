@@ -51,10 +51,18 @@
             @if ($laporan->wip_qty_kg > 0)
                 <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f1f5f9;">
                     <span style="color: #64748b;">Curah WIP Dikemas:</span>
-                    <strong style="color: #0f172a;">
-                        @if ($laporan->produksi) [{{ $laporan->produksi->produksi_no }}] @endif
-                        {{ number_format($laporan->wip_qty_kg, 2, ',', '.') }} {{ $laporan->wip_satuan ?: 'Kg' }}
-                    </strong>
+                    <div style="text-align: right;">
+                        <strong style="color: #0f172a; display: block;">
+                            {{ $laporan->wipBarang?->barang_nm ?? ($laporan->produksi ? 'Keripik Curah' : '-') }}
+                        </strong>
+                        <div style="font-size: 0.75rem; color: #64748b; margin: 2px 0;">
+                            @if ($laporan->produksi) [{{ $laporan->produksi->produksi_no }}] @endif
+                            @if ($laporan->wip_batch_no) &bull; Batch: {{ $laporan->wip_batch_no }} @endif
+                        </div>
+                        <span style="font-weight: 800; color: #059669; font-size: 0.85rem;">
+                            {{ number_format($laporan->wip_qty_kg, 2, ',', '.') }} {{ $laporan->wip_satuan ?: 'Kg' }}
+                        </span>
+                    </div>
                 </div>
             @endif
 
@@ -93,14 +101,37 @@
                 </div>
             @endif
 
-            @if ($laporan->lakban_atas_gr > 0 || $laporan->lakban_bawah_gr > 0 || $laporan->lakban_qty > 0)
+            @if ($laporan->lakban_atas_gr > 0 || $laporan->lakban_bawah_gr > 0 || $laporan->lakban_qty > 0 || $laporan->lakbanBarang)
                 <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f1f5f9;">
                     <span style="color: #64748b;">Lakban Dus:</span>
-                    <strong style="color: #0f172a;">
+                    <div style="text-align: right;">
+                        <strong style="color: #0f172a; display: block;">
+                            {{ $laporan->lakbanBarang?->barang_nm ?? 'Lakban' }}
+                        </strong>
                         @if ($laporan->lakban_atas_gr > 0 || $laporan->lakban_bawah_gr > 0)
-                            Atas {{ number_format($laporan->lakban_atas_gr, 0, ',', '.') }}g | Bwh {{ number_format($laporan->lakban_bawah_gr, 0, ',', '.') }}g (Total {{ number_format($laporan->lakban_qty, 0, ',', '.') }}g)
+                            <div style="font-size: 0.75rem; color: #64748b; margin: 2px 0;">
+                                Atas {{ number_format($laporan->lakban_atas_gr, 0, ',', '.') }}g &bull; Bwh {{ number_format($laporan->lakban_bawah_gr, 0, ',', '.') }}g
+                            </div>
+                            <span style="font-weight: 800; color: #059669; font-size: 0.85rem;">
+                                Total: {{ number_format($laporan->lakban_qty, 0, ',', '.') }} Gram
+                            </span>
+                        @elseif ($laporan->lakban_qty > 0)
+                            <span style="font-weight: 800; color: #059669; font-size: 0.85rem;">
+                                {{ number_format($laporan->lakban_qty, 1, ',', '.') }} {{ $laporan->lakbanBarang?->satuanDasar?->satuan_nm ?? 'Gram/Roll' }}
+                            </span>
+                        @endif
+                    </div>
+                </div>
+            @endif
+
+            @if ($laporan->kemasan_lain_qty > 0 || $laporan->kemasanLainBarang)
+                <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f1f5f9;">
+                    <span style="color: #64748b;">Kemasan Tambahan:</span>
+                    <strong style="color: #0f172a;">
+                        @if ($laporan->kemasanLainBarang)
+                            {{ $laporan->kemasanLainBarang->barang_nm }} ({{ number_format($laporan->kemasan_lain_qty, 1, ',', '.') }} {{ $laporan->kemasanLainBarang->satuanDasar?->satuan_nm ?? 'Pcs' }})
                         @else
-                            {{ number_format($laporan->lakban_qty, 0, ',', '.') }} Gram/Roll
+                            {{ number_format($laporan->kemasan_lain_qty, 1, ',', '.') }} Pcs
                         @endif
                     </strong>
                 </div>

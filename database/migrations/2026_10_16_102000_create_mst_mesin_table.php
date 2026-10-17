@@ -12,32 +12,33 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('mst_mesin', function (Blueprint $table) {
-            $table->id('mesin_id');
-            $table->string('mesin_cd', 50)->unique()->comment('Kode Identifikasi Mesin (cth: FRY-IFL-01, PKG-CS-01)');
-            $table->string('mesin_nm', 100)->comment('Nama Mesin Operasional Pabrik');
-            $table->string('kategori_mesin', 30)->default('PRODUKSI')->comment('Kategori: PRODUKSI (Penggorengan/Pengolahan) atau PACKAGING (Pengemasan)');
-            $table->string('jenis_proses', 50)->nullable()->comment('Jenis Proses: PENGGORENGAN, PEMOTONGAN, PENIRISAN, PENGEMASAN_SEALER, PENGEMASAN_OTOMATIS, PENGEMASAN_KARTON');
-            $table->decimal('kapasitas_per_jam', 12, 2)->nullable()->comment('Kapasitas Output Standar Mesin');
-            $table->string('satuan_kapasitas', 30)->default('KG/JAM')->comment('Satuan Kapasitas (cth: KG/JAM, KEMASAN/MENIT, KARTON/MENIT)');
-            $table->string('tipe_energi', 30)->nullable()->comment('Sumber Energi: GAS_CNG, LPG, LISTRIK, SOLAR, MANUAL');
-            $table->string('status_kondisi', 30)->default('SIAP')->comment('Status Kesiapan: SIAP, MAINTENANCE, RUSAK');
-            $table->string('keterangan', 255)->nullable()->comment('Catatan Tambahan Spesifikasi Mesin');
+        if (!Schema::hasTable('mst_mesin')) {
+            Schema::create('mst_mesin', function (Blueprint $table) {
+                $table->id('mesin_id');
+                $table->string('mesin_cd', 50)->unique()->comment('Kode Identifikasi Mesin (cth: FRY-IFL-01, PKG-CS-01)');
+                $table->string('mesin_nm', 100)->comment('Nama Mesin Operasional Pabrik');
+                $table->string('kategori_mesin', 30)->default('PRODUKSI')->comment('Kategori: PRODUKSI (Penggorengan/Pengolahan) atau PACKAGING (Pengemasan)');
+                $table->string('jenis_proses', 50)->nullable()->comment('Jenis Proses: PENGGORENGAN, PEMOTONGAN, PENIRISAN, PENGEMASAN_SEALER, PENGEMASAN_OTOMATIS, PENGEMASAN_KARTON');
+                $table->decimal('kapasitas_per_jam', 12, 2)->nullable()->comment('Kapasitas Output Standar Mesin');
+                $table->string('satuan_kapasitas', 30)->default('KG/JAM')->comment('Satuan Kapasitas (cth: KG/JAM, KEMASAN/MENIT, KARTON/MENIT)');
+                $table->string('tipe_energi', 30)->nullable()->comment('Sumber Energi: GAS_CNG, LPG, LISTRIK, SOLAR, MANUAL');
+                $table->string('status_kondisi', 30)->default('SIAP')->comment('Status Kesiapan: SIAP, MAINTENANCE, RUSAK');
+                $table->string('keterangan', 255)->nullable()->comment('Catatan Tambahan Spesifikasi Mesin');
 
-            // 8 Kolom Audit Trail Standar ERP Mirasa
-            $table->timestamp('created_at')->nullable();
-            $table->string('created_by', 100)->nullable();
-            $table->timestamp('updated_at')->nullable();
-            $table->string('updated_by', 100)->nullable();
-            $table->timestamp('deleted_at')->nullable();
-            $table->string('deleted_by', 100)->nullable();
-            $table->boolean('deleted_st')->default(false);
-            $table->boolean('active_st')->default(true);
-        });
+                // 8 Kolom Audit Trail Standar ERP Mirasa
+                $table->timestamp('created_at')->nullable();
+                $table->string('created_by', 100)->nullable();
+                $table->timestamp('updated_at')->nullable();
+                $table->string('updated_by', 100)->nullable();
+                $table->timestamp('deleted_at')->nullable();
+                $table->string('deleted_by', 100)->nullable();
+                $table->boolean('deleted_st')->default(false);
+                $table->boolean('active_st')->default(true);
+            });
 
-        // Seed data awal mesin operasional pabrik PT Mirasa Food Industry
-        $now = now();
-        DB::table('mst_mesin')->insert([
+            // Seed data awal mesin operasional pabrik PT Mirasa Food Industry
+            $now = now();
+            DB::table('mst_mesin')->insert([
             // ── KATEGORI: PRODUKSI (PENGGORENGAN & PENGOLAHAN BAHAN) ──
             [
                 'mesin_cd'          => 'FRY-IFL-01',
@@ -237,6 +238,7 @@ return new class extends Migration
                 'deleted_st'        => false,
             ],
         ]);
+        }
     }
 
     /**

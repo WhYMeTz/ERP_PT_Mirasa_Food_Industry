@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\MasterData\MstBarang;
 use App\Models\MasterData\MstKaryawan;
 use App\Models\Produksi\DatProduksiHdr;
+use App\Models\Produksi\DatProduksiDtl;
 use App\Services\Produksi\LaporanKemasOperatorService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -28,22 +29,31 @@ class PackagingOperatorController extends Controller
      */
     public function create(): View
     {
-        // 1. Barang Jadi (FG)
-        $barangJadiList = MstBarang::with('satuanDasar')
+        // 1. Barang Jadi (FG) - Filter ketat HANYA barang Finished Goods (FG)
+        $barangJadiList = MstBarang::with(['satuanDasar', 'jenisBarang'])
             ->whereHas('jenisBarang', function ($q) {
-                $q->where('jenis_barang_cd', 'FG')
-                  ->orWhere('jenis_barang_nm', 'ILIKE', '%jadi%');
+                $q->where('jenis_barang_cd', 'FG');
             })
             ->where('active_st', true)
             ->where('deleted_st', false)
             ->orderBy('barang_nm')
             ->get();
 
-        // 2. Lembar Masak WIP Curah - Diurutkan FIFO (masakan terdahulu di atas) dengan eager loading detail output
+        // 2. Varian Output WIP Hasil Masak Dapur (Option A)
+        $wipList = DatProduksiDtl::with(['produksi', 'barang.satuanDasar'])
+            ->where('deleted_st', false)
+            ->whereHas('produksi', function ($q) {
+                $q->where('deleted_st', false)
+                  ->where('status_cd', '!=', 'VOID');
+            })
+            ->where('qty_kg', '>', 0)
+            ->orderByDesc('output_id')
+            ->get();
+
+        // Lembar Masak WIP Curah - Diurutkan FIFO dengan eager loading detail output
         $produksiList = DatProduksiHdr::with(['details.barang.satuanDasar'])
             ->where('deleted_st', false)
             ->where('status_cd', '!=', 'VOID')
-            ->where('produksi_tgl', '>=', now()->subDays(30)->toDateString())
             ->orderBy('produksi_tgl', 'asc')
             ->orderBy('produksi_id', 'asc')
             ->get();
@@ -54,12 +64,19 @@ class PackagingOperatorController extends Controller
             ->orderBy('karyawan_nm')
             ->get();
 
-        // 4. Bumbu Tabur (Seasoning)
+        // 4. Bumbu Tabur (Seasoning) - Khusus bahan penolong / bumbu tabur (Bukan FG/WIP)
         $bumbuList = MstBarang::where(function ($q) {
                 $q->where('barang_nm', 'ILIKE', '%bumbu%')
-                  ->orWhere('barang_nm', 'ILIKE', '%balado%')
                   ->orWhere('barang_nm', 'ILIKE', '%seasoning%')
-                  ->orWhere('barang_nm', 'ILIKE', '%perasa%');
+                  ->orWhere('barang_nm', 'ILIKE', '%perasa%')
+                  ->orWhere('barang_cd', 'ILIKE', 'BBL%')
+                  ->orWhere('barang_cd', 'ILIKE', 'BBQ%')
+                  ->orWhere('barang_cd', 'ILIKE', 'BCL%')
+                  ->orWhere('barang_cd', 'ILIKE', 'BCS%')
+                  ->orWhere('barang_cd', 'ILIKE', 'BSS%');
+            })
+            ->whereHas('jenisBarang', function ($q) {
+                $q->whereNotIn('jenis_barang_cd', ['FG', 'WIP', 'BB', 'RAW']);
             })
             ->where('active_st', true)
             ->where('deleted_st', false)
@@ -73,6 +90,7 @@ class PackagingOperatorController extends Controller
                   ->orWhere('barang_nm', 'ILIKE', '%kemas%')
                   ->orWhere('barang_nm', 'ILIKE', '%pouch%');
             })
+            ->whereHas('jenisBarang', fn($q) => $q->whereNotIn('jenis_barang_cd', ['FG', 'WIP', 'BB', 'RAW']))
             ->where('active_st', true)
             ->where('deleted_st', false)
             ->orderBy('barang_nm')
@@ -84,18 +102,39 @@ class PackagingOperatorController extends Controller
                   ->orWhere('barang_nm', 'ILIKE', '%dus%')
                   ->orWhere('barang_nm', 'ILIKE', '%box%');
             })
+            ->whereHas('jenisBarang', fn($q) => $q->whereNotIn('jenis_barang_cd', ['FG', 'WIP', 'BB', 'RAW']))
             ->where('active_st', true)
             ->where('deleted_st', false)
             ->orderBy('barang_nm')
             ->get();
 
-        // 7. Kemasan Lainnya (Lakban, Bal, Label)
-        $kemasanLainList = MstBarang::where(function ($q) {
+        // 7. Lakban (Selotip / Tape - Filter Khusus Lakban Pabrik)
+        $lakbanList = MstBarang::with('satuanDasar')
+            ->where(function ($q) {
                 $q->where('barang_nm', 'ILIKE', '%lakban%')
-                  ->orWhere('barang_nm', 'ILIKE', '%bal%')
-                  ->orWhere('barang_nm', 'ILIKE', '%expired%')
-                  ->orWhere('barang_nm', 'ILIKE', '%label%');
+                  ->orWhere('barang_cd', 'ILIKE', '%lkb%')
+                  ->orWhere('barang_nm', 'ILIKE', '%tape%')
+                  ->orWhere('barang_nm', 'ILIKE', '%selotip%');
             })
+            ->whereHas('jenisBarang', fn($q) => $q->whereNotIn('jenis_barang_cd', ['FG', 'WIP', 'BB', 'RAW']))
+            ->where('active_st', true)
+            ->where('deleted_st', false)
+            ->orderBy('barang_nm')
+            ->get();
+
+        // 8. Kemasan Lainnya (Plastik Bal, Tali Rafia, Label Expired, Sarung Tangan, dll)
+        $kemasanLainList = MstBarang::with('satuanDasar')
+            ->where(function ($q) {
+                $q->where('barang_nm', 'ILIKE', '%bal %')
+                  ->orWhere('barang_nm', 'ILIKE', '%bal')
+                  ->orWhere('barang_nm', 'ILIKE', '%expired%')
+                  ->orWhere('barang_nm', 'ILIKE', '%rafia%')
+                  ->orWhere('barang_nm', 'ILIKE', '%label%')
+                  ->orWhere('barang_nm', 'ILIKE', '%sarung tangan%');
+            })
+            ->where('barang_nm', 'NOT ILIKE', '%bumbu%')
+            ->where('barang_nm', 'NOT ILIKE', '%lakban%')
+            ->whereHas('jenisBarang', fn($q) => $q->whereNotIn('jenis_barang_cd', ['FG', 'WIP', 'BB', 'RAW']))
             ->where('active_st', true)
             ->where('deleted_st', false)
             ->orderBy('barang_nm')
@@ -103,11 +142,13 @@ class PackagingOperatorController extends Controller
 
         return view('produksi.packaging_operator.create', compact(
             'barangJadiList',
+            'wipList',
             'produksiList',
             'karyawanList',
             'bumbuList',
             'plastikList',
             'kartonList',
+            'lakbanList',
             'kemasanLainList'
         ));
     }
@@ -118,11 +159,18 @@ class PackagingOperatorController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $request->validate([
-            'tgl_kemas'        => 'required|date',
-            'shift'            => 'required|string',
-            'operator_nama'    => 'required|string|max:150',
-            'barang_jadi_id'   => 'required|exists:mst_barang,barang_id',
-            'hasil_karton_qty' => 'required|numeric|min:0.0001',
+            'tgl_kemas'              => 'required|date',
+            'shift'                  => 'required|string',
+            'operator_nama'          => 'required|string|max:150',
+            'output_id'              => 'nullable|exists:dat_produksi_dtl,output_id',
+            'wip_barang_id'          => 'nullable|exists:mst_barang,barang_id',
+            'produksi_id'            => 'nullable|exists:dat_produksi_hdr,produksi_id',
+            'barang_jadi_id'         => 'required|exists:mst_barang,barang_id',
+            'hasil_karton_qty'       => 'required|numeric|min:0.0001',
+            'lakban_barang_id'       => 'nullable|exists:mst_barang,barang_id',
+            'lakban_qty'             => 'nullable|numeric|min:0',
+            'kemasan_lain_barang_id' => 'nullable|exists:mst_barang,barang_id',
+            'kemasan_lain_qty'       => 'nullable|numeric|min:0',
         ], [
             'tgl_kemas.required'        => 'Tanggal kemas wajib diisi.',
             'operator_nama.required'    => 'Nama operator/leader wajib diisi.',

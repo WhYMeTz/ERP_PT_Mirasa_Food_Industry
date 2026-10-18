@@ -187,7 +187,27 @@ class PackagingService
                         $batchNo = $lastProd?->batch_no ?? null;
                     }
                 } else {
-                    $hargaSatuan = (float) $b->harga_beli_standar;
+                    // Prioritaskan harga acuan standar dari Master Standar Harga Kemasan & Packaging
+                    $nm = strtoupper($b->barang_nm ?? '');
+                    $tarifMap = $this->tarifKemasanService->getTarifMap();
+
+                    if (str_contains($nm, 'KARTON') && (str_contains($nm, 'MAKSI') || str_contains($nm, 'MX') || str_contains($nm, 'MK'))) {
+                        $hargaSatuan = (float) ($tarifMap['KARTON_MX'] ?? $b->harga_beli_standar);
+                    } elseif (str_contains($nm, 'KARTON')) {
+                        $hargaSatuan = (float) ($tarifMap['KARTON_XX'] ?? $b->harga_beli_standar);
+                    } elseif (str_contains($nm, 'BUMBU') || str_contains($nm, 'BALADO')) {
+                        $hargaSatuan = (float) ($tarifMap['BUMBU_BALADO'] ?? $b->harga_beli_standar);
+                    } elseif (str_contains($nm, 'ROLL') && (str_contains($nm, 'MAKSI') || str_contains($nm, 'MX') || str_contains($nm, 'MK'))) {
+                        $hargaSatuan = (float) ($tarifMap['ROLL_MX'] ?? $b->harga_beli_standar);
+                    } elseif (str_contains($nm, 'ROLL') || str_contains($nm, 'PLASTIK')) {
+                        $hargaSatuan = (float) ($tarifMap['ROLL_XX'] ?? $b->harga_beli_standar);
+                    } elseif (str_contains($nm, 'LAKBAN')) {
+                        $hargaSatuan = (float) ($tarifMap['LAKBAN_ROLL'] ?? $b->harga_beli_standar);
+                    } elseif (str_contains($nm, 'EXP') || str_contains($nm, 'KERTAS')) {
+                        $hargaSatuan = (float) ($tarifMap['KERTAS_EXP'] ?? $b->harga_beli_standar);
+                    } else {
+                        $hargaSatuan = (float) $b->harga_beli_standar;
+                    }
                 }
             }
 
@@ -618,6 +638,9 @@ class PackagingService
         ];
         $monthName = $monthNames[$month] ?? 'Januari';
 
+        // Parameter Standar Acuan Harga diambil dinamis dari Master Standar Harga Kemasan & Packaging
+        $daftarHarga = $this->tarifKemasanService->getDaftarHargaPackaging();
+
         $days = [];
         for ($day = 1; $day <= $daysInMonth; $day++) {
             $dateObj = Carbon::createFromDate($year, $month, $day);
@@ -745,7 +768,7 @@ class PackagingService
                 // Estimasi standar balado jika tidak diinput terpisah (5% dari Berko sesuai parameter Excel)
                 if ($baladoKg == 0 && $berkoKg > 0) {
                     $baladoKg = round($berkoKg * 0.05, 2);
-                    $baladoNilai = round($baladoKg * 39450, 0);
+                    $baladoNilai = round($baladoKg * ($daftarHarga['bumbu_balado'] ?? 38499), 0);
                 }
 
                 // Perhitungan lakban atas & bawah (Prioritaskan input timbangan riil Atas & Bawah)

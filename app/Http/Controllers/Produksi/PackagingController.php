@@ -113,6 +113,10 @@ class PackagingController extends Controller
             ->orderBy('barang_nm')
             ->get();
 
+        // Ambil peta standar tarif kemasan dari Master Data Standar Harga Kemasan & Packaging
+        $tarifMap = $this->tarifKemasanService->getTarifMap();
+        $tarifLakbanDefault = (float) ($tarifMap['LAKBAN_GRAM'] ?? 36.70);
+
         // Ambil daftar barang kemasan, bumbu, penolong & curah untuk komponen manual / tambahan
         $kemasanBarangList = MstBarang::active()
             ->with(['satuanDasar', 'jenisBarang'])
@@ -135,7 +139,7 @@ class PackagingController extends Controller
             })
             ->orderBy('barang_nm')
             ->get()
-            ->map(function ($b) {
+            ->map(function ($b) use ($tarifMap) {
                 $cd = strtoupper($b->jenisBarang->jenis_barang_cd ?? '');
                 $nm = strtoupper($b->barang_nm ?? '');
 
@@ -153,13 +157,35 @@ class PackagingController extends Controller
                     $kategoriLabel = 'Bahan Penolong / Lainnya';
                 }
 
+                // Prioritaskan harga acuan standar dari Master Standar Harga Kemasan & Packaging
+                $hargaStandar = (float) ($b->harga_beli_standar ?? 0);
+                if (str_contains($nm, 'KARTON') && (str_contains($nm, 'MAKSI') || str_contains($nm, 'MX') || str_contains($nm, 'MK'))) {
+                    $hargaStandar = (float) ($tarifMap['KARTON_MX'] ?? $hargaStandar);
+                } elseif (str_contains($nm, 'KARTON')) {
+                    $hargaStandar = (float) ($tarifMap['KARTON_XX'] ?? $hargaStandar);
+                } elseif (str_contains($nm, 'BUMBU') || str_contains($nm, 'BALADO')) {
+                    $hargaStandar = (float) ($tarifMap['BUMBU_BALADO'] ?? $hargaStandar);
+                } elseif (str_contains($nm, 'ROLL') && (str_contains($nm, 'MAKSI') || str_contains($nm, 'MX') || str_contains($nm, 'MK'))) {
+                    $hargaStandar = (float) ($tarifMap['ROLL_MX'] ?? $hargaStandar);
+                } elseif (str_contains($nm, 'ROLL') || str_contains($nm, 'PLASTIK')) {
+                    $hargaStandar = (float) ($tarifMap['ROLL_XX'] ?? $hargaStandar);
+                } elseif (str_contains($nm, 'LAKBAN')) {
+                    $hargaStandar = (float) ($tarifMap['LAKBAN_ROLL'] ?? $hargaStandar);
+                } elseif (str_contains($nm, 'EXP') || str_contains($nm, 'KERTAS')) {
+                    $hargaStandar = (float) ($tarifMap['KERTAS_EXP'] ?? $hargaStandar);
+                } elseif (str_contains($nm, 'BERKO')) {
+                    $hargaStandar = (float) ($tarifMap['WIP_BERKO'] ?? $hargaStandar);
+                } elseif ($kategori === 'WIP') {
+                    $hargaStandar = (float) ($tarifMap['WIP_CURAH'] ?? $hargaStandar);
+                }
+
                 return [
                     'barang_id'      => $b->barang_id,
                     'barang_cd'      => $b->barang_cd,
                     'barang_nm'      => $b->barang_nm,
                     'satuan_cd'      => $b->satuanDasar?->satuan_cd ?? 'PCS',
                     'satuan_nm'      => $b->satuanDasar?->satuan_nm ?? 'Pcs',
-                    'harga_standar'  => (float) ($b->harga_beli_standar ?? 0),
+                    'harga_standar'  => $hargaStandar,
                     'kategori'       => $kategori,
                     'kategori_label' => $kategoriLabel,
                 ];
@@ -173,10 +199,6 @@ class PackagingController extends Controller
             ->orderBy('produksi_tgl', 'asc')
             ->orderBy('produksi_id', 'asc')
             ->get();
-
-        // Ambil standar tarif lakban per gram dari Master Data Tarif Kemasan
-        $tarifMap = $this->tarifKemasanService->getTarifMap();
-        $tarifLakbanDefault = (float) ($tarifMap['LAKBAN_GRAM'] ?? 36.70);
 
         return view('produksi.packaging.create', compact('gudangList', 'barangJadiList', 'kemasanBarangList', 'produksiList', 'selectedLaporan', 'tarifLakbanDefault'));
     }

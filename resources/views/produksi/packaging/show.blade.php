@@ -9,9 +9,10 @@
 @section('content')
 <div class="show-container packaging-show-container">
     @php
-        $expDate = $header->expired_tgl
-            ? Carbon\Carbon::parse($header->expired_tgl)->format('d/m/Y')
-            : Carbon\Carbon::parse($header->pack_tgl)->addMonths(6)->format('d/m/Y');
+        $expCarbon = $header->expired_tgl
+            ? ($header->expired_tgl instanceof \Carbon\CarbonInterface ? $header->expired_tgl : Carbon\Carbon::parse($header->expired_tgl))
+            : ($header->pack_tgl ? Carbon\Carbon::parse($header->pack_tgl)->addMonths(6) : now()->addMonths(6));
+        $expDate = $expCarbon->format('d/m/Y');
 
         $wipItems = $header->details->filter(fn($d) => strtoupper($d->kategori_bahan) === 'WIP');
         $kemasanItems = $header->details->filter(fn($d) => strtoupper($d->kategori_bahan) !== 'WIP');
@@ -342,7 +343,7 @@
                             </div>
                             <div class="st-row">
                                 <span class="st-lbl">Tgl. Exp :</span>
-                                <span class="st-val">{{ strtoupper(Carbon\Carbon::parse($expDate)->format('d M Y')) }}</span>
+                                <span class="st-val">{{ strtoupper($expCarbon->format('d M Y')) }}</span>
                             </div>
                             <div class="st-row">
                                 <span class="st-lbl">Kode FG :</span>

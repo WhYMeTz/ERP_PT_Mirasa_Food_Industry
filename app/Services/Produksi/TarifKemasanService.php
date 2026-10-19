@@ -142,7 +142,18 @@ class TarifKemasanService
                     continue;
                 }
 
-                $numericVal = (float) str_replace(['Rp', '.', ' '], ['', '', ''], str_replace(',', '.', (string) $nilai));
+                if (is_numeric($nilai)) {
+                    $numericVal = (float) $nilai;
+                } else {
+                    $clean = trim(str_replace(['Rp', ' '], '', (string) $nilai));
+                    if (str_contains($clean, ',') && str_contains($clean, '.')) {
+                        $clean = str_replace('.', '', $clean);
+                        $clean = str_replace(',', '.', $clean);
+                    } elseif (str_contains($clean, ',')) {
+                        $clean = str_replace(',', '.', $clean);
+                    }
+                    $numericVal = (float) $clean;
+                }
 
                 $tarif = MstTarifKemasan::where('kode_tarif', $kodeTarif)->first();
                 if ($tarif) {

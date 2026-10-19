@@ -170,7 +170,12 @@ class PackagingController extends Controller
                 } elseif (str_contains($nm, 'ROLL') || str_contains($nm, 'PLASTIK')) {
                     $hargaStandar = (float) ($tarifMap['ROLL_XX'] ?? $hargaStandar);
                 } elseif (str_contains($nm, 'LAKBAN')) {
-                    $hargaStandar = (float) ($tarifMap['LAKBAN_ROLL'] ?? $hargaStandar);
+                    $satuan = strtoupper($b->satuanDasar?->satuan_cd ?? '');
+                    if (in_array($satuan, ['GR', 'GRAM', 'G'])) {
+                        $hargaStandar = (float) ($tarifMap['LAKBAN_GRAM'] ?? 36.70);
+                    } else {
+                        $hargaStandar = (float) ($tarifMap['LAKBAN_ROLL'] ?? $hargaStandar);
+                    }
                 } elseif (str_contains($nm, 'EXP') || str_contains($nm, 'KERTAS')) {
                     $hargaStandar = (float) ($tarifMap['KERTAS_EXP'] ?? $hargaStandar);
                 } elseif (str_contains($nm, 'BERKO')) {
@@ -200,7 +205,9 @@ class PackagingController extends Controller
             ->orderBy('produksi_id', 'asc')
             ->get();
 
-        return view('produksi.packaging.create', compact('gudangList', 'barangJadiList', 'kemasanBarangList', 'produksiList', 'selectedLaporan', 'tarifLakbanDefault'));
+        $tarifs = $this->tarifKemasanService->getAllTarif();
+
+        return view('produksi.packaging.create', compact('gudangList', 'barangJadiList', 'kemasanBarangList', 'produksiList', 'selectedLaporan', 'tarifLakbanDefault', 'tarifs'));
     }
 
     /**
@@ -512,6 +519,8 @@ class PackagingController extends Controller
             ->orderBy('barang_nm')
             ->get(['barang_id', 'barang_cd', 'barang_nm']);
 
+        $tarifs = $this->tarifKemasanService->getAllTarif();
+
         return view('produksi.packaging.rekap', compact(
             'mode',
             'year',
@@ -522,7 +531,8 @@ class PackagingController extends Controller
             'report',
             'yearlyReport',
             'barangJadiList',
-            'barangJadiId'
+            'barangJadiId',
+            'tarifs'
         ));
     }
 

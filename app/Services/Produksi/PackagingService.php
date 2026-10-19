@@ -3,6 +3,7 @@
 namespace App\Services\Produksi;
 
 use App\Models\Gudang\DatStokBatch;
+use App\Models\Gudang\DatStokLedger;
 use App\Models\MasterData\MstBarang;
 use App\Models\MasterData\MstGudang;
 use App\Models\Produksi\DatPackagingDtl;
@@ -17,6 +18,7 @@ use Exception;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 use App\Services\Produksi\TarifKemasanService;
 
@@ -167,10 +169,39 @@ class PackagingService
             $batchNo = $activeBatch?->batch_no ?? null;
 
             if ($kategori === 'WIP' && $linkedProduksi && (float) $linkedProduksi->hpp_per_kg > 0) {
-                // Prioritas Tertinggi: Sinkronisasi langsung dengan Dokumen HPP Produksi Hari Terkait
+                // Prioritas Tertinggi untuk WIP: Sinkronisasi langsung dengan Dokumen HPP Produksi Hari Terkait
                 $hargaSatuan = (float) $linkedProduksi->hpp_per_kg;
                 $batchNo = $linkedProduksi->batch_wip_no 
                     ?: ($linkedProduksi->produksi_tgl ? $linkedProduksi->produksi_tgl->format('d m Y') : $batchNo);
+            } elseif ($kategori === 'KEMASAN' || $kategori === 'BUMBU') {
+                // Prioritaskan Standar Acuan Pabrik dari Master Standar Harga Kemasan & Packaging
+                $nm = strtoupper($b->barang_nm ?? '');
+                $satuan = strtoupper($b->satuanDasar?->satuan_cd ?? '');
+                $tarifMap = $this->tarifKemasanService->getTarifMap();
+
+                if (str_contains($nm, 'KARTON') && (str_contains($nm, 'MAKSI') || str_contains($nm, 'MX') || str_contains($nm, 'MK'))) {
+                    $hargaSatuan = (float) ($tarifMap['KARTON_MX'] ?? $b->harga_beli_standar);
+                } elseif (str_contains($nm, 'KARTON')) {
+                    $hargaSatuan = (float) ($tarifMap['KARTON_XX'] ?? $b->harga_beli_standar);
+                } elseif (str_contains($nm, 'BUMBU') || str_contains($nm, 'BALADO')) {
+                    $hargaSatuan = (float) ($tarifMap['BUMBU_BALADO'] ?? $b->harga_beli_standar);
+                } elseif (str_contains($nm, 'ROLL') && (str_contains($nm, 'MAKSI') || str_contains($nm, 'MX') || str_contains($nm, 'MK'))) {
+                    $hargaSatuan = (float) ($tarifMap['ROLL_MX'] ?? $b->harga_beli_standar);
+                } elseif (str_contains($nm, 'ROLL') || str_contains($nm, 'PLASTIK')) {
+                    $hargaSatuan = (float) ($tarifMap['ROLL_XX'] ?? $b->harga_beli_standar);
+                } elseif (str_contains($nm, 'LAKBAN')) {
+                    if (in_array($satuan, ['GR', 'GRAM', 'G'])) {
+                        $hargaSatuan = (float) ($tarifMap['LAKBAN_GRAM'] ?? 36.70);
+                    } else {
+                        $hargaSatuan = (float) ($tarifMap['LAKBAN_ROLL'] ?? $b->harga_beli_standar);
+                    }
+                } elseif (str_contains($nm, 'EXP') || str_contains($nm, 'KERTAS')) {
+                    $hargaSatuan = (float) ($tarifMap['KERTAS_EXP'] ?? $b->harga_beli_standar);
+                } elseif ($activeBatch && (float) $activeBatch->harga_satuan > 0) {
+                    $hargaSatuan = (float) $activeBatch->harga_satuan;
+                } else {
+                    $hargaSatuan = (float) $b->harga_beli_standar;
+                }
             } elseif ($activeBatch && (float) $activeBatch->harga_satuan > 0) {
                 $hargaSatuan = (float) $activeBatch->harga_satuan;
             } else {
@@ -187,27 +218,7 @@ class PackagingService
                         $batchNo = $lastProd?->batch_no ?? null;
                     }
                 } else {
-                    // Prioritaskan harga acuan standar dari Master Standar Harga Kemasan & Packaging
-                    $nm = strtoupper($b->barang_nm ?? '');
-                    $tarifMap = $this->tarifKemasanService->getTarifMap();
-
-                    if (str_contains($nm, 'KARTON') && (str_contains($nm, 'MAKSI') || str_contains($nm, 'MX') || str_contains($nm, 'MK'))) {
-                        $hargaSatuan = (float) ($tarifMap['KARTON_MX'] ?? $b->harga_beli_standar);
-                    } elseif (str_contains($nm, 'KARTON')) {
-                        $hargaSatuan = (float) ($tarifMap['KARTON_XX'] ?? $b->harga_beli_standar);
-                    } elseif (str_contains($nm, 'BUMBU') || str_contains($nm, 'BALADO')) {
-                        $hargaSatuan = (float) ($tarifMap['BUMBU_BALADO'] ?? $b->harga_beli_standar);
-                    } elseif (str_contains($nm, 'ROLL') && (str_contains($nm, 'MAKSI') || str_contains($nm, 'MX') || str_contains($nm, 'MK'))) {
-                        $hargaSatuan = (float) ($tarifMap['ROLL_MX'] ?? $b->harga_beli_standar);
-                    } elseif (str_contains($nm, 'ROLL') || str_contains($nm, 'PLASTIK')) {
-                        $hargaSatuan = (float) ($tarifMap['ROLL_XX'] ?? $b->harga_beli_standar);
-                    } elseif (str_contains($nm, 'LAKBAN')) {
-                        $hargaSatuan = (float) ($tarifMap['LAKBAN_ROLL'] ?? $b->harga_beli_standar);
-                    } elseif (str_contains($nm, 'EXP') || str_contains($nm, 'KERTAS')) {
-                        $hargaSatuan = (float) ($tarifMap['KERTAS_EXP'] ?? $b->harga_beli_standar);
-                    } else {
-                        $hargaSatuan = (float) $b->harga_beli_standar;
-                    }
+                    $hargaSatuan = (float) $b->harga_beli_standar;
                 }
             }
 
@@ -462,6 +473,15 @@ class PackagingService
                     ->orderBy('created_at', 'asc')
                     ->first();
 
+                // Fallback jika tidak ditemukan batch_no persis tapi ada batch stok lain yang tersedia (FIFO)
+                if (!$stokBatch) {
+                    $stokBatch = DatStokBatch::where('barang_id', $dtlData['barang_id'])
+                        ->where('deleted_st', false)
+                        ->where('sisa_qty', '>', 0)
+                        ->orderBy('created_at', 'asc')
+                        ->first();
+                }
+
                 $gudangSumberId = $stokBatch ? $stokBatch->gudang_id : $gudangId;
                 $batchTarget = $stokBatch ? $stokBatch->batch_no : ($dtlData['batch_no'] ?? 'BATCH-DEF');
 
@@ -469,16 +489,69 @@ class PackagingService
                 $ket = "Konsumsi Pengemasan ({$packNo}): {$dtlData['qty_aktual']} {$dtlData['satuan_cd']} untuk {$hasilKarton} Karton {$header->barangJadi?->barang_nm}";
                 
                 try {
-                    $this->stokService->deductStock(
-                        gudangId: $gudangSumberId,
-                        barangId: $dtlData['barang_id'],
-                        batchNo: $batchTarget,
-                        qty: $dtlData['qty_aktual'],
-                        dokumenNo: $packNo,
-                        keterangan: $ket
-                    );
+                    // Jika batch target mencukupi secara penuh, potong langsung
+                    if ($stokBatch && (float)$stokBatch->sisa_qty >= (float)$dtlData['qty_aktual']) {
+                        $this->stokService->deductStock(
+                            gudangId: $gudangSumberId,
+                            barangId: $dtlData['barang_id'],
+                            batchNo: $batchTarget,
+                            qty: $dtlData['qty_aktual'],
+                            dokumenNo: $packNo,
+                            keterangan: $ket
+                        );
+                    } else {
+                        // Jika stok batch kurang atau butuh pemotongan multi-batch FIFO:
+                        $sisaDibutuhkan = (float) $dtlData['qty_aktual'];
+                        $availableBatches = DatStokBatch::where('barang_id', $dtlData['barang_id'])
+                            ->where('deleted_st', false)
+                            ->where('sisa_qty', '>', 0)
+                            ->orderBy('created_at', 'asc')
+                            ->get();
+
+                        foreach ($availableBatches as $b) {
+                            if ($sisaDibutuhkan <= 0) break;
+                            $qtyPotong = min($sisaDibutuhkan, (float)$b->sisa_qty);
+                            if ($qtyPotong > 0) {
+                                $this->stokService->deductStock(
+                                    gudangId: $b->gudang_id,
+                                    barangId: $dtlData['barang_id'],
+                                    batchNo: $b->batch_no,
+                                    qty: $qtyPotong,
+                                    dokumenNo: $packNo,
+                                    keterangan: $ket
+                                );
+                                $sisaDibutuhkan -= $qtyPotong;
+                            }
+                        }
+
+                        // Jika saldo stok sistem masih kurang dari konsumsi riil lapangan, kurangi batch yang ada
+                        if ($sisaDibutuhkan > 0) {
+                            $targetMinus = $stokBatch ?: DatStokBatch::where('barang_id', $dtlData['barang_id'])->latest('stok_id')->first();
+                            if ($targetMinus) {
+                                $targetMinus->sisa_qty = max(0, (float)$targetMinus->sisa_qty - $sisaDibutuhkan);
+                                $targetMinus->save();
+
+                                $totalSaldoAkhir = (float) DatStokBatch::where('gudang_id', $targetMinus->gudang_id)
+                                    ->where('barang_id', $dtlData['barang_id'])
+                                    ->sum('sisa_qty');
+
+                                DatStokLedger::create([
+                                    'gudang_id'         => $targetMinus->gudang_id,
+                                    'barang_id'         => $dtlData['barang_id'],
+                                    'batch_no'          => $targetMinus->batch_no,
+                                    'grade_cd'          => $targetMinus->grade_cd ?? 'A',
+                                    'transaksi_tgl'     => now(),
+                                    'dokumen_no'        => $packNo,
+                                    'tipe_transaksi_cd' => 'OUT',
+                                    'qty'               => $sisaDibutuhkan,
+                                    'saldoakhir_qty'    => $totalSaldoAkhir,
+                                    'keterangan_txt'    => $ket . " (Konsumsi melebihi saldo batch)",
+                                ]);
+                            }
+                        }
+                    }
                 } catch (Exception $e) {
-                    // Fallback jika stok fisik kurang tapi operasional tetap mencatat konsumsi
+                    Log::warning("Gagal eksekusi potong stok bahan [{$dtlData['barang_id']}]: " . $e->getMessage());
                 }
             }
 

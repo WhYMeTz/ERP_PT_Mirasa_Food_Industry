@@ -5,6 +5,7 @@
 @push('styles')
     <link rel="stylesheet" href="{{ asset('css/produksi/produksi-create.css') }}">
     <link rel="stylesheet" href="{{ asset('css/produksi/packaging/packaging-create.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/master/tarif_kemasan/tarif-kemasan-modal.css') }}">
 @endpush
 
 @section('content')
@@ -125,31 +126,60 @@
                                         ? $p->exp_date->format('Y-m-d') 
                                         : ($p->produksi_tgl ? $p->produksi_tgl->copy()->addMonths(6)->format('Y-m-d') : date('Y-m-d', strtotime('+6 months')));
                                     $validDetails = $p->details->filter(fn($d) => (float) $d->qty_kg > 0);
+                                    $targetWipId = old('wip_barang_id', $selectedLaporan?->wip_barang_id);
+                                    $targetProdId = old('produksi_id', $selectedLaporan?->produksi_id);
                                 @endphp
                                 @if($validDetails->isNotEmpty())
-                                    @foreach($validDetails as $dtl)
-                                        @php
-                                            $qtyKg = (float) $dtl->qty_kg;
-                                            $barangNm = $dtl->barang?->barang_nm ?? 'Keripik Curah';
-                                            $batchStr = $dtl->batch_no ?: ($p->batch_wip_no ?: ($p->produksi_tgl ? $p->produksi_tgl->format('d m Y') : '-'));
-                                            $hppVal = (float) ($dtl->hpp_satuan > 0 ? $dtl->hpp_satuan : $p->hpp_per_kg);
-                                        @endphp
-                                        <option value="{{ $p->produksi_id }}" 
-                                                data-hpp="{{ $hppVal }}" 
-                                                data-batch="{{ $batchStr }}" 
-                                                data-exp="{{ $expDateStr }}"
-                                                data-qty="{{ $qtyKg }}"
-                                                data-no="{{ $p->produksi_no }}"
-                                                data-barang-id="{{ $dtl->barang_id }}"
-                                                data-barang-nm="{{ $barangNm }}"
-                                                {{ (old('produksi_id') == $p->produksi_id) ? 'selected' : '' }}>
-                                            [{{ $p->produksi_no }}] {{ $tglStr }} • {{ $barangNm }} ({{ number_format($qtyKg, 0, ',', '.') }} Kg) • Batch: {{ $batchStr }} (HPP: Rp {{ number_format($hppVal, 0, ',', '.') }}/Kg)
-                                        </option>
-                                    @endforeach
+                                    @if($validDetails->count() > 1)
+                                        <optgroup label="[{{ $p->produksi_no }}] {{ $tglStr }} ({{ $validDetails->count() }} Varian Curah • Total {{ number_format($validDetails->sum('qty_kg'), 0, ',', '.') }} Kg)">
+                                            @foreach($validDetails as $dtl)
+                                                @php
+                                                    $qtyKg = (float) $dtl->qty_kg;
+                                                    $barangNm = $dtl->barang?->barang_nm ?? 'Keripik Curah';
+                                                    $batchStr = $dtl->batch_no ?: ($p->batch_wip_no ?: ($p->produksi_tgl ? $p->produksi_tgl->format('d m Y') : '-'));
+                                                    $hppVal = (float) ($dtl->hpp_satuan > 0 ? $dtl->hpp_satuan : $p->hpp_per_kg);
+                                                    $isSelected = ($targetProdId == $p->produksi_id && ($targetWipId ? (int)$dtl->barang_id === (int)$targetWipId : $loop->first));
+                                                @endphp
+                                                <option value="{{ $p->produksi_id }}" 
+                                                        data-hpp="{{ $hppVal }}" 
+                                                        data-batch="{{ $batchStr }}" 
+                                                        data-exp="{{ $expDateStr }}"
+                                                        data-qty="{{ $qtyKg }}"
+                                                        data-no="{{ $p->produksi_no }}"
+                                                        data-barang-id="{{ $dtl->barang_id }}"
+                                                        data-barang-nm="{{ $barangNm }}"
+                                                        {{ $isSelected ? 'selected' : '' }}>
+                                                    [{{ $p->produksi_no }}] {{ $tglStr }} • {{ $barangNm }} ({{ number_format($qtyKg, 0, ',', '.') }} Kg) • Batch: {{ $batchStr }} (HPP: Rp {{ number_format($hppVal, 0, ',', '.') }}/Kg)
+                                                </option>
+                                            @endforeach
+                                        </optgroup>
+                                    @else
+                                        @foreach($validDetails as $dtl)
+                                            @php
+                                                $qtyKg = (float) $dtl->qty_kg;
+                                                $barangNm = $dtl->barang?->barang_nm ?? 'Keripik Curah';
+                                                $batchStr = $dtl->batch_no ?: ($p->batch_wip_no ?: ($p->produksi_tgl ? $p->produksi_tgl->format('d m Y') : '-'));
+                                                $hppVal = (float) ($dtl->hpp_satuan > 0 ? $dtl->hpp_satuan : $p->hpp_per_kg);
+                                                $isSelected = ($targetProdId == $p->produksi_id && ($targetWipId ? (int)$dtl->barang_id === (int)$targetWipId : true));
+                                            @endphp
+                                            <option value="{{ $p->produksi_id }}" 
+                                                    data-hpp="{{ $hppVal }}" 
+                                                    data-batch="{{ $batchStr }}" 
+                                                    data-exp="{{ $expDateStr }}"
+                                                    data-qty="{{ $qtyKg }}"
+                                                    data-no="{{ $p->produksi_no }}"
+                                                    data-barang-id="{{ $dtl->barang_id }}"
+                                                    data-barang-nm="{{ $barangNm }}"
+                                                    {{ $isSelected ? 'selected' : '' }}>
+                                                [{{ $p->produksi_no }}] {{ $tglStr }} • {{ $barangNm }} ({{ number_format($qtyKg, 0, ',', '.') }} Kg) • Batch: {{ $batchStr }} (HPP: Rp {{ number_format($hppVal, 0, ',', '.') }}/Kg)
+                                            </option>
+                                        @endforeach
+                                    @endif
                                 @else
                                     @php
                                         $qtyBerko = (float) ($p->total_berko_qty > 0 ? $p->total_berko_qty : $p->berko_qty);
                                         $batchStr = $p->batch_wip_no ?: ($p->produksi_tgl ? $p->produksi_tgl->format('d m Y') : '-');
+                                        $isSelected = ($targetProdId == $p->produksi_id);
                                     @endphp
                                     @if($qtyBerko > 0)
                                         <option value="{{ $p->produksi_id }}" 
@@ -159,7 +189,7 @@
                                                 data-qty="{{ $qtyBerko }}"
                                                 data-no="{{ $p->produksi_no }}"
                                                 data-barang-nm="KS BERKO"
-                                                {{ (old('produksi_id') == $p->produksi_id) ? 'selected' : '' }}>
+                                                {{ $isSelected ? 'selected' : '' }}>
                                             [{{ $p->produksi_no }}] {{ $tglStr }} • KS BERKO ({{ number_format($qtyBerko, 0, ',', '.') }} Kg) • Batch: {{ $batchStr }} (HPP: Rp {{ number_format($p->hpp_per_kg, 0, ',', '.') }}/Kg)
                                         </option>
                                     @endif
@@ -206,7 +236,13 @@
                         2. Bahan Baku Kemasan &amp; Keripik Curah (WIP) Terpakai
                     </strong>
                 </div>
-                <div>
+                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                    @if(Auth::user()?->canManageTarifKemasan())
+                        <button type="button" onclick="openQuickUpdateModal()" class="btn btn-secondary btn-sm" style="font-size: 0.8rem; padding: 0.35rem 0.75rem; font-weight: 700; border-radius: 6px; border: 1.5px solid #86efac; background: #f0fdf4; color: #166534; display: inline-flex; align-items: center; gap: 0.35rem;" title="Konfigurasi cepat standar harga kemasan (Excel Sync) tanpa keluar dari formulir">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                            <span>Standar Tarif Kemasan</span>
+                        </button>
+                    @endif
                     <button type="button" onclick="addNewMaterialRow()" class="btn btn-secondary btn-sm" style="font-size: 0.8rem; padding: 0.35rem 0.75rem; font-weight: 600; border-radius: 6px; border: 1px solid #cbd5e1; background: #ffffff; color: #334155; display: inline-flex; align-items: center; gap: 0.35rem;">
                         <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                         <span>Tambah Baris Bahan</span>
@@ -257,8 +293,13 @@
                                 </span>
                             </div>
                         </div>
-                        <div style="font-size: 0.75rem; background: #ffffff; padding: 0.25rem 0.65rem; border-radius: 6px; border: 1px solid #86efac; color: #166534; font-weight: 700;">
-                            Tarif Acuan: Rp <span id="tarifLakbanInfo">{{ number_format($tarifLakbanDefault ?? 36.70, 2, ',', '.') }}</span> / gram
+                        <div style="font-size: 0.75rem; background: #ffffff; padding: 0.25rem 0.65rem; border-radius: 6px; border: 1px solid #86efac; color: #166534; font-weight: 700; display: inline-flex; align-items: center; gap: 0.4rem;">
+                            <span>Tarif Acuan: Rp <span id="tarifLakbanInfo">{{ number_format($tarifLakbanDefault ?? 36.70, 2, ',', '.') }}</span> / gram</span>
+                            @if(Auth::user()?->canManageTarifKemasan())
+                                <button type="button" onclick="openQuickUpdateModal()" style="border: none; background: transparent; color: #059669; cursor: pointer; padding: 0; display: inline-flex; align-items: center;" title="Ubah tarif standar acuan">
+                                    <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                                </button>
+                            @endif
                         </div>
                     </div>
 
@@ -448,6 +489,9 @@
 
 {{-- MODAL TARIK LAPORAN OPERATOR LAPANGAN --}}
 @include('produksi.packaging.partials.modal-pull-operator')
+
+{{-- MODAL PERBARUI STANDAR TARIF KEMASAN (EXCEL SYNC) --}}
+@include('master_data.tarif_kemasan.partials.modal-quick-update')
 @endsection
 
 @push('scripts')

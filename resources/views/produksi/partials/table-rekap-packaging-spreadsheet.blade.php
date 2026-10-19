@@ -16,9 +16,23 @@
             <svg width="16" height="16" fill="none" stroke="#0284c7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
             <span>DAFTAR HARGA ACUAN PRODUKSI (PING-PING &amp; MAKSI) &bull; PERIODE {{ strtoupper($monthName) }} {{ $year }}</span>
         </div>
-        <span style="font-size: 0.72rem; color: #64748b; font-style: italic;">
-            Formula Standar Akuntansi Biaya Manufaktur PT Mirasa
-        </span>
+        <div style="display: flex; align-items: center; gap: 0.65rem;">
+            @if(Auth::user()?->canManageTarifKemasan())
+                <button type="button" 
+                        onclick="openQuickUpdateModal()" 
+                        class="btn btn-sm" 
+                        style="font-size: 0.75rem; font-weight: 700; background: #0284c7; color: #ffffff; border: none; border-radius: 4px; padding: 0.2rem 0.6rem; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; transition: background 0.15s ease;"
+                        onmouseover="this.style.background='#0369a1'"
+                        onmouseout="this.style.background='#0284c7'"
+                        title="Perbarui nilai master standar harga acuan kemasan">
+                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                    <span>Ubah Standar Acuan</span>
+                </button>
+            @endif
+            <span style="font-size: 0.72rem; color: #64748b; font-style: italic;">
+                Formula Standar Akuntansi Biaya Manufaktur PT Mirasa
+            </span>
+        </div>
     </div>
 
     <div class="daftar-harga-grid">

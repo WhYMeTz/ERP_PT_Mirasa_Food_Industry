@@ -143,3 +143,70 @@ function closeVoidPackagingModal() {
         modal.style.display = 'none';
     }
 }
+
+/**
+ * Modal Quick Matrix Update (Perbarui Cepat Seluruh Daftar Harga Seperti Excel)
+ */
+function openQuickUpdateModal() {
+    closeAllPckActionDropdowns();
+    const modal = document.getElementById('modalQuickUpdateTarif');
+    if (modal) {
+        modal.classList.add('show');
+    }
+}
+
+function closeQuickUpdateModal() {
+    const modal = document.getElementById('modalQuickUpdateTarif');
+    if (modal) {
+        modal.classList.remove('show');
+    }
+}
+
+// Inisialisasi AJAX submit handler untuk Modal Quick Update Tarif Kemasan pada Halaman Index & Rekap
+document.addEventListener('DOMContentLoaded', function () {
+    const formQuick = document.getElementById('formQuickUpdateTarif');
+    if (formQuick) {
+        formQuick.addEventListener('submit', function (e) {
+            e.preventDefault();
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const origHtml = submitBtn ? submitBtn.innerHTML : '';
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span>Menyimpan...</span>';
+            }
+
+            const formData = new FormData(this);
+            fetch(this.action, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                    'Accept': 'application/json'
+                },
+                body: formData
+            })
+            .then(res => res.json())
+            .then(res => {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = origHtml;
+                }
+
+                if (res.success) {
+                    closeQuickUpdateModal();
+                    // Reload halaman agar seluruh rumus, metrik, dan tabel rekapitulasi ter-refresh dengan angka baru
+                    window.location.reload();
+                } else {
+                    alert(res.message || 'Gagal menyimpan perubahan tarif kemasan.');
+                }
+            })
+            .catch(err => {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = origHtml;
+                }
+                console.error(err);
+                alert('Terjadi kendala jaringan saat menyimpan standar tarif.');
+            });
+        });
+    }
+});

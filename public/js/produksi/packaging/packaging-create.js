@@ -237,6 +237,22 @@ function fetchBomPreview() {
                     if (emptyRow) tbody.appendChild(emptyRow);
                 }
                 recalculateTotals();
+
+                // Jika di dalam hasil BOM ada komponen WIP, sinkronkan opsi dropdown produksi_id dengan varian WIP tersebut
+                const wipBomItem = (data.items || []).find(it => it.kategori_bahan === 'WIP');
+                if (wipBomItem && wipBomItem.barang_id) {
+                    const prodSelect = document.getElementById('produksi_id');
+                    if (prodSelect && prodSelect.value) {
+                        const currentProdId = prodSelect.value;
+                        const matchedOpt = Array.from(prodSelect.options).find(opt => 
+                            opt.value == currentProdId && opt.getAttribute('data-barang-id') == wipBomItem.barang_id
+                        );
+                        if (matchedOpt && prodSelect.selectedIndex !== matchedOpt.index) {
+                            prodSelect.selectedIndex = matchedOpt.index;
+                            onProduksiSelect(prodSelect, true);
+                        }
+                    }
+                }
             }
         })
         .catch(err => {
@@ -266,7 +282,7 @@ function formatDateIndo(dateStr) {
 /**
  * Handler ketika Lembar HPP Produksi (WIP) dipilih di Bagian 1
  */
-function onProduksiSelect(selectEl) {
+function onProduksiSelect(selectEl, skipAddRow = false) {
     const prodId = selectEl?.value;
     const syncBox = document.getElementById('wipSyncStatusBox');
     const syncText = document.getElementById('wipSyncStatusText');
@@ -279,6 +295,8 @@ function onProduksiSelect(selectEl) {
     }
 
     const opt = selectEl.options[selectEl.selectedIndex];
+    if (!opt) return;
+
     const hppVal = parseFloat(opt.getAttribute('data-hpp')) || 0;
     const batchVal = opt.getAttribute('data-batch') || '';
     const expVal = opt.getAttribute('data-exp') || '';
@@ -318,9 +336,10 @@ function onProduksiSelect(selectEl) {
             // Update badge info sumber
             const originTag = tr.querySelector('.wip-origin-tag');
             if (originTag) {
+                const rowBarangNm = tr.querySelector('.barang-name-cell strong')?.textContent?.trim() || barangNm;
                 originTag.innerHTML = `
                     <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                    ✓ HPP Produksi ${prodNo} (${barangNm})
+                    ✓ HPP Produksi ${prodNo} (${rowBarangNm})
                 `;
                 originTag.style.background = '#dcfce7';
                 originTag.style.color = '#15803d';
@@ -341,7 +360,8 @@ function onProduksiSelect(selectEl) {
     });
 
     // Jika belum ada baris WIP di tabel (misal belum ada produk FG/BOM), tarik detail master barang curah via AJAX
-    if (!foundWip) {
+    const isOperatorLinked = !!document.getElementById('laporan_operator_id')?.value;
+    if (!foundWip && !skipAddRow && !isOperatorLinked) {
         const ajaxUrl = `/produksi/packaging/ajax-produksi-details?produksi_id=${prodId}` + (barangId ? `&barang_id=${barangId}` : '');
         fetch(ajaxUrl)
             .then(res => res.json())
@@ -357,6 +377,15 @@ function onProduksiSelect(selectEl) {
 
                     if (d.exp_date && expiredInput && !expiredInput.value) {
                         expiredInput.value = d.exp_date;
+                    }
+
+                    // Cek lagi apakah baris WIP sudah dibuat oleh operator atau proses lain
+                    const existingWip = Array.from(document.querySelectorAll('.material-row')).some(tr => {
+                        const cat = tr.querySelector('input[name*="[kategori_bahan]"]')?.value;
+                        return cat && cat.toUpperCase() === 'WIP';
+                    });
+                    if (existingWip || document.getElementById('laporan_operator_id')?.value) {
+                        return; // Abaikan penambahan agar tidak memunculkan baris ganda
                     }
 
                     addMaterialRow({
@@ -381,23 +410,6 @@ function onProduksiSelect(selectEl) {
             })
             .catch(err => {
                 console.warn('Gagal memuat detail AJAX produksi:', err);
-                addMaterialRow({
-                    kategori_bahan: 'WIP',
-                    barang_id: 45,
-                    barang_nm: 'KS BERKO (Keripik Curah)',
-                    barang_cd: 'WIP-BRK',
-                    satuan_cd: 'KG',
-                    qty_standar: 0,
-                    qty_aktual: 0,
-                    harga_satuan: hppVal,
-                    subtotal_nilai: 0,
-                    batch_no: batchVal,
-                    stok_tersedia: qtyVal,
-                    cukup_stok: true,
-                    is_wip: true,
-                    sync_source: prodNo
-                });
-                recalculateTotals();
             });
     }
 
@@ -417,6 +429,21 @@ function clearProduksiSync() {
     const syncBox = document.getElementById('wipSyncStatusBox');
     if (selectEl) selectEl.value = '';
     if (syncBox) syncBox.style.display = 'none';
+
+    // Reset origin tag pada baris WIP agar tidak meninggalkan jejak tiket yang sudah dilepas
+    const rows = document.querySelectorAll('.material-row');
+    rows.forEach(tr => {
+        const catInput = tr.querySelector('input[name*="[kategori_bahan]"]');
+        if (catInput && catInput.value.toUpperCase() === 'WIP') {
+            const originTag = tr.querySelector('.wip-origin-tag');
+            if (originTag) {
+                originTag.innerHTML = `Keripik Curah (WIP)`;
+                originTag.style.background = '#f1f5f9';
+                originTag.style.color = '#475569';
+                originTag.style.borderColor = '#cbd5e1';
+            }
+        }
+    });
 
     // Refresh BOM jika aktif
     const barangSelect = document.getElementById('barang_jadi_id');
@@ -580,11 +607,16 @@ function addMaterialRow(item = {}) {
                     ${syncSource ? `HPP ${syncSource}` : 'HPP Curah WIP'}
                 </div>
             ` : `
-                <div class="pack-origin-tag">Harga Modal</div>
+                <div class="pack-origin-tag" title="Standar Acuan Master Data Kemasan">Standar Acuan</div>
             `}
         </td>
-        <td style="text-align: right; font-weight: 700; color: #0f172a; width: 150px;">
-            <span id="subtotalLabel_${idx}">Rp ${formatRupiah(qtyAktual * hargaSatuan)}</span>
+        <td style="text-align: right; width: 160px;">
+            <div style="font-weight: 700; color: #0f172a; font-size: 0.875rem;">
+                <span id="subtotalLabel_${idx}">Rp ${formatRupiah(qtyAktual * hargaSatuan)}</span>
+            </div>
+            <div style="font-size: 0.7rem; color: #64748b; margin-top: 0.15rem;" id="subtotalFormula_${idx}">
+                ${formatNumber(qtyAktual)} ${satuanCd} &times; Rp ${formatRupiah(hargaSatuan)}
+            </div>
             <input type="hidden" id="subtotalVal_${idx}" value="${qtyAktual * hargaSatuan}">
         </td>
         <td style="text-align: center; width: 45px;">
@@ -670,6 +702,9 @@ function recalculateRow(idx) {
     const priceInput = tr.querySelector('.row-price-input');
     const subtotalLabel = document.getElementById(`subtotalLabel_${idx}`);
     const subtotalVal = document.getElementById(`subtotalVal_${idx}`);
+    const subtotalFormula = document.getElementById(`subtotalFormula_${idx}`);
+    const satuanInput = document.getElementById(`satuanInput_${idx}`);
+    const satuanCd = satuanInput ? satuanInput.value : '';
 
     const qty = parseFloat(qtyInput?.value) || 0;
     const price = parseFloat(priceInput?.value) || 0;
@@ -677,6 +712,9 @@ function recalculateRow(idx) {
 
     if (subtotalLabel) subtotalLabel.textContent = 'Rp ' + formatRupiah(subtotal);
     if (subtotalVal) subtotalVal.value = subtotal;
+    if (subtotalFormula) {
+        subtotalFormula.innerHTML = `${formatNumber(qty)} ${satuanCd} &times; Rp ${formatRupiah(price)}`;
+    }
 
     recalculateTotals();
 }
@@ -935,14 +973,31 @@ function applyOperatorLaporan(itemOrIdx) {
         batchInput.value = item.wip_batch_no;
     }
 
-    // 4. Set Produksi WIP jika ada
+    // 4. Bangun baris-baris material LANGSUNG DARI DATA INPUT OPERATOR terlebih dahulu
+    buildMaterialRowsFromOperator(item);
+
+    // 5. Set Produksi WIP jika ada (dengan skipAddRow = true agar tidak memunculkan baris WIP phantom)
     const prodSelect = document.getElementById('produksi_id');
     if (prodSelect && item.produksi_id) {
-        prodSelect.value = item.produksi_id;
-        onProduksiSelect(prodSelect);
+        const targetWipId = item.wip_barang_id || (item.wip_barang ? item.wip_barang.barang_id : null);
+        let matchedOpt = null;
+        if (targetWipId) {
+            matchedOpt = Array.from(prodSelect.options).find(opt => 
+                opt.value == item.produksi_id && opt.getAttribute('data-barang-id') == targetWipId
+            );
+        }
+        if (!matchedOpt) {
+            matchedOpt = Array.from(prodSelect.options).find(opt => opt.value == item.produksi_id);
+        }
+        if (matchedOpt) {
+            prodSelect.selectedIndex = matchedOpt.index;
+        } else {
+            prodSelect.value = item.produksi_id;
+        }
+        onProduksiSelect(prodSelect, true);
     }
 
-    // 5. Tampilkan Banner Status Tarik Data
+    // 6. Tampilkan Banner Status Tarik Data
     const badge = document.getElementById('operatorSyncBadge');
     const title = document.getElementById('operatorSyncTitle');
     const subtitle = document.getElementById('operatorSyncSubtitle');
@@ -971,7 +1026,7 @@ function applyOperatorLaporan(itemOrIdx) {
         }
     }
 
-    // 6. Sinkronkan Timbangan Lakban Atas & Bawah
+    // 7. Sinkronkan Timbangan Lakban Atas & Bawah
     const lakbanAtasInput = document.getElementById('lakban_atas_gr');
     const lakbanBawahInput = document.getElementById('lakban_bawah_gr');
     let atasGr = parseFloat(item.lakban_atas_gr) || 0;
@@ -983,9 +1038,6 @@ function applyOperatorLaporan(itemOrIdx) {
     if (lakbanAtasInput) lakbanAtasInput.value = atasGr;
     if (lakbanBawahInput) lakbanBawahInput.value = bawahGr;
     onLakbanInputsChanged();
-
-    // 7. Bangun baris-baris material LANGSUNG DARI DATA INPUT OPERATOR
-    buildMaterialRowsFromOperator(item);
 
     // 8. Tetap ambil ID BOM secara pasif tanpa mereset tabel material
     fetchBomPreview();
@@ -1148,8 +1200,11 @@ function buildMaterialRowsFromOperator(item) {
             );
         }
         const lakbanObj = item.lakban_barang || lakbanMaster;
-        let tarifLakban = 35.10;
-        if (lakbanMaster && parseFloat(lakbanMaster.harga_standar) > 0) {
+        // Prioritaskan tarif lakban timbangan per gram dari Master Data Tarif Kemasan
+        let tarifLakban = (typeof window.tarifLakbanDefault !== 'undefined' && window.tarifLakbanDefault > 0)
+            ? parseFloat(window.tarifLakbanDefault)
+            : 36.70;
+        if (lakbanMaster && (lakbanMaster.satuan_cd === 'GRAM' || lakbanMaster.satuan_cd === 'GR') && parseFloat(lakbanMaster.harga_standar) > 0) {
             tarifLakban = parseFloat(lakbanMaster.harga_standar);
         }
 
@@ -1249,13 +1304,6 @@ function onLakbanInputsChanged() {
         ? parseFloat(window.tarifLakbanDefault)
         : 36.70;
 
-    const lakbanMaster = (window.masterKemasanList || []).find(m => 
-        (m.barang_cd && m.barang_cd.includes('LKB')) || 
-        (m.barang_nm && m.barang_nm.toUpperCase().includes('LAKBAN'))
-    );
-    if (lakbanMaster && parseFloat(lakbanMaster.harga_standar) > 0) {
-        tarif = parseFloat(lakbanMaster.harga_standar);
-    }
     const tarifInfo = document.getElementById('tarifLakbanInfo');
     if (tarifInfo) tarifInfo.textContent = formatRupiah(tarif);
 
@@ -1299,3 +1347,128 @@ function clearOperatorSync() {
     // Refresh formula BOM standar
     fetchBomPreview();
 }
+
+/**
+ * Modal Quick Matrix Update (Standar Harga Kemasan & Lakban Langsung dari Form)
+ */
+function openQuickUpdateModal() {
+    const modal = document.getElementById('modalQuickUpdateTarif');
+    if (modal) {
+        modal.classList.add('show');
+    }
+}
+
+function closeQuickUpdateModal() {
+    const modal = document.getElementById('modalQuickUpdateTarif');
+    if (modal) {
+        modal.classList.remove('show');
+    }
+}
+
+// Inisialisasi AJAX submit handler untuk Modal Quick Update Tarif Kemasan
+document.addEventListener('DOMContentLoaded', function () {
+    const formQuick = document.getElementById('formQuickUpdateTarif');
+    if (formQuick) {
+        formQuick.addEventListener('submit', function (e) {
+            e.preventDefault();
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const origHtml = submitBtn ? submitBtn.innerHTML : '';
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span>Menyimpan...</span>';
+            }
+
+            const formData = new FormData(this);
+            fetch(this.action, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                    'Accept': 'application/json'
+                },
+                body: formData
+            })
+            .then(res => res.json())
+            .then(res => {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = origHtml;
+                }
+
+                if (res.success) {
+                    const map = res.data || {};
+
+                    // 1. Perbarui default tarif lakban gram
+                    if (typeof map.LAKBAN_GRAM !== 'undefined') {
+                        window.tarifLakbanDefault = parseFloat(map.LAKBAN_GRAM);
+                        const elInfo = document.getElementById('tarifLakbanInfo');
+                        if (elInfo) elInfo.textContent = formatRupiah(window.tarifLakbanDefault);
+                        onLakbanInputsChanged();
+                    }
+
+                    // 2. Perbarui harga standar pada masterKemasanList
+                    if (window.masterKemasanList && Array.isArray(window.masterKemasanList)) {
+                        window.masterKemasanList.forEach(item => {
+                            const nm = (item.barang_nm || '').toUpperCase();
+                            if (nm.includes('KARTON') && (nm.includes('MAKSI') || nm.includes('MX') || nm.includes('MK'))) {
+                                if (map.KARTON_MX) item.harga_standar = parseFloat(map.KARTON_MX);
+                            } else if (nm.includes('KARTON')) {
+                                if (map.KARTON_XX) item.harga_standar = parseFloat(map.KARTON_XX);
+                            } else if (nm.includes('BUMBU') || nm.includes('BALADO')) {
+                                if (map.BUMBU_BALADO) item.harga_standar = parseFloat(map.BUMBU_BALADO);
+                            } else if (nm.includes('ROLL') && (nm.includes('MAKSI') || nm.includes('MX') || nm.includes('MK'))) {
+                                if (map.ROLL_MX) item.harga_standar = parseFloat(map.ROLL_MX);
+                            } else if (nm.includes('ROLL') || nm.includes('PLASTIK')) {
+                                if (map.ROLL_XX) item.harga_standar = parseFloat(map.ROLL_XX);
+                            } else if (nm.includes('LAKBAN')) {
+                                if (map.LAKBAN_ROLL) item.harga_standar = parseFloat(map.LAKBAN_ROLL);
+                            } else if (nm.includes('EXP') || nm.includes('KERTAS')) {
+                                if (map.KERTAS_EXP) item.harga_standar = parseFloat(map.KERTAS_EXP);
+                            } else if (nm.includes('BERKO')) {
+                                if (map.WIP_BERKO) item.harga_standar = parseFloat(map.WIP_BERKO);
+                            } else if (item.kategori === 'WIP') {
+                                if (map.WIP_CURAH) item.harga_standar = parseFloat(map.WIP_CURAH);
+                            }
+                        });
+                    }
+
+                    // 3. Sinkronkan harga satuan di baris tabel material jika belum disesuaikan manual
+                    const rows = document.querySelectorAll('.material-row');
+                    rows.forEach(tr => {
+                        const selectEl = tr.querySelector('.row-barang-select');
+                        const priceInput = tr.querySelector('.row-price-input');
+                        const barangId = selectEl ? selectEl.value : tr.querySelector('input[name*="[barang_id]"]')?.value;
+                        const rowIdx = tr.id ? tr.id.replace('materialRow_', '') : null;
+
+                        if (barangId && priceInput) {
+                            const m = findMasterKemasan(barangId);
+                            if (m && parseFloat(m.harga_standar) > 0) {
+                                priceInput.value = m.harga_standar;
+                                if (rowIdx !== null) recalculateRow(rowIdx);
+                            }
+                        }
+                    });
+
+                    recalculateTotals();
+                    closeQuickUpdateModal();
+
+                    // Notifikasi visual
+                    const alertBox = document.createElement('div');
+                    alertBox.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999; background: #059669; color: #ffffff; padding: 12px 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); font-weight: 700; font-size: 0.85rem; display: flex; align-items: center; gap: 8px;';
+                    alertBox.innerHTML = '<svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>Standar harga kemasan berhasil disinkronkan &amp; diterapkan langsung!</span>';
+                    document.body.appendChild(alertBox);
+                    setTimeout(() => alertBox.remove(), 4000);
+                } else {
+                    alert(res.message || 'Gagal menyimpan perubahan tarif kemasan.');
+                }
+            })
+            .catch(err => {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = origHtml;
+                }
+                console.error(err);
+                alert('Terjadi kendala jaringan saat menyimpan standar tarif.');
+            });
+        });
+    }
+});

@@ -96,7 +96,7 @@ class TarifKemasanController extends Controller
             ]);
         }
 
-        return redirect()->route('master.tarif_kemasan.index')
+        return redirect()->back()
             ->with('toast_success', 'Standar harga acuan kemasan berhasil disinkronkan.');
     }
 

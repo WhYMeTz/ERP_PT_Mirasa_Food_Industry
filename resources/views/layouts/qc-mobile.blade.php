@@ -29,7 +29,7 @@
             <div class="qc-top-actions">
 
                 {{-- TOMBOL LOGOUT MINI --}}
-                <form action="{{ route('logout') }}" method="POST" style="margin: 0;" onsubmit="return confirm('Keluar dari sesi akun QC?');">
+                <form action="{{ route('mobile.logout') }}" method="POST" style="margin: 0;" onsubmit="return confirm('Keluar dari sesi akun QC?');">
                     @csrf
                     <button type="submit" class="qc-btn-logout-mini" title="Logout dari Sistem">
                         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
@@ -80,7 +80,7 @@
             </a>
 
             {{-- MENU 4: KELUAR / LOGOUT --}}
-            <form action="{{ route('logout') }}" method="POST" id="formLogoutBottomNav" style="display: contents;">
+            <form action="{{ route('mobile.logout') }}" method="POST" id="formLogoutBottomNav" style="display: contents;">
                 @csrf
                 <button type="submit" class="qc-nav-item" onclick="return confirm('Keluar dari sesi akun QC?');">
                     <svg class="qc-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">

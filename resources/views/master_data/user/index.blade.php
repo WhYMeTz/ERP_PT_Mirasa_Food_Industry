@@ -146,30 +146,49 @@
                                 <span class="badge badge-danger">Nonaktif</span>
                             @endif
                         </td>
-                        <td style="text-align: right;">
-                            <div style="display: inline-flex; gap: 0.35rem;">
+                        <td style="text-align: right; position: relative;">
+                            <button type="button" 
+                                    class="btn-action-trigger" 
+                                    onclick="toggleSmartActionDropdown(this, event, 'dropdown-user-{{ $item->id }}')">
+                                <span>Aksi</span>
+                                <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                            </button>
+                            <div id="dropdown-user-{{ $item->id }}" class="action-dropdown-menu">
+                                {{-- Aksi 1: Lihat Detail Akun --}}
+                                <button type="button" 
+                                    class="action-dropdown-item" 
+                                    onclick="closeAllActionDropdowns(); openUserDetailModal({{ $item->id }})">
+                                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                    <span>Lihat Detail Akun</span>
+                                </button>
+
                                 @if ($item->role_cd !== 'SUPERADMIN')
+                                    {{-- Aksi 2: Atur Hak Akses Role --}}
                                     <button type="button" 
-                                        class="btn btn-secondary btn-sm" 
-                                        onclick="openRolePermissionModal('{{ $item->role_cd }}')"
-                                        style="color: #0284c7;"
-                                        title="Atur Hak Akses Role {{ $item->role_cd }}">
-                                        🛡️ Izin
+                                        class="action-dropdown-item" 
+                                        onclick="closeAllActionDropdowns(); openRolePermissionModal('{{ $item->role_cd }}')">
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                                        <span>Atur Hak Akses ({{ $item->role_cd }})</span>
                                     </button>
                                 @endif
+
+                                {{-- Aksi 3: Edit Data Akun --}}
                                 <button type="button" 
-                                    class="btn btn-secondary btn-sm" 
-                                    onclick='editUser({{ $item->id }}, "{{ addslashes($item->name) }}", "{{ addslashes($item->email) }}", "{{ $item->karyawan_id ?? "" }}", "{{ $item->role_cd }}", "{{ $item->gudang_id ?? "" }}", @json($item->assignedGudangs->pluck("gudang_id")->toArray()))'
-                                    title="Edit Akun & Akses">
-                                    Edit
+                                    class="action-dropdown-item" 
+                                    onclick='closeAllActionDropdowns(); editUser({{ $item->id }}, "{{ addslashes($item->name) }}", "{{ addslashes($item->email) }}", "{{ $item->karyawan_id ?? "" }}", "{{ $item->role_cd }}", "{{ $item->gudang_id ?? "" }}", @json($item->assignedGudangs->pluck("gudang_id")->toArray()))'>
+                                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                    <span>Edit Akun Pengguna</span>
                                 </button>
-                                <form action="{{ route('admin.users.destroy', $item->id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menonaktifkan akun pengguna ini?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn btn-danger btn-sm" title="Hapus">
-                                        Hapus
-                                    </button>
-                                </form>
+
+                                <div class="action-dropdown-divider"></div>
+
+                                {{-- Aksi 4: Hapus / Nonaktifkan --}}
+                                <button type="button" 
+                                    class="action-dropdown-item danger-item" 
+                                    onclick="closeAllActionDropdowns(); openDeleteUserModal({{ $item->id }}, '{{ addslashes($item->name) }}', '{{ addslashes($item->email) }}', '{{ $item->role_cd }}')">
+                                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                    <span>Nonaktifkan Akun</span>
+                                </button>
                             </div>
                         </td>
                     </tr>
@@ -757,11 +776,229 @@
         document.getElementById('formDeleteRole').action = '{{ url("pengguna-sistem/roles") }}/' + id;
         openModal('modalDeleteRole');
     }
+
+    // =========================================================================
+    // MODAL DETAIL USER & FITUR PASSWORD KHUSUS SUPERADMIN
+    // =========================================================================
+    let currentDetailUserData = null;
+
+    function closeAllActionDropdowns() {
+        document.querySelectorAll('.action-dropdown-menu').forEach(m => m.style.display = 'none');
+        document.querySelectorAll('.btn-action-trigger.active').forEach(b => b.classList.remove('active'));
+    }
+
+    function openDeleteUserModal(id, name, email, role) {
+        document.getElementById('deleteUserId').innerText = id;
+        document.getElementById('deleteUserName').innerText = name;
+        document.getElementById('deleteUserEmail').innerText = email;
+        document.getElementById('deleteUserRoleBadge').innerText = role;
+        document.getElementById('formDeleteUser').action = '{{ url("pengguna-sistem") }}/' + id;
+        openModal('modalDeleteUser');
+    }
+
+    function openUserDetailModal(userId) {
+        openModal('modalDetailUser');
+        document.getElementById('detailLoadingSpinner').style.display = 'block';
+        document.getElementById('detailContentBody').style.display = 'none';
+
+        fetch('{{ url("pengguna-sistem") }}/' + userId, {
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(async response => {
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                throw new Error(data.message || ('HTTP ' + response.status + ' ' + response.statusText));
+            }
+            return data;
+        })
+        .then(result => {
+            if (result.status === 'success') {
+                renderUserDetail(result.data);
+            } else {
+                alert(result.message || 'Gagal memuat detail akun pengguna.');
+                closeModal('modalDetailUser');
+            }
+        })
+        .catch(error => {
+            console.error('Error detail user:', error);
+            alert('Terjadi kesalahan saat memuat detail akun pengguna: ' + error.message);
+            closeModal('modalDetailUser');
+        });
+    }
+
+    function renderUserDetail(data) {
+        currentDetailUserData = data;
+        document.getElementById('detailLoadingSpinner').style.display = 'none';
+        document.getElementById('detailContentBody').style.display = 'block';
+
+        // Avatar Initial
+        const initial = (data.name || 'U').charAt(0).toUpperCase();
+        document.getElementById('detailUserAvatar').innerText = initial;
+        document.getElementById('detailModalTitle').innerText = data.name;
+        document.getElementById('detailUserId').innerText = data.id;
+
+        // Role badge styling
+        const roleBadge = document.getElementById('detailRoleBadge');
+        roleBadge.innerText = data.role_cd;
+        let roleBg = '#fee2e2'; let roleClr = '#991b1b';
+        if (data.role_cd === 'STAFF_PRODUKSI') { roleBg = '#ffedd5'; roleClr = '#c2410c'; }
+        else if (data.role_cd === 'ADMIN_GUDANG') { roleBg = '#e0f2fe'; roleClr = '#0369a1'; }
+        else if (data.role_cd === 'PURCHASING') { roleBg = '#fef3c7'; roleClr = '#92400e'; }
+        else if (data.role_cd === 'FINANCE') { roleBg = '#dcfce7'; roleClr = '#15803d'; }
+        else if (data.role_cd === 'QC') { roleBg = '#f3e8ff'; roleClr = '#7e22ce'; }
+        roleBadge.style.background = roleBg;
+        roleBadge.style.color = roleClr;
+
+        // Status badge
+        const statusBadge = document.getElementById('detailStatusBadge');
+        if (data.active_st) {
+            statusBadge.className = 'badge badge-success';
+            statusBadge.innerText = 'Aktif';
+        } else {
+            statusBadge.className = 'badge badge-danger';
+            statusBadge.innerText = 'Nonaktif';
+        }
+
+        // Credentials
+        document.getElementById('detailNamaVal').innerText = data.name;
+        document.getElementById('detailEmailVal').innerText = data.email;
+        document.getElementById('detailRoleDesc').innerText = data.role_desc || data.role_cd;
+
+        // Password container: HANYA Superadmin yang bisa melihat password
+        const superadminBox = document.getElementById('superadminPasswordBox');
+        const restrictedBox = document.getElementById('restrictedPasswordBox');
+        const securityBadge = document.getElementById('detailSecurityBadge');
+        const pwdInput = document.getElementById('detailPasswordInput');
+
+        if (data.can_view_password) {
+            superadminBox.style.display = 'block';
+            restrictedBox.style.display = 'none';
+            securityBadge.innerText = '🔓 Privilese Superadmin';
+            securityBadge.style.background = '#fef2f2';
+            securityBadge.style.color = '#dc2626';
+            securityBadge.style.borderColor = '#fecaca';
+
+            pwdInput.value = data.password || 'password123';
+            pwdInput.type = 'password';
+            resetEyeIcon(false);
+        } else {
+            superadminBox.style.display = 'none';
+            restrictedBox.style.display = 'block';
+            securityBadge.innerText = '🔒 Terkunci (Bukan Superadmin)';
+            securityBadge.style.background = '#f1f5f9';
+            securityBadge.style.color = '#64748b';
+            securityBadge.style.borderColor = '#e2e8f0';
+        }
+
+        // Profil Karyawan
+        const karyFilled = document.getElementById('detailKaryawanFilled');
+        const karyEmpty = document.getElementById('detailKaryawanEmpty');
+        if (data.karyawan) {
+            karyFilled.style.display = 'block';
+            karyEmpty.style.display = 'none';
+            document.getElementById('detailKaryawanNama').innerText = data.karyawan.nama;
+            document.getElementById('detailKaryawanNik').innerText = 'NIK: ' + data.karyawan.nik;
+            document.getElementById('detailKaryawanDept').innerText = data.karyawan.departemen;
+        } else {
+            karyFilled.style.display = 'none';
+            karyEmpty.style.display = 'block';
+        }
+
+        // Penugasan Gudang
+        const gudangBox = document.getElementById('detailGudangsContainer');
+        gudangBox.innerHTML = '';
+        if (data.role_cd === 'SUPERADMIN') {
+            gudangBox.innerHTML = '<div style="background: #fef2f2; border: 1px solid #fecaca; padding: 0.35rem 0.6rem; border-radius: 6px; font-size: 0.775rem; color: #991b1b; font-weight: 700; display: flex; align-items: center; gap: 6px;"><span>🌐</span> Akses Bebas Seluruh Perusahaan & Gudang</div>';
+        } else if (data.gudangs && data.gudangs.length > 0) {
+            data.gudangs.forEach(g => {
+                const row = document.createElement('div');
+                row.style.cssText = 'background: #f0fdf4; border: 1px solid #bbf7d0; padding: 0.25rem 0.5rem; border-radius: 6px; font-size: 0.75rem; color: #166534; font-weight: 600; display: flex; align-items: center; gap: 5px;';
+                row.innerHTML = '<span>🔒</span> <span>' + g.nama + ' (' + g.kode + ')</span>';
+                gudangBox.appendChild(row);
+            });
+        } else if (data.default_gudang) {
+            gudangBox.innerHTML = '<div style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 0.25rem 0.5rem; border-radius: 6px; font-size: 0.75rem; color: #166534; font-weight: 600; display: flex; align-items: center; gap: 5px;"><span>🔒</span> <span>' + data.default_gudang + '</span></div>';
+        } else {
+            gudangBox.innerHTML = '<div style="background: #fff7ed; border: 1px solid #fed7aa; padding: 0.25rem 0.5rem; border-radius: 6px; font-size: 0.75rem; color: #c2410c; font-style: italic;">⚠️ Belum ditugaskan ke cabang manapun.</div>';
+        }
+
+        // Permissions summary
+        const permBox = document.getElementById('detailPermissionsChips');
+        permBox.innerHTML = '';
+        const perms = Array.isArray(data.permissions) ? data.permissions : [];
+        document.getElementById('detailPermissionsCount').innerText = data.role_cd === 'SUPERADMIN' ? 'Full Access' : perms.length;
+
+        if (data.role_cd === 'SUPERADMIN') {
+            permBox.innerHTML = '<span style="background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; font-size: 0.725rem; font-weight: 800; padding: 0.25rem 0.65rem; border-radius: 6px;">⭐ SUPERADMIN: Hak Akses Penuh ke Seluruh 6 Modul Pabrik (Bypass Otorisasi)</span>';
+        } else if (perms.length > 0) {
+            perms.forEach(p => {
+                const chip = document.createElement('span');
+                chip.style.cssText = 'background: #ffffff; color: #334155; border: 1px solid #cbd5e1; font-size: 0.685rem; font-weight: 600; padding: 0.2rem 0.5rem; border-radius: 4px; font-family: monospace;';
+                chip.innerText = p;
+                permBox.appendChild(chip);
+            });
+        } else {
+            permBox.innerHTML = '<span style="color: #94a3b8; font-size: 0.75rem; font-style: italic;">Tidak ada hak akses aktif.</span>';
+        }
+
+        // Audit Trail Dates
+        document.getElementById('detailCreatedAt').innerText = data.created_at;
+        document.getElementById('detailUpdatedAt').innerText = data.updated_at;
+
+        // Button Edit from Detail Modal
+        document.getElementById('btnEditFromDetail').onclick = function() {
+            closeModal('modalDetailUser');
+            const assignedIds = (data.gudangs || []).map(g => g.id);
+            editUser(data.id, data.name, data.email, data.karyawan ? data.karyawan.id : '', data.role_cd, data.default_gudang ? '' : '', assignedIds);
+        };
+    }
+
+    function toggleDetailPasswordVisibility() {
+        const pwdInput = document.getElementById('detailPasswordInput');
+        if (!pwdInput) return;
+        const isPwd = pwdInput.type === 'password';
+        pwdInput.type = isPwd ? 'text' : 'password';
+        resetEyeIcon(isPwd);
+    }
+
+    function resetEyeIcon(isVisible) {
+        const eyeIcon = document.getElementById('eyeDetailIcon');
+        if (!eyeIcon) return;
+        if (isVisible) {
+            eyeIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18"/>';
+        } else {
+            eyeIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>';
+        }
+    }
+
+    function copyDetailPassword() {
+        const pwdInput = document.getElementById('detailPasswordInput');
+        if (!pwdInput || !pwdInput.value) return;
+        navigator.clipboard.writeText(pwdInput.value).then(() => {
+            const btn = document.getElementById('btnCopyDetailPwd');
+            const origHtml = btn.innerHTML;
+            btn.innerHTML = '<span>✅ Tersalin!</span>';
+            btn.style.borderColor = '#22c55e';
+            btn.style.color = '#15803d';
+            setTimeout(() => {
+                btn.innerHTML = origHtml;
+                btn.style.borderColor = '#cbd5e1';
+                btn.style.color = '#334155';
+            }, 2000);
+        }).catch(err => {
+            alert('Gagal menyalin kata sandi: ' + err);
+        });
+    }
 </script>
 
-{{-- MODALS KELOLA PERAN --}}
+{{-- MODALS KELOLA PERAN & DETAIL AKUN --}}
 @include('master_data.user.partials.modal-role-create')
 @include('master_data.user.partials.modal-role-manage')
 @include('master_data.user.partials.modal-role-edit')
 @include('master_data.user.partials.modal-role-delete')
+@include('master_data.user.partials.modal-detail')
+@include('master_data.user.partials.modal-delete-user')
 @endsection

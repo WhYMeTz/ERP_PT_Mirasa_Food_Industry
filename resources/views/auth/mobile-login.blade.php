@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Login Operator Kemas - PT Mirasa Food Industry</title>
+    <title>Login Operasional Mobile (QC & Kemas) - PT Mirasa Food Industry</title>
     <link rel="icon" type="image/png" href="{{ asset('images/logo.png') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,17 +12,17 @@
 </head>
 <body class="pkg-login-body">
     <div class="pkg-login-container">
-        {{-- BRANDING KHUSUS OPERATOR LAPANGAN --}}
+        {{-- BRANDING KHUSUS OPERASIONAL LAPANGAN (QC & KEMAS) --}}
         <div class="pkg-login-header">
             <img src="{{ asset('images/logo.png') }}" alt="Logo PT Mirasa" class="pkg-login-logo" onerror="this.style.display='none'">
             <div>
                 <span class="pkg-login-badge">
                     <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
-                    <span>Portal Shopfloor Kemas</span>
+                    <span>Portal Operasional Mobile</span>
                 </span>
             </div>
             <h1 class="pkg-login-title">PT Mirasa Food Industry</h1>
-            <p class="pkg-login-subtitle">Silakan login untuk mencatat laporan kemas harian</p>
+            <p class="pkg-login-subtitle">Masuk untuk QC Lapangan Inbound & Operator Kemas</p>
         </div>
 
         {{-- KARTU FORM LOGIN MOBILE (MODERN RED & WHITE) --}}
@@ -46,12 +46,12 @@
 
                 {{-- Input Akun / Email / Username --}}
                 <div class="pkg-form-group">
-                    <label for="emailInput" class="pkg-form-label">Akun / Email Operator</label>
+                    <label for="emailInput" class="pkg-form-label">Akun / Email Petugas</label>
                     <div class="pkg-input-wrapper">
                         <span class="pkg-input-icon">
                             <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
                         </span>
-                        <input type="text" id="emailInput" name="email" class="pkg-input-field" placeholder="contoh: produksi.mgl@mirasa.co.id" value="{{ old('email') }}" required autocomplete="username">
+                        <input type="text" id="emailInput" name="email" class="pkg-input-field" placeholder="contoh: qc@mirasa.co.id atau operator.kemas" value="{{ old('email') }}" required autocomplete="username">
                     </div>
                 </div>
 
@@ -82,7 +82,7 @@
 
                 {{-- Tombol Masuk --}}
                 <button type="submit" class="pkg-btn-submit">
-                    <span>Masuk ke Sistem Kemas</span>
+                    <span>Masuk ke Portal Mobile</span>
                     <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
                 </button>
             </form>
@@ -95,12 +95,30 @@
                     </div>
                     <div class="pkg-quick-grid">
                         @foreach($operatorUsers as $op)
-                            <button type="button" class="pkg-quick-user-btn" onclick="selectQuickOperator('{{ $op->email }}', 'password123')">
+                            @php
+                                $isQc = $op->role_cd === 'QC';
+                                $roleClass = 'role-pkg';
+                                $roleLabel = 'Operator Kemas';
+                                if ($isQc) {
+                                    $roleClass = 'role-qc';
+                                    $roleLabel = 'QC Lapangan';
+                                } elseif ($op->role_cd === 'STAFF_PRODUKSI') {
+                                    $roleClass = 'role-prod';
+                                    $roleLabel = 'Staff Produksi';
+                                } elseif ($op->role_cd === 'SUPERADMIN') {
+                                    $roleClass = 'role-admin';
+                                    $roleLabel = 'Superadmin';
+                                }
+                            @endphp
+                            <button type="button" class="pkg-quick-user-btn {{ $isQc ? 'is-qc' : '' }}" onclick="selectQuickOperator('{{ $op->email }}', 'password123')">
                                 <div>
-                                    <span class="pkg-quick-name">{{ $op->name }}</span>
-                                    <span class="pkg-quick-meta">{{ $op->email }} ({{ $op->role_cd }})</span>
+                                    <span class="pkg-quick-name">
+                                        <span class="pkg-role-badge {{ $roleClass }}">{{ $roleLabel }}</span>
+                                        <span>{{ $op->name }}</span>
+                                    </span>
+                                    <span class="pkg-quick-meta">{{ $op->email }} &bull; {{ $op->gudang->gudang_nm ?? 'Pabrik Mirasa' }}</span>
                                 </div>
-                                <span class="pkg-quick-arrow">Login &rarr;</span>
+                                <span class="pkg-quick-arrow">Masuk &rarr;</span>
                             </button>
                         @endforeach
                     </div>
@@ -112,7 +130,7 @@
         <div class="pkg-login-footer">
             <a href="{{ route('login') }}" class="pkg-link-office">
                 <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                <span>Bukan operator? Masuk ke Web Office ERP</span>
+                <span>Bukan operasional lapangan? Masuk ke Web Office ERP</span>
             </a>
         </div>
     </div>

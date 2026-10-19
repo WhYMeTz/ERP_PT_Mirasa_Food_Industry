@@ -42,10 +42,11 @@ Route::post('login', [AuthController::class, 'login'])->name('login.attempt');
 Route::post('logout', [AuthController::class, 'logout'])->name('logout');
 Route::get('quick-login/{id}', [AuthController::class, 'quickLogin'])->name('quick.login');
 
-// Mobile / Operator Shopfloor Authentication Routes
+// Mobile (QC Lapangan & Operator Shopfloor) Authentication Routes
 Route::get('mobile/login', [AuthController::class, 'showMobileLogin'])->name('mobile.login');
 Route::post('mobile/login', [AuthController::class, 'mobileLogin'])->name('mobile.login.attempt');
 Route::post('mobile/logout', [AuthController::class, 'mobileLogout'])->name('mobile.logout');
+Route::get('qc/login', fn () => redirect()->route('mobile.login'))->name('qc.login');
 
 // Root Redirection
 Route::get('/', function () {

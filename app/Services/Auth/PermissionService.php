@@ -602,4 +602,29 @@ class PermissionService
         $default = self::DEFAULT_PERMISSIONS[$roleCd] ?? [];
         return in_array($permissionCd, $default, true);
     }
+
+    /**
+     * Ambil seluruh izin yang aktif untuk suatu peran (role_cd)
+     */
+    public function getPermissionsForRole(string $roleCd): array
+    {
+        $roleCd = strtoupper(trim($roleCd));
+        if ($roleCd === 'SUPERADMIN') {
+            return self::getAllPermissionKeys();
+        }
+
+        $permissions = Cache::remember('mirasa_role_permissions', 3600, function () {
+            return SysRolePermission::where('allowed_st', true)
+                ->get()
+                ->groupBy('role_cd')
+                ->map(fn ($items) => $items->pluck('permission_cd')->toArray())
+                ->toArray();
+        });
+
+        if (isset($permissions[$roleCd])) {
+            return $permissions[$roleCd];
+        }
+
+        return self::DEFAULT_PERMISSIONS[$roleCd] ?? [];
+    }
 }

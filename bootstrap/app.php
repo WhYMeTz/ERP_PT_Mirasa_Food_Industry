@@ -19,7 +19,14 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\RestrictMobileOperatorMiddleware::class,
         ]);
         $middleware->redirectGuestsTo(function (Request $request) {
-            if ($request->is('produksi/packaging/mobile*') || $request->is('mobile/*')) {
+            if (
+                $request->is('produksi/packaging/mobile*') ||
+                $request->is('mobile/*') ||
+                $request->is('qc/inbound/create*') ||
+                $request->is('qc/inbound/pengujian-2*') ||
+                $request->is('qc/login*') ||
+                ($request->is('qc/*') && $request->get('view') === 'mobile')
+            ) {
                 return route('mobile.login');
             }
             return route('login');
@@ -31,7 +38,14 @@ return Application::configure(basePath: dirname(__DIR__))
                 || ($e instanceof \Symfony\Component\HttpKernel\Exception\HttpException && $e->getStatusCode() === 419);
 
             if ($is419) {
-                if ($request->is('mobile/*') || $request->is('produksi/packaging/mobile*')) {
+                if (
+                    $request->is('mobile/*') ||
+                    $request->is('produksi/packaging/mobile*') ||
+                    $request->is('qc/inbound/create*') ||
+                    $request->is('qc/inbound/pengujian-2*') ||
+                    $request->is('qc/login*') ||
+                    ($request->is('qc/*') && $request->get('view') === 'mobile')
+                ) {
                     return redirect()->route('mobile.login')
                         ->withInput($request->except(['password', '_token']))
                         ->withErrors(['email' => 'Sesi formulir kedaluwarsa. Halaman telah disegarkan otomatis, silakan coba lagi.']);

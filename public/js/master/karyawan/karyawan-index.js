@@ -91,35 +91,52 @@ window.addEventListener('scroll', function() {
 window.addEventListener('resize', closeAllActionDropdowns);
 
 /**
- * Buka modal edit karyawan dan isi datanya
+ * Escape teks agar aman disisipkan ke innerHTML
  */
-function editKaryawan(id, nik, nama, departemen, jabatan, telp, email, alamat) {
-    closeAllActionDropdowns();
+function escapeHtml(value) {
+    const div = document.createElement('div');
+    div.textContent = value ?? '';
+    return div.innerHTML;
+}
 
-    const baseUrl = (window.appConfig && window.appConfig.karyawanBaseUrl) 
-        ? window.appConfig.karyawanBaseUrl 
+function getKaryawanBaseUrl() {
+    return (window.appConfig && window.appConfig.karyawanBaseUrl)
+        ? window.appConfig.karyawanBaseUrl
         : '/master-karyawan';
+}
+
+/**
+ * Buka modal edit karyawan dan isi datanya (data berupa object dari Blade)
+ */
+function editKaryawan(data) {
+    closeAllActionDropdowns();
 
     const form = document.getElementById('formEditKaryawan');
     if (form) {
-        form.action = baseUrl + '/' + id;
+        form.action = getKaryawanBaseUrl() + '/' + data.karyawan_id;
     }
 
-    const elNik = document.getElementById('edit_nik');
-    const elNama = document.getElementById('edit_karyawan_nm');
-    const elDept = document.getElementById('edit_departemen_cd');
-    const elJabatan = document.getElementById('edit_jabatan_nm');
-    const elTelp = document.getElementById('edit_telepon_no');
-    const elEmail = document.getElementById('edit_email');
-    const elAlamat = document.getElementById('edit_alamat_txt');
+    const fields = {
+        edit_nik: data.nik,
+        edit_id_absensi: data.id_absensi,
+        edit_karyawan_nm: data.karyawan_nm,
+        edit_departemen_cd: data.departemen_cd,
+        edit_jabatan_nm: data.jabatan_nm,
+        edit_kelompok: data.kelompok,
+        edit_shift: data.shift,
+        edit_status_kerja: data.status_kerja || 'Tetap',
+        edit_tgl_masuk: data.tgl_masuk,
+        edit_telepon_no: data.telepon_no,
+        edit_email: data.email,
+        edit_bank_name: data.bank_name,
+        edit_no_rekening: data.no_rekening,
+        edit_alamat_txt: data.alamat_txt,
+    };
 
-    if (elNik) elNik.value = nik || '';
-    if (elNama) elNama.value = nama || '';
-    if (elDept) elDept.value = departemen || '';
-    if (elJabatan) elJabatan.value = jabatan || '';
-    if (elTelp) elTelp.value = telp || '';
-    if (elEmail) elEmail.value = email || '';
-    if (elAlamat) elAlamat.value = alamat || '';
+    Object.entries(fields).forEach(([id, value]) => {
+        const el = document.getElementById(id);
+        if (el) el.value = value ?? '';
+    });
 
     openModal('modalEditKaryawan');
 }
@@ -127,21 +144,17 @@ function editKaryawan(id, nik, nama, departemen, jabatan, telp, email, alamat) {
 /**
  * Buka modal konfirmasi hapus karyawan
  */
-function openDeleteKaryawanModal(id, nik, nama, departemen, jabatan) {
+function openDeleteKaryawanModal(data) {
     closeAllActionDropdowns();
-
-    const baseUrl = (window.appConfig && window.appConfig.karyawanBaseUrl) 
-        ? window.appConfig.karyawanBaseUrl 
-        : '/master-karyawan';
 
     const form = document.getElementById('formDeleteKaryawan');
     if (form) {
-        form.action = baseUrl + '/' + id;
+        form.action = getKaryawanBaseUrl() + '/' + data.karyawan_id;
     }
 
     const elInfo = document.getElementById('deleteKaryawanInfo');
     if (elInfo) {
-        elInfo.innerHTML = `<strong>${nama}</strong> <span style="font-family: monospace; color: #0284c7;">(${nik})</span><br><span style="color: #64748b; font-size: 0.8rem;">Departemen: ${departemen} | Jabatan: ${jabatan}</span>`;
+        elInfo.innerHTML = `<strong>${escapeHtml(data.karyawan_nm)}</strong> <span style="font-family: monospace; color: #0284c7;">(${escapeHtml(data.nik)})</span><br><span style="color: #64748b; font-size: 0.8rem;">Departemen: ${escapeHtml(data.departemen_nm)} | Jabatan: ${escapeHtml(data.jabatan_nm)}</span>`;
     }
 
     openModal('modalDeleteKaryawan');
@@ -151,39 +164,14 @@ function openDeleteKaryawanModal(id, nik, nama, departemen, jabatan) {
  * Reset NIK otomatis di modal tambah
  */
 function resetNikOtomatis() {
-    const defaultNik = (window.appConfig && window.appConfig.nextNik) ? window.appConfig.nextNik : '';
+    const defaultNik = (window.appConfig && window.appConfig.nextNIK) ? window.appConfig.nextNIK : '';
     const elNik = document.getElementById('create_nik');
     if (elNik && defaultNik) {
         elNik.value = defaultNik;
     }
 }
 
-/**
- * Kontrol modal global
- */
-function openModal(id) {
-    const modal = document.getElementById(id);
-    if (modal) {
-        modal.classList.add('active');
-        document.body.style.overflow = 'hidden';
-    }
-}
-
-function closeModal(id) {
-    const modal = document.getElementById(id);
-    if (modal) {
-        modal.classList.remove('active');
-        document.body.style.overflow = '';
-    }
-}
-
-// Menutup modal dengan tombol ESC
-window.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
-        document.querySelectorAll('.modal-backdrop.active').forEach(modal => {
-            modal.classList.remove('active');
-        });
-        document.body.style.overflow = '';
-        closeAllActionDropdowns();
-    }
+// Tutup dropdown aksi dengan tombol ESC (modal sudah ditangani layout)
+window.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeAllActionDropdowns();
 });

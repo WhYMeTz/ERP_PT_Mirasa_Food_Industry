@@ -15,21 +15,37 @@ class MstBomSeeder extends Seeder
      */
     public function run(): void
     {
+        $this->call(MasterBarangExcelSeeder::class);
+
         DB::transaction(function () {
-            // Pastikan tidak duplikat
+            // Ambil ID barang berdasarkan kode
+            $barangMap = MstBarang::pluck('barang_id', 'barang_cd');
+            $requiredCodes = [
+                'WIP-FCC',
+                'BB-SK001',
+                'MSW00G-BP2',
+                'FG-XX001',
+                'FG-XX003',
+            ];
+            $missingCodes = array_diff($requiredCodes, $barangMap->keys()->all());
+
+            if ($missingCodes !== []) {
+                throw new \RuntimeException(
+                    'Data BOM tidak dapat dibuat. Kode barang wajib belum tersedia: '
+                    .implode(', ', $missingCodes)
+                );
+            }
+
             MstBomDtl::truncate();
             MstBomHdr::query()->delete();
 
-            // Ambil ID barang berdasarkan kode
-            $barangMap = MstBarang::pluck('barang_id', 'barang_cd');
-
             // 1. FORMULA STANDAR INDOFOOD (IFM) - KERIPIK SINGKONG POLOS TANPA BUMBU
-            $targetIfmId = $barangMap['WIP-FCC'] ?? $barangMap['KIF00G-BP1'] ?? 41;
-            $singkongId = $barangMap['BB-SK001'] ?? 5;
-            $minyakSawitId = $barangMap['MSW00G-BP2'] ?? 11;
-            $perenyahId = $barangMap['PRH00G-BP2'] ?? 13;
-            $kartonIfmId = $barangMap['KIF00G-BP1'] ?? 26;
-            $lakbanId = $barangMap['LBS00G-BP1'] ?? 35;
+            $targetIfmId = $barangMap['WIP-FCC'];
+            $singkongId = $barangMap['BB-SK001'];
+            $minyakSawitId = $barangMap['MSW00G-BP2'];
+            $perenyahId = $barangMap['PRH00G-BP2'] ?? null;
+            $kartonIfmId = $barangMap['KIF00G-BP1'] ?? null;
+            $lakbanId = $barangMap['LBS00G-BP1'] ?? null;
 
             $bomIfm = MstBomHdr::create([
                 'bom_no'           => 'BOM-IFM-001',
@@ -87,10 +103,10 @@ class MstBomSeeder extends Seeder
             }
 
             // 2. FORMULA STANDAR PING-PING 500 (Per 100 Karton)
-            $targetPp500Id = $barangMap['FG-XX001'] ?? 54;
-            $bumbuBaladoId = $barangMap['BBL00G-BP1'] ?? 14;
-            $rollPpId = $barangMap['RXX00G-BP1'] ?? 23;
-            $kartonPpId = $barangMap['KXX00G-BP6'] ?? 31;
+            $targetPp500Id = $barangMap['FG-XX001'];
+            $bumbuBaladoId = $barangMap['BBL00G-BP1'] ?? null;
+            $rollPpId = $barangMap['RXX00G-BP1'] ?? null;
+            $kartonPpId = $barangMap['KXX00G-BP6'] ?? null;
 
             $bomPp500 = MstBomHdr::create([
                 'bom_no'           => 'BOM-PP-500',
@@ -148,9 +164,9 @@ class MstBomSeeder extends Seeder
             }
 
             // 3. FORMULA STANDAR PING-PING 2000 (Per 100 Karton)
-            $targetPp2000Id = $barangMap['FG-XX003'] ?? 56;
-            $rollPp2000Id = $barangMap['RXX00G-BP3'] ?? 25;
-            $kartonPp2000Id = $barangMap['KXB00G-BP8'] ?? 33;
+            $targetPp2000Id = $barangMap['FG-XX003'];
+            $rollPp2000Id = $barangMap['RXX00G-BP3'] ?? null;
+            $kartonPp2000Id = $barangMap['KXB00G-BP8'] ?? null;
 
             $bomPp2000 = MstBomHdr::create([
                 'bom_no'           => 'BOM-PP-2000',

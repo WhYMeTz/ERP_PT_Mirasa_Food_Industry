@@ -1024,68 +1024,89 @@
                         </div>
                     @endif
 
-                    {{-- 6. KEUANGAN, HUTANG & KAS/BANK --}}
-                    @if (Auth::user()->canAccessKeuangan())
-                        @php
-                            $isKeuanganActive = request()->routeIs('keuangan.*');
-                        @endphp
-                        <div class="pill-dropdown" id="navDropdownKeuangan">
-                            <button type="button" 
-                                    class="pill-dropdown-btn {{ $isKeuanganActive ? 'active' : '' }}" 
-                                    onclick="toggleNavDropdown('navDropdownKeuangan', event)">
-                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #059669; flex-shrink: 0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                <span class="nav-text-full">Keuangan &amp; Kas</span>
-                                <span class="nav-text-short">Keuangan</span>
+                    {{-- 6a. MANAJEMEN KARYAWAN (2-KOLOM MEGA MENU) --}}
+                    @if (Auth::user()->canAccessManajemenKaryawan())
+                        <div class="pill-dropdown" id="navDropdownManajemenKaryawan">
+                            <button type="button"
+                                class="pill-dropdown-btn {{ request()->routeIs('manajemen.*') ? 'active' : '' }}"
+                                onclick="toggleNavDropdown('navDropdownManajemenKaryawan', event)">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #0d9488;">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                </svg>
+                                <span>Manajemen Karyawan</span>
                                 <span class="pill-dropdown-arrow">▼</span>
                             </button>
-                            <div class="dropdown-menu" style="min-width: 250px; padding: 0.45rem;">
-                                @if (Auth::user()->canAccessHutang())
-                                    <a href="{{ route('keuangan.hutang.index') }}" class="mega-item {{ request()->routeIs('keuangan.hutang.*') ? 'active' : '' }}">
-                                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                                        <div style="display: flex; flex-direction: column;">
-                                            <span style="font-weight: 600;">Hutang &amp; Tagihan Supplier</span>
-                                            <span style="font-size: 0.6875rem; color: #64748b;">Tagihan GRN, gas bulanan &amp; jatuh tempo</span>
-                                        </div>
-                                    </a>
-                                @endif
 
-                                @if (Auth::user()->canAccessBayarHutang())
-                                    <div style="height: 1px; background: #f1f5f9; margin: 0.3rem 0;"></div>
-                                    <a href="{{ route('keuangan.bayar.index') }}" class="mega-item {{ request()->routeIs('keuangan.bayar.*') ? 'active' : '' }}">
-                                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-                                        <div style="display: flex; flex-direction: column;">
-                                            <span style="font-weight: 600;">Pelunasan (Bukti Kas Keluar)</span>
-                                            <span style="font-size: 0.6875rem; color: #64748b;">Catat bayar cash, transfer &amp; cicilan BKK</span>
-                                        </div>
-                                    </a>
-                                @endif
+                            <div class="dropdown-menu dropdown-mega">
+                                <div class="mega-grid">
 
-                                @if (Auth::user()->canAccessKasMasuk())
-                                    <div style="height: 1px; background: #f1f5f9; margin: 0.3rem 0;"></div>
-                                    <a href="{{ route('keuangan.kas_masuk.index') }}" class="mega-item {{ request()->routeIs('keuangan.kas_masuk.*') ? 'active' : '' }}">
-                                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                        <div style="display: flex; flex-direction: column;">
-                                            <span style="font-weight: 600;">Penerimaan (Bukti Kas Masuk)</span>
-                                            <span style="font-size: 0.6875rem; color: #64748b;">Uang masuk limbah, modal &amp; piutang BKM</span>
-                                        </div>
-                                    </a>
-                                @endif
+                                    {{-- KELOMPOK 1: ABSENSI --}}
+                                    <div style="display: flex; flex-direction: column;">
+                                        <div class="mega-header" style="color: #0d9488;">Absensi</div>
 
-                                @if (Auth::user()->canAccessKasBank())
-                                    <div style="height: 1px; background: #f1f5f9; margin: 0.3rem 0;"></div>
-                                    <a href="{{ route('keuangan.kas_bank.index') }}" class="mega-item {{ request()->routeIs('keuangan.kas_bank.*') ? 'active' : '' }}">
-                                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
-                                        <div style="display: flex; flex-direction: column;">
-                                            <span style="font-weight: 600;">Kas &amp; Rekening Bank</span>
-                                            <span style="font-size: 0.6875rem; color: #64748b;">Saldo Kas Kecil, BCA, Mandiri &amp; mutasi</span>
-                                        </div>
-                                    </a>
-                                @endif
+                                        @if (Auth::user()->canAccessFingerprint())
+                                            <a href="{{ route('manajemen.fingerprint.index') }}"
+                                                class="mega-item {{ request()->routeIs('manajemen.fingerprint.*') ? 'active' : '' }}">
+                                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4"/>
+                                                </svg>
+                                                <span>Finger Print Karyawan</span>
+                                            </a>
+                                        @endif
+
+                                        @if (Auth::user()->canAccessAbsensi())
+                                            <a href="{{ route('manajemen.jadwal.index') }}"
+                                                class="mega-item {{ request()->routeIs('manajemen.jadwal.*') ? 'active' : '' }}">
+                                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                                </svg>
+                                                <span>Jadwal Karyawan</span>
+                                            </a>
+                                            <a href="{{ route('manajemen.kode-shift.index') }}"
+                                                class="mega-item {{ request()->routeIs('manajemen.kode-shift.*') ? 'active' : '' }}">
+                                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                                </svg>
+                                                <span>Kode Shift</span>
+                                            </a>
+                                        @endif
+                                    </div>
+
+                                    {{-- KELOMPOK 2: PENGGAJIAN --}}
+                                    <div style="display: flex; flex-direction: column;">
+                                        <div class="mega-header" style="color: #0d9488;">Penggajian</div>
+
+                                        @if (Auth::user()->canAccessPayroll())
+                                            <a href="{{ route('manajemen.payroll.index') }}"
+                                                class="mega-item {{ request()->routeIs('manajemen.payroll.*') ? 'active' : '' }}">
+                                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
+                                                </svg>
+                                                <span>Payroll</span>
+                                            </a>
+                                        @endif
+
+                                        @if (Auth::user()->canAccessPayroll())
+                                            <a href="{{ route('manajemen.payroll_harian.index') }}"
+                                                class="mega-item {{ request()->routeIs('manajemen.payroll_harian.*') ? 'active' : '' }}">
+                                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                                                </svg>
+                                                <span>Detail Payroll Harian</span>
+                                            </a>
+                                        @endif
+                                    </div>
+
+                                </div>
                             </div>
                         </div>
                     @endif
 
-                    {{-- 7. MASTER DATA (2-KOLOM MEGA MENU) --}}
+                    {{-- 6b. MASTER DATA (2-KOLOM MEGA MENU) --}}
                     @if (Auth::user()->canAccessMasterData())
                         <div class="pill-dropdown" id="navDropdownMaster">
                             <button type="button" 

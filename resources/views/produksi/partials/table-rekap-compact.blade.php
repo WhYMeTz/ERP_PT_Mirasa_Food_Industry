@@ -89,16 +89,26 @@
                         {{-- Lini Produksi & No Batch --}}
                         <td>
                             {{-- Nama Lini Produksi --}}
-                            @if(count($d['lini_list'] ?? []) > 1)
-                                <div style="font-size: 0.775rem; font-weight: 700; color: #0f172a; line-height: 1.25;" title="{{ implode(', ', $d['lini_list']) }}">
-                                    {{ $d['lini_list'][0] }}
-                                    <span style="font-size: 0.65rem; font-weight: 600; color: #475569; background: #f1f5f9; border: 1px solid #e2e8f0; padding: 0.5px 4px; border-radius: 3px; margin-left: 2px;">
-                                        +{{ count($d['lini_list']) - 1 }}
-                                    </span>
+                            @php
+                                $cleanLiniList = array_map(function($l) {
+                                    $u = strtoupper($l);
+                                    if (str_contains($u, 'IFM') || str_contains($u, 'IFL') || str_contains($u, 'INDOFOOD')) return 'Lini IFM';
+                                    return 'Lini Manual';
+                                }, $d['lini_list'] ?? []);
+                                $cleanLiniList = array_values(array_unique($cleanLiniList));
+                            @endphp
+                            @if(count($cleanLiniList) > 1)
+                                <div style="display: flex; gap: 0.25rem; flex-wrap: wrap; align-items: center;">
+                                    <span style="font-size: 0.685rem; font-weight: 700; color: #0284c7; background: #f0f9ff; border: 1px solid #bae6fd; padding: 1.5px 5px; border-radius: 4px;">Lini IFM</span>
+                                    <span style="font-size: 0.685rem; font-weight: 700; color: #059669; background: #f0fdf4; border: 1px solid #bbf7d0; padding: 1.5px 5px; border-radius: 4px;">Lini Manual</span>
                                 </div>
                             @else
-                                <div style="font-size: 0.775rem; font-weight: 700; color: #0f172a; line-height: 1.25;">
-                                    {{ $d['lini_produksi'] ?? 'Lini Penggorengan & Keripik' }}
+                                @php
+                                    $singleLini = !empty($cleanLiniList) ? $cleanLiniList[0] : (str_contains(strtoupper($d['lini_produksi'] ?? ''), 'IFM') ? 'Lini IFM' : 'Lini Manual');
+                                    $isIfmSingle = $singleLini === 'Lini IFM';
+                                @endphp
+                                <div style="font-size: 0.775rem; font-weight: 700; color: {{ $isIfmSingle ? '#0284c7' : '#0f172a' }}; line-height: 1.25;">
+                                    {{ $singleLini }}
                                 </div>
                             @endif
 
@@ -214,40 +224,21 @@
                                     <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                                 </button>
                                 <div id="{{ $compactMenuId }}" class="action-dropdown-menu">
-                                    @if(($d['shift_count'] ?? 1) > 1 && !empty($d['shift_records']))
-                                        <div style="padding: 0.35rem 0.75rem; font-size: 0.675rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; background: #f8fafc; border-bottom: 1px solid #f1f5f9;">
-                                            Rincian Shift ({{ $d['shift_count'] }} Dokumen)
-                                        </div>
-                                        @foreach($d['shift_records'] as $sRec)
-                                            <a href="{{ route('produksi.show', $sRec['produksi_id']) }}" class="action-dropdown-item">
-                                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                                                <span>Shift {{ $sRec['shift_cd'] }} &bull; {{ $sRec['batch_wip_no'] !== '-' ? 'Batch ' . $sRec['batch_wip_no'] : $sRec['produksi_no'] }}</span>
-                                            </a>
-                                            <a href="{{ route('produksi.cetak-stiker', $sRec['produksi_id']) }}" class="action-dropdown-item" target="_blank" style="padding-left: 1.75rem; font-size: 0.75rem; color: #475569;">
-                                                <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-                                                <span>Cetak Stiker Shift {{ $sRec['shift_cd'] }}</span>
-                                            </a>
-                                        @endforeach
-                                        <div class="action-dropdown-divider"></div>
-                                        <button type="button" class="action-dropdown-item danger-item" onclick="openDeleteProduksiModal({{ $d['produksi_id'] }}, '{{ $d['produksi_no'] }}', '{{ $formattedDate }}', '{{ $d['shift_cd'] }}', '{{ $d['batch_wip_no'] }}')">
-                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                            <span>Hapus Data Produksi</span>
-                                        </button>
-                                    @else
-                                        <a href="{{ route('produksi.show', $d['produksi_id']) }}" class="action-dropdown-item">
-                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                                            <span>Detail Dokumen</span>
+                                    <a href="{{ route('produksi.show', $d['produksi_id']) }}" class="action-dropdown-item">
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                        <span>Lihat Detail Dokumen</span>
+                                    </a>
+                                    @if(Auth::user()->canCreateProduksi())
+                                        <a href="{{ route('produksi.adjust', $d['produksi_id']) }}" class="action-dropdown-item">
+                                            <svg width="14" height="14" fill="none" stroke="#d97706" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                            <span>Adjustment HPP</span>
                                         </a>
-                                        <a href="{{ route('produksi.cetak-stiker', $d['produksi_id']) }}" class="action-dropdown-item" target="_blank">
-                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-                                            <span>Cetak Stiker Karton</span>
-                                        </a>
-                                        <div class="action-dropdown-divider"></div>
-                                        <button type="button" class="action-dropdown-item danger-item" onclick="openDeleteProduksiModal({{ $d['produksi_id'] }}, '{{ $d['produksi_no'] }}', '{{ $formattedDate }}', '{{ $d['shift_cd'] }}', '{{ $d['batch_wip_no'] }}')">
-                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                            <span>Hapus Produksi</span>
-                                        </button>
                                     @endif
+                                    <div class="action-dropdown-divider"></div>
+                                    <button type="button" class="action-dropdown-item danger-item" onclick="openDeleteProduksiModal({{ $d['produksi_id'] }}, '{{ $d['produksi_no'] }}', '{{ $formattedDate }}', '{{ $d['shift_cd'] }}', '{{ $d['batch_wip_no'] }}')">
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                        <span>Hapus Data Produksi</span>
+                                    </button>
                                 </div>
                             @else
                                 <span style="color: #cbd5e1;">-</span>
@@ -422,7 +413,7 @@
                                     <div class="mini-cost-list">
                                         @if(!empty($d['ifl_qty']) && $d['ifl_qty'] > 0)
                                             <div class="mini-cost-row">
-                                                <span style="color: #0369a1;">• Lini IFL (Indofood):</span>
+                                                <span style="color: #0369a1;">• Lini IFM (Indofood):</span>
                                                 <strong style="color: #0369a1;">{{ number_format($d['ifl_qty'], 2, ',', '.') }} kg</strong>
                                             </div>
                                         @endif

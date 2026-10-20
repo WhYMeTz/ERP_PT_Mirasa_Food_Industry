@@ -30,32 +30,6 @@
                 </div>
                 <div id="textPahitWarning">Singkong beracun sianida / tidak layak konsumsi pabrik. Keputusan otomatis dialihkan ke <strong>TOLAK TOTAL</strong>. Truk tidak diizinkan bongkar ke gudang dan Admin Gudang akan menerbitkan Berita Acara Penolakan.</div>
             </div>
-
-            {{-- Kotak Diskusi Atasan (Khusus Pengujian 2 atau Kondisi Kritis) --}}
-            <div id="boxDiskusiAtasan" style="display: none; background: #fff7ed; border: 1.5px solid #fdba74; border-radius: 10px; padding: 0.85rem 1rem; color: #9a3412; font-size: 0.825rem;">
-                <div style="font-weight: 800; display: flex; align-items: center; justify-content: space-between; gap: 0.4rem; margin-bottom: 0.35rem; flex-wrap: wrap;">
-                    <span style="display: flex; align-items: center; gap: 0.35rem;">
-                        <span>🗣️</span> <span>HASIL DISKUSI DENGAN ATASAN (SUPERVISOR / KEPALA DIREKTUR)</span>
-                    </span>
-                    <span style="font-size: 0.7rem; font-weight: 700; background: #ffedd5; color: #c2410c; padding: 2px 7px; border-radius: 4px;">
-                        SOP Pengujian 2
-                    </span>
-                </div>
-                <div style="line-height: 1.4; margin-bottom: 0.5rem;">
-                    Jika hasil Pengujian 2 gagal atau terdapat cacat mutu pada sisa muatan bak, diskusikan langkah operasional dengan atasan:
-                </div>
-                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                    <button type="button" onclick="setDiskusiAction('TOLAK_SISA')" style="background: #dc2626; color: #ffffff; border: none; font-size: 0.75rem; font-weight: 800; padding: 0.4rem 0.75rem; border-radius: 6px; cursor: pointer;">
-                        🚫 Tolak Sisa Muatan (Truk Dipulangkan)
-                    </button>
-                    <button type="button" onclick="setDiskusiAction('PENYESUAIAN_REFRAKSI')" style="background: #ea580c; color: #ffffff; border: none; font-size: 0.75rem; font-weight: 800; padding: 0.4rem 0.75rem; border-radius: 6px; cursor: pointer;">
-                        ⚖️ Terima Bersyarat (Potongan Refraksi Ekstra)
-                    </button>
-                    <button type="button" onclick="setDiskusiAction('DOWNGRADE_B')" style="background: #ca8a04; color: #ffffff; border: none; font-size: 0.75rem; font-weight: 800; padding: 0.4rem 0.75rem; border-radius: 6px; cursor: pointer;">
-                        🟡 Turunkan Mutu ke Grade B
-                    </button>
-                </div>
-            </div>
         </div>
     </div>
 
@@ -94,6 +68,26 @@
                 <div style="background: #dcfce7; border: 1.5px solid #86efac; border-radius: 10px; padding: 0.75rem 0.85rem;">
                     <span style="font-size: 0.725rem; color: #15803d; font-weight: 800;">TOTAL BERSIH TERIMA:</span>
                     <div id="summaryNetto" style="font-size: 1.25rem; font-weight: 900; color: #15803d; margin-top: 0.2rem;">0.00 KG</div>
+                </div>
+            </div>
+
+            {{-- BANNER INFORMASI AKUMULASI PENGUJIAN 1 + PENGUJIAN 2 --}}
+            <div id="bannerAkumulasiPengujian2" style="display: none; background: #faf5ff; border: 1.5px solid #d8b4fe; border-radius: 10px; padding: 0.75rem 1rem; margin-top: 0.15rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                    <div>
+                        <div style="font-size: 0.75rem; font-weight: 800; color: #6b21a8; display: flex; align-items: center; gap: 0.35rem;">
+                            <span>📦</span> <span>AKUMULASI NETTO GUDANG (UJI 1 + UJI 2):</span>
+                        </div>
+                        <div style="font-size: 0.775rem; color: #7e22ce; margin-top: 2px;">
+                            Netto Uji 1: <strong id="lblAkumulasiNettoUji1">0.00 KG</strong> + Netto Uji 2: <strong id="lblAkumulasiNettoUji2">0.00 KG</strong>
+                        </div>
+                    </div>
+                    <div style="text-align: right;">
+                        <span style="font-size: 0.7rem; color: #7e22ce; font-weight: 700; text-transform: uppercase;">Total Gabungan Diterima:</span>
+                        <div style="font-size: 1.15rem; font-weight: 900; color: #6b21a8; font-family: monospace;" id="lblAkumulasiNettoTotal">
+                            0.00 KG
+                        </div>
+                    </div>
                 </div>
             </div>
 

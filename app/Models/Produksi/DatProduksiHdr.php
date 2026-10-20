@@ -211,4 +211,32 @@ class DatProduksiHdr extends Model
         }
         return (int) (($this->attributes['tk_langsung_org'] ?? 0) + ($this->attributes['tk_tidak_langsung_org'] ?? 0) + ($this->attributes['tk_training_org'] ?? 0));
     }
+
+    /**
+     * Relasi ke Log Riwayat Penyesuaian HPP (Audit Trail)
+     */
+    public function adjustmentLogs(): HasMany
+    {
+        return $this->hasMany(DatProduksiAdjustmentLog::class, 'produksi_id', 'produksi_id')
+            ->where('deleted_st', false)
+            ->orderBy('created_at', 'desc');
+    }
+
+    /**
+     * Relasi ke Dokumen Pengeluaran Bahan Kemas Gudang yang ditautkan ke produksi ini
+     */
+    public function pengeluaranKemasan(): HasMany
+    {
+        return $this->hasMany(\App\Models\Gudang\DatPakaiHdr::class, 'produksi_id', 'produksi_id')
+            ->where('deleted_st', false);
+    }
+
+    /**
+     * Relasi ke Dokumen Pengemasan (Packaging) dari hasil produksi Berko ini
+     */
+    public function packagings(): HasMany
+    {
+        return $this->hasMany(DatPackagingHdr::class, 'produksi_id', 'produksi_id')
+            ->where('deleted_st', false);
+    }
 }

@@ -117,7 +117,21 @@ class DatQcInboundHdr extends Model
 
     public function isPengujian2Done(): bool
     {
-        return $this->pengujian2List && $this->pengujian2List->isNotEmpty();
+        if ($this->pengujian2List && $this->pengujian2List->isNotEmpty()) {
+            return true;
+        }
+
+        // Jika seluruh muatan surat jalan sudah diturunkan di pabrik pada Uji 1, tidak ada sisa muatan untuk Uji 2
+        $sj = (float) ($this->jumlah_surat_jalan ?? 0);
+        $pabrik = (float) ($this->jumlah_di_pabrik ?? 0);
+        $gross = (float) ($this->details?->first()?->qty_timbang_gross ?? 0);
+        $muatanTurun = max($pabrik, $gross);
+
+        if ($sj > 0 && $muatanTurun >= $sj) {
+            return true;
+        }
+
+        return false;
     }
 
     public function terima(): HasOne

@@ -21,6 +21,7 @@ class DatPakaiHdr extends Model
         'pakai_no',
         'pakai_tgl',
         'gudang_id',
+        'produksi_id',
         'tujuan_pemakaian',
         'catatan_txt',
         'created_by',
@@ -53,11 +54,28 @@ class DatPakaiHdr extends Model
     }
 
     /**
-     * Relasi ke Laporan Hasil Produksi yang menggunakan dokumen ini
+     * Relasi ke Laporan Hasil Produksi yang menggunakan dokumen ini (Bahan Baku Singkong/Minyak)
      */
     public function produksi(): HasOne
     {
         return $this->hasOne(\App\Models\Produksi\DatProduksiHdr::class, 'pakai_id', 'pakai_id')
+            ->where('deleted_st', false);
+    }
+
+    /**
+     * Relasi ke Tiket Produksi Terkait (jika pengeluaran kemasan ditujukan untuk batch produksi tertentu)
+     */
+    public function produksiTerkait(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Produksi\DatProduksiHdr::class, 'produksi_id', 'produksi_id');
+    }
+
+    /**
+     * Relasi ke Dokumen Pengemasan (Packaging) yang menggunakan bahan dari pengeluaran ini
+     */
+    public function packaging(): HasOne
+    {
+        return $this->hasOne(\App\Models\Produksi\DatPackagingHdr::class, 'pakai_id', 'pakai_id')
             ->where('deleted_st', false);
     }
 }

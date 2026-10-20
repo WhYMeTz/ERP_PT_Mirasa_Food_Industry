@@ -43,6 +43,7 @@
                     <th>Nama Supplier</th>
                     <th>Jenis Supplier</th>
                     <th>Kontak / Telp</th>
+                    <th>Tempo (TOP)</th>
                     <th>Alamat</th>
                     <th style="width: 130px; text-align: center;">Aksi</th>
                 </tr>
@@ -61,6 +62,11 @@
                             @endif
                         </td>
                         <td>{{ $item->kontak_no ?? '-' }}</td>
+                        <td>
+                            <span class="badge" style="background: #f0fdf4; color: #166534; font-weight: 700; border: 1px solid #bbf7d0; font-size: 0.78rem;">
+                                ⏱️ {{ $item->top_hari ?? 14 }} Hari
+                            </span>
+                        </td>
                         <td>{{ $item->alamat_txt ?? '-' }}</td>
                         <td style="text-align: center; vertical-align: middle;">
                             @if (Auth::user()?->canEditMasterSupplier() || Auth::user()?->canDeleteMasterSupplier())
@@ -75,7 +81,7 @@
                                     @if (Auth::user()?->canEditMasterSupplier())
                                         <button type="button" 
                                             class="action-dropdown-item" 
-                                            onclick="closeAllActionDropdowns(); editSupplier({{ $item->supplier_id }}, '{{ addslashes($item->supplier_cd) }}', '{{ addslashes($item->supplier_nm) }}', '{{ $item->jenis_supplier_id ?? '' }}', '{{ addslashes($item->kontak_no ?? '') }}', '{{ addslashes($item->alamat_txt ?? '') }}')">
+                                            onclick="closeAllActionDropdowns(); editSupplier({{ $item->supplier_id }}, '{{ addslashes($item->supplier_cd) }}', '{{ addslashes($item->supplier_nm) }}', '{{ $item->jenis_supplier_id ?? '' }}', '{{ addslashes($item->kontak_no ?? '') }}', '{{ addslashes($item->alamat_txt ?? '') }}', {{ $item->top_hari ?? 14 }})">
                                             <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                                             <span>Edit Data Supplier</span>
                                         </button>

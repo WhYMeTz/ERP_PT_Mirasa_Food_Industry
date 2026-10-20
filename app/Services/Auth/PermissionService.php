@@ -32,14 +32,23 @@ class PermissionService
                         'delete' => ['key' => 'po_delete', 'label' => 'Hapus / Batal'],
                     ],
                 ],
-                'QC' => [
-                    'label'   => 'Pengujian Mutu (QC & HACCP)',
-                    'desc'    => 'Inspeksi kedatangan sampling, uji laboratorium goreng, dan verifikasi checklist.',
+                'QC_MOBILE' => [
+                    'label'   => '📱 QC Mobile (Sampling & Lapangan HP)',
+                    'desc'    => 'Pemeriksaan sampling kedatangan truk di gerbang, checklist hygiene, dan uji wajan fryer via smartphone/tablet.',
                     'actions' => [
-                        'view'   => ['key' => 'qc_view',   'label' => 'Lihat Tiket QC'],
-                        'create' => ['key' => 'qc_create', 'label' => 'Input Uji QC'],
-                        'edit'   => ['key' => 'qc_edit',   'label' => 'Edit / Koreksi'],
-                        'delete' => ['key' => 'qc_delete', 'label' => 'Hapus / Batal'],
+                        'view'   => ['key' => 'qc_mobile_view',   'label' => 'Buka Riwayat Mobile'],
+                        'create' => ['key' => 'qc_mobile_create', 'label' => 'Input Uji Baru (+QC 1 / +QC 2)'],
+                        'edit'   => ['key' => 'qc_mobile_edit',   'label' => 'Edit / Koreksi di HP'],
+                        'delete' => ['key' => 'qc_mobile_delete', 'label' => 'Hapus / Batal di HP'],
+                    ],
+                ],
+                'QC_WEB' => [
+                    'label'   => '🖥️ QC Web (Portal HACCP, Dokumen & Cetak Desktop)',
+                    'desc'    => 'Monitoring portal web desktop, audit lembar dokumen HACCP resmi A4, Berita Acara, dan audit muatan truk.',
+                    'actions' => [
+                        'view'   => ['key' => 'qc_web_view',   'label' => 'Buka Riwayat & Dokumen Web'],
+                        'edit'   => ['key' => 'qc_web_edit',   'label' => 'Edit Dokumen HACCP di Web'],
+                        'delete' => ['key' => 'qc_web_delete', 'label' => 'Batalkan Tiket di Web'],
                     ],
                 ],
                 'TERIMA' => [
@@ -152,6 +161,53 @@ class PermissionService
                         'create' => ['key' => 'so_create', 'label' => 'Buat SO Baru'],
                         'edit'   => ['key' => 'so_edit',   'label' => 'Edit Pesanan'],
                         'delete' => ['key' => 'so_delete', 'label' => 'Hapus / Batal'],
+                    ],
+                ],
+            ],
+        ],
+        'KEUANGAN' => [
+            'group_key'    => 'KEUANGAN',
+            'group_title'  => '💰 Keuangan, Hutang & Kas/Bank',
+            'group_desc'   => 'Pengelolaan hutang pembelian supplier, tagihan utilitas gas, pelunasan kas keluar (BKK), dan buku kas bank.',
+            'badge'        => 'KEUANGAN',
+            'badge_color'  => '#059669',
+            'bg_color'     => '#f0fdf4',
+            'border_color' => '#a7f3d0',
+            'modules'      => [
+                'HUTANG' => [
+                    'label'   => 'Hutang Usaha & Tagihan Supplier (AP)',
+                    'desc'    => 'Pencatatan faktur tagihan pembelian GRN, tagihan gas bulanan, jatuh tempo, dan potongan retur.',
+                    'actions' => [
+                        'view'   => ['key' => 'hutang_view',   'label' => 'Lihat Tagihan'],
+                        'create' => ['key' => 'hutang_create', 'label' => 'Catat Tagihan Baru'],
+                        'edit'   => ['key' => 'hutang_edit',   'label' => 'Edit / Koreksi Tagihan'],
+                        'delete' => ['key' => 'hutang_delete', 'label' => 'Hapus / Batalkan'],
+                    ],
+                ],
+                'BAYAR_HUTANG' => [
+                    'label'   => 'Pelunasan Hutang (Bukti Kas Keluar - BKK)',
+                    'desc'    => 'Eksekusi pembayaran tagihan secara tunai/cash, transfer bank, cicilan parsial, atau pelunasan batch.',
+                    'actions' => [
+                        'view'   => ['key' => 'bayar_hutang_view',   'label' => 'Lihat Bukti Bayar'],
+                        'create' => ['key' => 'bayar_hutang_create', 'label' => 'Input Pembayaran / BKK'],
+                        'delete' => ['key' => 'bayar_hutang_void',   'label' => 'Batalkan / Void Pembayaran'],
+                    ],
+                ],
+                'KAS_MASUK' => [
+                    'label'   => 'Penerimaan Kas & Bank (Bukti Kas Masuk - BKM)',
+                    'desc'    => 'Pencatatan uang masuk dari penjualan limbah, modal owner, pelunasan piutang, dan pendapatan lain.',
+                    'actions' => [
+                        'view'   => ['key' => 'kas_masuk_view',   'label' => 'Lihat Bukti Kas Masuk'],
+                        'create' => ['key' => 'kas_masuk_create', 'label' => 'Input Kas Masuk (BKM)'],
+                        'delete' => ['key' => 'kas_masuk_void',   'label' => 'Batalkan / Void BKM'],
+                    ],
+                ],
+                'KAS_BANK' => [
+                    'label'   => 'Kas & Rekening Bank (Buku Mutasi)',
+                    'desc'    => 'Monitoring saldo kas kecil kantor pabrik, rekening BCA & Mandiri, serta riwayat mutasi arus kas.',
+                    'actions' => [
+                        'view'   => ['key' => 'kas_bank_view',   'label' => 'Lihat Saldo & Mutasi'],
+                        'create' => ['key' => 'kas_bank_manage', 'label' => 'Kelola Akun & Penyesuaian Saldo'],
                     ],
                 ],
             ],
@@ -282,7 +338,8 @@ class PermissionService
      */
     public const DEFAULT_PERMISSIONS = [
         'ADMIN_GUDANG' => [
-            'qc_view',
+            'qc_mobile_view',
+            'qc_web_view',
             'terima_view',
             'terima_create',
             'terima_edit',
@@ -314,7 +371,7 @@ class PermissionService
             'po_create',
             'po_edit',
             'po_delete',
-            'qc_view',
+            'qc_web_view',
             'terima_view',
             'retur_view',
             'retur_create',
@@ -326,7 +383,7 @@ class PermissionService
         ],
         'FINANCE' => [
             'po_view',
-            'qc_view',
+            'qc_web_view',
             'terima_view',
             'retur_view',
             'stok_view',
@@ -339,14 +396,28 @@ class PermissionService
             'so_edit',
             'tarif_produksi_view',
             'tarif_produksi_manage',
+            'hutang_view',
+            'hutang_create',
+            'hutang_edit',
+            'hutang_delete',
+            'bayar_hutang_view',
+            'bayar_hutang_create',
+            'bayar_hutang_void',
+            'kas_masuk_view',
+            'kas_masuk_create',
+            'kas_masuk_void',
+            'kas_bank_view',
+            'kas_bank_manage',
             'master_barang_view',
             'master_customer_view',
+            'master_supplier_view',
         ],
         'QC' => [
-            'qc_view',
-            'qc_create',
-            'qc_edit',
-            'qc_delete',
+            'qc_mobile_view',
+            'qc_mobile_create',
+            'qc_mobile_edit',
+            'qc_web_view',
+            'qc_web_edit',
             'po_view',
             'terima_view',
             'retur_view',
@@ -530,5 +601,30 @@ class PermissionService
         // Fallback ke default jika belum tersimpan di DB
         $default = self::DEFAULT_PERMISSIONS[$roleCd] ?? [];
         return in_array($permissionCd, $default, true);
+    }
+
+    /**
+     * Ambil seluruh izin yang aktif untuk suatu peran (role_cd)
+     */
+    public function getPermissionsForRole(string $roleCd): array
+    {
+        $roleCd = strtoupper(trim($roleCd));
+        if ($roleCd === 'SUPERADMIN') {
+            return self::getAllPermissionKeys();
+        }
+
+        $permissions = Cache::remember('mirasa_role_permissions', 3600, function () {
+            return SysRolePermission::where('allowed_st', true)
+                ->get()
+                ->groupBy('role_cd')
+                ->map(fn ($items) => $items->pluck('permission_cd')->toArray())
+                ->toArray();
+        });
+
+        if (isset($permissions[$roleCd])) {
+            return $permissions[$roleCd];
+        }
+
+        return self::DEFAULT_PERMISSIONS[$roleCd] ?? [];
     }
 }

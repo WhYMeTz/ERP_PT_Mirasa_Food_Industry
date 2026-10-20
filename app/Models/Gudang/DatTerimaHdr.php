@@ -25,6 +25,7 @@ class DatTerimaHdr extends Model
         'supplier_id',
         'gudang_id',
         'suratjalan_no',
+        'tgl_jatuh_tempo',
         'status_cd',
         'catatan_txt',
         'subtotal_nominal',
@@ -43,6 +44,7 @@ class DatTerimaHdr extends Model
 
     protected $casts = [
         'terima_tgl'       => 'date',
+        'tgl_jatuh_tempo'  => 'date',
         'subtotal_nominal' => 'decimal:4',
         'potongan_nominal' => 'decimal:4',
         'dpp_nominal'      => 'decimal:4',

@@ -6,39 +6,16 @@
 <div class="card" style="margin-bottom: 1.25rem; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.03); background: #ffffff;">
     <div class="card-header" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0.875rem 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
         <strong id="cardHeaderTitle" style="color: #0f172a; font-size: 0.95rem; display: flex; align-items: center; gap: 0.4rem;">
-            <span>2. Shift Kerja, Penomoran Batch &amp; Kemasan Karton</span>
+            <span>3. Penomoran Batch, Kemasan &amp; Kedaluwarsa Produk</span>
         </strong>
         <span id="cardHeaderBadge" style="font-size: 0.775rem; font-weight: 700; color: #334155; background: #f1f5f9; padding: 0.25rem 0.65rem; border-radius: 4px; border: 1px solid #cbd5e1;">
-            Format Batch: [Shift][NoAwal] - [Shift][NoAkhir]
+            Format Batch: Otomatis Standar Lini
         </span>
     </div>
 
     <div style="padding: 1.25rem;">
-        {{-- Hidden Input Shift & Jam --}}
-        <input type="hidden" name="shift_cd" id="shift_cd" value="{{ old('shift_cd', 'A') }}">
-        <input type="hidden" name="jam_produksi" id="jam_produksi" value="{{ old('jam_produksi', date('H:i')) }}">
-
-        {{-- BARIS 1: SHIFT KERJA & PENOMORAN KARTON --}}
-        <div id="rowShiftKartonGrid" style="display: grid; grid-template-columns: 1.2fr 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem; align-items: start;">
-            {{-- 1. Shift Kerja Segmented Toggle --}}
-            <div id="sectionShiftSelection">
-                <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">
-                    Shift Kerja Produksi <span style="color: #ef4444;">*</span>
-                </label>
-                <div style="display: flex; background: #f1f5f9; padding: 3px; border-radius: 8px; border: 1px solid #cbd5e1; gap: 3px;">
-                    <button type="button" id="btnShiftA" onclick="selectShift('A')" 
-                        style="flex: 1; padding: 0.5rem 0.75rem; font-weight: 800; font-size: 0.85rem; border: none; border-radius: 6px; cursor: pointer; transition: all 0.2s ease;"
-                        class="{{ old('shift_cd', 'A') === 'A' ? 'shift-segmented-active active-a' : 'shift-segmented-inactive' }}">
-                        Shift A
-                    </button>
-                    <button type="button" id="btnShiftB" onclick="selectShift('B')" 
-                        style="flex: 1; padding: 0.5rem 0.75rem; font-weight: 800; font-size: 0.85rem; border: none; border-radius: 6px; cursor: pointer; transition: all 0.2s ease;"
-                        class="{{ old('shift_cd', 'A') === 'B' ? 'shift-segmented-active active-b' : 'shift-segmented-inactive' }}">
-                        Shift B
-                    </button>
-                </div>
-                <small style="color: #64748b; font-size: 0.725rem; margin-top: 0.35rem; display: block;">Regu operasional lantai pabrik.</small>
-            </div>
+        {{-- BARIS 1: KUANTITAS KEMASAN & NOMOR SERI KARTON --}}
+        <div id="rowShiftKartonGrid" style="display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem; align-items: start;">
 
             {{-- 2. Qty Karton Selesai --}}
             <div id="colQtyKarton">
@@ -52,7 +29,7 @@
                         style="font-weight: 800; font-size: 1rem; color: #0f172a; padding-right: 4.5rem;" 
                         placeholder="0" 
                         oninput="updateKartonRangeAndBatch()">
-                    <span id="unitKartonSuffix" style="position: absolute; right: 0.65rem; top: 50%; transform: translateY(-50%); font-size: 0.75rem; font-weight: 700; color: #64748b; pointer-events: none;">Kemasan</span>
+                    <span id="unitKartonSuffix" style="position: absolute; right: 0.65rem; top: 50%; transform: translateY(-50%); font-size: 0.75rem; font-weight: 700; color: #64748b; pointer-events: none;">Box 6 Kg</span>
                 </div>
                 <small style="color: #64748b; font-size: 0.725rem; margin-top: 0.35rem; display: block;">
                     Berat: <strong id="liveEstimasiKg" style="color: #0284c7;">0.00 Kg</strong> <span id="liveEstimasiDesc">(Netto 6 Kg/Box)</span>
@@ -62,15 +39,16 @@
             {{-- 3. No. Karton Awal --}}
             <div id="colKartonAwal">
                 <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">
-                    No. Karton Awal <span style="color: #ef4444;">*</span>
+                    No. Karton Awal <span style="font-weight: 500; font-size: 0.725rem; color: #64748b;">(Khusus IFM)</span>
                 </label>
                 <input type="number" step="1" min="1" name="no_karton_awal" id="no_karton_awal" 
                     value="{{ old('no_karton_awal', 1) }}" 
                     class="form-control" 
                     style="font-family: monospace; font-weight: 700; font-size: 0.95rem;" 
+                    placeholder="Contoh: 1 (Kosongkan jika non-IFM)"
                     oninput="updateKartonRangeAndBatch()">
                 <small id="kartonSourceInfo" style="color: #0284c7; font-size: 0.725rem; margin-top: 0.35rem; display: block;">
-                    Memuat riwayat...
+                    Khusus IFM. Kosongkan jika produksi selain IFM (otomatis format tanggal).
                 </small>
             </div>
 
@@ -134,9 +112,9 @@
                     </span>
                 </div>
                 <div id="liveBatchCode" style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 1.25rem; font-weight: 800; color: #0f172a; letter-spacing: 0.03em; line-height: 1.2;">
-                    {{ old('batch_wip_no', 'A0001 - A0001') }}
+                    {{ old('batch_wip_no', date('d m Y')) }}
                 </div>
-                <input type="hidden" name="batch_wip_no" id="batch_wip_no" value="{{ old('batch_wip_no') }}">
+                <input type="hidden" name="batch_wip_no" id="batch_wip_no" value="{{ old('batch_wip_no', date('d m Y')) }}">
             </div>
         </div>
 

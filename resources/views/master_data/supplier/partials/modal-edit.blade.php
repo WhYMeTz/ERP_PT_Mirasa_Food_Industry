@@ -30,6 +30,11 @@
                     <label for="edit_kontak_no" class="form-label">Kontak / No Telepon</label>
                     <input type="text" id="edit_kontak_no" name="kontak_no" class="form-control">
                 </div>
+                <div class="form-group">
+                    <label for="edit_top_hari" class="form-label">Term of Payment (TOP) / Tempo Bayar <span style="font-weight: 400; color: #64748b; font-size: 0.75rem;">(Hari)</span></label>
+                    <input type="number" id="edit_top_hari" name="top_hari" min="0" max="365" class="form-control" placeholder="Contoh: 14">
+                    <small style="color: #64748b; font-size: 0.75rem; display: block; margin-top: 0.25rem;">Default jangka waktu jatuh tempo tagihan setelah barang masuk (misal: 14 hari, 30 hari, atau 0 untuk COD/Tunai).</small>
+                </div>
                 <div class="form-group" style="margin-bottom: 0;">
                     <label for="edit_alamat_txt" class="form-label">Alamat Lengkap</label>
                     <textarea id="edit_alamat_txt" name="alamat_txt" class="form-control" rows="2"></textarea>

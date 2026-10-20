@@ -42,11 +42,6 @@
         foreach ($p->details as $d) {
             $cat = $classifyBarang($d->barang?->barang_nm, $d->barang?->barang_cd);
             $cats[] = $cat;
-            if ($cat === 'BUMBU') {
-                $cats[] = 'MSG';
-                $cats[] = 'GARAM';
-                $cats[] = 'PERENYAH';
-            }
         }
         return array_values(array_unique($cats));
     };
@@ -114,6 +109,9 @@
             </button>
             <button type="button" onclick="selectKomoditas('PERENYAH')" class="btn komoditas-btn" id="btnKomoditas_PERENYAH" style="font-size: 0.8rem; font-weight: 800; padding: 0.5rem 0.4rem; border-radius: 8px; border: 1.5px solid #cbd5e1; background: #ffffff; color: #334155; text-align: center; cursor: pointer; transition: all 0.15s;">
                 ✨ Perenyah
+            </button>
+            <button type="button" onclick="selectKomoditas('BUMBU')" class="btn komoditas-btn" id="btnKomoditas_BUMBU" style="font-size: 0.8rem; font-weight: 800; padding: 0.5rem 0.4rem; border-radius: 8px; border: 1.5px solid #cbd5e1; background: #ffffff; color: #334155; text-align: center; cursor: pointer; transition: all 0.15s;">
+                🌶️ Bumbu
             </button>
         </div>
     </div>
@@ -800,6 +798,8 @@
                 barang_id: '{{ $parentQc->details->first()?->barang_id }}',
                 grade_cd: '{{ $parentQc->details->first()?->grade_cd ?? "A" }}',
                 refraksi_persen: '{{ (float) ($parentQc->details->first()?->refraksi_persen ?? 0) }}',
+                reject: {{ (float) ($parentQc->details->first()?->qty_reject ?? 0) }},
+                netto: {{ (float) ($parentQc->details->first()?->qty_netto_lolos ?? 0) }},
             } @else null @endif,
         };
     </script>

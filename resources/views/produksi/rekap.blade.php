@@ -9,12 +9,7 @@
 @section('content')
 <div style="margin-bottom: 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
     <div>
-        <div style="font-size: 0.75rem; font-weight: 700; color: #0284c7; text-transform: uppercase; letter-spacing: 0.06em; display: flex; align-items: center; gap: 0.35rem;">
-            <span>Produksi &amp; Manufaktur</span>
-            <span>&bull;</span>
-            <span>PT Mirasa Food Industry</span>
-        </div>
-        <h1 style="font-size: 1.45rem; font-weight: 800; color: #0f172a; margin: 0.2rem 0 0 0; letter-spacing: -0.02em;">
+        <h1 style="font-size: 1.45rem; font-weight: 800; color: #0f172a; margin: 0; letter-spacing: -0.02em;">
             Buku Rekapitulasi Harga Pokok Produksi (HPP)
         </h1>
         <p style="margin: 0.25rem 0 0 0; font-size: 0.825rem; color: #64748b;">
@@ -73,22 +68,22 @@
 </div>
 
 @if ($mode === 'harian')
-    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1.25rem;">
-        <div>
-            <span style="font-weight: 700; font-size: 1.05rem; color: #0f172a; letter-spacing: -0.01em;">Rekapitulasi Produksi Harian</span>
-            <span style="font-size: 0.8rem; color: #64748b; margin-left: 0.5rem;">Audit kalkulasi biaya bahan, energi CNG, upah kerja, FOH, rendemen &amp; HPP/kg.</span>
+    <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; margin-bottom: 1.25rem;">
+        <div style="display: flex; flex-direction: column; min-width: 0; flex: 1;">
+            <span style="font-weight: 800; font-size: 1.15rem; color: #0f172a; letter-spacing: -0.01em; white-space: nowrap;">Rekapitulasi Produksi Harian</span>
+            <span style="font-size: 0.825rem; color: #64748b; line-height: 1.4; white-space: nowrap; margin-top: 0.15rem;">Audit kalkulasi biaya bahan, energi CNG, upah kerja, FOH, rendemen &amp; HPP/kg.</span>
         </div>
 
-        <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+        <div style="display: flex; gap: 0.3rem; align-items: center; flex-shrink: 0; flex-wrap: nowrap;">
             {{-- Filter Periode Kalender Terpadu --}}
-            <form action="{{ route('produksi.rekap') }}" method="GET" style="display: flex; gap: 0.35rem; align-items: center; background: #ffffff; padding: 0.2rem 0.5rem; border-radius: 6px; border: 1px solid #cbd5e1; box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+            <form action="{{ route('produksi.rekap') }}" method="GET" style="display: flex; gap: 0.25rem; align-items: center; background: #ffffff; padding: 0.2rem 0.45rem; border-radius: 6px; border: 1px solid #cbd5e1; box-shadow: 0 1px 2px rgba(0,0,0,0.02); margin: 0;">
                 <input type="hidden" name="mode" value="harian">
-                <select name="bulan" class="form-control" style="font-size: 0.8rem; padding: 0.25rem 0.5rem; height: 30px; border: none; font-weight: 700; color: #1e293b;" onchange="this.form.submit()">
+                <select name="bulan" class="form-control" style="font-size: 0.8125rem; padding: 0.15rem 0.5rem 0.15rem 0.35rem; height: 30px; border: none; font-weight: 700; color: #1e293b; min-width: 110px; cursor: pointer; background: transparent;" onchange="this.form.submit()">
                     @foreach ($monthsList as $num => $nm)
                         <option value="{{ $num }}" {{ $num == $month ? 'selected' : '' }}>{{ $nm }}</option>
                     @endforeach
                 </select>
-                <select name="tahun" class="form-control" style="font-size: 0.8rem; padding: 0.25rem 0.5rem; height: 30px; border: none; font-weight: 700; color: #1e293b;" onchange="this.form.submit()">
+                <select name="tahun" class="form-control" style="font-size: 0.8125rem; padding: 0.15rem 0.35rem; height: 30px; border: none; font-weight: 700; color: #1e293b; min-width: 68px; cursor: pointer; background: transparent;" onchange="this.form.submit()">
                     @foreach ($yearsList as $yr)
                         <option value="{{ $yr }}" {{ $yr == $year ? 'selected' : '' }}>{{ $yr }}</option>
                     @endforeach
@@ -98,7 +93,7 @@
             <a href="{{ route('produksi.export-rekap-pdf', ['tahun' => $year, 'bulan' => $month]) }}" 
                target="_blank" 
                class="btn btn-secondary" 
-               style="background: #ffffff; border: 1.5px solid #dc2626; color: #dc2626; font-size: 0.85rem; font-weight: 700; padding: 0.55rem 0.95rem; box-shadow: 0 1px 2px rgba(0,0,0,0.03); display: inline-flex; align-items: center; gap: 0.35rem; transition: all 0.15s ease-in-out;" 
+               style="background: #ffffff; border: 1.5px solid #dc2626; color: #dc2626; font-size: 0.8125rem; font-weight: 700; padding: 0.42rem 0.65rem; box-shadow: 0 1px 2px rgba(0,0,0,0.03); display: inline-flex; align-items: center; gap: 0.3rem; transition: all 0.15s ease-in-out; white-space: nowrap;" 
                onmouseover="this.style.background='#fef2f2'" 
                onmouseout="this.style.background='#ffffff'" 
                title="Buka &amp; Cetak Dokumen Rekapitulasi HPP PDF Resmi">
@@ -108,7 +103,7 @@
 
             <a href="{{ route('produksi.export-rekap-excel', ['tahun' => $year, 'bulan' => $month]) }}" 
                class="btn btn-secondary" 
-               style="background: #ffffff; border: 1.5px solid #059669; color: #059669; font-size: 0.85rem; font-weight: 700; padding: 0.55rem 0.95rem; box-shadow: 0 1px 2px rgba(0,0,0,0.03); display: inline-flex; align-items: center; gap: 0.35rem; transition: all 0.15s ease-in-out;" 
+               style="background: #ffffff; border: 1.5px solid #059669; color: #059669; font-size: 0.8125rem; font-weight: 700; padding: 0.42rem 0.65rem; box-shadow: 0 1px 2px rgba(0,0,0,0.03); display: inline-flex; align-items: center; gap: 0.3rem; transition: all 0.15s ease-in-out; white-space: nowrap;" 
                onmouseover="this.style.background='#ecfdf5'" 
                onmouseout="this.style.background='#ffffff'" 
                title="Download Rekapitulasi HPP format Excel (.xlsx)">
@@ -119,7 +114,7 @@
             <button type="button" 
                     onclick="openModalImportRekap()" 
                     class="btn btn-secondary" 
-                    style="background: #ffffff; border: 1.5px solid #7c3aed; color: #7c3aed; font-size: 0.85rem; font-weight: 700; padding: 0.55rem 0.95rem; box-shadow: 0 1px 2px rgba(0,0,0,0.03); display: inline-flex; align-items: center; gap: 0.35rem; transition: all 0.15s ease-in-out;" 
+                    style="background: #ffffff; border: 1.5px solid #7c3aed; color: #7c3aed; font-size: 0.8125rem; font-weight: 700; padding: 0.42rem 0.65rem; box-shadow: 0 1px 2px rgba(0,0,0,0.03); display: inline-flex; align-items: center; gap: 0.3rem; transition: all 0.15s ease-in-out; white-space: nowrap;" 
                     onmouseover="this.style.background='#faf5ff'" 
                     onmouseout="this.style.background='#ffffff'" 
                     title="Import data spreadsheet harian dari file Excel">
@@ -129,12 +124,12 @@
 
             <a href="{{ route('produksi.adjust-utilitas', ['tahun' => $year, 'bulan' => $month]) }}" 
                class="btn btn-secondary" 
-               style="background: #ffffff; border: 1.5px solid #0284c7; color: #0284c7; font-size: 0.85rem; font-weight: 700; padding: 0.55rem 0.95rem; box-shadow: 0 1px 2px rgba(0,0,0,0.03); display: inline-flex; align-items: center; gap: 0.35rem; transition: all 0.15s ease-in-out; text-decoration: none;" 
+               style="background: #ffffff; border: 1.5px solid #0284c7; color: #0284c7; font-size: 0.8125rem; font-weight: 700; padding: 0.42rem 0.65rem; box-shadow: 0 1px 2px rgba(0,0,0,0.03); display: inline-flex; align-items: center; gap: 0.3rem; transition: all 0.15s ease-in-out; text-decoration: none; white-space: nowrap;" 
                onmouseover="this.style.background='#f0f9ff'" 
                onmouseout="this.style.background='#ffffff'" 
-               title="Buka Halaman Alokasi Tagihan Listrik PLN &amp; Gas CNG Bulanan ke HPP">
+               title="Buka Halaman Rekonsiliasi Alokasi Tagihan Listrik PLN &amp; Gas CNG Bulanan ke HPP">
                 <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                <span>Penyesuaian Utilitas</span>
+                <span>Rekonsiliasi Utilitas (PLN &amp; Gas)</span>
             </a>
         </div>
     </div>
@@ -249,19 +244,18 @@
 {{-- ═════════════════════════════════════════════════════════════
      TAMPILAN 2: REKAPITULASI BULANAN (TREN 12 BULAN DALAM 1 TAHUN)
      ═════════════════════════════════════════════════════════════ --}}
-@else
-    {{-- BARIS KONTROL TAHUN --}}
-    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1.25rem;">
-        <div>
-            <span style="font-weight: 700; font-size: 1.05rem; color: #0f172a; letter-spacing: -0.01em;">Konsolidasi Tren Produksi &amp; HPP Tahunan</span>
-            <span style="font-size: 0.8rem; color: #64748b; margin-left: 0.5rem;">Perbandingan akumulasi biaya, output WIP, dan rendemen antar bulan sepanjang tahun.</span>
+@elseif ($mode === 'bulanan' && $yearlyReport)
+    <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; margin-bottom: 1.25rem;">
+        <div style="display: flex; flex-direction: column; min-width: 0; flex: 1;">
+            <span style="font-weight: 800; font-size: 1.15rem; color: #0f172a; letter-spacing: -0.01em; white-space: nowrap;">Konsolidasi Tren Produksi &amp; HPP Tahunan</span>
+            <span style="font-size: 0.825rem; color: #64748b; line-height: 1.4; white-space: nowrap; margin-top: 0.15rem;">Perbandingan akumulasi biaya, output WIP, dan rendemen antar bulan sepanjang tahun.</span>
         </div>
 
-        <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+        <div style="display: flex; gap: 0.35rem; align-items: center; flex-shrink: 0; flex-wrap: nowrap;">
             {{-- Filter Tahun --}}
-            <form action="{{ route('produksi.rekap') }}" method="GET" style="display: flex; gap: 0.35rem; align-items: center; background: #ffffff; padding: 0.2rem 0.5rem; border-radius: 6px; border: 1px solid #cbd5e1; box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+            <form action="{{ route('produksi.rekap') }}" method="GET" style="display: flex; gap: 0.2rem; align-items: center; background: #ffffff; padding: 0.15rem 0.35rem; border-radius: 6px; border: 1px solid #cbd5e1; box-shadow: 0 1px 2px rgba(0,0,0,0.02); margin: 0;">
                 <input type="hidden" name="mode" value="bulanan">
-                <select name="tahun" class="form-control" style="font-size: 0.8rem; padding: 0.25rem 0.5rem; height: 30px; border: none; font-weight: 700; color: #1e293b;" onchange="this.form.submit()">
+                <select name="tahun" class="form-control" style="font-size: 0.8125rem; padding: 0.15rem 0.5rem 0.15rem 0.35rem; height: 30px; border: none; font-weight: 700; color: #1e293b; min-width: 95px; cursor: pointer; background: transparent;" onchange="this.form.submit()">
                     @foreach ($yearsList as $yr)
                         <option value="{{ $yr }}" {{ $yr == $year ? 'selected' : '' }}>Tahun {{ $yr }}</option>
                     @endforeach
@@ -271,7 +265,7 @@
             <button type="button" 
                     onclick="window.print()" 
                     class="btn btn-secondary" 
-                    style="background: #ffffff; border: 1.5px solid #dc2626; color: #dc2626; font-size: 0.85rem; font-weight: 700; padding: 0.55rem 0.95rem; box-shadow: 0 1px 2px rgba(0,0,0,0.03); display: inline-flex; align-items: center; gap: 0.35rem; transition: all 0.15s ease-in-out;" 
+                    style="background: #ffffff; border: 1.5px solid #dc2626; color: #dc2626; font-size: 0.8125rem; font-weight: 700; padding: 0.42rem 0.75rem; box-shadow: 0 1px 2px rgba(0,0,0,0.03); display: inline-flex; align-items: center; gap: 0.35rem; transition: all 0.15s ease-in-out; white-space: nowrap;" 
                     onmouseover="this.style.background='#fef2f2'" 
                     onmouseout="this.style.background='#ffffff'" 
                     title="Cetak atau simpan PDF laporan konsolidasi tahunan">
@@ -283,9 +277,10 @@
 
     {{-- 4 KARTU METRIK OPERASIONAL & HPP TAHUNAN (SERAGAM DENGAN MODUL LAIN) --}}
     @php
-        $an = $yearlyReport['annual_totals'];
-        $anRendemenLolos = $an['rendemen'] >= 33.0;
-        $anRendemenWarning = $an['rendemen'] >= 30.0;
+        $an = $yearlyReport['annual_totals'] ?? [];
+        $anRendemen = (float) ($an['rendemen'] ?? 0);
+        $anRendemenLolos = $anRendemen >= 33.0;
+        $anRendemenWarning = $anRendemen >= 30.0;
         $anRendemenColor = $anRendemenLolos ? '#059669' : ($anRendemenWarning ? '#d97706' : '#dc2626');
         $anRendemenBg = $anRendemenLolos ? '#d1fae5' : ($anRendemenWarning ? '#fef3c7' : '#fee2e2');
     @endphp

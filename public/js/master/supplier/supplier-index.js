@@ -93,12 +93,13 @@ window.addEventListener('resize', closeAllActionDropdowns);
 /**
  * Buka modal edit supplier dan isi formulirnya
  */
-function editSupplier(id, kode, nama, jenisSupplierId, kontak, alamat) {
+function editSupplier(id, kode, nama, jenisSupplierId, kontak, alamat, topHari) {
     closeAllActionDropdowns();
     const elCd = document.getElementById('edit_supplier_cd');
     const elNm = document.getElementById('edit_supplier_nm');
     const elJenis = document.getElementById('edit_jenis_supplier_id');
     const elKontak = document.getElementById('edit_kontak_no');
+    const elTop = document.getElementById('edit_top_hari');
     const elAlamat = document.getElementById('edit_alamat_txt');
     const form = document.getElementById('formEditSupplier');
     
@@ -106,6 +107,7 @@ function editSupplier(id, kode, nama, jenisSupplierId, kontak, alamat) {
     if (elNm) elNm.value = nama;
     if (elJenis) elJenis.value = jenisSupplierId || '';
     if (elKontak) elKontak.value = kontak || '';
+    if (elTop) elTop.value = (topHari !== undefined && topHari !== null && topHari !== '') ? topHari : 14;
     if (elAlamat) elAlamat.value = alamat || '';
     
     const baseUrl = (window.masterSupplierConfig && window.masterSupplierConfig.baseUrl) 

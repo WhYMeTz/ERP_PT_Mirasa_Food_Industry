@@ -86,4 +86,90 @@ class AuthController extends Controller
         return redirect()->route('login')
             ->with('success', 'Anda telah berhasil keluar dari sistem.');
     }
+
+    /**
+     * Tampilkan formulir login khusus Mobile (QC Lapangan & Operator Kemas)
+     */
+    public function showMobileLogin(): View|RedirectResponse
+    {
+        if (Auth::check()) {
+            $user = Auth::user();
+            return redirect()->intended(route($user->getDashboardRoute()));
+        }
+
+        // Ambil akun untuk fast-switcher: QC Lapangan, Operator Kemas, Staff Produksi, Superadmin
+        $operatorUsers = User::with(['karyawan', 'gudang'])
+            ->where('active_st', true)
+            ->where('deleted_st', false)
+            ->where(function ($q) {
+                $q->where('role_cd', 'QC')
+                  ->orWhere('role_cd', 'OPERATOR_PACKAGING')
+                  ->orWhere('role_cd', 'STAFF_PRODUKSI')
+                  ->orWhere('role_cd', 'SUPERADMIN');
+            })
+            ->orderByRaw("CASE 
+                WHEN role_cd = 'QC' THEN 1 
+                WHEN role_cd = 'OPERATOR_PACKAGING' THEN 2 
+                WHEN role_cd = 'STAFF_PRODUKSI' THEN 3 
+                ELSE 4 
+            END")
+            ->get();
+
+        return view('auth.mobile-login', compact('operatorUsers'));
+    }
+
+    /**
+     * Proses autentikasi login khusus Mobile (QC Lapangan & Operator Kemas)
+     */
+    public function mobileLogin(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'email'    => ['required', 'string'],
+            'password' => ['required', 'string'],
+        ], [
+            'email.required'    => 'Akun / Email wajib diisi.',
+            'password.required' => 'Kata sandi wajib diisi.',
+        ]);
+
+        $input = $request->input('email');
+        $field = filter_var($input, FILTER_VALIDATE_EMAIL) ? 'email' : 'name';
+        $credentials = [
+            $field     => $input,
+            'password' => $request->input('password'),
+            'active_st' => true,
+            'deleted_st' => false,
+        ];
+
+        $remember = $request->boolean('remember');
+
+        if (Auth::attempt($credentials, $remember)) {
+            $request->session()->regenerate();
+            $user = Auth::user();
+
+            $targetRoute = $user->getDashboardRoute();
+            $portalTitle = $user->isQc() ? 'Portal QC Lapangan' : ($user->isOperatorPackaging() ? 'Portal Kemas' : 'Portal Mobile');
+
+            return redirect()->intended(route($targetRoute))
+                ->with('success', "Selamat bertugas, {$user->name}! Anda berhasil masuk ke {$portalTitle}.");
+        }
+
+        return back()->withInput($request->only('email', 'remember'))->withErrors([
+            'email' => 'Akun atau kata sandi yang Anda masukkan salah.',
+        ]);
+    }
+
+    /**
+     * Keluar dari sesi Mobile (QC Lapangan & Operator Kemas)
+     */
+    public function mobileLogout(Request $request): RedirectResponse
+    {
+        Auth::logout();
+
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return redirect()->route('mobile.login')
+            ->with('success', 'Sesi kerja lapangan Anda telah diakhiri. Silakan login kembali saat memulai tugas baru.');
+    }
 }
+

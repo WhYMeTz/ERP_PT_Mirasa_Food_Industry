@@ -14,6 +14,8 @@
     let currentPoCategory = 'MINYAK';
     let currentPoSearch = '';
     let currentMinyakSatuan = 'KG';
+    let originalBarangOptionsHTML = null;
+    let currentPodtlId = null;
 
     // 1. Tab Navigasi Khusus Minyak (Hanya 2 Tab, Tampilan Sama Persis Singkong)
     window.switchMinyakTab = function (tabNumber) {
@@ -210,16 +212,29 @@
     };
 
     // 7. Kesimpulan QC Card (TERIMA vs TOLAK)
-    window.updateKesimpulanCard = function (radio) {
-        const cardTerima = document.getElementById('cardTerima');
-        const cardTolak = document.getElementById('cardTolak');
-        if (radio.value === 'TERIMA') {
-            cardTerima?.classList.add('active-ok');
-            cardTolak?.classList.remove('active-danger');
+    window.selectDisposisiMinyak = function (val) {
+        const inputMinyak = document.getElementById('inputMinyakKesimpulan');
+        const inputQc = document.getElementById('inputKesimpulanQc');
+        if (inputMinyak) inputMinyak.value = val;
+        if (inputQc) inputQc.value = val;
+
+        const cardTerima = document.getElementById('cardDisposisiTerima') || document.getElementById('cardTerima');
+        const cardTolak = document.getElementById('cardDisposisiTolak') || document.getElementById('cardTolak');
+
+        if (val === 'TERIMA') {
+            cardTerima?.classList.add('active', 'terima', 'active-ok');
+            cardTolak?.classList.remove('active', 'tolak', 'active-danger');
         } else {
-            cardTolak?.classList.add('active-danger');
-            cardTerima?.classList.remove('active-ok');
+            cardTolak?.classList.add('active', 'tolak', 'active-danger');
+            cardTerima?.classList.remove('active', 'terima', 'active-ok');
         }
+
+        window.syncMinyakQuantity();
+    };
+
+    window.updateKesimpulanCard = function (radio) {
+        const val = (typeof radio === 'string') ? radio : (radio?.value || 'TERIMA');
+        window.selectDisposisiMinyak(val);
     };
 
     // 8. Floating Dock Navigation (Sesuai qc-form.css di atas Bottom Navbar)
@@ -363,7 +378,12 @@
             el.innerText = suffixText;
         });
 
-        // 4. Kalkulasi ulang display kuantitas & formula netto
+        // 4. Update label satuan pada kartu disposisi (Kuantitas Diterima / Ditolak)
+        document.querySelectorAll('.unit-label-disposisi-minyak').forEach(function (el) {
+            el.innerText = currentMinyakSatuan.toLowerCase();
+        });
+
+        // 5. Kalkulasi ulang display kuantitas & formula netto
         window.syncMinyakQuantity();
     };
 
@@ -484,6 +504,19 @@
                 radioTolak.checked = true;
                 if (typeof window.updateKesimpulanCard === 'function') window.updateKesimpulanCard(radioTolak);
             }
+        }
+
+        // Sinkronisasi Kuantitas Diterima & Ditolak pada Kartu Disposisi
+        const kesimpulan = document.getElementById('inputKesimpulanQc')?.value || document.getElementById('inputMinyakKesimpulan')?.value || 'TERIMA';
+        const inputQtyTerima = document.getElementById('inputQtyTerima');
+        const inputQtyTolak = document.getElementById('inputQtyTolak');
+
+        if (kesimpulan === 'TOLAK') {
+            if (inputQtyTerima) inputQtyTerima.value = 0;
+            if (inputQtyTolak) inputQtyTolak.value = (gross > 0 ? gross.toFixed(2).replace(/\.00$/, '') : 0);
+        } else {
+            if (inputQtyTerima) inputQtyTerima.value = (netto > 0 ? netto.toFixed(2).replace(/\.00$/, '') : 0);
+            if (inputQtyTolak) inputQtyTolak.value = (reject > 0 ? reject.toFixed(2).replace(/\.00$/, '') : 0);
         }
     };
 
@@ -713,11 +746,161 @@
         if (currentVal && !isCurrentValVisible) select.value = '';
     }
 
+    // PO Multi-Item Selector & Selection Auto-fill untuk Minyak Goreng
+    function renderPoItemsCards(items, selectedPodtlId) {
+        const box = document.getElementById('boxPoItemsSelector');
+        const list = document.getElementById('poItemsCardsList');
+        const badgeCount = document.getElementById('countPoItemsBadge');
+        const bSel = document.getElementById('minyakBarangSelect');
+
+        if (!items || items.length === 0) {
+            if (box) box.style.display = 'none';
+            if (bSel && originalBarangOptionsHTML) {
+                bSel.innerHTML = originalBarangOptionsHTML;
+            }
+            currentPodtlId = null;
+            const hiddenPodtl = document.getElementById('inputSelectedPodtlId');
+            if (hiddenPodtl) hiddenPodtl.value = '';
+            return;
+        }
+
+        if (box) box.style.display = 'block';
+        if (badgeCount) badgeCount.innerText = items.length;
+
+        // Tentukan podtl_id aktif
+        let activeId = selectedPodtlId;
+        if (!activeId || !items.some(it => String(it.podtl_id) === String(activeId))) {
+            activeId = items[0].podtl_id;
+        }
+        currentPodtlId = activeId;
+        const hiddenPodtl = document.getElementById('inputSelectedPodtlId');
+        if (hiddenPodtl) hiddenPodtl.value = activeId;
+
+        // Filter dropdown minyakBarangSelect agar berisi item-item PO ini
+        if (bSel) {
+            bSel.innerHTML = '';
+            items.forEach(it => {
+                const opt = document.createElement('option');
+                opt.value = it.barang_id;
+                opt.text = `${it.barang_nm} • Sisa PO: ${it.sisa_qty.toLocaleString('id-ID')} ${it.satuan_cd || it.satuan || 'KG'}`;
+                opt.setAttribute('data-nama', it.barang_nm);
+                opt.setAttribute('data-satuan', it.satuan || 'KG');
+                opt.setAttribute('data-satuan-cd', it.satuan_cd || 'KG');
+                opt.setAttribute('data-podtl-id', it.podtl_id);
+                opt.setAttribute('data-sisa-qty', it.sisa_qty);
+                opt.setAttribute('data-pesan-qty', it.pesan_qty);
+                if (String(it.podtl_id) === String(activeId)) {
+                    opt.selected = true;
+                }
+                bSel.appendChild(opt);
+            });
+        }
+
+        // Render Kartu Interaktif
+        if (list) {
+            list.innerHTML = '';
+            items.forEach((it) => {
+                const isActive = (String(it.podtl_id) === String(activeId));
+                const sisa = it.sisa_qty > 0 ? it.sisa_qty : it.pesan_qty;
+                const unit = it.satuan_cd || it.satuan || 'KG';
+                const card = document.createElement('div');
+                card.className = `po-item-card ${isActive ? 'is-active' : ''}`;
+                card.id = `poItemCard_${it.podtl_id}`;
+                card.onclick = function () {
+                    window.selectPoItem(it.podtl_id);
+                };
+
+                card.innerHTML = `
+                    <div class="po-item-card-left">
+                        <span class="po-item-radio-circle"></span>
+                        <div class="po-item-info">
+                            <span class="po-item-nama">${it.barang_nm}</span>
+                            <span class="po-item-sub">Pesan: ${it.pesan_qty.toLocaleString('id-ID')} ${unit} • Masuk: ${it.terima_qty.toLocaleString('id-ID')}</span>
+                        </div>
+                    </div>
+                    <span class="po-item-badge-sisa">
+                        Sisa: ${sisa.toLocaleString('id-ID')} ${unit}
+                    </span>
+                `;
+                list.appendChild(card);
+            });
+        }
+    }
+
+    window.selectPoItem = function (podtlId) {
+        currentPodtlId = podtlId;
+        const hiddenPodtl = document.getElementById('inputSelectedPodtlId');
+        if (hiddenPodtl) hiddenPodtl.value = podtlId;
+
+        const poId = document.getElementById('poSelect')?.value;
+        const poData = window.qcConfig?.poList?.[poId] || window.appConfig?.poListData?.[poId];
+        if (!poData || !poData.items) return;
+
+        const targetItem = poData.items.find(it => String(it.podtl_id) === String(podtlId));
+        if (!targetItem) return;
+
+        // Update class is-active pada kartu
+        document.querySelectorAll('.po-item-card').forEach(c => c.classList.remove('is-active'));
+        const activeCard = document.getElementById(`poItemCard_${podtlId}`);
+        if (activeCard) activeCard.classList.add('is-active');
+
+        // Update select barang
+        const bSel = document.getElementById('minyakBarangSelect');
+        if (bSel) {
+            bSel.value = targetItem.barang_id;
+            window.onMinyakBarangChanged(bSel);
+        }
+
+        // Sinkronkan Satuan (KG vs Liter)
+        if (targetItem.satuan_cd || targetItem.satuan) {
+            window.setMinyakSatuan(targetItem.satuan_cd || targetItem.satuan);
+        }
+
+        // Update kuantitas
+        const sisaQty = targetItem.sisa_qty > 0 ? targetItem.sisa_qty : targetItem.pesan_qty;
+        const inSJ = document.getElementById('inputJumlahSJ');
+        const inPabrik = document.getElementById('inputJumlahPabrik');
+        const grossInput = document.getElementById('minyakQtyGross');
+
+        if (inSJ && (!inSJ.value || inSJ.dataset.autoFilled === 'true' || inSJ.value == 0)) {
+            inSJ.value = sisaQty;
+            inSJ.dataset.autoFilled = 'true';
+        }
+        if (inPabrik && (!inPabrik.value || inPabrik.dataset.autoFilled === 'true' || inPabrik.value == 0)) {
+            inPabrik.value = sisaQty;
+            inPabrik.dataset.autoFilled = 'true';
+        }
+        if (grossInput && (!grossInput.value || grossInput.dataset.autoFilled === 'true' || grossInput.value == 0)) {
+            grossInput.value = sisaQty;
+            grossInput.dataset.autoFilled = 'true';
+        }
+
+        // Update nama jenis
+        const namaJenisInputs = [
+            document.getElementById('namaJenisInput'),
+            document.getElementById('minyakNamaJenisInput')
+        ];
+        namaJenisInputs.forEach(input => {
+            if (input && (!input.value || input.dataset.autoFilled === 'true')) {
+                input.value = targetItem.barang_nm || 'RBD Palm Olein / Curah Sawit';
+                input.dataset.autoFilled = 'true';
+            }
+        });
+
+        window.syncMinyakQuantity();
+    };
+
     window.onPoSelected = function (select) {
-        if (!select || !select.value) return;
+        if (!select || !select.value) {
+            renderPoItemsCards([], null);
+            return;
+        }
         const poId = select.value;
-        const poData = window.qcConfig?.poList?.[poId];
-        if (!poData) return;
+        const poData = window.qcConfig?.poList?.[poId] || window.appConfig?.poListData?.[poId];
+        if (!poData) {
+            renderPoItemsCards([], null);
+            return;
+        }
 
         // 1. Pilih Mitra Vendor & Sinkronkan
         if (poData.supplier_id) {
@@ -751,51 +934,10 @@
 
         // 4. Auto-fill Bahan Baku, Spesifikasi Jenis, Satuan & Kuantitas dari PO
         if (poData.items && poData.items.length > 0) {
-            const firstItem = poData.items[0];
-            const bSel = document.getElementById('minyakBarangSelect');
-            if (bSel && firstItem.barang_id) {
-                bSel.value = firstItem.barang_id;
-                window.onMinyakBarangChanged(bSel);
-            }
-
-            // Sinkronkan Satuan dari Item PO (KG vs Liter)
-            if (firstItem.satuan_cd || firstItem.satuan) {
-                window.setMinyakSatuan(firstItem.satuan_cd || firstItem.satuan);
-            }
-
-            // Nama Jenis / Fraksi
-            const namaJenisInputs = [
-                document.getElementById('namaJenisInput'),
-                document.getElementById('minyakNamaJenisInput')
-            ];
-            namaJenisInputs.forEach(input => {
-                if (input && (!input.value || input.dataset.autoFilled === 'true')) {
-                    input.value = firstItem.barang_nm || 'RBD Palm Olein / Curah Sawit';
-                    input.dataset.autoFilled = 'true';
-                }
-            });
-
-            // Kuantitas: Sisa Pesanan PO atau Pesan Qty
-            const sisaQty = firstItem.sisa_qty > 0 ? firstItem.sisa_qty : (firstItem.pesan_qty || 0);
-            if (sisaQty > 0) {
-                const inSJ = document.getElementById('inputJumlahSJ');
-                const inPabrik = document.getElementById('inputJumlahPabrik');
-                const grossInput = document.getElementById('minyakQtyGross');
-
-                if (inSJ && (!inSJ.value || inSJ.dataset.autoFilled === 'true')) {
-                    inSJ.value = sisaQty;
-                    inSJ.dataset.autoFilled = 'true';
-                }
-                if (inPabrik && (!inPabrik.value || inPabrik.dataset.autoFilled === 'true')) {
-                    inPabrik.value = sisaQty;
-                    inPabrik.dataset.autoFilled = 'true';
-                }
-                if (grossInput && (!grossInput.value || grossInput.dataset.autoFilled === 'true')) {
-                    grossInput.value = sisaQty;
-                    grossInput.dataset.autoFilled = 'true';
-                }
-                window.syncMinyakQuantity();
-            }
+            renderPoItemsCards(poData.items, poData.items[0].podtl_id);
+            window.selectPoItem(poData.items[0].podtl_id);
+        } else {
+            renderPoItemsCards([], null);
         }
     };
 
@@ -891,6 +1033,10 @@
         const kesimpulan = document.querySelector('input[name="minyak_kesimpulan"]:checked')?.value || 'TERIMA';
 
         injectHiddenInput('nama_jenis', curNamaJenis);
+        if (currentPodtlId) {
+            injectHiddenInput('items[0][podtl_id]', currentPodtlId);
+            injectHiddenInput('podtl_id', currentPodtlId);
+        }
         injectHiddenInput('minyak_satuan', currentMinyakSatuan);
         injectHiddenInput('satuan', currentMinyakSatuan);
         injectHiddenInput('items[0][satuan]', currentMinyakSatuan);
@@ -931,6 +1077,11 @@
 
     // 10. Inisialisasi Saat Dimuat
     document.addEventListener('DOMContentLoaded', function () {
+        const bSelInit = document.getElementById('minyakBarangSelect');
+        if (bSelInit && !originalBarangOptionsHTML) {
+            originalBarangOptionsHTML = bSelInit.innerHTML;
+        }
+
         window.switchMinyakTab(1);
         initTactileChoiceCards();
         filterSupplierDropdown();

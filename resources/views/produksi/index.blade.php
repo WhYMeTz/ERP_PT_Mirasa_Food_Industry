@@ -9,12 +9,7 @@
 @section('content')
 <div style="margin-bottom: 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
     <div>
-        <div style="font-size: 0.75rem; font-weight: 700; color: #0284c7; text-transform: uppercase; letter-spacing: 0.06em; display: flex; align-items: center; gap: 0.35rem;">
-            <span>Produksi &amp; Manufaktur</span>
-            <span>&bull;</span>
-            <span>PT Mirasa Food Industry</span>
-        </div>
-        <h1 style="font-size: 1.45rem; font-weight: 800; color: #0f172a; margin: 0.2rem 0 0 0; letter-spacing: -0.02em;">
+        <h1 style="font-size: 1.45rem; font-weight: 800; color: #0f172a; margin: 0; letter-spacing: -0.02em;">
             Hasil Barang Produksi Pabrik
         </h1>
         <p style="margin: 0.25rem 0 0 0; font-size: 0.825rem; color: #64748b;">
@@ -92,29 +87,6 @@
                class="filter-pill-link {{ request('jenis_cd') == 'WIP' ? 'active' : '' }}">
                 <span>Olahan Curah (WIP)</span>
             </a>
-        </div>
-
-        <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
-            <a href="{{ route('produksi.export-hasil', request()->all()) }}" 
-               class="btn btn-secondary" 
-               style="background: #ffffff; border: 1.5px solid #059669; color: #059669; font-size: 0.8rem; font-weight: 700; padding: 0.45rem 0.85rem; box-shadow: 0 1px 2px rgba(0,0,0,0.03); display: inline-flex; align-items: center; gap: 0.35rem; transition: all 0.15s ease-in-out;" 
-               onmouseover="this.style.background='#ecfdf5'" 
-               onmouseout="this.style.background='#ffffff'" 
-               title="Download daftar hasil produksi format Excel (.xlsx)">
-                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                <span>Export Excel</span>
-            </a>
-
-            <button type="button" 
-                    onclick="openModalImportHasil()" 
-                    class="btn btn-secondary" 
-                    style="background: #ffffff; border: 1.5px solid #7c3aed; color: #7c3aed; font-size: 0.8rem; font-weight: 700; padding: 0.45rem 0.85rem; box-shadow: 0 1px 2px rgba(0,0,0,0.03); display: inline-flex; align-items: center; gap: 0.35rem; transition: all 0.15s ease-in-out;" 
-                    onmouseover="this.style.background='#faf5ff'" 
-                    onmouseout="this.style.background='#ffffff'" 
-                    title="Import data hasil produksi dari berkas Excel">
-                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-                <span>Import Excel</span>
-            </button>
         </div>
     </div>
 
@@ -311,10 +283,6 @@
                                     <a href="{{ route('produksi.show', $prod->produksi_id) }}" class="action-dropdown-item">
                                         <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                                         <span>Detail Dokumen SPK</span>
-                                    </a>
-                                    <a href="{{ route('produksi.cetak-stiker', $prod->produksi_id) }}" class="action-dropdown-item" target="_blank">
-                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-                                        <span>Cetak Stiker Karton</span>
                                     </a>
                                     <div class="action-dropdown-divider"></div>
                                     <button type="button" class="action-dropdown-item danger-item" onclick="openDeleteProduksiModal({{ $prod->produksi_id }}, '{{ $prod->produksi_no }}', '{{ \Carbon\Carbon::parse($prod->produksi_tgl)->format('d/m/Y') }}', '{{ $prod->shift_cd }}', '{{ $prod->batch_wip_no }}')">

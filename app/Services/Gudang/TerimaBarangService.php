@@ -22,15 +22,25 @@ class TerimaBarangService
     /**
      * Mengambil riwayat penerimaan barang dengan pagination.
      */
-    public function getAllPaginated(int $perPage = 15, ?string $search = null, int|array|null $gudangId = null): LengthAwarePaginator
+    public function getAllPaginated(int $perPage = 15, ?string $search = null, int|array|null $gudangId = null, bool $hasReject = false): LengthAwarePaginator
     {
-        $query = DatTerimaHdr::with(['supplier', 'gudang', 'po', 'details.barang'])
+        $query = DatTerimaHdr::with(['supplier', 'gudang', 'po', 'details.barang', 'qc.details'])
             ->where('deleted_st', false);
 
         if (is_array($gudangId)) {
             $query->whereIn('gudang_id', $gudangId);
         } elseif ($gudangId !== null) {
             $query->where('gudang_id', $gudangId);
+        }
+
+        if ($hasReject) {
+            $query->where(function ($q) {
+                $q->whereHas('details', function ($dq) {
+                    $dq->where('reject_qty', '>', 0);
+                })->orWhereHas('qc.details', function ($qq) {
+                    $qq->where('qty_reject', '>', 0);
+                });
+            });
         }
 
         if (!empty($search)) {
@@ -52,9 +62,9 @@ class TerimaBarangService
      * Mengambil daftar per-item barang masuk sesuai Sheet "Barang Masuk" di Excel operasional:
      * Kolom: Tanggal | Kode Batch | Kode Barang | Nama Barang | Jenis | Keterangan | Qty Masuk | Satuan | Harga Satuan | Total Harga
      */
-    public function getBarangMasukListPaginated(int $perPage = 25, ?string $search = null, int|array|null $gudangId = null): LengthAwarePaginator
+    public function getBarangMasukListPaginated(int $perPage = 25, ?string $search = null, int|array|null $gudangId = null, bool $hasReject = false): LengthAwarePaginator
     {
-        $query = DatTerimaDtl::with(['header.supplier', 'header.gudang', 'header.po', 'barang.jenisBarang', 'barang.satuanDasar'])
+        $query = DatTerimaDtl::with(['header.supplier', 'header.gudang', 'header.po', 'header.qc.details', 'barang.jenisBarang', 'barang.satuanDasar'])
             ->whereHas('header', function ($q) use ($gudangId) {
                 $q->where('deleted_st', false);
                 if (is_array($gudangId)) {
@@ -63,6 +73,15 @@ class TerimaBarangService
                     $q->where('gudang_id', $gudangId);
                 }
             });
+
+        if ($hasReject) {
+            $query->where(function ($q) {
+                $q->where('reject_qty', '>', 0)
+                  ->orWhereHas('header.qc.details', function ($qq) {
+                      $qq->where('qty_reject', '>', 0);
+                  });
+            });
+        }
 
         if (!empty($search)) {
             $query->where(function ($q) use ($search) {
@@ -227,6 +246,7 @@ class TerimaBarangService
             $header = DatTerimaHdr::create([
                 'terima_no'        => $terimaNo,
                 'terima_tgl'       => $data['terima_tgl'] ?? date('Y-m-d'),
+                'tgl_jatuh_tempo'  => !empty($data['tgl_jatuh_tempo']) ? $data['tgl_jatuh_tempo'] : null,
                 'po_id'            => $poId,
                 'qc_id'            => !empty($data['qc_id']) ? (int)$data['qc_id'] : null,
                 'supplier_id'      => $supplierId,
@@ -352,6 +372,16 @@ class TerimaBarangService
                     $header,
                     $items
                 );
+            }
+
+            // 5. Otomatisasi Faktur Tagihan Hutang (AP) ke Keuangan
+            try {
+                app(\App\Services\Keuangan\HutangService::class)->createAutoFromGrn(
+                    $header,
+                    $data['tgl_jatuh_tempo'] ?? null
+                );
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error("Gagal auto generate AP dari GRN {$header->terima_no}: " . $e->getMessage());
             }
 
             return $header->fresh(['details.barang']);
@@ -517,6 +547,7 @@ class TerimaBarangService
                 'supplier_id'      => $supplierId,
                 'gudang_id'        => $gudangId,
                 'suratjalan_no'    => $data['suratjalan_no'] ?? null,
+                'tgl_jatuh_tempo'  => !empty($data['tgl_jatuh_tempo']) ? $data['tgl_jatuh_tempo'] : $terima->tgl_jatuh_tempo,
                 'catatan_txt'      => $data['catatan_txt'] ?? null,
                 'subtotal_nominal' => $subtotalNominal,
                 'potongan_nominal' => $totalSemuaPotongan,
@@ -705,7 +736,22 @@ class TerimaBarangService
                 app(\App\Services\Gudang\QcInboundService::class)->revertProcessed((int) $terima->qc_id);
             }
 
-            // 5. Tandai dokumen penerimaan sebagai terhapus (soft delete)
+            // 5. Cek & Batalkan Tagihan Hutang (AP) terkait jika belum dibayarkan
+            $hutangDtls = \App\Models\Keuangan\DatHutangDtl::where('deleted_st', false)
+                ->where('terima_id', $terima->terima_id)
+                ->get();
+
+            foreach ($hutangDtls as $hDtl) {
+                $hHdr = \App\Models\Keuangan\DatHutangHdr::find($hDtl->hutang_id);
+                if ($hHdr && $hHdr->total_dibayar > 0) {
+                    throw new \Exception("Dokumen penerimaan {$terima->terima_no} tidak dapat dibatalkan karena tagihan hutangnya sudah memiliki riwayat pembayaran di Keuangan (BKK).");
+                }
+                if ($hHdr && !$hHdr->deleted_st) {
+                    app(\App\Services\Keuangan\HutangService::class)->destroy($hHdr, auth()->user() ?? new \App\Models\User(['name' => 'SYSTEM']));
+                }
+            }
+
+            // 6. Tandai dokumen penerimaan sebagai terhapus (soft delete)
             $terima->deleted_st = true;
             $terima->save();
 

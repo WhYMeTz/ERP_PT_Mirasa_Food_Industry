@@ -59,6 +59,14 @@
         <p style="color: #64748b; font-size: 0.875rem;">
             Dokumen pengeluaran bahan dari {{ $pakai->gudang?->gudang_nm }} pada {{ \Carbon\Carbon::parse($pakai->pakai_tgl)->format('d F Y') }}.
         </p>
+        @if($pakai->produksi)
+            <div style="margin-top: 0.5rem; display: inline-flex; align-items: center; gap: 0.5rem; background: #f0fdf4; border: 1px solid #a7f3d0; padding: 0.35rem 0.75rem; border-radius: 6px; font-size: 0.8rem;">
+                <span style="color: #065f46; font-weight: 600;">Diproses dalam Lembar Produksi Harian:</span>
+                <a href="{{ route('produksi.show', $pakai->produksi->produksi_id) }}" style="color: #059669; font-weight: 800; text-decoration: none; display: inline-flex; align-items: center; gap: 0.25rem;">
+                    <span>{{ $pakai->produksi->produksi_no }} ({{ Carbon\Carbon::parse($pakai->produksi->produksi_tgl)->format('d/m/Y') }})</span> &rarr;
+                </a>
+            </div>
+        @endif
     </div>
     <div style="display: flex; gap: 0.5rem;">
         <button onclick="window.print()" class="btn btn-secondary">

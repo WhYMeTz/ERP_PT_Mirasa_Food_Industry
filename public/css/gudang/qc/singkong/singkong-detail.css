@@ -1,0 +1,658 @@
+/* ==========================================================================
+   QC SINGKONG MODERN MOBILE DETAIL VIEW - PT MIRASA FOOD INDUSTRY
+   Clean, aesthetic, high-density HACCP field inspection view
+   ========================================================================== */
+
+:root {
+    --sk-primary: #0284c7;
+    --sk-primary-dark: #0369a1;
+    --sk-primary-light: #e0f2fe;
+    --sk-success: #16a34a;
+    --sk-success-bg: #dcfce7;
+    --sk-warning: #d97706;
+    --sk-warning-bg: #fef3c7;
+    --sk-danger: #dc2626;
+    --sk-danger-bg: #fee2e2;
+    --sk-purple: #7e22ce;
+    --sk-purple-bg: #f3e8ff;
+    --sk-card-bg: #ffffff;
+    --sk-border: #e2e8f0;
+    --sk-text-main: #0f172a;
+    --sk-text-muted: #64748b;
+}
+
+.sk-detail-wrap {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 0.5rem 0.75rem 6.5rem;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--sk-text-main);
+    box-sizing: border-box;
+}
+
+/* TOP APP BAR */
+.sk-top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.85rem;
+}
+
+.sk-back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.825rem;
+    font-weight: 700;
+    color: #475569;
+    text-decoration: none;
+    background: #ffffff;
+    border: 1.5px solid #cbd5e1;
+    padding: 0.45rem 0.85rem;
+    border-radius: 10px;
+    transition: all 0.15s ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.sk-back-btn:hover {
+    background: #f8fafc;
+    color: #0f172a;
+    border-color: #94a3b8;
+}
+
+.sk-action-btn-edit {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.825rem;
+    font-weight: 800;
+    color: #ffffff;
+    background: #0284c7;
+    border: 1.5px solid #0284c7;
+    padding: 0.45rem 0.95rem;
+    border-radius: 10px;
+    text-decoration: none;
+    box-shadow: 0 3px 6px -1px rgba(2, 132, 199, 0.35);
+    transition: all 0.15s ease;
+}
+
+.sk-action-btn-edit:hover {
+    background: #0369a1;
+    color: #ffffff;
+    transform: translateY(-1px);
+}
+
+/* HERO CARD */
+.sk-hero {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 45%, #0369a1 100%);
+    border-radius: 16px;
+    padding: 1.25rem 1.35rem;
+    color: #ffffff;
+    margin-bottom: 1rem;
+    box-shadow: 0 8px 20px -4px rgba(2, 132, 199, 0.25), 0 4px 6px -2px rgba(15, 23, 42, 0.15);
+    position: relative;
+    overflow: hidden;
+}
+
+.sk-hero::after {
+    content: "";
+    position: absolute;
+    top: -40px;
+    right: -40px;
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(56, 189, 248, 0.2) 0%, rgba(56, 189, 248, 0) 70%);
+    pointer-events: none;
+}
+
+.sk-hero-badges {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.5rem;
+}
+
+.sk-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.72rem;
+    font-weight: 800;
+    padding: 0.22rem 0.6rem;
+    border-radius: 20px;
+    letter-spacing: 0.02em;
+}
+
+.sk-pill-commodity {
+    background: rgba(255, 255, 255, 0.18);
+    color: #f8fafc;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(4px);
+}
+
+.sk-pill-tahap1 {
+    background: rgba(2, 132, 199, 0.45);
+    color: #e0f2fe;
+    border: 1px solid rgba(125, 211, 252, 0.5);
+}
+
+.sk-pill-tahap2 {
+    background: rgba(147, 51, 234, 0.45);
+    color: #f3e8ff;
+    border: 1px solid rgba(216, 180, 254, 0.5);
+}
+
+.sk-pill-grade-a {
+    background: #dcfce7;
+    color: #14532d;
+    border: 1px solid #86efac;
+}
+
+.sk-pill-grade-b {
+    background: #fef3c7;
+    color: #78350f;
+    border: 1px solid #fde68a;
+}
+
+.sk-pill-grade-reject {
+    background: #fee2e2;
+    color: #7f1d1d;
+    border: 1px solid #fca5a5;
+}
+
+.sk-hero-title-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.75rem;
+}
+
+.sk-hero-ticket-no {
+    font-size: 1.45rem;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    margin: 0;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.sk-hero-status {
+    font-size: 0.75rem;
+    font-weight: 800;
+    padding: 0.25rem 0.7rem;
+    border-radius: 20px;
+    letter-spacing: 0.02em;
+}
+
+.sk-hero-status.siap {
+    background: #fef08a;
+    color: #854d0e;
+}
+
+.sk-hero-status.diterima {
+    background: #bbf7d0;
+    color: #14532d;
+}
+
+.sk-hero-status.parsial {
+    background: #ffedd5;
+    color: #9a3412;
+    border: 1px solid #fdba74;
+}
+
+.sk-hero-status.tolak {
+    background: #fecaca;
+    color: #991b1b;
+}
+
+.sk-hero-meta-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 0.45rem 0.85rem;
+    font-size: 0.775rem;
+    color: #e2e8f0;
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+    padding-top: 0.65rem;
+}
+
+.sk-hero-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.sk-hero-meta-item strong {
+    color: #ffffff;
+}
+
+.sk-hero-relation-box {
+    margin-top: 0.75rem;
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.775rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.sk-hero-relation-box a {
+    color: #38bdf8;
+    text-decoration: underline;
+    font-weight: 800;
+}
+
+/* CARDS COMMON */
+.sk-card {
+    background: var(--sk-card-bg);
+    border: 1.5px solid var(--sk-border);
+    border-radius: 14px;
+    padding: 1.1rem 1.2rem;
+    margin-bottom: 0.95rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.sk-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.85rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1.5px solid #f1f5f9;
+}
+
+.sk-card-title {
+    font-size: 0.875rem;
+    font-weight: 800;
+    color: #0f172a;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin: 0;
+}
+
+.sk-card-badge-right {
+    font-size: 0.7rem;
+    font-weight: 800;
+    padding: 0.2rem 0.5rem;
+    border-radius: 6px;
+    background: #f1f5f9;
+    color: #475569;
+}
+
+/* DATA GRIDS */
+.sk-grid-2 {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem 0.95rem;
+}
+
+.sk-grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.65rem;
+}
+
+.sk-cell {
+    display: flex;
+    flex-direction: column;
+}
+
+.sk-cell-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    margin-bottom: 0.15rem;
+}
+
+.sk-cell-value {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: #0f172a;
+    word-break: break-word;
+}
+
+.sk-cell-value.highlight-blue {
+    color: #0284c7;
+    font-weight: 800;
+}
+
+.sk-cell-value.highlight-green {
+    color: #15803d;
+    font-weight: 800;
+}
+
+.sk-cell-value.highlight-amber {
+    color: #b45309;
+    font-weight: 800;
+}
+
+.sk-cell-value.highlight-red {
+    color: #dc2626;
+    font-weight: 800;
+}
+
+/* TONASE METRICS (4 BOXES) */
+.sk-metrics-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.55rem;
+}
+
+@media (max-width: 520px) {
+    .sk-metrics-row {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.6rem;
+    }
+}
+
+.sk-metric-card {
+    background: #f8fafc;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 0.75rem 0.65rem;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    transition: all 0.15s ease;
+}
+
+.sk-metric-card.netto-hero {
+    background: linear-gradient(145deg, #f0fdf4 0%, #dcfce7 100%);
+    border-color: #86efac;
+    box-shadow: 0 3px 8px -1px rgba(22, 163, 74, 0.2);
+}
+
+.sk-metric-title {
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: #64748b;
+    letter-spacing: 0.02em;
+    margin-bottom: 0.2rem;
+}
+
+.sk-metric-card.netto-hero .sk-metric-title {
+    color: #166534;
+}
+
+.sk-metric-val {
+    font-size: 1.2rem;
+    font-weight: 900;
+    color: #0f172a;
+    line-height: 1.15;
+}
+
+.sk-metric-card.netto-hero .sk-metric-val {
+    color: #15803d;
+    font-size: 1.35rem;
+}
+
+.sk-metric-sub {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: #94a3b8;
+    margin-top: 0.2rem;
+}
+
+.sk-metric-card.netto-hero .sk-metric-sub {
+    color: #15803d;
+}
+
+/* DIAMETER & SORTIR PROGRESS BARS */
+.sk-diameter-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 0.75rem 0.85rem;
+    margin-bottom: 0.65rem;
+}
+
+.sk-diameter-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.8rem;
+    font-weight: 700;
+    margin-bottom: 0.35rem;
+}
+
+.sk-progress-bar-wrap {
+    height: 8px;
+    background: #e2e8f0;
+    border-radius: 6px;
+    overflow: hidden;
+    position: relative;
+}
+
+.sk-progress-bar-fill {
+    height: 100%;
+    border-radius: 6px;
+    transition: width 0.3s ease;
+}
+
+.sk-progress-bar-fill.pass {
+    background: #16a34a;
+}
+
+.sk-progress-bar-fill.fail {
+    background: #dc2626;
+}
+
+/* CHIPS FOR KESEGARAN */
+.sk-chips-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 0.4rem;
+}
+
+.sk-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.75rem;
+    font-weight: 800;
+    padding: 0.3rem 0.65rem;
+    border-radius: 8px;
+    border: 1.5px solid transparent;
+}
+
+.sk-chip-success {
+    background: #dcfce7;
+    color: #166534;
+    border-color: #86efac;
+}
+
+.sk-chip-danger {
+    background: #fee2e2;
+    color: #991b1b;
+    border-color: #fca5a5;
+}
+
+.sk-chip-warning {
+    background: #fef3c7;
+    color: #92400e;
+    border-color: #fde68a;
+}
+
+/* FRYER RESULT SECTION */
+.sk-fryer-card {
+    background: #ffffff;
+    border: 1.5px solid #fed7aa;
+    border-radius: 12px;
+    padding: 0.9rem 1rem;
+    margin-bottom: 0.75rem;
+}
+
+.sk-fryer-alert-pahit {
+    background: #fef2f2;
+    border: 1.5px solid #fca5a5;
+    border-radius: 10px;
+    padding: 0.75rem 0.9rem;
+    color: #991b1b;
+    margin-bottom: 0.75rem;
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.sk-defect-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(95px, 1fr));
+    gap: 0.45rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0.6rem 0.75rem;
+    margin-top: 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.sk-defect-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.sk-defect-label {
+    font-size: 0.68rem;
+    color: #64748b;
+}
+
+.sk-defect-val {
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: #0f172a;
+}
+
+/* SIGNATURES */
+.sk-sign-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+}
+
+.sk-sign-box {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 0.7rem 0.85rem;
+    text-align: center;
+}
+
+.sk-sign-role {
+    font-size: 0.68rem;
+    font-weight: 800;
+    color: #64748b;
+    text-transform: uppercase;
+    margin-bottom: 0.2rem;
+}
+
+.sk-sign-name {
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: #0f172a;
+}
+
+.sk-sign-badge {
+    font-size: 0.68rem;
+    font-weight: 800;
+    color: #16a34a;
+    margin-top: 0.25rem;
+}
+
+/* FIXED BOTTOM DOCK */
+.sk-bottom-dock {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(8px);
+    border-top: 1.5px solid #cbd5e1;
+    padding: 0.75rem 1rem;
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.08);
+    display: flex;
+    justify-content: center;
+    z-index: 99;
+}
+
+.sk-bottom-dock-inner {
+    width: 100%;
+    max-width: 680px;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.sk-dock-status {
+    flex: 1.5;
+    padding: 0.65rem 0.85rem;
+    border-radius: 10px;
+    font-size: 0.8rem;
+    font-weight: 800;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+}
+
+.sk-dock-btn-edit {
+    flex: 1;
+    padding: 0.65rem 1rem;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: #ffffff;
+    background: #0284c7;
+    border: none;
+    text-decoration: none;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    box-shadow: 0 2px 6px rgba(2, 132, 199, 0.35);
+    transition: all 0.15s ease;
+}
+
+.sk-dock-btn-edit:hover {
+    background: #0369a1;
+    color: #ffffff;
+}
+
+.sk-dock-btn-locked {
+    flex: 1;
+    padding: 0.65rem 1rem;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: #64748b;
+    background: #e2e8f0;
+    border: none;
+    text-align: center;
+    cursor: not-allowed;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+}

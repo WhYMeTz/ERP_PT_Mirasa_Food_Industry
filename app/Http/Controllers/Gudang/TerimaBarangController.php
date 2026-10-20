@@ -55,10 +55,12 @@ class TerimaBarangController extends Controller
             $gudangId = null;
         }
 
+        $hasReject = $request->boolean('has_reject');
+
         if ($viewType === 'header') {
-            $dataList = $this->terimaService->getAllPaginated($perPage, $search, $effectiveGudang);
+            $dataList = $this->terimaService->getAllPaginated($perPage, $search, $effectiveGudang, $hasReject);
         } else {
-            $dataList = $this->terimaService->getBarangMasukListPaginated($perPage, $search, $effectiveGudang);
+            $dataList = $this->terimaService->getBarangMasukListPaginated($perPage, $search, $effectiveGudang, $hasReject);
         }
 
         // Hitung 4 Metrik Operasional Harian
@@ -93,7 +95,7 @@ class TerimaBarangController extends Controller
             ]);
         }
 
-        return view('gudang.terima.index', compact('dataList', 'gudangList', 'search', 'gudangId', 'viewType', 'kpiCounts'));
+        return view('gudang.terima.index', compact('dataList', 'gudangList', 'search', 'gudangId', 'viewType', 'kpiCounts', 'hasReject'));
     }
 
     public function create(Request $request): View
@@ -219,6 +221,7 @@ class TerimaBarangController extends Controller
             'supplier_id'      => 'required|integer|exists:mst_supplier,supplier_id',
             'gudang_id'        => 'required|integer|exists:mst_gudang,gudang_id',
             'suratjalan_no'    => 'nullable|string|max:100',
+            'tgl_jatuh_tempo'  => 'nullable|date',
             'catatan_txt'      => 'nullable|string',
             'potongan_nominal' => 'nullable|numeric|min:0',
             'ppn_tipe'         => 'nullable|string|in:NON_PPN,PPN_11',

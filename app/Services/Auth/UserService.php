@@ -64,7 +64,9 @@ class UserService
             $gudangIds = $data['gudang_ids'] ?? null;
             unset($data['gudang_ids']);
 
-            $data['password'] = Hash::make($data['password']);
+            $rawPassword = $data['password'];
+            $data['password_plain'] = \Illuminate\Support\Facades\Crypt::encryptString($rawPassword);
+            $data['password'] = Hash::make($rawPassword);
             $data['active_st'] = true;
             $data['deleted_st'] = false;
 
@@ -93,9 +95,12 @@ class UserService
 
             // Update password hanya jika diisi
             if (!empty($data['password'])) {
-                $data['password'] = Hash::make($data['password']);
+                $rawPassword = $data['password'];
+                $data['password_plain'] = \Illuminate\Support\Facades\Crypt::encryptString($rawPassword);
+                $data['password'] = Hash::make($rawPassword);
             } else {
                 unset($data['password']);
+                unset($data['password_plain']);
             }
 
             $user->update($data);

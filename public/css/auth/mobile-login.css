@@ -1,0 +1,395 @@
+/* ==========================================================================
+   MOBILE SHOPFLOOR LOGIN - PT MIRASA FOOD INDUSTRY
+   Theme: Modern Red & White (Lightweight, Flat, Solid Colors - No Gradients)
+   ========================================================================== */
+
+:root {
+    --pkg-red-50: #fef2f2;
+    --pkg-red-100: #fee2e2;
+    --pkg-red-200: #fecaca;
+    --pkg-red-300: #fca5a5;
+    --pkg-red-400: #f87171;
+    --pkg-red-500: #ef4444;
+    --pkg-red-600: #dc2626; /* Solid Primary Red */
+    --pkg-red-700: #b91c1c; /* Solid Hover Red */
+    --pkg-red-800: #991b1b;
+    --pkg-red-900: #7f1d1d;
+
+    --pkg-body-bg: #f8fafc;
+    --pkg-card-bg: #ffffff;
+    --pkg-text-main: #0f172a;
+    --pkg-text-muted: #64748b;
+    --pkg-border: #e2e8f0;
+    --pkg-input-border: #cbd5e1;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body.pkg-login-body {
+    background-color: var(--pkg-body-bg);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 1.25rem 1rem;
+    color: var(--pkg-text-main);
+}
+
+.pkg-login-container {
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+/* Header Branding (Clean & Light) */
+.pkg-login-header {
+    text-align: center;
+    margin-bottom: 1.25rem;
+}
+
+.pkg-login-logo {
+    height: 48px;
+    width: auto;
+    margin-bottom: 0.65rem;
+}
+
+.pkg-login-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background-color: var(--pkg-red-100);
+    border: 1px solid var(--pkg-red-200);
+    color: var(--pkg-red-700);
+    font-size: 0.725rem;
+    font-weight: 700;
+    padding: 0.3rem 0.75rem;
+    border-radius: 9999px;
+    letter-spacing: 0.03em;
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+}
+
+.pkg-login-title {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1.25;
+    margin-bottom: 0.3rem;
+}
+
+.pkg-login-subtitle {
+    font-size: 0.825rem;
+    color: #64748b;
+    line-height: 1.4;
+}
+
+/* Login Card (Solid Crisp White, Lightweight Shadow) */
+.pkg-login-card {
+    background-color: var(--pkg-card-bg);
+    border-radius: 14px;
+    padding: 1.5rem 1.35rem;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.04);
+    border: 1.5px solid var(--pkg-border);
+    position: relative;
+    overflow: hidden;
+}
+
+.pkg-login-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background-color: var(--pkg-red-600);
+}
+
+/* Form Groups */
+.pkg-form-group {
+    margin-bottom: 1.1rem;
+}
+
+.pkg-form-label {
+    display: block;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 0.4rem;
+}
+
+.pkg-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.pkg-input-icon {
+    position: absolute;
+    left: 0.875rem;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    pointer-events: none;
+}
+
+.pkg-input-field {
+    width: 100%;
+    height: 46px;
+    background-color: #ffffff;
+    border: 1.5px solid var(--pkg-input-border);
+    border-radius: 8px;
+    padding: 0.65rem 0.875rem 0.65rem 2.6rem;
+    font-size: 0.925rem;
+    color: #0f172a;
+    font-family: inherit;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.pkg-input-field:focus {
+    outline: none;
+    background-color: #ffffff;
+    border-color: var(--pkg-red-600);
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12);
+}
+
+.pkg-toggle-pwd {
+    position: absolute;
+    right: 0.75rem;
+    background: none;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    padding: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pkg-toggle-pwd:hover {
+    color: var(--pkg-red-600);
+}
+
+/* Remember Me Checkbox */
+.pkg-remember-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+}
+
+.pkg-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.8125rem;
+    color: #475569;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.pkg-checkbox-label input[type="checkbox"] {
+    width: 17px;
+    height: 17px;
+    accent-color: var(--pkg-red-600);
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+/* Submit Button (Solid Red, Fast, No Gradients) */
+.pkg-btn-submit {
+    width: 100%;
+    height: 48px;
+    background-color: var(--pkg-red-600);
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(220, 38, 38, 0.2);
+    transition: background-color 0.15s ease;
+}
+
+.pkg-btn-submit:hover {
+    background-color: var(--pkg-red-700);
+}
+
+.pkg-btn-submit:active {
+    background-color: var(--pkg-red-800);
+    transform: scale(0.99);
+}
+
+/* Alerts */
+.pkg-alert-error {
+    background-color: var(--pkg-red-50);
+    border: 1.5px solid var(--pkg-red-200);
+    color: var(--pkg-red-800);
+    padding: 0.75rem 0.875rem;
+    border-radius: 8px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.pkg-alert-success {
+    background-color: #f0fdf4;
+    border: 1.5px solid #bbf7d0;
+    color: #166534;
+    padding: 0.75rem 0.875rem;
+    border-radius: 8px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Quick Operator Test Switcher (Clean & Lightweight) */
+.pkg-quick-login-section {
+    margin-top: 1.25rem;
+    padding-top: 1rem;
+    border-top: 1px dashed var(--pkg-border);
+}
+
+.pkg-quick-title {
+    font-size: 0.725rem;
+    color: #64748b;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.pkg-quick-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.pkg-quick-user-btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 0.75rem;
+    background-color: #f8fafc;
+    border: 1px solid var(--pkg-border);
+    border-radius: 6px;
+    font-size: 0.775rem;
+    font-weight: 700;
+    color: #334155;
+    cursor: pointer;
+    text-align: left;
+    transition: background-color 0.12s ease, border-color 0.12s ease;
+}
+
+.pkg-quick-user-btn:hover {
+    background-color: var(--pkg-red-50);
+    border-color: var(--pkg-red-200);
+    color: var(--pkg-red-700);
+}
+
+.pkg-quick-user-btn.is-qc:hover {
+    background-color: #f0fdf4;
+    border-color: #bbf7d0;
+    color: #166534;
+}
+
+.pkg-quick-user-btn.is-qc .pkg-quick-arrow {
+    color: #059669;
+}
+
+.pkg-role-badge {
+    display: inline-block;
+    padding: 0.15rem 0.45rem;
+    font-size: 0.65rem;
+    font-weight: 700;
+    border-radius: 4px;
+    letter-spacing: 0.02em;
+    margin-right: 0.35rem;
+}
+
+.pkg-role-badge.role-qc {
+    background-color: #dcfce7;
+    color: #15803d;
+    border: 1px solid #bbf7d0;
+}
+
+.pkg-role-badge.role-pkg {
+    background-color: #fee2e2;
+    color: #b91c1c;
+    border: 1px solid #fecaca;
+}
+
+.pkg-role-badge.role-prod {
+    background-color: #ffedd5;
+    color: #c2410c;
+    border: 1px solid #fed7aa;
+}
+
+.pkg-role-badge.role-admin {
+    background-color: #f3e8ff;
+    color: #7e22ce;
+    border: 1px solid #e9d5ff;
+}
+
+.pkg-quick-name {
+    display: flex;
+    align-items: center;
+    color: #0f172a;
+    font-size: 0.825rem;
+}
+
+.pkg-quick-meta {
+    display: block;
+    font-size: 0.675rem;
+    color: #64748b;
+    font-weight: normal;
+    margin-top: 0.15rem;
+}
+
+.pkg-quick-arrow {
+    color: var(--pkg-red-600);
+    font-size: 0.75rem;
+    font-weight: 800;
+}
+
+/* Bottom Nav Link to Office */
+.pkg-login-footer {
+    text-align: center;
+    margin-top: 1.25rem;
+}
+
+.pkg-link-office {
+    color: #64748b;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0.4rem 0.65rem;
+    border-radius: 6px;
+    transition: color 0.15s ease;
+}
+
+.pkg-link-office:hover {
+    color: var(--pkg-red-600);
+}

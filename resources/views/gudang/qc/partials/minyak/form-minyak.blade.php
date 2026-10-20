@@ -157,29 +157,54 @@
             </span>
         </div>
 
-        {{-- KOMENTAR / CATATAN KHUSUS QC (GAMBAR 3) --}}
-        <div class="form-group" style="margin-bottom: 0;">
-            <label class="form-label" style="font-weight: 800; font-size: 0.85rem; color: #0f172a;">Komentar / Catatan Khusus QC</label>
-            <textarea name="minyak_komentar" rows="3" class="form-control" placeholder="Kondisi segel tangki utuh dan sesuai dokumen DO. Suhu penerimaan kamar normal, minyak jernih kuning keemasan, FFA aman.">{{ old('minyak_komentar') }}</textarea>
+        {{-- 2 PILIHAN DISPOSISI: TERIMA vs TOLAK (SESUAI GAMBAR STANDAR QC) --}}
+        <input type="hidden" name="minyak_kesimpulan" id="inputMinyakKesimpulan" value="{{ old('minyak_kesimpulan', 'TERIMA') }}">
+        <input type="hidden" name="kesimpulan_qc" id="inputKesimpulanQc" value="{{ old('minyak_kesimpulan', 'TERIMA') }}">
+
+        <div class="qc-disposisi-grid">
+            <!-- KARTU TERIMA -->
+            <div class="qc-disposisi-card active terima" id="cardDisposisiTerima" onclick="selectDisposisiMinyak('TERIMA')">
+                <div class="qc-disposisi-head">
+                    <div class="qc-disposisi-title-wrap">
+                        <span class="qc-disposisi-radio-icon"></span>
+                        <span class="qc-disposisi-title">TERIMA</span>
+                    </div>
+                    <span class="qc-disposisi-status-badge">✓</span>
+                </div>
+                <div class="qc-disposisi-qty-wrap">
+                    <span class="qc-disposisi-qty-label">Kuantitas Diterima:</span>
+                    <div class="qc-disposisi-input-box">
+                        <input type="number" step="any" min="0" name="qty_terima" id="inputQtyTerima" class="qc-disposisi-input" value="0" readonly>
+                        <span class="qc-disposisi-unit unit-label-disposisi-minyak">kg</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- KARTU TOLAK -->
+            <div class="qc-disposisi-card tolak" id="cardDisposisiTolak" onclick="selectDisposisiMinyak('TOLAK')">
+                <div class="qc-disposisi-head">
+                    <div class="qc-disposisi-title-wrap">
+                        <span class="qc-disposisi-radio-icon"></span>
+                        <span class="qc-disposisi-title">TOLAK</span>
+                    </div>
+                    <span class="qc-disposisi-status-badge">✕</span>
+                </div>
+                <div class="qc-disposisi-qty-wrap">
+                    <span class="qc-disposisi-qty-label">Kuantitas Ditolak:</span>
+                    <div class="qc-disposisi-input-box">
+                        <input type="number" step="any" min="0" name="qty_tolak" id="inputQtyTolak" class="qc-disposisi-input" value="0" readonly>
+                        <span class="qc-disposisi-unit unit-label-disposisi-minyak">kg</span>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        {{-- KESIMPULAN AKHIR QC --}}
-        <div>
-            <label class="form-label" style="font-weight: 800; font-size: 0.85rem; color: #0f172a; margin-bottom: 0.45rem; display: block;">
-                Keputusan Akhir Inspeksi QC:
+        {{-- CATATAN / KOMENTAR PENGUJIAN --}}
+        <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label" style="font-weight: 800; font-size: 0.825rem; color: #0f172a; margin-bottom: 0.35rem; display: block;">
+                Catatan / Komentar Pengujian:
             </label>
-            <div class="big-choice-grid">
-                <label class="big-choice-btn {{ old('minyak_kesimpulan', 'TERIMA') === 'TERIMA' ? 'active-ok' : '' }}" id="cardTerima">
-                    <input type="radio" name="minyak_kesimpulan" id="minyakRadioTerima" value="TERIMA" {{ old('minyak_kesimpulan', 'TERIMA') === 'TERIMA' ? 'checked' : '' }} onchange="updateKesimpulanCard(this)" style="display: none;">
-                    <span style="font-weight: 900;">✔</span>
-                    <span>TERIMA (LOLOS)</span>
-                </label>
-                <label class="big-choice-btn {{ old('minyak_kesimpulan') === 'TOLAK' ? 'active-danger' : '' }}" id="cardTolak">
-                    <input type="radio" name="minyak_kesimpulan" id="minyakRadioTolak" value="TOLAK" {{ old('minyak_kesimpulan') === 'TOLAK' ? 'checked' : '' }} onchange="updateKesimpulanCard(this)" style="display: none;">
-                    <span style="font-weight: 900;">✖</span>
-                    <span>TOLAK (REJECT)</span>
-                </label>
-            </div>
+            <textarea name="minyak_komentar" id="inputMinyakKomentar" rows="3" class="form-control" placeholder="Kondisi segel tangki utuh dan sesuai dokumen DO. Suhu penerimaan kamar normal, minyak jernih kuning keemasan, FFA aman." style="font-size: 0.85rem; line-height: 1.45;">{{ old('minyak_komentar', 'Kondisi segel tangki utuh dan sesuai dokumen DO. Suhu penerimaan kamar normal, minyak jernih kuning keemasan, FFA aman.') }}</textarea>
         </div>
 
         {{-- OTORISASI & PEMERIKSA (BISA DITAMBAHKAN/DIEDIT LANGSUNG SESUAI PERMINTAAN USER) --}}

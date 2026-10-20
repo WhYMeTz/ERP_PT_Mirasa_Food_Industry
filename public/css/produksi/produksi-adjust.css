@@ -1,0 +1,874 @@
+/* ==========================================================================
+   Stylesheet Halaman Khusus Penyesuaian Biaya & HPP (Worksheet Accounting)
+   Path: public/css/produksi/produksi-adjust.css
+   PT Mirasa Food Industry - Standar Desain Seragam ERP Enterprise (Full-Width)
+   ========================================================================== */
+
+.adjust-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding-bottom: 3rem;
+}
+
+/* 1. Header & Navigation */
+.adjust-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+}
+
+.btn-back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #64748b;
+    text-decoration: none;
+    margin-bottom: 0.35rem;
+    transition: color 0.15s ease;
+}
+
+.btn-back-link:hover {
+    color: #0284c7;
+}
+
+.adjust-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.adjust-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #0f172a;
+    letter-spacing: -0.02em;
+    margin: 0;
+}
+
+.badge-version {
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+    font-size: 0.725rem;
+    font-weight: 700;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+}
+
+.adjust-header-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.btn-cancel-doc {
+    font-size: 0.85rem;
+    font-weight: 700;
+    padding: 0.5rem 0.95rem;
+    background: #ffffff;
+    color: #475569;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+    text-decoration: none;
+    transition: all 0.15s ease-in-out;
+}
+
+.btn-cancel-doc:hover {
+    background: #f8fafc;
+    border-color: #94a3b8;
+    color: #0f172a;
+}
+
+/* 2. Enterprise Parameter Card */
+.card-enterprise {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    margin-bottom: 1.25rem;
+}
+
+.card-enterprise-header {
+    background: #ffffff;
+    padding: 0.875rem 1.25rem;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.card-enterprise-title {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: #0f172a;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+}
+
+.badge-shift-pill {
+    font-size: 0.725rem;
+    font-weight: 700;
+    padding: 0.2rem 0.55rem;
+    border-radius: 9999px;
+    display: inline-block;
+}
+
+.badge-shift-a {
+    background: #e0f2fe;
+    color: #0369a1;
+    border: 1px solid #7dd3fc;
+}
+
+.badge-shift-b {
+    background: #f3e8ff;
+    color: #7e22ce;
+    border: 1px solid #d8b4fe;
+}
+
+.btn-reset-all-link {
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    color: #0284c7;
+    font-size: 0.775rem;
+    font-weight: 700;
+    cursor: pointer;
+    padding: 0.35rem 0.75rem;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    transition: all 0.15s ease;
+}
+
+.btn-reset-all-link:hover {
+    background: #e0f2fe;
+    border-color: #7dd3fc;
+    color: #0369a1;
+}
+
+.adjust-param-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 1.25rem;
+}
+
+.adjust-param-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.param-label {
+    font-size: 0.725rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #64748b;
+}
+
+.param-value {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #0f172a;
+}
+
+/* 3. Executive Stat Grid (4 KPI Cards identik dengan show.blade.php) */
+.executive-stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.executive-stat-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    transition: box-shadow 0.15s ease;
+}
+
+.executive-stat-card:hover {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.06);
+}
+
+.executive-stat-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.executive-stat-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #64748b;
+}
+
+.executive-stat-icon-box {
+    width: 34px;
+    height: 34px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.executive-stat-value {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin-top: 0.35rem;
+    line-height: 1.2;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-variant-numeric: tabular-nums;
+}
+
+.executive-stat-subtext {
+    font-size: 0.775rem;
+    color: #64748b;
+    margin-top: 0.45rem;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+}
+
+/* 4. Full-Width Table Card (BEBAS SCROLL KANAN-KIRI) */
+.adjust-table-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+}
+
+.adjust-table-card-header {
+    background: #ffffff;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 1rem 1.25rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+/* Nav Tabs Filter */
+.adj-nav-tabs {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.adj-nav-btn {
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    color: #475569;
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 0.45rem 0.85rem;
+    border-radius: 6px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s ease;
+}
+
+.adj-nav-btn:hover {
+    background: #f1f5f9;
+    color: #0f172a;
+    border-color: #94a3b8;
+}
+
+.adj-nav-btn.active {
+    background: #0284c7;
+    color: #ffffff;
+    border-color: #0284c7;
+    font-weight: 700;
+    box-shadow: 0 1px 2px rgba(2, 132, 199, 0.2);
+}
+
+/* Full Width Table: 100% responsive, no overflow scrollbar */
+.adj-full-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.825rem;
+    table-layout: auto;
+}
+
+.adj-full-table th {
+    background: #f8fafc;
+    color: #475569;
+    font-size: 0.725rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0.75rem 1rem;
+    border-bottom: 1.5px solid #e2e8f0;
+}
+
+.adj-full-table td {
+    padding: 0.7rem 1rem;
+    border-bottom: 1px solid #e2e8f0;
+    vertical-align: middle;
+}
+
+.adj-group-row td {
+    background: #f1f5f9;
+    padding: 0.65rem 1rem;
+    border-top: 1.5px solid #cbd5e1;
+    border-bottom: 1.5px solid #cbd5e1;
+}
+
+.adj-group-header-flex {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.adj-group-header-left {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+}
+
+.adj-group-num {
+    background: #0284c7;
+    color: #ffffff;
+    font-size: 0.725rem;
+    font-weight: 800;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.adj-group-name {
+    font-weight: 800;
+    color: #0f172a;
+    font-size: 0.825rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.adj-group-badge {
+    background: #e2e8f0;
+    color: #475569;
+    font-size: 0.725rem;
+    font-weight: 700;
+    padding: 0.2rem 0.6rem;
+    border-radius: 9999px;
+    border: 1px solid #cbd5e1;
+}
+
+/* Group Subtotal Row (Accounting Ledger Style) */
+.adj-group-subtotal-row {
+    background: #f8fafc;
+    border-top: 1.5px solid #cbd5e1;
+    border-bottom: 2px solid #cbd5e1;
+}
+
+.adj-group-subtotal-row td {
+    padding: 0.65rem 1rem !important;
+    vertical-align: middle;
+}
+
+.adj-subtotal-label {
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: #334155;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.adj-subtotal-awal {
+    text-align: right;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-weight: 600;
+    color: #64748b;
+    font-size: 0.85rem;
+}
+
+.adj-subtotal-new {
+    text-align: right;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-weight: 800;
+    color: #0f172a;
+    font-size: 0.9rem;
+}
+
+.adj-item-row:hover td {
+    background: #f8fafc;
+}
+
+.adj-item-title {
+    font-weight: 700;
+    color: #0f172a;
+    font-size: 0.85rem;
+}
+
+.adj-item-code {
+    font-size: 0.725rem;
+    color: #64748b;
+    margin-top: 0.15rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.adj-item-spec {
+    color: #64748b;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.adj-item-current {
+    text-align: right;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-weight: 600;
+    color: #475569;
+    font-size: 0.85rem;
+}
+
+/* Input Box */
+.adj-input-wrap {
+    display: flex;
+    align-items: center;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 6px;
+    background: #ffffff;
+    overflow: hidden;
+    transition: all 0.15s ease;
+    width: 100%;
+    max-width: 220px;
+    margin-left: auto;
+}
+
+.adj-input-wrap:focus-within {
+    border-color: #0284c7;
+    box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+}
+
+.adj-input-prefix {
+    background: #f8fafc;
+    color: #64748b;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.45rem 0.55rem;
+    border-right: 1px solid #e2e8f0;
+    user-select: none;
+}
+
+.adj-calc-input {
+    width: 100%;
+    border: none;
+    outline: none;
+    padding: 0.45rem 0.6rem;
+    font-size: 0.875rem;
+    font-weight: 700;
+    text-align: right;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-variant-numeric: tabular-nums;
+    color: #0f172a;
+    background: transparent;
+}
+
+/* Variance Badges */
+.adj-variance-badge {
+    display: inline-block;
+    padding: 0.25rem 0.6rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    white-space: nowrap;
+}
+
+.adj-variance-zero {
+    color: #64748b;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+}
+
+.adj-variance-up {
+    color: #b45309;
+    background: #fef3c7;
+    border: 1px solid #fde68a;
+}
+
+.adj-variance-down {
+    color: #047857;
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+}
+
+.btn-adj-reset {
+    background: none;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    font-size: 0.75rem;
+    padding: 0.35rem;
+    display: inline-flex;
+    align-items: center;
+    border-radius: 4px;
+    transition: all 0.15s ease;
+}
+
+.btn-adj-reset:hover {
+    color: #dc2626;
+    background: #fee2e2;
+}
+
+/* 4b. Table Total Footer (Akuntansi Ledger Style) */
+.adj-tfoot-total-row {
+    background: #f8fafc;
+    border-top: 2px solid #cbd5e1;
+    border-bottom: 2px solid #cbd5e1;
+}
+
+.adj-tfoot-total-row td {
+    padding: 0.85rem 1rem !important;
+    vertical-align: middle;
+}
+
+.adj-tfoot-title {
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: #0f172a;
+    letter-spacing: 0.03em;
+}
+
+.adj-tfoot-hpp-box {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-top: 0.25rem;
+    font-size: 0.8rem;
+    color: #475569;
+}
+
+.adj-tfoot-hpp-val {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #0284c7;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.adj-tfoot-current {
+    text-align: right;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-weight: 700;
+    color: #64748b;
+    font-size: 0.9rem;
+}
+
+.adj-tfoot-revised {
+    text-align: right;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-weight: 800;
+    color: #0f172a;
+    font-size: 0.95rem;
+}
+
+.adj-status-chip {
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.25rem 0.65rem;
+    border-radius: 9999px;
+    background: #f1f5f9;
+    color: #64748b;
+    border: 1px solid #e2e8f0;
+    display: inline-block;
+    transition: all 0.15s ease;
+}
+
+/* 5. Authorization & Berita Acara Card (Bawah Tabel) */
+.adjust-auth-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+}
+
+.adjust-auth-header {
+    background: #ffffff;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 0.875rem 1.25rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.adjust-auth-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #0f172a;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin: 0;
+}
+
+.adjust-auth-grid {
+    display: grid;
+    grid-template-columns: 360px 1fr;
+    gap: 1.5rem;
+    padding: 1.25rem;
+}
+
+@media (max-width: 900px) {
+    .adjust-auth-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.adjust-form-label {
+    display: block;
+    font-size: 0.775rem;
+    font-weight: 700;
+    color: #334155;
+    margin-bottom: 0.35rem;
+}
+
+.adjust-form-input {
+    width: 100%;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 0.55rem 0.75rem;
+    font-size: 0.85rem;
+    color: #0f172a;
+    outline: none;
+    transition: all 0.15s ease;
+    box-sizing: border-box;
+}
+
+.adjust-form-input:focus {
+    border-color: #0284c7;
+    box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+}
+
+.adjust-form-textarea {
+    width: 100%;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 0.55rem 0.75rem;
+    font-size: 0.85rem;
+    color: #0f172a;
+    outline: none;
+    transition: all 0.15s ease;
+    box-sizing: border-box;
+    resize: vertical;
+}
+
+.adjust-form-textarea:focus {
+    border-color: #0284c7;
+    box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+}
+
+.adjust-form-hint {
+    font-size: 0.725rem;
+    color: #94a3b8;
+    margin-top: 0.3rem;
+    line-height: 1.35;
+}
+
+.adjust-submit-bar {
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+    padding: 1rem 1.25rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.btn-submit-adjust {
+    padding: 0.65rem 1.5rem;
+    font-size: 0.875rem;
+    font-weight: 700;
+    background: #059669;
+    border: 1.5px solid #059669;
+    border-radius: 6px;
+    color: #ffffff;
+    cursor: pointer;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    box-shadow: 0 1px 2px rgba(5, 150, 105, 0.25);
+    transition: all 0.15s ease;
+}
+
+.btn-submit-adjust:hover {
+    background: #047857;
+    border-color: #047857;
+}
+
+/* 6. Audit Trail Card (Riwayat Berita Acara) */
+.adjust-audit-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    overflow: hidden;
+    margin-top: 1.5rem;
+}
+
+.adjust-audit-header {
+    background: #ffffff;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 0.875rem 1.25rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.adjust-audit-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #0f172a;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin: 0;
+}
+
+.adjust-audit-table-wrap {
+    width: 100%;
+    overflow: hidden;
+}
+
+.adjust-audit-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.825rem;
+    table-layout: fixed;
+    box-sizing: border-box;
+}
+
+.adjust-audit-table th {
+    background: #f8fafc;
+    color: #475569;
+    font-size: 0.725rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0.75rem 0.55rem;
+    border-bottom: 1.5px solid #cbd5e1;
+    white-space: nowrap;
+    box-sizing: border-box;
+}
+
+.adjust-audit-table td {
+    padding: 0.75rem 0.55rem;
+    border-bottom: 1px solid #e2e8f0;
+    vertical-align: middle;
+    box-sizing: border-box;
+}
+
+.adjust-audit-table th:first-child,
+.adjust-audit-table td:first-child {
+    padding-left: 1.25rem;
+}
+
+.adjust-audit-table th:last-child,
+.adjust-audit-table td:last-child {
+    padding-right: 1.25rem;
+}
+
+.adjust-audit-table tr:hover td {
+    background: #f8fafc;
+}
+
+.adjust-ba-badge {
+    background: #e0f2fe;
+    color: #0369a1;
+    border: 1px solid #bae6fd;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    white-space: nowrap;
+    display: inline-block;
+}
+
+.audit-old-val {
+    color: #64748b;
+    font-size: 0.75rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.audit-new-val {
+    font-weight: 700;
+    color: #0f172a;
+    font-size: 0.825rem;
+    margin-top: 1px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.audit-hpp-val {
+    color: #0284c7;
+    font-weight: 800;
+}
+
+.audit-diff-chip {
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    padding: 0.2rem 0.5rem;
+    font-size: 0.725rem;
+    color: #334155;
+    line-height: 1.35;
+    display: inline-block;
+    margin: 0.15rem 0.25rem 0.15rem 0;
+}
+
+.audit-diff-chip strong {
+    color: #0f172a;
+}
+
+.audit-user-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.725rem;
+    font-weight: 600;
+    color: #334155;
+    background: #f1f5f9;
+    padding: 0.2rem 0.55rem;
+    border-radius: 9999px;
+    border: 1px solid #e2e8f0;
+    white-space: nowrap;
+    box-sizing: border-box;
+}

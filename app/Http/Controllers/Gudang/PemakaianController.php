@@ -181,13 +181,21 @@ class PemakaianController extends Controller
 
         $bomList = $this->bomService->getAllActive();
 
+        // Ambil daftar dokumen produksi (Berko / Lini) aktif untuk referensi tiket kemasan
+        $produksiList = \App\Models\Produksi\DatProduksiHdr::where('deleted_st', false)
+            ->orderBy('produksi_tgl', 'desc')
+            ->orderBy('produksi_id', 'desc')
+            ->limit(40)
+            ->get();
+
         return view('gudang.pemakaian.create', compact(
             'gudangList',
             'barangList',
             'userGudangId',
             'autoNo',
             'liniList',
-            'bomList'
+            'bomList',
+            'produksiList'
         ));
     }
 

@@ -56,7 +56,7 @@
             @endif
 
             {{-- TOMBOL EDIT CEPAT DI TOP HEADER --}}
-            @if (Auth::user()?->canEditQc() && !$isLocked)
+            @if (Auth::user()?->canEditQcMobile() && !$isLocked)
                 <a href="{{ route('qc.inbound.edit', [$qc->qc_id, 'view' => 'mobile', 'ref' => 'detail']) }}" style="font-size: 0.78rem; font-weight: 800; color: #ffffff; background: #0284c7; border: 1.5px solid #0284c7; padding: 0.35rem 0.75rem; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 0.35rem; box-shadow: 0 2px 4px rgba(2,132,199,0.25);">
                     <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                     <span>✏️ Edit Uji</span>
@@ -444,6 +444,65 @@
                 </div>
             </div>
 
+        {{-- JIKA BAHAN PENOLONG (MSG, GARAM, PERENYAH, BUMBU) --}}
+        @elseif (in_array($kat, ['MSG', 'GARAM', 'PERENYAH', 'BUMBU', 'BAHAN_PENOLONG']))
+            <div class="qc-param-list">
+                <div class="qc-param-row">
+                    <span class="qc-param-name">Komoditas Bahan</span>
+                    <span class="qc-param-val" style="font-weight: 800; color: #7c3aed;">
+                        {{ $firstDetail?->barang?->barang_nm ?: ($qc->nama_jenis ?: $kat) }}
+                    </span>
+                </div>
+                <div class="qc-param-row">
+                    <span class="qc-param-name">Spesifikasi / Nama Jenis</span>
+                    <span class="qc-param-val" style="font-weight: 700; color: #4338ca;">
+                        {{ $qc->nama_jenis ?: '-' }}
+                    </span>
+                </div>
+                @if ($qc->nama_produsen)
+                    <div class="qc-param-row">
+                        <span class="qc-param-name">Produsen &amp; Negara</span>
+                        <span class="qc-param-val">
+                            {{ $qc->nama_produsen }} ({{ $qc->negara_produsen ?: 'Indonesia' }})
+                        </span>
+                    </div>
+                @endif
+                <div class="qc-param-row">
+                    <span class="qc-param-name">Sertifikat Halal</span>
+                    <span class="qc-param-val {{ ($firstDetail?->sertifikat_halal_ada ?? true) ? 'pass' : 'fail' }}">
+                        {{ ($firstDetail?->sertifikat_halal_ada ?? true) ? '✔ Terlampir &amp; Valid' : '✖ Tidak Ada' }}
+                    </span>
+                </div>
+                <div class="qc-param-row">
+                    <span class="qc-param-name">Kondisi Kemasan / Karung</span>
+                    <span class="qc-param-val {{ ($firstDetail?->kondisi_kemasan_karung ?? true) ? 'pass' : 'fail' }}">
+                        {{ ($firstDetail?->kondisi_kemasan_karung ?? true) ? '✔ Bersih, Utuh, Tertutup Rapat' : '✖ Rusak / Terbuka' }}
+                    </span>
+                </div>
+                <div class="qc-param-row">
+                    <span class="qc-param-name">Bebas Benda Asing / Hama</span>
+                    <span class="qc-param-val {{ ($firstDetail?->bebas_benda_asing_st ?? true) ? 'pass' : 'fail' }}">
+                        {{ ($firstDetail?->bebas_benda_asing_st ?? true) ? '✔ Bersih / Bebas Kontaminasi' : '✖ Ditemukan Benda Asing' }}
+                    </span>
+                </div>
+                @if ($firstDetail?->expired_tgl)
+                    <div class="qc-param-row">
+                        <span class="qc-param-name">Tanggal Expired</span>
+                        <span class="qc-param-val pass">
+                            {{ \Carbon\Carbon::parse($firstDetail->expired_tgl)->format('d/m/Y') }}
+                        </span>
+                    </div>
+                @endif
+                @if ($firstDetail?->batch_produsen)
+                    <div class="qc-param-row">
+                        <span class="qc-param-name">Lot / Batch Produsen</span>
+                        <span class="qc-param-val">
+                            {{ $firstDetail->batch_produsen }}
+                        </span>
+                    </div>
+                @endif
+            </div>
+
         {{-- JIKA PLASTIK & KARTON --}}
         @else
             <div class="qc-param-list">
@@ -511,7 +570,7 @@
             @endif
         </div>
 
-        @if (Auth::user()?->canEditQc() && !$isLocked)
+        @if (Auth::user()?->canEditQcMobile() && !$isLocked)
             <a href="{{ route('qc.inbound.edit', [$qc->qc_id, 'view' => 'mobile', 'ref' => 'detail']) }}" style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; background: #0284c7; color: #ffffff; font-size: 0.95rem; font-weight: 800; padding: 0.85rem 1.25rem; border-radius: 10px; text-decoration: none; box-shadow: 0 3px 6px rgba(2,132,199,0.3);">
                 <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                 <span>✏️ Edit &amp; Koreksi Data Sampling QC</span>
@@ -545,7 +604,7 @@
         </div>
     @endif
 
-    @if (Auth::user()?->canEditQc() && !$isLocked)
+    @if (Auth::user()?->canEditQcMobile() && !$isLocked)
         <a href="{{ route('qc.inbound.edit', [$qc->qc_id, 'view' => 'mobile', 'ref' => 'detail']) }}" class="qc-btn-mobile-edit" style="flex: 1; text-align: center;">
             <span>✏️ Edit Uji</span>
         </a>

@@ -18,11 +18,19 @@ use App\Http\Controllers\MasterData\JenisBarangController;
 use App\Http\Controllers\MasterData\JenisSupplierController;
 use App\Http\Controllers\MasterData\KaryawanController;
 use App\Http\Controllers\MasterData\LiniProduksiController;
+use App\Http\Controllers\MasterData\MesinController;
 use App\Http\Controllers\MasterData\SatuanController;
 use App\Http\Controllers\MasterData\SupplierController;
 use App\Http\Controllers\MasterData\TarifProduksiController;
+use App\Http\Controllers\MasterData\TarifKemasanController;
+use App\Http\Controllers\Keuangan\BayarHutangController;
+use App\Http\Controllers\Keuangan\HutangController;
+use App\Http\Controllers\Keuangan\KasBankController;
+use App\Http\Controllers\Keuangan\KasMasukController;
 use App\Http\Controllers\Penjualan\SoController;
 use App\Http\Controllers\Produksi\BomController;
+use App\Http\Controllers\Produksi\PackagingController;
+use App\Http\Controllers\Produksi\PackagingOperatorController;
 use App\Http\Controllers\Produksi\ProduksiController;
 use App\Http\Controllers\Produksi\ProduksiStokController;
 use App\Http\Controllers\Manajemen\FingerprintController;
@@ -39,6 +47,12 @@ Route::get('login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('login', [AuthController::class, 'login'])->name('login.attempt');
 Route::post('logout', [AuthController::class, 'logout'])->name('logout');
 Route::get('quick-login/{id}', [AuthController::class, 'quickLogin'])->name('quick.login');
+
+// Mobile (QC Lapangan & Operator Shopfloor) Authentication Routes
+Route::get('mobile/login', [AuthController::class, 'showMobileLogin'])->name('mobile.login');
+Route::post('mobile/login', [AuthController::class, 'mobileLogin'])->name('mobile.login.attempt');
+Route::post('mobile/logout', [AuthController::class, 'mobileLogout'])->name('mobile.logout');
+Route::get('qc/login', fn () => redirect()->route('mobile.login'))->name('qc.login');
 
 // Root Redirection
 Route::get('/', function () {
@@ -94,6 +108,10 @@ Route::middleware('auth')->group(function () {
         ->middleware('role:SUPERADMIN,STAFF_PRODUKSI,master_resep_view,master_resep_manage');
     Route::resource('master-lini-produksi', LiniProduksiController::class)
         ->names('master.lini_produksi');
+    Route::patch('master-mesin/{id}/toggle-status', [MesinController::class, 'toggleStatus'])
+        ->name('master.mesin.toggle_status');
+    Route::resource('master-mesin', MesinController::class)
+        ->names('master.mesin');
 
     // Master Standar Tarif Produksi & FOH Pabrik
     Route::get('master-tarif-produksi/api-rates', [TarifProduksiController::class, 'apiRates'])
@@ -104,6 +122,16 @@ Route::middleware('auth')->group(function () {
         ->name('master.tarif_produksi.index');
     Route::put('master-tarif-produksi/{id}', [TarifProduksiController::class, 'update'])
         ->name('master.tarif_produksi.update');
+
+    // Master Standar Harga Kemasan & Packaging (Ping-Ping, Maksi, Lakban, Roll, Bumbu, dll)
+    Route::get('master-tarif-kemasan/api-rates', [TarifKemasanController::class, 'apiRates'])
+        ->name('master.tarif_kemasan.api-rates');
+    Route::post('master-tarif-kemasan/quick-update', [TarifKemasanController::class, 'quickUpdate'])
+        ->name('master.tarif_kemasan.quick-update');
+    Route::get('master-tarif-kemasan', [TarifKemasanController::class, 'index'])
+        ->name('master.tarif_kemasan.index');
+    Route::put('master-tarif-kemasan/{id}', [TarifKemasanController::class, 'update'])
+        ->name('master.tarif_kemasan.update');
 
     // Master Supplier
     Route::resource('master-jenis-supplier', JenisSupplierController::class)->names('master.jenis_supplier');
@@ -289,24 +317,50 @@ Route::middleware('auth')->group(function () {
         Route::get('/next-karton', [ProduksiController::class, 'getNextKarton'])->name('next-karton');
         Route::get('/sync-karyawan', [ProduksiController::class, 'getKaryawanDataByDate'])->name('sync-karyawan');
         Route::get('/{id}', [ProduksiController::class, 'show'])->name('show')->whereNumber('id');
+        Route::get('/{id}/adjust', [ProduksiController::class, 'adjustPage'])->name('adjust')->middleware('role:produksi_create')->whereNumber('id');
+        Route::post('/{id}/adjust-hpp', [ProduksiController::class, 'adjustHpp'])->name('adjust-hpp')->middleware('role:produksi_create')->whereNumber('id');
         Route::get('/{id}/cetak-stiker', [ProduksiController::class, 'cetakStiker'])->name('cetak-stiker')->whereNumber('id');
         Route::delete('/{id}', [ProduksiController::class, 'destroy'])->name('destroy')->middleware('role:produksi_create')->whereNumber('id');
+
+        // Pengemasan Barang Jadi & HPP (Packaging)
+        Route::get('/packaging/ajax-bom-preview', [PackagingController::class, 'ajaxBomPreview'])->name('packaging.ajax-bom-preview');
+        Route::get('/packaging/ajax-produksi-details', [PackagingController::class, 'ajaxProduksiDetails'])->name('packaging.ajax-produksi-details');
+        Route::get('/packaging/ajax-pakai-details', [PackagingController::class, 'ajaxPakaiDetails'])->name('packaging.ajax-pakai-details');
+        Route::get('/packaging', [PackagingController::class, 'index'])->name('packaging.index');
+        Route::get('/packaging/rekap', [PackagingController::class, 'rekap'])->name('packaging.rekap');
+        Route::get('/packaging/export-rekap-excel', [PackagingController::class, 'exportRekapExcel'])->name('packaging.export-rekap-excel');
+        Route::get('/packaging/export-rekap-pdf', [PackagingController::class, 'exportRekapPdf'])->name('packaging.export-rekap-pdf');
+        Route::get('/packaging/catatan-operator', [PackagingController::class, 'catatanOperator'])->name('packaging.catatan-operator');
+        Route::get('/packaging/catatan-operator/{id}', [PackagingController::class, 'showCatatanOperator'])->name('packaging.catatan-operator.show')->whereNumber('id');
+        Route::get('/packaging/create', [PackagingController::class, 'create'])->name('packaging.create')->middleware('role:produksi_create');
+        Route::post('/packaging', [PackagingController::class, 'store'])->name('packaging.store')->middleware('role:produksi_create');
+        Route::get('/packaging/{id}', [PackagingController::class, 'show'])->name('packaging.show')->whereNumber('id');
+        Route::post('/packaging/{id}/void', [PackagingController::class, 'void'])->name('packaging.void')->middleware('role:produksi_create')->whereNumber('id');
+    });
+
+    // Laporan Pengemasan Lapangan (Mobile-First Operator HP & Admin Office)
+    Route::prefix('produksi')->name('produksi.')->group(function () {
+        Route::get('/packaging/mobile', [PackagingOperatorController::class, 'create'])->name('packaging.mobile');
+        Route::post('/packaging/mobile', [PackagingOperatorController::class, 'store'])->name('packaging.mobile.store');
+        Route::get('/packaging/mobile/riwayat', [PackagingOperatorController::class, 'index'])->name('packaging.mobile.index');
+        Route::get('/packaging/mobile/{id}', [PackagingOperatorController::class, 'show'])->name('packaging.mobile.show')->whereNumber('id');
+        Route::get('/packaging/ajax-unprocessed-laporan', [PackagingOperatorController::class, 'ajaxUnprocessed'])->name('packaging.ajax-unprocessed-laporan');
     });
 
     // Quality Control (QC) Inbound Bahan Baku (Mobile-First / Google Form Style)
     Route::prefix('qc')->name('qc.')->group(function () {
         Route::get('inbound/siap-gudang', [QcInboundController::class, 'getSiapGudang'])->name('inbound.siap_gudang');
         Route::get('inbound/ticket-data/{id}', [QcInboundController::class, 'getTicketData'])->name('inbound.ticket_data');
-        Route::get('inbound/pengujian-2', [QcInboundController::class, 'createPengujian2'])->name('inbound.create_pengujian_2')->middleware('role:qc_create');
-        Route::post('inbound/pengujian-2', [QcInboundController::class, 'storePengujian2'])->name('inbound.store_pengujian_2')->middleware('role:qc_create');
-        Route::get('inbound/create', [QcInboundController::class, 'create'])->name('inbound.create')->middleware('role:qc_create');
-        Route::post('inbound', [QcInboundController::class, 'store'])->name('inbound.store')->middleware('role:qc_create');
-        Route::get('inbound/{id}/edit', [QcInboundController::class, 'edit'])->name('inbound.edit')->middleware('role:qc_edit,GUDANG,QC');
-        Route::put('inbound/{id}', [QcInboundController::class, 'update'])->name('inbound.update')->middleware('role:qc_edit,GUDANG,QC');
-        Route::delete('inbound/{id}', [QcInboundController::class, 'destroy'])->name('inbound.destroy')->middleware('role:qc_delete');
-        Route::get('inbound/{id}/berita-acara', [QcInboundController::class, 'beritaAcara'])->name('inbound.berita_acara')->middleware('role:qc_view');
-        Route::post('inbound/{id}/uji-goreng', [QcInboundController::class, 'updateUjiGoreng'])->name('inbound.update_uji_goreng')->middleware('role:qc_create');
-        Route::resource('inbound', QcInboundController::class)->only(['index', 'show'])->names('inbound')->middleware('role:qc_view');
+        Route::get('inbound/pengujian-2', [QcInboundController::class, 'createPengujian2'])->name('inbound.create_pengujian_2')->middleware('role:qc_mobile_create,qc_create');
+        Route::post('inbound/pengujian-2', [QcInboundController::class, 'storePengujian2'])->name('inbound.store_pengujian_2')->middleware('role:qc_mobile_create,qc_create');
+        Route::get('inbound/create', [QcInboundController::class, 'create'])->name('inbound.create')->middleware('role:qc_mobile_create,qc_create');
+        Route::post('inbound', [QcInboundController::class, 'store'])->name('inbound.store')->middleware('role:qc_mobile_create,qc_create');
+        Route::get('inbound/{id}/edit', [QcInboundController::class, 'edit'])->name('inbound.edit')->middleware('role:qc_mobile_edit,qc_web_edit,qc_edit');
+        Route::put('inbound/{id}', [QcInboundController::class, 'update'])->name('inbound.update')->middleware('role:qc_mobile_edit,qc_web_edit,qc_edit');
+        Route::delete('inbound/{id}', [QcInboundController::class, 'destroy'])->name('inbound.destroy')->middleware('role:qc_mobile_delete,qc_web_delete,qc_delete');
+        Route::get('inbound/{id}/berita-acara', [QcInboundController::class, 'beritaAcara'])->name('inbound.berita_acara')->middleware('role:qc_web_view,qc_view');
+        Route::post('inbound/{id}/uji-goreng', [QcInboundController::class, 'updateUjiGoreng'])->name('inbound.update_uji_goreng')->middleware('role:qc_mobile_create,qc_create');
+        Route::resource('inbound', QcInboundController::class)->only(['index', 'show'])->names('inbound')->middleware('role:qc_mobile_view,qc_web_view,qc_view');
     });
 
     // Modul Transaksi Penjualan (PO Penjualan / Sales Order)
@@ -315,5 +369,33 @@ Route::middleware('auth')->group(function () {
         Route::get('so/{id}/export-surat-jalan', [SoController::class, 'exportSuratJalanPdf'])->name('so.export-surat-jalan');
         Route::post('so/{id}/cancel', [SoController::class, 'cancel'])->name('so.cancel');
         Route::resource('so', SoController::class);
+    });
+
+    // Modul Keuangan: Hutang Usaha (AP), Pelunasan Kas Keluar & Rekening Bank
+    Route::prefix('keuangan')->name('keuangan.')->group(function () {
+        // 1. Hutang Usaha & Tagihan Pembelian (AP)
+        Route::get('hutang/ajax-unbilled-grn', [HutangController::class, 'ajaxUnbilledGrn'])->name('hutang.ajax-unbilled-grn')->middleware('role:hutang_view,hutang_create');
+        Route::get('hutang/ajax-gas-summary', [HutangController::class, 'ajaxGasSummary'])->name('hutang.ajax-gas-summary')->middleware('role:hutang_view,hutang_create');
+        Route::get('hutang/create-gas', [HutangController::class, 'createGas'])->name('hutang.create_gas')->middleware('role:hutang_create');
+        Route::post('hutang/store-gas', [HutangController::class, 'storeGas'])->name('hutang.store_gas')->middleware('role:hutang_create');
+        Route::patch('hutang/{id}/update-tempo', [HutangController::class, 'updateTempo'])->name('hutang.update-tempo')->middleware('role:hutang_create');
+        Route::resource('hutang', HutangController::class)->except(['edit', 'update']);
+
+        // 2. Pelunasan Hutang (Bukti Kas Keluar - BKK)
+        Route::post('bayar/{id}/void', [BayarHutangController::class, 'void'])->name('bayar.void')->middleware('role:bayar_hutang_void');
+        Route::resource('bayar', BayarHutangController::class)->only(['index', 'create', 'store', 'show']);
+
+        // 3. Kas & Rekening Bank
+        Route::get('kas-bank/mutasi', [KasBankController::class, 'mutasi'])->name('kas_bank.mutasi')->middleware('role:kas_bank_view');
+        Route::get('kas-bank', [KasBankController::class, 'index'])->name('kas_bank.index')->middleware('role:kas_bank_view');
+        Route::post('kas-bank', [KasBankController::class, 'store'])->name('kas_bank.store')->middleware('role:kas_bank_manage');
+        Route::put('kas-bank/{id}', [KasBankController::class, 'update'])->name('kas_bank.update')->middleware('role:kas_bank_manage');
+        Route::delete('kas-bank/{id}', [KasBankController::class, 'destroy'])->name('kas_bank.destroy')->middleware('role:kas_bank_manage');
+        Route::post('kas-bank/transfer', [KasBankController::class, 'transfer'])->name('kas_bank.transfer')->middleware('role:kas_bank_manage');
+        Route::post('kas-bank/penyesuaian', [KasBankController::class, 'penyesuaian'])->name('kas_bank.penyesuaian')->middleware('role:kas_bank_manage');
+
+        // 4. Penerimaan Kas & Bank (Bukti Kas Masuk - BKM)
+        Route::post('kas-masuk/{id}/void', [KasMasukController::class, 'void'])->name('kas_masuk.void')->middleware('role:kas_masuk_void');
+        Route::resource('kas-masuk', KasMasukController::class)->names('kas_masuk')->only(['index', 'create', 'store', 'show']);
     });
 });

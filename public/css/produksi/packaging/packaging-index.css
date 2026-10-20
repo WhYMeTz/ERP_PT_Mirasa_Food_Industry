@@ -1,0 +1,274 @@
+/**
+ * =========================================================================
+ * ERP PT MIRASA - PENGEMASAN BARANG JADI & HPP (PACKAGING) INDEX CSS
+ * Diseragamkan 100% dengan Standar Desain HPP Produksi (produksi-index.css)
+ * =========================================================================
+ */
+
+@import url('/css/produksi/produksi-index.css');
+
+.packaging-index-container {
+    width: 100%;
+}
+
+/* KPI Metrics & Toolbar styles inherit from produksi-index.css (.executive-stat-grid, .executive-stat-card) */
+
+/* Filter Toolbar */
+.filter-toolbar-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.25rem;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+.filter-grid {
+    display: grid;
+    grid-template-columns: 2fr 1.2fr 1.5fr 1.2fr auto;
+    gap: 0.75rem;
+    align-items: end;
+}
+
+@media (max-width: 1024px) {
+    .filter-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+@media (max-width: 640px) {
+    .filter-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Smart Action Dropdown Button (Standar PO AGENTS.md) */
+.btn-action-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: #ffffff;
+    border: 1.5px solid #cbd5e1;
+    color: #1e293b;
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 0.32rem 0.65rem;
+    border-radius: 6px;
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    transition: all 0.15s ease;
+    white-space: nowrap;
+}
+
+.btn-action-trigger:hover {
+    background: #f0fdf4;
+    color: #059669;
+    border-color: #059669;
+}
+
+.btn-action-trigger.active {
+    background: #f0fdf4;
+    color: #059669;
+    border-color: #059669;
+}
+
+.btn-action-trigger svg {
+    transition: transform 0.2s ease;
+}
+
+.btn-action-trigger.active svg {
+    transform: rotate(180deg);
+}
+
+/* Action Dropdown Menu Fixed Viewport Positioning */
+.action-dropdown-menu {
+    display: none;
+    position: fixed;
+    z-index: 999999 !important;
+    min-width: 190px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+    padding: 0.35rem 0;
+    text-align: left;
+}
+
+.action-dropdown-menu.show {
+    display: block;
+    animation: fadeInDown 0.15s ease-out;
+}
+
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.action-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.5rem 0.85rem;
+    font-size: 0.8rem;
+    color: #334155;
+    background: none;
+    border: none;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.12s ease;
+    box-sizing: border-box;
+}
+
+.action-dropdown-item:hover {
+    background: #f0fdf4;
+    color: #059669;
+}
+
+.action-dropdown-item.danger-item {
+    color: #dc2626;
+}
+
+.action-dropdown-item.danger-item:hover {
+    background: #fef2f2;
+    color: #dc2626;
+}
+
+.action-dropdown-divider {
+    height: 1px;
+    background: #f1f5f9;
+    margin: 0.3rem 0;
+}
+
+/* Modal Danger */
+.modal-danger-header {
+    background: #fef2f2;
+    border-bottom: 1px solid #fee2e2;
+    padding: 1.15rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.modal-danger-title {
+    color: #991b1b;
+    font-weight: 700;
+    font-size: 1.05rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   DAFTAR HARGA ACUAN PACKAGING (PARAMETER HEADER SEPERTI EXCEL MIRASA)
+   ══════════════════════════════════════════════════════════════════════════ */
+.daftar-harga-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.25rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.daftar-harga-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.daftar-harga-title {
+    font-size: 0.875rem;
+    font-weight: 800;
+    color: #0f172a;
+    letter-spacing: -0.01em;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.daftar-harga-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.75rem;
+}
+
+.price-ref-box {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 0.65rem 0.85rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.price-ref-label {
+    font-size: 0.675rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #64748b;
+    margin-bottom: 0.25rem;
+}
+
+.price-ref-val {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #0f172a;
+    font-family: monospace;
+}
+
+.price-ref-sub {
+    font-size: 0.7rem;
+    color: #94a3b8;
+    margin-top: 0.2rem;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   TABEL SPREADSHEET MATRIKS HARGA POKOK PRODUKSI PING-PING & MAKSI
+   ══════════════════════════════════════════════════════════════════════════ */
+.table-packaging-spreadsheet {
+    width: 100%;
+    min-width: 1950px;
+    border-collapse: collapse;
+    font-size: 0.775rem;
+}
+
+.table-packaging-spreadsheet th {
+    padding: 0.45rem 0.5rem;
+    font-size: 0.72rem;
+    font-weight: 800;
+    border: 1px solid #cbd5e1;
+    text-align: center;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+.table-packaging-spreadsheet td {
+    padding: 0.4rem 0.5rem;
+    border: 1px solid #e2e8f0;
+    vertical-align: middle;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.table-packaging-spreadsheet tbody tr:hover {
+    background: #f0fdf4 !important;
+}
+
+.table-packaging-spreadsheet tfoot td {
+    padding: 0.55rem 0.5rem;
+    border: 1px solid #cbd5e1;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}

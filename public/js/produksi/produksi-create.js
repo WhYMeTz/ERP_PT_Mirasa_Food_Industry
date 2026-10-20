@@ -165,8 +165,9 @@
         const nm = opt?.dataset?.nm || '';
 
         const isCurah = isCurahWipProduct(cd, nm);
+        const baseDate = getDateBatch();
         const batchForItem = isCurah
-            ? getDateBatch()                                               // Curah → tanggal
+            ? (baseDate && baseDate !== '-' ? baseDate : '-')              // Curah → format tanggal murni (DD MM YYYY)
             : (document.getElementById('batch_wip_no')?.value || '-');    // Kemasan → range karton
 
         const badgeFgBatch = document.getElementById(`badgeFgBatch_${idx}`);
@@ -175,11 +176,11 @@
         if (badgeFgBatch) {
             badgeFgBatch.textContent = batchForItem;
             if (isCurah) {
-                // Hijau = curah/Berko → format tanggal
+                // Hijau = curah/Berko → format tanggal murni
                 badgeFgBatch.style.background = '#f0fdf4';
                 badgeFgBatch.style.color = '#065f46';
                 badgeFgBatch.style.borderColor = '#a7f3d0';
-                badgeFgBatch.title = 'Batch Curah: Format Tanggal (DD MM YYYY)';
+                badgeFgBatch.title = 'Batch Curah: Format Tanggal Murni (DD MM YYYY)';
             } else if (batchForItem && batchForItem !== '-') {
                 // Biru = kemasan karton IFM → format range
                 badgeFgBatch.style.background = '#f0f9ff';
@@ -198,7 +199,7 @@
     }
 
     // Helper: Sinkronisasi Kode Batch Bagian 2 ke seluruh Baris Output Barang Jadi (Bagian 7)
-    // Per baris: kemasan IFM → range, WIP curah → tanggal
+    // Per baris: kemasan IFM → range, WIP curah → tanggal murni harian (DD MM YYYY)
     window.syncBatchToOutputItems = function () {
         const tbody = document.getElementById('tbodyOutputFg');
         if (!tbody) return;
@@ -221,7 +222,9 @@
     // 3. Kalkulasi Rentang Karton & Kode Batch WIP / Barang Jadi
     window.updateKartonRangeAndBatch = function (skipSyncTable = false) {
         const shift = document.getElementById('shift_cd')?.value || 'A';
-        const noAwal = parseInt(document.getElementById('no_karton_awal')?.value) || 1;
+        const rawAwalVal = document.getElementById('no_karton_awal')?.value;
+        const hasKartonInput = rawAwalVal !== undefined && rawAwalVal.trim() !== '' && parseInt(rawAwalVal) > 0;
+        const noAwal = hasKartonInput ? parseInt(rawAwalVal) : 1;
         const qtyKarton = parseInt(document.getElementById('qty_karton')?.value) || 0;
         const liniSelect = document.getElementById('lini_produksi');
         const selectedOpt = liniSelect?.selectedOptions?.[0];
@@ -231,28 +234,55 @@
         const selectedCd = selectedOpt?.getAttribute('data-cd') || '';
         const tgl = document.getElementById('produksi_tgl')?.value || '';
 
-        // Cek apakah Lini adalah Standar Indofood IFM / IFL (WIP-FCC berkarton urut 6 kg)
-        const isIfm = Boolean(
-            lini && (
-                selectedTipe === 'IFM' || 
-                lini.toUpperCase().includes('IFM') || 
-                lini.toUpperCase().includes('IFL') || 
-                lini.toUpperCase().includes('INDOFOOD') || 
-                selectedCd === 'IFM' || 
-                selectedCd === 'IFL'
-            )
-        );
+        // Cek produk hasil produksi utama pada baris pertama tabel Bagian 7
+        const firstFgSel = document.querySelector('#tableOutputFg tbody tr:first-child .select-fg-barang')
+            || document.querySelector('.select-fg-barang');
+        const firstOpt = firstFgSel?.selectedOptions?.[0];
+        const prodCd = (firstOpt?.dataset?.cd || firstOpt?.getAttribute('data-cd') || '').toUpperCase();
+        const prodNm = (firstOpt?.dataset?.nm || firstOpt?.getAttribute('data-nm') || firstOpt?.textContent || '').toUpperCase();
+        const prodJenis = (firstOpt?.dataset?.jenis || firstOpt?.getAttribute('data-jenis') || '').toUpperCase();
+        const hasExplicitProduct = Boolean(firstOpt && firstOpt.value);
 
-        // Cek apakah Lini adalah Olahan Curah WIP (Penggorengan / Keripik)
+        // Standar Indofood IFM (Box 6 Kg berkarton urut):
+        // 1. Jika produk sudah dipilih di tabel: aktif HANYA jika produknya adalah IFM / WIP-FCC
+        // 2. Jika produk belum dipilih (baru buka form atau baru pilih Lini Produksi):
+        //    - Default awal adalah Standar Karton Pabrik (Box 6 Kg, 3 kolom karton lengkap).
+        //    - Hanya beralih ke non-IFM jika user memilih lini selain IFL (Manual, Berko, Barco, dll)
+        let isIfm = false;
+        if (hasExplicitProduct) {
+            isIfm = Boolean(
+                prodCd.includes('FCC') || 
+                prodCd.includes('IFM') || 
+                prodNm.includes('WIP-FCC') || 
+                (prodNm.includes('IFM') && !prodNm.includes('MANUAL')) ||
+                (prodNm.includes('TANPA BUMBU') && !prodNm.includes('JUMBO'))
+            );
+        } else {
+            const isNonIfmLini = Boolean(
+                lini && (
+                    lini.toUpperCase().includes('MANUAL') || 
+                    lini.toUpperCase().includes('BERKO') || 
+                    lini.toUpperCase().includes('BARCO') || 
+                    lini.toUpperCase().includes('SAWIT') || 
+                    lini.toUpperCase().includes('NO SALT') || 
+                    lini.toUpperCase().includes('BALQI') ||
+                    lini.toUpperCase().includes('RETAIL')
+                ) && !lini.toUpperCase().includes('IFL') && !lini.toUpperCase().includes('IFM')
+            );
+            isIfm = !isNonIfmLini;
+        }
+
+        // Cek apakah produk adalah Olahan Curah WIP (Timbangan kg di Bagian 7)
         const isWip = Boolean(
-            selectedKategori.toUpperCase().includes('WIP') || 
-            lini.toUpperCase().includes('PENGGORENGAN') || 
-            lini.toUpperCase().includes('BERKO') || 
-            lini.toUpperCase().includes('BARCO') || 
-            lini.toUpperCase().includes('SAWIT') || 
-            lini.toUpperCase().includes('NO SALT') || 
-            lini.toUpperCase().includes('BALQI') ||
-            lini.toUpperCase().includes('KERIPIK')
+            !isIfm && (
+                prodJenis === 'WIP' ||
+                selectedKategori.toUpperCase().includes('WIP') || 
+                lini.toUpperCase().includes('BERKO') || 
+                lini.toUpperCase().includes('BARCO') || 
+                lini.toUpperCase().includes('SAWIT') || 
+                lini.toUpperCase().includes('NO SALT') || 
+                lini.toUpperCase().includes('BALQI')
+            )
         );
 
         // Elemen-elemen DOM
@@ -270,19 +300,16 @@
         if (sectionShift) sectionShift.style.display = 'block';
 
         if (isIfm) {
-            // MODE IFM: Nomor Karton Awal & Akhir WAJIB tampil
+            // MODE IFM: Nomor Karton Awal & Akhir WAJIB tampil (3 kolom: Qty Karton, No Awal, No Akhir)
             if (colAwal) colAwal.style.display = 'block';
             if (colAkhir) colAkhir.style.display = 'block';
             if (colQtyKarton) colQtyKarton.style.display = 'block';
-            if (rowShiftKartonGrid) rowShiftKartonGrid.style.gridTemplateColumns = '1.2fr 1fr 1fr 1fr';
-
-            if (cardHeaderTitle) cardHeaderTitle.textContent = '2. Shift Kerja, Penomoran Batch & Kemasan Karton (Standar Indofood IFL / IFM)';
-            if (cardHeaderBadge) {
-                cardHeaderBadge.innerHTML = 'Format Batch Karton: [Shift][NoAwal] - [Shift][NoAkhir]';
-                cardHeaderBadge.style.background = '#f1f5f9';
-                cardHeaderBadge.style.color = '#334155';
-                cardHeaderBadge.style.borderColor = '#cbd5e1';
+            if (rowShiftKartonGrid) {
+                rowShiftKartonGrid.style.display = 'grid';
+                rowShiftKartonGrid.style.gridTemplateColumns = '1.2fr 1fr 1fr';
             }
+
+            if (cardHeaderTitle) cardHeaderTitle.textContent = '3. Penomoran Batch & Kemasan Karton (Standar Indofood IFL / IFM)';
             if (labelKartonTitle) labelKartonTitle.innerHTML = 'Karton Selesai <span style="color: #ef4444;">*</span>';
             if (unitKartonSuffix) unitKartonSuffix.textContent = 'Box 6 Kg';
             if (liveEstimasiDesc) liveEstimasiDesc.textContent = '(Netto 6 Kg/Box)';
@@ -292,11 +319,11 @@
             if (colAkhir) colAkhir.style.display = 'none';
 
             if (isWip) {
-                // Curah WIP: Kuantitas diinput langsung pada timbangan kg di Bagian 7
+                // Curah WIP: Kuantitas diinput langsung pada timbangan kg di Bagian 2
                 if (colQtyKarton) colQtyKarton.style.display = 'none';
-                if (rowShiftKartonGrid) rowShiftKartonGrid.style.gridTemplateColumns = '1fr';
+                if (rowShiftKartonGrid) rowShiftKartonGrid.style.display = 'none';
 
-                if (cardHeaderTitle) cardHeaderTitle.textContent = '2. Shift Kerja & Kode Batch Produksi (Olahan Curah WIP)';
+                if (cardHeaderTitle) cardHeaderTitle.textContent = '3. Kode Batch Produksi (Olahan Curah WIP)';
                 if (cardHeaderBadge) {
                     cardHeaderBadge.innerHTML = 'Format Batch: Tanggal (DD MM YYYY)';
                     cardHeaderBadge.style.background = '#f1f5f9';
@@ -306,9 +333,12 @@
             } else {
                 // Barang Jadi Reguler Mirasa (Ping-Ping, Maksi, Jumbo, dll)
                 if (colQtyKarton) colQtyKarton.style.display = 'block';
-                if (rowShiftKartonGrid) rowShiftKartonGrid.style.gridTemplateColumns = '1.2fr 1fr';
+                if (rowShiftKartonGrid) {
+                    rowShiftKartonGrid.style.display = 'grid';
+                    rowShiftKartonGrid.style.gridTemplateColumns = 'minmax(250px, 360px)';
+                }
 
-                if (cardHeaderTitle) cardHeaderTitle.textContent = '2. Shift Kerja, Penomoran Batch & Kemasan Hasil Produksi';
+                if (cardHeaderTitle) cardHeaderTitle.textContent = '3. Penomoran Batch & Kemasan Hasil Produksi';
                 if (cardHeaderBadge) {
                     cardHeaderBadge.innerHTML = 'Format Batch: Tanggal (DD MM YYYY)';
                     cardHeaderBadge.style.background = '#f1f5f9';
@@ -321,24 +351,34 @@
             }
         }
 
-        // Hitung nomor akhir: awal + qty - 1
+        // Hitung nomor akhir: awal + qty - 1 (hanya jika nomor karton diisi)
         let noAkhir = noAwal;
-        if (qtyKarton > 0) {
-            noAkhir = noAwal + qtyKarton - 1;
-        }
         const inputAkhir = document.getElementById('no_karton_akhir');
-        if (inputAkhir) inputAkhir.value = noAkhir;
+        if (hasKartonInput) {
+            if (qtyKarton > 0) {
+                noAkhir = noAwal + qtyKarton - 1;
+            }
+            if (inputAkhir) inputAkhir.value = noAkhir;
+        } else {
+            if (inputAkhir) inputAkhir.value = '';
+        }
 
         // Kode Batch: IFM vs Reguler Mirasa
         let batchCode = '';
-        if (isIfm) {
+        if (isIfm && hasKartonInput) {
             if (qtyKarton > 0) {
                 batchCode = `${shift}${pad4(noAwal)} - ${shift}${pad4(noAkhir)}`;
             } else {
                 batchCode = `${shift}${pad4(noAwal)} - ${shift}${pad4(noAwal)}`;
             }
+            if (cardHeaderBadge) {
+                cardHeaderBadge.innerHTML = 'Format Batch Karton: [Shift][NoAwal] - [Shift][NoAkhir]';
+                cardHeaderBadge.style.background = '#f1f5f9';
+                cardHeaderBadge.style.color = '#334155';
+                cardHeaderBadge.style.borderColor = '#cbd5e1';
+            }
         } else {
-            // Format Batch Tanggal Persis Buku Persediaan Excel PT Mirasa: DD MM YYYY (cth: 02 01 2026)
+            // Format Batch Tanggal Murni: DD MM YYYY
             if (tgl) {
                 const parts = tgl.split('-');
                 if (parts.length === 3) {
@@ -350,6 +390,13 @@
                 const m = String(now.getMonth() + 1).padStart(2, '0');
                 const y = now.getFullYear();
                 batchCode = `${d} ${m} ${y}`;
+            }
+
+            if (cardHeaderBadge && isIfm && !hasKartonInput) {
+                cardHeaderBadge.innerHTML = 'Format Batch: Tanggal Murni (DD MM YYYY) <span style="font-weight: 500; font-size: 0.7rem; color: #64748b;">(No. Karton Dikosongkan)</span>';
+                cardHeaderBadge.style.background = '#f1f5f9';
+                cardHeaderBadge.style.color = '#334155';
+                cardHeaderBadge.style.borderColor = '#cbd5e1';
             }
         }
 
@@ -424,6 +471,7 @@
 
         window.updateKartonRangeAndBatch();
         window.syncBatchToOutputItems();
+        window.updateStickerPreview();
     };
 
     // 4. Update Tampilan Stiker Karton Fisik / Kemasan Retail
@@ -437,15 +485,42 @@
         const liniSelect = document.getElementById('lini_produksi');
         const selectedOpt = liniSelect?.selectedOptions?.[0];
         const lini = liniSelect?.value || '';
-        const selectedTipe = selectedOpt?.getAttribute('data-tipe');
-        const isIfm = Boolean(
-            lini && (
-                selectedTipe === 'IFM' || 
-                lini.toUpperCase().includes('IFM') || 
-                lini.toUpperCase().includes('IFL') || 
-                lini.toUpperCase().includes('INDOFOOD')
-            )
-        );
+
+        // Deteksi produk terpilih di baris pertama tabel output hasil produksi
+        const firstFgSel = document.querySelector('#tableOutputFg tbody tr:first-child .select-fg-barang')
+            || document.querySelector('.select-fg-barang');
+        const firstOpt = firstFgSel?.selectedOptions?.[0];
+        const prodCd = (firstOpt?.dataset?.cd || firstOpt?.getAttribute('data-cd') || '').toUpperCase();
+        const prodNm = (firstOpt?.dataset?.nm || firstOpt?.getAttribute('data-nm') || firstOpt?.textContent || '').trim();
+        const prodSatuan = (firstOpt?.dataset?.satuan || firstOpt?.getAttribute('data-satuan') || '').trim();
+
+        // Format Standar Indofood IFM Box 6 Kg:
+        // 1. Jika produk sudah dipilih di tabel: aktif HANYA jika produknya adalah IFM / WIP-FCC
+        // 2. Jika produk belum dipilih (baru pilih Lini Produksi): default ke standar karton pabrik kecuali memilih lini non-IFM
+        const hasExplicitProduct = Boolean(firstOpt && firstOpt.value);
+        let isIfm = false;
+        if (hasExplicitProduct) {
+            isIfm = Boolean(
+                prodCd.includes('FCC') || 
+                prodCd.includes('IFM') || 
+                prodNm.toUpperCase().includes('WIP-FCC') || 
+                (prodNm.toUpperCase().includes('IFM') && !prodNm.toUpperCase().includes('MANUAL')) ||
+                (prodNm.toUpperCase().includes('TANPA BUMBU') && !prodNm.toUpperCase().includes('JUMBO'))
+            );
+        } else {
+            const isNonIfmLini = Boolean(
+                lini && (
+                    lini.toUpperCase().includes('MANUAL') || 
+                    lini.toUpperCase().includes('BERKO') || 
+                    lini.toUpperCase().includes('BARCO') || 
+                    lini.toUpperCase().includes('SAWIT') || 
+                    lini.toUpperCase().includes('NO SALT') || 
+                    lini.toUpperCase().includes('BALQI') ||
+                    lini.toUpperCase().includes('RETAIL')
+                ) && !lini.toUpperCase().includes('IFL') && !lini.toUpperCase().includes('IFM')
+            );
+            isIfm = !isNonIfmLini;
+        }
 
         // Format tanggal sticker DD MMM YYYY (cth: 19 AUG 2022 / 02 OKT 2026)
         const monthNamesUpper = ['JAN', 'FEB', 'MAR', 'APR', 'MEI', 'JUN', 'JUL', 'AUG', 'SEP', 'OKT', 'NOV', 'DES'];
@@ -489,7 +564,7 @@
             const stTime = document.getElementById('stTime');
             const stPlantCode = document.getElementById('stPlantCode');
 
-            if (isIfm || !lini) {
+            if (isIfm) {
                 if (stMainTitle) stMainTitle.textContent = 'WIP-FCC';
                 if (stNetto) stNetto.textContent = '6 kg';
                 if (stGross) stGross.textContent = '7.08 kg';
@@ -501,10 +576,10 @@
                 }
                 if (stPlantCode) stPlantCode.textContent = 'M029 / - / ISA';
             } else {
-                // Mode Barang Jadi Reguler Mirasa
-                const productName = lini.replace('PRODUKSI ', '') || 'KEMASAN RETAIL';
-                if (stMainTitle) stMainTitle.textContent = productName;
-                if (stNetto) stNetto.textContent = 'KEMASAN BAL';
+                // Mode Barang Jadi Reguler Mirasa (Jumbo, Maksi, Ping-Ping, dll)
+                const cleanName = prodNm ? prodNm.replace(/^\[.*?\]\s*/, '') : (lini ? lini.replace('PRODUKSI ', '') : 'KEMASAN RETAIL');
+                if (stMainTitle) stMainTitle.textContent = cleanName.toUpperCase();
+                if (stNetto) stNetto.textContent = prodSatuan ? prodSatuan.toUpperCase() : 'KEMASAN BAL';
                 if (stGross) stGross.textContent = 'STANDAR';
                 if (stShiftKarton) {
                     const cartonNum = noAwal > 0 ? noAwal : 1;
@@ -1279,6 +1354,44 @@
         wrapper.style.display = 'block';
     };
 
+    // Helper: Proteksi Anti-Duplikat Barang Hasil Produksi
+    // Mencegah pemilihan barang yang sama di baris lain dalam 1 formulir dokumen produksi
+    window.updateFgDuplicateProtection = function () {
+        const tbody = document.getElementById('tbodyOutputFg');
+        if (!tbody) return;
+
+        const selects = Array.from(tbody.querySelectorAll('.select-fg-barang'));
+        const selectedValues = new Set();
+        selects.forEach(sel => {
+            if (sel.value) {
+                selectedValues.add(sel.value.toString());
+            }
+        });
+
+        selects.forEach(sel => {
+            const currentVal = sel.value ? sel.value.toString() : '';
+
+            Array.from(sel.options).forEach(opt => {
+                if (!opt.value) return; // Lewati placeholder
+                const optVal = opt.value.toString();
+
+                if (!opt.dataset.origText) {
+                    opt.dataset.origText = opt.textContent.trim().replace(/\s*──\s*\(Sudah Dipilih\)/g, '');
+                }
+
+                if (selectedValues.has(optVal) && optVal !== currentVal) {
+                    opt.disabled = true;
+                    if (!opt.textContent.includes('(Sudah Dipilih)')) {
+                        opt.textContent = `${opt.dataset.origText} ── (Sudah Dipilih)`;
+                    }
+                } else {
+                    opt.disabled = false;
+                    opt.textContent = opt.dataset.origText;
+                }
+            });
+        });
+    };
+
     // 13. Logika Baris Dinamis Output Barang Hasil Produksi (Tabel Terpadu)
     let fgRowCounter = document.querySelectorAll('.row-output-fg').length || 1;
     window.addFgRow = function (initial) {
@@ -1382,6 +1495,9 @@
 
         renumberFgRows();
         window.calcAll();
+        if (typeof window.updateFgDuplicateProtection === 'function') {
+            window.updateFgDuplicateProtection();
+        }
     };
 
 
@@ -1402,6 +1518,9 @@
         row.remove();
         renumberFgRows();
         window.calcAll();
+        if (typeof window.updateFgDuplicateProtection === 'function') {
+            window.updateFgDuplicateProtection();
+        }
     };
 
     function renumberFgRows() {
@@ -1463,7 +1582,27 @@
         const opt = sel.selectedOptions[0];
         if (!opt || !opt.value) {
             resetFgBarangRow(sel, idx);
+            if (typeof window.updateFgDuplicateProtection === 'function') {
+                window.updateFgDuplicateProtection();
+            }
             return;
+        }
+
+        // Proteksi Anti-Duplikat: Cek apakah barang ini sudah dipilih di baris lain
+        const currentVal = sel.value;
+        if (currentVal) {
+            const tbody = document.getElementById('tbodyOutputFg');
+            const otherSelects = Array.from(tbody?.querySelectorAll('.select-fg-barang') || []).filter(s => s !== sel);
+            const isDuplicate = otherSelects.some(s => s.value === currentVal);
+            if (isDuplicate) {
+                alert('⚠️ Barang ini sudah dipilih pada baris lain!\n\nUntuk produk yang sama dalam 1 dokumen produksi, silakan gabungkan jumlah kuantitasnya pada baris yang sudah ada.');
+                sel.value = '';
+                resetFgBarangRow(sel, idx);
+                if (typeof window.updateFgDuplicateProtection === 'function') {
+                    window.updateFgDuplicateProtection();
+                }
+                return;
+            }
         }
 
         const jenis = opt.dataset.jenis || 'FG';
@@ -1490,12 +1629,18 @@
         if (labelSatuan) labelSatuan.textContent = satuan;
         if (inputSatuan) inputSatuan.value = satuan;
 
-        // ── Auto-assign batch format berdasarkan jenis produk:
-        // Kemasan karton (IFM/FCC) → format range (A0001 - A0243)
-        // WIP Curah / Berko dll    → format tanggal (07 10 2026)
-        applyBatchBadgeToRow(idx, sel);
-
+        // Auto-assign batch format berdasarkan jenis produk
         window.onQtyHasilInput(idx);
+
+        if (typeof window.updateKartonRangeAndBatch === 'function') {
+            window.updateKartonRangeAndBatch(true);
+        }
+        if (typeof window.updateStickerPreview === 'function') {
+            window.updateStickerPreview();
+        }
+        if (typeof window.updateFgDuplicateProtection === 'function') {
+            window.updateFgDuplicateProtection();
+        }
     };
 
     window.onQtyHasilInput = function (idx, skipSyncKarton = false) {
@@ -1582,18 +1727,22 @@
             return;
         }
 
-        const isManual = currentLini.includes('MANUAL') || currentCd === 'MANUAL';
-        if (isManual) {
-            // Sesuai aturan: jika lini produksinya manual, tabel hasil barang produksi tetap tampilan default "pilih barang hasil produksi"
-            resetFgBarangRow(selBarang, idx);
+        // Jika user sudah memilih barang di baris ini, jangan ditimpa / di-overwrite
+        if (selBarang.value && selBarang.selectedIndex > 0) {
+            return;
+        }
+
+        // LINI IFL & LINI MANUAL: Merupakan lini mesin penggorengan umum (Continuous Fryer atau Manual).
+        // Dapat digunakan untuk memproduksi produk apa saja (Produk Jumbo, IFM, Maksi, Ping-Ping, Berko, dll).
+        // Jangan paksa / kunci ke WIP-FCC, beri kebebasan operator memilih produk hasil produksi di tabel Bagian 7.
+        const isIflOrManual = currentLini.includes('IFL') || currentLini.includes('MANUAL') || currentCd === 'IFL' || currentCd === 'MANUAL';
+        if (isIflOrManual) {
             return;
         }
 
         const isIfm = currentLini.includes('IFM') || 
-                      currentLini.includes('IFL') || 
                       currentLini.includes('INDOFOOD') || 
                       currentCd === 'IFM' || 
-                      currentCd === 'IFL' || 
                       currentTipe === 'IFM';
 
         for (let i = 0; i < selBarang.options.length; i++) {
@@ -1723,6 +1872,11 @@
         const valTkNilai = document.getElementById('tk_total_nilai')?.value;
         if ((!valTkJml || valTkJml === '0') && (!valTkNilai || valTkNilai === '0')) {
             window.syncLaborFromKaryawan();
+        }
+
+        // Inisialisasi proteksi anti-duplikat pilihan barang hasil produksi
+        if (typeof window.updateFgDuplicateProtection === 'function') {
+            window.updateFgDuplicateProtection();
         }
     });
 

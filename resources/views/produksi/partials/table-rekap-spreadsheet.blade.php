@@ -1,8 +1,3 @@
-{{-- ════════════════════════════════════════════════════════════════ --}}
-{{--  TABEL REKAPITULASI HPP FORMAT SPREADSHEET EXCEL LENGKAP (30 KOLOM) --}}
-{{--  ERP PT Mirasa Food Industry - 100% Mengikuti Format Lembar Excel  --}}
-{{-- ════════════════════════════════════════════════════════════════ --}}
-
 <div class="card" style="margin-bottom: 2rem;">
     <div class="card-header" style="background: #ffffff; padding: 0.875rem 1.25rem; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
         <div style="display: flex; align-items: center; gap: 0.5rem;">
@@ -13,7 +8,7 @@
                 {{ $report['count'] }} Hari Produksi
             </span>
         </div>
-        {{-- Switch Mode Kembali ke Ringkas --}}
+
         <div class="view-mode-pill-group">
             <button type="button" class="btn-view-mode" onclick="switchHppViewMode('compact')" title="Tampilan modern 7 kolom pas di layar tanpa scroll">
                 <span>Mode Ringkas</span>
@@ -60,7 +55,7 @@
                     <th colspan="2" class="th-green" style="background-color: #92d050 !important; color: #c00000 !important; border: 1px solid #3f6212 !important; padding: 0.35rem 0.4rem; text-align: center !important; vertical-align: middle !important; font-weight: 900;">B. PNGOLHN LIMBAH</th>
 
                     {{-- Under TOTAL WIP Sesuai Format Asli Excel Mirasa (13 Kolom) --}}
-                    <th class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.35rem 0.4rem; min-width: 70px; text-align: center !important; vertical-align: middle !important;">IFL</th>
+                    <th class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.35rem 0.4rem; min-width: 70px; text-align: center !important; vertical-align: middle !important;" title="Lini Otomatis Indofood (IFM)">IFM</th>
                     <th colspan="6" class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.35rem 0.4rem; text-align: center !important; vertical-align: middle !important;">MANUAL</th>
                     <th colspan="4" class="th-green" style="background-color: #92d050 !important; color: #000000 !important; border: 1px solid #3f6212 !important; padding: 0.35rem 0.4rem; text-align: center !important; vertical-align: middle !important;">BERKO + LENGKET</th>
                     <th rowspan="2" class="th-green" style="background-color: #92d050 !important; color: #002060 !important; border: 1px solid #3f6212 !important; padding: 0.35rem 0.4rem; min-width: 85px; line-height: 1.2; text-align: center !important; vertical-align: middle !important; font-weight: 900;">TOTAL<br>KG</th>
@@ -332,21 +327,17 @@
                                     <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                                 </button>
                                 <div id="{{ $rekapMenuId }}" class="action-dropdown-menu">
-                                    @if(($d['shift_count'] ?? 1) > 1 && !empty($d['shift_records']))
-                                        <div style="padding: 0.35rem 0.75rem; font-size: 0.675rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; background: #f8fafc; border-bottom: 1px solid #f1f5f9;">
-                                            Rincian Shift ({{ $d['shift_count'] }} Dokumen)
-                                        </div>
-                                        @foreach($d['shift_records'] as $sRec)
-                                            <a href="{{ route('produksi.show', $sRec['produksi_id']) }}" class="action-dropdown-item">
-                                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                                                <span>Detail Shift {{ $sRec['shift_cd'] }} ({{ $sRec['produksi_no'] }})</span>
-                                            </a>
-                                            <a href="{{ route('produksi.cetak-stiker', $sRec['produksi_id']) }}" class="action-dropdown-item" target="_blank" style="padding-left: 1.75rem; font-size: 0.75rem; color: #475569;">
-                                                <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-                                                <span>Cetak Stiker Shift {{ $sRec['shift_cd'] }}</span>
-                                            </a>
-                                        @endforeach
-                                        <div class="action-dropdown-divider"></div>
+                                    <a href="{{ route('produksi.show', $d['produksi_id']) }}" class="action-dropdown-item">
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                        <span>Lihat Detail Dokumen</span>
+                                    </a>
+                                    @if(Auth::user()->canCreateProduksi())
+                                        <a href="{{ route('produksi.adjust', $d['produksi_id']) }}" class="action-dropdown-item">
+                                            <svg width="14" height="14" fill="none" stroke="#d97706" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                            <span>Adjustment HPP</span>
+                                        </a>
+                                    @endif
+                                    <div class="action-dropdown-divider"></div>
                                         @php
                                             $tglSpreadsheet = sprintf('%02d/%02d/%04d', $d['day'], $month, $year);
                                         @endphp
@@ -354,24 +345,6 @@
                                             <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                                             <span>Hapus Data Produksi</span>
                                         </button>
-                                    @else
-                                        <a href="{{ route('produksi.show', $d['produksi_id']) }}" class="action-dropdown-item">
-                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                                            <span>Detail Dokumen</span>
-                                        </a>
-                                        <a href="{{ route('produksi.cetak-stiker', $d['produksi_id']) }}" class="action-dropdown-item" target="_blank">
-                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-                                            <span>Cetak Stiker Karton</span>
-                                        </a>
-                                        <div class="action-dropdown-divider"></div>
-                                        @php
-                                            $tglSpreadsheet = sprintf('%02d/%02d/%04d', $d['day'], $month, $year);
-                                        @endphp
-                                        <button type="button" class="action-dropdown-item danger-item" onclick="openDeleteProduksiModal({{ $d['produksi_id'] }}, '{{ $d['produksi_no'] }}', '{{ $tglSpreadsheet }}', '{{ $d['shift_cd'] }}', '{{ $d['batch_wip_no'] }}')">
-                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                            <span>Hapus Produksi</span>
-                                        </button>
-                                    @endif
                                 </div>
                             @else
                                 <span style="color: #cbd5e1;">-</span>

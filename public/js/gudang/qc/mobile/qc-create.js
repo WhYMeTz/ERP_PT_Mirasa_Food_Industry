@@ -88,6 +88,15 @@
             hasPanenFields: false,
             sampleUnit: 'gr',
             showTab3: false,
+        },
+        'BUMBU': {
+            docNo: 'MFI/HACCP-04/FRM-03/064/IX/2023',
+            title: 'Sampling Mutu Bumbu Tabur',
+            desc: 'Uji Fisik Bumbu (Kering, Homogen, Bau Standar) & CoA / Halal',
+            labelNamaJenis: 'NAMA JENIS (Contoh: Bumbu Balado, Keju Manis)',
+            hasPanenFields: false,
+            sampleUnit: 'gr',
+            showTab3: false,
         }
     };
 
@@ -98,7 +107,7 @@
         if (katInput) katInput.value = type;
 
         // Update styling tombol pilihan komoditas
-        ['SINGKONG', 'MINYAK', 'PLASTIK', 'KARTON', 'MSG', 'GARAM', 'PERENYAH'].forEach(k => {
+        ['SINGKONG', 'MINYAK', 'PLASTIK', 'KARTON', 'MSG', 'GARAM', 'PERENYAH', 'BUMBU'].forEach(k => {
             const btn = document.getElementById(`btnKomoditas_${k}`);
             if (btn) {
                 if (k === type) {
@@ -264,7 +273,7 @@
         if (singkongStockWidget) singkongStockWidget.style.display = (type === 'SINGKONG') ? 'block' : 'none';
         if (minyakStockWidget) minyakStockWidget.style.display = (type === 'MINYAK') ? 'block' : 'none';
 
-        const isBP = ['MSG', 'GARAM', 'PERENYAH'].includes(type);
+        const isBP = ['MSG', 'GARAM', 'PERENYAH', 'BUMBU'].includes(type);
 
         // Toggle containers inputan komoditas di Tahap 2
         const cSingkong = document.getElementById('singkongContainer');
@@ -315,7 +324,8 @@
                     const isMatch = (comm === type) || 
                                     (type === 'GARAM' && (comm === 'GARAM' || optText.includes('GARAM') || optText.includes('SALT'))) ||
                                     (type === 'MSG' && (comm === 'MSG' || optText.includes('MSG') || optText.includes('MONOSODIUM'))) ||
-                                    (type === 'PERENYAH' && (comm === 'PERENYAH' || optText.includes('PERENYAH')));
+                                    (type === 'PERENYAH' && (comm === 'PERENYAH' || optText.includes('PERENYAH') || optText.includes('STPP'))) ||
+                                    (type === 'BUMBU' && (comm === 'BUMBU' || optText.includes('BUMBU') || optText.includes('BALADO') || optText.includes('SEASONING')));
 
                     if (isMatch) {
                         opt.style.display = '';
@@ -357,7 +367,7 @@
     };
 
     window.syncNamaRmOnKomoditasSwitch = function (type) {
-        const isBP = ['MSG', 'GARAM', 'PERENYAH'].includes(type);
+        const isBP = ['MSG', 'GARAM', 'PERENYAH', 'BUMBU'].includes(type);
         const namaJenisEl = document.getElementById('namaJenisInput');
         if (!namaJenisEl) return;
 
@@ -450,7 +460,7 @@
             } else if (currentKomoditas === 'KARTON') {
                 targetJenis = 'KEMASAN';
                 filterLabel = 'Filter: 📦 Vendor Karton';
-            } else if (['MSG', 'GARAM', 'PERENYAH'].includes(currentKomoditas)) {
+            } else if (['MSG', 'GARAM', 'PERENYAH', 'BUMBU'].includes(currentKomoditas)) {
                 targetJenis = 'BUMBU_BP';
                 filterLabel = `Filter: 🧂 Bumbu & ${currentKomoditas}`;
             }
@@ -589,8 +599,8 @@
             } else if (currentKomoditas === 'KARTON') {
                 targetKomoditas = ['KARTON'];
                 filterLabel = 'Filter: 📦 Karton Box';
-            } else if (['MSG', 'GARAM', 'PERENYAH'].includes(currentKomoditas)) {
-                targetKomoditas = [currentKomoditas, 'BUMBU'];
+            } else if (['MSG', 'GARAM', 'PERENYAH', 'BUMBU'].includes(currentKomoditas)) {
+                targetKomoditas = [currentKomoditas];
                 filterLabel = `Filter: 🧂 Bahan Penolong (${currentKomoditas})`;
             }
         } else if (currentPoCategory === 'SINGKONG') {
@@ -669,14 +679,29 @@
     }
 
     // 7. Sinkronisasi Kuantitas Muatan
-    window.syncQuantityFields = function () {
+    window.syncQuantityFields = function (source) {
         const inputSJ = document.getElementById('inputJumlahSJ');
         const inputPabrik = document.getElementById('inputJumlahPabrik');
+
+        if (source === 'sj' && inputSJ && inputPabrik) {
+            if (!inputPabrik.value || parseFloat(inputPabrik.value) === 0 || inputPabrik.dataset.autoFilled === 'true') {
+                inputPabrik.value = inputSJ.value;
+                inputPabrik.dataset.autoFilled = 'true';
+            }
+        } else if (source === 'pabrik' && inputPabrik) {
+            inputPabrik.dataset.autoFilled = 'false';
+        }
+
         const sj = parseFloat(inputSJ ? inputSJ.value : 0) || 0;
         const pabrik = parseFloat(inputPabrik ? inputPabrik.value : 0) || sj;
 
         if (currentKomoditas === 'SINGKONG') {
-            const gross0 = document.getElementById('gross_0');
+            let gross0 = document.getElementById('gross_0');
+            const sContainer = document.getElementById('singkongContainer');
+            if (!gross0 && sContainer && typeof window.createItemCard === 'function') {
+                window.createItemCard({ gross: pabrik });
+                gross0 = document.getElementById('gross_0');
+            }
             if (gross0 && inputPabrik && inputPabrik.value !== '') {
                 gross0.value = pabrik > 0 ? pabrik : '';
                 window.calculateCard(0);
@@ -693,7 +718,7 @@
         } else if (currentKomoditas === 'KARTON') {
             const el = document.getElementById('kartonQtyGross');
             if (el && (!el.value || el.value == 0)) el.value = pabrik > 0 ? Math.round(pabrik) : '';
-        } else if (['MSG', 'GARAM', 'PERENYAH'].includes(currentKomoditas)) {
+        } else if (['MSG', 'GARAM', 'PERENYAH', 'BUMBU'].includes(currentKomoditas)) {
             const el = document.getElementById('bpQtyGross');
             if (el && (!el.value || el.value == 0)) el.value = pabrik > 0 ? pabrik : '';
         }
@@ -825,6 +850,11 @@
             url.searchParams.set('tahap', (tahap === 'PENGUJIAN_2') ? '2' : '1');
             window.history.replaceState({}, '', url.toString());
         } catch (e) {}
+
+        window.currentTahapUji = (tahap === 'PENGUJIAN_2' || tahap === 2) ? 2 : 1;
+        if (typeof window.calculateAll === 'function') {
+            window.calculateAll();
+        }
     };
 
     window.setTahapUji = function (tahap) {
@@ -904,6 +934,10 @@
 
         const totalSJ = parseFloat(d.sj_qty || 0);
         const p1Gross = parseFloat(d.gross || 0);
+        const p1Reject = parseFloat(d.reject || 0);
+        const p1RefraksiPct = parseFloat(d.refraksi || 0);
+        const p1RefKg = p1Gross * (p1RefraksiPct / 100);
+        window.currentP1Netto = typeof d.netto === 'number' && d.netto > 0 ? d.netto : Math.max(0, p1Gross - p1RefKg - p1Reject);
         
         let estimasiGrossUji2 = 0;
         let isFullUnloaded = false;
@@ -924,6 +958,16 @@
         if (inputPabrik) inputPabrik.value = estimasiGrossUji2;
 
         // Auto-fill Singkong Item 0
+        const sContainer = document.getElementById('singkongContainer');
+        if (sContainer && sContainer.querySelectorAll('.qc-item-card').length === 0 && typeof window.createItemCard === 'function') {
+            window.createItemCard({
+                barang_id: d.barang_id,
+                gross: estimasiGrossUji2,
+                refraksi_persen: d.refraksi || 0,
+                grade_cd: d.grade_cd || 'A'
+            });
+        }
+
         if (d.barang_id) {
             const bSel = document.getElementById('barang_select_0');
             if (bSel) {
@@ -935,15 +979,17 @@
         const gross0 = document.getElementById('gross_0');
         if (gross0) {
             gross0.value = estimasiGrossUji2;
-            window.calculateCard(0);
         }
         if (d.refraksi) {
             const ref0 = document.getElementById('refraksi_0');
             if (ref0) {
                 ref0.value = d.refraksi;
-                window.calculateCard(0);
             }
         }
+        if (d.grade_cd && typeof window.selectItemGrade === 'function') {
+            window.selectItemGrade(0, d.grade_cd);
+        }
+        window.calculateCard(0);
 
         // Tampilkan banner informatif hasil Pengujian 1 vs Pengujian 2
         const banner = document.getElementById('bannerSelectedP1');
@@ -975,6 +1021,9 @@
         if (batchNo) batchNo.value = '';
         if (selectP1) selectP1.value = '';
         if (banner) banner.style.display = 'none';
+
+        window.currentP1Netto = 0;
+        window.calculateAll();
 
         window.showQcToast('Pilihan Direset', 'Mode input kedatangan Pengujian 2 mandiri diaktifkan.', null, 1, true);
     };
@@ -1075,6 +1124,10 @@
         }
 
         window.updateFloatingDock(tabNumber);
+
+        if (typeof window.calculateAll === 'function') {
+            window.calculateAll();
+        }
 
         try {
             sessionStorage.setItem('qc_active_tab', tabNumber);
@@ -1334,7 +1387,7 @@
             injectHiddenInput('items[0][spesifikasi_standar]', document.querySelector('input[name="karton_spesifikasi_standar"]')?.value || '');
             injectHiddenInput('items[0][catatan_dtl]', document.querySelector('textarea[name="karton_komentar"]')?.value || '');
             injectHiddenInput('catatan_umum', document.querySelector('textarea[name="karton_komentar"]')?.value || '');
-        } else if (['MSG', 'GARAM', 'PERENYAH'].includes(currentKomoditas)) {
+        } else if (['MSG', 'GARAM', 'PERENYAH', 'BUMBU'].includes(currentKomoditas)) {
             const bId = document.getElementById('bpBarangSelect').value;
             const bOpt = document.getElementById('bpBarangSelect')?.selectedOptions[0];
             const bNm = bOpt ? (bOpt.getAttribute('data-nama') || bOpt.text.split(' - ')[1]?.split(' (')[0] || bOpt.text) : currentKomoditas;
@@ -1364,6 +1417,11 @@
             const firstSel = document.querySelector('.item-barang-select');
             const firstMat = firstSel ? RAW_MATERIALS.find(b => b.barang_id == firstSel.value) : null;
             injectHiddenInput('nama_jenis', curNamaJenis || (firstMat ? firstMat.barang_nm : 'Singkong Basah Curah'));
+            const selectedPodtl = document.getElementById('inputSelectedPodtlId')?.value;
+            if (selectedPodtl) {
+                injectHiddenInput('items[0][podtl_id]', selectedPodtl);
+                injectHiddenInput('podtl_id', selectedPodtl);
+            }
         }
     }
 
@@ -1582,57 +1640,6 @@
 
     window.recalculateAllCards = function () {
         window.calculateAll();
-    };
-
-    window.setDiskusiAction = function (action) {
-        const radioTerima = document.getElementById('radioTerima');
-        const radioTolak = document.getElementById('radioTolak');
-        const commentEl = document.querySelector('textarea[name="catatan_umum"]');
-
-        if (action === 'TOLAK_SISA') {
-            if (radioTolak) {
-                radioTolak.checked = true;
-                window.onKesimpulanChange('TOLAK');
-            }
-            if (commentEl) {
-                const note = "[PENGUJIAN 2 - DISKUSI ATASAN] Hasil sampling lapisan dalam tidak memenuhi standar (cacat/pahit). Sesuai diskusi dengan atasan, sisa muatan di atas truk DITOLAK TOTAL dan truk dipulangkan.";
-                if (!commentEl.value.includes('[PENGUJIAN 2 - DISKUSI ATASAN]')) {
-                    commentEl.value = (commentEl.value ? commentEl.value + "\n" : '') + note;
-                }
-            }
-            window.showQcToast('Tolak Sisa Muatan Dipilih', 'Kesimpulan dialihkan ke TOLAK TOTAL berdasarkan hasil diskusi atasan.', radioTolak, 3, true);
-        } else if (action === 'PENYESUAIAN_REFRAKSI') {
-            if (radioTerima) {
-                radioTerima.checked = true;
-                window.onKesimpulanChange('TERIMA');
-            }
-            const refInput = document.getElementById('refraksi_0');
-            if (refInput) {
-                const curRef = parseFloat(refInput.value || 0);
-                refInput.value = (curRef + 5.0).toFixed(1);
-                window.calculateCard(0);
-            }
-            if (commentEl) {
-                const note = "[PENGUJIAN 2 - DISKUSI ATASAN] Disetujui atasan untuk DITERIMA BERSYARAT dengan kompensasi penambahan potongan refraksi tanah/cacat afkir.";
-                if (!commentEl.value.includes('[PENGUJIAN 2 - DISKUSI ATASAN]')) {
-                    commentEl.value = (commentEl.value ? commentEl.value + "\n" : '') + note;
-                }
-            }
-            window.showQcToast('Penyesuaian Refraksi', 'Potongan refraksi ditambahkan dan dicatat pada lembar berita acara.', null, 3);
-        } else if (action === 'DOWNGRADE_B') {
-            const gSel = document.getElementById('grade_select_0');
-            if (gSel) {
-                gSel.value = 'B';
-                window.onGradeChanged(0, 'B');
-            }
-            if (commentEl) {
-                const note = "[PENGUJIAN 2 - DISKUSI ATASAN] Kualitas singkong diturunkan menjadi Grade B atas persetujuan atasan/supervisor.";
-                if (!commentEl.value.includes('[PENGUJIAN 2 - DISKUSI ATASAN]')) {
-                    commentEl.value = (commentEl.value ? commentEl.value + "\n" : '') + note;
-                }
-            }
-            window.showQcToast('Downgrade ke Grade B', 'Mutu singkong diubah ke Grade B. Periksa stok gudang.', null, 3, true);
-        }
     };
 
     // 13. Dynamic Item Card Builder untuk Singkong (Tunggal / Single Commodity)
@@ -2336,25 +2343,41 @@
         let totalReject = 0;
         let totalNetto = 0;
 
-        document.querySelectorAll('.qc-item-card').forEach(card => {
-            const grossInput = card.querySelector('input[id^="gross_"]');
-            const refraksiInput = card.querySelector('input[id^="refraksi_"]');
-            const rejectInput = card.querySelector('input[id^="reject_"]');
+        const cards = document.querySelectorAll('.qc-item-card');
+        if (cards.length > 0) {
+            cards.forEach(card => {
+                const grossInput = card.querySelector('input[id^="gross_"]');
+                const refraksiInput = card.querySelector('input[id^="refraksi_"]');
+                const rejectInput = card.querySelector('input[id^="reject_"]');
 
-            if (grossInput) {
-                const gross = parseFloat(grossInput.value) || 0;
-                const refraksiPersen = parseFloat(refraksiInput ? refraksiInput.value : 0) || 0;
-                const reject = parseFloat(rejectInput ? rejectInput.value : 0) || 0;
+                if (grossInput) {
+                    const gross = parseFloat(grossInput.value) || 0;
+                    const refraksiPersen = parseFloat(refraksiInput ? refraksiInput.value : 0) || 0;
+                    const reject = parseFloat(rejectInput ? rejectInput.value : 0) || 0;
 
-                const qtyRefraksi = (gross * (refraksiPersen / 100));
+                    const qtyRefraksi = (gross * (refraksiPersen / 100));
+                    const netto = Math.max(0, gross - qtyRefraksi - reject);
+
+                    totalGross += gross;
+                    totalRefraksi += qtyRefraksi;
+                    totalReject += reject;
+                    totalNetto += netto;
+                }
+            });
+        } else {
+            const gross0 = document.getElementById('gross_0');
+            if (gross0) {
+                const gross = parseFloat(gross0.value) || 0;
+                const refraksi = parseFloat(document.getElementById('refraksi_0')?.value) || 0;
+                const reject = parseFloat(document.getElementById('reject_0')?.value) || 0;
+                const qtyRefraksi = (gross * (refraksi / 100));
                 const netto = Math.max(0, gross - qtyRefraksi - reject);
-
                 totalGross += gross;
                 totalRefraksi += qtyRefraksi;
                 totalReject += reject;
                 totalNetto += netto;
             }
-        });
+        }
 
         const kesimpulanVal = document.getElementById('inputKesimpulanQc')?.value || document.querySelector('input[name="kesimpulan_qc"]:checked')?.value || 'TERIMA';
         const isTolakTotal = (kesimpulanVal === 'TOLAK');
@@ -2376,7 +2399,7 @@
                 sumNet.style.color = '#dc2626';
             }
             if (inputQtyTerima) inputQtyTerima.value = 0;
-            if (inputQtyTolak) inputQtyTolak.value = Math.round(totalGross);
+            if (inputQtyTolak) inputQtyTolak.value = parseFloat(totalGross.toFixed(2));
         } else {
             if (sumGross) sumGross.innerText = `${totalGross.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} KG`;
             if (sumRef) sumRef.innerText = `- ${totalRefraksi.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} KG`;
@@ -2385,13 +2408,32 @@
                 sumNet.innerText = `${totalNetto.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} KG`;
                 sumNet.style.color = '#15803d';
             }
-            if (inputQtyTerima) inputQtyTerima.value = Math.round(totalNetto);
-            if (inputQtyTolak) inputQtyTolak.value = Math.round(totalReject);
+            if (inputQtyTerima) inputQtyTerima.value = parseFloat(totalNetto.toFixed(2));
+            if (inputQtyTolak) inputQtyTolak.value = parseFloat(totalReject.toFixed(2));
         }
 
         const subcardNetto = document.getElementById('labelSubcardNetto');
         if (subcardNetto) {
             subcardNetto.innerText = `Netto: ${totalNetto.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} KG`;
+        }
+
+        // Akumulasi Pengujian 1 + Pengujian 2 (jika Pengujian 2)
+        const bannerAkumulasi = document.getElementById('bannerAkumulasiPengujian2');
+        if (bannerAkumulasi) {
+            const isTahap2 = (document.getElementById('tahapUjiInput')?.value === 'PENGUJIAN_2' || window.currentTahapUji === 2);
+            const p1Netto = parseFloat(window.currentP1Netto) || 0;
+            if (isTahap2 && p1Netto > 0) {
+                bannerAkumulasi.style.display = 'block';
+                const lblP1 = document.getElementById('lblAkumulasiNettoUji1');
+                const lblP2 = document.getElementById('lblAkumulasiNettoUji2');
+                const lblTot = document.getElementById('lblAkumulasiNettoTotal');
+                const nettoUji2 = isTolakTotal ? 0 : totalNetto;
+                if (lblP1) lblP1.innerText = `${p1Netto.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} KG`;
+                if (lblP2) lblP2.innerText = `${totalNetto.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} KG`;
+                if (lblTot) lblTot.innerText = `${(p1Netto + nettoUji2).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} KG`;
+            } else {
+                bannerAkumulasi.style.display = 'none';
+            }
         }
     };
 
@@ -2433,7 +2475,12 @@
     // 14. Pemilihan PO & Auto-fill Komoditas
     window.onPoSelected = function (select) {
         const poId = select.value;
-        if (!poId || !PO_LIST[poId]) return;
+        if (!poId || !PO_LIST[poId]) {
+            if (typeof window.renderSingkongPoItemsCards === 'function') {
+                window.renderSingkongPoItemsCards([], null);
+            }
+            return;
+        }
 
         const po = PO_LIST[poId];
         if (po.supplier_id) {
@@ -2524,8 +2571,22 @@
                 if (inSJ) inSJ.value = qty;
                 if (inPabrik) inPabrik.value = qty;
                 if (bpGross) bpGross.value = qty;
-            } else if (firstItemNm.includes('perenyah') || firstItemNm.includes('bumbu') || firstItemNm.includes('balado')) {
+            } else if (firstItemNm.includes('perenyah') || firstItemNm.includes('stpp')) {
                 window.selectKomoditas('PERENYAH');
+                const bpSelect = document.getElementById('bpBarangSelect');
+                if (bpSelect) {
+                    bpSelect.value = po.items[0].barang_id;
+                    window.syncNamaRmFromSelect(bpSelect);
+                }
+                const qty = po.items[0].sisa_qty > 0 ? po.items[0].sisa_qty : po.items[0].pesan_qty;
+                const inSJ = document.getElementById('inputJumlahSJ');
+                const inPabrik = document.getElementById('inputJumlahPabrik');
+                const bpGross = document.getElementById('bpQtyGross');
+                if (inSJ) inSJ.value = qty;
+                if (inPabrik) inPabrik.value = qty;
+                if (bpGross) bpGross.value = qty;
+            } else if (firstItemNm.includes('bumbu') || firstItemNm.includes('balado') || firstItemNm.includes('seasoning') || firstItemNm.includes('keju')) {
+                window.selectKomoditas('BUMBU');
                 const bpSelect = document.getElementById('bpBarangSelect');
                 if (bpSelect) {
                     bpSelect.value = po.items[0].barang_id;
@@ -2559,6 +2620,10 @@
                     });
                 } else {
                     window.createItemCard();
+                }
+
+                if (typeof window.renderSingkongPoItemsCards === 'function') {
+                    window.renderSingkongPoItemsCards(po.items, it ? it.podtl_id : null);
                 }
             }
 
@@ -2637,6 +2702,9 @@
             const hasCard = sContainer && sContainer.querySelectorAll('.qc-item-card').length > 0;
 
             if (config.hasParentQc) {
+                if (config.parentQcItem && config.parentQcItem.netto) {
+                    window.currentP1Netto = parseFloat(config.parentQcItem.netto) || 0;
+                }
                 const p1Select = document.getElementById('selectPendingP1');
                 if (p1Select && p1Select.value) {
                     window.onSelectPendingArrival(p1Select);

@@ -2,247 +2,219 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - ERP PT Mirasa Food Industry</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <title>Masuk ke Sistem - ERP PT Mirasa Food Industry</title>
     <link rel="icon" type="image/png" href="{{ asset('images/logo.png') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
-        body {
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 1.5rem;
-            color: #334155;
-        }
-        .login-card {
-            background: #ffffff;
-            border-radius: 16px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
-            width: 100%;
-            max-width: 460px;
-            padding: 2.5rem;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        .brand {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            margin-bottom: 2rem;
-            text-decoration: none;
-        }
-        .brand-badge {
-            background: #0284c7;
-            color: white;
-            font-weight: 800;
-            font-size: 0.875rem;
-            padding: 0.4rem 0.65rem;
-            border-radius: 8px;
-            letter-spacing: 0.05em;
-        }
-        .brand-text {
-            font-size: 1.25rem;
-            font-weight: 800;
-            color: #0f172a;
-            line-height: 1.2;
-        }
-        .brand-sub {
-            font-size: 0.75rem;
-            color: #64748b;
-            font-weight: 500;
-        }
-        .form-group {
-            margin-bottom: 1.25rem;
-        }
-        .form-label {
-            display: block;
-            font-size: 0.8125rem;
-            font-weight: 600;
-            color: #334155;
-            margin-bottom: 0.35rem;
-        }
-        .form-control {
-            width: 100%;
-            padding: 0.75rem 1rem;
-            border-radius: 8px;
-            border: 1px solid #cbd5e1;
-            font-size: 0.9375rem;
-            transition: all 0.2s;
-            outline: none;
-        }
-        .form-control:focus {
-            border-color: #0284c7;
-            box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
-        }
-        .btn-submit {
-            width: 100%;
-            padding: 0.875rem;
-            background: #0284c7;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 0.9375rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: background 0.2s;
-            margin-top: 0.5rem;
-        }
-        .btn-submit:hover {
-            background: #0369a1;
-        }
-        .alert {
-            padding: 0.75rem 1rem;
-            border-radius: 8px;
-            font-size: 0.8125rem;
-            margin-bottom: 1.25rem;
-        }
-        .alert-error {
-            background: #fee2e2;
-            color: #991b1b;
-            border: 1px solid #fecaca;
-        }
-        .alert-success {
-            background: #dcfce7;
-            color: #166534;
-            border: 1px solid #bbf7d0;
-        }
-        .demo-section {
-            margin-top: 2rem;
-            padding-top: 1.5rem;
-            border-top: 1px dashed #e2e8f0;
-        }
-        .demo-title {
-            font-size: 0.75rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: #64748b;
-            margin-bottom: 0.75rem;
-            display: flex;
-            align-items: center;
-            gap: 0.35rem;
-        }
-        .demo-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 0.5rem;
-        }
-        .demo-btn {
-            display: flex;
-            flex-direction: column;
-            text-align: left;
-            padding: 0.6rem 0.75rem;
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            text-decoration: none;
-            color: #1e293b;
-            transition: all 0.2s;
-        }
-        .demo-btn:hover {
-            background: #f0f9ff;
-            border-color: #0284c7;
-            transform: translateY(-2px);
-        }
-        .demo-btn-role {
-            font-size: 0.65rem;
-            font-weight: 800;
-            text-transform: uppercase;
-        }
-        .demo-btn-name {
-            font-size: 0.8125rem;
-            font-weight: 700;
-            color: #0f172a;
-            margin-top: 0.15rem;
-        }
-        .demo-btn-loc {
-            font-size: 0.7rem;
-            color: #64748b;
-        }
-    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ asset('css/auth/login.css') }}">
 </head>
-<body>
+<body class="auth-body">
 
-<div class="login-card">
-    <div class="brand">
-        <img src="{{ asset('images/logo.png') }}" alt="Logo Cap Payung" style="width: 44px; height: 44px; object-fit: contain; border-radius: 10px; background: #ffffff; box-shadow: 0 2px 6px rgba(0,0,0,0.08); padding: 2px; flex-shrink: 0;">
-        <div>
-            <div class="brand-text">PT Mirasa Food Industry</div>
-            <div class="brand-sub">Sistem Manajemen Produksi & Distribusi Makanan</div>
+    {{-- Fullscreen Environmental Factory Background (Bright & Animated) --}}
+    <div class="auth-page-bg" aria-hidden="true">
+        <img src="{{ asset('images/pabrik-mirasa-1.jpg') }}" alt="Pabrik PT Mirasa Food Industry" class="page-bg-img">
+        <div class="page-bg-overlay"></div>
+    </div>
+
+    <div class="auth-wrapper">
+        {{-- ===============================================================
+             SISI KIRI: SHOWCASE FOTO AERIAL PABRIK DENGAN KEN BURNS & QUOTE
+             =============================================================== --}}
+        <div class="auth-visual-pane">
+            {{-- Slideshow Foto Pabrik PT Mirasa --}}
+            <div class="slideshow-track">
+                <img src="{{ asset('images/pabrik-mirasa-1.jpg') }}" alt="Kompleks Pabrik PT Mirasa Food Industry" class="slide-img active">
+                <img src="{{ asset('images/pabrik-mirasa-2.jpg') }}" alt="Gedung Utama PT Mirasa Food Industry" class="slide-img">
+            </div>
+
+            <div class="visual-overlay"></div>
+
+            {{-- Header Visual: Logo & Status Operasional Pabrik --}}
+            <div class="visual-header">
+                <div class="glass-logo-badge">
+                    <img src="{{ asset('images/logo.png') }}" alt="Logo PT Mirasa" class="badge-logo-img" onerror="this.style.display='none'">
+                    <div class="badge-text-group">
+                        <span class="badge-title">PT Mirasa Food Industry</span>
+                        <span class="badge-sub">Enterprise System</span>
+                    </div>
+                </div>
+
+                <div class="plant-pill">
+                    <span class="pulsing-dot"></span>
+                    <span>Pabrik Magelang &bull; Beroperasi</span>
+                </div>
+            </div>
+
+            {{-- Footer Visual: Kutipan Korporat & Indikator Slide --}}
+            <div class="visual-footer">
+                <div class="quote-box">
+                    <span class="quote-icon">&ldquo;</span>
+                    <h2 class="quote-text">Sistem terpadu untuk efisiensi rantai pasok dan mutu pangan berstandar tinggi.</h2>
+                    <p class="quote-author">
+                        <span>PT Mirasa Food Industry</span>
+                        <span class="quote-author-tag">&bull; Standar HACCP & BPOM</span>
+                    </p>
+                </div>
+
+                <div class="slide-indicators">
+                    <button type="button" class="slide-dot active" title="Slide 1 - Kompleks Manufaktur"></button>
+                    <button type="button" class="slide-dot" title="Slide 2 - Gerbang & Kantor Utama"></button>
+                </div>
+            </div>
+        </div>
+
+        {{-- ===============================================================
+             SISI KANAN: KARTU FORMULIR LOGIN TERANG (LIGHT THEME) DENGAN AKSEN MERAH
+             =============================================================== --}}
+        <div class="auth-form-pane">
+            <div class="form-content-inner">
+                {{-- Header Form --}}
+                <div class="form-header">
+                    <div class="form-badge-pill">
+                        <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                        <span>Portal Manajemen ERP</span>
+                    </div>
+                    <h1 class="form-title">Selamat Datang</h1>
+                    <p class="form-subtitle">Silakan masukkan akun Anda untuk mengakses sistem operasional pabrik.</p>
+                </div>
+
+                {{-- Alert Pesan Validasi / Sukses --}}
+                @if (isset($errors) && $errors->any())
+                    <div class="auth-alert alert-danger">
+                        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                        <div>{{ $errors->first() }}</div>
+                    </div>
+                @endif
+
+                @if (session('success'))
+                    <div class="auth-alert alert-success">
+                        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                        <div>{{ session('success') }}</div>
+                    </div>
+                @endif
+
+                {{-- Formulir Autentikasi --}}
+                <form action="{{ route('login.attempt') }}" method="POST" id="mainLoginForm">
+                    @csrf
+
+                    {{-- Input Email / Username --}}
+                    <div class="form-group">
+                        <label for="emailInput" class="form-label">Email atau Nama Pengguna</label>
+                        <div class="input-container">
+                            <span class="input-icon-left">
+                                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                            </span>
+                            <input type="text" id="emailInput" name="email" class="form-input" placeholder="contoh: admin@mirasa.co.id" value="{{ old('email') }}" required autocomplete="username">
+                        </div>
+                    </div>
+
+                    {{-- Input Password --}}
+                    <div class="form-group">
+                        <label for="passwordInput" class="form-label">Kata Sandi</label>
+                        <div class="input-container">
+                            <span class="input-icon-left">
+                                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                            </span>
+                            <input type="password" id="passwordInput" name="password" class="form-input" placeholder="Masukkan kata sandi..." required autocomplete="current-password">
+                            <button type="button" id="togglePasswordBtn" class="btn-toggle-pwd" title="Lihat/Sembunyikan Sandi">
+                                <svg id="eyeIcon" width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    {{-- Opsi Ingat Saya & Bantuan --}}
+                    <div class="form-options-row">
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="remember" value="1" checked>
+                            <span>Ingat sesi saya</span>
+                        </label>
+                        <a href="javascript:void(0)" class="link-help" onclick="alert('Untuk reset kata sandi, silakan hubungi Administrator IT PT Mirasa Food Industry.');">Lupa kata sandi?</a>
+                    </div>
+
+                    {{-- Tombol Submit Merah --}}
+                    <button type="submit" class="btn-auth-submit">
+                        <span>Masuk ke Sistem</span>
+                        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                    </button>
+                </form>
+
+                {{-- ===============================================================
+                     1-CLICK QUICK LOGIN SWITCHER (AKUN DEMO / TESTING)
+                     =============================================================== --}}
+                @if (isset($demoUsers) && $demoUsers->count() > 0)
+                    <div class="demo-accounts-card">
+                        <button type="button" id="demoToggleTrigger" class="demo-toggle-trigger" title="Buka/Tutup daftar akun demo">
+                            <span class="demo-trigger-label">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                                <span>Pilih Akun Demo Uji Coba (1-Click Switch)</span>
+                            </span>
+                            <span class="demo-toggle-icon">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                            </span>
+                        </button>
+
+                        <div id="demoGridWrapper" class="demo-grid-wrapper">
+                            <div class="demo-grid">
+                                @foreach ($demoUsers as $u)
+                                    @php
+                                        $roleColor = '#0284c7';
+                                        $roleLabel = $u->role_cd;
+                                        if ($u->role_cd === 'SUPERADMIN') {
+                                            $roleColor = '#dc2626';
+                                            $roleLabel = 'SUPERADMIN';
+                                        } elseif ($u->role_cd === 'QC') {
+                                            $roleColor = '#059669';
+                                            $roleLabel = 'QC INBOUND';
+                                        } elseif ($u->role_cd === 'STAFF_PRODUKSI') {
+                                            $roleColor = '#ea580c';
+                                            $roleLabel = 'PRODUKSI';
+                                        } elseif ($u->role_cd === 'ADMIN_GUDANG') {
+                                            $roleColor = '#0284c7';
+                                            $roleLabel = 'GUDANG RAW';
+                                        } elseif ($u->role_cd === 'PURCHASING') {
+                                            $roleColor = '#d97706';
+                                            $roleLabel = 'PURCHASING';
+                                        } elseif ($u->role_cd === 'OPERATOR_PACKAGING') {
+                                            $roleColor = '#e11d48';
+                                            $roleLabel = 'OPERATOR KEMAS';
+                                        }
+                                    @endphp
+                                    <a href="{{ route('quick.login', $u->id) }}" class="demo-quick-btn" title="Masuk langsung sebagai {{ $u->name }}">
+                                        <div class="demo-role-tag" style="color: {{ $roleColor }};">
+                                            <span>{{ $roleLabel }}</span>
+                                            <span style="font-size: 0.65rem; opacity: 0.8;">&rarr;</span>
+                                        </div>
+                                        <span class="demo-user-name">{{ $u->name }}</span>
+                                        <span class="demo-user-loc">
+                                            @if ($u->gudang)
+                                                🔒 {{ $u->gudang->gudang_nm }}
+                                            @else
+                                                🌐 Seluruh Gudang
+                                            @endif
+                                        </span>
+                                    </a>
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
+                @endif
+            </div>
+
+            {{-- Link Footer ke Portal Lapangan HP --}}
+            <div class="form-footer">
+                <a href="{{ route('mobile.login') }}" class="link-mobile-portal">
+                    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                    <span>Petugas QC & Operator Kemas? Masuk ke Portal Lapangan (HP)</span>
+                </a>
+            </div>
         </div>
     </div>
 
-    @if (session('success'))
-        <div class="alert alert-success">{{ session('success') }}</div>
-    @endif
-
-    @if (isset($errors) && $errors->any())
-        <div class="alert alert-error">
-            @foreach ($errors->all() as $err)
-                <div>{{ $err }}</div>
-            @endforeach
-        </div>
-    @endif
-
-    <form action="{{ route('login.attempt') }}" method="POST">
-        @csrf
-        <div class="form-group">
-            <label for="email" class="form-label">Email Pengguna</label>
-            <input type="email" id="email" name="email" value="{{ old('email', 'produksi.mgl@mirasa.co.id') }}" class="form-control" required placeholder="nama@mirasa.co.id">
-        </div>
-
-        <div class="form-group">
-            <label for="password" class="form-label">Kata Sandi (Password)</label>
-            <input type="password" id="password" name="password" value="password123" class="form-control" required placeholder="Masukkan kata sandi...">
-        </div>
-
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
-            <label style="font-size: 0.8125rem; color: #475569; display: flex; align-items: center; gap: 0.35rem; cursor: pointer;">
-                <input type="checkbox" name="remember" value="1" checked> Ingat saya
-            </label>
-            <span style="font-size: 0.75rem; color: #64748b;">Default: password123</span>
-        </div>
-
-        <button type="submit" class="btn-submit">Masuk ke Sistem &rarr;</button>
-    </form>
-
-    {{-- QUICK DEMO SWITCHER --}}
-    @if (!empty($demoUsers) && $demoUsers->count() > 0)
-        <div class="demo-section">
-            <div class="demo-title">
-                <span>⚡</span>
-                <span>Masuk Cepat 1-Klik (Uji Coba Role & Gudang):</span>
-            </div>
-            <div class="demo-grid">
-                @foreach ($demoUsers as $u)
-                    <a href="{{ route('quick.login', $u->id) }}" class="demo-btn">
-                        @php
-                            $roleColor = '#0284c7';
-                            if ($u->role_cd === 'SUPERADMIN') $roleColor = '#dc2626';
-                            elseif ($u->role_cd === 'STAFF_PRODUKSI') $roleColor = '#ea580c';
-                            elseif ($u->role_cd === 'ADMIN_GUDANG') $roleColor = '#0284c7';
-                            elseif ($u->role_cd === 'PURCHASING') $roleColor = '#d97706';
-                            elseif ($u->role_cd === 'QC') $roleColor = '#059669';
-                        @endphp
-                        <span class="demo-btn-role" style="color: {{ $roleColor }};">{{ $u->role_cd }}</span>
-                        <span class="demo-btn-name">{{ $u->name }}</span>
-                        <span class="demo-btn-loc">
-                            @if ($u->gudang)
-                                🔒 {{ $u->gudang->gudang_nm }}
-                            @else
-                                🌐 Seluruh Gudang
-                            @endif
-                        </span>
-                    </a>
-                @endforeach
-            </div>
-        </div>
-    @endif
-</div>
-
+    <script src="{{ asset('js/auth/login.js') }}"></script>
 </body>
 </html>

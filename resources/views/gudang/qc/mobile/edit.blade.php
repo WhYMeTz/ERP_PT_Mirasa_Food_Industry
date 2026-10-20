@@ -25,10 +25,11 @@
             return str_contains($nm, 'PLASTIK') || str_contains($nm, 'ROLL') || str_contains($nm, 'KEMASAN') || str_contains($nm, 'OPP') || str_contains($nm, 'PP');
         } elseif ($kat === 'KARTON') {
             return str_contains($nm, 'KARTON') || str_contains($nm, 'DUS') || str_contains($nm, 'BOX');
-        } elseif (in_array($kat, ['MSG', 'GARAM', 'PERENYAH'])) {
+        } elseif (in_array($kat, ['MSG', 'GARAM', 'PERENYAH', 'BUMBU'])) {
             if ($kat === 'MSG') return str_contains($nm, 'MSG') || str_contains($nm, 'MONOSODIUM');
-            if ($kat === 'GARAM') return str_contains($nm, 'GARAM') || str_contains($nm, 'SEASALT') || str_contains($nm, 'SALT');
-            if ($kat === 'PERENYAH') return str_contains($nm, 'PERENYAH');
+            if ($kat === 'BUMBU') return str_contains($nm, 'BUMBU') || str_contains($nm, 'BALADO') || str_contains($nm, 'CHILLI') || str_contains($nm, 'SEASONING');
+            if ($kat === 'GARAM') return (str_contains($nm, 'GARAM') || str_contains($nm, 'SALT')) && !str_contains($nm, 'BUMBU');
+            if ($kat === 'PERENYAH') return str_contains($nm, 'PERENYAH') || str_contains($nm, 'STPP');
         }
         return true;
     });
@@ -47,14 +48,14 @@
             return 'PLASTIK';
         } elseif (str_contains($nm, 'KARTON') || str_contains($nm, 'DUS') || str_contains($nm, 'BOX')) {
             return 'KARTON';
+        } elseif (str_contains($nm, 'BUMBU') || str_contains($nm, 'BALADO') || str_contains($nm, 'CHILLI') || str_contains($nm, 'SEASONING')) {
+            return 'BUMBU';
         } elseif (str_contains($nm, 'MSG') || str_contains($nm, 'MONOSODIUM') || str_contains($nm, 'MICIN') || str_contains($nm, 'GLUTAMAT')) {
             return 'MSG';
         } elseif (str_contains($nm, 'GARAM') || str_contains($nm, 'SEASALT') || str_contains($nm, 'SALT')) {
             return 'GARAM';
-        } elseif (str_contains($nm, 'PERENYAH')) {
+        } elseif (str_contains($nm, 'PERENYAH') || str_contains($nm, 'STPP')) {
             return 'PERENYAH';
-        } elseif (str_contains($nm, 'BUMBU') || str_contains($nm, 'BALADO') || str_contains($nm, 'CHILLI') || str_contains($nm, 'SEASONING')) {
-            return 'BUMBU';
         }
         return 'LAINNYA';
     };
@@ -64,11 +65,6 @@
         foreach ($p->details as $d) {
             $cat = $classifyBarang($d->barang?->barang_nm, $d->barang?->barang_cd);
             $cats[] = $cat;
-            if ($cat === 'BUMBU') {
-                $cats[] = 'MSG';
-                $cats[] = 'GARAM';
-                $cats[] = 'PERENYAH';
-            }
         }
         return array_values(array_unique($cats));
     };
@@ -80,8 +76,8 @@
         if ($kat === 'MINYAK') return in_array('MINYAK', $cats);
         if ($kat === 'PLASTIK') return in_array('PLASTIK', $cats);
         if ($kat === 'KARTON') return in_array('KARTON', $cats);
-        if (in_array($kat, ['MSG', 'GARAM', 'PERENYAH'])) {
-            return in_array($kat, $cats) || in_array('BUMBU', $cats);
+        if (in_array($kat, ['MSG', 'GARAM', 'PERENYAH', 'BUMBU'])) {
+            return in_array($kat, $cats);
         }
         return true;
     });
@@ -172,18 +168,50 @@
         <input type="hidden" name="view" value="mobile">
         <input type="hidden" name="ref" value="{{ $ref ?: 'index' }}">
         <input type="hidden" name="kategori_barang" value="{{ $qc->kategori_barang }}">
-        <input type="hidden" name="tahap_uji" value="{{ old('tahap_uji', $qc->tahap_uji ?? 'PENGUJIAN_1') }}">
-        <input type="hidden" name="parent_qc_id" value="{{ old('parent_qc_id', $qc->parent_qc_id) }}">
         <input type="hidden" name="batch_no" value="{{ old('batch_no', $qc->batch_no) }}">
         <input type="hidden" name="items[{{ $qcdtlId }}][qcdtl_id]" value="{{ $qcdtlId }}">
         <input type="hidden" name="items[{{ $qcdtlId }}][podtl_id]" value="{{ $firstDetail?->podtl_id }}">
+
+        @php
+            $isPengujian2 = ($qc->tahap_uji ?? 'PENGUJIAN_1') === 'PENGUJIAN_2';
+        @endphp
+
+        <input type="hidden" name="tahap_uji" id="inputTahapUji" value="{{ old('tahap_uji', $qc->tahap_uji ?? 'PENGUJIAN_1') }}">
+        <input type="hidden" name="parent_qc_id" value="{{ old('parent_qc_id', $qc->parent_qc_id) }}">
+
+        @if ($kat === 'SINGKONG')
+            {{-- KARTU TAHAP PENGUJIAN SINGKONG (FIXED / NON-SWITCHABLE SAAT EDIT) --}}
+            <div class="qc-tahap-card" style="background: {{ $isPengujian2 ? '#faf5ff' : '#f0f9ff' }}; border: 1.5px solid {{ $isPengujian2 ? '#d8b4fe' : '#bae6fd' }}; border-radius: 12px; padding: 0.85rem 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.35rem;">
+                    <div style="font-size: 0.85rem; font-weight: 800; color: {{ $isPengujian2 ? '#6b21a8' : '#0369a1' }}; display: flex; align-items: center; gap: 0.4rem;">
+                        <span>{{ $isPengujian2 ? '🍟' : '🚛' }}</span>
+                        <span>{{ $isPengujian2 ? 'Dokumen QC: Pengujian 2 (Lanjutan Sisa Bak)' : 'Dokumen QC: Pengujian 1 (Awal Kedatangan Truk)' }}</span>
+                    </div>
+                    <span style="font-size: 0.72rem; font-weight: 800; padding: 2px 8px; border-radius: 6px; {{ $isPengujian2 ? 'background: #f3e8ff; color: #7e22ce; border: 1px solid #d8b4fe;' : 'background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd;' }}">
+                        {{ $isPengujian2 ? 'Tahap II' : 'Tahap I' }}
+                    </span>
+                </div>
+                <div style="font-size: 0.75rem; color: {{ $isPengujian2 ? '#7e22ce' : '#0284c7' }}; margin-top: 0.35rem; line-height: 1.4;">
+                    @if ($isPengujian2)
+                        Form koreksi data pengujian sensori &amp; fisik sisa muatan bak yang dibongkar pada lini produksi.
+                        @if ($qc->parentQc)
+                            <div style="margin-top: 0.45rem; font-size: 0.75rem; color: #581c87; background: #ffffff; border: 1px solid #e9d5ff; border-radius: 6px; padding: 0.4rem 0.6rem;">
+                                🔗 <strong>Truk Induk Kedatangan:</strong> #{{ $qc->parentQc->qc_no }} &bull; Plat: <strong>{{ $qc->parentQc->plat_nomor_truk ?: '-' }}</strong> &bull; Sopir: <strong>{{ $qc->parentQc->sopir_nama ?: '-' }}</strong> &bull; Netto Uji 1: <strong style="color: #15803d;">{{ number_format($qc->parentQc->details->sum('qty_netto_lolos'), 0, ',', '.') }} kg</strong>
+                            </div>
+                        @endif
+                    @else
+                        Form koreksi data inspeksi kedatangan truk awal saat tiba di gerbang pos penerimaan pabrik.
+                    @endif
+                </div>
+            </div>
+        @endif
 
         {{-- KARTU 1: INFO PENGIRIMAN, PO & KOMODITAS --}}
         <div class="qc-card-section">
             <h2 class="qc-card-title">
                 <span>🚚</span> <span>1. Info Armada, PO &amp; Komoditas</span>
                 @if ($kat === 'SINGKONG')
-                    <span style="font-size: 0.72rem; font-weight: 800; padding: 2px 6px; border-radius: 4px; float: right; {{ ($qc->tahap_uji ?? 'PENGUJIAN_1') === 'PENGUJIAN_2' ? 'background: #f3e8ff; color: #7e22ce;' : 'background: #e0f2fe; color: #0369a1;' }}">
+                    <span id="badgeCard1Tahap" style="font-size: 0.72rem; font-weight: 800; padding: 2px 6px; border-radius: 4px; float: right; {{ ($qc->tahap_uji ?? 'PENGUJIAN_1') === 'PENGUJIAN_2' ? 'background: #f3e8ff; color: #7e22ce;' : 'background: #e0f2fe; color: #0369a1;' }}">
                         {{ ($qc->tahap_uji ?? 'PENGUJIAN_1') === 'PENGUJIAN_2' ? '🍟 Pengujian II' : '🚛 Pengujian I' }}
                     </span>
                 @endif
@@ -334,6 +362,34 @@
                                 <option value="Minyak Goreng SunCo">
                                 <option value="Minyak Goreng Bimoli">
                                 <option value="Minyak Goreng Kunci Mas">
+                            @elseif ($kat === 'KARTON')
+                                <option value="Karton Box Mirasa 250g (K150/M125)">
+                                <option value="Karton Box Mirasa 500g (K150/M125/K150)">
+                                <option value="Karton Box Curah Cap Payung">
+                                <option value="Karton Box Single Wall 3 Ply">
+                                <option value="Karton Box Double Wall 5 Ply">
+                                <option value="Karton Box Corrugated C-Flute">
+                            @elseif ($kat === 'PLASTIK')
+                                <option value="Plastik Kemasan Keripik Cap Payung 250g">
+                                <option value="Plastik OPP Roll 250g (Tebal 0.08mm)">
+                                <option value="Plastik OPP Roll 500g">
+                                <option value="Standing Pouch Cap Payung 250g">
+                                <option value="Standing Pouch Zipper 500g Metalized">
+                                <option value="Plastik PP Tebal 0.08mm Seal Rapi">
+                            @elseif (in_array($kat, ['MSG', 'GARAM', 'PERENYAH', 'BUMBU']))
+                                <option value="Monosodium Glutamat Murni 99%">
+                                <option value="MSG Miwon Crystal Mesh 40-60">
+                                <option value="MSG Ajinomoto Food Grade">
+                                <option value="Garam Halus Beryodium K-40">
+                                <option value="Garam Industri Non-Yodium">
+                                <option value="Garam Kristal Refina 99.5%">
+                                <option value="Perenyah Kerupuk STPP Food Grade">
+                                <option value="Sodium Tripolyphosphate Food Grade">
+                                <option value="Sodium Bicarbonate Pengembang">
+                                <option value="Bumbu Tabur Balado Spesial">
+                                <option value="Bumbu Tabur Keju Manis">
+                                <option value="Bumbu Tabur Jagung Bakar">
+                                <option value="Bumbu Tabur Barbeque">
                             @else
                                 <option value="Singkong Basah Curah">
                                 <option value="Singkong Ketan">
@@ -347,7 +403,8 @@
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem;">
                     <div>
                         <label class="qc-info-label" style="display: block; font-weight: 700; margin-bottom: 0.25rem;">No. Surat Jalan / DO</label>
-                        <input type="text" name="nomor_do" value="{{ old('nomor_do', $qc->nomor_do ?? $qc->surat_jalan_supplier) }}" class="form-control" style="width: 100%; border-radius: 8px; font-weight: 700;">
+                        <input type="text" name="nomor_do" id="inputNomorDo" value="{{ old('nomor_do', $qc->nomor_do ?? $qc->surat_jalan_supplier) }}" class="form-control" style="width: 100%; border-radius: 8px; font-weight: 700;" oninput="const sjEl = document.getElementById('inputSuratJalanSupplier'); if(sjEl) sjEl.value = this.value;">
+                        <input type="hidden" name="surat_jalan_supplier" id="inputSuratJalanSupplier" value="{{ old('surat_jalan_supplier', $qc->surat_jalan_supplier ?? $qc->nomor_do) }}">
                     </div>
                     <div>
                         <label class="qc-info-label" style="display: block; font-weight: 700; margin-bottom: 0.25rem;">No. Plat Truk</label>
@@ -377,7 +434,7 @@
                             </div>
                             <div>
                                 <label class="qc-info-label" style="font-size: 0.72rem;">Umur Singkong (Bulan)</label>
-                                <input type="number" step="0.1" name="umur_singkong_bln" value="{{ old('umur_singkong_bln', $qc->umur_singkong_bln ?? 10) }}" class="form-control" style="width: 100%; border-radius: 6px; font-size: 0.8rem;">
+                                <input type="number" step="0.1" name="umur_singkong_bln" value="{{ old('umur_singkong_bln', $qc->umur_singkong_bln ?? 9.0) }}" class="form-control" style="width: 100%; border-radius: 6px; font-size: 0.8rem;">
                             </div>
                         </div>
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
@@ -386,8 +443,10 @@
                                 <input type="date" name="tgl_panen" value="{{ old('tgl_panen', $qc->tgl_panen ? $qc->tgl_panen->format('Y-m-d') : '') }}" class="form-control" style="width: 100%; border-radius: 6px; font-size: 0.8rem;">
                             </div>
                             <div>
-                                <label class="qc-info-label" style="font-size: 0.72rem;">Jumlah Sampel Uji (kg)</label>
-                                <input type="number" step="0.1" name="jumlah_sample_kg" value="{{ old('jumlah_sample_kg', $qc->jumlah_sample_kg ?? 10) }}" class="form-control" style="width: 100%; border-radius: 6px; font-size: 0.8rem; font-weight: 700;">
+                                <label class="qc-info-label" id="lblSampleUji" style="font-size: 0.72rem;">
+                                    {{ ($qc->tahap_uji ?? 'PENGUJIAN_1') === 'PENGUJIAN_2' ? 'Sampel Uji Sisa Bak (kg)' : 'Jumlah Sampel Uji (kg)' }}
+                                </label>
+                                <input type="number" step="0.1" name="jumlah_sample_kg" value="{{ old('jumlah_sample_kg', $qc->jumlah_sample_kg ?? 7.0) }}" class="form-control" style="width: 100%; border-radius: 6px; font-size: 0.8rem; font-weight: 700;">
                             </div>
                         </div>
                     </div>
@@ -405,6 +464,9 @@
                             <input type="checkbox" name="angkut_barang_haram_st" value="1" {{ old('angkut_barang_haram_st', $qc->angkut_barang_haram_st) ? 'checked' : '' }} style="width: 18px; height: 18px;">
                             <span style="font-weight: 700; color: #dc2626;">Truk Membawa Barang Haram (Centang jika ada)</span>
                         </label>
+                        <div style="margin-top: 0.25rem;">
+                            <input type="text" name="komentar_transportasi" value="{{ old('komentar_transportasi', $qc->komentar_transportasi) }}" placeholder="Catatan kebersihan armada / audit halal..." class="form-control" style="width: 100%; border-radius: 6px; font-size: 0.8rem;">
+                        </div>
                     </div>
                 </div>
             </div>
@@ -419,11 +481,15 @@
             <div style="display: flex; flex-direction: column; gap: 0.75rem;">
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem;">
                     <div>
-                        <label class="qc-info-label" style="display: block; font-weight: 700; margin-bottom: 0.25rem;">Jumlah Surat Jalan (kg)</label>
+                        <label class="qc-info-label" id="lblJumlahSJ" style="display: block; font-weight: 700; margin-bottom: 0.25rem;">
+                            {{ ($qc->tahap_uji ?? 'PENGUJIAN_1') === 'PENGUJIAN_2' ? 'Jumlah Surat Jalan (kg) (Auto Uji 1)' : 'Jumlah Surat Jalan (kg)' }}
+                        </label>
                         <input type="number" step="any" name="jumlah_surat_jalan" id="inputJumlahSJ" value="{{ old('jumlah_surat_jalan', $qc->jumlah_surat_jalan ?? $firstDetail?->qty_timbang_gross) }}" class="form-control" style="width: 100%; border-radius: 8px; font-weight: 700;" oninput="syncMobileGrossFromSJ(this.value)">
                     </div>
                     <div>
-                        <label class="qc-info-label" style="display: block; font-weight: 700; margin-bottom: 0.25rem;">Jumlah di Pabrik (kg)</label>
+                        <label class="qc-info-label" id="lblJumlahPabrik" style="display: block; font-weight: 700; margin-bottom: 0.25rem;">
+                            {{ ($qc->tahap_uji ?? 'PENGUJIAN_1') === 'PENGUJIAN_2' ? 'Muatan Uji 2 / Sisa Bak (kg)' : 'Jumlah di Pabrik (kg)' }}
+                        </label>
                         <input type="number" step="any" name="jumlah_di_pabrik" id="inputJumlahPabrik" value="{{ old('jumlah_di_pabrik', $qc->jumlah_di_pabrik ?? ($firstDetail?->qty_timbang_gross ?? $totalGross)) }}" class="form-control" style="width: 100%; border-radius: 8px; font-weight: 700; color: #0284c7;" oninput="syncMobileGrossFromPabrik(this.value)">
                     </div>
                 </div>
@@ -447,6 +513,13 @@
                     </div>
                 </div>
 
+                @if ($kat === 'SINGKONG')
+                <div style="margin-top: 0.15rem;">
+                    <label class="qc-info-label" style="display: block; font-weight: 700; margin-bottom: 0.25rem;">Kadar Air Singkong (%)</label>
+                    <input type="number" step="0.1" min="0" max="100" name="items[{{ $qcdtlId }}][kadar_air_persen]" value="{{ old('items.'.$qcdtlId.'.kadar_air_persen', $firstDetail?->kadar_air_persen ?? 12.0) }}" class="form-control" style="width: 100%; border-radius: 8px; font-weight: 700;" placeholder="12.0">
+                </div>
+                @endif
+
                 <div style="background: #ecfdf5; border: 1.5px solid #a7f3d0; border-radius: 10px; padding: 0.85rem 1rem; text-align: center; margin-top: 0.25rem;">
                     <div style="font-size: 0.75rem; font-weight: 700; color: #065f46; text-transform: uppercase;">Estimasi Netto Lolos Diterima Pabrik</div>
                     <div style="font-size: 1.45rem; font-weight: 900; color: #059669; margin-top: 0.2rem;" id="displayNettoText">
@@ -465,32 +538,32 @@
 
             @if ($kat === 'SINGKONG')
                 <div style="display: flex; flex-direction: column; gap: 0.85rem;">
-                    {{-- DIAMETER UMBI --}}
-                    <div>
-                        <div style="font-size: 0.78rem; font-weight: 800; color: #0284c7; margin-bottom: 0.35rem;">PENGUJIAN I &bull; DIAMETER UMBI:</div>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem;">
-                            <div>
-                                <label class="qc-info-label" style="display: block; font-weight: 700; margin-bottom: 0.25rem;">Diameter &lt; 4 cm (% Max 5%)</label>
-                                <input type="number" step="0.1" name="items[{{ $qcdtlId }}][diameter_kurang_4cm_persen]" value="{{ old('items.'.$qcdtlId.'.diameter_kurang_4cm_persen', $firstDetail?->diameter_kurang_4cm_persen ?? 0) }}" class="form-control" style="width: 100%; border-radius: 8px;">
-                            </div>
-                            <div>
-                                <label class="qc-info-label" style="display: block; font-weight: 700; margin-bottom: 0.25rem;">Diameter &ge; 4 cm (% Min 95%)</label>
-                                <input type="number" step="0.1" name="items[{{ $qcdtlId }}][diameter_lebih_4cm_persen]" value="{{ old('items.'.$qcdtlId.'.diameter_lebih_4cm_persen', $firstDetail?->diameter_lebih_4cm_persen ?? 100) }}" class="form-control" style="width: 100%; border-radius: 8px; font-weight: 700;">
-                            </div>
+                    {{-- 1. STATUS RAW MATERIAL SINGKONG --}}
+                    <div style="background: #ffffff; border: 1.5px solid #fed7aa; border-radius: 10px; padding: 0.75rem 0.85rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.4rem;">
+                        <span style="font-weight: 800; font-size: 0.82rem; color: #9a3412;">STATUS RAW MATERIAL SINGKONG :</span>
+                        <div style="display: flex; gap: 1rem; font-size: 0.82rem; font-weight: 700;">
+                            <label style="display: flex; align-items: center; gap: 4px; color: #15803d; cursor: pointer;">
+                                <input type="radio" name="items[{{ $qcdtlId }}][status_raw_material]" value="OK" {{ old('items.'.$qcdtlId.'.status_raw_material', $firstDetail?->status_raw_material ?? 'OK') === 'OK' ? 'checked' : '' }}> OK (Standar)
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 4px; color: #dc2626; cursor: pointer;">
+                                <input type="radio" name="items[{{ $qcdtlId }}][status_raw_material]" value="TDK_STD" {{ old('items.'.$qcdtlId.'.status_raw_material', $firstDetail?->status_raw_material ?? '') === 'TDK_STD' ? 'checked' : '' }}> TDK STD (Menyimpang)
+                            </label>
                         </div>
                     </div>
 
-                    {{-- KONDISI FISIK & KESEGARAN UMBI --}}
+                    {{-- 2. KONDISI FISIK & KESEGARAN UMBI --}}
                     <div>
-                        <div style="font-size: 0.78rem; font-weight: 800; color: #059669; margin-bottom: 0.35rem;">KONDISI FISIK &amp; KESEGARAN UMBI:</div>
+                        <div style="font-size: 0.78rem; font-weight: 800; color: #059669; margin-bottom: 0.35rem;" id="lblKondisiFisikSub">
+                            {{ ($qc->tahap_uji ?? 'PENGUJIAN_1') === 'PENGUJIAN_2' ? 'PENGUJIAN II • PEMERIKSAAN FISIK LAPISAN DALAM BAK (SISA MUATAN):' : 'PENGUJIAN I • KONDISI FISIK & KESEGARAN UMBI (AWAL):' }}
+                        </div>
                         <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.4rem; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.65rem;">
                             <label style="display: flex; align-items: center; gap: 6px; font-size: 0.8rem; cursor: pointer;">
-                                <input type="checkbox" name="items[{{ $qcdtlId }}][kondisi_segar]" value="1" {{ old('items.'.$qcdtlId.'.kondisi_segar', $firstDetail?->kondisi_segar) ? 'checked' : '' }}>
+                                <input type="checkbox" name="items[{{ $qcdtlId }}][kondisi_segar]" value="1" {{ old('items.'.$qcdtlId.'.kondisi_segar', $firstDetail?->kondisi_segar ?? 1) ? 'checked' : '' }}>
                                 <span style="font-weight: 700; color: #16a34a;">✔ Segar</span>
                             </label>
                             <label style="display: flex; align-items: center; gap: 6px; font-size: 0.8rem; cursor: pointer;">
                                 <input type="checkbox" name="items[{{ $qcdtlId }}][kondisi_layu]" value="1" {{ old('items.'.$qcdtlId.'.kondisi_layu', $firstDetail?->kondisi_layu) ? 'checked' : '' }}>
-                                <span style="font-weight: 700; color: #dc2626;">✖ Layu</span>
+                                <span style="font-weight: 700; color: #b45309;">✖ Layu</span>
                             </label>
                             <label style="display: flex; align-items: center; gap: 6px; font-size: 0.8rem; cursor: pointer;">
                                 <input type="checkbox" name="items[{{ $qcdtlId }}][kondisi_busuk]" value="1" {{ old('items.'.$qcdtlId.'.kondisi_busuk', $firstDetail?->kondisi_busuk) ? 'checked' : '' }}>
@@ -502,7 +575,7 @@
                             </label>
                             <label style="display: flex; align-items: center; gap: 6px; font-size: 0.8rem; cursor: pointer;">
                                 <input type="checkbox" name="items[{{ $qcdtlId }}][kondisi_basah]" value="1" {{ old('items.'.$qcdtlId.'.kondisi_basah', $firstDetail?->kondisi_basah) ? 'checked' : '' }}>
-                                <span style="font-weight: 700; color: #dc2626;">✖ Basah</span>
+                                <span style="font-weight: 700; color: #0284c7;">✖ Basah</span>
                             </label>
                             <label style="display: flex; align-items: center; gap: 6px; font-size: 0.8rem; cursor: pointer;">
                                 <input type="checkbox" name="items[{{ $qcdtlId }}][kondisi_lembek]" value="1" {{ old('items.'.$qcdtlId.'.kondisi_lembek', $firstDetail?->kondisi_lembek) ? 'checked' : '' }}>
@@ -515,46 +588,84 @@
                         </div>
                     </div>
 
-                    {{-- HASIL UJI GORENG (LAB FRYER) --}}
+                    {{-- 3. PROPORSI DIAMETER UMBI & DEFECT SORTIR FISIK --}}
+                    <div>
+                        <div style="font-size: 0.78rem; font-weight: 800; color: #0284c7; margin-bottom: 0.35rem;">PROPORSI DIAMETER &amp; DEFECT SORTIR FISIK:</div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem; margin-bottom: 0.5rem;">
+                            <div>
+                                <label class="qc-info-label" style="display: block; font-weight: 700; margin-bottom: 0.25rem;">Diameter &lt; 4 cm (% Max 5%)</label>
+                                <input type="number" step="0.1" min="0" max="100" name="items[{{ $qcdtlId }}][diameter_kurang_4cm_persen]" value="{{ old('items.'.$qcdtlId.'.diameter_kurang_4cm_persen', $firstDetail?->diameter_kurang_4cm_persen ?? 0) }}" class="form-control" style="width: 100%; border-radius: 8px;">
+                            </div>
+                            <div>
+                                <label class="qc-info-label" style="display: block; font-weight: 700; margin-bottom: 0.25rem;">Diameter &ge; 4 cm (% Min 95%)</label>
+                                <input type="number" step="0.1" min="0" max="100" name="items[{{ $qcdtlId }}][diameter_lebih_4cm_persen]" value="{{ old('items.'.$qcdtlId.'.diameter_lebih_4cm_persen', $firstDetail?->diameter_lebih_4cm_persen ?? 100) }}" class="form-control" style="width: 100%; border-radius: 8px; font-weight: 700;">
+                            </div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem;">
+                            <div>
+                                <label class="qc-info-label" style="font-size: 0.72rem;">Defect Gambos (%)</label>
+                                <input type="number" step="0.1" min="0" max="100" name="items[{{ $qcdtlId }}][defect_gambos_persen]" value="{{ old('items.'.$qcdtlId.'.defect_gambos_persen', $firstDetail?->defect_gambos_persen ?? 0) }}" class="form-control" style="width: 100%; border-radius: 6px; font-size: 0.8rem; font-weight: 700; color: #dc2626;">
+                            </div>
+                            <div>
+                                <label class="qc-info-label" style="font-size: 0.72rem;">Patah/Remuk (%)</label>
+                                <input type="number" step="0.1" min="0" max="100" name="items[{{ $qcdtlId }}][defect_breakage_persen]" value="{{ old('items.'.$qcdtlId.'.defect_breakage_persen', $firstDetail?->defect_breakage_persen ?? 0) }}" class="form-control" style="width: 100%; border-radius: 6px; font-size: 0.8rem; font-weight: 700;">
+                            </div>
+                            <div>
+                                <label class="qc-info-label" style="font-size: 0.72rem;">Kulit/Cluster (%)</label>
+                                <input type="number" step="0.1" min="0" max="100" name="items[{{ $qcdtlId }}][defect_cluster_persen]" value="{{ old('items.'.$qcdtlId.'.defect_cluster_persen', $firstDetail?->defect_cluster_persen ?? 0) }}" class="form-control" style="width: 100%; border-radius: 6px; font-size: 0.8rem; font-weight: 700;">
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- 4. HASIL UJI GORENG (LAB FRYER) & CACAT GORENG --}}
                     <div style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 10px; padding: 0.85rem;">
-                        <div style="font-size: 0.78rem; font-weight: 800; color: #d97706; margin-bottom: 0.45rem;">PENGUJIAN II &bull; HASIL UJI GORENG (LAB FRYER):</div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.45rem; flex-wrap: wrap; gap: 0.35rem;">
+                            <div style="font-size: 0.78rem; font-weight: 800; color: #d97706;" id="lblFryerSub">
+                                {{ ($qc->tahap_uji ?? 'PENGUJIAN_1') === 'PENGUJIAN_2' ? 'PENGUJIAN II • UJI GORENG SISA BAK (TITIK KRITIS PRODUKSI):' : 'PENGUJIAN I • HASIL UJI GORENG LAB FRYER (AWAL):' }}
+                            </div>
+                            <span style="font-size: 0.7rem; font-weight: 800; color: #b45309; background: #fef3c7; padding: 2px 6px; border-radius: 4px;">
+                                Kriteria Sensori
+                            </span>
+                        </div>
+
                         <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; margin-bottom: 0.65rem;">
                             <div>
-                                <label class="qc-info-label" style="display: block; font-weight: 700; margin-bottom: 0.2rem;">Rasa</label>
-                                <select name="items[{{ $qcdtlId }}][fryer_rasa]" class="form-control" style="width: 100%; border-radius: 6px; font-size: 0.8rem; font-weight: 700;">
-                                    <option value="TIDAK_PAHIT" {{ old('items.'.$qcdtlId.'.fryer_rasa', $firstDetail?->fryer_rasa ?? 'TIDAK_PAHIT') === 'TIDAK_PAHIT' ? 'selected' : '' }}>Tidak Pahit</option>
-                                    <option value="PAHIT" {{ old('items.'.$qcdtlId.'.fryer_rasa', $firstDetail?->fryer_rasa ?? '') === 'PAHIT' ? 'selected' : '' }}>Pahit</option>
+                                <label class="qc-info-label" style="display: block; font-weight: 700; margin-bottom: 0.2rem;">Rasa *</label>
+                                <select name="items[{{ $qcdtlId }}][fryer_rasa]" id="selectFryerRasa" class="form-control" style="width: 100%; border-radius: 6px; font-size: 0.8rem; font-weight: 800;" onchange="onRasaGorengChanged(this.value)">
+                                    <option value="TIDAK_PAHIT" {{ old('items.'.$qcdtlId.'.fryer_rasa', $firstDetail?->fryer_rasa ?? 'TIDAK_PAHIT') === 'TIDAK_PAHIT' ? 'selected' : '' }}>😋 Tidak Pahit</option>
+                                    <option value="PAHIT" {{ old('items.'.$qcdtlId.'.fryer_rasa', $firstDetail?->fryer_rasa ?? '') === 'PAHIT' ? 'selected' : '' }} style="color: #dc2626; font-weight: 900;">🤢 PAHIT</option>
                                 </select>
                             </div>
                             <div>
                                 <label class="qc-info-label" style="display: block; font-weight: 700; margin-bottom: 0.2rem;">Tekstur</label>
                                 <select name="items[{{ $qcdtlId }}][fryer_tekstur]" class="form-control" style="width: 100%; border-radius: 6px; font-size: 0.8rem; font-weight: 700;">
-                                    <option value="RENYAH" {{ old('items.'.$qcdtlId.'.fryer_tekstur', $firstDetail?->fryer_tekstur ?? 'RENYAH') === 'RENYAH' ? 'selected' : '' }}>Renyah</option>
-                                    <option value="ALOT" {{ old('items.'.$qcdtlId.'.fryer_tekstur', $firstDetail?->fryer_tekstur ?? '') === 'ALOT' ? 'selected' : '' }}>Alot</option>
-                                    <option value="LEMBEK" {{ old('items.'.$qcdtlId.'.fryer_tekstur', $firstDetail?->fryer_tekstur ?? '') === 'LEMBEK' ? 'selected' : '' }}>Lembek</option>
+                                    <option value="RENYAH" {{ old('items.'.$qcdtlId.'.fryer_tekstur', $firstDetail?->fryer_tekstur ?? 'RENYAH') === 'RENYAH' ? 'selected' : '' }}>✨ Renyah</option>
+                                    <option value="EMPUK" {{ old('items.'.$qcdtlId.'.fryer_tekstur', $firstDetail?->fryer_tekstur) === 'EMPUK' ? 'selected' : '' }}>🥟 Empuk</option>
+                                    <option value="ALOT" {{ old('items.'.$qcdtlId.'.fryer_tekstur', $firstDetail?->fryer_tekstur) === 'ALOT' ? 'selected' : '' }}>Alot</option>
+                                    <option value="LEMBEK" {{ old('items.'.$qcdtlId.'.fryer_tekstur', $firstDetail?->fryer_tekstur) === 'LEMBEK' ? 'selected' : '' }}>Lembek</option>
+                                    <option value="KERAS" {{ old('items.'.$qcdtlId.'.fryer_tekstur', $firstDetail?->fryer_tekstur) === 'KERAS' ? 'selected' : '' }}>🧱 Keras</option>
                                 </select>
                             </div>
                             <div>
                                 <label class="qc-info-label" style="display: block; font-weight: 700; margin-bottom: 0.2rem;">Penampakan</label>
                                 <select name="items[{{ $qcdtlId }}][fryer_penampakan]" class="form-control" style="width: 100%; border-radius: 6px; font-size: 0.8rem; font-weight: 700;">
-                                    <option value="TIDAK_OILSOAKED" {{ old('items.'.$qcdtlId.'.fryer_penampakan', $firstDetail?->fryer_penampakan ?? 'TIDAK_OILSOAKED') === 'TIDAK_OILSOAKED' ? 'selected' : '' }}>Normal</option>
-                                    <option value="OILSOAKED" {{ old('items.'.$qcdtlId.'.fryer_penampakan', $firstDetail?->fryer_penampakan ?? '') === 'OILSOAKED' ? 'selected' : '' }}>Oilsoaked</option>
+                                    <option value="TIDAK_OILSOAKED" {{ old('items.'.$qcdtlId.'.fryer_penampakan', $firstDetail?->fryer_penampakan ?? 'TIDAK_OILSOAKED') === 'TIDAK_OILSOAKED' ? 'selected' : '' }}>☀️ Normal</option>
+                                    <option value="OILSOAKED" {{ old('items.'.$qcdtlId.'.fryer_penampakan', $firstDetail?->fryer_penampakan ?? '') === 'OILSOAKED' ? 'selected' : '' }}>💧 Oilsoaked</option>
                                 </select>
                             </div>
                         </div>
 
-                        <div style="font-size: 0.725rem; font-weight: 700; color: #475569; margin-bottom: 0.3rem;">DEFECT FRYING (%):</div>
-                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; margin-bottom: 0.5rem;">
-                            <div>
-                                <label class="qc-info-label">Breakage / Remuk (%)</label>
-                                <input type="number" step="0.1" min="0" max="100" name="items[{{ $qcdtlId }}][defect_breakage_persen]" value="{{ old('items.'.$qcdtlId.'.defect_breakage_persen', $firstDetail?->defect_breakage_persen ?? 0) }}" class="form-control" style="width: 100%; border-radius: 6px; font-size: 0.8rem; font-weight: 700;">
-                            </div>
-                            <div>
-                                <label class="qc-info-label">Cluster / Menempel (%)</label>
-                                <input type="number" step="0.1" min="0" max="100" name="items[{{ $qcdtlId }}][defect_cluster_persen]" value="{{ old('items.'.$qcdtlId.'.defect_cluster_persen', $firstDetail?->defect_cluster_persen ?? 0) }}" class="form-control" style="width: 100%; border-radius: 6px; font-size: 0.8rem; font-weight: 700;">
-                            </div>
+                        {{-- ALERT BAHAYA RASA PAHIT --}}
+                        <div id="bannerPahitWarning" style="display: {{ old('items.'.$qcdtlId.'.fryer_rasa', $firstDetail?->fryer_rasa) === 'PAHIT' ? 'block' : 'none' }}; background: #fef2f2; border: 1.5px solid #fca5a5; border-radius: 8px; padding: 0.65rem 0.85rem; color: #991b1b; font-size: 0.78rem; margin-bottom: 0.65rem; line-height: 1.4;">
+                            <strong style="display: flex; align-items: center; gap: 4px; font-size: 0.82rem; margin-bottom: 2px;">
+                                <span>⚠️</span> <span>RASA PAHIT TERDETEKSI (AFKIR / RACUN SIANIDA)</span>
+                            </strong>
+                            Singkong dengan rasa pahit tidak layak konsumsi pabrik! Disposisi otomatis diubah menjadi <strong>TOLAK TOTAL</strong> dan Grade Mutu menjadi <strong>REJECT</strong>.
                         </div>
-                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem;">
+
+                        {{-- CACAT GORENG LANJUTAN --}}
+                        <div style="font-size: 0.725rem; font-weight: 700; color: #475569; margin-bottom: 0.3rem;">CACAT PENGGORENGAN TAMBAHAN (%):</div>
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem;">
                             <div>
                                 <label class="qc-info-label">Foldover (%)</label>
                                 <input type="number" step="0.1" min="0" max="100" name="items[{{ $qcdtlId }}][defect_foldover_persen]" value="{{ old('items.'.$qcdtlId.'.defect_foldover_persen', $firstDetail?->defect_foldover_persen ?? 0) }}" class="form-control" style="width: 100%; border-radius: 6px; font-size: 0.8rem; font-weight: 700;">
@@ -563,10 +674,35 @@
                                 <label class="qc-info-label">Oilsoaked (%)</label>
                                 <input type="number" step="0.1" min="0" max="100" name="items[{{ $qcdtlId }}][defect_oilsoaked_persen]" value="{{ old('items.'.$qcdtlId.'.defect_oilsoaked_persen', $firstDetail?->defect_oilsoaked_persen ?? 0) }}" class="form-control" style="width: 100%; border-radius: 6px; font-size: 0.8rem; font-weight: 700;">
                             </div>
-                            <div>
-                                <label class="qc-info-label">Gambos (%)</label>
-                                <input type="number" step="0.1" min="0" max="100" name="items[{{ $qcdtlId }}][defect_gambos_persen]" value="{{ old('items.'.$qcdtlId.'.defect_gambos_persen', $firstDetail?->defect_gambos_persen ?? 0) }}" class="form-control" style="width: 100%; border-radius: 6px; font-size: 0.8rem; font-weight: 700;">
-                            </div>
+                        </div>
+                    </div>
+
+                    {{-- 5. PENETAPAN GRADE MUTU SINGKONG --}}
+                    <div style="background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 10px; padding: 0.85rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+                            <label class="qc-info-label" style="font-weight: 800; margin: 0; color: #0f172a;">PENETAPAN GRADE MUTU SINGKONG *</label>
+                            <span style="font-size: 0.7rem; font-weight: 700; color: #0284c7; background: #e0f2fe; padding: 2px 6px; border-radius: 4px;">
+                                Grade Kedatangan
+                            </span>
+                        </div>
+                        <select name="items[{{ $qcdtlId }}][grade_cd]" id="selectGradeCd" class="form-control" style="width: 100%; border-radius: 8px; font-weight: 800; font-size: 0.9rem;" required onchange="onGradeChanged(this.value)">
+                            <option value="A" {{ old('items.'.$qcdtlId.'.grade_cd', $firstDetail?->grade_cd ?? 'A') === 'A' ? 'selected' : '' }} style="color: #047857; font-weight: 800;">
+                                🟢 Grade A (Super - Renyah & Diameter Memenuhi)
+                            </option>
+                            <option value="B" {{ old('items.'.$qcdtlId.'.grade_cd', $firstDetail?->grade_cd) === 'B' ? 'selected' : '' }} style="color: #b45309; font-weight: 800;">
+                                🟡 Grade B (Standar - Ada Ukuran Kecil / Refraksi Tanah)
+                            </option>
+                            <option value="C" {{ old('items.'.$qcdtlId.'.grade_cd', $firstDetail?->grade_cd) === 'C' ? 'selected' : '' }} style="color: #64748b; font-weight: 800;">
+                                ⚪ Grade C (Campur / Sortir Lanjut)
+                            </option>
+                            <option value="REJECT" {{ old('items.'.$qcdtlId.'.grade_cd', $firstDetail?->grade_cd) === 'REJECT' ? 'selected' : '' }} style="color: #dc2626; font-weight: 900;">
+                                🔴 REJECT (Afkir / Tolak Total)
+                            </option>
+                        </select>
+
+                        <div style="margin-top: 0.5rem;">
+                            <label class="qc-info-label" style="display: block; font-weight: 700; margin-bottom: 0.2rem; font-size: 0.75rem;">Catatan Spesifikasi Mutu Fisik</label>
+                            <input type="text" name="items[{{ $qcdtlId }}][catatan_dtl]" value="{{ old('items.'.$qcdtlId.'.catatan_dtl', $firstDetail?->catatan_dtl) }}" class="form-control" placeholder="Contoh: Singkong segar, aroma khas tanah normal, rasa gurih renyah..." style="width: 100%; border-radius: 6px; font-size: 0.8rem;">
                         </div>
                     </div>
                 </div>
@@ -636,6 +772,89 @@
                         </div>
                     </div>
                 </div>
+            @elseif (in_array($kat, ['MSG', 'GARAM', 'PERENYAH', 'BUMBU']))
+                <div style="display: flex; flex-direction: column; gap: 0.85rem;">
+                    {{-- 1. ISI RAW MATERIAL & KONDISI KEMASAN --}}
+                    <div style="background: #ffffff; border: 1.5px solid #ddd6fe; border-radius: 10px; padding: 0.85rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.4rem;">
+                            <span style="font-weight: 800; font-size: 0.82rem; color: #6d28d9;">2. ISI RAW MATERIAL :</span>
+                            <div style="display: flex; gap: 1rem; font-size: 0.82rem; font-weight: 700;">
+                                <label style="display: flex; align-items: center; gap: 4px; color: #15803d; cursor: pointer;">
+                                    <input type="radio" name="items[{{ $qcdtlId }}][status_raw_material]" value="OK" {{ old('items.'.$qcdtlId.'.status_raw_material', $firstDetail?->status_raw_material ?? 'OK') === 'OK' ? 'checked' : '' }}> OK
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 4px; color: #dc2626; cursor: pointer;">
+                                    <input type="radio" name="items[{{ $qcdtlId }}][status_raw_material]" value="TDK_STD" {{ old('items.'.$qcdtlId.'.status_raw_material', $firstDetail?->status_raw_material ?? '') === 'TDK_STD' ? 'checked' : '' }}> TDK STD
+                                </label>
+                            </div>
+                        </div>
+
+                        <div style="border-top: 1px dashed #ddd6fe; padding-top: 0.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.4rem;">
+                            <span style="font-weight: 800; font-size: 0.82rem; color: #0f172a;">KEMASAN :</span>
+                            <div style="display: flex; gap: 1rem; font-size: 0.82rem; font-weight: 700;">
+                                <label style="display: flex; align-items: center; gap: 4px; color: #15803d; cursor: pointer;">
+                                    <input type="radio" name="items[{{ $qcdtlId }}][kemasan_kondisi]" value="OK" {{ old('items.'.$qcdtlId.'.kemasan_kondisi', $firstDetail?->kemasan_kondisi ?? 'OK') === 'OK' ? 'checked' : '' }}> OK
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 4px; color: #dc2626; cursor: pointer;">
+                                    <input type="radio" name="items[{{ $qcdtlId }}][kemasan_kondisi]" value="TIDAK_STANDARD" {{ old('items.'.$qcdtlId.'.kemasan_kondisi', $firstDetail?->kemasan_kondisi ?? '') === 'TIDAK_STANDARD' ? 'checked' : '' }}> TIDAK STANDARD
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- 2. KONDISI FISIK ISI (KERING, BASAH, GUMPAL, BERMINYAK) --}}
+                    <div style="background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 10px; padding: 0.85rem;">
+                        <div style="font-size: 0.8rem; font-weight: 800; color: #6d28d9; margin-bottom: 0.45rem;">
+                            🧪 KONDISI FISIK ISI (RAW MATERIAL):
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.45rem;">
+                            <label style="display: flex; align-items: center; gap: 5px; font-size: 0.8rem; font-weight: 700; color: #15803d; cursor: pointer;">
+                                <input type="checkbox" name="items[{{ $qcdtlId }}][isi_kering]" value="1" {{ old('items.'.$qcdtlId.'.isi_kering', $firstDetail?->isi_kering) ? 'checked' : '' }}> KERING
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 5px; font-size: 0.8rem; font-weight: 700; color: #dc2626; cursor: pointer;">
+                                <input type="checkbox" name="items[{{ $qcdtlId }}][isi_basah]" value="1" {{ old('items.'.$qcdtlId.'.isi_basah', $firstDetail?->isi_basah) ? 'checked' : '' }}> BASAH
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 5px; font-size: 0.8rem; font-weight: 700; color: #d97706; cursor: pointer;">
+                                <input type="checkbox" name="items[{{ $qcdtlId }}][isi_gumpal]" value="1" {{ old('items.'.$qcdtlId.'.isi_gumpal', $firstDetail?->isi_gumpal) ? 'checked' : '' }}> GUMPAL
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 5px; font-size: 0.8rem; font-weight: 700; color: #d97706; cursor: pointer;">
+                                <input type="checkbox" name="items[{{ $qcdtlId }}][isi_berminyak]" value="1" {{ old('items.'.$qcdtlId.'.isi_berminyak', $firstDetail?->isi_berminyak) ? 'checked' : '' }}> BERMINYAK
+                            </label>
+                        </div>
+                    </div>
+
+                    {{-- 3. KONDISI KEMASAN (KOTOR, APEK, JAMUR, SOBEK) --}}
+                    <div style="background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 10px; padding: 0.85rem;">
+                        <div style="font-size: 0.8rem; font-weight: 800; color: #475569; margin-bottom: 0.45rem;">
+                            📦 KONDISI KEMASAN / WADAH ZAK:
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.45rem;">
+                            <label style="display: flex; align-items: center; gap: 5px; font-size: 0.8rem; font-weight: 700; color: #dc2626; cursor: pointer;">
+                                <input type="checkbox" name="items[{{ $qcdtlId }}][kemasan_kotor]" value="1" {{ old('items.'.$qcdtlId.'.kemasan_kotor', $firstDetail?->kemasan_kotor) ? 'checked' : '' }}> KOTOR
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 5px; font-size: 0.8rem; font-weight: 700; color: #dc2626; cursor: pointer;">
+                                <input type="checkbox" name="items[{{ $qcdtlId }}][kemasan_apek]" value="1" {{ old('items.'.$qcdtlId.'.kemasan_apek', $firstDetail?->kemasan_apek) ? 'checked' : '' }}> APEK
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 5px; font-size: 0.8rem; font-weight: 700; color: #dc2626; cursor: pointer;">
+                                <input type="checkbox" name="items[{{ $qcdtlId }}][kemasan_jamur]" value="1" {{ old('items.'.$qcdtlId.'.kemasan_jamur', $firstDetail?->kemasan_jamur) ? 'checked' : '' }}> JAMUR
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 5px; font-size: 0.8rem; font-weight: 700; color: #dc2626; cursor: pointer;">
+                                <input type="checkbox" name="items[{{ $qcdtlId }}][kemasan_sobek]" value="1" {{ old('items.'.$qcdtlId.'.kemasan_sobek', $firstDetail?->kemasan_sobek) ? 'checked' : '' }}> SOBEK
+                            </label>
+                        </div>
+                    </div>
+
+                    {{-- 4. NEGARA PRODUSEN & JUMLAH SAMPLE --}}
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem;">
+                        <div>
+                            <label class="qc-info-label" style="display: block; font-weight: 700; margin-bottom: 0.25rem;">Negara Produsen</label>
+                            <input type="text" name="negara_produsen" value="{{ old('negara_produsen', $qc->negara_produsen ?? 'Indonesia') }}" class="form-control" style="width: 100%; border-radius: 8px;">
+                        </div>
+                        <div>
+                            <label class="qc-info-label" style="display: block; font-weight: 700; margin-bottom: 0.25rem;">Jumlah Sample (gr)</label>
+                            <input type="number" step="any" name="jumlah_sample_gr" value="{{ old('jumlah_sample_gr', $qc->jumlah_sample_gr ?? 200) }}" class="form-control" style="width: 100%; border-radius: 8px; font-weight: 700;">
+                        </div>
+                    </div>
+                </div>
             @endif
         </div>
 
@@ -649,12 +868,12 @@
                 <div>
                     <label class="qc-info-label" style="display: block; font-weight: 700; margin-bottom: 0.35rem;">Keputusan Akhir QC:</label>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem;">
-                        <label style="display: flex; align-items: center; gap: 8px; background: #f0fdf4; border: 2px solid #86efac; border-radius: 8px; padding: 0.65rem 0.85rem; cursor: pointer;">
-                            <input type="radio" name="kesimpulan_qc" value="TERIMA" {{ old('kesimpulan_qc', $qc->status_qc !== 'DITOLAK_TOTAL' ? 'TERIMA' : '') === 'TERIMA' ? 'checked' : '' }} style="width: 20px; height: 20px;">
+                        <label id="lblRadioTerima" style="display: flex; align-items: center; gap: 8px; background: #f0fdf4; border: 2px solid #86efac; border-radius: 8px; padding: 0.65rem 0.85rem; cursor: pointer;">
+                            <input type="radio" name="kesimpulan_qc" id="radioTerima" value="TERIMA" {{ old('kesimpulan_qc', $qc->status_qc !== 'DITOLAK_TOTAL' ? 'TERIMA' : '') === 'TERIMA' ? 'checked' : '' }} style="width: 20px; height: 20px;">
                             <span style="font-weight: 900; color: #15803d; font-size: 0.95rem;">✔ TERIMA</span>
                         </label>
-                        <label style="display: flex; align-items: center; gap: 8px; background: #fef2f2; border: 2px solid #fca5a5; border-radius: 8px; padding: 0.65rem 0.85rem; cursor: pointer;">
-                            <input type="radio" name="kesimpulan_qc" value="TOLAK" {{ old('kesimpulan_qc', $qc->status_qc === 'DITOLAK_TOTAL' ? 'TOLAK' : '') === 'TOLAK' ? 'checked' : '' }} style="width: 20px; height: 20px;">
+                        <label id="lblRadioTolak" style="display: flex; align-items: center; gap: 8px; background: #fef2f2; border: 2px solid #fca5a5; border-radius: 8px; padding: 0.65rem 0.85rem; cursor: pointer;">
+                            <input type="radio" name="kesimpulan_qc" id="radioTolak" value="TOLAK" {{ old('kesimpulan_qc', $qc->status_qc === 'DITOLAK_TOTAL' ? 'TOLAK' : '') === 'TOLAK' ? 'checked' : '' }} style="width: 20px; height: 20px;">
                             <span style="font-weight: 900; color: #b91c1c; font-size: 0.95rem;">✖ TOLAK</span>
                         </label>
                     </div>
@@ -662,7 +881,7 @@
 
                 <div>
                     <label class="qc-info-label" style="display: block; font-weight: 700; margin-bottom: 0.25rem;">Catatan Petugas QC</label>
-                    <textarea name="catatan_umum" rows="2" class="form-control" style="width: 100%; border-radius: 8px;" placeholder="Catatan hasil sampling...">{{ old('catatan_umum', $firstDetail?->catatan_dtl ?: $qc->catatan_umum) }}</textarea>
+                    <textarea name="catatan_umum" id="inputCatatanUmum" rows="2" class="form-control" style="width: 100%; border-radius: 8px;" placeholder="Catatan hasil sampling...">{{ old('catatan_umum', $firstDetail?->catatan_dtl ?: $qc->catatan_umum) }}</textarea>
                 </div>
 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem;">

@@ -10,6 +10,7 @@ use App\Http\Controllers\Controller;
 use App\Imports\Produksi\HasilProduksiImport;
 use App\Imports\Produksi\RekapHppImport;
 use App\Models\Gudang\DatPakaiHdr;
+use App\Models\Produksi\DatProduksiHdr;
 use App\Models\MasterData\MstBarang;
 use App\Models\MasterData\MstGudang;
 use App\Models\MasterData\MstLiniProduksi;
@@ -79,7 +80,7 @@ class ProduksiController extends Controller
      */
     public function rekap(Request $request): View
     {
-        $mode = $request->input('mode', 'harian'); // 'harian' atau 'bulanan'
+        $mode = $request->input('mode') === 'bulanan' ? 'bulanan' : 'harian';
         $year = (int) $request->input('tahun', date('Y'));
         $month = (int) $request->input('bulan', date('n'));
 
@@ -329,7 +330,25 @@ class ProduksiController extends Controller
     public function show(int $id): View
     {
         $produksi = $this->produksiService->getById($id);
-        return view('produksi.show', compact('produksi'));
+
+        // Ambil seluruh dokumen produksi pada tanggal yang sama untuk Tab Switcher Split View per Lini
+        $sameDateProductions = DatProduksiHdr::whereDate('produksi_tgl', $produksi->produksi_tgl)
+            ->where('deleted_st', false)
+            ->where('status_cd', '!=', 'VOID')
+            ->orderBy('shift_cd', 'asc')
+            ->orderBy('produksi_id', 'asc')
+            ->get();
+
+        return view('produksi.show', compact('produksi', 'sameDateProductions'));
+    }
+
+    /**
+     * Halaman Khusus Penyesuaian / Koreksi HPP Lembar Produksi Harian (Worksheet Akuntansi Biaya Manufaktur).
+     */
+    public function adjustPage(int $id): View
+    {
+        $produksi = $this->produksiService->getById($id);
+        return view('produksi.adjust', compact('produksi'));
     }
 
     /**
@@ -352,6 +371,57 @@ class ProduksiController extends Controller
             return back()->with('success', 'Catatan produksi harian berhasil dihapus.');
         } catch (Exception $e) {
             return back()->with('error', 'Gagal menghapus data: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Penyesuaian / Koreksi HPP Harian Dokumen Tertentu dengan Audit Trail Akuntansi.
+     */
+    public function adjustHpp(Request $request, int $id): RedirectResponse
+    {
+        $request->validate([
+            'alasan_txt'                  => 'required|string|min:5',
+            'no_referensi_txt'            => 'nullable|string|max:100',
+
+            // Bahan Baku Langsung (BBL)
+            'singkong_nilai'              => 'nullable|numeric|min:0',
+            'minyak_nilai'                => 'nullable|numeric|min:0',
+            'bumbu_nilai'                 => 'nullable|numeric|min:0',
+
+            // Kemasan & Packing
+            'karton_baru_nilai'           => 'nullable|numeric|min:0',
+            'karton_bekas_nilai'          => 'nullable|numeric|min:0',
+            'plastik_hd_nilai'            => 'nullable|numeric|min:0',
+            'lakban_besar_nilai'          => 'nullable|numeric|min:0',
+            'lakban_kecil_nilai'          => 'nullable|numeric|min:0',
+            'tali_rafia_nilai'            => 'nullable|numeric|min:0',
+
+            // Tenaga Kerja & Utilitas
+            'tk_total_nilai'              => 'nullable|numeric|min:0',
+            'cng_nilai'                   => 'nullable|numeric|min:0',
+            'listrik_air_telp_nilai'      => 'nullable|numeric|min:0',
+
+            // Overhead Pabrik (FOH)
+            'pemeliharaan_mesin_nilai'    => 'nullable|numeric|min:0',
+            'qc_pengawasan_nilai'         => 'nullable|numeric|min:0',
+            'penyusutan_mesin_nilai'      => 'nullable|numeric|min:0',
+            'sarung_tangan_plastik_nilai' => 'nullable|numeric|min:0',
+            'sarung_tangan_kain_nilai'    => 'nullable|numeric|min:0',
+            'fotocopy_nilai'              => 'nullable|numeric|min:0',
+            'limbah_padat_nilai'          => 'nullable|numeric|min:0',
+            'limbah_kimia_nilai'          => 'nullable|numeric|min:0',
+        ]);
+
+        try {
+            $user = Auth::user()?->name ?? (Auth::user()?->username ?? 'SYSTEM');
+            $log = $this->produksiService->adjustSingleProductionHpp($id, $request->all(), $user);
+
+            $msg = "✅ Berhasil melakukan adjustment HPP (No. BA: {$log->adj_no})! ";
+            $msg .= "HPP baru: Rp " . number_format($log->hpp_sesudah, 2, ',', '.') . " / kg. Saldo batch stok di gudang telah disinkronkan.";
+
+            return redirect()->route('produksi.show', $id)->with('success', $msg);
+        } catch (Exception $e) {
+            return redirect()->back()->withInput()->with('error', 'Gagal melakukan adjustment HPP: ' . $e->getMessage());
         }
     }
 

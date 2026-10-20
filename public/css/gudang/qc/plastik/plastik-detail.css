@@ -1,0 +1,580 @@
+/* ==========================================================================
+   QC PLASTIK MODERN MOBILE DETAIL VIEW - PT MIRASA FOOD INDUSTRY
+   Teal Emerald & Deep Slate Enterprise Design System
+   ========================================================================== */
+
+:root {
+    --pl-primary: #0d9488;
+    --pl-primary-dark: #0f766e;
+    --pl-primary-light: #f0fdfa;
+    --pl-accent: #0284c7;
+    --pl-accent-light: #e0f2fe;
+    --pl-success: #16a34a;
+    --pl-success-bg: #dcfce7;
+    --pl-danger: #dc2626;
+    --pl-danger-bg: #fee2e2;
+    --pl-card-bg: #ffffff;
+    --pl-border: #e2e8f0;
+    --pl-text-main: #0f172a;
+    --pl-text-muted: #64748b;
+}
+
+.pl-detail-wrap {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 0.5rem 0.75rem 6.5rem;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--pl-text-main);
+    box-sizing: border-box;
+}
+
+/* TOP APP BAR */
+.pl-top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.85rem;
+}
+
+.pl-back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.825rem;
+    font-weight: 700;
+    color: #475569;
+    text-decoration: none;
+    background: #ffffff;
+    border: 1.5px solid #cbd5e1;
+    padding: 0.45rem 0.85rem;
+    border-radius: 10px;
+    transition: all 0.15s ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.pl-back-btn:hover {
+    background: #f8fafc;
+    color: #0f172a;
+    border-color: #94a3b8;
+}
+
+.pl-action-btn-edit {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.825rem;
+    font-weight: 800;
+    color: #ffffff;
+    background: #0d9488;
+    border: 1.5px solid #0d9488;
+    padding: 0.45rem 0.95rem;
+    border-radius: 10px;
+    text-decoration: none;
+    box-shadow: 0 3px 6px -1px rgba(13, 148, 136, 0.35);
+    transition: all 0.15s ease;
+}
+
+.pl-action-btn-edit:hover {
+    background: #0f766e;
+    color: #ffffff;
+    transform: translateY(-1px);
+}
+
+/* HERO CARD */
+.pl-hero {
+    background: linear-gradient(135deg, #0f172a 0%, #134e4a 60%, #0d9488 100%);
+    border-radius: 16px;
+    padding: 1.25rem 1.35rem;
+    color: #ffffff;
+    margin-bottom: 1rem;
+    box-shadow: 0 8px 20px -4px rgba(13, 148, 136, 0.25), 0 4px 6px -2px rgba(15, 23, 42, 0.15);
+    position: relative;
+    overflow: hidden;
+}
+
+.pl-hero::after {
+    content: "";
+    position: absolute;
+    top: -40px;
+    right: -40px;
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(20, 184, 166, 0.25) 0%, rgba(20, 184, 166, 0) 70%);
+    pointer-events: none;
+}
+
+.pl-hero-badges {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.5rem;
+}
+
+.pl-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.72rem;
+    font-weight: 800;
+    padding: 3px 9px;
+    border-radius: 20px;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+}
+
+.pl-pill-commodity {
+    background: rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.pl-pill-doc {
+    background: rgba(13, 148, 136, 0.4);
+    color: #ccfbf1;
+    border: 1px solid rgba(153, 246, 228, 0.4);
+}
+
+.pl-hero-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.85rem;
+}
+
+.pl-hero-ticket-no {
+    font-size: 1.45rem;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    margin: 0;
+}
+
+.pl-hero-status {
+    font-size: 0.78rem;
+    font-weight: 800;
+    padding: 4px 11px;
+    border-radius: 20px;
+}
+
+.pl-hero-status.siap {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.pl-hero-status.parsial {
+    background: #ffedd5;
+    color: #c2410c;
+}
+
+.pl-hero-status.diterima {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.pl-hero-status.tolak {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.pl-hero-meta-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 0.5rem 0.85rem;
+    font-size: 0.78rem;
+    opacity: 0.95;
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    padding-top: 0.75rem;
+}
+
+.pl-hero-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.pl-hero-grn-box {
+    margin-top: 0.75rem;
+    background: rgba(22, 101, 52, 0.5);
+    border: 1px solid rgba(134, 239, 172, 0.4);
+    border-radius: 8px;
+    padding: 0.45rem 0.75rem;
+    font-size: 0.78rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* SECTION CARDS */
+.pl-card {
+    background: #ffffff;
+    border-radius: 14px;
+    border: 1.5px solid var(--pl-border);
+    padding: 1.15rem 1.25rem;
+    margin-bottom: 0.95rem;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+}
+
+.pl-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.95rem;
+    padding-bottom: 0.55rem;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.pl-card-title {
+    font-size: 0.925rem;
+    font-weight: 800;
+    color: var(--pl-text-main);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+}
+
+.pl-card-badge-right {
+    font-size: 0.7rem;
+    font-weight: 800;
+    background: var(--pl-primary-light);
+    color: var(--pl-primary-dark);
+    padding: 2px 7px;
+    border-radius: 6px;
+}
+
+/* METRICS / KUANTITAS GRID */
+.pl-metrics-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 0.65rem;
+    margin-bottom: 0.85rem;
+}
+
+.pl-metric-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 0.75rem 0.85rem;
+    text-align: center;
+}
+
+.pl-metric-card.highlight {
+    background: #f0fdfa;
+    border-color: #99f6e4;
+}
+
+.pl-metric-title {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--pl-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    margin-bottom: 0.25rem;
+}
+
+.pl-metric-val {
+    font-size: 1.25rem;
+    font-weight: 900;
+    color: var(--pl-text-main);
+}
+
+.pl-metric-val.teal {
+    color: #0d9488;
+}
+
+.pl-metric-val.danger {
+    color: #dc2626;
+}
+
+.pl-metric-sub {
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: var(--pl-text-muted);
+    margin-top: 0.15rem;
+}
+
+/* PARAMETER ANALYSIS DISPLAY (KETEBALAN & KEUTUHAN) */
+.pl-param-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    margin-bottom: 0.85rem;
+}
+
+.pl-param-card {
+    background: #f8fafc;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 0.85rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.pl-param-label {
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.pl-param-value {
+    font-size: 1.15rem;
+    font-weight: 900;
+    color: #0f766e;
+}
+
+.pl-param-std {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #475569;
+    background: #e2e8f0;
+    padding: 2px 6px;
+    border-radius: 4px;
+    align-self: flex-start;
+}
+
+/* CACAT KEMASAN CHECKLIST DISPLAY */
+.pl-defect-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.5rem;
+    margin-bottom: 0.65rem;
+}
+
+.pl-defect-item {
+    border-radius: 8px;
+    padding: 0.5rem 0.4rem;
+    text-align: center;
+    font-size: 0.72rem;
+    font-weight: 800;
+    border: 1.5px solid #e2e8f0;
+    background: #f8fafc;
+    color: #64748b;
+}
+
+.pl-defect-item.detected {
+    background: #fee2e2;
+    border-color: #fca5a5;
+    color: #dc2626;
+}
+
+.pl-defect-item.clean {
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+    color: #16a34a;
+}
+
+/* STATUS WADAH & RAW MATERIAL PILLS */
+.pl-status-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.65rem;
+    margin-bottom: 0.75rem;
+}
+
+.pl-status-box {
+    border-radius: 10px;
+    padding: 0.75rem 0.85rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border: 1.5px solid #e2e8f0;
+}
+
+.pl-status-box.pass {
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+}
+
+.pl-status-box.fail {
+    background: #fef2f2;
+    border-color: #fecaca;
+}
+
+.pl-status-title {
+    font-size: 0.78rem;
+    font-weight: 800;
+    color: #1e293b;
+}
+
+.pl-status-badge {
+    font-size: 0.75rem;
+    font-weight: 800;
+    padding: 2px 7px;
+    border-radius: 6px;
+}
+
+.pl-status-badge.pass {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.pl-status-badge.fail {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+/* GENERAL GRID & CELLS */
+.pl-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+}
+
+.pl-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.pl-cell-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--pl-text-muted);
+    text-transform: uppercase;
+}
+
+.pl-cell-value {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--pl-text-main);
+    word-break: break-word;
+}
+
+.pl-cell-value.highlight-teal {
+    color: #0f766e;
+    font-weight: 800;
+}
+
+.pl-cell-value.highlight-blue {
+    color: #0284c7;
+    font-weight: 800;
+}
+
+/* AUDIT HALAL LIST */
+.pl-halal-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+}
+
+.pl-halal-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.65rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 0.65rem 0.85rem;
+}
+
+.pl-halal-left {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.pl-halal-title {
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: var(--pl-text-main);
+}
+
+.pl-halal-sub {
+    font-size: 0.7rem;
+    color: var(--pl-text-muted);
+}
+
+.pl-halal-badge {
+    font-size: 0.72rem;
+    font-weight: 800;
+    padding: 3px 8px;
+    border-radius: 6px;
+    flex-shrink: 0;
+}
+
+.pl-halal-badge.pass {
+    background: var(--pl-success-bg);
+    color: var(--pl-success);
+}
+
+.pl-halal-badge.fail {
+    background: var(--pl-danger-bg);
+    color: var(--pl-danger);
+}
+
+/* BOTTOM FIXED BAR */
+.pl-bottom-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #ffffff;
+    border-top: 1.5px solid #e2e8f0;
+    padding: 0.75rem 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    z-index: 50;
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.pl-bottom-btn {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    padding: 0.7rem 1rem;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    font-weight: 800;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.pl-bottom-btn.btn-edit {
+    background: #0d9488;
+    color: #ffffff;
+    box-shadow: 0 2px 6px rgba(13, 148, 136, 0.35);
+}
+
+.pl-bottom-btn.btn-edit:hover {
+    background: #0f766e;
+}
+
+.pl-bottom-btn.btn-back {
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+}
+
+.pl-bottom-btn.btn-back:hover {
+    background: #e2e8f0;
+    color: #0f172a;
+}
+
+@media (max-width: 480px) {
+    .pl-param-grid {
+        grid-template-columns: 1fr;
+    }
+    .pl-defect-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .pl-status-row {
+        grid-template-columns: 1fr;
+    }
+}

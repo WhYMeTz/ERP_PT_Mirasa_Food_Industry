@@ -25,6 +25,12 @@ use App\Http\Controllers\Penjualan\SoController;
 use App\Http\Controllers\Produksi\BomController;
 use App\Http\Controllers\Produksi\ProduksiController;
 use App\Http\Controllers\Produksi\ProduksiStokController;
+use App\Http\Controllers\Manajemen\FingerprintController;
+use App\Http\Controllers\Manajemen\AbsensiController;
+use App\Http\Controllers\Manajemen\PayrollController;
+use App\Http\Controllers\Manajemen\PayrollHarianController;
+use App\Http\Controllers\Manajemen\JadwalController;
+use App\Http\Controllers\Manajemen\KodeShiftController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -105,11 +111,35 @@ Route::middleware('auth')->group(function () {
         ->names('master.supplier')
         ->middleware('role:SUPERADMIN,PURCHASING');
 
-    // Master Customer & Karyawan
+    // Master Customer
     Route::resource('master-customer', CustomerController::class)->names('master.customer');
+
+    // Master Karyawan
+    // Rute untuk Export Excel, Import Excel, Cetak PDF 
+    Route::get('master-karyawan/export-excel', [KaryawanController::class, 'exportExcel'])->name('master.karyawan.export-excel');
+    Route::post('master-karyawan/import', [KaryawanController::class, 'importExcel'])->name('master.karyawan.import');
+    Route::get('master-karyawan/cetak-pdf', [KaryawanController::class, 'cetakPdf'])->name('master.karyawan.cetak-pdf');
+    Route::get('master-karyawan/template-import', [KaryawanController::class, 'downloadTemplate'])
+        ->name('master.karyawan.template-import');
+
     Route::resource('master-karyawan', KaryawanController::class)
         ->names('master.karyawan')
         ->middleware('role:SUPERADMIN,HRD,master_karyawan_view,master_karyawan_manage');
+
+    Route::prefix('manajemen')->name('manajemen.')
+        ->middleware(['auth', 'role:SUPERADMIN,HRD,fingerprint_view,absensi_view,payroll_view'])
+        ->group(function () {
+            Route::get('/fingerprint',     [FingerprintController::class, 'index'])->name('fingerprint.index');
+            Route::post('/fingerprint/import', [FingerprintController::class, 'import'])->name('fingerprint.import');
+            Route::post('/fingerprint/bulk-update', [FingerprintController::class, 'bulkUpdate'])->name('fingerprint.bulk-update');
+            Route::post('/fingerprint/bulk-delete', [FingerprintController::class, 'bulkDelete'])->name('fingerprint.bulk-delete');
+            Route::get('/absensi',         [AbsensiController::class, 'index'])->name('absensi.index');
+            Route::get('/jadwal',         [JadwalController::class, 'index'])->name('jadwal.index');
+            Route::post('/jadwal/import', [JadwalController::class, 'import'])->name('jadwal.import');
+            Route::get('/kode-shift',     [KodeShiftController::class, 'index'])->name('kode-shift.index');
+            Route::get('/payroll',         [PayrollController::class, 'index'])->name('payroll.index');
+            Route::get('/payroll-harian',  [PayrollHarianController::class, 'index'])->name('payroll_harian.index');
+    });
 
     // Modul Transaksi Gudang (Inbound, Outbound & Inventory Engine)
     Route::prefix('gudang')->name('gudang.')->group(function () {

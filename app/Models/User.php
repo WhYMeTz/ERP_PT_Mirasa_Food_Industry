@@ -609,6 +609,37 @@ class User extends Authenticatable
             || $this->canDo('master_karyawan_manage');
     }
 
+    /**
+     * Hak akses Manajemen Karyawan (Absensi & Payroll)
+     */
+    public function canAccessFingerprint(): bool
+    {
+        return $this->isSuperAdmin()
+            || $this->canDo('fingerprint_view')
+            || $this->canDo('fingerprint_manage');
+    }
+
+    public function canAccessAbsensi(): bool
+    {
+        return $this->isSuperAdmin()
+            || $this->canDo('absensi_view')
+            || $this->canDo('absensi_manage');
+    }
+
+    public function canAccessPayroll(): bool
+    {
+        return $this->isSuperAdmin()
+            || $this->canDo('payroll_view')
+            || $this->canDo('payroll_manage');
+    }
+
+    public function canAccessManajemenKaryawan(): bool
+    {
+        return $this->canAccessFingerprint()
+            || $this->canAccessAbsensi()
+            || $this->canAccessPayroll();
+    }
+
     public function canCreateMasterKaryawan(): bool
     {
         return $this->isSuperAdmin() 

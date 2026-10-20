@@ -1,0 +1,89 @@
+/* Halaman Finger Print Karyawan */
+.fp-head { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap; margin-bottom:20px; }
+.fp-title { font-size:28px; font-weight:700; margin:0; color:#0f172a; }
+.fp-sub { margin:4px 0 0; color:#64748b; font-size:14px; }
+
+.fp-btn { display:inline-flex; align-items:center; gap:8px; padding:10px 18px; border-radius:8px; border:1px solid transparent;
+          font-size:14px; font-weight:600; cursor:pointer; text-decoration:none; transition:.15s; }
+.fp-btn-primary { background:#0284c7; color:#fff; }
+.fp-btn-primary:hover { background:#0369a1; }
+.fp-btn-soft { background:#f1f5f9; color:#334155; border-color:#e2e8f0; }
+.fp-btn-soft:hover { background:#e2e8f0; }
+.fp-btn[disabled] { opacity:.5; cursor:not-allowed; }
+
+.fp-stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px; margin-bottom:20px; }
+.fp-stat { background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:18px 20px; }
+.fp-stat-label { font-size:12px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; }
+.fp-stat-value { font-size:30px; font-weight:700; margin:6px 0 2px; color:#0f172a; }
+.fp-stat-note { font-size:12px; color:#64748b; }
+
+.fp-card { background:#fff; border:1px solid #e2e8f0; border-radius:12px; margin-bottom:20px; }
+.fp-filter { display:flex; gap:10px; align-items:center; flex-wrap:wrap; padding:16px 20px; }
+.fp-input { padding:10px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:14px; background:#fff; color:#0f172a; }
+.fp-input:focus { outline:none; border-color:#0284c7; box-shadow:0 0 0 3px rgba(2,132,199,.15); }
+.fp-input-search { flex:1; min-width:220px; max-width:360px; }
+.fp-total { margin-left:auto; color:#64748b; font-size:14px; }
+.fp-total b { color:#0f172a; }
+
+.fp-table-wrap { overflow-x:auto; }
+.fp-table { width:100%; border-collapse:collapse; font-size:14px; }
+.fp-table th { text-align:left; padding:14px 16px; background:#f8fafc; color:#475569; font-weight:600;
+               border-bottom:1px solid #e2e8f0; white-space:nowrap; }
+.fp-table td { padding:12px 16px; border-bottom:1px solid #f1f5f9; color:#0f172a; white-space:nowrap; }
+.fp-table tbody tr:hover { background:#f8fafc; }
+.fp-mono { font-family:ui-monospace, Consolas, monospace; font-size:13px; }
+.fp-muted { color:#94a3b8; }
+.fp-id { color:#0284c7; font-weight:600; }
+.fp-time-final { font-weight:700; }
+.fp-badge { display:inline-block; padding:3px 10px; border-radius:6px; font-size:12px; font-weight:600; }
+.fp-badge-warn { background:#fef3c7; color:#b45309; }
+.fp-badge-info { background:#e0f2fe; color:#0369a1; }
+.fp-empty { text-align:center; padding:48px 16px; color:#94a3b8; }
+.fp-pager { padding:14px 20px; }
+
+.fp-alert { padding:12px 16px; border-radius:8px; margin-bottom:16px; font-size:14px; border:1px solid; }
+.fp-alert-ok  { background:#ecfdf5; color:#047857; border-color:#a7f3d0; }
+.fp-alert-err { background:#fef2f2; color:#b91c1c; border-color:#fecaca; }
+
+/* Modal impor */
+.fp-modal { position:fixed; inset:0; background:rgba(15,23,42,.45); display:none; align-items:center; justify-content:center; z-index:1000; padding:16px; }
+.fp-modal.open { display:flex; }
+.fp-modal-box { background:#fff; border-radius:14px; width:100%; max-width:480px; box-shadow:0 20px 50px rgba(0,0,0,.25); }
+.fp-modal-head { display:flex; justify-content:space-between; align-items:center; padding:20px 24px; border-bottom:1px solid #e2e8f0; }
+.fp-modal-head h3 { margin:0; font-size:18px; font-weight:700; color:#0f172a; }
+.fp-modal-x { background:none; border:none; font-size:22px; line-height:1; cursor:pointer; color:#64748b; }
+.fp-modal-body { padding:20px 24px; }
+.fp-modal-foot { display:flex; justify-content:flex-end; gap:10px; padding:16px 24px; border-top:1px solid #e2e8f0; }
+.fp-info { background:#f0f9ff; border:1px solid #bae6fd; color:#0c4a6e; border-radius:8px; padding:12px 14px; font-size:13px; margin-bottom:16px; }
+.fp-info-ok { background:#ecfdf5; border-color:#a7f3d0; color:#047857; margin:12px 0 0; }
+.fp-label { display:block; font-size:14px; font-weight:600; margin-bottom:6px; color:#0f172a; }
+.fp-label span { color:#dc2626; }
+.fp-file-box { border:1px solid #cbd5e1; border-radius:8px; padding:8px 10px; display:flex; align-items:center; gap:10px; }
+.fp-hint { font-size:12px; color:#64748b; margin:8px 0 0; }
+.fp-list { font-size:12px; color:#64748b; padding-left:18px; margin:10px 0 0; }
+.fp-chk { width:16px; height:16px; cursor:pointer; accent-color:#0284c7; }
+.fp-bulkbar { display:none; align-items:center; gap:10px; flex-wrap:wrap; padding:12px 20px; margin-bottom:20px;
+ 
+    background:#f0f9ff; border:1px solid #bae6fd; border-radius:12px; }
+.fp-bulkbar.show { display:flex; }
+.fp-bulkbar b { color:#0369a1; }
+.fp-btn-danger { background:#dc2626; color:#fff; }
+.fp-btn-danger:hover { background:#b91c1c; }
+.fp-badge-manual { background:#ede9fe; color:#6d28d9; margin-left:6px; }
+.fp-row-sel { background:#f0f9ff !important; }
+.fp-field { margin-bottom:14px; }
+.fp-check-line { display:flex; align-items:center; gap:8px; font-size:13px; color:#334155; }
+
+.fp-modal-lg { max-width:640px; max-height:92vh; display:flex; flex-direction:column; }
+.fp-modal-lg form { display:flex; flex-direction:column; min-height:0; }
+.fp-modal-lg .fp-modal-body { overflow-y:auto; }
+
+.fp-guide { margin-top:14px; border:1px solid #e2e8f0; border-radius:8px; }
+.fp-guide summary { cursor:pointer; padding:10px 14px; font-size:14px; font-weight:600; color:#0369a1; }
+.fp-guide[open] summary { border-bottom:1px solid #e2e8f0; }
+.fp-guide-body { padding:12px 14px; font-size:13px; color:#334155; }
+.fp-guide-body ol { margin:0 0 12px; padding-left:18px; }
+.fp-guide-body li { margin-bottom:4px; }
+.fp-guide-table { width:100%; border-collapse:collapse; font-size:12px; }
+.fp-guide-table th, .fp-guide-table td { border:1px solid #e2e8f0; padding:5px 8px; text-align:left; }
+.fp-guide-table th { background:#f8fafc; color:#475569; }

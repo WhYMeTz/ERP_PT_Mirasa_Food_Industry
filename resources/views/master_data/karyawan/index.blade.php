@@ -12,166 +12,253 @@
         <h1 style="font-size: 1.5rem; font-weight: 700; color: #0f172a;">Master Data Karyawan</h1>
         <p style="color: #64748b; font-size: 0.875rem; margin-top: 0.25rem;">Kelola data profil staf operasional, produksi, gudang, purchasing, dan tim manajemen.</p>
     </div>
-    <div>
-        @if (Auth::user()?->canCreateMasterKaryawan())
-            <button type="button" onclick="openModal('modalTambahKaryawan')" class="btn btn-primary">
-                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                Tambah Karyawan Baru
-            </button>
-        @endif
+    <div style="position: relative;">
+        <button type="button" id="btnKelolaData" onclick="toggleKelolaMenu(event)" style="background-color: #007bff; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer;">
+            Kelola Data &#9662;
+        </button>
+        <ul id="kelolaMenu" style="display: none; position: absolute; right: 0; top: 100%; margin-top: 4px; min-width: 220px; background: #fff; border: 1px solid #e2e8f0; border-radius: 0.375rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); padding: 0.5rem 0; z-index: 50; list-style: none;">
+            <!-- KELOMPOK 1: INPUT DATA -->
+            <li>
+                <a href="#" onclick="closeKelolaMenu(); openModal('modalTambahKaryawan'); return false;" style="display: block; padding: 0.5rem 1rem; color: #067e06; text-decoration: none; transition: background 0.2s;" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background='transparent'">
+                    ➕ Tambah Karyawan
+                </a>
+            </li>
+            <li>
+                <a href="#" onclick="closeKelolaMenu(); openModal('modalImportExcel'); return false;" style="display: block; padding: 0.5rem 1rem; color: #067e06; text-decoration: none; transition: background 0.2s;" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background='transparent'">
+                    📥 Import dari Excel
+                </a>
+            </li>
+
+            <!-- GARIS PEMBATAS TENGAH -->
+            <li style="margin: 0.4rem 0; border-top: 1px solid #e2e8f0;"></li>
+
+            <!-- KELOMPOK 2: OUTPUT DATA -->
+            <li>
+                <a href="{{ route('master.karyawan.export-excel', [
+                    'search' => request('search'),
+                    'departemen' => request('departemen'),
+                    'kelompok' => request('kelompok'),
+                    'shift' => request('shift')
+                ]) }}" style="display: block; padding: 0.5rem 1rem; color: #0284c7; text-decoration: none; transition: background 0.2s;" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background='transparent'">
+                    📤 Export ke Excel
+                </a>
+            </li>
+            <li>
+                <a href="{{ route('master.karyawan.cetak-pdf', [
+                    'search' => request('search'),
+                    'departemen' => request('departemen'),
+                    'kelompok' => request('kelompok'),
+                    'shift' => request('shift')
+                ]) }}" target="_blank" style="display: block; padding: 0.5rem 1rem; color: #0284c7; font-weight: 500; text-decoration: none; transition: background 0.2s;" onmouseover="this.style.background='#f0f9ff'" onmouseout="this.style.background='transparent'">
+                    📄 Cetak Laporan PDF
+                </a>
+            </li>
+        </ul>
     </div>
 </div>
 
-<div class="card">
-    <div class="card-header">
-        <form action="{{ route('master.karyawan.index') }}" method="GET" style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; max-width: 600px; width: 100%;">
-            <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Cari NIK, nama, jabatan, email..." class="form-control" style="padding: 0.5rem 0.75rem; max-width: 260px;">
-            <select name="departemen" class="form-control" style="padding: 0.5rem 0.75rem; max-width: 200px;" onchange="this.form.submit()">
-                <option value="">-- Semua Departemen --</option>
+<div class="card" style="background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 1.5rem; margin-bottom: 1.5rem;">
+    <div class="card-body" style="padding: 0;">
+        <form action="{{ route('master.karyawan.index') }}" method="GET" style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; width: 100%;">
+            <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Cari ID Karyawan, ID Absen, Nama..." class="form-control" style="padding: 0.5rem 0.75rem; max-width: 250px;">
+            
+            <select name="departemen" class="form-control" style="padding: 0.5rem 0.75rem; max-width: 180px;" onchange="this.form.submit()">
+                <option value="">-- Semua Bagian/Divisi --</option>
                 @foreach ($departemenList as $key => $label)
                     <option value="{{ $key }}" {{ ($departemen ?? '') === $key ? 'selected' : '' }}>{{ $label }}</option>
                 @endforeach
             </select>
+
+            <select name="kelompok" class="form-control" style="padding: 0.5rem 0.75rem; max-width: 180px;" onchange="this.form.submit()">
+                <option value="">-- Semua Kelompok --</option>
+                @foreach (\App\Models\MasterData\MstKaryawan::KELOMPOK as $key => $label)
+                    <option value="{{ $key }}" {{ ($kelompok ?? '') === $key ? 'selected' : '' }}>{{ $label }}</option>
+                @endforeach
+            </select>
+
+            <select name="shift" class="form-control" style="padding: 0.5rem 0.75rem; max-width: 150px;" onchange="this.form.submit()">
+                <option value="">-- Semua Shift --</option>
+                <option value="SHIFT A" {{ ($shift ?? '') === 'SHIFT A' ? 'selected' : '' }}>Shift A</option>
+                <option value="SHIFT B" {{ ($shift ?? '') === 'SHIFT B' ? 'selected' : '' }}>Shift B</option>
+                <option value="NON SHIFT" {{ ($shift ?? '') === 'NON SHIFT' ? 'selected' : '' }}>Non Shift</option>
+            </select>
+
             <button type="submit" class="btn btn-secondary">Filter</button>
-            @if(!empty($search) || !empty($departemen))
+            @if(!empty($search) || !empty($departemen) || !empty($kelompok) || !empty($shift))
                 <a href="{{ route('master.karyawan.index') }}" class="btn btn-secondary" title="Reset Filter">&times;</a>
             @endif
+            <div style="margin-left: auto; display: flex; align-items: center;">
+                <span style="color: #64748b; font-size: 0.875rem;">Total Karyawan: <strong>{{ $karyawanList->total() }}</strong></span>
+            </div>
         </form>
-        <span style="color: #64748b; font-size: 0.875rem;">Total Karyawan: <strong>{{ $karyawanList->total() }}</strong></span>
+        
     </div>
+</div>
 
+<div class="card">
     <div style="overflow-x: auto;">
-        <table>
+        <table class="table" style="width: 100%; border-collapse: collapse;">
             <thead>
-                <tr>
-                    <th style="width: 50px;">No</th>
-                    <th>NIK</th>
-                    <th>Nama Karyawan</th>
-                    <th>Departemen</th>
-                    <th>Jabatan</th>
-                    <th>Kontak / Telp</th>
-                    <th>Akun Sistem &amp; Cabang</th>
-                    <th style="width: 100px; text-align: center;">Aksi</th>
+                <tr style="border-bottom: 1px solid #e2e8f0; text-align: left; background-color: #f8fafc;">
+                    <th style="padding: 0.75rem; width: 50px;">No</th>
+                    <th style="padding: 0.75rem;">ID Karyawan</th>
+                    <th style="padding: 0.75rem;">ID Absensi</th>
+                    <th style="padding: 0.75rem;">Nama Karyawan</th>
+                    <th style="padding: 0.75rem;">Kelompok</th>
+                    <th style="padding: 0.75rem;">Shift</th>
+                    <th style="padding: 0.75rem;">Status Karyawan</th>
+                    <th style="padding: 0.75rem;">Bagian / Divisi</th>
+                    <th style="padding: 0.75rem;">Tanggal Masuk Kerja</th>
+                    <th style="padding: 0.75rem;">Kontak / No Telp</th>
+                    <th style="padding: 0.75rem;">Email</th>
+                    <th style="padding: 0.75rem;">Bank</th>
+                    <th style="padding: 0.75rem;">No. Rekening</th>
+                    <th style="padding: 0.75rem;">Masa Kerja</th>
+                    <th style="padding: 0.75rem;">Alamat</th>
+                    <th style="padding: 0.75rem;">Akun Sistem &amp; Gudang</th>
+                    <th style="padding: 0.75rem; width: 120px; text-align: center;">Aksi</th>
                 </tr>
             </thead>
             <tbody>
                 @forelse ($karyawanList as $index => $item)
-                    <tr>
-                        <td>{{ $karyawanList->firstItem() + $index }}</td>
-                        <td>
-                            <strong style="color: #0284c7; font-family: monospace; font-size: 0.9rem;">{{ $item->nik }}</strong>
+                    <tr style="border-bottom: 1px solid #e2e8f0;">
+                        <td style="padding: 0.75rem;">{{ $karyawanList->firstItem() + $index }}</td>
+                        <td style="padding: 0.75rem;"><strong style="color: #0284c7; font-family: monospace; font-size: 0.9rem;">{{ $item->nik ?? '-' }}</strong></td>
+                        <td style="padding: 0.75rem;">{{ $item->id_absensi ?? '-' }}</td>
+                        <td style="padding: 0.75rem;">
+                            <span style="font-weight: 600; color: #0f172a;">{{ $item->karyawan_nm }}</span>
                         </td>
-                        <td style="font-weight: 600; color: #0f172a;">
-                            {{ $item->karyawan_nm }}
-                            @if ($item->email)
-                                <span style="display: block; font-size: 0.75rem; color: #64748b; font-weight: normal;">{{ $item->email }}</span>
-                            @endif
+                        <td style="padding: 0.75rem;">
+                            @php $isLangsung = str_starts_with($item->kelompok ?? '', 'LANGSUNG'); @endphp
+                            <span class="badge" style="background: {{ $isLangsung ? '#e0f2fe' : '#f1f5f9' }}; color: {{ $isLangsung ? '#0369a1' : '#475569' }}; font-weight: 600; font-size: 0.75rem; padding: 0.25rem 0.5rem; border-radius: 4px;">
+                                {{ \App\Models\MasterData\MstKaryawan::KELOMPOK[$item->kelompok] ?? ($item->kelompok ?? '-') }}
+                            </span>
                         </td>
-                        <td>
+                        <td style="padding: 0.75rem;">{{ $item->shift ?? '-' }}</td>
+                        <td style="padding: 0.75rem;">{{ $item->status_kerja ?? 'Tetap' }}</td>
+                        <td style="padding: 0.75rem;">
                             @php
                                 $deptBg = '#f1f5f9';
                                 $deptClr = '#475569';
-                                if ($item->departemen_cd === 'PRODUKSI') { $deptBg = '#ffedd5'; $deptClr = '#c2410c'; }
-                                elseif ($item->departemen_cd === 'GUDANG') { $deptBg = '#e0f2fe'; $deptClr = '#0369a1'; }
-                                elseif ($item->departemen_cd === 'PURCHASING') { $deptBg = '#fef3c7'; $deptClr = '#92400e'; }
-                                elseif ($item->departemen_cd === 'FINANCE') { $deptBg = '#dcfce7'; $deptClr = '#15803d'; }
-                                elseif ($item->departemen_cd === 'QC') { $deptBg = '#f3e8ff'; $deptClr = '#7e22ce'; }
-                                elseif ($item->departemen_cd === 'HRD') { $deptBg = '#fce7f3'; $deptClr = '#be185d'; }
-                                elseif ($item->departemen_cd === 'MANAJEMEN') { $deptBg = '#fef08a'; $deptClr = '#854d0e'; }
+                                $deptCd = $item->departemen_cd ?? '';
+                                if ($deptCd === 'PRODUKSI') { $deptBg = '#eff6ff'; $deptClr = '#1e40af'; }
+                                elseif ($deptCd === 'GUDANG') { $deptBg = '#fef3c7'; $deptClr = '#92400e'; }
+                                elseif ($deptCd === 'PURCHASING') { $deptBg = '#ecfdf5'; $deptClr = '#065f46'; }
+                                elseif ($deptCd === 'FINANCE') { $deptBg = '#fdf2f8'; $deptClr = '#9d174d'; }
+                                elseif ($deptCd === 'QC') { $deptBg = '#f5f3ff'; $deptClr = '#5b21b6'; }
+                                elseif ($deptCd === 'HRD') { $deptBg = '#fff1f2'; $deptClr = '#9f1239'; }
+                                elseif ($deptCd === 'MANAJEMEN') { $deptBg = '#f0fdf4'; $deptClr = '#166534'; }
                             @endphp
-                            <span class="badge" style="background: {{ $deptBg }}; color: {{ $deptClr }}; font-weight: 700;">
+                            <span class="badge" style="background: {{ $deptBg }}; color: {{ $deptClr }}; font-weight: 700; font-size: 0.75rem; padding: 0.25rem 0.5rem; border-radius: 4px;">
                                 {{ $departemenList[$item->departemen_cd] ?? $item->departemen_cd }}
                             </span>
                         </td>
-                        <td>{{ $item->jabatan_nm }}</td>
-                        <td>{{ $item->telepon_no ?? '-' }}</td>
-                        <td>
+                        <td style="padding: 0.75rem;">{{ $item->tgl_masuk ? \Carbon\Carbon::parse($item->tgl_masuk)->format('d/m/y') : '-' }}</td>
+                        <td style="padding: 0.75rem;">{{ $item->telepon_no ?? '-' }}</td>
+                        <td style="padding: 0.75rem; font-size: 0.85rem; color: #64748b;">{{ $item->email ?? '-' }}</td>
+                        <td style="padding: 0.75rem;">{{ $item->bank_name ?? 'BCA' }}</td>
+                        <td style="padding: 0.75rem; font-family: monospace;">{{ $item->no_rekening ?? '-' }}</td>
+                        <td style="padding: 0.75rem; font-size: 0.85rem;">
+                            @if($item->tgl_masuk)
+                                {{ \Carbon\Carbon::parse($item->tgl_masuk)->diff(\Carbon\Carbon::now())->format('%y Tahun %m Bulan %d Hari') }}
+                            @else
+                                -
+                            @endif
+                        </td>
+                        <td style="padding: 0.75rem; font-size: 0.85rem; max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{{ $item->alamat_txt }}">{{ $item->alamat_txt ?? '-' }}</td>
+                        <td style="padding: 0.75rem;">
                             @if ($item->user)
                                 <span class="badge" style="background: #ecfdf5; color: #065f46; font-weight: 600;">
-                                    ✓ Akun: {{ $item->user->role_cd }}
+                                    Akun: {{ $item->user->role_cd }}
                                 </span>
                                 @if ($item->user->gudang)
-                                    <span style="display: block; font-size: 0.75rem; color: #0284c7; margin-top: 0.15rem;">
-                                        📍 {{ $item->user->gudang->gudang_nm }}
+                                    <span style="display: block; font-size: 0.75rem; color: #64748b; margin-top: 0.15rem;">
+                                        Gudang: {{ $item->user->gudang->gudang_nm }}
                                     </span>
                                 @else
-                                    <span style="display: block; font-size: 0.75rem; color: #94a3b8; margin-top: 0.15rem;">
-                                        🌐 Seluruh Perusahaan
+                                    <span style="display: block; font-size: 0.75rem; color: #64748b; margin-top: 0.15rem;">
+                                        Seluruh Perusahaan
                                     </span>
                                 @endif
                             @else
-                                <span class="badge" style="background: #f1f5f9; color: #94a3b8;">
-                                    Belum ada akun
-                                </span>
+                                <span class="badge" style="background: #f1f5f9; color: #64748b;">Belum ada akun</span>
                             @endif
                         </td>
-                        <td style="text-align: center; vertical-align: middle;">
-                            @if (Auth::user()?->canEditMasterKaryawan() || Auth::user()?->canDeleteMasterKaryawan())
-                                <button type="button" 
-                                    class="btn-action-trigger" 
-                                    onclick="toggleSmartActionDropdown(this, event, 'action-menu-{{ $item->karyawan_id }}')">
-                                    <span>Aksi</span>
-                                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                        <td style="padding: 0.75rem; text-align: center; vertical-align: middle; white-space: nowrap;">
+                            @php
+                                $rowData = [
+                                    'karyawan_id'   => $item->karyawan_id,
+                                    'nik'           => $item->nik,
+                                    'id_absensi'    => $item->id_absensi,
+                                    'karyawan_nm'   => $item->karyawan_nm,
+                                    'departemen_cd' => $item->departemen_cd,
+                                    'departemen_nm' => $departemenList[$item->departemen_cd] ?? $item->departemen_cd,
+                                    'jabatan_nm'    => $item->jabatan_nm,
+                                    'kelompok'      => $item->kelompok,
+                                    'shift'         => $item->shift,
+                                    'status_kerja'  => $item->status_kerja,
+                                    'tgl_masuk'     => $item->tgl_masuk ? \Carbon\Carbon::parse($item->tgl_masuk)->format('Y-m-d') : '',
+                                    'telepon_no'    => $item->telepon_no,
+                                    'email'         => $item->email,
+                                    'bank_name'     => $item->bank_name,
+                                    'no_rekening'   => $item->no_rekening,
+                                    'alamat_txt'    => $item->alamat_txt,
+                                ];
+                            @endphp
+                            @if (Auth::user()->canEditMasterKaryawan())
+                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="editKaryawan({{ Js::from($rowData) }})" style="padding: 0.25rem 0.5rem; font-size: 0.8rem; margin-right: 0.25rem;">
+                                    Edit
                                 </button>
-
-                                <div id="action-menu-{{ $item->karyawan_id }}" class="action-dropdown-menu">
-                                    @if (Auth::user()?->canEditMasterKaryawan())
-                                        <button type="button" 
-                                            class="action-dropdown-item" 
-                                            onclick="closeAllActionDropdowns(); editKaryawan({{ $item->karyawan_id }}, '{{ addslashes($item->nik) }}', '{{ addslashes($item->karyawan_nm) }}', '{{ $item->departemen_cd }}', '{{ addslashes($item->jabatan_nm) }}', '{{ addslashes($item->telepon_no ?? '') }}', '{{ addslashes($item->email ?? '') }}', '{{ addslashes($item->alamat_txt ?? '') }}')">
-                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                                            <span>Edit Data Karyawan</span>
-                                        </button>
-                                    @endif
-
-                                    @if (Auth::user()?->canEditMasterKaryawan() && Auth::user()?->canDeleteMasterKaryawan())
-                                        <div class="action-dropdown-divider"></div>
-                                    @endif
-
-                                    @if (Auth::user()?->canDeleteMasterKaryawan())
-                                        <button type="button" 
-                                            class="action-dropdown-item danger-item" 
-                                            onclick="closeAllActionDropdowns(); openDeleteKaryawanModal({{ $item->karyawan_id }}, '{{ addslashes($item->nik) }}', '{{ addslashes($item->karyawan_nm) }}', '{{ addslashes($departemenList[$item->departemen_cd] ?? $item->departemen_cd) }}', '{{ addslashes($item->jabatan_nm) }}')">
-                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                            <span>Nonaktifkan Karyawan</span>
-                                        </button>
-                                    @endif
-                                </div>
-                            @else
-                                <span style="font-size: 0.75rem; color: #94a3b8;">-</span>
+                            @endif
+                            @if (Auth::user()->canDeleteMasterKaryawan())
+                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="openDeleteKaryawanModal({{ Js::from($rowData) }})" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">
+                                    Hapus
+                                </button>
                             @endif
                         </td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="8" style="text-align: center; padding: 3rem 1rem; color: #94a3b8;">
-                            Belum ada data karyawan. Klik tombol <strong>"Tambah Karyawan Baru"</strong> di atas.
+                        <td colspan="17" style="text-align: center; padding: 3rem 1rem; color: #94a3b8;">
+                            Belum ada data karyawan. Klik tombol <strong>"Kelola Data"</strong> di atas untuk menambah data.
                         </td>
                     </tr>
                 @endforelse
             </tbody>
         </table>
     </div>
-
-    @if ($karyawanList->hasPages())
-        <div style="padding: 1rem 1.5rem; border-top: 1px solid #f1f5f9;">
-            {{ $karyawanList->withQueryString()->links() }}
-        </div>
-    @endif
 </div>
+
+@if ($karyawanList->hasPages())
+    <div style="padding: 1rem 1.5rem; border-top: 1px solid #f1f5f9;">
+        {{ $karyawanList->withQueryString()->links() }}
+    </div>
+@endif
 
 {{-- MODALS --}}
 @include('master_data.karyawan.partials.modal-create')
 @include('master_data.karyawan.partials.modal-edit')
 @include('master_data.karyawan.partials.modal-delete')
-
+@include('master_data.karyawan.partials.modal-import') {{-- Tambahan modal import excel --}}
+<script>
+    function toggleKelolaMenu(e) {
+        e.stopPropagation();
+        const menu = document.getElementById('kelolaMenu');
+        if (menu) menu.style.display = (menu.style.display === 'block') ? 'none' : 'block';
+    }
+    function closeKelolaMenu() {
+        const menu = document.getElementById('kelolaMenu');
+        if (menu) menu.style.display = 'none';
+    }
+    document.addEventListener('click', closeKelolaMenu);
+</script>
 @endsection
 
 @push('scripts')
     <script>
         window.appConfig = {
             karyawanBaseUrl: "{{ url('master-karyawan') }}",
-            nextNik: "{{ $nextNik }}"
+            nextNIK: "{{ $nextNik }}"
         };
     </script>
     <script src="{{ asset('js/master/karyawan/karyawan-index.js') }}"></script>

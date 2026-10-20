@@ -4,8 +4,8 @@ namespace App\Services\MasterData;
 
 use App\Models\MasterData\MstKaryawan;
 use App\Services\Common\CodeGeneratorService;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
@@ -16,18 +16,16 @@ class KaryawanService
     ) {}
 
     /**
-     * Mengambil daftar karyawan terpaginasi dengan pencarian
+     * Mengambil data mentah query builder untuk Export & PDF
      */
-    public function getAllPaginated(int $perPage = 15, ?string $search = null, ?string $departemen = null): LengthAwarePaginator
+    public function getAllFilteredQuery($search = null, $departemen = null, $kelompok = null, $shift = null): Builder
     {
         $query = MstKaryawan::with('user.gudang')->active();
 
         if (!empty($search)) {
             $query->where(function ($q) use ($search) {
-                $q->where('nik', 'ILIKE', "%{$search}%")
-                  ->orWhere('karyawan_nm', 'ILIKE', "%{$search}%")
-                  ->orWhere('jabatan_nm', 'ILIKE', "%{$search}%")
-                  ->orWhere('email', 'ILIKE', "%{$search}%");
+                $q->where('nik', 'LIKE', "%{$search}%")
+                  ->orWhere('karyawan_nm', 'LIKE', "%{$search}%");
             });
         }
 
@@ -35,58 +33,71 @@ class KaryawanService
             $query->where('departemen_cd', $departemen);
         }
 
+        if (!empty($kelompok)) {
+            $query->where('kelompok', $kelompok);
+        }
+
+        if (!empty($shift)) {
+            $query->where('shift', $shift);
+        }
+
+        return $query;
+    }
+
+    /**
+     * Mengambil data berhalaman untuk Tabel Utama
+     */
+    public function getAllPaginated(int $perPage = 15, ?string $search = null, ?string $departemen = null, ?string $kelompok = null, ?string $shift = null): LengthAwarePaginator
+    {
+        $query = MstKaryawan::with('user.gudang')->active();
+
+        if (!empty($search)) {
+            $query->where(function ($q) use ($search) {
+                $q->where('nik', 'LIKE', "%{$search}%")
+                  ->orWhere('karyawan_nm', 'LIKE', "%{$search}%")
+                  ->orWhere('jabatan_nm', 'LIKE', "%{$search}%")
+                  ->orWhere('email', 'LIKE', "%{$search}%");
+            });
+        }
+
+        if (!empty($departemen)) {
+            $query->where('departemen_cd', $departemen);
+        }
+
+        if (!empty($kelompok)) {
+            $query->where('kelompok', $kelompok);
+        }
+
+        if (!empty($shift)) {
+            $query->where('shift', $shift);
+        }
+
         return $query->orderBy('karyawan_id', 'desc')->paginate($perPage);
     }
 
-    /**
-     * Mengambil semua karyawan aktif untuk dropdown form
-     */
-    public function getAllActive(): Collection
-    {
-        return MstKaryawan::active()->orderBy('karyawan_nm', 'asc')->get();
-    }
-
-    /**
-     * Mengambil satu karyawan berdasarkan ID
-     */
-    public function getById(int $id): MstKaryawan
-    {
-        return MstKaryawan::with('user.gudang')->where('karyawan_id', $id)->firstOrFail();
-    }
-
-    /**
-     * Menyimpan data karyawan baru
-     */
     public function store(array $data): MstKaryawan
     {
         return DB::transaction(function () use ($data) {
             if (empty($data['nik'])) {
                 $data['nik'] = $this->codeGenerator->generate('mst_karyawan', 'nik', 'KRY-');
             }
-
             return MstKaryawan::create($data);
         });
     }
 
-    /**
-     * Memperbarui data karyawan
-     */
-    public function update(int $id, array $data): MstKaryawan
+    public function update(int $karyawan_id, array $data): MstKaryawan
     {
-        return DB::transaction(function () use ($id, $data) {
-            $karyawan = MstKaryawan::findOrFail($id);
+        return DB::transaction(function () use ($karyawan_id, $data) {
+            $karyawan = MstKaryawan::findOrFail($karyawan_id);
             $karyawan->update($data);
             return $karyawan->fresh();
         });
     }
 
-    /**
-     * Menghapus karyawan (Soft Delete)
-     */
-    public function delete(int $id): bool
+    public function delete(int $karyawan_id): bool
     {
-        return DB::transaction(function () use ($id) {
-            $karyawan = MstKaryawan::findOrFail($id);
+        return DB::transaction(function () use ($karyawan_id) {
+            $karyawan = MstKaryawan::findOrFail($karyawan_id);
             $userId = Auth::id() ?? 'SYSTEM';
 
             return $karyawan->update([

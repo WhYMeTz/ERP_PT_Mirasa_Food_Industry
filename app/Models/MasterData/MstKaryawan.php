@@ -17,12 +17,19 @@ class MstKaryawan extends Model
 
     protected $fillable = [
         'nik',
+        'id_absensi', // Tambahan baru
         'karyawan_nm',
+        'kelompok',    // Tambahan baru
+        'shift',       // Tambahan baru
+        'status_kerja',// Tambahan baru
         'departemen_cd',
         'jabatan_nm',
+        'tgl_masuk',   // Tambahan baru
         'telepon_no',
         'email',
-        'alamat_txt',
+        'bank_name',   // Tambahan baru
+        'no_rekening', // Tambahan baru
+        'alamat_txt',  // Kolom alamat bawaan Anda
         'created_by',
         'updated_by',
         'deleted_by',
@@ -33,6 +40,27 @@ class MstKaryawan extends Model
     protected $casts = [
         'deleted_st' => 'boolean',
         'active_st'  => 'boolean',
+    ];
+
+    public const KELOMPOK = [
+        'LANGSUNG IFM'     => 'Langsung IFM',
+        'LANGSUNG MANUAL'  => 'Langsung Manual',
+        'LANGSUNG PACKING' => 'Langsung Packing',
+        'TIDAK LANGSUNG'   => 'Tidak Langsung',
+    ];
+
+    public const DEPARTEMEN = [
+        'PRODUKSI'   => 'Departemen Produksi',
+        'GUDANG'     => 'Departemen Gudang & Logistik',
+        'PURCHASING' => 'Departemen Pengadaan (Purchasing)',
+        'FINANCE'    => 'Departemen Keuangan & Kasir',
+        'QC'         => 'Departemen Quality Control (QC)',
+        'HRD'        => 'Departemen SDM / HRD',
+        'MANAJEMEN'  => 'Manajemen / Direksi',
+        'UMUM'       => 'Departemen Umum',
+        'DRIVER'     => 'Driver',
+        'CLEANING'   => 'Cleaning Service',
+        'SECURITY'   => 'Security',
     ];
 
     /**

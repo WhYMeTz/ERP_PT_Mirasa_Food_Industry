@@ -5,15 +5,18 @@ namespace App\Services\Penjualan;
 use App\Models\Penjualan\DatSoDtl;
 use App\Models\Penjualan\DatSoHdr;
 use App\Services\Common\CodeGeneratorService;
+use App\Services\Gudang\StokService;
 use Exception;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class SoService
 {
     public function __construct(
-        protected CodeGeneratorService $codeGenerator
+        protected CodeGeneratorService $codeGenerator,
+        protected StokService $stokService
     ) {}
 
     /**
@@ -25,8 +28,12 @@ class SoService
         ?string $status = null,
         array $filters = []
     ): LengthAwarePaginator {
-        $query = DatSoHdr::with(['customer', 'details.barang.satuanDasar', 'details.barang.jenisBarang'])
-            ->active();
+        $query = DatSoHdr::with([
+            'customer',
+            'details.barang.satuanDasar',
+            'details.barang.jenisBarang',
+            'payments.header.kasBank',
+        ])->active();
 
         if (!empty($status)) {
             $query->where('status_cd', $status);
@@ -110,6 +117,7 @@ class SoService
             'customer',
             'details.barang.satuanDasar',
             'details.barang.jenisBarang',
+            'payments.header.kasBank',
         ])->where('so_id', $id)->firstOrFail();
     }
 
@@ -230,6 +238,221 @@ class SoService
             }
 
             return $header;
+        });
+    }
+
+    /**
+     * Dapatkan peta ketersediaan stok fisik barang jadi di Gudang FG.
+     *
+     * @param array $barangIds
+     * @return array<int, float> [barang_id => sisa_qty]
+     */
+    public function getStockAvailabilityMap(array $barangIds): array
+    {
+        $gudangFgId = \App\Models\MasterData\MstGudang::where('gudang_cd', 'GDG-FG')->value('gudang_id') ?? 6;
+
+        return \App\Models\Gudang\DatStokBatch::where('gudang_id', $gudangFgId)
+            ->whereIn('barang_id', $barangIds)
+            ->selectRaw('barang_id, SUM(sisa_qty) as total_stok')
+            ->groupBy('barang_id')
+            ->pluck('total_stok', 'barang_id')
+            ->map(fn($v) => (float) $v)
+            ->toArray();
+    }
+
+    /**
+     * Cek ketersediaan stok detail untuk 1 barang jadi (termasuk batch & exp date).
+     */
+    public function checkStockItem(int $barangId): array
+    {
+        $gudangFgId = \App\Models\MasterData\MstGudang::where('gudang_cd', 'GDG-FG')->value('gudang_id') ?? 6;
+
+        $batches = \App\Models\Gudang\DatStokBatch::where('gudang_id', $gudangFgId)
+            ->where('barang_id', $barangId)
+            ->where('sisa_qty', '>', 0)
+            ->orderByRaw('expired_tgl ASC NULLS LAST')
+            ->get(['batch_no', 'sisa_qty', 'expired_tgl', 'harga_satuan']);
+
+        $totalStok = (float) $batches->sum('sisa_qty');
+
+        return [
+            'barang_id'   => $barangId,
+            'total_stok'  => $totalStok,
+            'batch_count' => $batches->count(),
+            'batches'     => $batches,
+        ];
+    }
+
+    /**
+     * Konfirmasi Pengiriman Surat Jalan & Pemotongan Stok Barang Jadi (FEFO / FIFO).
+     *
+     * @param int $id
+     * @param array $data ['tgl_kirim_aktual' => '...', 'supir_nm' => '...', 'nopol_kendaraan' => '...']
+     * @param string|null $userName
+     * @return DatSoHdr
+     * @throws Exception
+     */
+    public function confirmDelivery(int $id, array $data, ?string $userName = null): DatSoHdr
+    {
+        return DB::transaction(function () use ($id, $data, $userName) {
+            $header = DatSoHdr::with(['details.barang.satuanDasar', 'customer'])->lockForUpdate()->findOrFail($id);
+
+            if ($header->status_cd === 'COMPLETED') {
+                throw new Exception("Dokumen SO {$header->so_no} sudah dalam status Selesai / Terkirim.");
+            }
+
+            if ($header->status_cd === 'CANCELLED') {
+                throw new Exception("Dokumen SO {$header->so_no} yang telah dibatalkan tidak dapat dikirim.");
+            }
+
+            $gudangFgId = \App\Models\MasterData\MstGudang::where('gudang_cd', 'GDG-FG')->value('gudang_id') ?? 6;
+            $tglKirim = $data['tgl_kirim_aktual'] ?? now()->toDateString();
+            $suratJalanNo = $header->surat_jalan_no ?: $this->codeGenerator->generateSuratJalanNo($tglKirim);
+            $totalPesanQty = 0;
+
+            // 1. Eksekusi pemotongan stok FEFO untuk setiap rincian barang jadi
+            foreach ($header->details as $dtl) {
+                $qtyPesan = (float) $dtl->pesan_qty;
+                $totalPesanQty += $qtyPesan;
+                $barang = $dtl->barang;
+                $barangNm = $barang ? $barang->barang_nm : "Barang ID {$dtl->barang_id}";
+
+                $ket = "Pengiriman Surat Jalan {$suratJalanNo} (SO: {$header->so_no}) ke " . ($header->customer?->customer_nm ?? 'Customer');
+
+                try {
+                    $this->stokService->deductStockFifo(
+                        gudangId: $gudangFgId,
+                        barangId: $dtl->barang_id,
+                        totalQty: $qtyPesan,
+                        dokumenNo: $suratJalanNo,
+                        keterangan: $ket
+                    );
+                } catch (Exception $e) {
+                    throw new Exception("Gagal memproses pengiriman untuk '{$barangNm}': {$e->getMessage()}");
+                }
+
+                // Update kirim_qty pada detail
+                $dtl->update([
+                    'kirim_qty' => $qtyPesan,
+                ]);
+            }
+
+            // 2. Perbarui Header PO Penjualan menjadi COMPLETED
+            $header->update([
+                'status_cd'          => 'COMPLETED',
+                'surat_jalan_no'     => $suratJalanNo,
+                'tgl_kirim_aktual'   => $tglKirim,
+                'supir_nm'           => $data['supir_nm'] ?? $header->supir_nm,
+                'nopol_kendaraan'    => $data['nopol_kendaraan'] ?? $header->nopol_kendaraan,
+                'total_terkirim_qty' => $totalPesanQty,
+                'updated_by'         => $userName ?? auth()->user()?->nama_lengkap ?? 'System',
+                'version_no'         => $header->version_no + 1,
+            ]);
+
+            Log::info("SO ID {$header->so_id} ({$header->so_no}) berhasil dikonfirmasi kirim dengan SJ: {$suratJalanNo} oleh " . ($userName ?? 'System'));
+
+            return $header;
+        });
+    }
+
+    /**
+     * Batalkan pengiriman barang & kembalikan stok fisik ke Gudang FG.
+     */
+    public function voidDelivery(int $id, string $reason, ?string $userName = null): DatSoHdr
+    {
+        return DB::transaction(function () use ($id, $reason, $userName) {
+            $header = DatSoHdr::with(['details.barang'])->lockForUpdate()->findOrFail($id);
+
+            if ($header->status_cd !== 'COMPLETED') {
+                throw new Exception("Hanya dokumen dengan status COMPLETED yang dapat dibatalkan pengirimannya.");
+            }
+
+            $gudangFgId = \App\Models\MasterData\MstGudang::where('gudang_cd', 'GDG-FG')->value('gudang_id') ?? 6;
+
+            // Kembalikan stok fisik ke Gudang FG
+            foreach ($header->details as $dtl) {
+                $qtyToRestore = (float) $dtl->kirim_qty;
+                if ($qtyToRestore > 0) {
+                    $this->stokService->addStock(
+                        gudangId: $gudangFgId,
+                        barangId: $dtl->barang_id,
+                        batchNo: 'RESTORE-SO',
+                        qty: $qtyToRestore,
+                        expiredTgl: null,
+                        dokumenNo: $header->surat_jalan_no,
+                        keterangan: "Pembatalan Pengiriman SO ({$header->so_no}): {$reason}",
+                        hargaSatuan: (float) $dtl->harga_satuan
+                    );
+                    $dtl->update(['kirim_qty' => 0]);
+                }
+            }
+
+            $note = $header->catatan_txt ? $header->catatan_txt . "\n[PENGIRIMAN DIBATALKAN]: {$reason}" : "[PENGIRIMAN DIBATALKAN]: {$reason}";
+
+            $header->update([
+                'status_cd'          => 'APPROVED',
+                'total_terkirim_qty' => 0,
+                'catatan_txt'        => $note,
+                'updated_by'         => $userName ?? auth()->user()?->nama_lengkap ?? 'System',
+                'version_no'         => $header->version_no + 1,
+            ]);
+
+            return $header;
+        });
+    }
+
+    /**
+     * Catat Penerimaan Pembayaran Kas Masuk (BKM) untuk SO ini (Bisa Parsial / Cicilan / Lunas).
+     */
+    public function recordPayment(int $id, array $data, $user): \App\Models\Keuangan\DatKasMasukHdr
+    {
+        return DB::transaction(function () use ($id, $data, $user) {
+            $header = DatSoHdr::with(['customer', 'payments.header'])->lockForUpdate()->findOrFail($id);
+
+            if ($header->status_cd === 'CANCELLED') {
+                throw new Exception("Tidak dapat mencatat pembayaran untuk pesanan yang telah dibatalkan.");
+            }
+
+            $nominal = (float) $data['nominal'];
+            if ($nominal <= 0) {
+                throw new Exception("Nominal pembayaran harus lebih besar dari Rp 0.");
+            }
+
+            $sisa = $header->sisa_tagihan;
+            if ($nominal > $sisa) {
+                throw new Exception("Nominal pembayaran (Rp " . number_format($nominal, 0, ',', '.') . ") melebihi sisa tagihan pesanan (Rp " . number_format($sisa, 0, ',', '.') . ").");
+            }
+
+            $kasMasukService = app(\App\Services\Keuangan\KasMasukService::class);
+
+            $payload = [
+                'kas_bank_id'         => $data['kas_bank_id'],
+                'tgl_terima'          => $data['tgl_terima'] ?? now()->toDateString(),
+                'kategori_penerimaan' => 'PELUNASAN_PIUTANG',
+                'customer_id'         => $header->customer_id,
+                'penyetor_nama'       => !empty($data['penyetor_nama']) ? $data['penyetor_nama'] : ($header->customer?->customer_nm ?? 'Customer'),
+                'metode_terima'       => $data['metode_terima'] ?? 'TRANSFER',
+                'no_referensi_bank'   => $data['no_referensi_bank'] ?? null,
+                'catatan'             => $data['catatan'] ?? "Pembayaran Piutang PO {$header->so_no} (Faktur: {$header->faktur_no})",
+                'items'               => [
+                    [
+                        'so_id'        => $header->so_id,
+                        'uraian'       => "Pembayaran PO {$header->so_no} - {$header->customer?->customer_nm}",
+                        'qty'          => 1,
+                        'satuan'       => 'Trx',
+                        'harga_satuan' => $nominal,
+                        'nominal'      => $nominal,
+                        'catatan'      => $data['catatan'] ?? null,
+                    ]
+                ]
+            ];
+
+            $userModel = $user instanceof \App\Models\User ? $user : \App\Models\User::first();
+            $bkm = $kasMasukService->storeKasMasuk($payload, $userModel);
+
+            Log::info("Pembayaran SO ID {$header->so_id} ({$header->so_no}) sebesar Rp {$nominal} berhasil dicatat via BKM {$bkm->bkm_no}");
+
+            return $bkm;
         });
     }
 

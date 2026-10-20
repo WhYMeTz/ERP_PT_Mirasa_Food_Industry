@@ -1,11 +1,62 @@
 /**
  * =========================================================================
  * ERP PT MIRASA - PENGEMASAN BARANG JADI & HPP (PACKAGING) SHOW JS
- * Handlers Cetak Dokumen & Modal Pembatalan (Void)
+ * Handlers Tab Navigation, Cetak Dokumen & Modal Pembatalan (Void)
  * =========================================================================
  */
 
+/**
+ * Tab Navigation Controls (Output FG | Kalkulasi Biaya Kemas | Riwayat Audit)
+ */
+function switchProdTab(tabName, event) {
+    if (event) {
+        event.preventDefault();
+    }
+    
+    // Update tab buttons
+    const buttons = document.querySelectorAll('.prod-tab-btn');
+    buttons.forEach(btn => {
+        if (btn.getAttribute('data-tab') === tabName) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+
+    // Update tab panes
+    const panes = document.querySelectorAll('.prod-tab-pane');
+    panes.forEach(pane => {
+        if (pane.id === 'pane-' + tabName) {
+            pane.classList.add('active');
+        } else {
+            pane.classList.remove('active');
+        }
+    });
+
+    // Update URL hash without jumping
+    if (history.replaceState) {
+        history.replaceState(null, null, '#' + tabName);
+    }
+}
+window.switchProdTab = switchProdTab;
+
 document.addEventListener('DOMContentLoaded', function () {
+    // Add click listeners to tab buttons
+    document.querySelectorAll('.prod-tab-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            const tab = this.getAttribute('data-tab');
+            if (tab) {
+                switchProdTab(tab, e);
+            }
+        });
+    });
+
+    // Check hash on load
+    const hash = window.location.hash.replace('#', '');
+    if (hash && ['output', 'biaya', 'audit'].includes(hash)) {
+        switchProdTab(hash);
+    }
+
     // Tombol Escape menutup modal void
     window.addEventListener('keydown', function (e) {
         if (e.key === 'Escape') {

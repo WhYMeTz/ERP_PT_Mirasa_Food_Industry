@@ -414,7 +414,7 @@
                             <th style="width: 150px; text-align: center;">Batch Varian</th>
                             <th style="width: 160px; text-align: right;">Kuantitas (Kg)</th>
                             <th style="width: 160px; text-align: right;">HPP Satuan</th>
-                            <th style="width: 180px; text-align: right;">Total Valuasi (Rp)</th>
+                            <th style="width: 180px; text-align: right;">Total Nilai (Rp)</th>
                         </tr>
                     </thead>
                     <tbody>

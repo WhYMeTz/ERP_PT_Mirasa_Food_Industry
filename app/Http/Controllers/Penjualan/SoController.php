@@ -93,7 +93,9 @@ class SoController extends Controller
             ->orderBy('barang_nm')
             ->get();
 
-        return view('penjualan.so.create', compact('soNo', 'fakturNo', 'suratJalanNo', 'customers', 'barangs'));
+        $stockMap = $this->soService->getStockAvailabilityMap($barangs->pluck('barang_id')->toArray());
+
+        return view('penjualan.so.create', compact('soNo', 'fakturNo', 'suratJalanNo', 'customers', 'barangs', 'stockMap'));
     }
 
     /**
@@ -120,7 +122,10 @@ class SoController extends Controller
     public function show(int $id): View
     {
         $order = $this->soService->getById($id);
-        return view('penjualan.so.show', compact('order'));
+        $stockMap = $this->soService->getStockAvailabilityMap($order->details->pluck('barang_id')->toArray());
+        $kasBanks = \App\Models\Keuangan\MstKasBank::active()->orderBy('nama_akun')->get();
+
+        return view('penjualan.so.show', compact('order', 'stockMap', 'kasBanks'));
     }
 
     /**
@@ -143,7 +148,9 @@ class SoController extends Controller
             ->orderBy('barang_nm')
             ->get();
 
-        return view('penjualan.so.edit', compact('order', 'customers', 'barangs'));
+        $stockMap = $this->soService->getStockAvailabilityMap($barangs->pluck('barang_id')->toArray());
+
+        return view('penjualan.so.edit', compact('order', 'customers', 'barangs', 'stockMap'));
     }
 
     /**
@@ -162,6 +169,101 @@ class SoController extends Controller
                 ->withInput()
                 ->with('error', 'Gagal memperbarui pesanan: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Konfirmasi Pengiriman Surat Jalan & Pemotongan Stok Barang Jadi (FEFO).
+     */
+    public function confirmDelivery(Request $request, int $id): RedirectResponse
+    {
+        $validated = $request->validate([
+            'tgl_kirim_aktual' => 'required|date',
+            'supir_nm'         => 'nullable|string|max:100',
+            'nopol_kendaraan'  => 'nullable|string|max:30',
+        ], [
+            'tgl_kirim_aktual.required' => 'Tanggal pengiriman wajib diisi.',
+        ]);
+
+        try {
+            $order = $this->soService->confirmDelivery($id, $validated, auth()->user()?->nama_lengkap);
+
+            return redirect()
+                ->route('penjualan.so.show', $order->so_id)
+                ->with('toast_success', "Pengiriman barang {$order->so_no} berhasil dikonfirmasi! Stok Gudang Barang Jadi (FG) telah otomatis dipotong via FEFO dengan Surat Jalan {$order->surat_jalan_no}.");
+        } catch (Exception $e) {
+            return back()->with('error', 'Gagal memproses pengiriman: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Batalkan Pengiriman Barang & Kembalikan Stok ke Gudang FG.
+     */
+    public function voidDelivery(Request $request, int $id): RedirectResponse
+    {
+        $request->validate([
+            'reason' => 'required|string|max:255',
+        ], [
+            'reason.required' => 'Alasan pembatalan pengiriman wajib diisi.',
+        ]);
+
+        try {
+            $order = $this->soService->voidDelivery($id, $request->input('reason'), auth()->user()?->nama_lengkap);
+
+            return redirect()
+                ->route('penjualan.so.show', $order->so_id)
+                ->with('toast_success', "Pengiriman barang {$order->so_no} berhasil dibatalkan dan seluruh stok fisik telah dikembalikan ke Gudang Barang Jadi.");
+        } catch (Exception $e) {
+            return back()->with('error', 'Gagal membatalkan pengiriman: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Catat Penerimaan Pembayaran Kas Masuk (BKM) dari Pelanggan.
+     */
+    public function recordPayment(Request $request, int $id): RedirectResponse
+    {
+        $validated = $request->validate([
+            'kas_bank_id'       => 'required|exists:mst_kas_bank,kas_bank_id',
+            'tgl_terima'        => 'required|date',
+            'nominal'           => 'required|numeric|min:1',
+            'metode_terima'     => 'required|string|in:TRANSFER,CASH,GIRO_CEK,EDC_QRIS',
+            'penyetor_nama'     => 'nullable|string|max:150',
+            'no_referensi_bank' => 'nullable|string|max:100',
+            'catatan'           => 'nullable|string|max:255',
+        ], [
+            'kas_bank_id.required' => 'Pilih rekening kas/bank tujuan penerimaan.',
+            'tgl_terima.required'  => 'Tanggal pembayaran wajib diisi.',
+            'nominal.required'     => 'Nominal pembayaran wajib diisi.',
+            'nominal.min'          => 'Nominal pembayaran minimal Rp 1.',
+        ]);
+
+        try {
+            $bkm = $this->soService->recordPayment($id, $validated, auth()->user());
+
+            return redirect()
+                ->route('penjualan.so.show', $id)
+                ->with('toast_success', "Pembayaran sebesar Rp " . number_format((float) $validated['nominal'], 0, ',', '.') . " berhasil dicatat dengan Bukti Kas Masuk {$bkm->bkm_no}!");
+        } catch (Exception $e) {
+            return back()->with('error', 'Gagal mencatat pembayaran: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * AJAX endpoint untuk mengecek ketersediaan stok fisik barang jadi real-time.
+     */
+    public function ajaxStockCheck(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $barangId = (int) $request->input('barang_id');
+        if (!$barangId) {
+            return response()->json(['success' => false, 'message' => 'Barang ID wajib diisi.'], 400);
+        }
+
+        $stockInfo = $this->soService->checkStockItem($barangId);
+
+        return response()->json([
+            'success' => true,
+            'data'    => $stockInfo,
+        ]);
     }
 
     /**

@@ -1,6 +1,8 @@
 @extends('layouts.app')
 
-@section('title', 'PO Penjualan - ERP PT Mirasa')
+@push('styles')
+    <link rel="stylesheet" href="{{ asset('css/penjualan/so/so-index.css') }}">
+@endpush
 
 @section('content')
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 1rem;">
@@ -328,26 +330,79 @@
                             </div>
                         </td>
                         <td style="text-align: right; font-weight: 700; color: #0f172a; font-size: 0.875rem;">
-                            Rp {{ number_format((float) $so->total_tagihan, 0, ',', '.') }}
+                            <div>Rp {{ number_format((float) $so->total_tagihan, 0, ',', '.') }}</div>
+                            <div style="margin-top: 3px;">
+                                @if ($so->status_bayar === 'LUNAS')
+                                    <span class="badge badge-success" style="font-size: 0.675rem; font-weight: 700;">Lunas (100%)</span>
+                                @elseif ($so->status_bayar === 'SEBAGIAN')
+                                    <span class="badge" style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a; font-size: 0.675rem; font-weight: 700;">
+                                        Sebagian ({{ $so->persen_bayar }}%)
+                                    </span>
+                                @else
+                                    <span class="badge" style="background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; font-size: 0.675rem; font-weight: 700;">
+                                        Belum Bayar
+                                    </span>
+                                @endif
+                            </div>
                         </td>
                         <td style="text-align: right;">
-                            <div style="display: inline-flex; gap: 0.35rem; align-items: center; flex-wrap: wrap; justify-content: flex-end;">
-                                {{-- Tombol Detail --}}
-                                <a href="{{ route('penjualan.so.show', $so->so_id) }}" class="btn btn-secondary btn-sm" title="Lihat Detail Dokumen PO">
-                                    Detail
+                            @php
+                                $soMenuId = 'soMenu_' . $so->so_id;
+                            @endphp
+                            <button type="button" 
+                                    class="btn-action-trigger" 
+                                    onclick="toggleSmartActionDropdown(this, event, '{{ $soMenuId }}')" 
+                                    title="Pilihan Aksi SO">
+                                <span>Aksi</span>
+                                <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                            </button>
+                            <div id="{{ $soMenuId }}" class="action-dropdown-menu">
+                                <a href="{{ route('penjualan.so.show', $so->so_id) }}" class="action-dropdown-item">
+                                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                    <span>Lihat Detail</span>
                                 </a>
 
-                                {{-- d. Export Faktur --}}
-                                <a href="{{ route('penjualan.so.export-faktur', $so->so_id) }}" target="_blank" class="btn btn-sm" style="background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd; padding: 0.3rem 0.55rem; font-size: 0.75rem; display: inline-flex; align-items: center; gap: 0.25rem; font-weight: 600;" title="Export Faktur Penjualan (PDF)">
-                                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
-                                    Faktur
+                                @if($so->sisa_tagihan > 0 && !$so->isCancelled())
+                                    <a href="{{ route('penjualan.so.show', $so->so_id) }}#pembayaran" class="action-dropdown-item" style="color: #0284c7;">
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                                        <span>Catat Pembayaran (BKM)</span>
+                                    </a>
+                                @endif
+
+                                @if($so->isDeliverable())
+                                    <button type="button" 
+                                            class="action-dropdown-item" 
+                                            onclick="openConfirmDeliveryModal({{ $so->so_id }}, '{{ $so->so_no }}', '{{ addslashes($so->customer?->customer_nm ?? '') }}')"
+                                            style="color: #059669;">
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                                        <span>Konfirmasi Kirim (FEFO)</span>
+                                    </button>
+                                @endif
+
+                                <a href="{{ route('penjualan.so.export-faktur', $so->so_id) }}" target="_blank" class="action-dropdown-item">
+                                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                                    <span>Cetak Faktur (PDF)</span>
                                 </a>
 
-                                {{-- e. Export Surat Jalan --}}
-                                <a href="{{ route('penjualan.so.export-surat-jalan', $so->so_id) }}" target="_blank" class="btn btn-sm" style="background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; padding: 0.3rem 0.55rem; font-size: 0.75rem; display: inline-flex; align-items: center; gap: 0.25rem; font-weight: 600;" title="Export Surat Jalan Pengiriman (PDF)">
-                                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
-                                    Surat Jalan
+                                <a href="{{ route('penjualan.so.export-surat-jalan', $so->so_id) }}" target="_blank" class="action-dropdown-item">
+                                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+                                    <span>Cetak Surat Jalan (PDF)</span>
                                 </a>
+
+                                @if(!in_array($so->status_cd, ['COMPLETED', 'CANCELLED']))
+                                    <div class="action-dropdown-divider"></div>
+                                    <a href="{{ route('penjualan.so.edit', $so->so_id) }}" class="action-dropdown-item">
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                        <span>Edit Pesanan</span>
+                                    </a>
+
+                                    <button type="button" 
+                                            class="action-dropdown-item danger-item" 
+                                            onclick="openCancelSoModal({{ $so->so_id }}, '{{ $so->so_no }}')">
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                        <span>Batalkan PO</span>
+                                    </button>
+                                @endif
                             </div>
                         </td>
                     </tr>
@@ -451,25 +506,20 @@
     @endif
 </div>
 
-<script>
-    function toggleSoRow(rowId, btn) {
-        const row = document.getElementById(rowId);
-        if (!row) return;
+{{-- MODAL DIALOGS LENGKAP --}}
+@include('penjualan.so.partials.modal-confirm-delivery')
+@include('penjualan.so.partials.modal-cancel-so')
 
-        const isHidden = (row.style.display === 'none' || row.style.display === '');
-        row.style.display = isHidden ? 'table-row' : 'none';
-
-        const icon = btn.querySelector('.chevron-icon');
-        if (icon) {
-            icon.style.transform = isHidden ? 'rotate(90deg)' : 'rotate(0deg)';
-        }
-    }
-
-    function toggleFilterDrawer() {
-        const drawer = document.getElementById('filterDrawer');
-        if (!drawer) return;
-        const isHidden = (drawer.style.display === 'none' || drawer.style.display === '');
-        drawer.style.display = isHidden ? 'block' : 'none';
-    }
-</script>
 @endsection
+
+@push('scripts')
+    <script src="{{ asset('js/penjualan/so/so-index.js') }}"></script>
+    <script>
+        function toggleFilterDrawer() {
+            const drawer = document.getElementById('filterDrawer');
+            if (!drawer) return;
+            const isHidden = (drawer.style.display === 'none' || drawer.style.display === '');
+            drawer.style.display = isHidden ? 'block' : 'none';
+        }
+    </script>
+@endpush

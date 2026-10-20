@@ -67,18 +67,28 @@ class TarifKemasanService
             ? Carbon::parse($wipCurah->berlaku_sejak)->format('d/m/Y') 
             : '20/01/2026';
 
-        $kartonXxVal = (float) ($map['KARTON_XX'] ?? 1338.90);
-        $kartonMxVal = (float) ($map['KARTON_MX'] ?? 1322.60);
-        $rollXxVal   = (float) ($map['ROLL_XX'] ?? 364830.00);
-        $rollMxVal   = (float) ($map['ROLL_MX'] ?? 364427.00);
+        // Ambil harga langsung dari Master Katalog Barang (Single Source of Truth)
+        $barangKartonMx = \App\Models\MasterData\MstBarang::where('barang_cd', 'KMX00G-BP7')->first();
+        $barangKartonXx = \App\Models\MasterData\MstBarang::where('barang_cd', 'KXX00G-BP6')->first();
+        $barangLakbanGr = \App\Models\MasterData\MstBarang::where('barang_cd', 'LKB-GR01')->first();
+        $barangBumbu    = \App\Models\MasterData\MstBarang::whereIn('barang_cd', ['BBA00G-BP1', 'BBL00G-BP1'])->first();
+        $barangExp      = \App\Models\MasterData\MstBarang::where('barang_cd', 'EXP00G-BP1')->first();
+        $barangRskPls   = \App\Models\MasterData\MstBarang::where('barang_cd', 'RSK-PLS01')->first();
+        $barangRollXx   = \App\Models\MasterData\MstBarang::where('barang_cd', 'RXX00G-BP1')->first();
+        $barangRollMx   = \App\Models\MasterData\MstBarang::where('barang_cd', 'RMX00G-BP2')->first();
+
+        $kartonXxVal = $barangKartonXx && (float)$barangKartonXx->harga_beli_standar > 0 ? (float)$barangKartonXx->harga_beli_standar : (float) ($map['KARTON_XX'] ?? 1338.90);
+        $kartonMxVal = $barangKartonMx && (float)$barangKartonMx->harga_beli_standar > 0 ? (float)$barangKartonMx->harga_beli_standar : (float) ($map['KARTON_MX'] ?? 1322.60);
+        $rollXxVal   = $barangRollXx && (float)$barangRollXx->harga_beli_standar > 0 ? (float)$barangRollXx->harga_beli_standar : (float) ($map['ROLL_XX'] ?? 364830.00);
+        $rollMxVal   = $barangRollMx && (float)$barangRollMx->harga_beli_standar > 0 ? (float)$barangRollMx->harga_beli_standar : (float) ($map['ROLL_MX'] ?? 364427.00);
         $lakbanRoll  = (float) ($map['LAKBAN_ROLL'] ?? 45880.00);
-        $lakbanGr    = (float) ($map['LAKBAN_GRAM'] ?? 36.70);
-        $bumbuVal    = (float) ($map['BUMBU_BALADO'] ?? 38499.00);
-        $expLbr      = (float) ($map['KERTAS_EXP'] ?? 250.00);
+        $lakbanGr    = $barangLakbanGr && (float)$barangLakbanGr->harga_beli_standar > 0 ? (float)$barangLakbanGr->harga_beli_standar : (float) ($map['LAKBAN_GRAM'] ?? 36.70);
+        $bumbuVal    = $barangBumbu && (float)$barangBumbu->harga_beli_standar > 0 ? (float)$barangBumbu->harga_beli_standar : (float) ($map['BUMBU_BALADO'] ?? 38499.00);
+        $expLbr      = $barangExp && (float)$barangExp->harga_beli_standar > 0 ? (float)$barangExp->harga_beli_standar : (float) ($map['KERTAS_EXP'] ?? 250.00);
         $wipKg       = (float) ($map['WIP_CURAH'] ?? 25500.00);
         $berkoKg     = (float) ($map['WIP_BERKO'] ?? 10000.00);
         $rollGabKg   = (float) ($map['ROLL_XX_MX'] ?? 43402.00);
-        $rollGabGr   = round($rollGabKg / 1000, 2);
+        $rollGabGr   = $barangRskPls && (float)$barangRskPls->harga_beli_standar > 0 ? (float)$barangRskPls->harga_beli_standar : round($rollGabKg / 1000, 2);
 
         return [
             'harga_wip'      => $wipKg,

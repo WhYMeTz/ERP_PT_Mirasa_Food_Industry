@@ -17,18 +17,9 @@
             <span>DAFTAR HARGA ACUAN PRODUKSI (PING-PING &amp; MAKSI) &bull; PERIODE {{ strtoupper($monthName) }} {{ $year }}</span>
         </div>
         <div style="display: flex; align-items: center; gap: 0.65rem;">
-            @if(Auth::user()?->canManageTarifKemasan())
-                <button type="button" 
-                        onclick="openQuickUpdateModal()" 
-                        class="btn btn-sm" 
-                        style="font-size: 0.75rem; font-weight: 700; background: #0284c7; color: #ffffff; border: none; border-radius: 4px; padding: 0.2rem 0.6rem; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; transition: background 0.15s ease;"
-                        onmouseover="this.style.background='#0369a1'"
-                        onmouseout="this.style.background='#0284c7'"
-                        title="Perbarui nilai master standar harga acuan kemasan">
-                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
-                    <span>Ubah Standar Acuan</span>
-                </button>
-            @endif
+            <span style="font-size: 0.72rem; color: #0284c7; background: #f0f9ff; border: 1px solid #bae6fd; padding: 2px 7px; border-radius: 4px; font-weight: 700;">
+                Tersinkron: Master Katalog Barang
+            </span>
             <span style="font-size: 0.72rem; color: #64748b; font-style: italic;">
                 Formula Standar Akuntansi Biaya Manufaktur PT Mirasa
             </span>
@@ -320,48 +311,21 @@
                                         <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                                     </button>
                                     <div id="{{ $spPckMenuId }}" class="action-dropdown-menu">
-                                        @if($docCountSp > 1 && !empty($d['pack_records']))
-                                            <div style="padding: 0.35rem 0.75rem; font-size: 0.675rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; background: #f8fafc; border-bottom: 1px solid #f1f5f9;">
-                                                Detail Dokumen Kemas ({{ $docCountSp }})
-                                            </div>
-                                            @foreach($d['pack_records'] as $pRec)
-                                                <a href="{{ route('produksi.packaging.show', $pRec->pack_id) }}" class="action-dropdown-item" style="display: flex; align-items: flex-start; gap: 0.5rem; padding: 0.5rem 0.75rem;">
-                                                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin-top: 2px; flex-shrink: 0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                                                    <div style="display: flex; flex-direction: column; text-align: left; line-height: 1.25;">
-                                                        <span style="font-weight: 700; color: #0f172a; font-size: 0.8rem;">{{ $pRec->pack_no }}</span>
-                                                        <span style="font-size: 0.72rem; color: #0284c7; font-weight: 600; margin-top: 0.15rem;">
-                                                            {{ number_format($pRec->hasil_karton_qty, 0) }} Ktn &bull; Batch {{ $pRec->batch_no ?? '-' }}
-                                                        </span>
-                                                    </div>
-                                                </a>
-                                            @endforeach
-
-                                            <div class="action-dropdown-divider"></div>
-                                            <a href="{{ route('produksi.packaging.index', ['pack_tgl' => $d['date']]) }}" class="action-dropdown-item">
-                                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
-                                                <span>Riwayat Tanggal Ini</span>
+                                        <a href="{{ route('produksi.packaging.show', $d['primary_pack_id']) }}" class="action-dropdown-item">
+                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                            <span>Lihat Detail Dokumen</span>
+                                        </a>
+                                        @if(Auth::user()->canCreateProduksi() || Auth::user()->canCreatePackaging())
+                                            <a href="{{ route('produksi.packaging.adjust', $d['primary_pack_id']) }}" class="action-dropdown-item">
+                                                <svg width="14" height="14" fill="none" stroke="#d97706" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                                <span>Adjustment HPP</span>
                                             </a>
-
-                                            @if(Auth::user()->canCreateProduksi())
-                                                <div class="action-dropdown-divider"></div>
-                                                <button type="button" class="action-dropdown-item danger-item" onclick="openVoidPackagingModal({{ $d['primary_pack_id'] }}, '{{ $d['primary_pack_no'] }}', '{{ addslashes($d['primary_product_nm'] ?? '') }}')">
-                                                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                                    <span>Batalkan (Void)</span>
-                                                </button>
-                                            @endif
-                                        @else
-                                            <a href="{{ route('produksi.packaging.show', $d['primary_pack_id']) }}" class="action-dropdown-item">
-                                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                                                <span>Detail Dokumen</span>
-                                            </a>
-                                            @if(Auth::user()->canCreateProduksi())
-                                                <div class="action-dropdown-divider"></div>
-                                                <button type="button" class="action-dropdown-item danger-item" onclick="openVoidPackagingModal({{ $d['primary_pack_id'] }}, '{{ $d['primary_pack_no'] }}', '{{ addslashes($d['primary_product_nm'] ?? '') }}')">
-                                                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                                    <span>Batalkan (Void)</span>
-                                                </button>
-                                            @endif
                                         @endif
+                                        <div class="action-dropdown-divider"></div>
+                                        <button type="button" class="action-dropdown-item danger-item" onclick="openVoidPackagingModal({{ $d['primary_pack_id'] }}, '{{ $d['primary_pack_no'] }}', '{{ addslashes($d['primary_product_nm'] ?? '') }}')">
+                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                            <span>Batalkan (Void)</span>
+                                        </button>
                                     </div>
                                 @else
                                     <span style="color: #cbd5e1;">-</span>

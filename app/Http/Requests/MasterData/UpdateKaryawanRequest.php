@@ -4,6 +4,7 @@ namespace App\Http\Requests\MasterData;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use App\Models\MasterData\MstKaryawan;
 
 class UpdateKaryawanRequest extends FormRequest
 {
@@ -52,6 +53,37 @@ class UpdateKaryawanRequest extends FormRequest
                 'nullable',
                 'string',
             ],
+            'id_absensi' => [
+                'nullable', 
+                'string', '
+                max:50'
+            ],
+            'kelompok' => [
+                'nullable', 
+                Rule::in(array_keys(MstKaryawan::KELOMPOK))
+            ],
+            'shift'      => [
+                'nullable', 
+                Rule::in(['SHIFT A', 'SHIFT B', 'NON SHIFT'])
+            ],
+            'status_kerja' => [
+                'nullable', 
+                'string', 
+                'max:50'
+            ],
+            'tgl_masuk'  => [
+                'nullable', 
+                'date'
+            ],
+            'bank_name'  => [
+                'nullable',
+                'string', 
+                'max:50'],
+            'no_rekening' => [
+                'nullable', 
+                'string', 
+                'max:50'
+            ],
             'active_st' => [
                 'nullable',
                 'boolean',
@@ -62,12 +94,17 @@ class UpdateKaryawanRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'nik.required'           => 'NIK karyawan wajib diisi.',
-            'nik.unique'             => 'NIK ini sudah digunakan oleh karyawan lain.',
+            'nik.unique'             => 'NIK ini sudah terdaftar. Gunakan NIK lain.',
             'karyawan_nm.required'   => 'Nama lengkap karyawan wajib diisi.',
             'departemen_cd.required' => 'Departemen wajib dipilih.',
             'jabatan_nm.required'    => 'Jabatan kerja wajib diisi.',
             'email.email'            => 'Format email tidak valid.',
+            'kelompok.in'            => 'Kelompok yang dipilih tidak valid.',
+            'shift.in'               => 'Shift harus Shift A, Shift B, atau Non Shift.',
+            'tgl_masuk.date'         => 'Format tanggal masuk kerja tidak valid.',
+            'id_absensi.max'         => 'ID Absensi maksimal 50 karakter.',
+            'bank_name.max'          => 'Nama bank maksimal 50 karakter.',
+            'no_rekening.max'        => 'Nomor rekening maksimal 50 karakter.',
         ];
     }
 }

@@ -5,7 +5,6 @@
 @push('styles')
     <link rel="stylesheet" href="{{ asset('css/produksi/produksi-create.css') }}">
     <link rel="stylesheet" href="{{ asset('css/produksi/packaging/packaging-create.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/master/tarif_kemasan/tarif-kemasan-modal.css') }}">
 @endpush
 
 @section('content')
@@ -237,12 +236,6 @@
                     </strong>
                 </div>
                 <div style="display: flex; gap: 0.5rem; align-items: center;">
-                    @if(Auth::user()?->canManageTarifKemasan())
-                        <button type="button" onclick="openQuickUpdateModal()" class="btn btn-secondary btn-sm" style="font-size: 0.8rem; padding: 0.35rem 0.75rem; font-weight: 700; border-radius: 6px; border: 1.5px solid #86efac; background: #f0fdf4; color: #166534; display: inline-flex; align-items: center; gap: 0.35rem;" title="Konfigurasi cepat standar harga kemasan (Excel Sync) tanpa keluar dari formulir">
-                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                            <span>Standar Tarif Kemasan</span>
-                        </button>
-                    @endif
                     <button type="button" onclick="addNewMaterialRow()" class="btn btn-secondary btn-sm" style="font-size: 0.8rem; padding: 0.35rem 0.75rem; font-weight: 600; border-radius: 6px; border: 1px solid #cbd5e1; background: #ffffff; color: #334155; display: inline-flex; align-items: center; gap: 0.35rem;">
                         <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                         <span>Tambah Baris Bahan</span>
@@ -294,12 +287,7 @@
                             </div>
                         </div>
                         <div style="font-size: 0.75rem; background: #ffffff; padding: 0.25rem 0.65rem; border-radius: 6px; border: 1px solid #86efac; color: #166534; font-weight: 700; display: inline-flex; align-items: center; gap: 0.4rem;">
-                            <span>Tarif Acuan: Rp <span id="tarifLakbanInfo">{{ number_format($tarifLakbanDefault ?? 36.70, 2, ',', '.') }}</span> / gram</span>
-                            @if(Auth::user()?->canManageTarifKemasan())
-                                <button type="button" onclick="openQuickUpdateModal()" style="border: none; background: transparent; color: #059669; cursor: pointer; padding: 0; display: inline-flex; align-items: center;" title="Ubah tarif standar acuan">
-                                    <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
-                                </button>
-                            @endif
+                            <span>Tarif Acuan: Rp <span id="tarifLakbanInfo">{{ number_format($tarifLakbanDefault ?? 36.70, 2, ',', '.') }}</span> / gram (Master Barang)</span>
                         </div>
                     </div>
 
@@ -489,9 +477,6 @@
 
 {{-- MODAL TARIK LAPORAN OPERATOR LAPANGAN --}}
 @include('produksi.packaging.partials.modal-pull-operator')
-
-{{-- MODAL PERBARUI STANDAR TARIF KEMASAN (EXCEL SYNC) --}}
-@include('master_data.tarif_kemasan.partials.modal-quick-update')
 @endsection
 
 @push('scripts')

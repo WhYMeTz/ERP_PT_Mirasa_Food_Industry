@@ -25,8 +25,43 @@
                 </div>
                 <div class="form-group">
                     <label for="create_customer_nm" class="form-label">Nama Perusahaan / Customer <span style="color:#ef4444;">*</span></label>
-                    <input type="text" id="create_customer_nm" name="customer_nm" class="form-control" placeholder="Contoh: PT Indofood CBP Sukses Makmur Tbk" oninput="debounceCodeFromName('customer', 'create_customer_nm', 'create_customer_cd')" required>
+                    <input type="text" id="create_customer_nm" name="customer_nm" class="form-control" placeholder="Contoh: PT Indofood Fortuna Makmur" oninput="debounceCodeFromName('customer', 'create_customer_nm', 'create_customer_cd')" required>
                 </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.875rem;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="create_klasifikasi" class="form-label">Kategori Customer <span style="color:#ef4444;">*</span></label>
+                        <select id="create_klasifikasi" name="klasifikasi" class="form-control" onchange="handleKlasifikasiChange('create')" required>
+                            <option value="MANUAL">MANUAL (Toko Retail / Sales Biasa)</option>
+                            <option value="IFM">IFM (PT Indofood Fortuna Makmur)</option>
+                            <option value="IDM_ALFA">IDM/ALFA (Modern Trade: Indomaret, Alfa, Midi)</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="create_wilayah" class="form-label">Wilayah / Kota</label>
+                        <input type="text" id="create_wilayah" name="wilayah" class="form-control" placeholder="Contoh: SEMARANG / CIKOKOL - TANGERANG">
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.875rem;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="create_kode_pelanggan" class="form-label">Kode Pelanggan (Ref Customer)</label>
+                        <input type="text" id="create_kode_pelanggan" name="kode_pelanggan" class="form-control" placeholder="Contoh: IFM01.012007 (Opsional)">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="create_top_txt" class="form-label">Terms of Payment (TOP)</label>
+                        <input type="text" id="create_top_txt" name="top_txt" class="form-control" value="Tinggal 1 Nota" placeholder="Contoh: 7 Hari / Tinggal 1 Nota">
+                    </div>
+                </div>
+
+                <div class="form-group" id="group_create_default_ppn">
+                    <label for="create_default_ppn" class="form-label">Default Pajak Faktur (Khusus Manual)</label>
+                    <select id="create_default_ppn" name="default_ppn" class="form-control">
+                        <option value="NON_PPN">Non-PPN (Format Faktur: XX/PM.B/MM/YY)</option>
+                        <option value="PPN_11">Ber-PPN 11% (Format Faktur: XX/PM.A/MM/YY)</option>
+                    </select>
+                </div>
+
                 <div class="form-group">
                     <label for="create_customer_kontak" class="form-label">Kontak PIC / No Telepon</label>
                     <input type="text" id="create_customer_kontak" name="kontak_no" class="form-control" placeholder="Contoh: 021-57958822 (Bpk. Hendra)">

@@ -10,11 +10,26 @@ return new class extends Migration
      */
     public function up(): void
     {
-        $bpId = DB::table('mst_jenis_barang')->where('jenis_barang_cd', 'BP')->value('jenis_barang_id') ?? 3;
-        $kgId = DB::table('mst_satuan')->where('satuan_cd', 'KG')->value('satuan_id') ?? 1;
+        $bpId = DB::table('mst_jenis_barang')->where('jenis_barang_cd', 'BP')->value('jenis_barang_id');
+        if ($bpId === null) {
+            $bpId = DB::table('mst_jenis_barang')->insertGetId([
+                'jenis_barang_cd' => 'BP',
+                'jenis_barang_nm' => 'Bahan Penolong & Kemasan',
+                'active_st'       => true,
+            ], 'jenis_barang_id');
+        }
 
-        // 1. Tambah MSG jika belum ada
-        $existsMsg = DB::table('mst_barang')->where('barang_nm', 'ILIKE', '%MSG%')->exists();
+        $kgId = DB::table('mst_satuan')->where('satuan_cd', 'KG')->value('satuan_id');
+        if ($kgId === null) {
+            $kgId = DB::table('mst_satuan')->insertGetId([
+                'satuan_cd' => 'KG',
+                'satuan_nm' => 'Kilogram',
+                'active_st' => true,
+            ], 'satuan_id');
+        }
+
+        // 1. Tambah MSG jika belum ada berdasarkan kode uniknya.
+        $existsMsg = DB::table('mst_barang')->where('barang_cd', 'MSG00G-BP1')->exists();
         if (!$existsMsg) {
             DB::table('mst_barang')->insert([
                 'barang_cd'          => 'MSG00G-BP1',
@@ -31,8 +46,8 @@ return new class extends Migration
             ]);
         }
 
-        // 2. Tambah GARAM jika belum ada
-        $existsGaram = DB::table('mst_barang')->where('barang_nm', 'ILIKE', '%GARAM%')->exists();
+        // 2. Tambah GARAM jika belum ada berdasarkan kode uniknya.
+        $existsGaram = DB::table('mst_barang')->where('barang_cd', 'GRM00G-BP1')->exists();
         if (!$existsGaram) {
             DB::table('mst_barang')->insert([
                 'barang_cd'          => 'GRM00G-BP1',

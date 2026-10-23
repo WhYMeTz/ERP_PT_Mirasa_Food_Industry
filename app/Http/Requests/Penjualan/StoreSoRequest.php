@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Penjualan;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreSoRequest extends FormRequest
 {
@@ -16,10 +17,19 @@ class StoreSoRequest extends FormRequest
         $soId = $this->route('so')?->so_id ?? $this->route('so');
 
         return [
-            'so_no'              => 'nullable|string|max:50|unique:dat_so_hdr,so_no,' . $soId . ',so_id',
+            'so_no'              => [
+                'nullable',
+                'string',
+                'max:50',
+                $soId ? Rule::unique('dat_so_hdr', 'so_no')->ignore($soId, 'so_id') : Rule::unique('dat_so_hdr', 'so_no'),
+            ],
+            'faktur_no'          => 'nullable|string|max:50',
+            'surat_jalan_no'     => 'nullable|string|max:50',
             'so_tgl'             => 'required|date',
             'customer_id'        => 'required|integer|exists:mst_customer,customer_id',
             'customer_po_no'     => 'nullable|string|max:100',
+            'top_txt'            => 'nullable|string|max:50',
+            'ppn_tipe_header'    => 'nullable|string|in:NON_PPN,PPN_11',
             'tgl_kirim_estimasi' => 'nullable|date',
             'catatan_txt'        => 'nullable|string',
             'potongan_nominal'   => 'nullable|numeric|min:0',

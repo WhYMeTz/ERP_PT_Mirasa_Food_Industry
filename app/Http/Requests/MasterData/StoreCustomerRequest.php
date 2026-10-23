@@ -25,6 +25,31 @@ class StoreCustomerRequest extends FormRequest
                 'string',
                 'max:150',
             ],
+            'klasifikasi' => [
+                'required',
+                'string',
+                'in:IFM,MANUAL,IDM_ALFA',
+            ],
+            'wilayah' => [
+                'nullable',
+                'string',
+                'max:100',
+            ],
+            'kode_pelanggan' => [
+                'nullable',
+                'string',
+                'max:50',
+            ],
+            'top_txt' => [
+                'nullable',
+                'string',
+                'max:50',
+            ],
+            'default_ppn' => [
+                'nullable',
+                'string',
+                'in:PPN_11,NON_PPN',
+            ],
             'kontak_no' => [
                 'nullable',
                 'string',

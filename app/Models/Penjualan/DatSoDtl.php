@@ -6,6 +6,7 @@ use App\Models\MasterData\MstBarang;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class DatSoDtl extends Model
 {
@@ -54,6 +55,19 @@ class DatSoDtl extends Model
     public function barang(): BelongsTo
     {
         return $this->belongsTo(MstBarang::class, 'barang_id');
+    }
+
+    public function returnDetails(): HasMany
+    {
+        return $this->hasMany(DatSoReturDtl::class, 'sodtl_id', 'sodtl_id');
+    }
+
+    public function getTotalReturQtyAttribute(): float
+    {
+        if ($this->relationLoaded('returnDetails')) {
+            return (float) $this->returnDetails->whereHas('header', fn($q) => $q->where('status_cd', 'CONFIRMED')->where('deleted_st', false))->sum('qty_retur');
+        }
+        return (float) $this->returnDetails()->whereHas('header', fn($q) => $q->where('status_cd', 'CONFIRMED')->where('deleted_st', false))->sum('qty_retur');
     }
 
     public function getSisaQtyAttribute(): float

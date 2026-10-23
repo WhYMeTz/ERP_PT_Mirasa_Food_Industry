@@ -1,0 +1,200 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   PO PENJUALAN (SALES ORDER) - INDEX STYLES
+   ERP PT Mirasa Food Industry
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* Metrik Statistik Ringkasan */
+.so-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.so-metric-card {
+    background: #ffffff;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    padding: 1rem 1.25rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.so-metric-card:hover {
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.06);
+}
+
+.so-metric-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.so-metric-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #64748b;
+}
+
+.so-metric-val {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin-top: 0.25rem;
+}
+
+.so-metric-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.so-metric-icon.blue {
+    background: #e0f2fe;
+    color: #0284c7;
+}
+
+.so-metric-icon.emerald {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.so-metric-icon.amber {
+    background: #fef3c7;
+    color: #b45309;
+}
+
+.so-metric-icon.slate {
+    background: #f1f5f9;
+    color: #475569;
+}
+
+.so-metric-subtext {
+    font-size: 0.75rem;
+    color: #64748b;
+    margin-top: 0.4rem;
+}
+
+/* Tabs Status Filter */
+.so-status-tabs {
+    display: flex;
+    gap: 0.5rem;
+    overflow-x: auto;
+    padding-bottom: 0.25rem;
+    margin-bottom: 1rem;
+}
+
+.so-status-tab {
+    padding: 0.45rem 0.95rem;
+    border-radius: 6px;
+    font-size: 0.825rem;
+    font-weight: 600;
+    text-decoration: none;
+    color: #64748b;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    white-space: nowrap;
+    transition: all 0.15s ease;
+}
+
+.so-status-tab:hover {
+    background: #f8fafc;
+    color: #0f172a;
+}
+
+.so-status-tab.active {
+    background: #0284c7;
+    color: #ffffff;
+    border-color: #0284c7;
+    box-shadow: 0 1px 2px rgba(2, 132, 199, 0.2);
+}
+
+.so-status-tab-count {
+    background: rgba(0,0,0,0.06);
+    padding: 1px 6px;
+    border-radius: 9999px;
+    font-size: 0.725rem;
+    font-weight: 700;
+}
+
+.so-status-tab.active .so-status-tab-count {
+    background: rgba(255,255,255,0.25);
+    color: #ffffff;
+}
+
+/* Smart Action Trigger (Aturan Wajib AGENTS.md) */
+.btn-action-trigger {
+    background: #ffffff;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 0.35rem 0.7rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #334155;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+    transition: all 0.15s ease;
+}
+
+.btn-action-trigger:hover {
+    border-color: #0284c7;
+    color: #0284c7;
+    background: #f0f9ff;
+}
+
+.action-dropdown-menu {
+    display: none;
+    position: fixed;
+    z-index: 99999;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+    min-width: 200px;
+    padding: 0.35rem 0;
+    font-size: 0.8125rem;
+}
+
+.action-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.85rem;
+    color: #334155;
+    text-decoration: none;
+    font-weight: 600;
+    background: transparent;
+    border: none;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.12s ease;
+}
+
+.action-dropdown-item:hover {
+    background: #f0fdf4;
+    color: #059669;
+}
+
+.action-dropdown-item.danger-item:hover {
+    background: #fef2f2;
+    color: #dc2626;
+}
+
+.action-dropdown-divider {
+    height: 1px;
+    background: #f1f5f9;
+    margin: 0.35rem 0;
+}

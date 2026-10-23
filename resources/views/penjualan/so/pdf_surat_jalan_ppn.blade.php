@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Surat Jalan (Ber-PPN) - {{ $order->surat_jalan_no ?: $order->so_no }}</title>
+    <title>Surat Jalan - {{ $order->surat_jalan_no ?: ($order->so_no ?? ($pengeluaran->pengeluaran_no ?? 'Dokumen')) }}</title>
     <style>
         @page {
             size: a4 portrait;
@@ -17,149 +17,208 @@
             padding: 0;
         }
 
-        /* Kop Surat Perusahaan */
-        .kop-table {
+        /* 1. KOP SURAT PERUSAHAAN (SESUAI FORM EXCEL RESMI) */
+        .kop-box {
             width: 100%;
-            border-bottom: 2px solid #000000;
-            padding-bottom: 4px;
-            margin-bottom: 8px;
+            border: 1px solid #000000;
             border-collapse: collapse;
         }
-        .kop-logo {
-            width: 52px;
+        .kop-box td {
+            border: 1px solid #000000;
             vertical-align: middle;
+        }
+        .kop-logo-cell {
+            width: 58px;
             text-align: center;
+            padding: 4px;
         }
-        .kop-text {
-            padding-left: 8px;
-            vertical-align: middle;
+        .kop-identity-cell {
+            padding: 4px 8px;
         }
-        .kop-company {
+        .company-title {
             font-size: 11pt;
             font-weight: bold;
-            color: #000000;
-            letter-spacing: 0.5px;
             font-style: italic;
+            letter-spacing: 0.3px;
         }
-        .kop-sub {
-            font-size: 7.5pt;
-            color: #000000;
+        .company-address {
+            font-size: 8pt;
             margin-top: 1px;
         }
-        .doc-control-box {
-            width: 170px;
-            border: 1px solid #000000;
-            border-collapse: collapse;
-            font-size: 7pt;
-        }
-        .doc-control-box td {
-            padding: 1px 4px;
-            border: 1px solid #000000;
+        .company-telp {
+            font-size: 8pt;
+            margin-top: 1px;
         }
 
-        /* Header Sub & Customer Info */
-        .header-info-table {
-            width: 100%;
-            margin-bottom: 6px;
-            border-collapse: collapse;
+        /* ISO Document Control Box */
+        .doc-control-cell {
+            width: 210px;
+            padding: 0;
         }
-        .header-info-table td {
+        .doc-control-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 7.5pt;
+        }
+        .doc-control-table td {
+            border: none;
+            padding: 1.5px 5px;
+            font-size: 7.5pt;
+        }
+
+        /* 2. SUB HEADER (SURAT JALAN & RUTE/SALESMAN/SOPIR) */
+        .sub-header-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 6px;
+        }
+        .sub-header-table td {
             vertical-align: top;
         }
-
-        .customer-box {
-            border: 1.5px solid #000000;
-            padding: 4px 6px;
-            font-size: 7.5pt;
-            min-height: 58px;
-        }
-
         .title-surat-jalan {
-            font-size: 14pt;
+            font-size: 15pt;
             font-weight: bold;
+            text-decoration: underline;
             text-align: center;
             letter-spacing: 1px;
-            margin: 4px 0 2px 0;
-            text-decoration: underline;
+            margin-top: 18px;
         }
 
-        .meta-line {
-            font-size: 8pt;
-            margin-bottom: 4px;
-        }
-
-        /* Items Table */
-        table.data-table {
+        /* Box Rute & Personil */
+        .personil-box {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 4px;
-            margin-bottom: 8px;
+            border: 1px solid #000000;
+            font-size: 8pt;
+            font-weight: bold;
         }
-        table.data-table th {
-            background-color: #ffffff;
+        .personil-box td {
+            border: 1px solid #000000;
+            padding: 2.5px 6px;
+        }
+
+        /* 3. TEKS PENGANTAR KENDARAAN */
+        .intro-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 8px;
+            margin-bottom: 4px;
+            font-size: 8pt;
+        }
+
+        /* 4. TABEL BARANG (HEADER CYAN & BANYAK MERGED) */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            border: 1.5px solid #000000;
+            font-size: 8pt;
+        }
+        .data-table th {
+            background-color: #d8f5fa;
+            border: 1px solid #000000;
             color: #000000;
             font-weight: bold;
             text-align: center;
-            padding: 4px 3px;
-            font-size: 7.5pt;
-            border: 1.5px solid #000000;
-            text-transform: uppercase;
+            padding: 4px 2px;
+            font-size: 8pt;
         }
-        table.data-table td {
-            padding: 3.5px 4px;
+        .data-table td {
             border: 1px solid #000000;
+            padding: 3.5px 4px;
             vertical-align: middle;
-            font-size: 7.5pt;
+            font-size: 8pt;
         }
 
-        /* Tanda Tangan */
+        /* 5. TANDA TANGAN (3 PIHAK: Sales/Sopir | Salesman | Bag. Gudang) */
         .ttd-table {
             width: 100%;
-            margin-top: 10px;
             border-collapse: collapse;
+            margin-top: 14px;
+            font-size: 8.5pt;
         }
         .ttd-table td {
             text-align: center;
             vertical-align: top;
             width: 33.33%;
             padding: 2px;
-            font-size: 8pt;
         }
         .ttd-space {
-            height: 48px;
-        }
-        .ttd-line {
-            font-weight: bold;
+            height: 52px;
         }
     </style>
 </head>
 <body>
-    {{-- Kop Surat Perusahaan --}}
-    <table class="kop-table">
+    @php
+        // 1. Tanggal Dokumen
+        $tglKirim = $order?->tgl_kirim_aktual 
+            ?: ($pengeluaran?->pengeluaran_tgl ? \Carbon\Carbon::parse($pengeluaran->pengeluaran_tgl) : null)
+            ?: ($order?->tgl_kirim_estimasi ?: ($order?->so_tgl ?: now()));
+        $tglFormatted = \Carbon\Carbon::parse($tglKirim)->translatedFormat('j-M-Y');
+
+        // 2. Customer, Rute, Salesman, Sopir, dan Nopol
+        $customer = $order?->customer ?: ($pengeluaran?->customer ?? null);
+        $rute = strtoupper($customer?->wilayah ?: ($customer?->kota ?: ($customer?->alamat_txt ?: 'YOGYAKARTA')));
+        $salesman = strtoupper($order?->salesman_nm ?? ($customer?->salesman_nm ?? ($order?->created_by ?: 'YANI')));
+        $sopir = strtoupper($order?->supir_nm ?: ($pengeluaran?->supir_nm ?? 'SYAEFUDIN'));
+        $nopol = $order?->nopol_kendaraan ?: ($pengeluaran?->nopol_kendaraan ?? '');
+
+        // 3. Agregasi Rincian Barang
+        $items = [];
+        if (!empty($pengeluaran) && $pengeluaran->details && $pengeluaran->details->count() > 0) {
+            foreach ($pengeluaran->details as $dtl) {
+                $qty = (float) $dtl->kirim_qty;
+                $konversi = (float) ($dtl->barang?->konversi_qty ?? 0);
+                $multiplier = ($konversi > 1) ? $konversi : 20; // Default 20 bks per karton (standar Mirasa)
+                $items[] = [
+                    'nama'     => $dtl->barang?->barang_nm ?? '-',
+                    'qty'      => $qty,
+                    'bks'      => ($qty > 0) ? ($qty * $multiplier) : 0,
+                    'catatan'  => $dtl->catatan_txt ?? '',
+                ];
+            }
+        } elseif (!empty($order) && $order->details && $order->details->count() > 0) {
+            foreach ($order->details as $dtl) {
+                $qty = (float) ($dtl->kirim_qty > 0 ? $dtl->kirim_qty : $dtl->pesan_qty);
+                $konversi = (float) ($dtl->barang?->konversi_qty ?? 0);
+                $multiplier = ($konversi > 1) ? $konversi : 20; // Default 20 bks per karton (standar Mirasa)
+                $items[] = [
+                    'nama'     => $dtl->barang?->barang_nm ?? '-',
+                    'qty'      => $qty,
+                    'bks'      => ($qty > 0) ? ($qty * $multiplier) : 0,
+                    'catatan'  => $dtl->catatan_txt ?? '',
+                ];
+            }
+        }
+    @endphp
+
+    {{-- KOP SURAT PERUSAHAAN (SESUAI DOKUMEN ISO RESMI EXCEL) --}}
+    <table class="kop-box">
         <tr>
-            @if(!empty($logoBase64))
-                <td class="kop-logo">
-                    <img src="{{ $logoBase64 }}" alt="Logo PT Mirasa" style="width: 44px; height: 44px;">
-                </td>
-            @endif
-            <td class="kop-text">
-                <div class="kop-company">PT. MIRASA FOOD INDUSTRY</div>
-                <div class="kop-sub">Jl. Menur No. 2, Ambartawang, Mungkid, Magelang.</div>
-                <div class="kop-sub">Telp. 0293-3288554, 3288556 Fax. 0293-782614</div>
+            <td class="kop-logo-cell">
+                @if(!empty($logoBase64))
+                    <img src="{{ $logoBase64 }}" alt="Logo PT Mirasa" style="width: 48px; height: 48px; display: block; margin: 0 auto;">
+                @else
+                    <div style="width: 48px; height: 48px;"></div>
+                @endif
             </td>
-            <td style="width: 175px; text-align: right; vertical-align: top;">
-                <table class="doc-control-box" align="right">
+            <td class="kop-identity-cell">
+                <div class="company-title">PT. MIRASA FOOD INDUSTRY</div>
+                <div class="company-address">Jl.Munggur No.2 Kalangan Ambartawang Mungkid Magelang</div>
+                <div class="company-telp">Telp. 0293-3280554, 3280556 Fax. 0293-782614</div>
+            </td>
+            <td class="doc-control-cell">
+                <table class="doc-control-table">
                     <tr>
-                        <td style="width: 60px;">No. Dok</td>
-                        <td>: MFI/BMR/1.0.3.0.3</td>
+                        <td style="width: 75px;">No. Doc</td>
+                        <td>: MFI/QMS/F.8.2.0.2</td>
                     </tr>
                     <tr>
-                        <td>Rev.</td>
+                        <td>No. Rev</td>
                         <td>: 0</td>
                     </tr>
                     <tr>
                         <td>Tgl. Terbit</td>
-                        <td>: 01-07-2023</td>
+                        <td>: 01-07-2022</td>
                     </tr>
                     <tr>
                         <td>Halaman</td>
@@ -170,91 +229,92 @@
         </tr>
     </table>
 
-    {{-- Tanggal, Judul & Kotak Customer --}}
-    <table class="header-info-table">
+    {{-- SUB HEADER (SURAT JALAN & KOTAK RUTE / SALESMAN / SOPIR) --}}
+    <table class="sub-header-table">
         <tr>
-            <td style="width: 58%; vertical-align: bottom;">
+            <td style="width: 58%; vertical-align: middle;">
                 <div class="title-surat-jalan">SURAT JALAN</div>
-                <div style="font-size: 7.5pt; font-family: monospace; color: #334155; text-align: center;">
-                    No. SJ: <strong>{{ $order->surat_jalan_no ?: ('SJ-' . $order->so_no) }}</strong> | Ref. PO: {{ $order->so_no }}
-                </div>
             </td>
-            <td style="width: 42%; vertical-align: top;">
-                <div style="text-align: right; font-size: 8pt; margin-bottom: 3px;">
-                    Magelang, <strong>{{ $order->tgl_kirim_aktual ? $order->tgl_kirim_aktual->translatedFormat('d-M-Y') : ($order->tgl_kirim_estimasi ? $order->tgl_kirim_estimasi->translatedFormat('d-M-Y') : date('d-M-Y')) }}</strong>
-                </div>
-                <div class="customer-box">
-                    <div style="font-size: 7pt; color: #334155;">Kepada Yth.</div>
-                    <div style="font-weight: bold; font-size: 8.5pt; color: #000000; text-transform: uppercase;">
-                        {{ $order->customer?->customer_nm }}
-                    </div>
-                    <div style="font-size: 7.5pt; color: #000000;">
-                        {{ $order->customer?->alamat_txt ?: ($order->customer?->kota ?: '-') }}
-                    </div>
-                    <div style="margin-top: 3px; font-weight: bold; font-size: 7.5pt; border-top: 1px dashed #000000; padding-top: 2px;">
-                        SOPIR : {{ $order->supir_nm ?: '-' }}
-                    </div>
-                </div>
+            <td style="width: 42%;">
+                <table style="width: 100%; border-collapse: collapse; margin-bottom: 3px;">
+                    <tr>
+                        <td style="font-size: 8.5pt; text-align: left; width: 45%;">Magelang,</td>
+                        <td style="font-size: 8.5pt; font-weight: bold; text-align: right; width: 55%;">{{ $tglFormatted }}</td>
+                    </tr>
+                </table>
+
+                <table class="personil-box">
+                    <tr>
+                        <td style="width: 35%;">RUTE</td>
+                        <td style="width: 65%;">{{ $rute }}</td>
+                    </tr>
+                    <tr>
+                        <td>SALESMAN</td>
+                        <td>{{ $salesman }}</td>
+                    </tr>
+                    <tr>
+                        <td>SOPIR</td>
+                        <td>{{ $sopir }}</td>
+                    </tr>
+                </table>
             </td>
         </tr>
     </table>
 
-    {{-- Keterangan Nopol Kendaraan --}}
-    <div class="meta-line" style="display: flex; justify-content: space-between; border-bottom: 1px dotted #000000; padding-bottom: 2px; margin-top: 4px;">
-        <span>Dengan Kendaraan Truk/Mobil Box Nomor Polisi: <strong>{{ $order->nopol_kendaraan ?: '........................' }}</strong></span>
-        <span style="float: right; font-style: italic;">kami kirim barang sbb.:</span>
-    </div>
+    {{-- TEKS PENGANTAR MOBIL BOX --}}
+    <table class="intro-table">
+        <tr>
+            <td style="text-align: left;">
+                Dengan Kendaraan Mobil Box Nomor Polisi 
+                @if(!empty($nopol))
+                    <strong style="font-size: 8.5pt; padding: 0 4px; border-bottom: 1px solid #000;">{{ $nopol }}</strong>
+                @else
+                    <span style="display: inline-block; width: 120px; border-bottom: 1px dotted #000;">&nbsp;</span>
+                @endif
+            </td>
+            <td style="text-align: right; font-style: italic;">
+                kami kirim barang sbb.:
+            </td>
+        </tr>
+    </table>
 
-    {{-- Tabel Rincian Fisik Barang (Struktur Sesuai Format Mirasa Ber-PPN) --}}
+    {{-- TABEL DATA RINCIAN BARANG --}}
     <table class="data-table">
         <thead>
             <tr>
-                <th rowspan="2" style="width: 25px;">No.</th>
-                <th rowspan="2" style="text-align: left; padding-left: 6px;">NAMA BARANG</th>
-                <th colspan="4" style="width: 220px;">BANYAKNYA</th>
-                <th rowspan="2" style="width: 140px;">KETERANGAN</th>
+                <th rowspan="2" style="width: 30px;">No.</th>
+                <th rowspan="2" style="text-align: left; padding-left: 8px;">NAMA BARANG</th>
+                <th colspan="2" style="width: 140px;">BANYAK</th>
+                <th rowspan="2" style="width: 180px;">KETERANGAN</th>
             </tr>
             <tr>
-                <th style="width: 50px;">IKAT</th>
-                <th style="width: 65px;">BUNGKUS / DUS</th>
-                <th style="width: 55px;">KARTON</th>
-                <th style="width: 50px;">BALL</th>
+                <th style="width: 70px;">JUMLAH</th>
+                <th style="width: 70px;">BKS</th>
             </tr>
         </thead>
         <tbody>
-            @php
-                $totalKarton = 0;
-                $rowCount = 0;
-            @endphp
-            @foreach($order->details as $idx => $dtl)
-                @php
-                    $qty = (float) $dtl->pesan_qty;
-                    $totalKarton += $qty;
-                    $rowCount++;
-                @endphp
+            @foreach($items as $idx => $it)
                 <tr>
                     <td style="text-align: center;">{{ $idx + 1 }}</td>
-                    <td style="font-weight: bold; padding-left: 6px;">
-                        {{ $dtl->barang?->barang_nm }}
+                    <td style="padding-left: 8px; font-weight: bold;">
+                        {{ $it['nama'] }}
                     </td>
-                    <td style="text-align: center; color: #64748b;">-</td>
-                    <td style="text-align: center; color: #64748b;">-</td>
-                    <td style="text-align: right; font-weight: bold; padding-right: 6px;">
-                        {{ number_format($qty, 0, ',', '.') }}
+                    <td style="text-align: center; font-weight: bold;">
+                        {{ $it['qty'] > 0 ? number_format($it['qty'], 0, ',', '.') : '' }}
                     </td>
-                    <td style="text-align: center; color: #64748b;">-</td>
-                    <td style="font-size: 7pt; color: #334155;">
-                        {{ $dtl->catatan_txt ?: 'Kondisi Baik' }}
+                    <td style="text-align: center; font-weight: bold;">
+                        {{ $it['bks'] > 0 ? number_format($it['bks'], 0, ',', '.') : '' }}
+                    </td>
+                    <td style="padding-left: 6px; font-size: 7.5pt; color: #1e293b;">
+                        {{ $it['catatan'] }}
                     </td>
                 </tr>
             @endforeach
 
-            {{-- Baris Kosong Tambahan Agar Menyerupai Continuous Form Fisik --}}
-            @for($i = $rowCount; $i < 6; $i++)
+            {{-- Baris Kosong Tambahan Agar Selalu Minimal 10 Baris Sesuai Form Fisik Asli --}}
+            @for($i = count($items); $i < 10; $i++)
                 <tr>
-                    <td style="text-align: center; color: #cbd5e1;">&nbsp;</td>
-                    <td>&nbsp;</td>
-                    <td>&nbsp;</td>
+                    <td style="text-align: center; height: 19px;">{{ $i + 1 }}</td>
                     <td>&nbsp;</td>
                     <td>&nbsp;</td>
                     <td>&nbsp;</td>
@@ -262,46 +322,25 @@
                 </tr>
             @endfor
         </tbody>
-        <tfoot>
-            <tr style="font-weight: bold;">
-                <td colspan="2" style="text-align: center; padding: 4px; letter-spacing: 1px;">
-                    TOTAL
-                </td>
-                <td style="text-align: center;">-</td>
-                <td style="text-align: center;">-</td>
-                <td style="text-align: right; padding-right: 6px; font-size: 8.5pt;">
-                    {{ number_format($totalKarton, 0, ',', '.') }}
-                </td>
-                <td style="text-align: center;">-</td>
-                <td></td>
-            </tr>
-        </tfoot>
     </table>
 
-    {{-- Kolom Tanda Tangan 3 Pihak --}}
+    {{-- TANDA TANGAN 3 PIHAK RESMI (Sales/Sopir | Salesman | Bag. Gudang) --}}
     <table class="ttd-table">
         <tr>
-            <td>
-                <div>Penerima</div>
-                <div class="ttd-space"></div>
-                <div class="ttd-line">( ........................................ )</div>
-            </td>
-            <td>
-                <div>Sopir / Sales</div>
-                <div class="ttd-space"></div>
-                <div class="ttd-line">( {{ $order->supir_nm ?: '........................................' }} )</div>
-            </td>
-            <td>
-                <div>Bagian Gudang</div>
-                <div class="ttd-space"></div>
-                <div class="ttd-line">( ........................................ )</div>
-            </td>
+            <td style="font-weight: bold;">Sales/Sopir</td>
+            <td style="font-weight: bold;">Salesman</td>
+            <td style="font-weight: bold;">Bag. Gudang</td>
+        </tr>
+        <tr>
+            <td class="ttd-space"></td>
+            <td class="ttd-space"></td>
+            <td class="ttd-space"></td>
+        </tr>
+        <tr>
+            <td>( ........................................ )</td>
+            <td>( ........................................ )</td>
+            <td>( ........................................ )</td>
         </tr>
     </table>
-
-    {{-- Footer Info Cetak --}}
-    <div style="margin-top: 12px; font-size: 6.5pt; color: #64748b; border-top: 1px dashed #cbd5e1; padding-top: 2px;">
-        <span>Dokumen Ber-PPN resmi &bull; Dicetak pada {{ $printedAt }} oleh {{ $printedBy }}</span>
-    </div>
 </body>
 </html>

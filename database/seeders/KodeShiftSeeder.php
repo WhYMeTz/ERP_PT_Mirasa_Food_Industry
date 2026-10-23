@@ -28,7 +28,7 @@ class KodeShiftSeeder extends Seeder
         ];
 
         foreach ($data as [$kode, $hari, $masuk, $pulang, $lintas, $ist, $std, $jenis, $ket]) {
-            MstKodeShift::updateOrCreate(['kode' => $kode], [
+            MstKodeShift::firstOrCreate(['kode' => $kode], [
                 'hari' => $hari, 'jam_masuk' => $masuk, 'jam_pulang' => $pulang,
                 'lintas_hari' => $lintas, 'istirahat_default' => $ist,
                 'standar_jam' => $std, 'jenis' => $jenis, 'keterangan' => $ket,

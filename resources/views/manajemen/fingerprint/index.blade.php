@@ -10,6 +10,13 @@
 
 {{-- HEADER --}}
 <div class="fp-head">
+    @if (request('from') === 'absensi')
+        <div class="fp-info" style="margin-bottom:16px">
+            Dibuka dari <b>Absensi Karyawan</b> untuk memeriksa ID <b>{{ request('q') }}</b>.
+            Setelah diperbaiki, <a href="{{ route('manajemen.absensi.index') }}"><b>kembali ke Absensi</b></a>
+            lalu klik <b>Hitung / Hitung Ulang</b>.
+        </div>
+    @endif
     <div>
         <h1 class="fp-title">Finger Print Karyawan</h1>
         <p class="fp-sub">Impor data mesin absensi. ...</p>

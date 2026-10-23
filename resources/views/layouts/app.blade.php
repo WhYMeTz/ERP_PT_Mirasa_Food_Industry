@@ -1072,6 +1072,17 @@
                                                 <span>Kode Shift</span>
                                             </a>
                                         @endif
+
+                                        @if (Auth::user()->canAccessAbsensi())
+                                            <a href="{{ route('manajemen.absensi.index') }}"
+                                                class="mega-item {{ request()->routeIs('manajemen.absensi.*') ? 'active' : '' }}">
+                                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zm8 0l2 2 4-4" />
+                                                </svg>
+                                                <span>Absensi Karyawan</span>
+                                            </a>
+                                        @endif
                                     </div>
 
                                     {{-- KELOMPOK 2: PENGGAJIAN --}}

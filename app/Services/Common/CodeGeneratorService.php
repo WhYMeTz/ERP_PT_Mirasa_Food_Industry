@@ -660,12 +660,153 @@ class CodeGeneratorService
     }
 
     /**
+     * Generate Nomor Faktur Standar MFI / IFM (format: XX/MFI/MM/YY atau XX/MFI-CKL/MM/YY)
+     * Contoh: 01/MFI/09/26 (Semarang) atau 01/MFI-CKL/09/26 (Cikokol Tangerang)
+     * Reset ke urutan 01 pada setiap awal bulan baru secara otomatis per plant/kode.
+     */
+    public function generateFakturMfiNo(?string $date = null, string $plantCode = 'MFI'): string
+    {
+        $plantCode = strtoupper(trim($plantCode));
+        if ($plantCode === 'CKL' || $plantCode === 'MFI_CKL' || str_contains($plantCode, 'CKL')) {
+            $plantCode = 'MFI-CKL';
+        } else {
+            $plantCode = 'MFI';
+        }
+
+        $timestamp = strtotime($date ?? date('Y-m-d'));
+        $month = date('m', $timestamp);
+        $year = date('y', $timestamp);
+        $suffix = "/{$plantCode}/{$month}/{$year}";
+
+        $existing = DB::table('dat_so_hdr')
+            ->where('faktur_no', 'LIKE', '%' . $suffix)
+            ->pluck('faktur_no');
+
+        $maxNumber = 0;
+        $regex = '/^(\d+)\/' . preg_quote($plantCode, '/') . '\/' . $month . '\/' . $year . '$/';
+        foreach ($existing as $fNo) {
+            if (preg_match($regex, trim($fNo), $matches)) {
+                $num = (int) $matches[1];
+                if ($num > $maxNumber) {
+                    $maxNumber = $num;
+                }
+            }
+        }
+
+        $nextNumber = $maxNumber + 1;
+        return str_pad((string) $nextNumber, 2, '0', STR_PAD_LEFT) . $suffix;
+    }
+
+    /**
+     * Generate Nomor Faktur Penjualan Manual (Toko / Sales):
+     * - Ber-PPN: format XX/PM.A/MM/YY (contoh: 01/PM.A/10/26)
+     * - Non-PPN: format XX/PM.B/MM/YY (contoh: 01/PM.B/10/26)
+     * Reset ke urutan 01 pada setiap awal bulan baru secara otomatis per jenis (PM.A / PM.B).
+     */
+    public function generateFakturManualNo(?string $date = null, bool $isPpn = false): string
+    {
+        $code = $isPpn ? 'PM.A' : 'PM.B';
+        $timestamp = strtotime($date ?? date('Y-m-d'));
+        $month = date('m', $timestamp);
+        $year = date('y', $timestamp);
+        $suffix = "/{$code}/{$month}/{$year}";
+
+        $existing = DB::table('dat_so_hdr')
+            ->where('faktur_no', 'LIKE', '%' . $suffix)
+            ->pluck('faktur_no');
+
+        $maxNumber = 0;
+        $regex = '/^(\d+)\/' . preg_quote($code, '/') . '\/' . $month . '\/' . $year . '$/';
+        foreach ($existing as $fNo) {
+            if (preg_match($regex, trim($fNo), $matches)) {
+                $num = (int) $matches[1];
+                if ($num > $maxNumber) {
+                    $maxNumber = $num;
+                }
+            }
+        }
+
+        $nextNumber = $maxNumber + 1;
+        return str_pad((string) $nextNumber, 2, '0', STR_PAD_LEFT) . $suffix;
+    }
+
+    /**
+     * Generate Nomor Faktur Penjualan Modern Trade (Indomaret / Alfamart / Alfamidi):
+     * Format: MFI + YYMM + XXX (3 digit nomor urut, reset bulanan)
+     * Contoh: MFI2610001 (atau MFI261001)
+     */
+    public function generateFakturModernTradeNo(?string $date = null): string
+    {
+        $timestamp = strtotime($date ?? date('Y-m-d'));
+        $ym = date('ym', $timestamp);
+        $prefix = "MFI{$ym}";
+
+        $existing = DB::table('dat_so_hdr')
+            ->where('faktur_no', 'LIKE', $prefix . '%')
+            ->pluck('faktur_no');
+
+        $maxNumber = 0;
+        $regex = '/^' . preg_quote($prefix, '/') . '(\d+)$/';
+        foreach ($existing as $fNo) {
+            if (preg_match($regex, trim($fNo), $matches)) {
+                $num = (int) $matches[1];
+                if ($num > $maxNumber) {
+                    $maxNumber = $num;
+                }
+            }
+        }
+
+        $nextNumber = $maxNumber + 1;
+        return $prefix . str_pad((string) $nextNumber, 2, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * Dispatcher Generator Faktur Otomatis berdasarkan Standar Resmi PT Mirasa (sesuai Master Spreadsheet):
+     * 1. IFM (Indofood):
+     *    - Semarang: XX/MFI/MM/YY (contoh: 01/MFI/10/26)
+     *    - Cikokol: XX/MFI-CKL/MM/YY (contoh: 01/MFI-CKL/10/26)
+     * 2. MANUAL (Sales / Toko Mitra):
+     *    - Ber-PPN: XX/PM.A/MM/YY (contoh: 01/PM.A/10/26)
+     *    - Non-PPN: XX/PM.B/MM/YY (contoh: 01/PM.B/10/26)
+     * 3. IDM_ALFA (Modern Trade: Alfamart, Alfamidi, Indomaret, DC):
+     *    - Format: MFIYYMMXX (contoh: MFI261001, MFI261002, MFI261003)
+     */
+    public function generateFakturByKlasifikasi(?string $klasifikasi = null, ?string $plantOrWilayah = null, bool $isPpn = false, ?string $date = null): string
+    {
+        $klasifikasi = strtoupper(trim((string) $klasifikasi));
+
+        if ($klasifikasi === 'IFM') {
+            $plantUpper = strtoupper(trim((string) $plantOrWilayah));
+            $plantCode = (str_contains($plantUpper, 'CKL') || str_contains($plantUpper, 'CIKOKOL') || str_contains($plantUpper, 'TANGERANG'))
+                ? 'MFI-CKL'
+                : 'MFI';
+            return $this->generateFakturMfiNo($date, $plantCode);
+        }
+
+        if ($klasifikasi === 'IDM_ALFA') {
+            return $this->generateFakturModernTradeNo($date);
+        }
+
+        // Default: Standar Penjualan Mirasa (PM.A jika PPN, PM.B jika Non-PPN)
+        return $this->generateFakturManualNo($date, $isPpn);
+    }
+
+    /**
      * Generate Nomor Surat Jalan Pengiriman (format: SJ-YYYYMM-0001)
      */
     public function generateSuratJalanNo(?string $date = null): string
     {
         $prefix = 'SJ-' . date('Ym', strtotime($date ?? date('Y-m-d'))) . '-';
         return $this->generate('dat_so_hdr', 'surat_jalan_no', $prefix, 4);
+    }
+
+    /**
+     * Generate Nomor Dokumen Retur PO Penjualan (format: RET-SO-YYYYMM-0001)
+     */
+    public function generateSoReturNo(?string $date = null): string
+    {
+        $prefix = 'RET-SO-' . date('Ym', strtotime($date ?? date('Y-m-d'))) . '-';
+        return $this->generate('dat_so_retur_hdr', 'retur_no', $prefix, 4);
     }
 }
 

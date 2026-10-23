@@ -1,0 +1,307 @@
+/* ==============================================================
+   FAKTUR PENJUALAN - FORM & SHOW STYLESHEET
+   PT Mirasa Food Industry (Cap Payung)
+   ============================================================== */
+
+.fk-form-container {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+/* Header */
+.fk-page-header {
+    margin-bottom: 1.5rem;
+}
+
+.fk-back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.8125rem;
+    color: #64748b;
+    text-decoration: none;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    transition: color 0.15s ease;
+}
+
+.fk-back-link:hover {
+    color: #059669;
+}
+
+.fk-title-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.fk-page-title {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #0f172a;
+    letter-spacing: -0.02em;
+    margin: 0;
+}
+
+.fk-page-subtitle {
+    font-size: 0.85rem;
+    color: #64748b;
+    margin: 0.25rem 0 0 0;
+}
+
+/* 2-Column Grid Header Cards */
+.fk-grid-2-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+    margin-bottom: 1.25rem;
+}
+
+@media (max-width: 900px) {
+    .fk-grid-2-col {
+        grid-template-columns: 1fr;
+    }
+}
+
+.fk-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 1.25rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.fk-card-title {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0 0 1rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding-bottom: 0.65rem;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.fk-form-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.85rem;
+}
+
+.fk-field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    margin-bottom: 0.85rem;
+}
+
+.fk-field-group:last-child {
+    margin-bottom: 0;
+}
+
+.fk-label {
+    font-size: 0.775rem;
+    font-weight: 700;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+.fk-label .required {
+    color: #dc2626;
+    margin-left: 2px;
+}
+
+.fk-input, .fk-select, .fk-textarea {
+    width: 100%;
+    height: 38px;
+    padding: 0 0.75rem;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 0.8125rem;
+    color: #1e293b;
+    background: #ffffff;
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    box-sizing: border-box;
+}
+
+.fk-textarea {
+    height: 70px;
+    padding: 0.5rem 0.75rem;
+    resize: vertical;
+}
+
+.fk-input:focus, .fk-select:focus, .fk-textarea:focus {
+    border-color: #059669;
+    box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.12);
+}
+
+.fk-input[readonly], .fk-input:disabled {
+    background: #f8fafc;
+    color: #64748b;
+    cursor: not-allowed;
+    border-color: #e2e8f0;
+}
+
+/* Items Table */
+.fk-table-container {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 1.25rem;
+    margin-bottom: 1.25rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.fk-items-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+}
+
+.fk-items-table thead th {
+    background: #f8fafc;
+    color: #475569;
+    font-weight: 700;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    padding: 0.75rem 0.65rem;
+    border-bottom: 1.5px solid #e2e8f0;
+}
+
+.fk-items-table tbody td {
+    padding: 0.75rem 0.65rem;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+}
+
+.fk-items-table tfoot td {
+    padding: 0.85rem 0.65rem;
+    border-top: 2px solid #e2e8f0;
+    font-weight: 700;
+    background: #f8fafc;
+}
+
+/* Commercial Breakdown Box (Perhitungan Faktur) */
+.fk-calc-box {
+    background: #ffffff;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1rem;
+    width: 360px;
+    margin-left: auto;
+}
+
+.fk-calc-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.35rem 0;
+    font-size: 0.8125rem;
+}
+
+.fk-calc-row.total-row {
+    border-top: 1.5px dashed #cbd5e1;
+    margin-top: 0.5rem;
+    padding-top: 0.65rem;
+    font-size: 1rem;
+    font-weight: 800;
+    color: #059669;
+}
+
+/* Bottom Action Bar */
+.fk-bottom-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    margin-top: 1.25rem;
+    padding: 1rem 0;
+}
+
+/* Modal Dialog Void (Strict Danger Standard) */
+.modal-danger-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(15, 23, 42, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+    backdrop-filter: blur(2px);
+}
+
+.modal-danger-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.modal-danger-box {
+    background: #ffffff;
+    width: 90%;
+    max-width: 480px;
+    border-radius: 12px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+    transform: scale(0.95);
+    transition: transform 0.2s ease;
+}
+
+.modal-danger-overlay.active .modal-danger-box {
+    transform: scale(1);
+}
+
+.modal-danger-header {
+    background: #fef2f2;
+    border-bottom: 1px solid #fee2e2;
+    padding: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.modal-danger-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #fee2e2;
+    color: #dc2626;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.modal-danger-title {
+    font-size: 1rem;
+    font-weight: 800;
+    color: #991b1b;
+    margin: 0;
+}
+
+.modal-danger-body {
+    padding: 1.25rem;
+    color: #475569;
+    font-size: 0.875rem;
+    line-height: 1.5;
+}
+
+.modal-danger-footer {
+    background: #f8fafc;
+    border-top: 1px solid #f1f5f9;
+    padding: 0.85rem 1.25rem;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.65rem;
+}

@@ -952,13 +952,83 @@
 
         // 3. Output Hasil Produksi (Tabel Terpadu FG & WIP)
         let totalOutputKg = 0;
-        document.querySelectorAll('.input-fg-qty-kg').forEach(inp => {
-            totalOutputKg += parseFloat(inp.value) || 0;
+        let totalBerkoKg = 0;
+        let totalLengketKg = 0;
+
+        document.querySelectorAll('.row-output-fg').forEach(row => {
+            const kgInp = row.querySelector('.input-fg-qty-kg');
+            const kgVal = parseFloat(kgInp?.value) || 0;
+            if (kgVal <= 0) return;
+
+            totalOutputKg += kgVal;
+
+            const selBarang = row.querySelector('.select-fg-barang');
+            const opt = selBarang?.selectedOptions?.[0];
+            const nm = (opt?.dataset?.nm || opt?.getAttribute('data-nm') || '').toUpperCase();
+            const cd = (opt?.dataset?.cd || opt?.getAttribute('data-cd') || '').toUpperCase();
+
+            if (cd.includes('LGT') || nm.includes('LENGKET')) {
+                totalLengketKg += kgVal;
+            } else if (cd.includes('BRK') || nm.includes('BERKO')) {
+                totalBerkoKg += kgVal;
+            }
         });
 
         const badgeTotalOutput = document.getElementById('badgeTotalOutputKg');
         if (badgeTotalOutput) {
             badgeTotalOutput.textContent = 'Total Output: ' + formatNumber(totalOutputKg, 2) + ' kg';
+        }
+
+        const badgeBerko = document.getElementById('badgeBerkoOutput');
+        if (badgeBerko) {
+            if (totalBerkoKg > 0) {
+                const berkoPct = totalOutputKg > 0 ? (totalBerkoKg / totalOutputKg) * 100 : 0;
+                badgeBerko.textContent = 'Berko: ' + formatNumber(totalBerkoKg, 2) + ' kg (' + formatNumber(berkoPct, 1) + '%)';
+                badgeBerko.style.display = 'inline-block';
+            } else {
+                badgeBerko.style.display = 'none';
+            }
+        }
+
+        const badgeLengket = document.getElementById('badgeLengketOutput');
+        if (badgeLengket) {
+            if (totalLengketKg > 0) {
+                let txt = 'Limbah Lengket: ' + formatNumber(totalLengketKg, 2) + ' kg';
+                if (singkongQty > 0) {
+                    const lengketPct = (totalLengketKg / singkongQty) * 100;
+                    txt += ' (' + formatNumber(lengketPct, 1) + '%)';
+                }
+                badgeLengket.textContent = txt;
+                badgeLengket.style.display = 'inline-block';
+            } else {
+                badgeLengket.style.display = 'none';
+            }
+        }
+
+        // Sinkronisasi Hidden Inputs untuk Limbah HACCP
+        const inpLengket = document.getElementById('waste_lengket_qty');
+        if (inpLengket) inpLengket.value = totalLengketKg > 0 ? totalLengketKg.toFixed(4) : (inpLengket.value || 0);
+
+        const inpLengketPct = document.getElementById('waste_lengket_persen');
+        if (inpLengketPct) {
+            const pct = singkongQty > 0 ? (totalLengketKg / singkongQty) * 100 : 0;
+            inpLengketPct.value = pct.toFixed(2);
+        }
+
+        const inpWasteTot = document.getElementById('waste_total_qty');
+        if (inpWasteTot) {
+            inpWasteTot.value = (totalLengketKg + totalBerkoKg).toFixed(4);
+        }
+
+        const liniVal = (document.getElementById('lini_produksi')?.value || '').toUpperCase();
+        const inpBerkoIfl = document.getElementById('berko_ifl_qty');
+        const inpBerkoNonIfl = document.getElementById('berko_non_ifl_qty');
+        if (liniVal.includes('IFL') || liniVal.includes('IFM')) {
+            if (inpBerkoIfl) inpBerkoIfl.value = totalBerkoKg.toFixed(4);
+            if (inpBerkoNonIfl) inpBerkoNonIfl.value = '0';
+        } else {
+            if (inpBerkoIfl) inpBerkoIfl.value = '0';
+            if (inpBerkoNonIfl) inpBerkoNonIfl.value = totalBerkoKg.toFixed(4);
         }
 
         // 4. Kalkulasi Otomatis Standar FOH Sesuai Pengali Excel Asli PT Mirasa
@@ -1401,6 +1471,11 @@
         const idx = fgRowCounter++;
         const currentBatch = document.getElementById('batch_wip_no')?.value || '';
         const currentQtyKarton = parseFloat(document.getElementById('qty_karton')?.value) || 0;
+        const isFirstRow = tbody.children.length === 0;
+        const defaultQtyHasil = initial?.qty_hasil !== undefined 
+            ? initial.qty_hasil 
+            : (isFirstRow && currentQtyKarton > 0 ? currentQtyKarton : '');
+        const defaultBatch = initial?.batch_no || (isFirstRow ? currentBatch : '-');
 
         const barangList = window.appConfig.barangHasilList || [];
         
@@ -1461,7 +1536,7 @@
                 </select>
             </td>
             <td style="padding: 0.5rem 0.75rem;">
-                <input type="number" step="0.0001" min="0" name="output_items[${idx}][qty_hasil]" id="qtyHasil_${idx}" class="form-control calc-trigger" style="text-align: right; font-weight: 700; color: #0f172a;" placeholder="0" value="${initial?.qty_hasil || (currentQtyKarton > 0 ? currentQtyKarton : '')}" oninput="onQtyHasilInput(${idx})">
+                <input type="number" step="0.0001" min="0" name="output_items[${idx}][qty_hasil]" id="qtyHasil_${idx}" class="form-control calc-trigger" style="text-align: right; font-weight: 700; color: #0f172a;" placeholder="0" value="${defaultQtyHasil}" oninput="onQtyHasilInput(${idx})">
             </td>
             <td style="padding: 0.5rem 0.75rem; text-align: center;">
                 <span id="labelSatuan_${idx}" style="font-weight: 600; color: #475569; font-size: 0.775rem;">${initial?.satuan_cd || '-'}</span>
@@ -1472,9 +1547,9 @@
             </td>
             <td style="padding: 0.5rem 0.75rem; text-align: center;">
                 <span class="badge-batch-wip" id="badgeFgBatch_${idx}" style="font-size: 0.75rem; font-weight: 700; color: #334155; background: #f8fafc; border: 1px solid #cbd5e1; padding: 0.2rem 0.5rem; border-radius: 4px; display: inline-block;">
-                    ${currentBatch || '-'}
+                    ${defaultBatch}
                 </span>
-                <input type="hidden" name="output_items[${idx}][batch_no]" id="batchFg_${idx}" value="${initial?.batch_no || currentBatch}">
+                <input type="hidden" name="output_items[${idx}][batch_no]" id="batchFg_${idx}" value="${defaultBatch !== '-' ? defaultBatch : ''}">
             </td>
             <td style="padding: 0.5rem 0.75rem; text-align: center;">
                 <button type="button" onclick="removeFgRow(${idx})" class="btn btn-sm btn-remove-fg" id="btnRemoveFg_${idx}" style="padding: 0.2rem 0.45rem; font-size: 0.75rem; background: #ffffff; border: 1px solid #cbd5e1; color: #dc2626; font-weight: 600;" title="Hapus baris ini">
@@ -1485,8 +1560,9 @@
 
         tbody.appendChild(tr);
 
-        // Jika ada initial value atau default auto selection
-        if (!initial) {
+        // Auto selection barang lini HANYA untuk baris pertama (jika tabel baru memiliki 1 baris)
+        // Baris ke-2 dst tidak boleh di-autoselect agar operator bebas memilih barang tambahan (Berko, Lengket, dll)
+        if (!initial && tbody.querySelectorAll('.row-output-fg').length === 1) {
             autoSelectLiniBarang(idx);
         }
 
@@ -1745,8 +1821,15 @@
                       currentCd === 'IFM' || 
                       currentTipe === 'IFM';
 
+        const tbody = document.getElementById('tbodyOutputFg');
+        const otherSelects = Array.from(tbody?.querySelectorAll('.select-fg-barang') || []).filter(s => s !== selBarang);
+
         for (let i = 0; i < selBarang.options.length; i++) {
             const opt = selBarang.options[i];
+            if (!opt.value) continue;
+            // Jika barang ini sudah dipilih pada baris lain, jangan dipilih ulang
+            if (otherSelects.some(s => s.value === opt.value)) continue;
+
             const nm = (opt.dataset.nm || opt.getAttribute('data-nm') || '').toUpperCase();
             const cd = (opt.dataset.cd || opt.getAttribute('data-cd') || '').toUpperCase();
             const txt = (opt.text || opt.textContent || '').toUpperCase();
@@ -1806,12 +1889,20 @@
         }
     }
 
+    // Helper: Hitung Limbah Waste HACCP & Persentase Singkong Lengket
+    window.calcWasteHaccp = function () {
+        if (typeof window.calcAll === 'function') {
+            window.calcAll();
+        }
+    };
+
     // Initialize on DOM Ready
     document.addEventListener('DOMContentLoaded', () => {
         window.updateHariLabel();
         window.fetchNextKarton();
         window.calcTk();
         window.calcCng();
+        window.calcWasteHaccp();
         window.calcAll();
         window.highlightMatchingPakai();
 

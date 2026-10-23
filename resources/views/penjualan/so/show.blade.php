@@ -36,19 +36,28 @@
     {{-- ACTION BUTTONS --}}
     <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
         @if($order->isDeliverable())
-            {{-- Tombol Utama: Eksekusi Pengiriman & Potong Stok FEFO --}}
-            <button type="button" 
-                    onclick="openConfirmDeliveryModal({{ $order->so_id }}, '{{ $order->so_no }}', '{{ addslashes($order->customer?->customer_nm ?? '') }}')" 
-                    class="btn btn-primary" 
-                    style="background: #059669; border-color: #059669; color: #ffffff; padding: 0.45rem 1rem; font-size: 0.85rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.4rem; box-shadow: 0 2px 4px rgba(5,150,105,0.2);">
-                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                <span>Konfirmasi Kirim &amp; Potong Stok (FEFO)</span>
-            </button>
+            {{-- Tombol Utama: Buat Surat Jalan di Modul Pengeluaran Barang --}}
+            <a href="{{ route('penjualan.pengeluaran.create', ['so_id' => $order->so_id]) }}" 
+               class="btn btn-primary" 
+               style="background: #059669; border-color: #059669; color: #ffffff; padding: 0.45rem 1rem; font-size: 0.85rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.4rem; box-shadow: 0 2px 4px rgba(5,150,105,0.2);">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+                <span>+ Buat Surat Jalan (Kirim Barang)</span>
+            </a>
         @elseif($order->isCompleted())
             <span class="delivery-badge-success" style="padding: 0.45rem 0.85rem; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 0.4rem;">
                 <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                 <span>Stok FG Terpotong Resmi (FEFO)</span>
             </span>
+
+            {{-- Tombol Catat Retur Penjualan --}}
+            <button type="button" 
+                    onclick="openReturModal()" 
+                    class="btn btn-secondary" 
+                    style="padding: 0.45rem 0.85rem; font-size: 0.85rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.35rem;" 
+                    title="Catat barang rusak/cacat yang dikembalikan oleh pelanggan">
+                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 15v-1a4 4 0 00-4-4H4m0 0l4 4m-4-4l4-4m12 11a4 4 0 004-4v-1a4 4 0 00-4-4h-4"/></svg>
+                <span>+ Catat Retur Barang</span>
+            </button>
 
             <button type="button" 
                     onclick="openVoidDeliveryModal({{ $order->so_id }}, '{{ $order->so_no }}')" 
@@ -76,17 +85,87 @@
             </span>
         @endif
 
-        {{-- Cetak Faktur PDF --}}
-        <a href="{{ route('penjualan.so.export-faktur', $order->so_id) }}" target="_blank" class="btn btn-secondary" style="padding: 0.45rem 0.85rem; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.35rem;">
+        @php
+            $custNmUpper = strtoupper($order->customer?->customer_nm ?? '');
+            $custCdUpper = strtoupper($order->customer?->customer_cd ?? '');
+            $isOrderIfm = str_contains($custNmUpper, 'INDOFOOD') || str_contains($custNmUpper, 'IFM') || str_contains($custNmUpper, 'FORTUNA') || str_contains($custCdUpper, 'IFM') || str_contains($custCdUpper, 'INDOFOOD');
+            $isOrderPpn = $order->ppn_nominal > 0 || $order->ppn_tipe === 'PPN_11';
+            $sjTitle = $isOrderIfm ? 'IFM' : ($isOrderPpn ? 'PPN' : 'Non-PPN');
+        @endphp
+
+        {{-- Cetak Faktur PDF Utama --}}
+        <a href="{{ route('penjualan.so.export-faktur', $order->so_id) }}" target="_blank" class="btn btn-secondary" style="padding: 0.45rem 0.85rem; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.35rem;" title="Cetak Faktur Penjualan Utama (Format {{ $isOrderPpn ? 'Ber-PPN' : 'Non-PPN' }})">
             <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
-            <span>Faktur (PDF)</span>
+            <span>Faktur ({{ $isOrderPpn ? 'PPN' : 'Non-PPN' }})</span>
         </a>
 
-        {{-- Cetak Surat Jalan PDF --}}
-        <a href="{{ route('penjualan.so.export-surat-jalan', $order->so_id) }}" target="_blank" class="btn btn-secondary" style="padding: 0.45rem 0.85rem; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.35rem;">
+        {{-- Cetak Surat Jalan PDF Utama --}}
+        <a href="{{ route('penjualan.so.export-surat-jalan', $order->so_id) }}" target="_blank" class="btn btn-secondary" style="padding: 0.45rem 0.85rem; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.35rem;" title="Cetak Surat Jalan Utama (Format {{ $sjTitle }})">
             <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
-            <span>Surat Jalan (PDF)</span>
+            <span>Surat Jalan ({{ $sjTitle }})</span>
         </a>
+
+        {{-- Dropdown Pilihan Format PDF Lengkap (IFM, Non-PPN & Ber-PPN) --}}
+        <div style="position: relative; display: inline-block;">
+            <button type="button" 
+                    class="btn btn-secondary" 
+                    onclick="togglePrintMenu(event)" 
+                    style="padding: 0.45rem 0.65rem; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.25rem;" 
+                    title="Pilihan Format Cetak (IFM / Non-PPN / Ber-PPN)">
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </button>
+            <div id="printMenuDropdown" style="display: none; position: absolute; right: 0; top: calc(100% + 5px); background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 8px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05); min-width: 275px; z-index: 50; overflow: hidden; text-align: left;">
+                {{-- Format Khusus IFM Indofood --}}
+                <div style="padding: 0.45rem 0.75rem; background: #ecfdf5; border-bottom: 1px solid #a7f3d0; font-size: 0.7rem; font-weight: 700; color: #065f46; text-transform: uppercase; letter-spacing: 0.05em;">
+                    Format Khusus IFM (PT. Indofood Fortuna)
+                </div>
+                <a href="{{ route('penjualan.so.export-surat-jalan', [$order->so_id, 'tipe' => 'ifm']) }}" target="_blank" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.55rem 0.85rem; font-size: 0.8125rem; color: #1e293b; text-decoration: none; border-bottom: 1px solid #e2e8f0;" onmouseover="this.style.background='#f0fdf4'; this.style.color='#047857';" onmouseout="this.style.background='transparent'; this.style.color='#1e293b';">
+                    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+                    <div>
+                        <div style="font-weight: 600;">Surat Jalan (Khusus IFM)</div>
+                        <div style="font-size: 0.7rem; color: #64748b;">Format KARTON &bull; KG &bull; Tgl Prod &bull; Varietas</div>
+                    </div>
+                </a>
+
+                {{-- Format Non-PPN --}}
+                <div style="padding: 0.45rem 0.75rem; background: #f8fafc; border-bottom: 1px solid #e2e8f0; font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;">
+                    Format Non-PPN (MFI/OMS/7.0)
+                </div>
+                <a href="{{ route('penjualan.so.export-faktur', [$order->so_id, 'tipe' => 'non_ppn']) }}" target="_blank" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.55rem 0.85rem; font-size: 0.8125rem; color: #1e293b; text-decoration: none; border-bottom: 1px solid #f1f5f9;" onmouseover="this.style.background='#f0fdf4'; this.style.color='#059669';" onmouseout="this.style.background='transparent'; this.style.color='#1e293b';">
+                    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                    <div>
+                        <div style="font-weight: 600;">Faktur Penjualan (Non-PPN)</div>
+                        <div style="font-size: 0.7rem; color: #64748b;">Tanpa PPN &bull; Rek. an. Habibah S.P</div>
+                    </div>
+                </a>
+                <a href="{{ route('penjualan.so.export-surat-jalan', [$order->so_id, 'tipe' => 'non_ppn']) }}" target="_blank" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.55rem 0.85rem; font-size: 0.8125rem; color: #1e293b; text-decoration: none; border-bottom: 1px solid #e2e8f0;" onmouseover="this.style.background='#f0fdf4'; this.style.color='#059669';" onmouseout="this.style.background='transparent'; this.style.color='#1e293b';">
+                    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+                    <div>
+                        <div style="font-weight: 600;">Surat Jalan (Non-PPN)</div>
+                        <div style="font-size: 0.7rem; color: #64748b;">Format PACK &bull; 3 Tanda Tangan</div>
+                    </div>
+                </a>
+
+                {{-- Format Ber-PPN --}}
+                <div style="padding: 0.45rem 0.75rem; background: #f8fafc; border-bottom: 1px solid #e2e8f0; font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;">
+                    Format Ber-PPN (MFI/BMR/1.0)
+                </div>
+                <a href="{{ route('penjualan.so.export-faktur', [$order->so_id, 'tipe' => 'ppn']) }}" target="_blank" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.55rem 0.85rem; font-size: 0.8125rem; color: #1e293b; text-decoration: none; border-bottom: 1px solid #f1f5f9;" onmouseover="this.style.background='#eff6ff'; this.style.color='#0284c7';" onmouseout="this.style.background='transparent'; this.style.color='#1e293b';">
+                    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                    <div>
+                        <div style="font-weight: 600;">Faktur Penjualan (Ber-PPN)</div>
+                        <div style="font-size: 0.7rem; color: #64748b;">PPN 11% &bull; DPP &bull; Rek. PT Mirasa</div>
+                    </div>
+                </a>
+                <a href="{{ route('penjualan.so.export-surat-jalan', [$order->so_id, 'tipe' => 'ppn']) }}" target="_blank" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.55rem 0.85rem; font-size: 0.8125rem; color: #1e293b; text-decoration: none;" onmouseover="this.style.background='#eff6ff'; this.style.color='#0284c7';" onmouseout="this.style.background='transparent'; this.style.color='#1e293b';">
+                    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+                    <div>
+                        <div style="font-weight: 600;">Surat Jalan (Ber-PPN)</div>
+                        <div style="font-size: 0.7rem; color: #64748b;">Format Bungkus/Dus &bull; Kendali Mutu</div>
+                    </div>
+                </a>
+            </div>
+        </div>
 
         @if(!in_array($order->status_cd, ['COMPLETED', 'CANCELLED']))
             <a href="{{ route('penjualan.so.edit', $order->so_id) }}" class="btn btn-secondary" style="padding: 0.45rem 0.85rem; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.35rem;">
@@ -124,9 +203,18 @@
         <div style="font-size: 1.35rem; font-weight: 700; color: #0f172a; margin-top: 0.25rem; font-family: monospace;">
             Rp {{ number_format((float) $order->total_tagihan, 0, ',', '.') }}
         </div>
-        <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.35rem;">
-            {{ $totalItem }} varian &bull; {{ number_format($totalQty, 0) }} total kuantitas
-        </div>
+        @if($order->total_retur_nominal > 0)
+            <div style="font-size: 0.725rem; color: #ea580c; font-weight: 600; margin-top: 0.2rem;">
+                Retur (Potong): - Rp {{ number_format((float) $order->total_retur_nominal, 0, ',', '.') }}
+            </div>
+            <div style="font-size: 0.75rem; color: #0284c7; font-weight: 700;">
+                Net: Rp {{ number_format((float) $order->net_tagihan, 0, ',', '.') }}
+            </div>
+        @else
+            <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.35rem;">
+                {{ $totalItem }} varian &bull; {{ number_format($totalQty, 0) }} total kuantitas
+            </div>
+        @endif
     </div>
 
     {{-- KARTU 2: SUDAH TERBAYAR KAS & BANK --}}
@@ -208,16 +296,16 @@
                     <thead>
                         <tr style="border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
                             <th style="width: 35px; text-align: center;">No</th>
-                            <th style="width: 110px; text-align: left;">e. Jenis Barang</th>
-                            <th style="min-width: 190px; text-align: left;">f. Nama Barang</th>
-                            <th style="width: 100px; text-align: left;">g. Kode Barang</th>
-                            <th style="width: 90px; text-align: right;">h. Jumlah Pesanan</th>
-                            <th style="width: 70px; text-align: left;">i. Satuan</th>
-                            <th style="width: 110px; text-align: right;">j. @Harga satuan</th>
-                            <th style="width: 70px; text-align: right;">k. Diskon %</th>
-                            <th style="width: 90px; text-align: right;">l. Potongan Harga</th>
-                            <th style="width: 95px; text-align: center;">m. PPN 11% / Non</th>
-                            <th style="width: 125px; text-align: right;">n. Total Harga</th>
+                            <th style="width: 110px; text-align: left;">Kategori</th>
+                            <th style="min-width: 190px; text-align: left;">Nama Produk / Barang Jadi</th>
+                            <th style="width: 100px; text-align: left;">Kode Barang</th>
+                            <th style="width: 90px; text-align: right;">Jumlah</th>
+                            <th style="width: 70px; text-align: left;">Satuan</th>
+                            <th style="width: 110px; text-align: right;">Harga Satuan</th>
+                            <th style="width: 70px; text-align: right;">Diskon (%)</th>
+                            <th style="width: 90px; text-align: right;">Potongan</th>
+                            <th style="width: 95px; text-align: center;">PPN</th>
+                            <th style="width: 125px; text-align: right;">Total Harga</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -334,9 +422,144 @@
                         <span style="font-weight: 700; color: #0f172a;">Total Tagihan SO Resmi:</span>
                         <strong style="color: #0284c7; font-size: 1.2rem; font-family: monospace;">Rp {{ number_format((float) $order->total_tagihan, 0, ',', '.') }}</strong>
                     </div>
+
+                    @if ($order->total_retur_nominal > 0)
+                        <div style="display: flex; justify-content: space-between; align-items: center; color: #dc2626; padding-top: 0.35rem;">
+                            <span>Retur Penjualan (Potong Tagihan):</span>
+                            <strong style="font-family: monospace;">- Rp {{ number_format((float) $order->total_retur_nominal, 0, ',', '.') }}</strong>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 0.35rem; border-top: 1px dashed #cbd5e1; font-size: 0.95rem;">
+                            <span style="font-weight: 700; color: #0f172a;">Sisa Tagihan Bersih (Net):</span>
+                            <strong style="color: #059669; font-size: 1.15rem; font-family: monospace;">Rp {{ number_format((float) $order->net_tagihan, 0, ',', '.') }}</strong>
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>
+
+        {{-- KARTU 1.5: RIWAYAT RETUR PENJUALAN (JIKA ADA RETUR) --}}
+        @if($order->returns && $order->returns->count() > 0)
+            <div class="card" id="retur-penjualan" style="border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); background: #ffffff;">
+                <div class="card-header" style="background: #ffffff; padding: 0.875rem 1.25rem; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <div style="width: 28px; height: 28px; border-radius: 6px; background: #f1f5f9; color: #475569; display: flex; align-items: center; justify-content: center;">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 15v-1a4 4 0 00-4-4H4m0 0l4 4m-4-4l4-4m12 11a4 4 0 004-4v-1a4 4 0 00-4-4h-4"/></svg>
+                        </div>
+                        <div>
+                            <strong style="color: #0f172a; font-size: 0.95rem;">Riwayat Retur Penjualan (Customer Returns)</strong>
+                            <span style="font-size: 0.75rem; color: #64748b; display: block;">Barang rusak/cacat telah dikembalikan ke Gudang &amp; dicatat pada kartu stok</span>
+                        </div>
+                    </div>
+
+                    @if($order->isCompleted() || ($order->status_cd === 'PARTIAL' && $order->total_kirim_qty > 0))
+                        <button type="button" onclick="openReturModal()" class="btn btn-secondary btn-sm" style="font-size: 0.775rem; font-weight: 600; padding: 0.35rem 0.75rem; display: inline-flex; align-items: center; gap: 0.3rem;">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                            <span>+ Tambah Retur</span>
+                        </button>
+                    @endif
+                </div>
+
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 0.825rem;">
+                        <thead>
+                            <tr style="background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+                                <th style="padding: 0.6rem 0.85rem; text-align: center; width: 40px;">No</th>
+                                <th style="padding: 0.6rem 0.85rem; text-align: left;">No. Retur</th>
+                                <th style="padding: 0.6rem 0.85rem; text-align: left;">Tanggal</th>
+                                <th style="padding: 0.6rem 0.85rem; text-align: left;">Gudang Masuk</th>
+                                <th style="padding: 0.6rem 0.85rem; text-align: left;">Tindakan</th>
+                                <th style="padding: 0.6rem 0.85rem; text-align: left;">Rincian Barang</th>
+                                <th style="padding: 0.6rem 0.85rem; text-align: right; width: 80px;">Total Qty</th>
+                                <th style="padding: 0.6rem 0.85rem; text-align: right; width: 120px;">Nilai Retur</th>
+                                <th style="padding: 0.6rem 0.85rem; text-align: center; width: 90px;">Status</th>
+                                <th style="padding: 0.6rem 0.85rem; text-align: center; width: 80px;">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($order->returns as $rIdx => $retur)
+                                <tr style="border-bottom: 1px solid #f1f5f9; background: {{ $retur->status_cd === 'VOID' ? '#fff1f2' : '#ffffff' }};">
+                                    <td style="text-align: center; color: #64748b; padding: 0.6rem 0.85rem;">{{ $rIdx + 1 }}</td>
+                                    <td style="padding: 0.6rem 0.85rem;">
+                                        <strong style="font-family: monospace; color: #0284c7;">{{ $retur->retur_no }}</strong>
+                                        @if($retur->alasan_txt)
+                                            <span style="display: block; font-size: 0.725rem; color: #64748b; margin-top: 2px;">{{ Str::limit($retur->alasan_txt, 45) }}</span>
+                                        @endif
+                                    </td>
+                                    <td style="padding: 0.6rem 0.85rem; color: #334155;">
+                                        {{ $retur->retur_tgl ? $retur->retur_tgl->format('d/m/Y') : '-' }}
+                                    </td>
+                                    <td style="padding: 0.6rem 0.85rem; color: #334155;">
+                                        <strong>{{ $retur->gudang?->gudang_nm ?? '-' }}</strong>
+                                        <span style="font-size: 0.725rem; color: #64748b; display: block;">Batch: RET-{{ $order->so_no }}</span>
+                                    </td>
+                                    <td style="padding: 0.6rem 0.85rem;">
+                                        @if($retur->tindakan_cd === 'POTONG_TAGIHAN')
+                                            <span class="badge" style="background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; font-size: 0.7rem; font-weight: 700;">
+                                                Potong Tagihan
+                                            </span>
+                                        @else
+                                            <span class="badge" style="background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; font-size: 0.7rem; font-weight: 700;">
+                                                Tukar Guling
+                                            </span>
+                                        @endif
+                                    </td>
+                                    <td style="padding: 0.6rem 0.85rem;">
+                                        @foreach($retur->details as $rdtl)
+                                            <div style="font-size: 0.775rem; margin-bottom: 2px;">
+                                                &bull; <strong>{{ $rdtl->barang?->barang_nm }}</strong>: {{ number_format((float)$rdtl->qty_retur, 0) }} unit 
+                                                <span style="color: #64748b;">({{ $rdtl->kondisi_label }})</span>
+                                            </div>
+                                        @endforeach
+                                    </td>
+                                    <td style="padding: 0.6rem 0.85rem; text-align: right; font-family: monospace; font-weight: 700;">
+                                        {{ number_format((float)$retur->total_qty, 0) }}
+                                    </td>
+                                    <td style="padding: 0.6rem 0.85rem; text-align: right; font-family: monospace; font-weight: 700; color: #0f172a;">
+                                        Rp {{ number_format((float)$retur->total_nilai, 0, ',', '.') }}
+                                    </td>
+                                    <td style="padding: 0.6rem 0.85rem; text-align: center;">
+                                        {!! $retur->status_badge !!}
+                                    </td>
+                                    <td style="padding: 0.6rem 0.85rem; text-align: center; white-space: nowrap;">
+                                        <a href="{{ route('penjualan.retur.export-pdf', $retur->retur_id) }}" 
+                                           target="_blank" 
+                                           class="btn btn-secondary btn-sm" 
+                                           style="font-size: 0.725rem; padding: 0.25rem 0.5rem; display: inline-flex; align-items: center; gap: 0.25rem; margin-right: 0.25rem;"
+                                           title="Cetak Berita Acara Retur PDF">
+                                            <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                                            <span>PDF</span>
+                                        </a>
+                                        @if($retur->status_cd === 'CONFIRMED')
+                                            <button type="button" 
+                                                    onclick="openVoidReturModal({{ $retur->retur_id }}, '{{ $retur->retur_no }}')"
+                                                    class="btn btn-secondary btn-sm" 
+                                                    style="border-color: #fca5a5; color: #dc2626; background: #fff5f5; font-size: 0.725rem; padding: 0.25rem 0.5rem;"
+                                                    title="Batalkan retur ini">
+                                                Void
+                                            </button>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                        <tfoot>
+                            <tr style="background: #f8fafc; border-top: 2px solid #e2e8f0; font-weight: 700;">
+                                <td colspan="6" style="padding: 0.65rem 0.85rem; text-align: right; color: #334155;">
+                                    Total Retur Terkonfirmasi:
+                                </td>
+                                <td style="padding: 0.65rem 0.85rem; text-align: right; font-family: monospace; color: #0f172a;">
+                                    {{ number_format((float)$order->total_retur_qty, 0) }}
+                                </td>
+                                <td style="padding: 0.65rem 0.85rem; text-align: right; font-family: monospace; color: #0f172a; font-size: 0.9rem;">
+                                    Rp {{ number_format((float)$order->total_retur_nominal, 0, ',', '.') }}
+                                </td>
+                                <td colspan="2"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        @endif
 
         {{-- KARTU 2: RIWAYAT PEMBAYARAN & PELUNASAN KAS MASUK (BKM) --}}
         <div class="card" id="pembayaran" style="border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
@@ -478,17 +701,60 @@
                 <strong style="color: #0f172a; font-size: 0.9rem;">Mitra Customer (Pelanggan)</strong>
             </div>
             <div style="padding: 1rem 1.25rem;">
-                <strong style="font-size: 1rem; color: #0f172a; display: block;">{{ $order->customer?->customer_nm ?? '-' }}</strong>
-                <span style="font-size: 0.75rem; color: #64748b; display: block; margin-top: 0.15rem;">Kode: {{ $order->customer?->customer_cd ?? '-' }}</span>
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem;">
+                    <div>
+                        <strong style="font-size: 1rem; color: #0f172a; display: block;">{{ $order->customer?->customer_nm ?? '-' }}</strong>
+                        <span style="font-size: 0.75rem; color: #64748b; display: block; margin-top: 0.15rem;">
+                            Kode: <strong>{{ $order->customer?->customer_cd ?? '-' }}</strong>
+                            @if($order->customer?->kode_pelanggan)
+                                &bull; Ref: <strong>{{ $order->customer->kode_pelanggan }}</strong>
+                            @endif
+                        </span>
+                    </div>
+                    @php
+                        $klas = $order->customer?->klasifikasi;
+                        $klasBadgeBg = match($klas) {
+                            'IFM' => '#e0f2fe',
+                            'IDM_ALFA' => '#f3e8ff',
+                            default => '#f0fdf4'
+                        };
+                        $klasBadgeClr = match($klas) {
+                            'IFM' => '#0284c7',
+                            'IDM_ALFA' => '#7e22ce',
+                            default => '#15803d'
+                        };
+                        $klasLabel = match($klas) {
+                            'IFM' => 'Indofood (IFM)',
+                            'IDM_ALFA' => 'Modern Trade (IDM/ALFA)',
+                            'MANUAL' => 'Manual (Sales/Toko)',
+                            default => 'Customer'
+                        };
+                    @endphp
+                    <span style="display: inline-block; background: {{ $klasBadgeBg }}; color: {{ $klasBadgeClr }}; font-weight: 700; font-size: 0.7rem; padding: 2px 8px; border-radius: 4px; white-space: nowrap;">
+                        {{ $klasLabel }}
+                    </span>
+                </div>
                 
                 <div style="margin-top: 0.75rem; font-size: 0.825rem; color: #475569; line-height: 1.4;">
+                    @if($order->customer?->wilayah)
+                        <div style="margin-bottom: 0.35rem;">
+                            <span style="color: #64748b; display: block; font-size: 0.75rem;">Wilayah / Area:</span>
+                            <strong style="color: #0f172a;">{{ $order->customer->wilayah }}</strong>
+                        </div>
+                    @endif
                     <div style="margin-bottom: 0.35rem;">
                         <span style="color: #64748b; display: block; font-size: 0.75rem;">Alamat Pengiriman:</span>
                         {{ $order->customer?->alamat_txt ?? '-' }}
                     </div>
-                    <div>
-                        <span style="color: #64748b; display: block; font-size: 0.75rem;">Telepon / Kontak:</span>
-                        <strong>{{ $order->customer?->kontak_no ?? '-' }}</strong>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-top: 0.35rem; border-top: 1px dashed #e2e8f0; padding-top: 0.5rem;">
+                        <div>
+                            <span style="color: #64748b; display: block; font-size: 0.75rem;">Syarat Bayar (TOP):</span>
+                            <strong style="color: #0284c7;">{{ $order->top_txt ?: ($order->customer?->top_txt ?: '-') }}</strong>
+                        </div>
+                        <div>
+                            <span style="color: #64748b; display: block; font-size: 0.75rem;">Telepon / Kontak:</span>
+                            <strong>{{ $order->customer?->kontak_no ?? '-' }}</strong>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -556,6 +822,7 @@
 @include('penjualan.so.partials.modal-void-delivery')
 @include('penjualan.so.partials.modal-cancel-so')
 @include('penjualan.so.partials.modal-record-payment')
+@include('penjualan.so.partials.modal-retur-penjualan')
 
 @endsection
 

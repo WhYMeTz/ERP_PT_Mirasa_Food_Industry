@@ -225,8 +225,8 @@
                     <th style="width: 45px; text-align: center;">No</th>
                     <th style="min-width: 180px;">Kode Pesanan</th>
                     <th style="min-width: 110px;">Tanggal</th>
-                    <th style="min-width: 180px;">Nama Customer</th>
-                    <th style="min-width: 140px;">Kode Customer</th>
+                    <th style="min-width: 130px;">Kode Customer</th>
+                    <th style="min-width: 200px;">Nama Customer</th>
                     <th style="min-width: 170px;">Status &amp; Realisasi</th>
                     <th style="min-width: 130px; text-align: right;">Total Tagihan</th>
                     <th style="min-width: 240px; text-align: right;">Aksi &amp; Export Dokumen</th>
@@ -266,6 +266,11 @@
                                     <a href="{{ route('penjualan.so.show', $so->so_id) }}" style="font-weight: 700; color: #0284c7; text-decoration: none; font-size: 0.9rem;">
                                         {{ $so->so_no }}
                                     </a>
+                                    @if($so->faktur_no)
+                                        <div style="font-family: monospace; font-size: 0.75rem; color: #15803d; font-weight: 700;">
+                                            Faktur: {{ $so->faktur_no }}
+                                        </div>
+                                    @endif
                                     <small style="display: block; font-size: 0.725rem; color: #64748b;">
                                         {{ $itemCount }} item produk &bull; {{ number_format($totalQty, 0) }} unit
                                     </small>
@@ -283,15 +288,33 @@
                             @endif
                         </td>
                         <td>
-                            <strong style="color: #0f172a; font-size: 0.875rem;">{{ $so->customer?->customer_nm ?? '-' }}</strong>
-                            @if($so->customer_po_no)
-                                <small style="display: block; font-size: 0.725rem; color: #64748b;">Ref PO: {{ $so->customer_po_no }}</small>
-                            @endif
-                        </td>
-                        <td>
                             <span style="font-family: monospace; font-size: 0.825rem; font-weight: 700; color: #0284c7; background: #f0f9ff; padding: 2px 6px; border-radius: 4px; border: 1px solid #e0f2fe;">
                                 {{ $so->customer?->customer_cd ?? '-' }}
                             </span>
+                        </td>
+                        <td>
+                            <strong style="color: #0f172a; font-size: 0.875rem;">{{ $so->customer?->customer_nm ?? '-' }}</strong>
+                            <div style="display: flex; gap: 0.35rem; align-items: center; margin-top: 2px;">
+                                @php
+                                    $cKlas = $so->customer?->klasifikasi;
+                                    $cBg = match($cKlas) { 'IFM' => '#e0f2fe', 'IDM_ALFA' => '#f3e8ff', default => '#f0fdf4' };
+                                    $cClr = match($cKlas) { 'IFM' => '#0284c7', 'IDM_ALFA' => '#7e22ce', default => '#15803d' };
+                                    $cLbl = match($cKlas) { 'IFM' => 'IFM', 'IDM_ALFA' => 'IDM/ALFA', default => 'MANUAL' };
+                                @endphp
+                                @if($cKlas)
+                                    <span style="font-size: 0.65rem; font-weight: 700; background: {{ $cBg }}; color: {{ $cClr }}; padding: 1px 5px; border-radius: 3px;">
+                                        {{ $cLbl }}
+                                    </span>
+                                @endif
+                                @if($so->top_txt ?: $so->customer?->top_txt)
+                                    <span style="font-size: 0.675rem; color: #64748b;">
+                                        TOP: <strong>{{ $so->top_txt ?: $so->customer?->top_txt }}</strong>
+                                    </span>
+                                @endif
+                            </div>
+                            @if($so->customer_po_no)
+                                <small style="display: block; font-size: 0.725rem; color: #64748b;">Ref PO: {{ $so->customer_po_no }}</small>
+                            @endif
                         </td>
                         <td>
                             {{-- BADGE STATUS & PROGRESS BAR --}}

@@ -1,33 +1,304 @@
 /* ══════════════════════════════════════════════════════════════════════════
-   PO PENJUALAN (SALES ORDER) - FORM STYLES (CREATE & EDIT)
+   PO PENJUALAN (SALES ORDER) - MODERN FORM STYLES (CREATE & EDIT)
    ERP PT Mirasa Food Industry
    ══════════════════════════════════════════════════════════════════════════ */
 
-.order-form-container {
+.so-form-container {
     width: 100%;
     margin: 0 auto;
 }
 
-/* Bottom summary grid: Catatan di kiri, Ringkasan Nilai di kanan */
-.order-bottom-grid {
-    display: grid;
-    grid-template-columns: 1.2fr 1fr;
-    gap: 1.5rem;
-    align-items: start;
-    margin-top: 1.5rem;
-    margin-bottom: 2rem;
+/* Page Header */
+.so-page-header {
+    margin-bottom: 1.5rem;
 }
 
-@media (max-width: 900px) {
-    .order-bottom-grid {
+.so-back-link {
+    color: #64748b;
+    text-decoration: none;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-bottom: 0.5rem;
+    transition: color 0.15s ease;
+}
+
+.so-back-link:hover {
+    color: #0284c7;
+}
+
+.so-title-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.so-page-title {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #0f172a;
+    letter-spacing: -0.02em;
+    margin: 0;
+}
+
+.so-page-subtitle {
+    color: #64748b;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+    margin-bottom: 0;
+    line-height: 1.45;
+}
+
+/* 2-Column Header Grid (Customer Info vs Document Info) */
+.so-header-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+    align-items: stretch;
+}
+
+@media (max-width: 992px) {
+    .so-header-grid {
         grid-template-columns: 1fr;
     }
+}
+
+/* Modern Card Component */
+.so-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 1px 2px rgba(15, 23, 42, 0.02);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.so-card:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 4px 12px -2px rgba(15, 23, 42, 0.06);
+}
+
+.so-card-header {
+    background: #ffffff;
+    padding: 0.875rem 1.25rem;
+    border-bottom: 1px solid #f1f5f9;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.so-card-header-left {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+}
+
+.so-card-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: #f0f9ff;
+    color: #0284c7;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.so-card-icon.emerald {
+    background: #ecfdf5;
+    color: #059669;
+}
+
+.so-card-title {
+    color: #0f172a;
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.so-card-subtitle {
+    font-size: 0.75rem;
+    color: #64748b;
+    margin-top: 0.1rem;
+}
+
+.so-card-body {
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.15rem;
+    flex: 1;
+}
+
+/* Form Layout Helpers */
+.so-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+@media (max-width: 580px) {
+    .so-grid-2 {
+        grid-template-columns: 1fr;
+    }
+}
+
+.so-form-group {
+    margin-bottom: 0;
+}
+
+.so-form-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 600;
+    font-size: 0.8125rem;
+    color: #334155;
+    margin-bottom: 0.35rem;
+}
+
+.so-form-label .req {
+    color: #ef4444;
+    font-weight: 700;
+    margin-left: 2px;
+}
+
+.so-label-badge {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 4px;
+    letter-spacing: 0.02em;
+}
+
+.so-label-badge.primary {
+    background: #e0f2fe;
+    color: #0284c7;
+}
+
+.so-label-badge.success {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.so-help-text {
+    display: block;
+    color: #64748b;
+    font-size: 0.725rem;
+    margin-top: 0.25rem;
+    line-height: 1.35;
+}
+
+/* Polished Form Inputs */
+.so-form-container .form-control {
+    border: 1.5px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
+    color: #0f172a;
+    background-color: #ffffff;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+    box-sizing: border-box;
+    width: 100%;
+}
+
+.so-form-container .form-control:focus {
+    border-color: #0284c7;
+    box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+    outline: none;
+    background-color: #ffffff;
+}
+
+.so-form-container .form-control[readonly] {
+    background: #f8fafc;
+    border-color: #e2e8f0;
+    color: #475569;
+    cursor: not-allowed;
+}
+
+.input-so-no {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+    font-weight: 700 !important;
+    color: #0284c7 !important;
+    background: #f0f9ff !important;
+    border-color: #bae6fd !important;
+}
+
+.input-faktur-no {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+    font-weight: 700 !important;
+    color: #15803d !important;
+    background: #f0fdf4 !important;
+    border-color: #86efac !important;
+}
+
+.input-customer-code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+    font-weight: 700 !important;
+    color: #0369a1 !important;
+    background: #f8fafc !important;
+}
+
+/* Customer Preview Box */
+.so-customer-preview {
+    background: #f8fafc;
+    border: 1.5px dashed #cbd5e1;
+    border-radius: 8px;
+    padding: 0.875rem 1rem;
+    font-size: 0.8125rem;
+    color: #334155;
+    transition: all 0.2s ease;
+}
+
+.so-preview-grid {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr 1fr;
+    gap: 1rem;
+}
+
+@media (max-width: 640px) {
+    .so-preview-grid {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+}
+
+.so-preview-label {
+    display: block;
+    color: #64748b;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 600;
+    margin-bottom: 0.15rem;
+}
+
+.so-preview-value {
+    color: #0f172a;
+    font-weight: 600;
+    line-height: 1.35;
+    word-break: break-word;
+}
+
+/* Table Card & Modern Grid */
+.so-table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 0 0 10px 10px;
 }
 
 .excel-grid-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.825rem;
+    font-size: 0.8125rem;
     table-layout: auto;
 }
 
@@ -35,23 +306,24 @@
     background: #0f172a;
     color: #f8fafc;
     font-weight: 600;
-    padding: 0.65rem 0.5rem;
+    padding: 0.7rem 0.55rem;
     border: 1px solid #334155;
-    font-size: 0.775rem;
-    letter-spacing: 0.02em;
+    font-size: 0.75rem;
+    letter-spacing: 0.03em;
     vertical-align: middle;
     white-space: nowrap;
+    text-transform: uppercase;
 }
 
 .excel-grid-table td {
     padding: 0.4rem 0.45rem;
-    border: 1px solid #cbd5e1;
+    border: 1px solid #e2e8f0;
     background: #ffffff;
-    vertical-align: top;
+    vertical-align: middle;
 }
 
 .excel-grid-table tr:nth-child(even) td {
-    background: #fafafa;
+    background: #fafbfc;
 }
 
 .excel-grid-table tr:hover td {
@@ -61,7 +333,7 @@
 .excel-grid-table .form-control {
     border: 1.5px solid #cbd5e1;
     border-radius: 5px;
-    padding: 0.35rem 0.5rem !important;
+    padding: 0.35rem 0.45rem !important;
     font-size: 0.8125rem !important;
     height: 32px;
     box-sizing: border-box;
@@ -75,14 +347,14 @@
     background: #ffffff !important;
 }
 
-/* Badge Ketersediaan Stok Real-Time */
+/* Stock Badges */
 .stock-badge {
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    padding: 2px 6px;
+    padding: 2px 7px;
     border-radius: 4px;
-    font-size: 0.725rem;
+    font-size: 0.7rem;
     font-weight: 700;
     margin-top: 3px;
     white-space: nowrap;
@@ -107,10 +379,284 @@
 }
 
 .btn-remove-row {
-    transition: transform 0.1s ease, color 0.1s ease;
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    padding: 0.35rem;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
 }
 
 .btn-remove-row:hover {
-    transform: scale(1.15);
-    color: #dc2626 !important;
+    color: #dc2626;
+    background: #fee2e2;
+    transform: scale(1.08);
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   UNIFIED INTEGRATED TABLE FOOTER & LEDGER (MINIMALIST & HIGH-EFFICIENCY)
+   ══════════════════════════════════════════════════════════════════════════ */
+.so-table-footer-bar {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 1.5rem;
+    align-items: start;
+    padding: 1.15rem 1.25rem 0.85rem 1.25rem;
+    background: #ffffff;
+    border-top: 1.5px solid #f1f5f9;
+}
+
+@media (max-width: 960px) {
+    .so-table-footer-bar {
+        grid-template-columns: 1fr;
+        gap: 1.25rem;
+    }
+}
+
+.so-footer-notes {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+}
+
+.so-notes-header {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: #334155;
+}
+
+.so-notes-textarea {
+    resize: vertical;
+    min-height: 54px;
+    font-size: 0.8125rem !important;
+    border: 1.5px solid #cbd5e1 !important;
+    border-radius: 6px !important;
+    padding: 0.45rem 0.65rem !important;
+    line-height: 1.4;
+    background: #ffffff;
+    box-sizing: border-box;
+    width: 100%;
+}
+
+.so-notes-textarea:focus {
+    border-color: #0284c7 !important;
+    box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15) !important;
+}
+
+.so-fefo-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 6px;
+    padding: 0.35rem 0.65rem;
+    font-size: 0.725rem;
+    color: #166534;
+    line-height: 1.35;
+}
+
+/* Compact Financial Ledger */
+.so-footer-financial {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0.875rem 1rem;
+}
+
+.so-fin-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.8125rem;
+    color: #64748b;
+}
+
+.so-fin-val {
+    color: #0f172a;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.875rem;
+}
+
+.so-fin-row.discount {
+    color: #d97706;
+}
+
+.so-fin-row.discount .so-fin-val {
+    color: #d97706;
+}
+
+.so-fin-row.potongan {
+    color: #dc2626;
+}
+
+.so-potongan-input-wrapper {
+    display: flex;
+    align-items: center;
+    position: relative;
+    width: 130px;
+}
+
+.so-potongan-prefix {
+    position: absolute;
+    left: 8px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #64748b;
+    pointer-events: none;
+}
+
+.so-potongan-input {
+    width: 100% !important;
+    text-align: right !important;
+    padding-left: 26px !important;
+    padding-right: 8px !important;
+    padding-top: 2px !important;
+    padding-bottom: 2px !important;
+    font-size: 0.8125rem !important;
+    height: 28px !important;
+    font-weight: 700 !important;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+    border: 1.5px solid #cbd5e1 !important;
+    border-radius: 4px !important;
+}
+
+.so-fin-row.dpp {
+    padding-top: 0.4rem;
+    border-top: 1px dashed #cbd5e1;
+    color: #334155;
+}
+
+.so-fin-row.ppn {
+    color: #0284c7;
+}
+
+.so-fin-row.ppn .so-fin-val {
+    color: #0284c7;
+}
+
+.so-fin-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.65rem 0.85rem;
+    background: #f0fdf4;
+    border: 1.5px solid #86efac;
+    border-radius: 6px;
+    margin-top: 0.25rem;
+}
+
+.so-total-label {
+    font-weight: 800;
+    color: #14532d;
+    font-size: 0.875rem;
+}
+
+.so-total-val {
+    color: #15803d;
+    font-size: 1.25rem;
+    font-weight: 800;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+/* Action Bar below Table Card */
+.so-table-action-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    background: #f8fafc;
+    border-top: 1.5px solid #e2e8f0;
+    border-radius: 0 0 10px 10px;
+}
+
+@media (max-width: 680px) {
+    .so-table-action-bar {
+        flex-direction: column-reverse;
+        gap: 0.75rem;
+        align-items: stretch;
+    }
+}
+
+.so-action-buttons-group {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+@media (max-width: 680px) {
+    .so-action-buttons-group {
+        display: flex;
+        flex-direction: column-reverse;
+        width: 100%;
+    }
+}
+
+.btn-so-cancel {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    padding: 0.65rem 1.25rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #475569;
+    background: #ffffff;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 8px;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.25;
+    transition: all 0.15s ease;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+}
+
+.btn-so-cancel:hover {
+    background: #f1f5f9;
+    border-color: #94a3b8;
+    color: #0f172a;
+    text-decoration: none;
+}
+
+.btn-so-submit {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.65rem 1.5rem;
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: #ffffff;
+    background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+    border: 1.5px solid #0284c7;
+    border-radius: 8px;
+    cursor: pointer;
+    line-height: 1.25;
+    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 6px rgba(2, 132, 199, 0.3), 0 1px 2px rgba(2, 132, 199, 0.15);
+}
+
+.btn-so-submit:hover {
+    background: linear-gradient(135deg, #0369a1 0%, #075985 100%);
+    border-color: #0369a1;
+    box-shadow: 0 4px 12px rgba(2, 132, 199, 0.4);
+    transform: translateY(-1px);
+}
+
+.btn-so-submit:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 3px rgba(2, 132, 199, 0.25);
+}
+
+

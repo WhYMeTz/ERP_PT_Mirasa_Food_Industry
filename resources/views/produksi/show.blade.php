@@ -309,6 +309,30 @@
                             {{ $tkTotal > 0 ? $tkTotal . ' Orang Hadir' : 'Standar Alokasi Shift' }}
                         </td>
                     </tr>
+                    @if(!empty($produksi->po_ifl_no) || !empty($produksi->po_buyer_ifl))
+                    <tr>
+                        <td class="label-col">PO Buyer / Pemesan IFL</td>
+                        <td class="value-col" style="color: #166534; font-weight: 700;">
+                            {{ $produksi->po_ifl_no ?: $produksi->po_buyer_ifl }}
+                        </td>
+                    </tr>
+                    @endif
+                    @if(($produksi->waste_total_qty > 0) || ($produksi->waste_lengket_qty > 0) || ($produksi->total_berko_qty > 0) || ($produksi->berko_ifl_qty > 0) || ($produksi->berko_non_ifl_qty > 0))
+                    <tr>
+                        <td class="label-col">Limbah &amp; Waste (HACCP)</td>
+                        <td class="value-col">
+                            <span style="font-weight: 700; color: #dc2626;">{{ number_format($produksi->waste_total_qty ?: ($produksi->waste_lengket_qty + $produksi->total_berko_qty), 2, ',', '.') }} kg</span>
+                            @if($produksi->waste_lengket_qty > 0)
+                                <span style="font-size: 0.75rem; color: #b91c1c; margin-left: 0.25rem; font-weight: 600;">(Lengket: {{ number_format($produksi->waste_lengket_qty, 2, ',', '.') }} kg / {{ number_format($produksi->waste_lengket_persen, 2) }}%)</span>
+                            @endif
+                            @if($produksi->total_berko_qty > 0 || $produksi->berko_ifl_qty > 0 || $produksi->berko_non_ifl_qty > 0)
+                                <div style="font-size: 0.75rem; color: #64748b; margin-top: 2px;">
+                                    Total Berko: {{ number_format($produksi->total_berko_qty ?: ($produksi->berko_ifl_qty + $produksi->berko_non_ifl_qty), 2, ',', '.') }} kg ({{ number_format($produksi->berko_persen, 2) }}%)
+                                </div>
+                            @endif
+                        </td>
+                    </tr>
+                    @endif
                 </table>
             </div>
         </div>

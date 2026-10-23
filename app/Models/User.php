@@ -302,6 +302,24 @@ class User extends Authenticatable
     }
 
     /**
+     * Hak akses Pengeluaran Barang (Surat Jalan Outbound Gudang FG)
+     */
+    public function canAccessPengeluaran(): bool
+    {
+        return $this->isSuperAdmin() || $this->canDo('pengeluaran_view') || $this->canAccessSo() || $this->canAccessTerima();
+    }
+
+    public function canCreatePengeluaran(): bool
+    {
+        return $this->isSuperAdmin() || $this->canDo('pengeluaran_create') || $this->canCreateSo() || $this->canCreateTerima();
+    }
+
+    public function canVoidPengeluaran(): bool
+    {
+        return $this->isSuperAdmin() || $this->canDo('pengeluaran_void') || $this->canDeleteSo();
+    }
+
+    /**
      * Cek apakah pengguna memiliki permission tertentu
      */
     public function hasPermission(string $permissionCd): bool

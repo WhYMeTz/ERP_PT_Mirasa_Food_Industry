@@ -24,6 +24,7 @@ class DatSoHdr extends Model
         'so_tgl',
         'customer_id',
         'customer_po_no',
+        'top_txt',
         'tgl_kirim_estimasi',
         'tgl_kirim_aktual',
         'supir_nm',
@@ -89,10 +90,41 @@ class DatSoHdr extends Model
         return $this->hasMany(DatSoDtl::class, 'so_id');
     }
 
+    public function pengeluaran(): HasMany
+    {
+        return $this->hasMany(DatPengeluaranHdr::class, 'so_id');
+    }
+
     public function payments(): HasMany
     {
         return $this->hasMany(\App\Models\Keuangan\DatKasMasukDtl::class, 'so_id')
             ->whereHas('header', fn($q) => $q->where('status_cd', 'POSTED')->where('deleted_st', false));
+    }
+
+    public function returns(): HasMany
+    {
+        return $this->hasMany(DatSoReturHdr::class, 'so_id', 'so_id')->active();
+    }
+
+    public function getTotalReturNominalAttribute(): float
+    {
+        if ($this->relationLoaded('returns')) {
+            return (float) $this->returns->where('status_cd', 'CONFIRMED')->where('tindakan_cd', 'POTONG_TAGIHAN')->sum('total_nilai');
+        }
+        return (float) $this->returns()->where('status_cd', 'CONFIRMED')->where('tindakan_cd', 'POTONG_TAGIHAN')->sum('total_nilai');
+    }
+
+    public function getTotalReturQtyAttribute(): float
+    {
+        if ($this->relationLoaded('returns')) {
+            return (float) $this->returns->where('status_cd', 'CONFIRMED')->sum('total_qty');
+        }
+        return (float) $this->returns()->where('status_cd', 'CONFIRMED')->sum('total_qty');
+    }
+
+    public function getNetTagihanAttribute(): float
+    {
+        return max(0, (float) $this->total_tagihan - $this->total_retur_nominal);
     }
 
     public function getTotalBayarAttribute(): float
@@ -105,12 +137,12 @@ class DatSoHdr extends Model
 
     public function getSisaTagihanAttribute(): float
     {
-        return max(0, (float) $this->total_tagihan - $this->total_bayar);
+        return max(0, $this->net_tagihan - $this->total_bayar);
     }
 
     public function getPersenBayarAttribute(): float
     {
-        $tagihan = (float) $this->total_tagihan;
+        $tagihan = $this->net_tagihan;
         if ($tagihan <= 0) return 100.0;
         return min(100.0, round(($this->total_bayar / $tagihan) * 100, 1));
     }
@@ -118,7 +150,7 @@ class DatSoHdr extends Model
     public function getStatusBayarAttribute(): string
     {
         $totalBayar = $this->total_bayar;
-        $tagihan = (float) $this->total_tagihan;
+        $tagihan = $this->net_tagihan;
 
         if ($tagihan <= 0 || $totalBayar >= $tagihan) {
             return 'LUNAS';

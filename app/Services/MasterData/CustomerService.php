@@ -15,9 +15,12 @@ class CustomerService
 
         if (!empty($search)) {
             $query->where(function ($q) use ($search) {
-                $q->where('customer_cd', 'ILIKE', "%{$search}%")
-                  ->orWhere('customer_nm', 'ILIKE', "%{$search}%")
-                  ->orWhere('kontak_no', 'ILIKE', "%{$search}%");
+                $q->where('customer_cd', 'LIKE', "%{$search}%")
+                  ->orWhere('customer_nm', 'LIKE', "%{$search}%")
+                  ->orWhere('wilayah', 'LIKE', "%{$search}%")
+                  ->orWhere('klasifikasi', 'LIKE', "%{$search}%")
+                  ->orWhere('kode_pelanggan', 'LIKE', "%{$search}%")
+                  ->orWhere('kontak_no', 'LIKE', "%{$search}%");
             });
         }
 

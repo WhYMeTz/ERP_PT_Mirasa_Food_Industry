@@ -17,6 +17,41 @@
                     <label for="edit_customer_nm" class="form-label">Nama Customer <span style="color:#ef4444;">*</span></label>
                     <input type="text" id="edit_customer_nm" name="customer_nm" class="form-control" required>
                 </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.875rem;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="edit_klasifikasi" class="form-label">Kategori Customer <span style="color:#ef4444;">*</span></label>
+                        <select id="edit_klasifikasi" name="klasifikasi" class="form-control" onchange="handleKlasifikasiChange('edit')" required>
+                            <option value="MANUAL">MANUAL (Toko Retail / Sales Biasa)</option>
+                            <option value="IFM">IFM (PT Indofood Fortuna Makmur)</option>
+                            <option value="IDM_ALFA">IDM/ALFA (Modern Trade: Indomaret, Alfa, Midi)</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="edit_wilayah" class="form-label">Wilayah / Kota</label>
+                        <input type="text" id="edit_wilayah" name="wilayah" class="form-control" placeholder="Contoh: SEMARANG / CIKOKOL - TANGERANG">
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.875rem;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="edit_kode_pelanggan" class="form-label">Kode Pelanggan (Ref Customer)</label>
+                        <input type="text" id="edit_kode_pelanggan" name="kode_pelanggan" class="form-control" placeholder="Contoh: IFM01.012007 (Opsional)">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="edit_top_txt" class="form-label">Terms of Payment (TOP)</label>
+                        <input type="text" id="edit_top_txt" name="top_txt" class="form-control" placeholder="Contoh: 7 Hari / Tinggal 1 Nota">
+                    </div>
+                </div>
+
+                <div class="form-group" id="group_edit_default_ppn">
+                    <label for="edit_default_ppn" class="form-label">Default Pajak Faktur (Khusus Manual)</label>
+                    <select id="edit_default_ppn" name="default_ppn" class="form-control">
+                        <option value="NON_PPN">Non-PPN (Format Faktur: XX/PM.B/MM/YY)</option>
+                        <option value="PPN_11">Ber-PPN 11% (Format Faktur: XX/PM.A/MM/YY)</option>
+                    </select>
+                </div>
+
                 <div class="form-group">
                     <label for="edit_customer_kontak" class="form-label">Kontak PIC / No Telepon</label>
                     <input type="text" id="edit_customer_kontak" name="kontak_no" class="form-control">

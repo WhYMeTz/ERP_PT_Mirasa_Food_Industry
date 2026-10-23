@@ -1,0 +1,371 @@
+/* ==============================================================
+   PENGELUARAN BARANG / SURAT JALAN - INDEX STYLESHEET
+   PT Mirasa Food Industry (Cap Payung)
+   ============================================================== */
+
+/* Container */
+.sj-index-container {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+/* Header Action Row */
+.sj-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.sj-page-title {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #0f172a;
+    letter-spacing: -0.02em;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.sj-page-subtitle {
+    font-size: 0.85rem;
+    color: #64748b;
+    margin: 0.25rem 0 0 0;
+}
+
+.sj-header-buttons {
+    display: flex;
+    gap: 0.65rem;
+    flex-wrap: wrap;
+}
+
+/* Operational Metrics Grid */
+.sj-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.sj-metric-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 1.15rem 1.25rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.sj-metric-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.sj-metric-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.sj-metric-title {
+    font-size: 0.775rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #64748b;
+}
+
+.sj-metric-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sj-metric-icon.blue {
+    background: #eff6ff;
+    color: #2563eb;
+}
+
+.sj-metric-icon.emerald {
+    background: #ecfdf5;
+    color: #059669;
+}
+
+.sj-metric-icon.amber {
+    background: #fffbeb;
+    color: #d97706;
+}
+
+.sj-metric-icon.purple {
+    background: #faf5ff;
+    color: #7c3aed;
+}
+
+.sj-metric-val {
+    font-size: 1.65rem;
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1.2;
+    font-feature-settings: "tnum";
+}
+
+.sj-metric-subtext {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    margin-top: 0.35rem;
+}
+
+/* Filter Card */
+.sj-filter-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.sj-filter-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr auto;
+    gap: 0.75rem;
+    align-items: flex-end;
+}
+
+@media (max-width: 992px) {
+    .sj-filter-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+@media (max-width: 576px) {
+    .sj-filter-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.sj-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.sj-form-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.sj-form-input,
+.sj-form-select {
+    height: 38px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 0 0.75rem;
+    font-size: 0.8125rem;
+    color: #1e293b;
+    background: #ffffff;
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.sj-form-input:focus,
+.sj-form-select:focus {
+    border-color: #0284c7;
+    box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.12);
+}
+
+/* Table Card */
+.sj-table-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    overflow: hidden;
+}
+
+.sj-table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.sj-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.825rem;
+    text-align: left;
+}
+
+.sj-table th {
+    background: #f8fafc;
+    color: #475569;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0.85rem 1rem;
+    border-bottom: 1.5px solid #e2e8f0;
+    white-space: nowrap;
+}
+
+.sj-table td {
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid #f1f5f9;
+    color: #334155;
+    vertical-align: middle;
+}
+
+.sj-table tbody tr:hover {
+    background-color: #f8fafc;
+}
+
+/* Badges */
+.badge-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.25rem 0.65rem;
+    border-radius: 9999px;
+    font-size: 0.725rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+}
+
+.badge-status.terkirim {
+    background: #e0f2fe;
+    color: #0369a1;
+}
+
+.badge-status.sampai {
+    background: #ecfdf5;
+    color: #059669;
+}
+
+.badge-status.batal {
+    background: #fef2f2;
+    color: #dc2626;
+}
+
+.badge-klasifikasi {
+    display: inline-block;
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    font-family: monospace;
+}
+
+.badge-klasifikasi.ifm {
+    background: #fef3c7;
+    color: #b45309;
+}
+
+.badge-klasifikasi.manual {
+    background: #e2e8f0;
+    color: #334155;
+}
+
+.badge-klasifikasi.modern {
+    background: #ede9fe;
+    color: #6d28d9;
+}
+
+/* Empty State */
+.sj-empty-state {
+    padding: 3rem 1.5rem;
+    text-align: center;
+    color: #64748b;
+}
+
+.sj-empty-icon {
+    width: 48px;
+    height: 48px;
+    margin: 0 auto 0.75rem auto;
+    color: #cbd5e1;
+}
+
+/* SMART ACTION DROPDOWN (AGENTS.md Standard) */
+.btn-action-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.75rem;
+    background: #ffffff;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 6px;
+    color: #334155;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn-action-trigger:hover {
+    border-color: #059669;
+    color: #059669;
+    background: #f0fdf4;
+}
+
+.action-dropdown-menu {
+    display: none;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+    min-width: 190px;
+    padding: 0.35rem 0;
+    z-index: 9999;
+}
+
+.action-dropdown-menu.show {
+    display: block;
+}
+
+.action-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.5rem 0.85rem;
+    color: #334155;
+    text-decoration: none;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    cursor: pointer;
+    background: transparent;
+    border: none;
+    width: 100%;
+    text-align: left;
+    transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+.action-dropdown-item:hover {
+    background-color: #f0fdf4;
+    color: #059669;
+}
+
+.action-dropdown-item.danger-item {
+    color: #dc2626;
+}
+
+.action-dropdown-item.danger-item:hover {
+    background-color: #fef2f2;
+    color: #b91c1c;
+}
+
+.action-dropdown-divider {
+    height: 1px;
+    background: #f1f5f9;
+    margin: 0.3rem 0;
+}

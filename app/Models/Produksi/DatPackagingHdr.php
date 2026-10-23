@@ -126,6 +126,14 @@ class DatPackagingHdr extends Model
     }
 
     /**
+     * Relasi ke Riwayat Berita Acara Penyesuaian HPP (Audit Trail)
+     */
+    public function adjustmentLogs(): HasMany
+    {
+        return $this->hasMany(DatPackagingAdjustmentLog::class, 'pack_id', 'pack_id')->orderBy('adj_id', 'desc');
+    }
+
+    /**
      * Scope data aktif (belum dihapus secara soft-delete)
      */
     public function scopeActive($query)

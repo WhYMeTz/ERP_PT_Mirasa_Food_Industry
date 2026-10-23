@@ -885,6 +885,7 @@ class ProduksiService
         // Ekstraksi dari baris tabel terpadu jika ada
         $totalOutputKg = 0;
         $uncategorizedQty = 0;
+        $wasteLengketFromItems = 0;
         if (!empty($data['output_items']) && is_array($data['output_items'])) {
             foreach ($data['output_items'] as $item) {
                 $itemKg = (float) ($item['qty_kg'] ?? ($item['qty_hasil'] ?? 0));
@@ -905,7 +906,12 @@ class ProduksiService
                         elseif (str_contains($cd, 'UCM') || str_contains($nm, 'UCAMP') || str_contains($nm, 'U/CAMP') || str_contains($nm, 'CAMPUR')) { $ucampQty += $itemKg; $isMatched = true; }
                         elseif (str_contains($cd, 'BLQ') || str_contains($nm, 'BALQI') || str_contains($nm, 'BAL Q') || str_contains($nm, 'BAL-Q')) { $balqiQty += $itemKg; $isMatched = true; }
                         elseif (str_contains($nm, 'BALO') || str_contains($nm, 'GELOMBANG')) { $baloQty += $itemKg; $isMatched = true; }
-                        elseif (str_contains($cd, 'BRK-ME') || str_contains($nm, 'BERKO ME') || str_contains($cd, 'LGT') || str_contains($nm, 'LENGKET')) { $berkoMeQty += $itemKg; $isMatched = true; }
+                        elseif (str_contains($cd, 'LGT') || str_contains($nm, 'LENGKET')) { 
+                            $berkoMeQty += $itemKg; 
+                            $wasteLengketFromItems += $itemKg;
+                            $isMatched = true; 
+                        }
+                        elseif (str_contains($cd, 'BRK-ME') || str_contains($nm, 'BERKO ME')) { $berkoMeQty += $itemKg; $isMatched = true; }
                         elseif (str_contains($cd, 'BRK') || str_contains($nm, 'BERKO')) { $berkoQty += $itemKg; $isMatched = true; }
                     }
                 }
@@ -979,6 +985,33 @@ class ProduksiService
         $rendemenPersen = $singkongQty > 0 ? ($effectiveOutputKg / $singkongQty) * 100 : 0;
         $hppPerKg = $effectiveOutputKg > 0 ? ($totalBiayaProduksi / $effectiveOutputKg) : 0;
 
+        // Metrik Limbah Fisik HACCP (Formulir MFI/HACCP-04/FRM-03/045/VIII/2021)
+        // Auto-sinkronisasi dari baris tabel jika form card-3B dilepas
+        $wasteLengketQty = (float) ($data['waste_lengket_qty'] ?? 0);
+        if ($wasteLengketQty <= 0 && $wasteLengketFromItems > 0) {
+            $wasteLengketQty = $wasteLengketFromItems;
+        }
+
+        $berkoIflQty = (float) ($data['berko_ifl_qty'] ?? 0);
+        $berkoNonIflQty = (float) ($data['berko_non_ifl_qty'] ?? 0);
+        if ($berkoIflQty <= 0 && $berkoNonIflQty <= 0 && $totalBerkoQty > 0) {
+            if (str_contains($liniUpper, 'IFL') || str_contains($liniUpper, 'IFM')) {
+                $berkoIflQty = $totalBerkoQty;
+            } else {
+                $berkoNonIflQty = $totalBerkoQty;
+            }
+        }
+
+        $wasteTotalQty = isset($data['waste_total_qty']) && (float) $data['waste_total_qty'] > 0
+            ? (float) $data['waste_total_qty']
+            : ($wasteLengketQty + $berkoIflQty + $berkoNonIflQty);
+        $wasteLengketPersen = $singkongQty > 0 ? ($wasteLengketQty / $singkongQty) * 100 : 0;
+        $poIflNo = !empty($data['po_ifl_no']) ? trim($data['po_ifl_no']) : null;
+        $poIflRealisasiQty = (float) ($data['po_ifl_realisasi_qty'] ?? 0);
+        $poIflTerpenuhiSt = isset($data['po_ifl_terpenuhi_st']) && $data['po_ifl_terpenuhi_st'] !== ''
+            ? (bool) $data['po_ifl_terpenuhi_st']
+            : null;
+
         return array_merge($data, [
             'singkong_qty'                => $singkongQty,
             'singkong_nilai'              => $singkongNilai,
@@ -1028,6 +1061,14 @@ class ProduksiService
             'berko_biasa_persen'          => round($berkoBiasaPersen, 2),
             'berko_me_persen'             => round($berkoMePersen, 2),
             'total_wip_qty'               => $totalWipQty,
+            'waste_lengket_qty'           => $wasteLengketQty,
+            'berko_ifl_qty'               => $berkoIflQty,
+            'berko_non_ifl_qty'           => $berkoNonIflQty,
+            'waste_total_qty'             => $wasteTotalQty,
+            'waste_lengket_persen'        => round($wasteLengketPersen, 2),
+            'po_ifl_no'                   => $poIflNo,
+            'po_ifl_realisasi_qty'        => $poIflRealisasiQty,
+            'po_ifl_terpenuhi_st'         => $poIflTerpenuhiSt,
             'rendemen_persen'             => round($rendemenPersen, 2),
             'hpp_per_kg'                  => round($hppPerKg, 2),
         ]);
@@ -1426,6 +1467,52 @@ class ProduksiService
         $this->attachSisaStok($paginator->items());
 
         return $paginator;
+    }
+
+    /**
+     * Mengambil data transaksi produksi header untuk Formulir HACCP MFI-04 (FORM DATA HASIL PRODUKSI).
+     */
+    public function getHaccpExportData(array $filters = []): Collection
+    {
+        $query = DatProduksiHdr::with(['gudang', 'outputs.barang'])
+            ->where('deleted_st', false);
+
+        if (!empty($filters['gudang_id'])) {
+            $query->where('gudang_id', $filters['gudang_id']);
+        }
+
+        if (!empty($filters['tgl_dari'])) {
+            $query->whereDate('produksi_tgl', '>=', $filters['tgl_dari']);
+        }
+
+        if (!empty($filters['tgl_sampai'])) {
+            $query->whereDate('produksi_tgl', '<=', $filters['tgl_sampai']);
+        }
+
+        if (!empty($filters['batch_no'])) {
+            $batchSearch = '%' . $filters['batch_no'] . '%';
+            $query->where(function ($q) use ($batchSearch) {
+                $q->where('batch_wip_no', 'like', $batchSearch)
+                  ->orWhereHas('outputs', function ($o) use ($batchSearch) {
+                      $o->where('batch_no', 'like', $batchSearch);
+                  });
+            });
+        }
+
+        if (!empty($filters['search'])) {
+            $search = '%' . $filters['search'] . '%';
+            $query->where(function ($q) use ($search) {
+                $q->where('produksi_no', 'like', $search)
+                  ->orWhere('batch_wip_no', 'like', $search)
+                  ->orWhere('po_ifl_no', 'like', $search)
+                  ->orWhere('lini_produksi', 'like', $search);
+            });
+        }
+
+        return $query->orderBy('produksi_tgl', 'asc')
+            ->orderBy('shift_cd', 'asc')
+            ->orderBy('produksi_id', 'asc')
+            ->get();
     }
 
     /**

@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Rekapitulasi Stok Komoditas &amp; Valuasi Persediaan - PT Mirasa Food Industry</title>
+    <title>Rekapitulasi Stok Komoditas &amp; Nilai Persediaan - PT Mirasa Food Industry</title>
     <style>
         @page {
             size: a4 landscape;
@@ -214,7 +214,7 @@
                 </div>
             </td>
             <td class="kop-title-box">
-                <div class="doc-title">REKAPITULASI STOK &amp; VALUASI PERSEDIAAN</div>
+                <div class="doc-title">REKAPITULASI STOK &amp; TOTAL NILAI PERSEDIAAN</div>
                 <div class="doc-number">Dicetak: {{ $printedAt }} WIB &bull; Oleh: {{ $printedBy }}</div>
             </td>
         </tr>
@@ -230,7 +230,7 @@
                 <strong>Total Item:</strong> {{ count($items) }} komoditas
             </td>
             <td style="width: 30%; text-align: right; color: #475569;">
-                <strong>Standar Dokumen:</strong> Rekap Stok Saldo &amp; Valuasi (ERP)
+                <strong>Standar Dokumen:</strong> Rekap Stok Saldo &amp; Nilai Persediaan (ERP)
             </td>
         </tr>
     </table>
@@ -247,7 +247,7 @@
                 <div class="kpi-mini-value">{{ number_format($totals['total_stok_akhir'] ?? 0, 2, ',', '.') }}</div>
             </td>
             <td class="kpi-mini-card" style="border-left: 3px solid #16a34a;">
-                <div class="kpi-mini-label">Total Valuasi Aset</div>
+                <div class="kpi-mini-label">Total Nilai Stok</div>
                 <div class="kpi-mini-value" style="color: #16a34a;">Rp {{ number_format($totals['total_nilai'] ?? 0, 0, ',', '.') }}</div>
             </td>
             <td class="kpi-mini-card" style="border-left: 3px solid #dc2626;">
@@ -360,13 +360,13 @@
                 <div class="sign-space"></div>
                 <div class="sign-line"></div>
                 <div style="font-weight: bold; color: #0f172a;">( ............................................ )</div>
-                <div style="font-size: 6.5pt; color: #64748b;">Valuasi Persediaan Valid</div>
+                <div style="font-size: 6.5pt; color: #64748b;">Nilai Persediaan Terverifikasi</div>
             </td>
         </tr>
     </table>
 
     <div class="footer-note">
-        Dokumen ini dihasilkan secara otomatis oleh Sistem ERP PT Mirasa Food Industry &bull; Rekapitulasi Stok Komoditas &amp; Valuasi &bull; Lembar Asli Gudang
+        Dokumen ini dihasilkan secara otomatis oleh Sistem ERP PT Mirasa Food Industry &bull; Rekapitulasi Stok Komoditas &amp; Nilai Persediaan &bull; Lembar Asli Gudang
     </div>
 
 </body>

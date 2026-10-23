@@ -308,6 +308,16 @@ class ProduksiController extends Controller
             'output_items.*.keterangan_txt' => 'nullable|string|max:255',
 
             'catatan_txt'                 => 'nullable|string',
+
+            // Limbah HACCP & PO Buyer IFL (Otomatis Tersinkronisasi dari Tabel Output & Form)
+            'po_ifl_no'                   => 'nullable|string|max:50',
+            'po_ifl_realisasi_qty'        => 'nullable|numeric|min:0',
+            'po_ifl_terpenuhi_st'         => 'nullable|in:0,1',
+            'waste_lengket_qty'           => 'nullable|numeric|min:0',
+            'waste_lengket_persen'        => 'nullable|numeric|min:0',
+            'berko_ifl_qty'               => 'nullable|numeric|min:0',
+            'berko_non_ifl_qty'           => 'nullable|numeric|min:0',
+            'waste_total_qty'             => 'nullable|numeric|min:0',
         ]);
 
         try {

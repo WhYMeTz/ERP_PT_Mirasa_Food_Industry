@@ -95,6 +95,16 @@ class DatProduksiHdr extends Model
         'berko_persen',
         'total_wip_qty',
 
+        // Limbah HACCP & Pemenuhan PO IFL (Formulir MFI/HACCP-04/FRM-03/045/VIII/2021)
+        'waste_lengket_qty',
+        'berko_ifl_qty',
+        'berko_non_ifl_qty',
+        'waste_total_qty',
+        'waste_lengket_persen',
+        'po_ifl_no',
+        'po_ifl_realisasi_qty',
+        'po_ifl_terpenuhi_st',
+
         // Metrik
         'rendemen_persen',
         'hpp_per_kg',
@@ -162,6 +172,13 @@ class DatProduksiHdr extends Model
         'total_berko_qty'             => 'decimal:4',
         'berko_persen'                => 'decimal:2',
         'total_wip_qty'               => 'decimal:4',
+        'waste_lengket_qty'           => 'decimal:4',
+        'berko_ifl_qty'               => 'decimal:4',
+        'berko_non_ifl_qty'           => 'decimal:4',
+        'waste_total_qty'             => 'decimal:4',
+        'waste_lengket_persen'        => 'decimal:2',
+        'po_ifl_realisasi_qty'        => 'decimal:4',
+        'po_ifl_terpenuhi_st'         => 'boolean',
         'rendemen_persen'             => 'decimal:2',
         'hpp_per_kg'                  => 'decimal:2',
         'deleted_st'                  => 'boolean',

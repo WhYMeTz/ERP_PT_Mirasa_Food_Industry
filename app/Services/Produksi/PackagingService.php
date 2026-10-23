@@ -6,6 +6,7 @@ use App\Models\Gudang\DatStokBatch;
 use App\Models\Gudang\DatStokLedger;
 use App\Models\MasterData\MstBarang;
 use App\Models\MasterData\MstGudang;
+use App\Models\Produksi\DatPackagingAdjustmentLog;
 use App\Models\Produksi\DatPackagingDtl;
 use App\Models\Produksi\DatPackagingHdr;
 use App\Models\Produksi\DatProduksiDtl;
@@ -174,33 +175,34 @@ class PackagingService
                 $batchNo = $linkedProduksi->batch_wip_no 
                     ?: ($linkedProduksi->produksi_tgl ? $linkedProduksi->produksi_tgl->format('d m Y') : $batchNo);
             } elseif ($kategori === 'KEMASAN' || $kategori === 'BUMBU') {
-                // Prioritaskan Standar Acuan Pabrik dari Master Standar Harga Kemasan & Packaging
                 $nm = strtoupper($b->barang_nm ?? '');
                 $satuan = strtoupper($b->satuanDasar?->satuan_cd ?? '');
-                $tarifMap = $this->tarifKemasanService->getTarifMap();
 
-                if (str_contains($nm, 'KARTON') && (str_contains($nm, 'MAKSI') || str_contains($nm, 'MX') || str_contains($nm, 'MK'))) {
-                    $hargaSatuan = (float) ($tarifMap['KARTON_MX'] ?? $b->harga_beli_standar);
-                } elseif (str_contains($nm, 'KARTON')) {
-                    $hargaSatuan = (float) ($tarifMap['KARTON_XX'] ?? $b->harga_beli_standar);
-                } elseif (str_contains($nm, 'BUMBU') || str_contains($nm, 'BALADO')) {
-                    $hargaSatuan = (float) ($tarifMap['BUMBU_BALADO'] ?? $b->harga_beli_standar);
-                } elseif (str_contains($nm, 'ROLL') && (str_contains($nm, 'MAKSI') || str_contains($nm, 'MX') || str_contains($nm, 'MK'))) {
-                    $hargaSatuan = (float) ($tarifMap['ROLL_MX'] ?? $b->harga_beli_standar);
-                } elseif (str_contains($nm, 'ROLL') || str_contains($nm, 'PLASTIK')) {
-                    $hargaSatuan = (float) ($tarifMap['ROLL_XX'] ?? $b->harga_beli_standar);
-                } elseif (str_contains($nm, 'LAKBAN')) {
-                    if (in_array($satuan, ['GR', 'GRAM', 'G'])) {
-                        $hargaSatuan = (float) ($tarifMap['LAKBAN_GRAM'] ?? 36.70);
-                    } else {
-                        $hargaSatuan = (float) ($tarifMap['LAKBAN_ROLL'] ?? $b->harga_beli_standar);
-                    }
-                } elseif (str_contains($nm, 'EXP') || str_contains($nm, 'KERTAS')) {
-                    $hargaSatuan = (float) ($tarifMap['KERTAS_EXP'] ?? $b->harga_beli_standar);
-                } elseif ($activeBatch && (float) $activeBatch->harga_satuan > 0) {
+                // Prioritas 1: Jika ditarik dari batch aktual stok gudang (BPPB)
+                if ($activeBatch && (float) $activeBatch->harga_satuan > 0) {
                     $hargaSatuan = (float) $activeBatch->harga_satuan;
-                } else {
+                // Prioritas 2: Single Source of Truth dari Master Katalog Barang (mst_barang)
+                } elseif ((float) $b->harga_beli_standar > 0) {
                     $hargaSatuan = (float) $b->harga_beli_standar;
+                // Prioritas 3: Safety Fallback Guard benchmark acuan pabrik
+                } else {
+                    if (str_contains($nm, 'KARTON') && (str_contains($nm, 'MAKSI') || str_contains($nm, 'MX') || str_contains($nm, 'MK'))) {
+                        $hargaSatuan = 1322.60;
+                    } elseif (str_contains($nm, 'KARTON')) {
+                        $hargaSatuan = 1338.90;
+                    } elseif (str_contains($nm, 'BUMBU') || str_contains($nm, 'BALADO')) {
+                        $hargaSatuan = 38499.00;
+                    } elseif (str_contains($nm, 'ROLL') && (str_contains($nm, 'MAKSI') || str_contains($nm, 'MX') || str_contains($nm, 'MK'))) {
+                        $hargaSatuan = 364427.00;
+                    } elseif (str_contains($nm, 'ROLL') || str_contains($nm, 'PLASTIK')) {
+                        $hargaSatuan = 364830.00;
+                    } elseif (str_contains($nm, 'LAKBAN')) {
+                        $hargaSatuan = in_array($satuan, ['GR', 'GRAM', 'G']) ? 36.70 : 45880.00;
+                    } elseif (str_contains($nm, 'EXP') || str_contains($nm, 'KERTAS')) {
+                        $hargaSatuan = 250.00;
+                    } else {
+                        $hargaSatuan = (float) ($b->harga_beli_standar ?? 0);
+                    }
                 }
             } elseif ($activeBatch && (float) $activeBatch->harga_satuan > 0) {
                 $hargaSatuan = (float) $activeBatch->harga_satuan;
@@ -1212,5 +1214,206 @@ class PackagingService
                 'annual_count'          => $allRecords->count(),
             ],
         ];
+    }
+
+    /**
+     * Penyesuaian / Koreksi HPP Pengemasan Dokumen Tertentu dengan Audit Trail Akuntansi.
+     * Mengkoreksi rincian detail bahan, upah TK kemas, biaya lain, rekalkulasi HPP/karton & HPP/pcs,
+     * serta menyelaraskan nilai persediaan FG pada batch stok gudang terkait.
+     */
+    public function adjustPackagingHpp(int $packId, array $data, string $userId): DatPackagingAdjustmentLog
+    {
+        return DB::transaction(function () use ($packId, $data, $userId) {
+            $header = DatPackagingHdr::with(['details.barang.satuanDasar', 'barangJadi', 'gudang'])->findOrFail($packId);
+
+            if ($header->status_cd === 'VOID') {
+                throw new Exception("Dokumen pengemasan yang berstatus VOID tidak dapat dilakukan adjustment HPP.");
+            }
+
+            $alasan = trim($data['alasan_txt'] ?? '');
+            if (strlen($alasan) < 5) {
+                throw new Exception("Alasan adjustment / dasar dokumen wajib diisi minimal 5 karakter untuk keperluan audit trail akuntansi.");
+            }
+
+            $oldTotalBiaya = (float) $header->total_biaya_produksi;
+            $oldHppKarton = (float) $header->hpp_per_karton;
+            $oldHppPcs = (float) $header->hpp_per_pcs;
+            $oldTotalWip = (float) $header->total_biaya_wip;
+            $oldTotalKemasan = (float) $header->total_biaya_kemasan;
+            $oldUpahTk = (float) $header->total_biaya_tenaga_kerja;
+            $oldBiayaLain = (float) $header->total_biaya_lain;
+
+            $changedFields = [];
+            $kategoriList = [];
+
+            // 1. Proses Koreksi Rincian Detail Bahan (WIP & Kemasan)
+            $inputItems = $data['items'] ?? [];
+            $newTotalWip = 0;
+            $newTotalKemasan = 0;
+
+            foreach ($header->details as $dtl) {
+                $dtlId = $dtl->packdtl_id;
+                $kategori = strtoupper(trim($dtl->kategori_bahan ?? 'KEMASAN'));
+                $barangNm = $dtl->barang?->barang_nm ?? ('Bahan #' . $dtl->barang_id);
+                $oldSubtotal = round((float) $dtl->subtotal_nilai, 2);
+                $qtyAktual = (float) $dtl->qty_aktual;
+
+                if (isset($inputItems[$dtlId])) {
+                    $itemInput = $inputItems[$dtlId];
+                    if (isset($itemInput['subtotal_nilai'])) {
+                        $newSubtotal = round((float) $itemInput['subtotal_nilai'], 2);
+                        $newHarga = $qtyAktual > 0 ? round($newSubtotal / $qtyAktual, 4) : (float) $dtl->harga_satuan;
+                    } elseif (isset($itemInput['harga_satuan'])) {
+                        $newHarga = round((float) $itemInput['harga_satuan'], 4);
+                        $newSubtotal = round($newHarga * $qtyAktual, 2);
+                    } else {
+                        $newSubtotal = $oldSubtotal;
+                        $newHarga = (float) $dtl->harga_satuan;
+                    }
+
+                    if (abs($newSubtotal - $oldSubtotal) > 0.01) {
+                        $changedFields["item_{$dtlId}"] = [
+                            'label'        => $barangNm,
+                            'kategori'     => $kategori,
+                            'old_subtotal' => $oldSubtotal,
+                            'new_subtotal' => $newSubtotal,
+                            'old_harga'    => (float) $dtl->harga_satuan,
+                            'new_harga'    => $newHarga,
+                            'qty'          => $qtyAktual,
+                            'satuan'       => $dtl->satuan_cd,
+                        ];
+                        $kategoriList[] = $kategori;
+
+                        $dtl->subtotal_nilai = $newSubtotal;
+                        $dtl->harga_satuan = $newHarga;
+                        $dtl->version_no = ((int) $dtl->version_no) + 1;
+                        $dtl->updated_by = $userId;
+                        $dtl->save();
+                    }
+                } else {
+                    $newSubtotal = $oldSubtotal;
+                }
+
+                if ($kategori === 'WIP') {
+                    $newTotalWip += $newSubtotal;
+                } else {
+                    $newTotalKemasan += $newSubtotal;
+                }
+            }
+
+            // 2. Koreksi Upah Tenaga Kerja Kemas (BTKL)
+            $newUpahTk = isset($data['total_biaya_tenaga_kerja']) 
+                ? round((float) $data['total_biaya_tenaga_kerja'], 2) 
+                : $oldUpahTk;
+
+            if (abs($newUpahTk - $oldUpahTk) > 0.01) {
+                $changedFields['total_biaya_tenaga_kerja'] = [
+                    'label'        => 'Upah Tenaga Kerja Kemas (BTKL)',
+                    'kategori'     => 'LABOR',
+                    'old_subtotal' => $oldUpahTk,
+                    'new_subtotal' => $newUpahTk,
+                ];
+                $kategoriList[] = 'LABOR';
+            }
+
+            // 3. Koreksi Biaya Lain / Overhead
+            $newBiayaLain = isset($data['total_biaya_lain']) 
+                ? round((float) $data['total_biaya_lain'], 2) 
+                : $oldBiayaLain;
+
+            if (abs($newBiayaLain - $oldBiayaLain) > 0.01) {
+                $changedFields['total_biaya_lain'] = [
+                    'label'        => 'Biaya Lain-Lain & Overhead Pengemasan',
+                    'kategori'     => 'OVERHEAD',
+                    'old_subtotal' => $oldBiayaLain,
+                    'new_subtotal' => $newBiayaLain,
+                ];
+                $kategoriList[] = 'OVERHEAD';
+            }
+
+            // 4. Koreksi Nilai Lakban Terpisah jika disediakan
+            if (isset($data['lakban_nilai'])) {
+                $newLakban = round((float) $data['lakban_nilai'], 2);
+                $oldLakban = round((float) $header->lakban_nilai, 2);
+                if (abs($newLakban - $oldLakban) > 0.01) {
+                    $header->lakban_nilai = $newLakban;
+                }
+            }
+
+            if (empty($changedFields)) {
+                throw new Exception("Tidak ada perubahan nilai nominal biaya yang terdeteksi.");
+            }
+
+            // Rekalkulasi Total Biaya & HPP
+            $newTotalBiaya = round($newTotalWip + $newTotalKemasan + $newUpahTk + $newBiayaLain, 2);
+            $selisihBiaya = round($newTotalBiaya - $oldTotalBiaya, 2);
+
+            $hasilKarton = (float) $header->hasil_karton_qty;
+            $hasilPcs = (float) $header->hasil_pcs_qty;
+
+            $newHppKarton = $hasilKarton > 0 ? round($newTotalBiaya / $hasilKarton, 4) : 0;
+            $newHppPcs = $hasilPcs > 0 ? round($newTotalBiaya / $hasilPcs, 4) : 0;
+
+            $selisihHppKarton = round($newHppKarton - $oldHppKarton, 4);
+            $selisihHppPcs = round($newHppPcs - $oldHppPcs, 4);
+
+            // Simpan perubahan ke DatPackagingHdr
+            $header->total_biaya_wip = $newTotalWip;
+            $header->total_biaya_kemasan = $newTotalKemasan;
+            $header->total_biaya_tenaga_kerja = $newUpahTk;
+            $header->total_biaya_lain = $newBiayaLain;
+            $header->total_biaya_produksi = $newTotalBiaya;
+            $header->hpp_per_karton = $newHppKarton;
+            $header->hpp_per_pcs = $newHppPcs;
+            $header->version_no = ((int) $header->version_no) + 1;
+            $header->updated_by = $userId;
+            $header->save();
+
+            // Referensi Memo
+            $noRef = !empty($data['no_referensi_txt']) ? trim($data['no_referensi_txt']) : null;
+            $fullAlasan = $noRef ? "[Ref: {$noRef}] " . $alasan : $alasan;
+
+            // Generate Nomor Berita Acara: ADJ-PCK-YYYYMM-0001
+            $prefix = 'ADJ-PCK-' . date('Ym') . '-';
+            $adjNo = $this->codeGenerator->generate('dat_packaging_adjustment_log', 'adj_no', $prefix, 4);
+
+            $kategoriUnique = array_values(array_unique($kategoriList));
+            $kategoriStr = count($kategoriUnique) === 1 ? $kategoriUnique[0] : (count($kategoriUnique) > 1 ? 'MULTI' : 'LAINNYA');
+
+            // Simpan ke Log Audit Trail Akuntansi
+            $log = DatPackagingAdjustmentLog::create([
+                'adj_no'               => $adjNo,
+                'pack_id'              => $header->pack_id,
+                'adj_tgl'              => now()->format('Y-m-d'),
+                'kategori_komponen'    => $kategoriStr,
+                'total_biaya_sebelum'  => $oldTotalBiaya,
+                'total_biaya_sesudah'  => $newTotalBiaya,
+                'selisih_biaya'        => $selisihBiaya,
+                'hpp_karton_sebelum'   => $oldHppKarton,
+                'hpp_karton_sesudah'   => $newHppKarton,
+                'selisih_hpp_karton'   => $selisihHppKarton,
+                'hpp_pcs_sebelum'      => $oldHppPcs,
+                'hpp_pcs_sesudah'      => $newHppPcs,
+                'selisih_hpp_pcs'      => $selisihHppPcs,
+                'alasan_txt'           => $fullAlasan,
+                'no_referensi_txt'     => $noRef,
+                'perubahan_field_json' => $changedFields,
+                'created_by'           => $userId,
+                'updated_by'           => $userId,
+            ]);
+
+            // Sinkronisasi Persediaan Barang Jadi (FG) di Gudang
+            if (!empty($header->batch_no) && $header->barang_jadi_id > 0) {
+                DatStokBatch::where('barang_id', $header->barang_jadi_id)
+                    ->where('batch_no', $header->batch_no)
+                    ->where('deleted_st', false)
+                    ->update([
+                        'harga_satuan' => $newHppKarton,
+                        'updated_by'   => $userId,
+                    ]);
+            }
+
+            return $log;
+        });
     }
 }

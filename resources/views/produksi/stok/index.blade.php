@@ -58,7 +58,7 @@
         <div style="display: flex; justify-content: space-between; align-items: flex-start;">
             <div>
                 <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b;">
-                    Valuasi Stok Produksi (WIP &amp; FG)
+                    Total Nilai Stok Hasil Produksi
                 </span>
                 <div style="font-size: 1.45rem; font-weight: 800; color: #0f172a; margin-top: 0.25rem; font-family: monospace;">
                     Rp {{ number_format($kpiMetrics['total_nilai'], 0, ',', '.') }}
@@ -69,7 +69,7 @@
             </div>
         </div>
         <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.4rem;">
-            Total estimasi aset barang olahan &amp; jadi
+            Total estimasi nilai nominal WIP &amp; barang jadi
         </div>
     </div>
 

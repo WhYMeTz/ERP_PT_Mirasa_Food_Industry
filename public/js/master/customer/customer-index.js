@@ -93,18 +93,30 @@ window.addEventListener('resize', closeAllActionDropdowns);
 /**
  * Buka modal edit customer dan isi formulirnya
  */
-function editCustomer(id, kode, nama, kontak, alamat) {
+function editCustomer(id, kode, nama, kontak, alamat, klasifikasi, wilayah, kodePelanggan, topTxt, defaultPpn) {
     closeAllActionDropdowns();
     const elCd = document.getElementById('edit_customer_cd');
     const elNm = document.getElementById('edit_customer_nm');
     const elKontak = document.getElementById('edit_customer_kontak');
     const elAlamat = document.getElementById('edit_customer_alamat');
+    const elKlas = document.getElementById('edit_klasifikasi');
+    const elWil = document.getElementById('edit_wilayah');
+    const elRef = document.getElementById('edit_kode_pelanggan');
+    const elTop = document.getElementById('edit_top_txt');
+    const elPpn = document.getElementById('edit_default_ppn');
     const form = document.getElementById('formEditCustomer');
     
     if (elCd) elCd.value = kode;
     if (elNm) elNm.value = nama;
     if (elKontak) elKontak.value = kontak || '';
     if (elAlamat) elAlamat.value = alamat || '';
+    if (elKlas) elKlas.value = klasifikasi || 'MANUAL';
+    if (elWil) elWil.value = wilayah || '';
+    if (elRef) elRef.value = kodePelanggan || '';
+    if (elTop) elTop.value = topTxt || '';
+    if (elPpn) elPpn.value = defaultPpn || 'NON_PPN';
+
+    handleKlasifikasiChange('edit');
     
     const baseUrl = (window.masterCustomerConfig && window.masterCustomerConfig.baseUrl) 
         ? window.masterCustomerConfig.baseUrl 
@@ -116,6 +128,49 @@ function editCustomer(id, kode, nama, kontak, alamat) {
     
     if (typeof openModal === 'function') {
         openModal('modalEditCustomer');
+    }
+}
+
+/**
+ * Handle perubahan klasifikasi customer pada form tambah/edit
+ */
+function handleKlasifikasiChange(prefix) {
+    const klasifikasiElem = document.getElementById(prefix + '_klasifikasi');
+    const topElem = document.getElementById(prefix + '_top_txt');
+    const ppnGroup = document.getElementById('group_' + prefix + '_default_ppn');
+    const ppnElem = document.getElementById(prefix + '_default_ppn');
+    const refElem = document.getElementById(prefix + '_kode_pelanggan');
+
+    if (!klasifikasiElem) return;
+    const val = klasifikasiElem.value;
+
+    if (val === 'IFM') {
+        if (topElem && (!topElem.value || topElem.value === 'Tinggal 1 Nota')) {
+            topElem.value = '7 Hari';
+        }
+        if (refElem && !refElem.value) {
+            refElem.placeholder = 'Contoh: IFM01.012007';
+        }
+        if (ppnGroup) ppnGroup.style.display = 'none';
+    } else if (val === 'IDM_ALFA') {
+        if (topElem) {
+            topElem.value = '';
+            topElem.placeholder = 'Tidak ada TOP (Kosong / -)';
+        }
+        if (refElem && !refElem.value) {
+            refElem.placeholder = 'Kosong';
+        }
+        if (ppnGroup) {
+            ppnGroup.style.display = 'none';
+        }
+    } else { // MANUAL
+        if (topElem && (!topElem.value || topElem.value === '7 Hari' || topElem.value === '14 Hari')) {
+            topElem.value = 'Tinggal 1 Nota';
+        }
+        if (refElem && !refElem.value) {
+            refElem.placeholder = 'Kode Sales / Toko (Opsional)';
+        }
+        if (ppnGroup) ppnGroup.style.display = 'block';
     }
 }
 
@@ -149,3 +204,4 @@ window.toggleSmartActionDropdown = toggleSmartActionDropdown;
 window.closeAllActionDropdowns = closeAllActionDropdowns;
 window.editCustomer = editCustomer;
 window.openDeleteCustomerModal = openDeleteCustomerModal;
+window.handleKlasifikasiChange = handleKlasifikasiChange;

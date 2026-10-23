@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Buku Rekapitulasi Stok Harian & Valuasi Persediaan - ERP PT Mirasa')
+@section('title', 'Buku Rekapitulasi Stok Harian & Nilai Persediaan - ERP PT Mirasa')
 
 @push('styles')
     <link rel="stylesheet" href="{{ asset('css/gudang/stok/rekap-stok.css') }}">
@@ -12,7 +12,7 @@
     <div style="margin-bottom: 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
         <div>
             <h1 style="font-size: 1.45rem; font-weight: 800; color: #0f172a; margin: 0; letter-spacing: -0.02em;">
-                Buku Rekapitulasi Stok Harian &amp; Valuasi Persediaan
+                Buku Rekapitulasi Stok Harian &amp; Nilai Persediaan
             </h1>
             <p style="margin: 0.25rem 0 0 0; font-size: 0.825rem; color: #64748b;">
                 Monitoring saldo awal, mutasi masuk/keluar, saldo penutupan harian, dan estimasi nilai persediaan barang.
@@ -108,10 +108,10 @@
 
     {{-- 3. 4 KARTU METRIK OPERASIONAL --}}
     <div class="kpi-rekap-grid">
-        {{-- Card 1: Valuasi Persediaan --}}
+        {{-- Card 1: Nilai Persediaan --}}
         <div class="kpi-card">
             <div class="kpi-card-header">
-                <span class="kpi-label">Valuasi {{ $tab === 'hasil_produksi' ? 'Gudang Jadi' : 'Bahan Baku & Penolong' }}</span>
+                <span class="kpi-label">Total Nilai {{ $tab === 'hasil_produksi' ? 'Gudang Jadi' : 'Bahan Baku & Penolong' }}</span>
                 <div class="kpi-icon-box" style="background: #f1f5f9; color: #475569;">
                     <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
                 </div>
@@ -120,7 +120,7 @@
                 Rp {{ number_format($totals['grand_nilai_persediaan'], 0, ',', '.') }}
             </div>
             <div class="kpi-desc">
-                Estimasi total nilai aset fisik persediaan per {{ $tanggal }}
+                Total nilai rupiah seluruh stok {{ $tab === 'hasil_produksi' ? 'barang jadi' : 'bahan baku & penolong' }} di gudang per {{ $tanggal }}
             </div>
         </div>
 
@@ -168,7 +168,7 @@
             </div>
         </div>
 
-        {{-- Card 4: Status Ambang Batas SKU (Menampilkan Aman, Sedang, dan Habis Lengkap) --}}
+        {{-- Card 4: Status Ambang Batas SKU (Menampilkan Aman, Rendah, dan Habis Lengkap) --}}
         <div class="kpi-card" style="background: {{ ($totals['sku_habis'] > 0 || $totals['sku_rendah'] > 0) ? '#fffbeb' : '#ffffff' }}; border-color: {{ ($totals['sku_habis'] > 0 || $totals['sku_rendah'] > 0) ? '#fde68a' : '#e2e8f0' }};">
             <div class="kpi-card-header">
                 <span class="kpi-label" style="color: {{ ($totals['sku_habis'] > 0 || $totals['sku_rendah'] > 0) ? '#b45309' : '#64748b' }};">
@@ -184,7 +184,7 @@
                 </span>
                 <span style="color: #cbd5e1; font-weight: 400; margin: 0 0.15rem;">&bull;</span>
                 <span style="color: {{ $totals['sku_rendah'] > 0 ? '#b45309' : '#64748b' }}; font-weight: 800;">
-                    {{ $totals['sku_rendah'] }} <span style="font-size: 0.825rem; font-weight: 700; color: #334155;">Sedang</span>
+                    {{ $totals['sku_rendah'] }} <span style="font-size: 0.825rem; font-weight: 700; color: #334155;">Rendah</span>
                 </span>
                 <span style="color: #cbd5e1; font-weight: 400; margin: 0 0.15rem;">&bull;</span>
                 <span style="color: {{ $totals['sku_habis'] > 0 ? '#dc2626' : '#94a3b8' }}; font-weight: 800;">
@@ -222,14 +222,12 @@
                        class="filter-pill-link {{ request('status') === 'habis' ? 'active-red' : '' }}">
                         <span>Habis ({{ $totals['sku_habis'] }})</span>
                     </a>
-                    @if($totals['sku_rendah'] > 0)
-                        <a href="{{ route('gudang.stok.rekap', array_merge(request()->except(['page', 'status']), ['tab' => 'hasil_produksi', 'status' => 'rendah'])) }}"
-                           class="filter-pill-link {{ request('status') === 'rendah' ? 'active-amber' : '' }}">
-                            <span>Sedang ({{ $totals['sku_rendah'] }})</span>
-                        </a>
-                    @endif
+                    <a href="{{ route('gudang.stok.rekap', array_merge(request()->except(['page', 'status']), ['tab' => 'hasil_produksi', 'status' => 'rendah'])) }}"
+                       class="filter-pill-link {{ (request('status') === 'rendah' || request('status') === 'sedang') ? 'active-amber' : '' }}">
+                        <span>Rendah ({{ $totals['sku_rendah'] }})</span>
+                    </a>
                     <a href="{{ route('gudang.stok.rekap', array_merge(request()->except(['page', 'status']), ['tab' => 'hasil_produksi', 'status' => 'bergerak'])) }}"
-                       class="filter-pill-link {{ request('status') === 'bergerak' ? 'active-green' : '' }}">
+                       class="filter-pill-link {{ request('status') === 'bergerak' ? 'active' : '' }}">
                         <span>Mutasi Hari Ini</span>
                     </a>
                 @else
@@ -258,20 +256,16 @@
                         <span class="badge-commodity badge-supp">SUPP</span>
                         <span>Bumbu</span>
                     </a>
-                    @if($totals['sku_habis'] > 0)
-                        <a href="{{ route('gudang.stok.rekap', array_merge(request()->except(['page', 'status']), ['tab' => 'bahan', 'status' => 'habis'])) }}"
-                           class="filter-pill-link {{ request('status') === 'habis' ? 'active-red' : '' }}">
-                            <span>Habis ({{ $totals['sku_habis'] }})</span>
-                        </a>
-                    @endif
-                    @if($totals['sku_rendah'] > 0)
-                        <a href="{{ route('gudang.stok.rekap', array_merge(request()->except(['page', 'status']), ['tab' => 'bahan', 'status' => 'rendah'])) }}"
-                           class="filter-pill-link {{ request('status') === 'rendah' ? 'active-amber' : '' }}">
-                            <span>Sedang ({{ $totals['sku_rendah'] }})</span>
-                        </a>
-                    @endif
+                    <a href="{{ route('gudang.stok.rekap', array_merge(request()->except(['page', 'status']), ['tab' => 'bahan', 'status' => 'habis'])) }}"
+                       class="filter-pill-link {{ request('status') === 'habis' ? 'active-red' : '' }}">
+                        <span>Habis ({{ $totals['sku_habis'] }})</span>
+                    </a>
+                    <a href="{{ route('gudang.stok.rekap', array_merge(request()->except(['page', 'status']), ['tab' => 'bahan', 'status' => 'rendah'])) }}"
+                       class="filter-pill-link {{ (request('status') === 'rendah' || request('status') === 'sedang') ? 'active-amber' : '' }}">
+                        <span>Rendah ({{ $totals['sku_rendah'] }})</span>
+                    </a>
                     <a href="{{ route('gudang.stok.rekap', array_merge(request()->except(['page', 'status']), ['tab' => 'bahan', 'status' => 'bergerak'])) }}"
-                       class="filter-pill-link {{ request('status') === 'bergerak' ? 'active-green' : '' }}">
+                       class="filter-pill-link {{ request('status') === 'bergerak' ? 'active' : '' }}">
                         <span>Mutasi Hari Ini</span>
                     </a>
                 @endif

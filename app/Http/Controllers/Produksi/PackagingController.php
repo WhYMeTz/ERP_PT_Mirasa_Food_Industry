@@ -16,6 +16,7 @@ use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -113,9 +114,11 @@ class PackagingController extends Controller
             ->orderBy('barang_nm')
             ->get();
 
-        // Ambil peta standar tarif kemasan dari Master Data Standar Harga Kemasan & Packaging
-        $tarifMap = $this->tarifKemasanService->getTarifMap();
-        $tarifLakbanDefault = (float) ($tarifMap['LAKBAN_GRAM'] ?? 36.70);
+        // Ambil standar tarif lakban per gram langsung dari Master Barang (LKB-GR01) atau fallback acuan pabrik
+        $lakbanGramBarang = MstBarang::where('barang_cd', 'LKB-GR01')->first();
+        $tarifLakbanDefault = $lakbanGramBarang && (float)$lakbanGramBarang->harga_beli_standar > 0 
+            ? (float)$lakbanGramBarang->harga_beli_standar 
+            : 36.70;
 
         // Ambil daftar barang kemasan, bumbu, penolong & curah untuk komponen manual / tambahan
         $kemasanBarangList = MstBarang::active()
@@ -139,7 +142,7 @@ class PackagingController extends Controller
             })
             ->orderBy('barang_nm')
             ->get()
-            ->map(function ($b) use ($tarifMap) {
+            ->map(function ($b) {
                 $cd = strtoupper($b->jenisBarang->jenis_barang_cd ?? '');
                 $nm = strtoupper($b->barang_nm ?? '');
 
@@ -157,31 +160,31 @@ class PackagingController extends Controller
                     $kategoriLabel = 'Bahan Penolong / Lainnya';
                 }
 
-                // Prioritaskan harga acuan standar dari Master Standar Harga Kemasan & Packaging
+                // Single Source of Truth: Prioritaskan harga beli standar dari Master Katalog Barang
                 $hargaStandar = (float) ($b->harga_beli_standar ?? 0);
-                if (str_contains($nm, 'KARTON') && (str_contains($nm, 'MAKSI') || str_contains($nm, 'MX') || str_contains($nm, 'MK'))) {
-                    $hargaStandar = (float) ($tarifMap['KARTON_MX'] ?? $hargaStandar);
-                } elseif (str_contains($nm, 'KARTON')) {
-                    $hargaStandar = (float) ($tarifMap['KARTON_XX'] ?? $hargaStandar);
-                } elseif (str_contains($nm, 'BUMBU') || str_contains($nm, 'BALADO')) {
-                    $hargaStandar = (float) ($tarifMap['BUMBU_BALADO'] ?? $hargaStandar);
-                } elseif (str_contains($nm, 'ROLL') && (str_contains($nm, 'MAKSI') || str_contains($nm, 'MX') || str_contains($nm, 'MK'))) {
-                    $hargaStandar = (float) ($tarifMap['ROLL_MX'] ?? $hargaStandar);
-                } elseif (str_contains($nm, 'ROLL') || str_contains($nm, 'PLASTIK')) {
-                    $hargaStandar = (float) ($tarifMap['ROLL_XX'] ?? $hargaStandar);
-                } elseif (str_contains($nm, 'LAKBAN')) {
-                    $satuan = strtoupper($b->satuanDasar?->satuan_cd ?? '');
-                    if (in_array($satuan, ['GR', 'GRAM', 'G'])) {
-                        $hargaStandar = (float) ($tarifMap['LAKBAN_GRAM'] ?? 36.70);
-                    } else {
-                        $hargaStandar = (float) ($tarifMap['LAKBAN_ROLL'] ?? $hargaStandar);
+
+                // Safety Fallback Guard: Jika harga di master barang masih 0/kosong, gunakan acuan benchmark pabrik
+                if ($hargaStandar <= 0) {
+                    if (str_contains($nm, 'KARTON') && (str_contains($nm, 'MAKSI') || str_contains($nm, 'MX') || str_contains($nm, 'MK'))) {
+                        $hargaStandar = 1322.60;
+                    } elseif (str_contains($nm, 'KARTON')) {
+                        $hargaStandar = 1338.90;
+                    } elseif (str_contains($nm, 'BUMBU') || str_contains($nm, 'BALADO')) {
+                        $hargaStandar = 38499.00;
+                    } elseif (str_contains($nm, 'ROLL') && (str_contains($nm, 'MAKSI') || str_contains($nm, 'MX') || str_contains($nm, 'MK'))) {
+                        $hargaStandar = 364427.00;
+                    } elseif (str_contains($nm, 'ROLL') || str_contains($nm, 'PLASTIK')) {
+                        $hargaStandar = 364830.00;
+                    } elseif (str_contains($nm, 'LAKBAN')) {
+                        $satuan = strtoupper($b->satuanDasar?->satuan_cd ?? '');
+                        $hargaStandar = in_array($satuan, ['GR', 'GRAM', 'G']) ? 36.70 : 45880.00;
+                    } elseif (str_contains($nm, 'EXP') || str_contains($nm, 'KERTAS')) {
+                        $hargaStandar = 250.00;
+                    } elseif (str_contains($nm, 'BERKO')) {
+                        $hargaStandar = 10000.00;
+                    } elseif ($kategori === 'WIP') {
+                        $hargaStandar = 25500.00;
                     }
-                } elseif (str_contains($nm, 'EXP') || str_contains($nm, 'KERTAS')) {
-                    $hargaStandar = (float) ($tarifMap['KERTAS_EXP'] ?? $hargaStandar);
-                } elseif (str_contains($nm, 'BERKO')) {
-                    $hargaStandar = (float) ($tarifMap['WIP_BERKO'] ?? $hargaStandar);
-                } elseif ($kategori === 'WIP') {
-                    $hargaStandar = (float) ($tarifMap['WIP_CURAH'] ?? $hargaStandar);
                 }
 
                 return [
@@ -458,10 +461,76 @@ class PackagingController extends Controller
             'details.barang.satuanDasar', 
             'bom',
             'produksi',
-            'pemakaian.details.barang'
+            'pemakaian.details.barang',
+            'adjustmentLogs'
         ])->findOrFail($id);
 
-        return view('produksi.packaging.show', compact('header'));
+        // Ambil seluruh dokumen pengemasan pada tanggal yang sama untuk Tab Switcher Split View
+        $sameDatePackaging = DatPackagingHdr::with(['barangJadi'])
+            ->whereDate('pack_tgl', $header->pack_tgl)
+            ->where('deleted_st', false)
+            ->where('status_cd', '!=', 'VOID')
+            ->orderBy('pack_id', 'asc')
+            ->get();
+
+        return view('produksi.packaging.show', compact('header', 'sameDatePackaging'));
+    }
+
+    /**
+     * Halaman Khusus Penyesuaian / Koreksi HPP Pengemasan Barang Jadi (Worksheet Akuntansi Biaya Kemas).
+     */
+    public function adjustPage(int $id): View
+    {
+        $header = DatPackagingHdr::with([
+            'barangJadi.satuanDasar', 
+            'gudang', 
+            'details.barang.satuanDasar', 
+            'bom',
+            'produksi',
+            'adjustmentLogs'
+        ])->findOrFail($id);
+
+        // Ambil seluruh dokumen pengemasan pada tanggal yang sama untuk Tab Switcher Split View
+        $sameDatePackaging = DatPackagingHdr::with(['barangJadi'])
+            ->whereDate('pack_tgl', $header->pack_tgl)
+            ->where('deleted_st', false)
+            ->where('status_cd', '!=', 'VOID')
+            ->orderBy('pack_id', 'asc')
+            ->get();
+
+        return view('produksi.packaging.adjust', compact('header', 'sameDatePackaging'));
+    }
+
+    /**
+     * Penyesuaian / Koreksi HPP Pengemasan Dokumen Tertentu dengan Audit Trail Akuntansi.
+     */
+    public function adjustHpp(Request $request, int $id): RedirectResponse
+    {
+        $request->validate([
+            'alasan_txt'                  => 'required|string|min:5',
+            'no_referensi_txt'            => 'nullable|string|max:100',
+            'total_biaya_tenaga_kerja'    => 'nullable|numeric|min:0',
+            'total_biaya_lain'            => 'nullable|numeric|min:0',
+            'lakban_nilai'                => 'nullable|numeric|min:0',
+            'items'                       => 'nullable|array',
+            'items.*.subtotal_nilai'      => 'nullable|numeric|min:0',
+            'items.*.harga_satuan'        => 'nullable|numeric|min:0',
+        ], [
+            'alasan_txt.required'         => 'Alasan penyesuaian wajib diisi minimal 5 karakter untuk audit akuntansi.',
+            'alasan_txt.min'              => 'Alasan penyesuaian wajib diisi minimal 5 karakter untuk audit akuntansi.',
+        ]);
+
+        try {
+            $user = Auth::user()?->name ?? (Auth::user()?->username ?? 'SYSTEM');
+            $log = $this->packagingService->adjustPackagingHpp($id, $request->all(), $user);
+
+            $msg = "✅ Berhasil melakukan adjustment HPP Pengemasan (No. BA: {$log->adj_no})! ";
+            $msg .= "HPP baru: Rp " . number_format($log->hpp_karton_sesudah, 0, ',', '.') . "/Karton (Rp " . number_format($log->hpp_pcs_sesudah, 0, ',', '.') . "/Pcs). Persediaan FG di gudang telah disinkronkan.";
+
+            return redirect()->route('produksi.packaging.show', $id)->with('success', $msg);
+        } catch (Exception $e) {
+            return redirect()->back()->withInput()->with('error', 'Gagal melakukan adjustment HPP: ' . $e->getMessage());
+        }
     }
 
     /**

@@ -67,7 +67,7 @@ class RekapStokExport
         $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14)->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('FF0F172A'));
 
         $sheet->mergeCells('A2:L2');
-        $sheet->setCellValue('A2', 'LAPORAN REKAPITULASI STOK & VALUASI PERSEDIAAN GUDANG');
+        $sheet->setCellValue('A2', 'LAPORAN REKAPITULASI STOK & TOTAL NILAI PERSEDIAAN GUDANG');
         $sheet->getStyle('A2')->getFont()->setBold(true)->setSize(11)->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('FF0369A1'));
 
         // Metadata Info

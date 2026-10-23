@@ -602,7 +602,7 @@ class StokService
                 $query->whereRaw('(COALESCE(lin.masuk_hari_ini, 0) > 0 OR COALESCE(lout.keluar_hari_ini, 0) > 0)');
             } elseif ($st === 'aman') {
                 $query->whereRaw('GREATEST(0, (COALESCE(b.sisa_sekarang, 0) - COALESCE(fin.in_future, 0) + COALESCE(fout.out_future, 0))) > mst_barang.batas_minimum_qty');
-            } elseif ($st === 'rendah') {
+            } elseif ($st === 'rendah' || $st === 'sedang') {
                 $query->whereRaw('GREATEST(0, (COALESCE(b.sisa_sekarang, 0) - COALESCE(fin.in_future, 0) + COALESCE(fout.out_future, 0))) > 0 AND GREATEST(0, (COALESCE(b.sisa_sekarang, 0) - COALESCE(fin.in_future, 0) + COALESCE(fout.out_future, 0))) <= mst_barang.batas_minimum_qty');
             } elseif ($st === 'habis') {
                 $query->whereRaw('GREATEST(0, (COALESCE(b.sisa_sekarang, 0) - COALESCE(fin.in_future, 0) + COALESCE(fout.out_future, 0))) <= 0');

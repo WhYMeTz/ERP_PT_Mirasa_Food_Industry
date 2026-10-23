@@ -24,7 +24,12 @@ class DatSoHdr extends Model
         'so_tgl',
         'customer_id',
         'customer_po_no',
+        'top_txt',
         'tgl_kirim_estimasi',
+        'tgl_kirim_aktual',
+        'supir_nm',
+        'nopol_kendaraan',
+        'total_terkirim_qty',
         'status_cd',
         'catatan_txt',
         'subtotal_bruto',
@@ -40,11 +45,14 @@ class DatSoHdr extends Model
         'deleted_by',
         'deleted_st',
         'active_st',
+        'version_no',
     ];
 
     protected $casts = [
         'so_tgl'             => 'date',
         'tgl_kirim_estimasi' => 'date',
+        'tgl_kirim_aktual'   => 'date',
+        'total_terkirim_qty' => 'decimal:4',
         'subtotal_bruto'     => 'decimal:4',
         'diskon_total'       => 'decimal:4',
         'potongan_nominal'   => 'decimal:4',
@@ -54,7 +62,23 @@ class DatSoHdr extends Model
         'total_tagihan'      => 'decimal:4',
         'deleted_st'         => 'boolean',
         'active_st'          => 'boolean',
+        'version_no'         => 'integer',
     ];
+
+    public function isDeliverable(): bool
+    {
+        return in_array($this->status_cd, ['APPROVED', 'PROCESSING', 'PARTIAL']) && !$this->deleted_st;
+    }
+
+    public function isCompleted(): bool
+    {
+        return $this->status_cd === 'COMPLETED';
+    }
+
+    public function isCancelled(): bool
+    {
+        return $this->status_cd === 'CANCELLED';
+    }
 
     public function customer(): BelongsTo
     {
@@ -64,6 +88,77 @@ class DatSoHdr extends Model
     public function details(): HasMany
     {
         return $this->hasMany(DatSoDtl::class, 'so_id');
+    }
+
+    public function pengeluaran(): HasMany
+    {
+        return $this->hasMany(DatPengeluaranHdr::class, 'so_id');
+    }
+
+    public function payments(): HasMany
+    {
+        return $this->hasMany(\App\Models\Keuangan\DatKasMasukDtl::class, 'so_id')
+            ->whereHas('header', fn($q) => $q->where('status_cd', 'POSTED')->where('deleted_st', false));
+    }
+
+    public function returns(): HasMany
+    {
+        return $this->hasMany(DatSoReturHdr::class, 'so_id', 'so_id')->active();
+    }
+
+    public function getTotalReturNominalAttribute(): float
+    {
+        if ($this->relationLoaded('returns')) {
+            return (float) $this->returns->where('status_cd', 'CONFIRMED')->where('tindakan_cd', 'POTONG_TAGIHAN')->sum('total_nilai');
+        }
+        return (float) $this->returns()->where('status_cd', 'CONFIRMED')->where('tindakan_cd', 'POTONG_TAGIHAN')->sum('total_nilai');
+    }
+
+    public function getTotalReturQtyAttribute(): float
+    {
+        if ($this->relationLoaded('returns')) {
+            return (float) $this->returns->where('status_cd', 'CONFIRMED')->sum('total_qty');
+        }
+        return (float) $this->returns()->where('status_cd', 'CONFIRMED')->sum('total_qty');
+    }
+
+    public function getNetTagihanAttribute(): float
+    {
+        return max(0, (float) $this->total_tagihan - $this->total_retur_nominal);
+    }
+
+    public function getTotalBayarAttribute(): float
+    {
+        if ($this->relationLoaded('payments')) {
+            return (float) $this->payments->sum('nominal');
+        }
+        return (float) $this->payments()->sum('nominal');
+    }
+
+    public function getSisaTagihanAttribute(): float
+    {
+        return max(0, $this->net_tagihan - $this->total_bayar);
+    }
+
+    public function getPersenBayarAttribute(): float
+    {
+        $tagihan = $this->net_tagihan;
+        if ($tagihan <= 0) return 100.0;
+        return min(100.0, round(($this->total_bayar / $tagihan) * 100, 1));
+    }
+
+    public function getStatusBayarAttribute(): string
+    {
+        $totalBayar = $this->total_bayar;
+        $tagihan = $this->net_tagihan;
+
+        if ($tagihan <= 0 || $totalBayar >= $tagihan) {
+            return 'LUNAS';
+        } elseif ($totalBayar > 0) {
+            return 'SEBAGIAN';
+        } else {
+            return 'BELUM_BAYAR';
+        }
     }
 
     public function scopeActive(Builder $query): Builder

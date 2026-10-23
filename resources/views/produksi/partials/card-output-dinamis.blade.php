@@ -1,16 +1,22 @@
 <div class="card" style="margin-bottom: 1.25rem; border: 1px solid #cbd5e1; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.03); background: #ffffff;">
-    <div class="card-header" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0.875rem 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
-        <div>
-            <strong style="color: #0f172a; font-size: 0.95rem; display: flex; align-items: center; gap: 0.4rem;">
+    <div class="card-header" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0.75rem 1.25rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
+        <div style="min-width: 0;">
+            <strong style="color: #0f172a; font-size: 0.925rem; display: flex; align-items: center; gap: 0.4rem;">
                 <span>2. Hasil Barang Produksi (Barang Jadi &amp; Olahan Curah)</span>
             </strong>
-            <span style="font-size: 0.775rem; color: #64748b; display: block; margin-top: 0.15rem;">
-                Pencatatan rincian output barang yang dihasilkan (kemasan barang jadi FG maupun timbangan olahan curah WIP).
+            <span style="font-size: 0.75rem; color: #64748b; display: block; margin-top: 0.15rem;">
+                Pencatatan rincian output barang yang dihasilkan (Barang Jadi FG, Curah WIP, Berko &amp; Limbah Lengket).
             </span>
         </div>
-        <div style="display: flex; align-items: center; gap: 0.5rem;">
-            <span id="badgeTotalOutputKg" style="font-size: 0.825rem; font-weight: 700; color: #0284c7; background: #f0f9ff; border: 1px solid #bae6fd; padding: 0.3rem 0.75rem; border-radius: 6px;">
+        <div style="display: flex; align-items: center; gap: 0.4rem; flex-shrink: 0;">
+            <span id="badgeTotalOutputKg" style="font-size: 0.775rem; font-weight: 700; color: #0284c7; background: #f0f9ff; border: 1px solid #bae6fd; padding: 0.25rem 0.65rem; border-radius: 6px; white-space: nowrap;">
                 Total Output: 0.00 kg
+            </span>
+            <span id="badgeBerkoOutput" style="font-size: 0.775rem; font-weight: 700; color: #b45309; background: #fffbeb; border: 1px solid #fde68a; padding: 0.25rem 0.65rem; border-radius: 6px; white-space: nowrap; display: none;">
+                Berko: 0.00 kg
+            </span>
+            <span id="badgeLengketOutput" style="font-size: 0.775rem; font-weight: 700; color: #b91c1c; background: #fef2f2; border: 1px solid #fecaca; padding: 0.25rem 0.65rem; border-radius: 6px; white-space: nowrap; display: none;">
+                Limbah Lengket: 0.00 kg
             </span>
         </div>
     </div>
@@ -108,13 +114,34 @@
             </table>
         </div>
 
-        {{-- CATATAN PRODUKSI / KUALITAS --}}
-        <div>
-            <label style="display: block; font-size: 0.75rem; font-weight: 700; color: #334155; margin-bottom: 0.25rem;">
-                Catatan Produksi / Kualitas Shift
-            </label>
-            <textarea name="catatan_txt" id="catatan_txt" class="form-control" rows="2" placeholder="Catatan shift, deviasi bumbu, atau kendala pengerjaan...">{{ old('catatan_txt') }}</textarea>
+        {{-- AREA CATATAN & PO BUYER --}}
+        <div style="display: grid; grid-template-columns: 1.4fr 1fr; gap: 1.25rem; align-items: start; margin-top: 1rem; padding-top: 0.85rem; border-top: 1px dashed #e2e8f0;">
+            <div>
+                <label for="catatan_txt" style="display: block; font-size: 0.775rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">
+                    Catatan Produksi / Kualitas Shift
+                </label>
+                <textarea name="catatan_txt" id="catatan_txt" class="form-control" rows="2" style="font-size: 0.825rem; resize: vertical;" placeholder="Catatan shift, deviasi bumbu, atau kendala pengerjaan...">{{ old('catatan_txt', $produksi->catatan_txt ?? '') }}</textarea>
+            </div>
+            <div>
+                <label for="po_ifl_no" style="display: block; font-size: 0.775rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem; display: flex; align-items: center; justify-content: space-between;">
+                    <span>No. Dokumen PO Buyer IFL</span>
+                    <span style="font-size: 0.7rem; font-weight: 500; color: #94a3b8;">Opsional</span>
+                </label>
+                <input type="text" name="po_ifl_no" id="po_ifl_no" class="form-control" style="font-family: monospace; font-weight: 700; font-size: 0.85rem; height: 38px; color: #0f172a;" placeholder="Contoh: PO-IFL/2026/10/088" value="{{ old('po_ifl_no', $produksi->po_ifl_no ?? '') }}">
+                <small style="color: #64748b; font-size: 0.7rem; margin-top: 0.35rem; display: block;">
+                    Diisi jika hasil produksi dialokasikan untuk pemenuhan PO buyer khusus.
+                </small>
+            </div>
         </div>
+
+        {{-- Hidden Inputs untuk Sinkronisasi Otomatis Limbah HACCP ke Controller & Database --}}
+        <input type="hidden" name="waste_lengket_qty" id="waste_lengket_qty" value="{{ old('waste_lengket_qty', $produksi->waste_lengket_qty ?? 0) }}">
+        <input type="hidden" name="waste_lengket_persen" id="waste_lengket_persen" value="{{ old('waste_lengket_persen', $produksi->waste_lengket_persen ?? 0) }}">
+        <input type="hidden" name="berko_ifl_qty" id="berko_ifl_qty" value="{{ old('berko_ifl_qty', $produksi->berko_ifl_qty ?? 0) }}">
+        <input type="hidden" name="berko_non_ifl_qty" id="berko_non_ifl_qty" value="{{ old('berko_non_ifl_qty', $produksi->berko_non_ifl_qty ?? 0) }}">
+        <input type="hidden" name="waste_total_qty" id="waste_total_qty" value="{{ old('waste_total_qty', $produksi->waste_total_qty ?? 0) }}">
+        <input type="hidden" name="po_ifl_realisasi_qty" id="po_ifl_realisasi_qty" value="{{ old('po_ifl_realisasi_qty', $produksi->po_ifl_realisasi_qty ?? 0) }}">
+        <input type="hidden" name="po_ifl_terpenuhi_st" id="po_ifl_terpenuhi_st" value="{{ old('po_ifl_terpenuhi_st', $produksi->po_ifl_terpenuhi_st ?? '') }}">
     </div>
 </div>
 

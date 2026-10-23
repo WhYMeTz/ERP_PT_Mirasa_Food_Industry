@@ -28,6 +28,9 @@ use App\Http\Controllers\Keuangan\HutangController;
 use App\Http\Controllers\Keuangan\KasBankController;
 use App\Http\Controllers\Keuangan\KasMasukController;
 use App\Http\Controllers\Penjualan\SoController;
+use App\Http\Controllers\Penjualan\PengeluaranBarangController;
+use App\Http\Controllers\Penjualan\FakturPenjualanController;
+use App\Http\Controllers\Penjualan\SoReturController;
 use App\Http\Controllers\Produksi\BomController;
 use App\Http\Controllers\Produksi\PackagingController;
 use App\Http\Controllers\Produksi\PackagingOperatorController;
@@ -360,6 +363,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/packaging/create', [PackagingController::class, 'create'])->name('packaging.create')->middleware('role:produksi_create');
         Route::post('/packaging', [PackagingController::class, 'store'])->name('packaging.store')->middleware('role:produksi_create');
         Route::get('/packaging/{id}', [PackagingController::class, 'show'])->name('packaging.show')->whereNumber('id');
+        Route::get('/packaging/{id}/adjust', [PackagingController::class, 'adjustPage'])->name('packaging.adjust')->middleware('role:produksi_create')->whereNumber('id');
+        Route::post('/packaging/{id}/adjust-hpp', [PackagingController::class, 'adjustHpp'])->name('packaging.adjust-hpp')->middleware('role:produksi_create')->whereNumber('id');
         Route::post('/packaging/{id}/void', [PackagingController::class, 'void'])->name('packaging.void')->middleware('role:produksi_create')->whereNumber('id');
     });
 
@@ -392,8 +397,33 @@ Route::middleware('auth')->group(function () {
     Route::prefix('penjualan')->name('penjualan.')->group(function () {
         Route::get('so/{id}/export-faktur', [SoController::class, 'exportFakturPdf'])->name('so.export-faktur');
         Route::get('so/{id}/export-surat-jalan', [SoController::class, 'exportSuratJalanPdf'])->name('so.export-surat-jalan');
+        Route::post('so/{id}/confirm-delivery', [SoController::class, 'confirmDelivery'])->name('so.confirm-delivery');
+        Route::post('so/{id}/void-delivery', [SoController::class, 'voidDelivery'])->name('so.void-delivery');
+        Route::post('so/{id}/record-payment', [SoController::class, 'recordPayment'])->name('so.record-payment');
+        Route::post('so/{id}/retur', [SoController::class, 'storeReturn'])->name('so.retur');
+        Route::post('so/retur/{returId}/void', [SoController::class, 'voidReturn'])->name('so.retur-void');
         Route::post('so/{id}/cancel', [SoController::class, 'cancel'])->name('so.cancel');
+        Route::get('so/ajax/stock-check', [SoController::class, 'ajaxStockCheck'])->name('so.ajax.stock-check');
+        Route::get('so/ajax/generate-faktur-no', [SoController::class, 'ajaxGenerateFakturNo'])->name('so.ajax.generate-faktur-no');
         Route::resource('so', SoController::class);
+
+        // Modul Pengeluaran Barang / Surat Jalan (Gudang FG - Outbound Delivery)
+        Route::get('pengeluaran/ajax-so-detail/{id}', [PengeluaranBarangController::class, 'ajaxSoDetail'])->name('pengeluaran.ajax-so-detail');
+        Route::get('pengeluaran/{id}/export-pdf', [PengeluaranBarangController::class, 'exportPdf'])->name('pengeluaran.export-pdf');
+        Route::post('pengeluaran/{id}/void', [PengeluaranBarangController::class, 'void'])->name('pengeluaran.void');
+        Route::resource('pengeluaran', PengeluaranBarangController::class)->except(['edit', 'update', 'destroy']);
+
+        // Modul Faktur Penjualan (Commercial Invoice & AR Recognition)
+        Route::get('faktur/ajax-surat-jalan-detail/{id}', [FakturPenjualanController::class, 'ajaxSuratJalanDetail'])->name('faktur.ajax-surat-jalan-detail');
+        Route::get('faktur/{id}/export-pdf', [FakturPenjualanController::class, 'exportPdf'])->name('faktur.export-pdf');
+        Route::post('faktur/{id}/void', [FakturPenjualanController::class, 'void'])->name('faktur.void');
+        Route::resource('faktur', FakturPenjualanController::class)->except(['edit', 'update', 'destroy']);
+
+        // Rekapitulasi Terpusat Retur Penjualan (Customer Returns)
+        Route::get('retur', [SoReturController::class, 'index'])->name('retur.index');
+        Route::get('retur/{id}', [SoReturController::class, 'show'])->name('retur.show');
+        Route::get('retur/{id}/export-pdf', [SoReturController::class, 'exportPdf'])->name('retur.export-pdf');
+        Route::post('retur/{id}/void', [SoReturController::class, 'void'])->name('retur.void');
     });
 
     // Modul Keuangan: Hutang Usaha (AP), Pelunasan Kas Keluar & Rekening Bank

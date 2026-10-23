@@ -584,6 +584,7 @@
             'categoryName' => $sup->jenisSupplier?->jenis_supplier_nm ?? 'Lainnya',
             'contact' => $sup->kontak_no ?? '-',
             'address' => $sup->alamat_txt ?? '',
+            'top_hari' => (int)($sup->top_hari ?? 14),
         ];
     })->values();
 @endphp

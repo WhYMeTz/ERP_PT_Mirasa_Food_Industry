@@ -5,8 +5,10 @@ namespace App\Services\Keuangan;
 use App\Models\Keuangan\DatBayarHutangHdr;
 use App\Models\Keuangan\DatBayarHutangDtl;
 use App\Models\Keuangan\DatHutangHdr;
+use App\Models\Keuangan\DatJurnalHdr;
 use App\Models\Keuangan\DatKasMutasi;
 use App\Models\Keuangan\MstKasBank;
+use App\Models\MasterData\MstSupplier;
 use App\Models\User;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
@@ -14,6 +16,13 @@ use Exception;
 
 class KasBankService
 {
+    protected JurnalService $jurnalService;
+
+    public function __construct(JurnalService $jurnalService)
+    {
+        $this->jurnalService = $jurnalService;
+    }
+
     /**
      * Dapatkan semua rekening kas & bank aktif
      */
@@ -231,6 +240,38 @@ class KasBankService
                 'updated_by'      => $user->name ?? 'SYSTEM',
             ]);
 
+            // 5. Catat Jurnal Double-Entry ke Jurnal Umum
+            $kodeKas = !empty($kasBank->kode_akun) ? $kasBank->kode_akun : '1101';
+            $suppModel = $supplierId ? MstSupplier::find($supplierId) : null;
+            $suppName = $suppModel?->supplier_nm ?? 'Supplier';
+
+            $keteranganJurnal = "Pembayaran Hutang - {$suppName} - {$bkk->bayar_no}";
+
+            $jurnalEntries = [
+                [
+                    'kode_akun'  => '2100', // (Debet) Mengurangi Hutang Usaha
+                    'debet'      => $totalBayar,
+                    'kredit'     => 0,
+                    'keterangan' => $keteranganJurnal,
+                ],
+                [
+                    'kode_akun'  => $kodeKas, // (Kredit) Mengurangi Saldo Kas / Rekening Bank
+                    'debet'      => 0,
+                    'kredit'     => $totalBayar,
+                    'keterangan' => $keteranganJurnal,
+                ],
+            ];
+
+            $this->jurnalService->catatJurnal(
+                tipeTransaksi: 'BAYAR_HUTANG',
+                tglJurnal: $tglBayar,
+                refNo: $bkk->bayar_no,
+                refId: $bkk->bayar_id,
+                keterangan: $keteranganJurnal,
+                entries: $jurnalEntries,
+                user: $user
+            );
+
             return $bkk;
         });
     }
@@ -295,6 +336,15 @@ class KasBankService
                 'status_cd'  => 'VOID',
                 'updated_by' => $user->name ?? 'SYSTEM',
             ]);
+
+            // 5. Batalkan Jurnal Terkait BKK
+            DatJurnalHdr::where('ref_no', $bkk->bayar_no)
+                ->where('deleted_st', false)
+                ->update([
+                    'deleted_st' => true,
+                    'deleted_by' => $user->name ?? 'SYSTEM',
+                    'updated_by' => $user->name ?? 'SYSTEM',
+                ]);
         });
     }
 

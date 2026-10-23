@@ -29,12 +29,35 @@
         <a href="{{ route('gudang.terima.index') }}" style="color: #64748b; text-decoration: none; font-size: 0.875rem; display: inline-flex; align-items: center; gap: 0.25rem; margin-bottom: 0.5rem;">
             &larr; Kembali ke Daftar Penerimaan
         </a>
-        <div style="display: flex; align-items: center; gap: 0.75rem;">
-            <h1 style="font-size: 1.5rem; font-weight: 700; color: #0f172a;">{{ $terima->terima_no }}</h1>
+        <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+            <h1 style="font-size: 1.5rem; font-weight: 700; color: #0f172a; margin: 0;">{{ $terima->terima_no }}</h1>
             <span class="badge badge-success">Stok Masuk Gudang (GRN)</span>
+
+            @php
+                $firstHutangDtl = $terima->hutangDetails->first();
+                $hutangHdr = $firstHutangDtl?->header;
+            @endphp
+
+            @if ($hutangHdr)
+                <a href="{{ route('keuangan.hutang.show', $hutangHdr->hutang_id) }}" style="text-decoration: none;">
+                    <span class="badge" style="background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
+                        💼 Ditagihkan: {{ $hutangHdr->hutang_no }}
+                    </span>
+                </a>
+            @else
+                <span class="badge" style="background: #f8fafc; color: #64748b; border: 1px solid #cbd5e1; font-weight: 600;">
+                    ⏳ Belum Ditagihkan
+                </span>
+            @endif
         </div>
     </div>
     <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; position: relative;">
+        @if ($hutangHdr)
+            <a href="{{ route('keuangan.hutang.show', $hutangHdr->hutang_id) }}" class="btn btn-secondary" style="background: #eff6ff; border: 1.5px solid #0284c7; color: #0284c7; font-size: 0.85rem; font-weight: 700; padding: 0.55rem 0.95rem; box-shadow: 0 1px 2px rgba(0,0,0,0.03); display: inline-flex; align-items: center; gap: 0.35rem;" title="Buka Invoice Tagihan Hutang Pembelian">
+                <span>💼 Invoice AP ({{ $hutangHdr->hutang_no }})</span>
+            </a>
+        @endif
+
         <a href="{{ route('gudang.terima.export-pdf', $terima->terima_id) }}" target="_blank" class="btn btn-secondary" style="background: #ffffff; border: 1.5px solid #dc2626; color: #dc2626; font-size: 0.85rem; font-weight: 700; padding: 0.55rem 0.95rem; box-shadow: 0 1px 2px rgba(0,0,0,0.03); display: inline-flex; align-items: center; gap: 0.35rem; transition: all 0.15s ease-in-out;" onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background='#ffffff'" title="Buka & Cetak Bukti Penerimaan Barang Dokumen PDF Resmi">
             <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
             <span>Cetak PDF (GRN)</span>
@@ -90,6 +113,12 @@
                     </button>
                 @endif
             @endif
+            @if ($hutangHdr)
+                <a href="{{ route('keuangan.hutang.show', $hutangHdr->hutang_id) }}" class="action-dropdown-item">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    <span>Buka Invoice Keuangan ({{ $hutangHdr->hutang_no }})</span>
+                </a>
+            @endif
             @if (Auth::user()?->canEditTerima())
                 <a href="{{ route('gudang.terima.edit', $terima->terima_id) }}" class="action-dropdown-item">
                     <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
@@ -132,6 +161,98 @@
                     📄 Buka Berita Acara Penolakan &rarr;
                 </button>
             @endif
+        </div>
+    @endif
+
+    @if ($hutangHdr)
+        @php
+            // Hitung total diskon dan potongan di GRN
+            $grnDiskonTotal = (float) $terima->details->sum(function($d) {
+                $sub = (float)$d->terima_qty * (float)$d->harga_nominal;
+                if ((float)$d->diskon_persen > 0) return round($sub * ((float)$d->diskon_persen / 100), 2);
+                return (float)$d->terima_qty * (float)($d->diskon_nominal ?? 0);
+            });
+            $grnPotonganTotal = (float) $terima->details->sum('potongan_nominal');
+
+            // Hitung total diskon dan potongan di Keuangan
+            $apDiskonTotal = (float) $terima->hutangDetails->sum('diskon_nominal');
+            $apPotonganTotal = (float) $terima->hutangDetails->sum('potongan_nominal');
+
+            $selisihDiskon = round($apDiskonTotal - $grnDiskonTotal, 2);
+            $selisihPotongan = round($apPotonganTotal - $grnPotonganTotal, 2);
+            $adaPenyesuaian = (abs($selisihDiskon) > 0.01 || abs($selisihPotongan) > 0.01);
+        @endphp
+
+        <div class="card no-print" style="margin-bottom: 1.5rem; background: #ffffff; border: 1.5px solid {{ $adaPenyesuaian ? '#f59e0b' : '#38bdf8' }}; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.03);">
+            <div style="background: {{ $adaPenyesuaian ? '#fffbeb' : '#f0f9ff' }}; padding: 0.85rem 1.25rem; border-bottom: 1px solid {{ $adaPenyesuaian ? '#fef3c7' : '#e0f2fe' }}; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                <div style="display: flex; align-items: center; gap: 0.6rem;">
+                    <span style="font-size: 1.25rem;">{{ $adaPenyesuaian ? '📝' : '💼' }}</span>
+                    <div>
+                        <strong style="font-size: 0.925rem; color: {{ $adaPenyesuaian ? '#92400e' : '#0369a1' }};">
+                            {{ $adaPenyesuaian ? 'Penyesuaian & Rekonsiliasi Tagihan Keuangan' : 'Dokumen Tagihan Hutang Pembelian (AP Invoice)' }}
+                        </strong>
+                        <div style="font-size: 0.75rem; color: #64748b; margin-top: 2px;">
+                            Terkait Invoice Keuangan: <a href="{{ route('keuangan.hutang.show', $hutangHdr->hutang_id) }}" style="font-weight: 800; font-family: monospace; color: #0284c7; text-decoration: underline;">{{ $hutangHdr->hutang_no }}</a>
+                            @if ($hutangHdr->no_faktur_supplier)
+                                &bull; Faktur Supplier: <strong>{{ $hutangHdr->no_faktur_supplier }}</strong>
+                            @endif
+                            &bull; Tgl Tagihan: {{ \Carbon\Carbon::parse($hutangHdr->tgl_tagihan)->format('d/m/Y') }}
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span class="badge" style="background: {{ $hutangHdr->status_pembayaran === 'LUNAS' ? '#dcfce7' : ($hutangHdr->status_pembayaran === 'SEBAGIAN' ? '#fef3c7' : '#fee2e2') }}; color: {{ $hutangHdr->status_pembayaran === 'LUNAS' ? '#15803d' : ($hutangHdr->status_pembayaran === 'SEBAGIAN' ? '#b45309' : '#b91c1c') }}; font-weight: 700;">
+                        {{ str_replace('_', ' ', $hutangHdr->status_pembayaran) }}
+                    </span>
+                    <a href="{{ route('keuangan.hutang.show', $hutangHdr->hutang_id) }}" class="btn btn-secondary btn-sm" style="font-size: 0.775rem; font-weight: 700; background: #ffffff;">
+                        Buka Invoice Keuangan &rarr;
+                    </a>
+                </div>
+            </div>
+
+            <div style="padding: 1rem 1.25rem;">
+                @if ($adaPenyesuaian)
+                    <div style="background: #fffdf5; border-left: 4px solid #f59e0b; padding: 0.75rem 1rem; border-radius: 4px; margin-bottom: 0.5rem;">
+                        <div style="font-size: 0.825rem; font-weight: 700; color: #b45309; margin-bottom: 0.35rem;">
+                            ⚠️ Perbedaan / Penyesuaian Nilai oleh Bagian Keuangan:
+                        </div>
+                        <ul style="margin: 0; padding-left: 1.2rem; font-size: 0.8rem; color: #475569; line-height: 1.5;">
+                            @if (abs($selisihDiskon) > 0.01)
+                                <li>
+                                    <strong>Diskon Faktur:</strong> 
+                                    Di Invoice Keuangan dicatat <strong>Rp {{ number_format($apDiskonTotal, 0, ',', '.') }}</strong> 
+                                    (Catatan awal GRN: Rp {{ number_format($grnDiskonTotal, 0, ',', '.') }} &bull; 
+                                    <span style="color: {{ $selisihDiskon > 0 ? '#16a34a' : '#dc2626' }}; font-weight: 700;">
+                                        {{ $selisihDiskon > 0 ? '+ Tambahan Diskon Rp ' . number_format($selisihDiskon, 0, ',', '.') : '- Pengurangan Diskon Rp ' . number_format(abs($selisihDiskon), 0, ',', '.') }}
+                                    </span>)
+                                </li>
+                            @endif
+                            @if (abs($selisihPotongan) > 0.01)
+                                <li>
+                                    <strong>Potongan Mutu:</strong> 
+                                    Di Invoice Keuangan dicatat <strong>Rp {{ number_format($apPotonganTotal, 0, ',', '.') }}</strong> 
+                                    (Catatan awal GRN: Rp {{ number_format($grnPotonganTotal, 0, ',', '.') }} &bull; 
+                                    <span style="color: {{ $selisihPotongan > 0 ? '#dc2626' : '#16a34a' }}; font-weight: 700;">
+                                        {{ $selisihPotongan > 0 ? '+ Penyesuaian Potongan Rp ' . number_format($selisihPotongan, 0, ',', '.') : '- Pengurangan Potongan Rp ' . number_format(abs($selisihPotongan), 0, ',', '.') }}
+                                    </span>)
+                                </li>
+                            @endif
+                        </ul>
+                    </div>
+                @else
+                    <div style="font-size: 0.8rem; color: #166534; display: flex; align-items: center; gap: 0.4rem;">
+                        <span style="font-weight: 800;">✓</span>
+                        <span>Nilai kuantitas, harga satuan, dan diskon pada invoice Keuangan <strong>100% klop (cocok)</strong> dengan data fisik penerimaan gudang.</span>
+                    </div>
+                @endif
+
+                @if ($hutangHdr->catatan)
+                    <div style="font-size: 0.775rem; color: #64748b; margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px dashed #e2e8f0;">
+                        💬 <strong>Catatan dari Bagian Keuangan:</strong> <em>"{{ $hutangHdr->catatan }}"</em>
+                    </div>
+                @endif
+            </div>
         </div>
     @endif
 
@@ -236,6 +357,10 @@
                         $subNet = (float) ($item->subtotal_netto ?: max(0, ($itemNetto * $hargaNet) - $potonganItem));
                         $isItemPpn = ($item->ppn_tipe === 'PPN_11');
                         $tagihanItem = (float) ($item->subtotal_tagihan ?: ($subNet + ($isItemPpn ? round($subNet * 0.11) : 0)));
+
+                        $matchingHutangDtl = $terima->hutangDetails->first(function($h) use ($item) {
+                            return ($h->terima_dtl_id && $h->terima_dtl_id == $item->terimadtl_id) || ($h->barang_id == $item->barang_id);
+                        });
                     @endphp
                     <tr>
                         <td style="text-align: center; color: #64748b; font-weight: 600;">{{ $index + 1 }}</td>
@@ -274,9 +399,27 @@
                         </td>
                         <td style="text-align: right; font-family: monospace; font-size: 0.85rem; color: {{ $diskonPct > 0 ? '#d97706' : '#94a3b8' }};">
                             {{ $diskonPct > 0 ? number_format($diskonPct, 1, ',', '.') . '%' : '-' }}
+                            @if ($matchingHutangDtl && $matchingHutangDtl->diskon_nominal > 0)
+                                @php
+                                    $grnItemDisc = $diskonPct > 0 ? round(($itemNetto * $hargaAwal) * ($diskonPct / 100)) : 0;
+                                @endphp
+                                @if (abs((float)$matchingHutangDtl->diskon_nominal - $grnItemDisc) > 1)
+                                    <div style="font-size: 0.7rem; color: #0284c7; font-weight: 700; margin-top: 2px;" title="Diskon disesuaikan oleh Keuangan di invoice">
+                                        💼 Keu: Rp {{ number_format($matchingHutangDtl->diskon_nominal, 0, ',', '.') }}
+                                        @if ($matchingHutangDtl->diskon_persen > 0)
+                                            ({{ floatval($matchingHutangDtl->diskon_persen) }}%)
+                                        @endif
+                                    </div>
+                                @endif
+                            @endif
                         </td>
                         <td style="text-align: right; font-family: monospace; font-size: 0.85rem; color: {{ $potonganItem > 0 ? '#dc2626' : '#94a3b8' }}; font-weight: {{ $potonganItem > 0 ? '600' : 'normal' }};">
                             {{ $potonganItem > 0 ? '- Rp ' . number_format($potonganItem, 0, ',', '.') : '-' }}
+                            @if ($matchingHutangDtl && abs((float)$matchingHutangDtl->potongan_nominal - $potonganItem) > 1)
+                                <div style="font-size: 0.7rem; color: #0284c7; font-weight: 700; margin-top: 2px;" title="Potongan disesuaikan oleh Keuangan di invoice">
+                                    💼 Keu: Rp {{ number_format($matchingHutangDtl->potongan_nominal, 0, ',', '.') }}
+                                </div>
+                            @endif
                         </td>
                         <td style="text-align: right; font-family: monospace; font-size: 0.85rem; font-weight: 600; color: #047857;">
                             Rp {{ number_format($subNet, 0, ',', '.') }}
@@ -304,10 +447,7 @@
 
     {{-- SUMMARY BREAKDOWN KEUANGAN: DISKON, POTONGAN HARGA, DPP & PPN --}}
     @php
-        $calcSubtotalBruto = (float) ($terima->subtotal_nominal ?? 0);
-        if ($calcSubtotalBruto <= 0) {
-            $calcSubtotalBruto = (float) $terima->details->sum(fn($d) => (float)$d->terima_qty * (float)$d->harga_nominal);
-        }
+        $calcSubtotalBruto = (float) $terima->details->sum(fn($d) => (float)$d->terima_qty * (float)$d->harga_nominal);
         $calcDiskonItem = (float) $terima->details->sum(fn($d) => (float)$d->terima_qty * (float)($d->diskon_nominal ?? 0));
         $calcPotonganItem = (float) $terima->details->sum(fn($d) => (float)($d->potongan_nominal ?? 0));
         $totalSemuaPotongan = (float) ($terima->potongan_nominal ?? 0);

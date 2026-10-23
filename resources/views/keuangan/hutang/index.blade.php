@@ -204,9 +204,20 @@
 
                         {{-- 1. NO TAGIHAN & TGL --}}
                         <td style="padding: 0.75rem 0.75rem;">
-                            <a href="{{ route('keuangan.hutang.show', $h->hutang_id) }}" style="font-weight: 800; color: #0284c7; text-decoration: none; font-family: monospace;">
-                                {{ $h->hutang_no }}
-                            </a>
+                            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                                <a href="{{ route('keuangan.hutang.show', $h->hutang_id) }}" style="font-weight: 800; color: #0284c7; text-decoration: none; font-family: monospace;">
+                                    {{ $h->hutang_no }}
+                                </a>
+                                @if ($h->jurnal)
+                                    <button type="button" 
+                                            onclick="openModalDetailJurnal({{ $h->jurnal->jurnal_id }})" 
+                                            class="badge-jurnal-link" 
+                                            title="Klik untuk lihat rincian Jurnal Umum ({{ $h->jurnal->jurnal_no }})">
+                                        <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                        <span>Jurnal</span>
+                                    </button>
+                                @endif
+                            </div>
                             <div style="font-size: 0.72rem; color: #64748b; margin-top: 2px;">
                                 {{ \Carbon\Carbon::parse($h->tgl_tagihan)->format('d/m/Y') }}
                             </div>
@@ -325,6 +336,16 @@
                                     <span>Lihat Detail Tagihan</span>
                                 </a>
 
+                                @if ($h->jurnal)
+                                    <button type="button" 
+                                            class="action-dropdown-item" 
+                                            style="color: #0284c7; font-weight: 700;" 
+                                            onclick="openModalDetailJurnal({{ $h->jurnal->jurnal_id }})">
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                        <span>Detail Jurnal Umum (Pop-up)</span>
+                                    </button>
+                                @endif
+
                                 @if ($h->sisa_hutang > 0 && Auth::user()->canCreateBayarHutang())
                                     <div class="action-dropdown-divider"></div>
                                     @php
@@ -389,6 +410,7 @@
 {{-- MODAL PEMBATALAN TAGIHAN & BAYAR CEPAT --}}
 @include('keuangan.hutang.partials.modal-delete-hutang')
 @include('keuangan.hutang.partials.modal-quick-pay')
+@include('keuangan.jurnal.partials.modal-detail-jurnal')
 
 @endsection
 
@@ -398,5 +420,5 @@
         baseUrl: '{{ url('') }}'
     };
 </script>
-<script src="{{ asset('js/keuangan/hutang/hutang-index.js') }}"></script>
+<script src="{{ asset('js/keuangan/hutang/hutang-index.js') }}?v={{ file_exists(public_path('js/keuangan/hutang/hutang-index.js')) ? filemtime(public_path('js/keuangan/hutang/hutang-index.js')) : time() }}"></script>
 @endpush

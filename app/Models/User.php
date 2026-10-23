@@ -432,7 +432,24 @@ class User extends Authenticatable
             || $this->canAccessHutang() 
             || $this->canAccessBayarHutang() 
             || $this->canAccessKasMasuk()
-            || $this->canAccessKasBank();
+            || $this->canAccessKasBank()
+            || $this->canAccessCoa()
+            || $this->canAccessJurnal();
+    }
+
+    public function canAccessJurnal(): bool
+    {
+        return $this->isSuperAdmin() || $this->canDo('jurnal_view') || $this->canAccessCoa() || $this->canAccessHutang();
+    }
+
+    public function canAccessCoa(): bool
+    {
+        return $this->isSuperAdmin() || $this->canDo('coa_view') || $this->canDo('kas_bank_view') || $this->canDo('hutang_view');
+    }
+
+    public function canManageCoa(): bool
+    {
+        return $this->isSuperAdmin() || $this->canDo('coa_manage') || $this->canDo('kas_bank_manage');
     }
 
     public function canAccessKasMasuk(): bool

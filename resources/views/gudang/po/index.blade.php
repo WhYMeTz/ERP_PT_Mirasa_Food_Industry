@@ -202,7 +202,10 @@
                                     </svg>
                                 </button>
                                 <div>
-                                    <a href="{{ route('gudang.po.show', $po->po_id) }}" style="font-weight: 700; color: #0284c7; text-decoration: none; font-size: 0.9rem;">
+                                    <a href="javascript:void(0)" 
+                                       onclick="openPoDetailModal({{ $po->po_id }})" 
+                                       style="font-weight: 700; color: #0284c7; text-decoration: none; font-size: 0.9rem;" 
+                                       title="Klik untuk melihat detail dokumen PO">
                                         {{ $po->po_no }}
                                     </a>
                                     <small style="display: block; font-size: 0.725rem; color: #64748b;">
@@ -296,13 +299,29 @@
 
                             {{-- DROPDOWN MENU ITEMS --}}
                             <div id="poDropdown-{{ $po->po_id }}" class="action-dropdown-menu">
-                                {{-- 1. LIHAT DETAIL --}}
-                                <a href="{{ route('gudang.po.show', $po->po_id) }}" class="action-dropdown-item">
+                                {{-- 1. PRATINJAU DOKUMEN HACCP (MODAL POPUP RESMI) --}}
+                                <button type="button" 
+                                        class="action-dropdown-item" 
+                                        onclick="closeAllActionDropdowns(); openPoHaccpModal({{ $po->po_id }})">
+                                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                    <span style="font-weight: 700; color: #0284c7;">Dokumen Form HACCP</span>
+                                </button>
+
+                                {{-- 2. LIHAT DETAIL DOKUMEN (POPUP QUICK VIEW) --}}
+                                <button type="button" 
+                                        class="action-dropdown-item" 
+                                        onclick="closeAllActionDropdowns(); openPoDetailModal({{ $po->po_id }})">
                                     <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                                    <span>Lihat Detail PO</span>
+                                    <span>Detail Ringkasan PO</span>
+                                </button>
+
+                                {{-- 3. BUKA HALAMAN PENUH --}}
+                                <a href="{{ route('gudang.po.show', $po->po_id) }}" class="action-dropdown-item">
+                                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                                    <span>Buka Halaman Lengkap</span>
                                 </a>
 
-                                {{-- 2. CETAK PDF RESMI (HACCP) --}}
+                                {{-- 4. CETAK PDF RESMI (HACCP) --}}
                                 <a href="{{ route('gudang.po.export-pdf', $po->po_id) }}" target="_blank" class="action-dropdown-item">
                                     <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
                                     <span>Cetak PDF Resmi (HACCP)</span>
@@ -425,11 +444,92 @@
 {{-- MODAL CEPAT CATAT BARANG MASUK (IN-PLACE QUICK RECEIVE) --}}
 @include('gudang.po.partials.modal-quick-receive-index')
 
+{{-- MODAL DETAIL DOKUMEN PO (QUICK VIEW POPUP) --}}
+@include('gudang.po.partials.modal-detail-po')
+
+{{-- MODAL DOKUMEN FORM HACCP RESMI --}}
+@include('gudang.po.partials.modal-haccp-po')
+
 @endsection
 
 @push('scripts')
 <script>
+    window.poConfig = {
+        baseUrl: "{{ url('gudang/po') }}"
+    };
     window.quickTerimaCreateRoute = "{{ route('gudang.terima.create') }}";
 </script>
-<script src="{{ asset('js/gudang/po/po-index.js') }}"></script>
+<script src="{{ asset('js/gudang/po/po-index.js') }}?v={{ file_exists(public_path('js/gudang/po/po-index.js')) ? filemtime(public_path('js/gudang/po/po-index.js')) : time() }}"></script>
+<script>
+    // Fallback registration jika browser mencache script lama
+    if (typeof window.openPoDetailModal !== 'function') {
+        window.openPoDetailModal = function(poId) {
+            const modal = document.getElementById('modalDetailPo');
+            const spinner = document.getElementById('poDetailLoadingSpinner');
+            const content = document.getElementById('poDetailContentBody');
+
+            if (!modal) return;
+            modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+
+            if (spinner) spinner.style.display = 'block';
+            if (content) content.style.display = 'none';
+
+            fetch('{{ url("gudang/po") }}/' + poId, {
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(res => res.json())
+            .then(result => {
+                if (result.status === 'success' && result.data && typeof renderPoDetail === 'function') {
+                    renderPoDetail(result.data);
+                } else if (result.status === 'success' && result.data) {
+                    location.reload(true);
+                }
+            })
+            .catch(err => {
+                alert('Gagal memuat detail dokumen PO: ' + err.message);
+                if (modal) modal.style.display = 'none';
+                document.body.style.overflow = '';
+            });
+        };
+    }
+
+    if (typeof window.openPoHaccpModal !== 'function') {
+        window.openPoHaccpModal = function(poId) {
+            const modal = document.getElementById('modalHaccpPo');
+            const spinner = document.getElementById('haccpLoadingSpinner');
+            const sheet = document.getElementById('haccpPaperSheet');
+
+            if (!modal) return;
+            modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+
+            if (spinner) spinner.style.display = 'block';
+            if (sheet) sheet.style.display = 'none';
+
+            fetch('{{ url("gudang/po") }}/' + poId, {
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(res => res.json())
+            .then(result => {
+                if (result.status === 'success' && result.data && typeof renderPoHaccpSheet === 'function') {
+                    renderPoHaccpSheet(result.data);
+                } else if (result.status === 'success' && result.data) {
+                    location.reload(true);
+                }
+            })
+            .catch(err => {
+                alert('Gagal memuat dokumen form HACCP: ' + err.message);
+                if (modal) modal.style.display = 'none';
+                document.body.style.overflow = '';
+            });
+        };
+    }
+</script>
 @endpush

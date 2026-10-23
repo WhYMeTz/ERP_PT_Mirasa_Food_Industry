@@ -24,9 +24,12 @@ use App\Http\Controllers\MasterData\SupplierController;
 use App\Http\Controllers\MasterData\TarifProduksiController;
 use App\Http\Controllers\MasterData\TarifKemasanController;
 use App\Http\Controllers\Keuangan\BayarHutangController;
+use App\Http\Controllers\Keuangan\CoaController;
 use App\Http\Controllers\Keuangan\HutangController;
 use App\Http\Controllers\Keuangan\KasBankController;
 use App\Http\Controllers\Keuangan\KasMasukController;
+use App\Http\Controllers\Keuangan\JurnalController;
+use App\Http\Controllers\Keuangan\BukuBesarController;
 use App\Http\Controllers\Penjualan\SoController;
 use App\Http\Controllers\Produksi\BomController;
 use App\Http\Controllers\Produksi\PackagingController;
@@ -367,5 +370,16 @@ Route::middleware('auth')->group(function () {
         // 4. Penerimaan Kas & Bank (Bukti Kas Masuk - BKM)
         Route::post('kas-masuk/{id}/void', [KasMasukController::class, 'void'])->name('kas_masuk.void')->middleware('role:kas_masuk_void');
         Route::resource('kas-masuk', KasMasukController::class)->names('kas_masuk')->only(['index', 'create', 'store', 'show']);
+
+        // 5. Bagan Akun (Chart of Accounts / COA)
+        Route::resource('coa', CoaController::class)->except(['create', 'show', 'edit']);
+
+        // 6. Jurnal Umum (General Journal Ledger)
+        Route::resource('jurnal', JurnalController::class)->only(['index', 'show'])->middleware('role:jurnal_view,coa_view,hutang_view,kas_bank_view');
+
+        // 7. Buku Besar Interaktif (Interactive General Ledger)
+        Route::get('buku-besar', [BukuBesarController::class, 'index'])
+            ->name('buku_besar.index')
+            ->middleware('role:jurnal_view,coa_view,hutang_view,kas_bank_view');
     });
 });

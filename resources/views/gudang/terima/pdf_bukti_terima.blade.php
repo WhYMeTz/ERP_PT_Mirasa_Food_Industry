@@ -304,10 +304,7 @@
 
     {{-- CATATAN & FINANCIAL BREAKDOWN LENGKAP --}}
     @php
-        $calcSubtotalBruto = (float) ($terima->subtotal_nominal ?? 0);
-        if ($calcSubtotalBruto <= 0) {
-            $calcSubtotalBruto = $totalBruto;
-        }
+        $calcSubtotalBruto = $totalBruto;
         $calcDiskonItem    = $totalDiskon;
         $calcPotonganItem  = $totalPotongan;
         $totalSemuaPotongan = (float) ($terima->potongan_nominal ?? 0);

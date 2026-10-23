@@ -1081,6 +1081,37 @@
                                         </div>
                                     </a>
                                 @endif
+
+                                @if (Auth::user()->canAccessCoa())
+                                    <div style="height: 1px; background: #f1f5f9; margin: 0.3rem 0;"></div>
+                                    <a href="{{ route('keuangan.coa.index') }}" class="mega-item {{ request()->routeIs('keuangan.coa.*') ? 'active' : '' }}">
+                                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #7c3aed;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                                        <div style="display: flex; flex-direction: column;">
+                                            <span style="font-weight: 600; color: #0f172a;">Daftar Akun (COA)</span>
+                                            <span style="font-size: 0.6875rem; color: #64748b;">Bagan akun akuntansi, saldo &amp; buku besar</span>
+                                        </div>
+                                    </a>
+                                @endif
+
+                                @if (Auth::user()->canAccessJurnal())
+                                    <div style="height: 1px; background: #f1f5f9; margin: 0.3rem 0;"></div>
+                                    <a href="{{ route('keuangan.jurnal.index') }}" class="mega-item {{ request()->routeIs('keuangan.jurnal.*') ? 'active' : '' }}">
+                                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #0284c7;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                                        <div style="display: flex; flex-direction: column;">
+                                            <span style="font-weight: 600; color: #0f172a;">Jurnal Umum (General Journal)</span>
+                                            <span style="font-size: 0.6875rem; color: #64748b;">Histori entri double-entry debet &amp; kredit</span>
+                                        </div>
+                                    </a>
+
+                                    <div style="height: 1px; background: #f1f5f9; margin: 0.3rem 0;"></div>
+                                    <a href="{{ route('keuangan.buku_besar.index') }}" class="mega-item {{ request()->routeIs('keuangan.buku_besar.*') ? 'active' : '' }}">
+                                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #059669;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                                        <div style="display: flex; flex-direction: column;">
+                                            <span style="font-weight: 600; color: #0f172a;">Buku Besar (General Ledger)</span>
+                                            <span style="font-size: 0.6875rem; color: #64748b;">Mutasi akun interaktif &amp; grafik saldo</span>
+                                        </div>
+                                    </a>
+                                @endif
                             </div>
                         </div>
                     @endif

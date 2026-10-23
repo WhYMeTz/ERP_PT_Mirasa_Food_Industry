@@ -6,6 +6,7 @@ use App\Models\MasterData\MstKaryawan;
 use App\Services\Common\CodeGeneratorService;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
@@ -73,6 +74,22 @@ class KaryawanService
         }
 
         return $query->orderBy('karyawan_id', 'desc')->paginate($perPage);
+    }
+
+    /**
+     * Mengambil semua karyawan aktif untuk dropdown form
+     */
+    public function getAllActive(): Collection
+    {
+        return MstKaryawan::active()->orderBy('karyawan_nm', 'asc')->get();
+    }
+
+    /**
+     * Mengambil satu karyawan berdasarkan ID
+     */
+    public function getById(int $id): MstKaryawan
+    {
+        return MstKaryawan::with('user.gudang')->where('karyawan_id', $id)->firstOrFail();
     }
 
     public function store(array $data): MstKaryawan

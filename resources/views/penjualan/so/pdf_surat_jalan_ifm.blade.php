@@ -171,7 +171,7 @@
         .ttd-table-ifm {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 36px;
+            margin-top: 55px;
             table-layout: fixed;
         }
         .ttd-table-ifm td {

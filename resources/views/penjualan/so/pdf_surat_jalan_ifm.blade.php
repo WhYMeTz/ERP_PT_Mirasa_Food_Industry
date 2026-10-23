@@ -305,8 +305,8 @@
             <tr>
                 <td style="height: 20px;"></td>
                 <td style="vertical-align: middle; padding-left: 2px;">
-                    <div style="padding-left: 33px;">
-                        <span style="font-size: 10pt; font-weight: bold; text-decoration: underline; letter-spacing: 0.5px;">
+                    <div style="padding-left: 28px;">
+                        <span style="font-size: 12pt; font-weight: bold; text-decoration: underline; letter-spacing: 0.5px;">
                             SURAT JALAN
                         </span>
                     </div>
@@ -321,16 +321,16 @@
             <tr>
                 <td style="height: 18px;"></td>
                 <td rowspan="2" style="vertical-align: middle; padding-left: 2px;">
-                    <table style="border-collapse: collapse; font-size: 8.5pt; font-weight: bold; text-align: left; width: auto;">
+                    <table style="border-collapse: collapse; font-size: 10pt; font-weight: bold; text-align: left; width: auto;">
                         <tr>
-                            <td style="white-space: nowrap; padding: 1px 0;">NO. FAKTUR</td>
-                            <td style="padding: 1px 4px; text-align: center;">:</td>
-                            <td style="white-space: nowrap; font-size: 8.5pt; padding: 1px 0;">{{ $fakturMfiNo }}</td>
+                            <td style="white-space: nowrap; padding: 1.5px 0;">NO. FAKTUR</td>
+                            <td style="padding: 1.5px 4px; text-align: center;">:</td>
+                            <td style="white-space: nowrap; font-size: 10pt; padding: 1.5px 0;">{{ $fakturMfiNo }}</td>
                         </tr>
                         <tr>
-                            <td style="white-space: nowrap; padding: 1px 0;">NO. PO</td>
-                            <td style="padding: 1px 4px; text-align: center;">:</td>
-                            <td style="white-space: nowrap; font-size: 8.5pt; padding: 1px 0;">{{ $order->customer_po_no ?: ($order->catatan_txt ?: '') }}</td>
+                            <td style="white-space: nowrap; padding: 1.5px 0;">NO. PO</td>
+                            <td style="padding: 1.5px 4px; text-align: center;">:</td>
+                            <td style="white-space: nowrap; font-size: 10pt; padding: 1.5px 0;">{{ $order->customer_po_no ?: ($order->catatan_txt ?: '') }}</td>
                         </tr>
                     </table>
                 </td>

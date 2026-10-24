@@ -121,7 +121,9 @@ class VerifikasiPemakaianController extends Controller
     }
 
     /**
-     * Layar inspeksi / pemeriksaan mendalam dokumen pemakaian bahan sebelum posting.
+     * Layar inspeksi / pemeriksaan mendalam dokumen pemakaian bahan.
+     * Jika masih DRAFT, langsung menyajikan stasiun edit & penyesuaian bahan lengkap di tempat (in-place).
+     * Jika sudah POSTED, menyajikan tampilan dokumen resmi terkunci (read-only).
      */
     public function show(int $id): View
     {
@@ -135,16 +137,134 @@ class VerifikasiPemakaianController extends Controller
         ->where('deleted_st', false)
         ->firstOrFail();
 
-        // Kumpulkan data batch & cek ketersediaan stok fisik saat ini
         $gudangId = $pakai->gudang_id;
+        $totalNominal = (float) $pakai->details->sum('total_harga');
+
+        // Jika DRAFT, siapkan seluruh kelengkapan Master Data untuk koreksi langsung di tempat
+        if ($pakai->isDraft()) {
+            $gudangList = MstGudang::active()->orderBy('gudang_nm')->get();
+
+            $barangList = MstBarang::active()
+                ->where(function ($query) {
+                    $query->bahanProduksi()
+                          ->orWhere(function ($wip) {
+                              $wip->whereHas('jenisBarang', fn($j) => $j->where('jenis_barang_cd', 'WIP'))
+                                  ->where(function ($b) {
+                                      $b->where('barang_nm', 'ILIKE', '%BERKO%')
+                                        ->orWhere('barang_cd', 'ILIKE', '%BRK%');
+                                  });
+                          });
+                })
+                ->with(['satuanDasar', 'jenisBarang'])
+                ->orderBy('barang_nm')
+                ->get()
+                ->map(function ($b) {
+                    $cd = strtoupper($b->jenisBarang->jenis_barang_cd ?? '');
+                    $nm = strtoupper($b->barang_nm ?? '');
+
+                    if ($cd === 'BB' || $cd === 'RAW' || str_contains($nm, 'SINGKONG') || str_contains($nm, 'UBI') || str_contains($nm, 'OPAK') || str_contains($nm, 'PUYUR') || str_contains($nm, 'BERKO') || str_starts_with($cd, 'WIP')) {
+                        $b->kategori_kelompok = 'BAHAN_BAKU';
+                        $b->kategori_label = 'Bahan Baku';
+                    } elseif (str_contains($nm, 'KARTON') || str_contains($nm, 'PLASTIK') || str_contains($nm, 'ROLL') || str_contains($nm, 'LAKBAN') || str_contains($nm, 'RAFIA') || str_contains($nm, 'SARUNG TANGAN') || $cd === 'PACK') {
+                        $b->kategori_kelompok = 'KEMASAN';
+                        $b->kategori_label = 'Kemasan & Packaging';
+                    } else {
+                        $b->kategori_kelompok = 'BAHAN_PENOLONG';
+                        $b->kategori_label = 'Bahan Penolong & Bumbu';
+                    }
+
+                    return $b;
+                });
+
+            $liniList = MstLiniProduksi::where('deleted_st', false)
+                ->where('active_st', true)
+                ->orderBy('lini_id', 'asc')
+                ->get();
+
+            $bomList = $this->bomService->getAllActive();
+
+            $produksiList = DatProduksiHdr::where('deleted_st', false)
+                ->orderBy('produksi_tgl', 'desc')
+                ->orderBy('produksi_id', 'desc')
+                ->limit(40)
+                ->get();
+
+            // Kumpulkan data batch stok untuk setiap item detail yang sudah ada
+            $initialItems = [];
+            foreach ($pakai->details as $dtl) {
+                $batches = DatStokBatch::where('gudang_id', $gudangId)
+                    ->where('barang_id', $dtl->barang_id)
+                    ->where('deleted_st', false)
+                    ->where('sisa_qty', '>', 0)
+                    ->orderBy('created_at', 'asc')
+                    ->orderBy('stok_id', 'asc')
+                    ->get()
+                    ->map(function ($sb, $idx) {
+                        return [
+                            'stok_id'      => $sb->stok_id,
+                            'batch_no'     => $sb->batch_no,
+                            'grade_cd'     => $sb->grade_cd ?? 'A',
+                            'sisa_qty'     => (float) $sb->sisa_qty,
+                            'harga_satuan' => (float) $sb->harga_satuan,
+                            'is_fifo_top'  => ($idx === 0),
+                            'tgl_terima'   => $sb->created_at ? $sb->created_at->format('d/m/Y') : '-',
+                            'expired_tgl'  => $sb->expired_tgl ? \Carbon\Carbon::parse($sb->expired_tgl)->format('d/m/Y') : '-',
+                        ];
+                    })
+                    ->toArray();
+
+                $hasCurBatch = collect($batches)->contains('batch_no', $dtl->batch_no);
+                if (!$hasCurBatch) {
+                    $curBatchObj = DatStokBatch::where('gudang_id', $gudangId)
+                        ->where('barang_id', $dtl->barang_id)
+                        ->where('batch_no', $dtl->batch_no)
+                        ->first();
+                    if ($curBatchObj) {
+                        $batches[] = [
+                            'stok_id'      => $curBatchObj->stok_id,
+                            'batch_no'     => $curBatchObj->batch_no,
+                            'grade_cd'     => $curBatchObj->grade_cd ?? 'A',
+                            'sisa_qty'     => (float) $curBatchObj->sisa_qty,
+                            'harga_satuan' => (float) $curBatchObj->harga_satuan,
+                            'is_fifo_top'  => false,
+                            'tgl_terima'   => $curBatchObj->created_at ? $curBatchObj->created_at->format('d/m/Y') : '-',
+                            'expired_tgl'  => $curBatchObj->expired_tgl ? \Carbon\Carbon::parse($curBatchObj->expired_tgl)->format('d/m/Y') : '-',
+                        ];
+                    }
+                }
+
+                $initialItems[] = [
+                    'barang_id'      => $dtl->barang_id,
+                    'barang_cd'      => $dtl->barang?->barang_cd,
+                    'barang_nm'      => $dtl->barang?->barang_nm,
+                    'satuan_nm'      => $dtl->barang?->satuanDasar?->satuan_nm ?? 'Kg',
+                    'batch_no'       => $dtl->batch_no,
+                    'grade_cd'       => $dtl->grade_cd ?? 'A',
+                    'qty_keluar'     => (float) $dtl->qty_keluar,
+                    'harga_satuan'   => (float) $dtl->harga_satuan,
+                    'total_harga'    => (float) $dtl->total_harga,
+                    'keterangan_txt' => $dtl->keterangan_txt,
+                    'all_batches'    => $batches,
+                ];
+            }
+
+            return view('keuangan.verifikasi_pemakaian.show', compact(
+                'pakai',
+                'gudangList',
+                'barangList',
+                'liniList',
+                'bomList',
+                'produksiList',
+                'initialItems',
+                'totalNominal'
+            ));
+        }
+
+        // Jika POSTED, siapkan data inspeksi statis
         $itemsCheck = [];
-        $canApprove = true;
-        $totalNominal = 0;
+        $canApprove = false;
 
         foreach ($pakai->details as $dtl) {
-            $totalNominal += (float) $dtl->total_harga;
-
-            // Cari batch fisik saat ini di gudang
             $stokBatch = DatStokBatch::where('gudang_id', $gudangId)
                 ->where('barang_id', $dtl->barang_id)
                 ->where('batch_no', $dtl->batch_no)
@@ -152,36 +272,13 @@ class VerifikasiPemakaianController extends Controller
                 ->first();
 
             $currentStock = $stokBatch ? (float) $stokBatch->sisa_qty : 0;
-            $qtyKeluar = (float) $dtl->qty_keluar;
-
-            // Jika masih draft, cek apakah stok cukup untuk dipotong
-            $isStockSufficient = $pakai->isPosted() ? true : ($currentStock >= $qtyKeluar);
-            if (!$isStockSufficient) {
-                $canApprove = false;
-            }
-
-            // Cek apakah batch ini batch tertua (FIFO check)
-            $oldestBatch = DatStokBatch::where('gudang_id', $gudangId)
-                ->where('barang_id', $dtl->barang_id)
-                ->where('sisa_qty', '>', 0)
-                ->where('deleted_st', false)
-                ->orderBy('created_at', 'asc')
-                ->orderBy('stok_id', 'asc')
-                ->first();
-
-            $isFifoMatch = true;
-            $fifoNote = 'Sesuai urutan FIFO';
-            if ($oldestBatch && $oldestBatch->batch_no !== $dtl->batch_no && !$pakai->isPosted()) {
-                $isFifoMatch = false;
-                $fifoNote = "Ada batch tertua: {$oldestBatch->batch_no} ({$oldestBatch->sisa_qty} tersisa)";
-            }
 
             $itemsCheck[] = [
                 'detail'            => $dtl,
                 'current_stock'     => $currentStock,
-                'is_stock_ok'       => $isStockSufficient,
-                'is_fifo_ok'        => $isFifoMatch,
-                'fifo_note'         => $fifoNote,
+                'is_stock_ok'       => true,
+                'is_fifo_ok'        => true,
+                'fifo_note'         => 'Sudah Terposting',
                 'harga_satuan'      => (float) $dtl->harga_satuan,
                 'total_harga'       => (float) $dtl->total_harga,
             ];
@@ -281,140 +378,13 @@ class VerifikasiPemakaianController extends Controller
      * Layar pengeditan rincian pemakaian bahan oleh verifikator/supervisor.
      * Memungkinkan koreksi batch, timbangan, atau barang langsung di tempat.
      */
-    public function edit(int $id): View|RedirectResponse
+    /**
+     * Halaman edit dialihkan langsung ke show() karena tampilan detail dan pengeditan
+     * telah disatukan secara terpadu (All-in-One Inspection & Edit Station).
+     */
+    public function edit(int $id): RedirectResponse
     {
-        $pakai = DatPakaiHdr::with([
-            'gudang',
-            'details.barang.satuanDasar',
-            'details.barang.jenisBarang',
-        ])
-        ->where('pakai_id', $id)
-        ->where('deleted_st', false)
-        ->firstOrFail();
-
-        if (!$pakai->isDraft()) {
-            return redirect()->route('keuangan.verifikasi_pemakaian.show', $id)
-                ->with('error', "Dokumen {$pakai->pakai_no} sudah diposting dan tidak dapat diedit.");
-        }
-
-        $gudangList = MstGudang::active()->orderBy('gudang_nm')->get();
-
-        $barangList = MstBarang::active()
-            ->where(function ($query) {
-                $query->bahanProduksi()
-                      ->orWhere(function ($wip) {
-                          $wip->whereHas('jenisBarang', fn($j) => $j->where('jenis_barang_cd', 'WIP'))
-                              ->where(function ($b) {
-                                  $b->where('barang_nm', 'ILIKE', '%BERKO%')
-                                    ->orWhere('barang_cd', 'ILIKE', '%BRK%');
-                              });
-                      });
-            })
-            ->with(['satuanDasar', 'jenisBarang'])
-            ->orderBy('barang_nm')
-            ->get()
-            ->map(function ($b) {
-                $cd = strtoupper($b->jenisBarang->jenis_barang_cd ?? '');
-                $nm = strtoupper($b->barang_nm ?? '');
-
-                if ($cd === 'BB' || $cd === 'RAW' || str_contains($nm, 'SINGKONG') || str_contains($nm, 'UBI') || str_contains($nm, 'OPAK') || str_contains($nm, 'PUYUR') || str_contains($nm, 'BERKO') || str_starts_with($cd, 'WIP')) {
-                    $b->kategori_kelompok = 'BAHAN_BAKU';
-                    $b->kategori_label = 'Bahan Baku';
-                } elseif (str_contains($nm, 'KARTON') || str_contains($nm, 'PLASTIK') || str_contains($nm, 'ROLL') || str_contains($nm, 'LAKBAN') || str_contains($nm, 'RAFIA') || str_contains($nm, 'SARUNG TANGAN') || $cd === 'PACK') {
-                    $b->kategori_kelompok = 'KEMASAN';
-                    $b->kategori_label = 'Kemasan & Packaging';
-                } else {
-                    $b->kategori_kelompok = 'BAHAN_PENOLONG';
-                    $b->kategori_label = 'Bahan Penolong & Bumbu';
-                }
-
-                return $b;
-            });
-
-        $liniList = MstLiniProduksi::where('deleted_st', false)
-            ->where('active_st', true)
-            ->orderBy('lini_id', 'asc')
-            ->get();
-
-        $bomList = $this->bomService->getAllActive();
-
-        $produksiList = DatProduksiHdr::where('deleted_st', false)
-            ->orderBy('produksi_tgl', 'desc')
-            ->orderBy('produksi_id', 'desc')
-            ->limit(40)
-            ->get();
-
-        // Kumpulkan data batch stok untuk setiap item detail yang sudah ada
-        $gudangId = $pakai->gudang_id;
-        $initialItems = [];
-
-        foreach ($pakai->details as $dtl) {
-            $batches = DatStokBatch::where('gudang_id', $gudangId)
-                ->where('barang_id', $dtl->barang_id)
-                ->where('deleted_st', false)
-                ->where('sisa_qty', '>', 0)
-                ->orderBy('created_at', 'asc')
-                ->orderBy('stok_id', 'asc')
-                ->get()
-                ->map(function ($sb, $idx) {
-                    return [
-                        'stok_id'      => $sb->stok_id,
-                        'batch_no'     => $sb->batch_no,
-                        'grade_cd'     => $sb->grade_cd ?? 'A',
-                        'sisa_qty'     => (float) $sb->sisa_qty,
-                        'harga_satuan' => (float) $sb->harga_satuan,
-                        'is_fifo_top'  => ($idx === 0),
-                        'tgl_terima'   => $sb->created_at ? $sb->created_at->format('d/m/Y') : '-',
-                        'expired_tgl'  => $sb->expired_tgl ? \Carbon\Carbon::parse($sb->expired_tgl)->format('d/m/Y') : '-',
-                    ];
-                })
-                ->toArray();
-
-            // Pastikan jika batch yang terpilih saat ini memiliki sisa_qty 0 (misal pas-pasan), tetap muncul di opsi
-            $hasCurBatch = collect($batches)->contains('batch_no', $dtl->batch_no);
-            if (!$hasCurBatch) {
-                $curBatchObj = DatStokBatch::where('gudang_id', $gudangId)
-                    ->where('barang_id', $dtl->barang_id)
-                    ->where('batch_no', $dtl->batch_no)
-                    ->first();
-                if ($curBatchObj) {
-                    $batches[] = [
-                        'stok_id'      => $curBatchObj->stok_id,
-                        'batch_no'     => $curBatchObj->batch_no,
-                        'grade_cd'     => $curBatchObj->grade_cd ?? 'A',
-                        'sisa_qty'     => (float) $curBatchObj->sisa_qty,
-                        'harga_satuan' => (float) $curBatchObj->harga_satuan,
-                        'is_fifo_top'  => false,
-                        'tgl_terima'   => $curBatchObj->created_at ? $curBatchObj->created_at->format('d/m/Y') : '-',
-                        'expired_tgl'  => $curBatchObj->expired_tgl ? \Carbon\Carbon::parse($curBatchObj->expired_tgl)->format('d/m/Y') : '-',
-                    ];
-                }
-            }
-
-            $initialItems[] = [
-                'barang_id'      => $dtl->barang_id,
-                'barang_cd'      => $dtl->barang?->barang_cd,
-                'barang_nm'      => $dtl->barang?->barang_nm,
-                'satuan_nm'      => $dtl->barang?->satuanDasar?->satuan_nm ?? 'Kg',
-                'batch_no'       => $dtl->batch_no,
-                'grade_cd'       => $dtl->grade_cd ?? 'A',
-                'qty_keluar'     => (float) $dtl->qty_keluar,
-                'harga_satuan'   => (float) $dtl->harga_satuan,
-                'total_harga'    => (float) $dtl->total_harga,
-                'keterangan_txt' => $dtl->keterangan_txt,
-                'all_batches'    => $batches,
-            ];
-        }
-
-        return view('keuangan.verifikasi_pemakaian.edit', compact(
-            'pakai',
-            'gudangList',
-            'barangList',
-            'liniList',
-            'bomList',
-            'produksiList',
-            'initialItems'
-        ));
+        return redirect()->route('keuangan.verifikasi_pemakaian.show', $id);
     }
 
     /**

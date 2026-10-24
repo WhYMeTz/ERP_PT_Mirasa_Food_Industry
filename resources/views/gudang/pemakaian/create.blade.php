@@ -219,7 +219,7 @@
                     </span>
                 </div>
                 <div style="padding: 1.25rem;">
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; align-items: flex-end;">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; align-items: flex-end;">
                         <div>
                             <label style="display: block; font-weight: 600; font-size: 0.85rem; color: #334155; margin-bottom: 0.35rem;">
                                 Pilih Formula Resep Produk (BOM)
@@ -234,7 +234,7 @@
                             </select>
                         </div>
 
-                        <div style="max-width: 200px;">
+                        <div style="max-width: 170px;">
                             <label style="display: block; font-weight: 600; font-size: 0.85rem; color: #334155; margin-bottom: 0.35rem;">
                                 Target Rencana Produksi
                             </label>
@@ -244,12 +244,30 @@
                             </div>
                         </div>
 
+                        <div>
+                            <label style="display: block; font-weight: 600; font-size: 0.85rem; color: #334155; margin-bottom: 0.35rem;">
+                                Pilihan Grade Bahan Baku
+                            </label>
+                            <input type="hidden" id="bom_grade_filter" value="">
+                            <div class="grade-pill-group" style="display: flex; gap: 0.35rem; height: 38px; align-items: center; flex-wrap: nowrap;">
+                                <button type="button" class="btn-chip active" id="btnBomGradeAll" onclick="setBomGradeFilter(this, '')" style="padding: 0.45rem 0.65rem; font-size: 0.775rem;">
+                                    Campur (Semua)
+                                </button>
+                                <button type="button" class="btn-chip btn-chip-grade-a" id="btnBomGradeA" onclick="setBomGradeFilter(this, 'A')" style="padding: 0.45rem 0.65rem; font-size: 0.775rem;">
+                                    🟢 Grade A Saja
+                                </button>
+                                <button type="button" class="btn-chip btn-chip-grade-b" id="btnBomGradeB" onclick="setBomGradeFilter(this, 'B')" style="padding: 0.45rem 0.65rem; font-size: 0.775rem;">
+                                    🟡 Grade B Saja
+                                </button>
+                            </div>
+                        </div>
+
                         <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                            <button type="button" id="btnTarikResep" class="btn btn-primary" onclick="tarikBahanResepFifo()" style="background: #0284c7; border: 1px solid #0284c7; font-weight: 600; padding: 0.55rem 1.15rem; font-size: 0.85rem; border-radius: 6px; box-shadow: 0 1px 2px rgba(2, 132, 199, 0.2);">
+                            <button type="button" id="btnTarikResep" class="btn btn-primary" onclick="tarikBahanResepFifo()" style="background: #0284c7; border: 1px solid #0284c7; font-weight: 600; padding: 0.55rem 1.15rem; font-size: 0.85rem; border-radius: 6px; box-shadow: 0 1px 2px rgba(2, 132, 199, 0.2); height: 38px; display: inline-flex; align-items: center; gap: 0.35rem;">
                                 <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
                                 <span id="btnTarikText">Muat Batch FIFO Tertua</span>
                             </button>
-                            <button type="button" class="btn btn-secondary btn-sm" onclick="resetItemsTable()" style="background: #ffffff; border: 1px solid #cbd5e1; color: #64748b; border-radius: 6px; padding: 0.55rem 0.85rem;" title="Kosongkan Baris">
+                            <button type="button" class="btn btn-secondary btn-sm" onclick="resetItemsTable()" style="background: #ffffff; border: 1px solid #cbd5e1; color: #64748b; border-radius: 6px; padding: 0.55rem 0.85rem; height: 38px;" title="Kosongkan Baris">
                                 Reset Baris
                             </button>
                         </div>
@@ -821,6 +839,14 @@
         updateRowNumbers();
     }
 
+    function setBomGradeFilter(btn, grade) {
+        const parent = btn.parentElement;
+        parent.querySelectorAll('.btn-chip').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const input = document.getElementById('bom_grade_filter');
+        if (input) input.value = grade;
+    }
+
     function tarikBahanResepFifo() {
         const gudangId = getSelectedGudangId();
         if (!gudangId) {
@@ -844,15 +870,20 @@
             return;
         }
 
+        const gradeFilter = document.getElementById('bom_grade_filter')?.value || '';
+        const gradeLabelText = (gradeFilter === 'A') 
+            ? ' (Khusus Grade A Saja)' 
+            : ((gradeFilter === 'B') ? ' (Khusus Grade B Saja)' : '');
+
         const btn = document.getElementById('btnTarikResep');
         const btnText = document.getElementById('btnTarikText');
         const feedback = document.getElementById('resepFeedback');
 
         btn.disabled = true;
-        btnText.innerHTML = 'Menghitung Alokasi Batch FIFO...';
+        btnText.innerHTML = `Menghitung Batch FIFO${gradeLabelText}...`;
         feedback.style.display = 'none';
 
-        fetch(`{{ route('gudang.pemakaian.alokasi-resep') }}?gudang_id=${gudangId}&bom_id=${bomId}&target_qty=${targetQty}`)
+        fetch(`{{ route('gudang.pemakaian.alokasi-resep') }}?gudang_id=${gudangId}&bom_id=${bomId}&target_qty=${targetQty}&grade_filter=${gradeFilter}`)
             .then(res => res.json())
             .then(res => {
                 btn.disabled = false;
@@ -894,6 +925,15 @@
 
                     calculateGrandTotal();
 
+                    let gradeBadgeHeader = '';
+                    if (data.grade_filter === 'A') {
+                        gradeBadgeHeader = `<span style="background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; padding: 2px 7px; border-radius: 4px; font-weight: 700; font-size: 0.75rem; margin-left: 0.4rem;">🟢 Khusus Grade A</span>`;
+                    } else if (data.grade_filter === 'B') {
+                        gradeBadgeHeader = `<span style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a; padding: 2px 7px; border-radius: 4px; font-weight: 700; font-size: 0.75rem; margin-left: 0.4rem;">🟡 Khusus Grade B</span>`;
+                    } else {
+                        gradeBadgeHeader = `<span style="background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; padding: 2px 7px; border-radius: 4px; font-weight: 700; font-size: 0.75rem; margin-left: 0.4rem;">🔄 Campur / FIFO Bebas</span>`;
+                    }
+
                     // Render banner status / feedback
                     feedback.style.display = 'block';
                     if (data.is_lengkap) {
@@ -901,9 +941,11 @@
                             <div style="background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 6px; padding: 0.75rem 1rem; color: #065f46; display: flex; align-items: flex-start; gap: 0.65rem;">
                                 <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink: 0; color: #059669; margin-top: 2px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                                 <div>
-                                    <strong style="display: block; font-size: 0.875rem;">Alokasi Batch Tertua (FIFO) Berhasil Dimuat:</strong>
-                                    <span style="font-size: 0.8rem; line-height: 1.4;">
-                                        Total <strong>${items.length} baris bahan baku</strong> telah dialokasikan otomatis dari batch paling lama untuk target <strong>${targetQty} ${data.satuan_target}</strong>.
+                                    <strong style="display: inline-flex; align-items: center; font-size: 0.875rem;">
+                                        Alokasi Batch Tertua (FIFO) Berhasil Dimuat: ${gradeBadgeHeader}
+                                    </strong>
+                                    <span style="font-size: 0.8rem; line-height: 1.4; display: block; margin-top: 0.2rem;">
+                                        Total <strong>${items.length} baris bahan</strong> telah dialokasikan otomatis untuk target <strong>${targetQty} ${data.satuan_target}</strong>.
                                         Operator gudang dapat memeriksa dan menyesuaikan angka timbangan aktual jika terdapat deviasi sebelum klik simpan.
                                     </span>
                                 </div>
@@ -916,9 +958,11 @@
                                 <div style="display: flex; align-items: flex-start; gap: 0.65rem; margin-bottom: 0.35rem;">
                                     <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink: 0; color: #d97706; margin-top: 2px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
                                     <div>
-                                        <strong style="display: block; font-size: 0.875rem;">Perhatian: Ada Bahan Fisik yang Kurang di Gudang Ini</strong>
-                                        <span style="font-size: 0.8rem;">
-                                            Sistem berhasil memuat batch tertua yang tersedia, namun beberapa item tidak mencukupi untuk memenuhi seluruh kebutuhan resep (${targetQty} ${data.satuan_target}):
+                                        <strong style="display: inline-flex; align-items: center; font-size: 0.875rem;">
+                                            Perhatian: Ada Bahan Fisik yang Kurang di Gudang Ini ${gradeBadgeHeader}
+                                        </strong>
+                                        <span style="font-size: 0.8rem; display: block; margin-top: 0.2rem;">
+                                            Sistem berhasil memuat batch yang tersedia, namun beberapa item tidak mencukupi untuk memenuhi seluruh kebutuhan resep (${targetQty} ${data.satuan_target}):
                                         </span>
                                     </div>
                                 </div>

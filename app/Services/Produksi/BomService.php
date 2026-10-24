@@ -196,7 +196,7 @@ class BomService
      *   dan memecah (split) sisa kebutuhan ke batch terlama berikutnya (multi-batch split).
      * - Mengembalikan daftar baris draf pick-list yang siap dimasukkan ke form pengeluaran barang.
      */
-    public function alokasiBahanResepFifo(int $gudangId, int $bomId, float $targetQty): array
+    public function alokasiBahanResepFifo(int $gudangId, int $bomId, float $targetQty, ?string $gradeFilter = null): array
     {
         $bom = MstBomHdr::with(['barangJadi.satuanDasar', 'details.barangMentah.satuanDasar'])
             ->where('bom_id', $bomId)
@@ -209,6 +209,11 @@ class BomService
 
         if ($targetQty <= 0) {
             throw new Exception("Jumlah target rencana produksi harus lebih besar dari 0.");
+        }
+
+        $gradeFilter = strtoupper(trim((string) $gradeFilter));
+        if (!in_array($gradeFilter, ['A', 'B'])) {
+            $gradeFilter = null; // Default: Campur / Semua Grade
         }
 
         $rasio = $targetQty / (float) $bom->batch_ukuran_qty;
@@ -235,7 +240,7 @@ class BomService
                 ->orderBy('stok_id', 'asc')
                 ->get();
 
-            // Format semua opsi batch untuk dimasukkan ke dropdown baris
+            // Format semua opsi batch untuk dimasukkan ke dropdown baris (agar user tetap bisa ganti manual jika mau)
             $allBatchOptions = $availableBatches->values()->map(function ($b, $index) {
                 return [
                     'stok_id'      => $b->stok_id,
@@ -249,9 +254,30 @@ class BomService
                 ];
             })->toArray();
 
-            if ($availableBatches->isEmpty()) {
-                // Tidak ada stok fisik di gudang ini sama sekali
-                $peringatanList[] = "Bahan [{$barang->barang_cd}] {$barang->barang_nm} tidak memiliki stok fisik di gudang ini (kebutuhan: {$kebutuhanTotal} {$satuanNm}).";
+            // Cek apakah barang ini ber-grade (bahan baku atau memiliki batch dengan variasi grade A/B)
+            $jenisCd = strtoupper($barang->jenisBarang->jenis_barang_cd ?? '');
+            $nm = strtoupper($barang->barang_nm ?? '');
+            $isBahanBaku = ($jenisCd === 'BB' || $jenisCd === 'RAW' || str_contains($nm, 'SINGKONG') || str_contains($nm, 'UBI') || str_contains($nm, 'OPAK') || str_contains($nm, 'PUYUR') || str_contains($nm, 'BERKO'));
+            $hasMultipleGrades = $availableBatches->pluck('grade_cd')->filter()->unique()->count() > 1;
+            $isBahanBerGrade = ($isBahanBaku || $hasMultipleGrades);
+
+            // Filter batch yang akan dipakai untuk alokasi otomatis berdasarkan preferensi Grade user
+            $batchesForAllocation = $availableBatches;
+            $filterLabel = '';
+            if ($isBahanBerGrade && !empty($gradeFilter)) {
+                $filterLabel = " (Khusus Grade {$gradeFilter})";
+                $batchesForAllocation = $availableBatches->filter(function ($b) use ($gradeFilter) {
+                    return strtoupper($b->grade_cd ?? 'A') === $gradeFilter;
+                })->values();
+            }
+
+            if ($batchesForAllocation->isEmpty()) {
+                // Tidak ada stok fisik (atau tidak ada stok grade yang dipilih) di gudang ini
+                $keteranganDefisit = !empty($filterLabel)
+                    ? "Bahan [{$barang->barang_cd}] {$barang->barang_nm}{$filterLabel} tidak memiliki stok fisik aktif di gudang ini (kebutuhan: {$kebutuhanTotal} {$satuanNm})."
+                    : "Bahan [{$barang->barang_cd}] {$barang->barang_nm} tidak memiliki stok fisik di gudang ini (kebutuhan: {$kebutuhanTotal} {$satuanNm}).";
+                
+                $peringatanList[] = $keteranganDefisit;
                 $allocatedItems[] = [
                     'barang_id'       => $barangId,
                     'barang_cd'       => $barang->barang_cd,
@@ -259,7 +285,7 @@ class BomService
                     'satuan_nm'       => $satuanNm,
                     'kebutuhan_total' => $kebutuhanTotal,
                     'batch_no'        => '',
-                    'grade_cd'        => 'A',
+                    'grade_cd'        => ($isBahanBerGrade && $gradeFilter) ? $gradeFilter : 'A',
                     'qty_keluar'      => $kebutuhanTotal,
                     'harga_satuan'    => (float) ($barang->harga_beli_standar ?? 0),
                     'sisa_batch'      => 0,
@@ -268,8 +294,8 @@ class BomService
                     'is_allocated'    => false,
                     'is_oldest'       => false,
                     'is_split'        => false,
-                    'catatan_fifo'    => '⚠️ Stok fisik kosong di gudang ini!',
-                    'all_batches'     => [],
+                    'catatan_fifo'    => '⚠️ Stok fisik kosong di gudang ini!' . $filterLabel,
+                    'all_batches'     => $allBatchOptions,
                 ];
                 continue;
             }
@@ -278,8 +304,8 @@ class BomService
             $sisaKebutuhan = $kebutuhanTotal;
             $batchIndex = 0;
 
-            while ($sisaKebutuhan > 0 && $batchIndex < $availableBatches->count()) {
-                $batch = $availableBatches[$batchIndex];
+            while ($sisaKebutuhan > 0 && $batchIndex < $batchesForAllocation->count()) {
+                $batch = $batchesForAllocation[$batchIndex];
                 $sisaBatch = (float) $batch->sisa_qty;
                 $ambilQty = min($sisaKebutuhan, $sisaBatch);
                 $isExhausted = ($ambilQty >= $sisaBatch);
@@ -288,8 +314,8 @@ class BomService
                 $hargaSatuan = (float) $batch->harga_satuan > 0 ? (float) $batch->harga_satuan : (float) ($barang->harga_beli_standar ?? 0);
 
                 $keteranganFifo = ($batchIndex === 0)
-                    ? "⭐ FIFO Prioritas: Batch masuk paling lama ({$tglTerima})"
-                    : "Lanjutan Split FIFO: Batch ({$tglTerima})";
+                    ? "⭐ FIFO Prioritas{$filterLabel}: Batch masuk ({$tglTerima})"
+                    : "Lanjutan Split FIFO{$filterLabel}: Batch ({$tglTerima})";
 
                 if ($isExhausted) {
                     $keteranganFifo .= " [Habiskan Batch]";
@@ -320,9 +346,13 @@ class BomService
                 $batchIndex++;
             }
 
-            // Jika semua batch di gudang ini sudah habis tapi kebutuhan belum tercukupi
+            // Jika semua batch pilihan di gudang ini sudah habis tapi kebutuhan belum tercukupi
             if ($sisaKebutuhan > 0.0001) {
-                $peringatanList[] = "Bahan [{$barang->barang_cd}] {$barang->barang_nm} masih kurang " . round($sisaKebutuhan, 4) . " {$satuanNm} karena semua batch di gudang telah dialokasikan maksimal.";
+                $pesanKurang = !empty($filterLabel)
+                    ? "Bahan [{$barang->barang_cd}] {$barang->barang_nm}{$filterLabel} masih kurang " . round($sisaKebutuhan, 4) . " {$satuanNm} karena semua batch Grade {$gradeFilter} di gudang telah dialokasikan maksimal."
+                    : "Bahan [{$barang->barang_cd}] {$barang->barang_nm} masih kurang " . round($sisaKebutuhan, 4) . " {$satuanNm} karena semua batch di gudang telah dialokasikan maksimal.";
+
+                $peringatanList[] = $pesanKurang;
                 $allocatedItems[] = [
                     'barang_id'       => $barangId,
                     'barang_cd'       => $barang->barang_cd,
@@ -330,6 +360,7 @@ class BomService
                     'satuan_nm'       => $satuanNm,
                     'kebutuhan_total' => $kebutuhanTotal,
                     'batch_no'        => '',
+                    'grade_cd'        => ($isBahanBerGrade && $gradeFilter) ? $gradeFilter : 'A',
                     'qty_keluar'      => round($sisaKebutuhan, 4),
                     'harga_satuan'    => (float) ($barang->harga_beli_standar ?? 0),
                     'sisa_batch'      => 0,
@@ -338,7 +369,7 @@ class BomService
                     'is_allocated'    => false,
                     'is_oldest'       => false,
                     'is_split'        => true,
-                    'catatan_fifo'    => '⚠️ Defisit stok fisik: Kurang ' . round($sisaKebutuhan, 4) . " {$satuanNm}",
+                    'catatan_fifo'    => '⚠️ Defisit stok fisik' . $filterLabel . ': Kurang ' . round($sisaKebutuhan, 4) . " {$satuanNm}",
                     'all_batches'     => $allBatchOptions,
                 ];
             }
@@ -351,6 +382,7 @@ class BomService
             'target_qty'       => $targetQty,
             'batch_ukuran_qty' => (float) $bom->batch_ukuran_qty,
             'satuan_target'    => $bom->barangJadi?->satuanDasar?->satuan_nm ?? 'Unit',
+            'grade_filter'     => $gradeFilter ?: 'CAMPUR',
             'items'            => $allocatedItems,
             'peringatan'       => $peringatanList,
             'is_lengkap'       => empty($peringatanList),

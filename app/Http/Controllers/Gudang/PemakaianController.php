@@ -364,6 +364,7 @@ class PemakaianController extends Controller
         $gudangId = (int) $request->input('gudang_id');
         $bomId = (int) $request->input('bom_id');
         $targetQty = (float) $request->input('target_qty', 100);
+        $gradeFilter = $request->input('grade_filter');
 
         if (!$gudangId || !$bomId || $targetQty <= 0) {
             return response()->json([
@@ -381,7 +382,7 @@ class PemakaianController extends Controller
         }
 
         try {
-            $alokasi = $this->bomService->alokasiBahanResepFifo($gudangId, $bomId, $targetQty);
+            $alokasi = $this->bomService->alokasiBahanResepFifo($gudangId, $bomId, $targetQty, $gradeFilter);
 
             return response()->json([
                 'status'  => 'success',

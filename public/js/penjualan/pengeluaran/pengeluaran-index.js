@@ -83,22 +83,36 @@ window.closeVoidModal = function() {
     }
 };
 
-// Toggle Ready-to-Ship Queue List display
-window.toggleQueueList = function() {
-    const list = document.getElementById('sjQueueList');
-    const label = document.getElementById('sjQueueToggleText');
-    const icon = document.getElementById('sjQueueToggleIcon');
-    if (!list) return;
+// Switch Tab (Daftar Surat Jalan vs Antrean PO Siap Kirim)
+window.switchSjTab = function(tabName) {
+    const paneSj = document.getElementById('paneSj');
+    const paneAntrean = document.getElementById('paneAntrean');
+    const btnSj = document.getElementById('tabBtnSj');
+    const btnAntrean = document.getElementById('tabBtnAntrean');
 
-    const isHidden = list.style.display === 'none';
-    if (isHidden) {
-        list.style.display = 'grid';
-        if (label) label.textContent = 'Sembunyikan';
-        if (icon) icon.style.transform = 'rotate(180deg)';
+    if (!paneSj || !paneAntrean) return;
+
+    if (tabName === 'antrean') {
+        paneSj.style.display = 'none';
+        paneAntrean.style.display = 'block';
+        if (btnSj) btnSj.classList.remove('active');
+        if (btnAntrean) btnAntrean.classList.add('active');
+
+        // Update URL query string without page reload
+        const url = new URL(window.location);
+        url.searchParams.set('tab', 'antrean');
+        window.history.replaceState({}, '', url);
     } else {
-        list.style.display = 'none';
-        if (label) label.textContent = 'Tampilkan';
-        if (icon) icon.style.transform = 'rotate(0deg)';
+        paneSj.style.display = 'block';
+        paneAntrean.style.display = 'none';
+        if (btnSj) btnSj.classList.add('active');
+        if (btnAntrean) btnAntrean.classList.remove('active');
+
+        // Update URL query string without page reload
+        const url = new URL(window.location);
+        url.searchParams.delete('tab');
+        window.history.replaceState({}, '', url);
     }
 };
+
 

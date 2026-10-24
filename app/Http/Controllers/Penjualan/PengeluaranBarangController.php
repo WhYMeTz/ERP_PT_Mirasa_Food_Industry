@@ -42,6 +42,7 @@ class PengeluaranBarangController extends Controller
 
         $metrics = $this->pengeluaranService->getMetrics();
         $readyOrders = $this->pengeluaranService->getReadyToShipOrders();
+        $tab = $request->input('tab', 'sj');
 
         return view('penjualan.pengeluaran.index', compact(
             'suratJalanList',
@@ -50,7 +51,8 @@ class PengeluaranBarangController extends Controller
             'search',
             'status',
             'dateFrom',
-            'dateTo'
+            'dateTo',
+            'tab'
         ));
     }
 

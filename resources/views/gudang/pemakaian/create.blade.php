@@ -1044,37 +1044,21 @@
             });
     }
 
-    function onBatchSelect(selectEl) {
-        const row = selectEl.closest('tr');
-        const selectedOpt = selectEl.selectedOptions[0];
-        if (!selectedOpt || !selectedOpt.value) return;
+
+    function renderNormalBatchInfo(row) {
+        const batchSelect = row.querySelector('.batch-select');
+        const batchInfo = row.querySelector('.batch-info');
+        if (!batchSelect || !batchInfo) return;
+
+        const selectedOpt = batchSelect.selectedOptions[0];
+        if (!selectedOpt || !selectedOpt.value) {
+            batchInfo.innerHTML = '';
+            return;
+        }
 
         const sisa = parseFloat(selectedOpt.getAttribute('data-sisa') || 0);
-        const harga = parseFloat(selectedOpt.getAttribute('data-harga') || 0);
         const tglMasuk = selectedOpt.getAttribute('data-masuk') || '-';
-        const grade = (selectedOpt.getAttribute('data-grade') || 'A').toUpperCase();
-        const stokId = selectedOpt.getAttribute('data-stok-id') || '';
-
-        const gradeInput = row.querySelector('.grade-input');
-        if (gradeInput) gradeInput.value = grade;
-        const stokIdInput = row.querySelector('.stok-id-input');
-        if (stokIdInput) stokIdInput.value = stokId;
-
-        // Sinkronkan highlight button filter grade di baris jika user memilih batch manual
-        const gradeButtons = row.querySelectorAll('.grade-pill-group .btn-chip');
-        gradeButtons.forEach(b => {
-            if ((grade === 'A' && b.classList.contains('btn-chip-grade-a')) ||
-                (grade === 'B' && b.classList.contains('btn-chip-grade-b'))) {
-                b.classList.add('active');
-            } else if (!b.classList.contains('btn-chip-grade-a') && !b.classList.contains('btn-chip-grade-b') && grade !== 'A' && grade !== 'B') {
-                b.classList.add('active');
-            } else {
-                b.classList.remove('active');
-            }
-        });
-
-        const batchInfo = row.querySelector('.batch-info');
-        const isFirstBatch = (selectEl.selectedIndex === 0);
+        const grade = (row.querySelector('.grade-input')?.value || selectedOpt.getAttribute('data-grade') || 'A').toUpperCase();
 
         const gradeBadge = (grade === 'A')
             ? `<span style="background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; font-weight: 700; padding: 1px 6px; border-radius: 4px; font-size: 0.725rem;">🟢 Grade A (Super)</span>`
@@ -1082,14 +1066,15 @@
                 ? `<span style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a; font-weight: 700; padding: 1px 6px; border-radius: 4px; font-size: 0.725rem;">🟡 Grade B (Standar)</span>`
                 : `<span style="background: #f1f5f9; color: #334155; font-weight: 600; padding: 1px 6px; border-radius: 4px; font-size: 0.725rem;">Grade ${grade}</span>`);
 
-        const oldestOpt = (selectEl.options.length > 0 && selectEl.options[0].value) ? selectEl.options[0] : null;
+        const isFirstBatch = (batchSelect.selectedIndex === 0);
+        const oldestOpt = (batchSelect.options.length > 0 && batchSelect.options[0].value) ? batchSelect.options[0] : null;
         const oldestSisa = oldestOpt ? parseFloat(oldestOpt.getAttribute('data-sisa') || 0) : 0;
         const oldestBatchNo = oldestOpt ? oldestOpt.value : '-';
         const oldestMasuk = oldestOpt ? (oldestOpt.getAttribute('data-masuk') || '-') : '-';
 
         if (isFirstBatch) {
-            selectEl.style.borderColor = '#cbd5e1';
-            selectEl.style.backgroundColor = '#ffffff';
+            batchSelect.style.borderColor = '#cbd5e1';
+            batchSelect.style.backgroundColor = '#ffffff';
             batchInfo.innerHTML = `<div style="display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;">
                 ${gradeBadge}
                 <span style="color: #065f46; font-weight: 600; background: #ecfdf5; padding: 0.15rem 0.5rem; border-radius: 4px; border: 1px solid #a7f3d0; font-size: 0.75rem;">
@@ -1098,8 +1083,8 @@
             </div>`;
         } else if (oldestOpt && oldestSisa > 0) {
             // Operator memilih batch yang lebih baru padahal batch terlama masih ada sisa
-            selectEl.style.borderColor = '#f59e0b';
-            selectEl.style.backgroundColor = '#fffdf5';
+            batchSelect.style.borderColor = '#f59e0b';
+            batchSelect.style.backgroundColor = '#fffdf5';
             batchInfo.innerHTML = `
                 <div style="background: #fffbeb; border: 1.5px solid #f59e0b; border-radius: 6px; padding: 0.45rem 0.65rem; margin-top: 0.25rem; color: #92400e;">
                     <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap;">
@@ -1122,8 +1107,8 @@
                 </div>
             `;
         } else {
-            selectEl.style.borderColor = '#cbd5e1';
-            selectEl.style.backgroundColor = '#ffffff';
+            batchSelect.style.borderColor = '#cbd5e1';
+            batchSelect.style.backgroundColor = '#ffffff';
             batchInfo.innerHTML = `<div style="display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;">
                 ${gradeBadge}
                 <span style="color: #0369a1; font-weight: 600; background: #f0f9ff; padding: 0.15rem 0.5rem; border-radius: 4px; border: 1px solid #bae6fd; font-size: 0.75rem;">
@@ -1131,6 +1116,36 @@
                 </span>
             </div>`;
         }
+    }
+
+    function onBatchSelect(selectEl) {
+        const row = selectEl.closest('tr');
+        const selectedOpt = selectEl.selectedOptions[0];
+        if (!selectedOpt || !selectedOpt.value) return;
+
+        const harga = parseFloat(selectedOpt.getAttribute('data-harga') || 0);
+        const grade = (selectedOpt.getAttribute('data-grade') || 'A').toUpperCase();
+        const stokId = selectedOpt.getAttribute('data-stok-id') || '';
+
+        const gradeInput = row.querySelector('.grade-input');
+        if (gradeInput) gradeInput.value = grade;
+        const stokIdInput = row.querySelector('.stok-id-input');
+        if (stokIdInput) stokIdInput.value = stokId;
+
+        // Sinkronkan highlight button filter grade di baris jika user memilih batch manual
+        const gradeButtons = row.querySelectorAll('.grade-pill-group .btn-chip');
+        gradeButtons.forEach(b => {
+            if ((grade === 'A' && b.classList.contains('btn-chip-grade-a')) ||
+                (grade === 'B' && b.classList.contains('btn-chip-grade-b'))) {
+                b.classList.add('active');
+            } else if (!b.classList.contains('btn-chip-grade-a') && !b.classList.contains('btn-chip-grade-b') && grade !== 'A' && grade !== 'B') {
+                b.classList.add('active');
+            } else {
+                b.classList.remove('active');
+            }
+        });
+
+        renderNormalBatchInfo(row);
 
         const hargaInput = row.querySelector('.harga-input');
         if (harga > 0) {
@@ -1196,6 +1211,7 @@
         } else if (selectedBatchOpt && selectedBatchOpt.value) {
             qtyInput.style.borderColor = '#cbd5e1';
             qtyInput.style.backgroundColor = '#ffffff';
+            renderNormalBatchInfo(row); // Otomatis hilangkan peringatan merah dan kembalikan ke status normal
         }
 
         const subtotal = qty * harga;

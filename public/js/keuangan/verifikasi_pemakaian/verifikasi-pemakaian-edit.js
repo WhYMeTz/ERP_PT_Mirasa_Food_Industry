@@ -451,34 +451,20 @@ function fetchBatchesForRow(row, barangId) {
         });
 }
 
-function onBatchSelect(selectEl) {
-    const row = selectEl.closest('tr');
-    const selectedOpt = selectEl.selectedOptions[0];
-    if (!selectedOpt || !selectedOpt.value) return;
+function renderNormalBatchInfo(row) {
+    const batchSelect = row.querySelector('.batch-select');
+    const info = row.querySelector('.batch-info');
+    if (!batchSelect || !info) return;
+
+    const selectedOpt = batchSelect.selectedOptions[0];
+    if (!selectedOpt || !selectedOpt.value) {
+        info.innerHTML = '';
+        return;
+    }
 
     const sisa = parseFloat(selectedOpt.getAttribute('data-sisa') || 0);
-    const harga = parseFloat(selectedOpt.getAttribute('data-harga') || 0);
-    const grade = (selectedOpt.getAttribute('data-grade') || 'A').toUpperCase();
-    const stokId = selectedOpt.getAttribute('data-stok-id') || '';
-
-    row.querySelector('.grade-input').value = grade;
-    row.querySelector('.stok-id-input').value = stokId;
-
-    const gradeGroup = row.querySelector('.grade-pill-group');
-    if (gradeGroup) {
-        gradeGroup.querySelectorAll('.btn-chip').forEach(b => b.classList.remove('active'));
-        if (grade === 'A') gradeGroup.querySelector('.btn-chip-grade-a')?.classList.add('active');
-        else if (grade === 'B') gradeGroup.querySelector('.btn-chip-grade-b')?.classList.add('active');
-        else gradeGroup.children[0]?.classList.add('active');
-    }
-
-    const hargaInput = row.querySelector('.harga-input');
-    if (harga > 0 && (!hargaInput.value || parseFloat(hargaInput.value) === 0)) {
-        hargaInput.value = harga;
-    }
-
-    const info = row.querySelector('.batch-info');
-    const isTopFifo = selectEl.selectedIndex === 0;
+    const grade = (row.querySelector('.grade-input')?.value || selectedOpt.getAttribute('data-grade') || 'A').toUpperCase();
+    const isTopFifo = (batchSelect.selectedIndex === 0);
 
     let gradeBadge = (grade === 'A')
         ? `<span style="background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; font-weight: 700; padding: 1px 5px; border-radius: 3px; font-size: 0.7rem;">🟢 Grade A</span>`
@@ -505,6 +491,34 @@ function onBatchSelect(selectEl) {
             </div>
         `;
     }
+}
+
+function onBatchSelect(selectEl) {
+    const row = selectEl.closest('tr');
+    const selectedOpt = selectEl.selectedOptions[0];
+    if (!selectedOpt || !selectedOpt.value) return;
+
+    const harga = parseFloat(selectedOpt.getAttribute('data-harga') || 0);
+    const grade = (selectedOpt.getAttribute('data-grade') || 'A').toUpperCase();
+    const stokId = selectedOpt.getAttribute('data-stok-id') || '';
+
+    row.querySelector('.grade-input').value = grade;
+    row.querySelector('.stok-id-input').value = stokId;
+
+    const gradeGroup = row.querySelector('.grade-pill-group');
+    if (gradeGroup) {
+        gradeGroup.querySelectorAll('.btn-chip').forEach(b => b.classList.remove('active'));
+        if (grade === 'A') gradeGroup.querySelector('.btn-chip-grade-a')?.classList.add('active');
+        else if (grade === 'B') gradeGroup.querySelector('.btn-chip-grade-b')?.classList.add('active');
+        else gradeGroup.children[0]?.classList.add('active');
+    }
+
+    const hargaInput = row.querySelector('.harga-input');
+    if (harga > 0 && (!hargaInput.value || parseFloat(hargaInput.value) === 0)) {
+        hargaInput.value = harga;
+    }
+
+    renderNormalBatchInfo(row);
 
     calcRow(selectEl);
 }
@@ -564,6 +578,7 @@ function calcRow(el) {
             qtyInput.style.borderColor = '#cbd5e1';
             qtyInput.style.background = '#ffffff';
             qtyInput.title = '';
+            renderNormalBatchInfo(row); // Otomatis kembalikan status normal & hilangkan kartu merah
         }
     }
 

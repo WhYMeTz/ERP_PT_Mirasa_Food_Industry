@@ -30,6 +30,7 @@ use App\Http\Controllers\Keuangan\KasBankController;
 use App\Http\Controllers\Keuangan\KasMasukController;
 use App\Http\Controllers\Keuangan\JurnalController;
 use App\Http\Controllers\Keuangan\BukuBesarController;
+use App\Http\Controllers\Keuangan\VerifikasiPemakaianController;
 use App\Http\Controllers\Penjualan\SoController;
 use App\Http\Controllers\Penjualan\PengeluaranBarangController;
 use App\Http\Controllers\Penjualan\FakturPenjualanController;
@@ -471,6 +472,20 @@ Route::middleware('auth')->group(function () {
         // 7. Buku Besar Interaktif (Interactive General Ledger)
         Route::get('buku-besar', [BukuBesarController::class, 'index'])
             ->name('buku_besar.index')
+            ->middleware('role:jurnal_view,coa_view,hutang_view,kas_bank_view');
+
+        // 8. Verifikasi Pemakaian Bahan & Terbitkan Jurnal HPP
+        Route::get('verifikasi-pemakaian', [VerifikasiPemakaianController::class, 'index'])
+            ->name('verifikasi_pemakaian.index')
+            ->middleware('role:jurnal_view,coa_view,hutang_view,kas_bank_view');
+        Route::get('verifikasi-pemakaian/{id}', [VerifikasiPemakaianController::class, 'show'])
+            ->name('verifikasi_pemakaian.show')
+            ->middleware('role:jurnal_view,coa_view,hutang_view,kas_bank_view');
+        Route::post('verifikasi-pemakaian/{id}/approve', [VerifikasiPemakaianController::class, 'approve'])
+            ->name('verifikasi_pemakaian.approve')
+            ->middleware('role:jurnal_view,coa_view,hutang_view,kas_bank_view');
+        Route::post('verifikasi-pemakaian/{id}/reject', [VerifikasiPemakaianController::class, 'reject'])
+            ->name('verifikasi_pemakaian.reject')
             ->middleware('role:jurnal_view,coa_view,hutang_view,kas_bank_view');
     });
 });

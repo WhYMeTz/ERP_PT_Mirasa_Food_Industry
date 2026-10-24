@@ -41,10 +41,12 @@ class PengeluaranBarangController extends Controller
         );
 
         $metrics = $this->pengeluaranService->getMetrics();
+        $readyOrders = $this->pengeluaranService->getReadyToShipOrders();
 
         return view('penjualan.pengeluaran.index', compact(
             'suratJalanList',
             'metrics',
+            'readyOrders',
             'search',
             'status',
             'dateFrom',

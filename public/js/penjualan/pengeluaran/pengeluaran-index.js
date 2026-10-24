@@ -82,3 +82,23 @@ window.closeVoidModal = function() {
         modal.style.display = 'none';
     }
 };
+
+// Toggle Ready-to-Ship Queue List display
+window.toggleQueueList = function() {
+    const list = document.getElementById('sjQueueList');
+    const label = document.getElementById('sjQueueToggleText');
+    const icon = document.getElementById('sjQueueToggleIcon');
+    if (!list) return;
+
+    const isHidden = list.style.display === 'none';
+    if (isHidden) {
+        list.style.display = 'grid';
+        if (label) label.textContent = 'Sembunyikan';
+        if (icon) icon.style.transform = 'rotate(180deg)';
+    } else {
+        list.style.display = 'none';
+        if (label) label.textContent = 'Tampilkan';
+        if (icon) icon.style.transform = 'rotate(0deg)';
+    }
+};
+

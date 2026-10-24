@@ -369,3 +369,183 @@
     background: #f1f5f9;
     margin: 0.3rem 0;
 }
+
+/* ==============================================================
+   READY TO SHIP PO QUEUE ALERT BANNER & CARDS
+   ============================================================== */
+.sj-queue-alert {
+    background: #fffdf5;
+    border: 1.5px solid #fde68a;
+    border-radius: 12px;
+    padding: 1.15rem 1.25rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 6px -1px rgba(245, 158, 11, 0.05);
+}
+
+.sj-queue-alert-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.sj-queue-alert-title-box {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.sj-queue-alert-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: #fef3c7;
+    color: #d97706;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.sj-queue-alert-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #92400e;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.sj-queue-pill {
+    background: #d97706;
+    color: #ffffff;
+    font-size: 0.725rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 9999px;
+}
+
+.sj-queue-alert-subtitle {
+    font-size: 0.8125rem;
+    color: #b45309;
+    margin: 0.2rem 0 0 0;
+}
+
+.sj-queue-toggle-btn {
+    background: #ffffff;
+    border: 1px solid #fde68a;
+    border-radius: 6px;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.775rem;
+    font-weight: 700;
+    color: #b45309;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    transition: all 0.15s ease;
+}
+
+.sj-queue-toggle-btn:hover {
+    background: #fef3c7;
+    border-color: #f59e0b;
+}
+
+.sj-queue-list {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px dashed #fde68a;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 0.85rem;
+}
+
+.sj-queue-card {
+    background: #ffffff;
+    border: 1.5px solid #fef3c7;
+    border-radius: 8px;
+    padding: 0.85rem 1rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.sj-queue-card:hover {
+    border-color: #f59e0b;
+    box-shadow: 0 4px 10px rgba(245, 158, 11, 0.1);
+    transform: translateY(-2px);
+}
+
+.sj-queue-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.5rem;
+}
+
+.sj-queue-po-no {
+    font-family: monospace;
+    font-weight: 700;
+    font-size: 0.875rem;
+    color: #0284c7;
+}
+
+.sj-queue-date-badge {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #64748b;
+    background: #f1f5f9;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.sj-queue-customer {
+    font-weight: 700;
+    font-size: 0.875rem;
+    color: #1e293b;
+    margin-bottom: 0.35rem;
+}
+
+.sj-queue-items {
+    font-size: 0.775rem;
+    color: #64748b;
+    line-height: 1.4;
+    margin-bottom: 0.75rem;
+}
+
+.sj-queue-action {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+}
+
+.btn-process-sj {
+    background: #059669;
+    border: 1px solid #059669;
+    color: #ffffff;
+    border-radius: 6px;
+    padding: 0.4rem 0.85rem;
+    font-size: 0.775rem;
+    font-weight: 700;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.btn-process-sj:hover {
+    background: #047857;
+    border-color: #047857;
+    color: #ffffff;
+    transform: translateY(-1px);
+}
+
+.sj-metric-card.queue-highlight {
+    border-color: #fde68a;
+    background: linear-gradient(180deg, #ffffff 0%, #fffdf5 100%);
+    box-shadow: 0 2px 4px rgba(245, 158, 11, 0.08);
+}

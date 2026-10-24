@@ -953,6 +953,21 @@
                         `;
                     } else {
                         const peringatanItems = (data.peringatan || []).map(p => `<li>${p}</li>`).join('');
+                        let switchCampurBtnHtml = '';
+                        if (data.can_switch_to_campur && data.defisit_info) {
+                            switchCampurBtnHtml = `
+                                <div style="margin-top: 0.75rem; padding-top: 0.65rem; border-top: 1px dashed #fde68a; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
+                                    <span style="font-size: 0.8rem; font-weight: 600; color: #92400e;">
+                                        💡 Tersedia saldo fisik ${data.defisit_info.other_grade_label} sebanyak ${parseFloat(data.defisit_info.other_stock).toLocaleString('id-ID')} ${data.defisit_info.satuan_nm}!
+                                    </span>
+                                    <button type="button" onclick="switchBomGradeToCampurAndReload()" class="btn btn-warning btn-sm" style="background: #d97706; border-color: #d97706; color: #ffffff; font-weight: 700; font-size: 0.775rem; border-radius: 6px; padding: 0.35rem 0.75rem; display: inline-flex; align-items: center; gap: 0.35rem; box-shadow: 0 1px 2px rgba(217,119,6,0.25);">
+                                        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                        <span>Beralih ke Campur (Penuhi dari Grade Lain)</span>
+                                    </button>
+                                </div>
+                            `;
+                        }
+
                         feedback.innerHTML = `
                             <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 6px; padding: 0.75rem 1rem; color: #92400e;">
                                 <div style="display: flex; align-items: flex-start; gap: 0.65rem; margin-bottom: 0.35rem;">
@@ -969,8 +984,14 @@
                                 <ul style="margin: 0.35rem 0 0 1.75rem; font-size: 0.8rem; padding: 0; line-height: 1.5;">
                                     ${peringatanItems}
                                 </ul>
+                                ${switchCampurBtnHtml}
                             </div>
                         `;
+
+                        // Munculkan popup modal interaktif jika stok grade tidak cukup tapi grade lain tersedia
+                        if (data.can_switch_to_campur && data.defisit_info) {
+                            openWarningGradeShortageModal(data);
+                        }
                     }
 
                     // Smooth scroll ke tabel rincian bahan
@@ -1645,6 +1666,71 @@
         document.getElementById('pemakaianForm').submit();
     }
 
+    function openWarningGradeShortageModal(data) {
+        const info = data.defisit_info;
+        if (!info) return;
+
+        const titleEl = document.getElementById('gradeShortageModalTitle');
+        const msgEl = document.getElementById('gradeShortageModalMessage');
+
+        if (titleEl) {
+            titleEl.innerText = `Stok Fisik Grade ${info.chosen_grade} Tidak Mencukupi!`;
+        }
+
+        if (msgEl) {
+            msgEl.innerHTML = `
+                <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 0.85rem 1rem; margin-bottom: 0.85rem;">
+                    <div style="display: flex; gap: 0.5rem; align-items: flex-start;">
+                        <span style="font-size: 1.25rem; line-height: 1;">⚠️</span>
+                        <div>
+                            <strong style="color: #92400e; font-size: 0.875rem; display: block; margin-bottom: 0.25rem;">
+                                Defisit Bahan: ${info.barang_nm} (${info.barang_cd})
+                            </strong>
+                            <span style="font-size: 0.825rem; color: #78350f; line-height: 1.45; display: block;">
+                                Anda memilih alokasi <strong>Khusus Grade ${info.chosen_grade} Saja</strong>, namun saldo fisik Grade ${info.chosen_grade} di gudang ini telah habis sebelum seluruh target produksi tercapai.
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 0.85rem 1rem;">
+                    <div style="display: flex; gap: 0.5rem; align-items: flex-start;">
+                        <span style="font-size: 1.25rem; line-height: 1;">💡</span>
+                        <div>
+                            <strong style="color: #166534; font-size: 0.875rem; display: block; margin-bottom: 0.25rem;">
+                                Stok Fisik di Grade Lain Tersedia:
+                            </strong>
+                            <span style="font-size: 0.825rem; color: #14532d; line-height: 1.45; display: block;">
+                                Di gudang ini masih tersedia saldo fisik <strong>${info.other_grade_label}</strong> sebanyak <strong>${parseFloat(info.other_stock).toLocaleString('id-ID')} ${info.satuan_nm}</strong>.
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        const modal = document.getElementById('modalWarningGradeShortage');
+        if (modal) {
+            modal.style.display = 'flex';
+        }
+    }
+
+    function closeWarningGradeShortageModal() {
+        const modal = document.getElementById('modalWarningGradeShortage');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+    }
+
+    function switchBomGradeToCampurAndReload() {
+        const btnAll = document.getElementById('btnBomGradeAll');
+        if (btnAll) {
+            setBomGradeFilter(btnAll, '');
+        }
+        closeWarningGradeShortageModal();
+        tarikBahanResepFifo();
+    }
+
     // Inisialisasi awal saat halaman selesai dimuat
     document.addEventListener('DOMContentLoaded', () => {
         addRow();
@@ -1683,4 +1769,5 @@
 
 @include('gudang.pemakaian.partials.modal-warning-stock-limit')
 @include('gudang.pemakaian.partials.modal-warning-fifo')
+@include('gudang.pemakaian.partials.modal-warning-grade-shortage')
 @endsection

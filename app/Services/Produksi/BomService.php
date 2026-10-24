@@ -375,17 +375,52 @@ class BomService
             }
         }
 
+        $canSwitchToCampur = false;
+        $defisitInfo = null;
+
+        if (!empty($gradeFilter) && !empty($peringatanList)) {
+            // Cek apakah ada barang yang defisit tapi sebenarnya memiliki stok fisik aktif pada grade lain
+            foreach ($bom->details as $dtl) {
+                $bId = (int) $dtl->barang_mentah_id;
+                $otherStock = DatStokBatch::where('gudang_id', $gudangId)
+                    ->where('barang_id', $bId)
+                    ->where('sisa_qty', '>', 0)
+                    ->where('deleted_st', false)
+                    ->where(function($q) use ($gradeFilter) {
+                        $q->whereNull('grade_cd')
+                          ->orWhere('grade_cd', '!=', $gradeFilter);
+                    })
+                    ->sum('sisa_qty');
+
+                if ((float) $otherStock > 0) {
+                    $canSwitchToCampur = true;
+                    $otherGradeLabel = ($gradeFilter === 'B') ? 'Grade A' : 'Grade B';
+                    $defisitInfo = [
+                        'barang_nm'         => $dtl->barangMentah?->barang_nm ?? 'Bahan Baku',
+                        'barang_cd'         => $dtl->barangMentah?->barang_cd ?? '',
+                        'chosen_grade'      => $gradeFilter,
+                        'other_grade_label' => $otherGradeLabel,
+                        'other_stock'       => (float) $otherStock,
+                        'satuan_nm'         => $dtl->barangMentah?->satuanDasar?->satuan_nm ?? 'Kg',
+                    ];
+                    break;
+                }
+            }
+        }
+
         return [
-            'bom_id'           => $bom->bom_id,
-            'bom_no'           => $bom->bom_no,
-            'bom_nm'           => $bom->bom_nm,
-            'target_qty'       => $targetQty,
-            'batch_ukuran_qty' => (float) $bom->batch_ukuran_qty,
-            'satuan_target'    => $bom->barangJadi?->satuanDasar?->satuan_nm ?? 'Unit',
-            'grade_filter'     => $gradeFilter ?: 'CAMPUR',
-            'items'            => $allocatedItems,
-            'peringatan'       => $peringatanList,
-            'is_lengkap'       => empty($peringatanList),
+            'bom_id'                => $bom->bom_id,
+            'bom_no'                => $bom->bom_no,
+            'bom_nm'                => $bom->bom_nm,
+            'target_qty'            => $targetQty,
+            'batch_ukuran_qty'      => (float) $bom->batch_ukuran_qty,
+            'satuan_target'         => $bom->barangJadi?->satuanDasar?->satuan_nm ?? 'Unit',
+            'grade_filter'          => $gradeFilter ?: 'CAMPUR',
+            'items'                 => $allocatedItems,
+            'peringatan'            => $peringatanList,
+            'is_lengkap'            => empty($peringatanList),
+            'can_switch_to_campur'  => $canSwitchToCampur,
+            'defisit_info'          => $defisitInfo,
         ];
     }
 }

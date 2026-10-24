@@ -190,8 +190,8 @@
                                 <div style="display: flex; align-items: center; gap: 0.4rem; margin-top: 0.2rem;">
                                     @if ($klasifikasi === 'IFM')
                                         <span class="badge-klasifikasi ifm">IFM</span>
-                                    @elseif ($klasifikasi === 'IDM_ALFA')
-                                        <span class="badge-klasifikasi modern">MODERN</span>
+                                    @elseif (in_array($klasifikasi, ['MIDI_ALFA', 'IDM', 'IDM_ALFA']))
+                                        <span class="badge-klasifikasi modern">{{ $klasifikasi === 'MIDI_ALFA' ? 'MIDI/ALFA' : ($klasifikasi === 'IDM' ? 'IDM' : 'MODERN') }}</span>
                                     @else
                                         <span class="badge-klasifikasi manual">MANUAL</span>
                                     @endif

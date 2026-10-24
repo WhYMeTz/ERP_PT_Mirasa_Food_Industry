@@ -783,7 +783,7 @@ class CodeGeneratorService
             return $this->generateFakturMfiNo($date, $plantCode);
         }
 
-        if ($klasifikasi === 'IDM_ALFA') {
+        if (in_array($klasifikasi, ['IDM', 'MIDI_ALFA', 'ALFA_MIDI', 'IDM_ALFA'])) {
             return $this->generateFakturModernTradeNo($date);
         }
 

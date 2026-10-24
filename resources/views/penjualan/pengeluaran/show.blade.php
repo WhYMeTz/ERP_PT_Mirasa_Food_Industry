@@ -118,8 +118,8 @@
                         <td style="width: 140px; padding: 0.4rem 0; color: #64748b; font-weight: 600;">Nama Mitra Customer:</td>
                         <td style="padding: 0.4rem 0; font-weight: 700; color: #0f172a;">
                             {{ $customer?->customer_nm ?? '-' }}
-                            <span class="badge-klasifikasi {{ $klasifikasi === 'IFM' ? 'ifm' : ($klasifikasi === 'IDM_ALFA' ? 'modern' : 'manual') }}" style="margin-left: 0.4rem;">
-                                {{ $klasifikasi }}
+                            <span class="badge-klasifikasi {{ $klasifikasi === 'IFM' ? 'ifm' : (in_array($klasifikasi, ['IDM', 'MIDI_ALFA', 'IDM_ALFA']) ? 'modern' : 'manual') }}" style="margin-left: 0.4rem;">
+                                {{ $klasifikasi === 'MIDI_ALFA' ? 'Midi/Alfa' : $klasifikasi }}
                             </span>
                         </td>
                     </tr>

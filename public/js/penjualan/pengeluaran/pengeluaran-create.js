@@ -153,7 +153,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         if (custBadge) {
                             const k = cust ? cust.klasifikasi : 'MANUAL';
                             custBadge.textContent = k || 'MANUAL';
-                            custBadge.className = 'badge-klasifikasi ' + (k === 'IFM' ? 'ifm' : (k === 'IDM_ALFA' ? 'modern' : 'manual'));
+                            custBadge.className = 'badge-klasifikasi ' + (k === 'IFM' ? 'ifm' : (['IDM', 'MIDI_ALFA', 'IDM_ALFA'].includes(k) ? 'modern' : 'manual'));
                         }
 
                         renderItems(data.items);

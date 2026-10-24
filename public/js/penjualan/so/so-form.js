@@ -116,7 +116,7 @@ function initCustomerListener() {
         const inTop = document.getElementById('top_txt');
         if (inTop) {
             inTop.value = topTxt || '';
-            inTop.placeholder = topTxt ? 'Contoh: 7 Hari / 1 Nota' : (klasifikasi === 'IDM_ALFA' ? 'Tidak ada TOP (Modern Trade)' : 'Contoh: 7 Hari / 1 Nota');
+            inTop.placeholder = topTxt ? 'Contoh: 7 Hari / 1 Nota' : (['IDM', 'MIDI_ALFA', 'IDM_ALFA'].includes(klasifikasi) ? 'Tidak ada TOP (Modern Trade)' : 'Contoh: 7 Hari / 1 Nota');
         }
 
         // Update Status PPN Header jika ada default dari master customer
@@ -143,7 +143,7 @@ function initCustomerListener() {
             if (lblPo) lblPo.textContent = 'No. Nota / Sales Lapangan';
             if (inPo) inPo.placeholder = 'Contoh: J.02.03 / M.01.20 / P.04.15...';
             if (helpPo) helpPo.textContent = 'Nomor referensi nota penjualan atau kode sales lapangan (Contoh: J.02.03, M.01.20, P.04.15)';
-        } else if (klasifikasi === 'IDM_ALFA') {
+        } else if (['IDM', 'MIDI_ALFA', 'IDM_ALFA'].includes(klasifikasi)) {
             if (lblPo) lblPo.textContent = 'No. PO Modern Trade';
             if (inPo) inPo.placeholder = 'Contoh: OZ01POE26000866 / 5H5Q44496...';
             if (helpPo) helpPo.textContent = 'Nomor PO pesanan resmi (Contoh: OZ01POE26000866, 5H5Q44496, SQZ1POE26000869)';
@@ -165,10 +165,14 @@ function initCustomerListener() {
                 badgeKlas.textContent = 'Manual (Sales/Toko)';
                 badgeKlas.style.background = '#dcfce7';
                 badgeKlas.style.color = '#15803d';
-            } else if (klasifikasi === 'IDM_ALFA') {
-                badgeKlas.textContent = 'Modern Trade (IDM/ALFA)';
-                badgeKlas.style.background = '#f3e8ff';
-                badgeKlas.style.color = '#7e22ce';
+            } else if (klasifikasi === 'IDM') {
+                badgeKlas.textContent = 'Modern Trade (IDM)';
+                badgeKlas.style.background = '#eff6ff';
+                badgeKlas.style.color = '#1d4ed8';
+            } else if (klasifikasi === 'MIDI_ALFA' || klasifikasi === 'IDM_ALFA') {
+                badgeKlas.textContent = 'Modern Trade (Midi/Alfa)';
+                badgeKlas.style.background = '#fef2f2';
+                badgeKlas.style.color = '#b91c1c';
             } else {
                 badgeKlas.textContent = this.value ? 'Customer Umum' : 'Belum Memilih Customer';
                 badgeKlas.style.background = '#f1f5f9';

@@ -36,3 +36,7 @@ database/migrations/2026_09_25_000002_create_mst_bom_tables.php
 # Seeder dummy lokal pengujian QC (tidak di-push ke GitHub)
 database/seeders/QcDummySeeder.php
 
+# Seeder dummy lokal manajemen karyawan (tidak di-push ke GitHub)
+database/seeders/ManajemenKaryawanDummySeeder.php
+
+

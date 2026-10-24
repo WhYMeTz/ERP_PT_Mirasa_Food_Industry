@@ -88,9 +88,12 @@
         @php
             $custNmUpper = strtoupper($order->customer?->customer_nm ?? '');
             $custCdUpper = strtoupper($order->customer?->customer_cd ?? '');
-            $isOrderIfm = str_contains($custNmUpper, 'INDOFOOD') || str_contains($custNmUpper, 'IFM') || str_contains($custNmUpper, 'FORTUNA') || str_contains($custCdUpper, 'IFM') || str_contains($custCdUpper, 'INDOFOOD');
+            $klasifikasi = $order->customer?->klasifikasi;
+            $isOrderIfm = $klasifikasi === 'IFM' || str_contains($custNmUpper, 'INDOFOOD') || str_contains($custNmUpper, 'IFM') || str_contains($custNmUpper, 'FORTUNA') || str_contains($custCdUpper, 'IFM') || str_contains($custCdUpper, 'INDOFOOD');
+            $isOrderIdm = $klasifikasi === 'IDM' || str_contains($custCdUpper, 'IDM') || str_contains($custCdUpper, 'DC-YOGYA') || str_contains($custNmUpper, 'INDOMARET');
+            $isOrderAlfa = $klasifikasi === 'MIDI_ALFA' || $klasifikasi === 'IDM_ALFA' || str_contains($custNmUpper, 'ALFA') || str_contains($custNmUpper, 'SUMBER ALFARIA') || str_contains($custNmUpper, 'MIDI') || str_contains($custCdUpper, 'MIDI') || str_contains($custCdUpper, 'ALFA');
             $isOrderPpn = $order->ppn_nominal > 0 || $order->ppn_tipe === 'PPN_11';
-            $sjTitle = $isOrderIfm ? 'IFM' : ($isOrderPpn ? 'PPN' : 'Non-PPN');
+            $sjTitle = $isOrderIfm ? 'IFM' : ($isOrderIdm ? 'IDM' : ($isOrderAlfa ? 'Midi/Alfa' : ($isOrderPpn ? 'PPN' : 'Non-PPN')));
         @endphp
 
         {{-- Cetak Faktur PDF Utama --}}
@@ -105,16 +108,16 @@
             <span>Surat Jalan ({{ $sjTitle }})</span>
         </a>
 
-        {{-- Dropdown Pilihan Format PDF Lengkap (IFM, Non-PPN & Ber-PPN) --}}
+        {{-- Dropdown Pilihan Format PDF Lengkap (IFM, Midi/Alfa, IDM, Non-PPN & Ber-PPN) --}}
         <div style="position: relative; display: inline-block;">
             <button type="button" 
                     class="btn btn-secondary" 
                     onclick="togglePrintMenu(event)" 
                     style="padding: 0.45rem 0.65rem; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.25rem;" 
-                    title="Pilihan Format Cetak (IFM / Non-PPN / Ber-PPN)">
+                    title="Pilihan Format Cetak (IFM / Midi/Alfa / IDM / Non-PPN / Ber-PPN)">
                 <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
             </button>
-            <div id="printMenuDropdown" style="display: none; position: absolute; right: 0; top: calc(100% + 5px); background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 8px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05); min-width: 275px; z-index: 50; overflow: hidden; text-align: left;">
+            <div id="printMenuDropdown" style="display: none; position: absolute; right: 0; top: calc(100% + 5px); background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 8px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05); min-width: 295px; z-index: 50; overflow: hidden; text-align: left;">
                 {{-- Format Khusus IFM Indofood --}}
                 <div style="padding: 0.45rem 0.75rem; background: #ecfdf5; border-bottom: 1px solid #a7f3d0; font-size: 0.7rem; font-weight: 700; color: #065f46; text-transform: uppercase; letter-spacing: 0.05em;">
                     Format Khusus IFM (PT. Indofood Fortuna)
@@ -124,6 +127,30 @@
                     <div>
                         <div style="font-weight: 600;">Surat Jalan (Khusus IFM)</div>
                         <div style="font-size: 0.7rem; color: #64748b;">Format KARTON &bull; KG &bull; Tgl Prod &bull; Varietas</div>
+                    </div>
+                </a>
+
+                {{-- Format Khusus Midi / Alfa --}}
+                <div style="padding: 0.45rem 0.75rem; background: #eff6ff; border-bottom: 1px solid #bfdbfe; font-size: 0.7rem; font-weight: 700; color: #1e40af; text-transform: uppercase; letter-spacing: 0.05em;">
+                    Format Modern Trade (Midi / Alfa)
+                </div>
+                <a href="{{ route('penjualan.so.export-surat-jalan', [$order->so_id, 'tipe' => 'alfa']) }}" target="_blank" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.55rem 0.85rem; font-size: 0.8125rem; color: #1e293b; text-decoration: none; border-bottom: 1px solid #e2e8f0;" onmouseover="this.style.background='#eff6ff'; this.style.color='#1d4ed8';" onmouseout="this.style.background='transparent'; this.style.color='#1e293b';">
+                    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+                    <div>
+                        <div style="font-weight: 600;">Surat Jalan (Midi / Alfa)</div>
+                        <div style="font-size: 0.7rem; color: #64748b;">Standar Blangko PT Sumber Alfaria &amp; Midi</div>
+                    </div>
+                </a>
+
+                {{-- Format Khusus IDM Indomaret --}}
+                <div style="padding: 0.45rem 0.75rem; background: #eef2ff; border-bottom: 1px solid #c7d2fe; font-size: 0.7rem; font-weight: 700; color: #3730a3; text-transform: uppercase; letter-spacing: 0.05em;">
+                    Format Khusus IDM (Indomaret / DC Jogja)
+                </div>
+                <a href="{{ route('penjualan.so.export-surat-jalan', [$order->so_id, 'tipe' => 'idm']) }}" target="_blank" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.55rem 0.85rem; font-size: 0.8125rem; color: #1e293b; text-decoration: none; border-bottom: 1px solid #e2e8f0;" onmouseover="this.style.background='#eef2ff'; this.style.color='#4338ca';" onmouseout="this.style.background='transparent'; this.style.color='#1e293b';">
+                    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+                    <div>
+                        <div style="font-weight: 600;">Surat Jalan (Khusus IDM)</div>
+                        <div style="font-size: 0.7rem; color: #64748b;">Standar Kirim DC Indomaret Yogyakarta</div>
                     </div>
                 </a>
 
@@ -715,17 +742,20 @@
                         $klas = $order->customer?->klasifikasi;
                         $klasBadgeBg = match($klas) {
                             'IFM' => '#e0f2fe',
-                            'IDM_ALFA' => '#f3e8ff',
+                            'IDM' => '#eff6ff',
+                            'MIDI_ALFA', 'IDM_ALFA' => '#fef2f2',
                             default => '#f0fdf4'
                         };
                         $klasBadgeClr = match($klas) {
                             'IFM' => '#0284c7',
-                            'IDM_ALFA' => '#7e22ce',
+                            'IDM' => '#1d4ed8',
+                            'MIDI_ALFA', 'IDM_ALFA' => '#b91c1c',
                             default => '#15803d'
                         };
                         $klasLabel = match($klas) {
                             'IFM' => 'Indofood (IFM)',
-                            'IDM_ALFA' => 'Modern Trade (IDM/ALFA)',
+                            'IDM' => 'Modern Trade (IDM)',
+                            'MIDI_ALFA', 'IDM_ALFA' => 'Modern Trade (Midi/Alfa)',
                             'MANUAL' => 'Manual (Sales/Toko)',
                             default => 'Customer'
                         };

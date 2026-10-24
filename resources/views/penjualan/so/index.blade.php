@@ -297,9 +297,9 @@
                             <div style="display: flex; gap: 0.35rem; align-items: center; margin-top: 2px;">
                                 @php
                                     $cKlas = $so->customer?->klasifikasi;
-                                    $cBg = match($cKlas) { 'IFM' => '#e0f2fe', 'IDM_ALFA' => '#f3e8ff', default => '#f0fdf4' };
-                                    $cClr = match($cKlas) { 'IFM' => '#0284c7', 'IDM_ALFA' => '#7e22ce', default => '#15803d' };
-                                    $cLbl = match($cKlas) { 'IFM' => 'IFM', 'IDM_ALFA' => 'IDM/ALFA', default => 'MANUAL' };
+                                    $cBg = match($cKlas) { 'IFM' => '#e0f2fe', 'IDM' => '#eff6ff', 'MIDI_ALFA', 'IDM_ALFA' => '#fef2f2', default => '#f0fdf4' };
+                                    $cClr = match($cKlas) { 'IFM' => '#0284c7', 'IDM' => '#1d4ed8', 'MIDI_ALFA', 'IDM_ALFA' => '#b91c1c', default => '#15803d' };
+                                    $cLbl = match($cKlas) { 'IFM' => 'IFM', 'IDM' => 'IDM', 'MIDI_ALFA' => 'Midi/Alfa', 'IDM_ALFA' => 'Midi/Alfa', default => 'MANUAL' };
                                 @endphp
                                 @if($cKlas)
                                     <span style="font-size: 0.65rem; font-weight: 700; background: {{ $cBg }}; color: {{ $cClr }}; padding: 1px 5px; border-radius: 3px;">

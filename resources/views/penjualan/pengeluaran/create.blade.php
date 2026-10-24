@@ -90,8 +90,8 @@
                                 <span id="custNmText" class="sj-info-value" style="font-size: 0.925rem;">
                                     {{ $pCust?->customer_nm ?? '-' }}
                                 </span>
-                                <span id="custKlasifikasiBadge" class="badge-klasifikasi {{ $pKlasifikasi === 'IFM' ? 'ifm' : ($pKlasifikasi === 'IDM_ALFA' ? 'modern' : 'manual') }}">
-                                    {{ $pKlasifikasi }}
+                                <span id="custKlasifikasiBadge" class="badge-klasifikasi {{ $pKlasifikasi === 'IFM' ? 'ifm' : (in_array($pKlasifikasi, ['IDM', 'MIDI_ALFA', 'IDM_ALFA']) ? 'modern' : 'manual') }}">
+                                    {{ $pKlasifikasi === 'MIDI_ALFA' ? 'Midi/Alfa' : $pKlasifikasi }}
                                 </span>
                             </div>
                         </div>

@@ -200,8 +200,8 @@
                                     {{ $customer?->customer_nm ?: 'Pelanggan Umum' }}
                                 </div>
                                 <div style="display: flex; align-items: center; gap: 0.4rem; margin-top: 0.2rem;">
-                                    <span class="badge-klasifikasi {{ strtolower($klasifikasi) }}">
-                                        {{ $klasifikasi }}
+                                    <span class="badge-klasifikasi {{ in_array($klasifikasi, ['IDM', 'MIDI_ALFA', 'IDM_ALFA']) ? 'modern' : strtolower($klasifikasi) }}">
+                                        {{ $klasifikasi === 'MIDI_ALFA' ? 'Midi/Alfa' : $klasifikasi }}
                                     </span>
                                     <span style="font-size: 0.725rem; color: #64748b;">
                                         TOP: {{ $faktur->top_txt ?: '-' }}

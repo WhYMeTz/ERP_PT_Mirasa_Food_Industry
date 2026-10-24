@@ -481,6 +481,12 @@ Route::middleware('auth')->group(function () {
         Route::get('verifikasi-pemakaian/{id}', [VerifikasiPemakaianController::class, 'show'])
             ->name('verifikasi_pemakaian.show')
             ->middleware('role:jurnal_view,coa_view,hutang_view,kas_bank_view');
+        Route::get('verifikasi-pemakaian/{id}/edit', [VerifikasiPemakaianController::class, 'edit'])
+            ->name('verifikasi_pemakaian.edit')
+            ->middleware('role:jurnal_view,coa_view,hutang_view,kas_bank_view');
+        Route::put('verifikasi-pemakaian/{id}', [VerifikasiPemakaianController::class, 'update'])
+            ->name('verifikasi_pemakaian.update')
+            ->middleware('role:jurnal_view,coa_view,hutang_view,kas_bank_view');
         Route::post('verifikasi-pemakaian/{id}/approve', [VerifikasiPemakaianController::class, 'approve'])
             ->name('verifikasi_pemakaian.approve')
             ->middleware('role:jurnal_view,coa_view,hutang_view,kas_bank_view');

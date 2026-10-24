@@ -414,6 +414,87 @@ class PemakaianService
     }
 
     /**
+     * Memperbarui dokumen pengeluaran bahan (Hanya jika status masih DRAFT).
+     */
+    public function update(int $pakaiId, array $data, ?User $user = null): DatPakaiHdr
+    {
+        return DB::transaction(function () use ($pakaiId, $data, $user) {
+            $header = DatPakaiHdr::where('pakai_id', $pakaiId)->firstOrFail();
+
+            if ($header->status_st === 'POSTED') {
+                throw new Exception("Dokumen pemakaian '{$header->pakai_no}' sudah diposting dan stok telah dipotong. Dokumen tidak dapat diubah.");
+            }
+
+            $items = $data['items'] ?? [];
+            if (empty($items)) {
+                throw new Exception("Minimal harus ada 1 item bahan yang dikeluarkan.");
+            }
+
+            $gudangId = (int) ($data['gudang_id'] ?? $header->gudang_id);
+            $tujuanPemakaian = !empty($data['tujuan_pemakaian']) ? trim($data['tujuan_pemakaian']) : $header->tujuan_pemakaian;
+            $actor = $user?->name ?? auth()->user()?->name ?? 'SYSTEM';
+
+            // 1. Update Header
+            $header->update([
+                'pakai_tgl'        => $data['pakai_tgl'] ?? $header->pakai_tgl,
+                'gudang_id'        => $gudangId,
+                'produksi_id'      => !empty($data['produksi_id']) ? (int) $data['produksi_id'] : null,
+                'tujuan_pemakaian' => $tujuanPemakaian,
+                'catatan_txt'      => $data['catatan_txt'] ?? $header->catatan_txt,
+                'updated_by'       => $actor,
+            ]);
+
+            // 2. Hapus detail lama (karena DRAFT belum memotong stok)
+            DatPakaiDtl::where('pakai_id', $header->pakai_id)->delete();
+
+            // 3. Simpan detail item yang baru
+            foreach ($items as $item) {
+                $barangId = (int) $item['barang_id'];
+                $batchNo = trim($item['batch_no'] ?? '');
+                $qtyKeluar = (float) $item['qty_keluar'];
+
+                if ($qtyKeluar <= 0) continue;
+                if (empty($batchNo)) {
+                    throw new Exception("Nomor batch wajib dipilih untuk setiap item barang yang dikeluarkan.");
+                }
+
+                $gradeCd = !empty($item['grade_cd']) ? strtoupper(trim($item['grade_cd'])) : 'A';
+
+                // Ambil harga satuan dari batch atau master barang
+                $stokBatch = DatStokBatch::where('gudang_id', $gudangId)
+                    ->where('barang_id', $barangId)
+                    ->where('batch_no', $batchNo)
+                    ->first();
+
+                $hargaSatuan = !empty($item['harga_satuan']) && (float) $item['harga_satuan'] > 0
+                    ? (float) $item['harga_satuan']
+                    : (float) ($stokBatch?->harga_satuan ?? 0);
+
+                if ($hargaSatuan <= 0) {
+                    $barang = MstBarang::find($barangId);
+                    $hargaSatuan = (float) ($barang?->harga_beli_standar ?? 0);
+                }
+
+                $totalHarga = $qtyKeluar * $hargaSatuan;
+                $keteranganDetail = !empty($item['keterangan_txt']) ? trim($item['keterangan_txt']) : $tujuanPemakaian;
+
+                DatPakaiDtl::create([
+                    'pakai_id'       => $header->pakai_id,
+                    'barang_id'      => $barangId,
+                    'batch_no'       => $batchNo,
+                    'grade_cd'       => $gradeCd,
+                    'qty_keluar'     => $qtyKeluar,
+                    'harga_satuan'   => $hargaSatuan,
+                    'total_harga'    => $totalHarga,
+                    'keterangan_txt' => $keteranganDetail,
+                ]);
+            }
+
+            return $header->fresh(['details.barang']);
+        });
+    }
+
+    /**
      * Verifikasi & Posting Pengeluaran Bahan:
      * 1. Validasi status masih DRAFT
      * 2. Kurangi stok fisik gudang per-batch & catat kartu stok mutasi OUT

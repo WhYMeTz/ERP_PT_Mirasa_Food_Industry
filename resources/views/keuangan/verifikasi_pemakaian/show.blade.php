@@ -52,6 +52,10 @@
 
         <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
             @if($pakai->status_st === 'DRAFT')
+                <a href="{{ route('keuangan.verifikasi_pemakaian.edit', $pakai->pakai_id) }}" class="btn btn-warning" style="background: #d97706; border-color: #b45309; color: #ffffff; font-weight: 700; display: inline-flex; align-items: center; gap: 0.35rem; box-shadow: 0 1px 2px rgba(217, 119, 6, 0.2);">
+                    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                    <span>Edit &amp; Sesuaikan Bahan</span>
+                </a>
                 <button type="button" onclick="openModalReject({{ $pakai->pakai_id }}, '{{ $pakai->pakai_no }}')" class="btn btn-secondary" style="color: #dc2626; border-color: #fecaca;">
                     <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                     Tolak / Minta Revisi

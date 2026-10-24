@@ -1,0 +1,122 @@
+/**
+ * STYLESHEET - FORM EDIT & VERIFIKASI PEMAKAIAN BAHAN
+ * ERP PT Mirasa Food Industry
+ */
+
+.order-station-grid {
+    display: grid;
+    grid-template-columns: 2.3fr 1fr;
+    gap: 1.5rem;
+    align-items: start;
+    margin-bottom: 2rem;
+}
+
+@media (max-width: 1100px) {
+    .order-station-grid {
+        grid-template-columns: 1fr;
+    }
+    .sticky-action-sidebar {
+        position: static !important;
+        top: auto !important;
+    }
+}
+
+/* Excel Style Table */
+.excel-grid-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.825rem;
+}
+
+.excel-grid-table th {
+    background: #0f172a;
+    color: #f8fafc;
+    font-weight: 600;
+    padding: 0.55rem 0.45rem;
+    border: 1px solid #334155;
+    font-size: 0.775rem;
+    letter-spacing: 0.02em;
+    text-align: left;
+}
+
+.excel-grid-table td {
+    padding: 0.35rem 0.45rem;
+    border: 1px solid #cbd5e1;
+    background: #ffffff;
+    vertical-align: middle;
+}
+
+.excel-grid-table tr:nth-child(even) td {
+    background: #fafafa;
+}
+
+.excel-grid-table tr:hover td {
+    background: #fffbeb;
+}
+
+.excel-grid-table .form-control {
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    padding: 0.35rem 0.45rem !important;
+    font-size: 0.825rem !important;
+    height: 32px;
+    box-sizing: border-box;
+    width: 100%;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.excel-grid-table .form-control:focus {
+    border-color: #0284c7 !important;
+    box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2) !important;
+    background: #ffffff !important;
+}
+
+/* Category & Grade Pills */
+.btn-chip {
+    padding: 0.2rem 0.5rem;
+    font-size: 0.725rem;
+    font-weight: 600;
+    border-radius: 4px;
+    border: 1px solid #cbd5e1;
+    background: #f8fafc;
+    color: #475569;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    line-height: 1.2;
+}
+
+.btn-chip:hover {
+    background: #e2e8f0;
+    color: #0f172a;
+}
+
+.btn-chip.active {
+    background: #0284c7;
+    color: #ffffff;
+    border-color: #0284c7;
+    box-shadow: 0 1px 2px rgba(2, 132, 199, 0.2);
+}
+
+.btn-chip-grade-a.active {
+    background: #059669 !important;
+    color: #ffffff !important;
+    border-color: #059669 !important;
+}
+
+.btn-chip-grade-b.active {
+    background: #d97706 !important;
+    color: #ffffff !important;
+    border-color: #d97706 !important;
+}
+
+/* Modal Pop Animation */
+@keyframes modalPop {
+    from {
+        opacity: 0;
+        transform: scale(0.96) translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}

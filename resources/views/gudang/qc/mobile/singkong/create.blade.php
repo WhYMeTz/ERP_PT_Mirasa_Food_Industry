@@ -484,19 +484,7 @@
                             <span id="labelSubcardNetto" style="font-size: 0.75rem; font-weight: 800; color: #059669;">Netto: 0,00 KG</span>
                         </div>
 
-                        {{-- NAMA JENIS : (Spesifikasi Fraksi / Grade) di dalam Subcard Timbangan --}}
-                        <div class="form-group" style="margin-top: 0.65rem; margin-bottom: 0;">
-                            <label class="form-label" style="font-weight: 800; font-size: 0.775rem; color: #475569;">NAMA JENIS : (Spesifikasi Fraksi / Grade)</label>
-                            <input type="text" name="nama_jenis" id="namaJenisInput" list="listSingkongJenisPage" class="form-control" placeholder="Singkong Basah Curah / Singkong Gajah" value="{{ old('nama_jenis', 'Singkong Basah Curah') }}">
-                            <datalist id="listSingkongJenisPage">
-                                <option value="Singkong Basah Curah">
-                                <option value="Singkong Ketan">
-                                <option value="Singkong Gajah">
-                                <option value="Singkong Manggu">
-                                <option value="Singkong Mentega / Kuning">
-                                <option value="Singkong Manis Super">
-                            </datalist>
-                        </div>
+                        
                     </div>
 
                     {{-- 8. FIELD KHUSUS SINGKONG: IDENTITAS PANEN (DARI DOKUMEN HACCP SINGKONG) --}}

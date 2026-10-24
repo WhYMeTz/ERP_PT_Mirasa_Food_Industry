@@ -259,6 +259,21 @@ function selectSupplier(supplierId) {
         const packChip = document.querySelector('.barang-filter-chip[data-category="PACK"]');
         if (packChip) filterBarangCategory('PACK', packChip);
     }
+
+    // Auto-set tanggal jatuh tempo berdasarkan TOP Master Supplier (tetap bisa diedit manual)
+    const tempoInput = document.getElementById('tgl_jatuh_tempo');
+    const terimaTglInput = document.getElementById('terima_tgl');
+    if (tempoInput) {
+        const rawDate = (terimaTglInput && terimaTglInput.value) ? terimaTglInput.value : new Date().toISOString().split('T')[0];
+        const parts = rawDate.split('-');
+        const baseDate = new Date(parts[0], parts[1] - 1, parts[2]);
+        const topDays = parseInt(sup.top_hari, 10) >= 0 ? parseInt(sup.top_hari, 10) : 14;
+        baseDate.setDate(baseDate.getDate() + topDays);
+        const yyyy = baseDate.getFullYear();
+        const mm = String(baseDate.getMonth() + 1).padStart(2, '0');
+        const dd = String(baseDate.getDate()).padStart(2, '0');
+        tempoInput.value = `${yyyy}-${mm}-${dd}`;
+    }
 }
 
 function clearSelectedSupplier() {

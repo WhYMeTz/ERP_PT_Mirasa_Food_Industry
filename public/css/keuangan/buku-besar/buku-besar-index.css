@@ -1,0 +1,711 @@
+/**
+ * Stylesheet Buku Besar Interaktif (Interactive General Ledger) - ERP PT Mirasa
+ * Sesuai Aturan AGENTS.md (Clean, Responsive Split Layout, Premium Typography)
+ */
+
+.gl-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    min-height: calc(100vh - 120px);
+}
+
+/* Header & Filter Bar Atas */
+.gl-top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #ffffff;
+    padding: 0.85rem 1.25rem;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+}
+
+.gl-title-group h1 {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.gl-title-group p {
+    font-size: 0.775rem;
+    color: #64748b;
+    margin: 2px 0 0 0;
+}
+
+.gl-period-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+}
+
+/* Split Layout 2 Panel */
+.gl-split-wrapper {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 1rem;
+    align-items: start;
+}
+
+@media (max-width: 1024px) {
+    .gl-split-wrapper {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* PANEL KIRI: DAFTAR AKUN (COA SIDEBAR) */
+.gl-sidebar {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - 150px);
+    position: sticky;
+    top: 75px;
+}
+
+.gl-sidebar-header {
+    padding: 0.85rem;
+    border-bottom: 1px solid #f1f5f9;
+    background: #fafafa;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+}
+
+.gl-search-box {
+    position: relative;
+    margin-bottom: 0.5rem;
+}
+
+.gl-search-box input {
+    width: 100%;
+    padding: 0.45rem 0.65rem 0.45rem 2rem;
+    font-size: 0.8rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    outline: none;
+    transition: all 0.2s;
+}
+
+.gl-search-box input:focus {
+    border-color: #059669;
+    box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15);
+}
+
+.gl-search-icon {
+    position: absolute;
+    left: 0.65rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+    pointer-events: none;
+}
+
+.gl-kategori-tabs {
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+}
+
+.gl-tab-chip {
+    font-size: 0.6875rem;
+    padding: 3px 8px;
+    border-radius: 4px;
+    border: 1px solid #e2e8f0;
+    background: #ffffff;
+    color: #64748b;
+    cursor: pointer;
+    white-space: nowrap;
+    font-weight: 600;
+    transition: all 0.15s;
+}
+
+.gl-tab-chip:hover {
+    background: #f1f5f9;
+    color: #0f172a;
+}
+
+.gl-tab-chip.active {
+    background: #059669;
+    border-color: #059669;
+    color: #ffffff;
+}
+
+.gl-account-list {
+    overflow-y: auto;
+    padding: 0.4rem;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+}
+
+.gl-account-item {
+    display: flex;
+    flex-direction: column;
+    padding: 0.65rem 0.75rem;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.15s;
+    background: #ffffff;
+    position: relative;
+}
+
+.gl-account-item:hover {
+    background: #f8fafc;
+    border-color: #e2e8f0;
+}
+
+.gl-account-item.active {
+    background: #f0fdf4;
+    border-color: #a7f3d0;
+    border-left: 4px solid #059669;
+}
+
+.gl-acc-row-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2px;
+}
+
+.gl-acc-code {
+    font-family: monospace;
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: #0f172a;
+    background: #f1f5f9;
+    padding: 1px 5px;
+    border-radius: 4px;
+}
+
+.gl-account-item.active .gl-acc-code {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.gl-acc-badge {
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 10px;
+    background: #f1f5f9;
+    color: #64748b;
+}
+
+.gl-acc-badge.has-mutasi {
+    background: #e0f2fe;
+    color: #0369a1;
+}
+
+.gl-acc-name {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: #1e293b;
+    line-height: 1.25;
+}
+
+.gl-acc-row-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 4px;
+}
+
+.gl-acc-kategori {
+    font-size: 0.6875rem;
+    color: #94a3b8;
+}
+
+.gl-acc-saldo {
+    font-size: 0.775rem;
+    font-weight: 800;
+    color: #0f172a;
+}
+
+/* PANEL KANAN: BUKU BESAR DETAIL & CHART */
+.gl-content-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+/* Kartu Ringkasan Akun Terpilih */
+.gl-summary-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 1.25rem;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+}
+
+.gl-card-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding-bottom: 0.85rem;
+    border-bottom: 1px solid #f1f5f9;
+    margin-bottom: 0.85rem;
+}
+
+.gl-active-account-title h2 {
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.gl-active-account-title span {
+    font-size: 0.775rem;
+    color: #64748b;
+}
+
+.gl-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.75rem;
+}
+
+@media (max-width: 768px) {
+    .gl-metrics-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+.gl-metric-box {
+    padding: 0.75rem;
+    border-radius: 8px;
+    background: #f8fafc;
+    border: 1px solid #f1f5f9;
+}
+
+.gl-metric-box span {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 3px;
+}
+
+.gl-metric-box strong {
+    font-size: 1rem;
+    font-weight: 800;
+    color: #0f172a;
+}
+
+.gl-metric-box.debet strong { color: #0284c7; }
+.gl-metric-box.kredit strong { color: #d97706; }
+.gl-metric-box.saldo-akhir { background: #f0fdf4; border-color: #bbf7d0; }
+.gl-metric-box.saldo-akhir strong { color: #059669; }
+
+/* KARTU GRAFIK TREN SALDO HARIAN */
+.gl-chart-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+}
+
+.gl-chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.gl-chart-header h3 {
+    font-size: 0.875rem;
+    font-weight: 800;
+    color: #1e293b;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.gl-chart-container {
+    height: 180px;
+    position: relative;
+    width: 100%;
+}
+
+/* KARTU TABEL BUKU BESAR */
+.gl-table-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+}
+
+.gl-table-header-bar {
+    padding: 0.75rem 1rem;
+    background: #fafafa;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.gl-table-header-bar h3 {
+    font-size: 0.875rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0;
+}
+
+.gl-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+}
+
+.gl-table th {
+    background: #f8fafc;
+    color: #475569;
+    font-weight: 700;
+    font-size: 0.725rem;
+    text-transform: uppercase;
+    padding: 0.65rem 0.75rem;
+    border-bottom: 1.5px solid #e2e8f0;
+    letter-spacing: 0.03em;
+}
+
+.gl-table td {
+    padding: 0.65rem 0.75rem;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+}
+
+.gl-table tr:hover td {
+    background: #f8fafc;
+}
+
+.gl-row-beginning {
+    background: #f8fafc;
+    font-style: italic;
+    color: #64748b;
+}
+
+.gl-row-total {
+    background: #fafafa;
+    border-top: 2px solid #cbd5e1;
+    font-weight: 800;
+}
+
+.gl-row-ending {
+    background: #f0fdf4;
+    border-top: 1.5px solid #a7f3d0;
+    font-weight: 800;
+    color: #065f46;
+}
+
+.gl-ref-pill {
+    font-family: monospace;
+    font-weight: 700;
+    font-size: 0.75rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: #e0f2fe;
+    color: #0284c7;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.gl-ref-pill:hover {
+    background: #0284c7;
+    color: #ffffff;
+}
+
+.gl-ref-btn {
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s ease-in-out;
+}
+
+.gl-ref-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(2, 132, 199, 0.25);
+}
+
+.gl-empty-state {
+    padding: 3rem 1rem;
+    text-align: center;
+    color: #94a3b8;
+    font-size: 0.85rem;
+}
+
+/* ========================================================
+   MODAL POP-UP DETAIL TAGIHAN (ENTERPRISE SPLIT MODAL)
+======================================================== */
+.gl-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 1050;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.25rem;
+    animation: fadeInModal 0.18s ease-out forwards;
+}
+
+.gl-modal-dialog {
+    background: #ffffff;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 860px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.08);
+    border: 1px solid #cbd5e1;
+    overflow: hidden;
+    animation: slideUpModal 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fadeInModal {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUpModal {
+    from { transform: translateY(16px) scale(0.98); opacity: 0; }
+    to { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+.gl-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.25rem;
+    border-bottom: 1.5px solid #f1f5f9;
+    background: #f8fafc;
+}
+
+.gl-modal-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+    background: #ecfdf5;
+    color: #059669;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #a7f3d0;
+}
+
+.gl-btn-close {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+}
+
+.gl-btn-close:hover {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+.gl-btn-subtle {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 10px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #0284c7;
+    background: #f0f9ff;
+    border: 1px solid #bae6fd;
+    border-radius: 6px;
+    text-decoration: none;
+    transition: all 0.15s ease;
+}
+
+.gl-btn-subtle:hover {
+    background: #0284c7;
+    color: #ffffff;
+}
+
+.gl-modal-body {
+    padding: 1.25rem;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.gl-info-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+}
+
+@media (max-width: 640px) {
+    .gl-info-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+.gl-info-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0.65rem 0.85rem;
+}
+
+.gl-info-label {
+    display: block;
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: #64748b;
+    margin-bottom: 2px;
+}
+
+.gl-info-val {
+    font-size: 0.8125rem;
+    color: #0f172a;
+    font-weight: 700;
+}
+
+.gl-section-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.gl-section-title h4 {
+    margin: 0;
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: #1e293b;
+}
+
+.gl-modal-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+}
+
+.gl-modal-table th {
+    background: #f1f5f9;
+    color: #475569;
+    font-weight: 700;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid #cbd5e1;
+}
+
+.gl-modal-table td {
+    padding: 0.55rem 0.75rem;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.gl-rekap-grid {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+@media (max-width: 768px) {
+    .gl-rekap-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.gl-rekap-box {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0.85rem;
+}
+
+.gl-summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.8rem;
+    margin-bottom: 4px;
+}
+
+.gl-summary-row.total-row {
+    font-size: 0.9rem;
+    font-weight: 800;
+    color: #0f172a;
+    padding-top: 6px;
+    margin-top: 6px;
+    border-top: 1.5px solid #cbd5e1;
+}
+
+.gl-badge-status {
+    font-size: 0.6875rem;
+    font-weight: 800;
+    padding: 2px 7px;
+    border-radius: 5px;
+    letter-spacing: 0.02em;
+}
+
+.gl-badge-status.lunas {
+    background: #f0fdf4;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+}
+
+.gl-badge-status.overdue {
+    background: #fee2e2;
+    color: #b91c1c;
+    border: 1px solid #fecaca;
+}
+
+.gl-badge-status.parsial {
+    background: #fffbeb;
+    color: #b45309;
+    border: 1px solid #fde68a;
+}
+
+.gl-badge-status.belum-bayar {
+    background: #fef2f2;
+    color: #dc2626;
+    border: 1px solid #fecaca;
+}
+
+.gl-modal-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1.25rem;
+    border-top: 1px solid #f1f5f9;
+    background: #f8fafc;
+}
+

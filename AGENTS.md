@@ -85,3 +85,14 @@ Untuk menjaga konsistensi UI di seluruh sistem ERP:
 5. **Hak Akses & Role Middleware:**
    * Setiap fitur dan tombol aksi dicek menggunakan `Auth::user()->canDo(...)` atau helper method di `App\Models\User.php`.
    * Route dilindungi middleware `role:<nama_permission>`.
+
+---
+
+## 🚫 4. ATURAN EKSEKUSI & OPERASIONAL KHUSUS (WORKFLOW RESTRICTIONS)
+
+1. **Dilarang Cek Halaman / Fitur Secara Online (No Automated Browser Check):**
+   * AI Agent **DILARANG** membuka browser tool/subagent atau melakukan pengecekan web otomatis.
+   * Biarkan pengguna (developer) yang mengecek, menguji, dan memvalidasi tampilan antarmuka maupun fungsionalitas fitur secara langsung.
+2. **Dilarang Git Push Tanpa Perintah Eksplisit:**
+   * AI Agent **DILARANG KERAS** menjalankan `git push` ke remote repository dalam situasi apa pun kecuali diminta secara eksplisit oleh pengguna.
+

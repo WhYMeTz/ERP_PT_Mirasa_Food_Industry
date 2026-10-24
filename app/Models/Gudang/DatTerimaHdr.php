@@ -100,4 +100,13 @@ class DatTerimaHdr extends Model
     {
         return $this->hasMany(DatTerimaDtl::class, 'terima_id', 'terima_id');
     }
+
+    /**
+     * Relasi ke rincian tagihan hutang pembelian Keuangan (AP)
+     */
+    public function hutangDetails(): HasMany
+    {
+        return $this->hasMany(\App\Models\Keuangan\DatHutangDtl::class, 'terima_id', 'terima_id')
+            ->where('deleted_st', false);
+    }
 }

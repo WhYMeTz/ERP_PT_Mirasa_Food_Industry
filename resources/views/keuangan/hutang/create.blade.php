@@ -3,7 +3,7 @@
 @section('title', 'Catat Tagihan Hutang Pembelian (AP)')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/keuangan/hutang/hutang-create.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/keuangan/hutang/hutang-create.css') }}?v={{ filemtime(public_path('css/keuangan/hutang/hutang-create.css')) }}">
 @endpush
 
 @section('content')
@@ -73,7 +73,7 @@
                                 @endphp
                                 <button type="button" 
                                         class="btn-supplier-pill {{ $isActive ? 'active' : '' }}"
-                                        onclick="selectSupplierFromModal({{ $sg->supplier_id }}, '{{ addslashes($sg->supplier_nm) }}', '{{ $sg->supplier_cd }}', {{ $cnt }}, '{{ addslashes($sg->kontak_no ?? '-') }}', '{{ addslashes($sg->alamat_txt ?? '-') }}')"
+                                        onclick="selectSupplierFromModal({{ $sg->supplier_id }}, '{{ addslashes($sg->supplier_nm) }}', '{{ $sg->supplier_cd }}', {{ $cnt }}, '{{ addslashes($sg->kontak_no ?? '-') }}', '{{ addslashes($sg->alamat_txt ?? '-') }}', {{ (int)($sg->top_hari ?? 14) }})"
                                         data-supplier-id="{{ $sg->supplier_id }}"
                                         style="background: {{ $isActive ? '#0284c7' : '#ffffff' }}; 
                                                color: {{ $isActive ? '#ffffff' : '#0f172a' }}; 
@@ -95,6 +95,14 @@
                                                  font-size: 0.7rem; 
                                                  font-weight: 800;">
                                         {{ $cnt }} GRN
+                                    </span>
+                                    <span style="background: {{ $isActive ? 'rgba(255,255,255,0.2)' : '#f1f5f9' }}; 
+                                                 color: {{ $isActive ? '#ffffff' : '#475569' }}; 
+                                                 padding: 1px 5px; 
+                                                 border-radius: 4px; 
+                                                 font-size: 0.68rem; 
+                                                 font-weight: 700;">
+                                        TOP {{ $sg->top_hari ?? 14 }}h
                                     </span>
                                 </button>
                             @endforeach
@@ -146,6 +154,9 @@
                                     <span id="activeSupplierBadge" class="badge-grn-count" style="display: {{ ($unbilledSupplierSummary[$initSupp?->supplier_id ?? 0] ?? 0) > 0 ? 'inline-block' : 'none' }};">
                                         ⚡ {{ $unbilledSupplierSummary[$initSupp?->supplier_id ?? 0] ?? 0 }} GRN Siap Tagih
                                     </span>
+                                    <span id="activeSupplierTopBadge" style="background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; font-size: 0.725rem; font-weight: 700; padding: 2px 8px; border-radius: 6px;">
+                                        ⏱️ Default TOP: <span id="activeSupplierTopDays">{{ $initSupp?->top_hari ?? 14 }}</span> Hari
+                                    </span>
                                 </div>
                                 <div style="font-size: 0.75rem; color: #64748b; margin-top: 3px; display: flex; gap: 1rem; flex-wrap: wrap;">
                                     <span id="activeSupplierContact">📞 {{ $initSupp?->kontak_no ?: 'Belum ada kontak' }}</span>
@@ -161,13 +172,14 @@
                     </div>
                 </div>
 
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem;">
                     <div>
                         <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">
                             No. Faktur / Nota Supplier
                         </label>
                         <input type="text" 
                                name="no_faktur_supplier" 
+                               id="noFakturSupplierInput"
                                value="{{ old('no_faktur_supplier') }}" 
                                class="form-control" 
                                placeholder="Contoh: INV-SUP-2026/099" 
@@ -179,6 +191,7 @@
                             Tanggal Tagihan <span style="color: #dc2626;">*</span>
                         </label>
                         <input type="date" 
+                               id="tglTagihanInput"
                                name="tgl_tagihan" 
                                value="{{ old('tgl_tagihan', date('Y-m-d')) }}" 
                                class="form-control" 
@@ -188,14 +201,38 @@
 
                     <div>
                         <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">
-                            Tanggal Jatuh Tempo (TOP) <span style="color: #dc2626;">*</span>
+                            Tempo Bayar (TOP) <span style="color: #dc2626;">*</span>
+                        </label>
+                        <div style="position: relative;">
+                            <input type="number" 
+                                   id="topHariInput"
+                                   name="top_hari" 
+                                   value="{{ old('top_hari', $initSupp?->top_hari ?? 14) }}" 
+                                   min="0" max="365"
+                                   class="form-control" 
+                                   style="font-size: 0.85rem; height: 38px; padding-right: 2.75rem; font-weight: 700; color: #0284c7;" 
+                                   required>
+                            <span style="position: absolute; right: 10px; top: 9px; font-size: 0.75rem; color: #64748b; font-weight: 700; pointer-events: none;">Hari</span>
+                        </div>
+                        <small id="topDefaultHint" style="color: #64748b; font-size: 0.7rem; display: block; margin-top: 3px;">
+                            Default: <strong id="topDefaultDaysText" style="color: #0369a1;">{{ $initSupp?->top_hari ?? 14 }} Hari</strong>
+                        </small>
+                    </div>
+
+                    <div>
+                        <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">
+                            Tanggal Jatuh Tempo <span style="color: #dc2626;">*</span>
                         </label>
                         <input type="date" 
+                               id="tglJatuhTempoInput"
                                name="tgl_jatuh_tempo" 
-                               value="{{ old('tgl_jatuh_tempo', date('Y-m-d', strtotime('+14 days'))) }}" 
+                               value="{{ old('tgl_jatuh_tempo', date('Y-m-d', strtotime('+' . ($initSupp?->top_hari ?? 14) . ' days'))) }}" 
                                class="form-control" 
-                               style="font-size: 0.85rem; height: 38px;" 
+                               style="font-size: 0.85rem; height: 38px; font-weight: 700; color: #b45309;" 
                                required>
+                        <small id="jatuhTempoHelpText" style="color: #0369a1; font-size: 0.725rem; display: block; margin-top: 3px; font-weight: 600;">
+                            ⏱️ Otomatis: Tgl Tagihan + <span id="helpTextTopHari">{{ $initSupp?->top_hari ?? 14 }}</span> Hari (TOP Supplier)
+                        </small>
                     </div>
                 </div>
             </div>
@@ -292,17 +329,21 @@
                         <thead>
                             <tr style="background: #f8fafc; border-bottom: 1.5px solid #e2e8f0; font-size: 0.75rem; color: #475569; text-transform: uppercase;">
                                 <th style="padding: 0.75rem 0.75rem;">Deskripsi / Komoditas</th>
-                                <th style="padding: 0.75rem 0.5rem; text-align: right;">Kuantitas</th>
-                                <th style="padding: 0.75rem 0.5rem; text-align: center;">Satuan</th>
-                                <th style="padding: 0.75rem 0.5rem; text-align: right;">Harga Satuan (Rp)</th>
-                                <th style="padding: 0.75rem 0.5rem; text-align: right;">Diskon (Rp)</th>
-                                <th style="padding: 0.75rem 0.5rem; text-align: right;">PPN (Rp)</th>
-                                <th style="padding: 0.75rem 0.75rem; text-align: right;">Netto (Rp)</th>
+                                <th style="padding: 0.75rem 0.5rem; text-align: right; width: 105px;">Kuantitas</th>
+                                <th style="padding: 0.75rem 0.5rem; text-align: center; width: 60px;">Satuan</th>
+                                <th style="padding: 0.75rem 0.5rem; text-align: right; width: 125px;">Harga Satuan (Rp)</th>
+                                <th style="padding: 0.75rem 0.5rem; text-align: right; width: 165px;">Diskon (% / Rp)</th>
+                                <th style="padding: 0.75rem 0.5rem; text-align: right; width: 120px;">Potongan Mutu (Rp)</th>
+                                <th style="padding: 0.75rem 0.5rem; text-align: left; width: 175px;">
+                                    <span>Perlakuan PPN</span>
+                                    <span style="font-size: 0.68rem; color: #64748b; font-weight: 500; display: block; text-transform: none;">Non / +11% / Include</span>
+                                </th>
+                                <th style="padding: 0.75rem 0.75rem; text-align: right; width: 130px;">Netto (Rp)</th>
                             </tr>
                         </thead>
                         <tbody id="itemsTableBody">
                             <tr id="emptyItemsRow">
-                                <td colspan="7" style="padding: 2.5rem 1rem; text-align: center; color: #94a3b8; font-size: 0.825rem;">
+                                <td colspan="8" style="padding: 2.5rem 1rem; text-align: center; color: #94a3b8; font-size: 0.825rem;">
                                     Centang salah satu atau beberapa Surat Jalan / GRN di atas untuk memuat rincian tagihan.
                                 </td>
                             </tr>
@@ -341,6 +382,11 @@
                     <strong id="summaryTotalDiskon" style="color: #16a34a;">Rp 0</strong>
                 </div>
 
+                <div class="summary-row" id="rowSummaryPotonganItem" style="display: none; color: #b45309;">
+                    <span>Total Potongan Mutu</span>
+                    <strong id="summaryTotalPotonganItem" style="color: #b45309;">- Rp 0</strong>
+                </div>
+
                 <div class="summary-row">
                     <span>PPN</span>
                     <strong id="summaryTotalPpn" style="color: #0284c7;">Rp 0</strong>
@@ -351,7 +397,7 @@
                         Potongan Retur Barang Rusak (Rp)
                     </label>
                     <input type="number" 
-                           step="1" 
+                           step="any" 
                            min="0" 
                            name="total_potongan_retur" 
                            id="potonganReturInput" 
@@ -362,6 +408,30 @@
                     <div style="font-size: 0.68rem; color: #64748b; margin-top: 3px;">
                         Kredit nota jika ada bahan afkir/reject yang dipotongkan.
                     </div>
+                </div>
+
+                <div style="padding: 0.75rem 0; border-bottom: 1px dashed #e2e8f0; background: #faf5ff; margin: 0 -0.5rem; padding: 0.75rem 0.5rem; border-radius: 6px;">
+                    <label style="display: block; font-size: 0.75rem; font-weight: 700; color: #6b21a8; margin-bottom: 0.25rem; display: flex; align-items: center; justify-content: space-between;">
+                        <span>🚚 Biaya Ongkos Angkut / Ekspedisi (Rp)</span>
+                        <span style="font-size: 0.68rem; background: #f3e8ff; color: #7e22ce; padding: 1px 6px; border-radius: 4px; font-weight: 800;">Akun 6112</span>
+                    </label>
+                    <input type="number" 
+                           step="any" 
+                           min="0" 
+                           name="biaya_ongkir" 
+                           id="biayaOngkirInput" 
+                           value="0" 
+                           class="form-control" 
+                           style="font-size: 0.85rem; height: 34px; text-align: right; font-weight: 700; color: #7e22ce;" 
+                           placeholder="0">
+                    <div style="font-size: 0.68rem; color: #7e22ce; margin-top: 3px;">
+                        Biaya angkutan / sewa truk logistik yang ditagihkan pemasok.
+                    </div>
+                </div>
+
+                <div class="summary-row" id="rowSummaryOngkir" style="display: none; color: #7e22ce;">
+                    <span>+ Ongkos Angkut</span>
+                    <strong id="summaryBiayaOngkir" style="color: #7e22ce;">Rp 0</strong>
                 </div>
 
                 <div class="summary-row total-row">
@@ -390,8 +460,9 @@
 @push('scripts')
 <script>
     window.appConfig = {
-        baseUrl: '{{ url('') }}'
+        baseUrl: '{{ url('') }}',
+        initialTopHari: {{ (int)($initSupp?->top_hari ?? 14) }}
     };
 </script>
-<script src="{{ asset('js/keuangan/hutang/hutang-create.js') }}"></script>
+<script src="{{ asset('js/keuangan/hutang/hutang-create.js') }}?v={{ filemtime(public_path('js/keuangan/hutang/hutang-create.js')) }}"></script>
 @endpush

@@ -56,7 +56,7 @@
                          data-name="{{ strtolower($supp->supplier_nm) }}"
                          data-code="{{ strtolower($supp->supplier_cd ?? '') }}"
                          data-has-grn="{{ $hasGrn ? '1' : '0' }}"
-                         onclick="selectSupplierFromModal({{ $supp->supplier_id }}, '{{ addslashes($supp->supplier_nm) }}', '{{ $supp->supplier_cd }}', {{ $grnCnt }}, '{{ addslashes($supp->kontak_no ?? '-') }}', '{{ addslashes($supp->alamat_txt ?? '-') }}')">
+                         onclick="selectSupplierFromModal({{ $supp->supplier_id }}, '{{ addslashes($supp->supplier_nm) }}', '{{ $supp->supplier_cd }}', {{ $grnCnt }}, '{{ addslashes($supp->kontak_no ?? '-') }}', '{{ addslashes($supp->alamat_txt ?? '-') }}', {{ (int)($supp->top_hari ?? 14) }})">
                         
                         <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.75rem;">
                             <div style="flex: 1;">
@@ -68,6 +68,9 @@
                                             ⚡ {{ $grnCnt }} GRN Siap Tagih
                                         </span>
                                     @endif
+                                    <span style="background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; font-size: 0.725rem; font-weight: 700; padding: 2px 7px; border-radius: 6px;">
+                                        ⏱️ TOP: {{ $supp->top_hari ?? 14 }} Hari
+                                    </span>
                                 </div>
 
                                 <div style="font-size: 0.75rem; color: #64748b; margin-top: 4px; display: flex; gap: 1rem; flex-wrap: wrap;">

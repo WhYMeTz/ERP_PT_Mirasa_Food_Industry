@@ -28,8 +28,10 @@ class DatHutangHdr extends Model
         'periode_bulan',
         'total_bruto',
         'total_diskon',
+        'total_potongan_item',
         'total_potongan_retur',
         'total_ppn',
+        'biaya_ongkir',
         'total_tagihan',
         'total_dibayar',
         'sisa_hutang',
@@ -48,8 +50,10 @@ class DatHutangHdr extends Model
         'tgl_jatuh_tempo'      => 'date',
         'total_bruto'          => 'float',
         'total_diskon'         => 'float',
+        'total_potongan_item'  => 'float',
         'total_potongan_retur' => 'float',
         'total_ppn'            => 'float',
+        'biaya_ongkir'         => 'float',
         'total_tagihan'        => 'float',
         'total_dibayar'        => 'float',
         'sisa_hutang'          => 'float',
@@ -75,6 +79,12 @@ class DatHutangHdr extends Model
     public function bayarDetails(): HasMany
     {
         return $this->hasMany(DatBayarHutangDtl::class, 'hutang_id', 'hutang_id');
+    }
+
+    public function jurnal(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(DatJurnalHdr::class, 'ref_no', 'hutang_no')
+            ->where('deleted_st', false);
     }
 
     /**

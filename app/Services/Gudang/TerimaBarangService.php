@@ -7,6 +7,7 @@ use App\Models\Gudang\DatPoHdr;
 use App\Models\Gudang\DatTerimaDtl;
 use App\Models\Gudang\DatTerimaHdr;
 use App\Models\MasterData\MstBarang;
+use App\Models\MasterData\MstSupplier;
 use App\Services\Common\CodeGeneratorService;
 use Exception;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -114,7 +115,8 @@ class TerimaBarangService
             'gudang',
             'po',
             'qc.details',
-            'details.barang.satuanDasar'
+            'details.barang.satuanDasar',
+            'hutangDetails.header'
         ])->where('terima_id', $id)->firstOrFail();
     }
 
@@ -139,6 +141,7 @@ class TerimaBarangService
 
             // 1. Hitung akumulasi subtotal, diskon, potongan, dan PPN per item
             $subtotalNominal = 0;
+            $totalSubtotalBruto = 0;
             $totalDiskonNominal = 0;
             $totalItemPotongan = 0;
             $totalDppPpn = 0;
@@ -187,6 +190,7 @@ class TerimaBarangService
                         $totalDppNonPpn += $subtotalNetto;
                     }
 
+                    $totalSubtotalBruto += round($nettoQty * $hargaNominal, 4);
                     $subtotalNominal += $subtotalNetto;
                     $totalDiskonNominal += round($nettoQty * $diskonNominalUnit, 4);
                     $totalItemPotongan += $potonganItem;
@@ -242,11 +246,18 @@ class TerimaBarangService
             $dppNominal = max(0, $totalDppPpn - $potonganGlobal);
             $totalTagihan = round($subtotalNominal + $totalPpnNominal - $potonganGlobal, 2);
 
+            $terimaTglCarbon = !empty($data['terima_tgl']) ? \Carbon\Carbon::parse($data['terima_tgl']) : now();
+            $supplierObj = MstSupplier::find($supplierId);
+            $defaultTopHari = (int) ($supplierObj?->top_hari ?? 14);
+            $tglJatuhTempoCalc = !empty($data['tgl_jatuh_tempo']) 
+                ? $data['tgl_jatuh_tempo'] 
+                : (clone $terimaTglCarbon)->addDays($defaultTopHari)->toDateString();
+
             // 2. Simpan Header Penerimaan
             $header = DatTerimaHdr::create([
                 'terima_no'        => $terimaNo,
                 'terima_tgl'       => $data['terima_tgl'] ?? date('Y-m-d'),
-                'tgl_jatuh_tempo'  => !empty($data['tgl_jatuh_tempo']) ? $data['tgl_jatuh_tempo'] : null,
+                'tgl_jatuh_tempo'  => $tglJatuhTempoCalc,
                 'po_id'            => $poId,
                 'qc_id'            => !empty($data['qc_id']) ? (int)$data['qc_id'] : null,
                 'supplier_id'      => $supplierId,
@@ -254,7 +265,7 @@ class TerimaBarangService
                 'suratjalan_no'    => $data['suratjalan_no'] ?? null,
                 'status_cd'        => 'COMPLETED',
                 'catatan_txt'      => $data['catatan_txt'] ?? null,
-                'subtotal_nominal' => $subtotalNominal,
+                'subtotal_nominal' => $totalSubtotalBruto,
                 'potongan_nominal' => $totalSemuaPotongan,
                 'dpp_nominal'      => $dppNominal,
                 'ppn_tipe'         => $headerPpnTipe,
@@ -374,15 +385,11 @@ class TerimaBarangService
                 );
             }
 
-            // 5. Otomatisasi Faktur Tagihan Hutang (AP) ke Keuangan
-            try {
-                app(\App\Services\Keuangan\HutangService::class)->createAutoFromGrn(
-                    $header,
-                    $data['tgl_jatuh_tempo'] ?? null
-                );
-            } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::error("Gagal auto generate AP dari GRN {$header->terima_no}: " . $e->getMessage());
-            }
+            // 5. Faktur Tagihan Hutang (AP):
+            // Berdasarkan alur bisnis Opsi 1 (Pemisahan Operasional Gudang & Keuangan),
+            // penerimaan fisik barang (GRN) ini tidak langsung auto-generate hutang,
+            // melainkan masuk ke antrean 'Unbilled GRN' untuk diverifikasi oleh staf Keuangan
+            // dengan mencocokkan dokumen fisik dan menginput nomor faktur vendor asli.
 
             return $header->fresh(['details.barang']);
         });
@@ -443,6 +450,7 @@ class TerimaBarangService
 
             // Hitung akumulasi subtotal, diskon, potongan, dan PPN per item
             $subtotalNominal = 0;
+            $totalSubtotalBruto = 0;
             $totalDiskonNominal = 0;
             $totalItemPotongan = 0;
             $totalDppPpn = 0;
@@ -486,6 +494,7 @@ class TerimaBarangService
                         $totalDppNonPpn += $subtotalNetto;
                     }
 
+                    $totalSubtotalBruto += round($nettoQty * $hargaNominal, 4);
                     $subtotalNominal += $subtotalNetto;
                     $totalDiskonNominal += round($nettoQty * $diskonNominalUnit, 4);
                     $totalItemPotongan += $potonganItem;
@@ -549,7 +558,7 @@ class TerimaBarangService
                 'suratjalan_no'    => $data['suratjalan_no'] ?? null,
                 'tgl_jatuh_tempo'  => !empty($data['tgl_jatuh_tempo']) ? $data['tgl_jatuh_tempo'] : $terima->tgl_jatuh_tempo,
                 'catatan_txt'      => $data['catatan_txt'] ?? null,
-                'subtotal_nominal' => $subtotalNominal,
+                'subtotal_nominal' => $totalSubtotalBruto,
                 'potongan_nominal' => $totalSemuaPotongan,
                 'dpp_nominal'      => $dppNominal,
                 'ppn_tipe'         => $headerPpnTipe,

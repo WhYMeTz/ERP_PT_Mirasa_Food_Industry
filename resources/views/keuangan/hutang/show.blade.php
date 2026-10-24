@@ -41,6 +41,12 @@
     </div>
 
     <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+        @if ($jurnal)
+            <button type="button" onclick="openModalDetailJurnal({{ $jurnal->jurnal_id }})" class="btn btn-secondary" style="font-size: 0.8125rem; font-weight: 700; color: #0284c7; border-color: #cbd5e1; background: #ffffff; display: inline-flex; align-items: center; gap: 0.35rem;">
+                <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                <span>Pop-up Jurnal ({{ $jurnal->jurnal_no }})</span>
+            </button>
+        @endif
         <button type="button" onclick="window.print()" class="btn btn-secondary" style="font-size: 0.8125rem; font-weight: 700;">
             🖨️ Cetak Faktur
         </button>
@@ -140,6 +146,7 @@
                             <th style="padding: 0.75rem 0.5rem; text-align: center;">Satuan</th>
                             <th style="padding: 0.75rem 0.5rem; text-align: right;">Harga Satuan</th>
                             <th style="padding: 0.75rem 0.5rem; text-align: right;">Diskon</th>
+                            <th style="padding: 0.75rem 0.5rem; text-align: right;">Potongan Mutu</th>
                             <th style="padding: 0.75rem 0.5rem; text-align: right;">PPN</th>
                             <th style="padding: 0.75rem 0.85rem; text-align: right;">Netto</th>
                         </tr>
@@ -167,10 +174,30 @@
                                     Rp {{ number_format($dtl->harga_satuan, 0, ',', '.') }}
                                 </td>
                                 <td style="padding: 0.65rem 0.5rem; text-align: right; color: #16a34a;">
-                                    {{ $dtl->diskon_nominal > 0 ? 'Rp ' . number_format($dtl->diskon_nominal, 0, ',', '.') : '-' }}
+                                    @if ($dtl->diskon_nominal > 0)
+                                        Rp {{ number_format($dtl->diskon_nominal, 0, ',', '.') }}
+                                        @if ($dtl->diskon_persen > 0)
+                                            <div style="font-size: 0.7rem; color: #059669; font-weight: 700;">({{ floatval($dtl->diskon_persen) }}%)</div>
+                                        @endif
+                                    @else
+                                        -
+                                    @endif
+                                </td>
+                                <td style="padding: 0.65rem 0.5rem; text-align: right; color: #b45309;">
+                                    {{ $dtl->potongan_nominal > 0 ? 'Rp ' . number_format($dtl->potongan_nominal, 0, ',', '.') : '-' }}
                                 </td>
                                 <td style="padding: 0.65rem 0.5rem; text-align: right; color: #0284c7;">
-                                    {{ $dtl->ppn_nominal > 0 ? 'Rp ' . number_format($dtl->ppn_nominal, 0, ',', '.') : '-' }}
+                                    @if ($dtl->ppn_nominal > 0)
+                                        <div style="font-weight: 700;">Rp {{ number_format($dtl->ppn_nominal, 0, ',', '.') }}</div>
+                                        @if ($dtl->ppn_tipe === 'PPN_INCLUDE')
+                                            <div style="font-size: 0.68rem; color: #0284c7; font-weight: 700;">(Include 11%)</div>
+                                            <div style="font-size: 0.65rem; color: #64748b;">DPP: Rp {{ number_format($dtl->dpp_nominal, 0, ',', '.') }}</div>
+                                        @elseif ($dtl->ppn_tipe === 'PPN_11')
+                                            <div style="font-size: 0.68rem; color: #059669; font-weight: 700;">(Exclude +11%)</div>
+                                        @endif
+                                    @else
+                                        <span style="color: #94a3b8; font-size: 0.75rem;">Non PPN</span>
+                                    @endif
                                 </td>
                                 <td style="padding: 0.65rem 0.85rem; text-align: right; font-weight: 800; color: #0f172a;">
                                     Rp {{ number_format($dtl->total_netto, 0, ',', '.') }}
@@ -241,6 +268,81 @@
                 </div>
             @endif
         </div>
+
+        {{-- KARTU 4: JURNAL AKUNTANSI OTOMATIS (DOUBLE ENTRY) --}}
+        @if ($jurnal)
+            <div class="card" style="padding: 1.25rem; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; margin-top: 1.25rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem; flex-wrap: wrap; gap: 0.5rem;">
+                    <div>
+                        <h3 style="font-size: 0.95rem; font-weight: 800; color: #0f172a; margin: 0; display: flex; align-items: center; gap: 0.4rem;">
+                            <span>📑</span> <span>Jurnal Akuntansi Berpasangan (Double Entry)</span>
+                        </h3>
+                        <div style="font-size: 0.725rem; color: #64748b; margin-top: 2px;">
+                            No. Jurnal: <strong style="font-family: monospace; color: #0284c7;">{{ $jurnal->jurnal_no }}</strong> &bull; Tgl: {{ \Carbon\Carbon::parse($jurnal->tgl_jurnal)->format('d/m/Y') }}
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                        <button type="button" 
+                                onclick="openModalDetailJurnal({{ $jurnal->jurnal_id }})" 
+                                class="btn btn-secondary" 
+                                style="font-size: 0.75rem; font-weight: 700; padding: 4px 10px; display: inline-flex; align-items: center; gap: 5px; background: #ffffff; border: 1.5px solid #cbd5e1; color: #0284c7; border-radius: 6px; cursor: pointer; transition: all 0.15s ease;">
+                            <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                            <span>Pop-up Audit Jurnal</span>
+                        </button>
+                        <span style="font-size: 0.725rem; background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; font-weight: 800; padding: 4px 8px; border-radius: 6px;">
+                            ✓ BALANCED (Debet = Kredit)
+                        </span>
+                    </div>
+                </div>
+
+                <table class="table-compact" style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.8rem;">
+                    <thead>
+                        <tr style="background: #f8fafc; border-bottom: 1.5px solid #e2e8f0; font-size: 0.725rem; color: #475569; text-transform: uppercase;">
+                            <th style="padding: 0.6rem 0.75rem;">Kode &amp; Nama Akun</th>
+                            <th style="padding: 0.6rem 0.5rem;">Keterangan Baris</th>
+                            <th style="padding: 0.6rem 0.75rem; text-align: right; width: 140px;">Debet (Rp)</th>
+                            <th style="padding: 0.6rem 0.75rem; text-align: right; width: 140px;">Kredit (Rp)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($jurnal->details as $jdtl)
+                            <tr style="border-bottom: 1px solid #f1f5f9;">
+                                <td style="padding: 0.6rem 0.75rem;">
+                                    <span style="font-family: monospace; font-weight: 800; color: #0284c7; background: #e0f2fe; padding: 1px 5px; border-radius: 4px; font-size: 0.75rem;">
+                                        {{ $jdtl->coa?->kode_akun ?? '-' }}
+                                    </span>
+                                    <strong style="color: #0f172a; margin-left: 6px;">
+                                        {{ $jdtl->coa?->nama_akun ?? '-' }}
+                                    </strong>
+                                </td>
+                                <td style="padding: 0.6rem 0.5rem; color: #64748b; font-size: 0.75rem;">
+                                    {{ $jdtl->keterangan }}
+                                </td>
+                                <td style="padding: 0.6rem 0.75rem; text-align: right; font-weight: 700; color: {{ $jdtl->debet > 0 ? '#0f172a' : '#cbd5e1' }};">
+                                    {{ $jdtl->debet > 0 ? 'Rp ' . number_format($jdtl->debet, 0, ',', '.') : '-' }}
+                                </td>
+                                <td style="padding: 0.6rem 0.75rem; text-align: right; font-weight: 700; color: {{ $jdtl->kredit > 0 ? '#0f172a' : '#cbd5e1' }};">
+                                    {{ $jdtl->kredit > 0 ? 'Rp ' . number_format($jdtl->kredit, 0, ',', '.') : '-' }}
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                    <tfoot>
+                        <tr style="background: #f8fafc; font-weight: 800; border-top: 1.5px solid #cbd5e1;">
+                            <td colspan="2" style="padding: 0.6rem 0.75rem; text-align: right; color: #334155;">
+                                Total Keseimbangan Jurnal:
+                            </td>
+                            <td style="padding: 0.6rem 0.75rem; text-align: right; color: #0284c7;">
+                                Rp {{ number_format($jurnal->total_debet, 0, ',', '.') }}
+                            </td>
+                            <td style="padding: 0.6rem 0.75rem; text-align: right; color: #0284c7;">
+                                Rp {{ number_format($jurnal->total_kredit, 0, ',', '.') }}
+                            </td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        @endif
     </div>
 
     {{-- SISI KANAN: STATUS KEUANGAN & SISA HUTANG --}}
@@ -262,6 +364,13 @@
                 </div>
             @endif
 
+            @if ($hutang->total_potongan_item > 0)
+                <div style="display: flex; justify-content: space-between; padding: 0.45rem 0; font-size: 0.825rem; color: #b45309; border-bottom: 1px dashed #f1f5f9;">
+                    <span>Potongan Mutu Item</span>
+                    <strong>- Rp {{ number_format($hutang->total_potongan_item, 0, ',', '.') }}</strong>
+                </div>
+            @endif
+
             @if ($hutang->total_potongan_retur > 0)
                 <div style="display: flex; justify-content: space-between; padding: 0.45rem 0; font-size: 0.825rem; color: #dc2626; border-bottom: 1px dashed #f1f5f9;">
                     <span>Potongan Retur</span>
@@ -273,6 +382,13 @@
                 <div style="display: flex; justify-content: space-between; padding: 0.45rem 0; font-size: 0.825rem; color: #0284c7; border-bottom: 1px dashed #f1f5f9;">
                     <span>PPN</span>
                     <strong>+ Rp {{ number_format($hutang->total_ppn, 0, ',', '.') }}</strong>
+                </div>
+            @endif
+
+            @if ($hutang->biaya_ongkir > 0)
+                <div style="display: flex; justify-content: space-between; padding: 0.45rem 0; font-size: 0.825rem; color: #7e22ce; border-bottom: 1px dashed #f1f5f9;">
+                    <span>+ Beban Angkut (Ongkir)</span>
+                    <strong>+ Rp {{ number_format($hutang->biaya_ongkir, 0, ',', '.') }}</strong>
                 </div>
             @endif
 
@@ -311,6 +427,7 @@
 
 @include('keuangan.hutang.partials.modal-edit-tempo')
 @include('keuangan.hutang.partials.modal-quick-pay')
+@include('keuangan.jurnal.partials.modal-detail-jurnal')
 
 @endsection
 
@@ -320,6 +437,6 @@
             baseUrl: '{{ url('') }}'
         };
     </script>
-    <script src="{{ asset('js/keuangan/hutang/hutang-show.js') }}"></script>
-    <script src="{{ asset('js/keuangan/hutang/hutang-index.js') }}"></script>
+    <script src="{{ asset('js/keuangan/hutang/hutang-show.js') }}?v={{ file_exists(public_path('js/keuangan/hutang/hutang-show.js')) ? filemtime(public_path('js/keuangan/hutang/hutang-show.js')) : time() }}"></script>
+    <script src="{{ asset('js/keuangan/hutang/hutang-index.js') }}?v={{ file_exists(public_path('js/keuangan/hutang/hutang-index.js')) ? filemtime(public_path('js/keuangan/hutang/hutang-index.js')) : time() }}"></script>
 @endpush

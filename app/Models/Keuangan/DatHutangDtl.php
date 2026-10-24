@@ -26,8 +26,12 @@ class DatHutangDtl extends Model
         'satuan',
         'harga_satuan',
         'subtotal',
+        'diskon_persen',
         'diskon_nominal',
+        'potongan_nominal',
         'ppn_nominal',
+        'ppn_tipe',
+        'dpp_nominal',
         'total_netto',
         'catatan',
         'created_by',
@@ -39,14 +43,17 @@ class DatHutangDtl extends Model
     ];
 
     protected $casts = [
-        'qty'            => 'float',
-        'harga_satuan'   => 'float',
-        'subtotal'       => 'float',
-        'diskon_nominal' => 'float',
-        'ppn_nominal'    => 'float',
-        'total_netto'    => 'float',
-        'deleted_st'     => 'boolean',
-        'active_st'      => 'boolean',
+        'qty'              => 'float',
+        'harga_satuan'     => 'float',
+        'subtotal'         => 'float',
+        'diskon_persen'    => 'float',
+        'diskon_nominal'   => 'float',
+        'potongan_nominal' => 'float',
+        'ppn_nominal'      => 'float',
+        'dpp_nominal'      => 'float',
+        'total_netto'      => 'float',
+        'deleted_st'       => 'boolean',
+        'active_st'        => 'boolean',
     ];
 
     public function header(): BelongsTo

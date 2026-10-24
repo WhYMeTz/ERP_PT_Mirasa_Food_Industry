@@ -155,45 +155,49 @@
 </head>
 <body>
 
-    {{-- KOP TABEL STANDAR HACCP --}}
+    {{-- KOP TABEL STANDAR HACCP MIRASA PERSIS GAMBAR ASLI --}}
     <table class="kop-table">
         <tr>
-            <td class="kop-logo">
+            <td class="kop-logo" rowspan="2">
                 @if (!empty($logoBase64))
                     <img src="{{ $logoBase64 }}" style="width: 58px; height: auto;" alt="Logo Cap Payung">
                 @endif
-                <div style="font-size: 6.5pt; font-weight: 800; color: #dc2626; margin-top: 2px; letter-spacing: 0.04em;">
-                    ENAK - GURIH - LEZAT
+                <div style="font-size: 6.5pt; font-weight: 800; color: #dc2626; margin-top: 3px; letter-spacing: 0.04em;">
+                    ENAK &bull; GURIH &bull; LEZAT
                 </div>
             </td>
-            <td class="kop-title">
-                <div class="company-name">PT. MIRASA FOOD INDUSTRY</div>
-                <div class="form-label-title">Form</div>
-                <div class="form-doc-title">Permintaan Barang</div>
+            <td class="kop-title" style="border-bottom: 1px solid #000000; padding: 7px 10px;">
+                <div class="company-name" style="color: #003366; font-size: 12pt;">PT. MIRASA FOOD INDUSTRY</div>
             </td>
-            <td class="kop-meta">
+            <td class="kop-meta" rowspan="2">
                 <table class="meta-subtable">
                     <tr>
                         <td class="meta-label">Nomor dokumen</td>
                         <td class="meta-sep">:</td>
-                        <td class="meta-val">MFI/HACCP-04/FRM-03/050/VIII/2021</td>
+                        <td class="meta-val" style="font-size: 7.5pt; font-weight: 500;">MFI/HACCP-04/FRM-03/050/VIII/2021</td>
                     </tr>
                     <tr>
                         <td class="meta-label">Terbitan/Tgl</td>
                         <td class="meta-sep">:</td>
-                        <td class="meta-val">19-08-2021</td>
+                        <td class="meta-val" style="font-weight: 500;">19-08-2021</td>
                     </tr>
                     <tr>
                         <td class="meta-label">Revisi</td>
                         <td class="meta-sep">:</td>
-                        <td class="meta-val">00</td>
+                        <td class="meta-val" style="font-weight: 500;">00</td>
                     </tr>
                     <tr>
                         <td class="meta-label">Halaman</td>
                         <td class="meta-sep">:</td>
-                        <td class="meta-val">1 dari 1</td>
+                        <td class="meta-val"></td>
                     </tr>
                 </table>
+            </td>
+        </tr>
+        <tr>
+            <td class="kop-title" style="padding: 6px 10px;">
+                <div class="form-label-title" style="margin: 0; font-size: 11pt; font-weight: 800;">Form</div>
+                <div class="form-doc-title" style="margin: 0; font-size: 11pt; font-weight: 800;">Permintaan Barang</div>
             </td>
         </tr>
     </table>

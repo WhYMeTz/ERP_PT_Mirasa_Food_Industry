@@ -171,7 +171,7 @@
         .ttd-table-ifm {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 36px;
+            margin-top: 55px;
             table-layout: fixed;
         }
         .ttd-table-ifm td {
@@ -305,8 +305,8 @@
             <tr>
                 <td style="height: 20px;"></td>
                 <td style="vertical-align: middle; padding-left: 2px;">
-                    <div style="padding-left: 28px;">
-                        <span style="font-size: 12pt; font-weight: bold; text-decoration: underline; letter-spacing: 0.5px;">
+                    <div style="padding-left: 33px;">
+                        <span style="font-size: 10pt; font-weight: bold; text-decoration: underline; letter-spacing: 0.5px;">
                             SURAT JALAN
                         </span>
                     </div>

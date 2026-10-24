@@ -306,6 +306,12 @@ Route::middleware('auth')->group(function () {
         Route::post('pemakaian', [PemakaianController::class, 'store'])
             ->name('pemakaian.store')
             ->middleware('role:pemakaian_create');
+        Route::post('pemakaian/{id}/post', [PemakaianController::class, 'postPemakaian'])
+            ->name('pemakaian.post')
+            ->middleware('role:pemakaian_create');
+        Route::delete('pemakaian/{id}', [PemakaianController::class, 'destroy'])
+            ->name('pemakaian.destroy')
+            ->middleware('role:pemakaian_create');
         Route::resource('pemakaian', PemakaianController::class)->only(['index', 'show'])->middleware('role:pemakaian_view');
 
         // Monitoring Persediaan: Lacak Stok, Kartu Stok & Rekapitulasi Persediaan (Berdasarkan izin 'stok_view')

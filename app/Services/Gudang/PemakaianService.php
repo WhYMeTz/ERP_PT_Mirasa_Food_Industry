@@ -6,7 +6,9 @@ use App\Models\Gudang\DatPakaiDtl;
 use App\Models\Gudang\DatPakaiHdr;
 use App\Models\Gudang\DatStokBatch;
 use App\Models\MasterData\MstBarang;
+use App\Models\User;
 use App\Services\Common\CodeGeneratorService;
+use App\Services\Keuangan\JurnalService;
 use Exception;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
@@ -15,7 +17,8 @@ class PemakaianService
 {
     public function __construct(
         protected StokService $stokService,
-        protected CodeGeneratorService $codeGenerator
+        protected CodeGeneratorService $codeGenerator,
+        protected JurnalService $jurnalService
     ) {}
 
     /**
@@ -319,7 +322,7 @@ class PemakaianService
 
     /**
      * Memproses pengeluaran / pemakaian barang ke proses produksi atau packing via DB Transaction.
-     * Mengurangi saldo batch di dat_stok_batch & mencatat riwayat kartu stok mutasi (OUT).
+     * Menyimpan dokumen sebagai DRAFT (belum memotong stok & belum terbit jurnal agar bisa diverifikasi terlebih dahulu).
      */
     public function store(array $data): DatPakaiHdr
     {
@@ -333,7 +336,7 @@ class PemakaianService
             $gudangId = (int) $data['gudang_id'];
             $tujuanPemakaian = !empty($data['tujuan_pemakaian']) ? trim($data['tujuan_pemakaian']) : 'PRODUKSI';
 
-            // 1. Simpan Header Pengeluaran
+            // 1. Simpan Header Pengeluaran sebagai DRAFT
             $header = DatPakaiHdr::create([
                 'pakai_no'         => $pakaiNo,
                 'pakai_tgl'        => $data['pakai_tgl'] ?? date('Y-m-d'),
@@ -341,9 +344,10 @@ class PemakaianService
                 'produksi_id'      => !empty($data['produksi_id']) ? (int) $data['produksi_id'] : null,
                 'tujuan_pemakaian' => $tujuanPemakaian,
                 'catatan_txt'      => $data['catatan_txt'] ?? null,
+                'status_st'        => 'DRAFT',
             ]);
 
-            // 2. Loop detail item & kurangi stok
+            // 2. Loop detail item pemakaian
             foreach ($items as $item) {
                 $barangId = (int) $item['barang_id'];
                 $batchNo = trim($item['batch_no'] ?? '');
@@ -403,20 +407,127 @@ class PemakaianService
                     'total_harga'    => $totalHarga,
                     'keterangan_txt' => $keteranganDetail,
                 ]);
-
-                // Kurangi stok fisik per batch & grade serta catat kartu stok OUT
-                $this->stokService->deductStock(
-                    $gudangId,
-                    $barangId,
-                    $batchNo,
-                    $qtyKeluar,
-                    $pakaiNo,
-                    "Pengeluaran ({$tujuanPemakaian}) - {$keteranganDetail}",
-                    $gradeCd
-                );
             }
 
             return $header->fresh(['details.barang']);
+        });
+    }
+
+    /**
+     * Verifikasi & Posting Pengeluaran Bahan:
+     * 1. Validasi status masih DRAFT
+     * 2. Kurangi stok fisik gudang per-batch & catat kartu stok mutasi OUT
+     * 3. Terbitkan Jurnal Umum Akuntansi otomatis (Debet 1151 Persediaan WIP & FG, Kredit 1150 Persediaan Bahan Baku)
+     * 4. Ubah status menjadi POSTED
+     */
+    public function postPemakaian(int $pakaiId, ?User $user = null): DatPakaiHdr
+    {
+        return DB::transaction(function () use ($pakaiId, $user) {
+            $header = DatPakaiHdr::with(['details.barang.satuanDasar', 'gudang'])
+                ->where('pakai_id', $pakaiId)
+                ->where('deleted_st', false)
+                ->firstOrFail();
+
+            if ($header->status_st === 'POSTED') {
+                throw new Exception("Dokumen pemakaian '{$header->pakai_no}' sudah diposting sebelumnya.");
+            }
+
+            if ($header->details->isEmpty()) {
+                throw new Exception("Dokumen pemakaian '{$header->pakai_no}' tidak memiliki rincian bahan yang dikeluarkan.");
+            }
+
+            $totalNominal = 0;
+
+            // 1. Potong Stok Fisik untuk Setiap Baris Detail
+            foreach ($header->details as $dtl) {
+                $qtyKeluar = (float) $dtl->qty_keluar;
+                if ($qtyKeluar <= 0) {
+                    continue;
+                }
+
+                $totalNominal += (float) $dtl->total_harga;
+
+                // Potong stok batch & catat kartu stok OUT
+                $this->stokService->deductStock(
+                    $header->gudang_id,
+                    $dtl->barang_id,
+                    $dtl->batch_no,
+                    $qtyKeluar,
+                    $header->pakai_no,
+                    "Pengeluaran ({$header->tujuan_pemakaian}) - " . ($dtl->keterangan_txt ?? $header->tujuan_pemakaian),
+                    $dtl->grade_cd ?? 'A'
+                );
+            }
+
+            // 2. Terbitkan Jurnal Umum Otomatis
+            $jurnalId = null;
+            if ($totalNominal > 0) {
+                $tujuan = $header->tujuan_pemakaian ?: 'PRODUKSI';
+                $tglJurnal = $header->pakai_tgl ? $header->pakai_tgl->format('Y-m-d') : date('Y-m-d');
+                $keteranganJurnal = "Pemakaian Bahan Baku ({$tujuan}) - Dokumen No: {$header->pakai_no}";
+
+                $entries = [
+                    [
+                        'kode_akun'  => '1151', // Persediaan WIP & FG
+                        'debet'      => $totalNominal,
+                        'kredit'     => 0,
+                        'keterangan' => "Pemakaian Bahan untuk Produksi ({$tujuan})",
+                    ],
+                    [
+                        'kode_akun'  => '1150', // Persediaan Bahan Baku & Penolong
+                        'debet'      => 0,
+                        'kredit'     => $totalNominal,
+                        'keterangan' => "Pengeluaran Bahan Baku Gudang - {$header->pakai_no}",
+                    ],
+                ];
+
+                $jurnal = $this->jurnalService->catatJurnal(
+                    'PEMAKAIAN_PRODUKSI',
+                    $tglJurnal,
+                    $header->pakai_no,
+                    $header->pakai_id,
+                    $keteranganJurnal,
+                    $entries,
+                    $user
+                );
+
+                $jurnalId = $jurnal->jurnal_id;
+            }
+
+            // 3. Update Status Dokumen menjadi POSTED
+            $actor = $user?->name ?? auth()->user()?->name ?? 'SYSTEM';
+            $header->update([
+                'status_st'  => 'POSTED',
+                'posted_at'  => now(),
+                'posted_by'  => $actor,
+                'jurnal_id'  => $jurnalId,
+                'updated_by' => $actor,
+            ]);
+
+            return $header->fresh(['details.barang', 'jurnal']);
+        });
+    }
+
+    /**
+     * Hapus dokumen pemakaian (Hanya jika status masih DRAFT)
+     */
+    public function delete(int $pakaiId, ?User $user = null): bool
+    {
+        return DB::transaction(function () use ($pakaiId, $user) {
+            $header = DatPakaiHdr::where('pakai_id', $pakaiId)->firstOrFail();
+
+            if ($header->status_st === 'POSTED') {
+                throw new Exception("Dokumen pemakaian '{$header->pakai_no}' sudah diposting dan stok telah dipotong. Dokumen tidak dapat dihapus langsung.");
+            }
+
+            $actor = $user?->name ?? auth()->user()?->name ?? 'SYSTEM';
+            $header->update([
+                'deleted_st' => true,
+                'deleted_by' => $actor,
+                'deleted_at' => now(),
+            ]);
+
+            return true;
         });
     }
 }

@@ -55,6 +55,15 @@
         <h1 style="font-size: 1.5rem; font-weight: 700; color: #0f172a; margin-top: 0.5rem; display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
             <span>{{ $pakai->pakai_no }}</span>
             <span class="badge" style="background: #fee2e2; color: #991b1b; font-size: 0.85rem;">{{ $pakai->tujuan_pemakaian }}</span>
+            @if($pakai->isDraft())
+                <span class="badge" style="background: #fef3c7; color: #92400e; font-size: 0.8rem; border: 1px solid #fde68a; font-weight: 700; padding: 0.25rem 0.65rem;">
+                    ⏳ DRAFT (Menunggu Verifikasi)
+                </span>
+            @else
+                <span class="badge" style="background: #d1fae5; color: #065f46; font-size: 0.8rem; border: 1px solid #a7f3d0; font-weight: 700; padding: 0.25rem 0.65rem;">
+                    ✓ POSTED (Terverifikasi)
+                </span>
+            @endif
         </h1>
         <p style="color: #64748b; font-size: 0.875rem;">
             Dokumen pengeluaran bahan dari {{ $pakai->gudang?->gudang_nm }} pada {{ \Carbon\Carbon::parse($pakai->pakai_tgl)->format('d F Y') }}.
@@ -68,7 +77,20 @@
             </div>
         @endif
     </div>
-    <div style="display: flex; gap: 0.5rem;">
+    <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+        @if($pakai->isDraft())
+            <button type="button" onclick="openModalPostingPemakaian()" class="btn btn-primary" style="background: #059669; border-color: #059669; font-weight: 700; display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.55rem 1.15rem; box-shadow: 0 2px 4px rgba(5,150,105,0.25);">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                Verifikasi &amp; Terbitkan Jurnal
+            </button>
+        @else
+            @if($pakai->jurnal_id)
+                <button type="button" onclick="openModalDetailJurnal({{ $pakai->jurnal_id }})" class="btn btn-secondary" style="font-weight: 700; color: #065f46; border: 1.5px solid #a7f3d0; background: #f0fdf4; display: inline-flex; align-items: center; gap: 0.35rem;">
+                    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    Lihat Jurnal Umum
+                </button>
+            @endif
+        @endif
         <button onclick="window.print()" class="btn btn-secondary">
             <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
             Cetak Dokumen
@@ -77,6 +99,49 @@
             + Pengeluaran Baru
         </a>
     </div>
+</div>
+
+{{-- BANNER STATUS VERIFIKASI OPERASIONAL --}}
+<div class="no-print">
+    @if($pakai->isDraft())
+        <div style="background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 0.85rem;">
+                <div style="width: 44px; height: 44px; border-radius: 50%; background: #fef3c7; color: #b45309; display: flex; align-items: center; justify-content: center; font-size: 1.35rem; flex-shrink: 0; border: 1px solid #fde68a;">
+                    ⏳
+                </div>
+                <div>
+                    <h4 style="margin: 0; font-size: 0.95rem; font-weight: 700; color: #92400e;">Status Dokumen: DRAFT (Menunggu Verifikasi &amp; Posting)</h4>
+                    <p style="margin: 0.2rem 0 0; font-size: 0.825rem; color: #b45309; line-height: 1.45;">
+                        Dokumen ini baru dicatat oleh petugas gudang. <strong>Stok fisik belum dipotong</strong> dan <strong>Jurnal Umum belum terbit</strong>. Silakan periksa kembali daftar bahan di bawah. Jika sudah sesuai, klik tombol <strong>"Verifikasi &amp; Terbitkan Jurnal"</strong>.
+                    </p>
+                </div>
+            </div>
+            <button type="button" onclick="openModalPostingPemakaian()" class="btn btn-primary" style="background: #059669; border-color: #059669; font-weight: 700; display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.55rem 1.15rem; flex-shrink: 0;">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                Verifikasi &amp; Terbitkan Jurnal
+            </button>
+        </div>
+    @else
+        <div style="background: #ecfdf5; border: 1.5px solid #a7f3d0; border-radius: 8px; padding: 0.85rem 1.25rem; margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <div style="width: 40px; height: 40px; border-radius: 50%; background: #d1fae5; color: #065f46; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; flex-shrink: 0;">
+                    ✓
+                </div>
+                <div>
+                    <h4 style="margin: 0; font-size: 0.925rem; font-weight: 700; color: #065f46;">Dokumen Telah Terverifikasi &amp; Terposting</h4>
+                    <p style="margin: 0.15rem 0 0; font-size: 0.8rem; color: #047857;">
+                        Diverifikasi pada <strong>{{ $pakai->posted_at ? $pakai->posted_at->format('d/m/Y H:i') : '-' }}</strong> oleh <strong>{{ $pakai->posted_by ?? 'SYSTEM' }}</strong>. Stok fisik gudang telah dipotong dan Jurnal Umum telah diterbitkan.
+                    </p>
+                </div>
+            </div>
+            @if($pakai->jurnal_id)
+                <button type="button" onclick="openModalDetailJurnal({{ $pakai->jurnal_id }})" class="btn btn-secondary btn-sm" style="font-weight: 700; background: #ffffff; color: #065f46; border: 1.5px solid #a7f3d0; display: inline-flex; align-items: center; gap: 0.35rem;">
+                    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    Lihat Jurnal Umum
+                </button>
+            @endif
+        </div>
+    @endif
 </div>
 
 <div class="card" style="margin-bottom: 1.5rem;">
@@ -209,6 +274,9 @@
         <div style="height: 55px;"></div>
         <div style="border-bottom: 1px solid #94a3b8; width: 80%; margin: 0 auto;"></div>
         <span style="color: #64748b; font-size: 0.75rem; margin-top: 0.25rem; display: block;">Nama & Tanda Tangan</span>
-    </div>
 </div>
+
+{{-- MODALS PARTIALS (DRAFT VERIFICATION & JOURNAL PREVIEW) --}}
+@include('gudang.pemakaian.partials.modal-posting')
+@include('keuangan.jurnal.partials.modal-detail-jurnal')
 @endsection

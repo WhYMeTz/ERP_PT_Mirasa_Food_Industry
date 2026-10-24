@@ -207,16 +207,18 @@ class PemakaianController extends Controller
         try {
             $header = $this->pemakaianService->store($request->validated());
 
+            $msg = "Dokumen pengeluaran {$header->pakai_no} berhasil disimpan sebagai DRAFT (Stok belum dipotong). Silakan lakukan verifikasi fisik sebelum memposting.";
+
             if ($request->wantsJson()) {
                 return response()->json([
                     'status'  => 'success',
-                    'message' => "Pengeluaran barang {$header->pakai_no} berhasil diproses.",
+                    'message' => $msg,
                     'data'    => $header,
                 ], 201);
             }
 
-            return redirect()->route('gudang.pemakaian.index')
-                ->with('success', "Pengeluaran barang {$header->pakai_no} berhasil diproses dan stok telah dipotong.");
+            return redirect()->route('gudang.pemakaian.show', $header->pakai_id)
+                ->with('success', $msg);
         } catch (Exception $e) {
             if ($request->wantsJson()) {
                 return response()->json([
@@ -226,6 +228,72 @@ class PemakaianController extends Controller
             }
 
             return back()->withInput()->with('error', $e->getMessage());
+        }
+    }
+
+    /**
+     * Verifikasi & Posting Dokumen Pemakaian Bahan.
+     * Memotong stok fisik gudang dan menerbitkan Jurnal Umum otomatis.
+     */
+    public function postPemakaian(Request $request, int $id): RedirectResponse|JsonResponse
+    {
+        try {
+            $user = Auth::user();
+            $header = $this->pemakaianService->postPemakaian($id, $user);
+
+            $msg = "Dokumen pemakaian {$header->pakai_no} BERHASIL DIVERIFIKASI! Stok fisik telah dipotong dan Jurnal Umum otomatis telah diterbitkan.";
+
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'status'  => 'success',
+                    'message' => $msg,
+                    'data'    => $header,
+                ]);
+            }
+
+            return redirect()->route('gudang.pemakaian.show', $id)
+                ->with('success', $msg);
+        } catch (Exception $e) {
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => $e->getMessage(),
+                ], 422);
+            }
+
+            return back()->with('error', $e->getMessage());
+        }
+    }
+
+    /**
+     * Hapus dokumen pemakaian (hanya yang berstatus DRAFT).
+     */
+    public function destroy(Request $request, int $id): RedirectResponse|JsonResponse
+    {
+        try {
+            $user = Auth::user();
+            $this->pemakaianService->delete($id, $user);
+
+            $msg = "Dokumen pengeluaran DRAFT berhasil dibatalkan / dihapus.";
+
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'status'  => 'success',
+                    'message' => $msg,
+                ]);
+            }
+
+            return redirect()->route('gudang.pemakaian.index')
+                ->with('success', $msg);
+        } catch (Exception $e) {
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => $e->getMessage(),
+                ], 422);
+            }
+
+            return back()->with('error', $e->getMessage());
         }
     }
 

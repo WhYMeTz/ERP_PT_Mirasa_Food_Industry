@@ -289,6 +289,9 @@
                                 <a href="{{ route('gudang.pemakaian.show', $row->header?->pakai_id) }}" style="font-size: 0.85rem; font-weight: 700; color: #dc2626; text-decoration: none;">
                                     {{ $row->header?->pakai_no ?? '-' }}
                                 </a>
+                                @if(($row->header?->status_st ?? 'POSTED') === 'DRAFT')
+                                    <span class="badge" style="background: #fef3c7; color: #92400e; font-size: 0.675rem; padding: 0.1rem 0.35rem; font-weight: 700; border: 1px solid #fde68a; margin-left: 0.25rem;">DRAFT</span>
+                                @endif
                             </td>
                             <td>
                                 <div style="font-weight: 600; color: #0f172a; font-size: 0.85rem;">
@@ -385,8 +388,9 @@
                         <th style="min-width: 150px;">Gudang Asal</th>
                         <th style="min-width: 180px;">Tujuan Pemakaian / SPK</th>
                         <th style="min-width: 110px; text-align: center;">Total Item</th>
+                        <th style="min-width: 120px; text-align: center;">Status</th>
                         <th style="min-width: 160px;">Catatan</th>
-                        <th style="width: 100px; text-align: right;">Aksi</th>
+                        <th style="width: 140px; text-align: right;">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -418,16 +422,36 @@
                                     {{ $hdr->details->count() }} Bahan
                                 </span>
                             </td>
+                            <td style="text-align: center;">
+                                @if(($hdr->status_st ?? 'POSTED') === 'DRAFT')
+                                    <span class="badge" style="background: #fef3c7; color: #92400e; font-weight: 700; border: 1px solid #fde68a; font-size: 0.75rem; padding: 0.2rem 0.5rem;">
+                                        ⏳ DRAFT
+                                    </span>
+                                @else
+                                    <span class="badge" style="background: #ecfdf5; color: #065f46; font-weight: 700; border: 1px solid #a7f3d0; font-size: 0.75rem; padding: 0.2rem 0.5rem;">
+                                        ✓ POSTED
+                                    </span>
+                                @endif
+                            </td>
                             <td style="color: #64748b; font-size: 0.85rem;">{{ $hdr->catatan_txt ?? '-' }}</td>
-                            <td style="text-align: right;">
+                            <td style="text-align: right; white-space: nowrap;">
                                 <a href="{{ route('gudang.pemakaian.show', $hdr->pakai_id) }}" class="btn btn-secondary btn-sm" title="Lihat Dokumen Lengkap">
                                     Detail
                                 </a>
+                                @if(($hdr->status_st ?? 'POSTED') === 'DRAFT')
+                                    <a href="{{ route('gudang.pemakaian.show', $hdr->pakai_id) }}" class="btn btn-primary btn-sm" style="background: #059669; border-color: #059669; margin-left: 0.25rem;" title="Verifikasi &amp; Terbitkan Jurnal">
+                                        Verifikasi
+                                    </a>
+                                @elseif(!empty($hdr->jurnal_id))
+                                    <button type="button" onclick="openModalDetailJurnal({{ $hdr->jurnal_id }})" class="btn btn-secondary btn-sm" style="margin-left: 0.25rem; color: #065f46; border-color: #a7f3d0; background: #f0fdf4;" title="Lihat Jurnal Umum">
+                                        Jurnal
+                                    </button>
+                                @endif
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" style="text-align: center; padding: 3rem 1rem; color: #94a3b8;">
+                            <td colspan="9" style="text-align: center; padding: 3rem 1rem; color: #94a3b8;">
                                 Belum ada riwayat dokumen pengeluaran barang.
                             </td>
                         </tr>
@@ -534,3 +558,7 @@
         if (btn) { btn.disabled = true; btn.textContent = 'Memproses...'; }
     });
 </script>
+
+{{-- MODAL PREVIEW DETAIL JURNAL UMUM --}}
+@include('keuangan.jurnal.partials.modal-detail-jurnal')
+

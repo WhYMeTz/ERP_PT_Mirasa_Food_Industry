@@ -534,6 +534,8 @@
 @endif
 
 {{-- MODALS GLOBAL --}}
+@include('gudang.pemakaian.partials.modal-warning-stock-limit')
+@include('gudang.pemakaian.partials.modal-warning-fifo')
 @include('keuangan.verifikasi_pemakaian.partials.modal-reject')
 @include('keuangan.jurnal.partials.modal-detail-jurnal')
 

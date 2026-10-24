@@ -515,6 +515,7 @@ function calcRow(el) {
     const hargaInput = row.querySelector('.harga-input');
     const subtotalCell = row.querySelector('.subtotal-cell');
     const batchSelect = row.querySelector('.batch-select');
+    const batchInfo = row.querySelector('.batch-info');
 
     const qty = parseFloat(qtyInput.value || 0);
     const harga = parseFloat(hargaInput.value || 0);
@@ -523,11 +524,42 @@ function calcRow(el) {
     subtotalCell.innerText = 'Rp ' + Math.round(subtotal).toLocaleString('id-ID');
 
     if (batchSelect && batchSelect.selectedOptions[0]) {
-        const sisa = parseFloat(batchSelect.selectedOptions[0].getAttribute('data-sisa') || 0);
+        const selectedOpt = batchSelect.selectedOptions[0];
+        const sisa = parseFloat(selectedOpt.getAttribute('data-sisa') || 0);
+        const grade = (row.querySelector('.grade-input')?.value || selectedOpt.getAttribute('data-grade') || 'A').toUpperCase();
+        const gradeBadge = (grade === 'A')
+            ? `<span style="background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; font-weight: 700; padding: 1px 5px; border-radius: 3px; font-size: 0.7rem;">🟢 Grade A</span>`
+            : ((grade === 'B')
+                ? `<span style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a; font-weight: 700; padding: 1px 5px; border-radius: 3px; font-size: 0.7rem;">🟡 Grade B</span>`
+                : `Grade ${grade}`);
+
         if (sisa > 0 && qty > sisa) {
             qtyInput.style.borderColor = '#dc2626';
             qtyInput.style.background = '#fef2f2';
             qtyInput.title = `Kuantitas melebihi sisa fisik batch (${sisa.toLocaleString('id-ID')})`;
+            if (batchInfo) {
+                batchInfo.innerHTML = `
+                    <div style="background: #fef2f2; border: 1.5px solid #f87171; border-radius: 6px; padding: 0.45rem 0.65rem; margin-top: 0.35rem; color: #991b1b;">
+                        <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap;">
+                            <div>
+                                <div style="display: flex; align-items: center; gap: 0.35rem; margin-bottom: 0.2rem;">
+                                    ${gradeBadge}
+                                    <strong style="color: #dc2626; font-size: 0.775rem; display: inline-flex; align-items: center; gap: 0.25rem;">
+                                        ⚠️ Kuantitas Melebihi Sisa Fisik Batch!
+                                    </strong>
+                                </div>
+                                <div style="font-size: 0.735rem; color: #7f1d1d; line-height: 1.35;">
+                                    Batch <strong>${selectedOpt.value}</strong> hanya bersisa <strong>${sisa.toLocaleString('id-ID')} unit</strong>. Sisa <strong>${(qty - sisa).toLocaleString('id-ID')} unit</strong> harus diambil dari batch lain!
+                                </div>
+                            </div>
+                            <button type="button" onclick="autoSplitBatchForRow(this.closest('tr'))" style="background: #dc2626; color: #ffffff; font-weight: 700; font-size: 0.725rem; padding: 4px 10px; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.35rem; box-shadow: 0 1px 3px rgba(220,38,38,0.3);" title="Ambil sisa batch ini & otomatis tambah baris untuk sisa kuantitas">
+                                <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                                <span>⚡ Pecah ke Batch Berikutnya</span>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
         } else {
             qtyInput.style.borderColor = '#cbd5e1';
             qtyInput.style.background = '#ffffff';
@@ -593,6 +625,212 @@ function calculateGrandTotal() {
 
     const sideTotalItems = document.getElementById('sideTotalItems');
     if (sideTotalItems) sideTotalItems.innerText = validItemCount;
+}
+
+function autoSplitBatchForRow(row) {
+    if (!row) return;
+    const barangSelect = row.querySelector('.barang-select');
+    const batchSelect = row.querySelector('.batch-select');
+    const qtyInput = row.querySelector('.qty-input');
+    const gradeInput = row.querySelector('.grade-input');
+
+    if (!barangSelect || !barangSelect.value || !batchSelect || !batchSelect.value) return;
+
+    const barangId = barangSelect.value;
+    const totalRequested = parseFloat(qtyInput?.value || 0);
+    if (totalRequested <= 0) return;
+
+    const selectedOpt = batchSelect.selectedOptions[0];
+    if (!selectedOpt) return;
+
+    const sisaCurrent = parseFloat(selectedOpt.getAttribute('data-sisa') || 0);
+    if (totalRequested <= sisaCurrent) {
+        return;
+    }
+
+    let allBatches = row._allBatches || [];
+    if (allBatches.length === 0 && batchSelect.options.length > 0) {
+        allBatches = Array.from(batchSelect.options).filter(opt => opt.value).map(opt => ({
+            batch_no: opt.value,
+            stok_id: opt.getAttribute('data-stok-id') || '',
+            grade_cd: opt.getAttribute('data-grade') || 'A',
+            sisa_qty: parseFloat(opt.getAttribute('data-sisa') || 0),
+            harga_satuan: parseFloat(opt.getAttribute('data-harga') || 0),
+            tgl_terima: opt.getAttribute('data-masuk') || '',
+            expired_tgl: opt.getAttribute('data-exp') || ''
+        }));
+        row._allBatches = allBatches;
+    }
+
+    const currentGrade = (gradeInput?.value || selectedOpt.getAttribute('data-grade') || 'A').toUpperCase();
+
+    // 1. Baris saat ini mengambil kuantitas maksimal yang masih ada pada batch tersebut
+    const takeCurrent = Math.min(totalRequested, sisaCurrent);
+    qtyInput.value = takeCurrent;
+    calcRow(qtyInput);
+
+    let remainingQty = totalRequested - takeCurrent;
+
+    // 2. Kumpulkan kuantitas batch yang telah digunakan pada baris-baris lain
+    const usedBatchMap = {};
+    document.querySelectorAll('#itemsBody tr').forEach(r => {
+        const bId = r.querySelector('.barang-select')?.value;
+        const bNo = r.querySelector('.batch-select')?.value;
+        const gCd = (r.querySelector('.grade-input')?.value || 'A').toUpperCase();
+        const qVal = parseFloat(r.querySelector('.qty-input')?.value || 0);
+        if (bId === barangId && bNo) {
+            const key = `${bNo}_${gCd}`;
+            usedBatchMap[key] = (usedBatchMap[key] || 0) + qVal;
+        }
+    });
+
+    // 3. Cari batch berikutnya yang masih memiliki saldo fisik
+    let candidateBatches = allBatches.filter(b => (b.grade_cd || 'A').toUpperCase() === currentGrade);
+    if (candidateBatches.length === 0) {
+        candidateBatches = allBatches;
+    }
+
+    let addedRows = 0;
+    for (const b of candidateBatches) {
+        if (remainingQty <= 0) break;
+        const bGrade = (b.grade_cd || 'A').toUpperCase();
+        const key = `${b.batch_no}_${bGrade}`;
+        const alreadyUsed = usedBatchMap[key] || 0;
+        const availableInBatch = Math.max(0, parseFloat(b.sisa_qty) - alreadyUsed);
+
+        if (availableInBatch > 0) {
+            const takeFromThis = Math.min(remainingQty, availableInBatch);
+            remainingQty -= takeFromThis;
+            usedBatchMap[key] = alreadyUsed + takeFromThis;
+
+            addRowWithItemData({
+                barang_id: barangId,
+                batch_no: b.batch_no,
+                grade_cd: bGrade,
+                stok_id: b.stok_id || '',
+                qty_keluar: takeFromThis,
+                harga_satuan: b.harga_satuan || 0,
+                satuan_nm: row.querySelector('.row-satuan')?.textContent || 'Kg',
+                all_batches: allBatches
+            });
+            addedRows++;
+        }
+    }
+
+    calculateGrandTotal();
+
+    if (remainingQty > 0) {
+        alert(`Perhatian: Berhasil memecah ke ${addedRows} baris batch lanjutan.\nNamun stok fisik barang ini di seluruh batch gudang sudah habis total!\nMasih kurang ${remainingQty.toLocaleString('id-ID')} unit yang tidak dapat dialokasikan.`);
+    }
+}
+
+function checkStockLimitViolations() {
+    const violations = [];
+    document.querySelectorAll('#itemsBody tr').forEach(row => {
+        const barangSelect = row.querySelector('.barang-select');
+        const batchSelect = row.querySelector('.batch-select');
+        const qtyInput = row.querySelector('.qty-input');
+
+        if (!barangSelect || !barangSelect.value || !batchSelect || !batchSelect.value) return;
+
+        const qty = parseFloat(qtyInput?.value || 0);
+        if (qty <= 0) return;
+
+        const selectedOpt = batchSelect.selectedOptions[0];
+        if (!selectedOpt) return;
+
+        const sisa = parseFloat(selectedOpt.getAttribute('data-sisa') || 0);
+        if (qty > sisa) {
+            const barangOpt = barangSelect.selectedOptions[0];
+            const barangNm = barangOpt ? barangOpt.textContent.trim() : 'Bahan Produksi';
+            const rowNum = row.querySelector('.row-num')?.textContent.trim() || '-';
+            violations.push({
+                row: row,
+                rowNum: rowNum,
+                barangNm: barangNm,
+                batchNo: selectedOpt.value,
+                grade: selectedOpt.getAttribute('data-grade') || 'A',
+                qtyRequested: qty,
+                sisaBatch: sisa,
+                selisih: qty - sisa
+            });
+        }
+    });
+    return violations;
+}
+
+function openWarningStockLimitModal(violations) {
+    const tbody = document.getElementById('stockLimitWarningListBody');
+    if (!tbody) return;
+
+    let html = '';
+    violations.forEach((v, idx) => {
+        const gradeBadge = (v.grade === 'A')
+            ? `<span style="background:#ecfdf5; color:#065f46; border:1px solid #a7f3d0; padding:1px 5px; border-radius:3px; font-weight:700; font-size:0.7rem;">🟢 Grade A</span>`
+            : ((v.grade === 'B')
+                ? `<span style="background:#fffbeb; color:#b45309; border:1px solid #fde68a; padding:1px 5px; border-radius:3px; font-weight:700; font-size:0.7rem;">🟡 Grade B</span>`
+                : `Grade ${v.grade}`);
+
+        html += `
+            <tr style="border-bottom: 1px solid #e2e8f0; ${idx % 2 === 1 ? 'background:#fafafa;' : ''}">
+                <td style="padding: 0.55rem 0.65rem;">
+                    <div style="font-weight: 600; color: #0f172a;">${v.barangNm}</div>
+                    <div style="font-size: 0.72rem; color: #64748b; margin-top: 2px;">Baris #${v.rowNum} &bull; ${gradeBadge}</div>
+                </td>
+                <td style="padding: 0.55rem 0.65rem;">
+                    <strong style="color: #b45309; font-family: monospace;">${v.batchNo}</strong>
+                </td>
+                <td style="padding: 0.55rem 0.65rem; text-align: right; font-weight: 700; color: #dc2626; font-family: monospace;">
+                    ${v.qtyRequested.toLocaleString('id-ID')}
+                </td>
+                <td style="padding: 0.55rem 0.65rem; text-align: right; font-weight: 700; color: #059669; font-family: monospace;">
+                    ${v.sisaBatch.toLocaleString('id-ID')}
+                </td>
+                <td style="padding: 0.55rem 0.65rem; text-align: center;">
+                    <button type="button" onclick="splitSpecificRowFromModal(${idx})" style="background:#dc2626; color:#ffffff; font-weight:700; font-size:0.725rem; padding:4px 8px; border:none; border-radius:4px; cursor:pointer; display:inline-flex; align-items:center; gap:0.25rem;" title="Pecah baris ini">
+                        <span>⚡ Pecah Baris</span>
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+    tbody.innerHTML = html;
+
+    window._currentStockViolations = violations;
+
+    const modal = document.getElementById('modalWarningStockLimit');
+    if (modal) {
+        modal.style.display = 'flex';
+    }
+}
+
+function closeWarningStockLimitModal() {
+    const modal = document.getElementById('modalWarningStockLimit');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+function splitSpecificRowFromModal(idx) {
+    if (window._currentStockViolations && window._currentStockViolations[idx]) {
+        const v = window._currentStockViolations[idx];
+        autoSplitBatchForRow(v.row);
+        const remaining = checkStockLimitViolations();
+        if (remaining.length > 0) {
+            openWarningStockLimitModal(remaining);
+        } else {
+            closeWarningStockLimitModal();
+        }
+    }
+}
+
+function applyAutoSplitAllViolations() {
+    const violations = checkStockLimitViolations();
+    violations.forEach(v => {
+        autoSplitBatchForRow(v.row);
+    });
+    closeWarningStockLimitModal();
+    calculateGrandTotal();
 }
 
 function checkFifoViolations() {
@@ -721,6 +959,14 @@ function submitVerifikasiForm(actionType) {
         return;
     }
 
+    // 1. Cek kuantitas melebihi sisa fisik batch (STOCK LIMIT) - BLOKIR KERAS!
+    const stockViolations = checkStockLimitViolations();
+    if (stockViolations.length > 0) {
+        openWarningStockLimitModal(stockViolations);
+        return;
+    }
+
+    // 2. Cek urutan FIFO
     if (!allowFifoOverride) {
         const violations = checkFifoViolations();
         if (violations.length > 0) {

@@ -382,6 +382,13 @@ class PemakaianService
                     throw new Exception("Batch '{$batchNo}' tidak ditemukan di gudang yang dipilih.");
                 }
 
+                $sisaStokFisik = (float) ($stokBatch->sisa_qty ?? 0);
+                if ($qtyKeluar > $sisaStokFisik) {
+                    $barang = MstBarang::find($barangId);
+                    $barangNm = $barang ? $barang->barang_nm : "Barang #{$barangId}";
+                    throw new Exception("Kuantitas pengeluaran '{$barangNm}' pada batch '{$batchNo}' (" . number_format($qtyKeluar, 2, ',', '.') . ") melebihi sisa fisik di gudang (" . number_format($sisaStokFisik, 2, ',', '.') . "). Silakan sesuaikan kuantitas atau pecah pemakaian ke batch berikutnya.");
+                }
+
                 $gradeCd = $stokBatch->grade_cd ?? $gradeCd;
 
                 $hargaSatuan = !empty($item['harga_satuan']) && (float) $item['harga_satuan'] > 0
@@ -465,6 +472,17 @@ class PemakaianService
                     ->where('barang_id', $barangId)
                     ->where('batch_no', $batchNo)
                     ->first();
+
+                if (!$stokBatch) {
+                    throw new Exception("Batch '{$batchNo}' tidak ditemukan di gudang yang dipilih.");
+                }
+
+                $sisaStokFisik = (float) ($stokBatch->sisa_qty ?? 0);
+                if ($qtyKeluar > $sisaStokFisik) {
+                    $barang = MstBarang::find($barangId);
+                    $barangNm = $barang ? $barang->barang_nm : "Barang #{$barangId}";
+                    throw new Exception("Kuantitas pengeluaran '{$barangNm}' pada batch '{$batchNo}' (" . number_format($qtyKeluar, 2, ',', '.') . ") melebihi sisa fisik di gudang (" . number_format($sisaStokFisik, 2, ',', '.') . "). Silakan sesuaikan kuantitas atau pecah pemakaian ke batch berikutnya.");
+                }
 
                 $hargaSatuan = !empty($item['harga_satuan']) && (float) $item['harga_satuan'] > 0
                     ? (float) $item['harga_satuan']

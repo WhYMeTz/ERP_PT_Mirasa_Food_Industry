@@ -149,7 +149,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('master-customer', CustomerController::class)->names('master.customer');
 
     // Master Karyawan
-    // Rute untuk Export Excel, Import Excel, Cetak PDF 
+    // Rute Master data karyawan
     Route::get('master-karyawan/export-excel', [KaryawanController::class, 'exportExcel'])->name('master.karyawan.export-excel');
     Route::post('master-karyawan/import', [KaryawanController::class, 'importExcel'])->name('master.karyawan.import');
     Route::get('master-karyawan/cetak-pdf', [KaryawanController::class, 'cetakPdf'])->name('master.karyawan.cetak-pdf');
@@ -160,7 +160,8 @@ Route::middleware('auth')->group(function () {
         ->names('master.karyawan')
         ->middleware('role:SUPERADMIN,HRD,master_karyawan_view,master_karyawan_manage');
 
-    Route::prefix('manajemen')->name('manajemen.')
+     // Rute Manajemen Karyawan
+        Route::prefix('manajemen')->name('manajemen.')
         ->middleware(['auth', 'role:SUPERADMIN,HRD,fingerprint_view,absensi_view,payroll_view'])
         ->group(function () {
             Route::get('/fingerprint',     [FingerprintController::class, 'index'])->name('fingerprint.index');
@@ -168,12 +169,36 @@ Route::middleware('auth')->group(function () {
             Route::post('/fingerprint/bulk-update', [FingerprintController::class, 'bulkUpdate'])->name('fingerprint.bulk-update');
             Route::post('/fingerprint/bulk-delete', [FingerprintController::class, 'bulkDelete'])->name('fingerprint.bulk-delete');
             Route::get('/absensi',         [AbsensiController::class, 'index'])->name('absensi.index');
+            Route::post('/absensi/hitung', [AbsensiController::class, 'hitung'])->name('absensi.hitung');
             Route::get('/jadwal',         [JadwalController::class, 'index'])->name('jadwal.index');
             Route::post('/jadwal/import', [JadwalController::class, 'import'])->name('jadwal.import');
+            Route::get('/jadwal/template', [JadwalController::class, 'template'])->name('jadwal.template');
+            Route::post('/jadwal/bulk-update', [JadwalController::class, 'bulkUpdate'])->name('jadwal.bulk-update');
+            Route::post('/jadwal/bulk-delete', [JadwalController::class, 'bulkDelete'])->name('jadwal.bulk-delete');
             Route::get('/kode-shift',     [KodeShiftController::class, 'index'])->name('kode-shift.index');
-            Route::get('/payroll',         [PayrollController::class, 'index'])->name('payroll.index');
-            Route::get('/payroll-harian',  [PayrollHarianController::class, 'index'])->name('payroll_harian.index');
-    });
+            Route::post('/kode-shift',                [KodeShiftController::class, 'store'])->name('kode-shift.store');
+            Route::put('/kode-shift/{kodeShift}',     [KodeShiftController::class, 'update'])->name('kode-shift.update');
+            Route::delete('/kode-shift/{kodeShift}',  [KodeShiftController::class, 'destroy'])->name('kode-shift.destroy');
+            Route::get('/payroll-harian', [PayrollHarianController::class, 'index'])->name('payroll_harian.index');
+
+            Route::middleware('role:SUPERADMIN,HRD,payroll_view')->group(function () {
+                Route::get('/payroll',            [PayrollController::class, 'index'])->name('payroll.index');
+                Route::get('/payroll/slip',       [PayrollController::class, 'slip'])->name('payroll.slip');
+                Route::get('/payroll/slip-semua', [PayrollController::class, 'slipSemua'])->name('payroll.slip-semua');
+                Route::get('/payroll/export', [PayrollController::class, 'export'])->name('payroll.export');
+                Route::get('/payroll/template', [PayrollController::class, 'template'])->name('payroll.template');
+                Route::post('/payroll/import',  [PayrollController::class, 'import'])->name('payroll.import');
+                Route::get('/payroll-harian/rincian', [PayrollHarianController::class, 'rincian'])->name('payroll_harian.rincian');
+                Route::get('/payroll-harian/export',  [PayrollHarianController::class, 'export'])->name('payroll_harian.export');
+            });
+
+            Route::middleware('role:SUPERADMIN,HRD')->group(function () {
+                Route::post('/payroll/komponen',   [PayrollController::class, 'simpan'])->name('payroll.simpan');
+                Route::post('/payroll/finalkan',   [PayrollController::class, 'finalkan'])->name('payroll.finalkan');
+                Route::post('/payroll/buka-kunci', [PayrollController::class, 'bukaKunci'])->name('payroll.buka-kunci');
+                Route::post('/payroll/dibayar',    [PayrollController::class, 'dibayar'])->name('payroll.dibayar');
+            });
+        });
 
     // Modul Transaksi Gudang (Inbound, Outbound & Inventory Engine)
     Route::prefix('gudang')->name('gudang.')->group(function () {

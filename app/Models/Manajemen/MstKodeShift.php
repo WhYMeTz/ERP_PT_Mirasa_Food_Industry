@@ -8,5 +8,5 @@ class MstKodeShift extends Model
 {
     protected $table = 'mst_kode_shift';
     protected $guarded = [];
-    protected $casts = ['lintas_hari' => 'boolean'];
+    protected $casts = ['lintas_hari' => 'boolean', 'aktif' => 'boolean'];
 }

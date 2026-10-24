@@ -7,6 +7,12 @@ use App\Imports\Manajemen\JadwalImport;
 use App\Models\Manajemen\MstKodeShift;
 use App\Models\Manajemen\TrxJadwalKaryawan;
 use App\Services\Manajemen\JadwalService;
+use App\Models\MasterData\MstKaryawan;
+use App\Services\Manajemen\AbsensiService;
+use Illuminate\Support\Facades\DB;
+use PhpOffice\PhpSpreadsheet\Cell\DataValidation;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -24,11 +30,23 @@ class JadwalController extends Controller
             ->when($request->kelompok, fn ($q, $k) => $q->where('kelompok_kerja', $k))
             ->when($request->shift, fn ($q, $s) => $q->where('kode_shift', $s));
 
+        $periode = TrxJadwalKaryawan::whereBetween('tanggal', [$dari, $sampai]);
+
+        // jadwal dihubungkan ke master karyawan lewat ID absen (9 digit, sama seperti di AbsensiService)
+        $denganKaryawan = TrxJadwalKaryawan::whereBetween('tanggal', [$dari, $sampai])
+            ->join('mst_karyawan as k', fn ($j) => $j->whereRaw("LPAD(TRIM(k.id_absensi), 9, '0') = trx_jadwal_karyawan.id_absen"));
+
+        $hitungShift = fn (string $nilai) => (clone $denganKaryawan)
+            ->whereRaw('UPPER(TRIM(k.shift)) = ?', [$nilai])
+            ->distinct()
+            ->count('trx_jadwal_karyawan.id_absen');
+
         $stat = [
-            'baris'         => (clone $query)->count(),
-            'karyawan'      => (clone $query)->distinct()->count('id_absen'),
-            'hari'          => (clone $query)->distinct()->count('tanggal'),
-            'tanpa_istirahat' => (clone $query)->whereNull('istirahat_jam')->count(),
+            'langsung'       => (clone $periode)->where('kelompok_kerja', 'like', 'Langsung%')->distinct()->count('id_absen'),
+            'tidak_langsung' => (clone $periode)->where('kelompok_kerja', 'Tidak Langsung')->distinct()->count('id_absen'),
+            'shift_a'        => $hitungShift('SHIFT A'),
+            'shift_b'        => $hitungShift('SHIFT B'),
+            'non_shift'      => $hitungShift('NON SHIFT'),
         ];
 
         $rows = $query->orderBy('tanggal')->orderBy('nama')->paginate(50)->withQueryString();
@@ -39,7 +57,8 @@ class JadwalController extends Controller
             'dari'      => $dari,
             'sampai'    => $sampai,
             'shiftMap'  => MstKodeShift::all()->keyBy('kode'),
-            'kelompoks' => TrxJadwalKaryawan::whereNotNull('kelompok_kerja')->distinct()->orderBy('kelompok_kerja')->pluck('kelompok_kerja'),
+            'kelompoks' => $kelompoks = TrxJadwalKaryawan::whereNotNull('kelompok_kerja')->distinct()->orderBy('kelompok_kerja')->pluck('kelompok_kerja'),
+            'kelompokOpsi' => collect(MstKaryawan::KELOMPOK)->values()->merge($kelompoks)->unique()->sort()->values(),
         ]);
     }
 
@@ -47,7 +66,7 @@ class JadwalController extends Controller
     {
         $request->validate(['file' => 'required|file|mimes:xlsx,xls,csv|max:10240']);
 
-        $import = new JadwalImport(MstKodeShift::pluck('kode')->all());
+        $import = new JadwalImport(MstKodeShift::where('aktif', true)->pluck('kode')->all());
         Excel::import($import, $request->file('file'));
 
         if (empty($import->rows)) {
@@ -63,5 +82,136 @@ class JadwalController extends Controller
             ->route('manajemen.jadwal.index', ['dari' => $hasil['dari'], 'sampai' => $hasil['sampai']])
             ->with('success', "Impor selesai: {$hasil['baris']} baris jadwal disimpan" . ($lewat ? ", $lewat baris dilewati." : '.'))
             ->with('jadwal_errors', array_slice($import->errors, 0, 20));
+    }
+
+    public function template()
+    {
+        $shifts   = MstKodeShift::where('aktif', true)->orderBy('id')->get();
+        $kelompok = array_values(MstKaryawan::KELOMPOK);
+
+        $ss = new Spreadsheet();
+        $ws = $ss->getActiveSheet()->setTitle('Jadwal');
+        $ws->fromArray(['Tanggal', 'ID_Absen', 'Nama (opsional)', 'Kelompok_Kerja', 'Kode_Shift', 'Istirahat_Jam'], null, 'A1');
+        $ws->getStyle('A1:F1')->getFont()->setBold(true);
+        $ws->getStyle('A1:F1')->getFill()->setFillType('solid')->getStartColor()->setRGB('9DC3E6');
+        $ws->getStyle('A2:A301')->getNumberFormat()->setFormatCode('dd/mm/yyyy');
+        $ws->getStyle('B2:B301')->getNumberFormat()->setFormatCode('@');
+        $ws->fromArray([['2026-09-01', '000000512', 'CONTOH NAMA', $kelompok[0] ?? '', $shifts->first()->kode ?? 'A', 1]], null, 'A2');
+        foreach (['A' => 13, 'B' => 13, 'C' => 26, 'D' => 20, 'E' => 12, 'F' => 14] as $c => $w) {
+            $ws->getColumnDimension($c)->setWidth($w);
+        }
+        $ws->freezePane('A2');
+
+        // sheet daftar (sumber dropdown)
+        $dl = $ss->createSheet()->setTitle('Daftar');
+        $dl->setCellValue('A1', 'Kode_Shift');
+        $dl->setCellValue('B1', 'Kelompok_Kerja');
+        foreach ($shifts as $i => $s) { $dl->setCellValue('A' . ($i + 2), $s->kode); }
+        foreach ($kelompok as $i => $k) { $dl->setCellValue('B' . ($i + 2), $k); }
+        $nS = max(1, $shifts->count()) + 1;
+        $nK = max(1, count($kelompok)) + 1;
+
+        $dropdown = function (string $range, string $formula, bool $ketat) use ($ws) {
+            $dv = $ws->getCell(explode(':', $range)[0])->getDataValidation();
+            $dv->setType(DataValidation::TYPE_LIST)->setFormula1($formula)->setSqref($range);
+            $dv->setAllowBlank(true)->setShowDropDown(false)->setShowErrorMessage(true);
+            $dv->setErrorStyle($ketat ? DataValidation::STYLE_STOP : DataValidation::STYLE_WARNING);
+            $dv->setError($ketat ? 'Pilih kode shift dari daftar.' : 'Kelompok di luar daftar. Lanjutkan?');
+        };
+        $dropdown('E2:E301', "Daftar!\$A\$2:\$A\${$nS}", true);
+        $dropdown('D2:D301', "Daftar!\$B\$2:\$B\${$nK}", false);
+
+        // sheet petunjuk, tabel kode shift diambil dari database
+        $pt = $ss->createSheet()->setTitle('Petunjuk');
+        $baris = [
+            ['PETUNJUK PENGISIAN'],
+            ['Satu baris = satu karyawan pada satu tanggal. Hanya isi karyawan yang dijadwalkan pada tanggal itu.'],
+            ['Kelompok_Kerja, Kode_Shift, dan Istirahat_Jam ditentukan per hari, boleh berbeda tiap hari untuk orang yang sama.'],
+            ['Istirahat_Jam: 0, 1, atau 1,5. Kosong = memakai bawaan shift.'],
+            ['ID_Absen harus sama dengan ID Absensi di Master Karyawan (9 digit, format teks).'],
+            ['Driver: kelompok tetap Tidak Langsung. Aturan driver dikenali dari Bagian/Divisi = Driver di Master Karyawan.'],
+            ['Hapus baris contoh sebelum impor. Impor ulang pada Tanggal + ID_Absen yang sama akan menimpa baris lama.'],
+            [],
+            ['Kode', 'Hari', 'Masuk', 'Pulang', 'Istirahat', 'Standar', 'Keterangan'],
+        ];
+        foreach ($shifts as $s) {
+            $baris[] = [$s->kode, $s->hari, $s->jam_masuk ? substr($s->jam_masuk, 0, 5) : '-',
+                ($s->jam_pulang ? substr($s->jam_pulang, 0, 5) : '-') . ($s->lintas_hari ? ' (+1 hari)' : ''),
+                (float) $s->istirahat_default, $s->standar_jam ?? '-', $s->keterangan];
+        }
+        $pt->fromArray($baris, null, 'A1');
+        $pt->getStyle('A1')->getFont()->setBold(true);
+        $pt->getStyle('A9:G9')->getFont()->setBold(true);
+        $pt->getColumnDimension('A')->setWidth(8);
+        $pt->getColumnDimension('B')->setWidth(16);
+        $pt->getColumnDimension('G')->setWidth(48);
+
+        $ss->setActiveSheetIndex(0);
+
+        return response()->streamDownload(
+            fn () => (new Xlsx($ss))->save('php://output'),
+            'template_import_jadwal.xlsx',
+            ['Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']
+        );
+    }
+
+    public function bulkUpdate(Request $request, AbsensiService $absensi)
+    {
+        $data = $request->validate([
+            'ids'            => ['required', 'array', 'min:1'],
+            'ids.*'          => ['integer', 'exists:trx_jadwal_karyawan,id'],
+            'kelompok_kerja' => ['nullable', 'string', 'max:50'],
+            'kode_shift'     => ['nullable', 'exists:mst_kode_shift,kode'],
+            'istirahat_jam'  => ['nullable', 'string'],   // kosong = tidak diubah, 'bawaan' = pakai bawaan shift, atau angka
+        ]);
+
+        $update = [];
+        if (filled($data['kelompok_kerja'] ?? null)) {
+            $update['kelompok_kerja'] = $data['kelompok_kerja'];
+        }
+        if (filled($data['kode_shift'] ?? null)) {
+            $update['kode_shift'] = $data['kode_shift'];
+        }
+        $ist = $data['istirahat_jam'] ?? null;
+        if ($ist === 'bawaan') {
+            $update['istirahat_jam'] = null;
+        } elseif (filled($ist)) {
+            if (!is_numeric($ist) || $ist < 0 || $ist > 8) {
+                return back()->with('error', 'Istirahat harus berupa angka 0 sampai 8 jam.');
+            }
+            $update['istirahat_jam'] = (float) $ist;
+        }
+
+        if (!$update) {
+            return back()->with('error', 'Tidak ada kolom yang diubah.');
+        }
+
+        $ids = $data['ids'];
+        $range = TrxJadwalKaryawan::whereIn('id', $ids)->selectRaw('MIN(tanggal) as dari, MAX(tanggal) as sampai')->first();
+
+        DB::transaction(function () use ($ids, $update, $range, $absensi) {
+            TrxJadwalKaryawan::whereIn('id', $ids)->update($update);
+            $absensi->hitung($range->dari, $range->sampai);
+        });
+
+        return back()->with('success', count($ids) . " baris jadwal diperbarui, absensi {$range->dari} s.d {$range->sampai} dihitung ulang.");
+    }
+
+    public function bulkDelete(Request $request, AbsensiService $absensi)
+    {
+        $data = $request->validate([
+            'ids'   => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer', 'exists:trx_jadwal_karyawan,id'],
+        ]);
+
+        $ids = $data['ids'];
+        $range = TrxJadwalKaryawan::whereIn('id', $ids)->selectRaw('MIN(tanggal) as dari, MAX(tanggal) as sampai')->first();
+
+        DB::transaction(function () use ($ids, $range, $absensi) {
+            TrxJadwalKaryawan::whereIn('id', $ids)->delete();
+            $absensi->hitung($range->dari, $range->sampai);
+        });
+
+        return back()->with('success', count($ids) . " baris jadwal dihapus, absensi {$range->dari} s.d {$range->sampai} dihitung ulang.");
     }
 }

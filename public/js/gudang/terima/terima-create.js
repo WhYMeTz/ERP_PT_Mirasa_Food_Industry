@@ -1451,21 +1451,9 @@ function applyQcTicket(qcId) {
                             </td>
                             <td>
                                 <input type="number" step="0.01" min="0" name="items[${idx}][harga_nominal]" value="${defaultHarga}" class="form-control item-harga" placeholder="0" style="text-align: right; font-weight: 600;" oninput="calculateTotalTerima()">
-                            </td>
-                            <td>
-                                <input type="number" step="0.1" min="0" max="100" name="items[${idx}][diskon_persen]" value="0" class="form-control item-diskon" placeholder="0" style="text-align: right;" oninput="calculateTotalTerima()">
-                            </td>
-                            <td>
-                                <input type="number" step="0.01" min="0" name="items[${idx}][potongan_nominal]" value="0" class="form-control item-potongan" placeholder="0" style="text-align: right;" oninput="calculateTotalTerima()">
-                            </td>
-                            <td>
-                                <select name="items[${idx}][ppn_tipe]" class="form-control item-ppn-tipe" onchange="calculateTotalTerima()" style="font-size: 0.775rem; font-weight: 600;">
-                                    <option value="NON_PPN" selected>Non (0%)</option>
-                                    <option value="PPN_11">PPN 11%</option>
-                                </select>
-                            </td>
-                            <td style="text-align: right; font-weight: 700; font-family: monospace; color: #0f172a;" class="row-subtotal">
-                                Rp 0
+                                <input type="hidden" name="items[${idx}][diskon_persen]" value="0" class="item-diskon">
+                                <input type="hidden" name="items[${idx}][potongan_nominal]" value="0" class="item-potongan">
+                                <input type="hidden" name="items[${idx}][ppn_tipe]" value="NON_PPN" class="item-ppn-tipe">
                             </td>
                             <td style="text-align: center;">
                                 <button type="button" onclick="removeTerimaRow(this)" class="btn btn-danger btn-sm" style="padding: 0.2rem 0.45rem; font-size: 0.8rem;" title="Hapus Baris">&times;</button>

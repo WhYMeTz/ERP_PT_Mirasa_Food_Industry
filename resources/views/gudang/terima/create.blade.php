@@ -286,20 +286,16 @@
                         <thead>
                             <tr>
                                 <th style="width: 32px; text-align: center;">No</th>
-                                <th style="min-width: 180px; text-align: left;">Nama Komoditas / Barang <span style="color:#ef4444;">*</span></th>
-                                <th style="width: 140px; text-align: left;">Nomor Batch Fisik <span style="color:#ef4444;">*</span></th>
-                                <th style="width: 110px; text-align: center;">Tgl Expired</th>
-                                <th style="width: 90px; text-align: center;">Grade</th>
-                                <th style="width: 85px; text-align: right;">Qty (Bruto) <span style="color:#ef4444;">*</span></th>
-                                <th style="width: 70px; text-align: right;">Afkir</th>
-                                <th style="width: 75px; text-align: right; background: #064e3b; color: #ffffff;">Netto</th>
-                                <th style="width: 45px; text-align: center;">Satuan</th>
-                                <th style="width: 95px; text-align: right;">Harga Satuan</th>
-                                <th style="width: 60px; text-align: right;" title="Diskon dagang per item (%)">Disc (%)</th>
-                                <th style="width: 85px; text-align: right;" title="Potongan nominal item (Rp)">Potongan</th>
-                                <th style="width: 80px; text-align: center;" title="Pajak Pertambahan Nilai">PPN</th>
-                                <th style="width: 95px; text-align: right; background: #0f172a; color: #ffffff;" title="Subtotal bersih setelah diskon, potongan & PPN">Subtotal</th>
-                                <th style="width: 35px; text-align: center;">Hapus</th>
+                                <th style="min-width: 220px; text-align: left;">Nama Komoditas / Barang <span style="color:#ef4444;">*</span></th>
+                                <th style="width: 150px; text-align: left;">Nomor Batch Fisik <span style="color:#ef4444;">*</span></th>
+                                <th style="width: 115px; text-align: center;">Tgl Expired</th>
+                                <th style="width: 95px; text-align: center;">Grade</th>
+                                <th style="width: 105px; text-align: right;">Qty (Bruto) <span style="color:#ef4444;">*</span></th>
+                                <th style="width: 85px; text-align: right;">Afkir</th>
+                                <th style="width: 95px; text-align: right; background: #064e3b; color: #ffffff;">Netto</th>
+                                <th style="width: 60px; text-align: center;">Satuan</th>
+                                <th style="width: 120px; text-align: right;">Harga Satuan</th>
+                                <th style="width: 40px; text-align: center;">Hapus</th>
                             </tr>
                         </thead>
                         <tbody id="terimaItemsContainer">
@@ -356,21 +352,10 @@
                                             </td>
                                             <td>
                                                 <input type="number" step="0.01" min="0" name="items[{{ $idx }}][harga_nominal]" value="{{ (float) $pdtl->harga_nominal }}" class="form-control item-harga" placeholder="0" style="text-align: right; font-weight: 600;" oninput="calculateTotalTerima()">
-                                            </td>
-                                            <td>
-                                                <input type="number" step="0.1" min="0" max="100" name="items[{{ $idx }}][diskon_persen]" value="{{ old("items.{$idx}.diskon_persen", (float)($pdtl->diskon_persen ?? 0)) }}" class="form-control item-diskon" placeholder="0" style="text-align: right;" oninput="calculateTotalTerima()">
-                                            </td>
-                                            <td>
-                                                <input type="number" step="0.01" min="0" name="items[{{ $idx }}][potongan_nominal]" value="{{ old("items.{$idx}.potongan_nominal", (float)($pdtl->potongan_nominal ?? 0)) }}" class="form-control item-potongan" placeholder="0" style="text-align: right;" oninput="calculateTotalTerima()">
-                                            </td>
-                                            <td>
-                                                <select name="items[{{ $idx }}][ppn_tipe]" class="form-control item-ppn-tipe" onchange="calculateTotalTerima()" style="font-size: 0.775rem; font-weight: 600;">
-                                                    <option value="NON_PPN" {{ old("items.{$idx}.ppn_tipe", $pdtl->ppn_tipe ?? 'NON_PPN') === 'NON_PPN' ? 'selected' : '' }}>Non (0%)</option>
-                                                    <option value="PPN_11" {{ old("items.{$idx}.ppn_tipe", $pdtl->ppn_tipe ?? 'NON_PPN') === 'PPN_11' ? 'selected' : '' }}>PPN 11%</option>
-                                                </select>
-                                            </td>
-                                            <td style="text-align: right; font-weight: 700; font-family: monospace; color: #0f172a;" class="row-subtotal">
-                                                Rp 0
+                                                {{-- Nilai Finansial/Pajak Disimpan di Hidden Input untuk Finance --}}
+                                                <input type="hidden" name="items[{{ $idx }}][diskon_persen]" value="{{ old("items.{$idx}.diskon_persen", (float)($pdtl->diskon_persen ?? 0)) }}" class="item-diskon">
+                                                <input type="hidden" name="items[{{ $idx }}][potongan_nominal]" value="{{ old("items.{$idx}.potongan_nominal", (float)($pdtl->potongan_nominal ?? 0)) }}" class="item-potongan">
+                                                <input type="hidden" name="items[{{ $idx }}][ppn_tipe]" value="{{ old("items.{$idx}.ppn_tipe", $pdtl->ppn_tipe ?? 'NON_PPN') }}" class="item-ppn-tipe">
                                             </td>
                                             <td style="text-align: center;">
                                                 <button type="button" onclick="removeTerimaRow(this)" class="btn btn-danger btn-sm" style="padding: 0.2rem 0.45rem; font-size: 0.8rem;" title="Hapus Baris">&times;</button>
@@ -456,21 +441,10 @@
                                     </td>
                                     <td>
                                         <input type="number" step="0.01" min="0" name="items[0][harga_nominal]" value="0" class="form-control item-harga" placeholder="0" style="text-align: right; font-weight: 600;" oninput="calculateTotalTerima()">
-                                    </td>
-                                    <td>
-                                        <input type="number" step="0.1" min="0" max="100" name="items[0][diskon_persen]" value="0" class="form-control item-diskon" placeholder="0" style="text-align: right;" oninput="calculateTotalTerima()">
-                                    </td>
-                                    <td>
-                                        <input type="number" step="0.01" min="0" name="items[0][potongan_nominal]" value="0" class="form-control item-potongan" placeholder="0" style="text-align: right;" oninput="calculateTotalTerima()">
-                                    </td>
-                                    <td>
-                                        <select name="items[0][ppn_tipe]" class="form-control item-ppn-tipe" onchange="calculateTotalTerima()" style="font-size: 0.775rem; font-weight: 600;">
-                                            <option value="NON_PPN" selected>Non (0%)</option>
-                                            <option value="PPN_11">PPN 11%</option>
-                                        </select>
-                                    </td>
-                                    <td style="text-align: right; font-weight: 700; font-family: monospace; color: #0f172a;" class="row-subtotal">
-                                        Rp 0
+                                        {{-- Nilai Finansial/Pajak Disimpan di Hidden Input untuk Finance --}}
+                                        <input type="hidden" name="items[0][diskon_persen]" value="0" class="item-diskon">
+                                        <input type="hidden" name="items[0][potongan_nominal]" value="0" class="item-potongan">
+                                        <input type="hidden" name="items[0][ppn_tipe]" value="NON_PPN" class="item-ppn-tipe">
                                     </td>
                                     <td style="text-align: center;">
                                         <button type="button" onclick="removeTerimaRow(this)" class="btn btn-danger btn-sm" style="padding: 0.2rem 0.45rem; font-size: 0.8rem;" title="Hapus Baris">&times;</button>
@@ -481,7 +455,7 @@
                         <tfoot>
                             <tr style="background: #f8fafc; font-weight: 700; border-top: 2px solid #cbd5e1;">
                                 <td colspan="5" style="text-align: right; padding: 0.55rem 0.75rem; color: #475569; font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.03em;">
-                                    Total:
+                                    Total Kuantitas:
                                 </td>
                                 <td id="totalBrutoQtyDisplay" style="padding: 0.45rem 0.35rem; color: #0284c7; font-size: 0.825rem; text-align: right; font-family: monospace; font-weight: 700;" title="Total Bruto Timbangan">
                                     0,00
@@ -494,12 +468,6 @@
                                 </td>
                                 <td style="text-align: center; color: #64748b; font-size: 0.75rem;">Total</td>
                                 <td></td>
-                                <td id="totalTerimaDiskonDisplay" style="padding: 0.45rem 0.35rem; color: #dc2626; font-size: 0.8rem; text-align: right; font-family: monospace;">-</td>
-                                <td id="totalTerimaPotonganDisplay" style="padding: 0.45rem 0.35rem; color: #dc2626; font-size: 0.8rem; text-align: right; font-family: monospace;">-</td>
-                                <td id="totalTerimaPpnDisplay" style="padding: 0.45rem 0.35rem; color: #0284c7; font-size: 0.8rem; text-align: center; font-family: monospace;">-</td>
-                                <td id="totalTerimaNilaiDisplay" style="padding: 0.45rem 0.35rem; color: #0f172a; font-size: 0.875rem; text-align: right; font-family: monospace; font-weight: 800;">
-                                    Rp 0
-                                </td>
                                 <td></td>
                             </tr>
                         </tfoot>
@@ -541,13 +509,10 @@
                         </div>
                     </div>
 
-                    {{-- Kanan: Total Estimasi Tagihan & Tombol Aksi --}}
-                    <div style="display: flex; align-items: center; gap: 1.25rem; flex-wrap: wrap;">
-                        <div style="text-align: right;">
-                            <span style="font-size: 0.7rem; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; display: block; line-height: 1;">Total Estimasi Tagihan</span>
-                            <strong id="barGrandTotal" style="font-size: 1.35rem; color: #0f172a; font-family: monospace; font-weight: 800; line-height: 1.3; display: block;">Rp 0</strong>
-                            <div id="barTaxSummaryLine" style="font-size: 0.725rem; color: #64748b; margin-top: 1px; display: none;"></div>
-                        </div>
+                    {{-- Kanan: Hidden Total Estimasi & Tombol Aksi Bersih --}}
+                    <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+                        <span id="barGrandTotal" style="display: none;">Rp 0</span>
+                        <div id="barTaxSummaryLine" style="display: none;"></div>
 
                         <div style="width: 1px; height: 32px; background: #e2e8f0;"></div>
 
@@ -603,7 +568,7 @@
         window.initialQcId = {{ (int) old('qc_id', request('qc_id')) }};
     @endif
 </script>
-<script src="{{ asset('js/gudang/terima/terima-create.js') }}"></script>
+<script src="{{ asset('js/gudang/terima/terima-create.js') }}?v={{ filemtime(public_path('js/gudang/terima/terima-create.js')) }}"></script>
 <script>
     if (window.oldSupplierId && !window.initialQcId) {
         selectSupplier(window.oldSupplierId);

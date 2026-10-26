@@ -181,7 +181,7 @@
                         <th style="min-width: 140px;">No. Batch &amp; Exp</th>
                         <th style="min-width: 110px; text-align: right;">Qty Masuk</th>
                         <th style="min-width: 130px;">Gudang Simpan</th>
-                        <th style="min-width: 130px; text-align: right;">Total Nilai</th>
+                        <th style="min-width: 120px; text-align: right;">@Harga Satuan</th>
                         <th style="width: 100px; text-align: right;">Aksi</th>
                     </tr>
                 </thead>
@@ -281,14 +281,11 @@
                                 </span>
                             </td>
                             <td style="text-align: right;">
-                                <div style="font-weight: 700; color: #0f172a; font-size: 0.875rem;">
-                                    Rp {{ number_format($subtotal, 0, ',', '.') }}
+                                <div style="font-weight: 700; color: #0f172a; font-size: 0.875rem; font-family: monospace;">
+                                    Rp {{ number_format((float) ($row->harga_netto ?: $row->harga_nominal), 0, ',', '.') }}
                                 </div>
                                 <small style="color: #64748b; font-size: 0.725rem;">
-                                    @ Rp {{ number_format((float) ($row->harga_netto ?: $row->harga_nominal), 0, ',', '.') }}
-                                    @if((float) ($row->diskon_persen ?? 0) > 0)
-                                        <span style="color: #d97706; font-weight: 600;">(Disc {{ number_format((float)$row->diskon_persen, 1) }}%)</span>
-                                    @endif
+                                    / {{ $satuan }}
                                 </small>
                             </td>
                             <td style="text-align: right; position: relative;">
@@ -362,7 +359,7 @@
                         <th style="min-width: 180px;">Supplier Pengirim</th>
                         <th style="min-width: 140px;">Gudang Simpan</th>
                         <th style="min-width: 110px; text-align: center;">Total Item</th>
-                        <th style="min-width: 130px; text-align: right;">Total Tagihan</th>
+                        <th style="min-width: 130px; text-align: right;">Total Fisik Netto</th>
                         <th style="width: 100px; text-align: right;">Aksi</th>
                     </tr>
                 </thead>
@@ -433,12 +430,12 @@
                                 </span>
                             </td>
                             <td style="text-align: right;">
-                                <strong style="color: #0f172a; font-size: 0.9rem; font-family: monospace;">
-                                    Rp {{ number_format((float) ($item->total_tagihan ?: $item->total_nominal), 0, ',', '.') }}
+                                <strong style="color: #047857; font-size: 0.95rem; font-family: monospace;">
+                                    {{ number_format((float) $item->details->sum('terima_qty') - (float) $item->details->sum('reject_qty'), 2, ',', '.') }}
                                 </strong>
-                                @if($item->ppn_tipe === 'PPN_11')
-                                    <small style="display: block; font-size: 0.7rem; color: #0284c7; font-weight: 600;">+ PPN 11%</small>
-                                @endif
+                                <small style="display: block; font-size: 0.7rem; color: #64748b;">
+                                    Netto Bersih
+                                </small>
                             </td>
                             <td style="text-align: right; position: relative;">
                                 <button type="button" class="btn-action-trigger" onclick="toggleSmartActionDropdown(this, event, 'dropdown-hdr-{{ $item->terima_id }}')">

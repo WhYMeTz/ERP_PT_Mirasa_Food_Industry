@@ -35,8 +35,7 @@ class StoreKaryawanRequest extends FormRequest
             ],
             'jabatan_nm' => [
                 'required',
-                'string',
-                'max:100',
+                Rule::in(MstKaryawan::DIVISI),
             ],
             'telepon_no' => [
                 'nullable',
@@ -92,7 +91,8 @@ class StoreKaryawanRequest extends FormRequest
             'nik.required'           => 'NIK / ID Karyawan wajib diisi.',
             'karyawan_nm.required'   => 'Nama lengkap karyawan wajib diisi.',
             'departemen_cd.required' => 'Departemen wajib dipilih.',
-            'jabatan_nm.required'    => 'Jabatan kerja wajib diisi.',
+            'jabatan_nm.required'    => 'Divisi / Bagian wajib dipilih.',
+            'jabatan_nm.in'          => 'Divisi / Bagian yang dipilih tidak valid.',
             'email.email'            => 'Format email tidak valid.',
             'kelompok.in'            => 'Kelompok yang dipilih tidak valid.',
             'shift.in'               => 'Shift harus Shift A, Shift B, atau Non Shift.',

@@ -154,7 +154,7 @@ function openDeleteKaryawanModal(data) {
 
     const elInfo = document.getElementById('deleteKaryawanInfo');
     if (elInfo) {
-        elInfo.innerHTML = `<strong>${escapeHtml(data.karyawan_nm)}</strong> <span style="font-family: monospace; color: #0284c7;">(${escapeHtml(data.nik)})</span><br><span style="color: #64748b; font-size: 0.8rem;">Departemen: ${escapeHtml(data.departemen_nm)} | Jabatan: ${escapeHtml(data.jabatan_nm)}</span>`;
+        elInfo.innerHTML = `<strong>${escapeHtml(data.karyawan_nm)}</strong> <span style="font-family: monospace; color: #0284c7;">(${escapeHtml(data.nik)})</span><br><span style="color: #64748b; font-size: 0.8rem;">Departemen: ${escapeHtml(data.departemen_nm)} | Divisi: ${escapeHtml(data.jabatan_nm)}</span>`;
     }
 
     openModal('modalDeleteKaryawan');

@@ -35,9 +35,25 @@ class KaryawanImport implements ToModel, WithHeadingRow
             return null;
         }
 
-        $bagian = $this->upper($this->get($row, ['bagian', 'bagian_divisi', 'departemen']));
+        $nikBersih = trim((string) $nik);
+        $departemen = $this->upper($this->get($row, ['departemen', 'bagian', 'bagian_divisi']));
 
-        $karyawan = MstKaryawan::firstOrNew(['nik' => trim((string) $nik)]);
+        $divisiMentah = $this->get($row, ['divisi_bagian', 'divisi', 'jabatan', 'jabatan_kerja']);
+        $divisi = $this->normalizeDivisi($divisiMentah);
+
+        $karyawan = MstKaryawan::firstOrNew(['nik' => $nikBersih]);
+
+        if ($divisi === null) {
+            if ($this->text($divisiMentah) !== null) {
+                $this->ditolak[] = ['nik' => $nikBersih, 'alasan' => 'Divisi / Bagian "' . $this->text($divisiMentah) . '" tidak ada di daftar.'];
+                return null;
+            }
+            if (!$karyawan->exists) {
+                $this->ditolak[] = ['nik' => $nikBersih, 'alasan' => 'Divisi / Bagian wajib diisi untuk karyawan baru.'];
+                return null;
+            }
+            // kosong pada karyawan yang sudah ada: divisi lama dipertahankan
+        }
 
         $karyawan->fill([
             'id_absensi'    => $this->text($this->get($row, ['id_absensi', 'id_absen'])),
@@ -45,8 +61,8 @@ class KaryawanImport implements ToModel, WithHeadingRow
             'kelompok'      => $this->upper($this->get($row, ['kelompok'])),
             'shift'         => $this->normalizeShift($this->get($row, ['shift'])),
             'status_kerja'  => $this->normalizeStatus($this->get($row, ['status_karyawan', 'status'])),
-            'departemen_cd' => $bagian,
-            'jabatan_nm'    => $this->text($this->get($row, ['jabatan', 'jabatan_kerja'])) ?? ($bagian ?? '-'),
+            'departemen_cd' => $departemen,
+            'jabatan_nm'    => $divisi ?? $karyawan->jabatan_nm,
             'tgl_masuk'     => $this->parseDate($this->get($row, ['tanggal_masuk', 'tanggal_masuk_kerja', 'tgl_masuk'])),
             'telepon_no'    => $this->text($this->get($row, ['no_hp', 'kontak_no_telp', 'telepon'])),
             'email'         => $this->text($this->get($row, ['email'])),
@@ -62,8 +78,19 @@ class KaryawanImport implements ToModel, WithHeadingRow
 
         $karyawan->save();
 
-        // Sudah disimpan sendiri (update jika NIK sudah ada), jadi tidak perlu dikembalikan
         return null;
+    }
+
+    /** Kode divisi baku, atau null bila kosong / tidak dikenal. */
+    private function normalizeDivisi(mixed $value): ?string
+    {
+        $teks = $this->upper($value);
+        if ($teks === null) {
+            return null;
+        }
+        $teks = self::ALIAS_DIVISI[$teks] ?? $teks;
+
+        return in_array($teks, MstKaryawan::DIVISI, true) ? $teks : null;
     }
 
     /**
@@ -137,4 +164,13 @@ class KaryawanImport implements ToModel, WithHeadingRow
             }
         }
     }
+
+    /** Baris yang ditolak: ['baris' => ..., 'nik' => ..., 'alasan' => ...] */
+    public array $ditolak = [];
+
+    /** Penulisan lain => kode divisi baku */
+    private const ALIAS_DIVISI = [
+        'POT RENDEM' => 'POT.RENDEM', 'POT. RENDEM' => 'POT.RENDEM', 'POTONG RENDEM' => 'POT.RENDEM',
+        'QUALITY CONTROL' => 'QUALITYCONTROL', 'QC' => 'QUALITYCONTROL',
+    ];
 }

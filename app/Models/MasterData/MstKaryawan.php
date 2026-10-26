@@ -63,6 +63,11 @@ class MstKaryawan extends Model
         'SECURITY'   => 'Security',
     ];
 
+    public const DIVISI = [
+        'UMUM', 'POT.RENDEM', 'SORTIR AC', 'BATCH FRYER', 'PACKING',
+        'MAKARONI', 'DRIVER', 'SECURITY', 'KEUANGAN', 'QUALITYCONTROL',
+    ];
+
     /**
      * Relasi ke akun user jika karyawan memiliki hak akses sistem
      */

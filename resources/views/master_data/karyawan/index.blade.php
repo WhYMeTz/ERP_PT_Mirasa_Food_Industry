@@ -63,7 +63,7 @@
             <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Cari ID Karyawan, ID Absen, Nama..." class="form-control" style="padding: 0.5rem 0.75rem; max-width: 250px;">
             
             <select name="departemen" class="form-control" style="padding: 0.5rem 0.75rem; max-width: 180px;" onchange="this.form.submit()">
-                <option value="">-- Semua Bagian/Divisi --</option>
+                <option value="">-- Semua Departemen --</option>
                 @foreach ($departemenList as $key => $label)
                     <option value="{{ $key }}" {{ ($departemen ?? '') === $key ? 'selected' : '' }}>{{ $label }}</option>
                 @endforeach
@@ -107,13 +107,14 @@
                     <th style="padding: 0.75rem;">Kelompok</th>
                     <th style="padding: 0.75rem;">Shift</th>
                     <th style="padding: 0.75rem;">Status Karyawan</th>
-                    <th style="padding: 0.75rem;">Bagian / Divisi</th>
+                    <th style="padding: 0.75rem;">Departemen</th>
+                    <th style="padding: 0.75rem;">Divisi / Bagian</th> 
                     <th style="padding: 0.75rem;">Tanggal Masuk Kerja</th>
                     <th style="padding: 0.75rem;">Kontak / No Telp</th>
                     <th style="padding: 0.75rem;">Email</th>
                     <th style="padding: 0.75rem;">Bank</th>
                     <th style="padding: 0.75rem;">No. Rekening</th>
-                    <th style="padding: 0.75rem;">Masa Kerja</th>
+                    <th style="padding: 1 rem;">Masa Kerja</th>
                     <th style="padding: 0.75rem;">Alamat</th>
                     <th style="padding: 0.75rem;">Akun Sistem &amp; Gudang</th>
                     <th style="padding: 0.75rem; width: 120px; text-align: center;">Aksi</th>
@@ -153,6 +154,7 @@
                                 {{ $departemenList[$item->departemen_cd] ?? $item->departemen_cd }}
                             </span>
                         </td>
+                        <td style="padding: 0.75rem;">{{ $item->jabatan_nm }}</td> 
                         <td style="padding: 0.75rem;">{{ $item->tgl_masuk ? \Carbon\Carbon::parse($item->tgl_masuk)->format('d/m/y') : '-' }}</td>
                         <td style="padding: 0.75rem;">{{ $item->telepon_no ?? '-' }}</td>
                         <td style="padding: 0.75rem; font-size: 0.85rem; color: #64748b;">{{ $item->email ?? '-' }}</td>
@@ -219,7 +221,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="17" style="text-align: center; padding: 3rem 1rem; color: #94a3b8;">
+                        <td colspan="18" style="text-align: center; padding: 3rem 1rem; color: #94a3b8;">
                             Belum ada data karyawan. Klik tombol <strong>"Kelola Data"</strong> di atas untuk menambah data.
                         </td>
                     </tr>

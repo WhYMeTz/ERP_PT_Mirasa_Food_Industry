@@ -96,6 +96,7 @@ class KaryawanPetunjukSheet implements FromArray, WithTitle, WithColumnWidths, W
 
                 $kelompok = implode(', ', array_keys(MstKaryawan::KELOMPOK));
                 $kodeBagian = implode(', ', array_keys(KaryawanTemplateSheet::DEPARTEMEN));
+                $daftarDivisi = implode(', ', MstKaryawan::DIVISI);
 
                 $columns = [
                     ['ID Karyawan', 'Ya', 'ID unik karyawan, maksimal 50 karakter. Ditulis huruf kapital. Jika sudah terdaftar, data karyawan tersebut diperbarui.', 'DRV1N19'],
@@ -104,8 +105,8 @@ class KaryawanPetunjukSheet implements FromArray, WithTitle, WithColumnWidths, W
                     ['Kelompok', 'Tidak', 'Pilih salah satu: ' . $kelompok . '.', 'LANGSUNG IFM'],
                     ['Shift', 'Tidak', 'Pilih salah satu: SHIFT A, SHIFT B, NON SHIFT. Penulisan "A" atau "B" saja juga diterima.', 'SHIFT A'],
                     ['Status Karyawan', 'Tidak', 'Pilih salah satu: Tetap, Kontrak, Harian. Jika kosong, dianggap Tetap.', 'Tetap'],
-                    ['Bagian/Divisi', 'Ya', 'Isi dengan KODE bagian (lihat daftar di bawah): ' . $kodeBagian . '.', 'PRODUKSI'],
-                    ['Jabatan', 'Tidak', 'Jabatan kerja. Jika kosong, otomatis diisi kode bagian.', 'OPERATOR PACKING'],
+                    ['Departemen', 'Ya', 'Isi dengan KODE departemen (lihat daftar di bawah): ' . $kodeBagian . '.', 'PRODUKSI'],
+                    ['Bagian/Divisi', 'Tidak', 'Bagian/Devisi. Jika kosong, otomatis diisi kode devisi.' . $daftarDivisi . '.', 'OPERATOR PACKING'],
                     ['Tanggal Masuk Kerja', 'Tidak', 'Format hari/bulan/tahun (dd/mm/yyyy).', '07/06/2023'],
                     ['No. HP', 'Tidak', 'Nomor telepon/WhatsApp, hanya angka.', '081234567801'],
                     ['Email', 'Tidak', 'Alamat email yang valid.', 'joko@mirasa.co.id'],

@@ -70,7 +70,7 @@ class KaryawanExport extends DefaultValueBinder implements
     {
         return [
             'No', 'ID Karyawan', 'ID Absensi', 'Nama Karyawan', 'Kelompok', 'Shift',
-            'Status', 'Bagian/Divisi', 'Jabatan', 'Tanggal Masuk Kerja',
+            'Status', 'Departemen', 'Divisi/Bagian', 'Tanggal Masuk Kerja',
             'Kontak/No. Telp', 'Email', 'Bank', 'No. Rekening', 'Alamat',
         ];
     }

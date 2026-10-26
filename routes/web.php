@@ -45,6 +45,7 @@ use App\Http\Controllers\Manajemen\PayrollController;
 use App\Http\Controllers\Manajemen\PayrollHarianController;
 use App\Http\Controllers\Manajemen\JadwalController;
 use App\Http\Controllers\Manajemen\KodeShiftController;
+use App\Http\Controllers\Manajemen\MultiPayrollController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -190,6 +191,8 @@ Route::middleware('auth')->group(function () {
                 Route::post('/payroll/import',  [PayrollController::class, 'import'])->name('payroll.import');
                 Route::get('/payroll-harian/rincian', [PayrollHarianController::class, 'rincian'])->name('payroll_harian.rincian');
                 Route::get('/payroll-harian/export',  [PayrollHarianController::class, 'export'])->name('payroll_harian.export');
+                Route::get('/payroll/multi-payroll',       [MultiPayrollController::class, 'index'])->name('payroll.multi.index');
+                Route::get('/payroll/multi-payroll/excel', [MultiPayrollController::class, 'excel'])->name('payroll.multi.excel');
             });
 
             Route::middleware('role:SUPERADMIN,HRD')->group(function () {
@@ -197,6 +200,7 @@ Route::middleware('auth')->group(function () {
                 Route::post('/payroll/finalkan',   [PayrollController::class, 'finalkan'])->name('payroll.finalkan');
                 Route::post('/payroll/buka-kunci', [PayrollController::class, 'bukaKunci'])->name('payroll.buka-kunci');
                 Route::post('/payroll/dibayar',    [PayrollController::class, 'dibayar'])->name('payroll.dibayar');
+                Route::post('/payroll/multi-payroll/unduh', [MultiPayrollController::class, 'unduh'])->name('payroll.multi.unduh');
             });
         });
 

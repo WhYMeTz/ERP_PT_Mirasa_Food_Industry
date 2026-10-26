@@ -148,7 +148,7 @@
                 <th style="width: 10%;">Kelompok</th>
                 <th style="width: 7%;">Shift</th>
                 <th style="width: 7%;">Status</th>
-                <th style="width: 12%;">Bagian / Divisi</th>
+                <th style="width: 12%;">Departemen</th>
                 <th style="width: 9%;">Tanggal Masuk</th>
                 <th style="width: 11%;">No. HP</th>
                 <th style="width: 4%;">Bank</th>

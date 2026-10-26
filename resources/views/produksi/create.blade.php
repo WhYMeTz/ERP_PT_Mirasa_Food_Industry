@@ -296,11 +296,11 @@
                 <div class="card-header" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0.875rem 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
                     <strong style="color: #0f172a; font-size: 0.95rem;">6. Tenaga Kerja Produksi</strong>
                     <div style="display: flex; align-items: center; gap: 0.4rem;">
-                        <button type="button" id="btnSyncKaryawan" class="btn btn-sm btn-outline-primary" onclick="syncLaborFromKaryawan(true)" style="font-size: 0.725rem; padding: 0.2rem 0.6rem; display: inline-flex; align-items: center; gap: 0.25rem; border-radius: 4px; font-weight: 600; cursor: pointer;">
+                        <button type="button" id="btnSyncKaryawan" class="btn btn-sm btn-outline-primary" onclick="syncLaborFromKaryawan(true, true)" style="font-size: 0.725rem; padding: 0.2rem 0.6rem; display: inline-flex; align-items: center; gap: 0.25rem; border-radius: 4px; font-weight: 600; cursor: pointer;" title="Muat ulang data presensi & upah dari modul Karyawan">
                             <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                            Tarik Data Karyawan
+                            <span>Muat Ulang Presensi</span>
                         </button>
-                        <span style="font-size: 0.7rem; color: #0284c7; background: #e0f2fe; border: 1px solid #bae6fd; padding: 0.15rem 0.5rem; border-radius: 4px; font-weight: 700;">Hadir &amp; Gaji Harian</span>
+                        <span style="font-size: 0.7rem; color: #0284c7; background: #e0f2fe; border: 1px solid #bae6fd; padding: 0.15rem 0.5rem; border-radius: 4px; font-weight: 700;">Otomatis dari Tanggal &amp; Lini</span>
                     </div>
                 </div>
                 <div style="padding: 1.25rem;">
@@ -316,20 +316,20 @@
                                 Tenaga Kerja Hadir (Orang) <span style="color: #ef4444;">*</span>
                             </label>
                             <input type="number" min="0" name="tk_jumlah_org" id="tk_jumlah_org" class="form-control calc-trigger" style="text-align: center; font-weight: 700; font-size: 1rem; color: #0f172a;" value="{{ old('tk_jumlah_org', old('tk_langsung_org', 0)) }}" placeholder="0" oninput="onTkJumlahChange()">
-                            <small style="color: #64748b; font-size: 0.7rem; display: block; margin-top: 0.25rem;">Ditarik dari absensi harian modul Karyawan.</small>
+                            <small style="color: #64748b; font-size: 0.7rem; display: block; margin-top: 0.25rem;">Otomatis terisi dari absensi kelompok lini kerja.</small>
                         </div>
                         <div>
                             <label style="display: block; font-size: 0.75rem; font-weight: 700; color: #334155; margin-bottom: 0.25rem;">
                                 Total Upah Tenaga Kerja (Rp) <span style="color: #ef4444;">*</span>
                             </label>
                             <input type="number" step="0.01" min="0" name="tk_total_nilai" id="tk_total_nilai" class="form-control calc-trigger" style="text-align: right; font-weight: 700; font-size: 1rem; color: #0f172a;" value="{{ old('tk_total_nilai', 0) }}" placeholder="0" oninput="calcAll()">
-                            <small style="color: #64748b; font-size: 0.7rem; display: block; margin-top: 0.25rem;">Akumulasi gaji aktual per orang dari modul Karyawan.</small>
+                            <small style="color: #64748b; font-size: 0.7rem; display: block; margin-top: 0.25rem;">Otomatis terisi dari akumulasi upah harian riil.</small>
                         </div>
                     </div>
 
                     {{-- Status sinkronisasi modul karyawan --}}
                     <div id="tkSyncStatus" style="font-size: 0.725rem; color: #64748b; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.4rem 0.75rem; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;">
-                        <span id="tkSyncText">Data presensi dan total upah ditarik otomatis berdasarkan Tanggal Produksi.</span>
+                        <span id="tkSyncText">Otomatis tersinkron saat Tanggal Produksi &amp; Lini Produksi dipilih.</span>
                         <span id="tkSyncIndicator" style="display: none; font-weight: 600; color: #0284c7;">Memuat...</span>
                     </div>
                 </div>

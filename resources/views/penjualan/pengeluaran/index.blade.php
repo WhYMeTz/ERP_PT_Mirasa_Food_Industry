@@ -103,16 +103,7 @@
     <div class="sj-tabs-wrapper">
         <div class="sj-tabs-group">
             <button type="button" 
-                    class="sj-tab-item {{ ($tab ?? 'sj') === 'sj' ? 'active' : '' }}" 
-                    onclick="switchSjTab('sj')" 
-                    id="tabBtnSj">
-                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                <span>Daftar Dokumen Surat Jalan</span>
-                <span class="sj-tab-badge count">{{ number_format($suratJalanList->total(), 0, ',', '.') }}</span>
-            </button>
-
-            <button type="button" 
-                    class="sj-tab-item {{ ($tab ?? 'sj') === 'antrean' ? 'active' : '' }}" 
+                    class="sj-tab-item {{ ($tab ?? 'antrean') === 'antrean' ? 'active' : '' }}" 
                     onclick="switchSjTab('antrean')" 
                     id="tabBtnAntrean">
                 <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
@@ -123,17 +114,27 @@
                     <span class="sj-tab-badge count">0</span>
                 @endif
             </button>
+
+            <button type="button" 
+                    class="sj-tab-item {{ ($tab ?? 'antrean') === 'sj' ? 'active' : '' }}" 
+                    onclick="switchSjTab('sj')" 
+                    id="tabBtnSj">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                <span>Daftar Dokumen Surat Jalan</span>
+                <span class="sj-tab-badge count">{{ number_format($suratJalanList->total(), 0, ',', '.') }}</span>
+            </button>
         </div>
     </div>
 
     {{-- ==============================================================
          TAB PANE 1: DAFTAR DOKUMEN SURAT JALAN
          ============================================================== --}}
-    <div id="paneSj" class="sj-tab-pane {{ ($tab ?? 'sj') === 'sj' ? 'active' : '' }}" style="{{ ($tab ?? 'sj') === 'antrean' ? 'display: none;' : '' }}">
+    <div id="paneSj" class="sj-tab-pane {{ ($tab ?? 'antrean') === 'sj' ? 'active' : '' }}" style="{{ ($tab ?? 'antrean') === 'sj' ? '' : 'display: none;' }}">
 
     {{-- FILTER & PENCARIAN --}}
     <div class="sj-filter-card">
         <form method="GET" action="{{ route('penjualan.pengeluaran.index') }}" class="sj-filter-grid">
+            <input type="hidden" name="tab" value="sj">
             <div class="sj-form-group">
                 <label for="search" class="sj-form-label">Cari Pengeluaran / Customer / Truk</label>
                 <input type="text" name="search" id="search" value="{{ $search }}"
@@ -165,7 +166,7 @@
                     Filter
                 </button>
                 @if ($search || $status || $dateFrom || $dateTo)
-                    <a href="{{ route('penjualan.pengeluaran.index') }}" class="btn btn-secondary" style="height: 38px; padding: 0 0.75rem; font-size: 0.825rem; display: inline-flex; align-items: center;">
+                    <a href="{{ route('penjualan.pengeluaran.index', ['tab' => 'sj']) }}" class="btn btn-secondary" style="height: 38px; padding: 0 0.75rem; font-size: 0.825rem; display: inline-flex; align-items: center;">
                         Reset
                     </a>
                 @endif
@@ -362,7 +363,7 @@
     {{-- ==============================================================
          TAB PANE 2: ANTREAN PO SIAP KIRIM (STANDARD ERP WORKLIST)
          ============================================================== --}}
-    <div id="paneAntrean" class="sj-tab-pane {{ ($tab ?? 'sj') === 'antrean' ? 'active' : '' }}" style="{{ ($tab ?? 'sj') === 'antrean' ? '' : 'display: none;' }}">
+    <div id="paneAntrean" class="sj-tab-pane {{ ($tab ?? 'antrean') === 'antrean' ? 'active' : '' }}" style="{{ ($tab ?? 'antrean') === 'antrean' ? '' : 'display: none;' }}">
         <div class="sj-table-card">
             <div class="sj-antrean-header">
                 <div>
@@ -451,9 +452,23 @@
                                     @endif
                                 </td>
                                 <td style="text-align: center;">
-                                    <span style="display: inline-block; padding: 2px 8px; border-radius: 9999px; font-size: 0.7rem; font-weight: 700; {{ $ro->status_cd === 'APPROVED' ? 'background: #dcfce7; color: #15803d;' : 'background: #fef3c7; color: #b45309;' }}">
-                                        {{ $ro->status_cd }}
-                                    </span>
+                                    @if ($ro->status_cd === 'APPROVED')
+                                        <span style="display: inline-block; padding: 2px 8px; border-radius: 9999px; font-size: 0.7rem; font-weight: 700; background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0;">
+                                            Disetujui
+                                        </span>
+                                    @elseif ($ro->status_cd === 'PARTIAL')
+                                        <span style="display: inline-block; padding: 2px 8px; border-radius: 9999px; font-size: 0.7rem; font-weight: 700; background: #fef3c7; color: #b45309; border: 1px solid #fde68a;">
+                                            Sebagian Kirim
+                                        </span>
+                                    @elseif ($ro->status_cd === 'PROCESSING')
+                                        <span style="display: inline-block; padding: 2px 8px; border-radius: 9999px; font-size: 0.7rem; font-weight: 700; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd;">
+                                            Diproses
+                                        </span>
+                                    @else
+                                        <span style="display: inline-block; padding: 2px 8px; border-radius: 9999px; font-size: 0.7rem; font-weight: 700; background: #f1f5f9; color: #475569;">
+                                            {{ $ro->status_cd }}
+                                        </span>
+                                    @endif
                                 </td>
                                 <td style="text-align: center;">
                                     <a href="{{ route('penjualan.pengeluaran.create', ['so_id' => $ro->so_id]) }}" 

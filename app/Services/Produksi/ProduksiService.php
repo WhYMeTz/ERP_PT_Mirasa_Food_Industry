@@ -10,6 +10,7 @@ use App\Models\Produksi\DatProduksiDtl;
 use App\Models\Produksi\DatProduksiAdjustmentLog;
 use App\Services\Common\CodeGeneratorService;
 use App\Services\Gudang\StokService;
+use App\Services\Manajemen\PayrollHarianService;
 use App\Services\Produksi\TarifProduksiService;
 use Carbon\Carbon;
 use Exception;
@@ -613,24 +614,94 @@ class ProduksiService
     }
 
     /**
-     * Sinkronisasi data tenaga kerja (kehadiran & total upah) dari modul Karyawan berdasarkan tanggal.
-     * Siap diintegrasikan langsung dengan tabel presensi/absensi & penggajian yang sedang dibuat mentor.
+     * Sinkronisasi data tenaga kerja (kehadiran & total upah) dari modul Karyawan (PayrollHarianService)
+     * berdasarkan tanggal produksi dan lini produksi (Langsung IFM, Langsung Manual, Langsung Packing).
      */
-    public function getLaborDataFromKaryawan(string $tgl): array
+    public function getLaborDataFromKaryawan(string $tgl, ?string $lini = null): array
     {
         $parsedDate = Carbon::parse($tgl);
         $tglFormatted = $parsedDate->format('d/m/Y');
 
-        $result = [
-            'tgl'          => $tgl,
-            'is_synced'    => false,
-            'jumlah_orang' => 0,
-            'total_upah'   => 0,
-            'source'       => 'none',
-            'message'      => "Data presensi per {$tglFormatted} belum tersedia.",
-        ];
+        // Petakan lini produksi ke kelompok kerja di PayrollHarianService
+        $targetKelompok = null;
+        $kelompokLabel = 'Semua Lini Langsung';
 
-        // Daftar tabel presensi / absensi / payroll potensial dari modul Karyawan
+        if (!empty($lini)) {
+            $liniUpper = strtoupper(trim($lini));
+            if (str_contains($liniUpper, 'IFM') || str_contains($liniUpper, 'IFL') || str_contains($liniUpper, 'INDOFOOD')) {
+                $targetKelompok = 'Langsung IFM';
+                $kelompokLabel = 'Langsung IFM';
+            } elseif (str_contains($liniUpper, 'PACKING') || str_contains($liniUpper, 'KEMAS') || str_contains($liniUpper, 'PACK')) {
+                $targetKelompok = 'Langsung Packing';
+                $kelompokLabel = 'Langsung Packing';
+            } else {
+                $targetKelompok = 'Langsung Manual';
+                $kelompokLabel = 'Langsung Manual';
+            }
+        } else {
+            $targetKelompok = 'langsung';
+        }
+
+        try {
+            $payrollHarian = app(PayrollHarianService::class);
+            // Panggil rincian tanpa menyentuh/mengubah kode PayrollHarianService sama sekali
+            $rincian = $payrollHarian->rincian($tgl);
+            $rows = collect($rincian['rows'] ?? []);
+
+            $filtered = $rows->filter(function ($row) use ($targetKelompok) {
+                if (empty($row['masuk'])) {
+                    return false;
+                }
+                $kAsli = strtoupper((string) ($row['kelompok_asli'] ?? $row['kelompok'] ?? ''));
+                if ($targetKelompok === 'Langsung IFM') {
+                    return str_contains($kAsli, 'IFM') || str_contains($kAsli, 'IFL');
+                }
+                if ($targetKelompok === 'Langsung Packing') {
+                    return str_contains($kAsli, 'PACKING') || str_contains($kAsli, 'KEMAS');
+                }
+                if ($targetKelompok === 'Langsung Manual') {
+                    return str_contains($kAsli, 'MANUAL');
+                }
+                // default / semua lini langsung
+                return str_contains($kAsli, 'LANGSUNG') && !str_contains($kAsli, 'TIDAK');
+            });
+
+            $orang = $filtered->count();
+            $biaya = (float) $filtered->sum('total');
+
+            // Jika kelompok spesifik kosong dan lini tidak dipilih secara eksplisit, ambil semua langsung
+            if ($orang === 0 && empty($lini)) {
+                $allLangsung = $rows->filter(function ($row) {
+                    if (empty($row['masuk'])) {
+                        return false;
+                    }
+                    $kAsli = strtoupper((string) ($row['kelompok_asli'] ?? $row['kelompok'] ?? ''));
+                    return str_contains($kAsli, 'LANGSUNG') && !str_contains($kAsli, 'TIDAK');
+                });
+                if ($allLangsung->count() > 0) {
+                    $orang = $allLangsung->count();
+                    $biaya = (float) $allLangsung->sum('total');
+                    $kelompokLabel = 'Semua Lini Langsung';
+                }
+            }
+
+            if ($orang > 0 || $biaya > 0) {
+                return [
+                    'tgl'            => $tgl,
+                    'tgl_format'     => $tglFormatted,
+                    'is_synced'      => true,
+                    'tk_jumlah_org'  => $orang,
+                    'tk_total_nilai' => $biaya,
+                    'kelompok'       => $kelompokLabel,
+                    'source'         => 'payroll_harian',
+                    'message'        => "Data presensi tersinkronisasi ({$kelompokLabel}: {$orang} orang, total Rp " . number_format($biaya, 0, ',', '.') . ").",
+                ];
+            }
+        } catch (\Throwable $e) {
+            // Graceful fallback jika terjadi exception saat akses PayrollHarianService
+        }
+
+        // Fallback jika menggunakan skema tabel dinamis alternatif
         $possibleTables = [
             'dat_absensi', 'dat_presensi', 'dat_kehadiran', 'dat_absensi_karyawan',
             'dat_gaji_karyawan', 'dat_payroll', 'dat_payroll_harian'
@@ -672,22 +743,33 @@ class ProduksiService
 
                         if ($count > 0 || $totalUpah > 0) {
                             return [
-                                'tgl'          => $tgl,
-                                'is_synced'    => true,
-                                'jumlah_orang' => $count,
-                                'total_upah'   => $totalUpah,
-                                'source'       => $tableName,
-                                'message'      => "Data presensi tersinkronisasi ({$count} orang hadir, total Rp " . number_format($totalUpah, 0, ',', '.') . ").",
+                                'tgl'            => $tgl,
+                                'tgl_format'     => $tglFormatted,
+                                'is_synced'      => true,
+                                'tk_jumlah_org'  => $count,
+                                'tk_total_nilai' => $totalUpah,
+                                'kelompok'       => $kelompokLabel,
+                                'source'         => $tableName,
+                                'message'        => "Data presensi tersinkronisasi ({$count} orang hadir, total Rp " . number_format($totalUpah, 0, ',', '.') . ").",
                             ];
                         }
                     }
                 } catch (\Throwable $e) {
-                    // Graceful fallback jika terjadi exception saat akses tabel dinamis
+                    // Graceful fallback
                 }
             }
         }
 
-        return $result;
+        return [
+            'tgl'            => $tgl,
+            'tgl_format'     => $tglFormatted,
+            'is_synced'      => false,
+            'tk_jumlah_org'  => 0,
+            'tk_total_nilai' => 0,
+            'kelompok'       => $kelompokLabel,
+            'source'         => 'none',
+            'message'        => "Data presensi per {$tglFormatted}" . (!empty($lini) ? " [{$kelompokLabel}]" : "") . " belum tersedia di modul Karyawan.",
+        ];
     }
 
     /**

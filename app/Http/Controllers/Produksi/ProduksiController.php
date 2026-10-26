@@ -216,7 +216,8 @@ class ProduksiController extends Controller
     {
         try {
             $tgl = $request->input('tgl', date('Y-m-d'));
-            $data = $this->produksiService->getLaborDataFromKaryawan($tgl);
+            $lini = $request->input('lini');
+            $data = $this->produksiService->getLaborDataFromKaryawan($tgl, $lini);
 
             return response()->json([
                 'status' => 'success',

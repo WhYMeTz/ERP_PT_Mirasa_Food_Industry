@@ -96,23 +96,23 @@
         </div>
     </div>
 
-    {{-- 4. TOTAL BIAYA BAHAN (HPP) --}}
+    {{-- 4. MENUNGGU VERIFIKASI (DRAFT) --}}
     <div style="background: #ffffff; border-radius: 8px; border: 1px solid #e2e8f0; padding: 1rem 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
         <div style="display: flex; justify-content: space-between; align-items: flex-start;">
             <div>
-                <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #dc2626;">
-                    Total Biaya Bahan (HPP)
+                <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #d97706;">
+                    Menunggu Verifikasi (Draft)
                 </span>
-                <div style="font-size: 1.45rem; font-weight: 800; color: #0f172a; margin-top: 0.25rem; font-family: monospace;">
-                    Rp {{ number_format($ringkasan['grand_total_nilai'] ?? 0, 0, ',', '.') }}
+                <div style="font-size: 1.5rem; font-weight: 800; color: #b45309; margin-top: 0.25rem; font-family: monospace;">
+                    {{ number_format($kpiCounts['draft'] ?? 0) }} <span style="font-size: 0.85rem; font-weight: 600; color: #64748b;">Dokumen</span>
                 </div>
             </div>
-            <div style="width: 32px; height: 32px; border-radius: 6px; background: #fee2e2; display: flex; align-items: center; justify-content: center; color: #dc2626; flex-shrink: 0;">
-                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+            <div style="width: 32px; height: 32px; border-radius: 6px; background: #fef3c7; display: flex; align-items: center; justify-content: center; color: #d97706; flex-shrink: 0;">
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
             </div>
         </div>
         <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.4rem;">
-            Akumulasi nilai seluruh bahan dikeluarkan
+            {{ number_format($kpiCounts['posted'] ?? 0) }} dokumen telah diposting &amp; potong stok
         </div>
     </div>
 </div>
@@ -272,8 +272,8 @@
                         <th style="min-width: 130px;">No. Batch (FIFO)</th>
                         <th style="min-width: 110px; text-align: right;">Qty Keluar</th>
                         <th style="min-width: 120px; text-align: right;">Sisa Barang</th>
-                        <th style="min-width: 130px; text-align: right;">Total Biaya (HPP)</th>
-                        <th style="width: 100px; text-align: right;">Aksi</th>
+                        <th style="min-width: 120px; text-align: center;">Status Dokumen</th>
+                        <th style="width: 110px; text-align: right;">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -289,6 +289,9 @@
                                 <a href="{{ route('gudang.pemakaian.show', $row->header?->pakai_id) }}" style="font-size: 0.85rem; font-weight: 700; color: #dc2626; text-decoration: none;">
                                     {{ $row->header?->pakai_no ?? '-' }}
                                 </a>
+                                @if(($row->header?->status_st ?? 'POSTED') === 'DRAFT')
+                                    <span class="badge" style="background: #fef3c7; color: #92400e; font-size: 0.675rem; padding: 0.1rem 0.35rem; font-weight: 700; border: 1px solid #fde68a; margin-left: 0.25rem;">DRAFT</span>
+                                @endif
                             </td>
                             <td>
                                 <div style="font-weight: 600; color: #0f172a; font-size: 0.85rem;">
@@ -349,24 +352,58 @@
                                     </div>
                                 @endif
                             </td>
-                            <td style="text-align: right;">
-                                <div style="font-weight: 700; color: #0f172a; font-size: 0.875rem;">
-                                    Rp {{ number_format((float) $row->total_harga, 0, ',', '.') }}
-                                </div>
-                                <small style="color: #64748b; font-size: 0.725rem;">
-                                    @ Rp {{ number_format((float) $row->harga_satuan, 0, ',', '.') }}
-                                </small>
+                            <td style="text-align: center;">
+                                @if(($row->header?->status_st ?? 'POSTED') === 'DRAFT')
+                                    <span class="badge" style="background: #fef3c7; color: #92400e; font-weight: 700; border: 1px solid #fde68a; font-size: 0.75rem; padding: 0.2rem 0.5rem;">
+                                        ⏳ DRAFT
+                                    </span>
+                                @else
+                                    <span class="badge" style="background: #ecfdf5; color: #065f46; font-weight: 700; border: 1px solid #a7f3d0; font-size: 0.75rem; padding: 0.2rem 0.5rem;">
+                                        ✓ POSTED
+                                    </span>
+                                @endif
                             </td>
-                            <td style="text-align: right;">
-                                <a href="{{ route('gudang.pemakaian.show', $row->header?->pakai_id) }}" class="btn btn-secondary btn-sm" title="Lihat Dokumen Pengeluaran &amp; Cetak BPPB">
-                                    Detail
-                                </a>
+                            <td style="text-align: right; position: relative;">
+                                @php $rowMenuId = 'dropdown-pakai-item-' . $row->pakai_dtl_id; @endphp
+                                <button type="button" class="btn-action-trigger" onclick="toggleSmartActionDropdown(this, event, '{{ $rowMenuId }}')">
+                                    <span>Aksi</span>
+                                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                </button>
+                                <div id="{{ $rowMenuId }}" class="action-dropdown-menu">
+                                    <a href="{{ route('gudang.pemakaian.show', $row->header?->pakai_id) }}" class="action-dropdown-item">
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                        <span>Lihat Detail BPPB</span>
+                                    </a>
+                                    <a href="{{ route('gudang.pemakaian.export-pdf', $row->header?->pakai_id) }}" target="_blank" class="action-dropdown-item">
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                                        <span>Cetak BPPB (PDF)</span>
+                                    </a>
+                                    @if(Auth::user()?->canEditPemakaian() && ($row->header?->status_st ?? 'POSTED') === 'DRAFT')
+                                        <a href="{{ route('gudang.pemakaian.edit', $row->header?->pakai_id) }}" class="action-dropdown-item">
+                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                            <span>Edit Dokumen (Draft)</span>
+                                        </a>
+                                    @endif
+                                    @if(Auth::user()?->canVerifyPemakaian() && ($row->header?->status_st ?? 'POSTED') === 'DRAFT')
+                                        <a href="{{ route('gudang.pemakaian.show', $row->header?->pakai_id) }}" class="action-dropdown-item" style="color: #059669;">
+                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                            <span style="font-weight: 700;">Verifikasi &amp; Potong Stok</span>
+                                        </a>
+                                    @endif
+                                    @if(Auth::user()?->canDeletePemakaian() && ($row->header?->status_st ?? 'POSTED') === 'DRAFT')
+                                        <div class="action-dropdown-divider"></div>
+                                        <button type="button" class="action-dropdown-item danger-item" onclick="openDeletePemakaianModal({{ $row->header?->pakai_id }}, '{{ $row->header?->pakai_no }}', '{{ addslashes($row->header?->tujuan_pemakaian ?? '') }}')">
+                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                            <span>Hapus Dokumen</span>
+                                        </button>
+                                    @endif
+                                </div>
                             </td>
                         </tr>
                     @empty
                         <tr>
                             <td colspan="9" style="text-align: center; padding: 3rem 1rem; color: #94a3b8;">
-                                Belum ada riwayat transaksi pengeluaran barang. Klik tombol <strong>"+ Catat Barang Keluar"</strong> di atas.
+                                Belum ada riwayat transaksi pengeluaran barang. Klik tombol <strong>"+ Catat Pemakaian Bahan"</strong> di atas.
                             </td>
                         </tr>
                     @endforelse
@@ -385,8 +422,9 @@
                         <th style="min-width: 150px;">Gudang Asal</th>
                         <th style="min-width: 180px;">Tujuan Pemakaian / SPK</th>
                         <th style="min-width: 110px; text-align: center;">Total Item</th>
+                        <th style="min-width: 120px; text-align: center;">Status</th>
                         <th style="min-width: 160px;">Catatan</th>
-                        <th style="width: 100px; text-align: right;">Aksi</th>
+                        <th style="width: 110px; text-align: right;">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -418,16 +456,63 @@
                                     {{ $hdr->details->count() }} Bahan
                                 </span>
                             </td>
+                            <td style="text-align: center;">
+                                @if(($hdr->status_st ?? 'POSTED') === 'DRAFT')
+                                    <span class="badge" style="background: #fef3c7; color: #92400e; font-weight: 700; border: 1px solid #fde68a; font-size: 0.75rem; padding: 0.2rem 0.5rem;">
+                                        ⏳ DRAFT
+                                    </span>
+                                @else
+                                    <span class="badge" style="background: #ecfdf5; color: #065f46; font-weight: 700; border: 1px solid #a7f3d0; font-size: 0.75rem; padding: 0.2rem 0.5rem;">
+                                        ✓ POSTED
+                                    </span>
+                                @endif
+                            </td>
                             <td style="color: #64748b; font-size: 0.85rem;">{{ $hdr->catatan_txt ?? '-' }}</td>
-                            <td style="text-align: right;">
-                                <a href="{{ route('gudang.pemakaian.show', $hdr->pakai_id) }}" class="btn btn-secondary btn-sm" title="Lihat Dokumen Lengkap">
-                                    Detail
-                                </a>
+                            <td style="text-align: right; position: relative;">
+                                @php $hdrMenuId = 'dropdown-pakai-hdr-' . $hdr->pakai_id; @endphp
+                                <button type="button" class="btn-action-trigger" onclick="toggleSmartActionDropdown(this, event, '{{ $hdrMenuId }}')">
+                                    <span>Aksi</span>
+                                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                </button>
+                                <div id="{{ $hdrMenuId }}" class="action-dropdown-menu">
+                                    <a href="{{ route('gudang.pemakaian.show', $hdr->pakai_id) }}" class="action-dropdown-item">
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                        <span>Lihat Detail BPPB</span>
+                                    </a>
+                                    <a href="{{ route('gudang.pemakaian.export-pdf', $hdr->pakai_id) }}" target="_blank" class="action-dropdown-item">
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                                        <span>Cetak BPPB (PDF)</span>
+                                    </a>
+                                    @if(Auth::user()?->canEditPemakaian() && ($hdr->status_st ?? 'POSTED') === 'DRAFT')
+                                        <a href="{{ route('gudang.pemakaian.edit', $hdr->pakai_id) }}" class="action-dropdown-item">
+                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                            <span>Edit Dokumen (Draft)</span>
+                                        </a>
+                                    @endif
+                                    @if(Auth::user()?->canVerifyPemakaian() && ($hdr->status_st ?? 'POSTED') === 'DRAFT')
+                                        <a href="{{ route('gudang.pemakaian.show', $hdr->pakai_id) }}" class="action-dropdown-item" style="color: #059669;">
+                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                            <span style="font-weight: 700;">Verifikasi &amp; Potong Stok</span>
+                                        </a>
+                                    @elseif(!empty($hdr->jurnal_id))
+                                        <button type="button" class="action-dropdown-item" onclick="openModalDetailJurnal({{ $hdr->jurnal_id }})" style="color: #065f46;">
+                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                            <span>Lihat Jurnal Umum</span>
+                                        </button>
+                                    @endif
+                                    @if(Auth::user()?->canDeletePemakaian() && ($hdr->status_st ?? 'POSTED') === 'DRAFT')
+                                        <div class="action-dropdown-divider"></div>
+                                        <button type="button" class="action-dropdown-item danger-item" onclick="openDeletePemakaianModal({{ $hdr->pakai_id }}, '{{ $hdr->pakai_no }}', '{{ addslashes($hdr->tujuan_pemakaian ?? '') }}')">
+                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                            <span>Hapus Dokumen</span>
+                                        </button>
+                                    @endif
+                                </div>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" style="text-align: center; padding: 3rem 1rem; color: #94a3b8;">
+                            <td colspan="9" style="text-align: center; padding: 3rem 1rem; color: #94a3b8;">
                                 Belum ada riwayat dokumen pengeluaran barang.
                             </td>
                         </tr>
@@ -534,3 +619,10 @@
         if (btn) { btn.disabled = true; btn.textContent = 'Memproses...'; }
     });
 </script>
+
+{{-- MODAL PREVIEW DETAIL JURNAL UMUM --}}
+@include('keuangan.jurnal.partials.modal-detail-jurnal')
+
+{{-- MODAL HAPUS TRANSAKSI PEMAKAIAN BAHAN (DRAFT) --}}
+@include('gudang.pemakaian.partials.modal-delete-confirm')
+

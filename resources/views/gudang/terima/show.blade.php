@@ -335,14 +335,9 @@
                     <th>Nomor Batch / Lot</th>
                     <th style="text-align: center;">Expired</th>
                     <th style="text-align: center;">Grade</th>
-                    <th style="text-align: right;">Qty Netto</th>
+                    <th style="text-align: right;">Qty Netto (Masuk)</th>
                     <th style="text-align: center;">Satuan</th>
-                    <th style="text-align: right;">Harga Satuan</th>
-                    <th style="text-align: right;">Diskon</th>
-                    <th style="text-align: right;">Potongan</th>
-                    <th style="text-align: right;">HPP Masuk</th>
-                    <th style="text-align: center;">Pajak</th>
-                    <th style="text-align: right;">Subtotal Tagihan</th>
+                    <th style="text-align: right;">@Harga Satuan</th>
                     <th style="text-align: center;" class="no-print">Aksi</th>
                 </tr>
             </thead>
@@ -350,17 +345,7 @@
                 @foreach ($terima->details as $index => $item)
                     @php
                         $hargaAwal = (float) ($item->harga_nominal ?? 0);
-                        $diskonPct = (float) ($item->diskon_persen ?? 0);
-                        $potonganItem = (float) ($item->potongan_nominal ?? 0);
-                        $hargaNet = (float) ($item->harga_netto ?: ($hargaAwal * (1 - ($diskonPct / 100))));
                         $itemNetto = max(0, (float) $item->terima_qty - (float) ($item->reject_qty ?? 0));
-                        $subNet = (float) ($item->subtotal_netto ?: max(0, ($itemNetto * $hargaNet) - $potonganItem));
-                        $isItemPpn = ($item->ppn_tipe === 'PPN_11');
-                        $tagihanItem = (float) ($item->subtotal_tagihan ?: ($subNet + ($isItemPpn ? round($subNet * 0.11) : 0)));
-
-                        $matchingHutangDtl = $terima->hutangDetails->first(function($h) use ($item) {
-                            return ($h->terima_dtl_id && $h->terima_dtl_id == $item->terimadtl_id) || ($h->barang_id == $item->barang_id);
-                        });
                     @endphp
                     <tr>
                         <td style="text-align: center; color: #64748b; font-weight: 600;">{{ $index + 1 }}</td>
@@ -369,7 +354,7 @@
                             <span style="display: block; font-size: 0.75rem; color: #64748b;">Kode: {{ $item->barang?->barang_cd }}</span>
                         </td>
                         <td>
-                            <span style="font-family: monospace; font-size: 0.85rem; background: #f1f5f9; padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 700; color: #0284c7;">
+                            <span style="font-family: monospace; font-size: 0.85rem; background: #ecfdf5; padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 700; color: #065f46; border: 1px solid #a7f3d0;">
                                 {{ $item->batch_no }}
                             </span>
                         </td>
@@ -394,45 +379,9 @@
                             @endif
                         </td>
                         <td style="text-align: center; color: #475569; font-size: 0.85rem;">{{ $item->barang?->satuanDasar?->satuan_nm ?? '-' }}</td>
-                        <td style="text-align: right; font-family: monospace; font-size: 0.85rem;">
+                        <td style="text-align: right; font-family: monospace; font-size: 0.875rem; font-weight: 700; color: #0f172a;">
                             Rp {{ number_format($hargaAwal, 0, ',', '.') }}
-                        </td>
-                        <td style="text-align: right; font-family: monospace; font-size: 0.85rem; color: {{ $diskonPct > 0 ? '#d97706' : '#94a3b8' }};">
-                            {{ $diskonPct > 0 ? number_format($diskonPct, 1, ',', '.') . '%' : '-' }}
-                            @if ($matchingHutangDtl && $matchingHutangDtl->diskon_nominal > 0)
-                                @php
-                                    $grnItemDisc = $diskonPct > 0 ? round(($itemNetto * $hargaAwal) * ($diskonPct / 100)) : 0;
-                                @endphp
-                                @if (abs((float)$matchingHutangDtl->diskon_nominal - $grnItemDisc) > 1)
-                                    <div style="font-size: 0.7rem; color: #0284c7; font-weight: 700; margin-top: 2px;" title="Diskon disesuaikan oleh Keuangan di invoice">
-                                        💼 Keu: Rp {{ number_format($matchingHutangDtl->diskon_nominal, 0, ',', '.') }}
-                                        @if ($matchingHutangDtl->diskon_persen > 0)
-                                            ({{ floatval($matchingHutangDtl->diskon_persen) }}%)
-                                        @endif
-                                    </div>
-                                @endif
-                            @endif
-                        </td>
-                        <td style="text-align: right; font-family: monospace; font-size: 0.85rem; color: {{ $potonganItem > 0 ? '#dc2626' : '#94a3b8' }}; font-weight: {{ $potonganItem > 0 ? '600' : 'normal' }};">
-                            {{ $potonganItem > 0 ? '- Rp ' . number_format($potonganItem, 0, ',', '.') : '-' }}
-                            @if ($matchingHutangDtl && abs((float)$matchingHutangDtl->potongan_nominal - $potonganItem) > 1)
-                                <div style="font-size: 0.7rem; color: #0284c7; font-weight: 700; margin-top: 2px;" title="Potongan disesuaikan oleh Keuangan di invoice">
-                                    💼 Keu: Rp {{ number_format($matchingHutangDtl->potongan_nominal, 0, ',', '.') }}
-                                </div>
-                            @endif
-                        </td>
-                        <td style="text-align: right; font-family: monospace; font-size: 0.85rem; font-weight: 600; color: #047857;">
-                            Rp {{ number_format($subNet, 0, ',', '.') }}
-                        </td>
-                        <td style="text-align: center;">
-                            @if ($isItemPpn)
-                                <span class="badge" style="background: #e0f2fe; color: #0284c7; font-size: 0.725rem; font-weight: 700;">PPN 11%</span>
-                            @else
-                                <span class="badge" style="background: #f1f5f9; color: #64748b; font-size: 0.725rem; font-weight: 600;">Non-Pajak</span>
-                            @endif
-                        </td>
-                        <td style="text-align: right; font-weight: 700; font-family: monospace; color: #0f172a;">
-                            Rp {{ number_format($tagihanItem, 0, ',', '.') }}
+                            <small style="color: #64748b; font-size: 0.725rem; font-weight: normal; display: block;">/ {{ $item->barang?->satuanDasar?->satuan_nm ?? 'Satuan' }}</small>
                         </td>
                         <td style="text-align: center;" class="no-print">
                             <a href="{{ route('gudang.stok.ledger', ['barang_id' => $item->barang_id, 'gudang_id' => $terima->gudang_id]) }}" class="btn btn-secondary btn-sm" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;" title="Lihat Kartu Stok Barang Ini">
@@ -445,88 +394,31 @@
         </table>
     </div>
 
-    {{-- SUMMARY BREAKDOWN KEUANGAN: DISKON, POTONGAN HARGA, DPP & PPN --}}
+    {{-- SUMMARY REKAPITULASI FISIK GUDANG --}}
     @php
-        $calcSubtotalBruto = (float) $terima->details->sum(fn($d) => (float)$d->terima_qty * (float)$d->harga_nominal);
-        $calcDiskonItem = (float) $terima->details->sum(fn($d) => (float)$d->terima_qty * (float)($d->diskon_nominal ?? 0));
-        $calcPotonganItem = (float) $terima->details->sum(fn($d) => (float)($d->potongan_nominal ?? 0));
-        $totalSemuaPotongan = (float) ($terima->potongan_nominal ?? 0);
-        $calcPotonganFaktur = max(0, $totalSemuaPotongan - $calcPotonganItem);
-
-        $totalDppPpn = (float) $terima->details->where('ppn_tipe', 'PPN_11')->sum('subtotal_netto');
-        $totalDppNonPpn = (float) $terima->details->where('ppn_tipe', '!=', 'PPN_11')->sum('subtotal_netto');
-        if ($totalDppPpn == 0 && $totalDppNonPpn == 0) {
-            if ($terima->ppn_tipe === 'PPN_11') {
-                $totalDppPpn = (float) ($terima->dpp_nominal ?: ($calcSubtotalBruto - $calcDiskonItem - $totalSemuaPotongan));
-            } else {
-                $totalDppNonPpn = (float) ($calcSubtotalBruto - $calcDiskonItem - $totalSemuaPotongan);
-            }
-        }
-        $calcPpn = (float) ($terima->ppn_nominal ?? $terima->details->sum('ppn_nominal'));
-        $calcTagihan = (float) ($terima->total_tagihan ?? ($totalDppPpn + $totalDppNonPpn + $calcPpn - $calcPotonganFaktur));
-        $calcHpp = (float) $terima->details->sum(fn($d) => (float)($d->subtotal_netto ?: ((float)$d->terima_qty * (float)($d->harga_netto ?: $d->harga_nominal))));
-        if ($calcHpp <= 0) $calcHpp = (float) ($terima->total_nominal ?? 0);
+        $sumBruto = (float) $terima->details->sum('terima_qty');
+        $sumAfkir = (float) $terima->details->sum('reject_qty');
+        $sumNetto = max(0, $sumBruto - $sumAfkir);
     @endphp
 
-    <div style="border-top: 2px solid #e2e8f0; background: #f8fafc; padding: 1.25rem; display: flex; justify-content: flex-end;">
-        <div style="width: 100%; max-width: 440px; display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.85rem;">
-            <div style="display: flex; justify-content: space-between; align-items: center; color: #64748b;">
-                <span>Subtotal Nilai Kotor:</span>
-                <strong style="color: #0f172a; font-family: monospace;">Rp {{ number_format($calcSubtotalBruto, 0, ',', '.') }}</strong>
+    <div style="border-top: 2px solid #e2e8f0; background: #f8fafc; padding: 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <div style="color: #64748b; font-size: 0.85rem;">
+            Catatan: Perhitungan faktur tagihan hutang, PPN, dan rekonsiliasi pembayaran dikelola oleh modul <strong>Keuangan &amp; Akuntansi</strong>.
+        </div>
+        <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+            <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.5rem 1rem; text-align: right;">
+                <span style="font-size: 0.725rem; color: #64748b; text-transform: uppercase; font-weight: 700; display: block;">Total Qty Bruto</span>
+                <strong style="color: #0f172a; font-size: 1rem; font-family: monospace;">{{ number_format($sumBruto, 2, ',', '.') }}</strong>
             </div>
-
-            @if ($calcDiskonItem > 0)
-                <div style="display: flex; justify-content: space-between; align-items: center; color: #d97706;">
-                    <span>Akumulasi Diskon Item:</span>
-                    <strong style="font-family: monospace;">- Rp {{ number_format($calcDiskonItem, 0, ',', '.') }}</strong>
+            @if ($sumAfkir > 0)
+                <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; padding: 0.5rem 1rem; text-align: right;">
+                    <span style="font-size: 0.725rem; color: #dc2626; text-transform: uppercase; font-weight: 700; display: block;">Total Afkir / Reject</span>
+                    <strong style="color: #b91c1c; font-size: 1rem; font-family: monospace;">- {{ number_format($sumAfkir, 2, ',', '.') }}</strong>
                 </div>
             @endif
-
-            @if ($calcPotonganItem > 0)
-                <div style="display: flex; justify-content: space-between; align-items: center; color: #dc2626;">
-                    <span>Akumulasi Potongan Item:</span>
-                    <strong style="font-family: monospace;">- Rp {{ number_format($calcPotonganItem, 0, ',', '.') }}</strong>
-                </div>
-            @endif
-
-            @if ($calcPotonganFaktur > 0)
-                <div style="display: flex; justify-content: space-between; align-items: center; color: #dc2626;">
-                    <span>Potongan Tambahan Nota Faktur:</span>
-                    <strong style="font-family: monospace;">- Rp {{ number_format($calcPotonganFaktur, 0, ',', '.') }}</strong>
-                </div>
-            @endif
-
-            @if ($totalDppPpn > 0)
-                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed #cbd5e1; padding-top: 0.4rem; color: #334155;">
-                    <span style="font-weight: 600;">DPP Barang Kena PPN (11%):</span>
-                    <strong style="font-family: monospace; font-weight: 700; color: #0f172a;">Rp {{ number_format($totalDppPpn, 0, ',', '.') }}</strong>
-                </div>
-
-                <div style="display: flex; justify-content: space-between; align-items: center; color: #0284c7;">
-                    <span>Nominal PPN (11%):</span>
-                    <strong style="font-family: monospace;">+ Rp {{ number_format($calcPpn, 0, ',', '.') }}</strong>
-                </div>
-            @endif
-
-            @if ($totalDppNonPpn > 0)
-                <div style="display: flex; justify-content: space-between; align-items: center; color: #047857; {{ $totalDppPpn > 0 ? '' : 'border-top: 1px dashed #cbd5e1; padding-top: 0.4rem;' }}">
-                    <span>Subtotal Barang Non-Pajak (0%):</span>
-                    <strong style="font-family: monospace;">Rp {{ number_format($totalDppNonPpn, 0, ',', '.') }}</strong>
-                </div>
-            @endif
-
-            <div style="display: flex; justify-content: space-between; align-items: center; border-top: 2px solid #0f172a; padding-top: 0.65rem; margin-top: 0.25rem;">
-                <span style="font-size: 1rem; font-weight: 800; color: #0f172a;">Total Tagihan Akhir Supplier:</span>
-                <strong style="font-size: 1.25rem; font-weight: 800; color: #0f172a; font-family: monospace;">
-                    Rp {{ number_format($calcTagihan, 0, ',', '.') }}
-                </strong>
-            </div>
-
-            <div style="display: flex; justify-content: space-between; align-items: center; background: #dcfce7; border: 1px solid #86efac; border-radius: 6px; padding: 0.45rem 0.75rem; margin-top: 0.35rem;">
-                <span style="color: #166534; font-size: 0.775rem; font-weight: 700; text-transform: uppercase;">Total Nilai Masuk Stok (HPP):</span>
-                <strong style="color: #15803d; font-family: monospace; font-size: 0.95rem;">
-                    Rp {{ number_format($calcHpp, 0, ',', '.') }}
-                </strong>
+            <div style="background: #ecfdf5; border: 1.5px solid #a7f3d0; border-radius: 6px; padding: 0.5rem 1.25rem; text-align: right;">
+                <span style="font-size: 0.725rem; color: #047857; text-transform: uppercase; font-weight: 800; display: block;">Total Netto Masuk Gudang</span>
+                <strong style="color: #047857; font-size: 1.2rem; font-family: monospace;">+ {{ number_format($sumNetto, 2, ',', '.') }}</strong>
             </div>
         </div>
     </div>

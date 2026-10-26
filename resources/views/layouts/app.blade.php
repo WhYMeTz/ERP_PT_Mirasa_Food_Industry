@@ -1125,6 +1125,23 @@
                                             <span style="font-size: 0.6875rem; color: #64748b;">Mutasi akun interaktif &amp; grafik saldo</span>
                                         </div>
                                     </a>
+
+                                    <div style="height: 1px; background: #f1f5f9; margin: 0.3rem 0;"></div>
+                                    <a href="{{ route('keuangan.verifikasi_pemakaian.index') }}" class="mega-item {{ request()->routeIs('keuangan.verifikasi_pemakaian.*') ? 'active' : '' }}">
+                                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #ea580c;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+                                        <div style="display: flex; flex-direction: column;">
+                                            <span style="font-weight: 600; color: #0f172a;">Verifikasi Pemakaian Bahan</span>
+                                            <span style="font-size: 0.6875rem; color: #64748b;">Periksa batch fisik, potong stok &amp; jurnal HPP</span>
+                                        </div>
+                                        @php
+                                            $draftPakaiBadge = \App\Models\Gudang\DatPakaiHdr::where('status_st', 'DRAFT')->where('deleted_st', false)->count();
+                                        @endphp
+                                        @if($draftPakaiBadge > 0)
+                                            <span style="margin-left: auto; background: #fef3c7; color: #92400e; font-size: 0.7rem; font-weight: 800; padding: 0.15rem 0.45rem; border-radius: 999px; border: 1px solid #fde68a;">
+                                                {{ $draftPakaiBadge }}
+                                            </span>
+                                        @endif
+                                    </a>
                                 @endif
                             </div>
                         </div>

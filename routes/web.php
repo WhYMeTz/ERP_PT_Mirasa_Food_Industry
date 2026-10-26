@@ -30,6 +30,7 @@ use App\Http\Controllers\Keuangan\KasBankController;
 use App\Http\Controllers\Keuangan\KasMasukController;
 use App\Http\Controllers\Keuangan\JurnalController;
 use App\Http\Controllers\Keuangan\BukuBesarController;
+use App\Http\Controllers\Keuangan\VerifikasiPemakaianController;
 use App\Http\Controllers\Penjualan\SoController;
 use App\Http\Controllers\Penjualan\PengeluaranBarangController;
 use App\Http\Controllers\Penjualan\FakturPenjualanController;
@@ -310,6 +311,21 @@ Route::middleware('auth')->group(function () {
         Route::post('pemakaian', [PemakaianController::class, 'store'])
             ->name('pemakaian.store')
             ->middleware('role:pemakaian_create');
+        Route::get('pemakaian/{id}/edit', [PemakaianController::class, 'edit'])
+            ->name('pemakaian.edit')
+            ->middleware('role:pemakaian_edit,SUPERADMIN');
+        Route::put('pemakaian/{id}', [PemakaianController::class, 'update'])
+            ->name('pemakaian.update')
+            ->middleware('role:pemakaian_edit,SUPERADMIN');
+        Route::post('pemakaian/{id}/post', [PemakaianController::class, 'postPemakaian'])
+            ->name('pemakaian.post')
+            ->middleware('role:pemakaian_verify,SUPERADMIN');
+        Route::delete('pemakaian/{id}', [PemakaianController::class, 'destroy'])
+            ->name('pemakaian.destroy')
+            ->middleware('role:pemakaian_delete,SUPERADMIN');
+        Route::get('pemakaian/{id}/export-pdf', [PemakaianController::class, 'exportPdf'])
+            ->name('pemakaian.export-pdf')
+            ->middleware('role:pemakaian_view');
         Route::resource('pemakaian', PemakaianController::class)->only(['index', 'show'])->middleware('role:pemakaian_view');
 
         // Monitoring Persediaan: Lacak Stok, Kartu Stok & Rekapitulasi Persediaan (Berdasarkan izin 'stok_view')
@@ -469,6 +485,26 @@ Route::middleware('auth')->group(function () {
         // 7. Buku Besar Interaktif (Interactive General Ledger)
         Route::get('buku-besar', [BukuBesarController::class, 'index'])
             ->name('buku_besar.index')
+            ->middleware('role:jurnal_view,coa_view,hutang_view,kas_bank_view');
+
+        // 8. Verifikasi Pemakaian Bahan & Terbitkan Jurnal HPP
+        Route::get('verifikasi-pemakaian', [VerifikasiPemakaianController::class, 'index'])
+            ->name('verifikasi_pemakaian.index')
+            ->middleware('role:jurnal_view,coa_view,hutang_view,kas_bank_view');
+        Route::get('verifikasi-pemakaian/{id}', [VerifikasiPemakaianController::class, 'show'])
+            ->name('verifikasi_pemakaian.show')
+            ->middleware('role:jurnal_view,coa_view,hutang_view,kas_bank_view');
+        Route::get('verifikasi-pemakaian/{id}/edit', [VerifikasiPemakaianController::class, 'edit'])
+            ->name('verifikasi_pemakaian.edit')
+            ->middleware('role:jurnal_view,coa_view,hutang_view,kas_bank_view');
+        Route::put('verifikasi-pemakaian/{id}', [VerifikasiPemakaianController::class, 'update'])
+            ->name('verifikasi_pemakaian.update')
+            ->middleware('role:jurnal_view,coa_view,hutang_view,kas_bank_view');
+        Route::post('verifikasi-pemakaian/{id}/approve', [VerifikasiPemakaianController::class, 'approve'])
+            ->name('verifikasi_pemakaian.approve')
+            ->middleware('role:jurnal_view,coa_view,hutang_view,kas_bank_view');
+        Route::post('verifikasi-pemakaian/{id}/reject', [VerifikasiPemakaianController::class, 'reject'])
+            ->name('verifikasi_pemakaian.reject')
             ->middleware('role:jurnal_view,coa_view,hutang_view,kas_bank_view');
     });
 });

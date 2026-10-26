@@ -125,7 +125,7 @@ class VerifikasiPemakaianController extends Controller
      * Jika masih DRAFT, langsung menyajikan stasiun edit & penyesuaian bahan lengkap di tempat (in-place).
      * Jika sudah POSTED, menyajikan tampilan dokumen resmi terkunci (read-only).
      */
-    public function show(int $id): View
+    public function show(Request $request, int $id): View|JsonResponse
     {
         $pakai = DatPakaiHdr::with([
             'gudang',
@@ -248,6 +248,29 @@ class VerifikasiPemakaianController extends Controller
                 ];
             }
 
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'status'       => 'success',
+                    'pakai'        => [
+                        'pakai_id'         => $pakai->pakai_id,
+                        'pakai_no'         => $pakai->pakai_no,
+                        'pakai_tgl'        => $pakai->pakai_tgl ? \Carbon\Carbon::parse($pakai->pakai_tgl)->format('Y-m-d') : '',
+                        'pakai_tgl_fmt'    => $pakai->pakai_tgl ? \Carbon\Carbon::parse($pakai->pakai_tgl)->format('d/m/Y') : '',
+                        'gudang_id'        => $pakai->gudang_id,
+                        'gudang_nm'        => $pakai->gudang?->gudang_nm ?? '-',
+                        'tujuan_pemakaian' => $pakai->tujuan_pemakaian,
+                        'catatan_txt'      => $pakai->catatan_txt ?? '',
+                        'status_st'        => $pakai->status_st,
+                        'created_by'       => $pakai->created_by ?? '-',
+                        'produksi_id'      => $pakai->produksi_id,
+                    ],
+                    'initialItems' => $initialItems,
+                    'totalNominal' => (float) $totalNominal,
+                    'gudangList'   => $gudangList,
+                    'barangList'   => $barangList,
+                ]);
+            }
+
             return view('keuangan.verifikasi_pemakaian.show', compact(
                 'pakai',
                 'gudangList',
@@ -275,6 +298,12 @@ class VerifikasiPemakaianController extends Controller
 
             $itemsCheck[] = [
                 'detail'            => $dtl,
+                'barang_nm'         => $dtl->barang?->barang_nm ?? '-',
+                'barang_cd'         => $dtl->barang?->barang_cd ?? '-',
+                'satuan_nm'         => $dtl->barang?->satuanDasar?->satuan_nm ?? 'Kg',
+                'batch_no'          => $dtl->batch_no,
+                'grade_cd'          => $dtl->grade_cd ?? 'A',
+                'qty_keluar'        => (float) $dtl->qty_keluar,
                 'current_stock'     => $currentStock,
                 'is_stock_ok'       => true,
                 'is_fifo_ok'        => true,
@@ -282,6 +311,27 @@ class VerifikasiPemakaianController extends Controller
                 'harga_satuan'      => (float) $dtl->harga_satuan,
                 'total_harga'       => (float) $dtl->total_harga,
             ];
+        }
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'status'       => 'success',
+                'pakai'        => [
+                    'pakai_id'         => $pakai->pakai_id,
+                    'pakai_no'         => $pakai->pakai_no,
+                    'pakai_tgl'        => $pakai->pakai_tgl ? \Carbon\Carbon::parse($pakai->pakai_tgl)->format('Y-m-d') : '',
+                    'pakai_tgl_fmt'    => $pakai->pakai_tgl ? \Carbon\Carbon::parse($pakai->pakai_tgl)->format('d/m/Y') : '',
+                    'gudang_id'        => $pakai->gudang_id,
+                    'gudang_nm'        => $pakai->gudang?->gudang_nm ?? '-',
+                    'tujuan_pemakaian' => $pakai->tujuan_pemakaian,
+                    'catatan_txt'      => $pakai->catatan_txt ?? '',
+                    'status_st'        => $pakai->status_st,
+                    'created_by'       => $pakai->created_by ?? '-',
+                    'jurnal_id'        => $pakai->jurnal_id,
+                ],
+                'itemsCheck'   => $itemsCheck,
+                'totalNominal' => (float) $totalNominal,
+            ]);
         }
 
         return view('keuangan.verifikasi_pemakaian.show', compact(

@@ -109,11 +109,14 @@ class PermissionService
             'border_color' => '#fed7aa',
             'modules'      => [
                 'SPK' => [
-                    'label'   => 'Pemakaian Bahan (SPK Masak)',
-                    'desc'    => 'Permintaan dan pengeluaran bahan baku / penolong ke dapur produksi.',
+                    'label'   => 'Pemakaian Bahan (BPPB / Pengeluaran)',
+                    'desc'    => 'Permintaan dan pengeluaran bahan baku / penolong ke lini produksi pabrik.',
                     'actions' => [
                         'view'   => ['key' => 'pemakaian_view',   'label' => 'Lihat SPK'],
-                        'create' => ['key' => 'pemakaian_create', 'label' => 'Catat Pengeluaran'],
+                        'create' => ['key' => 'pemakaian_create', 'label' => 'Catat Pengeluaran (Draft)'],
+                        'edit'   => ['key' => 'pemakaian_edit',   'label' => 'Edit / Koreksi'],
+                        'delete' => ['key' => 'pemakaian_delete', 'label' => 'Hapus Dokumen'],
+                        'verify' => ['key' => 'pemakaian_verify', 'label' => 'Verifikasi & Potong Stok'],
                     ],
                 ],
                 'HASIL_PRODUKSI' => [
@@ -359,6 +362,8 @@ class PermissionService
         'STAFF_PRODUKSI' => [
             'pemakaian_view',
             'pemakaian_create',
+            'pemakaian_edit',
+            'pemakaian_verify',
             'produksi_view',
             'produksi_create',
             'stok_fg_view',

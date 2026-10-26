@@ -381,6 +381,21 @@ class User extends Authenticatable
         return $this->isSuperAdmin() || $this->canDo('pemakaian_create');
     }
 
+    public function canEditPemakaian(): bool
+    {
+        return $this->isSuperAdmin() || $this->canDo('pemakaian_edit');
+    }
+
+    public function canDeletePemakaian(): bool
+    {
+        return $this->isSuperAdmin() || $this->canDo('pemakaian_delete');
+    }
+
+    public function canVerifyPemakaian(): bool
+    {
+        return $this->isSuperAdmin() || $this->canDo('pemakaian_verify');
+    }
+
     /**
      * Hak akses Produksi & Laporan HPP Harian
      */

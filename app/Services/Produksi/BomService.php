@@ -235,7 +235,6 @@ class BomService
                 ->where('barang_id', $barangId)
                 ->where('sisa_qty', '>', 0)
                 ->where('deleted_st', false)
-                ->orderByRaw('expired_tgl ASC NULLS LAST')
                 ->orderBy('created_at', 'asc')
                 ->orderBy('stok_id', 'asc')
                 ->get();

@@ -3,9 +3,9 @@
 @section('title', 'Pemeriksaan Dokumen ' . $pakai->pakai_no . ' - ERP PT Mirasa')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/keuangan/verifikasi_pemakaian/verifikasi-pemakaian.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/keuangan/verifikasi_pemakaian/verifikasi-pemakaian.css') }}?v={{ file_exists(public_path('css/keuangan/verifikasi_pemakaian/verifikasi-pemakaian.css')) ? filemtime(public_path('css/keuangan/verifikasi_pemakaian/verifikasi-pemakaian.css')) : time() }}">
     @if($pakai->isDraft())
-        <link rel="stylesheet" href="{{ asset('css/keuangan/verifikasi_pemakaian/verifikasi-pemakaian-edit.css') }}">
+        <link rel="stylesheet" href="{{ asset('css/keuangan/verifikasi_pemakaian/verifikasi-pemakaian-edit.css') }}?v={{ file_exists(public_path('css/keuangan/verifikasi_pemakaian/verifikasi-pemakaian-edit.css')) ? filemtime(public_path('css/keuangan/verifikasi_pemakaian/verifikasi-pemakaian-edit.css')) : time() }}">
     @endif
     <style>
         @media print {
@@ -58,6 +58,37 @@
         </div>
 
         <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+            @if($pakai->isDraft())
+                {{-- LIVE KPI WIDGET DI POJOK KANAN ATAS --}}
+                <div id="liveTotalWidget" class="live-kpi-widget">
+                    <div>
+                        <div style="font-size: 0.675rem; font-weight: 700; text-transform: uppercase; color: #059669; letter-spacing: 0.04em;">
+                            Total Fisik Keluar:
+                        </div>
+                        <div style="display: flex; align-items: baseline; gap: 0.25rem;">
+                            <span id="sideTotalQtyLarge" style="font-size: 1.65rem; font-weight: 800; font-family: monospace; color: #047857; line-height: 1;">0,00</span>
+                            <span style="font-size: 0.85rem; font-weight: 700; color: #059669;">Kg</span>
+                        </div>
+                    </div>
+                    <div style="height: 32px; width: 1px; background: #e2e8f0;"></div>
+                    <div style="font-size: 0.775rem; line-height: 1.45;">
+                        <div style="color: #065f46; font-weight: 700;">🟢 Grade A: <strong id="sideGradeAQty" style="font-family: monospace;">0,00 Kg</strong></div>
+                        <div style="color: #b45309; font-weight: 700;">🟡 Grade B: <strong id="sideGradeBQty" style="font-family: monospace;">0,00 Kg</strong></div>
+                    </div>
+                    <div style="height: 32px; width: 1px; background: #e2e8f0;"></div>
+                    <div style="font-size: 0.775rem; color: #64748b; font-weight: 600;">
+                        <strong id="sideTotalItems" style="font-weight: 800; color: #0f172a;">0</strong> Baris Item
+                    </div>
+                    <div style="height: 32px; width: 1px; background: #e2e8f0;"></div>
+                    <div>
+                        <div style="font-size: 0.675rem; font-weight: 700; text-transform: uppercase; color: #0284c7; letter-spacing: 0.04em;">
+                            Total Biaya HPP:
+                        </div>
+                        <span id="sideGrandTotal" style="font-size: 1.25rem; font-weight: 800; font-family: monospace; color: #0284c7; line-height: 1;">Rp 0</span>
+                    </div>
+                </div>
+            @endif
+
             @if($pakai->isPosted())
                 @if($pakai->jurnal_id)
                     <button type="button" onclick="openModalDetailJurnal({{ $pakai->jurnal_id }})" class="btn btn-secondary" style="color: #065f46; border-color: #a7f3d0; background: #f0fdf4; font-weight: 700;">
@@ -77,19 +108,24 @@
 {{-- JIKA DOKUMEN MASIH DRAFT: TAMPILKAN STASIUN INSPEKSI & EDIT LANGSUNG DI TEMPAT --}}
 @if($pakai->isDraft())
 
-    <div class="no-print" style="background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 8px; padding: 0.85rem 1.25rem; margin-bottom: 1.25rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
+    <div class="no-print" style="background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 8px; padding: 0.75rem 1.25rem; margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
         <div style="display: flex; align-items: center; gap: 0.75rem;">
-            <div style="width: 38px; height: 38px; border-radius: 50%; background: #fef3c7; color: #b45309; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; flex-shrink: 0;">
+            <div style="width: 36px; height: 36px; border-radius: 50%; background: #fef3c7; color: #b45309; display: flex; align-items: center; justify-content: center; font-size: 1.15rem; flex-shrink: 0;">
                 ✏️
             </div>
             <div>
-                <h4 style="margin: 0; font-size: 0.925rem; font-weight: 700; color: #92400e;">
-                    Layar Terpadu: Inspeksi &amp; Koreksi Bahan Langsung di Tempat
+                <h4 style="margin: 0; font-size: 0.9rem; font-weight: 700; color: #92400e;">
+                    Layar Terpadu: Pemeriksaan &amp; Koreksi Bahan Langsung di Tabel
                 </h4>
-                <p style="margin: 0.15rem 0 0; font-size: 0.8rem; color: #b45309;">
-                    Anda dapat langsung mengoreksi nomor batch, kuantitas timbangan, atau mengganti item bahan di bawah ini. Setelah sesuai, pilih <strong>"Simpan &amp; Langsung Setujui"</strong> untuk memotong stok fisik dan membukukan Jurnal Umum secara instan.
+                <p style="margin: 0.15rem 0 0; font-size: 0.775rem; color: #b45309;">
+                    Gunakan filter kategori (Bahan Baku / Penolong / Kemasan) &amp; Grade untuk mencari barang atau mengganti nomor batch. Verifikasi kuantitas timbangan fisik sebelum disetujui.
                 </p>
             </div>
+        </div>
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+            <span class="badge" style="background: #e0f2fe; color: #0369a1; font-weight: 700; font-size: 0.75rem; padding: 0.35rem 0.75rem; border-radius: 6px;">
+                💡 Shortcut: Tekan Enter pada Qty/Harga untuk baris baru
+            </span>
         </div>
     </div>
 
@@ -99,268 +135,216 @@
         @method('PUT')
         <input type="hidden" name="action_type" id="action_type" value="save_draft">
 
-        <div class="order-station-grid">
-            {{-- KOLOM KIRI: FORMULIR UTAMA & TABEL (2.3fr) --}}
-            <div style="display: flex; flex-direction: column; gap: 1.25rem;">
-                
-                {{-- KARTU 1: INFORMASI DOKUMEN & PENGELUARAN --}}
-                <div class="card" style="border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
-                    <div class="card-header" style="background: #ffffff; padding: 0.85rem 1.25rem; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
-                        <strong style="color: #0f172a; font-size: 0.95rem;">1. Informasi Dokumen &amp; Tujuan Pengeluaran</strong>
-                        <span class="badge" style="background: #e0f2fe; color: #0369a1; font-weight: 700; font-size: 0.725rem;">Stasiun Verifikasi Terpadu</span>
+        <div class="verifikasi-fullwidth-container">
+            {{-- KARTU 1: INFORMASI DOKUMEN & PENGELUARAN (COMPACT & SLEEK) --}}
+            <div class="card" style="border: 1px solid #cbd5e1; box-shadow: 0 1px 3px rgba(0,0,0,0.04); background: #ffffff; margin-bottom: 1rem;">
+                <div style="background: #f8fafc; padding: 0.75rem 1.25rem; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                    <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+                        <strong style="color: #0f172a; font-size: 0.95rem;">1. Dokumen Bukti Pengeluaran (BPPB)</strong>
+                        <span style="font-family: monospace; font-size: 0.95rem; font-weight: 800; color: #0284c7; background: #e0f2fe; padding: 2px 8px; border-radius: 4px; border: 1px solid #bae6fd;">
+                            {{ $pakai->pakai_no }}
+                        </span>
+                        <span style="font-size: 0.775rem; color: #64748b;">
+                            Dicatat oleh: <strong>{{ $pakai->created_by ?? 'Admin Gudang' }}</strong>
+                        </span>
                     </div>
-                    <div style="padding: 1.25rem; display: flex; flex-direction: column; gap: 1rem;">
-                        
-                        {{-- BARIS 1: NO DOKUMEN, TANGGAL, GUDANG ASAL, TUJUAN / SPK --}}
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1rem;">
-                            <div class="form-group" style="margin-bottom: 0;">
-                                <label for="pakai_no" class="form-label" style="font-weight: 600; font-size: 0.825rem; color: #334155; margin-bottom: 0.35rem;">
-                                    Nomor Bukti Pengeluaran (BPPB)
-                                </label>
-                                <input type="text" id="pakai_no" value="{{ $pakai->pakai_no }}" class="form-control" style="font-family: monospace; font-weight: 700; height: 38px; border-radius: 6px; font-size: 0.85rem; background: #f8fafc;" disabled>
-                                <small style="color: #64748b; font-size: 0.725rem;">Nomor urut resmi dokumen terkunci.</small>
-                            </div>
+                    <span class="badge" style="background: #e0f2fe; color: #0369a1; font-weight: 700; font-size: 0.725rem;">
+                        Semua Data Dapat Dikoreksi Langsung
+                    </span>
+                </div>
 
-                            <div class="form-group" style="margin-bottom: 0;">
-                                <label for="pakai_tgl" class="form-label" style="font-weight: 600; font-size: 0.825rem; color: #334155; margin-bottom: 0.35rem;">
-                                    Tanggal Pengeluaran Fisik <span style="color: #ef4444;">*</span>
-                                </label>
-                                <input type="date" id="pakai_tgl" name="pakai_tgl" value="{{ old('pakai_tgl', $pakai->pakai_tgl ? \Carbon\Carbon::parse($pakai->pakai_tgl)->format('Y-m-d') : date('Y-m-d')) }}" class="form-control" style="height: 38px; border-radius: 6px; font-size: 0.85rem;" required>
-                            </div>
+                <div style="padding: 0.85rem 1.25rem; display: grid; grid-template-columns: 1.1fr 1.6fr 1.8fr 2fr; gap: 0.85rem; align-items: start;">
+                    <div>
+                        <label for="pakai_tgl" style="font-weight: 700; font-size: 0.75rem; color: #475569; display: block; margin-bottom: 3px;">
+                            Tanggal Keluar <span style="color: #ef4444;">*</span>
+                        </label>
+                        <input type="date" id="pakai_tgl" name="pakai_tgl" value="{{ old('pakai_tgl', $pakai->pakai_tgl ? \Carbon\Carbon::parse($pakai->pakai_tgl)->format('Y-m-d') : date('Y-m-d')) }}" class="form-control" style="height: 38px; border-radius: 6px; font-size: 0.85rem;" required>
+                    </div>
 
-                            <div class="form-group" style="margin-bottom: 0;">
-                                <label for="gudang_id" class="form-label" style="font-weight: 600; font-size: 0.825rem; color: #334155; margin-bottom: 0.35rem;">
-                                    Lokasi Gudang Asal <span style="color: #ef4444;">*</span>
-                                </label>
-                                <select name="gudang_id" id="gudang_id" class="form-control" style="height: 38px; border-radius: 6px; font-size: 0.85rem;" required onchange="onGudangChanged()">
-                                    <option value="">-- Pilih Lokasi Asal --</option>
-                                    @foreach ($gudangList as $gdg)
-                                        <option value="{{ $gdg->gudang_id }}" {{ old('gudang_id', $pakai->gudang_id) == $gdg->gudang_id ? 'selected' : '' }}>
-                                            {{ $gdg->display_name }} ({{ $gdg->gudang_cd }})
-                                        </option>
-                                    @endforeach
-                                </select>
-                            </div>
+                    <div>
+                        <label for="gudang_id" style="font-weight: 700; font-size: 0.75rem; color: #475569; display: block; margin-bottom: 3px;">
+                            Lokasi Gudang Asal <span style="color: #ef4444;">*</span>
+                        </label>
+                        <select name="gudang_id" id="gudang_id" class="form-control" style="height: 38px; border-radius: 6px; font-size: 0.85rem;" required onchange="onGudangChanged()">
+                            <option value="">-- Pilih Lokasi Asal --</option>
+                            @foreach ($gudangList as $gdg)
+                                <option value="{{ $gdg->gudang_id }}" {{ old('gudang_id', $pakai->gudang_id) == $gdg->gudang_id ? 'selected' : '' }}>
+                                    {{ $gdg->display_name }} ({{ $gdg->gudang_cd }})
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
 
-                            <div class="form-group" style="margin-bottom: 0;">
-                                <label for="tujuan_pemakaian" class="form-label" style="font-weight: 600; font-size: 0.825rem; color: #334155; margin-bottom: 0.35rem;">
-                                    Tujuan Pemakaian / Lini Kerja <span style="color: #ef4444;">*</span>
-                                </label>
-                                <select name="tujuan_pemakaian" id="tujuan_pemakaian" class="form-control" style="height: 38px; border-radius: 6px; font-size: 0.85rem;" required onchange="updateSidebarInfo()">
-                                    <option value="">-- Pilih Lini Produksi / Tujuan --</option>
-                                    @if(isset($liniList) && $liniList->isNotEmpty())
-                                        @foreach($liniList->groupBy(fn($item) => $item->kategori_lini ?: 'UMUM') as $kategori => $items)
-                                            <optgroup label="{{ $kategori }}">
-                                                @foreach($items as $lini)
-                                                    <option value="{{ $lini->lini_nm }}" {{ old('tujuan_pemakaian', $pakai->tujuan_pemakaian) === $lini->lini_nm ? 'selected' : '' }}>
-                                                        {{ $lini->lini_nm }} {{ $lini->keterangan ? '('.$lini->keterangan.')' : '' }}
-                                                    </option>
-                                                @endforeach
-                                            </optgroup>
+                    <div>
+                        <label for="tujuan_pemakaian" style="font-weight: 700; font-size: 0.75rem; color: #475569; display: block; margin-bottom: 3px;">
+                            Tujuan Pemakaian / Lini Kerja <span style="color: #ef4444;">*</span>
+                        </label>
+                        <select name="tujuan_pemakaian" id="tujuan_pemakaian" class="form-control" style="height: 38px; border-radius: 6px; font-size: 0.85rem;" required onchange="updateSidebarInfo()">
+                            <option value="">-- Pilih Lini Produksi / Tujuan --</option>
+                            @if(isset($liniList) && $liniList->isNotEmpty())
+                                @foreach($liniList->groupBy(fn($item) => $item->kategori_lini ?: 'UMUM') as $kategori => $items)
+                                    <optgroup label="{{ $kategori }}">
+                                        @foreach($items as $lini)
+                                            <option value="{{ $lini->lini_nm }}" {{ old('tujuan_pemakaian', $pakai->tujuan_pemakaian) === $lini->lini_nm ? 'selected' : '' }}>
+                                                {{ $lini->lini_nm }} {{ $lini->keterangan ? '('.$lini->keterangan.')' : '' }}
+                                            </option>
                                         @endforeach
-                                    @endif
-                                </select>
-                            </div>
-                        </div>
+                                    </optgroup>
+                                @endforeach
+                            @endif
+                        </select>
+                    </div>
 
-                        {{-- BARIS 2: CATATAN TAMBAHAN --}}
-                        <div class="form-group" style="margin-bottom: 0;">
-                            <label for="catatan_txt" class="form-label" style="font-weight: 600; font-size: 0.825rem; color: #334155; margin-bottom: 0.35rem;">
-                                Catatan Tambahan Verifikasi / Koreksi (Opsional)
-                            </label>
-                            <input type="text" id="catatan_txt" name="catatan_txt" value="{{ old('catatan_txt', $pakai->catatan_txt) }}" placeholder="Keterangan koreksi timbangan, memo supervisor, instruksi verifikator, dll." class="form-control" style="height: 38px; border-radius: 6px; font-size: 0.85rem;">
-                        </div>
+                    <div>
+                        <label for="catatan_txt" style="font-weight: 700; font-size: 0.75rem; color: #475569; display: block; margin-bottom: 3px;">
+                            Catatan Koreksi / Memo Audit (Opsional)
+                        </label>
+                        <input type="text" id="catatan_txt" name="catatan_txt" value="{{ old('catatan_txt', $pakai->catatan_txt) }}" placeholder="Catatan memo audit..." class="form-control" style="height: 38px; border-radius: 6px; font-size: 0.85rem;">
+                    </div>
+                </div>
+            </div>
+
+            {{-- KARTU 2: RINCIAN BAHAN YANG DIKELUARKAN (TABEL LENGKAP PENUH SEPERTI FORM PEMAKAIAN) --}}
+            <div class="card" style="border: 1px solid #cbd5e1; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); background: #ffffff;">
+                <div class="card-header" style="background: #ffffff; padding: 0.75rem 1.25rem; border-bottom: 1px solid #cbd5e1; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <strong style="color: #0f172a; font-size: 0.95rem;">2. Rincian Fisik Bahan &amp; Alokasi Batch (FIFO)</strong>
+                        <span style="font-size: 0.775rem; color: #64748b;">
+                            💡 Klik angka atau batch untuk mengubah data langsung
+                        </span>
+                    </div>
+                    <div style="display: flex; gap: 0.35rem; flex-wrap: wrap; align-items: center;">
+                        <span style="font-size: 0.775rem; font-weight: 700; color: #64748b; margin-right: 0.25rem;">+ Tambah Cepat:</span>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="addRow('BAHAN_BAKU')" style="font-weight: 700; font-size: 0.8rem; border-radius: 6px; border: 1.5px solid #cbd5e1; background: #ffffff; padding: 0.35rem 0.75rem;">
+                            <span style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #d97706; margin-right: 4px;"></span>Bahan Baku
+                        </button>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="addRow('BAHAN_PENOLONG')" style="font-weight: 700; font-size: 0.8rem; border-radius: 6px; border: 1.5px solid #cbd5e1; background: #ffffff; padding: 0.35rem 0.75rem;">
+                            <span style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #0284c7; margin-right: 4px;"></span>Bumbu / Penolong
+                        </button>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="addRow('KEMASAN')" style="font-weight: 700; font-size: 0.8rem; border-radius: 6px; border: 1.5px solid #cbd5e1; background: #ffffff; padding: 0.35rem 0.75rem;">
+                            <span style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #059669; margin-right: 4px;"></span>Kemasan
+                        </button>
+                        <button type="button" class="btn btn-primary btn-sm" onclick="addRow('')" style="font-weight: 700; font-size: 0.8rem; border-radius: 6px; background: #dc2626; border: none; padding: 0.35rem 0.85rem;">
+                            + Baris Umum
+                        </button>
                     </div>
                 </div>
 
-                {{-- KARTU 2: RINCIAN BAHAN YANG DIKELUARKAN (INTERAKTIF & BISA DIEDIT LANGSUNG) --}}
-                <div class="card" style="border: 1px solid #cbd5e1; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
-                    <div class="card-header" style="background: #ffffff; padding: 0.85rem 1.25rem; border-bottom: 1px solid #cbd5e1; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
-                        <div>
-                            <strong style="color: #0f172a; font-size: 0.95rem;">2. Rincian Fisik Bahan Dikeluarkan &amp; Pilihan Batch (FIFO)</strong>
-                            <span style="font-size: 0.75rem; color: #64748b; margin-left: 0.5rem;">
-                                💡 Tekan <kbd style="background:#e2e8f0; padding:2px 5px; border-radius:3px; font-weight:700;">Enter</kbd> untuk berpindah antar-baris layaknya Excel
-                            </span>
-                        </div>
-                        <div style="display: flex; gap: 0.35rem; flex-wrap: wrap; align-items: center;">
-                            <span style="font-size: 0.75rem; font-weight: 600; color: #64748b; margin-right: 0.25rem;">+ Tambah Cepat:</span>
-                            <button type="button" class="btn btn-secondary btn-sm" onclick="addRow('BAHAN_BAKU')" style="font-weight: 600; font-size: 0.775rem; border-radius: 6px; border: 1px solid #cbd5e1; background: #ffffff; padding: 0.3rem 0.65rem;">
-                                <span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #d97706; margin-right: 4px;"></span>Bahan Baku
-                            </button>
-                            <button type="button" class="btn btn-secondary btn-sm" onclick="addRow('BAHAN_PENOLONG')" style="font-weight: 600; font-size: 0.775rem; border-radius: 6px; border: 1px solid #cbd5e1; background: #ffffff; padding: 0.3rem 0.65rem;">
-                                <span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #0284c7; margin-right: 4px;"></span>Bumbu / Penolong
-                            </button>
-                            <button type="button" class="btn btn-secondary btn-sm" onclick="addRow('KEMASAN')" style="font-weight: 600; font-size: 0.775rem; border-radius: 6px; border: 1px solid #cbd5e1; background: #ffffff; padding: 0.3rem 0.65rem;">
-                                <span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #059669; margin-right: 4px;"></span>Kemasan
-                            </button>
-                            <button type="button" class="btn btn-primary btn-sm" onclick="addRow('')" style="font-weight: 600; font-size: 0.775rem; border-radius: 6px; background: #0284c7; border: none; padding: 0.3rem 0.75rem;">
-                                + Baris Umum
-                            </button>
-                        </div>
+                {{-- SMART AUDIT STRIP: INDIKATOR CEPAT MATA ELANG UNTUK VERIFIKATOR --}}
+                <div class="audit-status-strip">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                        <span style="font-weight: 700; color: #334155; font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.03em;">
+                            🎯 Deteksi Audit Visual:
+                        </span>
+                        <span class="audit-indicator-pill audit-pill-ok" title="Bahan dengan stok fisik cukup & batch tertua (FIFO)">
+                            🟢 Lolos Audit: <span id="auditCountOk">0</span> Item
+                        </span>
+                        <span class="audit-indicator-pill audit-pill-warning" title="Bahan yang mengambil batch lebih baru padahal batch lama masih ada sisa">
+                            🟡 Peringatan FIFO: <span id="auditCountWarn">0</span> Item
+                        </span>
+                        <span class="audit-indicator-pill audit-pill-danger" title="Bahan yang kuantitasnya melebihi stok fisik (rawan salah input admin gudang)">
+                            🔴 Anomali / Kurang Stok: <span id="auditCountDanger">0</span> Item
+                        </span>
                     </div>
+                    <div style="font-size: 0.725rem; color: #64748b;">
+                        ⚡ <span style="color: #0f172a; font-weight: 600;">Tips:</span> Cukup fokuskan mata pada baris bertanda <span style="color: #dc2626; font-weight: 700;">merah</span> atau <span style="color: #b45309; font-weight: 700;">kuning</span>.
+                    </div>
+                </div>
 
-                    <div style="overflow-x: auto;">
-                        <table class="excel-grid-table" id="itemsTable" style="width: 100%; min-width: 980px;">
-                            <thead>
-                                <tr>
-                                    <th style="width: 35px; text-align: center;">No</th>
-                                    <th style="min-width: 240px;">Kategori &amp; Nama Bahan Produksi <span style="color:#ef4444;">*</span></th>
-                                    <th style="min-width: 260px;">Pilihan Grade &amp; Batch (FIFO) <span style="color:#ef4444;">*</span></th>
-                                    <th style="width: 115px; text-align: right;">Qty Keluar <span style="color:#ef4444;">*</span></th>
-                                    <th style="width: 65px; text-align: center;">Satuan</th>
-                                    <th style="width: 125px; text-align: right;">Harga Satuan (Rp)</th>
-                                    <th style="width: 135px; text-align: right;">Total Biaya (HPP)</th>
-                                    <th style="width: 40px; text-align: center;">Hapus</th>
-                                </tr>
-                            </thead>
-                            <tbody id="itemsBody">
-                                {{-- Di-render via JavaScript (addRowWithItemData) --}}
-                            </tbody>
-                            <tfoot>
-                                <tr style="border-top: 2px solid #cbd5e1; font-weight: 700; background: #f8fafc;">
-                                    <td colspan="3" style="padding: 0.65rem 0.75rem; text-align: right; color: #475569; font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.05em;">
-                                        Total Akumulasi Fisik &amp; HPP:
-                                        <span style="margin-left: 0.65rem; text-transform: none; font-size: 0.75rem; display: inline-flex; gap: 0.35rem; vertical-align: middle;">
-                                            <span style="background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; padding: 2px 7px; border-radius: 4px; font-weight: 700;">
-                                                🟢 Grade A: <strong id="footGradeAQty" style="font-family: monospace;">0,00</strong>
-                                            </span>
-                                            <span style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a; padding: 2px 7px; border-radius: 4px; font-weight: 700;">
-                                                🟡 Grade B: <strong id="footGradeBQty" style="font-family: monospace;">0,00</strong>
-                                            </span>
+                <div style="overflow-x: auto;">
+                    <table class="excel-grid-table" id="itemsTable" style="width: 100%;">
+                        <thead>
+                            <tr>
+                                <th style="width: 50px; text-align: center;">No &amp; Status</th>
+                                <th style="min-width: 320px;">Kategori &amp; Nama Bahan Produksi <span style="color:#ef4444;">*</span></th>
+                                <th style="min-width: 340px;">Pilihan Grade &amp; Batch (FIFO) <span style="color:#ef4444;">*</span></th>
+                                <th style="width: 140px; text-align: right;">Qty Keluar <span style="color:#ef4444;">*</span></th>
+                                <th style="width: 80px; text-align: center;">Satuan</th>
+                                <th style="width: 140px; text-align: right;">Harga Satuan (Rp)</th>
+                                <th style="width: 150px; text-align: right;">Total Biaya (HPP)</th>
+                                <th style="width: 50px; text-align: center;">Hapus</th>
+                            </tr>
+                        </thead>
+                        <tbody id="itemsBody">
+                            {{-- Di-render via JavaScript (addRowWithItemData) --}}
+                        </tbody>
+                        <tfoot>
+                            <tr style="border-top: 2px solid #cbd5e1; font-weight: 700; background: #f8fafc;">
+                                <td colspan="3" style="padding: 0.75rem 1rem; text-align: right; color: #475569; font-size: 0.825rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                                    Total Akumulasi Fisik &amp; HPP:
+                                    <span style="margin-left: 0.85rem; text-transform: none; font-size: 0.8rem; display: inline-flex; gap: 0.5rem; vertical-align: middle;">
+                                         <span style="background: #ecfdf5; color: #065f46; border: 1.5px solid #a7f3d0; padding: 3px 8px; border-radius: 6px; font-weight: 700;">
+                                            🟢 Grade A: <strong id="footGradeAQty" style="font-family: monospace; font-size: 0.95rem;">0,00</strong>
                                         </span>
-                                    </td>
-                                    <td style="padding: 0.65rem 0.5rem; text-align: right; color: #0284c7; font-family: monospace; font-size: 0.95rem; font-weight: 700;" id="grandTotalQty">
-                                        0,00
-                                    </td>
-                                    <td style="text-align: center; color: #64748b; font-size: 0.725rem;">Subtotal:</td>
-                                    <td></td>
-                                    <td style="padding: 0.65rem 0.5rem; text-align: right; color: #0f172a; font-family: monospace; font-size: 1.05rem; font-weight: 800;" id="grandTotalNilai">
-                                        Rp 0
-                                    </td>
-                                    <td></td>
-                                </tr>
-                            </tfoot>
-                        </table>
-                    </div>
-                </div>
-
-            </div> {{-- End Kolom Kiri (.order-station-grid left) --}}
-
-            {{-- KOLOM KANAN: STICKY ACTION SIDEBAR (1fr) --}}
-            <div class="sticky-action-sidebar" style="position: sticky; top: 1.25rem; display: flex; flex-direction: column; gap: 1.25rem;">
-                
-                {{-- KARTU SUMMARY & ACTION UTAMA --}}
-                <div class="card" style="border: 1px solid #cbd5e1; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.06); overflow: hidden;">
-                    <div class="card-header" style="background: #0f172a; color: #ffffff; padding: 0.85rem 1.25rem;">
-                        <div style="font-size: 0.725rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em; color: #94a3b8;">
-                            Panel Verifikasi
-                        </div>
-                        <strong style="color: #ffffff; font-size: 1.05rem;">Ringkasan Biaya HPP</strong>
-                    </div>
-
-                    <div style="padding: 1.25rem;">
-                        {{-- TOTAL NOMINAL DISPLAY BESAR --}}
-                        <div style="margin-bottom: 1.25rem;">
-                            <span style="font-size: 0.725rem; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; display: block;">Total Biaya Bahan (HPP):</span>
-                            <div id="sideGrandTotal" style="font-size: 1.65rem; font-weight: 800; color: #0f172a; margin-top: 0.2rem; font-family: monospace; letter-spacing: -0.02em;">
-                                Rp 0
-                            </div>
-                        </div>
-
-                        {{-- STATISTIK DAMPAK KARTU STOK --}}
-                        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.75rem 1rem; margin-bottom: 1.25rem; display: flex; flex-direction: column; gap: 0.55rem; font-size: 0.85rem;">
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <span style="color: #64748b;">Jumlah Bahan:</span>
-                                <strong style="color: #0f172a;"><span id="sideTotalItems">0</span> Baris Item</strong>
-                            </div>
-
-                            <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 0.4rem; border-top: 1px dashed #e2e8f0;">
-                                <span style="color: #64748b;">Gudang Asal:</span>
-                                <strong id="sideGudangName" style="color: #0f172a; font-size: 0.8rem; max-width: 150px; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">-</strong>
-                            </div>
-
-                            <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 0.4rem; border-top: 1px dashed #e2e8f0;">
-                                <span style="color: #64748b;">Tujuan / SPK:</span>
-                                <strong id="sideTujuanName" style="color: #0f172a; font-size: 0.8rem; max-width: 150px; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">-</strong>
-                            </div>
-
-                            {{-- BREAKDOWN REKAPITULASI GRADE A & GRADE B --}}
-                            <div style="padding: 0.55rem 0.65rem; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 5px; margin-top: 0.2rem;">
-                                <div style="font-size: 0.7rem; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.35rem; display: flex; justify-content: space-between;">
-                                    <span>Pemakaian per Grade:</span>
-                                    <span style="color: #94a3b8; font-weight: normal;">(Bahan Baku)</span>
-                                </div>
-                                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; padding: 0.2rem 0; border-bottom: 1px dashed #f1f5f9;">
-                                    <span style="display: inline-flex; align-items: center; gap: 0.3rem; color: #065f46; font-weight: 600;">
-                                        <span style="width: 7px; height: 7px; border-radius: 50%; background: #10b981; display: inline-block;"></span>
-                                        Grade A (Super)
+                                        <span style="background: #fffbeb; color: #b45309; border: 1.5px solid #fde68a; padding: 3px 8px; border-radius: 6px; font-weight: 700;">
+                                            🟡 Grade B: <strong id="footGradeBQty" style="font-family: monospace; font-size: 0.95rem;">0,00</strong>
+                                        </span>
                                     </span>
-                                    <strong id="sideGradeAQty" style="color: #065f46; font-family: monospace;">0,00 Kg</strong>
-                                </div>
-                                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; padding-top: 0.2rem;">
-                                    <span style="display: inline-flex; align-items: center; gap: 0.3rem; color: #b45309; font-weight: 600;">
-                                        <span style="width: 7px; height: 7px; border-radius: 50%; background: #f59e0b; display: inline-block;"></span>
-                                        Grade B (Standar)
-                                    </span>
-                                    <strong id="sideGradeBQty" style="color: #b45309; font-family: monospace;">0,00 Kg</strong>
-                                </div>
-                            </div>
-
-                            {{-- HIGHLIGHT TOTAL QTY KELUAR --}}
-                            <div style="padding: 0.55rem 0.65rem; background: #e0f2fe; border: 1px solid #bae6fd; border-radius: 5px; margin-top: 0.2rem;">
-                                <div style="display: flex; justify-content: space-between; align-items: center;">
-                                    <span style="color: #0369a1; font-size: 0.775rem; font-weight: 700; text-transform: uppercase;">Total Qty Keluar:</span>
-                                    <strong style="color: #0284c7; font-size: 1.05rem; font-family: monospace;"><span id="sideTotalQty">0,00</span></strong>
-                                </div>
-                            </div>
-                        </div>
-
-                        {{-- TOMBOL 1: SIMPAN PERUBAHAN & LANGSUNG SETUJUI (POSTING) --}}
-                        <button type="button" onclick="submitVerifikasiForm('save_and_approve')" class="btn btn-primary" style="width: 100%; padding: 0.75rem 1rem; font-size: 0.925rem; font-weight: 700; background: #059669; border: 1px solid #059669; justify-content: center; box-shadow: 0 4px 6px -1px rgba(5, 150, 105, 0.25); display: flex; align-items: center; gap: 0.5rem; cursor: pointer; margin-bottom: 0.65rem;">
-                            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                            <span>Simpan &amp; Langsung Setujui (Posting)</span>
-                        </button>
-
-                        {{-- TOMBOL 2: SIMPAN PERUBAHAN SAJA (TETAP DRAFT) --}}
-                        <button type="button" onclick="submitVerifikasiForm('save_draft')" class="btn btn-secondary" style="width: 100%; padding: 0.65rem 1rem; font-size: 0.85rem; font-weight: 600; border: 1.5px solid #cbd5e1; background: #ffffff; color: #334155; justify-content: center; display: flex; align-items: center; gap: 0.4rem; cursor: pointer; margin-bottom: 0.65rem;">
-                            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
-                            <span>Simpan Perubahan Saja (Tetap DRAFT)</span>
-                        </button>
-
-                        {{-- TOMBOL 3: TOLAK / BATALKAN DOKUMEN --}}
-                        <button type="button" onclick="openModalReject({{ $pakai->pakai_id }}, '{{ $pakai->pakai_no }}')" class="btn btn-secondary" style="width: 100%; padding: 0.6rem 1rem; font-size: 0.825rem; font-weight: 600; border: 1px solid #fecaca; background: #fef2f2; color: #dc2626; justify-content: center; display: flex; align-items: center; gap: 0.35rem; cursor: pointer; margin-bottom: 0.65rem;">
-                            <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                            <span>Tolak / Batalkan Dokumen</span>
-                        </button>
-                    </div>
+                                </td>
+                                <td style="padding: 0.75rem 0.75rem; text-align: right; color: #047857; font-family: monospace; font-size: 1.35rem; font-weight: 800;" id="grandTotalQty">
+                                    0,00
+                                </td>
+                                <td style="text-align: center; color: #64748b; font-size: 0.8rem; font-weight: 700;">Subtotal:</td>
+                                <td></td>
+                                <td style="padding: 0.75rem 0.75rem; text-align: right; color: #0f172a; font-family: monospace; font-size: 1.25rem; font-weight: 800;" id="grandTotalNilai">
+                                    Rp 0
+                                </td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
+                    </table>
                 </div>
+            </div>
 
-                {{-- KARTU PANDUAN CEPAT --}}
-                <div class="card" style="border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.03); background: #ffffff;">
-                    <div class="card-header" style="background: #ffffff; padding: 0.75rem 1.25rem; border-bottom: 1px solid #e2e8f0;">
-                        <strong style="color: #0f172a; font-size: 0.85rem;">Panduan Verifikasi &amp; Edit Terpadu</strong>
-                    </div>
-                    <div style="padding: 1rem 1.25rem; font-size: 0.8rem; color: #475569; line-height: 1.5;">
-                        <div style="margin-bottom: 0.5rem; display: flex; gap: 0.5rem;">
-                            <span style="color: #059669; font-weight: 700;">&bull;</span>
-                            <span><strong>Koreksi di Tempat:</strong> Ganti batch atau timbangan riil yang dimasukkan orang gudang langsung di tabel ini.</span>
-                        </div>
-                        <div style="margin-bottom: 0.5rem; display: flex; gap: 0.5rem;">
-                            <span style="color: #059669; font-weight: 700;">&bull;</span>
-                            <span><strong>Simpan &amp; Langsung Setujui:</strong> Otomatis memotong saldo fisik batch dan membukukan Jurnal HPP (Debet 1151, Kredit 1150).</span>
-                        </div>
-                        <div style="display: flex; gap: 0.5rem;">
-                            <span style="color: #059669; font-weight: 700;">&bull;</span>
-                            <span><strong>Simpan Perubahan Saja:</strong> Menyimpan rincian baru sebagai DRAFT jika masih menunggu konfirmasi lanjutan.</span>
-                        </div>
-                    </div>
+        </div> {{-- End .verifikasi-fullwidth-container --}}
+
+        {{-- STICKY BOTTOM ACTION BAR (TETAP MELAYANG DI BAWAH AGAR TIDAK MEMAKAN LEBAR TABEL) --}}
+        <div class="verifikasi-sticky-bottom-bar">
+            <div style="display: flex; align-items: center; gap: 0.65rem;">
+                <div style="width: 34px; height: 34px; border-radius: 50%; background: #ecfdf5; color: #059669; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.15rem; font-weight: 800;">
+                    ✓
                 </div>
+                <div>
+                    <strong style="color: #0f172a; font-size: 0.875rem; display: block;">Mode Verifikasi &amp; Pemeriksaan Fisik Bahan (DRAFT)</strong>
+                    <span style="font-size: 0.75rem; color: #64748b;">Stok fisik terpotong &amp; Jurnal Umum dibukukan otomatis saat disetujui.</span>
+                </div>
+            </div>
 
-            </div> {{-- End Kolom Kanan (.sticky-action-sidebar) --}}
-        </div> {{-- End .order-station-grid --}}
+            {{-- MINI LIVE SUMMARY DI BOTTOM BAR --}}
+            <div class="verifikasi-bottom-summary-card">
+                <div>
+                    <div style="font-size: 0.675rem; font-weight: 700; color: #475569; text-transform: uppercase;">Total Fisik:</div>
+                    <div style="font-size: 1.15rem; font-weight: 800; font-family: monospace; color: #047857;" id="botBarTotalQty">0,00 Kg</div>
+                </div>
+                <div style="height: 28px; width: 1px; background: #cbd5e1;"></div>
+                <div>
+                    <div style="font-size: 0.675rem; font-weight: 700; color: #475569; text-transform: uppercase;">Total Biaya (HPP):</div>
+                    <div style="font-size: 1.15rem; font-weight: 800; font-family: monospace; color: #0f172a;" id="botBarGrandTotal">Rp 0</div>
+                </div>
+                <div style="height: 28px; width: 1px; background: #cbd5e1;"></div>
+                <div style="font-size: 0.725rem; line-height: 1.3;">
+                    <div style="color: #065f46; font-weight: 700;">(D) 1151: <span id="sideJournalDebet" style="font-family: monospace;">Rp 0</span></div>
+                    <div style="color: #991b1b; font-weight: 700;">(K) 1150: <span id="sideJournalKredit" style="font-family: monospace;">Rp 0</span></div>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 0.65rem; align-items: center;">
+                <button type="button" onclick="openModalReject({{ $pakai->pakai_id }}, '{{ $pakai->pakai_no }}')" class="btn btn-secondary" style="padding: 0.65rem 1rem; font-size: 0.85rem; font-weight: 600; border: 1.5px solid #fecaca; background: #fef2f2; color: #dc2626; border-radius: 6px; cursor: pointer;">
+                    Tolak / Batalkan
+                </button>
+                <button type="button" onclick="submitVerifikasiForm('save_draft')" class="btn btn-secondary" style="padding: 0.65rem 1.25rem; font-weight: 700; font-size: 0.875rem; border-radius: 6px; background: #f8fafc; border: 1.5px solid #cbd5e1;">
+                    Simpan Perubahan (DRAFT)
+                </button>
+                <button type="button" onclick="submitVerifikasiForm('save_and_approve')" class="btn btn-primary" style="padding: 0.75rem 1.85rem; font-size: 0.95rem; font-weight: 800; background: #059669; border: none; border-radius: 6px; box-shadow: 0 4px 6px -1px rgba(5, 150, 105, 0.35); display: inline-flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                    <span>Simpan &amp; Langsung Setujui (Posting)</span>
+                </button>
+            </div>
+        </div>
     </form>
 
     @include('keuangan.verifikasi_pemakaian.partials.modal-warning-fifo')
+    @include('keuangan.verifikasi_pemakaian.partials.modal-confirm-approve-station')
 
 @else
 {{-- JIKA DOKUMEN SUDAH POSTED: TAMPILKAN FORMAT RESMI TERKUNCI (READ-ONLY) --}}
@@ -542,7 +526,7 @@
 @endsection
 
 @push('scripts')
-<script src="{{ asset('js/keuangan/verifikasi_pemakaian/verifikasi-pemakaian.js') }}"></script>
+<script src="{{ asset('js/keuangan/verifikasi_pemakaian/verifikasi-pemakaian.js') }}?v={{ file_exists(public_path('js/keuangan/verifikasi_pemakaian/verifikasi-pemakaian.js')) ? filemtime(public_path('js/keuangan/verifikasi_pemakaian/verifikasi-pemakaian.js')) : time() }}"></script>
 @if($pakai->isDraft())
 <script>
     window.appConfig = {
@@ -552,6 +536,6 @@
         urlAlokasiResep: "{{ route('gudang.pemakaian.alokasi-resep') }}"
     };
 </script>
-<script src="{{ asset('js/keuangan/verifikasi_pemakaian/verifikasi-pemakaian-edit.js') }}"></script>
+<script src="{{ asset('js/keuangan/verifikasi_pemakaian/verifikasi-pemakaian-edit.js') }}?v={{ file_exists(public_path('js/keuangan/verifikasi_pemakaian/verifikasi-pemakaian-edit.js')) ? filemtime(public_path('js/keuangan/verifikasi_pemakaian/verifikasi-pemakaian-edit.js')) : time() }}"></script>
 @endif
 @endpush

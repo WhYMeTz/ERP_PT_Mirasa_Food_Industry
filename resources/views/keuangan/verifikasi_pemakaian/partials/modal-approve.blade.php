@@ -43,6 +43,10 @@
                     </div>
                 </div>
 
+                <div style="background:#fffbeb; border:1px solid #fde68a; border-radius:6px; padding:0.65rem 0.85rem; margin-bottom:0.75rem; font-size:0.775rem; color:#92400e; line-height:1.4;">
+                    ⚠️ <strong>Kewaspadaan Audit:</strong> Pastikan fisik timbangan dan batch barang sudah akurat. Jika ingin mengecek baris per baris atau mengoreksi angka salah input, silakan gunakan tombol <strong>"Periksa &amp; Koreksi Bahan"</strong>.
+                </div>
+
                 <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:6px; padding:0.75rem; margin-bottom:1.25rem; font-size:0.8rem; color:#1e40af; line-height:1.45;">
                     ℹ️ <strong>Dampak:</strong> Stok fisik batch barang di gudang akan resmi dipotong dan status terkunci menjadi <strong>POSTED</strong>.
                 </div>

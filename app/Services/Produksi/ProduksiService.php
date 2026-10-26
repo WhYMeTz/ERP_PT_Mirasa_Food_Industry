@@ -1330,6 +1330,15 @@ class ProduksiService
                 }
             }
 
+            // Auto-posting Dokumen Pemakaian Bahan (BPPB) jika berstatus DRAFT saat Laporan Produksi diposting
+            if (!empty($produksi->pakai_id)) {
+                $pakaiHdr = DatPakaiHdr::find($produksi->pakai_id);
+                if ($pakaiHdr && $pakaiHdr->isDraft() && $produksi->status_cd === 'POSTED') {
+                    $pemakaianService = app(\App\Services\Gudang\PemakaianService::class);
+                    $pemakaianService->postPemakaian($pakaiHdr->pakai_id, Auth::user());
+                }
+            }
+
             return $produksi;
         });
     }

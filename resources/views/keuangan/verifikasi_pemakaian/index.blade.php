@@ -3,7 +3,7 @@
 @section('title', 'Verifikasi Pemakaian Bahan - ERP PT Mirasa')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/keuangan/verifikasi_pemakaian/verifikasi-pemakaian.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/keuangan/verifikasi_pemakaian/verifikasi-pemakaian.css') }}?v={{ file_exists(public_path('css/keuangan/verifikasi_pemakaian/verifikasi-pemakaian.css')) ? filemtime(public_path('css/keuangan/verifikasi_pemakaian/verifikasi-pemakaian.css')) : time() }}">
 @endpush
 
 @section('content')
@@ -150,12 +150,12 @@
                         $docTotal = $hdr->details->sum('total_harga');
                         $menuId = 'menuActionVerif_' . $hdr->pakai_id;
                     @endphp
-                    <tr style="border-bottom: 1px solid #f1f5f9;">
+                    <tr id="rowPakai_{{ $hdr->pakai_id }}" class="verif-table-row" ondblclick="window.location.href='{{ route('keuangan.verifikasi_pemakaian.show', $hdr->pakai_id) }}'" title="Klik ganda (double-click) untuk membuka halaman pemeriksaan penuh" style="border-bottom: 1px solid #f1f5f9; cursor: pointer;">
                         <td style="text-align: center; color: #64748b; font-size: 0.85rem;">
                             {{ $dataList->firstItem() + $index }}
                         </td>
                         <td>
-                            <a href="{{ route('keuangan.verifikasi_pemakaian.show', $hdr->pakai_id) }}" style="font-weight: 700; color: #ea580c; text-decoration: none; font-size: 0.875rem;">
+                            <a href="{{ route('keuangan.verifikasi_pemakaian.show', $hdr->pakai_id) }}" style="font-weight: 700; color: #ea580c; text-decoration: none; font-size: 0.875rem;" ondblclick="event.stopPropagation()">
                                 {{ $hdr->pakai_no }}
                             </a>
                             <div style="font-size: 0.725rem; color: #64748b; margin-top: 2px;">
@@ -180,7 +180,7 @@
                                 @foreach ($hdr->details->take(2) as $dtl)
                                     <div style="font-size: 0.8rem; color: #1e293b; display: flex; justify-content: space-between;">
                                         <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                                            {{ $dtl->barang?->barang_nm }}
+                                             {{ $dtl->barang?->barang_nm }}
                                         </span>
                                         <span style="font-family: monospace; font-size: 0.725rem; background: #f1f5f9; padding: 0.1rem 0.3rem; border-radius: 3px; margin-left: 0.3rem;">
                                             {{ $dtl->batch_no }}
@@ -195,7 +195,7 @@
                             </div>
                         </td>
                         <td style="text-align: right;">
-                            <strong style="color: #0f172a; font-family: monospace; font-size: 0.925rem;">
+                            <strong id="cellTotalRupiah_{{ $hdr->pakai_id }}" style="color: #0f172a; font-family: monospace; font-size: 0.925rem;">
                                 Rp {{ number_format((float) $docTotal, 0, ',', '.') }}
                             </strong>
                         </td>
@@ -210,38 +210,60 @@
                                 </span>
                             @endif
                         </td>
-                        <td style="text-align: right;">
-                            {{-- STANDAR SMART ACTION DROPDOWN ERP MIRASA --}}
-                            <button type="button" class="btn-action-trigger" onclick="toggleSmartActionDropdown(this, event, '{{ $menuId }}')">
-                                <span>Aksi</span>
-                                <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-                            </button>
-                            <div id="{{ $menuId }}" class="action-dropdown-menu">
+                        <td style="text-align: right; white-space: nowrap;" ondblclick="event.stopPropagation()">
+                            <div style="display: flex; align-items: center; justify-content: flex-end; gap: 0.35rem;">
                                 @if($hdr->status_st === 'DRAFT')
-                                    <a href="{{ route('keuangan.verifikasi_pemakaian.show', $hdr->pakai_id) }}" class="action-dropdown-item" style="color: #0284c7; font-weight: 600;">
-                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                                        <span>Periksa &amp; Koreksi Bahan</span>
-                                    </a>
-                                    <button type="button" class="action-dropdown-item" onclick="openModalApprove({{ $hdr->pakai_id }}, '{{ $hdr->pakai_no }}', {{ $docTotal }})" style="color: #059669;">
-                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                        <span>Setujui &amp; Terbitkan Jurnal</span>
-                                    </button>
-                                    <button type="button" class="action-dropdown-item danger-item" onclick="openModalReject({{ $hdr->pakai_id }}, '{{ $hdr->pakai_no }}')">
-                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                                        <span>Tolak / Batalkan</span>
+                                    <button type="button" class="btn-quick-inspect" onclick="openQuickInspectModal({{ $hdr->pakai_id }})" ondblclick="event.stopPropagation()" title="⚡ Periksa Cepat (Popup Ringkas)">
+                                        <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                                        <span>Periksa</span>
                                     </button>
                                 @else
-                                    <a href="{{ route('keuangan.verifikasi_pemakaian.show', $hdr->pakai_id) }}" class="action-dropdown-item">
-                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                                        <span>Lihat Dokumen Resmi</span>
-                                    </a>
-                                    @if($hdr->jurnal_id)
-                                        <button type="button" class="action-dropdown-item" onclick="openModalDetailJurnal({{ $hdr->jurnal_id }})" style="color: #0284c7;">
-                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                                            <span>Lihat Jurnal Umum</span>
-                                        </button>
-                                    @endif
+                                    <button type="button" class="btn-quick-inspect btn-quick-inspect-view" onclick="openQuickInspectModal({{ $hdr->pakai_id }})" ondblclick="event.stopPropagation()" title="Lihat Rincian Cepat (Popup)">
+                                        <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                        <span>Lihat</span>
+                                    </button>
                                 @endif
+
+                                {{-- STANDAR SMART ACTION DROPDOWN ERP MIRASA --}}
+                                <button type="button" class="btn-action-trigger" onclick="toggleSmartActionDropdown(this, event, '{{ $menuId }}')" ondblclick="event.stopPropagation()">
+                                    <span>Aksi</span>
+                                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                </button>
+                                <div id="{{ $menuId }}" class="action-dropdown-menu">
+                                    @if($hdr->status_st === 'DRAFT')
+                                        <button type="button" class="action-dropdown-item" onclick="openQuickInspectModal({{ $hdr->pakai_id }})" style="color: #ea580c; font-weight: 700;">
+                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                                            <span>⚡ Periksa Cepat (Popup)</span>
+                                        </button>
+                                        <a href="{{ route('keuangan.verifikasi_pemakaian.show', $hdr->pakai_id) }}" class="action-dropdown-item" style="color: #0284c7; font-weight: 600;">
+                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                            <span>Buka Halaman Lengkap</span>
+                                        </a>
+                                        <button type="button" class="action-dropdown-item" onclick="openModalApprove({{ $hdr->pakai_id }}, '{{ $hdr->pakai_no }}', {{ $docTotal }})" style="color: #059669;">
+                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                            <span>Setujui &amp; Terbitkan Jurnal</span>
+                                        </button>
+                                        <button type="button" class="action-dropdown-item danger-item" onclick="openModalReject({{ $hdr->pakai_id }}, '{{ $hdr->pakai_no }}')">
+                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                            <span>Tolak / Batalkan</span>
+                                        </button>
+                                    @else
+                                        <button type="button" class="action-dropdown-item" onclick="openQuickInspectModal({{ $hdr->pakai_id }})" style="color: #0284c7; font-weight: 600;">
+                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                            <span>Lihat Rincian Cepat</span>
+                                        </button>
+                                        <a href="{{ route('keuangan.verifikasi_pemakaian.show', $hdr->pakai_id) }}" class="action-dropdown-item">
+                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                            <span>Lihat Dokumen Resmi</span>
+                                        </a>
+                                        @if($hdr->jurnal_id)
+                                            <button type="button" class="action-dropdown-item" onclick="openModalDetailJurnal({{ $hdr->jurnal_id }})" style="color: #0284c7;">
+                                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                                <span>Lihat Jurnal Umum</span>
+                                            </button>
+                                        @endif
+                                    @endif
+                                </div>
                             </div>
                         </td>
                     </tr>
@@ -268,6 +290,7 @@
 </div>
 
 {{-- MODALS PARTIALS --}}
+@include('keuangan.verifikasi_pemakaian.partials.modal-quick-inspect')
 @include('keuangan.verifikasi_pemakaian.partials.modal-approve')
 @include('keuangan.verifikasi_pemakaian.partials.modal-reject')
 @include('keuangan.jurnal.partials.modal-detail-jurnal')
@@ -275,5 +298,11 @@
 @endsection
 
 @push('scripts')
-    <script src="{{ asset('js/keuangan/verifikasi_pemakaian/verifikasi-pemakaian.js') }}"></script>
+    <script>
+        window.appConfig = {
+            csrfToken: '{{ csrf_token() }}',
+            baseUrl: '{{ url('/') }}'
+        };
+    </script>
+    <script src="{{ asset('js/keuangan/verifikasi_pemakaian/verifikasi-pemakaian.js') }}?v={{ file_exists(public_path('js/keuangan/verifikasi_pemakaian/verifikasi-pemakaian.js')) ? filemtime(public_path('js/keuangan/verifikasi_pemakaian/verifikasi-pemakaian.js')) : time() }}"></script>
 @endpush

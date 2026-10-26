@@ -33,11 +33,17 @@ function updateSidebarInfo() {
 
 function onGudangChanged() {
     updateSidebarInfo();
-    // Update batch selections saat gudang berubah
+    // Re-fetch batches for all rows using the newly selected warehouse
     document.querySelectorAll('#itemsBody tr').forEach(row => {
         const barangSelect = row.querySelector('.barang-select');
         if (barangSelect && barangSelect.value) {
-            fetchBatchesForRow(row, barangSelect.value);
+            let gradeFilter = '';
+            const activeGradeBtn = row.querySelector('.grade-pill-group .btn-chip.active');
+            if (activeGradeBtn) {
+                if (activeGradeBtn.classList.contains('btn-chip-grade-a')) gradeFilter = 'A';
+                else if (activeGradeBtn.classList.contains('btn-chip-grade-b')) gradeFilter = 'B';
+            }
+            fetchBatchesForRow(row, barangSelect.value, gradeFilter);
         }
     });
 }
@@ -148,17 +154,44 @@ function setRowGradeFilter(btn, grade) {
     }
 
     const row = btn.closest('tr');
+    const barangSelect = row.querySelector('.barang-select');
+
+    if ((!row._allBatches || row._allBatches.length === 0) && barangSelect && barangSelect.value) {
+        fetchBatchesForRow(row, barangSelect.value, grade);
+        return;
+    }
+
+    renderBatchOptionsInRow(row, grade);
+}
+
+function renderBatchOptionsInRow(row, gradeFilter = '') {
     const batchSelect = row.querySelector('.batch-select');
+    const batchInfo = row.querySelector('.batch-info');
+    if (!batchSelect) return;
+
     const batches = row._allBatches || [];
 
-    if (batches.length === 0) return;
+    if (batches.length === 0) {
+        batchSelect.innerHTML = '<option value="">(Stok Fisik Kosong / Habis di Gudang ini)</option>';
+        if (batchInfo) {
+            batchInfo.innerHTML = '<span style="color: #dc2626; font-weight: 700; background: #fee2e2; padding: 0.2rem 0.5rem; border-radius: 4px;">⚠️ Stok fisik bahan ini habis di gudang terpilih.</span>';
+        }
+        row.querySelector('.harga-input').value = 0;
+        row.querySelector('.stok-id-input').value = '';
+        calcRow(batchSelect);
+        return;
+    }
 
-    const filtered = grade ? batches.filter(b => (b.grade_cd || 'A') === grade) : batches;
+    let filtered = gradeFilter 
+        ? batches.filter(b => (b.grade_cd || 'A').toUpperCase() === gradeFilter.toUpperCase())
+        : batches;
 
     if (filtered.length === 0) {
-        batchSelect.innerHTML = `<option value="">(Tidak ada stok Grade ${grade} aktif di gudang)</option>`;
-        row.querySelector('.batch-info').innerHTML = `<span style="color: #dc2626; font-weight: 700; background: #fee2e2; padding: 0.2rem 0.5rem; border-radius: 4px;">Tidak ada stok fisik Grade ${grade} di gudang ini.</span>`;
-        row.querySelector('.grade-input').value = grade;
+        batchSelect.innerHTML = `<option value="">(Tidak ada stok Grade ${gradeFilter} di gudang)</option>`;
+        if (batchInfo) {
+            batchInfo.innerHTML = `<span style="color: #b45309; font-weight: 700; background: #fef3c7; padding: 0.2rem 0.5rem; border-radius: 4px;">Stok Grade ${gradeFilter} tidak tersedia di gudang terpilih.</span>`;
+        }
+        row.querySelector('.grade-input').value = gradeFilter;
         row.querySelector('.stok-id-input').value = '';
         calcRow(batchSelect);
         return;
@@ -167,11 +200,11 @@ function setRowGradeFilter(btn, grade) {
     let html = '';
     filtered.forEach((b, idx) => {
         const isTop = (idx === 0);
-        const prefix = isTop ? '⭐ [FIFO] ' : '';
+        const prefix = isTop ? '⭐ [FIFO Tertua] ' : '';
         const gCd = (b.grade_cd || 'A').toUpperCase();
         const gradeBadge = (gCd === 'A') ? '🟢 Grade A' : ((gCd === 'B') ? '🟡 Grade B' : `Grade ${gCd}`);
-        const expInfo = b.expired_tgl && b.expired_tgl !== '-' ? ` | Exp: ${b.expired_tgl}` : '';
-        const tglTerima = b.tgl_terima && b.tgl_terima !== '-' ? ` | Masuk: ${b.tgl_terima}` : '';
+        const expInfo = (b.expired_tgl && b.expired_tgl !== '-') ? ` | Exp: ${b.expired_tgl}` : '';
+        const tglTerima = (b.tgl_terima && b.tgl_terima !== '-') ? ` | Masuk: ${b.tgl_terima}` : '';
         html += `<option value="${b.batch_no}" data-stok-id="${b.stok_id || ''}" data-grade="${gCd}" data-sisa="${b.sisa_qty}" data-harga="${b.harga_satuan || 0}" data-masuk="${b.tgl_terima}" data-exp="${b.expired_tgl || '-'}" ${isTop ? 'selected' : ''}>
             ${prefix}${b.batch_no} • [${gradeBadge}] (Sisa: ${parseFloat(b.sisa_qty).toLocaleString('id-ID')})${tglTerima}${expInfo}
         </option>`;
@@ -188,47 +221,50 @@ function addRow(initialCategory = '') {
     const barangOptions = renderBarangOptions('', initialCategory);
 
     tr.innerHTML = `
-        <td class="row-num" style="font-weight: 700; text-align: center; color: #475569; background: #f1f5f9; font-size: 0.8rem;">
-            ${tbody.children.length + 1}
+        <td style="text-align: center; vertical-align: middle; padding: 0.35rem 0.25rem; background: #f8fafc;">
+            <div class="row-num" style="font-weight: 700; color: #475569; font-size: 0.8rem;">
+                ${tbody.children.length + 1}
+            </div>
+            <div class="audit-badge-cell audit-badge-ok" title="Audit: Menunggu input">✓</div>
         </td>
-        <td style="padding: 0.45rem 0.5rem;">
-            <div class="cat-pill-group" style="display: flex; gap: 0.25rem; margin-bottom: 0.35rem; align-items: center; flex-wrap: nowrap;">
+        <td style="padding: 0.45rem 0.55rem;">
+            <div class="cat-pill-group" style="display: flex; gap: 0.35rem; margin-bottom: 0.4rem; align-items: center; flex-wrap: wrap;">
                 <button type="button" class="btn-chip ${initialCategory === '' ? 'active' : ''}" onclick="setRowCategory(this, '')">Semua</button>
                 <button type="button" class="btn-chip ${initialCategory === 'BAHAN_BAKU' ? 'active' : ''}" onclick="setRowCategory(this, 'BAHAN_BAKU')">Bahan Baku</button>
                 <button type="button" class="btn-chip ${initialCategory === 'BAHAN_PENOLONG' ? 'active' : ''}" onclick="setRowCategory(this, 'BAHAN_PENOLONG')">Bumbu / Penolong</button>
                 <button type="button" class="btn-chip ${initialCategory === 'KEMASAN' ? 'active' : ''}" onclick="setRowCategory(this, 'KEMASAN')">Kemasan</button>
             </div>
-            <select name="items[${rowIndex}][barang_id]" class="form-control barang-select" style="font-size: 0.85rem;" required onchange="onBarangSelect(this)">
+            <select name="items[${rowIndex}][barang_id]" class="form-control barang-select" style="font-size: 0.85rem; font-weight: 600; color: #0f172a; height: 38px;" required onchange="onBarangSelect(this)">
                 ${barangOptions}
             </select>
         </td>
-        <td style="padding: 0.45rem 0.5rem;">
-            <div class="grade-pill-group" style="display: flex; gap: 0.25rem; margin-bottom: 0.35rem; align-items: center; flex-wrap: nowrap;">
+        <td style="padding: 0.45rem 0.55rem;">
+            <div class="grade-pill-group" style="display: flex; gap: 0.35rem; margin-bottom: 0.4rem; align-items: center; flex-wrap: nowrap;">
                 <button type="button" class="btn-chip active" onclick="setRowGradeFilter(this, '')">Semua</button>
                 <button type="button" class="btn-chip btn-chip-grade-a" onclick="setRowGradeFilter(this, 'A')">🟢 Grade A</button>
                 <button type="button" class="btn-chip btn-chip-grade-b" onclick="setRowGradeFilter(this, 'B')">🟡 Grade B</button>
             </div>
             <input type="hidden" name="items[${rowIndex}][grade_cd]" class="grade-input" value="A">
             <input type="hidden" name="items[${rowIndex}][stok_id]" class="stok-id-input" value="">
-            <select name="items[${rowIndex}][batch_no]" class="form-control batch-select" style="font-size: 0.85rem;" required onchange="onBatchSelect(this)">
+            <select name="items[${rowIndex}][batch_no]" class="form-control batch-select" style="font-size: 0.85rem; height: 38px; font-family: monospace;" required onchange="onBatchSelect(this)">
                 <option value="">-- Pilih Barang Dulu --</option>
             </select>
-            <div class="batch-info" style="font-size: 0.725rem; color: #059669; font-weight: 600; margin-top: 0.2rem;"></div>
+            <div class="batch-info" style="font-size: 0.75rem; margin-top: 3px;"></div>
         </td>
-        <td style="padding: 0.45rem 0.5rem;">
-            <input type="number" step="0.0001" min="0.0001" name="items[${rowIndex}][qty_keluar]" class="form-control qty-input" placeholder="0" style="font-weight: 700; text-align: right; font-size: 0.875rem;" required oninput="calcRow(this)">
+        <td style="padding: 0.45rem 0.55rem;">
+            <input type="number" step="0.0001" min="0.0001" name="items[${rowIndex}][qty_keluar]" class="form-control qty-input" placeholder="0" style="font-weight: 800; text-align: right; font-size: 1.15rem; height: 38px; color: #0284c7;" required oninput="calcRow(this)">
         </td>
-        <td style="text-align: center; padding: 0.45rem 0.5rem;">
-            <span class="row-satuan" style="font-weight: 700; color: #475569; font-size: 0.8rem;">-</span>
+        <td style="text-align: center; padding: 0.45rem 0.55rem;">
+            <span class="row-satuan" style="font-weight: 800; color: #475569; font-size: 0.85rem;">-</span>
         </td>
-        <td style="padding: 0.45rem 0.5rem;">
-            <input type="number" step="0.01" min="0" name="items[${rowIndex}][harga_satuan]" class="form-control harga-input" placeholder="0" style="text-align: right; font-size: 0.85rem;" oninput="calcRow(this)">
+        <td style="padding: 0.45rem 0.55rem;">
+            <input type="number" step="0.01" min="0" name="items[${rowIndex}][harga_satuan]" class="form-control harga-input" placeholder="0" style="text-align: right; font-size: 0.85rem; height: 38px; font-family: monospace;" oninput="calcRow(this)">
         </td>
-        <td style="padding: 0.45rem 0.5rem; text-align: right; font-weight: 700; color: #0f172a; font-size: 0.875rem; font-family: monospace;" class="subtotal-cell">
+        <td style="padding: 0.45rem 0.55rem; text-align: right; font-weight: 800; color: #0f172a; font-size: 0.95rem; font-family: monospace;" class="subtotal-cell">
             Rp 0
         </td>
-        <td style="padding: 0.45rem 0.5rem; text-align: center;">
-            <button type="button" class="btn btn-secondary btn-sm" onclick="removeRow(this)" style="color: #ef4444; padding: 0.2rem 0.5rem; border-radius: 4px;" title="Hapus Baris">&times;</button>
+        <td style="padding: 0.45rem 0.55rem; text-align: center;">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="removeRow(this)" style="color: #ef4444; border: 1.5px solid #fecaca; background: #fef2f2; width: 34px; height: 34px; border-radius: 6px; font-size: 1.1rem; font-weight: 700; cursor: pointer;" title="Hapus Baris">&times;</button>
         </td>
     `;
 
@@ -237,6 +273,7 @@ function addRow(initialCategory = '') {
     rowIndex++;
     updateRowNumbers();
     calculateGrandTotal();
+    updateAuditSummaryCounts();
 }
 
 function removeRow(btn) {
@@ -273,17 +310,26 @@ function addRowWithItemData(item) {
     tr._allBatches = item.all_batches || [];
     const curGrade = (item.grade_cd || 'A').toUpperCase();
 
+    // Saring batch sesuai grade item jika ada (misal Grade A hanya tampil Grade A)
+    let batchesToShow = item.all_batches || [];
+    if (curGrade === 'A' || curGrade === 'B') {
+        const gradeFiltered = batchesToShow.filter(b => (b.grade_cd || 'A').toUpperCase() === curGrade);
+        if (gradeFiltered.length > 0) {
+            batchesToShow = gradeFiltered;
+        }
+    }
+
     let batchOptions = '';
-    if (!item.all_batches || item.all_batches.length === 0) {
+    if (batchesToShow.length === 0) {
         batchOptions = `<option value="${item.batch_no}" selected>${item.batch_no} • [Grade ${curGrade}]</option>`;
     } else {
-        item.all_batches.forEach((b, idx) => {
+        batchesToShow.forEach((b, idx) => {
             const isSelected = (b.batch_no === item.batch_no && (b.grade_cd || 'A') === curGrade) ? 'selected' : '';
-            const prefix = (idx === 0) ? '⭐ [FIFO] ' : '';
+            const prefix = (idx === 0) ? '⭐ [FIFO Tertua] ' : '';
             const gCd = (b.grade_cd || 'A').toUpperCase();
             const gradeBadge = (gCd === 'A') ? '🟢 Grade A' : ((gCd === 'B') ? '🟡 Grade B' : `Grade ${gCd}`);
-            const expInfo = b.expired_tgl && b.expired_tgl !== '-' ? ` | Exp: ${b.expired_tgl}` : '';
-            const tglTerima = b.tgl_terima && b.tgl_terima !== '-' ? ` | Masuk: ${b.tgl_terima}` : '';
+            const expInfo = (b.expired_tgl && b.expired_tgl !== '-') ? ` | Exp: ${b.expired_tgl}` : '';
+            const tglTerima = (b.tgl_terima && b.tgl_terima !== '-') ? ` | Masuk: ${b.tgl_terima}` : '';
             batchOptions += `<option value="${b.batch_no}" data-stok-id="${b.stok_id || ''}" data-grade="${gCd}" data-sisa="${b.sisa_qty}" data-harga="${b.harga_satuan || 0}" data-masuk="${b.tgl_terima}" data-exp="${b.expired_tgl || '-'}" ${isSelected}>
                 ${prefix}${b.batch_no} • [${gradeBadge}] (Sisa: ${parseFloat(b.sisa_qty).toLocaleString('id-ID')})${tglTerima}${expInfo}
             </option>`;
@@ -293,47 +339,50 @@ function addRowWithItemData(item) {
     const subtotal = (parseFloat(item.qty_keluar) || 0) * (parseFloat(item.harga_satuan) || 0);
 
     tr.innerHTML = `
-        <td class="row-num" style="font-weight: 700; text-align: center; color: #475569; background: #f1f5f9; font-size: 0.8rem;">
-            ${tbody.children.length + 1}
+        <td style="text-align: center; vertical-align: middle; padding: 0.35rem 0.25rem; background: #f8fafc;">
+            <div class="row-num" style="font-weight: 700; color: #475569; font-size: 0.8rem;">
+                ${tbody.children.length + 1}
+            </div>
+            <div class="audit-badge-cell audit-badge-ok" title="Audit: Data fisik & FIFO aman">✓</div>
         </td>
-        <td style="padding: 0.45rem 0.5rem;">
-            <div class="cat-pill-group" style="display: flex; gap: 0.25rem; margin-bottom: 0.35rem; align-items: center; flex-wrap: wrap;">
+        <td style="padding: 0.45rem 0.55rem;">
+            <div class="cat-pill-group" style="display: flex; gap: 0.35rem; margin-bottom: 0.4rem; align-items: center; flex-wrap: wrap;">
                 <button type="button" class="btn-chip ${itemCat === '' ? 'active' : ''}" onclick="setRowCategory(this, '')">Semua</button>
                 <button type="button" class="btn-chip ${itemCat === 'BAHAN_BAKU' ? 'active' : ''}" onclick="setRowCategory(this, 'BAHAN_BAKU')">Bahan Baku</button>
                 <button type="button" class="btn-chip ${itemCat === 'BAHAN_PENOLONG' ? 'active' : ''}" onclick="setRowCategory(this, 'BAHAN_PENOLONG')">Bumbu / Penolong</button>
                 <button type="button" class="btn-chip ${itemCat === 'KEMASAN' ? 'active' : ''}" onclick="setRowCategory(this, 'KEMASAN')">Kemasan</button>
             </div>
-            <select name="items[${rowIndex}][barang_id]" class="form-control barang-select" style="font-size: 0.85rem;" required onchange="onBarangSelect(this)">
+            <select name="items[${rowIndex}][barang_id]" class="form-control barang-select" style="font-size: 0.85rem; font-weight: 600; color: #0f172a; height: 38px;" required onchange="onBarangSelect(this)">
                 ${barangOptions}
             </select>
         </td>
-        <td style="padding: 0.45rem 0.5rem;">
-            <div class="grade-pill-group" style="display: flex; gap: 0.25rem; margin-bottom: 0.35rem; align-items: center; flex-wrap: nowrap;">
+        <td style="padding: 0.45rem 0.55rem;">
+            <div class="grade-pill-group" style="display: flex; gap: 0.35rem; margin-bottom: 0.4rem; align-items: center; flex-wrap: nowrap;">
                 <button type="button" class="btn-chip ${curGrade !== 'A' && curGrade !== 'B' ? 'active' : ''}" onclick="setRowGradeFilter(this, '')">Semua</button>
                 <button type="button" class="btn-chip btn-chip-grade-a ${curGrade === 'A' ? 'active' : ''}" onclick="setRowGradeFilter(this, 'A')">🟢 Grade A</button>
                 <button type="button" class="btn-chip btn-chip-grade-b ${curGrade === 'B' ? 'active' : ''}" onclick="setRowGradeFilter(this, 'B')">🟡 Grade B</button>
             </div>
             <input type="hidden" name="items[${rowIndex}][grade_cd]" class="grade-input" value="${curGrade}">
             <input type="hidden" name="items[${rowIndex}][stok_id]" class="stok-id-input" value="${item.stok_id || ''}">
-            <select name="items[${rowIndex}][batch_no]" class="form-control batch-select" style="font-size: 0.85rem;" required onchange="onBatchSelect(this)">
+            <select name="items[${rowIndex}][batch_no]" class="form-control batch-select" style="font-size: 0.85rem; height: 38px; font-family: monospace;" required onchange="onBatchSelect(this)">
                 ${batchOptions}
             </select>
-            <div class="batch-info" style="font-size: 0.725rem; color: #059669; font-weight: 600; margin-top: 0.2rem;"></div>
+            <div class="batch-info" style="font-size: 0.75rem; margin-top: 3px;"></div>
         </td>
-        <td style="padding: 0.45rem 0.5rem;">
-            <input type="number" step="0.0001" min="0.0001" name="items[${rowIndex}][qty_keluar]" value="${item.qty_keluar}" class="form-control qty-input" placeholder="0" style="font-weight: 700; text-align: right; font-size: 0.875rem;" required oninput="calcRow(this)">
+        <td style="padding: 0.45rem 0.55rem;">
+            <input type="number" step="0.0001" min="0.0001" name="items[${rowIndex}][qty_keluar]" value="${item.qty_keluar}" class="form-control qty-input" placeholder="0" style="font-weight: 800; text-align: right; font-size: 1.15rem; height: 38px; color: #0284c7;" required oninput="calcRow(this)">
         </td>
-        <td style="text-align: center; padding: 0.45rem 0.5rem;">
-            <span class="row-satuan" style="font-weight: 700; color: #475569; font-size: 0.8rem;">${item.satuan_nm || '-'}</span>
+        <td style="text-align: center; padding: 0.45rem 0.55rem;">
+            <span class="row-satuan" style="font-weight: 800; color: #475569; font-size: 0.85rem;">${item.satuan_nm || '-'}</span>
         </td>
-        <td style="padding: 0.45rem 0.5rem;">
-            <input type="number" step="0.01" min="0" name="items[${rowIndex}][harga_satuan]" value="${item.harga_satuan}" class="form-control harga-input" placeholder="0" style="text-align: right; font-size: 0.85rem;" oninput="calcRow(this)">
+        <td style="padding: 0.45rem 0.55rem;">
+            <input type="number" step="0.01" min="0" name="items[${rowIndex}][harga_satuan]" value="${item.harga_satuan}" class="form-control harga-input" placeholder="0" style="text-align: right; font-size: 0.85rem; height: 38px; font-family: monospace;" oninput="calcRow(this)">
         </td>
-        <td style="padding: 0.45rem 0.5rem; text-align: right; font-weight: 700; color: #0f172a; font-size: 0.875rem; font-family: monospace;" class="subtotal-cell">
+        <td style="padding: 0.45rem 0.55rem; text-align: right; font-weight: 800; color: #0f172a; font-size: 0.95rem; font-family: monospace;" class="subtotal-cell">
             Rp ${subtotal.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
         </td>
-        <td style="padding: 0.45rem 0.5rem; text-align: center;">
-            <button type="button" class="btn btn-secondary btn-sm" onclick="removeRow(this)" style="color: #ef4444; padding: 0.2rem 0.5rem; border-radius: 4px;" title="Hapus Baris">&times;</button>
+        <td style="padding: 0.45rem 0.55rem; text-align: center;">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="removeRow(this)" style="color: #ef4444; border: 1.5px solid #fecaca; background: #fef2f2; width: 34px; height: 34px; border-radius: 6px; font-size: 1.1rem; font-weight: 700; cursor: pointer;" title="Hapus Baris">&times;</button>
         </td>
     `;
 
@@ -344,11 +393,13 @@ function addRowWithItemData(item) {
     const batchSelect = tr.querySelector('.batch-select');
     if (batchSelect && batchSelect.selectedOptions[0]) {
         const sisa = parseFloat(batchSelect.selectedOptions[0].getAttribute('data-sisa') || 0);
-        tr.querySelector('.batch-info').innerHTML = `<span style="color: #059669;">Sisa di gudang: ${sisa.toLocaleString('id-ID')}</span>`;
+        tr.querySelector('.batch-info').innerHTML = `<span style="color: #059669; font-weight: 600;">Sisa gudang: ${sisa.toLocaleString('id-ID')} unit</span>`;
     }
 
     rowIndex++;
     updateRowNumbers();
+    calculateGrandTotal();
+    updateAuditSummaryCounts();
 }
 
 function onBarangSelect(selectEl) {
@@ -367,11 +418,17 @@ function onBarangSelect(selectEl) {
     }
 
     if (barangId) {
-        fetchBatchesForRow(row, barangId);
+        // Reset grade pill group to 'Semua' so all batches of this item load by default
+        const group = row.querySelector('.grade-pill-group');
+        if (group) {
+            group.querySelectorAll('.btn-chip').forEach(b => b.classList.remove('active'));
+            group.children[0]?.classList.add('active');
+        }
+        fetchBatchesForRow(row, barangId, '');
     } else {
         const batchSelect = row.querySelector('.batch-select');
         batchSelect.innerHTML = '<option value="">-- Pilih Barang Dulu --</option>';
-        row.querySelector('.batch-info').textContent = '';
+        if (row.querySelector('.batch-info')) row.querySelector('.batch-info').textContent = '';
         row._allBatches = [];
         if (satuanEl) satuanEl.textContent = '-';
     }
@@ -379,21 +436,22 @@ function onBarangSelect(selectEl) {
     calcRow(selectEl);
 }
 
-function fetchBatchesForRow(row, barangId) {
+function fetchBatchesForRow(row, barangId, forcedGrade = null) {
     const gudangId = getSelectedGudangId();
     const batchSelect = row.querySelector('.batch-select');
     const batchInfo = row.querySelector('.batch-info');
 
     if (!gudangId) {
         batchSelect.innerHTML = '<option value="">-- Pilih Gudang di Atas Dulu --</option>';
-        batchInfo.innerHTML = '<span style="color: #dc2626; font-weight: 600;">⚠️ Gudang belum dipilih di bagian atas!</span>';
+        if (batchInfo) batchInfo.innerHTML = '<span style="color: #dc2626; font-weight: 600;">⚠️ Gudang belum dipilih di bagian atas!</span>';
         return;
     }
 
     batchSelect.innerHTML = '<option value="">Memuat data batch FIFO...</option>';
-    batchInfo.innerHTML = '<span style="color: #64748b;">Memeriksa stok fisik & urutan batch...</span>';
+    if (batchInfo) batchInfo.innerHTML = '<span style="color: #64748b;">Memeriksa stok fisik gudang &amp; urutan batch...</span>';
 
-    const url = `${window.appConfig?.urlGetBatches || '/gudang/pemakaian/batches'}?gudang_id=${gudangId}&barang_id=${barangId}`;
+    const baseUrl = window.appConfig?.urlGetBatches || '/gudang/pemakaian/batches';
+    const url = `${baseUrl}?gudang_id=${encodeURIComponent(gudangId)}&barang_id=${encodeURIComponent(barangId)}`;
 
     fetch(url)
         .then(res => res.json())
@@ -401,55 +459,30 @@ function fetchBatchesForRow(row, barangId) {
             if (res.status === 'success') {
                 row._allBatches = res.batches || [];
 
-                if (!res.batches || res.batches.length === 0) {
-                    batchSelect.innerHTML = '<option value="">(Stok Fisik Habis di Gudang ini)</option>';
-                    batchInfo.innerHTML = '<span style="color: #dc2626; font-weight: 700; background: #fee2e2; padding: 0.2rem 0.5rem; border-radius: 4px;">Stok fisik habis total di gudang ini.</span>';
-                    row.querySelector('.harga-input').value = 0;
-                    row.querySelector('.stok-id-input').value = '';
+                let gradeFilter = '';
+                if (forcedGrade !== null) {
+                    gradeFilter = forcedGrade;
                 } else {
                     const activeGradeBtn = row.querySelector('.grade-pill-group .btn-chip.active');
-                    let currentGradeFilter = '';
                     if (activeGradeBtn) {
-                        if (activeGradeBtn.classList.contains('btn-chip-grade-a')) currentGradeFilter = 'A';
-                        else if (activeGradeBtn.classList.contains('btn-chip-grade-b')) currentGradeFilter = 'B';
+                        if (activeGradeBtn.classList.contains('btn-chip-grade-a')) gradeFilter = 'A';
+                        else if (activeGradeBtn.classList.contains('btn-chip-grade-b')) gradeFilter = 'B';
                     }
-
-                    let filtered = currentGradeFilter 
-                        ? res.batches.filter(b => (b.grade_cd || 'A') === currentGradeFilter)
-                        : res.batches;
-
-                    if (filtered.length === 0) {
-                        filtered = res.batches;
-                        const group = row.querySelector('.grade-pill-group');
-                        if (group) {
-                            group.querySelectorAll('.btn-chip').forEach(b => b.classList.remove('active'));
-                            group.children[0]?.classList.add('active');
-                        }
-                    }
-
-                    let html = '';
-                    filtered.forEach((b, idx) => {
-                        const isTop = (idx === 0);
-                        const prefix = isTop ? '⭐ [FIFO] ' : '';
-                        const gCd = (b.grade_cd || 'A').toUpperCase();
-                        const gradeBadge = (gCd === 'A') ? '🟢 Grade A' : ((gCd === 'B') ? '🟡 Grade B' : `Grade ${gCd}`);
-                        const expInfo = b.expired_tgl && b.expired_tgl !== '-' ? ` | Exp: ${b.expired_tgl}` : '';
-                        const tglTerima = b.tgl_terima && b.tgl_terima !== '-' ? ` | Masuk: ${b.tgl_terima}` : '';
-                        html += `<option value="${b.batch_no}" data-stok-id="${b.stok_id || ''}" data-grade="${gCd}" data-sisa="${b.sisa_qty}" data-harga="${b.harga_satuan || 0}" data-masuk="${b.tgl_terima}" data-exp="${b.expired_tgl || '-'}" ${isTop ? 'selected' : ''}>
-                            ${prefix}${b.batch_no} • [${gradeBadge}] (Sisa: ${parseFloat(b.sisa_qty).toLocaleString('id-ID')})${tglTerima}${expInfo}
-                        </option>`;
-                    });
-                    batchSelect.innerHTML = html;
-                    onBatchSelect(batchSelect);
                 }
+
+                renderBatchOptionsInRow(row, gradeFilter);
+            } else {
+                batchSelect.innerHTML = '<option value="">Gagal memuat batch</option>';
+                if (batchInfo) batchInfo.innerHTML = `<span style="color: #dc2626;">${res.message || 'Gagal memuat batch'}</span>`;
             }
         })
         .catch(err => {
             console.error(err);
             batchSelect.innerHTML = '<option value="">Gagal memuat batch</option>';
-            batchInfo.innerHTML = '<span style="color: #dc2626;">Koneksi gagal saat mengambil batch.</span>';
+            if (batchInfo) batchInfo.innerHTML = '<span style="color: #dc2626;">Koneksi gagal saat mengambil batch.</span>';
         });
 }
+
 
 function renderNormalBatchInfo(row) {
     const batchSelect = row.querySelector('.batch-select');
@@ -523,6 +556,91 @@ function onBatchSelect(selectEl) {
     calcRow(selectEl);
 }
 
+function updateRowAuditStatus(row) {
+    if (!row) return 'ok';
+    const barangSelect = row.querySelector('.barang-select');
+    const batchSelect = row.querySelector('.batch-select');
+    const qtyInput = row.querySelector('.qty-input');
+    const badge = row.querySelector('.audit-badge-cell');
+
+    row.classList.remove('row-audit-ok', 'row-audit-warning', 'row-audit-danger');
+    if (badge) {
+        badge.classList.remove('audit-badge-ok', 'audit-badge-warn', 'audit-badge-danger');
+    }
+
+    if (!barangSelect || !barangSelect.value) {
+        if (badge) {
+            badge.className = 'audit-badge-cell';
+            badge.textContent = '-';
+            badge.title = 'Bahan belum dipilih';
+        }
+        return 'none';
+    }
+
+    const qty = parseFloat(qtyInput ? qtyInput.value : 0) || 0;
+    const selectedOpt = batchSelect ? batchSelect.selectedOptions[0] : null;
+    const sisa = selectedOpt ? parseFloat(selectedOpt.getAttribute('data-sisa') || 0) : 0;
+
+    // 1. Cek anomali bahaya: Qty melebihi sisa fisik atau Qty <= 0
+    if (qty <= 0 || (sisa > 0 && qty > sisa) || (selectedOpt && !selectedOpt.value)) {
+        row.classList.add('row-audit-danger');
+        if (badge) {
+            badge.className = 'audit-badge-cell audit-badge-danger';
+            badge.innerHTML = '!';
+            badge.title = (qty <= 0) 
+                ? 'Anomali: Kuantitas harus lebih dari 0' 
+                : `Anomali Stok: Kuantitas (${qty.toLocaleString('id-ID')}) melebihi sisa fisik batch (${sisa.toLocaleString('id-ID')})`;
+        }
+        return 'danger';
+    }
+
+    // 2. Cek peringatan FIFO: melompati batch tertua
+    if (batchSelect && batchSelect.selectedIndex > 0 && batchSelect.options.length > 1) {
+        const oldestOpt = batchSelect.options[0];
+        const oldestSisa = parseFloat(oldestOpt ? oldestOpt.getAttribute('data-sisa') || 0 : 0);
+        if (oldestSisa > 0) {
+            row.classList.add('row-audit-warning');
+            if (badge) {
+                badge.className = 'audit-badge-cell audit-badge-warn';
+                badge.innerHTML = '⚠';
+                badge.title = `Peringatan FIFO: Melompati batch tertua [${oldestOpt.value}] yang masih bersisa ${oldestSisa.toLocaleString('id-ID')} unit`;
+            }
+            return 'warning';
+        }
+    }
+
+    // 3. Status aman & lolos audit
+    row.classList.add('row-audit-ok');
+    if (badge) {
+        badge.className = 'audit-badge-cell audit-badge-ok';
+        badge.innerHTML = '✓';
+        badge.title = 'Audit Lolos: Stok batch fisik cukup & sesuai aturan FIFO';
+    }
+    return 'ok';
+}
+
+function updateAuditSummaryCounts() {
+    let countOk = 0;
+    let countWarn = 0;
+    let countDanger = 0;
+
+    document.querySelectorAll('#itemsBody tr').forEach(row => {
+        const st = updateRowAuditStatus(row);
+        if (st === 'danger') countDanger++;
+        else if (st === 'warning') countWarn++;
+        else if (st === 'ok') countOk++;
+    });
+
+    const elOk = document.getElementById('auditCountOk');
+    if (elOk) elOk.innerText = countOk;
+
+    const elWarn = document.getElementById('auditCountWarn');
+    if (elWarn) elWarn.innerText = countWarn;
+
+    const elDanger = document.getElementById('auditCountDanger');
+    if (elDanger) elDanger.innerText = countDanger;
+}
+
 function calcRow(el) {
     const row = el.closest('tr');
     const qtyInput = row.querySelector('.qty-input');
@@ -583,6 +701,7 @@ function calcRow(el) {
     }
 
     calculateGrandTotal();
+    updateAuditSummaryCounts();
 }
 
 function calculateGrandTotal() {
@@ -625,12 +744,15 @@ function calculateGrandTotal() {
     const footGradeB = document.getElementById('footGradeBQty');
     if (footGradeB) footGradeB.innerText = gradeBQty.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-    // Update sticky sidebar
+    // Update sticky sidebar & header widget
     const sideGrandTotal = document.getElementById('sideGrandTotal');
     if (sideGrandTotal) sideGrandTotal.innerText = 'Rp ' + Math.round(grandTotal).toLocaleString('id-ID');
 
     const sideTotalQty = document.getElementById('sideTotalQty');
     if (sideTotalQty) sideTotalQty.innerText = totalQty.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    const sideTotalQtyLarge = document.getElementById('sideTotalQtyLarge');
+    if (sideTotalQtyLarge) sideTotalQtyLarge.innerText = totalQty.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
     const sideGradeAQty = document.getElementById('sideGradeAQty');
     if (sideGradeAQty) sideGradeAQty.innerText = gradeAQty.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' Kg';
@@ -640,6 +762,20 @@ function calculateGrandTotal() {
 
     const sideTotalItems = document.getElementById('sideTotalItems');
     if (sideTotalItems) sideTotalItems.innerText = validItemCount;
+
+    // Update bottom bar live values
+    const botBarTotalQty = document.getElementById('botBarTotalQty');
+    if (botBarTotalQty) botBarTotalQty.innerText = totalQty.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' Kg';
+
+    const botBarGrandTotal = document.getElementById('botBarGrandTotal');
+    if (botBarGrandTotal) botBarGrandTotal.innerText = 'Rp ' + Math.round(grandTotal).toLocaleString('id-ID');
+
+    // Update sticky sidebar / bottom bar simulasi jurnal umum otomatis
+    const sideJournalDebet = document.getElementById('sideJournalDebet');
+    if (sideJournalDebet) sideJournalDebet.innerText = 'Rp ' + Math.round(grandTotal).toLocaleString('id-ID');
+
+    const sideJournalKredit = document.getElementById('sideJournalKredit');
+    if (sideJournalKredit) sideJournalKredit.innerText = 'Rp ' + Math.round(grandTotal).toLocaleString('id-ID');
 }
 
 function autoSplitBatchForRow(row) {
@@ -964,6 +1100,46 @@ function proceedOverrideFifoSubmit() {
     document.getElementById('verifikasiEditForm').submit();
 }
 
+function openModalConfirmApproveStation() {
+    const modal = document.getElementById('modalConfirmApproveStation');
+    if (!modal) return;
+
+    let totalQty = 0;
+    let grandTotal = 0;
+    document.querySelectorAll('#itemsBody tr').forEach(row => {
+        const q = parseFloat(row.querySelector('.qty-input')?.value || 0);
+        const h = parseFloat(row.querySelector('.harga-input')?.value || 0);
+        totalQty += q;
+        grandTotal += (q * h);
+    });
+
+    const elQty = document.getElementById('modalAuditTotalQty');
+    if (elQty) elQty.innerText = totalQty.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' Kg';
+
+    const elTotal = document.getElementById('modalAuditGrandTotal');
+    if (elTotal) elTotal.innerText = 'Rp ' + Math.round(grandTotal).toLocaleString('id-ID');
+
+    const elDebet = document.getElementById('modalJournalDebet');
+    if (elDebet) elDebet.innerText = 'Rp ' + Math.round(grandTotal).toLocaleString('id-ID');
+
+    const elKredit = document.getElementById('modalJournalKredit');
+    if (elKredit) elKredit.innerText = 'Rp ' + Math.round(grandTotal).toLocaleString('id-ID');
+
+    modal.style.display = 'flex';
+}
+
+function closeModalConfirmApproveStation() {
+    const modal = document.getElementById('modalConfirmApproveStation');
+    if (modal) modal.style.display = 'none';
+}
+
+function executeApproveStationForm() {
+    closeModalConfirmApproveStation();
+    const actionInput = document.getElementById('action_type');
+    if (actionInput) actionInput.value = 'save_and_approve';
+    document.getElementById('verifikasiEditForm').submit();
+}
+
 function submitVerifikasiForm(actionType) {
     pendingActionType = actionType;
     const actionInput = document.getElementById('action_type');
@@ -990,10 +1166,10 @@ function submitVerifikasiForm(actionType) {
         }
     }
 
+    // 3. Jika Save & Approve: Tampilkan Modal Konfirmasi Smart Audit (Tanpa alert/confirm browser bawaan)
     if (actionType === 'save_and_approve') {
-        if (!confirm('Apakah Anda yakin ingin menyimpan perubahan DAN LANGSUNG MEMPOSTING dokumen ini?\n\n• Stok fisik gudang akan langsung dipotong (FIFO)\n• Jurnal Umum Akuntansi otomatis akan diterbitkan (Debet 1151 WIP/FG, Kredit 1150 Persediaan Bahan).')) {
-            return;
-        }
+        openModalConfirmApproveStation();
+        return;
     }
 
     form.submit();
@@ -1013,6 +1189,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     updateSidebarInfo();
     calculateGrandTotal();
+    updateAuditSummaryCounts();
 
     document.getElementById('tujuan_pemakaian')?.addEventListener('change', updateSidebarInfo);
     document.getElementById('tujuan_pemakaian')?.addEventListener('input', updateSidebarInfo);

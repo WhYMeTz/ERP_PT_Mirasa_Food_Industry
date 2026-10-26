@@ -88,12 +88,16 @@ class PemakaianController extends Controller
 
         $rawCounts = $rawCountsQuery->selectRaw("
             COUNT(*) as total_dokumen,
-            COUNT(CASE WHEN pakai_tgl = ? THEN 1 END) as today_dokumen
+            COUNT(CASE WHEN pakai_tgl = ? THEN 1 END) as today_dokumen,
+            COUNT(CASE WHEN status_st = 'DRAFT' THEN 1 END) as draft_dokumen,
+            COUNT(CASE WHEN status_st = 'POSTED' THEN 1 END) as posted_dokumen
         ", [$today])->first();
 
         $kpiCounts = [
             'total'        => (int) ($rawCounts->total_dokumen ?? 0),
             'today'        => (int) ($rawCounts->today_dokumen ?? 0),
+            'draft'        => (int) ($rawCounts->draft_dokumen ?? 0),
+            'posted'       => (int) ($rawCounts->posted_dokumen ?? 0),
             'singkong_qty' => (float) ($ringkasan['singkong_qty'] ?? 0),
             'total_biaya'  => (float) ($ringkasan['grand_total_nilai'] ?? 0),
         ];
@@ -173,10 +177,11 @@ class PemakaianController extends Controller
 
         $autoNo = $this->codeGenerator->generatePakaiNo();
 
-        // Ambil daftar master lini produksi aktif murni dari database
+        // Ambil daftar master lini produksi aktif khusus peruntukan Work In Progress (WIP)
         $liniList = MstLiniProduksi::where('deleted_st', false)
             ->where('active_st', true)
-            ->orderBy('lini_id', 'asc')
+            ->where('kategori_lini', 'ILIKE', '%WIP%')
+            ->orderBy('lini_nm', 'asc')
             ->get();
 
         $bomList = $this->bomService->getAllActive();
@@ -215,6 +220,130 @@ class PemakaianController extends Controller
                     'message' => $msg,
                     'data'    => $header,
                 ], 201);
+            }
+
+            return redirect()->route('gudang.pemakaian.show', $header->pakai_id)
+                ->with('success', $msg);
+        } catch (Exception $e) {
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => $e->getMessage(),
+                ], 422);
+            }
+
+            return back()->withInput()->with('error', $e->getMessage());
+        }
+    }
+
+    /**
+     * Form edit transaksi pengeluaran barang (Khusus DRAFT).
+     */
+    public function edit(int $id): View|RedirectResponse
+    {
+        $pakai = $this->pemakaianService->getById($id);
+
+        if ($pakai->status_st === 'POSTED') {
+            return redirect()->route('gudang.pemakaian.show', $id)
+                ->with('error', "Dokumen {$pakai->pakai_no} sudah diposting dan stok telah dipotong. Dokumen tidak dapat diubah.");
+        }
+
+        $user = Auth::user();
+        $gudangList = $user ? $user->getAllowedGudangList() : collect();
+        $userGudangId = $pakai->gudang_id;
+
+        $barangList = MstBarang::active()
+            ->where(function ($query) {
+                $query->bahanProduksi()
+                      ->orWhere(function ($wip) {
+                          $wip->whereHas('jenisBarang', fn($j) => $j->where('jenis_barang_cd', 'WIP'))
+                              ->where(function ($b) {
+                                  $b->where('barang_nm', 'ILIKE', '%BERKO%')
+                                    ->orWhere('barang_cd', 'ILIKE', '%BRK%');
+                              });
+                      });
+            })
+            ->with(['satuanDasar', 'jenisBarang'])
+            ->orderBy('barang_nm')
+            ->get()
+            ->map(function ($b) {
+                $cd = strtoupper($b->jenisBarang->jenis_barang_cd ?? '');
+                $nm = strtoupper($b->barang_nm ?? '');
+
+                if ($cd === 'BB' || $cd === 'RAW' || str_contains($nm, 'SINGKONG') || str_contains($nm, 'UBI') || str_contains($nm, 'OPAK') || str_contains($nm, 'PUYUR') || str_contains($nm, 'BERKO') || str_starts_with($cd, 'WIP')) {
+                    $b->kategori_kelompok = 'BAHAN_BAKU';
+                    $b->kategori_label = 'Bahan Baku';
+                } elseif (str_contains($nm, 'KARTON') || str_contains($nm, 'PLASTIK') || str_contains($nm, 'ROLL') || str_contains($nm, 'LAKBAN') || str_contains($nm, 'RAFIA') || str_contains($nm, 'SARUNG TANGAN') || $cd === 'PACK') {
+                    $b->kategori_kelompok = 'KEMASAN';
+                    $b->kategori_label = 'Kemasan & Packaging';
+                } else {
+                    $b->kategori_kelompok = 'BAHAN_PENOLONG';
+                    $b->kategori_label = 'Bahan Penolong & Bumbu';
+                }
+
+                return $b;
+            });
+
+        // Ambil daftar master lini produksi aktif khusus peruntukan Work In Progress (WIP)
+        $liniList = MstLiniProduksi::where('deleted_st', false)
+            ->where('active_st', true)
+            ->where(function ($q) use ($pakai) {
+                $q->where('kategori_lini', 'ILIKE', '%WIP%')
+                  ->orWhere('lini_nm', $pakai->tujuan_pemakaian);
+            })
+            ->orderBy('lini_nm', 'asc')
+            ->get();
+
+        $bomList = $this->bomService->getAllActive();
+
+        $produksiList = \App\Models\Produksi\DatProduksiHdr::where('deleted_st', false)
+            ->orderBy('produksi_tgl', 'desc')
+            ->orderBy('produksi_id', 'desc')
+            ->limit(40)
+            ->get();
+
+        return view('gudang.pemakaian.edit', compact(
+            'pakai',
+            'gudangList',
+            'barangList',
+            'userGudangId',
+            'liniList',
+            'bomList',
+            'produksiList'
+        ));
+    }
+
+    /**
+     * Update transaksi pengeluaran barang (Khusus DRAFT).
+     */
+    public function update(Request $request, int $id): RedirectResponse|JsonResponse
+    {
+        $validated = $request->validate([
+            'pakai_tgl'        => 'required|date',
+            'gudang_id'        => 'required|exists:mst_gudang,gudang_id',
+            'tujuan_pemakaian' => 'required|string|max:100',
+            'catatan_txt'      => 'nullable|string',
+            'items'            => 'required|array|min:1',
+            'items.*.barang_id'=> 'required|exists:mst_barang,barang_id',
+            'items.*.batch_no' => 'required|string|max:100',
+            'items.*.qty_keluar' => 'required|numeric|min:0.01',
+            'items.*.grade_cd' => 'nullable|string|max:5',
+            'items.*.harga_satuan' => 'nullable|numeric|min:0',
+            'items.*.keterangan_txt' => 'nullable|string|max:255',
+        ]);
+
+        try {
+            $user = Auth::user();
+            $header = $this->pemakaianService->update($id, $validated, $user);
+
+            $msg = "Dokumen pengeluaran {$header->pakai_no} berhasil diperbarui.";
+
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'status'  => 'success',
+                    'message' => $msg,
+                    'data'    => $header,
+                ]);
             }
 
             return redirect()->route('gudang.pemakaian.show', $header->pakai_id)
@@ -331,7 +460,6 @@ class PemakaianController extends Controller
             ->when($request->filled('grade_cd'), function ($q) use ($request) {
                 $q->where('grade_cd', strtoupper(trim($request->input('grade_cd'))));
             })
-            ->orderByRaw('expired_tgl ASC NULLS LAST')
             ->orderBy('created_at', 'asc')
             ->orderBy('stok_id', 'asc')
             ->get(['stok_id', 'batch_no', 'grade_cd', 'sisa_qty', 'harga_satuan', 'expired_tgl', 'created_at']);
@@ -489,6 +617,34 @@ class PemakaianController extends Controller
         $pdf->setOption('isRemoteEnabled', true);
 
         $fileName = 'Rekap_Barang_Keluar_' . date('Ymd_His') . '.pdf';
+        return $pdf->stream($fileName);
+    }
+
+    /**
+     * Export Dokumen Bukti Pengeluaran Barang (BPPB) Tunggal ke format PDF resmi.
+     */
+    public function exportPdf(int $id): Response
+    {
+        $pakai = $this->pemakaianService->getById($id);
+
+        $logoPath = public_path('images/logo.png');
+        $logoBase64 = null;
+        if (file_exists($logoPath)) {
+            $logoBase64 = 'data:image/png;base64,' . base64_encode(file_get_contents($logoPath));
+        }
+
+        $pdf = Pdf::loadView('gudang.pemakaian.pdf_dokumen', [
+            'pakai'      => $pakai,
+            'logoBase64' => $logoBase64,
+            'printedAt'  => now()->translatedFormat('d F Y H:i'),
+            'printedBy'  => auth()->user()?->karyawan?->karyawan_nm ?? (auth()->user()?->nama_lengkap ?? 'Petugas Gudang'),
+        ]);
+
+        $pdf->setPaper('a4', 'portrait');
+        $pdf->setOption('isHtml5ParserEnabled', true);
+        $pdf->setOption('isRemoteEnabled', true);
+
+        $fileName = 'BPPB_' . str_replace(['/', '\\', ' '], '_', $pakai->pakai_no) . '.pdf';
         return $pdf->stream($fileName);
     }
 

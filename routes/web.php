@@ -307,12 +307,21 @@ Route::middleware('auth')->group(function () {
         Route::post('pemakaian', [PemakaianController::class, 'store'])
             ->name('pemakaian.store')
             ->middleware('role:pemakaian_create');
+        Route::get('pemakaian/{id}/edit', [PemakaianController::class, 'edit'])
+            ->name('pemakaian.edit')
+            ->middleware('role:pemakaian_edit,SUPERADMIN');
+        Route::put('pemakaian/{id}', [PemakaianController::class, 'update'])
+            ->name('pemakaian.update')
+            ->middleware('role:pemakaian_edit,SUPERADMIN');
         Route::post('pemakaian/{id}/post', [PemakaianController::class, 'postPemakaian'])
             ->name('pemakaian.post')
-            ->middleware('role:pemakaian_create');
+            ->middleware('role:pemakaian_verify,SUPERADMIN');
         Route::delete('pemakaian/{id}', [PemakaianController::class, 'destroy'])
             ->name('pemakaian.destroy')
-            ->middleware('role:pemakaian_create');
+            ->middleware('role:pemakaian_delete,SUPERADMIN');
+        Route::get('pemakaian/{id}/export-pdf', [PemakaianController::class, 'exportPdf'])
+            ->name('pemakaian.export-pdf')
+            ->middleware('role:pemakaian_view');
         Route::resource('pemakaian', PemakaianController::class)->only(['index', 'show'])->middleware('role:pemakaian_view');
 
         // Monitoring Persediaan: Lacak Stok, Kartu Stok & Rekapitulasi Persediaan (Berdasarkan izin 'stok_view')

@@ -1,0 +1,183 @@
+/* public/css/gudang/pemakaian/pemakaian-form.css */
+/* Form Pemakaian Bahan Baku & Penolong (BPPB) - ERP PT Mirasa */
+
+.excel-grid-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.925rem;
+}
+.excel-grid-table th {
+    background: #0f172a;
+    color: #f8fafc;
+    font-weight: 700;
+    padding: 0.85rem 0.75rem;
+    border: 1px solid #334155;
+    font-size: 0.85rem;
+    letter-spacing: 0.03em;
+    text-align: left;
+}
+.excel-grid-table td {
+    padding: 0.65rem 0.75rem;
+    border: 1px solid #cbd5e1;
+    background: #ffffff;
+    vertical-align: middle;
+}
+.excel-grid-table tr:nth-child(even) td {
+    background: #fafafa;
+}
+.excel-grid-table tr:hover td {
+    background: #fff1f2;
+}
+.excel-grid-table .barang-select {
+    height: 44px !important;
+    font-size: 0.95rem !important;
+    font-weight: 600 !important;
+    border: 1.5px solid #cbd5e1 !important;
+    border-radius: 6px !important;
+    padding: 0.4rem 0.65rem !important;
+    box-sizing: border-box;
+    width: 100%;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+.excel-grid-table .barang-select:focus {
+    border-color: #059669 !important;
+    box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.2) !important;
+    outline: none;
+}
+.excel-grid-table .batch-select {
+    height: 44px !important;
+    font-size: 0.925rem !important;
+    font-family: monospace !important;
+    font-weight: 600 !important;
+    border: 1.5px solid #cbd5e1 !important;
+    border-radius: 6px !important;
+    padding: 0.4rem 0.65rem !important;
+    box-sizing: border-box;
+    width: 100%;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+.excel-grid-table .batch-select:focus {
+    border-color: #059669 !important;
+    box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.2) !important;
+    outline: none;
+}
+.excel-grid-table .qty-input {
+    height: 46px !important;
+    font-size: 1.35rem !important;
+    font-weight: 800 !important;
+    font-family: monospace !important;
+    text-align: right !important;
+    color: #b91c1c !important;
+    border: 2px solid #cbd5e1 !important;
+    border-radius: 6px !important;
+    padding: 0.4rem 0.75rem !important;
+    box-sizing: border-box;
+    width: 100%;
+    background: #ffffff !important;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+.excel-grid-table .qty-input:focus {
+    border-color: #059669 !important;
+    box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.2) !important;
+    background: #f0fdf4 !important;
+    outline: none;
+}
+
+.toolbar-label {
+    font-size: 0.85rem !important;
+    font-weight: 800 !important;
+    color: #0f172a !important;
+    display: block !important;
+    margin-bottom: 0.35rem !important;
+    letter-spacing: -0.01em;
+}
+.toolbar-select, .toolbar-input {
+    height: 42px !important;
+    min-height: 42px !important;
+    padding: 0.45rem 0.75rem !important;
+    font-size: 0.925rem !important;
+    font-weight: 600 !important;
+    line-height: normal !important;
+    color: #0f172a !important;
+    background-color: #ffffff !important;
+    border: 1.5px solid #cbd5e1 !important;
+    border-radius: 6px !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+    outline: none !important;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+.toolbar-select:focus, .toolbar-input:focus {
+    border-color: #0284c7 !important;
+    box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.2) !important;
+}
+
+.btn-chip {
+    padding: 0.45rem 0.85rem;
+    font-size: 0.825rem;
+    font-weight: 700;
+    border-radius: 6px;
+    border: 1.5px solid #cbd5e1;
+    background: #f8fafc;
+    color: #475569;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    line-height: 1.2;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.btn-chip:hover {
+    background: #e2e8f0;
+    color: #0f172a;
+}
+.btn-chip.active {
+    background: #0284c7;
+    color: #ffffff;
+    border-color: #0284c7;
+    box-shadow: 0 1px 2px rgba(2, 132, 199, 0.2);
+}
+.btn-chip-grade-a.active {
+    background: #059669 !important;
+    color: #ffffff !important;
+    border-color: #059669 !important;
+}
+.btn-chip-grade-b.active {
+    background: #d97706 !important;
+    color: #ffffff !important;
+    border-color: #d97706 !important;
+}
+
+.live-kpi-widget {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    background: #ffffff;
+    border: 1.5px solid #a7f3d0;
+    border-radius: 8px;
+    padding: 0.45rem 1rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.live-kpi-widget.is-floating {
+    position: fixed !important;
+    top: 56px !important;
+    right: 1.75rem !important;
+    z-index: 999 !important;
+    background: rgba(255, 255, 255, 0.98) !important;
+    backdrop-filter: blur(8px) !important;
+    border: 2px solid #059669 !important;
+    border-radius: 10px !important;
+    box-shadow: 0 10px 25px -5px rgba(5, 150, 105, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+    animation: slideDownFloatingWidget 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes slideDownFloatingWidget {
+    from {
+        opacity: 0.7;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

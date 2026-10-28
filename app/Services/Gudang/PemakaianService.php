@@ -382,10 +382,34 @@ class PemakaianService
                     throw new Exception("Batch '{$batchNo}' tidak ditemukan di gudang yang dipilih.");
                 }
 
+                // Cek apakah batch ini sedang terikat di dokumen DRAFT lain yang belum diposting/acc
+                $otherDraftQuery = DatPakaiDtl::where('barang_id', $barangId)
+                    ->where('batch_no', $batchNo)
+                    ->whereHas('header', function ($q) use ($gudangId) {
+                        $q->where('gudang_id', $gudangId)
+                          ->where('status_st', 'DRAFT')
+                          ->where('deleted_st', false);
+                    });
+
+                $draftQtyOther = (float) $otherDraftQuery->sum('qty_keluar');
                 $sisaStokFisik = (float) ($stokBatch->sisa_qty ?? 0);
-                if ($qtyKeluar > $sisaStokFisik) {
+                $sisaBebas = max(0.0, round($sisaStokFisik - $draftQtyOther, 4));
+
+                if ($qtyKeluar > $sisaBebas) {
                     $barang = MstBarang::find($barangId);
                     $barangNm = $barang ? $barang->barang_nm : "Barang #{$barangId}";
+
+                    if ($qtyKeluar <= $sisaStokFisik && $draftQtyOther > 0) {
+                        $otherDocNos = $otherDraftQuery->with('header:pakai_id,pakai_no')
+                            ->get()
+                            ->pluck('header.pakai_no')
+                            ->unique()
+                            ->filter()
+                            ->implode(', ');
+
+                        throw new Exception("Batch '{$batchNo}' untuk '{$barangNm}' sudah teralokasi di dokumen DRAFT lain: [{$otherDocNos}] sebesar " . number_format($draftQtyOther, 2, ',', '.') . ". Sisa bebas yang dapat diambil hanya " . number_format($sisaBebas, 2, ',', '.') . " (dari total fisik " . number_format($sisaStokFisik, 2, ',', '.') . "). Silakan pilih batch lain atau sesuaikan kuantitas.");
+                    }
+
                     throw new Exception("Kuantitas pengeluaran '{$barangNm}' pada batch '{$batchNo}' (" . number_format($qtyKeluar, 2, ',', '.') . ") melebihi sisa fisik di gudang (" . number_format($sisaStokFisik, 2, ',', '.') . "). Silakan sesuaikan kuantitas atau pecah pemakaian ke batch berikutnya.");
                 }
 
@@ -477,10 +501,35 @@ class PemakaianService
                     throw new Exception("Batch '{$batchNo}' tidak ditemukan di gudang yang dipilih.");
                 }
 
+                // Cek apakah batch ini sedang terikat di dokumen DRAFT lain yang belum diposting/acc (kecuali dokumen yang sedang diedit ini)
+                $otherDraftQuery = DatPakaiDtl::where('barang_id', $barangId)
+                    ->where('batch_no', $batchNo)
+                    ->whereHas('header', function ($q) use ($gudangId, $pakaiId) {
+                        $q->where('gudang_id', $gudangId)
+                          ->where('pakai_id', '!=', $pakaiId)
+                          ->where('status_st', 'DRAFT')
+                          ->where('deleted_st', false);
+                    });
+
+                $draftQtyOther = (float) $otherDraftQuery->sum('qty_keluar');
                 $sisaStokFisik = (float) ($stokBatch->sisa_qty ?? 0);
-                if ($qtyKeluar > $sisaStokFisik) {
+                $sisaBebas = max(0.0, round($sisaStokFisik - $draftQtyOther, 4));
+
+                if ($qtyKeluar > $sisaBebas) {
                     $barang = MstBarang::find($barangId);
                     $barangNm = $barang ? $barang->barang_nm : "Barang #{$barangId}";
+
+                    if ($qtyKeluar <= $sisaStokFisik && $draftQtyOther > 0) {
+                        $otherDocNos = $otherDraftQuery->with('header:pakai_id,pakai_no')
+                            ->get()
+                            ->pluck('header.pakai_no')
+                            ->unique()
+                            ->filter()
+                            ->implode(', ');
+
+                        throw new Exception("Batch '{$batchNo}' untuk '{$barangNm}' sudah teralokasi di dokumen DRAFT lain: [{$otherDocNos}] sebesar " . number_format($draftQtyOther, 2, ',', '.') . ". Sisa bebas yang dapat diambil hanya " . number_format($sisaBebas, 2, ',', '.') . " (dari total fisik " . number_format($sisaStokFisik, 2, ',', '.') . "). Silakan pilih batch lain atau sesuaikan kuantitas.");
+                    }
+
                     throw new Exception("Kuantitas pengeluaran '{$barangNm}' pada batch '{$batchNo}' (" . number_format($qtyKeluar, 2, ',', '.') . ") melebihi sisa fisik di gudang (" . number_format($sisaStokFisik, 2, ',', '.') . "). Silakan sesuaikan kuantitas atau pecah pemakaian ke batch berikutnya.");
                 }
 

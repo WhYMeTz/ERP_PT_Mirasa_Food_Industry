@@ -287,7 +287,12 @@
                                     : (float) $po->details->sum(fn($d) => (float)$d->subtotal_tagihan > 0 ? (float)$d->subtotal_tagihan : ((float)$d->subtotal_nominal > 0 ? (float)$d->subtotal_nominal : (float)$d->pesan_qty * (float)$d->harga_nominal)));
                         @endphp
                         <td style="text-align: right; font-weight: 700; color: #0f172a; font-size: 0.875rem;">
-                            Rp {{ number_format($nominalRow, 0, ',', '.') }}
+                            <div>Rp {{ number_format($nominalRow, 0, ',', '.') }}</div>
+                            @if ($po->is_harga_termasuk_pajak)
+                                <span class="badge" style="background: #dcfce7; color: #166534; font-size: 0.65rem; font-weight: 600; padding: 1px 5px;" title="Harga barang sudah termasuk PPN (Include)">Inc PPN</span>
+                            @elseif ((float) $po->ppn_nominal > 0)
+                                <span class="badge" style="background: #e0f2fe; color: #0369a1; font-size: 0.65rem; font-weight: 600; padding: 1px 5px;" title="PPN ditambahkan di atas DPP (Exclude)">+PPN</span>
+                            @endif
                         </td>
                         <td style="text-align: right; position: relative;">
                             <button type="button" 

@@ -8,8 +8,8 @@
                     <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
                 </div>
                 <div>
-                    <h3 style="margin:0; font-size:1.05rem; font-weight:700; color:#991b1b;">Kuantitas Melebihi Saldo Fisik Batch!</h3>
-                    <div style="font-size:0.75rem; color:#b91c1c; margin-top:2px;">Kuantitas yang diminta lebih besar dari sisa fisik batch. Silakan pilih cara pemecahan batch di bawah.</div>
+                    <h3 style="margin:0; font-size:1.05rem; font-weight:700; color:#991b1b;" id="stockLimitModalTitle">Validasi Stok: Kuantitas Melebihi Saldo Bebas / Bentrok DRAFT!</h3>
+                    <div style="font-size:0.75rem; color:#b91c1c; margin-top:2px;" id="stockLimitModalSub">Kuantitas melebihi sisa bebas batch atau batch telah terikat di dokumen DRAFT lain. Silakan pilih cara pemecahan batch di bawah.</div>
                 </div>
             </div>
             <button type="button" onclick="closeWarningStockLimitModal()" style="background:none; border:none; font-size:1.4rem; color:#94a3b8; cursor:pointer; line-height:1; padding:0 4px;" title="Tutup">&times;</button>
@@ -18,7 +18,7 @@
         {{-- Body Modal --}}
         <div style="padding:1.25rem;">
             <p style="font-size:0.85rem; color:#334155; margin-top:0; margin-bottom:0.75rem; line-height:1.5;">
-                Sistem mendeteksi <strong>kuantitas pengeluaran melebihi sisa fisik</strong> pada batch berikut. Anda dapat memecah baris secara <strong>Khusus Grade Sama</strong> atau <strong>Campur (Semua Grade)</strong>:
+                Sistem mendeteksi <strong>kuantitas pengeluaran melebihi sisa bebas atau batch telah terikat di dokumen DRAFT lain</strong>. Anda dapat memecah baris secara <strong>Khusus Grade Sama</strong> atau <strong>Campur (Semua Grade)</strong>:
             </p>
 
             {{-- Container Tabel Batch yang Melanggar --}}
@@ -29,7 +29,7 @@
                             <th style="padding:0.55rem 0.65rem;">Nama Bahan &amp; Baris</th>
                             <th style="padding:0.55rem 0.65rem; color:#b45309;">Batch Dipilih</th>
                             <th style="padding:0.55rem 0.65rem; text-align:right;">Diminta</th>
-                            <th style="padding:0.55rem 0.65rem; text-align:right; color:#065f46;">Sisa Batch</th>
+                            <th style="padding:0.55rem 0.65rem; text-align:right; color:#065f46;">Sisa Bebas</th>
                             <th style="padding:0.55rem 0.65rem; text-align:center;">Pilihan Pemecahan</th>
                         </tr>
                     </thead>

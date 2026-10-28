@@ -22,26 +22,63 @@ function handleBarangChange(selectEl) {
     calculateRow(selectEl);
 }
 
+function onHeaderTaxInclusiveToggle(headerCheckbox) {
+    const isInc = headerCheckbox.checked;
+    const badge = document.getElementById('badgeTaxMode');
+    if (badge) {
+        if (isInc) {
+            badge.innerText = 'Sudah Termasuk PPN (Gross)';
+            badge.style.background = '#dcfce7';
+            badge.style.color = '#15803d';
+        } else {
+            badge.innerText = 'Belum Termasuk PPN (Net)';
+            badge.style.background = '#e2e8f0';
+            badge.style.color = '#475569';
+        }
+    }
+    document.querySelectorAll('.item-include-tax').forEach(cb => {
+        cb.checked = isInc;
+    });
+    calculateAllTotals();
+}
+
 function calculateRow(element) {
     const row = element.closest('tr');
-    const qty = parseFloat(row.querySelector('.input-qty').value) || 0;
-    const harga = parseFloat(row.querySelector('.input-harga').value) || 0;
-    const diskonPersen = parseFloat(row.querySelector('.input-diskon').value) || 0;
-    const potonganNominal = parseFloat(row.querySelector('.input-potongan').value) || 0;
-    const ppnTipe = row.querySelector('.select-ppn').value;
+    const qty = parseFloat(row.querySelector('.input-qty')?.value) || 0;
+    const harga = parseFloat(row.querySelector('.input-harga')?.value) || 0;
+    const diskonPersen = Math.min(100, Math.max(0, parseFloat(row.querySelector('.input-diskon')?.value) || 0));
+    const potonganNominal = parseFloat(row.querySelector('.input-potongan')?.value) || 0;
+
+    const pajakSelect = row.querySelector('.select-pajak');
+    const selectedOpt = pajakSelect ? pajakSelect.options[pajakSelect.selectedIndex] : null;
+    const tarif = selectedOpt ? (parseFloat(selectedOpt.dataset.tarif) || 0) : 0;
+    const sifat = selectedOpt ? (selectedOpt.dataset.sifat || 'TAMBAH') : 'TAMBAH';
+    const isInc = row.querySelector('.item-include-tax')?.checked || false;
 
     const diskonUnit = harga * (diskonPersen / 100);
     const hargaNetto = Math.max(0, harga - diskonUnit);
-    const subtotalNetto = Math.max(0, (qty * hargaNetto) - potonganNominal);
-    const ppnNominal = (ppnTipe === 'PPN_11') ? Math.round(subtotalNetto * 0.11) : 0;
-    const subtotalTagihan = subtotalNetto + ppnNominal;
+    const grossRowTotal = Math.max(0, (qty * hargaNetto) - potonganNominal);
 
-    row.querySelector('.row-subtotal').textContent = 'Rp ' + subtotalTagihan.toLocaleString('id-ID');
-    row.setAttribute('data-subtotal-bruto', (qty * harga));
-    row.setAttribute('data-diskon-total', (qty * diskonUnit) + potonganNominal);
-    row.setAttribute('data-dpp', subtotalNetto);
-    row.setAttribute('data-ppn', ppnNominal);
-    row.setAttribute('data-grand-total', subtotalTagihan);
+    let subtotalNetto = 0;
+    let ppnNominal = 0;
+    let subtotalTagihan = 0;
+
+    if (isInc && tarif > 0) {
+        subtotalNetto = Math.round((grossRowTotal / (1 + (tarif / 100))) * 10000) / 10000;
+        ppnNominal = Math.round((grossRowTotal - subtotalNetto) * 10000) / 10000;
+        subtotalTagihan = grossRowTotal;
+    } else {
+        subtotalNetto = grossRowTotal;
+        ppnNominal = Math.round((subtotalNetto * (tarif / 100)) * 10000) / 10000;
+        subtotalTagihan = (sifat === 'POTONG')
+            ? Math.max(0, subtotalNetto - ppnNominal)
+            : (subtotalNetto + ppnNominal);
+    }
+
+    const cellSubtotal = row.querySelector('.row-subtotal');
+    if (cellSubtotal) {
+        cellSubtotal.textContent = 'Rp ' + Math.round(subtotalTagihan).toLocaleString('id-ID');
+    }
 
     calculateAllTotals();
 }
@@ -54,17 +91,41 @@ function calculateAllTotals() {
     let grandTotal = 0;
 
     document.querySelectorAll('#tbodyPoItems tr.po-item-row').forEach(row => {
-        const qty = parseFloat(row.querySelector('.input-qty').value) || 0;
-        const harga = parseFloat(row.querySelector('.input-harga').value) || 0;
-        const diskonPersen = parseFloat(row.querySelector('.input-diskon').value) || 0;
-        const potonganNominal = parseFloat(row.querySelector('.input-potongan').value) || 0;
-        const ppnTipe = row.querySelector('.select-ppn').value;
+        const qty = parseFloat(row.querySelector('.input-qty')?.value) || 0;
+        const harga = parseFloat(row.querySelector('.input-harga')?.value) || 0;
+        const diskonPersen = Math.min(100, Math.max(0, parseFloat(row.querySelector('.input-diskon')?.value) || 0));
+        const potonganNominal = parseFloat(row.querySelector('.input-potongan')?.value) || 0;
+
+        const pajakSelect = row.querySelector('.select-pajak');
+        const selectedOpt = pajakSelect ? pajakSelect.options[pajakSelect.selectedIndex] : null;
+        const tarif = selectedOpt ? (parseFloat(selectedOpt.dataset.tarif) || 0) : 0;
+        const sifat = selectedOpt ? (selectedOpt.dataset.sifat || 'TAMBAH') : 'TAMBAH';
+        const isInc = row.querySelector('.item-include-tax')?.checked || false;
 
         const diskonUnit = harga * (diskonPersen / 100);
         const hargaNetto = Math.max(0, harga - diskonUnit);
-        const subtotalNetto = Math.max(0, (qty * hargaNetto) - potonganNominal);
-        const ppnNominal = (ppnTipe === 'PPN_11') ? Math.round(subtotalNetto * 0.11) : 0;
-        const subtotalTagihan = subtotalNetto + ppnNominal;
+        const grossRowTotal = Math.max(0, (qty * hargaNetto) - potonganNominal);
+
+        let subtotalNetto = 0;
+        let ppnNominal = 0;
+        let subtotalTagihan = 0;
+
+        if (isInc && tarif > 0) {
+            subtotalNetto = Math.round((grossRowTotal / (1 + (tarif / 100))) * 10000) / 10000;
+            ppnNominal = Math.round((grossRowTotal - subtotalNetto) * 10000) / 10000;
+            subtotalTagihan = grossRowTotal;
+        } else {
+            subtotalNetto = grossRowTotal;
+            ppnNominal = Math.round((subtotalNetto * (tarif / 100)) * 10000) / 10000;
+            subtotalTagihan = (sifat === 'POTONG')
+                ? Math.max(0, subtotalNetto - ppnNominal)
+                : (subtotalNetto + ppnNominal);
+        }
+
+        const cellSubtotal = row.querySelector('.row-subtotal');
+        if (cellSubtotal) {
+            cellSubtotal.textContent = 'Rp ' + Math.round(subtotalTagihan).toLocaleString('id-ID');
+        }
 
         totalBruto += (qty * harga);
         totalDiskon += (qty * diskonUnit) + potonganNominal;
@@ -80,11 +141,11 @@ function calculateAllTotals() {
     const elGrandTotal = document.getElementById('summaryGrandTotal');
     const elBadgeItemCount = document.getElementById('badgeItemCount');
 
-    if (elSubtotalBruto) elSubtotalBruto.textContent = 'Rp ' + totalBruto.toLocaleString('id-ID');
-    if (elDiskon) elDiskon.textContent = '- Rp ' + totalDiskon.toLocaleString('id-ID');
-    if (elDpp) elDpp.textContent = 'Rp ' + totalDpp.toLocaleString('id-ID');
-    if (elPpn) elPpn.textContent = 'Rp ' + totalPpn.toLocaleString('id-ID');
-    if (elGrandTotal) elGrandTotal.textContent = 'Rp ' + grandTotal.toLocaleString('id-ID');
+    if (elSubtotalBruto) elSubtotalBruto.textContent = 'Rp ' + Math.round(totalBruto).toLocaleString('id-ID');
+    if (elDiskon) elDiskon.textContent = totalDiskon > 0 ? '- Rp ' + Math.round(totalDiskon).toLocaleString('id-ID') : 'Rp 0';
+    if (elDpp) elDpp.textContent = 'Rp ' + Math.round(totalDpp).toLocaleString('id-ID');
+    if (elPpn) elPpn.textContent = totalPpn > 0 ? '+ Rp ' + Math.round(totalPpn).toLocaleString('id-ID') : 'Rp 0';
+    if (elGrandTotal) elGrandTotal.textContent = 'Rp ' + Math.round(grandTotal).toLocaleString('id-ID');
 
     const rowCount = document.querySelectorAll('#tbodyPoItems tr.po-item-row').length;
     if (elBadgeItemCount) elBadgeItemCount.textContent = `(${rowCount} item)`;
@@ -103,6 +164,15 @@ function addNewItemRow() {
         .replace(/__NUM__/g, currentCount);
 
     tbody.insertAdjacentHTML('beforeend', html);
+    
+    // Sinkronkan include tax default baris baru dengan header
+    const headerIncCheck = document.getElementById('is_harga_termasuk_pajak');
+    const newlyAddedRow = tbody.lastElementChild;
+    if (newlyAddedRow && headerIncCheck) {
+        const rowInc = newlyAddedRow.querySelector('.item-include-tax');
+        if (rowInc) rowInc.checked = headerIncCheck.checked;
+    }
+
     renumberRows();
     calculateAllTotals();
 }

@@ -29,6 +29,12 @@
             @else
                 <span class="badge" style="background:#fee2e2; color:#b91c1c;">Dibatalkan</span>
             @endif
+
+            @if($po->is_harga_termasuk_pajak)
+                <span class="badge" style="background:#dcfce7; color:#15803d; border: 1px solid #86efac; font-weight:700;">Harga Termasuk PPN (Gross)</span>
+            @else
+                <span class="badge" style="background:#f1f5f9; color:#475569; border: 1px solid #cbd5e1;">Belum Termasuk PPN (Net)</span>
+            @endif
         </div>
     </div>
 
@@ -258,7 +264,7 @@
                             <th style="text-align: right;">Harga Satuan</th>
                             <th style="text-align: right;">Diskon</th>
                             <th style="text-align: right;">Potongan</th>
-                            <th style="text-align: center;">PPN</th>
+                            <th style="text-align: center;">Pajak (PPN)</th>
                             <th style="text-align: right;">Subtotal</th>
                         </tr>
                     </thead>
@@ -283,6 +289,10 @@
                                 } else {
                                     $subtotalRow = $calcManual;
                                 }
+
+                                $taxLabel = $item->pajak?->pajak_nm ?? ($isPpn ? 'PPN 11%' : 'Non-Pajak');
+                                $taxTarif = $item->pajak ? (float)$item->pajak->tarif_persen : ($isPpn ? 11 : 0);
+                                $taxInc = (bool) ($item->is_harga_termasuk_pajak ?? $po->is_harga_termasuk_pajak);
                             @endphp
                             <tr style="border-bottom: 1px solid #f1f5f9;">
                                 <td style="text-align: center; color: #64748b; font-size: 0.85rem;">{{ $index + 1 }}</td>
@@ -312,10 +322,15 @@
                                     {{ $potNom > 0 ? 'Rp ' . number_format($potNom, 0, ',', '.') : '-' }}
                                 </td>
                                 <td style="text-align: center;">
-                                    @if ($isPpn)
-                                        <span class="badge" style="background:#e0f2fe; color:#0369a1; font-size:0.7rem; font-weight:700;">PPN 11%</span>
+                                    @if ($taxTarif > 0)
+                                        <span class="badge" style="background:#e0f2fe; color:#0369a1; font-size:0.7rem; font-weight:700;">
+                                            {{ $taxLabel }}
+                                        </span>
+                                        @if ($taxInc)
+                                            <span class="badge" style="background:#dcfce7; color:#15803d; font-size:0.65rem; font-weight:700; margin-left:2px;" title="Harga baris ini sudah termasuk PPN (Include)">Inc</span>
+                                        @endif
                                     @else
-                                        <span class="badge" style="background:#f1f5f9; color:#64748b; font-size:0.7rem;">Non-PPN</span>
+                                        <span class="badge" style="background:#f1f5f9; color:#64748b; font-size:0.7rem;">Non-Pajak</span>
                                     @endif
                                 </td>
                                 <td style="text-align: right; font-weight: 700; color: #0f172a; font-size: 0.875rem; font-family: monospace;">
@@ -409,7 +424,7 @@
                     </div>
 
                     <div style="display: flex; justify-content: space-between; align-items: center; color: #0284c7;">
-                        <span>PPN (11%):</span>
+                        <span>Pajak (PPN):</span>
                         <strong style="font-family: monospace;">+ Rp {{ number_format($calcPpn, 0, ',', '.') }}</strong>
                     </div>
 

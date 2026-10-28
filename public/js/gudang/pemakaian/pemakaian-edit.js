@@ -243,7 +243,8 @@
         const batchSelect = tr.querySelector('.batch-select');
 
         const baseUrl = window.appConfig?.batchesUrl || '/gudang/pemakaian/batches';
-        const url = `${baseUrl}?gudang_id=${encodeURIComponent(gudangId)}&barang_id=${encodeURIComponent(detail.barang_id)}`;
+        const excludePakaiId = window.appConfig?.pakaiId || 0;
+        const url = `${baseUrl}?gudang_id=${encodeURIComponent(gudangId)}&barang_id=${encodeURIComponent(detail.barang_id)}&exclude_pakai_id=${encodeURIComponent(excludePakaiId)}`;
 
         fetch(url)
             .then(res => {
@@ -263,14 +264,43 @@
                             const prefix = (idx === 0) ? '⭐ [FIFO Tertua] ' : '';
                             const gCd = (b.grade_cd || 'A').toUpperCase();
                             const gradeBadge = (gCd === 'A') ? '🟢 Grade A' : ((gCd === 'B') ? '🟡 Grade B' : `Grade ${gCd}`);
-                            html += `<option value="${b.batch_no}" data-stok-id="${b.stok_id || ''}" data-grade="${gCd}" data-sisa="${b.sisa_qty}" data-harga="${b.harga_satuan || 0}" data-masuk="${b.tgl_terima}" data-exp="${b.expired_tgl || '-'}" ${isSelected ? 'selected' : ''}>
-                                ${prefix}${b.batch_no} • [${gradeBadge}] (Sisa: ${parseFloat(b.sisa_qty).toLocaleString('id-ID')})
+                            
+                            const sisaFisik = parseFloat(b.sisa_qty || 0);
+                            const sisaBebas = (b.sisa_bebas !== undefined) ? parseFloat(b.sisa_bebas) : sisaFisik;
+                            const draftQty = parseFloat(b.draft_qty || 0);
+                            const draftDocs = (b.draft_doc_nos || []).join(', ');
+                            const isFullyBooked = b.is_fully_booked || (sisaBebas <= 0.0001 && draftQty > 0);
+
+                            let labelText = '';
+                            if (draftQty > 0) {
+                                if (isFullyBooked) {
+                                    labelText = `⛔ [HABIS DIBOOKING DRAFT] ${prefix}${b.batch_no} • [${gradeBadge}] (Sisa Bebas: 0 | Fisik: ${sisaFisik.toLocaleString('id-ID')} | ⚠️ ${draftQty.toLocaleString('id-ID')} di Draft ${draftDocs})`;
+                                } else {
+                                    labelText = `⚠️ [DRAFT ALLOCATED] ${prefix}${b.batch_no} • [${gradeBadge}] Sisa Bebas: ${sisaBebas.toLocaleString('id-ID')} (Fisik: ${sisaFisik.toLocaleString('id-ID')} | ⚠️ ${draftQty.toLocaleString('id-ID')} di Draft ${draftDocs})`;
+                                }
+                            } else {
+                                labelText = `${prefix}${b.batch_no} • [${gradeBadge}] (Sisa: ${sisaFisik.toLocaleString('id-ID')})`;
+                            }
+
+                            html += `<option value="${b.batch_no}" 
+                                data-stok-id="${b.stok_id || ''}" 
+                                data-grade="${gCd}" 
+                                data-sisa="${sisaFisik}" 
+                                data-sisa-bebas="${sisaBebas}"
+                                data-draft-qty="${draftQty}"
+                                data-draft-docs="${draftDocs}"
+                                data-is-fully-booked="${isFullyBooked ? 1 : 0}"
+                                data-harga="${b.harga_satuan || 0}" 
+                                data-masuk="${b.tgl_terima || '-'}" 
+                                data-exp="${b.expired_tgl || '-'}" 
+                                ${isSelected ? 'selected' : ''}>
+                                ${labelText}
                             </option>`;
                         });
                     }
 
                     if (!matched && detail.batch_no) {
-                        html = `<option value="${detail.batch_no}" data-stok-id="${detail.stok_id || ''}" data-grade="${detail.grade_cd || 'A'}" data-sisa="0" data-harga="${detail.harga_satuan || 0}" selected>
+                        html = `<option value="${detail.batch_no}" data-stok-id="${detail.stok_id || ''}" data-grade="${detail.grade_cd || 'A'}" data-sisa="0" data-sisa-bebas="0" data-draft-qty="0" data-harga="${detail.harga_satuan || 0}" selected>
                             ${detail.batch_no} • [Grade ${detail.grade_cd || 'A'}] (Batch Eksisting Dokumen)
                         </option>` + html;
                     }
@@ -324,15 +354,50 @@
         if (!item.all_batches || item.all_batches.length === 0) {
             batchOptions = '<option value="">(Stok Fisik Habis di Gudang ini)</option>';
         } else {
-            item.all_batches.forEach(b => {
+            let batchesToShow = item.all_batches;
+            if (curGrade === 'A' || curGrade === 'B') {
+                const gradeFiltered = batchesToShow.filter(b => (b.grade_cd || 'A').toUpperCase() === curGrade);
+                if (gradeFiltered.length > 0) batchesToShow = gradeFiltered;
+            }
+
+            batchesToShow.forEach(b => {
                 const isSelected = (b.batch_no === item.batch_no && (b.grade_cd || 'A') === curGrade) ? 'selected' : '';
                 const prefix = b.is_fifo_top ? '⭐ [FIFO Tertua] ' : '';
                 const gCd = (b.grade_cd || 'A').toUpperCase();
                 const gradeBadge = (gCd === 'A') ? '🟢 Grade A' : ((gCd === 'B') ? '🟡 Grade B' : `Grade ${gCd}`);
                 const expInfo = b.expired_tgl ? ` | Exp: ${b.expired_tgl}` : '';
                 const tglTerima = b.tgl_terima ? ` | Masuk: ${b.tgl_terima}` : '';
-                batchOptions += `<option value="${b.batch_no}" data-stok-id="${b.stok_id || ''}" data-grade="${gCd}" data-sisa="${b.sisa_qty}" data-harga="${b.harga_satuan || 0}" data-masuk="${b.tgl_terima}" data-exp="${b.expired_tgl || '-'}" ${isSelected}>
-                    ${prefix}${b.batch_no} • [${gradeBadge}] (Sisa: ${parseFloat(b.sisa_qty).toLocaleString('id-ID')})${tglTerima}${expInfo}
+
+                const sisaFisik = parseFloat(b.sisa_qty || 0);
+                const sisaBebas = (b.sisa_bebas !== undefined) ? parseFloat(b.sisa_bebas) : sisaFisik;
+                const draftQty = parseFloat(b.draft_qty || 0);
+                const draftDocs = Array.isArray(b.draft_doc_nos) ? b.draft_doc_nos.join(', ') : (b.draft_doc_nos || '');
+                const isFullyBooked = b.is_fully_booked || (sisaBebas <= 0.0001 && draftQty > 0);
+
+                let labelText = '';
+                if (draftQty > 0) {
+                    if (isFullyBooked) {
+                        labelText = `⛔ [HABIS DIBOOKING DRAFT] ${prefix}${b.batch_no} • [${gradeBadge}] (Sisa Bebas: 0 | Fisik: ${sisaFisik.toLocaleString('id-ID')} | ⚠️ ${draftQty.toLocaleString('id-ID')} di Draft [${draftDocs}])`;
+                    } else {
+                        labelText = `⚠️ [DRAFT ALLOCATED] ${prefix}${b.batch_no} • [${gradeBadge}] Sisa Bebas: ${sisaBebas.toLocaleString('id-ID')} (Fisik: ${sisaFisik.toLocaleString('id-ID')} | ⚠️ ${draftQty.toLocaleString('id-ID')} di Draft [${draftDocs}])`;
+                    }
+                } else {
+                    labelText = `${prefix}${b.batch_no} • [${gradeBadge}] (Sisa: ${sisaFisik.toLocaleString('id-ID')})${tglTerima}${expInfo}`;
+                }
+
+                batchOptions += `<option value="${b.batch_no}" 
+                    data-stok-id="${b.stok_id || ''}" 
+                    data-grade="${gCd}" 
+                    data-sisa="${sisaFisik}" 
+                    data-sisa-bebas="${sisaBebas}"
+                    data-draft-qty="${draftQty}"
+                    data-draft-docs="${draftDocs}"
+                    data-is-fully-booked="${isFullyBooked ? 1 : 0}"
+                    data-harga="${b.harga_satuan || 0}" 
+                    data-masuk="${b.tgl_terima || '-'}" 
+                    data-exp="${b.expired_tgl || '-'}" 
+                    ${isSelected}>
+                    ${labelText}
                 </option>`;
             });
         }
@@ -409,10 +474,17 @@
         attachExcelKeyboardEvents(tr);
         rowIndex++;
         updateRowNumbers();
+
+        if (item.batch_no) {
+            calcRow(tr.querySelector('.qty-input'));
+        }
     }
 
     function setBomGradeFilter(btn, grade) {
-        document.querySelectorAll('#bomGradePillGroup .btn-chip').forEach(b => b.classList.remove('active'));
+        const group = btn.closest('.grade-pill-group') || document.getElementById('bomGradePillGroup');
+        if (group) {
+            group.querySelectorAll('.btn-chip').forEach(b => b.classList.remove('active'));
+        }
         btn.classList.add('active');
         const input = document.getElementById('bom_grade_filter');
         if (input) input.value = grade;
@@ -426,7 +498,7 @@
             return;
         }
 
-        const bomSelect = document.getElementById('bom_id');
+        const bomSelect = document.getElementById('bom_select') || document.getElementById('bom_id');
         const bomId = bomSelect ? bomSelect.value : '';
         if (!bomId) {
             alert('Harap pilih Formula Resep Produk (BOM) terlebih dahulu!');
@@ -572,8 +644,37 @@
             const gradeBadge = (gCd === 'A') ? '🟢 Grade A' : ((gCd === 'B') ? '🟡 Grade B' : `Grade ${gCd}`);
             const expInfo = b.expired_tgl ? ` | Exp: ${b.expired_tgl}` : '';
             const tglTerima = b.tgl_terima ? ` | Masuk: ${b.tgl_terima}` : '';
-            html += `<option value="${b.batch_no}" data-stok-id="${b.stok_id || ''}" data-grade="${gCd}" data-sisa="${b.sisa_qty}" data-harga="${b.harga_satuan || 0}" data-masuk="${b.tgl_terima}" data-exp="${b.expired_tgl || '-'}" ${isTop ? 'selected' : ''}>
-                ${prefix}${b.batch_no} • [${gradeBadge}] (Sisa: ${parseFloat(b.sisa_qty).toLocaleString('id-ID')})${tglTerima}${expInfo}
+            
+            const sisaFisik = parseFloat(b.sisa_qty || 0);
+            const sisaBebas = (b.sisa_bebas !== undefined) ? parseFloat(b.sisa_bebas) : sisaFisik;
+            const draftQty = parseFloat(b.draft_qty || 0);
+            const draftDocs = (b.draft_doc_nos || []).join(', ');
+            const isFullyBooked = b.is_fully_booked || (sisaBebas <= 0.0001 && draftQty > 0);
+
+            let labelText = '';
+            if (draftQty > 0) {
+                if (isFullyBooked) {
+                    labelText = `⛔ [HABIS DIBOOKING DRAFT] ${prefix}${b.batch_no} • [${gradeBadge}] (Sisa Bebas: 0 | Fisik: ${sisaFisik.toLocaleString('id-ID')} | ⚠️ ${draftQty.toLocaleString('id-ID')} di Draft ${draftDocs})`;
+                } else {
+                    labelText = `⚠️ [DRAFT ALLOCATED] ${prefix}${b.batch_no} • [${gradeBadge}] Sisa Bebas: ${sisaBebas.toLocaleString('id-ID')} (Fisik: ${sisaFisik.toLocaleString('id-ID')} | ⚠️ ${draftQty.toLocaleString('id-ID')} di Draft ${draftDocs})`;
+                }
+            } else {
+                labelText = `${prefix}${b.batch_no} • [${gradeBadge}] (Sisa: ${sisaFisik.toLocaleString('id-ID')})${tglTerima}${expInfo}`;
+            }
+
+            html += `<option value="${b.batch_no}" 
+                data-stok-id="${b.stok_id || ''}" 
+                data-grade="${gCd}" 
+                data-sisa="${sisaFisik}" 
+                data-sisa-bebas="${sisaBebas}"
+                data-draft-qty="${draftQty}"
+                data-draft-docs="${draftDocs}"
+                data-is-fully-booked="${isFullyBooked ? 1 : 0}"
+                data-harga="${b.harga_satuan || 0}" 
+                data-masuk="${b.tgl_terima || '-'}" 
+                data-exp="${b.expired_tgl || '-'}" 
+                ${isTop ? 'selected' : ''}>
+                ${labelText}
             </option>`;
         });
         batchSelect.innerHTML = html;
@@ -600,7 +701,8 @@
         }
 
         const baseUrl = window.appConfig?.batchesUrl || '/gudang/pemakaian/batches';
-        const url = `${baseUrl}?gudang_id=${encodeURIComponent(gudangId)}&barang_id=${encodeURIComponent(barangId)}`;
+        const excludePakaiId = window.appConfig?.pakaiId || 0;
+        const url = `${baseUrl}?gudang_id=${encodeURIComponent(gudangId)}&barang_id=${encodeURIComponent(barangId)}&exclude_pakai_id=${encodeURIComponent(excludePakaiId)}`;
 
         fetch(url)
             .then(res => {
@@ -651,6 +753,9 @@
         }
 
         const sisa = parseFloat(opt.getAttribute('data-sisa') || 0);
+        const sisaBebas = parseFloat(opt.getAttribute('data-sisa-bebas') || sisa);
+        const draftQty = parseFloat(opt.getAttribute('data-draft-qty') || 0);
+        const draftDocs = opt.getAttribute('data-draft-docs') || '';
         const tglMasuk = opt.getAttribute('data-masuk') || '-';
         const grade = (row.querySelector('.grade-input')?.value || opt.getAttribute('data-grade') || 'A').toUpperCase();
 
@@ -674,15 +779,32 @@
             });
         }
 
+        let draftWarningNotice = '';
+        if (draftQty > 0) {
+            draftWarningNotice = `
+                <div style="background: #fffbeb; border: 1.5px solid #f59e0b; border-radius: 6px; padding: 0.35rem 0.6rem; margin-top: 0.3rem; color: #92400e;">
+                    <div style="display: flex; align-items: center; gap: 0.35rem; font-weight: 700; font-size: 0.74rem;">
+                        <span>⚠️ Terikat Dokumen DRAFT: [${draftDocs}]</span>
+                    </div>
+                    <div style="font-size: 0.72rem; color: #78350f; margin-top: 2px;">
+                        Kuantitas dibooking draft lain: <strong>${draftQty.toLocaleString('id-ID')} unit</strong>. Sisa bebas unallocated: <strong style="color: #065f46;">${sisaBebas.toLocaleString('id-ID')} unit</strong> (dari fisik ${sisa.toLocaleString('id-ID')} unit).
+                    </div>
+                </div>
+            `;
+        }
+
         if (isFirst || isSame || oldestAlreadyUsed) {
             batchSelect.style.borderColor = '#cbd5e1';
             batchSelect.style.backgroundColor = '#ffffff';
-            batchInfo.innerHTML = `<div style="display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;">
-                ${gradeBadge}
-                <span style="color: #065f46; font-weight: 600; background: #ecfdf5; padding: 0.15rem 0.5rem; border-radius: 4px; border: 1px solid #a7f3d0; font-size: 0.75rem;">
-                    ⭐ FIFO Terverifikasi • Masuk: ${tglMasuk} • Sisa: ${sisa.toLocaleString('id-ID')} unit
-                </span>
-            </div>`;
+            batchInfo.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;">
+                    ${gradeBadge}
+                    <span style="color: #065f46; font-weight: 600; background: #ecfdf5; padding: 0.15rem 0.5rem; border-radius: 4px; border: 1px solid #a7f3d0; font-size: 0.75rem;">
+                        ⭐ FIFO Terverifikasi • Masuk: ${tglMasuk} • Sisa Bebas: ${sisaBebas.toLocaleString('id-ID')} unit (Fisik: ${sisa.toLocaleString('id-ID')})
+                    </span>
+                </div>
+                ${draftWarningNotice}
+            `;
         } else if (oldestOpt && oldestSisa > 0) {
             batchSelect.style.borderColor = '#f59e0b';
             batchSelect.style.backgroundColor = '#fffdf5';
@@ -700,16 +822,20 @@
                         </div>
                     </div>
                 </div>
+                ${draftWarningNotice}
             `;
         } else {
             batchSelect.style.borderColor = '#cbd5e1';
             batchSelect.style.backgroundColor = '#ffffff';
-            batchInfo.innerHTML = `<div style="display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;">
-                ${gradeBadge}
-                <span style="color: #0369a1; font-weight: 600; background: #f0f9ff; padding: 0.15rem 0.5rem; border-radius: 4px; border: 1px solid #bae6fd; font-size: 0.75rem;">
-                    Pilihan Manual • Masuk ${tglMasuk} • Maks: ${sisa.toLocaleString('id-ID')} unit
-                </span>
-            </div>`;
+            batchInfo.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;">
+                    ${gradeBadge}
+                    <span style="color: #0369a1; font-weight: 600; background: #f0f9ff; padding: 0.15rem 0.5rem; border-radius: 4px; border: 1px solid #bae6fd; font-size: 0.75rem;">
+                        Pilihan Manual • Masuk ${tglMasuk} • Sisa Bebas: ${sisaBebas.toLocaleString('id-ID')} unit (Fisik: ${sisa.toLocaleString('id-ID')})
+                    </span>
+                </div>
+                ${draftWarningNotice}
+            `;
         }
     }
 
@@ -743,7 +869,10 @@
         const batchSelect = row.querySelector('.batch-select');
         const batchInfo = row.querySelector('.batch-info');
         const selectedBatchOpt = batchSelect?.selectedOptions[0];
-        const sisa = selectedBatchOpt ? parseFloat(selectedBatchOpt.getAttribute('data-sisa') || 0) : 0;
+        const sisaFisik = selectedBatchOpt ? parseFloat(selectedBatchOpt.getAttribute('data-sisa') || 0) : 0;
+        const sisaBebas = selectedBatchOpt ? parseFloat(selectedBatchOpt.getAttribute('data-sisa-bebas') || sisaFisik) : 0;
+        const draftQty = selectedBatchOpt ? parseFloat(selectedBatchOpt.getAttribute('data-draft-qty') || 0) : 0;
+        const draftDocs = selectedBatchOpt ? selectedBatchOpt.getAttribute('data-draft-docs') || '' : '';
         const qtyInput = row.querySelector('.qty-input');
         const grade = (row.querySelector('.grade-input')?.value || selectedBatchOpt?.getAttribute('data-grade') || 'A').toUpperCase();
 
@@ -753,9 +882,21 @@
                 ? `<span style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a; font-weight: 700; padding: 1px 6px; border-radius: 4px; font-size: 0.725rem;">🟡 Grade B</span>`
                 : `<span style="background: #f1f5f9; color: #334155; font-weight: 600; padding: 1px 6px; border-radius: 4px; font-size: 0.725rem;">Grade ${grade}</span>`);
 
-        if (selectedBatchOpt && selectedBatchOpt.value && qty > sisa) {
+        if (selectedBatchOpt && selectedBatchOpt.value && qty > sisaBebas) {
             qtyInput.style.borderColor = '#dc2626';
             qtyInput.style.backgroundColor = '#fef2f2';
+
+            const isDraftConflict = (qty <= sisaFisik && draftQty > 0);
+            const titleMsg = isDraftConflict
+                ? `⚠️ Melebihi Sisa Bebas! Terikat di DRAFT Lain`
+                : (sisaBebas <= 0.0001 && draftQty > 0 ? `⛔ Batch Habis Ter-booking di DRAFT Lain!` : `⚠️ Kuantitas Melebihi Sisa Fisik Batch!`);
+
+            const descMsg = isDraftConflict
+                ? `Batch <strong>${selectedBatchOpt.value}</strong> memiliki fisik <strong>${sisaFisik.toLocaleString('id-ID')} unit</strong>, namun <strong>${draftQty.toLocaleString('id-ID')} unit</strong> telah dibooking di draft <strong>[${draftDocs}]</strong>. Sisa bebas hanya <strong>${sisaBebas.toLocaleString('id-ID')} unit</strong>. Sisa <strong>${(qty - sisaBebas).toLocaleString('id-ID')} unit</strong> harus diambil dari batch lain!`
+                : (sisaBebas <= 0.0001 && draftQty > 0
+                    ? `Batch <strong>${selectedBatchOpt.value}</strong> memiliki fisik <strong>${sisaFisik.toLocaleString('id-ID')} unit</strong>, tapi seluruhnya telah di-booking di dokumen DRAFT <strong>[${draftDocs}]</strong> yang belum di-acc/potong stok. Sisa bebas: <strong>0 unit</strong>.`
+                    : `Batch <strong>${selectedBatchOpt.value}</strong> hanya bersisa <strong>${sisaFisik.toLocaleString('id-ID')} unit</strong>. Sisa <strong>${(qty - sisaFisik).toLocaleString('id-ID')} unit</strong> harus diambil dari batch lain!`);
+
             if (batchInfo) {
                 batchInfo.innerHTML = `
                     <div style="background: #fef2f2; border: 1.5px solid #f87171; border-radius: 6px; padding: 0.5rem 0.75rem; margin-top: 0.35rem; color: #991b1b;">
@@ -764,11 +905,11 @@
                                 <div style="display: flex; align-items: center; gap: 0.35rem; margin-bottom: 0.2rem;">
                                     ${gradeBadge}
                                     <strong style="color: #dc2626; font-size: 0.775rem; display: inline-flex; align-items: center; gap: 0.25rem;">
-                                        ⚠️ Kuantitas Melebihi Sisa Fisik Batch!
+                                        ${titleMsg}
                                     </strong>
                                 </div>
                                 <div style="font-size: 0.735rem; color: #7f1d1d; line-height: 1.35;">
-                                    Batch <strong>${selectedBatchOpt.value}</strong> hanya bersisa <strong>${sisa.toLocaleString('id-ID')} unit</strong>. Sisa <strong>${(qty - sisa).toLocaleString('id-ID')} unit</strong> harus diambil dari batch lain!
+                                    ${descMsg}
                                 </div>
                             </div>
                             <div style="display: flex; gap: 0.35rem; align-items: center; flex-wrap: wrap;">
@@ -843,8 +984,9 @@
         const selectedOpt = batchSelect.selectedOptions[0];
         if (!selectedOpt) return;
 
-        const sisaCurrent = parseFloat(selectedOpt.getAttribute('data-sisa') || 0);
-        if (totalRequested <= sisaCurrent) return;
+        const sisaCurrentFisik = parseFloat(selectedOpt.getAttribute('data-sisa') || 0);
+        const sisaCurrentBebas = parseFloat(selectedOpt.getAttribute('data-sisa-bebas') || sisaCurrentFisik);
+        if (totalRequested <= sisaCurrentBebas) return;
 
         let allBatches = row._allBatches || [];
         if (allBatches.length === 0 && batchSelect.options.length > 0) {
@@ -853,6 +995,9 @@
                 stok_id: opt.getAttribute('data-stok-id') || '',
                 grade_cd: opt.getAttribute('data-grade') || 'A',
                 sisa_qty: parseFloat(opt.getAttribute('data-sisa') || 0),
+                sisa_bebas: parseFloat(opt.getAttribute('data-sisa-bebas') || opt.getAttribute('data-sisa') || 0),
+                draft_qty: parseFloat(opt.getAttribute('data-draft-qty') || 0),
+                draft_doc_nos: (opt.getAttribute('data-draft-docs') || '').split(',').map(s => s.trim()).filter(Boolean),
                 harga_satuan: parseFloat(opt.getAttribute('data-harga') || 0),
                 tgl_terima: opt.getAttribute('data-masuk') || '',
                 expired_tgl: opt.getAttribute('data-exp') || ''
@@ -862,7 +1007,7 @@
 
         const currentGrade = (gradeInput?.value || selectedOpt.getAttribute('data-grade') || 'A').toUpperCase();
 
-        const takeCurrent = Math.min(totalRequested, sisaCurrent);
+        const takeCurrent = Math.min(totalRequested, sisaCurrentBebas);
         qtyInput.value = takeCurrent;
         calcRow(qtyInput);
 
@@ -893,7 +1038,8 @@
             const bGrade = (b.grade_cd || 'A').toUpperCase();
             const key = `${b.batch_no}_${bGrade}`;
             const alreadyUsed = usedBatchMap[key] || 0;
-            const availableInBatch = Math.max(0, parseFloat(b.sisa_qty) - alreadyUsed);
+            const sisaBebasB = (b.sisa_bebas !== undefined) ? parseFloat(b.sisa_bebas) : parseFloat(b.sisa_qty);
+            const availableInBatch = Math.max(0, sisaBebasB - alreadyUsed);
 
             if (availableInBatch > 0) {
                 const takeFromThis = Math.min(remainingQty, availableInBatch);
@@ -912,7 +1058,7 @@
                     is_allocated: true,
                     is_split: true,
                     catatan_fifo: splitMode === 'SAME_GRADE' ? `⚡ Pecahan Khusus Grade ${bGrade}` : `🔄 Pecahan Campur (FIFO)`,
-                    sisa_batch: parseFloat(b.sisa_qty),
+                    sisa_batch: sisaBebasB,
                     all_batches: allBatches
                 });
                 addedRows++;
@@ -926,18 +1072,20 @@
                 const bGrade = (b.grade_cd || 'A').toUpperCase();
                 const key = `${b.batch_no}_${bGrade}`;
                 const alreadyUsed = usedBatchMap[key] || 0;
-                otherAvailable += Math.max(0, parseFloat(b.sisa_qty) - alreadyUsed);
+                const sisaBebasOther = (b.sisa_bebas !== undefined) ? parseFloat(b.sisa_bebas) : parseFloat(b.sisa_qty);
+                otherAvailable += Math.max(0, sisaBebasOther - alreadyUsed);
             });
 
             if (otherAvailable > 0) {
-                const agree = confirm(`Perhatian: Stok fisik Grade ${currentGrade} telah habis terpakai!\nMasih kurang ${remainingQty.toLocaleString('id-ID')} unit yang belum terpenuhi.\n\nDi gudang ini masih tersedia saldo fisik Grade lain sebanyak ${otherAvailable.toLocaleString('id-ID')} unit.\n\nApakah Anda ingin melanjutkan alokasi sisa kekurangan tersebut dari Grade lain (Campur)?`);
+                const agree = confirm(`Perhatian: Sisa bebas Grade ${currentGrade} telah habis terpakai!\nMasih kurang ${remainingQty.toLocaleString('id-ID')} unit yang belum terpenuhi.\n\nDi gudang ini masih tersedia saldo bebas Grade lain sebanyak ${otherAvailable.toLocaleString('id-ID')} unit.\n\nApakah Anda ingin melanjutkan alokasi sisa kekurangan tersebut dari Grade lain (Campur)?`);
                 if (agree) {
                     for (const b of otherBatches) {
                         if (remainingQty <= 0) break;
                         const bGrade = (b.grade_cd || 'A').toUpperCase();
                         const key = `${b.batch_no}_${bGrade}`;
                         const alreadyUsed = usedBatchMap[key] || 0;
-                        const availableInBatch = Math.max(0, parseFloat(b.sisa_qty) - alreadyUsed);
+                        const sisaBebasOther = (b.sisa_bebas !== undefined) ? parseFloat(b.sisa_bebas) : parseFloat(b.sisa_qty);
+                        const availableInBatch = Math.max(0, sisaBebasOther - alreadyUsed);
 
                         if (availableInBatch > 0) {
                             const takeFromThis = Math.min(remainingQty, availableInBatch);
@@ -956,7 +1104,7 @@
                                 is_allocated: true,
                                 is_split: true,
                                 catatan_fifo: `🔄 Pecahan Campur (Grade ${bGrade})`,
-                                sisa_batch: parseFloat(b.sisa_qty),
+                                sisa_batch: sisaBebasOther,
                                 all_batches: allBatches
                             });
                             addedRows++;
@@ -969,12 +1117,16 @@
         calculateGrandTotal();
 
         if (remainingQty > 0) {
-            alert(`Perhatian: Berhasil memecah ke ${addedRows} baris batch lanjutan.\nNamun stok fisik barang ini di seluruh batch gudang sudah habis total!\nMasih kurang ${remainingQty.toLocaleString('id-ID')} unit yang tidak dapat dialokasikan.`);
+            alert(`Perhatian: Berhasil memecah ke ${addedRows} baris batch lanjutan.\nNamun sisa bebas barang ini di seluruh batch gudang sudah habis!\nMasih kurang ${remainingQty.toLocaleString('id-ID')} unit yang tidak dapat dialokasikan.`);
         }
     }
 
+    // Pengecekan Stock Limit & Komitmen Draft (Mencegah submit jika kuantitas melebihi sisa bebas / bentrok draft)
     function checkStockLimitViolations() {
         const violations = [];
+        const batchUsage = {};
+
+        // Pass 1: Kumpulkan akumulasi kuantitas per batch
         document.querySelectorAll('#itemsBody tr').forEach(row => {
             const barangSelect = row.querySelector('.barang-select');
             const batchSelect = row.querySelector('.batch-select');
@@ -988,23 +1140,62 @@
             const selectedOpt = batchSelect.selectedOptions[0];
             if (!selectedOpt) return;
 
-            const sisa = parseFloat(selectedOpt.getAttribute('data-sisa') || 0);
-            if (qty > sisa) {
-                const barangOpt = barangSelect.selectedOptions[0];
-                const barangNm = barangOpt ? barangOpt.textContent.trim() : 'Bahan Produksi';
-                const rowNum = row.querySelector('.row-num')?.textContent.trim() || '-';
-                violations.push({
-                    row: row,
-                    rowNum: rowNum,
-                    barangNm: barangNm,
+            const sisaFisik = parseFloat(selectedOpt.getAttribute('data-sisa') || 0);
+            const sisaBebasAttr = selectedOpt.getAttribute('data-sisa-bebas');
+            const sisaBebas = (sisaBebasAttr !== null && sisaBebasAttr !== '') ? parseFloat(sisaBebasAttr) : sisaFisik;
+            const draftQty = parseFloat(selectedOpt.getAttribute('data-draft-qty') || 0);
+            const draftDocs = selectedOpt.getAttribute('data-draft-docs') || '';
+            const grade = (row.querySelector('.grade-input')?.value || selectedOpt.getAttribute('data-grade') || 'A').toUpperCase();
+            const isFullyBooked = selectedOpt.getAttribute('data-is-fully-booked') === '1' || (sisaBebas <= 0.0001 && draftQty > 0);
+
+            const key = `${barangSelect.value}_${selectedOpt.value}_${grade}`;
+            if (!batchUsage[key]) {
+                batchUsage[key] = {
+                    totalQty: 0,
+                    sisaBebas: sisaBebas,
+                    sisaFisik: sisaFisik,
+                    draftQty: draftQty,
+                    draftDocs: draftDocs,
+                    isFullyBooked: isFullyBooked,
                     batchNo: selectedOpt.value,
-                    grade: selectedOpt.getAttribute('data-grade') || 'A',
-                    qtyRequested: qty,
-                    sisaBatch: sisa,
-                    selisih: qty - sisa
+                    grade: grade,
+                    rows: []
+                };
+            }
+            batchUsage[key].totalQty += qty;
+            batchUsage[key].rows.push({ row, qty });
+        });
+
+        // Pass 2: Deteksi pelanggaran batas stok fisik maupun alokasi draft lain
+        Object.keys(batchUsage).forEach(key => {
+            const b = batchUsage[key];
+            if (b.totalQty > b.sisaBebas || b.isFullyBooked || (b.sisaBebas <= 0.0001 && b.draftQty > 0)) {
+                b.rows.forEach(item => {
+                    const row = item.row;
+                    const barangSelect = row.querySelector('.barang-select');
+                    const barangOpt = barangSelect ? barangSelect.selectedOptions[0] : null;
+                    const barangNm = barangOpt ? barangOpt.textContent.trim() : 'Bahan Produksi';
+                    const rowNum = row.querySelector('.row-num')?.textContent.trim() || '-';
+
+                    violations.push({
+                        row: row,
+                        rowNum: rowNum,
+                        barangNm: barangNm,
+                        batchNo: b.batchNo,
+                        grade: b.grade,
+                        qtyRequested: item.qty,
+                        totalRequested: b.totalQty,
+                        sisaBatch: b.sisaBebas,
+                        sisaFisik: b.sisaFisik,
+                        draftQty: b.draftQty,
+                        draftDocs: b.draftDocs,
+                        isFullyBooked: b.isFullyBooked,
+                        selisih: Math.max(0, b.totalQty - b.sisaBebas)
+                    });
                 });
             }
         });
+
         return violations;
     }
 
@@ -1163,6 +1354,7 @@
                     </td>
                     <td style="padding: 0.55rem 0.65rem; text-align: right; font-weight: 700; color: #059669; font-family: monospace;">
                         ${v.sisaBatch.toLocaleString('id-ID')}
+                        ${v.draftQty > 0 ? `<div style="font-size:0.68rem; color:#b45309; font-weight:600; font-family:sans-serif;">⚠️ ${v.draftQty.toLocaleString('id-ID')} di Draft [${v.draftDocs}]</div>` : ''}
                     </td>
                     <td style="padding: 0.55rem 0.65rem; text-align: center;">
                         <div style="display:inline-flex; gap:0.3rem;">
@@ -1263,7 +1455,66 @@
         checkScroll();
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
+    // Validasi Terpadu Sebelum Submit Form (Mencegah submit jika ada pelanggaran stok, draft collision, atau batch kosong)
+    function validateFormBeforeSubmit() {
+        const rows = document.querySelectorAll('#itemsBody tr');
+        if (rows.length === 0) {
+            alert('Minimal harus ada 1 baris bahan yang dikeluarkan.');
+            return false;
+        }
+
+        let hasEmptyBatch = false;
+        let emptyBatchItemName = '';
+        let hasZeroQty = false;
+
+        rows.forEach(r => {
+            const barangSelect = r.querySelector('.barang-select');
+            const batchSelect = r.querySelector('.batch-select');
+            const qtyInput = r.querySelector('.qty-input');
+            const qty = parseFloat(qtyInput?.value || 0);
+
+            if (barangSelect && barangSelect.value) {
+                const barangNm = barangSelect.selectedOptions[0]?.textContent?.trim() || 'Barang';
+                if (!batchSelect || !batchSelect.value) {
+                    hasEmptyBatch = true;
+                    emptyBatchItemName = barangNm;
+                }
+                if (qty <= 0) {
+                    hasZeroQty = true;
+                }
+            }
+        });
+
+        if (hasEmptyBatch) {
+            alert(`Perhatian: Bahan "${emptyBatchItemName}" belum memiliki batch yang valid (stok fisik di gudang kosong atau habis terikat draft lain)!\nHarap pilih batch lain yang tersedia atau hapus baris ini terlebih dahulu.`);
+            return false;
+        }
+
+        if (hasZeroQty) {
+            alert('Harap pastikan semua kuantitas pengeluaran bahan yang diisi lebih besar dari 0!');
+            return false;
+        }
+
+        // 1. Cek Pelanggaran Saldo Stok & Komitmen Draft (Hard Stop!)
+        const stockViolations = checkStockLimitViolations();
+        if (stockViolations.length > 0) {
+            openWarningStockLimitModal(stockViolations);
+            return false;
+        }
+
+        // 2. Cek Pelanggaran Urutan FIFO
+        if (!allowFifoOverride) {
+            const violations = checkFifoViolations();
+            if (violations.length > 0) {
+                openWarningFifoModal(violations);
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    function init() {
         if (EXISTING_DETAILS && EXISTING_DETAILS.length > 0) {
             EXISTING_DETAILS.forEach(it => {
                 addExistingRow(it);
@@ -1279,26 +1530,40 @@
         document.getElementById('tujuan_pemakaian')?.addEventListener('input', updateSidebarInfo);
         document.getElementById('gudang_id')?.addEventListener('change', onGudangChanged);
 
-        document.getElementById('pemakaianForm')?.addEventListener('submit', function(e) {
-            const stockViolations = checkStockLimitViolations();
-            if (stockViolations.length > 0) {
-                e.preventDefault();
-                openWarningStockLimitModal(stockViolations);
-                return false;
-            }
+        const form = document.getElementById('pemakaianForm');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                if (!validateFormBeforeSubmit()) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return false;
+                }
+            });
+        }
 
-            if (allowFifoOverride) {
-                return;
-            }
+        // Intersepsi langsung pada tombol Simpan (Save Button Integration)
+        const btnSubmit = document.getElementById('btnSubmitPemakaian');
+        if (btnSubmit) {
+            btnSubmit.addEventListener('click', function(e) {
+                if (!form) return;
+                if (!form.checkValidity()) {
+                    form.reportValidity();
+                    return;
+                }
+                if (!validateFormBeforeSubmit()) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return false;
+                }
+            });
+        }
+    }
 
-            const violations = checkFifoViolations();
-            if (violations.length > 0) {
-                e.preventDefault();
-                openWarningFifoModal(violations);
-                return false;
-            }
-        });
-    });
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
 
     window.pemakaianApp = {
         setRowCategory,

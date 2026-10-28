@@ -306,6 +306,7 @@
 @push('scripts')
 <script>
     window.appConfig = {
+        pakaiId: {{ $pakai->pakai_id }},
         barangList: @json($barangList),
         initialItems: @json($initialItems),
         urlGetBatches: "{{ route('gudang.pemakaian.batches') }}",

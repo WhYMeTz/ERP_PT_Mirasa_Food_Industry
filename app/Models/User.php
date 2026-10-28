@@ -609,6 +609,44 @@ class User extends Authenticatable
         return $this->isSuperAdmin() || $this->canDo('master_satuan_delete') || $this->canDo('master_gudang_manage');
     }
 
+    public function canAccessPajak(): bool
+    {
+        return $this->isSuperAdmin() 
+            || $this->isFinance() 
+            || $this->isPurchasing() 
+            || $this->hasRole(['ADMIN', 'DIREKTUR', 'MANAJER', 'FINANCE', 'PURCHASING', 'KEUANGAN']) 
+            || $this->canDo('master_pajak_view') 
+            || $this->canDo('keuangan_view') 
+            || $this->canDo('pembelian_view');
+    }
+
+    public function canCreateMasterPajak(): bool
+    {
+        return $this->isSuperAdmin() 
+            || $this->isFinance() 
+            || $this->hasRole(['ADMIN', 'DIREKTUR', 'FINANCE', 'KEUANGAN']) 
+            || $this->canDo('master_pajak_create') 
+            || $this->canDo('keuangan_manage');
+    }
+
+    public function canEditMasterPajak(): bool
+    {
+        return $this->isSuperAdmin() 
+            || $this->isFinance() 
+            || $this->hasRole(['ADMIN', 'DIREKTUR', 'FINANCE', 'KEUANGAN']) 
+            || $this->canDo('master_pajak_edit') 
+            || $this->canDo('keuangan_manage');
+    }
+
+    public function canDeleteMasterPajak(): bool
+    {
+        return $this->isSuperAdmin() 
+            || $this->isFinance() 
+            || $this->hasRole(['ADMIN', 'DIREKTUR', 'FINANCE', 'KEUANGAN']) 
+            || $this->canDo('master_pajak_delete') 
+            || $this->canDo('keuangan_manage');
+    }
+
     public function canAccessJenis(): bool
     {
         return $this->isSuperAdmin() || $this->canDo('master_jenis_view') || $this->canDo('master_jenis_create') || $this->canDo('master_barang_manage');

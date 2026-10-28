@@ -21,6 +21,11 @@
         <h1 class="fp-title">Absensi Karyawan</h1>
         <p class="fp-sub">Hasil perhitungan dari scan finger print, jadwal, dan Master Karyawan: jam bulat, potongan, lembur, dan kehadiran.</p>
     </div>
+    @php $qs = array_merge(request()->query(), ['dari' => $dari, 'sampai' => $sampai]); @endphp
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start">
+        <a href="{{ route('manajemen.absensi.export', $qs) }}" class="fp-btn fp-btn-emerald">Export Excel</a>
+        <a href="{{ route('manajemen.absensi.cetak-pdf', $qs) }}" target="_blank" class="fp-btn fp-btn-primary">Cetak PDF</a>
+    </div>
 </div>
 
 <div class="fp-stats">

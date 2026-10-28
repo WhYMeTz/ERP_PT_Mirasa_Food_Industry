@@ -5,6 +5,7 @@ namespace App\Services\Produksi;
 use App\Models\Produksi\MstBomDtl;
 use App\Models\Produksi\MstBomHdr;
 use App\Services\Common\CodeGeneratorService;
+use App\Models\Gudang\DatPakaiDtl;
 use App\Models\Gudang\DatStokBatch;
 use Carbon\Carbon;
 use Exception;
@@ -196,7 +197,7 @@ class BomService
      *   dan memecah (split) sisa kebutuhan ke batch terlama berikutnya (multi-batch split).
      * - Mengembalikan daftar baris draf pick-list yang siap dimasukkan ke form pengeluaran barang.
      */
-    public function alokasiBahanResepFifo(int $gudangId, int $bomId, float $targetQty): array
+    public function alokasiBahanResepFifo(int $gudangId, int $bomId, float $targetQty, ?string $gradeFilter = null, int $excludePakaiId = 0): array
     {
         $bom = MstBomHdr::with(['barangJadi.satuanDasar', 'details.barangMentah.satuanDasar'])
             ->where('bom_id', $bomId)
@@ -209,6 +210,11 @@ class BomService
 
         if ($targetQty <= 0) {
             throw new Exception("Jumlah target rencana produksi harus lebih besar dari 0.");
+        }
+
+        $gradeFilter = strtoupper(trim((string) $gradeFilter));
+        if (!in_array($gradeFilter, ['A', 'B'])) {
+            $gradeFilter = null; // Default: Campur / Semua Grade
         }
 
         $rasio = $targetQty / (float) $bom->batch_ukuran_qty;
@@ -230,28 +236,91 @@ class BomService
                 ->where('barang_id', $barangId)
                 ->where('sisa_qty', '>', 0)
                 ->where('deleted_st', false)
-                ->orderByRaw('expired_tgl ASC NULLS LAST')
                 ->orderBy('created_at', 'asc')
                 ->orderBy('stok_id', 'asc')
                 ->get();
 
-            // Format semua opsi batch untuk dimasukkan ke dropdown baris
-            $allBatchOptions = $availableBatches->values()->map(function ($b, $index) {
+            // Ambil alokasi draft dokumen pemakaian lain yang belum diposting (anti-tabrakan draft)
+            $draftAllocations = DatPakaiDtl::where('barang_id', $barangId)
+                ->whereHas('header', function ($q) use ($gudangId, $excludePakaiId) {
+                    $q->where('gudang_id', $gudangId)
+                      ->where('status_st', 'DRAFT')
+                      ->where('deleted_st', false);
+                    if ($excludePakaiId > 0) {
+                        $q->where('pakai_id', '!=', $excludePakaiId);
+                    }
+                })
+                ->with('header:pakai_id,pakai_no')
+                ->get()
+                ->groupBy(function ($d) {
+                    return trim($d->batch_no) . '_' . strtoupper(trim($d->grade_cd ?: 'A'));
+                });
+
+            // Format semua opsi batch untuk dimasukkan ke dropdown baris (agar user tetap bisa ganti manual jika mau)
+            $allBatchOptions = $availableBatches->values()->map(function ($b, $index) use ($draftAllocations) {
+                $gradeCd = strtoupper(trim($b->grade_cd ?: 'A'));
+                $lookupKey = trim($b->batch_no) . '_' . $gradeCd;
+                $group = $draftAllocations->get($lookupKey);
+
+                $sisaFisik = (float) $b->sisa_qty;
+                $draftQty = $group ? (float) $group->sum('qty_keluar') : 0.0;
+                $draftDocNos = $group ? $group->pluck('header.pakai_no')->unique()->filter()->values()->toArray() : [];
+                $sisaBebas = max(0.0, round($sisaFisik - $draftQty, 4));
+
+                $b->sisa_bebas = $sisaBebas;
+                $b->draft_qty = $draftQty;
+                $b->draft_doc_nos = $draftDocNos;
+
                 return [
-                    'stok_id'      => $b->stok_id,
-                    'batch_no'     => $b->batch_no,
-                    'grade_cd'     => $b->grade_cd ?? 'A',
-                    'sisa_qty'     => (float) $b->sisa_qty,
-                    'harga_satuan' => (float) $b->harga_satuan,
-                    'expired_tgl'  => $b->expired_tgl ? Carbon::parse($b->expired_tgl)->format('d/m/Y') : null,
-                    'tgl_terima'   => $b->created_at ? $b->created_at->format('d/m/Y') : '-',
-                    'is_fifo_top'  => $index === 0,
+                    'stok_id'        => $b->stok_id,
+                    'batch_no'       => $b->batch_no,
+                    'grade_cd'       => $gradeCd,
+                    'sisa_qty'       => $sisaFisik,
+                    'draft_qty'      => $draftQty,
+                    'draft_doc_nos'  => $draftDocNos,
+                    'sisa_bebas'     => $sisaBebas,
+                    'is_committed'   => $draftQty > 0,
+                    'is_fully_booked'=> $sisaBebas <= 0.0001,
+                    'harga_satuan'   => (float) $b->harga_satuan,
+                    'expired_tgl'    => $b->expired_tgl ? Carbon::parse($b->expired_tgl)->format('d/m/Y') : null,
+                    'tgl_terima'     => $b->created_at ? $b->created_at->format('d/m/Y') : '-',
+                    'is_fifo_top'    => $index === 0,
                 ];
             })->toArray();
 
-            if ($availableBatches->isEmpty()) {
-                // Tidak ada stok fisik di gudang ini sama sekali
-                $peringatanList[] = "Bahan [{$barang->barang_cd}] {$barang->barang_nm} tidak memiliki stok fisik di gudang ini (kebutuhan: {$kebutuhanTotal} {$satuanNm}).";
+            // Cek apakah barang ini ber-grade (bahan baku atau memiliki batch dengan variasi grade A/B)
+            $jenisCd = strtoupper($barang->jenisBarang->jenis_barang_cd ?? '');
+            $nm = strtoupper($barang->barang_nm ?? '');
+            $isBahanBaku = ($jenisCd === 'BB' || $jenisCd === 'RAW' || str_contains($nm, 'SINGKONG') || str_contains($nm, 'UBI') || str_contains($nm, 'OPAK') || str_contains($nm, 'PUYUR') || str_contains($nm, 'BERKO'));
+            $hasMultipleGrades = $availableBatches->pluck('grade_cd')->filter()->unique()->count() > 1;
+            $isBahanBerGrade = ($isBahanBaku || $hasMultipleGrades);
+
+            // Filter batch yang akan dipakai untuk alokasi otomatis berdasarkan preferensi Grade user
+            $batchesForAllocation = $availableBatches;
+            $filterLabel = '';
+            if ($isBahanBerGrade && !empty($gradeFilter)) {
+                $filterLabel = " (Khusus Grade {$gradeFilter})";
+                $batchesForAllocation = $availableBatches->filter(function ($b) use ($gradeFilter) {
+                    return strtoupper($b->grade_cd ?? 'A') === $gradeFilter;
+                })->values();
+            }
+
+            // Saring kandidat yang memiliki sisa bebas > 0 agar tidak mengambil batch yang sudah dibooking draft lain
+            $freeBatchesForAllocation = $batchesForAllocation->filter(function ($b) {
+                return ($b->sisa_bebas ?? $b->sisa_qty) > 0.0001;
+            })->values();
+
+            // Jika semua batch ter-booking draft lain, fallback ke batchesForAllocation untuk tetap menampilkan info defisit
+            $activeAllocationBatches = $freeBatchesForAllocation->isNotEmpty() ? $freeBatchesForAllocation : $batchesForAllocation;
+
+            if ($activeAllocationBatches->isEmpty() || ($freeBatchesForAllocation->isEmpty() && $batchesForAllocation->isNotEmpty())) {
+                $pesanDefisit = $freeBatchesForAllocation->isEmpty() && $batchesForAllocation->isNotEmpty()
+                    ? "Bahan [{$barang->barang_cd}] {$barang->barang_nm}{$filterLabel} seluruh stok fisiknya telah terikat di dokumen DRAFT lain (kebutuhan: {$kebutuhanTotal} {$satuanNm})."
+                    : (!empty($filterLabel)
+                        ? "Bahan [{$barang->barang_cd}] {$barang->barang_nm}{$filterLabel} tidak memiliki stok fisik aktif di gudang ini (kebutuhan: {$kebutuhanTotal} {$satuanNm})."
+                        : "Bahan [{$barang->barang_cd}] {$barang->barang_nm} tidak memiliki stok fisik di gudang ini (kebutuhan: {$kebutuhanTotal} {$satuanNm}).");
+
+                $peringatanList[] = $pesanDefisit;
                 $allocatedItems[] = [
                     'barang_id'       => $barangId,
                     'barang_cd'       => $barang->barang_cd,
@@ -259,7 +328,7 @@ class BomService
                     'satuan_nm'       => $satuanNm,
                     'kebutuhan_total' => $kebutuhanTotal,
                     'batch_no'        => '',
-                    'grade_cd'        => 'A',
+                    'grade_cd'        => ($isBahanBerGrade && $gradeFilter) ? $gradeFilter : 'A',
                     'qty_keluar'      => $kebutuhanTotal,
                     'harga_satuan'    => (float) ($barang->harga_beli_standar ?? 0),
                     'sisa_batch'      => 0,
@@ -268,19 +337,24 @@ class BomService
                     'is_allocated'    => false,
                     'is_oldest'       => false,
                     'is_split'        => false,
-                    'catatan_fifo'    => '⚠️ Stok fisik kosong di gudang ini!',
-                    'all_batches'     => [],
+                    'catatan_fifo'    => '⚠️ ' . $pesanDefisit,
+                    'all_batches'     => $allBatchOptions,
                 ];
                 continue;
             }
 
-            // Alokasikan kebutuhan bertahap dari batch terlama (FIFO)
+            // Alokasikan kebutuhan bertahap dari batch terlama (FIFO) berdasarkan saldo BEBAS (unallocated)
             $sisaKebutuhan = $kebutuhanTotal;
             $batchIndex = 0;
 
-            while ($sisaKebutuhan > 0 && $batchIndex < $availableBatches->count()) {
-                $batch = $availableBatches[$batchIndex];
-                $sisaBatch = (float) $batch->sisa_qty;
+            while ($sisaKebutuhan > 0 && $batchIndex < $activeAllocationBatches->count()) {
+                $batch = $activeAllocationBatches[$batchIndex];
+                $sisaBatch = (float) ($batch->sisa_bebas ?? $batch->sisa_qty);
+                if ($sisaBatch <= 0.0001) {
+                    $batchIndex++;
+                    continue;
+                }
+
                 $ambilQty = min($sisaKebutuhan, $sisaBatch);
                 $isExhausted = ($ambilQty >= $sisaBatch);
                 $tglTerima = $batch->created_at ? $batch->created_at->format('d/m/Y') : '-';
@@ -288,11 +362,15 @@ class BomService
                 $hargaSatuan = (float) $batch->harga_satuan > 0 ? (float) $batch->harga_satuan : (float) ($barang->harga_beli_standar ?? 0);
 
                 $keteranganFifo = ($batchIndex === 0)
-                    ? "⭐ FIFO Prioritas: Batch masuk paling lama ({$tglTerima})"
-                    : "Lanjutan Split FIFO: Batch ({$tglTerima})";
+                    ? "⭐ FIFO Prioritas{$filterLabel}: Batch masuk ({$tglTerima})"
+                    : "Lanjutan Split FIFO{$filterLabel}: Batch ({$tglTerima})";
 
                 if ($isExhausted) {
-                    $keteranganFifo .= " [Habiskan Batch]";
+                    $keteranganFifo .= " [Habiskan Sisa Bebas]";
+                }
+
+                if (!empty($batch->draft_qty) && $batch->draft_qty > 0) {
+                    $keteranganFifo .= " (⚠️ Draft Lain: " . round($batch->draft_qty, 2) . " {$satuanNm})";
                 }
 
                 $allocatedItems[] = [
@@ -320,9 +398,13 @@ class BomService
                 $batchIndex++;
             }
 
-            // Jika semua batch di gudang ini sudah habis tapi kebutuhan belum tercukupi
+            // Jika semua batch pilihan di gudang ini sudah habis tapi kebutuhan belum tercukupi
             if ($sisaKebutuhan > 0.0001) {
-                $peringatanList[] = "Bahan [{$barang->barang_cd}] {$barang->barang_nm} masih kurang " . round($sisaKebutuhan, 4) . " {$satuanNm} karena semua batch di gudang telah dialokasikan maksimal.";
+                $pesanKurang = !empty($filterLabel)
+                    ? "Bahan [{$barang->barang_cd}] {$barang->barang_nm}{$filterLabel} masih kurang " . round($sisaKebutuhan, 4) . " {$satuanNm} karena semua batch Grade {$gradeFilter} di gudang telah dialokasikan maksimal."
+                    : "Bahan [{$barang->barang_cd}] {$barang->barang_nm} masih kurang " . round($sisaKebutuhan, 4) . " {$satuanNm} karena semua batch di gudang telah dialokasikan maksimal.";
+
+                $peringatanList[] = $pesanKurang;
                 $allocatedItems[] = [
                     'barang_id'       => $barangId,
                     'barang_cd'       => $barang->barang_cd,
@@ -330,6 +412,7 @@ class BomService
                     'satuan_nm'       => $satuanNm,
                     'kebutuhan_total' => $kebutuhanTotal,
                     'batch_no'        => '',
+                    'grade_cd'        => ($isBahanBerGrade && $gradeFilter) ? $gradeFilter : 'A',
                     'qty_keluar'      => round($sisaKebutuhan, 4),
                     'harga_satuan'    => (float) ($barang->harga_beli_standar ?? 0),
                     'sisa_batch'      => 0,
@@ -338,22 +421,58 @@ class BomService
                     'is_allocated'    => false,
                     'is_oldest'       => false,
                     'is_split'        => true,
-                    'catatan_fifo'    => '⚠️ Defisit stok fisik: Kurang ' . round($sisaKebutuhan, 4) . " {$satuanNm}",
+                    'catatan_fifo'    => '⚠️ Defisit stok fisik' . $filterLabel . ': Kurang ' . round($sisaKebutuhan, 4) . " {$satuanNm}",
                     'all_batches'     => $allBatchOptions,
                 ];
             }
         }
 
+        $canSwitchToCampur = false;
+        $defisitInfo = null;
+
+        if (!empty($gradeFilter) && !empty($peringatanList)) {
+            // Cek apakah ada barang yang defisit tapi sebenarnya memiliki stok fisik aktif pada grade lain
+            foreach ($bom->details as $dtl) {
+                $bId = (int) $dtl->barang_mentah_id;
+                $otherStock = DatStokBatch::where('gudang_id', $gudangId)
+                    ->where('barang_id', $bId)
+                    ->where('sisa_qty', '>', 0)
+                    ->where('deleted_st', false)
+                    ->where(function($q) use ($gradeFilter) {
+                        $q->whereNull('grade_cd')
+                          ->orWhere('grade_cd', '!=', $gradeFilter);
+                    })
+                    ->sum('sisa_qty');
+
+                if ((float) $otherStock > 0) {
+                    $canSwitchToCampur = true;
+                    $otherGradeLabel = ($gradeFilter === 'B') ? 'Grade A' : 'Grade B';
+                    $defisitInfo = [
+                        'barang_nm'         => $dtl->barangMentah?->barang_nm ?? 'Bahan Baku',
+                        'barang_cd'         => $dtl->barangMentah?->barang_cd ?? '',
+                        'chosen_grade'      => $gradeFilter,
+                        'other_grade_label' => $otherGradeLabel,
+                        'other_stock'       => (float) $otherStock,
+                        'satuan_nm'         => $dtl->barangMentah?->satuanDasar?->satuan_nm ?? 'Kg',
+                    ];
+                    break;
+                }
+            }
+        }
+
         return [
-            'bom_id'           => $bom->bom_id,
-            'bom_no'           => $bom->bom_no,
-            'bom_nm'           => $bom->bom_nm,
-            'target_qty'       => $targetQty,
-            'batch_ukuran_qty' => (float) $bom->batch_ukuran_qty,
-            'satuan_target'    => $bom->barangJadi?->satuanDasar?->satuan_nm ?? 'Unit',
-            'items'            => $allocatedItems,
-            'peringatan'       => $peringatanList,
-            'is_lengkap'       => empty($peringatanList),
+            'bom_id'                => $bom->bom_id,
+            'bom_no'                => $bom->bom_no,
+            'bom_nm'                => $bom->bom_nm,
+            'target_qty'            => $targetQty,
+            'batch_ukuran_qty'      => (float) $bom->batch_ukuran_qty,
+            'satuan_target'         => $bom->barangJadi?->satuanDasar?->satuan_nm ?? 'Unit',
+            'grade_filter'          => $gradeFilter ?: 'CAMPUR',
+            'items'                 => $allocatedItems,
+            'peringatan'            => $peringatanList,
+            'is_lengkap'            => empty($peringatanList),
+            'can_switch_to_campur'  => $canSwitchToCampur,
+            'defisit_info'          => $defisitInfo,
         ];
     }
 }

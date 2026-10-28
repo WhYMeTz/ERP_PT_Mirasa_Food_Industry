@@ -26,6 +26,8 @@ class DatPoDtl extends Model
         'potongan_nominal',
         'harga_netto',
         'subtotal_netto',
+        'pajak_id',
+        'is_harga_termasuk_pajak',
         'ppn_tipe',
         'ppn_persen',
         'ppn_nominal',
@@ -41,21 +43,31 @@ class DatPoDtl extends Model
     ];
 
     protected $casts = [
-        'pesan_qty'        => 'decimal:4',
-        'harga_nominal'    => 'decimal:4',
-        'diskon_persen'    => 'decimal:2',
-        'diskon_nominal'   => 'decimal:4',
-        'potongan_nominal' => 'decimal:4',
-        'harga_netto'      => 'decimal:4',
-        'subtotal_netto'   => 'decimal:4',
-        'ppn_persen'       => 'decimal:2',
-        'ppn_nominal'      => 'decimal:4',
-        'subtotal_nominal' => 'decimal:4',
-        'subtotal_tagihan' => 'decimal:4',
-        'terima_qty'       => 'decimal:4',
-        'deleted_st'       => 'boolean',
-        'active_st'        => 'boolean',
+        'pajak_id'                => 'integer',
+        'is_harga_termasuk_pajak' => 'boolean',
+        'pesan_qty'               => 'decimal:4',
+        'harga_nominal'           => 'decimal:4',
+        'diskon_persen'           => 'decimal:2',
+        'diskon_nominal'          => 'decimal:4',
+        'potongan_nominal'        => 'decimal:4',
+        'harga_netto'             => 'decimal:4',
+        'subtotal_netto'          => 'decimal:4',
+        'ppn_persen'              => 'decimal:2',
+        'ppn_nominal'             => 'decimal:4',
+        'subtotal_nominal'        => 'decimal:4',
+        'subtotal_tagihan'        => 'decimal:4',
+        'terima_qty'              => 'decimal:4',
+        'deleted_st'              => 'boolean',
+        'active_st'               => 'boolean',
     ];
+
+    /**
+     * Relasi ke Master Pajak
+     */
+    public function pajak(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\MasterData\MstPajak::class, 'pajak_id', 'pajak_id');
+    }
 
     /**
      * Relasi ke Header PO
@@ -72,6 +84,7 @@ class DatPoDtl extends Model
     {
         return $this->belongsTo(MstBarang::class, 'barang_id', 'barang_id');
     }
+
 
     /**
      * Relasi ke detail penerimaan fisik barang

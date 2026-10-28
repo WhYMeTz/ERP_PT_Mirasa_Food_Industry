@@ -81,6 +81,10 @@
             <a href="{{ route('manajemen.payroll.export', ['periode' => $periode]) }}" class="fp-btn fp-btn-soft">Export Excel</a>
             <a href="{{ route('manajemen.payroll.slip-semua', ['periode' => $periode]) }}" target="_blank" class="fp-btn fp-btn-soft">Cetak Semua Slip</a>
         @endif
+        
+        @if ($status !== 'draft')
+            <a href="{{ route('manajemen.payroll.multi.index', ['periode' => $periode]) }}" class="fp-btn fp-btn-soft">Multi Payroll BCA</a>
+        @endif
 
         @if ($status === 'draft' && $rows->isNotEmpty())
             <a href="{{ route('manajemen.payroll.template', ['periode' => $periode]) }}" class="fp-btn fp-btn-soft">Unduh Template</a>

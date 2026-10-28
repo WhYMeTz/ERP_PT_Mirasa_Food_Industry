@@ -28,4 +28,37 @@ class JadwalService
             'sampai' => collect($rows)->max('tanggal'),
         ];
     }
+
+    /**
+     * Susun baris jadwal untuk input manual: setiap karyawan x setiap tanggal di rentang yang harinya dipilih.
+     *
+     * @param list<array{id:string, nama:?string, kelompok:?string}> $karyawan  id = ID absen 9 digit
+     * @param list<int> $hari  nomor hari ISO: 1 = Senin ... 7 = Minggu
+     * @param string|null $kelompok  kosong = pakai kelompok masing-masing karyawan
+     * @param float|null $istirahat  null = pakai bawaan shift
+     */
+    public function susunBaris(array $karyawan, string $dari, string $sampai, array $hari, string $kodeShift, ?string $kelompok, ?float $istirahat): array
+    {
+        $rows = [];
+        $tgl  = new \DateTimeImmutable($dari);
+        $akhir = new \DateTimeImmutable($sampai);
+
+        for (; $tgl <= $akhir; $tgl = $tgl->modify('+1 day')) {
+            if (! in_array((int) $tgl->format('N'), $hari, true)) {
+                continue;
+            }
+            foreach ($karyawan as $k) {
+                $rows[] = [
+                    'tanggal'        => $tgl->format('Y-m-d'),
+                    'id_absen'       => str_pad((string) $k['id'], 9, '0', STR_PAD_LEFT),
+                    'nama'           => ($k['nama'] ?? '') !== '' ? $k['nama'] : null,
+                    'kelompok_kerja' => ($kelompok !== null && $kelompok !== '') ? $kelompok : (($k['kelompok'] ?? '') !== '' ? $k['kelompok'] : null),
+                    'kode_shift'     => $kodeShift,
+                    'istirahat_jam'  => $istirahat,
+                ];
+            }
+        }
+
+        return $rows;
+    }
 }

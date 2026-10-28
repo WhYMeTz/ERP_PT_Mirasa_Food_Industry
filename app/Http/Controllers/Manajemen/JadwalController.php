@@ -14,6 +14,7 @@ use PhpOffice\PhpSpreadsheet\Cell\DataValidation;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Maatwebsite\Excel\Facades\Excel;
 
 class JadwalController extends Controller
@@ -59,6 +60,12 @@ class JadwalController extends Controller
             'shiftMap'  => MstKodeShift::all()->keyBy('kode'),
             'kelompoks' => $kelompoks = TrxJadwalKaryawan::whereNotNull('kelompok_kerja')->distinct()->orderBy('kelompok_kerja')->pluck('kelompok_kerja'),
             'kelompokOpsi' => collect(MstKaryawan::KELOMPOK)->values()->merge($kelompoks)->unique()->sort()->values(),
+            'karyawanOpsi' => MstKaryawan::whereNotNull('id_absensi')->orderBy('karyawan_nm')->get()->map(fn ($k) => [
+                'id'       => str_pad(trim($k->id_absensi), 9, '0', STR_PAD_LEFT),
+                'nama'     => $k->karyawan_nm,
+                'kelompok' => MstKaryawan::KELOMPOK[$k->kelompok] ?? $k->kelompok,
+                'shift'    => $k->shift,
+            ])->values(),
         ]);
     }
 
@@ -82,6 +89,77 @@ class JadwalController extends Controller
             ->route('manajemen.jadwal.index', ['dari' => $hasil['dari'], 'sampai' => $hasil['sampai']])
             ->with('success', "Impor selesai: {$hasil['baris']} baris jadwal disimpan" . ($lewat ? ", $lewat baris dilewati." : '.'))
             ->with('jadwal_errors', array_slice($import->errors, 0, 20));
+    }
+
+    /** Tambah jadwal manual: beberapa karyawan x rentang tanggal x hari terpilih, satu shift. */
+    public function store(Request $request, JadwalService $service, AbsensiService $absensi)
+    {
+        $data = $request->validate([
+            'karyawan'       => ['required', 'array', 'min:1'],
+            'karyawan.*'     => ['string', 'max:20'],
+            'dari'           => ['required', 'date'],
+            'sampai'         => ['required', 'date', 'after_or_equal:dari'],
+            'hari'           => ['required', 'array', 'min:1'],
+            'hari.*'         => ['integer', 'between:1,7'],
+            'kode_shift'     => ['required', Rule::exists('mst_kode_shift', 'kode')->where('aktif', true)],
+            'kelompok_kerja' => ['nullable', 'string', 'max:50'],
+            'istirahat_jam'  => ['nullable', 'string'],   // kosong/'bawaan' = bawaan shift, atau 0 / 1 / 1.5
+        ], [
+            'karyawan.required' => 'Pilih minimal satu karyawan.',
+            'hari.required'     => 'Pilih minimal satu hari.',
+            'sampai.after_or_equal' => 'Tanggal sampai tidak boleh sebelum tanggal dari.',
+        ]);
+
+        $ist = $data['istirahat_jam'] ?? null;
+        if (blank($ist) || $ist === 'bawaan') {
+            $ist = null;
+        } elseif (is_numeric($ist) && in_array((float) $ist, [0.0, 1.0, 1.5], true)) {
+            $ist = (float) $ist;
+        } else {
+            return back()->withInput()->with('error', 'Istirahat harus 0, 1, atau 1,5 jam.');
+        }
+
+        // ID absen -> data karyawan (sama cara dengan AbsensiService: 9 digit)
+        $master = MstKaryawan::whereNotNull('id_absensi')->get()
+            ->keyBy(fn ($k) => str_pad(trim($k->id_absensi), 9, '0', STR_PAD_LEFT));
+
+        $karyawan = [];
+        foreach (array_unique($data['karyawan']) as $id) {
+            $id = str_pad(trim($id), 9, '0', STR_PAD_LEFT);
+            $k  = $master->get($id);
+            if (! $k) {
+                return back()->withInput()->with('error', "ID absen {$id} tidak ditemukan di Master Karyawan.");
+            }
+            $karyawan[] = ['id' => $id, 'nama' => $k->karyawan_nm, 'kelompok' => MstKaryawan::KELOMPOK[$k->kelompok] ?? $k->kelompok];
+        }
+
+        $hari = array_map('intval', $data['hari']);
+        $rows = $service->susunBaris($karyawan, $data['dari'], $data['sampai'], $hari, $data['kode_shift'], $data['kelompok_kerja'] ?? null, $ist);
+
+        if (! $rows) {
+            return back()->withInput()->with('error', 'Tidak ada tanggal yang cocok dengan hari yang dipilih.');
+        }
+        if (count($rows) > 5000) {
+            return back()->withInput()->with('error', 'Terlalu banyak baris (' . count($rows) . '). Maksimal 5.000 baris sekali simpan, perkecil rentang atau jumlah karyawan.');
+        }
+
+        // hitung berapa baris yang menimpa jadwal lama (tanggal + ID absen sama)
+        $ada = TrxJadwalKaryawan::whereBetween('tanggal', [$data['dari'], $data['sampai']])
+            ->whereIn('id_absen', array_column($karyawan, 'id'))
+            ->get(['tanggal', 'id_absen'])
+            ->map(fn ($r) => $r->tanggal->toDateString() . '|' . $r->id_absen)
+            ->flip();
+        $menimpa = collect($rows)->filter(fn ($r) => $ada->has($r['tanggal'] . '|' . $r['id_absen']))->count();
+
+        $hasil = null;
+        DB::transaction(function () use ($service, $absensi, $rows, &$hasil) {
+            $hasil = $service->simpan($rows);
+            $absensi->hitung($hasil['dari'], $hasil['sampai']);
+        });
+
+        return redirect()
+            ->route('manajemen.jadwal.index', ['dari' => $hasil['dari'], 'sampai' => $hasil['sampai']])
+            ->with('success', "{$hasil['baris']} baris jadwal disimpan" . ($menimpa ? " ({$menimpa} menimpa jadwal lama)" : '') . ", absensi {$hasil['dari']} s.d {$hasil['sampai']} dihitung ulang.");
     }
 
     public function template()

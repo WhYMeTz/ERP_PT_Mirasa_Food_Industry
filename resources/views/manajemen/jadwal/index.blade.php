@@ -4,6 +4,11 @@
 
 @push('styles')
     <link rel="stylesheet" href="{{ asset('css/manajemen/fingerprint/fingerprint-index.css') }}">
+    <style>
+        .fp-btn-emerald { background: #10b981; border-color: #10b981; color: #fff; }
+        .fp-btn-emerald:hover { background: #059669; border-color: #059669; color: #fff; }
+        .fp-btn-emerald:disabled { opacity: .6; cursor: not-allowed; }
+    </style>
 @endpush
 
 @section('content')
@@ -19,10 +24,16 @@
         <h1 class="fp-title">Jadwal Karyawan</h1>
         <p class="fp-sub">Kelompok kerja, kode shift, dan istirahat per karyawan per tanggal.</p>
     </div>
+    <div style="display:flex; gap:10px; flex-wrap:wrap">
+        <button type="button" class="fp-btn fp-btn-emerald" onclick="fpOpenAdd()">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            Tambah Jadwal
+        </button>
     <button type="button" class="fp-btn fp-btn-primary" onclick="fpOpenModal()">
         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M16 8l-4-4m0 0L8 8m4-4v12"/></svg>
         Impor Jadwal
     </button>
+    </div>
 </div>
 
 @if (session('jadwal_errors'))
@@ -254,12 +265,104 @@
     </div>
 </div>
 
+{{-- MODAL TAMBAH JADWAL MANUAL --}}
+<div id="fpAddModal" class="fp-modal" onclick="if(event.target===this) fpCloseAdd()">
+    <div class="fp-modal-box fp-modal-lg">
+        <form id="fpAddForm" method="POST" action="{{ route('manajemen.jadwal.store') }}">
+            @csrf
+            <div class="fp-modal-head">
+                <h3>Tambah Jadwal Manual</h3>
+                <button type="button" class="fp-modal-x" onclick="fpCloseAdd()">&times;</button>
+            </div>
+            <div class="fp-modal-body">
+                <div class="fp-info">
+                    Jadwal dibuat untuk <b>setiap karyawan terpilih</b> pada <b>setiap tanggal</b> di rentang itu yang harinya dicentang.
+                    Jadwal yang sudah ada pada tanggal dan karyawan yang sama akan <b>ditimpa</b>. Setelah disimpan, absensi pada rentang itu otomatis dihitung ulang.
+                </div>
+
+                <div class="fp-field">
+                    <label class="fp-label">Karyawan <span>*</span> <span class="fp-muted" style="font-weight:400">(<b id="fpAddCount">0</b> dipilih)</span></label>
+                    <input type="text" id="fpAddCari" class="fp-input" style="width:100%" placeholder="Cari nama atau ID absen...">
+                    <div style="display:flex; gap:8px; margin:8px 0">
+                        <button type="button" class="fp-btn fp-btn-soft" style="padding:4px 10px; font-size:12px" onclick="fpAddPilih(true)">Pilih semua yang tampil</button>
+                        <button type="button" class="fp-btn fp-btn-soft" style="padding:4px 10px; font-size:12px" onclick="fpAddPilih(false)">Kosongkan</button>
+                    </div>
+                    <div id="fpAddList" style="max-height:220px; overflow:auto; border:1px solid #e2e8f0; border-radius:8px; padding:6px 10px">
+                        @foreach ($karyawanOpsi as $k)
+                            <label class="fp-add-item" data-cari="{{ strtolower($k['nama'] . ' ' . $k['id']) }}" style="display:flex; gap:8px; align-items:center; padding:4px 0; cursor:pointer">
+                                <input type="checkbox" name="karyawan[]" value="{{ $k['id'] }}" class="fp-add-chk" @checked(in_array($k['id'], old('karyawan', [])))>
+                                <span style="font-weight:600">{{ $k['nama'] }}</span>
+                                <span class="fp-mono fp-muted">{{ $k['id'] }}</span>
+                                <span class="fp-muted" style="font-size:12px">{{ $k['kelompok'] ?? '-' }}{{ $k['shift'] ? ' · ' . $k['shift'] : '' }}</span>
+                            </label>
+                        @endforeach
+                    </div>
+                </div>
+
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px">
+                    <div class="fp-field">
+                        <label class="fp-label">Tanggal Dari <span>*</span></label>
+                        <input type="date" name="dari" class="fp-input" style="width:100%" value="{{ old('dari', now()->toDateString()) }}" required>
+                    </div>
+                    <div class="fp-field">
+                        <label class="fp-label">Tanggal Sampai <span>*</span></label>
+                        <input type="date" name="sampai" class="fp-input" style="width:100%" value="{{ old('sampai', now()->toDateString()) }}" required>
+                    </div>
+                </div>
+
+                <div class="fp-field">
+                    <label class="fp-label">Hari yang dijadwalkan <span>*</span></label>
+                    <div style="display:flex; gap:14px; flex-wrap:wrap">
+                        @foreach ([1 => 'Senin', 2 => 'Selasa', 3 => 'Rabu', 4 => 'Kamis', 5 => 'Jumat', 6 => 'Sabtu', 7 => 'Minggu'] as $no => $nm)
+                            <label style="display:flex; gap:6px; align-items:center; cursor:pointer">
+                                <input type="checkbox" name="hari[]" value="{{ $no }}" @checked(in_array($no, old('hari', [1, 2, 3, 4, 5, 6])))> {{ $nm }}
+                            </label>
+                        @endforeach
+                    </div>
+                </div>
+
+                <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px">
+                    <div class="fp-field">
+                        <label class="fp-label">Kode Shift <span>*</span></label>
+                        <select name="kode_shift" class="fp-input" style="width:100%" required>
+                            <option value="">-- Pilih shift --</option>
+                            @foreach ($shiftMap as $kode => $s)
+                                <option value="{{ $kode }}" @selected(old('kode_shift') === $kode)>{{ $kode }}@if ($s->jam_masuk) ({{ substr($s->jam_masuk, 0, 5) }}-{{ substr($s->jam_pulang, 0, 5) }})@endif</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="fp-field">
+                        <label class="fp-label">Kelompok Kerja</label>
+                        <select name="kelompok_kerja" class="fp-input" style="width:100%">
+                            <option value="">-- Ikuti kelompok karyawan --</option>
+                            @foreach ($kelompokOpsi as $k) <option value="{{ $k }}" @selected(old('kelompok_kerja') === $k)>{{ $k }}</option> @endforeach
+                        </select>
+                    </div>
+                    <div class="fp-field">
+                        <label class="fp-label">Istirahat</label>
+                        <select name="istirahat_jam" class="fp-input" style="width:100%">
+                            <option value="bawaan">Pakai bawaan shift</option>
+                            <option value="0" @selected(old('istirahat_jam') === '0')>0 jam</option>
+                            <option value="1" @selected(old('istirahat_jam') === '1')>1 jam</option>
+                            <option value="1.5" @selected(old('istirahat_jam') === '1.5')>1,5 jam</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="fp-modal-foot">
+                <button type="button" class="fp-btn fp-btn-soft" onclick="fpCloseAdd()">Batal</button>
+                <button type="submit" id="fpAddSubmit" class="fp-btn fp-btn-emerald">Simpan Jadwal</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <form id="fpDeleteForm" method="POST" action="{{ route('manajemen.jadwal.bulk-delete') }}" hidden>@csrf</form>
 <script>
     const fpModal = document.getElementById('fpModal'), fpFile = document.getElementById('fpFile'), fpSubmit = document.getElementById('fpSubmit');
     function fpOpenModal()  { fpModal.classList.add('open'); }
     function fpCloseModal() { fpModal.classList.remove('open'); }
-    document.addEventListener('keydown', e => { if (e.key === 'Escape') { fpCloseModal(); fpCloseEdit(); } });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') { fpCloseModal(); fpCloseEdit(); fpCloseAdd(); } });
     fpFile.addEventListener('change', function () {
         const f = this.files[0], info = document.getElementById('fpFileInfo');
         if (!f) { info.style.display = 'none'; fpSubmit.disabled = true; return; }
@@ -306,6 +409,31 @@
         const b = document.getElementById('fpEditSubmit');
         b.disabled = true; b.textContent = 'Memproses...';
     });
+
+    // ===== Tambah jadwal manual =====
+    const fpAddModal = document.getElementById('fpAddModal');
+    const fpAddChecks = () => [...document.querySelectorAll('.fp-add-chk')];
+    function fpOpenAdd()  { fpAddModal.classList.add('open'); fpAddHitung(); }
+    function fpCloseAdd() { fpAddModal.classList.remove('open'); }
+    function fpAddHitung() { document.getElementById('fpAddCount').textContent = fpAddChecks().filter(c => c.checked).length; }
+    function fpAddPilih(nilai) {
+        document.querySelectorAll('.fp-add-item').forEach(el => {
+            if (el.style.display !== 'none') el.querySelector('.fp-add-chk').checked = nilai;
+        });
+        fpAddHitung();
+    }
+    document.getElementById('fpAddCari').addEventListener('input', function () {
+        const q = this.value.trim().toLowerCase();
+        document.querySelectorAll('.fp-add-item').forEach(el => {
+            el.style.display = !q || el.dataset.cari.includes(q) ? 'flex' : 'none';
+        });
+    });
+    document.getElementById('fpAddList').addEventListener('change', fpAddHitung);
+    document.getElementById('fpAddForm').addEventListener('submit', function (e) {
+        if (!fpAddChecks().some(c => c.checked)) { e.preventDefault(); alert('Pilih minimal satu karyawan.'); return; }
+        const b = document.getElementById('fpAddSubmit'); b.disabled = true; b.textContent = 'Memproses...';
+    });
+    @if (old('karyawan')) fpOpenAdd(); @endif
 
     function fpBulkDelete() {
         const n = fpSelected().length;

@@ -9,6 +9,8 @@ use App\Services\Manajemen\FingerprintService;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Models\Manajemen\TrxFingerprintLog;
+use App\Models\MasterData\MstKaryawan;
+use Illuminate\Validation\ValidationException;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -47,7 +49,9 @@ class FingerprintController extends Controller
         $rows = $query->orderByDesc('tanggal')->orderBy('nama')
             ->paginate(50)->withQueryString();
 
-        return view('manajemen.fingerprint.index', compact('rows', 'dari', 'sampai', 'stat'));
+        return view('manajemen.fingerprint.index', compact('rows', 'dari', 'sampai', 'stat'))
+        ->with('karyawanList', MstKaryawan::whereNotNull('id_absensi')
+            ->orderBy('karyawan_nm')->get(['id_absensi', 'karyawan_nm', 'nik']));
     }
 
     public function import(Request $request, FingerprintService $service)
@@ -65,6 +69,71 @@ class FingerprintController extends Controller
 
         return back()->with('success',
             "Impor selesai: {$hasil['scan']} scan diproses menjadi {$hasil['hari_karyawan']} data absensi harian.");
+    }
+
+    public function store(Request $request)
+    {
+        $d = $request->validate([
+            'id_absen'     => 'required|string|max:20',
+            'tanggal'      => 'required|date',
+            'jam_masuk'    => 'nullable|date_format:H:i',
+            'jam_pulang'   => 'nullable|date_format:H:i',
+            'pulang_besok' => 'nullable|boolean',
+            'catatan'      => 'required|string|max:255',
+        ], [
+            'id_absen.required'      => 'ID Absen wajib diisi.',
+            'tanggal.required'       => 'Tanggal wajib diisi.',
+            'jam_masuk.date_format'  => 'Format jam masuk tidak valid.',
+            'jam_pulang.date_format' => 'Format jam pulang tidak valid.',
+            'catatan.required'       => 'Alasan input manual wajib diisi.',
+        ]);
+
+        if (empty($d['jam_masuk']) && empty($d['jam_pulang'])) {
+            throw ValidationException::withMessages(['jam_masuk' => 'Isi minimal jam masuk atau jam pulang.']);
+        }
+
+        $id = str_pad(trim($d['id_absen']), 9, '0', STR_PAD_LEFT);
+        $k  = MstKaryawan::whereNotNull('id_absensi')->get()
+            ->first(fn ($x) => str_pad(trim($x->id_absensi), 9, '0', STR_PAD_LEFT) === $id);
+
+        if (!$k) {
+            throw ValidationException::withMessages(['id_absen' => "ID Absen {$id} tidak ditemukan di Master Karyawan."]);
+        }
+
+        $tgl = Carbon::parse($d['tanggal'])->toDateString();
+
+        if (TrxAbsensiHarian::where('id_absen', $id)->whereDate('tanggal', $tgl)->exists()) {
+            throw ValidationException::withMessages(['id_absen' =>
+                "Data {$k->karyawan_nm} pada " . Carbon::parse($tgl)->locale('id')->translatedFormat('d F Y')
+                . ' sudah ada. Centang barisnya lalu klik Edit untuk mengubah jamnya.']);
+        }
+
+        $masuk  = !empty($d['jam_masuk']) ? Carbon::parse("$tgl {$d['jam_masuk']}") : null;
+        $pulang = !empty($d['jam_pulang'])
+            ? Carbon::parse("$tgl {$d['jam_pulang']}")->addDays($request->boolean('pulang_besok') ? 1 : 0)
+            : null;
+
+        if ($masuk && $pulang && $pulang->lte($masuk)) {
+            throw ValidationException::withMessages(['jam_pulang' =>
+                'Jam pulang harus setelah jam masuk. Untuk shift malam, centang "Pulang di hari berikutnya".']);
+        }
+
+        TrxAbsensiHarian::create([
+            'id_absen'    => $id,
+            'nama'        => $k->karyawan_nm,
+            'tanggal'     => $tgl,
+            'masuk_asli'  => null,     // tidak ada scan mesin
+            'pulang_asli' => null,
+            'jam_masuk'   => $masuk ? FingerprintService::bulatkan($masuk) : null,
+            'jam_pulang'  => $pulang ? FingerprintService::bulatkan($pulang) : null,
+            'jumlah_scan' => 0,
+            'is_manual'   => true,
+            'catatan'     => $d['catatan'],
+        ]);
+
+        return redirect()
+            ->route('manajemen.fingerprint.index', ['q' => $id, 'dari' => $tgl, 'sampai' => $tgl])
+            ->with('success', "Absensi manual {$k->karyawan_nm} berhasil ditambahkan. Hitung ulang di Absensi Karyawan agar ikut terhitung.");
     }
 
     public function bulkUpdate(Request $request)

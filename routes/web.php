@@ -19,6 +19,7 @@ use App\Http\Controllers\MasterData\JenisSupplierController;
 use App\Http\Controllers\MasterData\KaryawanController;
 use App\Http\Controllers\MasterData\LiniProduksiController;
 use App\Http\Controllers\MasterData\MesinController;
+use App\Http\Controllers\MasterData\PajakController;
 use App\Http\Controllers\MasterData\SatuanController;
 use App\Http\Controllers\MasterData\SupplierController;
 use App\Http\Controllers\MasterData\TarifProduksiController;
@@ -30,6 +31,7 @@ use App\Http\Controllers\Keuangan\KasBankController;
 use App\Http\Controllers\Keuangan\KasMasukController;
 use App\Http\Controllers\Keuangan\JurnalController;
 use App\Http\Controllers\Keuangan\BukuBesarController;
+use App\Http\Controllers\Keuangan\VerifikasiPemakaianController;
 use App\Http\Controllers\Penjualan\SoController;
 use App\Http\Controllers\Penjualan\PengeluaranBarangController;
 use App\Http\Controllers\Penjualan\FakturPenjualanController;
@@ -45,6 +47,7 @@ use App\Http\Controllers\Manajemen\PayrollController;
 use App\Http\Controllers\Manajemen\PayrollHarianController;
 use App\Http\Controllers\Manajemen\JadwalController;
 use App\Http\Controllers\Manajemen\KodeShiftController;
+use App\Http\Controllers\Manajemen\MultiPayrollController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -118,6 +121,10 @@ Route::middleware('auth')->group(function () {
         ->name('master.mesin.toggle_status');
     Route::resource('master-mesin', MesinController::class)
         ->names('master.mesin');
+    Route::patch('master-pajak/{id}/toggle-status', [PajakController::class, 'toggleStatus'])
+        ->name('master.pajak.toggle_status');
+    Route::resource('master-pajak', PajakController::class)
+        ->names('master.pajak');
 
     // Master Standar Tarif Produksi & FOH Pabrik
     Route::get('master-tarif-produksi/api-rates', [TarifProduksiController::class, 'apiRates'])
@@ -166,15 +173,19 @@ Route::middleware('auth')->group(function () {
         ->group(function () {
             Route::get('/fingerprint',     [FingerprintController::class, 'index'])->name('fingerprint.index');
             Route::post('/fingerprint/import', [FingerprintController::class, 'import'])->name('fingerprint.import');
+            Route::post('/fingerprint/manual', [FingerprintController::class, 'store'])->name('fingerprint.store');
             Route::post('/fingerprint/bulk-update', [FingerprintController::class, 'bulkUpdate'])->name('fingerprint.bulk-update');
             Route::post('/fingerprint/bulk-delete', [FingerprintController::class, 'bulkDelete'])->name('fingerprint.bulk-delete');
             Route::get('/absensi',         [AbsensiController::class, 'index'])->name('absensi.index');
             Route::post('/absensi/hitung', [AbsensiController::class, 'hitung'])->name('absensi.hitung');
+            Route::get('/absensi/export', [AbsensiController::class, 'exportExcel'])->name('absensi.export');
+            Route::get('/absensi/cetak-pdf', [AbsensiController::class, 'cetakPdf'])->name('absensi.cetak-pdf');
             Route::get('/jadwal',         [JadwalController::class, 'index'])->name('jadwal.index');
             Route::post('/jadwal/import', [JadwalController::class, 'import'])->name('jadwal.import');
             Route::get('/jadwal/template', [JadwalController::class, 'template'])->name('jadwal.template');
             Route::post('/jadwal/bulk-update', [JadwalController::class, 'bulkUpdate'])->name('jadwal.bulk-update');
             Route::post('/jadwal/bulk-delete', [JadwalController::class, 'bulkDelete'])->name('jadwal.bulk-delete');
+            Route::post('/jadwal/tambah', [JadwalController::class, 'store'])->name('jadwal.store');
             Route::get('/kode-shift',     [KodeShiftController::class, 'index'])->name('kode-shift.index');
             Route::post('/kode-shift',                [KodeShiftController::class, 'store'])->name('kode-shift.store');
             Route::put('/kode-shift/{kodeShift}',     [KodeShiftController::class, 'update'])->name('kode-shift.update');
@@ -190,6 +201,8 @@ Route::middleware('auth')->group(function () {
                 Route::post('/payroll/import',  [PayrollController::class, 'import'])->name('payroll.import');
                 Route::get('/payroll-harian/rincian', [PayrollHarianController::class, 'rincian'])->name('payroll_harian.rincian');
                 Route::get('/payroll-harian/export',  [PayrollHarianController::class, 'export'])->name('payroll_harian.export');
+                Route::get('/payroll/multi-payroll',       [MultiPayrollController::class, 'index'])->name('payroll.multi.index');
+                Route::get('/payroll/multi-payroll/excel', [MultiPayrollController::class, 'excel'])->name('payroll.multi.excel');
             });
 
             Route::middleware('role:SUPERADMIN,HRD')->group(function () {
@@ -197,6 +210,7 @@ Route::middleware('auth')->group(function () {
                 Route::post('/payroll/finalkan',   [PayrollController::class, 'finalkan'])->name('payroll.finalkan');
                 Route::post('/payroll/buka-kunci', [PayrollController::class, 'bukaKunci'])->name('payroll.buka-kunci');
                 Route::post('/payroll/dibayar',    [PayrollController::class, 'dibayar'])->name('payroll.dibayar');
+                Route::post('/payroll/multi-payroll/unduh', [MultiPayrollController::class, 'unduh'])->name('payroll.multi.unduh');
             });
         });
 
@@ -306,6 +320,21 @@ Route::middleware('auth')->group(function () {
         Route::post('pemakaian', [PemakaianController::class, 'store'])
             ->name('pemakaian.store')
             ->middleware('role:pemakaian_create');
+        Route::get('pemakaian/{id}/edit', [PemakaianController::class, 'edit'])
+            ->name('pemakaian.edit')
+            ->middleware('role:pemakaian_edit,SUPERADMIN');
+        Route::put('pemakaian/{id}', [PemakaianController::class, 'update'])
+            ->name('pemakaian.update')
+            ->middleware('role:pemakaian_edit,SUPERADMIN');
+        Route::post('pemakaian/{id}/post', [PemakaianController::class, 'postPemakaian'])
+            ->name('pemakaian.post')
+            ->middleware('role:pemakaian_verify,SUPERADMIN');
+        Route::delete('pemakaian/{id}', [PemakaianController::class, 'destroy'])
+            ->name('pemakaian.destroy')
+            ->middleware('role:pemakaian_delete,SUPERADMIN');
+        Route::get('pemakaian/{id}/export-pdf', [PemakaianController::class, 'exportPdf'])
+            ->name('pemakaian.export-pdf')
+            ->middleware('role:pemakaian_view');
         Route::resource('pemakaian', PemakaianController::class)->only(['index', 'show'])->middleware('role:pemakaian_view');
 
         // Monitoring Persediaan: Lacak Stok, Kartu Stok & Rekapitulasi Persediaan (Berdasarkan izin 'stok_view')
@@ -465,6 +494,26 @@ Route::middleware('auth')->group(function () {
         // 7. Buku Besar Interaktif (Interactive General Ledger)
         Route::get('buku-besar', [BukuBesarController::class, 'index'])
             ->name('buku_besar.index')
+            ->middleware('role:jurnal_view,coa_view,hutang_view,kas_bank_view');
+
+        // 8. Verifikasi Pemakaian Bahan & Terbitkan Jurnal HPP
+        Route::get('verifikasi-pemakaian', [VerifikasiPemakaianController::class, 'index'])
+            ->name('verifikasi_pemakaian.index')
+            ->middleware('role:jurnal_view,coa_view,hutang_view,kas_bank_view');
+        Route::get('verifikasi-pemakaian/{id}', [VerifikasiPemakaianController::class, 'show'])
+            ->name('verifikasi_pemakaian.show')
+            ->middleware('role:jurnal_view,coa_view,hutang_view,kas_bank_view');
+        Route::get('verifikasi-pemakaian/{id}/edit', [VerifikasiPemakaianController::class, 'edit'])
+            ->name('verifikasi_pemakaian.edit')
+            ->middleware('role:jurnal_view,coa_view,hutang_view,kas_bank_view');
+        Route::put('verifikasi-pemakaian/{id}', [VerifikasiPemakaianController::class, 'update'])
+            ->name('verifikasi_pemakaian.update')
+            ->middleware('role:jurnal_view,coa_view,hutang_view,kas_bank_view');
+        Route::post('verifikasi-pemakaian/{id}/approve', [VerifikasiPemakaianController::class, 'approve'])
+            ->name('verifikasi_pemakaian.approve')
+            ->middleware('role:jurnal_view,coa_view,hutang_view,kas_bank_view');
+        Route::post('verifikasi-pemakaian/{id}/reject', [VerifikasiPemakaianController::class, 'reject'])
+            ->name('verifikasi_pemakaian.reject')
             ->middleware('role:jurnal_view,coa_view,hutang_view,kas_bank_view');
     });
 });

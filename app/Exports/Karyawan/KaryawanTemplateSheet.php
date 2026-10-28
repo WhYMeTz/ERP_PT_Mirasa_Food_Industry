@@ -21,7 +21,7 @@ class KaryawanTemplateSheet implements FromArray, WithHeadings, WithTitle, WithC
     public const MAX_ROW = 500;
 
     // Kolom wajib diisi (judulnya diberi warna merah)
-    public const REQUIRED = ['A', 'C', 'G'];
+    public const REQUIRED = ['A', 'C', 'G', 'H'];
 
     // HARUS sama dengan $departemenList di KaryawanController::index()
     public const DEPARTEMEN = [
@@ -47,7 +47,7 @@ class KaryawanTemplateSheet implements FromArray, WithHeadings, WithTitle, WithC
     {
         return [
             'ID Karyawan', 'ID Absensi', 'Nama Karyawan', 'Kelompok', 'Shift',
-            'Status Karyawan', 'Bagian/Divisi', 'Jabatan', 'Tanggal Masuk Kerja',
+            'Status Karyawan', 'Departemen', 'Divisi/Bagian', 'Tanggal Masuk Kerja',
             'No. HP', 'Email', 'Bank', 'No. Rekening', 'Alamat',
         ];
     }
@@ -109,6 +109,7 @@ class KaryawanTemplateSheet implements FromArray, WithHeadings, WithTitle, WithC
                     'E' => 'SHIFT A,SHIFT B,NON SHIFT',
                     'F' => 'Tetap,Kontrak,Harian',
                     'G' => implode(',', array_keys(self::DEPARTEMEN)),
+                    'H' => implode(',', MstKaryawan::DIVISI),
                 ];
 
                 foreach ($lists as $col => $items) {

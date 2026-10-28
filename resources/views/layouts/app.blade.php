@@ -1125,6 +1125,23 @@
                                             <span style="font-size: 0.6875rem; color: #64748b;">Mutasi akun interaktif &amp; grafik saldo</span>
                                         </div>
                                     </a>
+
+                                    <div style="height: 1px; background: #f1f5f9; margin: 0.3rem 0;"></div>
+                                    <a href="{{ route('keuangan.verifikasi_pemakaian.index') }}" class="mega-item {{ request()->routeIs('keuangan.verifikasi_pemakaian.*') ? 'active' : '' }}">
+                                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #ea580c;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+                                        <div style="display: flex; flex-direction: column;">
+                                            <span style="font-weight: 600; color: #0f172a;">Verifikasi Pemakaian Bahan</span>
+                                            <span style="font-size: 0.6875rem; color: #64748b;">Periksa batch fisik, potong stok &amp; jurnal HPP</span>
+                                        </div>
+                                        @php
+                                            $draftPakaiBadge = \App\Models\Gudang\DatPakaiHdr::where('status_st', 'DRAFT')->where('deleted_st', false)->count();
+                                        @endphp
+                                        @if($draftPakaiBadge > 0)
+                                            <span style="margin-left: auto; background: #fef3c7; color: #92400e; font-size: 0.7rem; font-weight: 800; padding: 0.15rem 0.45rem; border-radius: 999px; border: 1px solid #fde68a;">
+                                                {{ $draftPakaiBadge }}
+                                            </span>
+                                        @endif
+                                    </a>
                                 @endif
                             </div>
                         </div>
@@ -1217,8 +1234,8 @@
                                             </a>
                                         @endif
                                     </div>
-
                                 </div>
+                            </div>
                         </div>
                     @endif
 
@@ -1279,6 +1296,12 @@
                                             <a href="{{ route('master.jenis.index') }}" class="mega-item {{ request()->routeIs('master.jenis.*') ? 'active' : '' }}">
                                                 <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
                                                 <span>Kategori / Jenis Barang</span>
+                                            </a>
+                                        @endif
+                                        @if (Auth::user()->canAccessPajak())
+                                            <a href="{{ route('master.pajak.index') }}" class="mega-item {{ request()->routeIs('master.pajak.*') ? 'active' : '' }}">
+                                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2zM10 8.5a.5.5 0 11-1 0 .5.5 0 011 0zm5 5a.5.5 0 11-1 0 .5.5 0 011 0z"/></svg>
+                                                <span>Master Pajak &amp; Tarif</span>
                                             </a>
                                         @endif
                                     </div>

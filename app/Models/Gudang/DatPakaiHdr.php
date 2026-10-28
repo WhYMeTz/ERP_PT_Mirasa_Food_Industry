@@ -24,6 +24,10 @@ class DatPakaiHdr extends Model
         'produksi_id',
         'tujuan_pemakaian',
         'catatan_txt',
+        'status_st',
+        'posted_at',
+        'posted_by',
+        'jurnal_id',
         'created_by',
         'updated_by',
         'deleted_by',
@@ -33,9 +37,28 @@ class DatPakaiHdr extends Model
 
     protected $casts = [
         'pakai_tgl'  => 'date',
+        'posted_at'  => 'datetime',
         'deleted_st' => 'boolean',
         'active_st'  => 'boolean',
     ];
+
+    public function isDraft(): bool
+    {
+        return ($this->status_st ?? 'DRAFT') === 'DRAFT';
+    }
+
+    public function isPosted(): bool
+    {
+        return ($this->status_st ?? '') === 'POSTED';
+    }
+
+    /**
+     * Relasi ke Jurnal Umum Akuntansi
+     */
+    public function jurnal(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Keuangan\DatJurnalHdr::class, 'jurnal_id', 'jurnal_id');
+    }
 
     /**
      * Relasi ke Gudang Asal

@@ -45,7 +45,7 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="edit_departemen_cd" class="form-label">Bagian / Divisi <span style="color:#ef4444;">*</span></label>
+                        <label for="edit_departemen_cd" class="form-label"> Departemen <span style="color:#ef4444;">*</span></label>
                         <select id="edit_departemen_cd" name="departemen_cd" class="form-control" required>
                             <option value="">-- Pilih Departemen --</option>
                             @foreach ($departemenList as $key => $label)
@@ -54,8 +54,13 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="edit_jabatan_nm" class="form-label">Jabatan Kerja <span style="color:#ef4444;">*</span></label>
-                        <input type="text" id="edit_jabatan_nm" name="jabatan_nm" class="form-control" required placeholder="Contoh: Mandor Produksi">
+                        <label for="edit_jabatan_nm" class="form-label">Divisi / Bagian <span style="color:#ef4444;">*</span></label>
+                        <select id="edit_jabatan_nm" name="jabatan_nm" class="form-control" required>
+                            <option value="">-- Pilih Divisi / Bagian --</option>
+                            @foreach (\App\Models\MasterData\MstKaryawan::DIVISI as $divisi)
+                                <option value="{{ $divisi }}">{{ $divisi }}</option>
+                            @endforeach
+                        </select>
                     </div>
 
                     <div class="form-group">

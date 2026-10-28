@@ -589,6 +589,12 @@ function addRow(focusNew = false) {
         }
     }
 
+    const headerIncCheck = document.getElementById('is_harga_termasuk_pajak');
+    const rowIncCheck = tr.querySelector('.item-include-tax');
+    if (rowIncCheck && headerIncCheck) {
+        rowIncCheck.checked = headerIncCheck.checked;
+    }
+
     const select = tr.querySelector('.item-barang');
     applyBarangCategoryFilterToSelect(select, activeBarangCategory);
 
@@ -597,6 +603,26 @@ function addRow(focusNew = false) {
     }
     calculateGrandTotal();
     return tr;
+}
+
+function onHeaderTaxInclusiveToggle(headerCheckbox) {
+    const isInc = headerCheckbox.checked;
+    const badge = document.getElementById('badgeTaxMode');
+    if (badge) {
+        if (isInc) {
+            badge.innerText = 'Sudah Termasuk PPN (Gross)';
+            badge.style.background = '#dcfce7';
+            badge.style.color = '#15803d';
+        } else {
+            badge.innerText = 'Belum Termasuk PPN (Net)';
+            badge.style.background = '#e2e8f0';
+            badge.style.color = '#475569';
+        }
+    }
+    document.querySelectorAll('.item-include-tax').forEach(cb => {
+        cb.checked = isInc;
+    });
+    calculateGrandTotal();
 }
 
 function removeRow(btn) {
@@ -664,22 +690,46 @@ function calculateGrandTotal() {
     let totalDpp = 0;
     let totalPpn = 0;
     let grandTotal = 0;
+    let anyRowInc = false;
+    let allRowInc = true;
+    let rowCount = 0;
     const supplierItemCount = {};
     const supHiddenSelect = document.getElementById('supplier_id');
 
     document.querySelectorAll('.item-row').forEach(row => {
+        rowCount++;
         const qty = Math.max(0, parseFloat(row.querySelector('.item-qty')?.value) || 0);
         const harga = Math.max(0, parseFloat(row.querySelector('.item-harga')?.value) || 0);
         const diskonPersen = Math.min(100, Math.max(0, parseFloat(row.querySelector('.item-diskon')?.value) || 0));
         const potonganNominal = Math.max(0, parseFloat(row.querySelector('.item-potongan')?.value) || 0);
-        const ppnSelect = row.querySelector('.item-ppn-tipe');
-        const isPpn11 = ppnSelect ? ppnSelect.value === 'PPN_11' : false;
+        
+        const pajakSelect = row.querySelector('.item-pajak-id');
+        const selectedOpt = pajakSelect ? pajakSelect.options[pajakSelect.selectedIndex] : null;
+        const tarif = selectedOpt ? (parseFloat(selectedOpt.dataset.tarif) || 0) : 0;
+        const sifat = selectedOpt ? (selectedOpt.dataset.sifat || 'TAMBAH') : 'TAMBAH';
+        const isInc = row.querySelector('.item-include-tax')?.checked || false;
+
+        if (isInc) anyRowInc = true; else allRowInc = false;
 
         const diskonUnit = harga * (diskonPersen / 100);
         const hargaNetto = Math.max(0, harga - diskonUnit);
-        const rowSubtotalNetto = Math.max(0, (qty * hargaNetto) - potonganNominal);
-        const itemPpnNominal = isPpn11 ? Math.round(rowSubtotalNetto * 0.11) : 0;
-        const rowSubtotalTagihan = rowSubtotalNetto + itemPpnNominal;
+        const grossRowTotal = Math.max(0, (qty * hargaNetto) - potonganNominal);
+
+        let rowSubtotalNetto = 0;
+        let itemPpnNominal = 0;
+        let rowSubtotalTagihan = 0;
+
+        if (isInc && tarif > 0) {
+            rowSubtotalNetto = Math.round((grossRowTotal / (1 + (tarif / 100))) * 10000) / 10000;
+            itemPpnNominal = Math.round((grossRowTotal - rowSubtotalNetto) * 10000) / 10000;
+            rowSubtotalTagihan = grossRowTotal;
+        } else {
+            rowSubtotalNetto = grossRowTotal;
+            itemPpnNominal = Math.round((rowSubtotalNetto * (tarif / 100)) * 10000) / 10000;
+            rowSubtotalTagihan = (sifat === 'POTONG')
+                ? Math.max(0, rowSubtotalNetto - itemPpnNominal)
+                : (rowSubtotalNetto + itemPpnNominal);
+        }
 
         const rowSubtotalCell = row.querySelector('.row-subtotal');
         if (rowSubtotalCell) {
@@ -710,12 +760,28 @@ function calculateGrandTotal() {
     const elDiskonDisplay = document.getElementById('totalDiskonDisplay');
     const elPotonganDisplay = document.getElementById('totalPotonganDisplay');
     const elPpnDisplay = document.getElementById('totalPpnDisplay');
+    const elTotalIncBadge = document.getElementById('totalIncBadge');
     const elGrandTotalDisplay = document.getElementById('grandTotalDisplay');
 
     if (elTotalQty) elTotalQty.innerText = totalQty.toFixed(2);
     if (elDiskonDisplay) elDiskonDisplay.innerText = totalDiskon > 0 ? '-Rp ' + Math.round(totalDiskon).toLocaleString('id-ID') : '-';
     if (elPotonganDisplay) elPotonganDisplay.innerText = totalPotongan > 0 ? '-Rp ' + Math.round(totalPotongan).toLocaleString('id-ID') : '-';
     if (elPpnDisplay) elPpnDisplay.innerText = totalPpn > 0 ? '+Rp ' + Math.round(totalPpn).toLocaleString('id-ID') : '-';
+    if (elTotalIncBadge) {
+        if (rowCount > 0 && allRowInc) {
+            elTotalIncBadge.innerText = 'Inc';
+            elTotalIncBadge.style.color = '#15803d';
+            elTotalIncBadge.style.fontWeight = '700';
+        } else if (anyRowInc) {
+            elTotalIncBadge.innerText = 'Mix';
+            elTotalIncBadge.style.color = '#b45309';
+            elTotalIncBadge.style.fontWeight = '700';
+        } else {
+            elTotalIncBadge.innerText = '-';
+            elTotalIncBadge.style.color = '#64748b';
+            elTotalIncBadge.style.fontWeight = 'normal';
+        }
+    }
     if (elGrandTotalDisplay) elGrandTotalDisplay.innerText = 'Rp ' + Math.round(grandTotal).toLocaleString('id-ID');
 
     const sideGrandTotal = document.getElementById('sideGrandTotal');
@@ -723,6 +789,7 @@ function calculateGrandTotal() {
     const sideSubtotal = document.getElementById('sideSubtotalBruto');
     const sideDiskon = document.getElementById('sideTotalDiskon');
     const sidePotongan = document.getElementById('sideTotalPotongan');
+    const sideDpp = document.getElementById('sideTotalDpp');
     const sidePpn = document.getElementById('sideTotalPpn');
 
     if (sideGrandTotal) sideGrandTotal.innerText = 'Rp ' + Math.round(grandTotal).toLocaleString('id-ID');
@@ -730,6 +797,7 @@ function calculateGrandTotal() {
     if (sideSubtotal) sideSubtotal.innerText = 'Rp ' + Math.round(totalBruto).toLocaleString('id-ID');
     if (sideDiskon) sideDiskon.innerText = totalDiskon > 0 ? '-Rp ' + Math.round(totalDiskon).toLocaleString('id-ID') : 'Rp 0';
     if (sidePotongan) sidePotongan.innerText = totalPotongan > 0 ? '-Rp ' + Math.round(totalPotongan).toLocaleString('id-ID') : 'Rp 0';
+    if (sideDpp) sideDpp.innerText = 'Rp ' + Math.round(totalDpp).toLocaleString('id-ID');
     if (sidePpn) sidePpn.innerText = totalPpn > 0 ? '+Rp ' + Math.round(totalPpn).toLocaleString('id-ID') : 'Rp 0';
 
     const submitBtnText = document.getElementById('btnSubmitPoText');
@@ -919,6 +987,10 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     document.querySelectorAll('.item-row').forEach(r => attachExcelKeyboardEvents(r));
+    const headerIncCheck = document.getElementById('is_harga_termasuk_pajak');
+    if (headerIncCheck && headerIncCheck.checked) {
+        onHeaderTaxInclusiveToggle(headerIncCheck);
+    }
     updateRowNumbers();
     calculateGrandTotal();
 });

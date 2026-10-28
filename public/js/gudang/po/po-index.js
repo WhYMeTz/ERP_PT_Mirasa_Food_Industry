@@ -384,7 +384,8 @@ function renderPoDetail(po) {
     document.getElementById('poDetailSubtotalBruto').textContent = formatRp(po.subtotal_bruto);
     document.getElementById('poDetailDiskon').textContent = formatRp(parseFloat(po.diskon_total || 0) + parseFloat(po.potongan_nominal || 0));
     document.getElementById('poDetailDpp').textContent = formatRp(po.dpp_nominal);
-    document.getElementById('poDetailPpn').textContent = formatRp(po.ppn_nominal);
+    const ppnLabel = formatRp(po.ppn_nominal) + (po.is_harga_termasuk_pajak ? ' (Termasuk)' : '');
+    document.getElementById('poDetailPpn').textContent = ppnLabel;
     document.getElementById('poDetailTotalTagihan').textContent = formatRp(po.total_tagihan || po.total_nominal);
 
     // Catatan

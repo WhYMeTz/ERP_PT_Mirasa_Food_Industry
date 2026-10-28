@@ -196,10 +196,26 @@
                         </div>
                     </div>
 
-                    {{-- BARIS 3: CATATAN --}}
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label for="catatan_txt" class="form-label" style="font-weight: 600; font-size: 0.85rem;">Instruksi / Catatan Pengadaan</label>
-                        <textarea id="catatan_txt" name="catatan_txt" rows="2" class="form-control" placeholder="Contoh: Estimasi pengiriman hari Jumat jam 08.00 pagi, singkong kadar air standar pabrik.">{{ old('catatan_txt') }}</textarea>
+                    {{-- BARIS 3: SKEMA PAJAK & CATATAN --}}
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem; align-items: start;">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="catatan_txt" class="form-label" style="font-weight: 600; font-size: 0.85rem;">Instruksi / Catatan Pengadaan</label>
+                            <textarea id="catatan_txt" name="catatan_txt" rows="2" class="form-control" placeholder="Contoh: Estimasi pengiriman hari Jumat jam 08.00 pagi, singkong kadar air standar pabrik.">{{ old('catatan_txt') }}</textarea>
+                        </div>
+
+                        <div style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 0.75rem 1rem; display: flex; flex-direction: column; justify-content: center; gap: 0.25rem;">
+                            <label style="display: flex; align-items: center; gap: 0.65rem; cursor: pointer; margin-bottom: 0; user-select: none;">
+                                <input type="hidden" name="is_harga_termasuk_pajak" value="0">
+                                <input type="checkbox" id="is_harga_termasuk_pajak" name="is_harga_termasuk_pajak" value="1" {{ old('is_harga_termasuk_pajak') ? 'checked' : '' }} onchange="onHeaderTaxInclusiveToggle(this)" style="width: 18px; height: 18px; accent-color: #059669; cursor: pointer;">
+                                <div>
+                                    <strong style="color: #0f172a; font-size: 0.875rem;">Harga Termasuk PPN (Tax-Inclusive)</strong>
+                                    <span class="badge" id="badgeTaxMode" style="background: #e2e8f0; color: #475569; font-size: 0.68rem; margin-left: 0.35rem; font-weight: 700;">Belum Termasuk PPN (Net)</span>
+                                </div>
+                            </label>
+                            <small id="helpTaxMode" style="color: #64748b; font-size: 0.735rem; line-height: 1.35; padding-left: 1.75rem;">
+                                Jika dicentang, harga satuan barang di bawah sudah mencakup PPN. Sistem otomatis mengekstrak DPP dan nilai PPN (perhitungan mundur).
+                            </small>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -360,17 +376,18 @@
                         <thead>
                             <tr>
                                 <th style="width: 32px; text-align: center;">No</th>
-                                <th style="min-width: 230px; text-align: left;">Nama Komoditas / Bahan Baku <span style="color:#f87171;">*</span></th>
-                                <th class="col-supplier" style="display: none; min-width: 200px; text-align: left;">
+                                <th style="min-width: 220px; text-align: left;">Nama Komoditas / Bahan Baku <span style="color:#f87171;">*</span></th>
+                                <th class="col-supplier" style="display: none; min-width: 190px; text-align: left;">
                                     Supplier Mitra <span style="color:#f87171;">*</span>
                                 </th>
-                                <th style="width: 70px; text-align: center;">Satuan</th>
-                                <th style="width: 95px; text-align: right;">Kuantitas <span style="color:#f87171;">*</span></th>
-                                <th style="width: 110px; text-align: right;">@Harga Satuan</th>
-                                <th style="width: 65px; text-align: right;" title="Diskon dagang per item (%)">Disc (%)</th>
-                                <th style="width: 90px; text-align: right;" title="Potongan nominal item (Rp)">Potongan</th>
-                                <th style="width: 85px; text-align: center;" title="Pajak Pertambahan Nilai">PPN</th>
-                                <th style="width: 115px; text-align: right; background: #0f172a; color: #ffffff;" title="Subtotal bersih setelah diskon, potongan & PPN">Subtotal</th>
+                                <th style="width: 65px; text-align: center;">Satuan</th>
+                                <th style="width: 90px; text-align: right;">Kuantitas <span style="color:#f87171;">*</span></th>
+                                <th style="width: 105px; text-align: right;">@Harga Satuan</th>
+                                <th style="width: 60px; text-align: right;" title="Diskon dagang per item (%)">Disc (%)</th>
+                                <th style="width: 85px; text-align: right;" title="Potongan nominal item (Rp)">Potongan</th>
+                                <th style="width: 110px; text-align: center;" title="Pajak Pembelian (Master Pajak)">Pajak (PPN)</th>
+                                <th style="width: 50px; text-align: center;" title="Centang jika harga item baris ini sudah termasuk PPN (Include)">Inc?</th>
+                                <th style="width: 110px; text-align: right; background: #0f172a; color: #ffffff;" title="Subtotal bersih setelah diskon, potongan & PPN">Subtotal</th>
                                 <th style="width: 35px; text-align: center;">Hapus</th>
                             </tr>
                         </thead>
@@ -430,10 +447,18 @@
                                     <input type="number" step="0.01" min="0" name="items[0][potongan_nominal]" class="form-control item-potongan" value="0" oninput="calculateSubtotal(this)" placeholder="0" style="text-align: right;">
                                 </td>
                                 <td>
-                                    <select name="items[0][ppn_tipe]" class="form-control item-ppn-tipe" onchange="calculateSubtotal(this)" style="font-size: 0.775rem; font-weight: 600;">
-                                        <option value="NON_PPN">Non (0%)</option>
-                                        <option value="PPN_11">PPN 11%</option>
+                                    <select name="items[0][pajak_id]" class="form-control item-pajak-id" onchange="calculateSubtotal(this)" style="font-size: 0.75rem; font-weight: 600;">
+                                        <option value="" data-tarif="0" data-sifat="TAMBAH">Non-Pajak (0%)</option>
+                                        @foreach ($pajakList as $pjk)
+                                            <option value="{{ $pjk->pajak_id }}" data-tarif="{{ (float)$pjk->tarif_persen }}" data-sifat="{{ $pjk->sifat_pajak }}" {{ $pjk->is_default ? 'selected' : '' }}>
+                                                {{ $pjk->pajak_nm }} ({{ (float)$pjk->tarif_persen }}%)
+                                            </option>
+                                        @endforeach
                                     </select>
+                                </td>
+                                <td style="text-align: center;">
+                                    <input type="hidden" name="items[0][is_harga_termasuk_pajak]" value="0">
+                                    <input type="checkbox" name="items[0][is_harga_termasuk_pajak]" value="1" class="item-include-tax" onchange="calculateSubtotal(this)" title="Centang jika harga item ini sudah termasuk PPN">
                                 </td>
                                 <td style="text-align: right; font-weight: 700; color: #0f172a; font-size: 0.85rem; font-family: monospace;" class="row-subtotal">
                                     Rp 0
@@ -450,7 +475,8 @@
                                 <td></td>
                                 <td id="totalDiskonDisplay" style="padding: 0.65rem 0.35rem; color: #d97706; font-size: 0.8rem; text-align: right; font-family: monospace;" title="Akumulasi Diskon Item">-</td>
                                 <td id="totalPotonganDisplay" style="padding: 0.65rem 0.35rem; color: #dc2626; font-size: 0.8rem; text-align: right; font-family: monospace;" title="Akumulasi Potongan">-</td>
-                                <td id="totalPpnDisplay" style="padding: 0.65rem 0.35rem; color: #0369a1; font-size: 0.8rem; text-align: center; font-family: monospace;" title="Akumulasi PPN 11%">-</td>
+                                <td id="totalPpnDisplay" style="padding: 0.65rem 0.35rem; color: #0369a1; font-size: 0.8rem; text-align: center; font-family: monospace;" title="Akumulasi Pajak">-</td>
+                                <td style="text-align: center; font-size: 0.7rem; color: #64748b;" id="totalIncBadge">-</td>
                                 <td id="grandTotalDisplay" style="text-align: right; padding: 0.65rem 0.5rem; font-size: 0.95rem; color: #0f172a; font-family: monospace;">Rp 0</td>
                                 <td></td>
                             </tr>
@@ -504,8 +530,12 @@
                             <span style="color: #64748b;">Potongan Harga:</span>
                             <span id="sideTotalPotongan" style="font-weight: 600; font-family: monospace; color: #dc2626;">Rp 0</span>
                         </div>
+                        <div style="display: flex; justify-content: space-between; padding-top: 0.35rem; border-top: 1px dashed #e2e8f0;">
+                            <span style="color: #64748b;">DPP (Netto):</span>
+                            <span id="sideTotalDpp" style="font-weight: 600; font-family: monospace; color: #334155;">Rp 0</span>
+                        </div>
                         <div style="display: flex; justify-content: space-between;">
-                            <span style="color: #64748b;">PPN (11%):</span>
+                            <span style="color: #64748b;">Pajak (PPN):</span>
                             <span id="sideTotalPpn" style="font-weight: 600; font-family: monospace; color: #0284c7;">Rp 0</span>
                         </div>
                         <div id="sideAutoSplitBox" style="display: none; padding-top: 0.5rem; border-top: 1px dashed #cbd5e1;">

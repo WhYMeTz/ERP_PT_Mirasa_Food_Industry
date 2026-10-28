@@ -111,9 +111,25 @@
                             <input type="date" id="tgl_estimasi_datang" name="tgl_estimasi_datang" class="form-control" value="{{ old('tgl_estimasi_datang', $po->tgl_estimasi_datang ? \Carbon\Carbon::parse($po->tgl_estimasi_datang)->format('Y-m-d') : '') }}">
                         </div>
 
-                        <div class="form-group" style="margin-bottom: 0; grid-column: 1 / -1;">
+                        <div class="form-group" style="margin-bottom: 0;">
                             <label for="catatan_txt" class="form-label" style="font-weight: 600; font-size: 0.85rem;">Instruksi &amp; Catatan Khusus Pengadaan</label>
                             <textarea id="catatan_txt" name="catatan_txt" class="form-control" rows="2" placeholder="Tuliskan catatan delivery, syarat bongkar muat, atau instruksi pembayaran...">{{ old('catatan_txt', $po->catatan_txt) }}</textarea>
+                        </div>
+
+                        <div style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 0.75rem 1rem; display: flex; flex-direction: column; justify-content: center; gap: 0.25rem;">
+                            <label style="display: flex; align-items: center; gap: 0.65rem; cursor: pointer; margin-bottom: 0; user-select: none;">
+                                <input type="hidden" name="is_harga_termasuk_pajak" value="0">
+                                <input type="checkbox" id="is_harga_termasuk_pajak" name="is_harga_termasuk_pajak" value="1" {{ old('is_harga_termasuk_pajak', $po->is_harga_termasuk_pajak) ? 'checked' : '' }} onchange="onHeaderTaxInclusiveToggle(this)" style="width: 18px; height: 18px; accent-color: #059669; cursor: pointer;">
+                                <div>
+                                    <strong style="color: #0f172a; font-size: 0.875rem;">Harga Termasuk PPN (Tax-Inclusive)</strong>
+                                    <span class="badge" id="badgeTaxMode" style="{{ old('is_harga_termasuk_pajak', $po->is_harga_termasuk_pajak) ? 'background:#dcfce7; color:#15803d;' : 'background:#e2e8f0; color:#475569;' }} font-size: 0.68rem; margin-left: 0.35rem; font-weight: 700;">
+                                        {{ old('is_harga_termasuk_pajak', $po->is_harga_termasuk_pajak) ? 'Sudah Termasuk PPN (Gross)' : 'Belum Termasuk PPN (Net)' }}
+                                    </span>
+                                </div>
+                            </label>
+                            <small id="helpTaxMode" style="color: #64748b; font-size: 0.735rem; line-height: 1.35; padding-left: 1.75rem;">
+                                Jika dicentang, harga satuan barang di bawah sudah mencakup PPN. Sistem otomatis mengekstrak DPP dan nilai PPN (perhitungan mundur).
+                            </small>
                         </div>
                     </div>
                 </div>
@@ -138,14 +154,15 @@
                             <tr>
                                 <th style="width: 35px; text-align: center;">No</th>
                                 <th style="min-width: 220px; text-align: left;">Bahan Baku / Komoditas <span style="color:#ef4444;">*</span></th>
-                                <th style="width: 110px; text-align: right;">Kuantitas <span style="color:#ef4444;">*</span></th>
-                                <th style="width: 60px; text-align: center;">Satuan</th>
-                                <th style="width: 125px; text-align: right;">Harga Satuan (Rp)</th>
-                                <th style="width: 75px; text-align: right;">Diskon %</th>
-                                <th style="width: 95px; text-align: right;">Potongan Rp</th>
-                                <th style="width: 95px; text-align: center;">PPN</th>
-                                <th style="width: 135px; text-align: right;">Subtotal (Rp)</th>
-                                <th style="min-width: 130px; text-align: left;">Catatan Item</th>
+                                <th style="width: 100px; text-align: right;">Kuantitas <span style="color:#ef4444;">*</span></th>
+                                <th style="width: 55px; text-align: center;">Satuan</th>
+                                <th style="width: 115px; text-align: right;">Harga Satuan (Rp)</th>
+                                <th style="width: 70px; text-align: right;">Diskon %</th>
+                                <th style="width: 90px; text-align: right;">Potongan Rp</th>
+                                <th style="width: 105px; text-align: center;">Pajak (PPN)</th>
+                                <th style="width: 45px; text-align: center;" title="Centang jika harga item baris ini sudah termasuk PPN (Include)">Inc?</th>
+                                <th style="width: 125px; text-align: right;">Subtotal (Rp)</th>
+                                <th style="min-width: 120px; text-align: left;">Catatan Item</th>
                                 <th style="width: 45px; text-align: center;">Aksi</th>
                             </tr>
                         </thead>
@@ -203,10 +220,21 @@
                                         <input type="number" step="any" min="0" name="items[{{ $idx }}][potongan_nominal]" class="form-control input-potongan" value="{{ (float) $dtl->potongan_nominal }}" style="text-align: right;" oninput="calculateRow(this)">
                                     </td>
                                     <td>
-                                        <select name="items[{{ $idx }}][ppn_tipe]" class="form-control select-ppn" style="font-size: 0.75rem;" onchange="calculateRow(this)">
-                                            <option value="NON_PPN" {{ $dtl->ppn_tipe == 'NON_PPN' ? 'selected' : '' }}>Non PPN</option>
-                                            <option value="PPN_11" {{ $dtl->ppn_tipe == 'PPN_11' ? 'selected' : '' }}>PPN 11%</option>
+                                        <select name="items[{{ $idx }}][pajak_id]" class="form-control select-pajak" style="font-size: 0.75rem;" onchange="calculateRow(this)">
+                                            <option value="" data-tarif="0" data-sifat="TAMBAH">Non-Pajak (0%)</option>
+                                            @foreach ($pajakList as $pjk)
+                                                <option value="{{ $pjk->pajak_id }}" 
+                                                        data-tarif="{{ (float)$pjk->tarif_persen }}" 
+                                                        data-sifat="{{ $pjk->sifat_pajak }}" 
+                                                        {{ ($dtl->pajak_id == $pjk->pajak_id || (empty($dtl->pajak_id) && $dtl->ppn_tipe == 'PPN_11' && (float)$pjk->tarif_persen == 11)) ? 'selected' : '' }}>
+                                                    {{ $pjk->pajak_nm }} ({{ (float)$pjk->tarif_persen }}%)
+                                                </option>
+                                            @endforeach
                                         </select>
+                                    </td>
+                                    <td style="text-align: center;">
+                                        <input type="hidden" name="items[{{ $idx }}][is_harga_termasuk_pajak]" value="0">
+                                        <input type="checkbox" name="items[{{ $idx }}][is_harga_termasuk_pajak]" value="1" class="item-include-tax" {{ $dtl->is_harga_termasuk_pajak ? 'checked' : '' }} onchange="calculateRow(this)" title="Centang jika harga item ini sudah termasuk PPN">
                                     </td>
                                     <td style="text-align: right; font-weight: 700; color: #0f172a; font-family: monospace;" class="row-subtotal">
                                         Rp {{ number_format((float) $dtl->subtotal_tagihan, 0, ',', '.') }}
@@ -257,7 +285,7 @@
                         <strong style="color: #0f172a;" id="summaryDpp">Rp 0</strong>
                     </div>
                     <div style="display: flex; justify-content: space-between; margin-bottom: 0.75rem;">
-                        <span style="color: #64748b;">PPN 11%:</span>
+                        <span style="color: #64748b;">Pajak (PPN):</span>
                         <strong style="color: #0369a1;" id="summaryPpn">Rp 0</strong>
                     </div>
 
@@ -320,10 +348,21 @@
             <input type="number" step="any" min="0" name="items[__INDEX__][potongan_nominal]" class="form-control input-potongan" value="0" style="text-align: right;" oninput="calculateRow(this)">
         </td>
         <td>
-            <select name="items[__INDEX__][ppn_tipe]" class="form-control select-ppn" style="font-size: 0.75rem;" onchange="calculateRow(this)">
-                <option value="NON_PPN">Non PPN</option>
-                <option value="PPN_11">PPN 11%</option>
+            <select name="items[__INDEX__][pajak_id]" class="form-control select-pajak" style="font-size: 0.75rem;" onchange="calculateRow(this)">
+                <option value="" data-tarif="0" data-sifat="TAMBAH">Non-Pajak (0%)</option>
+                @foreach ($pajakList as $pjk)
+                    <option value="{{ $pjk->pajak_id }}" 
+                            data-tarif="{{ (float)$pjk->tarif_persen }}" 
+                            data-sifat="{{ $pjk->sifat_pajak }}" 
+                            {{ $pjk->is_default ? 'selected' : '' }}>
+                        {{ $pjk->pajak_nm }} ({{ (float)$pjk->tarif_persen }}%)
+                    </option>
+                @endforeach
             </select>
+        </td>
+        <td style="text-align: center;">
+            <input type="hidden" name="items[__INDEX__][is_harga_termasuk_pajak]" value="0">
+            <input type="checkbox" name="items[__INDEX__][is_harga_termasuk_pajak]" value="1" class="item-include-tax" onchange="calculateRow(this)" title="Centang jika harga item ini sudah termasuk PPN">
         </td>
         <td style="text-align: right; font-weight: 700; color: #0f172a; font-family: monospace;" class="row-subtotal">
             Rp 0

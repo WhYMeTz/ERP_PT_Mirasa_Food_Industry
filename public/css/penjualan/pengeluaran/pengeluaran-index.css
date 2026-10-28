@@ -47,9 +47,21 @@
 /* Operational Metrics Grid */
 .sj-metrics-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    grid-template-columns: repeat(4, 1fr);
     gap: 1rem;
     margin-bottom: 1.5rem;
+}
+
+@media (max-width: 1024px) {
+    .sj-metrics-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 576px) {
+    .sj-metrics-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 .sj-metric-card {
@@ -136,8 +148,8 @@
 
 .sj-filter-grid {
     display: grid;
-    grid-template-columns: 2fr 1fr 1fr 1fr auto;
-    gap: 0.75rem;
+    grid-template-columns: 2.2fr 1.2fr 1.2fr auto;
+    gap: 0.85rem;
     align-items: flex-end;
 }
 
@@ -243,6 +255,12 @@
     text-transform: uppercase;
 }
 
+.badge-status.dikeluarkan {
+    background: #ecfdf5;
+    color: #047857;
+    border: 1px solid #a7f3d0;
+}
+
 .badge-status.terkirim {
     background: #e0f2fe;
     color: #0369a1;
@@ -256,6 +274,7 @@
 .badge-status.batal {
     background: #fef2f2;
     color: #dc2626;
+    border: 1px solid #fecaca;
 }
 
 .badge-klasifikasi {

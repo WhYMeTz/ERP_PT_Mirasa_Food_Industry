@@ -21,7 +21,26 @@ class LiniProduksiService
             $query->search($search);
         }
 
-        return $query->orderBy('lini_id', 'asc')->paginate($perPage);
+        return $query->orderByDesc('active_st')->orderBy('lini_id', 'asc')->paginate($perPage);
+    }
+
+    /**
+     * Mengubah status aktif / nonaktif (toggle) lini produksi via DB Transaction.
+     */
+    public function toggleStatus(int $id): MstLiniProduksi
+    {
+        return DB::transaction(function () use ($id) {
+            $lini = MstLiniProduksi::findOrFail($id);
+            $newStatus = !$lini->active_st;
+            $userName = Auth::user()?->nama_lengkap ?? 'System';
+
+            $lini->update([
+                'active_st'  => $newStatus,
+                'updated_by' => $userName,
+            ]);
+
+            return $lini->fresh();
+        });
     }
 
     /**

@@ -110,7 +110,7 @@ function openDeleteBarangModal(id, code, name) {
 /**
  * Buka modal edit barang dan isi nilainya
  */
-function editBarang(id, kode, nama, jenisId, satuanDasarId, satuanBesarId, konversi, batasMin, hargaStandar) {
+function editBarang(id, kode, nama, jenisId, satuanDasarId, satuanBesarId, konversi, batasMin, hargaStandar, hargaJual, hargaIdmAlfa, hargaMidi, hargaSmg, hargaCkl) {
     const elKode = document.getElementById('edit_barang_cd');
     const elNama = document.getElementById('edit_barang_nm');
     const elJenis = document.getElementById('edit_jenis_barang_id');
@@ -119,6 +119,11 @@ function editBarang(id, kode, nama, jenisId, satuanDasarId, satuanBesarId, konve
     const elKonversi = document.getElementById('edit_konversi_qty');
     const elBatasMin = document.getElementById('edit_batas_minimum_qty');
     const elHargaStandar = document.getElementById('edit_harga_beli_standar');
+    const elHargaJual = document.getElementById('edit_harga_jual');
+    const elHargaIdmAlfa = document.getElementById('edit_harga_jual_idm_alfa');
+    const elHargaMidi = document.getElementById('edit_harga_jual_alfamidi');
+    const elHargaSmg = document.getElementById('edit_harga_jual_ifm_smg');
+    const elHargaCkl = document.getElementById('edit_harga_jual_ifm_ckl');
     const elId = document.getElementById('edit_barang_id');
     const formEdit = document.getElementById('formEditBarang');
 
@@ -129,7 +134,12 @@ function editBarang(id, kode, nama, jenisId, satuanDasarId, satuanBesarId, konve
     if (elSatuanBesar) elSatuanBesar.value = satuanBesarId || '';
     if (elKonversi) elKonversi.value = konversi;
     if (elBatasMin) elBatasMin.value = batasMin || 0;
-    if (elHargaStandar) elHargaStandar.value = hargaStandar || 0;
+    if (elHargaStandar) elHargaStandar.value = parseFloat(hargaStandar) > 0 ? parseFloat(hargaStandar) : '';
+    if (elHargaJual) elHargaJual.value = parseFloat(hargaJual) > 0 ? parseFloat(hargaJual) : '';
+    if (elHargaIdmAlfa) elHargaIdmAlfa.value = parseFloat(hargaIdmAlfa) > 0 ? parseFloat(hargaIdmAlfa) : '';
+    if (elHargaMidi) elHargaMidi.value = parseFloat(hargaMidi) > 0 ? parseFloat(hargaMidi) : '';
+    if (elHargaSmg) elHargaSmg.value = parseFloat(hargaSmg) > 0 ? parseFloat(hargaSmg) : '';
+    if (elHargaCkl) elHargaCkl.value = parseFloat(hargaCkl) > 0 ? parseFloat(hargaCkl) : '';
     if (elId) elId.value = id;
 
     const baseUrl = window.masterBarangBaseUrl || '/master-barang';

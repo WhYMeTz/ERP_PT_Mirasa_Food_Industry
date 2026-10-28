@@ -5,7 +5,24 @@
  * ══════════════════════════════════════════════════════════════════════════
  */
 
-function openConfirmDeliveryModal(soId, soNo, customerNm) {
+// Auto-open PDF jika ada session auto_open_pdf dari controller setelah konfirmasi kirim
+document.addEventListener('DOMContentLoaded', function() {
+    if (window.appConfig && window.appConfig.autoOpenPdf) {
+        window.open(window.appConfig.autoOpenPdf, '_blank');
+    }
+});
+
+function openModalArmada() {
+    const modal = document.getElementById('modalUpdateArmada');
+    if (modal) modal.style.display = 'flex';
+}
+
+function closeModalArmada() {
+    const modal = document.getElementById('modalUpdateArmada');
+    if (modal) modal.style.display = 'none';
+}
+
+function openConfirmDeliveryModal(soId, soNo, customerNm, supirNm, nopol) {
     const modal = document.getElementById('modalConfirmDelivery');
     if (!modal) return;
 
@@ -21,6 +38,15 @@ function openConfirmDeliveryModal(soId, soNo, customerNm) {
     if (lblSoNo) lblSoNo.textContent = soNo;
     if (lblCust) lblCust.textContent = customerNm;
     if (tglInput) tglInput.value = new Date().toISOString().split('T')[0];
+
+    if (supirNm !== undefined) {
+        const supirInput = document.getElementById('deliverySupirInput');
+        if (supirInput) supirInput.value = supirNm || '';
+    }
+    if (nopol !== undefined) {
+        const nopolInput = document.getElementById('deliveryNopolInput');
+        if (nopolInput) nopolInput.value = nopol || '';
+    }
 
     modal.style.display = 'flex';
 }
@@ -146,6 +172,8 @@ function togglePrintMenu(e) {
     dropdown.style.display = isShown ? 'none' : 'block';
 }
 
+
+
 // Tutup modal / dropdown saat klik overlay luar
 window.addEventListener('click', function(e) {
     const printDropdown = document.getElementById('printMenuDropdown');
@@ -159,6 +187,7 @@ window.addEventListener('click', function(e) {
     const modalPayment = document.getElementById('modalRecordPayment');
     const modalRetur = document.getElementById('modalReturPenjualan');
     const modalVoidRetur = document.getElementById('modalVoidRetur');
+    const modalArmada = document.getElementById('modalUpdateArmada');
 
     if (e.target === modalDelivery) closeConfirmDeliveryModal();
     if (e.target === modalVoid) closeVoidDeliveryModal();
@@ -166,6 +195,7 @@ window.addEventListener('click', function(e) {
     if (e.target === modalPayment) closeRecordPaymentModal();
     if (e.target === modalRetur) closeReturModal();
     if (e.target === modalVoidRetur) closeVoidReturModal();
+    if (e.target === modalArmada) closeModalArmada();
 });
 
 

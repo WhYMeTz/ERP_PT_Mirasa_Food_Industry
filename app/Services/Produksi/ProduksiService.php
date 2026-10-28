@@ -167,12 +167,19 @@ class ProduksiService
                 $dayTkTotalNilai = (float) $dayRecords->sum('tk_total_nilai');
 
                 $dayBumbuNilai = (float) $dayRecords->sum('bumbu_nilai');
+                $dayBumbuQty = (float) $dayRecords->sum('bumbu_qty');
                 $dayKartonBaru = (float) $dayRecords->sum('karton_baru_nilai');
+                $dayKartonBaruQty = (float) $dayRecords->sum('karton_baru_qty');
                 $dayKartonBekas = (float) $dayRecords->sum('karton_bekas_nilai');
+                $dayKartonBekasQty = (float) $dayRecords->sum('karton_bekas_qty');
                 $dayPlastikHd = (float) $dayRecords->sum('plastik_hd_nilai');
+                $dayPlastikHdQty = (float) $dayRecords->sum('plastik_hd_qty');
                 $dayLakbanBesar = (float) $dayRecords->sum('lakban_besar_nilai');
+                $dayLakbanBesarQty = (float) $dayRecords->sum('lakban_besar_qty');
                 $dayLakbanKecil = (float) $dayRecords->sum('lakban_kecil_nilai');
+                $dayLakbanKecilQty = (float) $dayRecords->sum('lakban_kecil_qty');
                 $dayTaliRafia = (float) $dayRecords->sum('tali_rafia_nilai');
+                $dayTaliRafiaQty = (float) $dayRecords->sum('tali_rafia_qty');
 
                 $dayFotocopy = (float) $dayRecords->sum('fotocopy_nilai');
                 $daySarungPlastik = (float) $dayRecords->sum('sarung_tangan_plastik_nilai');
@@ -332,12 +339,19 @@ class ProduksiService
                     'tk_tidak_langsung_org'       => $dayTkTidakLangsung,
                     'tk_training_org'             => $dayTkTraining,
                     'tk_total_nilai'              => $dayTkTotalNilai,
+                    'bumbu_qty'                   => $dayBumbuQty,
                     'bumbu_nilai'                 => $dayBumbuNilai,
+                    'karton_baru_qty'             => $dayKartonBaruQty,
                     'karton_baru_nilai'           => $dayKartonBaru,
+                    'karton_bekas_qty'            => $dayKartonBekasQty,
                     'karton_bekas_nilai'          => $dayKartonBekas,
+                    'plastik_hd_qty'              => $dayPlastikHdQty,
                     'plastik_hd_nilai'            => $dayPlastikHd,
+                    'lakban_besar_qty'            => $dayLakbanBesarQty,
                     'lakban_besar_nilai'          => $dayLakbanBesar,
+                    'lakban_kecil_qty'            => $dayLakbanKecilQty,
                     'lakban_kecil_nilai'          => $dayLakbanKecil,
+                    'tali_rafia_qty'              => $dayTaliRafiaQty,
                     'tali_rafia_nilai'            => $dayTaliRafia,
                     'fotocopy_nilai'              => $dayFotocopy,
                     'sarung_tangan_plastik_nilai' => $daySarungPlastik,
@@ -399,12 +413,19 @@ class ProduksiService
                     'tk_tidak_langsung_org'       => 0,
                     'tk_training_org'             => 0,
                     'tk_total_nilai'              => 0,
+                    'bumbu_qty'                   => 0,
                     'bumbu_nilai'                 => 0,
+                    'karton_baru_qty'             => 0,
                     'karton_baru_nilai'           => 0,
+                    'karton_bekas_qty'            => 0,
                     'karton_bekas_nilai'          => 0,
+                    'plastik_hd_qty'              => 0,
                     'plastik_hd_nilai'            => 0,
+                    'lakban_besar_qty'            => 0,
                     'lakban_besar_nilai'          => 0,
+                    'lakban_kecil_qty'            => 0,
                     'lakban_kecil_nilai'          => 0,
+                    'tali_rafia_qty'              => 0,
                     'tali_rafia_nilai'            => 0,
                     'fotocopy_nilai'              => 0,
                     'sarung_tangan_plastik_nilai' => 0,
@@ -790,14 +811,21 @@ class ProduksiService
             'minyak_sawit_qty'   => 0,
             'minyak_kelapa_qty'  => 0,
             'minyak_nilai'       => 0,
+            'bumbu_qty'          => 0,
             'bumbu_nilai'        => 0,
             'berko_bahan_qty'    => 0,
             'berko_bahan_nilai'  => 0,
+            'karton_baru_qty'             => 0,
             'karton_baru_nilai'           => 0,
+            'karton_bekas_qty'            => 0,
             'karton_bekas_nilai'          => 0,
+            'plastik_hd_qty'              => 0,
             'plastik_hd_nilai'            => 0,
+            'lakban_besar_qty'            => 0,
             'lakban_besar_nilai'          => 0,
+            'lakban_kecil_qty'            => 0,
             'lakban_kecil_nilai'          => 0,
+            'tali_rafia_qty'              => 0,
             'tali_rafia_nilai'            => 0,
             'sarung_tangan_plastik_nilai' => 0,
             'sarung_tangan_plastik_qty'   => 0,
@@ -854,11 +882,14 @@ class ProduksiService
                 }
                 $summary['minyak_nilai'] += $subtotal;
             } elseif (str_contains($nm, 'BUMBU') || str_contains($nm, 'PERENYAH') || str_contains($nm, 'GARAM') || str_contains($nm, 'SEASONING')) {
+                $summary['bumbu_qty'] += $qty;
                 $summary['bumbu_nilai'] += $subtotal;
             } elseif (str_contains($nm, 'KARTON') || str_contains($nm, 'BOX')) {
                 if (str_contains($nm, 'BEKAS')) {
+                    $summary['karton_bekas_qty'] += $qty;
                     $summary['karton_bekas_nilai'] += $subtotal;
                 } else {
+                    $summary['karton_baru_qty'] += $qty;
                     $summary['karton_baru_nilai'] += $subtotal;
                 }
                 $kartonCount += (int) $qty;
@@ -871,14 +902,18 @@ class ProduksiService
                     $summary['sarung_tangan_plastik_qty'] += $qty;
                 }
             } elseif (str_contains($nm, 'PLASTIK') || str_contains($nm, 'HD')) {
+                $summary['plastik_hd_qty'] += $qty;
                 $summary['plastik_hd_nilai'] += $subtotal;
             } elseif (str_contains($nm, 'LAKBAN')) {
                 if (str_contains($nm, 'KECIL')) {
+                    $summary['lakban_kecil_qty'] += $qty;
                     $summary['lakban_kecil_nilai'] += $subtotal;
                 } else {
+                    $summary['lakban_besar_qty'] += $qty;
                     $summary['lakban_besar_nilai'] += $subtotal;
                 }
             } elseif (str_contains($nm, 'TALI') || str_contains($nm, 'RAFIA')) {
+                $summary['tali_rafia_qty'] += $qty;
                 $summary['tali_rafia_nilai'] += $subtotal;
             }
         }
@@ -1101,12 +1136,19 @@ class ProduksiService
             'minyak_kelapa_qty'           => $minyakKelapaQty,
             'minyak_nilai'                => $minyakNilai,
             'minyak_rasio_persen'         => round($minyakRasioPersen, 2),
+            'bumbu_qty'                   => (float) ($data['bumbu_qty'] ?? 0),
             'bumbu_nilai'                 => $bumbuNilai,
+            'karton_baru_qty'             => (float) ($data['karton_baru_qty'] ?? 0),
             'karton_baru_nilai'           => $kartonBaruNilai,
+            'karton_bekas_qty'            => (float) ($data['karton_bekas_qty'] ?? 0),
             'karton_bekas_nilai'          => $kartonBekasNilai,
+            'plastik_hd_qty'              => (float) ($data['plastik_hd_qty'] ?? 0),
             'plastik_hd_nilai'            => $plastikHdNilai,
+            'lakban_besar_qty'            => (float) ($data['lakban_besar_qty'] ?? 0),
             'lakban_besar_nilai'          => $lakbanBesarNilai,
+            'lakban_kecil_qty'            => (float) ($data['lakban_kecil_qty'] ?? 0),
             'lakban_kecil_nilai'          => $lakbanKecilNilai,
+            'tali_rafia_qty'              => (float) ($data['tali_rafia_qty'] ?? 0),
             'tali_rafia_nilai'            => $taliRafiaNilai,
             'total_bahan_nilai'           => $totalBahanNilai,
             'cng_mmbtu'                   => $cngMmbtu,
@@ -1119,7 +1161,9 @@ class ProduksiService
             'tk_tarif_per_org'            => $tkTarif,
             'tk_total_nilai'              => $tkTotalNilai,
             'fotocopy_nilai'              => $fotocopy,
+            'sarung_tangan_plastik_qty'   => (float) ($data['sarung_tangan_plastik_qty'] ?? 0),
             'sarung_tangan_plastik_nilai' => $sarungPlastik,
+            'sarung_tangan_kain_qty'      => (float) ($data['sarung_tangan_kain_qty'] ?? 0),
             'sarung_tangan_kain_nilai'    => $sarungKain,
             'qc_pengawasan_nilai'         => $qc,
             'listrik_air_telp_nilai'      => $listrik,
@@ -1854,6 +1898,9 @@ class ProduksiService
 
             $oldTotalBiaya = (float) $produksi->total_biaya_produksi;
             $oldHppPerKg = (float) $produksi->hpp_per_kg;
+            $oldTotalWip = (float) $produksi->total_wip_qty;
+            $oldSingkongQty = (float) $produksi->singkong_qty;
+            $oldRendemen = (float) $produksi->rendemen_persen;
 
             $alasan = trim($data['alasan_txt'] ?? '');
             if (strlen($alasan) < 5) {
@@ -1864,7 +1911,221 @@ class ProduksiService
             $changedFields = [];
             $kategoriList = [];
 
-            // Definisi 20 Seluruh Komponen Biaya Pabrik (Standar Akuntansi Biaya Manufaktur PT Mirasa)
+            // 1. KOREKSI KUANTITAS OUTPUT HASIL PRODUKSI (WIP)
+            $newTotalWip = $oldTotalWip;
+            $hasOutputAdjustment = false;
+            if (!empty($data['output_items']) && is_array($data['output_items'])) {
+                $accumulatedWip = 0;
+                foreach ($produksi->outputs as $out) {
+                    $outId = $out->output_id;
+                    if (isset($data['output_items'][$outId]['qty_kg'])) {
+                        $newQtyKg = round((float) $data['output_items'][$outId]['qty_kg'], 4);
+                        $oldQtyKg = round((float) $out->qty_kg, 4);
+                        $accumulatedWip += $newQtyKg;
+
+                        if (abs($newQtyKg - $oldQtyKg) > 0.0001) {
+                            $barangNm = $out->barang?->barang_nm ?? ($out->kategori_output ?? "Output #{$outId}");
+                            $changedFields["output_item_{$outId}"] = [
+                                'label' => "Output {$barangNm}",
+                                'old'   => $oldQtyKg,
+                                'new'   => $newQtyKg,
+                                'unit'  => 'Kg',
+                                'type'  => 'QUANTITY',
+                                'group' => 'OUTPUT',
+                            ];
+                            $kategoriList[] = 'OUTPUT';
+                            $hasOutputAdjustment = true;
+
+                            // Update kuantitas output pada baris
+                            $diffQty = $newQtyKg - $oldQtyKg;
+                            $out->qty_kg = $newQtyKg;
+                            $out->qty_hasil = $newQtyKg;
+                            $out->version_no = ((int) $out->version_no) + 1;
+                            $out->updated_by = $userId;
+                            $out->save();
+
+                            // Perbarui kuantitas fisik batch stok gudang jika berstatus POSTED
+                            if (!empty($out->batch_no)) {
+                                $stokBatch = DatStokBatch::where('barang_id', $out->barang_id)
+                                    ->where('batch_no', $out->batch_no)
+                                    ->where('deleted_st', false)
+                                    ->first();
+                                if ($stokBatch) {
+                                    $stokBatch->masuk_qty = (float) $stokBatch->masuk_qty + $diffQty;
+                                    $stokBatch->sisa_qty = max(0, (float) $stokBatch->sisa_qty + $diffQty);
+                                    $stokBatch->updated_by = $userId;
+                                    $stokBatch->save();
+                                }
+                            }
+                        }
+                    } else {
+                        $accumulatedWip += (float) $out->qty_kg;
+                    }
+                }
+                if ($hasOutputAdjustment || $accumulatedWip > 0) {
+                    $newTotalWip = $accumulatedWip;
+                }
+            } elseif (isset($data['total_wip_qty']) && $data['total_wip_qty'] !== '') {
+                $inputTotalWip = round((float) $data['total_wip_qty'], 4);
+                if (abs($inputTotalWip - $oldTotalWip) > 0.0001) {
+                    $changedFields['total_wip_qty'] = [
+                        'label' => 'Total Output Hasil WIP',
+                        'old'   => $oldTotalWip,
+                        'new'   => $inputTotalWip,
+                        'unit'  => 'Kg',
+                        'type'  => 'QUANTITY',
+                        'group' => 'OUTPUT',
+                    ];
+                    $kategoriList[] = 'OUTPUT';
+                    $newTotalWip = $inputTotalWip;
+
+                    // Jika output tunggal, sinkronkan langsung ke output item
+                    if ($produksi->outputs && $produksi->outputs->count() === 1) {
+                        $singleOut = $produksi->outputs->first();
+                        $diffQty = $newTotalWip - (float) $singleOut->qty_kg;
+                        $singleOut->qty_kg = $newTotalWip;
+                        $singleOut->qty_hasil = $newTotalWip;
+                        $singleOut->version_no = ((int) $singleOut->version_no) + 1;
+                        $singleOut->updated_by = $userId;
+                        $singleOut->save();
+
+                        if (!empty($singleOut->batch_no)) {
+                            $stokBatch = DatStokBatch::where('barang_id', $singleOut->barang_id)
+                                ->where('batch_no', $singleOut->batch_no)
+                                ->where('deleted_st', false)
+                                ->first();
+                            if ($stokBatch) {
+                                $stokBatch->masuk_qty = (float) $stokBatch->masuk_qty + $diffQty;
+                                $stokBatch->sisa_qty = max(0, (float) $stokBatch->sisa_qty + $diffQty);
+                                $stokBatch->updated_by = $userId;
+                                $stokBatch->save();
+                            }
+                        }
+                    }
+                }
+            }
+            $produksi->total_wip_qty = $newTotalWip;
+
+            // 2. KOREKSI KUANTITAS KOMPONEN BIAYA INPUT (Singkong, Minyak, Bumbu, Kemasan, Energi, Tenaga Kerja, APD)
+            $qtyDefinitions = [
+                // BBL
+                'singkong_qty' => [
+                    'label' => 'Kuantitas Singkong Mentah Basah',
+                    'unit'  => 'Kg',
+                    'group' => 'BBL',
+                    'precision' => 4,
+                ],
+                'minyak_qty' => [
+                    'label' => 'Kuantitas Minyak Goreng Terpakai',
+                    'unit'  => 'Kg',
+                    'group' => 'BBL',
+                    'precision' => 4,
+                    'target_column' => 'minyak_sawit_qty',
+                    'old_val_fn' => function($prod) {
+                        return (float) ($prod->minyak_sawit_qty + $prod->minyak_kelapa_qty);
+                    }
+                ],
+                'bumbu_qty' => [
+                    'label' => 'Kuantitas Bumbu & Perenyah',
+                    'unit'  => 'Kg',
+                    'group' => 'BBL',
+                    'precision' => 4,
+                ],
+
+                // Kemasan & Packing
+                'karton_baru_qty' => [
+                    'label' => 'Kuantitas Karton Box Baru',
+                    'unit'  => 'Pcs Box',
+                    'group' => 'KEMASAN',
+                    'precision' => 2,
+                ],
+                'karton_bekas_qty' => [
+                    'label' => 'Kuantitas Karton Box Bekas',
+                    'unit'  => 'Pcs Box',
+                    'group' => 'KEMASAN',
+                    'precision' => 2,
+                ],
+                'plastik_hd_qty' => [
+                    'label' => 'Kuantitas Plastik HD / Inner Bag',
+                    'unit'  => 'Roll / Kg',
+                    'group' => 'KEMASAN',
+                    'precision' => 2,
+                ],
+                'lakban_besar_qty' => [
+                    'label' => 'Kuantitas Lakban Coklat Besar',
+                    'unit'  => 'Roll',
+                    'group' => 'KEMASAN',
+                    'precision' => 2,
+                ],
+                'lakban_kecil_qty' => [
+                    'label' => 'Kuantitas Lakban Bening Kecil',
+                    'unit'  => 'Roll',
+                    'group' => 'KEMASAN',
+                    'precision' => 2,
+                ],
+                'tali_rafia_qty' => [
+                    'label' => 'Kuantitas Tali Rafia / Strapping',
+                    'unit'  => 'Roll',
+                    'group' => 'KEMASAN',
+                    'precision' => 2,
+                ],
+
+                // Tenaga Kerja & Energi
+                'cng_mmbtu' => [
+                    'label' => 'Konsumsi Gas Alam (CNG)',
+                    'unit'  => 'MMBTU',
+                    'group' => 'ENERGI',
+                    'precision' => 4,
+                ],
+                'tk_jumlah_org' => [
+                    'label' => 'Jumlah Tenaga Kerja Hadir',
+                    'unit'  => 'Orang',
+                    'group' => 'BTKL',
+                    'precision' => 0,
+                ],
+
+                // APD Overhead (FOH)
+                'sarung_tangan_plastik_qty' => [
+                    'label' => 'Kuantitas Sarung Tangan Plastik',
+                    'unit'  => 'Pcs / Box',
+                    'group' => 'FOH',
+                    'precision' => 2,
+                ],
+                'sarung_tangan_kain_qty' => [
+                    'label' => 'Kuantitas Sarung Tangan Kain',
+                    'unit'  => 'Pasang',
+                    'group' => 'FOH',
+                    'precision' => 2,
+                ],
+            ];
+
+            foreach ($qtyDefinitions as $qKey => $qDef) {
+                if (isset($data[$qKey]) && $data[$qKey] !== '') {
+                    $newQty = round((float) $data[$qKey], $qDef['precision'] ?? 2);
+                    $oldQty = isset($qDef['old_val_fn'])
+                        ? round((float) $qDef['old_val_fn']($produksi), $qDef['precision'] ?? 2)
+                        : round((float) ($produksi->$qKey ?? 0), $qDef['precision'] ?? 2);
+
+                    if (abs($newQty - $oldQty) > 0.0001) {
+                        $changedFields[$qKey] = [
+                            'label' => $qDef['label'],
+                            'old'   => $oldQty,
+                            'new'   => $newQty,
+                            'unit'  => $qDef['unit'],
+                            'type'  => 'QUANTITY',
+                            'group' => $qDef['group'],
+                        ];
+                        $targetCol = $qDef['target_column'] ?? $qKey;
+                        $produksi->$targetCol = $newQty;
+                        if ($qKey === 'tk_jumlah_org') {
+                            $produksi->tk_langsung_org = (int) $newQty;
+                        }
+                        $kategoriList[] = $qDef['group'];
+                    }
+                }
+            }
+
+            // 3. KOREKSI 20 KOMPONEN NILAI NOMINAL
             $fieldDefinitions = [
                 // 1. Biaya Bahan Baku Langsung (BBL)
                 'singkong_nilai'              => ['label' => 'Bahan Baku Singkong Mentah', 'group' => 'BBL'],
@@ -1897,7 +2158,7 @@ class ProduksiService
                 'limbah_kimia_nilai'          => ['label' => 'Pengolahan Limbah Kimia Pabrik', 'group' => 'FOH'],
             ];
 
-            // Deteksi perubahan pada seluruh komponen
+            // Deteksi perubahan pada seluruh komponen nominal
             foreach ($fieldDefinitions as $fieldKey => $fDef) {
                 if (isset($data[$fieldKey])) {
                     $newVal = round((float) $data[$fieldKey], 2);
@@ -1908,6 +2169,7 @@ class ProduksiService
                             'label' => $fDef['label'],
                             'old'   => $oldVal,
                             'new'   => $newVal,
+                            'type'  => 'NOMINAL',
                             'group' => $fDef['group'],
                         ];
                         $produksi->$fieldKey = $newVal;
@@ -1917,16 +2179,10 @@ class ProduksiService
             }
 
             if (empty($changedFields)) {
-                throw new Exception("Tidak ada perubahan nilai nominal biaya yang terdeteksi.");
+                throw new Exception("Tidak ada perubahan nilai nominal biaya maupun kuantitas yang terdeteksi.");
             }
 
-            // Hitung akumulasi total selisih biaya dari seluruh komponen yang disesuaikan
-            $selisihBiaya = 0;
-            foreach ($changedFields as $cf) {
-                $selisihBiaya += ((float) $cf['new'] - (float) $cf['old']);
-            }
-
-            // Rekalkulasi Subtotal Bahan Baku & Kemasan
+            // 4. REKALKULASI SUB-TOTAL BIAYA & METRIK MANUFAKTUR
             $produksi->total_bahan_nilai = (float) $produksi->singkong_nilai +
                 (float) $produksi->minyak_nilai +
                 (float) $produksi->bumbu_nilai +
@@ -1937,7 +2193,6 @@ class ProduksiService
                 (float) $produksi->lakban_kecil_nilai +
                 (float) $produksi->tali_rafia_nilai;
 
-            // Rekalkulasi Subtotal Overhead Pabrik (FOH)
             $produksi->total_overhead_nilai = (float) $produksi->fotocopy_nilai +
                 (float) $produksi->sarung_tangan_plastik_nilai +
                 (float) $produksi->sarung_tangan_kain_nilai +
@@ -1948,7 +2203,7 @@ class ProduksiService
                 (float) $produksi->limbah_padat_nilai +
                 (float) $produksi->limbah_kimia_nilai;
 
-            // Rekalkulasi Total Biaya Produksi: Bahan + CNG + TK + FOH
+            // Total Biaya Produksi: Bahan + CNG + TK + FOH
             $newTotalBiaya = round(
                 (float) $produksi->total_bahan_nilai +
                 (float) $produksi->cng_nilai +
@@ -1957,14 +2212,22 @@ class ProduksiService
                 2
             );
             $produksi->total_biaya_produksi = $newTotalBiaya;
+            $selisihBiaya = $newTotalBiaya - $oldTotalBiaya;
 
-            // Rekalkulasi HPP per Kg
+            // Rekalkulasi Rendemen Singkong (%) = (Total WIP Qty / Singkong Qty) * 100%
+            $effectiveSingkong = (float) $produksi->singkong_qty;
+            $produksi->rendemen_persen = $effectiveSingkong > 0 
+                ? round(($produksi->total_wip_qty / $effectiveSingkong) * 100, 2) 
+                : 0;
+
+            // Rekalkulasi HPP per Kg = Total Biaya / Total WIP Qty
             $effectiveWip = (float) $produksi->total_wip_qty;
-            if ($effectiveWip <= 0 && $produksi->outputs) {
+            if ($effectiveWip <= 0 && $produksi->outputs && $produksi->outputs->isNotEmpty()) {
                 $effectiveWip = (float) $produksi->outputs->sum('qty_kg');
             }
             $newHppPerKg = $effectiveWip > 0 ? round($newTotalBiaya / $effectiveWip, 2) : 0;
             $produksi->hpp_per_kg = $newHppPerKg;
+            $selisihHpp = $newHppPerKg - $oldHppPerKg;
 
             // Update version_no & audit
             $produksi->version_no = ((int) $produksi->version_no) + 1;
@@ -1983,7 +2246,6 @@ class ProduksiService
 
             $kategoriUnique = array_values(array_unique($kategoriList));
             $kategoriStr = count($kategoriUnique) === 1 ? $kategoriUnique[0] : (count($kategoriUnique) > 1 ? 'MULTI' : 'LAINNYA');
-            $selisihHpp = $newHppPerKg - $oldHppPerKg;
 
             // Simpan ke Log Audit Trail Akuntansi
             $log = DatProduksiAdjustmentLog::create([
@@ -2003,7 +2265,7 @@ class ProduksiService
                 'updated_by'           => $userId,
             ]);
 
-            // Sinkronisasi otomatis ke detail output dan kartu stok gudang
+            // Sinkronisasi otomatis HPP satuan ke detail output dan kartu stok gudang
             foreach ($produksi->outputs as $out) {
                 $out->hpp_satuan = $newHppPerKg;
                 $out->total_nilai = round((float) $out->qty_hasil * $newHppPerKg, 2);

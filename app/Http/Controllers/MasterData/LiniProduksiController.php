@@ -128,4 +128,27 @@ class LiniProduksiController extends Controller
             ->route('master.lini_produksi.index')
             ->with('success', 'Data lini produksi berhasil dinonaktifkan.');
     }
+
+    /**
+     * Mengubah status aktif / nonaktif (toggle) lini produksi via AJAX / Form.
+     */
+    public function toggleStatus(Request $request, int $id): RedirectResponse|JsonResponse
+    {
+        abort_unless($request->user()->canEditMasterLiniProduksi(), 403, 'Anda tidak memiliki hak akses untuk mengubah status lini produksi.');
+
+        $lini = $this->liniService->toggleStatus($id);
+        $statusText = $lini->active_st ? 'diaktifkan' : 'dinonaktifkan';
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success'   => true,
+                'message'   => "Lini produksi '{$lini->lini_nm}' berhasil {$statusText}.",
+                'active_st' => (bool) $lini->active_st,
+            ]);
+        }
+
+        return redirect()
+            ->back()
+            ->with('success', "Status lini produksi '{$lini->lini_nm}' berhasil {$statusText}.");
+    }
 }

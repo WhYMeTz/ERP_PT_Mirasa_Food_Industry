@@ -34,11 +34,6 @@
             </a>
             <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
                 <h1 style="font-size: 1.5rem; font-weight: 700; color: #0f172a; margin: 0;">{{ $produksi->produksi_no }}</h1>
-                @if ($produksi->status_cd === 'POSTED')
-                    <span class="badge badge-success">Posted</span>
-                @else
-                    <span class="badge" style="background: #f1f5f9; color: #475569;">Draft</span>
-                @endif
             </div>
         </div>
 
@@ -309,14 +304,6 @@
                             {{ $tkTotal > 0 ? $tkTotal . ' Orang Hadir' : 'Standar Alokasi Shift' }}
                         </td>
                     </tr>
-                    @if(!empty($produksi->po_ifl_no) || !empty($produksi->po_buyer_ifl))
-                    <tr>
-                        <td class="label-col">PO Buyer / Pemesan IFL</td>
-                        <td class="value-col" style="color: #166534; font-weight: 700;">
-                            {{ $produksi->po_ifl_no ?: $produksi->po_buyer_ifl }}
-                        </td>
-                    </tr>
-                    @endif
                     @if(($produksi->waste_total_qty > 0) || ($produksi->waste_lengket_qty > 0) || ($produksi->total_berko_qty > 0) || ($produksi->berko_ifl_qty > 0) || ($produksi->berko_non_ifl_qty > 0))
                     <tr>
                         <td class="label-col">Limbah &amp; Waste (HACCP)</td>
@@ -637,27 +624,27 @@
                         </tr>
                         <tr>
                             <td style="padding-left: 1.5rem;">Karton Baru (FL)</td>
-                            <td>Kemasan karton baru box luar</td>
+                            <td>Kemasan karton baru box luar {{ (float) ($produksi->karton_baru_qty ?? 0) > 0 ? '(' . number_format($produksi->karton_baru_qty, 0, ',', '.') . ' Pcs)' : '' }}</td>
                             <td style="text-align: right; font-variant-numeric: tabular-nums;">Rp {{ number_format($produksi->karton_baru_nilai, 0, ',', '.') }}</td>
                         </tr>
                         <tr>
                             <td style="padding-left: 1.5rem;">Karton Bekas</td>
-                            <td>Kemasan karton daur ulang / karton packing alternatif</td>
+                            <td>Kemasan karton daur ulang / karton packing alternatif {{ (float) ($produksi->karton_bekas_qty ?? 0) > 0 ? '(' . number_format($produksi->karton_bekas_qty, 0, ',', '.') . ' Pcs)' : '' }}</td>
                             <td style="text-align: right; font-variant-numeric: tabular-nums;">Rp {{ number_format($produksi->karton_bekas_nilai, 0, ',', '.') }}</td>
                         </tr>
                         <tr>
                             <td style="padding-left: 1.5rem;">Plastik HD 90x100</td>
-                            <td>Plastik inner pelindung karton</td>
+                            <td>Plastik inner pelindung karton {{ (float) ($produksi->plastik_hd_qty ?? 0) > 0 ? '(' . number_format($produksi->plastik_hd_qty, 0, ',', '.') . ' Lbr)' : '' }}</td>
                             <td style="text-align: right; font-variant-numeric: tabular-nums;">Rp {{ number_format($produksi->plastik_hd_nilai, 0, ',', '.') }}</td>
                         </tr>
                         <tr>
                             <td style="padding-left: 1.5rem;">Lakban Besar &amp; Kecil</td>
-                            <td>Isolasi perekat penutup karton</td>
+                            <td>Isolasi perekat penutup karton {{ ((float) ($produksi->lakban_besar_qty ?? 0) > 0 || (float) ($produksi->lakban_kecil_qty ?? 0) > 0) ? '(' . number_format(($produksi->lakban_besar_qty ?? 0) + ($produksi->lakban_kecil_qty ?? 0), 0, ',', '.') . ' Roll)' : '' }}</td>
                             <td style="text-align: right; font-variant-numeric: tabular-nums;">Rp {{ number_format($produksi->lakban_besar_nilai + $produksi->lakban_kecil_nilai, 0, ',', '.') }}</td>
                         </tr>
                         <tr>
                             <td style="padding-left: 1.5rem;">Tali Rafia</td>
-                            <td>Pengikat packing karton</td>
+                            <td>Pengikat packing karton {{ (float) ($produksi->tali_rafia_qty ?? 0) > 0 ? '(' . number_format($produksi->tali_rafia_qty, 0, ',', '.') . ' Roll)' : '' }}</td>
                             <td style="text-align: right; font-variant-numeric: tabular-nums;">Rp {{ number_format($produksi->tali_rafia_nilai, 0, ',', '.') }}</td>
                         </tr>
                         <tr class="cost-group-subtotal" style="color: #0369a1;">
@@ -815,7 +802,11 @@
                                             Rincian: 
                                             @foreach($log->perubahan_field_json as $fKey => $fVal)
                                                 <span style="background: #f8fafc; padding: 1px 4px; border: 1px solid #e2e8f0; border-radius: 3px; margin-right: 3px;">
-                                                    {{ $fVal['label'] ?? $fKey }}: Rp {{ number_format($fVal['old'], 0, ',', '.') }} &rarr; Rp {{ number_format($fVal['new'], 0, ',', '.') }}
+                                                    @if(isset($fVal['type']) && $fVal['type'] === 'QUANTITY')
+                                                        {{ $fVal['label'] ?? $fKey }}: {{ number_format((float) ($fVal['old'] ?? 0), 2, ',', '.') }} {{ $fVal['unit'] ?? '' }} &rarr; {{ number_format((float) ($fVal['new'] ?? 0), 2, ',', '.') }} {{ $fVal['unit'] ?? '' }}
+                                                    @else
+                                                        {{ $fVal['label'] ?? $fKey }}: Rp {{ number_format((float) ($fVal['old'] ?? 0), 0, ',', '.') }} &rarr; Rp {{ number_format((float) ($fVal['new'] ?? 0), 0, ',', '.') }}
+                                                    @endif
                                                 </span>
                                             @endforeach
                                         </div>

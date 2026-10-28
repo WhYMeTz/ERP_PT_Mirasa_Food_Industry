@@ -8,6 +8,53 @@
     'use strict';
 
     /**
+     * Konfigurasi Pemetaan Kuantitas Input ke Field Nominal & Tarif Satuan
+     */
+    const qtyConfigMap = {
+        // 1. Bahan Baku Langsung (BBL)
+        'singkong_qty': { configKey: 'singkongQtyAwal', nominalKey: 'singkong_nilai', unit: 'Kg', precision: 2, fallbackPrice: 4500 },
+        'minyak_qty': { configKey: 'minyakQtyAwal', nominalKey: 'minyak_nilai', unit: 'Kg', precision: 2, fallbackPrice: 17500 },
+        'bumbu_qty': { configKey: 'bumbuQtyAwal', nominalKey: 'bumbu_nilai', unit: 'Kg', precision: 2, fallbackPrice: 35000 },
+
+        // 2. Kemasan & Packing (KMS)
+        'karton_baru_qty': { configKey: 'kartonBaruQtyAwal', nominalKey: 'karton_baru_nilai', unit: 'Pcs', precision: 0, fallbackPrice: 10000 },
+        'karton_bekas_qty': { configKey: 'kartonBekasQtyAwal', nominalKey: 'karton_bekas_nilai', unit: 'Pcs', precision: 0, fallbackPrice: 5000 },
+        'plastik_hd_qty': { configKey: 'plastikHdQtyAwal', nominalKey: 'plastik_hd_nilai', unit: 'Roll', precision: 2, fallbackPrice: 29400 },
+        'lakban_besar_qty': { configKey: 'lakbanBesarQtyAwal', nominalKey: 'lakban_besar_nilai', unit: 'Roll', precision: 2, fallbackPrice: 15000 },
+        'lakban_kecil_qty': { configKey: 'lakbanKecilQtyAwal', nominalKey: 'lakban_kecil_nilai', unit: 'Roll', precision: 2, fallbackPrice: 6140 },
+        'tali_rafia_qty': { configKey: 'taliRafiaQtyAwal', nominalKey: 'tali_rafia_nilai', unit: 'Roll', precision: 2, fallbackPrice: 10000 },
+
+        // 3. Tenaga Kerja & Energi
+        'tk_jumlah_org': { configKey: 'tkJumlahOrgAwal', nominalKey: 'tk_total_nilai', unit: 'Org', precision: 0, fallbackPrice: 150000 },
+        'cng_mmbtu': { configKey: 'cngMmbtuAwal', nominalKey: 'cng_nilai', unit: 'MMBTU', precision: 4, fallbackPrice: 450000 },
+
+        // 4. Overhead APD (FOH)
+        'sarung_tangan_plastik_qty': { configKey: 'sarungTanganPlastikQtyAwal', nominalKey: 'sarung_tangan_plastik_nilai', unit: 'Box', precision: 0, fallbackPrice: 25000 },
+        'sarung_tangan_kain_qty': { configKey: 'sarungTanganKainQtyAwal', nominalKey: 'sarung_tangan_kain_nilai', unit: 'Psg', precision: 0, fallbackPrice: 5000 },
+    };
+
+    /**
+     * Dapatkan Harga / Tarif Satuan Komponen Masukan
+     */
+    function getUnitPrice(key) {
+        const mapping = qtyConfigMap[key];
+        if (!mapping) return 0;
+        const cfg = window.adjProdConfig || {};
+
+        if (cfg.unitPrices && cfg.unitPrices[key] !== undefined) {
+            return parseFloat(cfg.unitPrices[key]) || 0;
+        }
+
+        const initQty = parseFloat(cfg[mapping.configKey]) || 0;
+        const initNominal = parseFloat(cfg[mapping.nominalKey]) || 0;
+        if (initQty > 0 && initNominal > 0) {
+            return initNominal / initQty;
+        }
+        return mapping.fallbackPrice || 0;
+    }
+    window.getUnitPrice = getUnitPrice;
+
+    /**
      * Filter Kategori Lembar Kerja Komponen Biaya
      */
     function filterAdjCategory(category, btnEl) {
@@ -19,11 +66,13 @@
         const rows = document.querySelectorAll('.adj-item-row');
         const headers = document.querySelectorAll('.adj-group-row');
         const subtotals = document.querySelectorAll('.adj-group-subtotal-row');
+        const subgroups = document.querySelectorAll('.adj-subgroup-row');
 
         if (category === 'all') {
             rows.forEach(r => r.style.display = '');
             headers.forEach(h => h.style.display = '');
             subtotals.forEach(s => s.style.display = '');
+            subgroups.forEach(sg => sg.style.display = '');
         } else {
             rows.forEach(r => {
                 r.style.display = (r.getAttribute('data-group') === category) ? '' : 'none';
@@ -33,6 +82,9 @@
             });
             subtotals.forEach(s => {
                 s.style.display = (s.getAttribute('data-group-subtotal') === category) ? '' : 'none';
+            });
+            subgroups.forEach(sg => {
+                sg.style.display = (sg.getAttribute('data-subgroup') === category) ? '' : 'none';
             });
         }
     }
@@ -53,33 +105,272 @@
     window.resetAdjField = resetAdjField;
 
     /**
-     * Reset Seluruh 20 Input Komponen ke Nilai Orisinal
+     * Reset Kuantitas 1 Baris Output WIP ke Nilai Awal
+     */
+    function resetAdjOutputField(outId) {
+        const cfg = window.adjProdConfig || {};
+        const items = cfg.outputItems || [];
+        const item = items.find(it => String(it.output_id) === String(outId));
+        const input = document.getElementById('input_adj_output_' + outId);
+        if (input && item) {
+            input.value = parseFloat(item.qty_kg).toFixed(2);
+            recalculateHppSimulation();
+        }
+    }
+    window.resetAdjOutputField = resetAdjOutputField;
+
+    /**
+     * Reset Kuantitas 1 Komponen Masukan ke Nilai Awal & Kembalikan Nominal Pasangannya
+     */
+    function resetAdjQtyField(fieldKey) {
+        const cfg = window.adjProdConfig || {};
+        const mapping = qtyConfigMap[fieldKey];
+        const input = document.getElementById('input_adj_' + fieldKey);
+        if (!input) return;
+
+        if (mapping) {
+            const initialVal = cfg[mapping.configKey] !== undefined ? cfg[mapping.configKey] : 0;
+            input.value = mapping.precision === 0 ? parseInt(initialVal) : parseFloat(initialVal).toFixed(mapping.precision);
+
+            // Juga kembalikan nominal pasangannya ke nilai awal orisinal dokumen
+            if (mapping.nominalKey) {
+                const nomInput = document.getElementById('input_adj_' + mapping.nominalKey);
+                if (nomInput && cfg[mapping.nominalKey] !== undefined) {
+                    nomInput.value = Math.round(cfg[mapping.nominalKey]);
+                }
+            }
+        }
+        recalculateHppSimulation();
+    }
+    window.resetAdjQtyField = resetAdjQtyField;
+
+    /**
+     * Reset Seluruh Parameter (Output WIP, Seluruh Kuantitas Masukan & 20 Komponen Biaya) ke Nilai Orisinal
      */
     function resetAllAdjFields() {
         const cfg = window.adjProdConfig || {};
+
+        // 1. Reset Nominal 20 Komponen Biaya
         document.querySelectorAll('.adj-calc-input').forEach(input => {
             const key = input.getAttribute('data-key');
             if (key && cfg[key] !== undefined) {
                 input.value = Math.round(cfg[key]);
             }
         });
+
+        // 2. Reset Output WIP Items
+        const items = cfg.outputItems || [];
+        document.querySelectorAll('.adj-calc-output-qty').forEach(input => {
+            const outId = input.getAttribute('data-out-id');
+            if (outId) {
+                const item = items.find(it => String(it.output_id) === String(outId));
+                if (item) {
+                    input.value = parseFloat(item.qty_kg).toFixed(2);
+                }
+            } else if (input.id === 'input_adj_total_wip_qty') {
+                input.value = parseFloat(cfg.totalWipQty || 0).toFixed(2);
+            }
+        });
+
+        // 3. Reset Seluruh Kuantitas Masukan (BBL, Kemasan, Energi, BTKL, FOH APD)
+        for (const [key, mapping] of Object.entries(qtyConfigMap)) {
+            const input = document.getElementById('input_adj_' + key);
+            if (input) {
+                const initialVal = cfg[mapping.configKey] !== undefined ? cfg[mapping.configKey] : 0;
+                input.value = mapping.precision === 0 ? parseInt(initialVal) : parseFloat(initialVal).toFixed(mapping.precision);
+            }
+        }
+
         recalculateHppSimulation();
     }
     window.resetAllAdjFields = resetAllAdjFields;
+
+    /**
+     * Format Angka Kuantitas
+     */
+    function formatQty(num, maxDecimals = 2) {
+        return new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: maxDecimals }).format(num);
+    }
+
+    /**
+     * Format Angka Persentase
+     */
+    function formatPercent(num) {
+        return new Intl.NumberFormat('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
+    }
+
+    /**
+     * Format Rupiah Bulat
+     */
+    function formatRupiahWhole(num) {
+        return new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(Math.round(num));
+    }
+
+    /**
+     * Format Rupiah Desimal Presisi (HPP)
+     */
+    function formatRupiahDecimal(num) {
+        return new Intl.NumberFormat('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
+    }
 
     /**
      * Kalkulasi Live Simulasi HPP Baru pada Lembar Kerja Penyesuaian
      */
     function recalculateHppSimulation() {
         const cfg = window.adjProdConfig || {};
-        const wipQty = parseFloat(cfg.totalWipQty) || 0;
+        const wipQtyAwal = parseFloat(cfg.totalWipQty) || 0;
         const biayaAwal = parseFloat(cfg.totalBiayaAwal) || 0;
         const hppAwal = parseFloat(cfg.hppAwal) || 0;
+        const singkongQtyAwal = parseFloat(cfg.singkongQtyAwal) || 0;
+        const rendemenAwal = parseFloat(cfg.rendemenAwal) || 0;
 
         let deltaTotal = 0;
         let changedCount = 0;
 
-        // Subtotal penampung
+        // --- A. KOREKSI KUANTITAS OUTPUT HASIL PRODUKSI (WIP) ---
+        let newTotalWip = 0;
+        const outputInputs = document.querySelectorAll('.adj-calc-output-qty[data-out-id]');
+        const singleWipInput = document.getElementById('input_adj_total_wip_qty');
+        const items = cfg.outputItems || [];
+
+        if (outputInputs.length > 0) {
+            outputInputs.forEach(input => {
+                const outId = input.getAttribute('data-out-id');
+                const newQty = parseFloat(input.value) || 0;
+                const item = items.find(it => String(it.output_id) === String(outId));
+                const initialQty = item ? parseFloat(item.qty_kg) : newQty;
+                const deltaOut = newQty - initialQty;
+
+                newTotalWip += newQty;
+
+                const badge = document.getElementById('badge_delta_output_' + outId);
+                const resetBtn = document.getElementById('btn_reset_output_' + outId);
+
+                if (badge) {
+                    if (deltaOut > 0.001) {
+                        badge.className = 'adj-variance-badge adj-variance-up';
+                        badge.textContent = '+' + formatQty(deltaOut, 2) + ' Kg';
+                    } else if (deltaOut < -0.001) {
+                        badge.className = 'adj-variance-badge adj-variance-down';
+                        badge.textContent = '-' + formatQty(Math.abs(deltaOut), 2) + ' Kg';
+                    } else {
+                        badge.className = 'adj-variance-badge adj-variance-zero';
+                        badge.textContent = '0 Kg';
+                    }
+                }
+
+                if (resetBtn) {
+                    resetBtn.style.display = Math.abs(deltaOut) > 0.001 ? 'inline-flex' : 'none';
+                }
+
+                if (Math.abs(deltaOut) > 0.001) {
+                    changedCount++;
+                }
+            });
+        } else if (singleWipInput) {
+            newTotalWip = parseFloat(singleWipInput.value) || 0;
+            const deltaWip = newTotalWip - wipQtyAwal;
+            const badge = document.getElementById('badge_delta_total_wip_qty');
+
+            if (badge) {
+                if (deltaWip > 0.001) {
+                    badge.className = 'adj-variance-badge adj-variance-up';
+                    badge.textContent = '+' + formatQty(deltaWip, 2) + ' Kg';
+                } else if (deltaWip < -0.001) {
+                    badge.className = 'adj-variance-badge adj-variance-down';
+                    badge.textContent = '-' + formatQty(Math.abs(deltaWip), 2) + ' Kg';
+                } else {
+                    badge.className = 'adj-variance-badge adj-variance-zero';
+                    badge.textContent = '0 Kg';
+                }
+            }
+
+            if (Math.abs(deltaWip) > 0.001) {
+                changedCount++;
+            }
+        } else {
+            newTotalWip = wipQtyAwal;
+        }
+
+        const deltaWipOverall = newTotalWip - wipQtyAwal;
+
+        // Update Ringkasan Output WIP di Card dan Footer
+        const summaryTotalWipBaruText = document.getElementById('summaryTotalWipBaruText');
+        const summaryDeltaWipBadge = document.getElementById('summaryDeltaWipBadge');
+        const simulasiWipFooter = document.getElementById('simulasiWipFooter');
+
+        if (summaryTotalWipBaruText) {
+            summaryTotalWipBaruText.textContent = formatQty(newTotalWip, 2) + ' Kg';
+        }
+        if (simulasiWipFooter) {
+            simulasiWipFooter.textContent = formatQty(newTotalWip, 2) + ' Kg';
+        }
+        if (summaryDeltaWipBadge) {
+            if (deltaWipOverall > 0.001) {
+                summaryDeltaWipBadge.className = 'adj-variance-badge adj-variance-up';
+                summaryDeltaWipBadge.textContent = '+' + formatQty(deltaWipOverall, 2) + ' Kg';
+            } else if (deltaWipOverall < -0.001) {
+                summaryDeltaWipBadge.className = 'adj-variance-badge adj-variance-down';
+                summaryDeltaWipBadge.textContent = '-' + formatQty(Math.abs(deltaWipOverall), 2) + ' Kg';
+            } else {
+                summaryDeltaWipBadge.className = 'adj-variance-badge adj-variance-zero';
+                summaryDeltaWipBadge.textContent = '0 Kg';
+            }
+        }
+
+        // --- B. KOREKSI SELURUH KUANTITAS MASUKAN (BBL, KEMASAN, ENERGI, BTKL, APD) ---
+        let currentSingkongQty = singkongQtyAwal;
+
+        for (const [key, mapping] of Object.entries(qtyConfigMap)) {
+            const input = document.getElementById('input_adj_' + key);
+            if (!input) continue;
+
+            const newVal = parseFloat(input.value) || 0;
+            const initialVal = parseFloat(cfg[mapping.configKey]) || 0;
+            const delta = newVal - initialVal;
+
+            if (key === 'singkong_qty') {
+                currentSingkongQty = newVal;
+            }
+
+            const badge = document.getElementById('badge_delta_qty_' + key);
+            const resetBtn = document.getElementById('btn_reset_qty_' + key);
+            const threshold = mapping.precision === 0 ? 0.0001 : (mapping.precision >= 4 ? 0.00005 : 0.001);
+
+            if (badge) {
+                if (delta > threshold) {
+                    badge.className = 'adj-variance-badge adj-variance-up';
+                    badge.textContent = '+' + formatQty(delta, mapping.precision) + ' ' + mapping.unit;
+                } else if (delta < -threshold) {
+                    badge.className = 'adj-variance-badge adj-variance-down';
+                    badge.textContent = '-' + formatQty(Math.abs(delta), mapping.precision) + ' ' + mapping.unit;
+                } else {
+                    badge.className = 'adj-variance-badge adj-variance-zero';
+                    badge.textContent = '0 ' + mapping.unit;
+                }
+            }
+
+            if (resetBtn) {
+                resetBtn.style.display = Math.abs(delta) > threshold ? 'inline-flex' : 'none';
+            }
+
+            if (Math.abs(delta) > threshold) {
+                changedCount++;
+            }
+        }
+
+        // --- C. LIVE SIMULASI RENDEMEN SINGKONG (%) ---
+        const rendemenBaru = (currentSingkongQty > 0) ? ((newTotalWip / currentSingkongQty) * 100) : rendemenAwal;
+        const summaryRendemenBaruText = document.getElementById('summaryRendemenBaruText');
+        const simulasiRendemenFooter = document.getElementById('simulasiRendemenFooter');
+        if (summaryRendemenBaruText) {
+            summaryRendemenBaruText.textContent = formatPercent(rendemenBaru) + '%';
+        }
+        if (simulasiRendemenFooter) {
+            simulasiRendemenFooter.textContent = formatPercent(rendemenBaru) + '%';
+        }
+
+        // --- D. LIVE SIMULASI NOMINAL BIAYA (20 KOMPONEN) ---
         let subtotalBbl = 0;
         let subtotalKms = 0;
         let subtotalEng = 0;
@@ -136,7 +427,7 @@
             }
         });
 
-        // Helper update badge variance
+        // Helper update badge variance subtotal
         function updateSubtotalBadge(badgeId, delta) {
             const badge = document.getElementById(badgeId);
             if (!badge) return;
@@ -181,13 +472,13 @@
         updateSubtotalBadge('subtotal_eng_delta', subtotalEng - engAwal);
         updateSubtotalBadge('subtotal_foh_delta', subtotalFoh - fohAwal);
 
-        // Hitung biaya baru dan HPP baru
+        // --- E. KALKULASI TOTAL BIAYA & HPP PER KG BARU ---
         const biayaBaru = Math.round((biayaAwal + deltaTotal) * 100) / 100;
-        const hppBaru = wipQty > 0 ? Math.round((biayaBaru / wipQty) * 100) / 100 : 0;
+        const hppBaru = newTotalWip > 0 ? Math.round((biayaBaru / newTotalWip) * 100) / 100 : 0;
         const deltaHpp = Math.round((hppBaru - hppAwal) * 100) / 100;
-        const totalValuasiDampak = Math.round(deltaHpp * wipQty);
+        const totalValuasiDampak = Math.round(deltaHpp * newTotalWip);
 
-        // Update panel ringkasan eksekutif
+        // Update panel ringkasan eksekutif & tabel footer
         const hppEl = document.getElementById('simulasiHppBaruText');
         const badgeEl = document.getElementById('simulasiSelisihHppBadge');
         const totalEl = document.getElementById('simulasiTotalBiayaBaruText');
@@ -245,12 +536,12 @@
         if (countBadge) {
             countBadge.style.display = 'inline-block';
             if (changedCount === 0) {
-                countBadge.textContent = '0 Komponen Diubah';
+                countBadge.textContent = '0 Parameter Diubah';
                 countBadge.style.color = '#64748b';
                 countBadge.style.background = '#f1f5f9';
                 countBadge.style.borderColor = '#e2e8f0';
             } else {
-                countBadge.textContent = changedCount + ' Komponen Diubah';
+                countBadge.textContent = changedCount + ' Parameter Diubah';
                 countBadge.style.color = '#0369a1';
                 countBadge.style.background = '#e0f2fe';
                 countBadge.style.borderColor = '#7dd3fc';
@@ -272,22 +563,42 @@
     }
     window.recalculateHppSimulation = recalculateHppSimulation;
 
-    function formatRupiahWhole(num) {
-        return new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(Math.round(num));
-    }
-
-    function formatRupiahDecimal(num) {
-        return new Intl.NumberFormat('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
-    }
-
     /**
      * Inisialisasi saat DOM siap
      */
     document.addEventListener('DOMContentLoaded', function () {
-        // Event input real-time untuk seluruh field kalkulasi
+        // Event input real-time untuk seluruh field kalkulasi nominal
         document.querySelectorAll('.adj-calc-input').forEach(input => {
             input.addEventListener('input', recalculateHppSimulation);
             input.addEventListener('change', recalculateHppSimulation);
+        });
+
+        // Event input real-time untuk kuantitas output hasil produksi
+        document.querySelectorAll('.adj-calc-output-qty').forEach(input => {
+            input.addEventListener('input', recalculateHppSimulation);
+            input.addEventListener('change', recalculateHppSimulation);
+        });
+
+        // Event input real-time untuk seluruh kuantitas masukan bahan & utilitas (Otomatis hitung nominal = Qty × Harga Satuan)
+        document.querySelectorAll('.adj-calc-qty-input').forEach(input => {
+            const handleQtyInput = function () {
+                const key = input.getAttribute('data-key');
+                const mapping = qtyConfigMap[key];
+                if (mapping && mapping.nominalKey) {
+                    const unitPrice = getUnitPrice(key);
+                    if (unitPrice > 0) {
+                        const newQty = parseFloat(input.value) || 0;
+                        const nomInput = document.getElementById('input_adj_' + mapping.nominalKey);
+                        if (nomInput) {
+                            nomInput.value = Math.round(newQty * unitPrice);
+                        }
+                    }
+                }
+                recalculateHppSimulation();
+            };
+
+            input.addEventListener('input', handleQtyInput);
+            input.addEventListener('change', handleQtyInput);
         });
 
         // Trigger kalkulasi awal untuk konsistensi nilai awal

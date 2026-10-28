@@ -120,6 +120,15 @@ document.addEventListener('DOMContentLoaded', function () {
             const soId = this.value;
             if (!soId) {
                 if (customerInfoBox) customerInfoBox.style.display = 'none';
+                const infoSjNo = document.getElementById('infoSjNo');
+                const infoSupir = document.getElementById('infoSupir');
+                const infoNopol = document.getElementById('infoNopol');
+                const infoCatatan = document.getElementById('infoCatatan');
+                if (infoSjNo) infoSjNo.textContent = '-';
+                if (infoSupir) infoSupir.textContent = '-';
+                if (infoNopol) infoNopol.textContent = '-';
+                if (infoCatatan) infoCatatan.textContent = '(Tidak ada catatan)';
+
                 if (tableBody) {
                     tableBody.innerHTML = `
                         <tr>
@@ -154,6 +163,56 @@ document.addEventListener('DOMContentLoaded', function () {
                             const k = cust ? cust.klasifikasi : 'MANUAL';
                             custBadge.textContent = k || 'MANUAL';
                             custBadge.className = 'badge-klasifikasi ' + (k === 'IFM' ? 'ifm' : (['IDM', 'MIDI_ALFA', 'IDM_ALFA'].includes(k) ? 'modern' : 'manual'));
+                        }
+
+                        // Auto-fill Surat Jalan & Parameter Armada langsung dari Dokumen PO
+                        if (order) {
+                            const sjInput = document.getElementById('pengeluaran_no');
+                            const tglInput = document.getElementById('pengeluaran_tgl');
+                            const supirInput = document.getElementById('supir_nm');
+                            const nopolInput = document.getElementById('nopol_kendaraan');
+                            const catatanInput = document.getElementById('catatan_txt');
+
+                            // Element Tampilan Info (Read-Only Card)
+                            const infoSjNo = document.getElementById('infoSjNo');
+                            const infoSjTgl = document.getElementById('infoSjTgl');
+                            const infoSupir = document.getElementById('infoSupir');
+                            const infoNopol = document.getElementById('infoNopol');
+                            const infoCatatan = document.getElementById('infoCatatan');
+
+                            const sjNo = order.surat_jalan_no || '-';
+                            if (sjInput) sjInput.value = order.surat_jalan_no || '';
+                            if (infoSjNo) infoSjNo.textContent = sjNo;
+
+                            const rawTgl = order.tgl_kirim_aktual || order.tgl_kirim_estimasi || order.so_tgl;
+                            if (rawTgl) {
+                                const cleanDate = rawTgl.substring(0, 10);
+                                if (tglInput) tglInput.value = cleanDate;
+                                if (infoSjTgl) {
+                                    try {
+                                        const d = new Date(cleanDate + 'T00:00:00');
+                                        infoSjTgl.textContent = new Intl.DateTimeFormat('id-ID', {
+                                            day: 'numeric',
+                                            month: 'long',
+                                            year: 'numeric'
+                                        }).format(d);
+                                    } catch (e) {
+                                        infoSjTgl.textContent = cleanDate;
+                                    }
+                                }
+                            }
+
+                            const supirVal = order.supir_nm || '';
+                            if (supirInput) supirInput.value = supirVal;
+                            if (infoSupir) infoSupir.textContent = supirVal || '-';
+
+                            const nopolVal = order.nopol_kendaraan || '';
+                            if (nopolInput) nopolInput.value = nopolVal;
+                            if (infoNopol) infoNopol.textContent = nopolVal || '-';
+
+                            const catatanVal = order.catatan_txt || '';
+                            if (catatanInput) catatanInput.value = catatanVal;
+                            if (infoCatatan) infoCatatan.textContent = catatanVal || '(Tidak ada catatan)';
                         }
 
                         renderItems(data.items);

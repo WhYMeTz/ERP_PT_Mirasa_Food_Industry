@@ -120,73 +120,89 @@
                 </div>
             </div>
 
-            {{-- KARTU 2: PARAMETER DOKUMEN & EKSPEDISI ARMADA --}}
+            {{-- KARTU 2: PARAMETER DOKUMEN & EKSPEDISI ARMADA (DITERBITKAN RESMI DARI PO) --}}
             <div class="sj-card">
                 <div class="sj-card-header">
                     <div class="sj-card-header-left">
                         <span class="sj-card-icon emerald">
-                            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+                            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                         </span>
                         <div>
                             <h3 class="sj-card-title">Parameter Surat Jalan &amp; Ekspedisi</h3>
-                            <div class="sj-card-subtitle">Nomor dokumen, tanggal kirim, supir, dan armada</div>
+                            <div class="sj-card-subtitle">Diterbitkan resmi oleh Bagian Penjualan (PO)</div>
                         </div>
+                    </div>
+                    <div>
+                        <span class="badge" style="background: #ecfdf5; color: #047857; font-weight: 700; font-size: 0.725rem; padding: 4px 10px; border-radius: 6px; border: 1px solid #a7f3d0; display: inline-flex; align-items: center; gap: 0.35rem;">
+                            <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                            Terbit Resmi dari PO
+                        </span>
                     </div>
                 </div>
 
                 <div class="sj-card-body">
-                    <div class="sj-form-grid-2">
-                        <div class="sj-form-group">
-                            <label for="pengeluaran_no" class="sj-form-label">
-                                <span>No. Surat Jalan <span class="req">*</span></span>
-                                <span style="font-size: 0.7rem; color: #059669; font-weight: 700;">Auto Format</span>
-                            </label>
-                            <input type="text" name="pengeluaran_no" id="pengeluaran_no"
-                                   value="{{ old('pengeluaran_no', $defaultSjNo) }}"
-                                   class="sj-form-input" style="font-family: monospace; font-weight: 700;" required>
+                    {{-- Hidden Form Inputs required for POST --}}
+                    <input type="hidden" name="pengeluaran_no" id="pengeluaran_no"
+                           value="{{ old('pengeluaran_no', $prefilledData['order']->surat_jalan_no ?? $defaultSjNo) }}">
+                    <input type="hidden" name="pengeluaran_tgl" id="pengeluaran_tgl"
+                           value="{{ old('pengeluaran_tgl', ($hasPrefill && !empty($prefilledData['order']->tgl_kirim_estimasi)) ? \Carbon\Carbon::parse($prefilledData['order']->tgl_kirim_estimasi)->format('Y-m-d') : date('Y-m-d')) }}">
+                    <input type="hidden" name="supir_nm" id="supir_nm"
+                           value="{{ old('supir_nm', $prefilledData['order']->supir_nm ?? '') }}">
+                    <input type="hidden" name="nopol_kendaraan" id="nopol_kendaraan"
+                           value="{{ old('nopol_kendaraan', $prefilledData['order']->nopol_kendaraan ?? '') }}">
+                    <input type="hidden" name="ekspedisi_nm" id="ekspedisi_nm"
+                           value="{{ old('ekspedisi_nm', 'Truk Box MFI') }}">
+                    <input type="hidden" name="catatan_txt" id="catatan_txt"
+                           value="{{ old('catatan_txt', $prefilledData['order']->catatan_txt ?? '') }}">
+
+                    {{-- Informasi Parameter Pengiriman (Read-Only Info Grid) --}}
+                    <div class="sj-info-box" style="margin-top: 0; background: #ffffff; border: 1px solid #e2e8f0;">
+                        <div class="sj-info-item">
+                            <div class="sj-info-label">No. Surat Jalan Resmi:</div>
+                            <div id="infoSjNo" class="sj-info-value" style="font-family: monospace; font-size: 0.95rem; color: #0284c7; font-weight: 800;">
+                                {{ $prefilledData['order']->surat_jalan_no ?? ($defaultSjNo ?: '-') }}
+                            </div>
                         </div>
 
-                        <div class="sj-form-group">
-                            <label for="pengeluaran_tgl" class="sj-form-label">
-                                <span>Tanggal Berangkat <span class="req">*</span></span>
-                            </label>
-                            <input type="date" name="pengeluaran_tgl" id="pengeluaran_tgl"
-                                   value="{{ old('pengeluaran_tgl', date('Y-m-d')) }}"
-                                   class="sj-form-input" required>
+                        <div class="sj-info-item">
+                            <div class="sj-info-label">Tanggal Pengeluaran / Berangkat:</div>
+                            <div id="infoSjTgl" class="sj-info-value" style="font-size: 0.85rem; color: #0f172a;">
+                                {{ ($hasPrefill && !empty($prefilledData['order']->tgl_kirim_estimasi)) ? \Carbon\Carbon::parse($prefilledData['order']->tgl_kirim_estimasi)->translatedFormat('d F Y') : \Carbon\Carbon::now()->translatedFormat('d F Y') }}
+                            </div>
+                        </div>
+
+                        <div class="sj-info-item">
+                            <div class="sj-info-label">Nama Supir / Pengemudi:</div>
+                            <div id="infoSupir" class="sj-info-value" style="font-size: 0.85rem; color: #0f172a;">
+                                {{ !empty($prefilledData['order']->supir_nm) ? $prefilledData['order']->supir_nm : '-' }}
+                            </div>
+                        </div>
+
+                        <div class="sj-info-item">
+                            <div class="sj-info-label">No. Polisi Armada Truk:</div>
+                            <div id="infoNopol" class="sj-info-value" style="font-family: monospace; font-size: 0.85rem; color: #0f172a; text-transform: uppercase;">
+                                {{ !empty($prefilledData['order']->nopol_kendaraan) ? $prefilledData['order']->nopol_kendaraan : '-' }}
+                            </div>
+                        </div>
+
+                        <div class="sj-info-item">
+                            <div class="sj-info-label">Jenis Ekspedisi:</div>
+                            <div id="infoEkspedisi" class="sj-info-value" style="font-size: 0.825rem; color: #475569;">
+                                Truk Box MFI (Internal)
+                            </div>
+                        </div>
+
+                        <div class="sj-info-item">
+                            <div class="sj-info-label">Catatan Pengiriman (PO):</div>
+                            <div id="infoCatatan" class="sj-info-value" style="font-size: 0.8rem; font-weight: 500; color: #64748b; font-style: italic;">
+                                {{ !empty($prefilledData['order']->catatan_txt) ? $prefilledData['order']->catatan_txt : '(Tidak ada catatan)' }}
+                            </div>
                         </div>
                     </div>
 
-                    <div class="sj-form-grid-2">
-                        <div class="sj-form-group">
-                            <label for="supir_nm" class="sj-form-label">Nama Supir / Pengemudi</label>
-                            <input type="text" name="supir_nm" id="supir_nm"
-                                   value="{{ old('supir_nm') }}"
-                                   placeholder="Contoh: Pak Budi / Slamet..." class="sj-form-input">
-                        </div>
-
-                        <div class="sj-form-group">
-                            <label for="nopol_kendaraan" class="sj-form-label">No. Polisi Armada</label>
-                            <input type="text" name="nopol_kendaraan" id="nopol_kendaraan"
-                                   value="{{ old('nopol_kendaraan') }}"
-                                   placeholder="Contoh: AD 8234 KL / B 9123 XY"
-                                   class="sj-form-input" style="text-transform: uppercase; font-family: monospace;">
-                        </div>
-                    </div>
-
-                    <div class="sj-form-grid-2">
-                        <div class="sj-form-group">
-                            <label for="ekspedisi_nm" class="sj-form-label">Ekspedisi / Jenis Armada</label>
-                            <input type="text" name="ekspedisi_nm" id="ekspedisi_nm"
-                                   value="{{ old('ekspedisi_nm', 'Truk Box MFI') }}"
-                                   placeholder="Truk Box MFI / Ekspedisi Luar..." class="sj-form-input">
-                        </div>
-
-                        <div class="sj-form-group">
-                            <label for="catatan_txt" class="sj-form-label">Instruksi / Catatan Pengiriman</label>
-                            <input type="text" name="catatan_txt" id="catatan_txt"
-                                   value="{{ old('catatan_txt') }}"
-                                   placeholder="Catatan untuk bagian ekspedisi..." class="sj-form-input">
-                        </div>
+                    <div style="font-size: 0.725rem; color: #64748b; margin-top: 0.65rem; display: flex; align-items: center; gap: 0.4rem; padding: 0.5rem 0.75rem; background: #f8fafc; border-radius: 6px; border: 1px dashed #cbd5e1;">
+                        <svg width="15" height="15" fill="none" stroke="#0284c7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        <span>Parameter Surat Jalan &amp; Armada ditetapkan resmi oleh <strong>Bagian Penjualan (PO)</strong>. Petugas Gudang hanya memverifikasi fisik muatan karton.</span>
                     </div>
                 </div>
             </div>

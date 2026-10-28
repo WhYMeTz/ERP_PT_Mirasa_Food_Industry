@@ -1313,17 +1313,30 @@
                         setVal('minyak_sawit_qty', d.minyak_sawit_qty);
                         setVal('minyak_kelapa_qty', d.minyak_kelapa_qty);
                         setVal('minyak_nilai', d.minyak_nilai);
+                        setVal('bumbu_qty', d.bumbu_qty);
                         setVal('bumbu_nilai', d.bumbu_nilai);
+                        setVal('karton_baru_qty', d.karton_baru_qty);
                         setVal('karton_baru_nilai', d.karton_baru_nilai);
+                        setVal('karton_bekas_qty', d.karton_bekas_qty);
                         setVal('karton_bekas_nilai', d.karton_bekas_nilai);
+                        setVal('plastik_hd_qty', d.plastik_hd_qty);
                         setVal('plastik_hd_nilai', d.plastik_hd_nilai);
+                        setVal('lakban_besar_qty', d.lakban_besar_qty);
                         setVal('lakban_besar_nilai', d.lakban_besar_nilai);
+                        setVal('lakban_kecil_qty', d.lakban_kecil_qty);
                         setVal('lakban_kecil_nilai', d.lakban_kecil_nilai);
+                        setVal('tali_rafia_qty', d.tali_rafia_qty);
                         setVal('tali_rafia_nilai', d.tali_rafia_nilai);
 
                         // Auto-fill Sarung Tangan jika ada dari dokumen BPPB Gudang
+                        if (d.sarung_tangan_plastik_qty && d.sarung_tangan_plastik_qty > 0) {
+                            setVal('sarung_tangan_plastik_qty', d.sarung_tangan_plastik_qty);
+                        }
                         if (d.sarung_tangan_plastik_nilai && d.sarung_tangan_plastik_nilai > 0) {
                             setVal('sarung_tangan_plastik_nilai', d.sarung_tangan_plastik_nilai);
+                        }
+                        if (d.sarung_tangan_kain_qty && d.sarung_tangan_kain_qty > 0) {
+                            setVal('sarung_tangan_kain_qty', d.sarung_tangan_kain_qty);
                         }
                         if (d.sarung_tangan_kain_nilai && d.sarung_tangan_kain_nilai > 0) {
                             setVal('sarung_tangan_kain_nilai', d.sarung_tangan_kain_nilai);

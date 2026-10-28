@@ -10,7 +10,11 @@
     <style>
         @page {
             size: a4 portrait;
-            margin: 8mm 10mm 10mm 10mm;
+            /* Margin kanan-kiri disamakan persis dengan lembar fisik Surat Jalan IFM: Kiri 3.5mm, Kanan 7.4mm, Atas 12mm, Bawah 10mm */
+            margin: 12mm 7.4mm 10mm 3.5mm;
+        }
+        * {
+            box-sizing: border-box;
         }
         body {
             font-family: 'Arial', 'Helvetica', sans-serif;
@@ -245,8 +249,15 @@
                 $totalBungkus += $bungkus;
 
                 $plu = !empty($dtl->barang?->kode_pelanggan) ? $dtl->barang->kode_pelanggan : ($dtl->barang?->barang_cd ?? '4297432');
-                $batchNo = $dtl->batch_no ?: date('d m Y', strtotime($tglKirim)) . ' A';
-                $expDate = date('d/m/Y', strtotime($tglKirim . ' +14 months'));
+                $batchNo = $dtl->batch_no ?: (date('d m Y', strtotime($tglKirim)) . ' A');
+
+                // Ambil Exp Date asli dari kartu stok batch fisik di gudang
+                $batchStok = \App\Models\Gudang\DatStokBatch::where('barang_id', $dtl->barang_id)
+                    ->where('batch_no', $dtl->batch_no)
+                    ->first();
+                $expDate = ($batchStok && $batchStok->expired_tgl)
+                    ? date('d/m/Y', strtotime($batchStok->expired_tgl))
+                    : date('d/m/Y', strtotime($tglKirim . ' +14 months'));
 
                 $items[] = [
                     'plu'      => $plu,
@@ -372,13 +383,13 @@
     {{-- TEKS PENGANTAR MOBIL BOX (POSISI PRESISI EXCEL) --}}
     <table class="intro-table">
         <tr>
-            <td style="text-align: left; width: 38%; white-space: nowrap;">
+            <td style="text-align: left; width: 30%; white-space: nowrap;">
                 Dengan Kendaraan Mobil Box No. Polisi
             </td>
-            <td style="text-align: left; width: 20%; font-weight: bold; font-size: 9pt; padding-left: 4px;">
+            <td style="text-align: left; width: 36%; font-weight: bold; font-size: 9pt; padding-left: 8px;">
                 {{ $nopol ?: 'AA 9475 B' }}
             </td>
-            <td style="text-align: left; width: 42%; font-style: italic; padding-left: 10px;">
+            <td style="text-align: left; width: 34%; font-style: italic; padding-left: 12px;">
                 kami kirim barang sbb.:
             </td>
         </tr>

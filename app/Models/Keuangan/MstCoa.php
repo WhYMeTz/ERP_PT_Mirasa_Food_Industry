@@ -66,4 +66,14 @@ class MstCoa extends Model
         return $this->hasMany(DatJurnalDtl::class, 'coa_id', 'coa_id')
             ->where('deleted_st', false);
     }
+
+    public function getCoaCdAttribute(): string
+    {
+        return $this->kode_akun ?? '';
+    }
+
+    public function getCoaNmAttribute(): string
+    {
+        return $this->nama_akun ?? '';
+    }
 }

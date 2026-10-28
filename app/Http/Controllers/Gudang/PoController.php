@@ -8,6 +8,7 @@ use App\Models\Gudang\DatPoHdr;
 use App\Models\MasterData\MstBarang;
 use App\Models\MasterData\MstGudang;
 use App\Models\MasterData\MstJenisSupplier;
+use App\Models\MasterData\MstPajak;
 use App\Models\MasterData\MstSupplier;
 use App\Services\Common\CodeGeneratorService;
 use App\Services\Gudang\PoService;
@@ -90,6 +91,13 @@ class PoController extends Controller
             ->get();
         $nextPoNo = $this->codeGenerator->generatePoNo();
 
+        // Daftar Master Pajak Pembelian (PPN / PPh)
+        $pajakList = MstPajak::active()
+            ->pembelian()
+            ->orderBy('is_default', 'desc')
+            ->orderBy('pajak_nm')
+            ->get();
+
         // Cek penugasan lokasi gudang akun user yang login
         $assignedGudangId = count($allowedGudangIds) === 1 ? $allowedGudangIds[0] : null;
         $isGudangLocked = count($allowedGudangIds) === 1 && !$user?->isSuperAdmin();
@@ -103,6 +111,7 @@ class PoController extends Controller
             'jenisSupplierList',
             'gudangList',
             'barangList',
+            'pajakList',
             'nextPoNo',
             'assignedGudangId',
             'isGudangLocked',
@@ -284,12 +293,20 @@ class PoController extends Controller
             ->orderBy('barang_nm')
             ->get();
 
+        // Daftar Master Pajak Pembelian (PPN / PPh)
+        $pajakList = MstPajak::active()
+            ->pembelian()
+            ->orderBy('is_default', 'desc')
+            ->orderBy('pajak_nm')
+            ->get();
+
         return view('gudang.po.edit', compact(
             'po',
             'supplierList',
             'jenisSupplierList',
             'gudangList',
-            'barangList'
+            'barangList',
+            'pajakList'
         ));
     }
 
@@ -301,18 +318,21 @@ class PoController extends Controller
         $request->validate([
             'po_tgl'                   => 'required|date',
             'supplier_id'              => 'required|exists:mst_supplier,supplier_id',
-            'gudang_id'                => 'required|exists:mst_gudang,gudang_id',
-            'tgl_estimasi_datang'      => 'nullable|date',
-            'catatan_txt'              => 'nullable|string|max:1000',
-            'items'                    => 'required|array|min:1',
-            'items.*.podtl_id'         => 'nullable|integer',
-            'items.*.barang_id'        => 'required|exists:mst_barang,barang_id',
-            'items.*.pesan_qty'        => 'required|numeric|min:0.01',
-            'items.*.harga_nominal'    => 'required|numeric|min:0',
-            'items.*.diskon_persen'    => 'nullable|numeric|min:0|max:100',
-            'items.*.potongan_nominal' => 'nullable|numeric|min:0',
-            'items.*.ppn_tipe'         => 'nullable|string|in:NON_PPN,PPN_11',
-            'items.*.catatan_txt'      => 'nullable|string|max:255',
+            'gudang_id'                       => 'required|exists:mst_gudang,gudang_id',
+            'is_harga_termasuk_pajak'         => 'nullable|boolean',
+            'tgl_estimasi_datang'             => 'nullable|date',
+            'catatan_txt'                     => 'nullable|string|max:1000',
+            'items'                           => 'required|array|min:1',
+            'items.*.podtl_id'                => 'nullable|integer',
+            'items.*.barang_id'               => 'required|exists:mst_barang,barang_id',
+            'items.*.pesan_qty'               => 'required|numeric|min:0.01',
+            'items.*.harga_nominal'           => 'required|numeric|min:0',
+            'items.*.diskon_persen'           => 'nullable|numeric|min:0|max:100',
+            'items.*.potongan_nominal'        => 'nullable|numeric|min:0',
+            'items.*.pajak_id'                => 'nullable|integer|exists:mst_pajak,pajak_id',
+            'items.*.is_harga_termasuk_pajak' => 'nullable|boolean',
+            'items.*.ppn_tipe'                => 'nullable|string',
+            'items.*.catatan_txt'             => 'nullable|string|max:255',
         ], [
             'items.required'           => 'Minimal harus ada 1 item barang yang dipesan.',
             'items.min'                => 'Minimal harus ada 1 item barang yang dipesan.',

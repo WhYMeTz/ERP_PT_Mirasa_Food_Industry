@@ -55,6 +55,17 @@
 <form action="{{ route('gudang.pemakaian.store') }}" method="POST" id="pemakaianForm">
     @csrf
 
+    {{-- BADGE STATUS AUTO-SAVE & PULIHKAN DRAFT --}}
+    <div id="draftAutoSaveBadge" style="display: none; align-items: center; justify-content: space-between; background: #f0f9ff; border: 1.5px solid #bae6fd; border-radius: 8px; padding: 0.45rem 0.85rem; margin-bottom: 0.75rem; font-size: 0.8rem; color: #0369a1; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+            <span id="draftAutoSaveText">Draft tersimpan otomatis di browser. Layar aman di-refresh kapan saja.</span>
+        </div>
+        <button type="button" onclick="window.pemakaianApp.clearAndResetDraft()" style="background: none; border: none; color: #dc2626; font-size: 0.775rem; font-weight: 700; cursor: pointer; text-decoration: underline; padding: 2px 6px;" title="Kosongkan draft tersimpan dan mulai form baru">
+            Kosongkan Draft &amp; Mulai Baru
+        </button>
+    </div>
+
     {{-- PANEL TOOLBAR TERPADU (1 KOTAK RAMPING 2 BARIS: INFO DOKUMEN & RESEP BOM) --}}
     <div style="background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 0.85rem 1rem; margin-bottom: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
         {{-- BARIS 1: NO BPPB, TANGGAL, GUDANG ASAL, TUJUAN --}}
@@ -115,7 +126,7 @@
             </div>
             
             <div style="flex: 2.5; min-width: 280px;">
-                <select id="bom_select" class="toolbar-select">
+                <select id="bom_select" name="bom_id" class="toolbar-select">
                     <option value="">-- Pilih Formula Resep Standar --</option>
                     @foreach ($bomList as $bom)
                         <option value="{{ $bom->bom_id }}" data-nomor="{{ $bom->bom_no }}" data-nama="{{ $bom->bom_nm }}" data-batch="{{ (float) $bom->batch_ukuran_qty }}">

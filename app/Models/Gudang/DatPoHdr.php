@@ -24,6 +24,7 @@ class DatPoHdr extends Model
         'supplier_id',
         'gudang_id',
         'status_cd',
+        'is_harga_termasuk_pajak',
         'subtotal_bruto',
         'diskon_total',
         'potongan_nominal',
@@ -43,10 +44,11 @@ class DatPoHdr extends Model
     ];
 
     protected $casts = [
-        'po_tgl'              => 'date',
-        'tgl_estimasi_datang' => 'date',
-        'closed_at'           => 'datetime',
-        'subtotal_bruto'      => 'decimal:4',
+        'po_tgl'                  => 'date',
+        'tgl_estimasi_datang'     => 'date',
+        'closed_at'               => 'datetime',
+        'is_harga_termasuk_pajak' => 'boolean',
+        'subtotal_bruto'          => 'decimal:4',
         'diskon_total'        => 'decimal:4',
         'potongan_nominal'    => 'decimal:4',
         'dpp_nominal'         => 'decimal:4',

@@ -438,11 +438,13 @@ class PemakaianController extends Controller
     /**
      * Endpoint AJAX untuk mengambil daftar batch aktif (sisa > 0) diurutkan FIFO (paling lama dibeli).
      * Batch yang sudah habis (sisa_qty = 0) dieliminasi total dari dropdown.
+     * Dilengkapi deteksi komitmen dokumen DRAFT lain agar tidak terjadi tabrakan / double-claim batch sebelum diposting.
      */
     public function getBatches(Request $request): JsonResponse
     {
         $gudangId = (int) $request->input('gudang_id');
         $barangId = (int) $request->input('barang_id');
+        $excludePakaiId = (int) $request->input('exclude_pakai_id', 0);
 
         $user = Auth::user();
         if ($user && !$user->canAccessGudang($gudangId)) {
@@ -452,6 +454,22 @@ class PemakaianController extends Controller
                 'batches' => [],
             ], 403);
         }
+
+        // Ambil alokasi kuantitas yang sedang terikat di dokumen DRAFT lain (belum diposting/acc)
+        $draftAllocations = DatPakaiDtl::where('barang_id', $barangId)
+            ->whereHas('header', function ($q) use ($gudangId, $excludePakaiId) {
+                $q->where('gudang_id', $gudangId)
+                  ->where('status_st', 'DRAFT')
+                  ->where('deleted_st', false);
+                if ($excludePakaiId > 0) {
+                    $q->where('pakai_id', '!=', $excludePakaiId);
+                }
+            })
+            ->with('header:pakai_id,pakai_no')
+            ->get()
+            ->groupBy(function ($d) {
+                return trim($d->batch_no) . '_' . strtoupper(trim($d->grade_cd ?: 'A'));
+            });
 
         $batches = DatStokBatch::where('gudang_id', $gudangId)
             ->where('barang_id', $barangId)
@@ -464,16 +482,30 @@ class PemakaianController extends Controller
             ->orderBy('stok_id', 'asc')
             ->get(['stok_id', 'batch_no', 'grade_cd', 'sisa_qty', 'harga_satuan', 'expired_tgl', 'created_at']);
 
-        $formattedBatches = $batches->values()->map(function ($b, $index) {
+        $formattedBatches = $batches->values()->map(function ($b, $index) use ($draftAllocations) {
+            $gradeCd = strtoupper(trim($b->grade_cd ?: 'A'));
+            $lookupKey = trim($b->batch_no) . '_' . $gradeCd;
+            $group = $draftAllocations->get($lookupKey);
+
+            $sisaFisik = (float) $b->sisa_qty;
+            $draftQty = $group ? (float) $group->sum('qty_keluar') : 0.0;
+            $draftDocNos = $group ? $group->pluck('header.pakai_no')->unique()->filter()->values()->toArray() : [];
+            $sisaBebas = max(0.0, round($sisaFisik - $draftQty, 4));
+
             return [
-                'stok_id'      => $b->stok_id,
-                'batch_no'     => $b->batch_no,
-                'grade_cd'     => $b->grade_cd ?? 'A',
-                'sisa_qty'     => (float) $b->sisa_qty,
-                'harga_satuan' => (float) $b->harga_satuan,
-                'expired_tgl'  => $b->expired_tgl ? \Carbon\Carbon::parse($b->expired_tgl)->format('d/m/Y') : null,
-                'tgl_terima'   => $b->created_at ? $b->created_at->format('d/m/Y') : '-',
-                'is_fifo_top'  => $index === 0,
+                'stok_id'        => $b->stok_id,
+                'batch_no'       => $b->batch_no,
+                'grade_cd'       => $gradeCd,
+                'sisa_qty'       => $sisaFisik,
+                'draft_qty'      => $draftQty,
+                'draft_doc_nos'  => $draftDocNos,
+                'sisa_bebas'     => $sisaBebas,
+                'is_committed'   => $draftQty > 0,
+                'is_fully_booked'=> $sisaBebas <= 0.0001,
+                'harga_satuan'   => (float) $b->harga_satuan,
+                'expired_tgl'    => $b->expired_tgl ? \Carbon\Carbon::parse($b->expired_tgl)->format('d/m/Y') : null,
+                'tgl_terima'     => $b->created_at ? $b->created_at->format('d/m/Y') : '-',
+                'is_fifo_top'    => $index === 0,
             ];
         });
 
@@ -509,8 +541,10 @@ class PemakaianController extends Controller
             ], 403);
         }
 
+        $excludePakaiId = (int) $request->input('exclude_pakai_id', 0);
+
         try {
-            $alokasi = $this->bomService->alokasiBahanResepFifo($gudangId, $bomId, $targetQty, $gradeFilter);
+            $alokasi = $this->bomService->alokasiBahanResepFifo($gudangId, $bomId, $targetQty, $gradeFilter, $excludePakaiId);
 
             return response()->json([
                 'status'  => 'success',

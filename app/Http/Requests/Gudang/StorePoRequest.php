@@ -19,11 +19,12 @@ class StorePoRequest extends FormRequest
             'po_tgl'              => 'required|date',
             'tgl_estimasi_datang' => 'nullable|date',
             'supplier_id'         => 'nullable|integer|exists:mst_supplier,supplier_id',
-            'gudang_id'           => 'required|integer|exists:mst_gudang,gudang_id',
-            'catatan_txt'         => 'nullable|string',
+            'gudang_id'               => 'required|integer|exists:mst_gudang,gudang_id',
+            'is_harga_termasuk_pajak' => 'nullable|boolean',
+            'catatan_txt'             => 'nullable|string',
 
-            'items'                     => 'required|array|min:1',
-            'items.*.barang_id'         => [
+            'items'                                => 'required|array|min:1',
+            'items.*.barang_id'                    => [
                 'required',
                 'integer',
                 Rule::exists('mst_barang', 'barang_id')->where(function ($query) {
@@ -36,13 +37,15 @@ class StorePoRequest extends FormRequest
                           });
                 }),
             ],
-            'items.*.supplier_id'       => 'nullable|integer|exists:mst_supplier,supplier_id',
-            'items.*.pesan_qty'         => 'required|numeric|min:0.0001',
-            'items.*.harga_nominal'     => 'nullable|numeric|min:0',
-            'items.*.diskon_persen'     => 'nullable|numeric|min:0|max:100',
-            'items.*.potongan_nominal'  => 'nullable|numeric|min:0',
-            'items.*.ppn_tipe'          => 'nullable|string|in:NON_PPN,PPN_11',
-            'items.*.catatan_txt'       => 'nullable|string',
+            'items.*.supplier_id'                  => 'nullable|integer|exists:mst_supplier,supplier_id',
+            'items.*.pesan_qty'                    => 'required|numeric|min:0.0001',
+            'items.*.harga_nominal'                => 'nullable|numeric|min:0',
+            'items.*.diskon_persen'                => 'nullable|numeric|min:0|max:100',
+            'items.*.potongan_nominal'             => 'nullable|numeric|min:0',
+            'items.*.pajak_id'                     => 'nullable|integer|exists:mst_pajak,pajak_id',
+            'items.*.is_harga_termasuk_pajak'      => 'nullable|boolean',
+            'items.*.ppn_tipe'                     => 'nullable|string',
+            'items.*.catatan_txt'                  => 'nullable|string',
         ];
     }
 

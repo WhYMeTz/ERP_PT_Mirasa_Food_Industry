@@ -378,8 +378,22 @@ function renderQiDraftRow(item = null, defaultCategory = '') {
             const isTop = (idx === 0);
             const prefix = isTop ? '⭐ [FIFO #1] ' : '';
             const gCd = (b.grade_cd || 'A').toUpperCase();
-            batchOptions += `<option value="${b.batch_no}" data-harga="${b.harga_satuan || 0}" data-sisa="${b.sisa_qty}" data-grade="${gCd}" ${isSel}>
-                ${prefix}${b.batch_no} • [Grade ${gCd}] (Sisa: ${parseFloat(b.sisa_qty).toLocaleString('id-ID')})
+            const sisaFisik = parseFloat(b.sisa_qty || 0);
+            const sisaBebas = (b.sisa_bebas !== undefined) ? parseFloat(b.sisa_bebas) : sisaFisik;
+            const draftQty = parseFloat(b.draft_qty || 0);
+            const draftDocs = b.draft_doc_nos || '';
+            const isFullyBooked = (b.is_fully_booked || sisaBebas <= 0.0001) && draftQty > 0;
+            const isCommitted = draftQty > 0;
+
+            let tag = '';
+            if (isFullyBooked) {
+                tag = ' ⛔ [HABIS DIBOOKING DRAFT]';
+            } else if (isCommitted) {
+                tag = ` ⚠️ [DRAFT ALLOCATED: ${draftQty.toLocaleString('id-ID')}]`;
+            }
+
+            batchOptions += `<option value="${b.batch_no}" data-harga="${b.harga_satuan || 0}" data-sisa="${sisaFisik}" data-sisa-bebas="${sisaBebas}" data-draft-qty="${draftQty}" data-draft-docs="${draftDocs}" data-grade="${gCd}" ${isSel}>
+                ${prefix}${b.batch_no} • [Grade ${gCd}] (Sisa Bebas: ${sisaBebas.toLocaleString('id-ID')} / Fisik: ${sisaFisik.toLocaleString('id-ID')})${tag}
             </option>`;
         });
     }
@@ -537,7 +551,8 @@ function onQiBarangChange(selectEl) {
     batchSelect.innerHTML = '<option value="">Memuat batch FIFO...</option>';
     batchInfo.textContent = 'Memeriksa ketersediaan stok fisik...';
 
-    const url = `/gudang/pemakaian/batches?gudang_id=${encodeURIComponent(gudangId)}&barang_id=${encodeURIComponent(barangId)}`;
+    const excludePakaiId = currentQiData?.pakai?.pakai_id || 0;
+    const url = `/gudang/pemakaian/batches?gudang_id=${encodeURIComponent(gudangId)}&barang_id=${encodeURIComponent(barangId)}&exclude_pakai_id=${encodeURIComponent(excludePakaiId)}`;
     fetch(url)
         .then(res => res.json())
         .then(res => {
@@ -583,8 +598,22 @@ function applyQiGradeFilter(tr) {
         const gCd = (b.grade_cd || 'A').toUpperCase();
         const expInfo = (b.expired_tgl && b.expired_tgl !== '-') ? ` | Exp: ${b.expired_tgl}` : '';
         const tglTerima = (b.tgl_terima && b.tgl_terima !== '-') ? ` | Masuk: ${b.tgl_terima}` : '';
-        html += `<option value="${b.batch_no}" data-harga="${b.harga_satuan || 0}" data-sisa="${b.sisa_qty}" data-grade="${gCd}" ${isTop ? 'selected' : ''}>
-            ${prefix}${b.batch_no} • [Grade ${gCd}] (Sisa: ${parseFloat(b.sisa_qty).toLocaleString('id-ID')})${tglTerima}${expInfo}
+        const sisaFisik = parseFloat(b.sisa_qty || 0);
+        const sisaBebas = (b.sisa_bebas !== undefined) ? parseFloat(b.sisa_bebas) : sisaFisik;
+        const draftQty = parseFloat(b.draft_qty || 0);
+        const draftDocs = b.draft_doc_nos || '';
+        const isFullyBooked = (b.is_fully_booked || sisaBebas <= 0.0001) && draftQty > 0;
+        const isCommitted = draftQty > 0;
+
+        let tag = '';
+        if (isFullyBooked) {
+            tag = ' ⛔ [HABIS DIBOOKING DRAFT]';
+        } else if (isCommitted) {
+            tag = ` ⚠️ [DRAFT ALLOCATED: ${draftQty.toLocaleString('id-ID')}]`;
+        }
+
+        html += `<option value="${b.batch_no}" data-harga="${b.harga_satuan || 0}" data-sisa="${sisaFisik}" data-sisa-bebas="${sisaBebas}" data-draft-qty="${draftQty}" data-draft-docs="${draftDocs}" data-grade="${gCd}" ${isTop ? 'selected' : ''}>
+            ${prefix}${b.batch_no} • [Grade ${gCd}] (Sisa Bebas: ${sisaBebas.toLocaleString('id-ID')} / Fisik: ${sisaFisik.toLocaleString('id-ID')})${tag}${tglTerima}${expInfo}
         </option>`;
     });
 
@@ -598,7 +627,10 @@ function onQiBatchChange(batchSelect) {
     if (!selectedOpt) return;
 
     const harga = parseFloat(selectedOpt.getAttribute('data-harga') || 0);
-    const sisa = parseFloat(selectedOpt.getAttribute('data-sisa') || 0);
+    const sisaFisik = parseFloat(selectedOpt.getAttribute('data-sisa') || 0);
+    const sisaBebas = parseFloat(selectedOpt.getAttribute('data-sisa-bebas') || sisaFisik);
+    const draftQty = parseFloat(selectedOpt.getAttribute('data-draft-qty') || 0);
+    const draftDocs = selectedOpt.getAttribute('data-draft-docs') || '';
     const satuan = tr.querySelector('.qi-item-satuan').textContent.trim();
 
     if (harga > 0) {
@@ -607,7 +639,11 @@ function onQiBatchChange(batchSelect) {
 
     const batchInfo = tr.querySelector('.qi-batch-info');
     if (batchInfo) {
-        batchInfo.innerHTML = `<span style="color: #059669; font-weight: 600;">Sisa gudang: ${sisa.toLocaleString('id-ID')} ${satuan}</span>`;
+        let draftInfo = '';
+        if (draftQty > 0) {
+            draftInfo = ` <span style="color: #b45309; font-weight: 700;">⚠️ ${draftQty.toLocaleString('id-ID')} ${satuan} dibooking draft [${draftDocs}]!</span>`;
+        }
+        batchInfo.innerHTML = `<span style="color: #059669; font-weight: 600;">Sisa Bebas: ${sisaBebas.toLocaleString('id-ID')} ${satuan} (Fisik: ${sisaFisik.toLocaleString('id-ID')})</span>${draftInfo}`;
     }
 
     recalculateQiRow(batchSelect);
@@ -615,11 +651,31 @@ function onQiBatchChange(batchSelect) {
 
 function recalculateQiRow(inputEl) {
     const tr = inputEl.closest('tr');
-    const qty = parseFloat(tr.querySelector('.qi-item-qty').value) || 0;
+    const qtyInput = tr.querySelector('.qi-item-qty');
+    const qty = parseFloat(qtyInput ? qtyInput.value : 0) || 0;
     const harga = parseFloat(tr.querySelector('.qi-item-harga').value) || 0;
     const subtotal = qty * harga;
 
     tr.querySelector('.qi-item-subtotal').textContent = 'Rp ' + Math.round(subtotal).toLocaleString('id-ID');
+
+    const batchSelect = tr.querySelector('.qi-item-batch');
+    const selectedOpt = batchSelect ? batchSelect.selectedOptions[0] : null;
+    if (selectedOpt && qtyInput) {
+        const sisaFisik = parseFloat(selectedOpt.getAttribute('data-sisa') || 0);
+        const sisaBebas = parseFloat(selectedOpt.getAttribute('data-sisa-bebas') || sisaFisik);
+        const draftQty = parseFloat(selectedOpt.getAttribute('data-draft-qty') || 0);
+
+        if ((sisaBebas > 0 && qty > sisaBebas) || (sisaBebas <= 0.0001 && draftQty > 0 && qty > 0)) {
+            qtyInput.style.borderColor = '#dc2626';
+            qtyInput.style.backgroundColor = '#fef2f2';
+            qtyInput.title = `Kuantitas (${qty}) melebihi sisa bebas (${sisaBebas})!`;
+        } else {
+            qtyInput.style.borderColor = '#cbd5e1';
+            qtyInput.style.backgroundColor = '#ffffff';
+            qtyInput.title = '';
+        }
+    }
+
     updateQiTotals();
 }
 
@@ -719,6 +775,25 @@ function submitQiForm(actionType) {
             showQiAlert(`Baris #${idx + 1}: Kuantitas keluar harus lebih dari 0.`, 'danger');
             hasError = true;
             return;
+        }
+
+        const batchSelect = tr.querySelector('.qi-item-batch');
+        const selOpt = batchSelect ? batchSelect.selectedOptions[0] : null;
+        if (selOpt) {
+            const sisaFisik = parseFloat(selOpt.getAttribute('data-sisa') || 0);
+            const sisaBebas = parseFloat(selOpt.getAttribute('data-sisa-bebas') || sisaFisik);
+            const draftQty = parseFloat(selOpt.getAttribute('data-draft-qty') || 0);
+            const draftDocs = selOpt.getAttribute('data-draft-docs') || '';
+
+            if (qty > sisaBebas) {
+                if (draftQty > 0) {
+                    showQiAlert(`Baris #${idx + 1}: Kuantitas (${qty.toLocaleString('id-ID')}) melebihi sisa bebas (${sisaBebas.toLocaleString('id-ID')}) karena ${draftQty.toLocaleString('id-ID')} unit sedang dibooking di DRAFT [${draftDocs}]!`, 'danger');
+                } else {
+                    showQiAlert(`Baris #${idx + 1}: Kuantitas (${qty.toLocaleString('id-ID')}) melebihi sisa batch (${sisaBebas.toLocaleString('id-ID')})!`, 'danger');
+                }
+                hasError = true;
+                return;
+            }
         }
 
         items.push({

@@ -1298,6 +1298,12 @@
                                                 <span>Kategori / Jenis Barang</span>
                                             </a>
                                         @endif
+                                        @if (Auth::user()->canAccessPajak())
+                                            <a href="{{ route('master.pajak.index') }}" class="mega-item {{ request()->routeIs('master.pajak.*') ? 'active' : '' }}">
+                                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2zM10 8.5a.5.5 0 11-1 0 .5.5 0 011 0zm5 5a.5.5 0 11-1 0 .5.5 0 011 0z"/></svg>
+                                                <span>Master Pajak &amp; Tarif</span>
+                                            </a>
+                                        @endif
                                     </div>
 
                                     {{-- KOLOM 2: RELASI & ENTITAS --}}

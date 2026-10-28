@@ -224,7 +224,7 @@ class TerimaBarangController extends Controller
             'tgl_jatuh_tempo'  => 'nullable|date',
             'catatan_txt'      => 'nullable|string',
             'potongan_nominal' => 'nullable|numeric|min:0',
-            'ppn_tipe'         => 'nullable|string|in:NON_PPN,PPN_11',
+            'ppn_tipe'         => 'nullable|string',
 
             'items'                 => 'required|array|min:1',
             'items.*.barang_id'     => 'required|integer|exists:mst_barang,barang_id',
@@ -237,7 +237,7 @@ class TerimaBarangController extends Controller
             'items.*.harga_nominal'    => 'nullable|numeric|min:0',
             'items.*.diskon_persen'    => 'nullable|numeric|min:0|max:100',
             'items.*.potongan_nominal' => 'nullable|numeric|min:0',
-            'items.*.ppn_tipe'         => 'nullable|string|in:NON_PPN,PPN_11',
+            'items.*.ppn_tipe'         => 'nullable|string',
             'items.*.catatan_txt'      => 'nullable|string',
         ]);
 

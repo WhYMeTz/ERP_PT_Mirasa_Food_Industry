@@ -109,7 +109,7 @@
             </div>
             
             <div style="flex: 2.5; min-width: 280px;">
-                <select id="bom_select" class="toolbar-select">
+                <select id="bom_select" name="bom_id" class="toolbar-select">
                     <option value="">-- Pilih Formula Resep Standar --</option>
                     @foreach ($bomList as $bom)
                         <option value="{{ $bom->bom_id }}" data-nomor="{{ $bom->bom_no }}" data-nama="{{ $bom->bom_nm }}" data-batch="{{ (float) $bom->batch_ukuran_qty }}">
@@ -252,6 +252,7 @@
 @push('scripts')
 <script>
     window.appConfig = {
+        pakaiId: {{ $pakai->pakai_id }},
         barangList: @json($barangList),
         existingDetails: @json($pakai->details),
         batchesUrl: "{{ route('gudang.pemakaian.batches', [], false) }}",

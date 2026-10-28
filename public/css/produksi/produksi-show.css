@@ -5,7 +5,7 @@
    ========================================================================== */
 
 .show-container {
-    max-width: 1400px;
+    max-width: 100%;
     margin: 0 auto;
     padding-bottom: 2.5rem;
 }
@@ -1287,5 +1287,279 @@ a.btn-adjust-hpp:active {
     font-weight: 800;
     color: #059669;
 }
+
+/* ==========================================================================
+   14. Riwayat Adjustment & Audit Trail HPP (Refined Enterprise Design)
+   ========================================================================== */
+.audit-doc-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #0284c7;
+    background: #f0f9ff;
+    border: 1px solid #bae6fd;
+    padding: 0.25rem 0.55rem;
+    border-radius: 6px;
+    letter-spacing: 0.01em;
+}
+
+.audit-date-box {
+    display: flex;
+    flex-direction: column;
+}
+
+.audit-date-main {
+    font-weight: 700;
+    color: #1e293b;
+    font-size: 0.8125rem;
+}
+
+.audit-date-time {
+    font-size: 0.72rem;
+    color: #64748b;
+    margin-top: 1px;
+}
+
+.badge-audit-komponen {
+    display: inline-block;
+    padding: 0.25rem 0.65rem;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 0.725rem;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+}
+
+.badge-komp-kemasan {
+    background: #f5f3ff;
+    color: #6d28d9;
+    border: 1px solid #ddd6fe;
+}
+
+.badge-komp-bbl {
+    background: #ecfdf5;
+    color: #047857;
+    border: 1px solid #a7f3d0;
+}
+
+.badge-komp-utilitas {
+    background: #fffbeb;
+    color: #b45309;
+    border: 1px solid #fde68a;
+}
+
+.badge-komp-tk {
+    background: #f0f9ff;
+    color: #0369a1;
+    border: 1px solid #bae6fd;
+}
+
+.badge-komp-default {
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+}
+
+/* Card Nilai Sebelum & Sesudah */
+.audit-val-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 7px;
+    padding: 0.5rem 0.75rem;
+    min-width: 200px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+.audit-val-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.75rem;
+    margin-bottom: 2px;
+    white-space: nowrap;
+}
+
+.audit-val-lbl {
+    color: #64748b;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.audit-val-before {
+    color: #475569;
+    font-family: ui-monospace, SFMono-Regular, monospace;
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.audit-val-after {
+    font-weight: 800;
+    color: #0f172a;
+    font-family: ui-monospace, SFMono-Regular, monospace;
+    font-size: 0.8125rem;
+    white-space: nowrap;
+}
+
+.audit-val-after.font-accent {
+    color: #0284c7;
+}
+
+.audit-val-badge {
+    margin-top: 4px;
+    padding-top: 4px;
+    border-top: 1px dashed #e2e8f0;
+    text-align: right;
+    font-size: 0.725rem;
+    font-weight: 800;
+    font-family: ui-monospace, SFMono-Regular, monospace;
+    white-space: nowrap;
+}
+
+.badge-diff-plus {
+    color: #dc2626;
+}
+
+.badge-diff-minus {
+    color: #16a34a;
+}
+
+.badge-diff-zero {
+    color: #64748b;
+}
+
+/* Kolom Alasan & Rincian */
+.badge-audit-ref {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    background: #e0f2fe;
+    color: #0369a1;
+    border: 1px solid #bae6fd;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    font-family: ui-monospace, SFMono-Regular, monospace;
+    margin-bottom: 0.25rem;
+}
+
+.audit-reason-title {
+    font-weight: 700;
+    color: #1e293b;
+    font-size: 0.84rem;
+    line-height: 1.4;
+}
+
+.audit-details-panel {
+    margin-top: 0.45rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 0.45rem 0.65rem;
+}
+
+.audit-details-caption {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: #64748b;
+    margin-bottom: 0.35rem;
+}
+
+.audit-details-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.audit-change-chip {
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    padding: 3px 8px;
+    font-size: 0.75rem;
+    color: #334155;
+}
+
+.chip-name {
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.chip-old {
+    color: #475569;
+    font-family: ui-monospace, SFMono-Regular, monospace;
+    font-size: 0.725rem;
+    font-weight: 600;
+}
+
+.chip-new {
+    font-weight: 800;
+    color: #0284c7;
+    font-family: ui-monospace, SFMono-Regular, monospace;
+    font-size: 0.75rem;
+}
+
+.chip-delta {
+    font-weight: 700;
+    font-size: 0.7rem;
+    font-family: ui-monospace, SFMono-Regular, monospace;
+}
+
+.chip-delta.pos {
+    color: #dc2626;
+}
+
+.chip-delta.neg {
+    color: #16a34a;
+}
+
+/* Operator Box */
+.audit-operator-box {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.audit-operator-avatar {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    color: #475569;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.audit-operator-name {
+    font-weight: 700;
+    color: #1e293b;
+    font-size: 0.8125rem;
+    line-height: 1.2;
+}
+
+.audit-operator-sub {
+    font-size: 0.7rem;
+    color: #94a3b8;
+    margin-top: 1px;
+}
+
 
 

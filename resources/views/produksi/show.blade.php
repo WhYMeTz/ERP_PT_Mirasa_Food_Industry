@@ -747,11 +747,11 @@
                         <tr>
                             <th style="width: 140px;">No. Berita Acara</th>
                             <th style="width: 110px;">Tanggal</th>
-                            <th style="width: 120px;">Komponen</th>
-                            <th style="width: 160px; text-align: right;">Perubahan Biaya</th>
-                            <th style="width: 150px; text-align: right;">Dampak HPP/Kg</th>
+                            <th style="width: 115px;">Komponen</th>
+                            <th style="width: 220px;">Perubahan Biaya</th>
+                            <th style="width: 220px;">Dampak HPP/Kg</th>
                             <th>Alasan &amp; Dasar Dokumen</th>
-                            <th style="width: 120px;">Operator</th>
+                            <th style="width: 140px;">Operator</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -759,68 +759,127 @@
                             @php
                                 $isNaik = (float) $log->selisih_hpp > 0;
                                 $isTurun = (float) $log->selisih_hpp < 0;
+                                $isBiayaNaik = (float) $log->selisih_biaya >= 0;
+
+                                $kategori = strtoupper(trim($log->kategori_komponen ?? ''));
+                                $badgeClass = match($kategori) {
+                                    'KEMASAN' => 'badge-komp-kemasan',
+                                    'BBL' => 'badge-komp-bbl',
+                                    'UTILITAS' => 'badge-komp-utilitas',
+                                    'TK' => 'badge-komp-tk',
+                                    default => 'badge-komp-default'
+                                };
+
+                                $alasanText = $log->alasan_txt ?? '-';
+                                $hasRef = preg_match('/\[Ref:\s*([^\]]+)\]/', $alasanText, $matches);
+                                $cleanAlasan = $hasRef ? trim(str_replace($matches[0], '', $alasanText)) : $alasanText;
                             @endphp
                             <tr>
-                                <td style="font-family: monospace; font-weight: 700; color: #0284c7;">
-                                    {{ $log->adj_no }}
+                                <td>
+                                    <div class="audit-doc-badge">
+                                        <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                        <span>{{ $log->adj_no }}</span>
+                                    </div>
                                 </td>
                                 <td>
-                                    {{ Carbon\Carbon::parse($log->adj_tgl)->format('d/m/Y') }}
-                                    <div style="font-size: 0.7rem; color: #94a3b8;">{{ $log->created_at?->format('H:i') }} WIB</div>
+                                    <div class="audit-date-box">
+                                        <span class="audit-date-main">{{ Carbon\Carbon::parse($log->adj_tgl)->format('d/m/Y') }}</span>
+                                        <span class="audit-date-time">{{ $log->created_at?->format('H:i') }} WIB</span>
+                                    </div>
                                 </td>
                                 <td>
-                                    <span style="background: #f1f5f9; color: #334155; padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 700; font-size: 0.7rem;">
+                                    <span class="badge-audit-komponen {{ $badgeClass }}">
                                         {{ $log->kategori_komponen }}
                                     </span>
                                 </td>
-                                <td style="text-align: right; font-variant-numeric: tabular-nums;">
-                                    <div style="font-size: 0.725rem; color: #64748b;">
-                                        Rp {{ number_format($log->total_biaya_sebelum, 0, ',', '.') }} &rarr;
-                                    </div>
-                                    <div style="font-weight: 700; color: #0f172a;">
-                                        Rp {{ number_format($log->total_biaya_sesudah, 0, ',', '.') }}
-                                    </div>
-                                    <div style="font-size: 0.7rem; font-weight: 700; color: {{ (float)$log->selisih_biaya >= 0 ? '#dc2626' : '#16a34a' }};">
-                                        {{ (float)$log->selisih_biaya >= 0 ? '+' : '' }}Rp {{ number_format($log->selisih_biaya, 0, ',', '.') }}
-                                    </div>
-                                </td>
-                                <td style="text-align: right; font-variant-numeric: tabular-nums;">
-                                    <div style="font-size: 0.725rem; color: #64748b;">
-                                        Rp {{ number_format($log->hpp_sebelum, 2, ',', '.') }} &rarr;
-                                    </div>
-                                    <div style="font-weight: 700; color: #0284c7;">
-                                        Rp {{ number_format($log->hpp_sesudah, 2, ',', '.') }}
-                                    </div>
-                                    <div style="font-size: 0.7rem; font-weight: 700; color: {{ $isNaik ? '#dc2626' : ($isTurun ? '#16a34a' : '#64748b') }};">
-                                        {{ $isNaik ? '+' : '' }}Rp {{ number_format($log->selisih_hpp, 2, ',', '.') }}
+                                <td>
+                                    <div class="audit-val-card">
+                                        <div class="audit-val-row">
+                                            <span class="audit-val-lbl">Sebelum:</span>
+                                            <span class="audit-val-before">Rp&nbsp;{{ number_format($log->total_biaya_sebelum, 0, ',', '.') }}</span>
+                                        </div>
+                                        <div class="audit-val-row">
+                                            <span class="audit-val-lbl">Sesudah:</span>
+                                            <span class="audit-val-after">Rp&nbsp;{{ number_format($log->total_biaya_sesudah, 0, ',', '.') }}</span>
+                                        </div>
+                                        <div class="audit-val-badge {{ $isBiayaNaik ? 'badge-diff-plus' : 'badge-diff-minus' }}">
+                                            {{ $isBiayaNaik ? '▲ +' : '▼ -' }}Rp&nbsp;{{ number_format(abs($log->selisih_biaya), 0, ',', '.') }}
+                                        </div>
                                     </div>
                                 </td>
                                 <td>
-                                    <div style="font-weight: 600; color: #334155;">{{ $log->alasan_txt }}</div>
+                                    <div class="audit-val-card">
+                                        <div class="audit-val-row">
+                                            <span class="audit-val-lbl">Sebelum:</span>
+                                            <span class="audit-val-before">Rp&nbsp;{{ number_format($log->hpp_sebelum, 2, ',', '.') }}</span>
+                                        </div>
+                                        <div class="audit-val-row">
+                                            <span class="audit-val-lbl">Sesudah:</span>
+                                            <span class="audit-val-after font-accent">Rp&nbsp;{{ number_format($log->hpp_sesudah, 2, ',', '.') }}</span>
+                                        </div>
+                                        <div class="audit-val-badge {{ $isNaik ? 'badge-diff-plus' : ($isTurun ? 'badge-diff-minus' : 'badge-diff-zero') }}">
+                                            {{ $isNaik ? '▲ +' : ($isTurun ? '▼ -' : '') }}Rp&nbsp;{{ number_format(abs($log->selisih_hpp), 2, ',', '.') }}
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    @if($hasRef)
+                                        <div>
+                                            <span class="badge-audit-ref">
+                                                <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                                                Ref: {{ $matches[1] }}
+                                            </span>
+                                        </div>
+                                    @endif
+                                    <div class="audit-reason-title">{{ $cleanAlasan }}</div>
                                     @if(!empty($log->perubahan_field_json))
-                                        <div style="font-size: 0.7rem; color: #64748b; margin-top: 0.2rem;">
-                                            Rincian: 
-                                            @foreach($log->perubahan_field_json as $fKey => $fVal)
-                                                <span style="background: #f8fafc; padding: 1px 4px; border: 1px solid #e2e8f0; border-radius: 3px; margin-right: 3px;">
-                                                    @if(isset($fVal['type']) && $fVal['type'] === 'QUANTITY')
-                                                        {{ $fVal['label'] ?? $fKey }}: {{ number_format((float) ($fVal['old'] ?? 0), 2, ',', '.') }} {{ $fVal['unit'] ?? '' }} &rarr; {{ number_format((float) ($fVal['new'] ?? 0), 2, ',', '.') }} {{ $fVal['unit'] ?? '' }}
-                                                    @else
-                                                        {{ $fVal['label'] ?? $fKey }}: Rp {{ number_format((float) ($fVal['old'] ?? 0), 0, ',', '.') }} &rarr; Rp {{ number_format((float) ($fVal['new'] ?? 0), 0, ',', '.') }}
-                                                    @endif
-                                                </span>
-                                            @endforeach
+                                        <div class="audit-details-panel">
+                                            <div class="audit-details-caption">Rincian Perubahan Item:</div>
+                                            <div class="audit-details-list">
+                                                @foreach($log->perubahan_field_json as $fKey => $fVal)
+                                                    @php
+                                                        $isQty = isset($fVal['type']) && $fVal['type'] === 'QUANTITY';
+                                                        $oldVal = (float)($fVal['old'] ?? 0);
+                                                        $newVal = (float)($fVal['new'] ?? 0);
+                                                        $delta = $newVal - $oldVal;
+                                                    @endphp
+                                                    <div class="audit-change-chip">
+                                                        <span class="chip-name">{{ $fVal['label'] ?? $fKey }}</span>
+                                                        <span class="chip-old">
+                                                            {{ $isQty ? number_format($oldVal, 2, ',', '.') . ' ' . ($fVal['unit'] ?? '') : 'Rp ' . number_format($oldVal, 0, ',', '.') }}
+                                                        </span>
+                                                        <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #94a3b8;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                                                        <span class="chip-new">
+                                                            {{ $isQty ? number_format($newVal, 2, ',', '.') . ' ' . ($fVal['unit'] ?? '') : 'Rp ' . number_format($newVal, 0, ',', '.') }}
+                                                        </span>
+                                                        @if($delta != 0)
+                                                            <span class="chip-delta {{ $delta > 0 ? 'pos' : 'neg' }}">
+                                                                ({{ $delta > 0 ? '+' : '' }}{{ $isQty ? number_format($delta, 2, ',', '.') . ' ' . ($fVal['unit'] ?? '') : 'Rp ' . number_format($delta, 0, ',', '.') }})
+                                                            </span>
+                                                        @endif
+                                                    </div>
+                                                @endforeach
+                                            </div>
                                         </div>
                                     @endif
                                 </td>
-                                <td style="color: #475569; font-weight: 600;">
-                                    {{ $log->created_by ?? 'System' }}
+                                <td>
+                                    <div class="audit-operator-box">
+                                        <div class="audit-operator-avatar">
+                                            <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                                        </div>
+                                        <div>
+                                            <div class="audit-operator-name">{{ $log->created_by ?? 'System' }}</div>
+                                            <div class="audit-operator-sub">Petugas Revisi</div>
+                                        </div>
+                                    </div>
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" style="padding: 2rem 1rem; text-align: center; color: #94a3b8;">
-                                    <div style="font-weight: 700; color: #64748b; font-size: 0.85rem;">Belum Ada Riwayat Adjustment HPP</div>
-                                    <div style="font-size: 0.75rem; margin-top: 0.2rem;">Dokumen ini masih mencatat nilai kalkulasi produksi orisinal (Versi v1).</div>
+                                <td colspan="7" style="padding: 2.5rem 1rem; text-align: center; color: #94a3b8;">
+                                    <div style="font-weight: 700; color: #64748b; font-size: 0.9rem;">Belum Ada Riwayat Adjustment HPP</div>
+                                    <div style="font-size: 0.775rem; margin-top: 0.25rem;">Dokumen ini masih mencatat nilai kalkulasi biaya produksi orisinal (Versi v1).</div>
                                 </td>
                             </tr>
                         @endforelse

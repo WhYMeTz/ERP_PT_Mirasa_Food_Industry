@@ -214,42 +214,86 @@
 
                     <div style="background: #ffffff; padding: 0.85rem; border-radius: 6px; border: 1px solid #e2e8f0;">
                         <span style="display: block; font-size: 0.775rem; font-weight: 700; color: #1e293b; text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 0.5rem;">
-                            Bumbu &amp; Perenyah (Rp)
+                            Bumbu &amp; Perenyah
                         </span>
-                        <label style="font-size: 0.7rem; color: #475569; font-weight: 600;">Nilai Bumbu/Garam/Perenyah</label>
-                        <input type="number" step="0.01" min="0" name="bumbu_nilai" id="bumbu_nilai" class="form-control calc-trigger" style="text-align: right;" value="{{ old('bumbu_nilai', 0) }}" placeholder="0" oninput="calcAll()">
+                        <div style="display: flex; gap: 0.5rem;">
+                            <div style="flex: 1;">
+                                <label style="font-size: 0.7rem; color: #475569; font-weight: 600;">Kuantitas (Kg)</label>
+                                <input type="number" step="0.0001" min="0" name="bumbu_qty" id="bumbu_qty" class="form-control" style="text-align: right;" value="{{ old('bumbu_qty', 0) }}" placeholder="0">
+                            </div>
+                            <div style="flex: 1.2;">
+                                <label style="font-size: 0.7rem; color: #475569; font-weight: 600;">Nilai Rupiah (Rp)</label>
+                                <input type="number" step="0.01" min="0" name="bumbu_nilai" id="bumbu_nilai" class="form-control calc-trigger" style="text-align: right;" value="{{ old('bumbu_nilai', 0) }}" placeholder="0" oninput="calcAll()">
+                            </div>
+                        </div>
                     </div>
                 </div>
 
                 {{-- Baris 2: Kemasan & Packaging --}}
                 <div style="background: #f8fafc; padding: 0.85rem; border-radius: 6px; border: 1px solid #e2e8f0;">
                     <span style="display: block; font-size: 0.775rem; font-weight: 700; color: #1e293b; text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 0.5rem;">
-                        Rincian Bahan Kemasan &amp; Packaging (Rp)
+                        Rincian Bahan Kemasan &amp; Packaging
                     </span>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.75rem;">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem;">
                         <div>
-                            <label style="font-size: 0.7rem; color: #475569; font-weight: 600;">Karton Baru</label>
-                            <input type="number" step="0.01" min="0" name="karton_baru_nilai" id="karton_baru_nilai" class="form-control calc-trigger" style="text-align: right;" value="{{ old('karton_baru_nilai', 0) }}" oninput="calcAll()">
+                            <label style="font-size: 0.7rem; color: #475569; font-weight: 600; display: flex; justify-content: space-between;">
+                                <span>Karton Baru</span>
+                                <span style="font-size: 0.65rem; color: #64748b;">(Qty &bull; Rp)</span>
+                            </label>
+                            <div style="display: flex; gap: 0.35rem;">
+                                <input type="number" step="0.01" min="0" name="karton_baru_qty" id="karton_baru_qty" class="form-control" style="width: 42%; text-align: right; font-size: 0.8rem;" value="{{ old('karton_baru_qty', 0) }}" placeholder="Pcs">
+                                <input type="number" step="0.01" min="0" name="karton_baru_nilai" id="karton_baru_nilai" class="form-control calc-trigger" style="width: 58%; text-align: right; font-size: 0.8rem;" value="{{ old('karton_baru_nilai', 0) }}" placeholder="Rp" oninput="calcAll()">
+                            </div>
                         </div>
                         <div>
-                            <label style="font-size: 0.7rem; color: #475569; font-weight: 600;">Karton Bekas</label>
-                            <input type="number" step="0.01" min="0" name="karton_bekas_nilai" id="karton_bekas_nilai" class="form-control calc-trigger" style="text-align: right;" value="{{ old('karton_bekas_nilai', 0) }}" oninput="calcAll()">
+                            <label style="font-size: 0.7rem; color: #475569; font-weight: 600; display: flex; justify-content: space-between;">
+                                <span>Karton Bekas</span>
+                                <span style="font-size: 0.65rem; color: #64748b;">(Qty &bull; Rp)</span>
+                            </label>
+                            <div style="display: flex; gap: 0.35rem;">
+                                <input type="number" step="0.01" min="0" name="karton_bekas_qty" id="karton_bekas_qty" class="form-control" style="width: 42%; text-align: right; font-size: 0.8rem;" value="{{ old('karton_bekas_qty', 0) }}" placeholder="Pcs">
+                                <input type="number" step="0.01" min="0" name="karton_bekas_nilai" id="karton_bekas_nilai" class="form-control calc-trigger" style="width: 58%; text-align: right; font-size: 0.8rem;" value="{{ old('karton_bekas_nilai', 0) }}" placeholder="Rp" oninput="calcAll()">
+                            </div>
                         </div>
                         <div>
-                            <label style="font-size: 0.7rem; color: #475569; font-weight: 600;">Plastik HD 90x100</label>
-                            <input type="number" step="0.01" min="0" name="plastik_hd_nilai" id="plastik_hd_nilai" class="form-control calc-trigger" style="text-align: right;" value="{{ old('plastik_hd_nilai', 0) }}" oninput="calcAll()">
+                            <label style="font-size: 0.7rem; color: #475569; font-weight: 600; display: flex; justify-content: space-between;">
+                                <span>Plastik HD 90x100</span>
+                                <span style="font-size: 0.65rem; color: #64748b;">(Qty &bull; Rp)</span>
+                            </label>
+                            <div style="display: flex; gap: 0.35rem;">
+                                <input type="number" step="0.01" min="0" name="plastik_hd_qty" id="plastik_hd_qty" class="form-control" style="width: 42%; text-align: right; font-size: 0.8rem;" value="{{ old('plastik_hd_qty', 0) }}" placeholder="Lbr">
+                                <input type="number" step="0.01" min="0" name="plastik_hd_nilai" id="plastik_hd_nilai" class="form-control calc-trigger" style="width: 58%; text-align: right; font-size: 0.8rem;" value="{{ old('plastik_hd_nilai', 0) }}" placeholder="Rp" oninput="calcAll()">
+                            </div>
                         </div>
                         <div>
-                            <label style="font-size: 0.7rem; color: #475569; font-weight: 600;">Lakban Besar</label>
-                            <input type="number" step="0.01" min="0" name="lakban_besar_nilai" id="lakban_besar_nilai" class="form-control calc-trigger" style="text-align: right;" value="{{ old('lakban_besar_nilai', 0) }}" oninput="calcAll()">
+                            <label style="font-size: 0.7rem; color: #475569; font-weight: 600; display: flex; justify-content: space-between;">
+                                <span>Lakban Besar</span>
+                                <span style="font-size: 0.65rem; color: #64748b;">(Qty &bull; Rp)</span>
+                            </label>
+                            <div style="display: flex; gap: 0.35rem;">
+                                <input type="number" step="0.01" min="0" name="lakban_besar_qty" id="lakban_besar_qty" class="form-control" style="width: 42%; text-align: right; font-size: 0.8rem;" value="{{ old('lakban_besar_qty', 0) }}" placeholder="Roll">
+                                <input type="number" step="0.01" min="0" name="lakban_besar_nilai" id="lakban_besar_nilai" class="form-control calc-trigger" style="width: 58%; text-align: right; font-size: 0.8rem;" value="{{ old('lakban_besar_nilai', 0) }}" placeholder="Rp" oninput="calcAll()">
+                            </div>
                         </div>
                         <div>
-                            <label style="font-size: 0.7rem; color: #475569; font-weight: 600;">Lakban Kecil</label>
-                            <input type="number" step="0.01" min="0" name="lakban_kecil_nilai" id="lakban_kecil_nilai" class="form-control calc-trigger" style="text-align: right;" value="{{ old('lakban_kecil_nilai', 0) }}" oninput="calcAll()">
+                            <label style="font-size: 0.7rem; color: #475569; font-weight: 600; display: flex; justify-content: space-between;">
+                                <span>Lakban Kecil</span>
+                                <span style="font-size: 0.65rem; color: #64748b;">(Qty &bull; Rp)</span>
+                            </label>
+                            <div style="display: flex; gap: 0.35rem;">
+                                <input type="number" step="0.01" min="0" name="lakban_kecil_qty" id="lakban_kecil_qty" class="form-control" style="width: 42%; text-align: right; font-size: 0.8rem;" value="{{ old('lakban_kecil_qty', 0) }}" placeholder="Roll">
+                                <input type="number" step="0.01" min="0" name="lakban_kecil_nilai" id="lakban_kecil_nilai" class="form-control calc-trigger" style="width: 58%; text-align: right; font-size: 0.8rem;" value="{{ old('lakban_kecil_nilai', 0) }}" placeholder="Rp" oninput="calcAll()">
+                            </div>
                         </div>
                         <div>
-                            <label style="font-size: 0.7rem; color: #475569; font-weight: 600;">Tali Rafia</label>
-                            <input type="number" step="0.01" min="0" name="tali_rafia_nilai" id="tali_rafia_nilai" class="form-control calc-trigger" style="text-align: right;" value="{{ old('tali_rafia_nilai', 0) }}" oninput="calcAll()">
+                            <label style="font-size: 0.7rem; color: #475569; font-weight: 600; display: flex; justify-content: space-between;">
+                                <span>Tali Rafia</span>
+                                <span style="font-size: 0.65rem; color: #64748b;">(Qty &bull; Rp)</span>
+                            </label>
+                            <div style="display: flex; gap: 0.35rem;">
+                                <input type="number" step="0.01" min="0" name="tali_rafia_qty" id="tali_rafia_qty" class="form-control" style="width: 42%; text-align: right; font-size: 0.8rem;" value="{{ old('tali_rafia_qty', 0) }}" placeholder="Roll">
+                                <input type="number" step="0.01" min="0" name="tali_rafia_nilai" id="tali_rafia_nilai" class="form-control calc-trigger" style="width: 58%; text-align: right; font-size: 0.8rem;" value="{{ old('tali_rafia_nilai', 0) }}" placeholder="Rp" oninput="calcAll()">
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -296,11 +340,11 @@
                 <div class="card-header" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0.875rem 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
                     <strong style="color: #0f172a; font-size: 0.95rem;">6. Tenaga Kerja Produksi</strong>
                     <div style="display: flex; align-items: center; gap: 0.4rem;">
-                        <button type="button" id="btnSyncKaryawan" class="btn btn-sm btn-outline-primary" onclick="syncLaborFromKaryawan(true)" style="font-size: 0.725rem; padding: 0.2rem 0.6rem; display: inline-flex; align-items: center; gap: 0.25rem; border-radius: 4px; font-weight: 600; cursor: pointer;">
+                        <button type="button" id="btnSyncKaryawan" class="btn btn-sm btn-outline-primary" onclick="syncLaborFromKaryawan(true, true)" style="font-size: 0.725rem; padding: 0.2rem 0.6rem; display: inline-flex; align-items: center; gap: 0.25rem; border-radius: 4px; font-weight: 600; cursor: pointer;" title="Muat ulang data presensi & upah dari modul Karyawan">
                             <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                            Tarik Data Karyawan
+                            <span>Muat Ulang Presensi</span>
                         </button>
-                        <span style="font-size: 0.7rem; color: #0284c7; background: #e0f2fe; border: 1px solid #bae6fd; padding: 0.15rem 0.5rem; border-radius: 4px; font-weight: 700;">Hadir &amp; Gaji Harian</span>
+                        <span style="font-size: 0.7rem; color: #0284c7; background: #e0f2fe; border: 1px solid #bae6fd; padding: 0.15rem 0.5rem; border-radius: 4px; font-weight: 700;">Otomatis dari Tanggal &amp; Lini</span>
                     </div>
                 </div>
                 <div style="padding: 1.25rem;">
@@ -316,20 +360,20 @@
                                 Tenaga Kerja Hadir (Orang) <span style="color: #ef4444;">*</span>
                             </label>
                             <input type="number" min="0" name="tk_jumlah_org" id="tk_jumlah_org" class="form-control calc-trigger" style="text-align: center; font-weight: 700; font-size: 1rem; color: #0f172a;" value="{{ old('tk_jumlah_org', old('tk_langsung_org', 0)) }}" placeholder="0" oninput="onTkJumlahChange()">
-                            <small style="color: #64748b; font-size: 0.7rem; display: block; margin-top: 0.25rem;">Ditarik dari absensi harian modul Karyawan.</small>
+                            <small style="color: #64748b; font-size: 0.7rem; display: block; margin-top: 0.25rem;">Otomatis terisi dari absensi kelompok lini kerja.</small>
                         </div>
                         <div>
                             <label style="display: block; font-size: 0.75rem; font-weight: 700; color: #334155; margin-bottom: 0.25rem;">
                                 Total Upah Tenaga Kerja (Rp) <span style="color: #ef4444;">*</span>
                             </label>
                             <input type="number" step="0.01" min="0" name="tk_total_nilai" id="tk_total_nilai" class="form-control calc-trigger" style="text-align: right; font-weight: 700; font-size: 1rem; color: #0f172a;" value="{{ old('tk_total_nilai', 0) }}" placeholder="0" oninput="calcAll()">
-                            <small style="color: #64748b; font-size: 0.7rem; display: block; margin-top: 0.25rem;">Akumulasi gaji aktual per orang dari modul Karyawan.</small>
+                            <small style="color: #64748b; font-size: 0.7rem; display: block; margin-top: 0.25rem;">Otomatis terisi dari akumulasi upah harian riil.</small>
                         </div>
                     </div>
 
                     {{-- Status sinkronisasi modul karyawan --}}
                     <div id="tkSyncStatus" style="font-size: 0.725rem; color: #64748b; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.4rem 0.75rem; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;">
-                        <span id="tkSyncText">Data presensi dan total upah ditarik otomatis berdasarkan Tanggal Produksi.</span>
+                        <span id="tkSyncText">Otomatis tersinkron saat Tanggal Produksi &amp; Lini Produksi dipilih.</span>
                         <span id="tkSyncIndicator" style="display: none; font-weight: 600; color: #0284c7;">Memuat...</span>
                     </div>
                 </div>
@@ -486,6 +530,7 @@
                                 <label class="foh-field-label">Sarung Tangan Plastik</label>
                                 <span class="foh-rate-pill pill-nota">Nota Fisik</span>
                             </div>
+                            <input type="hidden" name="sarung_tangan_plastik_qty" id="sarung_tangan_plastik_qty" value="{{ old('sarung_tangan_plastik_qty', 0) }}">
                             <div class="foh-input-group">
                                 <span class="foh-input-addon">Rp</span>
                                 <input type="number" step="0.01" min="0" name="sarung_tangan_plastik_nilai" id="sarung_tangan_plastik_nilai" class="form-control calc-trigger" value="{{ old('sarung_tangan_plastik_nilai', 0) }}" oninput="calcAll()">
@@ -499,6 +544,7 @@
                                 <label class="foh-field-label">Sarung Tangan Kain</label>
                                 <span class="foh-rate-pill pill-nota">Nota Fisik</span>
                             </div>
+                            <input type="hidden" name="sarung_tangan_kain_qty" id="sarung_tangan_kain_qty" value="{{ old('sarung_tangan_kain_qty', 0) }}">
                             <div class="foh-input-group">
                                 <span class="foh-input-addon">Rp</span>
                                 <input type="number" step="0.01" min="0" name="sarung_tangan_kain_nilai" id="sarung_tangan_kain_nilai" class="form-control calc-trigger" value="{{ old('sarung_tangan_kain_nilai', 0) }}" oninput="calcAll()">

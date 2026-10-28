@@ -29,26 +29,31 @@ class PengeluaranBarangController extends Controller
         $perPage  = (int) $request->input('per_page', 15);
         $search   = $request->input('search');
         $status   = $request->input('status');
-        $dateFrom = $request->input('date_from');
-        $dateTo   = $request->input('date_to');
+        $date     = $request->input('date');
 
         $suratJalanList = $this->pengeluaranService->getAllPaginated(
             perPage: $perPage,
             search: $search,
             status: $status,
-            dateFrom: $dateFrom,
-            dateTo: $dateTo
+            date: $date
         );
 
         $metrics = $this->pengeluaranService->getMetrics();
+        $readyOrders = $this->pengeluaranService->getReadyToShipOrders();
+        
+        $tab = $request->input('tab');
+        if (!$tab) {
+            $tab = ($search || $status || $date) ? 'sj' : 'antrean';
+        }
 
         return view('penjualan.pengeluaran.index', compact(
             'suratJalanList',
             'metrics',
+            'readyOrders',
             'search',
             'status',
-            'dateFrom',
-            'dateTo'
+            'date',
+            'tab'
         ));
     }
 
@@ -69,7 +74,9 @@ class PengeluaranBarangController extends Controller
             }
         }
 
-        $defaultSjNo = $this->codeGenerator->generateSuratJalanNo(now()->toDateString());
+        $defaultSjNo = !empty($prefilledData['order']->surat_jalan_no)
+            ? $prefilledData['order']->surat_jalan_no
+            : $this->codeGenerator->generateSuratJalanNo(now()->toDateString());
 
         return view('penjualan.pengeluaran.create', compact(
             'readyOrders',

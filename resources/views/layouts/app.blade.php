@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'ERP PT Mirasa Food Industry')</title>
     <link rel="icon" type="image/png" href="{{ asset('images/logo.png') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -993,6 +994,9 @@
                     @if (Auth::user()->canAccessSo())
                         @php
                             $isPenjualanActive = request()->routeIs('penjualan.*');
+                            $pendingShipCount = \App\Models\Penjualan\DatSoHdr::where('deleted_st', false)
+                                ->whereIn('status_cd', ['APPROVED', 'PROCESSING', 'PARTIAL'])
+                                ->count();
                         @endphp
                         <div class="pill-dropdown" id="navDropdownPenjualan">
                             <button type="button" 
@@ -1000,9 +1004,12 @@
                                     onclick="toggleNavDropdown('navDropdownPenjualan', event)">
                                 <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #2563eb;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
                                 <span>Penjualan</span>
+                                @if($pendingShipCount > 0)
+                                    <span style="background: #f59e0b; color: #ffffff; font-size: 0.65rem; font-weight: 700; padding: 1px 5px; border-radius: 9999px; line-height: 1.2;">{{ $pendingShipCount }}</span>
+                                @endif
                                 <span class="pill-dropdown-arrow">▼</span>
                             </button>
-                            <div class="dropdown-menu" style="min-width: 260px; padding: 0.45rem;">
+                            <div class="dropdown-menu" style="min-width: 275px; padding: 0.45rem;">
                                 <a href="{{ route('penjualan.so.index') }}" class="mega-item {{ request()->routeIs('penjualan.so.*') ? 'active' : '' }}">
                                     <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                                     <div style="display: flex; flex-direction: column;">
@@ -1011,12 +1018,19 @@
                                     </div>
                                 </a>
                                 <div style="height: 1px; background: #f1f5f9; margin: 0.3rem 0;"></div>
-                                <a href="{{ route('penjualan.pengeluaran.index') }}" class="mega-item {{ request()->routeIs('penjualan.pengeluaran.*') ? 'active' : '' }}">
-                                    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
-                                    <div style="display: flex; flex-direction: column;">
-                                        <span style="font-weight: 600;">Pengeluaran Barang</span>
-                                        <span style="font-size: 0.6875rem; color: #64748b;">Fisik keluar Gudang FG</span>
+                                <a href="{{ route('penjualan.pengeluaran.index') }}" class="mega-item {{ request()->routeIs('penjualan.pengeluaran.*') ? 'active' : '' }}" style="display: flex; justify-content: space-between; align-items: center;">
+                                    <div style="display: flex; align-items: center; gap: 0.6rem;">
+                                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+                                        <div style="display: flex; flex-direction: column;">
+                                            <span style="font-weight: 600;">Pengeluaran Barang</span>
+                                            <span style="font-size: 0.6875rem; color: #64748b;">Fisik keluar Gudang FG</span>
+                                        </div>
                                     </div>
+                                    @if($pendingShipCount > 0)
+                                        <span style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a; font-size: 0.675rem; font-weight: 700; padding: 2px 7px; border-radius: 9999px; white-space: nowrap;">
+                                            {{ $pendingShipCount }} Siap Kirim
+                                        </span>
+                                    @endif
                                 </a>
                                 <div style="height: 1px; background: #f1f5f9; margin: 0.3rem 0;"></div>
                                 <a href="{{ route('penjualan.faktur.index') }}" class="mega-item {{ request()->routeIs('penjualan.faktur.*') ? 'active' : '' }}">

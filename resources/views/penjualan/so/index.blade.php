@@ -15,7 +15,7 @@
     <div style="display: flex; gap: 0.5rem; align-items: center;">
         <a href="{{ route('penjualan.so.create') }}" class="btn btn-primary">
             <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-            + Buat PO Penjualan
+            Buat PO Penjualan
         </a>
     </div>
 </div>
@@ -371,6 +371,7 @@
                         <td style="text-align: right;">
                             @php
                                 $soMenuId = 'soMenu_' . $so->so_id;
+                                $activeSjItem = $so->pengeluaran ? $so->pengeluaran->where('status_cd', '!=', 'BATAL')->first() : null;
                             @endphp
                             <button type="button" 
                                     class="btn-action-trigger" 
@@ -385,32 +386,33 @@
                                     <span>Lihat Detail</span>
                                 </a>
 
+                                @if ($activeSjItem)
+                                    {{-- Cetak Dokumen Surat Jalan Resmi (Batch & Exp Date Riil) --}}
+                                    <a href="{{ route('penjualan.pengeluaran.export-pdf', $activeSjItem->pengeluaran_id) }}" target="_blank" class="action-dropdown-item">
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+                                        <span>Cetak Surat Jalan (PDF)</span>
+                                    </a>
+                                @elseif (!in_array($so->status_cd, ['COMPLETED', 'CANCELLED']))
+                                    {{-- Kirim Barang Cepat via FEFO --}}
+                                    <button type="button" 
+                                            class="action-dropdown-item" 
+                                            style="color: #059669; font-weight: 700;" 
+                                            onclick="openConfirmDeliveryModal({{ $so->so_id }}, '{{ $so->so_no }}', '{{ addslashes($so->customer?->customer_nm ?? '') }}', '{{ addslashes($so->supir_nm ?? '') }}', '{{ addslashes($so->nopol_kendaraan ?? '') }}')">
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                                        <span>Kirim Barang (FEFO)</span>
+                                    </button>
+                                    <a href="{{ route('penjualan.so.export-surat-jalan', $so->so_id) }}" target="_blank" class="action-dropdown-item" style="color: #64748b;">
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                        <span>Draf SJ</span>
+                                    </a>
+                                @endif
+
                                 @if($so->sisa_tagihan > 0 && !$so->isCancelled())
                                     <a href="{{ route('penjualan.so.show', $so->so_id) }}#pembayaran" class="action-dropdown-item" style="color: #0284c7;">
                                         <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
                                         <span>Catat Pembayaran (BKM)</span>
                                     </a>
                                 @endif
-
-                                @if($so->isDeliverable())
-                                    <button type="button" 
-                                            class="action-dropdown-item" 
-                                            onclick="openConfirmDeliveryModal({{ $so->so_id }}, '{{ $so->so_no }}', '{{ addslashes($so->customer?->customer_nm ?? '') }}')"
-                                            style="color: #059669;">
-                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                                        <span>Konfirmasi Kirim (FEFO)</span>
-                                    </button>
-                                @endif
-
-                                <a href="{{ route('penjualan.so.export-faktur', $so->so_id) }}" target="_blank" class="action-dropdown-item">
-                                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
-                                    <span>Cetak Faktur (PDF)</span>
-                                </a>
-
-                                <a href="{{ route('penjualan.so.export-surat-jalan', $so->so_id) }}" target="_blank" class="action-dropdown-item">
-                                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
-                                    <span>Cetak Surat Jalan (PDF)</span>
-                                </a>
 
                                 @if(!in_array($so->status_cd, ['COMPLETED', 'CANCELLED']))
                                     <div class="action-dropdown-divider"></div>
@@ -442,7 +444,12 @@
                                         <a href="{{ route('penjualan.so.export-faktur', $so->so_id) }}" target="_blank" style="font-size: 0.75rem; color: #0284c7; text-decoration: none; font-weight: 600;">
                                             📄 Export Faktur (PDF)
                                         </a>
-                                        <a href="{{ route('penjualan.so.export-surat-jalan', $so->so_id) }}" target="_blank" style="font-size: 0.75rem; color: #16a34a; text-decoration: none; font-weight: 600;">
+                                        @php
+                                            $subrowSjRoute = $activeSjItem 
+                                                ? route('penjualan.pengeluaran.export-pdf', $activeSjItem->pengeluaran_id) 
+                                                : route('penjualan.so.export-surat-jalan', $so->so_id);
+                                        @endphp
+                                        <a href="{{ $subrowSjRoute }}" target="_blank" style="font-size: 0.75rem; color: #16a34a; text-decoration: none; font-weight: 600;">
                                             🚚 Export Surat Jalan (PDF)
                                         </a>
                                         <a href="{{ route('penjualan.so.show', $so->so_id) }}" style="font-size: 0.75rem; color: #64748b; text-decoration: none;">
@@ -536,6 +543,11 @@
 @endsection
 
 @push('scripts')
+    <script>
+        window.appConfig = {
+            autoOpenPdf: @json(session('auto_open_pdf'))
+        };
+    </script>
     <script src="{{ asset('js/penjualan/so/so-index.js') }}"></script>
     <script>
         function toggleFilterDrawer() {

@@ -115,6 +115,8 @@ Route::middleware('auth')->group(function () {
     Route::resource('master-resep', BomController::class)
         ->names('master.resep')
         ->middleware('role:SUPERADMIN,STAFF_PRODUKSI,master_resep_view,master_resep_manage');
+    Route::patch('master-lini-produksi/{id}/toggle-status', [LiniProduksiController::class, 'toggleStatus'])
+        ->name('master.lini_produksi.toggle_status');
     Route::resource('master-lini-produksi', LiniProduksiController::class)
         ->names('master.lini_produksi');
     Route::patch('master-mesin/{id}/toggle-status', [MesinController::class, 'toggleStatus'])
@@ -145,6 +147,7 @@ Route::middleware('auth')->group(function () {
         ->name('master.tarif_kemasan.index');
     Route::put('master-tarif-kemasan/{id}', [TarifKemasanController::class, 'update'])
         ->name('master.tarif_kemasan.update');
+
 
     // Master Supplier
     Route::resource('master-jenis-supplier', JenisSupplierController::class)->names('master.jenis_supplier');
@@ -429,6 +432,7 @@ Route::middleware('auth')->group(function () {
     Route::prefix('penjualan')->name('penjualan.')->group(function () {
         Route::get('so/{id}/export-faktur', [SoController::class, 'exportFakturPdf'])->name('so.export-faktur');
         Route::get('so/{id}/export-surat-jalan', [SoController::class, 'exportSuratJalanPdf'])->name('so.export-surat-jalan');
+        Route::post('so/{id}/update-armada', [SoController::class, 'updateArmada'])->name('so.update-armada');
         Route::post('so/{id}/confirm-delivery', [SoController::class, 'confirmDelivery'])->name('so.confirm-delivery');
         Route::post('so/{id}/void-delivery', [SoController::class, 'voidDelivery'])->name('so.void-delivery');
         Route::post('so/{id}/record-payment', [SoController::class, 'recordPayment'])->name('so.record-payment');

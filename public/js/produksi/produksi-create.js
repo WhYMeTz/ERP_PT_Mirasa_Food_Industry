@@ -472,6 +472,7 @@
         window.updateKartonRangeAndBatch();
         window.syncBatchToOutputItems();
         window.updateStickerPreview();
+        window.syncLaborFromKaryawan(false, true);
     };
 
     // 4. Update Tampilan Stiker Karton Fisik / Kemasan Retail
@@ -598,10 +599,13 @@
         }
     };
 
-    // 4.B Sinkronisasi Data Tenaga Kerja dari Modul Karyawan
-    window.syncLaborFromKaryawan = async function (isManualClick = false) {
+    // 4.B Sinkronisasi Data Tenaga Kerja dari Modul Karyawan (Otomatis berdasarkan Tanggal & Lini)
+    window.syncLaborFromKaryawan = async function (isManualClick = false, forceUpdate = true) {
         const tglInput = document.getElementById('produksi_tgl');
         if (!tglInput || !tglInput.value) return;
+
+        const liniInput = document.getElementById('lini_produksi');
+        const lini = liniInput?.value || '';
 
         const syncStatusText = document.getElementById('tkSyncText');
         const syncIndicator = document.getElementById('tkSyncIndicator');
@@ -614,7 +618,7 @@
             if (syncIndicator) syncIndicator.style.display = 'inline';
             if (btnSync) btnSync.disabled = true;
 
-            const res = await fetch(`${syncUrl}?tgl=${encodeURIComponent(tglInput.value)}`);
+            const res = await fetch(`${syncUrl}?tgl=${encodeURIComponent(tglInput.value)}&lini=${encodeURIComponent(lini)}`);
             if (!res.ok) throw new Error('HTTP ' + res.status);
             const json = await res.json();
 
@@ -624,22 +628,31 @@
                 const inputTotal = document.getElementById('tk_total_nilai');
                 const inputLangsung = document.getElementById('tk_langsung_org');
 
-                if (inputJml && (!inputJml.value || inputJml.value === '0' || isManualClick)) {
-                    inputJml.value = data.tk_jumlah_org || 0;
-                }
-                if (inputLangsung) {
-                    inputLangsung.value = inputJml ? inputJml.value : (data.tk_jumlah_org || 0);
-                }
-                if (inputTotal && (!inputTotal.value || parseFloat(inputTotal.value) === 0 || isManualClick)) {
-                    inputTotal.value = data.tk_total_nilai || 0;
+                const shouldUpdate = forceUpdate || isManualClick || !inputJml || !inputJml.value || inputJml.value === '0';
+
+                if (shouldUpdate && data.is_synced) {
+                    if (inputJml) {
+                        inputJml.value = data.tk_jumlah_org || 0;
+                        delete inputJml.dataset.userEdited;
+                    }
+                    if (inputLangsung) {
+                        inputLangsung.value = data.tk_jumlah_org || 0;
+                    }
+                    if (inputTotal) {
+                        inputTotal.value = data.tk_total_nilai || 0;
+                        delete inputTotal.dataset.userEdited;
+                    }
                 }
 
                 if (syncStatusText) {
-                    if (data.tk_jumlah_org > 0) {
-                        syncStatusText.innerHTML = `✓ Sinkron presensi <strong>${data.tgl_format}</strong>: <strong>${data.tk_jumlah_org} orang</strong> hadir (Total upah aktual: <strong>${formatRupiah(data.tk_total_nilai)}</strong>)`;
+                    if (data.is_synced && data.tk_jumlah_org > 0) {
+                        syncStatusText.innerHTML = `✓ Otomatis terisi dari Presensi [<strong>${data.kelompok}</strong>]: <strong>${data.tk_jumlah_org} orang</strong> (Total upah: <strong>${formatRupiah(data.tk_total_nilai)}</strong>)`;
                         syncStatusText.style.color = '#15803d';
+                    } else if (data.is_synced) {
+                        syncStatusText.innerHTML = `✓ Sinkron Presensi [<strong>${data.kelompok}</strong>]: 0 orang tercatat hadir pada <strong>${data.tgl_format}</strong>. Nilai dapat diisi manual.`;
+                        syncStatusText.style.color = '#64748b';
                     } else {
-                        syncStatusText.innerHTML = `ℹ Belum ada data absensi untuk tanggal <strong>${data.tgl_format}</strong>. Nilai dapat diisi manual.`;
+                        syncStatusText.innerHTML = `ℹ Belum ada data absensi [<strong>${data.kelompok || 'Langsung'}</strong>] per <strong>${data.tgl_format}</strong>. Nilai dapat diisi manual.`;
                         syncStatusText.style.color = '#64748b';
                     }
                 }
@@ -658,9 +671,11 @@
     };
 
     window.onTkJumlahChange = function () {
-        const jml = parseInt(document.getElementById('tk_jumlah_org')?.value) || 0;
+        const inputJml = document.getElementById('tk_jumlah_org');
+        const jml = parseInt(inputJml?.value) || 0;
         const inputLangsung = document.getElementById('tk_langsung_org');
         if (inputLangsung) inputLangsung.value = jml;
+        if (inputJml) inputJml.dataset.userEdited = 'true';
     };
 
     // 5. Salin Hasil Karton ke Timbangan Output WIP Kg
@@ -1298,17 +1313,30 @@
                         setVal('minyak_sawit_qty', d.minyak_sawit_qty);
                         setVal('minyak_kelapa_qty', d.minyak_kelapa_qty);
                         setVal('minyak_nilai', d.minyak_nilai);
+                        setVal('bumbu_qty', d.bumbu_qty);
                         setVal('bumbu_nilai', d.bumbu_nilai);
+                        setVal('karton_baru_qty', d.karton_baru_qty);
                         setVal('karton_baru_nilai', d.karton_baru_nilai);
+                        setVal('karton_bekas_qty', d.karton_bekas_qty);
                         setVal('karton_bekas_nilai', d.karton_bekas_nilai);
+                        setVal('plastik_hd_qty', d.plastik_hd_qty);
                         setVal('plastik_hd_nilai', d.plastik_hd_nilai);
+                        setVal('lakban_besar_qty', d.lakban_besar_qty);
                         setVal('lakban_besar_nilai', d.lakban_besar_nilai);
+                        setVal('lakban_kecil_qty', d.lakban_kecil_qty);
                         setVal('lakban_kecil_nilai', d.lakban_kecil_nilai);
+                        setVal('tali_rafia_qty', d.tali_rafia_qty);
                         setVal('tali_rafia_nilai', d.tali_rafia_nilai);
 
                         // Auto-fill Sarung Tangan jika ada dari dokumen BPPB Gudang
+                        if (d.sarung_tangan_plastik_qty && d.sarung_tangan_plastik_qty > 0) {
+                            setVal('sarung_tangan_plastik_qty', d.sarung_tangan_plastik_qty);
+                        }
                         if (d.sarung_tangan_plastik_nilai && d.sarung_tangan_plastik_nilai > 0) {
                             setVal('sarung_tangan_plastik_nilai', d.sarung_tangan_plastik_nilai);
+                        }
+                        if (d.sarung_tangan_kain_qty && d.sarung_tangan_kain_qty > 0) {
+                            setVal('sarung_tangan_kain_qty', d.sarung_tangan_kain_qty);
                         }
                         if (d.sarung_tangan_kain_nilai && d.sarung_tangan_kain_nilai > 0) {
                             setVal('sarung_tangan_kain_nilai', d.sarung_tangan_kain_nilai);
@@ -1943,7 +1971,7 @@
             elTglProd.addEventListener('change', () => {
                 window._expDateUserModified = false;
                 window.updateKartonRangeAndBatch();
-                window.syncLaborFromKaryawan();
+                window.syncLaborFromKaryawan(false, true);
             });
         }
 
@@ -1958,12 +1986,16 @@
             });
         });
 
-        // Inisialisasi sinkronisasi data tenaga kerja dari modul karyawan jika data masih kosong/default
-        const valTkJml = document.getElementById('tk_jumlah_org')?.value;
-        const valTkNilai = document.getElementById('tk_total_nilai')?.value;
-        if ((!valTkJml || valTkJml === '0') && (!valTkNilai || valTkNilai === '0')) {
-            window.syncLaborFromKaryawan();
+        // Event listener jika user mengedit total upah secara manual
+        const elTkTotal = document.getElementById('tk_total_nilai');
+        if (elTkTotal) {
+            elTkTotal.addEventListener('input', () => {
+                elTkTotal.dataset.userEdited = 'true';
+            });
         }
+
+        // Inisialisasi sinkronisasi data tenaga kerja dari modul karyawan saat halaman dibuka
+        window.syncLaborFromKaryawan(false, false);
 
         // Inisialisasi proteksi anti-duplikat pilihan barang hasil produksi
         if (typeof window.updateFgDuplicateProtection === 'function') {

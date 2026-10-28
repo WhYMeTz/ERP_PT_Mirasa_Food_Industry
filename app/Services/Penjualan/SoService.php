@@ -35,6 +35,7 @@ class SoService
             'details.barang.satuanDasar',
             'details.barang.jenisBarang',
             'payments.header.kasBank',
+            'pengeluaran',
         ])->active();
 
         if (!empty($status)) {
@@ -122,6 +123,8 @@ class SoService
             'payments.header.kasBank',
             'returns.gudang',
             'returns.details.barang.satuanDasar',
+            'pengeluaran.faktur',
+            'pengeluaran.details.barang',
         ])->where('so_id', $id)->firstOrFail();
     }
 
@@ -188,6 +191,8 @@ class SoService
                 'customer_po_no'     => $data['customer_po_no'] ?? null,
                 'top_txt'            => $topTxt,
                 'tgl_kirim_estimasi' => $data['tgl_kirim_estimasi'] ?? null,
+                'supir_nm'           => $data['supir_nm'] ?? null,
+                'nopol_kendaraan'    => $data['nopol_kendaraan'] ?? null,
                 'status_cd'          => 'APPROVED',
                 'catatan_txt'        => $data['catatan_txt'] ?? null,
                 'subtotal_bruto'     => $calculated['subtotal_bruto'],
@@ -249,6 +254,8 @@ class SoService
                 'customer_po_no'     => $data['customer_po_no'] ?? $header->customer_po_no,
                 'top_txt'            => $data['top_txt'] ?? $header->top_txt,
                 'tgl_kirim_estimasi' => $data['tgl_kirim_estimasi'] ?? $header->tgl_kirim_estimasi,
+                'supir_nm'           => array_key_exists('supir_nm', $data) ? $data['supir_nm'] : $header->supir_nm,
+                'nopol_kendaraan'    => array_key_exists('nopol_kendaraan', $data) ? $data['nopol_kendaraan'] : $header->nopol_kendaraan,
                 'catatan_txt'        => $data['catatan_txt'] ?? $header->catatan_txt,
                 'subtotal_bruto'     => $calculated['subtotal_bruto'],
                 'diskon_total'       => $calculated['diskon_total'],
@@ -443,6 +450,42 @@ class SoService
                 'updated_by'         => $userName ?? auth()->user()?->nama_lengkap ?? 'System',
                 'version_no'         => $header->version_no + 1,
             ]);
+
+            return $header;
+        });
+    }
+
+    /**
+     * Update cepat parameter armada (Supir & Nopol Truk) dari modul Penjualan (PO).
+     */
+    public function updateArmada(int $id, array $data, ?string $userName = null): DatSoHdr
+    {
+        return DB::transaction(function () use ($id, $data, $userName) {
+            $header = DatSoHdr::lockForUpdate()->findOrFail($id);
+
+            $updatePayload = [
+                'supir_nm'        => !empty($data['supir_nm']) ? $data['supir_nm'] : null,
+                'nopol_kendaraan' => !empty($data['nopol_kendaraan']) ? $data['nopol_kendaraan'] : null,
+                'updated_by'      => $userName ?? auth()->user()?->nama_lengkap ?? 'System',
+            ];
+
+            if (!empty($data['surat_jalan_no'])) {
+                $updatePayload['surat_jalan_no'] = $data['surat_jalan_no'];
+            }
+            if (!empty($data['tgl_kirim_estimasi'])) {
+                $updatePayload['tgl_kirim_estimasi'] = $data['tgl_kirim_estimasi'];
+            }
+
+            $header->update($updatePayload);
+
+            // Sinkronkan juga ke dokumen pengeluaran gudang jika sudah ada
+            \App\Models\Penjualan\DatPengeluaranHdr::where('so_id', $header->so_id)
+                ->where('deleted_st', false)
+                ->update([
+                    'supir_nm'        => $header->supir_nm,
+                    'nopol_kendaraan' => $header->nopol_kendaraan,
+                    'pengeluaran_no'  => $header->surat_jalan_no,
+                ]);
 
             return $header;
         });

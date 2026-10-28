@@ -82,3 +82,37 @@ window.closeVoidModal = function() {
         modal.style.display = 'none';
     }
 };
+
+// Switch Tab (Antrean PO Siap Kirim vs Daftar Dokumen Surat Jalan)
+window.switchSjTab = function(tabName) {
+    const paneSj = document.getElementById('paneSj');
+    const paneAntrean = document.getElementById('paneAntrean');
+    const btnSj = document.getElementById('tabBtnSj');
+    const btnAntrean = document.getElementById('tabBtnAntrean');
+
+    if (!paneSj || !paneAntrean) return;
+
+    if (tabName === 'sj') {
+        paneSj.style.display = 'block';
+        paneAntrean.style.display = 'none';
+        if (btnSj) btnSj.classList.add('active');
+        if (btnAntrean) btnAntrean.classList.remove('active');
+
+        // Update URL query string with ?tab=sj
+        const url = new URL(window.location);
+        url.searchParams.set('tab', 'sj');
+        window.history.replaceState({}, '', url);
+    } else {
+        paneSj.style.display = 'none';
+        paneAntrean.style.display = 'block';
+        if (btnSj) btnSj.classList.remove('active');
+        if (btnAntrean) btnAntrean.classList.add('active');
+
+        // Default tab is antrean, so remove tab parameter
+        const url = new URL(window.location);
+        url.searchParams.delete('tab');
+        window.history.replaceState({}, '', url);
+    }
+};
+
+

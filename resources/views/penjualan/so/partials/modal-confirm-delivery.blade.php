@@ -49,15 +49,54 @@
                         <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">
                             Nama Supir / Pengemudi
                         </label>
-                        <input type="text" name="supir_nm" id="deliverySupirInput" class="form-control" placeholder="Contoh: Budi Santoso" style="width: 100%; border: 1.5px solid #cbd5e1; border-radius: 6px; padding: 0.45rem 0.75rem; font-size: 0.85rem;">
+                        <input type="text" name="supir_nm" id="deliverySupirInput" value="{{ $order->supir_nm ?? '' }}" class="form-control" placeholder="Contoh: Budi Santoso" style="width: 100%; border: 1.5px solid #cbd5e1; border-radius: 6px; padding: 0.45rem 0.75rem; font-size: 0.85rem;">
                     </div>
                     <div>
                         <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">
                             Nomor Polisi Armada / Truk
                         </label>
-                        <input type="text" name="nopol_kendaraan" id="deliveryNopolInput" class="form-control" placeholder="Contoh: N 8123 AB" style="width: 100%; border: 1.5px solid #cbd5e1; border-radius: 6px; padding: 0.45rem 0.75rem; font-size: 0.85rem; text-transform: uppercase;">
+                        <input type="text" name="nopol_kendaraan" id="deliveryNopolInput" value="{{ $order->nopol_kendaraan ?? '' }}" class="form-control" placeholder="Contoh: N 8123 AB" style="width: 100%; border: 1.5px solid #cbd5e1; border-radius: 6px; padding: 0.45rem 0.75rem; font-size: 0.85rem; text-transform: uppercase;">
                     </div>
                 </div>
+
+                @if(isset($order) && $order->details && $order->details->count() > 0)
+                <div>
+                    <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">
+                        Rincian Barang yang Dikirim
+                    </label>
+                    <div style="border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden; max-height: 180px; overflow-y: auto;">
+                        <table style="width: 100%; font-size: 0.785rem; border-collapse: collapse;">
+                            <thead>
+                                <tr style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; color: #475569;">
+                                    <th style="padding: 6px 10px; text-align: left;">Produk</th>
+                                    <th style="padding: 6px 10px; text-align: right; width: 85px;">Sisa Pesan</th>
+                                    <th style="padding: 6px 10px; text-align: right; width: 100px;">Kirim Qty</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($order->details as $idx => $dtl)
+                                    @php $sisa = max(0, (float)$dtl->pesan_qty - (float)$dtl->kirim_qty); @endphp
+                                    <tr style="border-bottom: 1px solid #f1f5f9;">
+                                        <td style="padding: 6px 10px; font-weight: 600; color: #0f172a;">
+                                            {{ $dtl->barang?->barang_nm ?? '-' }}
+                                            <input type="hidden" name="items[{{ $idx }}][sodtl_id]" value="{{ $dtl->sodtl_id }}">
+                                        </td>
+                                        <td style="padding: 6px 10px; text-align: right; color: #64748b;">
+                                            {{ number_format($sisa, 0, ',', '.') }} {{ $dtl->barang?->satuanDasar?->satuan_nm ?? 'Karton' }}
+                                        </td>
+                                        <td style="padding: 4px 10px; text-align: right;">
+                                            <input type="number" step="any" min="0" max="{{ $sisa }}" name="items[{{ $idx }}][kirim_qty]" value="{{ $sisa }}" class="form-control" style="padding: 3px 6px; font-size: 0.8rem; text-align: right; font-weight: 700; width: 85px; display: inline-block;">
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                    <span style="color: #059669; font-size: 0.725rem; margin-top: 3px; display: block; font-weight: 600;">
+                        ✓ Sistem otomatis memprioritaskan batch tertua &amp; mencatat nomor batch fisik riil (FEFO).
+                    </span>
+                </div>
+                @endif
             </div>
 
             {{-- FOOTER MODAL --}}
@@ -65,9 +104,9 @@
                 <button type="button" class="btn btn-secondary" onclick="closeConfirmDeliveryModal()" style="font-size: 0.825rem; padding: 0.45rem 1rem; font-weight: 600;">
                     Batal
                 </button>
-                <button type="submit" class="btn btn-primary" style="background: #059669; border-color: #059669; font-size: 0.825rem; padding: 0.45rem 1.15rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.35rem;">
+                <button type="submit" class="btn btn-primary" style="background: #059669; border-color: #059669; font-size: 0.825rem; padding: 0.45rem 1.15rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.35rem; box-shadow: 0 2px 4px rgba(5, 150, 105, 0.25);">
                     <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                    <span>Konfirmasi &amp; Potong Stok</span>
+                    <span>Konfirmasi &amp; Terbitkan Surat Jalan (FEFO)</span>
                 </button>
             </div>
         </form>

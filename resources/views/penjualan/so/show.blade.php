@@ -96,103 +96,63 @@
             $sjTitle = $isOrderIfm ? 'IFM' : ($isOrderIdm ? 'IDM' : ($isOrderAlfa ? 'Midi/Alfa' : ($isOrderPpn ? 'PPN' : 'Non-PPN')));
         @endphp
 
-        {{-- Cetak Faktur PDF Utama --}}
-        <a href="{{ route('penjualan.so.export-faktur', $order->so_id) }}" target="_blank" class="btn btn-secondary" style="padding: 0.45rem 0.85rem; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.35rem;" title="Cetak Faktur Penjualan Utama (Format {{ $isOrderPpn ? 'Ber-PPN' : 'Non-PPN' }})">
-            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
-            <span>Faktur ({{ $isOrderPpn ? 'PPN' : 'Non-PPN' }})</span>
-        </a>
+        @php
+            $activeSj = $order->pengeluaran->where('status_cd', '!=', 'BATAL')->first();
+            $activeFaktur = $activeSj?->faktur ?? \App\Models\Penjualan\DatFakturHdr::where('so_id', $order->so_id)->where('deleted_st', false)->where('status_pembayaran', '!=', 'BATAL')->first();
+        @endphp
 
-        {{-- Cetak Surat Jalan PDF Utama --}}
-        <a href="{{ route('penjualan.so.export-surat-jalan', $order->so_id) }}" target="_blank" class="btn btn-secondary" style="padding: 0.45rem 0.85rem; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.35rem;" title="Cetak Surat Jalan Utama (Format {{ $sjTitle }})">
-            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
-            <span>Surat Jalan ({{ $sjTitle }})</span>
-        </a>
+        @php
+            $sjRoute = $activeSj 
+                ? route('penjualan.pengeluaran.export-pdf', $activeSj->pengeluaran_id) 
+                : route('penjualan.so.export-surat-jalan', $order->so_id);
+        @endphp
 
-        {{-- Dropdown Pilihan Format PDF Lengkap (IFM, Midi/Alfa, IDM, Non-PPN & Ber-PPN) --}}
-        <div style="position: relative; display: inline-block;">
-            <button type="button" 
-                    class="btn btn-secondary" 
-                    onclick="togglePrintMenu(event)" 
-                    style="padding: 0.45rem 0.65rem; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.25rem;" 
-                    title="Pilihan Format Cetak (IFM / Midi/Alfa / IDM / Non-PPN / Ber-PPN)">
-                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        {{-- AKSI PENGIRIMAN & SURAT JALAN --}}
+        @if ($activeSj)
+            <a href="{{ route('penjualan.pengeluaran.export-pdf', $activeSj->pengeluaran_id) }}" target="_blank" class="btn btn-secondary" style="padding: 0.45rem 0.85rem; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.35rem;" title="Cetak Surat Jalan Resmi (Batch & Exp Date Riil)">
+                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                <span>Cetak Surat Jalan (PDF)</span>
+            </a>
+
+            <a href="{{ route('penjualan.pengeluaran.show', $activeSj->pengeluaran_id) }}" class="btn btn-secondary" style="padding: 0.45rem 0.85rem; font-size: 0.825rem; display: inline-flex; align-items: center; gap: 0.35rem; color: #0284c7; font-weight: 700; border-color: #bae6fd; background: #f0f9ff;" title="Lihat Dokumen Surat Jalan Gudang">
+                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                <span>SJ: {{ $activeSj->pengeluaran_no }}</span>
+            </a>
+
+            @if (!$activeFaktur)
+                <button type="button" class="btn btn-secondary" onclick="openVoidDeliveryModal({{ $order->so_id }}, '{{ $order->so_no }}')" style="padding: 0.45rem 0.75rem; font-size: 0.825rem; display: inline-flex; align-items: center; gap: 0.35rem; color: #dc2626; border-color: #fca5a5; background: #fef2f2;" title="Batalkan Pengiriman & Kembalikan Stok ke Gudang FG">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/></svg>
+                    <span>Batalkan SJ (Restore Stok)</span>
+                </button>
+            @endif
+        @elseif (!in_array($order->status_cd, ['COMPLETED', 'CANCELLED']))
+            <button type="button" class="btn btn-primary" onclick="openConfirmDeliveryModal({{ $order->so_id }}, '{{ $order->so_no }}', '{{ addslashes($order->customer?->customer_nm ?? '') }}', '{{ addslashes($order->supir_nm ?? '') }}', '{{ addslashes($order->nopol_kendaraan ?? '') }}')" style="padding: 0.45rem 0.95rem; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.4rem; background: #059669; border-color: #047857; font-weight: 700; box-shadow: 0 2px 4px rgba(5,150,105,0.25);" title="Keluarkan fisik barang dari Gudang FG secara FEFO & terbitkan Surat Jalan resmi">
+                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                <span>🚀 Proses Pengiriman Barang (FEFO)</span>
             </button>
-            <div id="printMenuDropdown" style="display: none; position: absolute; right: 0; top: calc(100% + 5px); background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 8px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05); min-width: 295px; z-index: 50; overflow: hidden; text-align: left;">
-                {{-- Format Khusus IFM Indofood --}}
-                <div style="padding: 0.45rem 0.75rem; background: #ecfdf5; border-bottom: 1px solid #a7f3d0; font-size: 0.7rem; font-weight: 700; color: #065f46; text-transform: uppercase; letter-spacing: 0.05em;">
-                    Format Khusus IFM (PT. Indofood Fortuna)
-                </div>
-                <a href="{{ route('penjualan.so.export-surat-jalan', [$order->so_id, 'tipe' => 'ifm']) }}" target="_blank" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.55rem 0.85rem; font-size: 0.8125rem; color: #1e293b; text-decoration: none; border-bottom: 1px solid #e2e8f0;" onmouseover="this.style.background='#f0fdf4'; this.style.color='#047857';" onmouseout="this.style.background='transparent'; this.style.color='#1e293b';">
-                    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
-                    <div>
-                        <div style="font-weight: 600;">Surat Jalan (Khusus IFM)</div>
-                        <div style="font-size: 0.7rem; color: #64748b;">Format KARTON &bull; KG &bull; Tgl Prod &bull; Varietas</div>
-                    </div>
-                </a>
 
-                {{-- Format Khusus Midi / Alfa --}}
-                <div style="padding: 0.45rem 0.75rem; background: #eff6ff; border-bottom: 1px solid #bfdbfe; font-size: 0.7rem; font-weight: 700; color: #1e40af; text-transform: uppercase; letter-spacing: 0.05em;">
-                    Format Modern Trade (Midi / Alfa)
-                </div>
-                <a href="{{ route('penjualan.so.export-surat-jalan', [$order->so_id, 'tipe' => 'alfa']) }}" target="_blank" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.55rem 0.85rem; font-size: 0.8125rem; color: #1e293b; text-decoration: none; border-bottom: 1px solid #e2e8f0;" onmouseover="this.style.background='#eff6ff'; this.style.color='#1d4ed8';" onmouseout="this.style.background='transparent'; this.style.color='#1e293b';">
-                    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
-                    <div>
-                        <div style="font-weight: 600;">Surat Jalan (Midi / Alfa)</div>
-                        <div style="font-size: 0.7rem; color: #64748b;">Standar Blangko PT Sumber Alfaria &amp; Midi</div>
-                    </div>
-                </a>
+            <a href="{{ route('penjualan.so.export-surat-jalan', $order->so_id) }}" target="_blank" class="btn btn-secondary" style="padding: 0.45rem 0.75rem; font-size: 0.825rem; display: inline-flex; align-items: center; gap: 0.35rem; color: #64748b;" title="Pratinjau Draf Surat Jalan Sebelum Kirim">
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                <span>Draf SJ</span>
+            </a>
+        @endif
 
-                {{-- Format Khusus IDM Indomaret --}}
-                <div style="padding: 0.45rem 0.75rem; background: #eef2ff; border-bottom: 1px solid #c7d2fe; font-size: 0.7rem; font-weight: 700; color: #3730a3; text-transform: uppercase; letter-spacing: 0.05em;">
-                    Format Khusus IDM (Indomaret / DC Jogja)
-                </div>
-                <a href="{{ route('penjualan.so.export-surat-jalan', [$order->so_id, 'tipe' => 'idm']) }}" target="_blank" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.55rem 0.85rem; font-size: 0.8125rem; color: #1e293b; text-decoration: none; border-bottom: 1px solid #e2e8f0;" onmouseover="this.style.background='#eef2ff'; this.style.color='#4338ca';" onmouseout="this.style.background='transparent'; this.style.color='#1e293b';">
-                    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
-                    <div>
-                        <div style="font-weight: 600;">Surat Jalan (Khusus IDM)</div>
-                        <div style="font-size: 0.7rem; color: #64748b;">Standar Kirim DC Indomaret Yogyakarta</div>
-                    </div>
-                </a>
-
-                {{-- Format Non-PPN --}}
-                <div style="padding: 0.45rem 0.75rem; background: #f8fafc; border-bottom: 1px solid #e2e8f0; font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;">
-                    Format Non-PPN (MFI/OMS/7.0)
-                </div>
-                <a href="{{ route('penjualan.so.export-faktur', [$order->so_id, 'tipe' => 'non_ppn']) }}" target="_blank" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.55rem 0.85rem; font-size: 0.8125rem; color: #1e293b; text-decoration: none; border-bottom: 1px solid #f1f5f9;" onmouseover="this.style.background='#f0fdf4'; this.style.color='#059669';" onmouseout="this.style.background='transparent'; this.style.color='#1e293b';">
-                    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
-                    <div>
-                        <div style="font-weight: 600;">Faktur Penjualan (Non-PPN)</div>
-                        <div style="font-size: 0.7rem; color: #64748b;">Tanpa PPN &bull; Rek. an. Habibah S.P</div>
-                    </div>
-                </a>
-                <a href="{{ route('penjualan.so.export-surat-jalan', [$order->so_id, 'tipe' => 'non_ppn']) }}" target="_blank" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.55rem 0.85rem; font-size: 0.8125rem; color: #1e293b; text-decoration: none; border-bottom: 1px solid #e2e8f0;" onmouseover="this.style.background='#f0fdf4'; this.style.color='#059669';" onmouseout="this.style.background='transparent'; this.style.color='#1e293b';">
-                    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
-                    <div>
-                        <div style="font-weight: 600;">Surat Jalan (Non-PPN)</div>
-                        <div style="font-size: 0.7rem; color: #64748b;">Format PACK &bull; 3 Tanda Tangan</div>
-                    </div>
-                </a>
-
-                {{-- Format Ber-PPN --}}
-                <div style="padding: 0.45rem 0.75rem; background: #f8fafc; border-bottom: 1px solid #e2e8f0; font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;">
-                    Format Ber-PPN (MFI/BMR/1.0)
-                </div>
-                <a href="{{ route('penjualan.so.export-faktur', [$order->so_id, 'tipe' => 'ppn']) }}" target="_blank" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.55rem 0.85rem; font-size: 0.8125rem; color: #1e293b; text-decoration: none; border-bottom: 1px solid #f1f5f9;" onmouseover="this.style.background='#eff6ff'; this.style.color='#0284c7';" onmouseout="this.style.background='transparent'; this.style.color='#1e293b';">
-                    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
-                    <div>
-                        <div style="font-weight: 600;">Faktur Penjualan (Ber-PPN)</div>
-                        <div style="font-size: 0.7rem; color: #64748b;">PPN 11% &bull; DPP &bull; Rek. PT Mirasa</div>
-                    </div>
-                </a>
-                <a href="{{ route('penjualan.so.export-surat-jalan', [$order->so_id, 'tipe' => 'ppn']) }}" target="_blank" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.55rem 0.85rem; font-size: 0.8125rem; color: #1e293b; text-decoration: none;" onmouseover="this.style.background='#eff6ff'; this.style.color='#0284c7';" onmouseout="this.style.background='transparent'; this.style.color='#1e293b';">
-                    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
-                    <div>
-                        <div style="font-weight: 600;">Surat Jalan (Ber-PPN)</div>
-                        <div style="font-size: 0.7rem; color: #64748b;">Format Bungkus/Dus &bull; Kendali Mutu</div>
-                    </div>
-                </a>
-            </div>
-        </div>
+        {{-- STATUS ALUR TAHAP 3: FAKTUR PENJUALAN KEUANGAN --}}
+        @if ($activeFaktur)
+            <a href="{{ route('penjualan.faktur.show', $activeFaktur->faktur_id) }}" class="btn btn-secondary" style="padding: 0.45rem 0.85rem; font-size: 0.825rem; display: inline-flex; align-items: center; gap: 0.35rem; color: #059669; font-weight: 700; border-color: #a7f3d0; background: #f0fdf4;" title="Lihat Dokumen Faktur Penjualan">
+                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"/></svg>
+                <span>Faktur: {{ $activeFaktur->faktur_no }}</span>
+            </a>
+            <a href="{{ route('penjualan.faktur.export-pdf', $activeFaktur->faktur_id) }}" target="_blank" class="btn btn-secondary" style="padding: 0.45rem 0.65rem; font-size: 0.825rem; display: inline-flex; align-items: center; gap: 0.25rem;" title="Cetak Faktur Penjualan (PDF)">
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                <span>Cetak Faktur</span>
+            </a>
+        @elseif ($activeSj)
+            <a href="{{ route('penjualan.faktur.create', ['pengeluaran_id' => $activeSj->pengeluaran_id]) }}" class="btn btn-secondary" style="padding: 0.45rem 0.85rem; font-size: 0.825rem; display: inline-flex; align-items: center; gap: 0.35rem; color: #059669; font-weight: 700; border-color: #86efac; background: #f0fdf4;" title="Terbitkan Faktur Penjualan Komersial Berdasarkan SJ">
+                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                <span>+ Catat Faktur (Keuangan)</span>
+            </a>
+        @endif
 
         @if(!in_array($order->status_cd, ['COMPLETED', 'CANCELLED']))
             <a href="{{ route('penjualan.so.edit', $order->so_id) }}" class="btn btn-secondary" style="padding: 0.45rem 0.85rem; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.35rem;">
@@ -816,12 +776,15 @@
                     </strong>
                 </div>
 
-                @if($order->supir_nm || $order->nopol_kendaraan)
-                    <div>
-                        <span style="color: #64748b; display: block; font-size: 0.75rem;">Armada / Pengemudi:</span>
-                        <strong style="color: #334155;">{{ $order->supir_nm ?? '-' }} ({{ $order->nopol_kendaraan ?? '-' }})</strong>
+                <div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.15rem;">
+                        <span style="color: #64748b; font-size: 0.75rem;">Armada / Pengemudi:</span>
+                        <button type="button" onclick="openModalArmada()" style="background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 4px; color: #0284c7; font-size: 0.7rem; font-weight: 700; cursor: pointer; padding: 0.1rem 0.45rem; display: inline-flex; align-items: center; gap: 0.2rem;" title="Atur supir / nopol armada pengiriman">
+                            ✏️ Atur Armada
+                        </button>
                     </div>
-                @endif
+                    <strong style="color: #334155; font-size: 0.85rem;">{{ $order->supir_nm ?: '(Belum diatur)' }} {{ $order->nopol_kendaraan ? "({$order->nopol_kendaraan})" : '' }}</strong>
+                </div>
 
                 <div>
                     <span style="color: #64748b; display: block; font-size: 0.75rem;">Nomor Surat Jalan:</span>
@@ -853,9 +816,15 @@
 @include('penjualan.so.partials.modal-cancel-so')
 @include('penjualan.so.partials.modal-record-payment')
 @include('penjualan.so.partials.modal-retur-penjualan')
+@include('penjualan.so.partials.modal-update-armada')
 
 @endsection
 
 @push('scripts')
+    <script>
+        window.appConfig = {
+            autoOpenPdf: @json(session('auto_open_pdf'))
+        };
+    </script>
     <script src="{{ asset('js/penjualan/so/so-show.js') }}"></script>
 @endpush

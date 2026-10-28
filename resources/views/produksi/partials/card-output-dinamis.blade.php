@@ -114,23 +114,14 @@
             </table>
         </div>
 
-        {{-- AREA CATATAN & PO BUYER --}}
-        <div style="display: grid; grid-template-columns: 1.4fr 1fr; gap: 1.25rem; align-items: start; margin-top: 1rem; padding-top: 0.85rem; border-top: 1px dashed #e2e8f0;">
+        {{-- AREA CATATAN PRODUKSI (PO Buyer IFL disembunyikan sementara) --}}
+        <div style="margin-top: 1rem; padding-top: 0.85rem; border-top: 1px dashed #e2e8f0;">
             <div>
                 <label for="catatan_txt" style="display: block; font-size: 0.775rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">
                     Catatan Produksi / Kualitas Shift
                 </label>
                 <textarea name="catatan_txt" id="catatan_txt" class="form-control" rows="2" style="font-size: 0.825rem; resize: vertical;" placeholder="Catatan shift, deviasi bumbu, atau kendala pengerjaan...">{{ old('catatan_txt', $produksi->catatan_txt ?? '') }}</textarea>
-            </div>
-            <div>
-                <label for="po_ifl_no" style="display: block; font-size: 0.775rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem; display: flex; align-items: center; justify-content: space-between;">
-                    <span>No. Dokumen PO Buyer IFL</span>
-                    <span style="font-size: 0.7rem; font-weight: 500; color: #94a3b8;">Opsional</span>
-                </label>
-                <input type="text" name="po_ifl_no" id="po_ifl_no" class="form-control" style="font-family: monospace; font-weight: 700; font-size: 0.85rem; height: 38px; color: #0f172a;" placeholder="Contoh: PO-IFL/2026/10/088" value="{{ old('po_ifl_no', $produksi->po_ifl_no ?? '') }}">
-                <small style="color: #64748b; font-size: 0.7rem; margin-top: 0.35rem; display: block;">
-                    Diisi jika hasil produksi dialokasikan untuk pemenuhan PO buyer khusus.
-                </small>
+                <input type="hidden" name="po_ifl_no" id="po_ifl_no" value="{{ old('po_ifl_no', $produksi->po_ifl_no ?? '') }}">
             </div>
         </div>
 

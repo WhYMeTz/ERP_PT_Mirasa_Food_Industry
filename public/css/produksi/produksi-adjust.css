@@ -5,8 +5,9 @@
    ========================================================================== */
 
 .adjust-container {
-    max-width: 1400px;
-    margin: 0 auto;
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
     padding-bottom: 3rem;
 }
 
@@ -446,6 +447,99 @@
     font-weight: 500;
 }
 
+/* Subgroup Rows (Pemisah Sub-Overhead A & B) */
+.adj-subgroup-row td {
+    background: #f8fafc;
+    padding: 0.55rem 1rem !important;
+    border-top: 1px dashed #cbd5e1;
+    border-bottom: 1px dashed #cbd5e1;
+}
+
+.adj-subgroup-header-flex {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.adj-subgroup-left {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+}
+
+.adj-subgroup-badge {
+    font-size: 0.675rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.2rem 0.55rem;
+    border-radius: 4px;
+    border: 1px solid transparent;
+    line-height: 1.2;
+}
+
+.adj-subgroup-badge.badge-alokasi {
+    background: #f1f5f9;
+    color: #475569;
+    border-color: #cbd5e1;
+}
+
+.adj-subgroup-badge.badge-apd {
+    background: #ecfdf5;
+    color: #047857;
+    border-color: #a7f3d0;
+}
+
+.adj-subgroup-title {
+    font-size: 0.775rem;
+    font-weight: 700;
+    color: #334155;
+    letter-spacing: 0.02em;
+}
+
+.adj-subgroup-meta {
+    font-size: 0.725rem;
+    color: #64748b;
+    font-weight: 500;
+}
+
+/* Cell Tanpa Kuantitas Fisik (Kolom Kuantitas / Satuan) */
+.adj-no-qty-cell {
+    vertical-align: middle;
+}
+
+.adj-no-qty-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.35rem 0.75rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    transition: all 0.15s ease;
+}
+
+.adj-no-qty-pill:hover {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+}
+
+.adj-no-qty-dash {
+    color: #94a3b8;
+    font-weight: 700;
+    font-size: 0.85rem;
+}
+
+.adj-no-qty-text {
+    color: #64748b;
+    font-weight: 600;
+    font-size: 0.75rem;
+    letter-spacing: 0.01em;
+}
+
 .adj-item-current {
     text-align: right;
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
@@ -464,7 +558,7 @@
     overflow: hidden;
     transition: all 0.15s ease;
     width: 100%;
-    max-width: 220px;
+    max-width: 240px;
     margin-left: auto;
 }
 
@@ -858,6 +952,16 @@
     color: #0f172a;
 }
 
+.audit-diff-chip-qty {
+    background: #ecfdf5;
+    border-color: #a7f3d0;
+    color: #065f46;
+}
+
+.audit-diff-chip-qty strong {
+    color: #047857;
+}
+
 .audit-user-badge {
     display: inline-flex;
     align-items: center;
@@ -871,4 +975,146 @@
     border: 1px solid #e2e8f0;
     white-space: nowrap;
     box-sizing: border-box;
+}
+
+/* 8. Koreksi Kuantitas Komponen & Output WIP (Enterprise Standard) */
+.adj-qty-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.adj-qty-initial {
+    font-size: 0.75rem;
+    color: #64748b;
+    font-weight: 600;
+}
+
+.adj-qty-input-wrap {
+    display: inline-flex;
+    align-items: center;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 6px;
+    background: #ffffff;
+    overflow: hidden;
+    transition: all 0.15s ease;
+    width: 100%;
+    max-width: 190px;
+}
+
+.adj-qty-input-wrap:focus-within {
+    border-color: #0284c7;
+    box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+}
+
+.adj-calc-qty-input {
+    width: 100%;
+    border: none;
+    outline: none;
+    padding: 0.4rem 0.55rem;
+    font-size: 0.825rem;
+    font-weight: 700;
+    text-align: right;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-variant-numeric: tabular-nums;
+    color: #0f172a;
+    background: transparent;
+}
+
+.adj-qty-suffix {
+    background: #f8fafc;
+    color: #475569;
+    font-size: 0.725rem;
+    font-weight: 700;
+    padding: 0.4rem 0.5rem;
+    border-left: 1px solid #e2e8f0;
+    user-select: none;
+    white-space: nowrap;
+}
+
+.adj-qty-delta-row {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-top: 2px;
+}
+
+/* Kartu Koreksi Output WIP Timbangan */
+.adj-output-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+}
+
+.adj-output-header {
+    background: #ffffff;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 0.875rem 1.25rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.adj-output-title {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: #0f172a;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+}
+
+.adj-output-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.825rem;
+}
+
+.adj-output-table th {
+    background: #f8fafc;
+    color: #475569;
+    font-size: 0.725rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0.65rem 1rem;
+    border-bottom: 1.5px solid #e2e8f0;
+}
+
+.adj-output-table td {
+    padding: 0.65rem 1rem;
+    border-bottom: 1px solid #e2e8f0;
+    vertical-align: middle;
+}
+
+.adj-output-table tr:hover td {
+    background: #f8fafc;
+}
+
+.adj-output-summary-bar {
+    background: #f8fafc;
+    border-top: 1.5px solid #e2e8f0;
+    padding: 0.75rem 1.25rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.adj-rendemen-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.25rem 0.65rem;
+    border-radius: 9999px;
+    font-size: 0.775rem;
+    font-weight: 700;
+    border: 1px solid #cbd5e1;
+    background: #ffffff;
 }

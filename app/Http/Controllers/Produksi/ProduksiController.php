@@ -216,7 +216,8 @@ class ProduksiController extends Controller
     {
         try {
             $tgl = $request->input('tgl', date('Y-m-d'));
-            $data = $this->produksiService->getLaborDataFromKaryawan($tgl);
+            $lini = $request->input('lini');
+            $data = $this->produksiService->getLaborDataFromKaryawan($tgl, $lini);
 
             return response()->json([
                 'status' => 'success',
@@ -256,12 +257,19 @@ class ProduksiController extends Controller
             'minyak_sawit_qty'            => 'nullable|numeric|min:0',
             'minyak_kelapa_qty'           => 'nullable|numeric|min:0',
             'minyak_nilai'                => 'nullable|numeric|min:0',
+            'bumbu_qty'                   => 'nullable|numeric|min:0',
             'bumbu_nilai'                 => 'nullable|numeric|min:0',
+            'karton_baru_qty'             => 'nullable|numeric|min:0',
             'karton_baru_nilai'           => 'nullable|numeric|min:0',
+            'karton_bekas_qty'            => 'nullable|numeric|min:0',
             'karton_bekas_nilai'          => 'nullable|numeric|min:0',
+            'plastik_hd_qty'              => 'nullable|numeric|min:0',
             'plastik_hd_nilai'            => 'nullable|numeric|min:0',
+            'lakban_besar_qty'            => 'nullable|numeric|min:0',
             'lakban_besar_nilai'          => 'nullable|numeric|min:0',
+            'lakban_kecil_qty'            => 'nullable|numeric|min:0',
             'lakban_kecil_nilai'          => 'nullable|numeric|min:0',
+            'tali_rafia_qty'              => 'nullable|numeric|min:0',
             'tali_rafia_nilai'            => 'nullable|numeric|min:0',
 
             // Energi
@@ -279,7 +287,9 @@ class ProduksiController extends Controller
 
             // Overhead
             'fotocopy_nilai'              => 'nullable|numeric|min:0',
+            'sarung_tangan_plastik_qty'   => 'nullable|numeric|min:0',
             'sarung_tangan_plastik_nilai' => 'nullable|numeric|min:0',
+            'sarung_tangan_kain_qty'      => 'nullable|numeric|min:0',
             'sarung_tangan_kain_nilai'    => 'nullable|numeric|min:0',
             'qc_pengawasan_nilai'         => 'nullable|numeric|min:0',
             'listrik_air_telp_nilai'      => 'nullable|numeric|min:0',
@@ -393,21 +403,37 @@ class ProduksiController extends Controller
             'alasan_txt'                  => 'required|string|min:5',
             'no_referensi_txt'            => 'nullable|string|max:100',
 
-            // Bahan Baku Langsung (BBL)
+            // Output WIP Kuantitas (Hasil Timbangan Fisik)
+            'total_wip_qty'               => 'nullable|numeric|min:0',
+            'output_items'                => 'nullable|array',
+            'output_items.*.qty_kg'       => 'nullable|numeric|min:0',
+
+            // Bahan Baku Langsung (BBL) - Kuantitas & Nilai
+            'singkong_qty'                => 'nullable|numeric|min:0',
             'singkong_nilai'              => 'nullable|numeric|min:0',
+            'minyak_qty'                  => 'nullable|numeric|min:0',
             'minyak_nilai'                => 'nullable|numeric|min:0',
+            'bumbu_qty'                   => 'nullable|numeric|min:0',
             'bumbu_nilai'                 => 'nullable|numeric|min:0',
 
-            // Kemasan & Packing
+            // Kemasan & Packing - Kuantitas & Nilai
+            'karton_baru_qty'             => 'nullable|numeric|min:0',
             'karton_baru_nilai'           => 'nullable|numeric|min:0',
+            'karton_bekas_qty'            => 'nullable|numeric|min:0',
             'karton_bekas_nilai'          => 'nullable|numeric|min:0',
+            'plastik_hd_qty'              => 'nullable|numeric|min:0',
             'plastik_hd_nilai'            => 'nullable|numeric|min:0',
+            'lakban_besar_qty'            => 'nullable|numeric|min:0',
             'lakban_besar_nilai'          => 'nullable|numeric|min:0',
+            'lakban_kecil_qty'            => 'nullable|numeric|min:0',
             'lakban_kecil_nilai'          => 'nullable|numeric|min:0',
+            'tali_rafia_qty'              => 'nullable|numeric|min:0',
             'tali_rafia_nilai'            => 'nullable|numeric|min:0',
 
-            // Tenaga Kerja & Utilitas
+            // Tenaga Kerja & Utilitas - Kuantitas & Nilai
+            'tk_jumlah_org'               => 'nullable|integer|min:0',
             'tk_total_nilai'              => 'nullable|numeric|min:0',
+            'cng_mmbtu'                   => 'nullable|numeric|min:0',
             'cng_nilai'                   => 'nullable|numeric|min:0',
             'listrik_air_telp_nilai'      => 'nullable|numeric|min:0',
 
@@ -415,7 +441,9 @@ class ProduksiController extends Controller
             'pemeliharaan_mesin_nilai'    => 'nullable|numeric|min:0',
             'qc_pengawasan_nilai'         => 'nullable|numeric|min:0',
             'penyusutan_mesin_nilai'      => 'nullable|numeric|min:0',
+            'sarung_tangan_plastik_qty'   => 'nullable|numeric|min:0',
             'sarung_tangan_plastik_nilai' => 'nullable|numeric|min:0',
+            'sarung_tangan_kain_qty'      => 'nullable|numeric|min:0',
             'sarung_tangan_kain_nilai'    => 'nullable|numeric|min:0',
             'fotocopy_nilai'              => 'nullable|numeric|min:0',
             'limbah_padat_nilai'          => 'nullable|numeric|min:0',

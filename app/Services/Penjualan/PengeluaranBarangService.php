@@ -29,6 +29,7 @@ class PengeluaranBarangService
         int $perPage = 15,
         ?string $search = null,
         ?string $status = null,
+        ?string $date = null,
         ?string $dateFrom = null,
         ?string $dateTo = null
     ): LengthAwarePaginator {
@@ -56,15 +57,23 @@ class PengeluaranBarangService
         }
 
         if (!empty($status)) {
-            $query->where('status_cd', strtoupper(trim($status)));
+            $statusUpper = strtoupper(trim($status));
+            if ($statusUpper === 'DIKELUARKAN') {
+                $query->where('status_cd', '!=', 'BATAL');
+            } else {
+                $query->where('status_cd', $statusUpper);
+            }
         }
 
-        if (!empty($dateFrom)) {
-            $query->whereDate('pengeluaran_tgl', '>=', $dateFrom);
-        }
-
-        if (!empty($dateTo)) {
-            $query->whereDate('pengeluaran_tgl', '<=', $dateTo);
+        if (!empty($date)) {
+            $query->whereDate('pengeluaran_tgl', $date);
+        } else {
+            if (!empty($dateFrom)) {
+                $query->whereDate('pengeluaran_tgl', '>=', $dateFrom);
+            }
+            if (!empty($dateTo)) {
+                $query->whereDate('pengeluaran_tgl', '<=', $dateTo);
+            }
         }
 
         return $query->paginate($perPage);
@@ -76,26 +85,43 @@ class PengeluaranBarangService
     public function getMetrics(): array
     {
         $today = now()->toDateString();
+        $startOfMonth = now()->startOfMonth()->toDateString();
+        $endOfMonth = now()->endOfMonth()->toDateString();
         $base = DatPengeluaranHdr::where('deleted_st', false);
 
-        $totalDokumen = (clone $base)->count();
-        $kirimHariIni = (clone $base)->where('pengeluaran_tgl', $today)->count();
-        $totalQtyKirim = (float) (clone $base)->where('status_cd', '!=', 'BATAL')->sum('total_qty');
-        $dalamPerjalanan = (clone $base)->where('status_cd', 'TERKIRIM')->count();
-        $selesaiTiba = (clone $base)->where('status_cd', 'SAMPAI_TUJUAN')->count();
-
-        // PO yang siap dikirim (Approved tapi belum selesai kirim)
+        // 1. Antrean PO menunggu pengeluaran fisik (Gudang FG)
         $readyOrdersCount = DatSoHdr::where('deleted_st', false)
             ->whereIn('status_cd', ['APPROVED', 'PROCESSING', 'PARTIAL'])
             ->count();
 
+        // 2. Dokumen pengiriman diberangkatkan hari ini (non-batal)
+        $kirimHariIni = (clone $base)->where('pengeluaran_tgl', $today)
+            ->where('status_cd', '!=', 'BATAL')
+            ->count();
+
+        // 3. Fisik karton keluar hari ini
+        $qtyHariIni = (float) (clone $base)->where('pengeluaran_tgl', $today)
+            ->where('status_cd', '!=', 'BATAL')
+            ->sum('total_qty');
+
+        // 4. Akumulasi pengeluaran bulan ini (Karton & Dokumen)
+        $qtyBulanIni = (float) (clone $base)->whereBetween('pengeluaran_tgl', [$startOfMonth, $endOfMonth])
+            ->where('status_cd', '!=', 'BATAL')
+            ->sum('total_qty');
+        $sjBulanIni = (clone $base)->whereBetween('pengeluaran_tgl', [$startOfMonth, $endOfMonth])
+            ->where('status_cd', '!=', 'BATAL')
+            ->count();
+
+        $totalDokumen = (clone $base)->count();
+
         return [
-            'total_dokumen'      => $totalDokumen,
-            'kirim_hari_ini'     => $kirimHariIni,
-            'total_qty_kirim'    => $totalQtyKirim,
-            'dalam_perjalanan'   => $dalamPerjalanan,
-            'selesai_tiba'       => $selesaiTiba,
             'ready_orders_count' => $readyOrdersCount,
+            'kirim_hari_ini'     => $kirimHariIni,
+            'qty_hari_ini'       => $qtyHariIni,
+            'qty_bulan_ini'      => $qtyBulanIni,
+            'sj_bulan_ini'       => $sjBulanIni,
+            'bulan_nama'         => now()->translatedFormat('F Y'),
+            'total_dokumen'      => $totalDokumen,
         ];
     }
 
@@ -170,9 +196,11 @@ class PengeluaranBarangService
 
             $gudangFgId = MstGudang::where('gudang_cd', 'GDG-FG')->value('gudang_id') ?? 6;
             $tglKirim = $data['pengeluaran_tgl'] ?? now()->toDateString();
-            $suratJalanNo = !empty($data['pengeluaran_no'])
-                ? $data['pengeluaran_no']
-                : $this->codeGenerator->generateSuratJalanNo($tglKirim);
+            $suratJalanNo = !empty($order->surat_jalan_no)
+                ? $order->surat_jalan_no
+                : (!empty($data['pengeluaran_no'])
+                    ? $data['pengeluaran_no']
+                    : $this->codeGenerator->generateSuratJalanNo($tglKirim));
 
             // Buat header pengeluaran
             $header = DatPengeluaranHdr::create([
@@ -181,9 +209,9 @@ class PengeluaranBarangService
                 'so_id'           => $order->so_id,
                 'customer_id'     => $order->customer_id,
                 'gudang_id'       => $gudangFgId,
-                'supir_nm'        => $data['supir_nm'] ?? null,
-                'nopol_kendaraan' => $data['nopol_kendaraan'] ?? null,
-                'ekspedisi_nm'    => $data['ekspedisi_nm'] ?? null,
+                'supir_nm'        => !empty($data['supir_nm']) ? $data['supir_nm'] : $order->supir_nm,
+                'nopol_kendaraan' => !empty($data['nopol_kendaraan']) ? $data['nopol_kendaraan'] : $order->nopol_kendaraan,
+                'ekspedisi_nm'    => $data['ekspedisi_nm'] ?? 'Truk Box MFI',
                 'total_qty'       => 0,
                 'status_cd'       => 'TERKIRIM',
                 'catatan_txt'     => $data['catatan_txt'] ?? null,
@@ -290,10 +318,15 @@ class PengeluaranBarangService
     public function voidPengeluaran(int $pengeluaranId, string $reason, ?string $userName = null): DatPengeluaranHdr
     {
         return DB::transaction(function () use ($pengeluaranId, $reason, $userName) {
-            $header = DatPengeluaranHdr::with(['details', 'order.details'])->lockForUpdate()->findOrFail($pengeluaranId);
+            $header = DatPengeluaranHdr::with(['details', 'order.details', 'faktur'])->lockForUpdate()->findOrFail($pengeluaranId);
 
             if ($header->status_cd === 'BATAL') {
                 throw new Exception("Surat Jalan {$header->pengeluaran_no} sudah dalam status Dibatalkan (BATAL).");
+            }
+
+            // Kunci Keuangan: Surat Jalan tidak boleh dibatalkan jika Faktur Penjualan komersial sudah terbit
+            if ($header->faktur && $header->faktur->status_pembayaran !== 'BATAL' && !$header->faktur->deleted_st) {
+                throw new Exception("Surat Jalan {$header->pengeluaran_no} tidak dapat dibatalkan karena Faktur Penjualan ({$header->faktur->faktur_no}) sudah terbit. Batalkan faktur terlebih dahulu oleh bagian Keuangan jika ingin merevisi.");
             }
 
             $gudangFgId = $header->gudang_id;

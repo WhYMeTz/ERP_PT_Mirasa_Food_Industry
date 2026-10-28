@@ -3,7 +3,7 @@
 @section('title', 'Pengeluaran Barang - ERP PT Mirasa')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/penjualan/pengeluaran/pengeluaran-index.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/penjualan/pengeluaran/pengeluaran-index.css') }}?v={{ filemtime(public_path('css/penjualan/pengeluaran/pengeluaran-index.css')) }}">
 @endpush
 
 @section('content')
@@ -23,25 +23,24 @@
                 <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                 <span>+ Catat Pengeluaran Barang</span>
             </a>
-            <a href="{{ route('penjualan.so.index') }}" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.825rem;">
-                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                <span>Daftar PO Penjualan</span>
-            </a>
         </div>
     </div>
 
-    {{-- 4 KARTU METRIK OPERASIONAL --}}
+    {{-- 5 KARTU METRIK OPERASIONAL --}}
     <div class="sj-metrics-grid">
-        {{-- KARTU 1: TOTAL SURAT JALAN --}}
-        <div class="sj-metric-card">
+        {{-- KARTU 1: ANTREAN PENGELUARAN (FG) --}}
+        <div class="sj-metric-card clickable {{ ($metrics['ready_orders_count'] ?? 0) > 0 ? 'queue-highlight' : '' }}" onclick="switchSjTab('antrean')" title="Klik untuk membuka Antrean Pengeluaran">
             <div class="sj-metric-header">
-                <span class="sj-metric-title">Total Surat Jalan</span>
-                <div class="sj-metric-icon blue">
-                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                <span class="sj-metric-title">Antrean Pengeluaran</span>
+                <div class="sj-metric-icon amber" style="background: #fef3c7; color: #d97706;">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
                 </div>
             </div>
-            <div class="sj-metric-val">{{ number_format($metrics['total_dokumen'], 0, ',', '.') }}</div>
-            <div class="sj-metric-subtext">Total dokumen pengeluaran diterbitkan</div>
+            <div class="sj-metric-val" style="color: {{ ($metrics['ready_orders_count'] ?? 0) > 0 ? '#b45309' : '#0f172a' }};">
+                {{ number_format($metrics['ready_orders_count'] ?? 0, 0, ',', '.') }}
+                <span style="font-size: 0.85rem; font-weight: 600; color: #64748b;">PO</span>
+            </div>
+            <div class="sj-metric-subtext">Menunggu pengeluaran FG &bull; Klik buka tab</div>
         </div>
 
         {{-- KARTU 2: PENGIRIMAN HARI INI --}}
@@ -52,41 +51,80 @@
                     <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                 </div>
             </div>
-            <div class="sj-metric-val">{{ number_format($metrics['kirim_hari_ini'], 0, ',', '.') }}</div>
+            <div class="sj-metric-val">
+                {{ number_format($metrics['kirim_hari_ini'] ?? 0, 0, ',', '.') }}
+                <span style="font-size: 0.85rem; font-weight: 600; color: #64748b;">SJ</span>
+            </div>
             <div class="sj-metric-subtext">Truk diberangkatkan hari ini</div>
         </div>
 
-        {{-- KARTU 3: TOTAL KARTON KELUAR --}}
+        {{-- KARTU 3: FISIK KELUAR HARI INI --}}
         <div class="sj-metric-card">
             <div class="sj-metric-header">
-                <span class="sj-metric-title">Total Fisik Keluar</span>
-                <div class="sj-metric-icon amber">
+                <span class="sj-metric-title">Fisik Keluar Hari Ini</span>
+                <div class="sj-metric-icon blue" style="background: #e0f2fe; color: #0284c7;">
                     <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
                 </div>
             </div>
             <div class="sj-metric-val">
-                {{ number_format($metrics['total_qty_kirim'], 0, ',', '.') }}
+                {{ number_format($metrics['qty_hari_ini'] ?? 0, 0, ',', '.') }}
                 <span style="font-size: 0.85rem; font-weight: 600; color: #64748b;">Karton</span>
             </div>
-            <div class="sj-metric-subtext">Akumulasi produk keluar Gudang FG</div>
+            <div class="sj-metric-subtext">Volume produk keluar Gudang FG hari ini</div>
         </div>
 
-        {{-- KARTU 4: DALAM PERJALANAN --}}
+        {{-- KARTU 4: TOTAL PENGELUARAN BULAN INI --}}
         <div class="sj-metric-card">
             <div class="sj-metric-header">
-                <span class="sj-metric-title">Dalam Perjalanan</span>
-                <div class="sj-metric-icon purple">
-                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                <span class="sj-metric-title">Total Keluar Bulan Ini</span>
+                <div class="sj-metric-icon purple" style="background: #faf5ff; color: #7c3aed;">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
                 </div>
             </div>
-            <div class="sj-metric-val">{{ number_format($metrics['dalam_perjalanan'], 0, ',', '.') }}</div>
-            <div class="sj-metric-subtext">Menuju customer / Siap verifikasi tiba</div>
+            <div class="sj-metric-val">
+                {{ number_format($metrics['qty_bulan_ini'] ?? 0, 0, ',', '.') }}
+                <span style="font-size: 0.85rem; font-weight: 600; color: #64748b;">Karton</span>
+            </div>
+            <div class="sj-metric-subtext">{{ $metrics['bulan_nama'] ?? 'Bulan Ini' }} &bull; {{ number_format($metrics['sj_bulan_ini'] ?? 0, 0, ',', '.') }} Surat Jalan</div>
         </div>
     </div>
+
+    {{-- NAVIGASI TAB UTAMA (ENTERPRISE ERP WORKLIST) --}}
+    <div class="sj-tabs-wrapper">
+        <div class="sj-tabs-group">
+            <button type="button" 
+                    class="sj-tab-item {{ ($tab ?? 'antrean') === 'antrean' ? 'active' : '' }}" 
+                    onclick="switchSjTab('antrean')" 
+                    id="tabBtnAntrean">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                <span>Antrean Pengeluaran</span>
+                @if(isset($readyOrders) && $readyOrders->isNotEmpty())
+                    <span class="sj-tab-badge amber">{{ $readyOrders->count() }}</span>
+                @else
+                    <span class="sj-tab-badge count">0</span>
+                @endif
+            </button>
+
+            <button type="button" 
+                    class="sj-tab-item {{ ($tab ?? 'antrean') === 'sj' ? 'active' : '' }}" 
+                    onclick="switchSjTab('sj')" 
+                    id="tabBtnSj">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                <span>Riwayat Pengeluaran</span>
+                <span class="sj-tab-badge count">{{ number_format($suratJalanList->total(), 0, ',', '.') }}</span>
+            </button>
+        </div>
+    </div>
+
+    {{-- ==============================================================
+         TAB PANE 1: DAFTAR DOKUMEN SURAT JALAN
+         ============================================================== --}}
+    <div id="paneSj" class="sj-tab-pane {{ ($tab ?? 'antrean') === 'sj' ? 'active' : '' }}" style="{{ ($tab ?? 'antrean') === 'sj' ? '' : 'display: none;' }}">
 
     {{-- FILTER & PENCARIAN --}}
     <div class="sj-filter-card">
         <form method="GET" action="{{ route('penjualan.pengeluaran.index') }}" class="sj-filter-grid">
+            <input type="hidden" name="tab" value="sj">
             <div class="sj-form-group">
                 <label for="search" class="sj-form-label">Cari Pengeluaran / Customer / Truk</label>
                 <input type="text" name="search" id="search" value="{{ $search }}"
@@ -94,31 +132,25 @@
             </div>
 
             <div class="sj-form-group">
-                <label for="status" class="sj-form-label">Status Kirim</label>
+                <label for="status" class="sj-form-label">Status Dokumen</label>
                 <select name="status" id="status" class="sj-form-select">
                     <option value="">-- Semua Status --</option>
-                    <option value="TERKIRIM" {{ $status === 'TERKIRIM' ? 'selected' : '' }}>Terkirim (Di Jalan)</option>
-                    <option value="SAMPAI_TUJUAN" {{ $status === 'SAMPAI_TUJUAN' ? 'selected' : '' }}>Sampai Tujuan</option>
+                    <option value="DIKELUARKAN" {{ $status === 'DIKELUARKAN' ? 'selected' : '' }}>Dikeluarkan</option>
                     <option value="BATAL" {{ $status === 'BATAL' ? 'selected' : '' }}>Dibatalkan (Void)</option>
                 </select>
             </div>
 
             <div class="sj-form-group">
-                <label for="date_from" class="sj-form-label">Tanggal Dari</label>
-                <input type="date" name="date_from" id="date_from" value="{{ $dateFrom }}" class="sj-form-input">
-            </div>
-
-            <div class="sj-form-group">
-                <label for="date_to" class="sj-form-label">Tanggal Sampai</label>
-                <input type="date" name="date_to" id="date_to" value="{{ $dateTo }}" class="sj-form-input">
+                <label for="date" class="sj-form-label">Tanggal Pengeluaran</label>
+                <input type="date" name="date" id="date" value="{{ $date ?? '' }}" class="sj-form-input">
             </div>
 
             <div style="display: flex; gap: 0.35rem;">
                 <button type="submit" class="btn btn-primary" style="height: 38px; padding: 0 0.95rem; font-size: 0.825rem; font-weight: 700;">
                     Filter
                 </button>
-                @if ($search || $status || $dateFrom || $dateTo)
-                    <a href="{{ route('penjualan.pengeluaran.index') }}" class="btn btn-secondary" style="height: 38px; padding: 0 0.75rem; font-size: 0.825rem; display: inline-flex; align-items: center;">
+                @if ($search || $status || !empty($date))
+                    <a href="{{ route('penjualan.pengeluaran.index', ['tab' => 'sj']) }}" class="btn btn-secondary" style="height: 38px; padding: 0 0.75rem; font-size: 0.825rem; display: inline-flex; align-items: center;">
                         Reset
                     </a>
                 @endif
@@ -132,14 +164,15 @@
             <table class="sj-table">
                 <thead>
                     <tr>
-                        <th style="width: 50px; text-align: center;">No.</th>
-                        <th>Dokumen Surat Jalan</th>
-                        <th>Referensi PO Penjualan</th>
-                        <th>Mitra Customer</th>
-                        <th>Armada &amp; Supir</th>
-                        <th style="text-align: right;">Total Qty</th>
-                        <th style="text-align: center;">Status</th>
-                        <th style="text-align: center; width: 100px;">Aksi</th>
+                        <th style="width: 45px; text-align: center;">No.</th>
+                        <th style="width: 155px;">Dokumen Surat Jalan</th>
+                        <th style="width: 140px;">Referensi PO Penjualan</th>
+                        <th style="min-width: 180px;">Mitra Customer</th>
+                        <th style="min-width: 220px;">Rincian Barang Dikeluarkan</th>
+                        <th style="min-width: 160px;">Armada &amp; Supir</th>
+                        <th style="text-align: right; width: 110px;">Total Qty</th>
+                        <th style="text-align: center; width: 130px;">Status</th>
+                        <th style="text-align: center; width: 90px;">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -201,6 +234,31 @@
                                 </div>
                             </td>
 
+                            {{-- Rincian Barang Dikeluarkan --}}
+                            <td>
+                                <div style="font-size: 0.775rem; color: #334155; line-height: 1.45;">
+                                    @forelse($sj->details->take(2) as $dtl)
+                                        <div style="margin-bottom: 0.25rem;">
+                                            <span style="font-weight: 700; color: #0f172a;">{{ $dtl->barang?->barang_nm ?? '-' }}</span>
+                                            <span style="font-weight: 600; color: #0284c7;">({{ number_format($dtl->kirim_qty, 0, ',', '.') }} ctn)</span>
+                                            @if($dtl->batch_no)
+                                                <div style="font-size: 0.7rem; color: #64748b; font-family: monospace;">
+                                                    Batch: {{ $dtl->batch_no }}
+                                                </div>
+                                            @endif
+                                        </div>
+                                    @empty
+                                        <span style="color: #94a3b8; font-style: italic; font-size: 0.75rem;">Tanpa rincian barang</span>
+                                    @endforelse
+
+                                    @if($sj->details->count() > 2)
+                                        <div style="color: #64748b; font-size: 0.725rem; font-style: italic; margin-top: 0.15rem;">
+                                            +{{ $sj->details->count() - 2 }} produk lainnya...
+                                        </div>
+                                    @endif
+                                </div>
+                            </td>
+
                             {{-- Armada & Supir --}}
                             <td>
                                 <div style="font-weight: 600; color: #1e293b;">
@@ -217,22 +275,17 @@
                                 <span style="font-size: 0.75rem; font-weight: 500; color: #64748b;">Karton</span>
                             </td>
 
-                            {{-- Status Pengiriman --}}
+                            {{-- Status Dokumen Pengeluaran --}}
                             <td style="text-align: center;">
-                                @if ($sj->status_cd === 'SAMPAI_TUJUAN')
-                                    <span class="badge-status sampai">
-                                        <svg width="10" height="10" fill="currentColor" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3"/></svg>
-                                        Sampai Tujuan
-                                    </span>
-                                @elseif ($sj->status_cd === 'BATAL')
+                                @if ($sj->status_cd === 'BATAL')
                                     <span class="badge-status batal">
-                                        <svg width="10" height="10" fill="currentColor" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3"/></svg>
+                                        <svg width="8" height="8" fill="currentColor" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3"/></svg>
                                         Batal (Void)
                                     </span>
                                 @else
-                                    <span class="badge-status terkirim">
-                                        <svg width="10" height="10" fill="currentColor" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3"/></svg>
-                                        Terkirim
+                                    <span class="badge-status dikeluarkan">
+                                        <svg width="8" height="8" fill="currentColor" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3"/></svg>
+                                        Dikeluarkan
                                     </span>
                                 @endif
                             </td>
@@ -274,18 +327,25 @@
 
                                     @if ($sj->status_cd !== 'BATAL')
                                         <div class="action-dropdown-divider"></div>
-                                        {{-- Batalkan Pengiriman (Void) --}}
-                                        <button type="button" class="action-dropdown-item danger-item" onclick="openVoidModal('{{ $sj->pengeluaran_id }}', '{{ $sj->pengeluaran_no }}')">
-                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                            <span>Batalkan (Void SJ)</span>
-                                        </button>
+                                        @if ($sj->faktur && $sj->faktur->status_pembayaran !== 'BATAL' && !$sj->faktur->deleted_st)
+                                            <div class="action-dropdown-item" style="color: #94a3b8; font-size: 0.75rem; cursor: not-allowed;" title="SJ terkunci karena Faktur Penjualan ({{ $sj->faktur->faktur_no }}) sudah terbit.">
+                                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                                                <span>Terkunci (Faktur Terbit)</span>
+                                            </div>
+                                        @else
+                                            {{-- Batalkan Pengiriman (Void) --}}
+                                            <button type="button" class="action-dropdown-item danger-item" onclick="openVoidModal('{{ $sj->pengeluaran_id }}', '{{ $sj->pengeluaran_no }}')">
+                                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                                <span>Batalkan (Void SJ)</span>
+                                            </button>
+                                        @endif
                                     @endif
                                 </div>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8">
+                            <td colspan="9">
                                 <div class="sj-empty-state">
                                     <svg class="sj-empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
                                     <div style="font-weight: 700; font-size: 1rem; color: #334155;">Belum Ada Dokumen Surat Jalan</div>
@@ -310,8 +370,148 @@
             </div>
         @endif
     </div>
+    </div>{{-- /#paneSj --}}
 
-</div>
+    {{-- ==============================================================
+         TAB PANE 2: ANTREAN PO SIAP KIRIM (STANDARD ERP WORKLIST)
+         ============================================================== --}}
+    <div id="paneAntrean" class="sj-tab-pane {{ ($tab ?? 'antrean') === 'antrean' ? 'active' : '' }}" style="{{ ($tab ?? 'antrean') === 'antrean' ? '' : 'display: none;' }}">
+        <div class="sj-table-card">
+            <div class="sj-antrean-header">
+                <div>
+                    <h2 class="sj-antrean-title">Antrean PO Penjualan Menunggu Pengeluaran Fisik (Gudang FG)</h2>
+                    <p class="sj-antrean-desc">
+                        Daftar pesanan penjualan resmi yang siap dialokasikan batch FEFO untuk pengeluaran barang dan pengiriman.
+                    </p>
+                </div>
+                <div>
+                    <span class="sj-tab-badge amber" style="font-size: 0.775rem; padding: 4px 10px;">
+                        {{ $readyOrders->count() }} PO Menunggu
+                    </span>
+                </div>
+            </div>
+
+            <div class="sj-table-responsive">
+                <table class="sj-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 150px;">No. PO Penjualan</th>
+                            <th style="width: 110px;">Tanggal PO</th>
+                            <th>Mitra Customer &amp; Klasifikasi</th>
+                            <th>Rincian Produk Dipesan</th>
+                            <th style="text-align: right; width: 130px;">Total Pesanan</th>
+                            <th style="width: 120px;">Jadwal Kirim</th>
+                            <th style="width: 160px; text-align: center;">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($readyOrders as $ro)
+                            @php
+                                $klasifikasi = $ro->customer?->klasifikasi ?? 'MANUAL';
+                                $badgeStyle = 'background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1;';
+                                if ($klasifikasi === 'IFM') {
+                                    $badgeStyle = 'background: #f3e8ff; color: #7e22ce; border: 1px solid #d8b4fe;';
+                                } elseif ($klasifikasi === 'IDM') {
+                                    $badgeStyle = 'background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd;';
+                                } elseif (in_array($klasifikasi, ['MIDI_ALFA', 'MIDI', 'ALFA'])) {
+                                    $badgeStyle = 'background: #fef3c7; color: #b45309; border: 1px solid #fde68a;';
+                                }
+                                $totalKarton = (float) $ro->details->sum('pesan_qty');
+                                $kirimQty = (float) $ro->details->sum('kirim_qty');
+                                $sisaKarton = max(0, $totalKarton - $kirimQty);
+                            @endphp
+                            <tr>
+                                <td>
+                                    <span style="font-weight: 700; color: #0284c7; font-family: monospace; font-size: 0.85rem;">
+                                        {{ $ro->so_no }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {{ \Carbon\Carbon::parse($ro->so_tgl)->format('d/m/Y') }}
+                                </td>
+                                <td>
+                                    <div style="font-weight: 700; color: #1e293b; margin-bottom: 0.2rem;">
+                                        {{ $ro->customer?->customer_nm ?? '-' }}
+                                    </div>
+                                    <span style="display: inline-block; font-size: 0.675rem; font-weight: 700; padding: 1px 6px; border-radius: 4px; {{ $badgeStyle }}">
+                                        {{ $klasifikasi }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div style="font-size: 0.775rem; color: #475569; line-height: 1.45;">
+                                        @foreach($ro->details->take(2) as $dtl)
+                                            <div>&bull; {{ $dtl->barang?->barang_nm ?? '-' }} <span style="font-weight: 600; color: #0f172a;">({{ number_format($dtl->pesan_qty, 0, ',', '.') }} ctn)</span></div>
+                                        @endforeach
+                                        @if($ro->details->count() > 2)
+                                            <div style="color: #64748b; font-size: 0.725rem; font-style: italic;">
+                                                +{{ $ro->details->count() - 2 }} item lainnya...
+                                            </div>
+                                        @endif
+                                    </div>
+                                </td>
+                                <td style="text-align: right;">
+                                    <span style="font-weight: 700; color: #0f172a; font-size: 0.875rem;">
+                                        {{ number_format($totalKarton, 0, ',', '.') }}
+                                    </span>
+                                    <span style="font-size: 0.725rem; color: #64748b;">Karton</span>
+                                    @if ($ro->status_cd === 'PARTIAL' || ($kirimQty > 0 && $sisaKarton > 0))
+                                        <div style="margin-top: 0.2rem;">
+                                            <span style="display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 0.675rem; font-weight: 700; background: #fef3c7; color: #b45309; border: 1px solid #fde68a;">
+                                                Sisa: {{ number_format($sisaKarton, 0, ',', '.') }} ctn
+                                            </span>
+                                        </div>
+                                    @endif
+                                </td>
+                                <td>
+                                    @if($ro->tgl_kirim_estimasi)
+                                        @php
+                                            $estDate = \Carbon\Carbon::parse($ro->tgl_kirim_estimasi)->startOfDay();
+                                            $today = \Carbon\Carbon::today();
+                                            $isOverdue = $estDate->lt($today);
+                                            $isToday = $estDate->equalTo($today);
+                                        @endphp
+                                        <div style="font-size: 0.8rem; font-weight: 600; color: #0f172a;">
+                                            {{ $estDate->format('d/m/Y') }}
+                                        </div>
+                                        @if($isOverdue)
+                                            <span style="display: inline-block; font-size: 0.675rem; font-weight: 700; color: #b45309; background: #fef3c7; border: 1px solid #fde68a; padding: 1px 5px; border-radius: 4px; margin-top: 0.15rem;">
+                                                Lewat Jadwal
+                                            </span>
+                                        @elseif($isToday)
+                                            <span style="display: inline-block; font-size: 0.675rem; font-weight: 700; color: #047857; background: #ecfdf5; border: 1px solid #a7f3d0; padding: 1px 5px; border-radius: 4px; margin-top: 0.15rem;">
+                                                Kirim Hari Ini
+                                            </span>
+                                        @endif
+                                    @else
+                                        <span style="color: #94a3b8; font-size: 0.75rem;">-</span>
+                                    @endif
+                                </td>
+                                <td style="text-align: center;">
+                                    <a href="{{ route('penjualan.pengeluaran.create', ['so_id' => $ro->so_id]) }}" 
+                                       class="btn btn-primary" 
+                                       style="padding: 0.4rem 0.85rem; font-size: 0.775rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.35rem; border-radius: 6px; background: #0284c7; border: 1px solid #0284c7; text-decoration: none; color: #ffffff;"
+                                       title="Keluarkan fisik barang dan terbitkan Surat Jalan">
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg>
+                                        <span>Keluarkan Barang</span>
+                                    </a>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="7" style="text-align: center; padding: 2.5rem 1rem; color: #64748b;">
+                                    <div style="display: flex; flex-direction: column; align-items: center; gap: 0.5rem;">
+                                        <svg width="36" height="36" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #cbd5e1;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                        <span style="font-weight: 600; color: #475569;">Tidak ada PO dalam antrean siap kirim</span>
+                                        <span style="font-size: 0.775rem; color: #94a3b8;">Semua pesanan penjualan yang disetujui telah diproses pengeluarannya.</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 
 {{-- MODAL VOID / PEMBATALAN SURAT JALAN --}}
 @include('penjualan.pengeluaran.partials.modal-void')

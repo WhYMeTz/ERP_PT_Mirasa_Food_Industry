@@ -235,8 +235,15 @@
                 $totalBungkus += $bungkus;
 
                 $plu = !empty($dtl->barang?->kode_pelanggan) ? $dtl->barang->kode_pelanggan : ($dtl->barang?->barang_cd ?? '-');
-                $batchNo = $dtl->batch_no ?: date('d m Y', strtotime($tglKirim)) . ' A';
-                $expDate = date('d/m/Y', strtotime($tglKirim . ' +14 months'));
+                $batchNo = $dtl->batch_no ?: (date('d m Y', strtotime($tglKirim)) . ' A');
+
+                // Ambil Exp Date asli dari kartu stok batch fisik di gudang
+                $batchStok = \App\Models\Gudang\DatStokBatch::where('barang_id', $dtl->barang_id)
+                    ->where('batch_no', $dtl->batch_no)
+                    ->first();
+                $expDate = ($batchStok && $batchStok->expired_tgl)
+                    ? date('d/m/Y', strtotime($batchStok->expired_tgl))
+                    : date('d/m/Y', strtotime($tglKirim . ' +14 months'));
 
                 $items[] = [
                     'plu'      => $plu,
@@ -367,13 +374,13 @@
     {{-- TEKS PENGANTAR MOBIL BOX --}}
     <table class="intro-table">
         <tr>
-            <td style="text-align: left; width: 38%; white-space: nowrap;">
+            <td style="text-align: left; width: 30%; white-space: nowrap;">
                 Dengan Kendaraan Mobil Box No. Polisi
             </td>
-            <td style="text-align: left; width: 20%; font-weight: bold; font-size: 9pt; padding-left: 4px;">
+            <td style="text-align: left; width: 36%; font-weight: bold; font-size: 9pt; padding-left: 8px;">
                 {{ $nopol ?: 'AA 9475 B' }}
             </td>
-            <td style="text-align: left; width: 42%; font-style: italic; padding-left: 10px;">
+            <td style="text-align: left; width: 34%; font-style: italic; padding-left: 12px;">
                 kami kirim barang sbb.:
             </td>
         </tr>

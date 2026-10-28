@@ -19,20 +19,15 @@
             </a>
             <div class="sj-title-row">
                 <h1 class="sj-page-title" style="font-family: monospace;">{{ $pengeluaran->pengeluaran_no }}</h1>
-                @if ($pengeluaran->status_cd === 'SAMPAI_TUJUAN')
-                    <span class="badge-status sampai">
-                        <svg width="10" height="10" fill="currentColor" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3"/></svg>
-                        Sampai Tujuan
-                    </span>
-                @elseif ($pengeluaran->status_cd === 'BATAL')
+                @if ($pengeluaran->status_cd === 'BATAL')
                     <span class="badge-status batal">
-                        <svg width="10" height="10" fill="currentColor" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3"/></svg>
+                        <svg width="8" height="8" fill="currentColor" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3"/></svg>
                         Dibatalkan (Void)
                     </span>
                 @else
-                    <span class="badge-status terkirim">
-                        <svg width="10" height="10" fill="currentColor" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3"/></svg>
-                        Terkirim (Dalam Perjalanan)
+                    <span class="badge-status dikeluarkan">
+                        <svg width="8" height="8" fill="currentColor" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3"/></svg>
+                        Dikeluarkan
                     </span>
                 @endif
             </div>
@@ -69,11 +64,18 @@
             @endif
 
             @if ($pengeluaran->status_cd !== 'BATAL')
-                <button type="button" class="btn btn-danger" onclick="openVoidModal('{{ $pengeluaran->pengeluaran_id }}', '{{ $pengeluaran->pengeluaran_no }}')"
-                        style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.825rem; font-weight: 700; background: #dc2626; border-color: #b91c1c; color: #ffffff;">
-                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                    <span>Batalkan (Void SJ)</span>
-                </button>
+                @if ($pengeluaran->faktur && $pengeluaran->faktur->status_pembayaran !== 'BATAL' && !$pengeluaran->faktur->deleted_st)
+                    <span style="background: #f1f5f9; color: #64748b; font-size: 0.8rem; font-weight: 600; padding: 0.45rem 0.85rem; border-radius: 6px; border: 1.5px solid #cbd5e1; display: inline-flex; align-items: center; gap: 0.35rem;" title="Dokumen ini terkunci karena Faktur Penjualan ({{ $pengeluaran->faktur->faktur_no }}) sudah terbit. Batalkan faktur terlebih dahulu jika ingin void SJ.">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                        <span>Terkunci (Faktur Terbit)</span>
+                    </span>
+                @else
+                    <button type="button" class="btn btn-danger" onclick="openVoidModal('{{ $pengeluaran->pengeluaran_id }}', '{{ $pengeluaran->pengeluaran_no }}')"
+                            style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.825rem; font-weight: 700; background: #dc2626; border-color: #b91c1c; color: #ffffff;">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                        <span>Batalkan (Void SJ)</span>
+                    </button>
+                @endif
             @endif
         </div>
     </div>

@@ -736,6 +736,7 @@ class User extends Authenticatable
             || $this->canDo('master_customer_edit');
     }
 
+
     public function canCreateMasterCustomer(): bool
     {
         return $this->isSuperAdmin() || $this->canDo('master_customer_create') || $this->canDo('master_customer_manage');

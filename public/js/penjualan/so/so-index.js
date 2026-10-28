@@ -7,6 +7,13 @@
 
 let activeDropdownMenu = null;
 
+// Auto-open PDF jika ada session auto_open_pdf dari controller setelah konfirmasi kirim
+document.addEventListener('DOMContentLoaded', function() {
+    if (window.appConfig && window.appConfig.autoOpenPdf) {
+        window.open(window.appConfig.autoOpenPdf, '_blank');
+    }
+});
+
 /**
  * Toggle Smart Action Dropdown dengan position: fixed
  * Memastikan menu tidak terpotong oleh overflow scroll tabel (Aturan Wajib AGENTS.md)
@@ -90,7 +97,7 @@ function toggleSoRow(rowId, btn) {
 /**
  * Modal Dialog Handlers
  */
-function openConfirmDeliveryModal(soId, soNo, customerNm) {
+function openConfirmDeliveryModal(soId, soNo, customerNm, supirNm, nopol) {
     closeSmartActionDropdown();
     const modal = document.getElementById('modalConfirmDelivery');
     if (!modal) return;
@@ -100,9 +107,22 @@ function openConfirmDeliveryModal(soId, soNo, customerNm) {
         form.action = `/penjualan/so/${soId}/confirm-delivery`;
     }
 
-    document.getElementById('modalDeliverySoNo').textContent = soNo;
-    document.getElementById('modalDeliveryCustomer').textContent = customerNm;
-    document.getElementById('deliveryTglInput').value = new Date().toISOString().split('T')[0];
+    const lblSoNo = document.getElementById('modalDeliverySoNo');
+    const lblCust = document.getElementById('modalDeliveryCustomer');
+    const tglInput = document.getElementById('deliveryTglInput');
+
+    if (lblSoNo) lblSoNo.textContent = soNo;
+    if (lblCust) lblCust.textContent = customerNm;
+    if (tglInput) tglInput.value = new Date().toISOString().split('T')[0];
+
+    if (supirNm !== undefined) {
+        const supirInput = document.getElementById('deliverySupirInput');
+        if (supirInput) supirInput.value = supirNm || '';
+    }
+    if (nopol !== undefined) {
+        const nopolInput = document.getElementById('deliveryNopolInput');
+        if (nopolInput) nopolInput.value = nopol || '';
+    }
 
     modal.style.display = 'flex';
 }

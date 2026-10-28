@@ -31,6 +31,8 @@ class StoreSoRequest extends FormRequest
             'top_txt'            => 'nullable|string|max:50',
             'ppn_tipe_header'    => 'nullable|string|in:NON_PPN,PPN_11',
             'tgl_kirim_estimasi' => 'nullable|date',
+            'supir_nm'           => 'nullable|string|max:100',
+            'nopol_kendaraan'    => 'nullable|string|max:30',
             'catatan_txt'        => 'nullable|string',
             'potongan_nominal'   => 'nullable|numeric|min:0',
 
@@ -60,5 +62,44 @@ class StoreSoRequest extends FormRequest
             'items.*.harga_satuan.required' => 'Harga satuan wajib diisi.',
             'items.*.harga_satuan.min'   => 'Harga satuan tidak boleh negatif.',
         ];
+    }
+
+    /**
+     * Validasi bisnis lanjutan: produk pasokan khusus IFM hanya untuk pelanggan berklasifikasi IFM.
+     */
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator) {
+            $customer = \App\Models\MasterData\MstCustomer::find($this->customer_id);
+            if (!$customer) {
+                return;
+            }
+
+            $isIfm = strtoupper(trim($customer->klasifikasi ?? '')) === 'IFM'
+                || str_contains(strtoupper($customer->customer_nm), 'INDOFOOD')
+                || str_contains(strtoupper($customer->customer_nm), 'FORTUNA')
+                || str_contains(strtoupper($customer->customer_cd ?? ''), 'IFM');
+
+            $items = $this->input('items', []);
+            if (!is_array($items)) {
+                return;
+            }
+
+            foreach ($items as $idx => $item) {
+                $barangId = $item['barang_id'] ?? null;
+                if (!$barangId) continue;
+
+                $barang = \App\Models\MasterData\MstBarang::find($barangId);
+                if (!$barang) continue;
+
+                $cd = strtoupper($barang->barang_cd ?? '');
+                $nm = strtoupper($barang->barang_nm ?? '');
+                $isIfmProduct = str_contains($cd, 'FCC') || str_contains($cd, 'IFL') || str_contains($nm, 'IFL') || str_contains($nm, 'INDOFOOD');
+
+                if (!$isIfm && $isIfmProduct) {
+                    $validator->errors()->add("items.{$idx}.barang_id", "Produk {$barang->barang_nm} merupakan pasokan khusus PT. Indofood (IFM). Untuk customer umum/manual, silakan pilih produk Barang Jadi (FG) seperti KS Jumbo, Maksi, atau Ping-Ping.");
+                }
+            }
+        });
     }
 }

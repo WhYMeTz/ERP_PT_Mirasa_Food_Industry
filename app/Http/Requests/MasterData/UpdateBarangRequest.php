@@ -68,6 +68,31 @@ class UpdateBarangRequest extends FormRequest
                 'numeric',
                 'min:0',
             ],
+            'harga_jual' => [
+                'nullable',
+                'numeric',
+                'min:0',
+            ],
+            'harga_jual_idm_alfa' => [
+                'nullable',
+                'numeric',
+                'min:0',
+            ],
+            'harga_jual_alfamidi' => [
+                'nullable',
+                'numeric',
+                'min:0',
+            ],
+            'harga_jual_ifm_smg' => [
+                'nullable',
+                'numeric',
+                'min:0',
+            ],
+            'harga_jual_ifm_ckl' => [
+                'nullable',
+                'numeric',
+                'min:0',
+            ],
         ];
     }
 

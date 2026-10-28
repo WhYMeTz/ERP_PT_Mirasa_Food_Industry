@@ -302,27 +302,57 @@
                                     <div class="mini-cost-list">
                                         <div class="mini-cost-row">
                                             <span>Karton Baru:</span>
-                                            <strong>Rp {{ number_format($d['karton_baru_nilai'], 0, ',', '.') }}</strong>
+                                            <strong>
+                                                @if(!empty($d['karton_baru_qty']) && $d['karton_baru_qty'] > 0)
+                                                    <span style="font-size: 0.72rem; color: #0284c7; font-weight: 600; margin-right: 0.2rem;">{{ number_format($d['karton_baru_qty'], 0, ',', '.') }} Pcs &bull;</span>
+                                                @endif
+                                                Rp {{ number_format($d['karton_baru_nilai'], 0, ',', '.') }}
+                                            </strong>
                                         </div>
                                         <div class="mini-cost-row">
                                             <span>Karton Bekas:</span>
-                                            <strong>Rp {{ number_format($d['karton_bekas_nilai'], 0, ',', '.') }}</strong>
+                                            <strong>
+                                                @if(!empty($d['karton_bekas_qty']) && $d['karton_bekas_qty'] > 0)
+                                                    <span style="font-size: 0.72rem; color: #0284c7; font-weight: 600; margin-right: 0.2rem;">{{ number_format($d['karton_bekas_qty'], 0, ',', '.') }} Pcs &bull;</span>
+                                                @endif
+                                                Rp {{ number_format($d['karton_bekas_nilai'], 0, ',', '.') }}
+                                            </strong>
                                         </div>
                                         <div class="mini-cost-row">
                                             <span>Plastik HD 90x100:</span>
-                                            <strong>Rp {{ number_format($d['plastik_hd_nilai'], 0, ',', '.') }}</strong>
+                                            <strong>
+                                                @if(!empty($d['plastik_hd_qty']) && $d['plastik_hd_qty'] > 0)
+                                                    <span style="font-size: 0.72rem; color: #0284c7; font-weight: 600; margin-right: 0.2rem;">{{ number_format($d['plastik_hd_qty'], 0, ',', '.') }} Lbr &bull;</span>
+                                                @endif
+                                                Rp {{ number_format($d['plastik_hd_nilai'], 0, ',', '.') }}
+                                            </strong>
                                         </div>
                                         <div class="mini-cost-row">
                                             <span>Lakban Besar:</span>
-                                            <strong>Rp {{ number_format($d['lakban_besar_nilai'], 0, ',', '.') }}</strong>
+                                            <strong>
+                                                @if(!empty($d['lakban_besar_qty']) && $d['lakban_besar_qty'] > 0)
+                                                    <span style="font-size: 0.72rem; color: #0284c7; font-weight: 600; margin-right: 0.2rem;">{{ number_format($d['lakban_besar_qty'], 0, ',', '.') }} Roll &bull;</span>
+                                                @endif
+                                                Rp {{ number_format($d['lakban_besar_nilai'], 0, ',', '.') }}
+                                            </strong>
                                         </div>
                                         <div class="mini-cost-row">
                                             <span>Lakban Kecil:</span>
-                                            <strong>Rp {{ number_format($d['lakban_kecil_nilai'], 0, ',', '.') }}</strong>
+                                            <strong>
+                                                @if(!empty($d['lakban_kecil_qty']) && $d['lakban_kecil_qty'] > 0)
+                                                    <span style="font-size: 0.72rem; color: #0284c7; font-weight: 600; margin-right: 0.2rem;">{{ number_format($d['lakban_kecil_qty'], 0, ',', '.') }} Roll &bull;</span>
+                                                @endif
+                                                Rp {{ number_format($d['lakban_kecil_nilai'], 0, ',', '.') }}
+                                            </strong>
                                         </div>
                                         <div class="mini-cost-row">
                                             <span>Tali Rafia:</span>
-                                            <strong>Rp {{ number_format($d['tali_rafia_nilai'], 0, ',', '.') }}</strong>
+                                            <strong>
+                                                @if(!empty($d['tali_rafia_qty']) && $d['tali_rafia_qty'] > 0)
+                                                    <span style="font-size: 0.72rem; color: #0284c7; font-weight: 600; margin-right: 0.2rem;">{{ number_format($d['tali_rafia_qty'], 0, ',', '.') }} Roll &bull;</span>
+                                                @endif
+                                                Rp {{ number_format($d['tali_rafia_nilai'], 0, ',', '.') }}
+                                            </strong>
                                         </div>
                                     </div>
                                 </div>

@@ -106,3 +106,12 @@
 .fp-alasan-link { font-size:11px; color:#64748b; margin-top:3px; }
 .fp-alasan-link a { color:#0284c7; text-decoration:none; }
 .fp-alasan-link a:hover { text-decoration:underline; }
+
+.fp-head-actions { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+.fp-nama-info { font-size:13px; font-weight:600; margin-top:6px; min-height:18px; }
+.fp-nama-info.ok  { color:#047857; }
+.fp-nama-info.err { color:#b91c1c; }
+
+.fp-btn-emerald { background: #10b981; border-color: #10b981; color: #fff; }
+.fp-btn-emerald:hover { background: #059669; border-color: #059669; color: #fff; }
+.fp-btn-emerald:disabled { opacity: .6; cursor: not-allowed; }

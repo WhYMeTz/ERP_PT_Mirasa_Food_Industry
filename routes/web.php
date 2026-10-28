@@ -168,15 +168,19 @@ Route::middleware('auth')->group(function () {
         ->group(function () {
             Route::get('/fingerprint',     [FingerprintController::class, 'index'])->name('fingerprint.index');
             Route::post('/fingerprint/import', [FingerprintController::class, 'import'])->name('fingerprint.import');
+            Route::post('/fingerprint/manual', [FingerprintController::class, 'store'])->name('fingerprint.store');
             Route::post('/fingerprint/bulk-update', [FingerprintController::class, 'bulkUpdate'])->name('fingerprint.bulk-update');
             Route::post('/fingerprint/bulk-delete', [FingerprintController::class, 'bulkDelete'])->name('fingerprint.bulk-delete');
             Route::get('/absensi',         [AbsensiController::class, 'index'])->name('absensi.index');
             Route::post('/absensi/hitung', [AbsensiController::class, 'hitung'])->name('absensi.hitung');
+            Route::get('/absensi/export', [AbsensiController::class, 'exportExcel'])->name('absensi.export');
+            Route::get('/absensi/cetak-pdf', [AbsensiController::class, 'cetakPdf'])->name('absensi.cetak-pdf');
             Route::get('/jadwal',         [JadwalController::class, 'index'])->name('jadwal.index');
             Route::post('/jadwal/import', [JadwalController::class, 'import'])->name('jadwal.import');
             Route::get('/jadwal/template', [JadwalController::class, 'template'])->name('jadwal.template');
             Route::post('/jadwal/bulk-update', [JadwalController::class, 'bulkUpdate'])->name('jadwal.bulk-update');
             Route::post('/jadwal/bulk-delete', [JadwalController::class, 'bulkDelete'])->name('jadwal.bulk-delete');
+            Route::post('/jadwal/tambah', [JadwalController::class, 'store'])->name('jadwal.store');
             Route::get('/kode-shift',     [KodeShiftController::class, 'index'])->name('kode-shift.index');
             Route::post('/kode-shift',                [KodeShiftController::class, 'store'])->name('kode-shift.store');
             Route::put('/kode-shift/{kodeShift}',     [KodeShiftController::class, 'update'])->name('kode-shift.update');

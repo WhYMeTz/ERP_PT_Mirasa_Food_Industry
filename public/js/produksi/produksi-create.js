@@ -149,6 +149,7 @@
         return (
             c.includes('BRK') || n.includes('BERKO') ||
             c.includes('LGT') || n.includes('LENGKET') ||
+            c.includes('RMH') || n.includes('REMAHAN') ||
             c.includes('ASB') || n.includes('ASIN BARCO') ||
             c.includes('ASW') || n.includes('ASIN SAWIT') ||
             c.includes('NSL') || n.includes('NO SALT') ||
@@ -969,6 +970,7 @@
         let totalOutputKg = 0;
         let totalBerkoKg = 0;
         let totalLengketKg = 0;
+        let totalRemahanKg = 0;
 
         document.querySelectorAll('.row-output-fg').forEach(row => {
             const kgInp = row.querySelector('.input-fg-qty-kg');
@@ -984,6 +986,8 @@
 
             if (cd.includes('LGT') || nm.includes('LENGKET')) {
                 totalLengketKg += kgVal;
+            } else if (cd.includes('RMH') || nm.includes('REMAHAN')) {
+                totalRemahanKg += kgVal;
             } else if (cd.includes('BRK') || nm.includes('BERKO')) {
                 totalBerkoKg += kgVal;
             }
@@ -1002,6 +1006,17 @@
                 badgeBerko.style.display = 'inline-block';
             } else {
                 badgeBerko.style.display = 'none';
+            }
+        }
+
+        const badgeRemahan = document.getElementById('badgeRemahanOutput');
+        if (badgeRemahan) {
+            if (totalRemahanKg > 0) {
+                const remahanPct = totalOutputKg > 0 ? (totalRemahanKg / totalOutputKg) * 100 : 0;
+                badgeRemahan.textContent = 'Remahan: ' + formatNumber(totalRemahanKg, 2) + ' kg (' + formatNumber(remahanPct, 1) + '%)';
+                badgeRemahan.style.display = 'inline-block';
+            } else {
+                badgeRemahan.style.display = 'none';
             }
         }
 
@@ -1507,29 +1522,14 @@
 
         const barangList = window.appConfig.barangHasilList || [];
         
-        const fgItems = [];
         const wipItems = [];
         barangList.forEach(b => {
             const jenis = (b.jenis_barang?.jenis_barang_cd || (b.barang_cd.startsWith('WIP') ? 'WIP' : 'FG')).toUpperCase();
-            if (jenis === 'WIP') wipItems.push(b);
-            else fgItems.push(b);
+            if (jenis === 'WIP' || b.barang_cd.startsWith('WIP')) wipItems.push(b);
         });
 
-        // Buat opsi dropdown barang dengan pengelompokan optgroup yang rapi
-        let optionsHtml = '<option value="">-- Pilih Barang Hasil Produksi --</option>';
-
-        if (fgItems.length > 0) {
-            optionsHtml += '<optgroup label="── BARANG JADI (FINISH GOOD / FG) ──">';
-            fgItems.forEach(b => {
-                const jenis = 'FG';
-                const satuan = b.satuan_dasar?.satuan_cd || 'KARTON';
-                const selected = (initial && initial.barang_id == b.barang_id) ? 'selected' : '';
-                optionsHtml += `<option value="${b.barang_id}" data-cd="${b.barang_cd}" data-nm="${b.barang_nm}" data-jenis="${jenis}" data-satuan="${satuan}" ${selected}>
-                    [${b.barang_cd}] ${b.barang_nm} (${satuan})
-                </option>`;
-            });
-            optionsHtml += '</optgroup>';
-        }
+        // Buat opsi dropdown barang (Khusus Olahan Setengah Jadi / WIP Curah)
+        let optionsHtml = '<option value="">-- Pilih Olahan Setengah Jadi (WIP) --</option>';
 
         if (wipItems.length > 0) {
             optionsHtml += '<optgroup label="── OLAHAN SETENGAH JADI (WIP CURAH) ──">';

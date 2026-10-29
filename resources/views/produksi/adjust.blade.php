@@ -37,11 +37,6 @@
                 <h1 class="adjust-title">Adjustment HPP</h1>
                 <span class="badge" style="background: #e0f2fe; color: #0284c7; font-weight: 700; border: 1px solid #bae6fd;">{{ $produksi->produksi_no }}</span>
                 <span class="badge-version">v{{ $produksi->version_no ?? 1 }}</span>
-                @if($produksi->status_cd === 'POSTED')
-                    <span class="badge badge-success">Posted</span>
-                @else
-                    <span class="badge" style="background: #f1f5f9; color: #475569;">{{ $produksi->status_cd }}</span>
-                @endif
             </div>
         </div>
         <div class="adjust-header-actions">
@@ -273,6 +268,13 @@
                         <td>
                             <div class="adj-item-title">Singkong Mentah Basah</div>
                             <div class="adj-item-code">BBL-01 &bull; Singkong Grade A/B</div>
+                            @if(!empty($produksi->bahan_baku_batch_map['singkong']))
+                                <div style="margin-top: 0.25rem;">
+                                    <span class="adj-batch-pill" title="No. Batch Pemakaian Singkong">
+                                        Batch: {{ implode(', ', $produksi->bahan_baku_batch_map['singkong']) }}
+                                    </span>
+                                </div>
+                            @endif
                         </td>
                         <td>
                             <div class="adj-qty-cell">
@@ -307,6 +309,13 @@
                         <td>
                             <div class="adj-item-title">Minyak Goreng</div>
                             <div class="adj-item-code">BBL-02 &bull; Sawit &amp; Minyak Kelapa</div>
+                            @if(!empty($produksi->bahan_baku_batch_map['minyak']))
+                                <div style="margin-top: 0.25rem;">
+                                    <span class="adj-batch-pill" title="No. Batch Pemakaian Minyak Goreng">
+                                        Batch: {{ implode(', ', $produksi->bahan_baku_batch_map['minyak']) }}
+                                    </span>
+                                </div>
+                            @endif
                         </td>
                         <td>
                             <div class="adj-qty-cell">
@@ -341,6 +350,13 @@
                         <td>
                             <div class="adj-item-title">Bumbu Masak &amp; Perenyah</div>
                             <div class="adj-item-code">BBL-03 &bull; Racik Bumbu &amp; Garam</div>
+                            @if(!empty($produksi->bahan_baku_batch_map['bumbu']))
+                                <div style="margin-top: 0.25rem;">
+                                    <span class="adj-batch-pill" title="No. Batch Pemakaian Bumbu">
+                                        Batch: {{ implode(', ', $produksi->bahan_baku_batch_map['bumbu']) }}
+                                    </span>
+                                </div>
+                            @endif
                         </td>
                         <td>
                             <div class="adj-qty-cell">
@@ -403,6 +419,13 @@
                         <td>
                             <div class="adj-item-title">Karton Box Baru</div>
                             <div class="adj-item-code">KMS-01 &bull; Box Cetak Baru PT Mirasa</div>
+                            @if(!empty($produksi->bahan_baku_batch_map['karton_baru']))
+                                <div style="margin-top: 0.25rem;">
+                                    <span class="adj-batch-pill" title="No. Batch Pemakaian Karton Baru">
+                                        Batch: {{ implode(', ', $produksi->bahan_baku_batch_map['karton_baru']) }}
+                                    </span>
+                                </div>
+                            @endif
                         </td>
                         <td>
                             <div class="adj-qty-cell">
@@ -437,6 +460,13 @@
                         <td>
                             <div class="adj-item-title">Karton Box Bekas</div>
                             <div class="adj-item-code">KMS-02 &bull; Box Bekas Layak Pakai</div>
+                            @if(!empty($produksi->bahan_baku_batch_map['karton_bekas']))
+                                <div style="margin-top: 0.25rem;">
+                                    <span class="adj-batch-pill" title="No. Batch Pemakaian Karton Bekas">
+                                        Batch: {{ implode(', ', $produksi->bahan_baku_batch_map['karton_bekas']) }}
+                                    </span>
+                                </div>
+                            @endif
                         </td>
                         <td>
                             <div class="adj-qty-cell">
@@ -471,6 +501,13 @@
                         <td>
                             <div class="adj-item-title">Plastik HD / Inner Bag</div>
                             <div class="adj-item-code">KMS-03 &bull; Plastik Pelindung Dalam</div>
+                            @if(!empty($produksi->bahan_baku_batch_map['plastik_hd']))
+                                <div style="margin-top: 0.25rem;">
+                                    <span class="adj-batch-pill" title="No. Batch Pemakaian Plastik HD">
+                                        Batch: {{ implode(', ', $produksi->bahan_baku_batch_map['plastik_hd']) }}
+                                    </span>
+                                </div>
+                            @endif
                         </td>
                         <td>
                             <div class="adj-qty-cell">
@@ -505,6 +542,13 @@
                         <td>
                             <div class="adj-item-title">Lakban Coklat Besar</div>
                             <div class="adj-item-code">KMS-04 &bull; Lakban 2 Inch Box</div>
+                            @if(!empty($produksi->bahan_baku_batch_map['lakban_besar']))
+                                <div style="margin-top: 0.25rem;">
+                                    <span class="adj-batch-pill" title="No. Batch Pemakaian Lakban Besar">
+                                        Batch: {{ implode(', ', $produksi->bahan_baku_batch_map['lakban_besar']) }}
+                                    </span>
+                                </div>
+                            @endif
                         </td>
                         <td>
                             <div class="adj-qty-cell">
@@ -539,6 +583,13 @@
                         <td>
                             <div class="adj-item-title">Lakban Bening Kecil</div>
                             <div class="adj-item-code">KMS-05 &bull; Lakban Seal Plastik</div>
+                            @if(!empty($produksi->bahan_baku_batch_map['lakban_kecil']))
+                                <div style="margin-top: 0.25rem;">
+                                    <span class="adj-batch-pill" title="No. Batch Pemakaian Lakban Kecil">
+                                        Batch: {{ implode(', ', $produksi->bahan_baku_batch_map['lakban_kecil']) }}
+                                    </span>
+                                </div>
+                            @endif
                         </td>
                         <td>
                             <div class="adj-qty-cell">
@@ -573,6 +624,13 @@
                         <td>
                             <div class="adj-item-title">Tali Rafia / Strapping</div>
                             <div class="adj-item-code">KMS-06 &bull; Pengikat Pallet &amp; Box</div>
+                            @if(!empty($produksi->bahan_baku_batch_map['tali_rafia']))
+                                <div style="margin-top: 0.25rem;">
+                                    <span class="adj-batch-pill" title="No. Batch Pemakaian Tali Rafia">
+                                        Batch: {{ implode(', ', $produksi->bahan_baku_batch_map['tali_rafia']) }}
+                                    </span>
+                                </div>
+                            @endif
                         </td>
                         <td>
                             <div class="adj-qty-cell">

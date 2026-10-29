@@ -1500,6 +1500,20 @@ a.btn-adjust-hpp:active {
     color: #0f172a;
 }
 
+.chip-batch-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    background: #f0fdf4;
+    color: #15803d;
+    border: 1px solid #bbf7d0;
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    font-family: ui-monospace, SFMono-Regular, monospace;
+}
+
 .chip-old {
     color: #475569;
     font-family: ui-monospace, SFMono-Regular, monospace;
@@ -1559,6 +1573,100 @@ a.btn-adjust-hpp:active {
     font-size: 0.7rem;
     color: #94a3b8;
     margin-top: 1px;
+}
+
+/* ==========================================================================
+   15. Multi-level Sub-Header HPP Audit Trail (Optimal & Efisien)
+   ========================================================================== */
+.audit-col-header-group {
+    text-align: center !important;
+    background: #f1f5f9 !important;
+    color: #0f172a !important;
+    border-bottom: 2px solid #cbd5e1 !important;
+    font-weight: 800 !important;
+    font-size: 0.725rem !important;
+    letter-spacing: 0.04em !important;
+    text-transform: uppercase !important;
+}
+
+.audit-sub-th {
+    font-size: 0.7rem !important;
+    padding: 0.45rem 0.65rem !important;
+    text-transform: uppercase !important;
+    white-space: nowrap !important;
+    font-weight: 700 !important;
+}
+
+.audit-sub-th.th-awal {
+    background: #f8fafc !important;
+    color: #475569 !important;
+    border-right: 1px solid #e2e8f0;
+}
+
+.audit-sub-th.th-akhir {
+    background: #f0f9ff !important;
+    color: #0369a1 !important;
+    border-right: 1px solid #e2e8f0;
+}
+
+.audit-sub-th.th-selisih {
+    background: #fdf4ff !important;
+    color: #86198f !important;
+}
+
+.audit-cell-hpp-awal {
+    text-align: right;
+    font-family: ui-monospace, SFMono-Regular, monospace;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #475569;
+    background: #f8fafc;
+    border-right: 1px solid #f1f5f9;
+    white-space: nowrap;
+}
+
+.audit-cell-hpp-akhir {
+    text-align: right;
+    font-family: ui-monospace, SFMono-Regular, monospace;
+    font-size: 0.84rem;
+    font-weight: 800;
+    color: #0284c7;
+    background: #f0f9ff;
+    border-right: 1px solid #f1f5f9;
+    white-space: nowrap;
+}
+
+.audit-cell-selisih {
+    text-align: right;
+    white-space: nowrap;
+}
+
+.audit-selisih-pill {
+    display: inline-block;
+    padding: 0.2rem 0.55rem;
+    border-radius: 5px;
+    font-size: 0.75rem;
+    font-weight: 800;
+    font-family: ui-monospace, SFMono-Regular, monospace;
+    letter-spacing: -0.01em;
+}
+
+.audit-selisih-pill.pill-naik {
+    background: #fef2f2;
+    color: #dc2626;
+    border: 1px solid #fecaca;
+}
+
+.audit-selisih-pill.pill-turun {
+    background: #f0fdf4;
+    color: #16a34a;
+    border: 1px solid #bbf7d0;
+}
+
+.audit-selisih-pill.pill-netral {
+    background: #f8fafc;
+    color: #64748b;
+    border: 1px solid #e2e8f0;
 }
 
 

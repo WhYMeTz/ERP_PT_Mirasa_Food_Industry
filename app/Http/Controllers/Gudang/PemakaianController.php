@@ -142,7 +142,7 @@ class PemakaianController extends Controller
         $gudangList = $user ? $user->getAllowedGudangList() : collect();
         $userGudangId = ($gudangList->count() === 1 && !$user?->isSuperAdmin()) ? $gudangList->first()->gudang_id : null;
 
-        // Ambil barang peruntukan produksi: Bahan Baku, Penolong, Kemasan, serta khusus Berko (bukan seluruh WIP)
+        // Ambil barang peruntukan produksi: Bahan Baku, Penolong, Kemasan, serta khusus Berko & Remahan (bukan seluruh WIP)
         $barangList = MstBarang::active()
             ->where(function ($query) {
                 $query->bahanProduksi()
@@ -150,7 +150,9 @@ class PemakaianController extends Controller
                           $wip->whereHas('jenisBarang', fn($j) => $j->where('jenis_barang_cd', 'WIP'))
                               ->where(function ($b) {
                                   $b->where('barang_nm', 'ILIKE', '%BERKO%')
-                                    ->orWhere('barang_cd', 'ILIKE', '%BRK%');
+                                    ->orWhere('barang_cd', 'ILIKE', '%BRK%')
+                                    ->orWhere('barang_nm', 'ILIKE', '%REMAHAN%')
+                                    ->orWhere('barang_cd', 'ILIKE', '%RMH%');
                               });
                       });
             })
@@ -259,7 +261,9 @@ class PemakaianController extends Controller
                           $wip->whereHas('jenisBarang', fn($j) => $j->where('jenis_barang_cd', 'WIP'))
                               ->where(function ($b) {
                                   $b->where('barang_nm', 'ILIKE', '%BERKO%')
-                                    ->orWhere('barang_cd', 'ILIKE', '%BRK%');
+                                    ->orWhere('barang_cd', 'ILIKE', '%BRK%')
+                                    ->orWhere('barang_nm', 'ILIKE', '%REMAHAN%')
+                                    ->orWhere('barang_cd', 'ILIKE', '%RMH%');
                               });
                       });
             })

@@ -1402,6 +1402,7 @@ class ProduksiService
                     $barangNmUpper = strtoupper($barang->barang_nm);
                     $isCurahItem = str_contains($barangCdUpper, 'BRK') || str_contains($barangNmUpper, 'BERKO')
                         || str_contains($barangCdUpper, 'LGT') || str_contains($barangNmUpper, 'LENGKET')
+                        || str_contains($barangCdUpper, 'RMH') || str_contains($barangNmUpper, 'REMAHAN')
                         || str_contains($barangCdUpper, 'ASB') || str_contains($barangNmUpper, 'BARCO')
                         || str_contains($barangCdUpper, 'ASW') || str_contains($barangNmUpper, 'SAWIT')
                         || str_contains($barangCdUpper, 'NSL') || str_contains($barangNmUpper, 'NO SALT')

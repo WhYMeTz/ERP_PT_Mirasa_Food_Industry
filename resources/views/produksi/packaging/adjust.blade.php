@@ -27,11 +27,6 @@
                 <h1 class="adjust-title">Adjustment HPP</h1>
                 <span class="badge" style="background: #e0f2fe; color: #0284c7; font-weight: 700; border: 1px solid #bae6fd;">{{ $header->pack_no }}</span>
                 <span class="badge-version">v{{ $header->version_no ?? 1 }}</span>
-                @if($header->status_cd === 'POSTED')
-                    <span class="badge badge-success">Posted</span>
-                @else
-                    <span class="badge" style="background: #f1f5f9; color: #475569;">{{ $header->status_cd }}</span>
-                @endif
             </div>
         </div>
         <div class="adjust-header-actions">

@@ -143,9 +143,12 @@ class ProduksiController extends Controller
             ->orderBy('lini_id', 'asc')
             ->get();
 
-        // Ambil daftar barang hasil produksi aktif (WIP & Finish Good)
+        // Ambil daftar barang hasil produksi aktif (Khusus Olahan Setengah Jadi / WIP)
         $barangHasilList = MstBarang::active()
-            ->hasilProduksi()
+            ->where(function ($q) {
+                $q->whereHas('jenisBarang', fn($j) => $j->where('jenis_barang_cd', 'WIP'))
+                  ->orWhere('barang_cd', 'LIKE', 'WIP%');
+            })
             ->with(['satuanDasar', 'satuanBesar', 'jenisBarang'])
             ->orderBy('barang_nm')
             ->get();

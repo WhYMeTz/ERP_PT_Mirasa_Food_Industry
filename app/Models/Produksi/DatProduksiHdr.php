@@ -212,6 +212,61 @@ class DatProduksiHdr extends Model
     }
 
     /**
+     * Peta Nomor Batch Bahan Baku Masuk dari Dokumen Pemakaian (BPPB)
+     * Mengelompokkan nomor batch per kategori komponen biaya (BBL, Kemasan, dll)
+     */
+    public function getBahanBakuBatchMapAttribute(): array
+    {
+        $map = [];
+        if (!$this->relationLoaded('pemakaianBahan') || !$this->pemakaianBahan) {
+            $this->loadMissing('pemakaianBahan.details.barang');
+        }
+
+        if (!$this->pemakaianBahan || !$this->pemakaianBahan->details) {
+            return $map;
+        }
+
+        foreach ($this->pemakaianBahan->details as $dtl) {
+            $barang = $dtl->barang;
+            if (!$barang) continue;
+
+            $batch = trim($dtl->batch_no ?? '');
+            if (!$batch) continue;
+
+            $nm = strtoupper($barang->barang_nm ?? '');
+            $cd = strtoupper($barang->barang_cd ?? '');
+
+            if (str_contains($nm, 'SINGKONG') || str_contains($cd, 'SNG')) {
+                $map['singkong'][] = $batch;
+            } elseif (str_contains($nm, 'MINYAK') || str_contains($cd, 'MSW') || str_contains($cd, 'MKL')) {
+                $map['minyak'][] = $batch;
+            } elseif (str_contains($nm, 'BUMBU') || str_contains($nm, 'GARAM') || str_contains($nm, 'MSG') || str_contains($cd, 'BMB')) {
+                $map['bumbu'][] = $batch;
+            } elseif (str_contains($nm, 'KARTON') && str_contains($nm, 'BARU')) {
+                $map['karton_baru'][] = $batch;
+            } elseif (str_contains($nm, 'KARTON') && str_contains($nm, 'BEKAS')) {
+                $map['karton_bekas'][] = $batch;
+            } elseif (str_contains($nm, 'PLASTIK') || str_contains($nm, 'HD')) {
+                $map['plastik_hd'][] = $batch;
+            } elseif (str_contains($nm, 'LAKBAN') && str_contains($nm, 'BESAR')) {
+                $map['lakban_besar'][] = $batch;
+            } elseif (str_contains($nm, 'LAKBAN') && str_contains($nm, 'KECIL')) {
+                $map['lakban_kecil'][] = $batch;
+            } elseif (str_contains($nm, 'RAFIA') || str_contains($nm, 'TALI')) {
+                $map['tali_rafia'][] = $batch;
+            } else {
+                $map['lainnya'][] = "{$barang->barang_nm}: {$batch}";
+            }
+        }
+
+        foreach ($map as $key => $batches) {
+            $map[$key] = array_values(array_unique($batches));
+        }
+
+        return $map;
+    }
+
+    /**
      * Relasi ke Gudang Hasil Olahan WIP
      */
     public function gudang(): BelongsTo

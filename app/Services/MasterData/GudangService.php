@@ -9,9 +9,19 @@ use Illuminate\Support\Facades\DB;
 
 class GudangService
 {
-    public function getAllPaginated(int $perPage = 15, ?string $search = null): LengthAwarePaginator
+    public function getAllPaginated(int $perPage = 15, ?string $search = null, ?\App\Models\User $user = null): LengthAwarePaginator
     {
         $query = MstGudang::active();
+
+        // Filter berdasarkan gudang yang diizinkan untuk user
+        if ($user && !$user->isSuperAdmin()) {
+            $allowedGudangIds = $user->getAllowedGudangIds();
+            if (empty($allowedGudangIds)) {
+                // User tidak punya akses ke gudang apapun, return empty
+                return collect()->paginate($perPage);
+            }
+            $query->whereIn('gudang_id', $allowedGudangIds);
+        }
 
         if (!empty($search)) {
             $query->where(function ($q) use ($search) {
@@ -24,8 +34,15 @@ class GudangService
         return $query->orderBy('gudang_id', 'asc')->paginate($perPage);
     }
 
-    public function getById(int $id): MstGudang
+    public function getById(int $id, ?\App\Models\User $user = null): MstGudang
     {
+        // Check apakah user punya akses ke gudang ini
+        if ($user && !$user->isSuperAdmin()) {
+            if (!$user->canAccessGudang($id)) {
+                abort(403, 'Anda tidak memiliki hak akses ke gudang ini.');
+            }
+        }
+
         return MstGudang::where('gudang_id', $id)->firstOrFail();
     }
 
@@ -36,8 +53,15 @@ class GudangService
         });
     }
 
-    public function update(int $id, array $data): MstGudang
+    public function update(int $id, array $data, ?\App\Models\User $user = null): MstGudang
     {
+        // Check apakah user punya akses ke gudang ini
+        if ($user && !$user->isSuperAdmin()) {
+            if (!$user->canAccessGudang($id)) {
+                abort(403, 'Anda tidak memiliki hak akses untuk mengedit gudang ini.');
+            }
+        }
+
         return DB::transaction(function () use ($id, $data) {
             $gudang = MstGudang::findOrFail($id);
             $gudang->update($data);
@@ -45,8 +69,15 @@ class GudangService
         });
     }
 
-    public function delete(int $id): bool
+    public function delete(int $id, ?\App\Models\User $user = null): bool
     {
+        // Check apakah user punya akses ke gudang ini
+        if ($user && !$user->isSuperAdmin()) {
+            if (!$user->canAccessGudang($id)) {
+                abort(403, 'Anda tidak memiliki hak akses untuk menghapus gudang ini.');
+            }
+        }
+
         return DB::transaction(function () use ($id) {
             $gudang = MstGudang::findOrFail($id);
             $userId = Auth::id() ?? 'SYSTEM';

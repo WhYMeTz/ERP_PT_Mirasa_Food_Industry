@@ -16,18 +16,33 @@
         </a>
         <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
             <h1 style="font-size: 1.5rem; font-weight: 700; color: #0f172a; margin: 0;">{{ $po->po_no }}</h1>
-            @if ($po->status_cd == 'COMPLETED')
-                <span class="badge badge-success">Selesai (100%)</span>
+            @if ($po->status_cd == 'PENDING_APPROVAL')
+                <span class="badge" style="background:#fef3c7; color:#b45309; border: 1px solid #fde68a; font-weight:700;">Menunggu Approval Atasan</span>
+            @elseif ($po->status_cd == 'REJECTED')
+                <span class="badge" style="background:#fee2e2; color:#b91c1c; border: 1px solid #fecaca; font-weight:700;">Ditolak Atasan</span>
+            @elseif ($po->status_cd == 'COMPLETED')
+                @if (!empty($po->closed_at))
+                    <span class="badge" style="background:#ecfdf5; color:#047857; border: 1px solid #a7f3d0; font-weight:700;">Selesai (Batal Sisa {{ $po->persentase_terima }}%)</span>
+                @else
+                    <span class="badge badge-success">Selesai (100%)</span>
+                @endif
             @elseif ($po->status_cd == 'PARTIAL')
                 <span class="badge badge-info">Sebagian Diterima ({{ $po->persentase_terima }}%)</span>
             @elseif ($po->status_cd == 'CLOSED')
-                <span class="badge" style="background:#f1f5f9; color:#475569; border: 1px solid #cbd5e1;">Ditutup ({{ $po->persentase_terima }}%)</span>
+                <span class="badge" style="background:#ecfdf5; color:#047857; border: 1px solid #a7f3d0; font-weight:700;">Selesai (Batal Sisa {{ $po->persentase_terima }}%)</span>
             @elseif ($po->status_cd == 'APPROVED')
-                <span class="badge" style="background:#e0f2fe; color:#0369a1;">Disetujui</span>
+                <span class="badge" style="background:#e0f2fe; color:#0369a1; font-weight:700;">Disetujui</span>
             @elseif ($po->status_cd == 'DRAFT')
                 <span class="badge" style="background:#f1f5f9; color:#475569;">Draft</span>
             @else
                 <span class="badge" style="background:#fee2e2; color:#b91c1c;">Dibatalkan</span>
+            @endif
+
+            @if ($po->isSentToSupplier())
+                <span class="badge" style="background:#dbeafe; color:#1e40af; border: 1px solid #bfdbfe; font-weight:700; display: inline-flex; align-items: center; gap: 4px;">
+                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                    Terkirim ke Supplier
+                </span>
             @endif
 
             @if($po->is_harga_termasuk_pajak)
@@ -37,6 +52,17 @@
             @endif
         </div>
     </div>
+
+    @php
+        $sendSupplierPayload = [
+            'po_id'          => $po->po_id,
+            'po_no'          => $po->po_no,
+            'supplier_nm'    => $po->supplier?->supplier_nm ?? '-',
+            'supplier_email' => $po->supplier?->email ?? ($po->supplier_email_sent ?? ''),
+            'default_cc'     => '',
+            'default_notes'  => $po->supplier_email_notes ?? '',
+        ];
+    @endphp
 
     {{-- SINGLE UNIFIED ACTION DROPDOWN --}}
     <div style="position: relative; display: inline-block;">
@@ -51,6 +77,41 @@
         {{-- DROPDOWN MENU ITEMS --}}
         <div id="showActionMenuDropdown" class="show-action-menu-dropdown" style="display: none;">
             
+            {{-- AKSI APPROVAL JIKA MENUNGGU VERIFIKASI --}}
+            @if ($po->status_cd == 'PENDING_APPROVAL')
+                <form action="{{ route('gudang.po.resend_approval', $po->po_id) }}" method="POST" style="margin: 0;">
+                    @csrf
+                    <button type="submit" class="action-dropdown-item" title="Kirim ulang surat permohonan persetujuan ke email Atasan">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                        <span style="font-weight: 700; color: #b45309;">Kirim Ulang Email Approval</span>
+                    </button>
+                </form>
+
+                @if (Auth::user()?->canApprovePo())
+                    <form action="{{ route('gudang.po.approve_internal', $po->po_id) }}" method="POST" onsubmit="return confirm('Apakah Anda menyetujui dokumen Purchase Order {{ $po->po_no }} ini secara resmi?')" style="margin: 0;">
+                        @csrf
+                        <button type="submit" class="action-dropdown-item" style="color: #059669;">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            <span style="font-weight: 700;">Setujui PO (Sebagai Atasan)</span>
+                        </button>
+                    </form>
+                @endif
+                <div class="action-dropdown-divider"></div>
+            @endif
+
+            {{-- AKSI KIRIM KE SUPPLIER (JIKA SUDAH APPROVED) --}}
+            @if ($po->isApproved() || in_array($po->status_cd, ['APPROVED', 'PARTIAL', 'COMPLETED']))
+                <button type="button" 
+                        class="action-dropdown-item" 
+                        onclick="toggleShowActionMenu(event); openKirimSupplierModal({{ json_encode($sendSupplierPayload) }})">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+                    <span style="font-weight: 700; color: #0284c7;">
+                        {{ $po->isSentToSupplier() ? 'Kirim Ulang ke Supplier' : 'Kirim ke Supplier via Email' }}
+                    </span>
+                </button>
+                <div class="action-dropdown-divider"></div>
+            @endif
+
             {{-- 1. TERIMA BARANG (JIKA STATUS MEMUNGKINKAN) --}}
             @if (in_array($po->status_cd, ['APPROVED', 'PARTIAL']) && $po->total_sisa_qty > 0)
                 <button type="button" class="action-dropdown-item" onclick="openQuickReceiveModal(); toggleShowActionMenu(event);">
@@ -71,6 +132,14 @@
                 <span>Cetak PDF Resmi (HACCP)</span>
             </a>
 
+            {{-- 3.1 CETAK BERITA ACARA PEMBATALAN SISA (JIKA ADA PEMBATALAN SISA) --}}
+            @if (!empty($po->closed_at))
+                <a href="{{ route('gudang.po.berita_acara', $po->po_id) }}" target="_blank" class="action-dropdown-item">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    <span style="font-weight: 700; color: #dc2626;">Berita Acara Pembatalan Sisa</span>
+                </a>
+            @endif
+
             {{-- 4. PRINT BROWSER --}}
             <button type="button" class="action-dropdown-item" onclick="window.print(); toggleShowActionMenu(event);">
                 <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
@@ -88,16 +157,24 @@
                 </a>
             @endif
 
-            {{-- 5. TUTUP PO (SELESAI PARSIAL) --}}
-            @if ($po->status_cd == 'PARTIAL')
-                <button type="button" class="action-dropdown-item" onclick="openForceCloseModal(); toggleShowActionMenu(event);">
-                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
-                    <span>Tutup PO (Selesai Parsial)</span>
+            {{-- 5. BATALKAN SISA & SELESAIKAN PO --}}
+            @if ($po->status_cd == 'PARTIAL' && $po->total_sisa_qty > 0)
+                <button type="button" class="action-dropdown-item danger-item" onclick="openBatalkanSisaModal({{ json_encode([
+                    'po_id'        => $po->po_id,
+                    'po_no'        => $po->po_no,
+                    'supplier_nm'  => $po->supplier?->supplier_nm ?? '-',
+                    'total_pesan'  => (float)$po->details->sum('pesan_qty'),
+                    'total_terima' => (float)$po->details->sum('terima_qty'),
+                    'total_sisa'   => (float)$po->total_sisa_qty,
+                    'url'          => route('gudang.po.force_close', $po->po_id),
+                ]) }}); toggleShowActionMenu(event);">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <span style="font-weight: 700; color: #dc2626;">Batalkan Sisa &amp; Selesaikan PO</span>
                 </button>
             @endif
 
             {{-- 6. BATALKAN PO --}}
-            @if (in_array($po->status_cd, ['DRAFT', 'APPROVED']) && $po->details->sum('terima_qty') == 0)
+            @if (in_array($po->status_cd, ['DRAFT', 'APPROVED', 'PENDING_APPROVAL']) && $po->details->sum('terima_qty') == 0)
                 <div class="action-dropdown-divider"></div>
                 <form action="{{ route('gudang.po.cancel', $po->po_id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin membatalkan Purchase Order ini?')" style="margin: 0;">
                     @csrf
@@ -130,18 +207,152 @@
 {{-- BUNGKUS KONTEN DASHBOARD WEB DENGAN NO-PRINT AGAR TIDAK MUNCUL SAAT CETAK BROWSER --}}
 <div class="no-print">
 
-{{-- ALERT JIKA PO SUDAH DITUTUP --}}
-@if ($po->status_cd == 'CLOSED')
-    <div class="alert" style="background: #f8fafc; border: 1px solid #cbd5e1; border-left: 4px solid #475569; color: #334155; margin-bottom: 1.25rem; padding: 0.875rem 1.25rem; border-radius: 6px;">
-        <div style="font-weight: 700; color: #0f172a; font-size: 0.9rem;">Dokumen Purchase Order Telah Ditutup (Closed)</div>
-        <div style="font-size: 0.85rem; color: #475569; margin-top: 0.25rem;">
-            Ditutup pada: <strong>{{ $po->closed_at ? \Carbon\Carbon::parse($po->closed_at)->format('d/m/Y H:i') : '-' }}</strong> &bull; Oleh: <strong>{{ $po->closed_by ?? '-' }}</strong>
-        </div>
-        @if ($po->closed_reason)
-            <div style="margin-top: 0.35rem; font-size: 0.85rem; color: #64748b; background: #ffffff; padding: 0.4rem 0.65rem; border-radius: 4px; border: 1px solid #e2e8f0;">
-                <strong>Alasan Penutupan:</strong> {{ $po->closed_reason }}
+{{-- ALERT JIKA PO SUDAH DITUTUP / SELESAI BATAL SISA --}}
+@if ($po->status_cd == 'CLOSED' || (!empty($po->closed_at) && $po->status_cd == 'COMPLETED'))
+    <div class="alert" style="background: #f0fdf4; border: 1px solid #bbf7d0; border-left: 4px solid #16a34a; color: #166534; margin-bottom: 1.25rem; padding: 0.875rem 1.25rem; border-radius: 6px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 0.75rem;">
+            <div>
+                <div style="font-weight: 700; color: #14532d; font-size: 0.95rem; display: flex; align-items: center; gap: 0.35rem;">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    Dokumen PO Telah Selesai (Sisa Kuota Dibatalkan Resmi)
+                </div>
+                <div style="font-size: 0.85rem; color: #166534; margin-top: 0.25rem;">
+                    Diselesaikan pada: <strong>{{ $po->closed_at ? \Carbon\Carbon::parse($po->closed_at)->format('d/m/Y H:i') : '-' }}</strong> &bull; Oleh: <strong>{{ $po->closed_by ?? '-' }}</strong>
+                </div>
+                @if ($po->closed_reason)
+                    <div style="margin-top: 0.35rem; font-size: 0.85rem; color: #166534; background: #ffffff; padding: 0.4rem 0.65rem; border-radius: 4px; border: 1px solid #bbf7d0;">
+                        <strong>Alasan Pembatalan Sisa:</strong> {{ $po->closed_reason }}
+                    </div>
+                @endif
             </div>
-        @endif
+            <div>
+                <a href="{{ route('gudang.po.berita_acara', $po->po_id) }}" target="_blank" class="btn btn-sm" style="background: #ffffff; color: #dc2626; border: 1.5px solid #fca5a5; font-weight: 700; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.45rem 0.85rem; border-radius: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); text-decoration: none;">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    <span>Cetak Berita Acara (A4)</span>
+                </a>
+            </div>
+        </div>
+    </div>
+@endif
+
+{{-- KARTU STATUS APPROVAL & DISPATCH SUPPLIER --}}
+@if ($po->status_cd == 'PENDING_APPROVAL')
+    <div style="background: #fffbeb; border: 1.5px solid #fef3c7; border-left: 5px solid #f59e0b; border-radius: 8px; padding: 1.15rem 1.25rem; margin-bottom: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
+            <div style="display: flex; gap: 0.85rem; align-items: flex-start;">
+                <div style="width: 40px; height: 40px; border-radius: 8px; background: #fef3c7; color: #b45309; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </div>
+                <div>
+                    <h3 style="margin: 0; font-size: 1rem; font-weight: 700; color: #92400e;">Menunggu Persetujuan Atasan (Approver)</h3>
+                    <p style="margin: 0.25rem 0 0; font-size: 0.85rem; color: #78350f;">
+                        Dokumen PO ini telah dialamatkan kepada <strong>{{ $po->approver?->name ?? 'Atasan Penyetuju' }}</strong> 
+                        @if ($po->approver?->email)
+                            ({{ $po->approver->email }})
+                        @endif
+                        untuk diverifikasi via email resmi sebelum dapat diteruskan ke supplier.
+                    </p>
+                </div>
+            </div>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
+                <form action="{{ route('gudang.po.resend_approval', $po->po_id) }}" method="POST" style="margin: 0;">
+                    @csrf
+                    <button type="submit" class="btn btn-secondary btn-sm" style="display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.45rem 0.85rem; font-size: 0.825rem;">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                        <span>Kirim Ulang Email Approval</span>
+                    </button>
+                </form>
+
+                @if (Auth::user()?->canApprovePo())
+                    <form action="{{ route('gudang.po.approve_internal', $po->po_id) }}" method="POST" onsubmit="return confirm('Apakah Anda menyetujui dokumen Purchase Order {{ $po->po_no }} ini secara resmi?')" style="margin: 0;">
+                        @csrf
+                        <button type="submit" class="btn btn-primary btn-sm" style="display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.45rem 0.85rem; font-size: 0.825rem; background: #059669; border-color: #059669;">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            <span>Setujui PO (Atasan)</span>
+                        </button>
+                    </form>
+                @endif
+            </div>
+        </div>
+    </div>
+@elseif ($po->status_cd == 'REJECTED')
+    <div style="background: #fef2f2; border: 1.5px solid #fee2e2; border-left: 5px solid #ef4444; border-radius: 8px; padding: 1.15rem 1.25rem; margin-bottom: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
+            <div style="display: flex; gap: 0.85rem; align-items: flex-start;">
+                <div style="width: 40px; height: 40px; border-radius: 8px; background: #fee2e2; color: #dc2626; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </div>
+                <div>
+                    <h3 style="margin: 0; font-size: 1rem; font-weight: 700; color: #991b1b;">Dokumen PO Ditolak oleh Atasan</h3>
+                    <p style="margin: 0.25rem 0 0; font-size: 0.85rem; color: #7f1d1d;">
+                        Ditolak oleh: <strong>{{ $po->rejected_by ?? ($po->approver?->name ?? 'Atasan') }}</strong> 
+                        pada {{ $po->rejected_at ? \Carbon\Carbon::parse($po->rejected_at)->format('d F Y H:i') : '-' }}.
+                    </p>
+                    <div style="margin-top: 0.4rem; font-size: 0.85rem; background: #ffffff; padding: 0.5rem 0.75rem; border-radius: 6px; border: 1px solid #fecaca; color: #991b1b;">
+                        <strong>Catatan Alasan:</strong> {{ $po->reject_reason ?? 'Tidak ada keterangan tambahan.' }}
+                    </div>
+                </div>
+            </div>
+            @if (Auth::user()?->isSuperAdmin() || Auth::user()?->canEditPo())
+                <a href="{{ route('gudang.po.edit', $po->po_id) }}" class="btn btn-primary btn-sm" style="display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.45rem 0.85rem; font-size: 0.825rem;">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                    <span>Revisi &amp; Edit Dokumen PO</span>
+                </a>
+            @endif
+        </div>
+    </div>
+@elseif ($po->isApproved() || in_array($po->status_cd, ['APPROVED', 'PARTIAL', 'COMPLETED']))
+    <div style="background: #f0fdf4; border: 1.5px solid #dcfce7; border-left: 5px solid #10b981; border-radius: 8px; padding: 1.15rem 1.25rem; margin-bottom: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
+            <div style="display: flex; gap: 0.85rem; align-items: flex-start;">
+                <div style="width: 40px; height: 40px; border-radius: 8px; background: #d1fae5; color: #059669; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </div>
+                <div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                        <h3 style="margin: 0; font-size: 1rem; font-weight: 700; color: #065f46;">Dokumen PO Telah Disetujui Resmi (APPROVED)</h3>
+                        <span class="badge" style="background: #10b981; color: #ffffff; font-size: 0.7rem; font-weight: 700;">SAH DIVERIFIKASI</span>
+                    </div>
+                    <p style="margin: 0.25rem 0 0; font-size: 0.85rem; color: #047857;">
+                        Disetujui oleh: <strong>{{ $po->approved_by ?? ($po->approver?->name ?? 'Atasan Penyetuju') }}</strong> 
+                        pada {{ $po->approved_at ? \Carbon\Carbon::parse($po->approved_at)->format('d F Y H:i') : '-' }}.
+                        @if ($po->approval_notes)
+                            &bull; <em>"{{ $po->approval_notes }}"</em>
+                        @endif
+                    </p>
+
+                    {{-- STATUS EMAIL KE SUPPLIER --}}
+                    <div style="margin-top: 0.5rem; font-size: 0.8125rem;">
+                        @if ($po->isSentToSupplier())
+                            <span style="color: #1e40af; font-weight: 600; display: inline-flex; align-items: center; gap: 0.35rem; background: #dbeafe; padding: 2px 8px; border-radius: 4px;">
+                                <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                                Surat PO telah dikirim ke supplier ({{ $po->supplier_email_sent }}) pada {{ \Carbon\Carbon::parse($po->sent_to_supplier_at)->format('d/m/Y H:i') }}
+                            </span>
+                        @else
+                            <span style="color: #64748b; display: inline-flex; align-items: center; gap: 0.35rem;">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                PO siap dikirimkan ke mitra supplier via email.
+                            </span>
+                        @endif
+                    </div>
+                </div>
+            </div>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
+                @if ($po->approval_token)
+                    <a href="{{ route('po.verify.qr', $po->approval_token) }}" target="_blank" class="btn btn-secondary btn-sm" style="display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.45rem 0.85rem; font-size: 0.825rem;">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
+                        <span>Sertifikat Verifikasi QR</span>
+                    </a>
+                @endif
+                <button type="button" 
+                        onclick="openKirimSupplierModal({{ json_encode($sendSupplierPayload) }})" 
+                        class="btn btn-primary btn-sm" 
+                        style="display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.45rem 0.85rem; font-size: 0.825rem; background: #0284c7; border-color: #0284c7;">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+                    <span>{{ $po->isSentToSupplier() ? 'Kirim Ulang ke Supplier' : 'Kirim ke Supplier via Email' }}</span>
+                </button>
+            </div>
+        </div>
     </div>
 @endif
 
@@ -202,16 +413,22 @@
         </div>
     </div>
 
-    {{-- TOTAL SISA FISIK BELUM DATANG --}}
+    {{-- TOTAL SISA FISIK BELUM DATANG / DIBATALKAN --}}
     <div class="card" style="padding: 1rem 1.25rem; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
         <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b;">
-            Sisa Fisik Belum Tiba
+            @if (!empty($po->closed_at))
+                Sisa Kuota Dibatalkan
+            @else
+                Sisa Fisik Belum Tiba
+            @endif
         </span>
-        <div style="font-size: 1.35rem; font-weight: 700; color: {{ $totalSisa > 0 ? '#b45309' : '#059669' }}; margin-top: 0.25rem;">
+        <div style="font-size: 1.35rem; font-weight: 700; color: {{ !empty($po->closed_at) ? '#dc2626' : ($totalSisa > 0 ? '#b45309' : '#059669') }}; margin-top: 0.25rem;">
             {{ number_format($totalSisa, 2) }}
         </div>
         <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.35rem;">
-            @if ($totalSisa > 0)
+            @if (!empty($po->closed_at))
+                <strong style="color: #dc2626;">Dibatalkan resmi</strong> &bull; Sisa kuota tidak dapat dikirim lagi
+            @elseif ($totalSisa > 0)
                 Menunggu kiriman supplier berikutnya
             @else
                 Seluruh barang telah diterima lengkap
@@ -260,7 +477,7 @@
                             <th>Satuan</th>
                             <th style="text-align: right;">Pesan</th>
                             <th style="text-align: right;">Diterima</th>
-                            <th style="text-align: right;">Sisa</th>
+                            <th style="text-align: right;">{{ !empty($po->closed_at) ? 'Sisa Dibatalkan' : 'Sisa' }}</th>
                             <th style="text-align: right;">Harga Satuan</th>
                             <th style="text-align: right;">Diskon</th>
                             <th style="text-align: right;">Potongan</th>
@@ -309,8 +526,15 @@
                                 <td style="text-align: right; font-weight: 600; color: #059669; font-size: 0.875rem;">
                                     {{ number_format((float) $item->terima_qty, 2) }}
                                 </td>
-                                <td style="text-align: right; font-weight: 600; font-size: 0.875rem; color: {{ (float) $item->sisa_qty > 0 ? '#b45309' : '#64748b' }};">
-                                    {{ number_format((float) $item->sisa_qty, 2) }}
+                                <td style="text-align: right; font-weight: 600; font-size: 0.875rem;">
+                                    @if (!empty($po->closed_at) && (float) $item->sisa_qty > 0)
+                                        <span style="color: #dc2626; font-weight: 700;">{{ number_format((float) $item->sisa_qty, 2) }}</span>
+                                        <span class="badge" style="background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; font-size: 0.65rem; display: block; margin-top: 2px;">Batal Sisa</span>
+                                    @else
+                                        <span style="color: {{ (float) $item->sisa_qty > 0 ? '#b45309' : '#64748b' }};">
+                                            {{ number_format((float) $item->sisa_qty, 2) }}
+                                        </span>
+                                    @endif
                                 </td>
                                 <td style="text-align: right; font-size: 0.85rem; color: #475569; font-family: monospace;">
                                     Rp {{ number_format((float) $item->harga_nominal, 0, ',', '.') }}
@@ -350,8 +574,11 @@
                             <td style="text-align: right; padding: 0.75rem 0.5rem; color: #059669; font-size: 0.875rem;">
                                 {{ number_format($totalTerima, 2) }}
                             </td>
-                            <td style="text-align: right; padding: 0.75rem 0.5rem; color: {{ $totalSisa > 0 ? '#b45309' : '#64748b' }}; font-size: 0.875rem;">
+                            <td style="text-align: right; padding: 0.75rem 0.5rem; color: {{ !empty($po->closed_at) ? '#dc2626' : ($totalSisa > 0 ? '#b45309' : '#64748b') }}; font-size: 0.875rem;">
                                 {{ number_format($totalSisa, 2) }}
+                                @if (!empty($po->closed_at) && $totalSisa > 0)
+                                    <div style="font-size: 0.65rem; color: #dc2626; font-weight: 700;">(Batal Sisa)</div>
+                                @endif
                             </td>
                             <td colspan="4"></td>
                             <td style="text-align: right; padding: 0.75rem 1rem; color: #0f172a; font-size: 1rem; font-family: monospace;">
@@ -537,6 +764,12 @@
                         <span style="color: #64748b; display: block; font-size: 0.75rem;">Telepon / Kontak:</span>
                         <strong>{{ $po->supplier?->kontak_no ?? '-' }}</strong>
                     </div>
+                    <div style="margin-top: 0.35rem;">
+                        <span style="color: #64748b; display: block; font-size: 0.75rem;">Term of Payment (Syarat Bayar):</span>
+                        <strong style="color: #0284c7;">
+                            {{ $po->term_of_payment ?: ($po->supplier?->top_hari ? 'Tempo ' . $po->supplier->top_hari . ' Hari (Transfer)' : 'Transfer') }}
+                        </strong>
+                    </div>
                 </div>
             </div>
         </div>
@@ -557,17 +790,35 @@
             </div>
         </div>
 
-        {{-- PANEL 3: CATATAN & INSTRUKSI PENGADAAN --}}
+        {{-- PANEL 3: CATATAN DOKUMEN (NOTE) & REMARK --}}
         <div class="card" style="border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
             <div class="card-header" style="background: #ffffff; padding: 0.75rem 1.25rem; border-bottom: 1px solid #e2e8f0;">
-                <strong style="color: #0f172a; font-size: 0.9rem;">Instruksi &amp; Catatan</strong>
+                <strong style="color: #0f172a; font-size: 0.9rem;">Instruksi &amp; Catatan PO</strong>
             </div>
-            <div style="padding: 1rem 1.25rem; font-size: 0.85rem; color: #334155; line-height: 1.4;">
-                @if ($po->catatan_txt)
-                    <p style="margin: 0; white-space: pre-line;">{{ $po->catatan_txt }}</p>
-                @else
-                    <span style="color: #94a3b8; font-style: italic;">Tidak ada catatan khusus untuk dokumen ini.</span>
-                @endif
+            <div style="padding: 1rem 1.25rem; font-size: 0.85rem; color: #334155; line-height: 1.4; display: flex; flex-direction: column; gap: 0.75rem;">
+                <div>
+                    <span style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 0.25rem;">
+                        📌 Catatan Dokumen (NOTE)
+                    </span>
+                    @if ($po->catatan_txt)
+                        <p style="margin: 0; white-space: pre-line; color: #0f172a; font-weight: 600;">{{ $po->catatan_txt }}</p>
+                    @elseif ($po->tgl_estimasi_datang)
+                        <p style="margin: 0; color: #0f172a;">*Mohon dikirim tanggal {{ \Carbon\Carbon::parse($po->tgl_estimasi_datang)->locale('id')->translatedFormat('d F Y') }}</p>
+                    @else
+                        <span style="color: #94a3b8; font-style: italic;">Tidak ada catatan khusus.</span>
+                    @endif
+                </div>
+
+                <div style="border-top: 1px dashed #e2e8f0; padding-top: 0.5rem;">
+                    <span style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 0.25rem;">
+                        📝 Catatan Tambahan (REMARK)
+                    </span>
+                    @if ($po->remark_txt)
+                        <p style="margin: 0; white-space: pre-line; color: #0f172a;">{{ $po->remark_txt }}</p>
+                    @else
+                        <span style="color: #94a3b8; font-style: italic;">-</span>
+                    @endif
+                </div>
             </div>
         </div>
 
@@ -733,9 +984,15 @@
 @include('gudang.po.partials.modal-quick-receive-show')
 @include('gudang.po.partials.modal-force-close')
 @include('gudang.po.partials.modal-haccp-po')
+@include('gudang.po.partials.modal-kirim-supplier')
 
 @endsection
 
 @push('scripts')
-<script src="{{ asset('js/gudang/po/po-show.js') }}?v={{ filemtime(public_path('js/gudang/po/po-show.js')) }}"></script>
+<script>
+    window.poConfig = {
+        baseUrl: "{{ url('gudang/po') }}"
+    };
+</script>
+<script src="{{ asset('js/gudang/po/po-show.js') }}?v={{ file_exists(public_path('js/gudang/po/po-show.js')) ? filemtime(public_path('js/gudang/po/po-show.js')) : time() }}"></script>
 @endpush

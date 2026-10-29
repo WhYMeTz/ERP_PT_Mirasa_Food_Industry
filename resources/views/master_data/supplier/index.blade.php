@@ -43,6 +43,7 @@
                     <th>Nama Supplier</th>
                     <th>Jenis Supplier</th>
                     <th>Kontak / Telp</th>
+                    <th>Email Resmi</th>
                     <th>Tempo (TOP)</th>
                     <th>Alamat</th>
                     <th style="width: 130px; text-align: center;">Aksi</th>
@@ -63,6 +64,16 @@
                         </td>
                         <td>{{ $item->kontak_no ?? '-' }}</td>
                         <td>
+                            @if ($item->email)
+                                <a href="mailto:{{ $item->email }}" style="color: #0284c7; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+                                    <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                                    <span>{{ $item->email }}</span>
+                                </a>
+                            @else
+                                <span style="color: #94a3b8; font-size: 0.8125rem;">-</span>
+                            @endif
+                        </td>
+                        <td>
                             <span class="badge" style="background: #f0fdf4; color: #166534; font-weight: 700; border: 1px solid #bbf7d0; font-size: 0.78rem;">
                                 ⏱️ {{ $item->top_hari ?? 14 }} Hari
                             </span>
@@ -81,7 +92,7 @@
                                     @if (Auth::user()?->canEditMasterSupplier())
                                         <button type="button" 
                                             class="action-dropdown-item" 
-                                            onclick="closeAllActionDropdowns(); editSupplier({{ $item->supplier_id }}, '{{ addslashes($item->supplier_cd) }}', '{{ addslashes($item->supplier_nm) }}', '{{ $item->jenis_supplier_id ?? '' }}', '{{ addslashes($item->kontak_no ?? '') }}', '{{ addslashes($item->alamat_txt ?? '') }}', {{ $item->top_hari ?? 14 }})">
+                                            onclick="closeAllActionDropdowns(); editSupplier({{ $item->supplier_id }}, '{{ addslashes($item->supplier_cd) }}', '{{ addslashes($item->supplier_nm) }}', '{{ $item->jenis_supplier_id ?? '' }}', '{{ addslashes($item->kontak_no ?? '') }}', '{{ addslashes($item->email ?? '') }}', '{{ addslashes($item->alamat_txt ?? '') }}', {{ $item->top_hari ?? 14 }})">
                                             <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                                             <span>Edit Data Supplier</span>
                                         </button>
@@ -107,7 +118,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="7" style="text-align: center; padding: 3rem 1rem; color: #94a3b8;">
+                        <td colspan="9" style="text-align: center; padding: 3rem 1rem; color: #94a3b8;">
                             Belum ada data supplier. Klik tombol <strong>"Tambah Supplier Baru"</strong> di atas.
                         </td>
                     </tr>
@@ -135,6 +146,6 @@
         csrfToken: "{{ csrf_token() }}"
     };
 </script>
-<script src="{{ asset('js/master/supplier/supplier-index.js') }}"></script>
+<script src="{{ asset('js/master/supplier/supplier-index.js') }}?v={{ file_exists(public_path('js/master/supplier/supplier-index.js')) ? filemtime(public_path('js/master/supplier/supplier-index.js')) : time() }}"></script>
 @endpush
 @endsection

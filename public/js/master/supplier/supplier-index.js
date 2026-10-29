@@ -93,22 +93,45 @@ window.addEventListener('resize', closeAllActionDropdowns);
 /**
  * Buka modal edit supplier dan isi formulirnya
  */
-function editSupplier(id, kode, nama, jenisSupplierId, kontak, alamat, topHari) {
+function editSupplier(id, kode, nama, jenisSupplierId, kontak, emailOrAlamat, alamatOrTop, topHari) {
     closeAllActionDropdowns();
     const elCd = document.getElementById('edit_supplier_cd');
     const elNm = document.getElementById('edit_supplier_nm');
     const elJenis = document.getElementById('edit_jenis_supplier_id');
     const elKontak = document.getElementById('edit_kontak_no');
+    const elEmail = document.getElementById('edit_email');
     const elTop = document.getElementById('edit_top_hari');
     const elAlamat = document.getElementById('edit_alamat_txt');
     const form = document.getElementById('formEditSupplier');
     
-    if (elCd) elCd.value = kode;
-    if (elNm) elNm.value = nama;
+    let emailVal = '';
+    let alamatVal = '';
+    let topVal = 14;
+
+    if (topHari !== undefined) {
+        // Dipanggil dengan 8 parameter lengkap
+        emailVal = emailOrAlamat || '';
+        alamatVal = alamatOrTop || '';
+        topVal = (topHari !== null && topHari !== '') ? topHari : 14;
+    } else {
+        // Fallback jika dipanggil dengan 7 parameter
+        if (typeof emailOrAlamat === 'string' && emailOrAlamat.includes('@')) {
+            emailVal = emailOrAlamat;
+            alamatVal = '';
+            topVal = (alamatOrTop !== undefined && alamatOrTop !== null && alamatOrTop !== '') ? alamatOrTop : 14;
+        } else {
+            alamatVal = emailOrAlamat || '';
+            topVal = (alamatOrTop !== undefined && alamatOrTop !== null && alamatOrTop !== '') ? alamatOrTop : 14;
+        }
+    }
+
+    if (elCd) elCd.value = kode || '';
+    if (elNm) elNm.value = nama || '';
     if (elJenis) elJenis.value = jenisSupplierId || '';
     if (elKontak) elKontak.value = kontak || '';
-    if (elTop) elTop.value = (topHari !== undefined && topHari !== null && topHari !== '') ? topHari : 14;
-    if (elAlamat) elAlamat.value = alamat || '';
+    if (elEmail) elEmail.value = emailVal;
+    if (elTop) elTop.value = topVal;
+    if (elAlamat) elAlamat.value = alamatVal;
     
     const baseUrl = (window.masterSupplierConfig && window.masterSupplierConfig.baseUrl) 
         ? window.masterSupplierConfig.baseUrl 

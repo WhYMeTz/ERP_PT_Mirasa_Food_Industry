@@ -56,8 +56,8 @@
             <select name="items[__INDEX__][pajak_id]" class="form-control item-pajak-id" onchange="calculateSubtotal(this)" style="font-size: 0.75rem; font-weight: 600;">
                 <option value="" data-tarif="0" data-sifat="TAMBAH">Non-Pajak (0%)</option>
                 @foreach ($pajakList as $pjk)
-                    <option value="{{ $pjk->pajak_id }}" data-tarif="{{ (float)$pjk->tarif_persen }}" data-sifat="{{ $pjk->sifat_pajak }}" {{ $pjk->is_default ? 'selected' : '' }}>
-                        {{ $pjk->pajak_nm }} ({{ (float)$pjk->tarif_persen }}%)
+                    <option value="{{ $pjk->pajak_id }}" data-tarif="{{ (float)$pjk->tarif_persen }}" data-sifat="{{ $pjk->sifat_pajak }}" title="{{ $pjk->pajak_nm }}" {{ $pjk->is_default ? 'selected' : '' }}>
+                        {{ $pjk->pajak_cd }} ({{ (float)$pjk->tarif_persen }}%)
                     </option>
                 @endforeach
             </select>

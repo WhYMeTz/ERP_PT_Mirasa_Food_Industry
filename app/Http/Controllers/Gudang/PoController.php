@@ -10,6 +10,7 @@ use App\Models\MasterData\MstGudang;
 use App\Models\MasterData\MstJenisSupplier;
 use App\Models\MasterData\MstPajak;
 use App\Models\MasterData\MstSupplier;
+use App\Models\User;
 use App\Services\Common\CodeGeneratorService;
 use App\Services\Gudang\PoService;
 use Illuminate\Http\JsonResponse;
@@ -45,17 +46,21 @@ class PoController extends Controller
 
         $rawCounts = $rawCountsQuery->selectRaw("
                 COUNT(*) as all_count,
+                COUNT(CASE WHEN status_cd = 'PENDING_APPROVAL' THEN 1 END) as pending_approval_count,
                 COUNT(CASE WHEN status_cd = 'APPROVED' THEN 1 END) as approved_count,
                 COUNT(CASE WHEN status_cd = 'PARTIAL' THEN 1 END) as partial_count,
-                COUNT(CASE WHEN status_cd IN ('COMPLETED', 'CLOSED') THEN 1 END) as completed_count
+                COUNT(CASE WHEN status_cd IN ('COMPLETED', 'CLOSED') THEN 1 END) as completed_count,
+                COUNT(CASE WHEN status_cd = 'REJECTED' THEN 1 END) as rejected_count
             ")
             ->first();
 
         $statusCounts = [
-            'all'       => (int) ($rawCounts->all_count ?? 0),
-            'approved'  => (int) ($rawCounts->approved_count ?? 0),
-            'partial'   => (int) ($rawCounts->partial_count ?? 0),
-            'completed' => (int) ($rawCounts->completed_count ?? 0),
+            'all'              => (int) ($rawCounts->all_count ?? 0),
+            'pending_approval' => (int) ($rawCounts->pending_approval_count ?? 0),
+            'approved'         => (int) ($rawCounts->approved_count ?? 0),
+            'partial'          => (int) ($rawCounts->partial_count ?? 0),
+            'completed'        => (int) ($rawCounts->completed_count ?? 0),
+            'rejected'         => (int) ($rawCounts->rejected_count ?? 0),
         ];
 
         if ($request->wantsJson()) {
@@ -106,12 +111,16 @@ class PoController extends Controller
         $effectiveGudangForMin = ($user && $user->isSuperAdmin()) ? null : $allowedGudangIds;
         $belowMinimumList = $this->poService->getBarangBelowMinimum($effectiveGudangForMin);
 
+        // Daftar Atasan (Approver) yang berhak menyetujui PO
+        $approverList = User::getPoApprovers();
+
         return view('gudang.po.create', compact(
             'supplierList',
             'jenisSupplierList',
             'gudangList',
             'barangList',
             'pajakList',
+            'approverList',
             'nextPoNo',
             'assignedGudangId',
             'isGudangLocked',
@@ -208,8 +217,8 @@ class PoController extends Controller
         $request->validate([
             'closed_reason' => 'required|string|min:5|max:500',
         ], [
-            'closed_reason.required' => 'Alasan penutupan PO wajib diisi.',
-            'closed_reason.min'      => 'Alasan penutupan minimal 5 karakter.',
+            'closed_reason.required' => 'Alasan pembatalan sisa kuota PO wajib diisi.',
+            'closed_reason.min'      => 'Alasan pembatalan minimal 5 karakter.',
         ]);
 
         try {
@@ -217,17 +226,19 @@ class PoController extends Controller
             $userName = $user ? ($user->name ?? $user->username) : 'Petugas';
             $po = $this->poService->forceClose($id, $request->input('closed_reason'), $userName);
 
+            $msg = "Sisa kuota pesanan Purchase Order {$po->po_no} berhasil dibatalkan dan status dokumen kini SELESAI.";
+
             if ($request->wantsJson()) {
                 return response()->json([
                     'status'  => 'success',
-                    'message' => "Purchase Order {$po->po_no} berhasil ditutup.",
+                    'message' => $msg,
                     'data'    => $po,
                 ]);
             }
 
             return redirect()
-                ->route('gudang.po.show', $po->po_id)
-                ->with('success', "Purchase Order {$po->po_no} berhasil ditutup.");
+                ->back()
+                ->with('success', $msg);
         } catch (\Exception $e) {
             return back()->withErrors(['error' => $e->getMessage()]);
         }
@@ -260,6 +271,16 @@ class PoController extends Controller
         $cleanPoNo = preg_replace('/[^A-Za-z0-9\-]/', '', $po->po_no);
         $fileName = 'PO-' . $cleanPoNo . '.pdf';
         return $pdf->stream($fileName);
+    }
+
+    /**
+     * Tampilkan Dokumen Resmi Berita Acara Pembatalan Sisa Pesanan Purchase Order.
+     */
+    public function beritaAcara(int $id): View
+    {
+        $po = $this->poService->getById($id);
+        $po->loadMissing(['supplier', 'gudang', 'details.barang.satuanDasar']);
+        return view('gudang.po.berita_acara', compact('po'));
     }
 
     /**
@@ -300,13 +321,17 @@ class PoController extends Controller
             ->orderBy('pajak_nm')
             ->get();
 
+        // Daftar Atasan (Approver) yang berhak menyetujui PO
+        $approverList = User::getPoApprovers();
+
         return view('gudang.po.edit', compact(
             'po',
             'supplierList',
             'jenisSupplierList',
             'gudangList',
             'barangList',
-            'pajakList'
+            'pajakList',
+            'approverList'
         ));
     }
 
@@ -318,7 +343,8 @@ class PoController extends Controller
         $request->validate([
             'po_tgl'                   => 'required|date',
             'supplier_id'              => 'required|exists:mst_supplier,supplier_id',
-            'gudang_id'                       => 'required|exists:mst_gudang,gudang_id',
+            'gudang_id'                => 'required|exists:mst_gudang,gudang_id',
+            'approver_id'              => 'required|exists:users,id',
             'is_harga_termasuk_pajak'         => 'nullable|boolean',
             'tgl_estimasi_datang'             => 'nullable|date',
             'catatan_txt'                     => 'nullable|string|max:1000',

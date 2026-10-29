@@ -272,7 +272,15 @@ function renderPoDetail(po) {
     let badgeBg = '#f1f5f9';
     let badgeClr = '#475569';
 
-    if (po.status_cd === 'COMPLETED') {
+    if (po.status_cd === 'PENDING_APPROVAL') {
+        badgeText = 'Menunggu Approval';
+        badgeBg = '#fef3c7';
+        badgeClr = '#b45309';
+    } else if (po.status_cd === 'REJECTED') {
+        badgeText = 'Ditolak Atasan';
+        badgeBg = '#fee2e2';
+        badgeClr = '#b91c1c';
+    } else if (po.status_cd === 'COMPLETED') {
         badgeText = 'Selesai (100%)';
         badgeBg = '#dcfce7';
         badgeClr = '#15803d';
@@ -357,6 +365,10 @@ function renderPoDetail(po) {
         const harga = parseFloat(d.harga_nominal) || 0;
         const subtotal = (parseFloat(d.subtotal_tagihan) || (pQty * harga)) || 0;
 
+        const sisaCellHtml = (po.closed_at && sQty > 0)
+            ? `<span style="color: #dc2626; font-weight: 700;">${sQty.toLocaleString('id-ID')}</span><span class="badge" style="background:#fee2e2; color:#b91c1c; font-size:0.65rem; display:block; margin-top:2px;">Batal Sisa</span>`
+            : `<span style="color: ${sQty > 0 ? '#ea580c' : '#64748b'}; font-weight: 600;">${sQty.toLocaleString('id-ID')}</span>`;
+
         const tr = document.createElement('tr');
         tr.style.borderBottom = '1px solid #f1f5f9';
         tr.innerHTML = `
@@ -368,7 +380,7 @@ function renderPoDetail(po) {
             <td style="padding: 0.55rem 0.75rem; text-align: center; color: #475569;">${satuan}</td>
             <td style="padding: 0.55rem 0.75rem; text-align: right; font-weight: 600; color: #0f172a;">${pQty.toLocaleString('id-ID')}</td>
             <td style="padding: 0.55rem 0.75rem; text-align: right; font-weight: 600; color: #16a34a;">${tQty.toLocaleString('id-ID')}</td>
-            <td style="padding: 0.55rem 0.75rem; text-align: right; font-weight: 600; color: ${sQty > 0 ? '#ea580c' : '#64748b'};">${sQty.toLocaleString('id-ID')}</td>
+            <td style="padding: 0.55rem 0.75rem; text-align: right;">${sisaCellHtml}</td>
             <td style="padding: 0.55rem 0.75rem; text-align: right; color: #475569;">Rp ${harga.toLocaleString('id-ID')}</td>
             <td style="padding: 0.55rem 0.75rem; text-align: right; font-weight: 700; color: #0f172a;">Rp ${subtotal.toLocaleString('id-ID')}</td>
         `;
@@ -389,7 +401,10 @@ function renderPoDetail(po) {
     document.getElementById('poDetailTotalTagihan').textContent = formatRp(po.total_tagihan || po.total_nominal);
 
     // Catatan
-    document.getElementById('poDetailCatatan').textContent = po.catatan_txt || 'Tidak ada catatan tambahan untuk dokumen PO ini.';
+    const notesArr = [];
+    if (po.catatan_txt) notesArr.push(`NOTE: ${po.catatan_txt}`);
+    if (po.remark_txt) notesArr.push(`REMARK: ${po.remark_txt}`);
+    document.getElementById('poDetailCatatan').textContent = notesArr.length > 0 ? notesArr.join('\n') : 'Tidak ada catatan tambahan untuk dokumen PO ini.';
 
     // Riwayat Penerimaan GRN
     const penerimaan = po.penerimaan || [];
@@ -511,33 +526,27 @@ function renderPoHaccpSheet(po) {
     if (elModalNo) elModalNo.textContent = po.po_no || '-';
     if (elSheetNo) elSheetNo.textContent = po.po_no || '-';
 
+    const formatDateIndo = (dateStr) => {
+        if (!dateStr) return '-';
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return dateStr;
+        return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+    };
+
+    const elTgl = document.getElementById('haccpSheetTgl');
+    if (elTgl) elTgl.textContent = formatDateIndo(po.po_tgl);
+
+    // Supplier Box
     const sup = po.supplier || {};
     const elSupNm = document.getElementById('haccpSheetSupplierNm');
     const elSupAlamat = document.getElementById('haccpSheetSupplierAlamat');
+    const elSupUp = document.getElementById('haccpSheetSupplierUp');
+    const elSupTelp = document.getElementById('haccpSheetSupplierTelp');
+
     if (elSupNm) elSupNm.textContent = sup.supplier_nm || '-';
-    if (elSupAlamat) {
-        elSupAlamat.textContent = [
-            sup.alamat || '',
-            sup.telepon ? `Telp: ${sup.telepon}` : ''
-        ].filter(Boolean).join(' • ') || '-';
-    }
-
-    // Gudang & Kota
-    const gdg = po.gudang || {};
-    const elGdgCity = document.getElementById('haccpSheetGudangCity');
-    const elGdgAlamat = document.getElementById('haccpSheetGudangAlamat');
-    if (elGdgCity) elGdgCity.textContent = gdg.gudang_nm ? `${gdg.gudang_nm} - Magelang` : 'Magelang';
-    if (elGdgAlamat) elGdgAlamat.textContent = gdg.alamat || 'Jl. Munggur No. 2 Ambartawang, Kec. Mungkid, Kab. Magelang, Jawa Tengah 56512';
-
-    // Tanggal Tanda Tangan
-    const formatDateIndo = (dateStr) => {
-        if (!dateStr) return new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-        const d = new Date(dateStr);
-        if (isNaN(d.getTime())) return dateStr;
-        return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-    };
-    const elTgl = document.getElementById('haccpSheetTgl');
-    if (elTgl) elTgl.textContent = formatDateIndo(po.po_tgl);
+    if (elSupAlamat) elSupAlamat.textContent = sup.alamat || sup.alamat_txt || '-';
+    if (elSupUp) elSupUp.textContent = sup.kontak_person || '-';
+    if (elSupTelp) elSupTelp.textContent = sup.kontak_no || sup.telepon || sup.telepon_no || '-';
 
     // Link Download PDF
     const baseUrl = (window.poConfig && window.poConfig.baseUrl) ? window.poConfig.baseUrl : '/gudang/po';
@@ -550,40 +559,100 @@ function renderPoHaccpSheet(po) {
     tbody.innerHTML = '';
 
     const details = po.details || [];
+    let subtotal = 0;
+
     details.forEach((d, idx) => {
         const brg = d.barang || {};
-        const satuan = brg.satuan_dasar ? (brg.satuan_dasar.satuan_cd || brg.satuan_dasar.satuan_nm) : 'KG';
+        const satuan = brg.satuan_dasar ? (brg.satuan_dasar.satuan_cd || brg.satuan_dasar.satuan_nm) : (d.satuan_nm || 'PCS');
         const qtyPesan = parseFloat(d.pesan_qty) || 0;
+        const harga = parseFloat(d.harga_nominal) || 0;
+        const total = parseFloat(d.subtotal_nominal) || (qtyPesan * harga);
+        subtotal += total;
 
         const tr = document.createElement('tr');
+        tr.style.fontSize = '8.5pt';
         tr.innerHTML = `
-            <td style="border: 1px solid #000000; padding: 8px 6px; text-align: center; font-weight: 700; font-size: 10pt;">${idx + 1}.</td>
-            <td style="border: 1px solid #000000; padding: 8px 12px; font-size: 10pt;">
-                <strong style="color: #000000;">${brg.barang_nm || '-'}</strong>
-                ${brg.barang_cd ? `<div style="font-size: 8pt; color: #475569; font-family: monospace;">Kode: ${brg.barang_cd}</div>` : ''}
+            <td style="border-left: 1px solid #000000; border-right: 1px solid #000000; border-bottom: 1px solid #e5e7eb; padding: 4px 6px; text-align: center; font-weight: 600;">${idx + 1}</td>
+            <td style="border-left: 1px solid #000000; border-right: 1px solid #000000; border-bottom: 1px solid #e5e7eb; padding: 4px 8px;">
+                <strong style="text-transform: uppercase;">${brg.barang_nm || '-'}</strong>
+                ${brg.barang_cd ? `<span style="font-size: 7.5pt; color: #4b5563;">(${brg.barang_cd})</span>` : ''}
             </td>
-            <td style="border: 1px solid #000000; padding: 8px 10px; text-align: center; font-weight: 800; font-size: 10pt;">
-                ${qtyPesan.toLocaleString('id-ID')} ${satuan}
+            <td style="border-left: 1px solid #000000; border-right: 1px solid #000000; border-bottom: 1px solid #e5e7eb; padding: 4px 6px; text-align: right; font-weight: 700;">
+                ${qtyPesan.toLocaleString('id-ID')}
             </td>
-            <td style="border: 1px solid #000000; padding: 8px 10px; font-size: 9.5pt;">
-                ${d.catatan_txt || '-'}
+            <td style="border-left: 1px solid #000000; border-right: 1px solid #000000; border-bottom: 1px solid #e5e7eb; padding: 4px 6px; text-align: center; text-transform: uppercase;">
+                ${satuan}
+            </td>
+            <td style="border-left: 1px solid #000000; border-right: 1px solid #000000; border-bottom: 1px solid #e5e7eb; padding: 4px 6px; text-align: right;">
+                <span style="float: left; font-size: 7.5pt;">Rp</span> ${harga.toLocaleString('id-ID')}
+            </td>
+            <td style="border-left: 1px solid #000000; border-right: 1px solid #000000; border-bottom: 1px solid #e5e7eb; padding: 4px 8px; text-align: right; font-weight: 700;">
+                <span style="float: left; font-size: 7.5pt;">Rp</span> ${total.toLocaleString('id-ID')}
             </td>
         `;
         tbody.appendChild(tr);
     });
 
-    // Tambahkan 2-3 baris kosong seperti format formulir asli
-    const emptyRows = Math.max(1, 3 - details.length);
+    // Baris kosong
+    const emptyRows = Math.max(0, 6 - details.length);
     for (let i = 0; i < emptyRows; i++) {
         const trEmpty = document.createElement('tr');
+        trEmpty.style.height = '18px';
         trEmpty.innerHTML = `
-            <td style="border: 1px solid #000000; padding: 14px; text-align: center; color: transparent;">&nbsp;</td>
-            <td style="border: 1px solid #000000; padding: 14px;">&nbsp;</td>
-            <td style="border: 1px solid #000000; padding: 14px;">&nbsp;</td>
-            <td style="border: 1px solid #000000; padding: 14px;">&nbsp;</td>
+            <td style="border-left: 1px solid #000000; border-right: 1px solid #000000; padding: 4px 6px; text-align: center; color: #9ca3af; font-size: 7.5pt;">${details.length + i + 1}</td>
+            <td style="border-left: 1px solid #000000; border-right: 1px solid #000000; padding: 4px 8px;">&nbsp;</td>
+            <td style="border-left: 1px solid #000000; border-right: 1px solid #000000; padding: 4px 6px;">&nbsp;</td>
+            <td style="border-left: 1px solid #000000; border-right: 1px solid #000000; padding: 4px 6px;">&nbsp;</td>
+            <td style="border-left: 1px solid #000000; border-right: 1px solid #000000; padding: 4px 6px;">&nbsp;</td>
+            <td style="border-left: 1px solid #000000; border-right: 1px solid #000000; padding: 4px 8px;">&nbsp;</td>
         `;
         tbody.appendChild(trEmpty);
     }
+
+    // Hitung Totals & PPN
+    let ppn = parseFloat(po.ppn_nominal) || 0;
+    if (ppn === 0 && (po.is_harga_termasuk_pajak || (po.catatan_txt && po.catatan_txt.toUpperCase().includes('PPN')))) {
+        ppn = Math.round(subtotal * 0.11);
+    }
+    const grandTotal = parseFloat(po.total_tagihan) || (subtotal + ppn);
+
+    // Update Elements
+    const elSub = document.getElementById('haccpSheetSubtotal');
+    const elPpn = document.getElementById('haccpSheetPpn');
+    const elGrand = document.getElementById('haccpSheetGrandTotal');
+    if (elSub) elSub.textContent = subtotal.toLocaleString('id-ID');
+    if (elPpn) elPpn.textContent = ppn.toLocaleString('id-ID');
+    if (elGrand) elGrand.textContent = grandTotal.toLocaleString('id-ID');
+
+    // Note, TOP & Remark
+    const elNoteEta = document.getElementById('haccpSheetNoteEta');
+    const elCatatan = document.getElementById('haccpSheetCatatan');
+    if (elNoteEta) {
+        if (po.catatan_txt) {
+            elNoteEta.textContent = po.catatan_txt;
+        } else if (po.tgl_estimasi_datang) {
+            elNoteEta.textContent = `*Mohon dikirim tanggal ${formatDateIndo(po.tgl_estimasi_datang)}`;
+        } else {
+            elNoteEta.textContent = '-';
+        }
+    }
+    if (elCatatan) elCatatan.textContent = '';
+
+    const elTop = document.getElementById('haccpSheetTop');
+    if (elTop) {
+        if (po.term_of_payment) {
+            elTop.textContent = po.term_of_payment;
+        } else if (sup.top_hari && sup.top_hari > 0) {
+            elTop.textContent = `Tempo ${sup.top_hari} Hari (Transfer)`;
+        } else {
+            elTop.textContent = 'Transfer';
+        }
+    }
+    const elRemark = document.getElementById('haccpSheetRemark');
+    if (elRemark) elRemark.textContent = po.remark_txt || '-';
+
+    const elApprover = document.getElementById('haccpSheetApprover');
+    if (elApprover) elApprover.textContent = po.approved_by || (po.approver ? po.approver.name : 'Habieb Soleh Yoenanto');
 }
 window.renderPoHaccpSheet = renderPoHaccpSheet;
 
@@ -665,4 +734,109 @@ document.addEventListener('click', function (e) {
         closeAllActionDropdowns();
     }
 });
+
+/**
+ * =========================================================================
+ * MODAL PENGIRIMAN DOKUMEN PO KE SUPPLIER VIA EMAIL
+ * =========================================================================
+ */
+function openKirimSupplierModal(poData) {
+    const modal = document.getElementById('modalKirimSupplier');
+    const form = document.getElementById('formKirimSupplier');
+    const elPoNo = document.getElementById('modalSendPoNo');
+    const elSupplierNm = document.getElementById('modalSendSupplierNm');
+    const elEmail = document.getElementById('modalSendSupplierEmail');
+    const elCc = document.getElementById('modalSendCcEmail');
+    const elNotes = document.getElementById('modalSendCustomNotes');
+    const errBox = document.getElementById('sendSupplierAlertError');
+    const btn = document.getElementById('btnSubmitSendSupplier');
+
+    if (!modal || !form) return;
+
+    if (errBox) {
+        errBox.style.display = 'none';
+        errBox.textContent = '';
+    }
+
+    if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = `
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+            <span>Kirim Email Sekarang</span>
+        `;
+    }
+
+    const base = window.poConfig?.baseUrl || '/gudang/po';
+    form.action = base + '/' + poData.po_id + '/send-supplier';
+
+    if (elPoNo) elPoNo.textContent = poData.po_no || '-';
+    if (elSupplierNm) elSupplierNm.textContent = poData.supplier_nm || '-';
+    if (elEmail) elEmail.value = poData.supplier_email || '';
+    if (elCc) elCc.value = poData.default_cc || '';
+    if (elNotes) elNotes.value = poData.default_notes || '';
+
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+
+function closeKirimSupplierModal() {
+    const modal = document.getElementById('modalKirimSupplier');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+    }
+}
+
+function submitKirimSupplier(event) {
+    const btn = document.getElementById('btnSubmitSendSupplier');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="animation: spin 1s linear infinite;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+            <span>Sedang Memproses &amp; Mengirim...</span>
+        `;
+    }
+}
+
+/**
+ * Handler Modal Batalkan Sisa Pesanan & Selesaikan PO
+ */
+function openBatalkanSisaModal(poData) {
+    const modal = document.getElementById('modalForceClose');
+    if (!modal) return;
+
+    const form = document.getElementById('formForceClose');
+    const elPoNo = document.getElementById('mfcPoNo');
+    const elSupplier = document.getElementById('mfcSupplier');
+    const elTerima = document.getElementById('mfcTerimaQty');
+    const elSisa = document.getElementById('mfcSisaQty');
+    const textarea = document.getElementById('closed_reason');
+
+    if (textarea) textarea.value = '';
+
+    if (poData) {
+        const base = window.poConfig?.baseUrl || '/gudang/po';
+        if (form) form.action = poData.url || (base + '/' + poData.po_id + '/force-close');
+        if (elPoNo) elPoNo.textContent = poData.po_no || '-';
+        if (elSupplier) elSupplier.textContent = poData.supplier_nm || '-';
+        if (elTerima) elTerima.textContent = Number(poData.total_terima || 0).toLocaleString('id-ID');
+        if (elSisa) elSisa.textContent = Number(poData.total_sisa || 0).toLocaleString('id-ID');
+    }
+
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+window.openBatalkanSisaModal = openBatalkanSisaModal;
+window.openForceCloseModal = openBatalkanSisaModal;
+
+function closeForceCloseModal() {
+    const modal = document.getElementById('modalForceClose');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+    }
+}
+window.closeForceCloseModal = closeForceCloseModal;
+
+
 

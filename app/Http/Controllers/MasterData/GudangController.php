@@ -26,7 +26,8 @@ class GudangController extends Controller
         $perPage = (int) $request->input('per_page', 15);
         $search = $request->input('search');
 
-        $gudangs = $this->gudangService->getAllPaginated($perPage, $search);
+        // Pass user untuk filter berdasarkan assigned gudang
+        $gudangs = $this->gudangService->getAllPaginated($perPage, $search, $request->user());
         $nextGudangCode = $this->codeGeneratorService->generateGudangCode();
 
         if ($request->wantsJson()) {
@@ -64,7 +65,8 @@ class GudangController extends Controller
     {
         abort_unless($request->user()->canEditMasterPerusahaan(), 403, 'Anda tidak memiliki hak akses untuk mengedit entitas perusahaan.');
 
-        $gudang = $this->gudangService->update($id, $request->validated());
+        // Pass user untuk authorization check
+        $gudang = $this->gudangService->update($id, $request->validated(), $request->user());
 
         if ($request->wantsJson()) {
             return response()->json([
@@ -83,7 +85,8 @@ class GudangController extends Controller
     {
         abort_unless($request->user()->canDeleteMasterPerusahaan(), 403, 'Anda tidak memiliki hak akses untuk menonaktifkan entitas perusahaan.');
 
-        $this->gudangService->delete($id);
+        // Pass user untuk authorization check
+        $this->gudangService->delete($id, $request->user());
 
         if ($request->wantsJson()) {
             return response()->json([

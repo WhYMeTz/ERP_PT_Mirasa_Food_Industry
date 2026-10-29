@@ -285,6 +285,17 @@ function selectSupplier(supplierId) {
     if (supSearchWrapper) supSearchWrapper.style.display = 'none';
     if (supDropdownList) supDropdownList.style.display = 'none';
 
+    // Auto-fill Term of Payment jika belum diubah manual
+    const elTopInput = document.getElementById('term_of_payment');
+    if (elTopInput && (!elTopInput.value || elTopInput.value === 'Transfer' || elTopInput.dataset.autoFilled === 'true')) {
+        if (sup.topHari && parseInt(sup.topHari, 10) > 0) {
+            elTopInput.value = `Tempo ${sup.topHari} Hari (Transfer)`;
+        } else {
+            elTopInput.value = 'Transfer';
+        }
+        elTopInput.dataset.autoFilled = 'true';
+    }
+
     if (currentPoMode === 'multi') {
         document.querySelectorAll('.item-supplier').forEach(sel => {
             if (!sel.value) {

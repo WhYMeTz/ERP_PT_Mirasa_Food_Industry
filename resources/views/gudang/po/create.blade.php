@@ -196,26 +196,70 @@
                         </div>
                     </div>
 
-                    {{-- BARIS 3: SKEMA PAJAK & CATATAN --}}
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem; align-items: start;">
+                    {{-- BARIS 3: ATASAN PENYETUJU (APPROVER) --}}
+                    <div style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 0.875rem 1rem; display: flex; flex-direction: column; gap: 0.4rem;">
+                        <label for="approver_id" class="form-label" style="font-weight: 700; font-size: 0.85rem; margin-bottom: 0; display: flex; align-items: center; justify-content: space-between;">
+                            <span>👔 Atasan Penyetuju (Approver) <span style="color:#ef4444;">*</span></span>
+                            <span class="badge" style="background: #eff6ff; color: #1e40af; font-size: 0.7rem; border: 1px solid #bfdbfe; font-weight: 700;">
+                                Otorisasi Persetujuan Email &amp; Cap Digital
+                            </span>
+                        </label>
+                        <select id="approver_id" name="approver_id" class="form-control" required style="height: 38px; border-radius: 6px; font-weight: 600; font-size: 0.85rem;">
+                            <option value="">-- Pilih Atasan yang Menyetujui PO Ini --</option>
+                            @foreach ($approverList as $appr)
+                                <option value="{{ $appr->id }}" {{ old('approver_id') == $appr->id ? 'selected' : '' }}>
+                                    {{ $appr->name }} ({{ $appr->email }}) [{{ $appr->role_cd }}]
+                                </option>
+                            @endforeach
+                        </select>
+                        <small style="color: #64748b; font-size: 0.725rem; line-height: 1.35;">
+                            Setelah disimpan, email permohonan approval beserta draf PO otomatis dikirimkan ke atasan yang dipilih. Setelah disetujui, dokumen akan dibubuhi <strong>QR Code &amp; Cap Sah</strong> dan siap dikirimkan ke supplier.
+                        </small>
+                    </div>
+
+                    {{-- BARIS 4: CATATAN DOKUMEN (NOTE), REMARK, DAN TERM OF PAYMENT --}}
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.25rem; align-items: start; margin-bottom: 1.25rem;">
                         <div class="form-group" style="margin-bottom: 0;">
-                            <label for="catatan_txt" class="form-label" style="font-weight: 600; font-size: 0.85rem;">Instruksi / Catatan Pengadaan</label>
-                            <textarea id="catatan_txt" name="catatan_txt" rows="2" class="form-control" placeholder="Contoh: Estimasi pengiriman hari Jumat jam 08.00 pagi, singkong kadar air standar pabrik.">{{ old('catatan_txt') }}</textarea>
+                            <label for="catatan_txt" class="form-label" style="font-weight: 600; font-size: 0.85rem;">
+                                Catatan Pengiriman (NOTE)
+                                <small style="font-weight: 400; color: #64748b;">(Tampil di kotak NOTE)</small>
+                            </label>
+                            <textarea id="catatan_txt" name="catatan_txt" rows="2" class="form-control" placeholder="Contoh: *Mohon dikirim tanggal 29 Oktober 2026 jam 08.00 pagi.">{{ old('catatan_txt') }}</textarea>
                         </div>
 
-                        <div style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 0.75rem 1rem; display: flex; flex-direction: column; justify-content: center; gap: 0.25rem;">
-                            <label style="display: flex; align-items: center; gap: 0.65rem; cursor: pointer; margin-bottom: 0; user-select: none;">
-                                <input type="hidden" name="is_harga_termasuk_pajak" value="0">
-                                <input type="checkbox" id="is_harga_termasuk_pajak" name="is_harga_termasuk_pajak" value="1" {{ old('is_harga_termasuk_pajak') ? 'checked' : '' }} onchange="onHeaderTaxInclusiveToggle(this)" style="width: 18px; height: 18px; accent-color: #059669; cursor: pointer;">
-                                <div>
-                                    <strong style="color: #0f172a; font-size: 0.875rem;">Harga Termasuk PPN (Tax-Inclusive)</strong>
-                                    <span class="badge" id="badgeTaxMode" style="background: #e2e8f0; color: #475569; font-size: 0.68rem; margin-left: 0.35rem; font-weight: 700;">Belum Termasuk PPN (Net)</span>
-                                </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="remark_txt" class="form-label" style="font-weight: 600; font-size: 0.85rem;">
+                                Catatan Tambahan (REMARK)
+                                <small style="font-weight: 400; color: #64748b;">(Tampil di baris Remark dokumen)</small>
                             </label>
-                            <small id="helpTaxMode" style="color: #64748b; font-size: 0.735rem; line-height: 1.35; padding-left: 1.75rem;">
-                                Jika dicentang, harga satuan barang di bawah sudah mencakup PPN. Sistem otomatis mengekstrak DPP dan nilai PPN (perhitungan mundur).
+                            <textarea id="remark_txt" name="remark_txt" rows="2" class="form-control" placeholder="Contoh: Singkong kadar air standar pabrik, kemasan rapi.">{{ old('remark_txt') }}</textarea>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="term_of_payment" class="form-label" style="font-weight: 600; font-size: 0.85rem;">
+                                Term of Payment (Syarat Bayar)
+                                <small style="font-weight: 400; color: #64748b;">(Transfer / Tempo)</small>
+                            </label>
+                            <input type="text" id="term_of_payment" name="term_of_payment" class="form-control" value="{{ old('term_of_payment', 'Transfer') }}" placeholder="Contoh: Transfer atau Tempo 30 Hari (Transfer)">
+                            <small style="color: #64748b; font-size: 0.725rem; display: block; margin-top: 0.25rem;">
+                                Otomatis terisi saat supplier dipilih, bisa disesuaikan manual.
                             </small>
                         </div>
+                    </div>
+
+                    {{-- BARIS 5: SKEMA PAJAK --}}
+                    <div style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 0.75rem 1rem; display: flex; flex-direction: column; justify-content: center; gap: 0.25rem;">
+                        <label style="display: flex; align-items: center; gap: 0.65rem; cursor: pointer; margin-bottom: 0; user-select: none;">
+                            <input type="hidden" name="is_harga_termasuk_pajak" value="0">
+                            <input type="checkbox" id="is_harga_termasuk_pajak" name="is_harga_termasuk_pajak" value="1" {{ old('is_harga_termasuk_pajak') ? 'checked' : '' }} onchange="onHeaderTaxInclusiveToggle(this)" style="width: 18px; height: 18px; accent-color: #059669; cursor: pointer;">
+                            <div>
+                                <strong style="color: #0f172a; font-size: 0.875rem;">Harga Termasuk PPN (Tax-Inclusive)</strong>
+                                <span class="badge" id="badgeTaxMode" style="background: #e2e8f0; color: #475569; font-size: 0.68rem; margin-left: 0.35rem; font-weight: 700;">Belum Termasuk PPN (Net)</span>
+                            </div>
+                        </label>
+                        <small id="helpTaxMode" style="color: #64748b; font-size: 0.735rem; line-height: 1.35; padding-left: 1.75rem;">
+                            Jika dicentang, harga satuan barang di bawah sudah mencakup PPN. Sistem otomatis mengekstrak DPP dan nilai PPN (perhitungan mundur).
+                        </small>
                     </div>
                 </div>
             </div>
@@ -450,8 +494,8 @@
                                     <select name="items[0][pajak_id]" class="form-control item-pajak-id" onchange="calculateSubtotal(this)" style="font-size: 0.75rem; font-weight: 600;">
                                         <option value="" data-tarif="0" data-sifat="TAMBAH">Non-Pajak (0%)</option>
                                         @foreach ($pajakList as $pjk)
-                                            <option value="{{ $pjk->pajak_id }}" data-tarif="{{ (float)$pjk->tarif_persen }}" data-sifat="{{ $pjk->sifat_pajak }}" {{ $pjk->is_default ? 'selected' : '' }}>
-                                                {{ $pjk->pajak_nm }} ({{ (float)$pjk->tarif_persen }}%)
+                                            <option value="{{ $pjk->pajak_id }}" data-tarif="{{ (float)$pjk->tarif_persen }}" data-sifat="{{ $pjk->sifat_pajak }}" title="{{ $pjk->pajak_nm }}" {{ $pjk->is_default ? 'selected' : '' }}>
+                                                {{ $pjk->pajak_cd }} ({{ (float)$pjk->tarif_persen }}%)
                                             </option>
                                         @endforeach
                                     </select>
@@ -596,6 +640,7 @@
             'categoryName' => $sup->jenisSupplier?->jenis_supplier_nm ?? 'Lainnya',
             'contact' => $sup->kontak_no ?? '-',
             'address' => $sup->alamat_txt ?? '',
+            'topHari' => $sup->top_hari ?? 0,
         ];
     })->values();
 @endphp

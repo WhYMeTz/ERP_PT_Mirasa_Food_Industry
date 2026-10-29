@@ -296,8 +296,11 @@ class PermissionService
                     'label'   => 'Master Perusahaan / Cabang',
                     'desc'    => 'Entitas badan usaha PT / CV dalam grup Mirasa.',
                     'actions' => [
-                        'view' => ['key' => 'master_perusahaan_view', 'label' => 'Lihat Data'],
-                        'edit' => ['key' => 'master_perusahaan_edit', 'label' => 'Edit Data'],
+                        'view'   => ['key' => 'master_perusahaan_view',   'label' => 'Lihat Data'],
+                        'create' => ['key' => 'master_perusahaan_create', 'label' => 'Tambah Entitas'],
+                        'edit'   => ['key' => 'master_perusahaan_edit',   'label' => 'Edit Data'],
+                        'delete' => ['key' => 'master_perusahaan_delete', 'label' => 'Nonaktifkan'],
+                        'manage' => ['key' => 'master_perusahaan_manage', 'label' => 'Kelola Penuh'],
                     ],
                 ],
                 'SATUAN' => [
@@ -358,6 +361,7 @@ class PermissionService
             'master_barang_view',
             'master_satuan_view',
             'master_jenis_view',
+            'master_perusahaan_view',
         ],
         'STAFF_PRODUKSI' => [
             'pemakaian_view',
@@ -385,6 +389,7 @@ class PermissionService
             'master_supplier_view',
             'master_supplier_create',
             'master_supplier_edit',
+            'master_perusahaan_view',
         ],
         'FINANCE' => [
             'po_view',
@@ -416,6 +421,11 @@ class PermissionService
             'master_barang_view',
             'master_customer_view',
             'master_supplier_view',
+            'master_perusahaan_view',
+            'master_perusahaan_create',
+            'master_perusahaan_edit',
+            'master_perusahaan_delete',
+            'master_perusahaan_manage',
         ],
         'QC' => [
             'qc_mobile_view',

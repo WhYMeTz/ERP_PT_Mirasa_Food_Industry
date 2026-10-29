@@ -1,0 +1,411 @@
+/* =========================================================================
+ * ERP PT MIRASA - PURCHASE ORDER FORM : INPUT COMFORT LAYER
+ * -------------------------------------------------------------------------
+ * Lapisan UX tambahan untuk form PO (Create & Edit).
+ * TIDAK menghapus / mengubah kolom apa pun. Hanya menambah:
+ *   1. Sticky header kolom + sticky baris total saat tabel panjang
+ *   2. Sorotan baris aktif (operator tahu sedang isi baris mana)
+ *   3. Bar inspektur baris (ringkasan live data yang sedang diinput)
+ *   4. Input angka lebih nyaman (select-all saat fokus, hint format Rupiah)
+ *   5. Penanda baris bermasalah (barang kosong / duplikat / qty tidak valid)
+ * ========================================================================= */
+
+/* -------------------------------------------------------------------------
+ * 1. AREA SCROLL TABEL : header & footer tabel tetap terlihat
+ * ------------------------------------------------------------------------- */
+
+.ux-table-scroll {
+    max-height: 68vh;
+    overflow: auto !important;
+    position: relative;
+}
+
+/* Header kolom menempel di atas saat tabel di-scroll */
+.ux-table-scroll .excel-grid-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 6;
+    background: #0f172a;
+    box-shadow: 0 2px 0 0 #334155;
+}
+
+/* Baris total menempel di bawah, supaya grand total selalu kelihatan */
+.ux-table-scroll .excel-grid-table tfoot td {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    background: #f8fafc;
+    box-shadow: 0 -2px 0 0 #cbd5e1;
+}
+
+/* Kolom nomor & nama barang tidak ikut "hilang" saat scroll horizontal */
+.ux-table-scroll .excel-grid-table td.row-num,
+.ux-table-scroll .excel-grid-table th:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 4;
+    background: #f8fafc;
+}
+
+.ux-table-scroll .excel-grid-table thead th:first-child {
+    z-index: 7;
+    background: #0f172a;
+}
+
+.ux-table-scroll .excel-grid-table tr:hover td.row-num {
+    background: #f0f9ff;
+}
+
+/* Scrollbar tipis agar tidak memakan ruang */
+.ux-table-scroll::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+.ux-table-scroll::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 8px;
+}
+
+.ux-table-scroll::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 8px;
+    border: 2px solid #f1f5f9;
+}
+
+.ux-table-scroll::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* -------------------------------------------------------------------------
+ * 2. SOROTAN BARIS AKTIF
+ * ------------------------------------------------------------------------- */
+
+.excel-grid-table tr.ux-active-row > td {
+    background: #eff6ff !important;
+}
+
+.excel-grid-table tr.ux-active-row > td.row-num {
+    background: #dbeafe !important;
+    color: #1d4ed8 !important;
+    box-shadow: inset 3px 0 0 0 #2563eb;
+}
+
+.excel-grid-table tr.ux-active-row .form-control:focus {
+    border-color: #2563eb !important;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18) !important;
+}
+
+/* Baris bermasalah */
+.excel-grid-table tr.ux-row-invalid > td {
+    background: #fef2f2 !important;
+}
+
+.excel-grid-table tr.ux-row-invalid > td.row-num {
+    background: #fee2e2 !important;
+    color: #b91c1c !important;
+    box-shadow: inset 3px 0 0 0 #dc2626;
+}
+
+.excel-grid-table tr.ux-row-invalid .item-barang,
+.excel-grid-table tr.ux-row-invalid .item-barang-select,
+.excel-grid-table tr.ux-row-invalid .item-qty,
+.excel-grid-table tr.ux-row-invalid .input-qty {
+    border-color: #f87171 !important;
+    background: #fff7f7 !important;
+}
+
+/* Baris duplikat barang */
+.excel-grid-table tr.ux-row-duplicate > td.row-num {
+    box-shadow: inset 3px 0 0 0 #f59e0b;
+    background: #fffbeb !important;
+    color: #b45309 !important;
+}
+
+.ux-duplicate-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+    margin-top: 3px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fde68a;
+    font-size: 0.65rem;
+    font-weight: 700;
+    line-height: 1.4;
+    white-space: nowrap;
+}
+
+/* -------------------------------------------------------------------------
+ * 3. BAR INSPEKTUR BARIS (ringkasan live baris yang sedang diisi)
+ * ------------------------------------------------------------------------- */
+
+.po-row-inspector {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1.25rem;
+    background: #ffffff;
+    border-top: 1px solid #e2e8f0;
+    border-bottom: 1px solid #e2e8f0;
+    font-size: 0.78rem;
+    color: #475569;
+    min-height: 40px;
+    flex-wrap: wrap;
+}
+
+.po-row-inspector.ux-has-row {
+    background: linear-gradient(90deg, #eff6ff 0%, #ffffff 65%);
+    border-bottom-color: #bfdbfe;
+}
+
+.ux-inspector-hint {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: #64748b;
+    line-height: 1.45;
+}
+
+.ux-inspector-kbd {
+    color: #94a3b8;
+    font-size: 0.72rem;
+    margin-left: 0.15rem;
+}
+
+.ux-inspector-kbd kbd {
+    background: #e2e8f0;
+    color: #334155;
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    font-family: inherit;
+}
+
+/* Isi ringkasan baris aktif */
+.ux-inspector-content {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    flex-wrap: wrap;
+    width: 100%;
+}
+
+.ux-inspector-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.18rem 0.55rem;
+    border-radius: 5px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    font-size: 0.755rem;
+    color: #334155;
+    white-space: nowrap;
+    line-height: 1.5;
+}
+
+.ux-inspector-chip .ux-chip-label {
+    color: #94a3b8;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.ux-inspector-chip .ux-chip-value {
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.ux-inspector-chip.ux-chip-rowno {
+    background: #1d4ed8;
+    border-color: #1d4ed8;
+    color: #ffffff;
+    font-weight: 700;
+}
+
+.ux-inspector-chip.ux-chip-barang {
+    border-color: #bfdbfe;
+    background: #f8fbff;
+    max-width: 320px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ux-inspector-chip.ux-chip-subtotal {
+    margin-left: auto;
+    background: #0f172a;
+    border-color: #0f172a;
+    color: #ffffff;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.83rem;
+    font-weight: 800;
+    padding: 0.22rem 0.75rem;
+}
+
+.ux-inspector-chip.ux-chip-subtotal .ux-chip-label {
+    color: #94a3b8;
+}
+
+.ux-inspector-chip.ux-chip-subtotal .ux-chip-value {
+    color: #ffffff;
+}
+
+.ux-inspector-chip.ux-chip-warning {
+    background: #fffbeb;
+    border-color: #fde68a;
+    color: #92400e;
+    font-weight: 700;
+}
+
+/* -------------------------------------------------------------------------
+ * 4. INPUT ANGKA LEBIH NYAMAN
+ * ------------------------------------------------------------------------- */
+
+/* Hilangkan spinner panah agar tidak salah klik; tetap bisa pakai keyboard */
+.excel-grid-table input[type="number"]::-webkit-outer-spin-button,
+.excel-grid-table input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.excel-grid-table input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
+/* Input harga & qty: angka rata kanan dengan font monospace agar mudah dibaca */
+.excel-grid-table .item-qty,
+.excel-grid-table .input-qty,
+.excel-grid-table .item-harga,
+.excel-grid-table .input-harga {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+}
+
+/* Hint format Rupiah di bawah input harga */
+.ux-money-hint {
+    display: block;
+    margin-top: 2px;
+    font-size: 0.665rem;
+    font-weight: 600;
+    color: #64748b;
+    text-align: right;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    line-height: 1.3;
+    min-height: 12px;
+}
+
+.ux-money-hint.ux-money-zero {
+    color: #cbd5e1;
+}
+
+/* Subtotal baris dibuat lebih menonjol supaya hasil input langsung terbaca */
+.excel-grid-table .row-subtotal {
+    font-size: 0.9rem !important;
+    font-weight: 800 !important;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+}
+
+.excel-grid-table tr.ux-active-row .row-subtotal {
+    color: #1d4ed8 !important;
+}
+
+/* Fokus checkbox pajak lebih jelas */
+.excel-grid-table input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: #059669;
+    cursor: pointer;
+}
+
+/* -------------------------------------------------------------------------
+ * 5. TOOLBAR BANTU DI ATAS TABEL
+ * ------------------------------------------------------------------------- */
+
+.ux-table-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    padding: 0.45rem 1.25rem;
+    background: #ffffff;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 0.75rem;
+    color: #64748b;
+}
+
+.ux-toolbar-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.25rem 0.6rem;
+    border-radius: 5px;
+    border: 1px solid #cbd5e1;
+    background: #ffffff;
+    color: #334155;
+    font-size: 0.735rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.12s ease;
+    line-height: 1.5;
+}
+
+.ux-toolbar-btn:hover {
+    background: #f8fafc;
+    border-color: #94a3b8;
+    color: #0f172a;
+}
+
+.ux-toolbar-btn.ux-toolbar-primary {
+    background: #eff6ff;
+    border-color: #bfdbfe;
+    color: #1d4ed8;
+}
+
+.ux-toolbar-btn.ux-toolbar-primary:hover {
+    background: #dbeafe;
+}
+
+.ux-toolbar-spacer {
+    margin-left: auto;
+}
+
+.ux-toolbar-stat {
+    font-weight: 700;
+    color: #0f172a;
+    font-variant-numeric: tabular-nums;
+}
+
+/* -------------------------------------------------------------------------
+ * 6. RESPONSIVE : matikan sticky tinggi pada layar kecil
+ * ------------------------------------------------------------------------- */
+
+@media (max-width: 1100px) {
+    .ux-table-scroll {
+        max-height: none;
+    }
+
+    .po-row-inspector {
+        position: static;
+    }
+
+    .ux-inspector-chip.ux-chip-subtotal {
+        margin-left: 0;
+    }
+}
+
+/* Hormati preferensi pengguna yang mengurangi animasi */
+@media (prefers-reduced-motion: reduce) {
+    .ux-toolbar-btn,
+    .excel-grid-table .form-control {
+        transition: none !important;
+    }
+}

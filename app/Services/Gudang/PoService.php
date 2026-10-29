@@ -2,17 +2,24 @@
 
 namespace App\Services\Gudang;
 
+use App\Mail\PoApprovalRequestMail;
+use App\Mail\PoSupplierDispatchMail;
 use App\Models\Gudang\DatPoDtl;
 use App\Models\Gudang\DatPoHdr;
 use App\Models\Gudang\DatStokBatch;
 use App\Models\MasterData\MstBarang;
 use App\Models\MasterData\MstPajak;
+use App\Models\User;
 use App\Services\Common\CodeGeneratorService;
 use Exception;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Collection as SupportCollection;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 
 class PoService
 {
@@ -56,7 +63,7 @@ class PoService
      */
     public function getAllPaginated(int $perPage = 15, ?string $search = null, ?string $status = null, int|array|null $gudangId = null): LengthAwarePaginator
     {
-        $query = DatPoHdr::with(['supplier', 'gudang', 'details.barang.satuanDasar'])
+        $query = DatPoHdr::with(['supplier', 'gudang', 'approver', 'details.barang.satuanDasar'])
             ->where('deleted_st', false);
 
         if (is_array($gudangId)) {
@@ -95,6 +102,7 @@ class PoService
         return DatPoHdr::with([
             'supplier',
             'gudang',
+            'approver',
             'details.barang.satuanDasar',
             'details.barang.satuanBesar',
             'details.pajak',
@@ -144,7 +152,8 @@ class PoService
                 if (!$isMultiSupplier && !empty($data['po_no'])) {
                     $poNo = trim($data['po_no']);
                 } else {
-                    $poNo = $this->codeGenerator->generatePoNo();
+                    $poTgl = !empty($data['po_tgl']) ? (string) $data['po_tgl'] : null;
+                    $poNo = $this->codeGenerator->generatePoNo($poTgl);
                 }
 
                 $subtotalBruto = 0;
@@ -193,13 +202,18 @@ class PoService
                     $grandTotal += $subtotalTagihan;
                 }
 
+                $approverId = !empty($data['approver_id']) ? (int) $data['approver_id'] : null;
+                $initialStatus = !empty($data['status_cd']) ? $data['status_cd'] : ($approverId ? 'PENDING_APPROVAL' : 'APPROVED');
+
                 $header = DatPoHdr::create([
                     'po_no'                   => $poNo,
                     'po_tgl'                  => $data['po_tgl'] ?? date('Y-m-d'),
                     'tgl_estimasi_datang'     => $data['tgl_estimasi_datang'] ?? null,
                     'supplier_id'             => $supplierId,
                     'gudang_id'               => $data['gudang_id'],
-                    'status_cd'               => $data['status_cd'] ?? 'APPROVED', // Langsung siap diterima
+                    'approver_id'             => $approverId,
+                    'approval_token'          => Str::random(40),
+                    'status_cd'               => $initialStatus,
                     'is_harga_termasuk_pajak' => $headerTaxInclusive,
                     'subtotal_bruto'          => $subtotalBruto,
                     'diskon_total'            => $diskonTotal,
@@ -209,6 +223,8 @@ class PoService
                     'total_nominal'           => $grandTotal,
                     'total_tagihan'           => $grandTotal,
                     'catatan_txt'             => $data['catatan_txt'] ?? null,
+                    'remark_txt'              => $data['remark_txt'] ?? null,
+                    'term_of_payment'         => $data['term_of_payment'] ?? null,
                 ]);
 
                 foreach ($supplierItems as $item) {
@@ -276,12 +292,22 @@ class PoService
                 $createdPOs->push($header->fresh(['supplier', 'details.barang']));
             }
 
-            if ($createdPOs->count() === 1) {
-                return $createdPOs->first();
-            }
-
             return $createdPOs;
         });
+
+        // Kirim email notifikasi approval ke Atasan secara otomatis jika approver ditentukan
+        $pos = ($result instanceof SupportCollection) ? $result : collect([$result]);
+        foreach ($pos as $createdPo) {
+            if ($createdPo->approver_id && $createdPo->status_cd === 'PENDING_APPROVAL') {
+                $this->sendApprovalEmail($createdPo);
+            }
+        }
+
+        if ($result instanceof SupportCollection && $result->count() === 1) {
+            return $result->first();
+        }
+
+        return $result;
     }
 
     /**
@@ -455,6 +481,10 @@ class PoService
                 }
             } elseif ($po->status_cd === 'DRAFT') {
                 $newStatusCd = 'DRAFT';
+            } elseif ($po->status_cd === 'REJECTED') {
+                $newStatusCd = 'PENDING_APPROVAL'; // Pengajuan ulang
+            } elseif ($po->status_cd === 'PENDING_APPROVAL') {
+                $newStatusCd = 'PENDING_APPROVAL';
             } else {
                 $newStatusCd = 'APPROVED';
             }
@@ -466,6 +496,7 @@ class PoService
                 'tgl_estimasi_datang'     => $data['tgl_estimasi_datang'] ?? $po->tgl_estimasi_datang,
                 'supplier_id'             => $hasAnyReceived ? $po->supplier_id : ($data['supplier_id'] ?? $po->supplier_id),
                 'gudang_id'               => $data['gudang_id'] ?? $po->gudang_id,
+                'approver_id'             => !empty($data['approver_id']) ? (int) $data['approver_id'] : $po->approver_id,
                 'status_cd'               => $newStatusCd,
                 'is_harga_termasuk_pajak' => $headerTaxInclusive,
                 'subtotal_bruto'          => $subtotalBruto,
@@ -475,7 +506,9 @@ class PoService
                 'ppn_nominal'             => $totalPpn,
                 'total_nominal'           => $grandTotal,
                 'total_tagihan'           => $grandTotal,
-                'catatan_txt'             => $data['catatan_txt'] ?? $po->catatan_txt,
+                'catatan_txt'             => array_key_exists('catatan_txt', $data) ? $data['catatan_txt'] : $po->catatan_txt,
+                'remark_txt'              => array_key_exists('remark_txt', $data) ? $data['remark_txt'] : $po->remark_txt,
+                'term_of_payment'         => array_key_exists('term_of_payment', $data) ? $data['term_of_payment'] : $po->term_of_payment,
             ]);
 
             return $po->fresh(['supplier', 'details.barang', 'details.pajak']);
@@ -547,7 +580,7 @@ class PoService
             $po = DatPoHdr::with('details')->findOrFail($id);
 
             if ($po->status_cd !== 'PARTIAL') {
-                throw new Exception("Hanya Purchase Order dengan status 'PARTIAL' (sebagian diterima) yang dapat ditutup paksa.");
+                throw new Exception("Hanya Purchase Order dengan status 'PARTIAL' (sebagian diterima) yang dapat diselesaikan dengan pembatalan sisa.");
             }
 
             if ($po->total_sisa_qty <= 0) {
@@ -556,10 +589,11 @@ class PoService
 
             $dateStr = date('d/m/Y H:i');
             $userStr = $userName ?: 'Petugas Gudang / Purchasing';
-            $catatanTambahan = "[FORCE CLOSE - {$dateStr}] Ditutup oleh {$userStr}. Alasan: {$reason}. Sisa kuota pesanan resmi dibatalkan.";
+            $sisaQtyFormatted = number_format($po->total_sisa_qty, 2, ',', '.');
+            $catatanTambahan = "[SELESAI / BATAL SISA - {$dateStr}] Diselesaikan oleh {$userStr}. Sisa kuota pesanan {$sisaQtyFormatted} resmi dibatalkan. Alasan: {$reason}.";
 
             $po->update([
-                'status_cd'     => 'CLOSED',
+                'status_cd'     => 'COMPLETED',
                 'closed_at'     => now(),
                 'closed_by'     => $userStr,
                 'closed_reason' => $reason,
@@ -590,5 +624,137 @@ class PoService
         }
 
         return $query->orderBy('po_tgl', 'desc')->get();
+    }
+
+    /**
+     * Kirim email permohonan persetujuan PO ke atasan
+     */
+    public function sendApprovalEmail(DatPoHdr $po): bool
+    {
+        try {
+            $po->loadMissing(['approver', 'supplier', 'details.barang.satuanDasar']);
+            if (!$po->approver || empty($po->approver->email)) {
+                return false;
+            }
+
+            if (empty($po->approval_token)) {
+                $po->approval_token = Str::random(40);
+                $po->saveQuietly();
+            }
+
+            Mail::to($po->approver->email)->send(new PoApprovalRequestMail($po));
+            return true;
+        } catch (\Throwable $e) {
+            Log::warning("Gagal mengirim email approval PO {$po->po_no} ke {$po->approver?->email}: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Setujui Purchase Order oleh atasan
+     */
+    public function approvePo(int|string $identifier, ?string $approverName = null, ?string $notes = null): DatPoHdr
+    {
+        return DB::transaction(function () use ($identifier, $approverName, $notes) {
+            $query = is_numeric($identifier)
+                ? DatPoHdr::where('po_id', $identifier)
+                : DatPoHdr::where('approval_token', $identifier);
+
+            $po = $query->with('approver')->firstOrFail();
+
+            if ($po->status_cd === 'APPROVED') {
+                return $po; // Sudah disetujui sebelumnya
+            }
+
+            if (in_array($po->status_cd, ['COMPLETED', 'CLOSED', 'CANCELLED'])) {
+                throw new Exception("Dokumen PO {$po->po_no} sudah berstatus {$po->status_cd} dan tidak dapat diubah.");
+            }
+
+            $approver = $approverName ?: ($po->approver?->name ?: (Auth::user()?->name ?: 'Pimpinan / Direksi'));
+
+            $po->update([
+                'status_cd'      => 'APPROVED',
+                'approved_by'    => $approver,
+                'approved_at'    => now(),
+                'approval_notes' => $notes ?: 'Disetujui secara resmi oleh atasan.',
+                'rejected_by'    => null,
+                'rejected_at'    => null,
+                'reject_reason'  => null,
+            ]);
+
+            return $po->fresh(['details.barang', 'supplier', 'gudang', 'approver']);
+        });
+    }
+
+    /**
+     * Tolak Purchase Order oleh atasan
+     */
+    public function rejectPo(int|string $identifier, ?string $rejectorName = null, string $reason = ''): DatPoHdr
+    {
+        return DB::transaction(function () use ($identifier, $rejectorName, $reason) {
+            $query = is_numeric($identifier)
+                ? DatPoHdr::where('po_id', $identifier)
+                : DatPoHdr::where('approval_token', $identifier);
+
+            $po = $query->with('approver')->firstOrFail();
+
+            if (in_array($po->status_cd, ['COMPLETED', 'CLOSED', 'CANCELLED'])) {
+                throw new Exception("Dokumen PO {$po->po_no} sudah berstatus {$po->status_cd} dan tidak dapat diubah.");
+            }
+
+            $rejector = $rejectorName ?: ($po->approver?->name ?: (Auth::user()?->name ?: 'Pimpinan / Direksi'));
+
+            $po->update([
+                'status_cd'     => 'REJECTED',
+                'rejected_by'   => $rejector,
+                'rejected_at'   => now(),
+                'reject_reason' => $reason ?: 'Pengajuan ditolak oleh atasan.',
+            ]);
+
+            return $po->fresh(['details.barang', 'supplier', 'gudang', 'approver']);
+        });
+    }
+
+    /**
+     * Kirim dokumen resmi Purchase Order yang sudah disetujui ke email supplier
+     */
+    public function sendToSupplier(int $poId, string $supplierEmail, ?string $customNotes = null, ?string $ccEmail = null): DatPoHdr
+    {
+        $po = DatPoHdr::findOrFail($poId);
+
+        if (!in_array($po->status_cd, ['APPROVED', 'PARTIAL'])) {
+            throw new Exception("Hanya Purchase Order yang sudah disetujui resmi (APPROVED) yang dapat dikirim ke supplier.");
+        }
+
+        if (empty($supplierEmail)) {
+            throw new Exception("Alamat email supplier tujuan wajib diisi.");
+        }
+
+        try {
+            $mail = new PoSupplierDispatchMail($po, $customNotes);
+
+            $mailable = Mail::to($supplierEmail);
+            if (!empty($ccEmail)) {
+                $ccList = array_map('trim', explode(',', $ccEmail));
+                $mailable->cc($ccList);
+            }
+
+            $mailable->send($mail);
+
+            $user = Auth::user();
+            $senderName = $user?->name ?: 'Admin Purchasing';
+
+            $po->update([
+                'sent_to_supplier_at'   => now(),
+                'sent_to_supplier_by'   => $senderName,
+                'supplier_email_sent'   => $supplierEmail,
+                'supplier_email_notes'  => $customNotes,
+            ]);
+
+            return $po->fresh(['details.barang', 'supplier', 'gudang', 'approver']);
+        } catch (\Throwable $e) {
+            Log::error("Gagal mengirim email PO ke supplier: " . $e->getMessage());
+            throw new Exception("Gagal mengirim email ke supplier: " . $e->getMessage());
+        }
     }
 }

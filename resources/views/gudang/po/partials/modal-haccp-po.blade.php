@@ -1,8 +1,8 @@
-{{-- MODAL POPUP PRATINJAU DOKUMEN HACCP RESMI (SURAT PERMINTAAN BARANG / PURCHASE ORDER) --}}
+{{-- MODAL POPUP PRATINJAU DOKUMEN HACCP RESMI (PURCHASE ORDER RESMI PT MIRASA) --}}
 <div id="modalHaccpPo" class="modal-backdrop" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); z-index: 10050; align-items: center; justify-content: center; padding: 1.25rem; backdrop-filter: blur(4px);">
-    <div class="modal-dialog" style="background: #ffffff; border-radius: 12px; max-width: 900px; width: 100%; height: 92vh; max-height: 94vh; display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); overflow: hidden; border: 1px solid #cbd5e1; animation: modalZoomHaccp 0.18s ease-out;">
+    <div class="modal-dialog" style="background: #ffffff; border-radius: 12px; max-width: 920px; width: 100%; height: 92vh; max-height: 94vh; display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); overflow: hidden; border: 1px solid #cbd5e1; animation: modalZoomHaccp 0.18s ease-out;">
         
-        {{-- HEADER TOOLBAR MODAL (LIGHT THEME MATCHING QC HACCP) --}}
+        {{-- HEADER TOOLBAR MODAL --}}
         <div class="modal-header no-print" style="padding: 0.85rem 1.25rem; background: #ffffff; color: #0f172a; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; flex-wrap: wrap; gap: 0.75rem;">
             <div style="display: flex; align-items: center; gap: 0.65rem;">
                 <div style="width: 36px; height: 36px; border-radius: 8px; background: #e0f2fe; color: #0284c7; display: flex; align-items: center; justify-content: center; font-size: 1.15rem; flex-shrink: 0;">
@@ -10,11 +10,11 @@
                 </div>
                 <div>
                     <h3 style="font-size: 1rem; font-weight: 800; color: #0f172a; margin: 0; line-height: 1.3; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
-                        <span>Formulir HACCP: Surat Permintaan Barang</span>
-                        <span id="haccpModalPoNo" style="font-family: monospace; color: #0284c7; font-size: 0.9rem; font-weight: 800;">-</span>
+                        <span>Form Permintaan Barang (Purchase Order)</span>
+                        <span id="haccpModalPoNo" style="font-family: monospace; color: #dc2626; font-size: 0.95rem; font-weight: 800;">-</span>
                     </h3>
                     <p style="margin: 0; font-size: 0.75rem; color: #64748b;">
-                        Format Standar Sistem Manajemen Mutu Keamanan Pangan PT Mirasa Food Industry (MFI/HACCP-04/FRM-03/050/VIII/2021)
+                        Dokumen Resmi PT Mirasa Food Industry &bull; Dok: MFI/HACCP-04/FRM-03/050/VIII/2021
                     </p>
                 </div>
             </div>
@@ -33,109 +33,143 @@
             </div>
         </div>
 
-        {{-- BODY MODAL: CANVAS BERSIH DENGAN LEMBAR KERTAS A4 --}}
+        {{-- BODY MODAL: KERTAS DOKUMEN --}}
         <div class="modal-body" style="flex: 1; padding: 1.5rem; overflow-y: auto; background: #f8fafc; display: flex; justify-content: center;">
             
-            {{-- SPINNER LOADING (LIGHT THEME) --}}
+            {{-- SPINNER LOADING --}}
             <div id="haccpLoadingSpinner" style="text-align: center; padding: 5rem 1rem; color: #475569;">
                 <div style="display: inline-block; width: 40px; height: 40px; border: 3px solid #e2e8f0; border-top-color: #0284c7; border-radius: 50%; animation: spinHaccp 0.8s linear infinite;"></div>
-                <p style="font-size: 0.85rem; font-weight: 600; margin-top: 1rem; color: #64748b;">Mempersiapkan lembar formulir HACCP...</p>
+                <p style="font-size: 0.85rem; font-weight: 600; margin-top: 1rem; color: #64748b;">Mempersiapkan lembar formulir Purchase Order...</p>
             </div>
 
-            {{-- LEMBAR KERTAS A4 PUTIH DENGAN BAYANGAN BERSIH --}}
-            <div id="haccpPaperSheet" class="haccp-paper-sheet" style="display: none; background: #ffffff; width: 100%; max-width: 780px; min-height: 980px; padding: 35px 42px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); border: 1px solid #cbd5e1; color: #000000; font-family: 'Arial', sans-serif; box-sizing: border-box; position: relative;">
+            {{-- LEMBAR KERTAS PO MIRASA --}}
+            <div id="haccpPaperSheet" class="haccp-paper-sheet" style="display: none; background: #ffffff; width: 100%; max-width: 800px; min-height: 980px; padding: 35px 42px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); border: 1px solid #cbd5e1; color: #000000; font-family: 'Helvetica', 'Arial', sans-serif; box-sizing: border-box; position: relative;">
                 
-                {{-- 1. KOP TABEL STANDAR HACCP MIRASA --}}
-                <table style="width: 100%; border-collapse: collapse; border: 1.5px solid #000000; margin-bottom: 22px;">
+                {{-- 1. KOP SURAT HACCP --}}
+                <table style="width: 100%; border-collapse: collapse; margin-bottom: 6px;">
                     <tr>
-                        {{-- Kolom Logo --}}
-                        <td style="width: 135px; border: 1px solid #000000; text-align: center; vertical-align: middle; padding: 8px 6px;" rowspan="2">
-                            <img src="{{ asset('images/logo.png') }}" style="width: 62px; height: auto; display: block; margin: 0 auto;" alt="Logo Cap Payung">
-                            <div style="font-size: 7pt; font-weight: 800; color: #dc2626; margin-top: 4px; letter-spacing: 0.04em;">
+                        <td style="width: 75px; vertical-align: middle; padding-right: 8px;">
+                            <img src="{{ asset('images/logo.png') }}" style="width: 54px; height: auto; display: block;" alt="Logo Cap Payung">
+                            <div style="font-size: 5.5pt; font-weight: 800; color: #dc2626; margin-top: 2px; letter-spacing: 0.02em; text-align: center;">
                                 ENAK &bull; GURIH &bull; LEZAT
                             </div>
                         </td>
-
-                        {{-- Kolom Judul Perusahaan (Atas) --}}
-                        <td style="border: 1px solid #000000; border-bottom: 1px solid #000000; text-align: center; vertical-align: middle; padding: 8px 12px;">
-                            <div style="font-size: 13pt; font-weight: 800; color: #003366; letter-spacing: 0.04em;">
-                                PT. MIRASA FOOD INDUSTRY
-                            </div>
+                        <td style="vertical-align: middle; padding-left: 5px;">
+                            <div style="font-size: 13pt; font-weight: 800; color: #000000; letter-spacing: 0.03em;">PT MIRASA FOOD INDUSTRY</div>
+                            <div style="font-size: 11pt; font-weight: 700; color: #000000; margin-top: 3px;">FORM PERMINTAAN BARANG</div>
                         </td>
-
-                        {{-- Kolom Tabel Metadata HACCP (Kanan) --}}
-                        <td style="width: 290px; border: 1px solid #000000; padding: 0; vertical-align: top;" rowspan="2">
-                            <table style="width: 100%; border-collapse: collapse; font-size: 8.5pt;">
+                        <td style="width: 255px; vertical-align: top;">
+                            <table style="width: 100%; border-collapse: collapse; font-size: 8pt;">
                                 <tr>
-                                    <td style="border-bottom: 1px solid #000000; border-right: 1px solid #000000; padding: 4px 6px; font-weight: 500; width: 105px;">Nomor dokumen</td>
-                                    <td style="border-bottom: 1px solid #000000; border-right: 1px solid #000000; padding: 4px 4px; text-align: center; width: 10px;">:</td>
-                                    <td style="border-bottom: 1px solid #000000; padding: 4px 6px; font-size: 7.75pt;">MFI/HACCP-04/FRM-03/050/VIII/2021</td>
+                                    <td style="width: 95px; font-weight: 600; padding: 2px 3px;">Nomor dokumen</td>
+                                    <td style="width: 8px; text-align: center; padding: 2px 3px;">:</td>
+                                    <td style="font-weight: 600; padding: 2px 3px;">MFI/HACCP-04/FRM-03/050/VIII/2021</td>
                                 </tr>
                                 <tr>
-                                    <td style="border-bottom: 1px solid #000000; border-right: 1px solid #000000; padding: 4px 6px; font-weight: 500;">Terbitan/Tgl</td>
-                                    <td style="border-bottom: 1px solid #000000; border-right: 1px solid #000000; padding: 4px 4px; text-align: center;">:</td>
-                                    <td style="border-bottom: 1px solid #000000; padding: 4px 6px; font-weight: 500;">19-08-2021</td>
+                                    <td style="font-weight: 600; padding: 2px 3px;">Terbitan/Tgl</td>
+                                    <td style="text-align: center; padding: 2px 3px;">:</td>
+                                    <td style="font-weight: 600; padding: 2px 3px;">19-08-2021</td>
                                 </tr>
                                 <tr>
-                                    <td style="border-bottom: 1px solid #000000; border-right: 1px solid #000000; padding: 4px 6px; font-weight: 500;">Revisi</td>
-                                    <td style="border-bottom: 1px solid #000000; border-right: 1px solid #000000; padding: 4px 4px; text-align: center;">:</td>
-                                    <td style="border-bottom: 1px solid #000000; padding: 4px 6px; font-weight: 500;">00</td>
+                                    <td style="font-weight: 600; padding: 2px 3px;">Revisi</td>
+                                    <td style="text-align: center; padding: 2px 3px;">:</td>
+                                    <td style="font-weight: 600; padding: 2px 3px;">0</td>
                                 </tr>
                                 <tr>
-                                    <td style="border-right: 1px solid #000000; padding: 4px 6px; font-weight: 500;">Halaman</td>
-                                    <td style="border-right: 1px solid #000000; padding: 4px 4px; text-align: center;">:</td>
-                                    <td style="padding: 4px 6px; font-weight: 500;">1</td>
+                                    <td style="font-weight: 600; padding: 2px 3px;">Halaman</td>
+                                    <td style="text-align: center; padding: 2px 3px;">:</td>
+                                    <td style="font-weight: 600; padding: 2px 3px;">1</td>
                                 </tr>
                             </table>
                         </td>
                     </tr>
-                    <tr>
-                        {{-- Kolom Form Permintaan Barang (Bawah) --}}
-                        <td style="border: 1px solid #000000; text-align: center; vertical-align: middle; padding: 6px 10px;">
-                            <div style="font-size: 11.5pt; font-weight: 800; line-height: 1.25;">
-                                Form<br>Permintaan Barang
-                            </div>
-                        </td>
-                    </tr>
                 </table>
 
-                {{-- 2. NO PO (KIRI) & KEPADA YTH (KANAN) --}}
-                <table style="width: 100%; border-collapse: collapse; margin-bottom: 24px;">
-                    <tr>
-                        <td style="width: 50%; vertical-align: top; font-size: 10pt;">
-                            <div style="font-weight: 700;">No.</div>
-                            <div style="display: flex; gap: 8px; margin-top: 2px;">
-                                <span style="font-weight: 700;">PO</span>
-                                <span style="font-weight: 700;">:</span>
-                                <span id="haccpSheetPoNo" style="font-weight: 800; font-family: monospace; font-size: 10.5pt;">-</span>
-                            </div>
-                        </td>
-                        <td style="width: 50%; vertical-align: top; font-size: 10pt; padding-left: 20px;">
-                            <div style="font-weight: 700;">Kepada Yth:</div>
-                            <div id="haccpSheetSupplierNm" style="font-weight: 800; font-size: 10.5pt; margin-top: 2px;">-</div>
-                            <div id="haccpSheetSupplierAlamat" style="font-size: 9pt; color: #1e293b; margin-top: 1px;">-</div>
-                        </td>
-                    </tr>
-                </table>
+                <hr style="border: none; border-top: 2px solid #000000; margin: 4px 0 12px 0;">
 
-                {{-- 3. JUDUL SURAT --}}
-                <div style="text-align: center; margin-bottom: 22px;">
-                    <div style="font-size: 12.5pt; font-weight: 800; text-decoration: underline; letter-spacing: 0.05em;">
-                        SURAT PERMINTAAN BARANG
-                    </div>
-                    <div style="font-size: 11pt; font-weight: 800; letter-spacing: 0.05em; margin-top: 2px;">
-                        PURCHASE ORDER
-                    </div>
+                {{-- 2. JUDUL DOKUMEN --}}
+                <div style="text-align: center; font-size: 14pt; font-weight: 800; letter-spacing: 0.06em; margin-bottom: 12px; color: #000000;">
+                    PURCHASE ORDER
                 </div>
 
-                {{-- 4. TABEL BARANG PERSIS SEPERTI GAMBAR ASLI --}}
-                <table style="width: 100%; border-collapse: collapse; border: 1.5px solid #000000; margin-bottom: 25px;">
+                {{-- 3. PARAMETER PO & KOTAK SUPPLIER --}}
+                <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px;">
+                    <tr>
+                        <td style="width: 48%; vertical-align: top;">
+                            <table style="border-collapse: collapse; font-size: 9pt;">
+                                <tr>
+                                    <td style="width: 65px; font-weight: 600; padding: 2px 4px;">Quot No</td>
+                                    <td style="width: 10px; text-align: center; padding: 2px 4px;">:</td>
+                                    <td style="padding: 2px 4px;">-</td>
+                                </tr>
+                                <tr>
+                                    <td style="font-weight: 700; padding: 2px 4px;">PO No.</td>
+                                    <td style="text-align: center; font-weight: 700; padding: 2px 4px;">:</td>
+                                    <td style="padding: 2px 4px;">
+                                        <span id="haccpSheetPoNo" style="color: #dc2626; font-weight: 800; font-size: 10pt; font-family: 'Courier New', Courier, monospace;">-</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="font-weight: 600; padding: 2px 4px;">Tanggal</td>
+                                    <td style="text-align: center; padding: 2px 4px;">:</td>
+                                    <td style="padding: 2px 4px; font-weight: 700;" id="haccpSheetTgl">-</td>
+                                </tr>
+                            </table>
+                        </td>
+                        <td style="width: 4%;"></td>
+                        <td style="width: 48%; vertical-align: top;">
+                            <div style="border: 1px solid #000000; padding: 6px 10px; background: #ffffff; font-size: 8.5pt; line-height: 1.35; min-height: 65px;">
+                                <strong id="haccpSheetSupplierNm" style="font-size: 9.5pt; text-transform: uppercase;">-</strong>
+                                <div id="haccpSheetSupplierAlamat">-</div>
+                                <table style="width: 100%; border-collapse: collapse; margin-top: 3px; font-size: 8.5pt;">
+                                    <tr>
+                                        <td style="width: 45px; padding: 0;">Up</td>
+                                        <td style="width: 8px; padding: 0;">:</td>
+                                        <td style="padding: 0;" id="haccpSheetSupplierUp">-</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 0;">Telpon</td>
+                                        <td style="padding: 0;">:</td>
+                                        <td style="padding: 0;" id="haccpSheetSupplierTelp">-</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+
+                {{-- 4. KOTAK SHIP TO & INVOICE TO --}}
+                <table style="width: 100%; border-collapse: collapse; margin-bottom: 12px;">
+                    <tr>
+                        <td style="width: 48%; border: 1px solid #000000; padding: 6px 10px; font-size: 8.5pt; line-height: 1.35; vertical-align: top;">
+                            <strong style="text-decoration: underline;">Ship To :</strong><br>
+                            <strong>PT MIRASA FOOD INDUSTRY</strong><br>
+                            JL. Munggur No. 2 Kalangan Wetan, Ambartawang<br>
+                            Mungkid, Magelang, Jawa Tengah<br>
+                            Telp : 0293 3280554, 3280556
+                        </td>
+                        <td style="width: 4%;"></td>
+                        <td style="width: 48%; border: 1px solid #000000; padding: 6px 10px; font-size: 8.5pt; line-height: 1.35; vertical-align: top;">
+                            <strong style="text-decoration: underline;">Invoice To :</strong><br>
+                            <strong>PT MIRASA FOOD INDUSTRY</strong><br>
+                            JL. Munggur No. 2 Kalangan Wetan, Ambartawang<br>
+                            Mungkid, Magelang, Jawa Tengah<br>
+                            Telp : 0293 3280554, 3280556<br>
+                            NPWP : 07.635.700.4-152.000
+                        </td>
+                    </tr>
+                </table>
+
+                {{-- 5. TABEL RINCIAN ITEM BARANG --}}
+                <table style="width: 100%; border-collapse: collapse; border: 1px solid #000000; margin-bottom: 0;">
                     <thead>
-                        <tr>
-                            <th style="width: 48px; border: 1px solid #000000; border-bottom: 2.5px solid #000000; padding: 6px; font-size: 10pt; font-weight: 800; text-align: center;">NO</th>
-                            <th style="border: 1px solid #000000; border-bottom: 2.5px solid #000000; padding: 6px 12px; font-size: 10pt; font-weight: 800; text-align: center;">NAMA BARANG</th>
-                            <th style="width: 150px; border: 1px solid #000000; border-bottom: 2.5px solid #000000; padding: 6px 10px; font-size: 10pt; font-weight: 800; text-align: center;">JUMLAH</th>
-                            <th style="width: 200px; border: 1px solid #000000; border-bottom: 2.5px solid #000000; padding: 6px 10px; font-size: 10pt; font-weight: 800; text-align: center;">KETERANGAN</th>
+                        <tr style="background-color: #d1d5db; color: #000000; font-size: 8.5pt;">
+                            <th style="width: 32px; border: 1px solid #000000; padding: 5px 4px; text-align: center;">No</th>
+                            <th style="border: 1px solid #000000; padding: 5px 8px; text-align: left;">Description</th>
+                            <th style="width: 70px; border: 1px solid #000000; padding: 5px 6px; text-align: right;">Qty</th>
+                            <th style="width: 48px; border: 1px solid #000000; padding: 5px 4px; text-align: center;">Sat</th>
+                            <th style="width: 105px; border: 1px solid #000000; padding: 5px 6px; text-align: right;">Unit Price</th>
+                            <th style="width: 120px; border: 1px solid #000000; padding: 5px 8px; text-align: right;">Total Price</th>
                         </tr>
                     </thead>
                     <tbody id="haccpSheetItemsBody">
@@ -143,30 +177,70 @@
                     </tbody>
                 </table>
 
-                {{-- 5. TANDA TANGAN (KANAN) & NB (KIRI) --}}
-                <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+                {{-- 6. NOTE & TOTAL SECTION --}}
+                <table style="width: 100%; border-collapse: collapse; border: 1px solid #000000; border-top: 1px solid #000000; margin-bottom: 10px;">
                     <tr>
-                        {{-- Kiri: NB Pengiriman --}}
-                        <td style="width: 52%; vertical-align: top; font-size: 9.5pt; line-height: 1.4;">
-                            <div style="font-weight: 800;">NB.</div>
-                            <div>Barang di kirim ke alamat:</div>
-                            <div style="font-weight: 800; font-size: 10pt;">PT. MIRASA FOOD INDUSTRY</div>
-                            <div style="font-weight: 800;" id="haccpSheetGudangCity">Magelang</div>
-                            <div style="font-size: 8.5pt; color: #334155;" id="haccpSheetGudangAlamat">-</div>
+                        <td style="width: 62%; border: 1px solid #000000; padding: 5px 8px; vertical-align: top; font-size: 8.5pt; line-height: 1.4;">
+                            <strong>NOTE :</strong>
+                            <span id="haccpSheetNoteEta" style="font-weight: 700; color: #000000;">*Mohon dikirim sesuai tanggal estimasi</span>
+                            <div id="haccpSheetCatatan" style="margin-top: 2px; font-size: 8pt; color: #374151;"></div>
                         </td>
+                        <td style="width: 38%; border: 1px solid #000000; padding: 4px 6px; vertical-align: top; font-size: 8.5pt;">
+                            <table style="width: 100%; border-collapse: collapse; font-size: 8.5pt;">
+                                <tr>
+                                    <td style="font-weight: 700; width: 85px; padding: 2px 4px;">Total</td>
+                                    <td style="width: 15px; padding: 2px 4px;">Rp</td>
+                                    <td style="text-align: right; font-weight: 700; padding: 2px 4px;" id="haccpSheetSubtotal">0</td>
+                                </tr>
+                                <tr>
+                                    <td style="font-weight: 700; padding: 2px 4px;">PPN</td>
+                                    <td style="padding: 2px 4px;">Rp</td>
+                                    <td style="text-align: right; font-weight: 700; padding: 2px 4px;" id="haccpSheetPpn">0</td>
+                                </tr>
+                                <tr style="border-top: 1px solid #000000;">
+                                    <td style="font-weight: 800; font-size: 9pt; padding: 2px 4px;">Grand Total</td>
+                                    <td style="font-weight: 800; font-size: 9pt; padding: 2px 4px;">Rp</td>
+                                    <td style="text-align: right; font-weight: 800; font-size: 9.5pt; padding: 2px 4px;" id="haccpSheetGrandTotal">0</td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
 
-                        {{-- Kanan: Tanda Tangan Mengetahui --}}
-                        <td style="width: 48%; text-align: center; vertical-align: top; font-size: 10pt;">
-                            <div style="font-weight: 700;">
-                                Magelang, <span id="haccpSheetTgl">-</span>
+                {{-- 7. TERM OF PAYMENT & FRANCO BOX --}}
+                <table style="width: 100%; border-collapse: collapse; border: 1px solid #000000; margin-bottom: 12px; font-size: 8.5pt;">
+                    <tr>
+                        <td style="width: 140px; font-weight: 700; border: 1px solid #000000; padding: 3px 8px;">Term of Payment</td>
+                        <td style="width: 10px; text-align: center; border: 1px solid #000000; padding: 3px 2px;">:</td>
+                        <td style="border: 1px solid #000000; padding: 3px 8px;" id="haccpSheetTop">Transfer</td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: 700; border: 1px solid #000000; padding: 3px 8px;">Franco</td>
+                        <td style="text-align: center; border: 1px solid #000000; padding: 3px 2px;">:</td>
+                        <td style="border: 1px solid #000000; padding: 3px 8px;">Franco Gudang Magelang</td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: 700; border: 1px solid #000000; padding: 3px 8px;">Remark</td>
+                        <td style="text-align: center; border: 1px solid #000000; padding: 3px 2px;">:</td>
+                        <td style="border: 1px solid #000000; padding: 3px 8px;" id="haccpSheetRemark">-</td>
+                    </tr>
+                </table>
+
+                {{-- 8. TANDA TANGAN & FOOTNOTE NB FAKTUR PAJAK --}}
+                <table style="width: 100%; border-collapse: collapse; margin-top: 6px;">
+                    <tr>
+                        <td style="width: 60%; vertical-align: bottom;">
+                            <div style="font-size: 8pt; font-style: italic; font-weight: 700; color: #000000; margin-top: 35px;">
+                                NB : FAKTUR PAJAK AN. PT MIRASA FOOD INDUSTRY (NPWP: 07.635.700.4-152.000)
                             </div>
-                            <div style="font-weight: 700; margin-top: 2px;">
-                                Mengetahui
+                        </td>
+                        <td style="width: 40%; text-align: center; vertical-align: top;">
+                            <div style="font-size: 9pt; font-weight: 600; margin-bottom: 4px;">Hormat Kami,</div>
+                            <div style="height: 48px;" id="haccpSheetStampArea"></div>
+                            <div style="font-size: 9.5pt; font-weight: 800; text-decoration: underline; margin-top: 4px;" id="haccpSheetApprover">
+                                Habieb Soleh Yoenanto
                             </div>
-                            <div style="height: 70px;"></div>
-                            <div style="font-size: 10pt; font-weight: 700; letter-spacing: 0.1em;">
-                                ..............................
-                            </div>
+                            <div style="font-size: 7.5pt; color: #4b5563;">PT Mirasa Food Industry</div>
                         </td>
                     </tr>
                 </table>
@@ -174,7 +248,7 @@
             </div>
         </div>
 
-        {{-- FOOTER MODAL (LIGHT THEME) --}}
+        {{-- FOOTER MODAL --}}
         <div class="modal-footer no-print" style="padding: 0.75rem 1.25rem; background: #ffffff; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 0.5rem;">
             <button type="button" class="btn btn-secondary btn-sm" onclick="closePoHaccpModal()" style="background: #f1f5f9; border: 1px solid #cbd5e1; color: #334155; font-weight: 600; padding: 0.4rem 0.9rem; border-radius: 6px;">
                 Tutup Dokumen

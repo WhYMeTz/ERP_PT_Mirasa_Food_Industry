@@ -20,8 +20,11 @@ class StorePoRequest extends FormRequest
             'tgl_estimasi_datang' => 'nullable|date',
             'supplier_id'         => 'nullable|integer|exists:mst_supplier,supplier_id',
             'gudang_id'               => 'required|integer|exists:mst_gudang,gudang_id',
+            'approver_id'             => 'required|integer|exists:users,id',
             'is_harga_termasuk_pajak' => 'nullable|boolean',
             'catatan_txt'             => 'nullable|string',
+            'remark_txt'              => 'nullable|string',
+            'term_of_payment'         => 'nullable|string|max:100',
 
             'items'                                => 'required|array|min:1',
             'items.*.barang_id'                    => [
@@ -72,6 +75,8 @@ class StorePoRequest extends FormRequest
             'supplier_id.exists'        => 'Supplier yang dipilih tidak valid.',
             'gudang_id.required'        => 'Gudang tujuan pengiriman wajib dipilih.',
             'gudang_id.exists'          => 'Gudang tujuan yang dipilih tidak valid.',
+            'approver_id.required'      => 'Atasan yang berwenang menyetujui (Approver) wajib dipilih.',
+            'approver_id.exists'        => 'Atasan yang dipilih tidak valid.',
             'items.required'            => 'Minimal harus ada 1 item barang yang dipesan.',
             'items.min'                 => 'Minimal harus ada 1 item barang yang dipesan.',
             'items.*.barang_id.required'=> 'Barang wajib dipilih pada setiap baris item.',

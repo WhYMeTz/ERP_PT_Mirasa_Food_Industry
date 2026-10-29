@@ -12,29 +12,27 @@
 </head>
 <body class="auth-body">
 
-    {{-- Fullscreen Environmental Factory Background (Bright & Animated) --}}
-    <div class="auth-page-bg" aria-hidden="true">
+    {{-- Background dengan Gambar Pabrik --}}
+    <div class="auth-page-bg">
         <img src="{{ asset('images/pabrik-mirasa-1.jpg') }}" alt="Pabrik PT Mirasa Food Industry" class="page-bg-img">
         <div class="page-bg-overlay"></div>
     </div>
 
     <div class="auth-wrapper">
-        {{-- ===============================================================
-             SISI KIRI: SHOWCASE FOTO AERIAL PABRIK DENGAN KEN BURNS & QUOTE
-             =============================================================== --}}
+        {{-- SISI KIRI: SHOWCASE FOTO PABRIK --}}
         <div class="auth-visual-pane">
-            {{-- Slideshow Foto Pabrik PT Mirasa --}}
+            {{-- Slideshow Foto Pabrik --}}
             <div class="slideshow-track">
-                <img src="{{ asset('images/pabrik-mirasa-1.jpg') }}" alt="Kompleks Pabrik PT Mirasa Food Industry" class="slide-img active">
-                <img src="{{ asset('images/pabrik-mirasa-2.jpg') }}" alt="Gedung Utama PT Mirasa Food Industry" class="slide-img">
+                <img src="{{ asset('images/pabrik-mirasa-1.jpg') }}" alt="Kompleks Pabrik PT Mirasa" class="slide-img active">
+                <img src="{{ asset('images/pabrik-mirasa-2.jpg') }}" alt="Gedung Utama PT Mirasa" class="slide-img">
             </div>
 
             <div class="visual-overlay"></div>
 
-            {{-- Header Visual: Logo & Status Operasional Pabrik --}}
+            {{-- Header Visual: Logo & Status --}}
             <div class="visual-header">
                 <div class="glass-logo-badge">
-                    <img src="{{ asset('images/logo.png') }}" alt="Logo PT Mirasa" class="badge-logo-img" onerror="this.style.display='none'">
+                    <img src="{{ asset('images/logo.png') }}" alt="Logo PT Mirasa" class="badge-logo-img">
                     <div class="badge-text-group">
                         <span class="badge-title">PT Mirasa Food Industry</span>
                         <span class="badge-sub">Enterprise System</span>
@@ -47,7 +45,20 @@
                 </div>
             </div>
 
-            {{-- Footer Visual: Kutipan Korporat & Indikator Slide --}}
+            {{-- Certification Badges di Tengah --}}
+            <div class="certification-badges">
+                <div class="cert-badge">
+                    <img src="{{ asset('images/logo-haccp.png') }}" alt="HACCP Certified">
+                </div>
+                <div class="cert-badge">
+                    <img src="{{ asset('images/logo-cap-payung.jpg') }}" alt="Cap Payung">
+                </div>
+                <div class="cert-badge">
+                    <img src="{{ asset('images/enak-gurih-lezat.png') }}" alt="Premium Quality">
+                </div>
+            </div>
+
+            {{-- Footer Visual: Quote & Indikator --}}
             <div class="visual-footer">
                 <div class="quote-box">
                     <span class="quote-icon">&ldquo;</span>
@@ -59,15 +70,13 @@
                 </div>
 
                 <div class="slide-indicators">
-                    <button type="button" class="slide-dot active" title="Slide 1 - Kompleks Manufaktur"></button>
-                    <button type="button" class="slide-dot" title="Slide 2 - Gerbang & Kantor Utama"></button>
+                    <button type="button" class="slide-dot active"></button>
+                    <button type="button" class="slide-dot"></button>
                 </div>
             </div>
         </div>
 
-        {{-- ===============================================================
-             SISI KANAN: KARTU FORMULIR LOGIN TERANG (LIGHT THEME) DENGAN AKSEN MERAH
-             =============================================================== --}}
+        {{-- SISI KANAN: FORM LOGIN --}}
         <div class="auth-form-pane">
             <div class="form-content-inner">
                 {{-- Header Form --}}
@@ -80,7 +89,7 @@
                     <p class="form-subtitle">Silakan masukkan akun Anda untuk mengakses sistem operasional pabrik.</p>
                 </div>
 
-                {{-- Alert Pesan Validasi / Sukses --}}
+                {{-- Alert Pesan --}}
                 @if (isset($errors) && $errors->any())
                     <div class="auth-alert alert-danger">
                         <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
@@ -95,11 +104,11 @@
                     </div>
                 @endif
 
-                {{-- Formulir Autentikasi --}}
+                {{-- Form Login --}}
                 <form action="{{ route('login.attempt') }}" method="POST" id="mainLoginForm">
                     @csrf
 
-                    {{-- Input Email / Username --}}
+                    {{-- Input Email --}}
                     <div class="form-group">
                         <label for="emailInput" class="form-label">Email atau Nama Pengguna</label>
                         <div class="input-container">
@@ -118,7 +127,7 @@
                                 <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
                             </span>
                             <input type="password" id="passwordInput" name="password" class="form-input" placeholder="Masukkan kata sandi..." required autocomplete="current-password">
-                            <button type="button" id="togglePasswordBtn" class="btn-toggle-pwd" title="Lihat/Sembunyikan Sandi">
+                            <button type="button" id="togglePasswordBtn" class="btn-toggle-pwd">
                                 <svg id="eyeIcon" width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
@@ -127,7 +136,7 @@
                         </div>
                     </div>
 
-                    {{-- Opsi Ingat Saya & Bantuan --}}
+                    {{-- Opsi --}}
                     <div class="form-options-row">
                         <label class="checkbox-label">
                             <input type="checkbox" name="remember" value="1" checked>
@@ -136,19 +145,17 @@
                         <a href="javascript:void(0)" class="link-help" onclick="alert('Untuk reset kata sandi, silakan hubungi Administrator IT PT Mirasa Food Industry.');">Lupa kata sandi?</a>
                     </div>
 
-                    {{-- Tombol Submit Merah --}}
+                    {{-- Tombol Submit --}}
                     <button type="submit" class="btn-auth-submit">
                         <span>Masuk ke Sistem</span>
                         <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
                     </button>
                 </form>
 
-                {{-- ===============================================================
-                     1-CLICK QUICK LOGIN SWITCHER (AKUN DEMO / TESTING)
-                     =============================================================== --}}
+                {{-- Quick Login Demo --}}
                 @if (isset($demoUsers) && $demoUsers->count() > 0)
                     <div class="demo-accounts-card">
-                        <button type="button" id="demoToggleTrigger" class="demo-toggle-trigger" title="Buka/Tutup daftar akun demo">
+                        <button type="button" id="demoToggleTrigger" class="demo-toggle-trigger">
                             <span class="demo-trigger-label">
                                 <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                                 <span>Pilih Akun Demo Uji Coba (1-Click Switch)</span>
@@ -184,7 +191,7 @@
                                             $roleLabel = 'OPERATOR KEMAS';
                                         }
                                     @endphp
-                                    <a href="{{ route('quick.login', $u->id) }}" class="demo-quick-btn" title="Masuk langsung sebagai {{ $u->name }}">
+                                    <a href="{{ route('quick.login', $u->id) }}" class="demo-quick-btn">
                                         <div class="demo-role-tag" style="color: {{ $roleColor }};">
                                             <span>{{ $roleLabel }}</span>
                                             <span style="font-size: 0.65rem; opacity: 0.8;">&rarr;</span>
@@ -205,7 +212,7 @@
                 @endif
             </div>
 
-            {{-- Link Footer ke Portal Lapangan HP --}}
+            {{-- Footer --}}
             <div class="form-footer">
                 <a href="{{ route('mobile.login') }}" class="link-mobile-portal">
                     <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>

@@ -35,6 +35,11 @@ class StoreSupplierRequest extends FormRequest
                 'string',
                 'max:50',
             ],
+            'email' => [
+                'nullable',
+                'email',
+                'max:150',
+            ],
             'top_hari' => [
                 'nullable',
                 'integer',

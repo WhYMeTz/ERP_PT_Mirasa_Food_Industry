@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\UserController;
 use App\Http\Controllers\Common\CodeGeneratorController;
 use App\Http\Controllers\Gudang\AdjustmentController;
 use App\Http\Controllers\Gudang\PemakaianController;
+use App\Http\Controllers\Gudang\PoApprovalController;
 use App\Http\Controllers\Gudang\PoController;
 use App\Http\Controllers\Gudang\QcInboundController;
 use App\Http\Controllers\Gudang\ReturPembelianController;
@@ -70,6 +71,13 @@ Route::get('/', function () {
     }
     return redirect()->route('login');
 });
+
+// Persetujuan Dokumen PO Langsung dari Tautan Email Atasan (Secure Token)
+Route::get('po/approval-action/{token}', [PoApprovalController::class, 'directAction'])->name('po.approval.direct');
+Route::post('po/approval-action/{token}/reject', [PoApprovalController::class, 'processReject'])->name('po.approval.reject.process');
+
+// Verifikasi Keabsahan Dokumen PO Publik (Hasil Scan QR Code)
+Route::get('verify-po/{token}', [PoApprovalController::class, 'verifyQr'])->name('po.verify.qr');
 
 // Utility Routes (Bebas diakses oleh formulir web untuk live generator kode/batch)
 Route::get('/ajax/generate-code', [CodeGeneratorController::class, 'generate'])->name('ajax.generate_code');
@@ -245,6 +253,15 @@ Route::middleware('auth')->group(function () {
         Route::get('po/{id}/export-pdf', [PoController::class, 'exportPdf'])
             ->name('po.export-pdf')
             ->middleware('role:po_view');
+        Route::get('po/{id}/berita-acara', [PoController::class, 'beritaAcara'])
+            ->name('po.berita_acara')
+            ->middleware('role:po_view');
+        Route::post('po/{id}/resend-approval', [PoApprovalController::class, 'resendApprovalEmail'])
+            ->name('po.resend_approval');
+        Route::post('po/{id}/send-supplier', [PoApprovalController::class, 'sendToSupplier'])
+            ->name('po.send_supplier');
+        Route::post('po/{id}/approve-internal', [PoApprovalController::class, 'approveInternal'])
+            ->name('po.approve_internal');
         Route::resource('po', PoController::class)->only(['index', 'show'])->middleware('role:po_view');
 
         // Antrean Tiket QC Inbound -> Dialihkan terpadu ke Riwayat QC & Dokumen HACCP

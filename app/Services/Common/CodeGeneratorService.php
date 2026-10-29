@@ -1,4 +1,4 @@
-<?php
+    <?php
 
 namespace App\Services\Common;
 
@@ -423,12 +423,45 @@ class CodeGeneratorService
     }
 
     /**
-     * Generate Nomor Purchase Order (format: PO-YYYYMM-0001)
+     * Generate Nomor Purchase Order sesuai standar resmi PT Mirasa Food Industry:
+     * Format: [NOMOR_URUT]/PO/MFI/[BULAN]/[TAHUN]
+     * Contoh: 001/PO/MFI/10/26 atau 144/PO/MFI/10/26
+     * Reset nomor urut otomatis per bulan dan tahun, dengan padding 3 digit (atau dinamis jika > 999).
+     *
+     * @param string|null $date Tanggal PO (opsional, default: hari ini)
+     * @return string
      */
-    public function generatePoNo(): string
+    public function generatePoNo(?string $date = null): string
     {
-        $prefix = 'PO-' . date('Ym') . '-';
-        return $this->generate('dat_po_hdr', 'po_no', $prefix, 4);
+        $timestamp = strtotime($date ?? date('Y-m-d'));
+        $month = date('m', $timestamp);
+        $year = date('y', $timestamp);
+        $suffix = "/PO/MFI/{$month}/{$year}";
+
+        // Cari nomor PO yang berakhiran format resmi pada bulan & tahun ini
+        $existing = DB::table('dat_po_hdr')
+            ->where('po_no', 'LIKE', '%' . $suffix)
+            ->pluck('po_no');
+
+        $maxNumber = 0;
+        $regex = '/^(\d+)\/PO\/MFI\/' . $month . '\/' . $year . '$/i';
+
+        foreach ($existing as $poNo) {
+            if (preg_match($regex, trim((string) $poNo), $matches)) {
+                $num = (int) $matches[1];
+                if ($num > $maxNumber) {
+                    $maxNumber = $num;
+                }
+            }
+        }
+
+        do {
+            $maxNumber++;
+            $generated = str_pad((string) $maxNumber, 3, '0', STR_PAD_LEFT) . $suffix;
+            $exists = DB::table('dat_po_hdr')->where('po_no', $generated)->exists();
+        } while ($exists);
+
+        return $generated;
     }
 
     /**

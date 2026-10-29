@@ -658,7 +658,7 @@
         window.oldHasMultiSupplier = true;
     @endif
 </script>
-<script src="{{ asset('js/gudang/po/po-create.js') }}"></script>
+<script src="{{ asset('js/gudang/po/po-create.js') }}?v={{ filemtime(public_path('js/gudang/po/po-create.js')) }}"></script>
 <script>
     if (window.oldSupplierId) {
         selectSupplier(window.oldSupplierId);

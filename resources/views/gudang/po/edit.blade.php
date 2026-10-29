@@ -429,6 +429,6 @@
     window.currentServerYearMonth = '{{ date('Y-m') }}';
     window.editRowIndex = {{ $po->details->count() }};
 </script>
-<script src="{{ asset('js/gudang/po/po-edit.js') }}"></script>
+<script src="{{ asset('js/gudang/po/po-edit.js') }}?v={{ filemtime(public_path('js/gudang/po/po-edit.js')) }}"></script>
 @endpush
 @endsection

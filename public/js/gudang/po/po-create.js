@@ -1045,6 +1045,19 @@ function closePreviousMonthModal() {
     if (modal) modal.style.display = 'none';
 }
 
+function parsePoNoParts(val) {
+    if (!val) return null;
+    const match = val.trim().match(/^(\d+)\/PO\/MFI\/(\d{1,2})\/(\d{2})$/i);
+    if (match) {
+        return {
+            seq: match[1],
+            month: match[2].padStart(2, '0'),
+            year: match[3],
+        };
+    }
+    return null;
+}
+
 function initCreatePoDateNumberSync() {
     const poTglInput = document.getElementById('po_tgl');
     const poNoInput = document.getElementById('po_no');
@@ -1052,50 +1065,84 @@ function initCreatePoDateNumberSync() {
 
     if (!poTglInput || !poNoInput) return;
 
-    let lastCreateMonthYear = poTglInput.value ? poTglInput.value.slice(0, 7) : '';
+    let initialParts = parsePoNoParts(poNoInput.value);
+    let activeMonthYear = initialParts 
+        ? `${initialParts.year}-${initialParts.month}` 
+        : (poTglInput.value ? poTglInput.value.slice(2, 4) + '-' + poTglInput.value.slice(5, 7) : '');
 
+    function fetchAndApplyPoCode(targetDateStr, reasonText) {
+        poNoInput.style.opacity = '0.5';
+        poNoInput.style.pointerEvents = 'none';
+        if (poNoHelp) {
+            poNoHelp.innerHTML = `<span style="color:#0284c7;">⚡ Memeriksa urutan nomor PO untuk periode ${formatTanggalIndo(targetDateStr)}...</span>`;
+        }
+
+        fetch(`/ajax/generate-code?type=po&date=${encodeURIComponent(targetDateStr)}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success' && data.code) {
+                    poNoInput.value = data.code;
+                    const newParts = parsePoNoParts(data.code);
+                    if (newParts) {
+                        activeMonthYear = `${newParts.year}-${newParts.month}`;
+                    }
+
+                    // Visual highlight lembut
+                    poNoInput.style.background = '#f0fdf4';
+                    setTimeout(() => {
+                        poNoInput.style.background = '#f8fafc';
+                    }, 1200);
+
+                    if (poNoHelp) {
+                        poNoHelp.innerHTML = `<span style="color:#15803d; font-weight:600;">✓ Nomor PO disesuaikan otomatis (${reasonText}): <strong>${data.code}</strong></span>`;
+                    }
+                }
+            })
+            .catch(err => {
+                console.error('Gagal generate nomor PO:', err);
+                if (poNoHelp) {
+                    poNoHelp.innerHTML = `<span style="color:#dc2626;">Gagal menyinkronkan nomor urut otomatis. Anda dapat mengetiknya secara manual.</span>`;
+                }
+            })
+            .finally(() => {
+                poNoInput.style.opacity = '1';
+                poNoInput.style.pointerEvents = 'auto';
+            });
+    }
+
+    // 1. KETIKA TANGGAL PO DIUBAH PENGGUNA
     poTglInput.addEventListener('change', function () {
         const newDate = this.value;
         if (!newDate) return;
 
-        const newMonthYear = newDate.slice(0, 7);
-        // Jika bulannya berbeda dari bulan sebelumnya
-        if (newMonthYear !== lastCreateMonthYear) {
-            poNoInput.style.opacity = '0.5';
-            poNoInput.style.pointerEvents = 'none';
-            if (poNoHelp) {
-                poNoHelp.innerHTML = `<span style="color:#0284c7;">⚡ Memeriksa urutan nomor PO untuk periode ${formatTanggalIndo(newDate)}...</span>`;
-            }
-
-            fetch(`/ajax/generate-code?type=po&date=${encodeURIComponent(newDate)}`)
-                .then(res => res.json())
-                .then(data => {
-                    if (data.status === 'success' && data.code) {
-                        poNoInput.value = data.code;
-                        lastCreateMonthYear = newMonthYear;
-
-                        // Visual highlight
-                        poNoInput.style.background = '#f0fdf4';
-                        setTimeout(() => {
-                            poNoInput.style.background = '#f8fafc';
-                        }, 1200);
-
-                        if (poNoHelp) {
-                            poNoHelp.innerHTML = `<span style="color:#15803d; font-weight:600;">✓ Nomor PO disesuaikan otomatis ke urutan bulan ini: <strong>${data.code}</strong></span>`;
-                        }
-                    }
-                })
-                .catch(err => {
-                    console.error('Gagal generate nomor PO:', err);
-                    if (poNoHelp) {
-                        poNoHelp.innerHTML = `<span style="color:#dc2626;">Gagal menyinkronkan nomor urut otomatis. Anda dapat mengetiknya secara manual.</span>`;
-                    }
-                })
-                .finally(() => {
-                    poNoInput.style.opacity = '1';
-                    poNoInput.style.pointerEvents = 'auto';
-                });
+        const newYM = newDate.slice(2, 4) + '-' + newDate.slice(5, 7);
+        if (newYM !== activeMonthYear) {
+            fetchAndApplyPoCode(newDate, `urutan bulan ${formatTanggalIndo(newDate)}`);
         }
+    });
+
+    // 2. KETIKA BULAN/TAHUN PADA INPUT NOMOR PO DIUBAH LANGSUNG
+    ['change', 'blur'].forEach(evtName => {
+        poNoInput.addEventListener(evtName, function () {
+            const parts = parsePoNoParts(this.value);
+            if (!parts) return;
+
+            const typedYM = `${parts.year}-${parts.month}`;
+            if (typedYM !== activeMonthYear) {
+                const targetDate = `20${parts.year}-${parts.month}-01`;
+                
+                if (poTglInput.value) {
+                    const currentDay = poTglInput.value.slice(8, 10);
+                    const safeDate = `20${parts.year}-${parts.month}-${currentDay}`;
+                    const testD = new Date(safeDate);
+                    poTglInput.value = (!isNaN(testD.getTime())) ? safeDate : targetDate;
+                } else {
+                    poTglInput.value = targetDate;
+                }
+
+                fetchAndApplyPoCode(targetDate, `bulan ${parts.month} tahun 20${parts.year}`);
+            }
+        });
     });
 }
 

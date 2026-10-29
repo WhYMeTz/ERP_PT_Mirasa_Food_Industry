@@ -298,38 +298,57 @@ function initPoDateNumberSync() {
             });
     }
 
-    // 1. KETIKA TANGGAL PO DIUBAH PENGGUNA
-    poTglInput.addEventListener('change', function () {
-        const newDate = this.value;
-        if (!newDate) return;
+    // 1. KETIKA TANGGAL PO DIUBAH PENGGUNA (LANGSUNG LIVE)
+    ['change', 'input'].forEach(evtName => {
+        poTglInput.addEventListener(evtName, function () {
+            const newDate = this.value;
+            if (!newDate) return;
 
-        const newYM = newDate.slice(2, 4) + '-' + newDate.slice(5, 7);
-        if (newYM !== activeMonthYear) {
-            fetchAndApplyPoCode(newDate, `urutan bulan ${formatTanggalIndo(newDate)}`);
-        }
+            const newYM = newDate.slice(2, 4) + '-' + newDate.slice(5, 7);
+            if (newYM !== activeMonthYear) {
+                fetchAndApplyPoCode(newDate, `urutan bulan ${formatTanggalIndo(newDate)}`);
+            }
+        });
     });
 
-    // 2. KETIKA BULAN/TAHUN PADA INPUT NOMOR PO DIUBAH LANGSUNG
+    // 2. KETIKA BULAN/TAHUN PADA INPUT NOMOR PO DIUBAH LANGSUNG (INSTANT / TANPA HARUS KLIK LUAR)
+    let poNoDebounceTimer = null;
+
+    function handlePoNoInputSync() {
+        const parts = parsePoNoParts(poNoInput.value);
+        if (!parts) return;
+
+        const mNum = parseInt(parts.month, 10);
+        if (isNaN(mNum) || mNum < 1 || mNum > 12) return;
+
+        const typedYM = `${parts.year}-${parts.month}`;
+        if (typedYM !== activeMonthYear) {
+            const targetDate = `20${parts.year}-${parts.month}-01`;
+            
+            if (poTglInput.value) {
+                const currentDay = poTglInput.value.slice(8, 10);
+                const safeDate = `20${parts.year}-${parts.month}-${currentDay}`;
+                const testD = new Date(safeDate);
+                poTglInput.value = (!isNaN(testD.getTime())) ? safeDate : targetDate;
+            } else {
+                poTglInput.value = targetDate;
+            }
+
+            fetchAndApplyPoCode(targetDate, `bulan ${parts.month} tahun 20${parts.year}`);
+        }
+    }
+
+    // Respon instan saat mengetik (debounce 300ms agar halus saat mengetik 2 digit bulan)
+    poNoInput.addEventListener('input', function () {
+        clearTimeout(poNoDebounceTimer);
+        poNoDebounceTimer = setTimeout(handlePoNoInputSync, 300);
+    });
+
+    // Respon instan saat change atau blur
     ['change', 'blur'].forEach(evtName => {
         poNoInput.addEventListener(evtName, function () {
-            const parts = parsePoNoParts(this.value);
-            if (!parts) return;
-
-            const typedYM = `${parts.year}-${parts.month}`;
-            if (typedYM !== activeMonthYear) {
-                const targetDate = `20${parts.year}-${parts.month}-01`;
-                
-                if (poTglInput.value) {
-                    const currentDay = poTglInput.value.slice(8, 10);
-                    const safeDate = `20${parts.year}-${parts.month}-${currentDay}`;
-                    const testD = new Date(safeDate);
-                    poTglInput.value = (!isNaN(testD.getTime())) ? safeDate : targetDate;
-                } else {
-                    poTglInput.value = targetDate;
-                }
-
-                fetchAndApplyPoCode(targetDate, `bulan ${parts.month} tahun 20${parts.year}`);
-            }
+            clearTimeout(poNoDebounceTimer);
+            handlePoNoInputSync();
         });
     });
 }

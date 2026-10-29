@@ -734,6 +734,72 @@
         window.calcAll();
     };
 
+    // 9. Standar Harga Satuan & Hitung Otomatis Bahan Kemasan & Pembantu
+    window.standarHargaKemasan = {
+        bumbu_qty: 35000,
+        karton_baru_qty: 10000,
+        karton_bekas_qty: 5000,
+        plastik_hd_qty: 29400,
+        lakban_besar_qty: 15000,
+        lakban_kecil_qty: 6140,
+        tali_rafia_qty: 10000
+    };
+
+    const kemasanKeyMap = {
+        bumbu_qty: 'bumbu_nilai',
+        karton_baru_qty: 'karton_baru_nilai',
+        karton_bekas_qty: 'karton_bekas_nilai',
+        plastik_hd_qty: 'plastik_hd_nilai',
+        lakban_besar_qty: 'lakban_besar_nilai',
+        lakban_kecil_qty: 'lakban_kecil_nilai',
+        tali_rafia_qty: 'tali_rafia_nilai'
+    };
+
+    window.calcKemasanItem = function (qtyInputId) {
+        const valInputId = kemasanKeyMap[qtyInputId];
+        if (!valInputId) return;
+
+        const qtyEl = document.getElementById(qtyInputId);
+        const valEl = document.getElementById(valInputId);
+        if (!qtyEl || !valEl) return;
+
+        const qty = parseFloat(qtyEl.value) || 0;
+        const unitPrice = window.standarHargaKemasan[qtyInputId] || 0;
+
+        if (qty > 0) {
+            valEl.value = Math.round(qty * unitPrice);
+        } else {
+            valEl.value = 0;
+        }
+
+        window.calcAll();
+    };
+
+    window.initAutoKemasanCalc = function () {
+        Object.keys(kemasanKeyMap).forEach(qtyId => {
+            const qtyEl = document.getElementById(qtyId);
+            const valId = kemasanKeyMap[qtyId];
+            const valEl = document.getElementById(valId);
+
+            if (qtyEl) {
+                qtyEl.addEventListener('input', () => {
+                    window.calcKemasanItem(qtyId);
+                });
+            }
+
+            if (valEl && qtyEl) {
+                valEl.addEventListener('input', () => {
+                    const currentQty = parseFloat(qtyEl.value) || 0;
+                    const currentVal = parseFloat(valEl.value) || 0;
+                    if (currentQty > 0 && currentVal > 0) {
+                        window.standarHargaKemasan[qtyId] = currentVal / currentQty;
+                    }
+                    window.calcAll();
+                });
+            }
+        });
+    };
+
     // Standar Tarif Alokasi Biaya Overhead Pabrik (FOH) Dinamis dari Master Data
     const initialFoh = window.appConfig?.initialFohRates || {};
     window.FOH_RATES = {
@@ -909,17 +975,18 @@
         const syncField = (id, val) => {
             const el = document.getElementById(id);
             if (!el) return;
-            if (forceReset || !el.dataset.userModified || el.value === '' || parseFloat(el.value) === 0) {
-                el.value = (val > 0 ? Math.round(val) : (forceReset ? '0' : el.value));
+            if (forceReset || el.dataset.userModified !== 'true') {
+                el.value = Math.round(val);
                 if (forceReset) delete el.dataset.userModified;
             }
         };
 
         if (totalOutputKg > 0 || forceReset) {
             syncField('qc_pengawasan_nilai', totalOutputKg * window.FOH_RATES.QC);
-            syncField('listrik_air_telp_nilai', totalOutputKg * window.FOH_RATES.LISTRIK);
-            syncField('pemeliharaan_mesin_nilai', totalOutputKg * window.FOH_RATES.PEMELIHARAAN);
-            syncField('penyusutan_mesin_nilai', totalOutputKg * window.FOH_RATES.PENYUSUTAN);
+            // Listrik & Air + Telp, Pemeliharaan & Penyusutan sementara di-hidden & dinolkan (dalam masa peninjauan)
+            syncField('listrik_air_telp_nilai', 0);
+            syncField('pemeliharaan_mesin_nilai', 0);
+            syncField('penyusutan_mesin_nilai', 0);
             syncField('limbah_kimia_nilai', totalOutputKg * window.FOH_RATES.KIMIA);
 
             // Fotocopy & ATK: Rumus Excel Asli PT Mirasa =(AF/6)*2*$V$2 -> (Karton IFL x 2 lbr stiker) x Rp 28
@@ -927,8 +994,8 @@
             syncField('fotocopy_nilai', kartonIflCount * 2 * (window.FOH_RATES.FOTOCOPY || 28.00));
 
             const elLimbahP = document.getElementById('limbah_padat_nilai');
-            if (elLimbahP && (forceReset || !elLimbahP.dataset.userModified || elLimbahP.value === '' || parseFloat(elLimbahP.value) === 0)) {
-                elLimbahP.value = Math.round(window.FOH_RATES.LIMBAH_PADAT_SHIFT);
+            if (elLimbahP) {
+                elLimbahP.value = 0; // Limbah Padat di-hidden, cukup pakai Limbah IPAL
                 if (forceReset) delete elLimbahP.dataset.userModified;
             }
         }
@@ -1067,14 +1134,15 @@
         if (totalOutputKg > 0 && typeof window.FOH_RATES === 'object') {
             const autoSyncFoh = (id, val) => {
                 const el = document.getElementById(id);
-                if (el && (!el.dataset.userModified || el.value === '' || parseFloat(el.value) === 0)) {
+                if (el && el.dataset.userModified !== 'true') {
                     el.value = Math.round(val);
                 }
             };
             autoSyncFoh('qc_pengawasan_nilai', totalOutputKg * window.FOH_RATES.QC);
-            autoSyncFoh('listrik_air_telp_nilai', totalOutputKg * window.FOH_RATES.LISTRIK);
-            autoSyncFoh('pemeliharaan_mesin_nilai', totalOutputKg * window.FOH_RATES.PEMELIHARAAN);
-            autoSyncFoh('penyusutan_mesin_nilai', totalOutputKg * window.FOH_RATES.PENYUSUTAN);
+            // Listrik & Air + Telp, Pemeliharaan & Penyusutan sementara di-hidden & dinolkan (dalam masa peninjauan)
+            autoSyncFoh('listrik_air_telp_nilai', 0);
+            autoSyncFoh('pemeliharaan_mesin_nilai', 0);
+            autoSyncFoh('penyusutan_mesin_nilai', 0);
             autoSyncFoh('limbah_kimia_nilai', totalOutputKg * window.FOH_RATES.KIMIA);
 
             // Rumus Excel Asli Fotocopy: =(AF/6)*2*$V$2
@@ -1082,8 +1150,8 @@
             autoSyncFoh('fotocopy_nilai', kartonIflCount * 2 * (window.FOH_RATES.FOTOCOPY || 28.00));
 
             const elLimbahP = document.getElementById('limbah_padat_nilai');
-            if (elLimbahP && (!elLimbahP.dataset.userModified || elLimbahP.value === '' || parseFloat(elLimbahP.value) === 0)) {
-                elLimbahP.value = Math.round(window.FOH_RATES.LIMBAH_PADAT_SHIFT);
+            if (elLimbahP) {
+                elLimbahP.value = 0; // Limbah Padat di-hidden, cukup pakai Limbah IPAL
             }
         }
 
@@ -1133,6 +1201,417 @@
 
         const elHpp = document.getElementById('liveHppPerKg') || document.getElementById('liveHpp');
         if (elHpp) elHpp.textContent = formatRupiah(hppPerKg) + ' / kg';
+
+        // Hitung dan perbarui tabel Breakdown Alokasi HPP per Barang Hasil Produksi
+        if (typeof window.calcHppBreakdown === 'function') {
+            window.calcHppBreakdown(totalBiaya, totalOutputKg);
+        }
+    };
+
+    // ==============================================================
+    // 9.B. FITUR ALOKASI & BREAKDOWN HPP PER PRODUK (HYBRID JOINT COSTING)
+    // Standar Rasio Mutu (2.5x) & Input Penyesuaian Manual Office
+    // ==============================================================
+    window.hppBreakdownState = {
+        mode: 'CUSTOM', // 'CUSTOM', 'STANDAR_RASIO', 'EQUAL'
+        customPrices: {} // idx -> number
+    };
+
+    window.applyStandarRasio = function () {
+        const selectBasis = document.getElementById('selectBasisBarang');
+        if (selectBasis && !selectBasis.value) {
+            alert('Silakan pilih baris barang yang menjadi acuan pengali terlebih dahulu pada dropdown di samping tombol Hitung.');
+            selectBasis.focus();
+            return;
+        }
+        window.hppBreakdownState.mode = 'STANDAR_RASIO';
+        window.hppBreakdownState.customPrices = {};
+        window.calcAll();
+    };
+
+    window.onSelectBasisChange = function (val) {
+        if (val) {
+            window.applyStandarRasio();
+        } else {
+            window.hppBreakdownState.mode = 'CUSTOM';
+            window.calcAll();
+        }
+    };
+    // Alias kompatibilitas
+    window.applyModeBuIda = window.applyStandarRasio;
+
+    window.resetModeBagiRata = function () {
+        window.hppBreakdownState.mode = 'EQUAL';
+        window.hppBreakdownState.customPrices = {};
+        window.calcAll();
+    };
+
+    window.onBreakdownPriceChange = function (idx, rawVal) {
+        window.hppBreakdownState.mode = 'CUSTOM';
+        const val = parseFloat(rawVal);
+        if (isNaN(val) || rawVal === '') {
+            delete window.hppBreakdownState.customPrices[idx];
+        } else {
+            window.hppBreakdownState.customPrices[idx] = val;
+        }
+        window.calcAll();
+    };
+
+    window.resetPrimaryAuto = function (primaryIdx) {
+        if (window.hppBreakdownState.customPrices[primaryIdx] !== undefined) {
+            delete window.hppBreakdownState.customPrices[primaryIdx];
+        }
+        window.calcAll();
+    };
+
+    window.calcHppBreakdown = function (totalBiaya, totalOutputKg) {
+        const tbodyBreakdown = document.getElementById('tbodyBreakdownHpp');
+        if (!tbodyBreakdown) return;
+
+        const fgRows = document.querySelectorAll('#tbodyOutputFg tr.row-output-fg');
+        const items = [];
+
+        fgRows.forEach(row => {
+            const rowId = row.id || '';
+            const idxMatch = rowId.match(/\d+/);
+            const idx = idxMatch ? idxMatch[0] : 0;
+
+            const selectEl = row.querySelector('.select-fg-barang');
+            const qtyKgEl = row.querySelector('.input-fg-qty-kg');
+            const qtyHasilEl = row.querySelector(`#qtyHasil_${idx}`);
+
+            const barangId = selectEl?.value || '';
+            const selectedOpt = selectEl?.options[selectEl.selectedIndex];
+            const barangCd = (selectedOpt?.getAttribute('data-cd') || '').trim().toUpperCase();
+            let barangNm = (selectedOpt?.getAttribute('data-nm') || selectedOpt?.text || '').trim();
+            const qtyKg = parseFloat(qtyKgEl?.value) || 0;
+            const qtyHasil = parseFloat(qtyHasilEl?.value) || 0;
+            const satuan = row.querySelector(`#labelSatuan_${idx}`)?.textContent?.trim() || 'KG';
+
+            // Filter ketat: jika barang belum dipilih di Bagian 2, jangan masukkan baris kosong ke daftar alokasi HPP
+            if (!barangId || barangNm.startsWith('-- Pilih') || barangNm === '') {
+                return;
+            }
+
+            let role = 'UTAMA';
+            let roleLabel = 'Produk Utama';
+            let badgeClass = 'badge-peran-utama';
+            let defaultPrice = 16000;
+
+            const checkStr = `${barangCd} ${barangNm}`.toUpperCase();
+            if (checkStr.includes('BERKO') || checkStr.includes('BRK')) {
+                role = 'BERKO';
+                roleLabel = 'Sortir (Berko)';
+                badgeClass = 'badge-peran-berko';
+                defaultPrice = 16000;
+            } else if (checkStr.includes('LENGKET') || checkStr.includes('LGT')) {
+                role = 'LENGKET';
+                roleLabel = 'Limbah Lengket';
+                badgeClass = 'badge-peran-lengket';
+                defaultPrice = 5000;
+            } else if (checkStr.includes('REMAHAN') || checkStr.includes('RMH') || checkStr.includes('BS') || checkStr.includes('KW')) {
+                role = 'REMAHAN';
+                roleLabel = 'Remahan / KW';
+                badgeClass = 'badge-peran-remahan';
+                defaultPrice = 5000;
+            } else {
+                role = 'UTAMA';
+                roleLabel = 'Produk Utama';
+                badgeClass = 'badge-peran-utama';
+            }
+
+            items.push({
+                idx: idx,
+                barangId: barangId,
+                barangCd: barangCd,
+                barangNm: barangNm,
+                qtyKg: qtyKg,
+                qtyHasil: qtyHasil,
+                satuan: satuan,
+                role: role,
+                roleLabel: roleLabel,
+                badgeClass: badgeClass,
+                defaultPrice: defaultPrice,
+                price: 0,
+                totalNilai: 0
+            });
+        });
+
+        const elTotalKgFoot = document.getElementById('footerBreakdownTotalKg');
+        const elTotalNilaiFoot = document.getElementById('footerBreakdownTotalNilai');
+        const elTotalPorsiFoot = document.getElementById('footerBreakdownTotalPorsi');
+        const toolbarMetode = document.getElementById('toolbarMetodeAlokasi');
+        const noticeSingle = document.getElementById('noticeHppSingleProduct');
+
+        // Jika belum ada barang yang dipilih pada Bagian 2 (Empty State Profesional):
+        if (items.length === 0) {
+            tbodyBreakdown.innerHTML = `
+                <tr>
+                    <td colspan="7" style="padding: 2.5rem 1rem; text-align: center; color: #94a3b8; background: #ffffff;">
+                        <div style="font-size: 0.875rem; font-weight: 700; color: #475569;">Belum Ada Barang Hasil Produksi yang Dipilih</div>
+                        <div style="font-size: 0.775rem; color: #94a3b8; margin-top: 0.35rem;">Silakan pilih barang hasil olahan setengah jadi (WIP) pada Bagian 2 di atas untuk mengaktifkan tabel alokasi HPP.</div>
+                    </td>
+                </tr>
+            `;
+            if (elTotalKgFoot) elTotalKgFoot.textContent = '0.00 kg';
+            if (elTotalNilaiFoot) elTotalNilaiFoot.textContent = 'Rp 0';
+            if (toolbarMetode) toolbarMetode.style.display = 'inline-flex';
+            if (noticeSingle) noticeSingle.style.display = 'none';
+            return;
+        }
+
+        // Identifikasi item utama (primary): jika tidak ada yang berlabel UTAMA, jadikan baris pertama sebagai UTAMA
+        let primaryIdx = items.findIndex(it => it.role === 'UTAMA');
+        if (primaryIdx === -1 && items.length > 0) {
+            primaryIdx = 0;
+            items[0].role = 'UTAMA';
+            items[0].roleLabel = 'Produk Utama';
+            items[0].badgeClass = 'badge-peran-utama';
+        }
+
+        const primaryItem = primaryIdx !== -1 ? items[primaryIdx] : null;
+        const nonPrimaryItems = items.filter(it => it !== primaryItem);
+        const totalKgAll = items.reduce((acc, it) => acc + it.qtyKg, 0);
+
+        // Toolbar metode alokasi selalu tampil agar pengguna dapat mengatur rasio & acuan pengali
+        if (toolbarMetode) toolbarMetode.style.display = 'inline-flex';
+        if (noticeSingle) {
+            noticeSingle.style.display = (nonPrimaryItems.length === 0 && items.length > 0) ? 'inline' : 'none';
+        }
+
+        // Sinkronisasi opsi dropdown barang acuan pengali (selectBasisBarang)
+        const selectBasis = document.getElementById('selectBasisBarang');
+        let selectedBasisVal = selectBasis ? selectBasis.value : '';
+        if (selectBasis) {
+            if (nonPrimaryItems.length > 0) {
+                let optionsHtml = '<option value="">-- Pilih Baris Acuan --</option>';
+                nonPrimaryItems.forEach(it => {
+                    const optVal = String(it.idx);
+                    const isSelected = (selectedBasisVal === optVal);
+                    const rowNum = parseInt(it.idx) + 1;
+                    optionsHtml += `<option value="${optVal}" ${isSelected ? 'selected' : ''}>Baris ${rowNum}: ${it.barangNm}</option>`;
+                });
+
+                const currentOpts = Array.from(selectBasis.options).map(o => o.value).join(',');
+                const newOpts = [''].concat(nonPrimaryItems.map(it => String(it.idx))).join(',');
+                if (currentOpts !== newOpts) {
+                    selectBasis.innerHTML = optionsHtml;
+                    if (selectedBasisVal) {
+                        selectBasis.value = selectedBasisVal;
+                    }
+                }
+            } else {
+                // Tampilan netral jika belum ada produk sampingan yang dipilih di Bagian 2
+                selectBasis.innerHTML = `<option value="">-- Pilih Baris Acuan --</option>`;
+            }
+        }
+
+        // Tentukan barang acuan rasio (basisItem) - HANYA jika dipilih eksplisit oleh pengguna
+        let basisItem = null;
+        if (selectBasis && selectBasis.value) {
+            basisItem = items.find(it => String(it.idx) === String(selectBasis.value)) || null;
+        }
+
+        // Perhitungan alokasi biaya
+        if (totalKgAll <= 0 || totalBiaya <= 0) {
+            items.forEach(it => {
+                it.price = 0;
+                it.totalNilai = 0;
+            });
+        } else if (items.length === 1 || !items.some(it => it !== primaryItem)) {
+            // Hanya 1 jenis barang (100% dialokasikan ke produk utama)
+            if (primaryItem) {
+                primaryItem.price = primaryItem.qtyKg > 0 ? (totalBiaya / primaryItem.qtyKg) : 0;
+                primaryItem.totalNilai = totalBiaya;
+            }
+        } else {
+            // Campuran Produk Utama + Produk Sampingan
+            if (window.hppBreakdownState.mode === 'EQUAL') {
+                const avgPrice = totalKgAll > 0 ? (totalBiaya / totalKgAll) : 0;
+                items.forEach(it => {
+                    it.price = avgPrice;
+                    it.totalNilai = it.qtyKg * avgPrice;
+                });
+            } else if ((window.hppBreakdownState.mode === 'STANDAR_RASIO' || window.hppBreakdownState.mode === 'RATIO_BU_IDA') && basisItem) {
+                // Standar Rasio Mutu Dinamis: HPP Produk Utama = rasio × HPP Barang Acuan (basisItem)
+                const ratioInput = document.getElementById('inputRasioMutu');
+                const ratio = ratioInput ? (parseFloat(ratioInput.value) || 2.5) : 2.5;
+
+                let otherSideCost = 0;
+                items.forEach(it => {
+                    if (it !== primaryItem && it !== basisItem) {
+                        const customVal = window.hppBreakdownState.customPrices[it.idx];
+                        it.price = customVal !== undefined ? customVal : it.defaultPrice;
+                        it.totalNilai = it.qtyKg * it.price;
+                        otherSideCost += it.totalNilai;
+                    }
+                });
+
+                const remainingCost = Math.max(0, totalBiaya - otherSideCost);
+                const primaryKg = primaryItem ? primaryItem.qtyKg : 0;
+                const basisKg = basisItem ? basisItem.qtyKg : 0;
+
+                const denominator = (ratio * primaryKg) + basisKg;
+                const basisPrice = denominator > 0 ? (remainingCost / denominator) : 0;
+                const primaryPrice = basisPrice * ratio;
+
+                if (basisItem) {
+                    basisItem.price = basisPrice;
+                    basisItem.totalNilai = basisItem.qtyKg * basisPrice;
+                }
+                if (primaryItem) {
+                    primaryItem.price = primaryPrice;
+                    primaryItem.totalNilai = primaryItem.qtyKg * primaryPrice;
+                }
+            } else {
+                // Mode 'CUSTOM' (Input Manual Office - Pak Rahmat)
+                let totalSideCost = 0;
+                items.forEach(it => {
+                    if (it !== primaryItem) {
+                        const customVal = window.hppBreakdownState.customPrices[it.idx];
+                        it.price = customVal !== undefined ? customVal : it.defaultPrice;
+                        it.totalNilai = it.qtyKg * it.price;
+                        totalSideCost += it.totalNilai;
+                    }
+                });
+
+                // Produk Utama otomatis menyerap sisa modal produksi (kecuali jika diketik manual)
+                if (primaryItem) {
+                    const isPrimaryManual = (window.hppBreakdownState.customPrices[primaryItem.idx] !== undefined);
+                    if (isPrimaryManual) {
+                        primaryItem.price = window.hppBreakdownState.customPrices[primaryItem.idx];
+                        primaryItem.totalNilai = primaryItem.qtyKg * primaryItem.price;
+                    } else {
+                        const primaryCost = Math.max(0, totalBiaya - totalSideCost);
+                        primaryItem.price = primaryItem.qtyKg > 0 ? (primaryCost / primaryItem.qtyKg) : 0;
+                        primaryItem.totalNilai = primaryCost;
+                    }
+                }
+            }
+        }
+
+        // Render baris ke tabel #tbodyBreakdownHpp
+        let html = '';
+        let totalNilaiAllocated = 0;
+        const ratioInputEl = document.getElementById('inputRasioMutu');
+        const activeRatio = ratioInputEl ? (parseFloat(ratioInputEl.value) || 2.5) : 2.5;
+
+        items.forEach((it, i) => {
+            totalNilaiAllocated += it.totalNilai;
+            const porsi = totalKgAll > 0 ? ((it.qtyKg / totalKgAll) * 100).toFixed(1) : '0.0';
+            const isPrimary = (it === primaryItem);
+            const isBasis = (it === basisItem);
+            const isPrimaryManual = (isPrimary && window.hppBreakdownState.customPrices[it.idx] !== undefined);
+
+            // Simpan nilai satuan & total ke input hidden formulir
+            const hppSatuanHidden = document.getElementById(`hppSatuan_${it.idx}`);
+            if (hppSatuanHidden) hppSatuanHidden.value = Math.round(it.price);
+            const totalNilaiHidden = document.getElementById(`totalNilai_${it.idx}`);
+            if (totalNilaiHidden) totalNilaiHidden.value = Math.round(it.totalNilai);
+
+            html += `
+                <tr style="border-bottom: 1px solid #f1f5f9; transition: background 0.15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background=''">
+                    <td style="padding: 0.65rem 0.85rem; text-align: center; font-weight: 700; color: #64748b;">
+                        ${i + 1}
+                    </td>
+                    <td style="padding: 0.65rem 0.85rem;">
+                        <div style="font-weight: 700; color: #0f172a; font-size: 0.84rem;">${it.barangNm}</div>
+                        <div style="color: #64748b; font-family: ui-monospace, monospace; font-size: 0.725rem; margin-top: 0.1rem;">${it.barangCd || '-'}</div>
+                    </td>
+                    <td style="padding: 0.65rem 0.85rem; text-align: center;">
+                        <span class="badge-peran-tag ${it.badgeClass}">${it.roleLabel}</span>
+                    </td>
+                    <td style="padding: 0.65rem 0.85rem; text-align: right; font-weight: 700; color: #0f172a; font-variant-numeric: tabular-nums;">
+                        ${formatNumber(it.qtyKg, 2)} kg
+                    </td>
+                    <td style="padding: 0.65rem 0.85rem; text-align: right; color: #64748b; font-weight: 600; font-variant-numeric: tabular-nums;">
+                        ${porsi}%
+                    </td>
+                    <td style="padding: 0.65rem 0.85rem; text-align: right;">
+                        <div style="display: inline-flex; align-items: center; border: 1px solid #cbd5e1; border-radius: 6px; background: #ffffff; overflow: hidden; height: 32px; width: 145px; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">
+                            <span style="background: #f8fafc; padding: 0 0.5rem; font-size: 0.75rem; color: #64748b; font-weight: 600; border-right: 1px solid #cbd5e1; line-height: 30px;">Rp</span>
+                            <input type="number" step="1" min="0" 
+                                value="${Math.round(it.price)}" 
+                                placeholder="0" 
+                                oninput="onBreakdownPriceChange(${it.idx}, this.value)"
+                                style="border: none; padding: 0 0.5rem; text-align: right; font-size: 0.85rem; font-weight: 700; outline: none; width: 100%; color: #0f172a; height: 100%; font-family: ui-monospace, SFMono-Regular, monospace;"
+                                title="Ketik manual HPP satuan ${it.barangNm} per kg">
+                        </div>
+                        ${isPrimary ? (
+                            isPrimaryManual ? `
+                                <div style="font-size: 0.7rem; margin-top: 0.2rem; color: #64748b;">
+                                    <span style="color: #0284c7; font-weight: 700;">Manual</span> &bull; 
+                                    <a href="javascript:void(0)" onclick="resetPrimaryAuto(${it.idx})" style="color: #059669; text-decoration: underline; font-weight: 600;">
+                                        Kembalikan ke Auto
+                                    </a>
+                                </div>
+                            ` : `
+                                <div style="color: #059669; font-weight: 600; font-size: 0.7rem; margin-top: 0.2rem;">
+                                    ${window.hppBreakdownState.mode === 'STANDAR_RASIO' && basisItem ? `(${activeRatio}× ${basisItem.barangNm})` : '✓ Otomatis Serap Sisa'}
+                                </div>
+                            `
+                        ) : (
+                            isBasis && window.hppBreakdownState.mode === 'STANDAR_RASIO' ? `
+                                <div style="color: #b45309; font-weight: 600; font-size: 0.7rem; margin-top: 0.2rem;">
+                                    Acuan Rasio (${activeRatio}×)
+                                </div>
+                            ` : ''
+                        )}
+                    </td>
+                    <td style="padding: 0.65rem 0.85rem; text-align: right; font-weight: 800; font-size: 0.875rem; color: #0f172a; font-variant-numeric: tabular-nums;" class="cell-nilai-total">
+                        Rp ${formatNumber(Math.round(it.totalNilai), 0)}
+                    </td>
+                </tr>
+            `;
+        });
+
+        tbodyBreakdown.innerHTML = html;
+
+        // Update footer tabel
+        if (elTotalKgFoot) elTotalKgFoot.textContent = formatNumber(totalKgAll, 2) + ' kg';
+        if (elTotalNilaiFoot) elTotalNilaiFoot.textContent = 'Rp ' + formatNumber(Math.round(totalNilaiAllocated), 0);
+
+        // Rekonsiliasi Balance Check
+        const diff = Math.round(totalBiaya - totalNilaiAllocated);
+        const badgeBalance = document.getElementById('badgeHppBalance');
+        const diffEl = document.getElementById('reconciliationDiff');
+
+        if (Math.abs(diff) <= 20) {
+            if (badgeBalance) {
+                badgeBalance.style.background = '#ecfdf5';
+                badgeBalance.style.color = '#059669';
+                badgeBalance.style.borderColor = '#a7f3d0';
+                badgeBalance.textContent = 'Alokasi Klop (100%)';
+            }
+            if (diffEl) {
+                diffEl.textContent = 'Selisih Alokasi: Rp 0';
+                diffEl.style.color = '#059669';
+            }
+        } else {
+            if (badgeBalance) {
+                badgeBalance.style.background = '#fef2f2';
+                badgeBalance.style.color = '#dc2626';
+                badgeBalance.style.borderColor = '#fecaca';
+                badgeBalance.textContent = `Selisih Alokasi: Rp ${formatNumber(diff, 0)}`;
+            }
+            if (diffEl) {
+                diffEl.textContent = `Selisih Alokasi: Rp ${formatNumber(diff, 0)}`;
+                diffEl.style.color = '#dc2626';
+            }
+        }
+
+        // Sinkronkan kartu live HPP ringkasan bawah dengan harga Produk Utama
+        if (primaryItem && primaryItem.price > 0) {
+            const elHpp = document.getElementById('liveHppPerKg') || document.getElementById('liveHpp');
+            if (elHpp) {
+                elHpp.innerHTML = `
+                    <span>Rp ${formatNumber(Math.round(primaryItem.price), 0)} / kg</span>
+                    <small style="display: block; font-size: 0.7rem; font-weight: 600; color: #047857; margin-top: 0.15rem;">
+                        (Produk Utama: ${primaryItem.barangNm})
+                    </small>
+                `;
+            }
+        }
     };
 
     // 10. Highlight Dokumen Gudang (BPPB) yang Sesuai dengan Lini Produksi
@@ -1191,7 +1670,13 @@
     function findMatchingLiniIndex(elLini, targetRaw) {
         if (!elLini || !targetRaw) return -1;
         const target = targetRaw.trim().toUpperCase();
-        const targetClean = target.replace(/^PRODUKSI\s+/, '').trim();
+
+        // Normalisasi: bersihkan prefix umum operasional seperti PRODUKSI, PENGEMASAN, PACKAGING, PACKING, dan KS
+        const normalizeStr = (s) => s.replace(/^(PRODUKSI|PENGEMASAN|PACKAGING|PACKING)\s+/i, '')
+                                     .replace(/\bKS\s+/i, '')
+                                     .replace(/[^A-Z0-9]/g, '');
+
+        const targetNorm = normalizeStr(target);
 
         // 1. Pencocokan langsung (exact match)
         for (let i = 0; i < elLini.options.length; i++) {
@@ -1200,13 +1685,15 @@
             if (val && val === target) return i;
         }
 
-        // 2. Pencocokan tanpa prefix 'PRODUKSI ' atau berdasarkan kode lini (data-cd)
+        // 2. Pencocokan Normalized (bebas spasi, tanda strip '-', dan prefix)
         for (let i = 0; i < elLini.options.length; i++) {
             const opt = elLini.options[i];
             const val = (opt.value || '').trim().toUpperCase();
             const cd = (opt.getAttribute('data-cd') || '').trim().toUpperCase();
-            const valClean = val.replace(/^PRODUKSI\s+/, '').trim();
-            if (valClean && (valClean === targetClean || cd === target || cd === targetClean)) {
+            const valNorm = normalizeStr(val);
+            const cdNorm = cd.replace(/[^A-Z0-9]/g, '');
+
+            if (valNorm && (valNorm === targetNorm || cdNorm === targetNorm)) {
                 return i;
             }
         }
@@ -1236,13 +1723,13 @@
             }
         }
 
-        // 4. Fallback substring
+        // 4. Fallback substring matching
         for (let i = 0; i < elLini.options.length; i++) {
             const opt = elLini.options[i];
             const val = (opt.value || '').trim().toUpperCase();
             if (!val) continue;
-            const valClean = val.replace(/^PRODUKSI\s+/, '').trim();
-            if (targetClean && (valClean.includes(targetClean) || targetClean.includes(valClean))) {
+            const valNorm = normalizeStr(val);
+            if (valNorm && targetNorm && (valNorm.includes(targetNorm) || targetNorm.includes(valNorm))) {
                 return i;
             }
         }
@@ -1302,13 +1789,17 @@
                         // Catatan: Tanggal produksi sengaja dipertahankan tanggal hari ini (tidak mengikuti tanggal BPPB)
 
                         // 1. Auto-sinkronkan Lini Produksi sesuai Tujuan BPPB
+                        let isLiniMatched = false;
                         if (d.tujuan_pemakaian) {
                             const elLini = document.getElementById('lini_produksi');
                             if (elLini) {
                                 const matchedIndex = findMatchingLiniIndex(elLini, d.tujuan_pemakaian);
-                                if (matchedIndex !== -1 && elLini.selectedIndex !== matchedIndex) {
-                                    elLini.selectedIndex = matchedIndex;
-                                    elLini.dispatchEvent(new Event('change', { bubbles: true }));
+                                if (matchedIndex !== -1) {
+                                    isLiniMatched = true;
+                                    if (elLini.selectedIndex !== matchedIndex) {
+                                        elLini.selectedIndex = matchedIndex;
+                                        elLini.dispatchEvent(new Event('change', { bubbles: true }));
+                                    }
                                 }
                                 if (typeof window.updateKartonRangeAndBatch === 'function') window.updateKartonRangeAndBatch();
                             }
@@ -1342,6 +1833,15 @@
                         setVal('lakban_kecil_nilai', d.lakban_kecil_nilai);
                         setVal('tali_rafia_qty', d.tali_rafia_qty);
                         setVal('tali_rafia_nilai', d.tali_rafia_nilai);
+
+                        // Sinkronkan harga satuan riil dari dokumen BPPB ke memori kalkulasi
+                        if (d.bumbu_qty > 0 && d.bumbu_nilai > 0) window.standarHargaKemasan.bumbu_qty = d.bumbu_nilai / d.bumbu_qty;
+                        if (d.karton_baru_qty > 0 && d.karton_baru_nilai > 0) window.standarHargaKemasan.karton_baru_qty = d.karton_baru_nilai / d.karton_baru_qty;
+                        if (d.karton_bekas_qty > 0 && d.karton_bekas_nilai > 0) window.standarHargaKemasan.karton_bekas_qty = d.karton_bekas_nilai / d.karton_bekas_qty;
+                        if (d.plastik_hd_qty > 0 && d.plastik_hd_nilai > 0) window.standarHargaKemasan.plastik_hd_qty = d.plastik_hd_nilai / d.plastik_hd_qty;
+                        if (d.lakban_besar_qty > 0 && d.lakban_besar_nilai > 0) window.standarHargaKemasan.lakban_besar_qty = d.lakban_besar_nilai / d.lakban_besar_qty;
+                        if (d.lakban_kecil_qty > 0 && d.lakban_kecil_nilai > 0) window.standarHargaKemasan.lakban_kecil_qty = d.lakban_kecil_nilai / d.lakban_kecil_qty;
+                        if (d.tali_rafia_qty > 0 && d.tali_rafia_nilai > 0) window.standarHargaKemasan.tali_rafia_qty = d.tali_rafia_nilai / d.tali_rafia_qty;
 
                         // Auto-fill Sarung Tangan jika ada dari dokumen BPPB Gudang
                         if (d.sarung_tangan_plastik_qty && d.sarung_tangan_plastik_qty > 0) {
@@ -1389,19 +1889,18 @@
                             window.renderTabelPemakaian(d.items);
                         }
 
-                        // Notifikasi sukses tarik data
+                        // Notifikasi status penarikan data BPPB
                         const noticeEl = document.getElementById('pakaiMatchNotice');
                         if (noticeEl) {
-                            const isNoticeManual = d.tujuan_pemakaian && d.tujuan_pemakaian.toUpperCase().includes('MANUAL');
-                            const isNoticeIfm = d.tujuan_pemakaian && (d.tujuan_pemakaian.toUpperCase().includes('IFM') || d.tujuan_pemakaian.toUpperCase().includes('IFL'));
-                            if (isNoticeManual) {
-                                noticeEl.innerHTML = `Dokumen <strong>[${d.pakai_no || ''}]</strong> berhasil ditarik: Lini disinkronkan ke <strong>${d.tujuan_pemakaian}</strong>. Silakan tentukan barang hasil produksi secara manual.`;
-                            } else if (isNoticeIfm) {
-                                noticeEl.innerHTML = `Dokumen <strong>[${d.pakai_no || ''}]</strong> berhasil ditarik: Lini disinkronkan ke <strong>${d.tujuan_pemakaian}</strong> dan barang hasil produksi IFM terisi otomatis.`;
+                            if (isLiniMatched) {
+                                const elLini = document.getElementById('lini_produksi');
+                                const selectedLiniName = elLini?.options[elLini.selectedIndex]?.text || d.tujuan_pemakaian;
+                                noticeEl.innerHTML = `Dokumen <strong>[${d.pakai_no || ''}]</strong> berhasil ditarik: Lini otomatis disinkronkan ke <strong>${selectedLiniName}</strong> dan seluruh rincian bahan terisi lengkap.`;
+                                noticeEl.style.color = '#0284c7';
                             } else {
-                                noticeEl.innerHTML = `Dokumen <strong>[${d.pakai_no || ''}]</strong> berhasil ditarik: Lini disinkronkan ke <strong>${d.tujuan_pemakaian || '-'}</strong> dan seluruh bahan terisi otomatis.`;
+                                noticeEl.innerHTML = `Dokumen <strong>[${d.pakai_no || ''}]</strong> berhasil ditarik: Seluruh bahan terisi lengkap. Tujuan dokumen adalah <strong>"${d.tujuan_pemakaian || '-'}"</strong>. Mohon pilih <strong>Lini Produksi</strong> secara manual di bawah.`;
+                                noticeEl.style.color = '#b45309';
                             }
-                            noticeEl.style.color = '#0284c7';
                             noticeEl.style.display = 'block';
                         }
 
@@ -1578,6 +2077,8 @@
                     ${defaultBatch}
                 </span>
                 <input type="hidden" name="output_items[${idx}][batch_no]" id="batchFg_${idx}" value="${defaultBatch !== '-' ? defaultBatch : ''}">
+                <input type="hidden" name="output_items[${idx}][hpp_satuan]" id="hppSatuan_${idx}" value="${initial?.hpp_satuan || 0}">
+                <input type="hidden" name="output_items[${idx}][total_nilai]" id="totalNilai_${idx}" value="${initial?.total_nilai || 0}">
             </td>
             <td style="padding: 0.5rem 0.75rem; text-align: center;">
                 <button type="button" onclick="removeFgRow(${idx})" class="btn btn-sm btn-remove-fg" id="btnRemoveFg_${idx}" style="padding: 0.2rem 0.45rem; font-size: 0.75rem; background: #ffffff; border: 1px solid #cbd5e1; color: #dc2626; font-weight: 600;" title="Hapus baris ini">
@@ -1932,6 +2433,7 @@
         window.calcCng();
         window.calcWasteHaccp();
         window.calcAll();
+        window.initAutoKemasanCalc();
         window.highlightMatchingPakai();
 
         // Pastikan default untuk tabel inputan hasil barang produksi sudah ada minimal 1 baris

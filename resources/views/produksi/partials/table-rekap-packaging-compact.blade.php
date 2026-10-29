@@ -44,8 +44,61 @@
             </tr>
         </thead>
         <tbody>
-            @foreach ($report['days'] as $d)
-                @if ($d['has_data'])
+            @php
+                // Cari tanggal terakhir yang memiliki catatan pengemasan di bulan ini
+                $lastDataDate = null;
+                foreach ($report['days'] as $dayItem) {
+                    if (!empty($dayItem['has_data'])) {
+                        $lastDataDate = $dayItem['date'];
+                    }
+                }
+            @endphp
+
+            @if ($report['count'] === 0)
+                {{-- EMPTY STATE BANNER ELEGAN JIKA BULAN INI TIDAK ADA DATA SAMA SEKALI --}}
+                <tr>
+                    <td colspan="10" style="padding: 4rem 1.5rem; text-align: center; background: #ffffff;">
+                        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; max-width: 480px; margin: 0 auto;">
+                            <div style="width: 56px; height: 56px; border-radius: 50%; background: #f8fafc; display: flex; align-items: center; justify-content: center; margin-bottom: 1rem; color: #64748b; border: 1.5px solid #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">
+                                <svg width="26" height="26" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                            </div>
+                            <h3 style="font-size: 0.95rem; font-weight: 800; color: #0f172a; margin: 0 0 0.35rem 0;">
+                                Tidak Ada Data Pengemasan &amp; HPP pada Bulan {{ $monthName }} {{ $year }}
+                            </h3>
+                            <p style="font-size: 0.8125rem; color: #64748b; line-height: 1.5; margin: 0 0 1.25rem 0;">
+                                Belum terdapat pencatatan lembar hasil pengemasan (Finish Good) maupun alokasi biaya packing yang terdaftar pada periode bulan ini.
+                            </p>
+                            <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; justify-content: center;">
+                                @if (date('Y') == $year && date('n') != $month)
+                                    <a href="{{ route('produksi.packaging.rekap', ['tahun' => date('Y'), 'bulan' => date('n')]) }}" 
+                                       class="btn btn-secondary" 
+                                       style="font-size: 0.8rem; font-weight: 700; padding: 0.45rem 0.85rem; border-radius: 6px; border: 1.5px solid #cbd5e1; background: #ffffff; color: #1e293b; display: inline-flex; align-items: center; gap: 0.35rem; text-decoration: none;"
+                                       title="Kembali ke laporan bulan berjalan">
+                                        <span>Beralih ke Bulan Berjalan ({{ $monthsList[(int)date('n')] }})</span>
+                                        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                                    </a>
+                                @endif
+                                <a href="{{ route('produksi.packaging.create') }}" 
+                                   class="btn btn-primary" 
+                                   style="font-size: 0.8rem; font-weight: 700; padding: 0.45rem 0.95rem; border-radius: 6px; background: #0284c7; border: 1px solid #0369a1; color: #ffffff; display: inline-flex; align-items: center; gap: 0.35rem; text-decoration: none;">
+                                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                                    <span>Input Pengemasan Baru</span>
+                                </a>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            @else
+                @foreach ($report['days'] as $d)
+                    @php
+                        // Filter Kebersihan Data:
+                        // Hari-hari sebelum tanggal pengemasan terakhir yang kosong dihilangkan agar tampilan clean.
+                        // Hari-hari berikutnya yang belum beroperasi tetap ditampilkan sebagai placeholder kalender.
+                        if (!$d['has_data'] && $lastDataDate && $d['date'] < $lastDataDate) {
+                            continue;
+                        }
+                    @endphp
+                    @if ($d['has_data'])
                     @php
                         $dayId = 'pck-day-' . $d['day'];
                     @endphp
@@ -392,7 +445,6 @@
                         </td>
                     </tr>
                 @else
-                    {{-- BARIS TANGGAL LIBUR / TANPA AKTIVITAS PENGEMASAN --}}
                     <tr style="background: #fbfcfd; color: #94a3b8;">
                         <td>
                             <div style="font-weight: 600; color: #94a3b8; font-size: 0.8rem;">
@@ -408,14 +460,16 @@
                     </tr>
                 @endif
             @endforeach
+            @endif
         </tbody>
 
         {{-- FOOTER REKAPITULASI TOTAL BULANAN --}}
         @php
             $tot = $report['totals'];
         @endphp
-        <tfoot>
-            <tr style="background: #f8fafc; font-weight: 800; border-top: 2px solid #cbd5e1;">
+        @if ($report['count'] > 0)
+            <tfoot>
+                <tr style="background: #f8fafc; font-weight: 800; border-top: 2px solid #cbd5e1;">
                 <td colspan="2" style="font-size: 0.85rem; color: #0f172a; text-transform: uppercase;">
                     TOTAL KONSOLIDASI BULAN {{ strtoupper($monthName) }} {{ $year }}
                 </td>
@@ -442,5 +496,6 @@
                 </td>
             </tr>
         </tfoot>
+        @endif
     </table>
 </div>

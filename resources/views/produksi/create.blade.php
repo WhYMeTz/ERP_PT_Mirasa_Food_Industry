@@ -219,7 +219,7 @@
                         <div style="display: flex; gap: 0.5rem;">
                             <div style="flex: 1;">
                                 <label style="font-size: 0.7rem; color: #475569; font-weight: 600;">Kuantitas (Kg)</label>
-                                <input type="number" step="0.0001" min="0" name="bumbu_qty" id="bumbu_qty" class="form-control" style="text-align: right;" value="{{ old('bumbu_qty', 0) }}" placeholder="0">
+                                <input type="number" step="0.0001" min="0" name="bumbu_qty" id="bumbu_qty" class="form-control" style="text-align: right;" value="{{ old('bumbu_qty', 0) }}" placeholder="0" oninput="calcKemasanItem('bumbu_qty')">
                             </div>
                             <div style="flex: 1.2;">
                                 <label style="font-size: 0.7rem; color: #475569; font-weight: 600;">Nilai Rupiah (Rp)</label>
@@ -230,69 +230,122 @@
                 </div>
 
                 {{-- Baris 2: Kemasan & Packaging --}}
-                <div style="background: #f8fafc; padding: 0.85rem; border-radius: 6px; border: 1px solid #e2e8f0;">
-                    <span style="display: block; font-size: 0.775rem; font-weight: 700; color: #1e293b; text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 0.5rem;">
-                        Rincian Bahan Kemasan &amp; Packaging
-                    </span>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem;">
-                        <div>
-                            <label style="font-size: 0.7rem; color: #475569; font-weight: 600; display: flex; justify-content: space-between;">
-                                <span>Karton Baru</span>
-                                <span style="font-size: 0.65rem; color: #64748b;">(Qty &bull; Rp)</span>
-                            </label>
-                            <div style="display: flex; gap: 0.35rem;">
-                                <input type="number" step="0.01" min="0" name="karton_baru_qty" id="karton_baru_qty" class="form-control" style="width: 42%; text-align: right; font-size: 0.8rem;" value="{{ old('karton_baru_qty', 0) }}" placeholder="Pcs">
-                                <input type="number" step="0.01" min="0" name="karton_baru_nilai" id="karton_baru_nilai" class="form-control calc-trigger" style="width: 58%; text-align: right; font-size: 0.8rem;" value="{{ old('karton_baru_nilai', 0) }}" placeholder="Rp" oninput="calcAll()">
+                <div style="background: #f8fafc; padding: 1rem 1.15rem; border-radius: 8px; border: 1px solid #cbd5e1;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                        <span style="display: block; font-size: 0.8rem; font-weight: 800; color: #0f172a; text-transform: uppercase; letter-spacing: 0.03em;">
+                            Rincian Bahan Kemasan &amp; Packaging
+                        </span>
+                        <span style="font-size: 0.725rem; color: #64748b; font-weight: 600;">
+                            6 Komponen Material Kemas
+                        </span>
+                    </div>
+
+                    <div class="kemasan-grid-layout">
+                        {{-- 1. Karton Baru --}}
+                        <div class="kemasan-card-item">
+                            <div class="kemasan-card-header">
+                                <span class="kemasan-card-title">Karton Box Baru</span>
+                                <span class="kemasan-card-badge">Pcs</span>
+                            </div>
+                            <div class="kemasan-input-dual">
+                                <div class="kemasan-input-col col-qty">
+                                    <label class="kemasan-input-label">Kuantitas</label>
+                                    <input type="number" step="1" min="0" name="karton_baru_qty" id="karton_baru_qty" class="form-control" style="text-align: right; font-size: 0.825rem; font-weight: 600;" value="{{ old('karton_baru_qty', 0) }}" placeholder="0" oninput="calcKemasanItem('karton_baru_qty')">
+                                </div>
+                                <div class="kemasan-input-col col-val">
+                                    <label class="kemasan-input-label">Nilai Rupiah (Rp)</label>
+                                    <input type="number" step="0.01" min="0" name="karton_baru_nilai" id="karton_baru_nilai" class="form-control calc-trigger" style="text-align: right; font-size: 0.825rem; font-weight: 600;" value="{{ old('karton_baru_nilai', 0) }}" placeholder="0" oninput="calcAll()">
+                                </div>
                             </div>
                         </div>
-                        <div>
-                            <label style="font-size: 0.7rem; color: #475569; font-weight: 600; display: flex; justify-content: space-between;">
-                                <span>Karton Bekas</span>
-                                <span style="font-size: 0.65rem; color: #64748b;">(Qty &bull; Rp)</span>
-                            </label>
-                            <div style="display: flex; gap: 0.35rem;">
-                                <input type="number" step="0.01" min="0" name="karton_bekas_qty" id="karton_bekas_qty" class="form-control" style="width: 42%; text-align: right; font-size: 0.8rem;" value="{{ old('karton_bekas_qty', 0) }}" placeholder="Pcs">
-                                <input type="number" step="0.01" min="0" name="karton_bekas_nilai" id="karton_bekas_nilai" class="form-control calc-trigger" style="width: 58%; text-align: right; font-size: 0.8rem;" value="{{ old('karton_bekas_nilai', 0) }}" placeholder="Rp" oninput="calcAll()">
+
+                        {{-- 2. Karton Bekas --}}
+                        <div class="kemasan-card-item">
+                            <div class="kemasan-card-header">
+                                <span class="kemasan-card-title">Karton Box Bekas</span>
+                                <span class="kemasan-card-badge">Pcs</span>
+                            </div>
+                            <div class="kemasan-input-dual">
+                                <div class="kemasan-input-col col-qty">
+                                    <label class="kemasan-input-label">Kuantitas</label>
+                                    <input type="number" step="1" min="0" name="karton_bekas_qty" id="karton_bekas_qty" class="form-control" style="text-align: right; font-size: 0.825rem; font-weight: 600;" value="{{ old('karton_bekas_qty', 0) }}" placeholder="0" oninput="calcKemasanItem('karton_bekas_qty')">
+                                </div>
+                                <div class="kemasan-input-col col-val">
+                                    <label class="kemasan-input-label">Nilai Rupiah (Rp)</label>
+                                    <input type="number" step="0.01" min="0" name="karton_bekas_nilai" id="karton_bekas_nilai" class="form-control calc-trigger" style="text-align: right; font-size: 0.825rem; font-weight: 600;" value="{{ old('karton_bekas_nilai', 0) }}" placeholder="0" oninput="calcAll()">
+                                </div>
                             </div>
                         </div>
-                        <div>
-                            <label style="font-size: 0.7rem; color: #475569; font-weight: 600; display: flex; justify-content: space-between;">
-                                <span>Plastik HD 90x100</span>
-                                <span style="font-size: 0.65rem; color: #64748b;">(Qty &bull; Rp)</span>
-                            </label>
-                            <div style="display: flex; gap: 0.35rem;">
-                                <input type="number" step="0.01" min="0" name="plastik_hd_qty" id="plastik_hd_qty" class="form-control" style="width: 42%; text-align: right; font-size: 0.8rem;" value="{{ old('plastik_hd_qty', 0) }}" placeholder="Lbr">
-                                <input type="number" step="0.01" min="0" name="plastik_hd_nilai" id="plastik_hd_nilai" class="form-control calc-trigger" style="width: 58%; text-align: right; font-size: 0.8rem;" value="{{ old('plastik_hd_nilai', 0) }}" placeholder="Rp" oninput="calcAll()">
+
+                        {{-- 3. Plastik HD 90x100 --}}
+                        <div class="kemasan-card-item">
+                            <div class="kemasan-card-header">
+                                <span class="kemasan-card-title">Plastik HD 90x100</span>
+                                <span class="kemasan-card-badge">Lbr</span>
+                            </div>
+                            <div class="kemasan-input-dual">
+                                <div class="kemasan-input-col col-qty">
+                                    <label class="kemasan-input-label">Kuantitas</label>
+                                    <input type="number" step="0.01" min="0" name="plastik_hd_qty" id="plastik_hd_qty" class="form-control" style="text-align: right; font-size: 0.825rem; font-weight: 600;" value="{{ old('plastik_hd_qty', 0) }}" placeholder="0" oninput="calcKemasanItem('plastik_hd_qty')">
+                                </div>
+                                <div class="kemasan-input-col col-val">
+                                    <label class="kemasan-input-label">Nilai Rupiah (Rp)</label>
+                                    <input type="number" step="0.01" min="0" name="plastik_hd_nilai" id="plastik_hd_nilai" class="form-control calc-trigger" style="text-align: right; font-size: 0.825rem; font-weight: 600;" value="{{ old('plastik_hd_nilai', 0) }}" placeholder="0" oninput="calcAll()">
+                                </div>
                             </div>
                         </div>
-                        <div>
-                            <label style="font-size: 0.7rem; color: #475569; font-weight: 600; display: flex; justify-content: space-between;">
-                                <span>Lakban Besar</span>
-                                <span style="font-size: 0.65rem; color: #64748b;">(Qty &bull; Rp)</span>
-                            </label>
-                            <div style="display: flex; gap: 0.35rem;">
-                                <input type="number" step="0.01" min="0" name="lakban_besar_qty" id="lakban_besar_qty" class="form-control" style="width: 42%; text-align: right; font-size: 0.8rem;" value="{{ old('lakban_besar_qty', 0) }}" placeholder="Roll">
-                                <input type="number" step="0.01" min="0" name="lakban_besar_nilai" id="lakban_besar_nilai" class="form-control calc-trigger" style="width: 58%; text-align: right; font-size: 0.8rem;" value="{{ old('lakban_besar_nilai', 0) }}" placeholder="Rp" oninput="calcAll()">
+
+                        {{-- 4. Lakban Besar --}}
+                        <div class="kemasan-card-item">
+                            <div class="kemasan-card-header">
+                                <span class="kemasan-card-title">Lakban Besar</span>
+                                <span class="kemasan-card-badge">Roll</span>
+                            </div>
+                            <div class="kemasan-input-dual">
+                                <div class="kemasan-input-col col-qty">
+                                    <label class="kemasan-input-label">Kuantitas</label>
+                                    <input type="number" step="0.01" min="0" name="lakban_besar_qty" id="lakban_besar_qty" class="form-control" style="text-align: right; font-size: 0.825rem; font-weight: 600;" value="{{ old('lakban_besar_qty', 0) }}" placeholder="0" oninput="calcKemasanItem('lakban_besar_qty')">
+                                </div>
+                                <div class="kemasan-input-col col-val">
+                                    <label class="kemasan-input-label">Nilai Rupiah (Rp)</label>
+                                    <input type="number" step="0.01" min="0" name="lakban_besar_nilai" id="lakban_besar_nilai" class="form-control calc-trigger" style="text-align: right; font-size: 0.825rem; font-weight: 600;" value="{{ old('lakban_besar_nilai', 0) }}" placeholder="0" oninput="calcAll()">
+                                </div>
                             </div>
                         </div>
-                        <div>
-                            <label style="font-size: 0.7rem; color: #475569; font-weight: 600; display: flex; justify-content: space-between;">
-                                <span>Lakban Kecil</span>
-                                <span style="font-size: 0.65rem; color: #64748b;">(Qty &bull; Rp)</span>
-                            </label>
-                            <div style="display: flex; gap: 0.35rem;">
-                                <input type="number" step="0.01" min="0" name="lakban_kecil_qty" id="lakban_kecil_qty" class="form-control" style="width: 42%; text-align: right; font-size: 0.8rem;" value="{{ old('lakban_kecil_qty', 0) }}" placeholder="Roll">
-                                <input type="number" step="0.01" min="0" name="lakban_kecil_nilai" id="lakban_kecil_nilai" class="form-control calc-trigger" style="width: 58%; text-align: right; font-size: 0.8rem;" value="{{ old('lakban_kecil_nilai', 0) }}" placeholder="Rp" oninput="calcAll()">
+
+                        {{-- 5. Lakban Kecil --}}
+                        <div class="kemasan-card-item">
+                            <div class="kemasan-card-header">
+                                <span class="kemasan-card-title">Lakban Kecil</span>
+                                <span class="kemasan-card-badge">Roll</span>
+                            </div>
+                            <div class="kemasan-input-dual">
+                                <div class="kemasan-input-col col-qty">
+                                    <label class="kemasan-input-label">Kuantitas</label>
+                                    <input type="number" step="0.01" min="0" name="lakban_kecil_qty" id="lakban_kecil_qty" class="form-control" style="text-align: right; font-size: 0.825rem; font-weight: 600;" value="{{ old('lakban_kecil_qty', 0) }}" placeholder="0" oninput="calcKemasanItem('lakban_kecil_qty')">
+                                </div>
+                                <div class="kemasan-input-col col-val">
+                                    <label class="kemasan-input-label">Nilai Rupiah (Rp)</label>
+                                    <input type="number" step="0.01" min="0" name="lakban_kecil_nilai" id="lakban_kecil_nilai" class="form-control calc-trigger" style="text-align: right; font-size: 0.825rem; font-weight: 600;" value="{{ old('lakban_kecil_nilai', 0) }}" placeholder="0" oninput="calcAll()">
+                                </div>
                             </div>
                         </div>
-                        <div>
-                            <label style="font-size: 0.7rem; color: #475569; font-weight: 600; display: flex; justify-content: space-between;">
-                                <span>Tali Rafia</span>
-                                <span style="font-size: 0.65rem; color: #64748b;">(Qty &bull; Rp)</span>
-                            </label>
-                            <div style="display: flex; gap: 0.35rem;">
-                                <input type="number" step="0.01" min="0" name="tali_rafia_qty" id="tali_rafia_qty" class="form-control" style="width: 42%; text-align: right; font-size: 0.8rem;" value="{{ old('tali_rafia_qty', 0) }}" placeholder="Roll">
-                                <input type="number" step="0.01" min="0" name="tali_rafia_nilai" id="tali_rafia_nilai" class="form-control calc-trigger" style="width: 58%; text-align: right; font-size: 0.8rem;" value="{{ old('tali_rafia_nilai', 0) }}" placeholder="Rp" oninput="calcAll()">
+
+                        {{-- 6. Tali Rafia --}}
+                        <div class="kemasan-card-item">
+                            <div class="kemasan-card-header">
+                                <span class="kemasan-card-title">Tali Rafia / Strapping</span>
+                                <span class="kemasan-card-badge">Roll</span>
+                            </div>
+                            <div class="kemasan-input-dual">
+                                <div class="kemasan-input-col col-qty">
+                                    <label class="kemasan-input-label">Kuantitas</label>
+                                    <input type="number" step="0.01" min="0" name="tali_rafia_qty" id="tali_rafia_qty" class="form-control" style="text-align: right; font-size: 0.825rem; font-weight: 600;" value="{{ old('tali_rafia_qty', 0) }}" placeholder="0" oninput="calcKemasanItem('tali_rafia_qty')">
+                                </div>
+                                <div class="kemasan-input-col col-val">
+                                    <label class="kemasan-input-label">Nilai Rupiah (Rp)</label>
+                                    <input type="number" step="0.01" min="0" name="tali_rafia_nilai" id="tali_rafia_nilai" class="form-control calc-trigger" style="text-align: right; font-size: 0.825rem; font-weight: 600;" value="{{ old('tali_rafia_nilai', 0) }}" placeholder="0" oninput="calcAll()">
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -434,8 +487,8 @@
                             <small id="sublabel_foh_qc" class="foh-field-help">Rp {{ number_format($fohRates['qc'] ?? 49.97, 2, ',', '.') }} / Kg WIP</small>
                         </div>
 
-                        {{-- 2. Listrik & Air + Telp --}}
-                        <div class="foh-field-card">
+                        {{-- 2. Listrik & Air + Telp (Sementara di-hidden/ditinjau kembali) --}}
+                        <div class="foh-field-card" style="display: none;">
                             <div class="foh-field-head">
                                 <label class="foh-field-label">Listrik &amp; Air + Telp</label>
                                 <span id="badge_foh_listrik" class="foh-rate-pill" title="Standar: Total KG WIP × Pengali">x {{ number_format($fohRates['listrik'] ?? 223.80, 2, ',', '.') }}</span>
@@ -447,8 +500,8 @@
                             <small id="sublabel_foh_listrik" class="foh-field-help">Rp {{ number_format($fohRates['listrik'] ?? 223.80, 2, ',', '.') }} / Kg WIP</small>
                         </div>
 
-                        {{-- 3. Pemeliharaan Mesin --}}
-                        <div class="foh-field-card">
+                        {{-- 3. Pemeliharaan Mesin (Sementara di-hidden/ditinjau kembali) --}}
+                        <div class="foh-field-card" style="display: none;">
                             <div class="foh-field-head">
                                 <label class="foh-field-label">Pemeliharaan Mesin</label>
                                 <span id="badge_foh_pemeliharaan" class="foh-rate-pill" title="Standar: Total KG WIP × Pengali">x {{ number_format($fohRates['pemeliharaan'] ?? 23.34, 2, ',', '.') }}</span>
@@ -460,8 +513,8 @@
                             <small id="sublabel_foh_pemeliharaan" class="foh-field-help">Rp {{ number_format($fohRates['pemeliharaan'] ?? 23.34, 2, ',', '.') }} / Kg WIP</small>
                         </div>
 
-                        {{-- 4. Penyusutan Mesin & Gedung --}}
-                        <div class="foh-field-card">
+                        {{-- 4. Penyusutan Mesin & Gedung (Sementara di-hidden/ditinjau kembali) --}}
+                        <div class="foh-field-card" style="display: none;">
                             <div class="foh-field-head">
                                 <label class="foh-field-label">Penyusutan Mesin &amp; Gedung</label>
                                 <span id="badge_foh_penyusutan" class="foh-rate-pill" title="Standar: Total KG WIP × Pengali">x {{ number_format($fohRates['penyusutan'] ?? 66.44, 2, ',', '.') }}</span>
@@ -501,27 +554,19 @@
                     </div>
                 </div>
 
-                {{-- SUB-PANEL 2: OVERHEAD TETAP & PERLENGKAPAN FISIK (3 ITEM: 3 KOLOM x 1 BARIS SIMETRIS) --}}
+                {{-- SUB-PANEL 2: PERLENGKAPAN FISIK OPERASIONAL (2 ITEM: 2 KOLOM SIMETRIS) --}}
                 <div class="foh-subpanel foh-subpanel-fixed">
                     <div class="foh-subpanel-header">
                         <div class="foh-subpanel-title">
                             <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
-                            <span>Overhead Tetap &amp; Perlengkapan Operasional</span>
+                            <span>Perlengkapan Operasional Produksi</span>
                         </div>
-                        <span class="foh-subpanel-meta">Biaya flat per shift &amp; belanja nota fisik</span>
+                        <span class="foh-subpanel-meta">Belanja nota fisik perlengkapan kerja</span>
                     </div>
-                    <div class="foh-grid-3">
-                        {{-- 1. Limbah Padat --}}
-                        <div class="foh-field-card">
-                            <div class="foh-field-head">
-                                <label class="foh-field-label">Retribusi Limbah Padat</label>
-                                <span id="badge_foh_limbah_padat" class="foh-rate-pill pill-flat" title="Standar: Flat per shift">Flat Rp {{ number_format($fohRates['limbah_padat'] ?? 180000, 0, ',', '.') }}</span>
-                            </div>
-                            <div class="foh-input-group">
-                                <span class="foh-input-addon">Rp</span>
-                                <input type="number" step="0.01" min="0" name="limbah_padat_nilai" id="limbah_padat_nilai" class="form-control calc-trigger input-foh-auto" value="{{ old('limbah_padat_nilai', $fohRates['limbah_padat'] ?? 180000.00) }}" oninput="calcAll()">
-                            </div>
-                            <small id="sublabel_foh_limbah_padat" class="foh-field-help">Retribusi limbah flat per shift</small>
+                    <div class="foh-grid-2">
+                        {{-- 1. Limbah Padat (Sementara di-hidden/cukup pakai Limbah IPAL) --}}
+                        <div class="foh-field-card" style="display: none;">
+                            <input type="number" step="0.01" min="0" name="limbah_padat_nilai" id="limbah_padat_nilai" class="form-control calc-trigger input-foh-auto" value="{{ old('limbah_padat_nilai', 0) }}" oninput="calcAll()">
                         </div>
 
                         {{-- 2. Sarung Tangan Plastik --}}
@@ -556,47 +601,11 @@
             </div>
         </div>
 
-        {{-- RINGKASAN KALKULASI REAL-TIME --}}
-
-        <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 1.15rem 1.25rem; margin-bottom: 1.5rem;">
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem; align-items: center;">
-                {{-- Live Biaya --}}
-                <div>
-                    <span style="font-size: 0.725rem; font-weight: 700; text-transform: uppercase; color: #64748b; letter-spacing: 0.04em;">
-                        Total Biaya Produksi
-                    </span>
-                    <div id="liveTotalBiaya" style="font-size: 1.5rem; font-weight: 800; color: #0f172a; margin-top: 0.2rem;">
-                        Rp 0
-                    </div>
-                </div>
-
-                {{-- Live Rendemen --}}
-                <div style="text-align: center;">
-                    <span style="font-size: 0.725rem; font-weight: 700; text-transform: uppercase; color: #64748b; letter-spacing: 0.04em;">
-                        Rendemen Singkong
-                    </span>
-                    <div id="liveRendemen" style="font-size: 1.5rem; font-weight: 800; color: #0f172a; margin-top: 0.2rem;">
-                        0.00%
-                    </div>
-                    <span id="liveRendemenStatus" style="font-size: 0.725rem; font-weight: 600; color: #64748b;">
-                        Menunggu timbangan
-                    </span>
-                </div>
-
-                {{-- Live HPP / Kg --}}
-                <div style="text-align: right;">
-                    <span style="font-size: 0.725rem; font-weight: 700; text-transform: uppercase; color: #64748b; letter-spacing: 0.04em;">
-                        HPP Riil per Kg WIP
-                    </span>
-                    <div id="liveHpp" style="font-size: 1.5rem; font-weight: 800; color: #0f172a; margin-top: 0.2rem;">
-                        Rp 0 / kg
-                    </div>
-                </div>
-            </div>
-        </div>
+        {{-- RINGKASAN BIAYA PRODUKSI & ALOKASI HPP PER HASIL PRODUKSI (TERPADU) --}}
+        @include('produksi.partials.card-breakdown-hpp')
 
         {{-- ACTION BUTTONS --}}
-        <div style="display: flex; justify-content: flex-end; gap: 0.75rem; align-items: center;">
+        <div style="display: flex; justify-content: flex-end; gap: 0.75rem; align-items: center; margin-top: 1.25rem;">
             <a href="{{ route('produksi.index') }}" class="btn btn-secondary" style="padding: 0.65rem 1.25rem; font-weight: 600;">Batal</a>
             <button type="submit" class="btn btn-primary" style="padding: 0.65rem 1.5rem; font-size: 0.9rem; font-weight: 700;">
                 Simpan Lembar Produksi Harian

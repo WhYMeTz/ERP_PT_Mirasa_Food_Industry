@@ -69,13 +69,19 @@
         const subgroups = document.querySelectorAll('.adj-subgroup-row');
 
         if (category === 'all') {
-            rows.forEach(r => r.style.display = '');
+            rows.forEach(r => {
+                r.style.display = (r.getAttribute('data-hidden-initial') === 'true') ? 'none' : '';
+            });
             headers.forEach(h => h.style.display = '');
             subtotals.forEach(s => s.style.display = '');
             subgroups.forEach(sg => sg.style.display = '');
         } else {
             rows.forEach(r => {
-                r.style.display = (r.getAttribute('data-group') === category) ? '' : 'none';
+                if (r.getAttribute('data-hidden-initial') === 'true') {
+                    r.style.display = 'none';
+                } else {
+                    r.style.display = (r.getAttribute('data-group') === category) ? '' : 'none';
+                }
             });
             headers.forEach(h => {
                 h.style.display = (h.getAttribute('data-group-header') === category) ? '' : 'none';

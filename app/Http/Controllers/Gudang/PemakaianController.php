@@ -142,7 +142,6 @@ class PemakaianController extends Controller
         $gudangList = $user ? $user->getAllowedGudangList() : collect();
         $userGudangId = ($gudangList->count() === 1 && !$user?->isSuperAdmin()) ? $gudangList->first()->gudang_id : null;
 
-        // Ambil barang peruntukan produksi: Bahan Baku, Penolong, Kemasan, serta khusus Berko & Remahan (bukan seluruh WIP)
         $barangList = MstBarang::active()
             ->where(function ($query) {
                 $query->bahanProduksi()
@@ -288,7 +287,6 @@ class PemakaianController extends Controller
                 return $b;
             });
 
-        // Ambil daftar master lini produksi aktif khusus peruntukan Work In Progress (WIP)
         $liniList = MstLiniProduksi::where('deleted_st', false)
             ->where('active_st', true)
             ->where(function ($q) use ($pakai) {
@@ -459,7 +457,6 @@ class PemakaianController extends Controller
             ], 403);
         }
 
-        // Ambil alokasi kuantitas yang sedang terikat di dokumen DRAFT lain (belum diposting/acc)
         $draftAllocations = DatPakaiDtl::where('barang_id', $barangId)
             ->whereHas('header', function ($q) use ($gudangId, $excludePakaiId) {
                 $q->where('gudang_id', $gudangId)

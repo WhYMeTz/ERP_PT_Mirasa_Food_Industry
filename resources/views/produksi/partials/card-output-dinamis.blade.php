@@ -95,6 +95,8 @@
                                 {{ old('output_items.0.batch_no', date('d m Y')) }}
                             </span>
                             <input type="hidden" name="output_items[0][batch_no]" id="batchFg_0" value="{{ old('output_items.0.batch_no', date('d m Y')) }}">
+                            <input type="hidden" name="output_items[0][hpp_satuan]" id="hppSatuan_0" value="{{ old('output_items.0.hpp_satuan', 0) }}">
+                            <input type="hidden" name="output_items[0][total_nilai]" id="totalNilai_0" value="{{ old('output_items.0.total_nilai', 0) }}">
                         </td>
                         <td style="padding: 0.5rem 0.75rem; text-align: center;">
                             <button type="button" class="btn btn-sm btn-remove-fg" id="btnRemoveFg_0" style="padding: 0.2rem 0.45rem; font-size: 0.75rem; background: #ffffff; border: 1px solid #cbd5e1; color: #94a3b8; font-weight: 600; opacity: 0.4; cursor: not-allowed;" title="Baris utama tidak dapat dihapus" disabled>

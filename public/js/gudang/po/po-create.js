@@ -1047,12 +1047,14 @@ function closePreviousMonthModal() {
 
 function parsePoNoParts(val) {
     if (!val) return null;
-    const match = val.trim().match(/^(\d+)\/PO\/MFI\/(\d{1,2})\/(\d{2})$/i);
+    const match = val.trim().match(/^(\d+)\/PO\/MFI\/(\d{1,2})\/(\d{2,4})$/i);
     if (match) {
+        const rawYear = match[3];
+        const year2 = rawYear.length === 4 ? rawYear.slice(-2) : rawYear.padStart(2, '0');
         return {
             seq: match[1],
             month: match[2].padStart(2, '0'),
-            year: match[3],
+            year: year2,
         };
     }
     return null;

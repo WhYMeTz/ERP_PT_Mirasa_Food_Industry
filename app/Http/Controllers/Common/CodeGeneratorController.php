@@ -27,6 +27,11 @@ class CodeGeneratorController extends Controller
             case 'customer':
                 $code = $this->codeGeneratorService->generateCustomerCode($name);
                 break;
+            case 'po':
+                $date = $request->query('date', date('Y-m-d'));
+                $excludePoId = $request->query('exclude_id');
+                $code = $this->codeGeneratorService->generatePoNo($date, $excludePoId ? (int) $excludePoId : null);
+                break;
             case 'so':
                 $date = $request->query('date', date('Y-m-d'));
                 $code = $this->codeGeneratorService->generateSoNo($date);

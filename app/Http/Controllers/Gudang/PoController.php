@@ -341,7 +341,8 @@ class PoController extends Controller
     public function update(Request $request, int $id): RedirectResponse|JsonResponse
     {
         $request->validate([
-            'po_tgl'                   => 'required|date',
+            'po_no'                     => 'nullable|string|max:50|unique:dat_po_hdr,po_no,' . $id . ',po_id',
+            'po_tgl'                    => 'required|date',
             'supplier_id'              => 'required|exists:mst_supplier,supplier_id',
             'gudang_id'                => 'required|exists:mst_gudang,gudang_id',
             'approver_id'              => 'required|exists:users,id',

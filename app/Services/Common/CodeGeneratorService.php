@@ -429,9 +429,10 @@ class CodeGeneratorService
      * Reset nomor urut otomatis per bulan dan tahun, dengan padding 3 digit (atau dinamis jika > 999).
      *
      * @param string|null $date Tanggal PO (opsional, default: hari ini)
+     * @param int|null $excludePoId ID PO yang dikecualikan (berguna saat edit dokumen)
      * @return string
      */
-    public function generatePoNo(?string $date = null): string
+    public function generatePoNo(?string $date = null, ?int $excludePoId = null): string
     {
         $timestamp = strtotime($date ?? date('Y-m-d'));
         $month = date('m', $timestamp);
@@ -439,9 +440,14 @@ class CodeGeneratorService
         $suffix = "/PO/MFI/{$month}/{$year}";
 
         // Cari nomor PO yang berakhiran format resmi pada bulan & tahun ini
-        $existing = DB::table('dat_po_hdr')
-            ->where('po_no', 'LIKE', '%' . $suffix)
-            ->pluck('po_no');
+        $query = DB::table('dat_po_hdr')
+            ->where('po_no', 'LIKE', '%' . $suffix);
+
+        if ($excludePoId) {
+            $query->where('po_id', '!=', $excludePoId);
+        }
+
+        $existing = $query->pluck('po_no');
 
         $maxNumber = 0;
         $regex = '/^(\d+)\/PO\/MFI\/' . $month . '\/' . $year . '$/i';
@@ -458,7 +464,11 @@ class CodeGeneratorService
         do {
             $maxNumber++;
             $generated = str_pad((string) $maxNumber, 3, '0', STR_PAD_LEFT) . $suffix;
-            $exists = DB::table('dat_po_hdr')->where('po_no', $generated)->exists();
+            $checkQuery = DB::table('dat_po_hdr')->where('po_no', $generated);
+            if ($excludePoId) {
+                $checkQuery->where('po_id', '!=', $excludePoId);
+            }
+            $exists = $checkQuery->exists();
         } while ($exists);
 
         return $generated;

@@ -645,8 +645,11 @@
     })->values();
 @endphp
 
+@include('gudang.po.partials.modal-confirm-previous-month')
+
 @push('scripts')
 <script>
+    window.currentServerYearMonth = '{{ date('Y-m') }}';
     window.suppliersData = @json($suppliersJson);
     @if(old('supplier_id'))
         window.oldSupplierId = {{ old('supplier_id') }};

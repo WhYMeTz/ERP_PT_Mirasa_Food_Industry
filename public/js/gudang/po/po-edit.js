@@ -196,7 +196,137 @@ function renumberRows() {
     });
 }
 
+/**
+ * =========================================================================
+ * PROTEKSI PERIODE BULAN SEBELUMNYA & LIVE SYNC NOMOR PO DENGAN BULAN
+ * =========================================================================
+ */
+function formatTanggalIndo(dateStr) {
+    if (!dateStr) return '-';
+    const months = [
+        'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    ];
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+        const year = parts[0];
+        const monthIdx = parseInt(parts[1], 10) - 1;
+        const day = parseInt(parts[2], 10);
+        return `${day} ${months[monthIdx] || ''} ${year}`;
+    }
+    return dateStr;
+}
+
+function openPreviousMonthModal(poNo, poTgl) {
+    const modal = document.getElementById('modalConfirmPreviousMonth');
+    if (!modal) return;
+    const elPoNo = document.getElementById('mcpmPoNo');
+    const elPoTgl = document.getElementById('mcpmPoTgl');
+    if (elPoNo) elPoNo.textContent = poNo || '-';
+    if (elPoTgl) elPoTgl.textContent = formatTanggalIndo(poTgl);
+    modal.style.display = 'flex';
+}
+
+function closePreviousMonthModal() {
+    const modal = document.getElementById('modalConfirmPreviousMonth');
+    if (modal) modal.style.display = 'none';
+}
+
+let lastPoMonthYear = null;
+
+function initPoDateNumberSync() {
+    const poTglInput = document.getElementById('po_tgl');
+    const poNoInput = document.getElementById('po_no');
+    const poNoHelp = document.getElementById('po_no_help');
+
+    if (!poTglInput || !poNoInput) return;
+
+    lastPoMonthYear = poTglInput.value ? poTglInput.value.slice(0, 7) : '';
+
+    poTglInput.addEventListener('change', function () {
+        const newDate = this.value;
+        if (!newDate) return;
+
+        const newMonthYear = newDate.slice(0, 7);
+        // Jika bulannya berbeda dari bulan sebelumnya
+        if (newMonthYear !== lastPoMonthYear) {
+            poNoInput.style.opacity = '0.5';
+            poNoInput.style.pointerEvents = 'none';
+            if (poNoHelp) {
+                poNoHelp.innerHTML = `<span style="color:#0284c7;">⚡ Memeriksa urutan nomor PO untuk periode ${formatTanggalIndo(newDate)}...</span>`;
+            }
+
+            const excludeParam = window.poId ? `&exclude_id=${encodeURIComponent(window.poId)}` : '';
+            fetch(`/ajax/generate-code?type=po&date=${encodeURIComponent(newDate)}${excludeParam}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success' && data.code) {
+                        poNoInput.value = data.code;
+                        lastPoMonthYear = newMonthYear;
+
+                        // Visual highlight
+                        poNoInput.style.background = '#f0fdf4';
+                        setTimeout(() => {
+                            poNoInput.style.background = '#ffffff';
+                        }, 1200);
+
+                        if (poNoHelp) {
+                            poNoHelp.innerHTML = `<span style="color:#15803d; font-weight:600;">✓ Nomor PO disesuaikan otomatis ke urutan bulan ini: <strong>${data.code}</strong></span>`;
+                        }
+                    }
+                })
+                .catch(err => {
+                    console.error('Gagal generate nomor PO:', err);
+                    if (poNoHelp) {
+                        poNoHelp.innerHTML = `<span style="color:#dc2626;">Gagal menyinkronkan nomor urut otomatis. Anda dapat mengetiknya secara manual.</span>`;
+                    }
+                })
+                .finally(() => {
+                    poNoInput.style.opacity = '1';
+                    poNoInput.style.pointerEvents = 'auto';
+                });
+        }
+    });
+}
+
+function initPreviousMonthProtection() {
+    const formEditPo = document.getElementById('formEditPo');
+    if (!formEditPo) return;
+
+    let previousMonthConfirmed = false;
+
+    formEditPo.addEventListener('submit', function (e) {
+        if (previousMonthConfirmed) return;
+
+        const poTglInput = document.getElementById('po_tgl');
+        const poNoInput = document.getElementById('po_no');
+        const poTglVal = poTglInput ? poTglInput.value : '';
+        const originalTglVal = window.originalPoTgl || '';
+        const currentServerYM = window.currentServerYearMonth || (new Date().toISOString().slice(0, 7));
+
+        // Jika tanggal dokumen yang dipilih atau dokumen awal berada di bawah bulan berjalan
+        const checkDate = poTglVal || originalTglVal;
+        const docYM = checkDate ? checkDate.slice(0, 7) : '';
+
+        if (docYM && docYM < currentServerYM) {
+            e.preventDefault();
+            openPreviousMonthModal(poNoInput ? poNoInput.value : '', checkDate);
+        }
+    });
+
+    const btnConfirm = document.getElementById('btnConfirmSubmitPreviousMonth');
+    if (btnConfirm) {
+        btnConfirm.addEventListener('click', function () {
+            previousMonthConfirmed = true;
+            closePreviousMonthModal();
+            formEditPo.submit();
+        });
+    }
+}
+
 // Hitung total awal saat halaman dimuat
 document.addEventListener('DOMContentLoaded', function () {
     calculateAllTotals();
+    initPoDateNumberSync();
+    initPreviousMonthProtection();
 });

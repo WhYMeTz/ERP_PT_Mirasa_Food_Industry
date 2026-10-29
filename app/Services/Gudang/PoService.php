@@ -492,6 +492,7 @@ class PoService
             $hasAnyReceived = $po->details->contains(fn($dtl) => (float) $dtl->terima_qty > 0);
 
             $po->update([
+                'po_no'                   => !empty($data['po_no']) ? trim($data['po_no']) : $po->po_no,
                 'po_tgl'                  => $data['po_tgl'] ?? $po->po_tgl,
                 'tgl_estimasi_datang'     => $data['tgl_estimasi_datang'] ?? $po->tgl_estimasi_datang,
                 'supplier_id'             => $hasAnyReceived ? $po->supplier_id : ($data['supplier_id'] ?? $po->supplier_id),

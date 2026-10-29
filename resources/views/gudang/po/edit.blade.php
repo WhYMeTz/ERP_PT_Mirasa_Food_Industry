@@ -66,8 +66,9 @@
                 <div style="padding: 1.25rem;">
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
                         <div class="form-group" style="margin-bottom: 0;">
-                            <label class="form-label" style="font-weight: 600; font-size: 0.85rem;">Nomor PO Resmi</label>
-                            <input type="text" class="form-control" value="{{ $po->po_no }}" readonly style="background: #f1f5f9; font-weight: 700; color: #475569; font-family: monospace;">
+                            <label for="po_no" class="form-label" style="font-weight: 600; font-size: 0.85rem;">Nomor PO Resmi <span style="color:#ef4444;">*</span></label>
+                            <input type="text" id="po_no" name="po_no" class="form-control" value="{{ old('po_no', $po->po_no) }}" style="background: #ffffff; font-weight: 700; color: #1e293b; font-family: monospace;" required>
+                            <small id="po_no_help" style="color: #64748b; font-size: 0.725rem;">Nomor urut resmi pengadaan. Otomatis menyesuaikan saat tanggal/bulan diubah.</small>
                         </div>
 
                         <div class="form-group" style="margin-bottom: 0;">
@@ -417,8 +418,15 @@
     </tr>
 </template>
 
+{{-- MODAL PERINGATAN KONFIRMASI BULAN SEBELUMNYA --}}
+@include('gudang.po.partials.modal-confirm-previous-month')
+
 @push('scripts')
 <script>
+    window.poId = {{ $po->po_id }};
+    window.originalPoTgl = '{{ $po->po_tgl ? \Carbon\Carbon::parse($po->po_tgl)->format('Y-m-d') : date('Y-m-d') }}';
+    window.originalPoNo = @json($po->po_no);
+    window.currentServerYearMonth = '{{ date('Y-m') }}';
     window.editRowIndex = {{ $po->details->count() }};
 </script>
 <script src="{{ asset('js/gudang/po/po-edit.js') }}"></script>

@@ -2276,19 +2276,79 @@ class ProduksiService
             ]);
 
             // Sinkronisasi otomatis HPP satuan ke detail output dan kartu stok gudang
-            foreach ($produksi->outputs as $out) {
-                $out->hpp_satuan = $newHppPerKg;
-                $out->total_nilai = round((float) $out->qty_hasil * $newHppPerKg, 2);
-                $out->save();
+            // Mempertahankan alokasi rasio mutu / by-product costing jika dokumen memiliki produk sampingan (Berko, Lengket, Remahan)
+            $outputs = $produksi->outputs;
+            $hasDifferentiatedHpp = false;
+            if ($outputs && $outputs->count() > 1) {
+                $firstHpp = (float) $outputs->first()->hpp_satuan;
+                foreach ($outputs as $out) {
+                    if (abs((float)$out->hpp_satuan - $firstHpp) > 1.0) {
+                        $hasDifferentiatedHpp = true;
+                        break;
+                    }
+                }
+            }
 
-                if (!empty($out->batch_no)) {
-                    DatStokBatch::where('barang_id', $out->barang_id)
-                        ->where('batch_no', $out->batch_no)
-                        ->where('deleted_st', false)
-                        ->update([
-                            'harga_satuan' => $newHppPerKg,
-                            'updated_by'   => $userId,
-                        ]);
+            if ($hasDifferentiatedHpp) {
+                // Temukan produk utama (bukan berko/lengket/remahan)
+                $primaryOut = $outputs->first(function ($o) {
+                    $cd = strtoupper($o->barang?->barang_cd ?? $o->kategori_output ?? '');
+                    $nm = strtoupper($o->barang?->barang_nm ?? '');
+                    return !str_contains($cd, 'BRK') && !str_contains($nm, 'BERKO')
+                        && !str_contains($cd, 'LGT') && !str_contains($nm, 'LENGKET')
+                        && !str_contains($cd, 'RMH') && !str_contains($nm, 'REMAHAN');
+                }) ?? $outputs->first();
+
+                // Hitung total nilai modal produk sampingan yang bernilai tetap
+                $otherTotalNilai = 0;
+                foreach ($outputs as $out) {
+                    if ($out->output_id !== $primaryOut->output_id) {
+                        $qty = (float) ($out->qty_hasil > 0 ? $out->qty_hasil : $out->qty_kg);
+                        $otherTotalNilai += ($qty * (float) $out->hpp_satuan);
+                    }
+                }
+
+                // Produk utama otomatis menyerap selisih biaya penyesuaian
+                $primaryCost = max(0, $newTotalBiaya - $otherTotalNilai);
+                $primaryQty = (float) ($primaryOut->qty_hasil > 0 ? $primaryOut->qty_hasil : $primaryOut->qty_kg);
+                $primaryPrice = $primaryQty > 0 ? round($primaryCost / $primaryQty, 2) : 0;
+
+                foreach ($outputs as $out) {
+                    if ($out->output_id === $primaryOut->output_id) {
+                        $out->hpp_satuan = $primaryPrice;
+                        $out->total_nilai = round($primaryQty * $primaryPrice, 2);
+                    } else {
+                        $qty = (float) ($out->qty_hasil > 0 ? $out->qty_hasil : $out->qty_kg);
+                        $out->total_nilai = round($qty * (float) $out->hpp_satuan, 2);
+                    }
+                    $out->save();
+
+                    if (!empty($out->batch_no)) {
+                        DatStokBatch::where('barang_id', $out->barang_id)
+                            ->where('batch_no', $out->batch_no)
+                            ->where('deleted_st', false)
+                            ->update([
+                                'harga_satuan' => (float) $out->hpp_satuan,
+                                'updated_by'   => $userId,
+                            ]);
+                    }
+                }
+            } else {
+                // Output tunggal atau pembebanan HPP rata (Equal)
+                foreach ($outputs as $out) {
+                    $out->hpp_satuan = $newHppPerKg;
+                    $out->total_nilai = round((float) $out->qty_hasil * $newHppPerKg, 2);
+                    $out->save();
+
+                    if (!empty($out->batch_no)) {
+                        DatStokBatch::where('barang_id', $out->barang_id)
+                            ->where('batch_no', $out->batch_no)
+                            ->where('deleted_st', false)
+                            ->update([
+                                'harga_satuan' => $newHppPerKg,
+                                'updated_by'   => $userId,
+                            ]);
+                    }
                 }
             }
 

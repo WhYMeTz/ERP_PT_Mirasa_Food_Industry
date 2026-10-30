@@ -852,26 +852,26 @@
                                     <div class="audit-val-card" style="min-width: 175px;">
                                         <div class="audit-val-row">
                                             <span class="audit-val-lbl">Sebelum:</span>
-                                            <span class="audit-val-before">Rp&nbsp;{{ number_format($log->total_biaya_sebelum, 0, ',', '.') }}</span>
+                                            <span class="audit-val-before">Rp {{ number_format($log->total_biaya_sebelum, 0, ',', '.') }}</span>
                                         </div>
                                         <div class="audit-val-row">
                                             <span class="audit-val-lbl">Sesudah:</span>
-                                            <span class="audit-val-after">Rp&nbsp;{{ number_format($log->total_biaya_sesudah, 0, ',', '.') }}</span>
+                                            <span class="audit-val-after">Rp {{ number_format($log->total_biaya_sesudah, 0, ',', '.') }}</span>
                                         </div>
                                         <div class="audit-val-badge {{ $isBiayaNaik ? 'badge-diff-plus' : 'badge-diff-minus' }}">
-                                            {{ $isBiayaNaik ? '▲ +' : '▼ -' }}Rp&nbsp;{{ number_format(abs($log->selisih_biaya), 0, ',', '.') }}
+                                            {{ $isBiayaNaik ? '▲ +' : '▼ -' }}Rp {{ number_format(abs($log->selisih_biaya), 0, ',', '.') }}
                                         </div>
                                     </div>
                                 </td>
                                 <td class="audit-cell-hpp-awal">
-                                    Rp&nbsp;{{ number_format($log->hpp_sebelum, 2, ',', '.') }}
+                                    Rp {{ number_format($log->hpp_sebelum, 2, ',', '.') }}
                                 </td>
                                 <td class="audit-cell-hpp-akhir">
-                                    Rp&nbsp;{{ number_format($log->hpp_sesudah, 2, ',', '.') }}
+                                    Rp {{ number_format($log->hpp_sesudah, 2, ',', '.') }}
                                 </td>
                                 <td class="audit-cell-selisih">
                                     <span class="audit-selisih-pill {{ $isNaik ? 'pill-naik' : ($isTurun ? 'pill-turun' : 'pill-netral') }}">
-                                        {{ $isNaik ? '▲ +' : ($isTurun ? '▼ -' : '') }}Rp&nbsp;{{ number_format(abs($log->selisih_hpp), 2, ',', '.') }}
+                                        {{ $isNaik ? '▲ +' : ($isTurun ? '▼ -' : '') }}Rp {{ number_format(abs($log->selisih_hpp), 2, ',', '.') }}
                                     </span>
                                 </td>
                                 <td>
@@ -924,15 +924,15 @@
                                                             </span>
                                                         @endif
                                                         <span class="chip-old">
-                                                            {{ $isQty ? number_format($oldVal, 2, ',', '.') . ' ' . ($fVal['unit'] ?? '') : 'Rp&nbsp;' . number_format($oldVal, 0, ',', '.') }}
+                                                            {{ $isQty ? number_format($oldVal, 2, ',', '.') . ' ' . ($fVal['unit'] ?? '') : 'Rp ' . number_format($oldVal, 0, ',', '.') }}
                                                         </span>
                                                         <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #94a3b8;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
                                                         <span class="chip-new">
-                                                            {{ $isQty ? number_format($newVal, 2, ',', '.') . ' ' . ($fVal['unit'] ?? '') : 'Rp&nbsp;' . number_format($newVal, 0, ',', '.') }}
+                                                            {{ $isQty ? number_format($newVal, 2, ',', '.') . ' ' . ($fVal['unit'] ?? '') : 'Rp ' . number_format($newVal, 0, ',', '.') }}
                                                         </span>
                                                         @if($delta != 0)
                                                             <span class="chip-delta {{ $delta > 0 ? 'pos' : 'neg' }}">
-                                                                ({{ $delta > 0 ? '+' : '' }}{{ $isQty ? number_format($delta, 2, ',', '.') . ' ' . ($fVal['unit'] ?? '') : 'Rp&nbsp;' . number_format($delta, 0, ',', '.') }})
+                                                                ({{ $delta > 0 ? '+' : '' }}{{ $isQty ? number_format($delta, 2, ',', '.') . ' ' . ($fVal['unit'] ?? '') : 'Rp ' . number_format($delta, 0, ',', '.') }})
                                                             </span>
                                                         @endif
                                                     </div>

@@ -40,7 +40,7 @@
             </div>
         </div>
         <div class="adjust-header-actions">
-            <button type="button" onclick="resetAllAdjFields()" class="btn-cancel-doc" title="Reset seluruh 20 nilai input ke kondisi awal dokumen">
+            <button type="button" onclick="resetAllAdjFields()" class="btn-cancel-doc" title="Reset seluruh 16 nilai input ke kondisi awal dokumen">
                 <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
                 <span>Reset Nilai ke Awal</span>
             </button>
@@ -225,17 +225,17 @@
         <div class="adjust-table-card">
             <div class="adjust-table-card-header">
                 <div>
-                    <h2 class="adjust-card-title">Lembar Kerja Komponen Biaya Pabrik (20 Komponen)</h2>
+                    <h2 class="adjust-card-title">Lembar Kerja Komponen Biaya Pabrik (16 Komponen)</h2>
                     <div class="adjust-card-subtitle">Ubah nilai kuantitas maupun nominal rupiah di bawah ini untuk melihat simulasi dampak selisih HPP secara langsung.</div>
                 </div>
 
                 {{-- NAVIGASI TAB KATEGORI BIAYA --}}
                 <div class="adj-nav-tabs">
-                    <button type="button" class="adj-nav-btn active" onclick="filterAdjCategory('all', this)">Semua Komponen (20)</button>
+                    <button type="button" class="adj-nav-btn active" onclick="filterAdjCategory('all', this)">Semua Komponen (16)</button>
                     <button type="button" class="adj-nav-btn" onclick="filterAdjCategory('BBL', this)">Bahan Baku (3)</button>
                     <button type="button" class="adj-nav-btn" onclick="filterAdjCategory('KEMASAN', this)">Kemasan &amp; Packing (6)</button>
-                    <button type="button" class="adj-nav-btn" onclick="filterAdjCategory('ENERGI', this)">Tenaga Kerja &amp; Energi (3)</button>
-                    <button type="button" class="adj-nav-btn" onclick="filterAdjCategory('FOH', this)">Overhead Pabrik / FOH (8)</button>
+                    <button type="button" class="adj-nav-btn" onclick="filterAdjCategory('ENERGI', this)">Tenaga Kerja &amp; Energi (2)</button>
+                    <button type="button" class="adj-nav-btn" onclick="filterAdjCategory('FOH', this)">Overhead Pabrik / FOH (5)</button>
                 </div>
             </div>
 
@@ -540,7 +540,7 @@
                     </tr>
                     <tr class="adj-item-row" data-group="KEMASAN">
                         <td>
-                            <div class="adj-item-title">Lakban Coklat Besar</div>
+                            <div class="adj-item-title">Lakban Besar</div>
                             <div class="adj-item-code">KMS-04 &bull; Lakban 2 Inch Box</div>
                             @if(!empty($produksi->bahan_baku_batch_map['lakban_besar']))
                                 <div style="margin-top: 0.25rem;">
@@ -581,7 +581,7 @@
                     </tr>
                     <tr class="adj-item-row" data-group="KEMASAN">
                         <td>
-                            <div class="adj-item-title">Lakban Bening Kecil</div>
+                            <div class="adj-item-title">Lakban Kecil</div>
                             <div class="adj-item-code">KMS-05 &bull; Lakban Seal Plastik</div>
                             @if(!empty($produksi->bahan_baku_batch_map['lakban_kecil']))
                                 <div style="margin-top: 0.25rem;">
@@ -757,10 +757,11 @@
                             </button>
                         </td>
                     </tr>
-                    <tr class="adj-item-row" data-group="ENERGI">
+                    {{-- 3. Listrik & Air + Telp (Sementara di-hidden/dialokasikan via Utilitas Bulanan) --}}
+                    <tr class="adj-item-row" data-group="ENERGI" data-hidden-initial="true" style="display: none;">
                         <td>
                             <div class="adj-item-title">Listrik PLN, Air &amp; Utilitas</div>
-                            <div class="adj-item-code">NRG-02 &bull; Beban Daya &amp; Sanitasi</div>
+                            <div class="adj-item-code">NRG-02 &bull; Beban Daya &amp; Sanitasi (Dialokasikan via Utilitas Bulanan)</div>
                         </td>
                         <td class="adj-no-qty-cell">
                             <span class="adj-no-qty-pill">
@@ -806,12 +807,12 @@
                                     <span class="adj-group-num">4</span>
                                     <span class="adj-group-name">BIAYA OVERHEAD PABRIK (FOH / BOP)</span>
                                 </div>
-                                <span class="adj-group-badge">8 Komponen Biaya</span>
+                                <span class="adj-group-badge">5 Komponen Biaya Aktif</span>
                             </div>
                         </td>
                     </tr>
 
-                    {{-- SUB-OVERHEAD 4A: ALOKASI BIAYA PABRIK & FASILITAS (6 ITEM) --}}
+                    {{-- SUB-OVERHEAD 4A: ALOKASI BIAYA PABRIK & FASILITAS --}}
                     <tr class="adj-subgroup-row" data-subgroup="FOH">
                         <td colspan="6">
                             <div class="adj-subgroup-header-flex">
@@ -819,13 +820,13 @@
                                     <span class="adj-subgroup-badge badge-alokasi">BAGIAN 4.A</span>
                                     <span class="adj-subgroup-title">Beban Alokasi Pabrik &amp; Fasilitas</span>
                                 </div>
-                                <span class="adj-subgroup-meta">6 Biaya Moneter &bull; Standar Alokasi Sistem</span>
+                                <span class="adj-subgroup-meta">3 Komponen Alokasi Aktif &bull; Standar Alokasi Sistem</span>
                             </div>
                         </td>
                     </tr>
 
-                    {{-- 1. Pemeliharaan Mesin & Genset --}}
-                    <tr class="adj-item-row" data-group="FOH">
+                    {{-- 1. Pemeliharaan Mesin & Genset (Sementara Ditinjau/Hidden) --}}
+                    <tr class="adj-item-row" data-group="FOH" data-hidden-initial="true" style="display: none;">
                         <td>
                             <div class="adj-item-title">Pemeliharaan Mesin &amp; Genset</div>
                             <div class="adj-item-code">FOH-01 &bull; Servis, Oli &amp; Suku Cadang</div>
@@ -878,8 +879,8 @@
                         </td>
                     </tr>
 
-                    {{-- 3. Penyusutan Mesin Pabrik --}}
-                    <tr class="adj-item-row" data-group="FOH">
+                    {{-- 3. Penyusutan Mesin Pabrik (Sementara Ditinjau/Hidden) --}}
+                    <tr class="adj-item-row" data-group="FOH" data-hidden-initial="true" style="display: none;">
                         <td>
                             <div class="adj-item-title">Penyusutan Mesin Pabrik</div>
                             <div class="adj-item-code">FOH-03 &bull; Amortisasi Aset Tetap</div>
@@ -932,8 +933,8 @@
                         </td>
                     </tr>
 
-                    {{-- 5. Pengolahan Limbah Padat --}}
-                    <tr class="adj-item-row" data-group="FOH">
+                    {{-- 5. Pengolahan Limbah Padat (Sementara Ditinjau/Hidden) --}}
+                    <tr class="adj-item-row" data-group="FOH" data-hidden-initial="true" style="display: none;">
                         <td>
                             <div class="adj-item-title">Pengolahan Limbah Padat</div>
                             <div class="adj-item-code">FOH-05 &bull; Kulit Singkong &amp; Abu Boiler</div>
@@ -1089,7 +1090,7 @@
                 <tfoot>
                     <tr class="adj-tfoot-total-row">
                         <td colspan="2">
-                            <div class="adj-tfoot-title">TOTAL BIAYA PRODUKSI PABRIK (20 KOMPONEN)</div>
+                            <div class="adj-tfoot-title">TOTAL BIAYA PRODUKSI PABRIK (16 KOMPONEN AKTIF)</div>
                             <div class="adj-tfoot-hpp-box">
                                 <span>Estimasi HPP Baru:</span>
                                 <strong id="simulasiHppBaruText" class="adj-tfoot-hpp-val">Rp {{ number_format((float) $produksi->hpp_per_kg, 2, ',', '.') }}</strong>

@@ -130,9 +130,19 @@ class ProduksiController extends Controller
             ->get();
 
         // Ambil daftar dokumen pemakaian bahan yang belum pernah dipakai oleh produksi
+        // Khusus untuk lini produksi penggorengan / olahan curah (WIP), bukan dokumen pengemasan (Packaging)
         $pakaiList = DatPakaiHdr::with('details.barang')
             ->where('deleted_st', false)
             ->whereDoesntHave('produksi')
+            ->where(function ($q) {
+                $q->where('tujuan_pemakaian', 'ILIKE', '%PRODUKSI%')
+                  ->orWhere('tujuan_pemakaian', 'ILIKE', '%WIP%')
+                  ->orWhere('tujuan_pemakaian', 'ILIKE', '%IFM%')
+                  ->orWhere('tujuan_pemakaian', 'ILIKE', '%MANUAL%');
+            })
+            ->where('tujuan_pemakaian', 'NOT ILIKE', '%PENGEMASAN%')
+            ->where('tujuan_pemakaian', 'NOT ILIKE', '%PACKAGING%')
+            ->where('tujuan_pemakaian', 'NOT ILIKE', '%PACKING%')
             ->orderBy('pakai_tgl', 'desc')
             ->limit(50)
             ->get();

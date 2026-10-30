@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ asset('css/auth/login.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/auth/login.css') }}?v={{ time() }}">
 </head>
 <body class="auth-body">
 
@@ -45,19 +45,6 @@
                 </div>
             </div>
 
-            {{-- Certification Badges di Tengah --}}
-            <div class="certification-badges">
-                <div class="cert-badge">
-                    <img src="{{ asset('images/logo-haccp.png') }}" alt="HACCP Certified">
-                </div>
-                <div class="cert-badge">
-                    <img src="{{ asset('images/logo-cap-payung.jpg') }}" alt="Cap Payung">
-                </div>
-                <div class="cert-badge">
-                    <img src="{{ asset('images/enak-gurih-lezat.png') }}" alt="Premium Quality">
-                </div>
-            </div>
-
             {{-- Footer Visual: Quote & Indikator --}}
             <div class="visual-footer">
                 <div class="quote-box">
@@ -70,8 +57,8 @@
                 </div>
 
                 <div class="slide-indicators">
-                    <button type="button" class="slide-dot active"></button>
-                    <button type="button" class="slide-dot"></button>
+                    <button type="button" class="slide-dot active" aria-label="Slide 1"></button>
+                    <button type="button" class="slide-dot" aria-label="Slide 2"></button>
                 </div>
             </div>
         </div>
@@ -127,7 +114,7 @@
                                 <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
                             </span>
                             <input type="password" id="passwordInput" name="password" class="form-input" placeholder="Masukkan kata sandi..." required autocomplete="current-password">
-                            <button type="button" id="togglePasswordBtn" class="btn-toggle-pwd">
+                            <button type="button" id="togglePasswordBtn" class="btn-toggle-pwd" title="Lihat/Sembunyikan Sandi">
                                 <svg id="eyeIcon" width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
@@ -152,7 +139,7 @@
                     </button>
                 </form>
 
-                {{-- Quick Login Demo --}}
+                {{-- Quick Login Demo (Format Kartu Modern Seimbang & Anti-Lonjong) --}}
                 @if (isset($demoUsers) && $demoUsers->count() > 0)
                     <div class="demo-accounts-card">
                         <button type="button" id="demoToggleTrigger" class="demo-toggle-trigger">
@@ -171,8 +158,14 @@
                                     @php
                                         $roleColor = '#0284c7';
                                         $roleLabel = $u->role_cd;
-                                        if ($u->role_cd === 'SUPERADMIN') {
+                                        if ($u->role_cd === 'DIREKSI') {
                                             $roleColor = '#dc2626';
+                                            $roleLabel = 'DIREKSI';
+                                        } elseif ($u->role_cd === 'MANAJER') {
+                                            $roleColor = '#0284c7';
+                                            $roleLabel = 'MANAJER';
+                                        } elseif ($u->role_cd === 'SUPERADMIN') {
+                                            $roleColor = '#991b1b';
                                             $roleLabel = 'SUPERADMIN';
                                         } elseif ($u->role_cd === 'QC') {
                                             $roleColor = '#059669';
@@ -194,14 +187,14 @@
                                     <a href="{{ route('quick.login', $u->id) }}" class="demo-quick-btn">
                                         <div class="demo-role-tag" style="color: {{ $roleColor }};">
                                             <span>{{ $roleLabel }}</span>
-                                            <span style="font-size: 0.65rem; opacity: 0.8;">&rarr;</span>
+                                            <span class="demo-card-arrow">&rarr;</span>
                                         </div>
                                         <span class="demo-user-name">{{ $u->name }}</span>
                                         <span class="demo-user-loc">
                                             @if ($u->gudang)
-                                                🔒 {{ $u->gudang->gudang_nm }}
+                                                <span>🔒 {{ $u->gudang->gudang_nm }}</span>
                                             @else
-                                                🌐 Seluruh Gudang
+                                                <span>🌐 Seluruh Gudang</span>
                                             @endif
                                         </span>
                                     </a>
@@ -212,7 +205,7 @@
                 @endif
             </div>
 
-            {{-- Footer --}}
+            {{-- Footer Mobile Portal --}}
             <div class="form-footer">
                 <a href="{{ route('mobile.login') }}" class="link-mobile-portal">
                     <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
@@ -222,6 +215,6 @@
         </div>
     </div>
 
-    <script src="{{ asset('js/auth/login.js') }}"></script>
+    <script src="{{ asset('js/auth/login.js') }}?v={{ time() }}"></script>
 </body>
 </html>

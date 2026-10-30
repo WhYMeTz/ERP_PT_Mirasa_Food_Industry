@@ -10,8 +10,8 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (toggleBtn && passwordInput) {
         toggleBtn.addEventListener('click', function() {
-            const type = passwordInput.type === 'password' ? 'text' : 'password';
-            passwordInput.type = type;
+            const isPassword = passwordInput.type === 'password';
+            passwordInput.type = isPassword ? 'text' : 'password';
         });
     }
     
@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', function() {
             showSlide(currentSlide);
         });
     });
-    
+
     // Demo Accounts Toggle
     const demoToggle = document.getElementById('demoToggleTrigger');
     const demoGrid = document.getElementById('demoGridWrapper');
@@ -56,5 +56,4 @@ document.addEventListener('DOMContentLoaded', function() {
             demoGrid.classList.toggle('open');
         });
     }
-    
 });

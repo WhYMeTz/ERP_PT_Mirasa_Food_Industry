@@ -447,6 +447,9 @@ function addTerimaRow(focusNew = false) {
     updateTerimaRowNumbers();
     attachExcelKeyboardEventsTerima(tr);
     calculateTotalTerima();
+    if (typeof saveTerimaCreateDraft === 'function') {
+        saveTerimaCreateDraft();
+    }
 
     const select = tr.querySelector('.item-barang');
     applyBarangCategoryFilterToSelect(select, activeBarangCategory);
@@ -465,6 +468,9 @@ function removeTerimaRow(btn) {
     btn.closest('tr').remove();
     updateTerimaRowNumbers();
     calculateTotalTerima();
+    if (typeof saveTerimaCreateDraft === 'function') {
+        saveTerimaCreateDraft();
+    }
 }
 
 function updateTerimaRowNumbers() {
@@ -709,7 +715,7 @@ function calculateTotalTerima() {
     if (ppnDisplay) ppnDisplay.innerText = totalPpn > 0 ? '+Rp ' + Math.round(totalPpn).toLocaleString('id-ID') : '-';
     if (nilaiDisplay) nilaiDisplay.innerText = 'Rp ' + Math.round(grandTotal).toLocaleString('id-ID');
 
-    // Update Bar Ringkasan Terpadu di Footer Tabel
+    // Update Bar Ringkasan Terpadu di Footer Tabel & PO Workstation Live Widgets
     const barTotalNetto = document.getElementById('barTotalNetto');
     const barTotalReject = document.getElementById('barTotalReject');
     const barTotalItems = document.getElementById('barTotalItems');
@@ -720,6 +726,25 @@ function calculateTotalTerima() {
     if (barTotalReject) barTotalReject.innerText = totalReject.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     if (barTotalItems) barTotalItems.innerText = activeItemCount;
     if (barGrandTotal) barGrandTotal.innerText = 'Rp ' + Math.round(grandTotal).toLocaleString('id-ID');
+
+    // PO Workstation Top & Side Elements
+    const topLiveGrandTotal = document.getElementById('topLiveGrandTotal');
+    const topLiveItemCount = document.getElementById('topLiveItemCount');
+    const sideTotalQty = document.getElementById('sideTotalQty');
+    const sideTotalBruto = document.getElementById('sideTotalBruto');
+    const sideTotalAfkir = document.getElementById('sideTotalAfkir');
+    const sideTotalNetto = document.getElementById('sideTotalNetto');
+    const sideTotalDpp = document.getElementById('sideTotalDpp');
+    const sideGrandTotal = document.getElementById('sideGrandTotal');
+
+    if (topLiveGrandTotal) topLiveGrandTotal.innerText = totalNetto.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' KG';
+    if (topLiveItemCount) topLiveItemCount.innerText = activeItemCount + (activeItemCount > 1 ? ' Items' : ' Item');
+    if (sideTotalQty) sideTotalQty.innerText = totalNetto.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    if (sideTotalBruto) sideTotalBruto.innerText = totalBruto.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' KG';
+    if (sideTotalAfkir) sideTotalAfkir.innerText = totalReject.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' KG';
+    if (sideTotalNetto) sideTotalNetto.innerText = totalNetto.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' KG';
+    if (sideTotalDpp) sideTotalDpp.innerText = 'Rp ' + Math.round(totalSubtotalNetto).toLocaleString('id-ID');
+    if (sideGrandTotal) sideGrandTotal.innerText = 'Rp ' + Math.round(grandTotal).toLocaleString('id-ID');
 
     // Update Card Ringkasan Tambahan / Halaman Edit
     const globalPotonganInput = document.getElementById('global_potongan');
@@ -914,6 +939,15 @@ function clearAllInputsCreate() {
 let currentLoadedQcTicket = null;
 let allQcTickets = [];
 let activeQcCategory = '';
+
+function toggleModalFullscreen(modalId) {
+    const m = document.getElementById(modalId);
+    if (!m) return;
+    const dialog = m.querySelector('.modal-dialog');
+    if (!dialog) return;
+    dialog.classList.toggle('macos-fullscreen');
+}
+window.toggleModalFullscreen = toggleModalFullscreen;
 
 function openQcModal() {
     openModal('modalPilihQc');
@@ -1366,6 +1400,8 @@ function applyQcTicket(qcId) {
                 bannerSub.innerHTML = `Supplier: <strong>${escapeHtml(data.supplier_nm || '-')}</strong> &bull; Truk: <strong>${escapeHtml(data.plat_nomor_truk || '-')}</strong> &bull; Petugas QC: <strong>${escapeHtml(data.petugas_qc_nama || '-')}</strong>`;
             }
             if (btnDetach) btnDetach.style.display = 'inline-block';
+            const qcStatusPill = document.getElementById('qcStatusPill');
+            if (qcStatusPill) qcStatusPill.style.display = 'inline-block';
 
             // 8. Muat Item Barang dari Tiket QC ke Tabel
             const container = document.getElementById('terimaItemsContainer');
@@ -1396,6 +1432,7 @@ function applyQcTicket(qcId) {
                             <td>
                                 <input type="hidden" name="items[${idx}][podtl_id]" value="${it.podtl_id || ''}">
                                 <input type="hidden" name="items[${idx}][qcdtl_id]" value="${it.qcdtl_id || ''}">
+                                <input type="hidden" name="items[${idx}][qcdtl_ids]" value="${(it.qcdtl_ids && Array.isArray(it.qcdtl_ids)) ? it.qcdtl_ids.join(',') : (it.qcdtl_ids || it.qcdtl_id || '')}">
                                 <input type="hidden" name="items[${idx}][kadar_air_persen]" value="${it.kadar_air || 0}">
                                 <input type="hidden" name="items[${idx}][refraksi_persen]" value="${rowRefraksiPersen}">
                                 <input type="hidden" name="items[${idx}][barang_id]" value="${it.barang_id}" class="item-barang-id">
@@ -1430,11 +1467,11 @@ function applyQcTicket(qcId) {
                                 <input type="date" name="items[${idx}][expired_tgl]" class="form-control" style="font-size: 0.8rem;">
                             </td>
                             <td>
-                                <select name="items[${idx}][grade_cd]" class="form-control" style="font-size: 0.8rem;">
-                                    <option value="A" ${it.grade_cd === 'A' ? 'selected' : ''}>Grade A Super</option>
-                                    <option value="B" ${it.grade_cd === 'B' ? 'selected' : ''}>Grade B Standar</option>
-                                    <option value="C" ${it.grade_cd === 'C' ? 'selected' : ''}>Grade C Campur</option>
-                                    <option value="REJECT" ${it.grade_cd === 'REJECT' ? 'selected' : ''}>Reject / Afkir</option>
+                                <select name="items[${idx}][grade_cd]" class="form-control po-grade-select">
+                                    <option value="A" ${it.grade_cd === 'A' ? 'selected' : ''}>Grade A</option>
+                                    <option value="B" ${it.grade_cd === 'B' ? 'selected' : ''}>Grade B</option>
+                                    <option value="C" ${it.grade_cd === 'C' ? 'selected' : ''}>Grade C</option>
+                                    <option value="REJECT" ${it.grade_cd === 'REJECT' ? 'selected' : ''}>Reject</option>
                                 </select>
                             </td>
                             <td>
@@ -1455,6 +1492,9 @@ function applyQcTicket(qcId) {
                                 <input type="hidden" name="items[${idx}][potongan_nominal]" value="0" class="item-potongan">
                                 <input type="hidden" name="items[${idx}][ppn_tipe]" value="NON_PPN" class="item-ppn-tipe">
                             </td>
+                            <td style="text-align: right; font-weight: 700; color: #0f172a; font-size: 0.875rem; font-family: monospace;" class="row-subtotal">
+                                Rp ${Math.round(rowNetto * defaultHarga).toLocaleString('id-ID')}
+                            </td>
                             <td style="text-align: center;">
                                 <button type="button" onclick="removeTerimaRow(this)" class="btn btn-danger btn-sm" style="padding: 0.2rem 0.45rem; font-size: 0.8rem;" title="Hapus Baris">&times;</button>
                             </td>
@@ -1465,6 +1505,9 @@ function applyQcTicket(qcId) {
                 });
 
                 calculateTotalTerima();
+                if (typeof saveTerimaCreateDraft === 'function') {
+                    saveTerimaCreateDraft();
+                }
             }
         })
         .catch(err => {
@@ -1487,6 +1530,8 @@ function detachQcTicket() {
     if (bannerTitle) bannerTitle.innerText = 'Sinkronisasi Inspeksi Mutu QC Lapangan';
     if (bannerSub) bannerSub.innerText = 'Tarik hasil sampling kadar air, refraksi kotoran, dan timbangan truk yang telah diverifikasi tim QC.';
     if (btnDetach) btnDetach.style.display = 'none';
+    const qcStatusPill = document.getElementById('qcStatusPill');
+    if (qcStatusPill) qcStatusPill.style.display = 'none';
 
     currentLoadedQcTicket = null;
 
@@ -1530,6 +1575,10 @@ function detachQcTicket() {
     } catch (e) {
         console.warn('Gagal membersihkan parameter qc_id di URL:', e);
     }
+
+    if (typeof saveTerimaCreateDraft === 'function') {
+        saveTerimaCreateDraft();
+    }
 }
 
 // Expose QC Global Functions to Window
@@ -1545,7 +1594,8 @@ window.resetAllQcFilters = resetAllQcFilters;
 // =========================================================================
 // 5. AUTO-LOAD TIKET QC JIKA TERDAPAT PARAMETER qc_id PADA SAAT MEMBUKA HALAMAN
 // =========================================================================
-function initAutoLoadQcTicket() {
+function initAutoLoadQcTicket(skipIfDraftRestored = false) {
+    if (skipIfDraftRestored) return;
     const urlParams = new URLSearchParams(window.location.search);
     const targetQcId = window.initialQcId || document.getElementById('input_qc_id')?.value || urlParams.get('qc_id');
     if (targetQcId) {
@@ -1553,8 +1603,643 @@ function initAutoLoadQcTicket() {
     }
 }
 
+// =========================================================================
+// 6. SINKRONISASI TANGGAL & NOMOR GRN (FORMAT: 001/GRN/MFI/MM/YY)
+// =========================================================================
+function formatTanggalIndo(dateStr) {
+    if (!dateStr) return '-';
+    const months = [
+        'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    ];
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+        const d = parseInt(parts[2], 10);
+        const m = parseInt(parts[1], 10) - 1;
+        const y = parts[0];
+        if (!isNaN(d) && !isNaN(m) && m >= 0 && m < 12) {
+            return `${d} ${months[m]} ${y}`;
+        }
+    }
+    return dateStr;
+}
+
+function parseTerimaNoParts(val) {
+    if (!val) return null;
+    const match = val.trim().match(/^(\d+)\/GRN\/MFI\/(\d{1,2})\/(\d{2,4})$/i);
+    if (match) {
+        const rawYear = match[3];
+        const year2 = rawYear.length === 4 ? rawYear.slice(-2) : rawYear.padStart(2, '0');
+        return {
+            seq: match[1],
+            month: match[2].padStart(2, '0'),
+            year: year2,
+        };
+    }
+    return null;
+}
+
+let lastSystemSuggestedTerimaNo = '';
+
+function initCreateTerimaDateNumberSync() {
+    const terimaTglInput = document.getElementById('terima_tgl');
+    const terimaNoInput = document.getElementById('terima_no');
+    const terimaNoHelp = document.getElementById('terima_no_help');
+
+    if (!terimaTglInput || !terimaNoInput) return;
+
+    lastSystemSuggestedTerimaNo = terimaNoInput.value.trim();
+    let initialParts = parseTerimaNoParts(terimaNoInput.value);
+    let activeMonthYear = initialParts
+        ? `${initialParts.year}-${initialParts.month}`
+        : (terimaTglInput.value ? terimaTglInput.value.slice(2, 4) + '-' + terimaTglInput.value.slice(5, 7) : '');
+
+    function fetchAndApplyTerimaCode(targetDateStr, reasonText) {
+        terimaNoInput.style.opacity = '0.5';
+        terimaNoInput.style.pointerEvents = 'none';
+        if (terimaNoHelp) {
+            terimaNoHelp.style.display = 'block';
+            terimaNoHelp.innerHTML = `<span style="color:#0284c7;">⚡ Memeriksa urutan nomor GRN untuk periode ${formatTanggalIndo(targetDateStr)}...</span>`;
+        }
+
+        fetch(`/ajax/generate-code?type=grn&date=${encodeURIComponent(targetDateStr)}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success' && data.code) {
+                    terimaNoInput.value = data.code;
+                    lastSystemSuggestedTerimaNo = data.code;
+                    const newParts = parseTerimaNoParts(data.code);
+                    if (newParts) {
+                        activeMonthYear = `${newParts.year}-${newParts.month}`;
+                    }
+
+                    // Visual highlight lembut
+                    terimaNoInput.style.background = '#f0fdf4';
+                    setTimeout(() => {
+                        terimaNoInput.style.background = '#ffffff';
+                    }, 1200);
+
+                    if (terimaNoHelp) {
+                        terimaNoHelp.style.display = 'block';
+                        terimaNoHelp.innerHTML = `<span style="color:#15803d; font-weight:600;">✓ Nomor GRN disesuaikan otomatis (${reasonText}): <strong>${data.code}</strong></span>`;
+                    }
+                }
+            })
+            .catch(err => {
+                console.error('Gagal generate nomor GRN:', err);
+                if (terimaNoHelp) {
+                    terimaNoHelp.style.display = 'block';
+                    terimaNoHelp.innerHTML = `<span style="color:#dc2626;">Gagal menyinkronkan nomor urut otomatis. Anda dapat mengetiknya secara manual.</span>`;
+                }
+            })
+            .finally(() => {
+                terimaNoInput.style.opacity = '1';
+                terimaNoInput.style.pointerEvents = 'auto';
+            });
+    }
+
+    // 1. KETIKA TANGGAL TERIMA DIUBAH PENGGUNA (LANGSUNG LIVE)
+    ['change', 'input'].forEach(evtName => {
+        terimaTglInput.addEventListener(evtName, function () {
+            const newDate = this.value;
+            if (!newDate) return;
+
+            const newYM = newDate.slice(2, 4) + '-' + newDate.slice(5, 7);
+            if (newYM !== activeMonthYear) {
+                fetchAndApplyTerimaCode(newDate, `urutan bulan ${formatTanggalIndo(newDate)}`);
+            }
+        });
+    });
+
+    // 2. KETIKA BULAN/TAHUN PADA INPUT NOMOR GRN DIUBAH LANGSUNG
+    let terimaNoDebounceTimer = null;
+
+    function handleTerimaNoInputSync() {
+        const parts = parseTerimaNoParts(terimaNoInput.value);
+        if (!parts) return;
+
+        const mNum = parseInt(parts.month, 10);
+        if (isNaN(mNum) || mNum < 1 || mNum > 12) return;
+
+        const typedYM = `${parts.year}-${parts.month}`;
+        if (typedYM !== activeMonthYear) {
+            const targetDate = `20${parts.year}-${parts.month}-01`;
+
+            if (terimaTglInput.value) {
+                const currentDay = terimaTglInput.value.slice(8, 10);
+                const safeDate = `20${parts.year}-${parts.month}-${currentDay}`;
+                const testD = new Date(safeDate);
+                terimaTglInput.value = (!isNaN(testD.getTime())) ? safeDate : targetDate;
+            } else {
+                terimaTglInput.value = targetDate;
+            }
+
+            fetchAndApplyTerimaCode(targetDate, `bulan ${parts.month} tahun 20${parts.year}`);
+        }
+    }
+
+    terimaNoInput.addEventListener('input', function () {
+        clearTimeout(terimaNoDebounceTimer);
+        terimaNoDebounceTimer = setTimeout(handleTerimaNoInputSync, 300);
+    });
+
+    ['change', 'blur'].forEach(evtName => {
+        terimaNoInput.addEventListener(evtName, function () {
+            clearTimeout(terimaNoDebounceTimer);
+            handleTerimaNoInputSync();
+        });
+    });
+}
+
+function openPreviousMonthModal(options) {
+    const modal = document.getElementById('modalConfirmPreviousMonth');
+    if (!modal) return;
+    const elTerimaNo = document.getElementById('mcpmTerimaNo');
+    const elTerimaTgl = document.getElementById('mcpmTerimaTgl');
+    const elTitle = document.getElementById('mcpmTitle');
+    const elSubtitle = document.getElementById('mcpmSubtitle');
+    const elContent = document.getElementById('mcpmAlertContent');
+    const elQuestion = document.getElementById('mcpmQuestion');
+
+    if (elTerimaNo) elTerimaNo.textContent = options.terimaNo || '-';
+    if (elTerimaTgl) elTerimaTgl.textContent = formatTanggalIndo(options.terimaTgl);
+    if (elTitle) elTitle.textContent = options.title || 'Peringatan Dokumen Penerimaan';
+    if (elSubtitle) elSubtitle.textContent = options.subtitle || 'Perhatian khusus penomoran dokumen & periode pembukuan';
+    if (elContent) elContent.innerHTML = options.contentHtml || '';
+    if (elQuestion) elQuestion.textContent = options.question || 'Apakah Anda yakin ingin melanjutkan penyimpanan?';
+
+    modal.style.display = 'flex';
+}
+
+function closePreviousMonthModal() {
+    const modal = document.getElementById('modalConfirmPreviousMonth');
+    if (modal) modal.style.display = 'none';
+}
+window.closePreviousMonthModal = closePreviousMonthModal;
+
+function initCreatePreviousMonthProtection() {
+    const formTerima = document.getElementById('formTerima');
+    if (!formTerima) return;
+
+    let previousMonthConfirmed = false;
+
+    formTerima.addEventListener('submit', function (e) {
+        if (previousMonthConfirmed) return;
+
+        const terimaTglInput = document.getElementById('terima_tgl');
+        const terimaNoInput = document.getElementById('terima_no');
+        const terimaTglVal = terimaTglInput ? terimaTglInput.value : '';
+        const terimaNoVal = terimaNoInput ? terimaNoInput.value.trim() : '';
+        const currentServerYM = window.currentServerYearMonth || (new Date().toISOString().slice(0, 7));
+
+        const docYM = terimaTglVal ? terimaTglVal.slice(0, 7) : '';
+        const isPreviousMonth = Boolean(docYM && docYM < currentServerYM);
+
+        const currentParts = parseTerimaNoParts(terimaNoVal);
+        const suggestedParts = parseTerimaNoParts(lastSystemSuggestedTerimaNo);
+        const isManualSequence = Boolean(currentParts && suggestedParts && (currentParts.seq !== suggestedParts.seq));
+
+        if (isPreviousMonth || isManualSequence) {
+            e.preventDefault();
+
+            let title = '';
+            let subtitle = '';
+            let alerts = [];
+
+            if (isPreviousMonth && isManualSequence) {
+                title = 'Peringatan: Periode Sebelumnya & Nomor Urut Manual';
+                subtitle = 'Dua penyesuaian khusus terdeteksi pada dokumen penerimaan barang ini';
+            } else if (isPreviousMonth) {
+                title = 'Konfirmasi Penambahan Dokumen Periode Sebelumnya';
+                subtitle = 'Dokumen penerimaan ditujukan untuk periode bulan yang telah lewat';
+            } else {
+                title = 'Konfirmasi Penggunaan Nomor Urut GRN Manual';
+                subtitle = 'Nomor urut yang dimasukkan berbeda dengan saran nomor urut otomatis sistem';
+            }
+
+            if (isPreviousMonth) {
+                alerts.push(`Dokumen GRN ini bertanggal <strong>${formatTanggalIndo(terimaTglVal)}</strong> yang berada di luar periode bulan berjalan (<strong>${currentServerYM}</strong>). Saldo fisik stok dan mutasi kartu stok akan dicatat backdated pada tanggal tersebut.`);
+            }
+
+            if (isManualSequence) {
+                alerts.push(`Nomor urut yang Anda ketik (<strong>${currentParts.seq}</strong>) berbeda dari saran nomor urut berikutnya dari sistem (<strong>${suggestedParts.seq}</strong>). Pastikan nomor urut ini tidak menimbulkan celah atau tumpang tindih dalam pembukuan.`);
+            }
+
+            openPreviousMonthModal({
+                terimaNo: terimaNoVal,
+                terimaTgl: terimaTglVal,
+                title: title,
+                subtitle: subtitle,
+                contentHtml: alerts.map(a => `<div style="margin-bottom: 0.4rem;">&bull; ${a}</div>`).join(''),
+                question: 'Apakah Anda yakin data penerimaan barang sudah benar dan ingin tetap melanjutkan penyimpanan dokumen GRN ini?'
+            });
+
+            const btnConfirm = document.getElementById('btnConfirmSubmitPreviousMonth');
+            if (btnConfirm) {
+                btnConfirm.onclick = function () {
+                    previousMonthConfirmed = true;
+                    closePreviousMonthModal();
+                    clearTerimaCreateDraft();
+                    formTerima.submit();
+                };
+            }
+        }
+    });
+}
+
+// =========================================================================
+// 8. AUTO-SAVE & RESTORE DRAFT PENERIMAAN BARANG (GRN) (LOCAL STORAGE)
+// =========================================================================
+const TERIMA_DRAFT_STORAGE_KEY = 'erp_mirasa_terima_create_draft_v1';
+let terimaDraftSaveDebounceTimer = null;
+let terimaDraftIndicatorTimer = null;
+
+function showTerimaDraftIndicator(text) {
+    const ind = document.getElementById('draftSaveIndicator');
+    if (!ind) return;
+    ind.innerText = text;
+    ind.style.display = 'inline-block';
+    ind.style.opacity = '1';
+    clearTimeout(terimaDraftIndicatorTimer);
+    terimaDraftIndicatorTimer = setTimeout(() => {
+        if (ind && ind.innerText === text) {
+            ind.style.opacity = '0.6';
+        }
+    }, 3500);
+}
+window.showTerimaDraftIndicator = showTerimaDraftIndicator;
+
+function clearTerimaCreateDraft() {
+    try {
+        localStorage.removeItem(TERIMA_DRAFT_STORAGE_KEY);
+        const ind = document.getElementById('draftSaveIndicator');
+        if (ind) ind.style.display = 'none';
+    } catch (e) {
+        console.warn('Gagal menghapus draft Penerimaan:', e);
+    }
+}
+window.clearTerimaCreateDraft = clearTerimaCreateDraft;
+
+function saveTerimaCreateDraft() {
+    clearTimeout(terimaDraftSaveDebounceTimer);
+    terimaDraftSaveDebounceTimer = setTimeout(() => {
+        try {
+            const formTerima = document.getElementById('formTerima');
+            if (!formTerima) return;
+
+            const supplierId = document.getElementById('supplier_id')?.value || '';
+            const terimaTgl = document.getElementById('terima_tgl')?.value || '';
+            const terimaNo = document.getElementById('terima_no')?.value || '';
+            const gudangId = document.getElementById('gudang_id')?.value || '';
+            const poId = document.getElementById('po_id')?.value || '';
+            const qcId = document.getElementById('input_qc_id')?.value || '';
+            const suratjalanNo = document.getElementById('suratjalan_no')?.value || '';
+            const tglJatuhTempo = document.getElementById('tgl_jatuh_tempo')?.value || '';
+            const catatanTxt = document.getElementById('catatan_txt')?.value || '';
+            const catatanLengkap = document.getElementById('catatan_lengkap')?.value || '';
+
+            const rows = document.querySelectorAll('#terimaItemsContainer .terima-row');
+            const items = [];
+
+            rows.forEach(r => {
+                const isFixed = Boolean(r.querySelector('.item-barang-name'));
+                const bId = isFixed 
+                    ? (r.querySelector('.item-barang-id')?.value || '')
+                    : (r.querySelector('.item-barang')?.value || '');
+                const bNm = r.querySelector('.item-barang-name')?.innerText || '';
+                const bCd = r.querySelector('span[style*="monospace"]')?.innerText || '';
+                const satNm = r.querySelector('.row-satuan')?.innerText || '';
+                const podtlId = r.querySelector('input[name*="[podtl_id]"]')?.value || '';
+                const qcdtlId = r.querySelector('input[name*="[qcdtl_id]"]')?.value || '';
+                const qcdtlIds = r.querySelector('input[name*="[qcdtl_ids]"]')?.value || '';
+                const kadarAir = r.querySelector('input[name*="[kadar_air_persen]"]')?.value || '0';
+                const refraksiPersen = r.querySelector('input[name*="[refraksi_persen]"]')?.value || '0';
+                const sisaPo = r.dataset.sisa || '0';
+                const pesanPo = r.dataset.pesan || '0';
+
+                const batchNo = r.querySelector('.item-batch')?.value || '';
+                const expTgl = r.querySelector('input[name*="[expired_tgl]"]')?.value || '';
+                const gradeCd = r.querySelector('select[name*="[grade_cd]"]')?.value || 'A';
+                const terimaQty = r.querySelector('.item-terima-qty')?.value || '';
+                const rejectQty = r.querySelector('.item-reject-qty')?.value || '';
+                const harga = r.querySelector('.item-harga')?.value || '';
+                const diskon = r.querySelector('.item-diskon')?.value || '0';
+                const potongan = r.querySelector('.item-potongan')?.value || '0';
+                const ppnTipe = r.querySelector('.item-ppn-tipe')?.value || 'NON_PPN';
+
+                if (bId || (batchNo && !batchNo.endsWith('-')) || terimaQty || (rejectQty && parseFloat(rejectQty) > 0) || harga) {
+                    items.push({
+                        is_fixed: isFixed,
+                        barang_id: bId,
+                        barang_nm: bNm,
+                        barang_cd: bCd,
+                        satuan_nm: satNm,
+                        podtl_id: podtlId,
+                        qcdtl_id: qcdtlId,
+                        qcdtl_ids: qcdtlIds,
+                        kadar_air_persen: kadarAir,
+                        refraksi_persen: refraksiPersen,
+                        sisa_po: sisaPo,
+                        pesan_po: pesanPo,
+                        batch_no: batchNo,
+                        expired_tgl: expTgl,
+                        grade_cd: gradeCd,
+                        terima_qty: terimaQty,
+                        reject_qty: rejectQty,
+                        harga_nominal: harga,
+                        diskon_persen: diskon,
+                        potongan_nominal: potongan,
+                        ppn_tipe: ppnTipe
+                    });
+                }
+            });
+
+            // Hanya simpan jika user mulai menginputkan sesuatu
+            if (!supplierId && !suratjalanNo && !catatanTxt && !catatanLengkap && !qcId && items.length === 0) {
+                return;
+            }
+
+            const payload = {
+                timestamp: Date.now(),
+                header: {
+                    terima_tgl: terimaTgl,
+                    terima_no: terimaNo,
+                    supplier_id: supplierId,
+                    gudang_id: gudangId,
+                    po_id: poId,
+                    qc_id: qcId,
+                    suratjalan_no: suratjalanNo,
+                    tgl_jatuh_tempo: tglJatuhTempo,
+                    catatan_txt: catatanTxt,
+                    catatan_lengkap: catatanLengkap,
+                    qc_meta: currentLoadedQcTicket ? {
+                        qc_id: currentLoadedQcTicket.qc_id,
+                        qc_no: currentLoadedQcTicket.qc_no,
+                        supplier_nm: currentLoadedQcTicket.supplier_nm,
+                        plat_nomor_truk: currentLoadedQcTicket.plat_nomor_truk,
+                        petugas_qc_nama: currentLoadedQcTicket.petugas_qc_nama
+                    } : null
+                },
+                items: items
+            };
+
+            localStorage.setItem(TERIMA_DRAFT_STORAGE_KEY, JSON.stringify(payload));
+            showTerimaDraftIndicator('💾 Draft Tersimpan');
+        } catch (e) {
+            console.warn('Gagal menyimpan draft Penerimaan:', e);
+        }
+    }, 300);
+}
+window.saveTerimaCreateDraft = saveTerimaCreateDraft;
+
+function restoreTerimaCreateDraft() {
+    try {
+        const raw = localStorage.getItem(TERIMA_DRAFT_STORAGE_KEY);
+        if (!raw) return false;
+
+        const draft = JSON.parse(raw);
+        if (!draft || !draft.header) return false;
+
+        // Jika halaman dibuka kembali dengan error server (validation errors)
+        if (window.hasOldServerInput) {
+            return false;
+        }
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const queryQcId = urlParams.get('qc_id');
+        // Jika ada URL query qc_id yang BERBEDA dari draft yang tersimpan, prioritaskan query baru
+        if (queryQcId && draft.header.qc_id && String(draft.header.qc_id) !== String(queryQcId)) {
+            clearTerimaCreateDraft();
+            return false;
+        }
+
+        const h = draft.header;
+
+        // 1. Tanggal & Nomor GRN
+        if (h.terima_tgl) {
+            const el = document.getElementById('terima_tgl');
+            if (el) el.value = h.terima_tgl;
+        }
+        if (h.terima_no) {
+            const el = document.getElementById('terima_no');
+            if (el) el.value = h.terima_no;
+        }
+
+        // 2. Supplier
+        if (h.supplier_id) {
+            selectSupplier(h.supplier_id);
+        }
+
+        // 3. Gudang & PO
+        if (h.gudang_id) {
+            const el = document.getElementById('gudang_id');
+            if (el) el.value = h.gudang_id;
+        }
+        if (h.po_id) {
+            const el = document.getElementById('po_id');
+            if (el) el.value = h.po_id;
+        }
+
+        // 4. Surat Jalan & Jatuh Tempo & Catatan
+        if (h.suratjalan_no) {
+            const el = document.getElementById('suratjalan_no');
+            if (el) el.value = h.suratjalan_no;
+        }
+        if (h.tgl_jatuh_tempo) {
+            const el = document.getElementById('tgl_jatuh_tempo');
+            if (el) el.value = h.tgl_jatuh_tempo;
+        }
+        if (h.catatan_txt) {
+            const el = document.getElementById('catatan_txt');
+            if (el) el.value = h.catatan_txt;
+        }
+        if (h.catatan_lengkap) {
+            const el = document.getElementById('catatan_lengkap');
+            if (el) el.value = h.catatan_lengkap;
+        }
+
+        // 5. QC Meta & Link
+        if (h.qc_id) {
+            const inputQcId = document.getElementById('input_qc_id');
+            if (inputQcId) inputQcId.value = h.qc_id;
+        }
+        if (h.qc_meta) {
+            currentLoadedQcTicket = h.qc_meta;
+            const bannerTitle = document.getElementById('qcBannerTitle');
+            const bannerSub = document.getElementById('qcBannerSubtitle');
+            const btnDetach = document.getElementById('btnDetachQc');
+            const qcStatusPill = document.getElementById('qcStatusPill');
+
+            if (bannerTitle) bannerTitle.innerHTML = `<span style="color:#15803d;">✅ Terhubung dengan Tiket QC: ${escapeHtml(h.qc_meta.qc_no || '')}</span>`;
+            if (bannerSub) bannerSub.innerHTML = `Supplier: <strong>${escapeHtml(h.qc_meta.supplier_nm || '-')}</strong> &bull; Truk: <strong>${escapeHtml(h.qc_meta.plat_nomor_truk || '-')}</strong> &bull; Petugas QC: <strong>${escapeHtml(h.qc_meta.petugas_qc_nama || '-')}</strong>`;
+            if (btnDetach) btnDetach.style.display = 'inline-block';
+            if (qcStatusPill) qcStatusPill.style.display = 'inline-block';
+        }
+
+        // 6. Restorasi Item Baris Tabel
+        if (draft.items && draft.items.length > 0) {
+            const container = document.getElementById('terimaItemsContainer');
+            if (container) {
+                container.innerHTML = '';
+                terimaRowIndex = 0;
+
+                draft.items.forEach((it, idx) => {
+                    if (it.is_fixed) {
+                        // Baris Fixed (Dari PO atau Tiket QC)
+                        const tr = document.createElement('tr');
+                        tr.className = 'terima-row';
+                        tr.dataset.index = idx;
+                        const sisaPoVal = parseFloat(it.sisa_po) || 0;
+                        const pesanPoVal = parseFloat(it.pesan_po) || 0;
+                        tr.dataset.sisa = sisaPoVal;
+                        tr.dataset.pesan = pesanPoVal;
+                        tr.dataset.barangNm = it.barang_nm || '';
+
+                        const rowGross = parseFloat(it.terima_qty) || 0;
+                        const rowRejectQty = parseFloat(it.reject_qty) || 0;
+                        const defaultHarga = parseFloat(it.harga_nominal) || 0;
+                        const rowRefraksiPersen = parseFloat(it.refraksi_persen) || 0;
+                        const rowNetto = Math.max(0, rowGross - rowRejectQty);
+
+                        tr.innerHTML = `
+                            <td class="row-num" style="font-weight: 700; text-align: center; color: #475569; background: #f1f5f9;">${idx + 1}</td>
+                            <td>
+                                <input type="hidden" name="items[${idx}][podtl_id]" value="${escapeHtml(it.podtl_id || '')}">
+                                <input type="hidden" name="items[${idx}][qcdtl_id]" value="${escapeHtml(it.qcdtl_id || '')}">
+                                <input type="hidden" name="items[${idx}][qcdtl_ids]" value="${escapeHtml(it.qcdtl_ids || '')}">
+                                <input type="hidden" name="items[${idx}][kadar_air_persen]" value="${escapeHtml(it.kadar_air_persen || 0)}">
+                                <input type="hidden" name="items[${idx}][refraksi_persen]" value="${escapeHtml(rowRefraksiPersen)}">
+                                <input type="hidden" name="items[${idx}][barang_id]" value="${escapeHtml(it.barang_id)}" class="item-barang-id">
+                                
+                                <strong style="color: #0f172a; display: block; font-size: 0.85rem;" class="item-barang-name">${escapeHtml(it.barang_nm)}</strong>
+                                ${(sisaPoVal > 0 || pesanPoVal > 0) ? `
+                                    <div style="font-size: 0.725rem; color: #64748b; margin-top: 1px;">
+                                        Pesanan PO: <strong>${pesanPoVal.toLocaleString('id-ID')}</strong> | Sisa: <strong>${sisaPoVal.toLocaleString('id-ID')} ${escapeHtml(it.satuan_nm || 'KG')}</strong>
+                                    </div>
+                                ` : ''}
+                                <div style="display: flex; gap: 0.4rem; align-items: center; margin-top: 2px; flex-wrap: wrap;">
+                                    ${it.barang_cd ? `<span style="font-size: 0.725rem; font-family: monospace; color: #64748b;">${escapeHtml(it.barang_cd)}</span>` : ''}
+                                    ${parseFloat(it.kadar_air_persen) > 0 ? `
+                                        <span class="badge" style="background: #e0f2fe; color: #0369a1; font-size: 0.675rem; font-weight: 700;">
+                                            Kadar Air: ${it.kadar_air_persen}%
+                                        </span>
+                                    ` : ''}
+                                    ${rowRefraksiPersen > 0 ? `
+                                        <span class="badge" style="background: #fef3c7; color: #b45309; font-size: 0.675rem; font-weight: 700;">
+                                            Refraksi: ${rowRefraksiPersen}%
+                                        </span>
+                                    ` : ''}
+                                </div>
+                            </td>
+                            <td>
+                                <input type="text" name="items[${idx}][batch_no]" value="${escapeHtml(it.batch_no || '')}" class="form-control item-batch" style="font-family: monospace; font-weight: 700; color: #0284c7; width: 100%;" required>
+                            </td>
+                            <td>
+                                <input type="date" name="items[${idx}][expired_tgl]" value="${escapeHtml(it.expired_tgl || '')}" class="form-control" style="font-size: 0.8rem;">
+                            </td>
+                            <td>
+                                <select name="items[${idx}][grade_cd]" class="form-control po-grade-select">
+                                    <option value="A" ${it.grade_cd === 'A' ? 'selected' : ''}>Grade A</option>
+                                    <option value="B" ${it.grade_cd === 'B' ? 'selected' : ''}>Grade B</option>
+                                    <option value="C" ${it.grade_cd === 'C' ? 'selected' : ''}>Grade C</option>
+                                    <option value="REJECT" ${it.grade_cd === 'REJECT' ? 'selected' : ''}>Reject</option>
+                                </select>
+                            </td>
+                            <td>
+                                <input type="number" step="0.0001" min="0" name="items[${idx}][terima_qty]" value="${it.terima_qty}" class="form-control item-terima-qty" style="text-align: right; font-weight: 700;" oninput="calculateTotalTerima()" required>
+                            </td>
+                            <td>
+                                <input type="number" step="0.0001" min="0" name="items[${idx}][reject_qty]" value="${it.reject_qty || 0}" class="form-control item-reject-qty" placeholder="0" style="text-align: right;" oninput="calculateTotalTerima()">
+                            </td>
+                            <td style="text-align: right; font-weight: 700; color: #047857; background: #f0fdf4;" class="row-netto">
+                                ${rowNetto.toLocaleString('id-ID', { minimumFractionDigits: 2 })}
+                            </td>
+                            <td style="text-align: center;">
+                                <span class="row-satuan" style="font-weight: 700; color: #475569; font-size: 0.8rem;">${escapeHtml(it.satuan_nm || 'KG')}</span>
+                            </td>
+                            <td>
+                                <input type="number" step="0.01" min="0" name="items[${idx}][harga_nominal]" value="${defaultHarga}" class="form-control item-harga" placeholder="0" style="text-align: right; font-weight: 600;" oninput="calculateTotalTerima()">
+                                <input type="hidden" name="items[${idx}][diskon_persen]" value="${it.diskon_persen || 0}" class="item-diskon">
+                                <input type="hidden" name="items[${idx}][potongan_nominal]" value="${it.potongan_nominal || 0}" class="item-potongan">
+                                <input type="hidden" name="items[${idx}][ppn_tipe]" value="${it.ppn_tipe || 'NON_PPN'}" class="item-ppn-tipe">
+                            </td>
+                            <td style="text-align: right; font-weight: 700; color: #0f172a; font-size: 0.875rem; font-family: monospace;" class="row-subtotal">
+                                Rp ${Math.round(rowNetto * defaultHarga).toLocaleString('id-ID')}
+                            </td>
+                            <td style="text-align: center;">
+                                <button type="button" onclick="removeTerimaRow(this)" class="btn btn-danger btn-sm" style="padding: 0.2rem 0.45rem; font-size: 0.8rem;" title="Hapus Baris">&times;</button>
+                            </td>
+                        `;
+                        container.appendChild(tr);
+                        terimaRowIndex++;
+                        attachExcelKeyboardEventsTerima(tr);
+                    } else {
+                        // Baris Manual dari template
+                        const tr = addTerimaRow(false);
+                        if (tr) {
+                            const bSelect = tr.querySelector('.item-barang');
+                            if (bSelect && it.barang_id) {
+                                bSelect.value = String(it.barang_id);
+                                updateTerimaSatuanAndBatch(bSelect, false);
+                            }
+                            const batchInput = tr.querySelector('.item-batch');
+                            if (batchInput && it.batch_no) batchInput.value = it.batch_no;
+                            const expInput = tr.querySelector('input[name*="[expired_tgl]"]');
+                            if (expInput && it.expired_tgl) expInput.value = it.expired_tgl;
+                            const gradeSelect = tr.querySelector('select[name*="[grade_cd]"]');
+                            if (gradeSelect && it.grade_cd) gradeSelect.value = it.grade_cd;
+                            const terimaInput = tr.querySelector('.item-terima-qty');
+                            if (terimaInput && it.terima_qty) terimaInput.value = it.terima_qty;
+                            const rejectInput = tr.querySelector('.item-reject-qty');
+                            if (rejectInput && it.reject_qty) rejectInput.value = it.reject_qty;
+                            const hargaInput = tr.querySelector('.item-harga');
+                            if (hargaInput && it.harga_nominal) hargaInput.value = it.harga_nominal;
+                        }
+                    }
+                });
+
+                updateTerimaRowNumbers();
+                calculateTotalTerima();
+            }
+        }
+
+        showTerimaDraftIndicator('💾 Draft Dipulihkan dari Sesi Terakhir');
+        return true;
+    } catch (e) {
+        console.warn('Gagal me-restore draft Penerimaan:', e);
+        return false;
+    }
+}
+window.restoreTerimaCreateDraft = restoreTerimaCreateDraft;
+
+function initTerimaDraftAutoSave() {
+    const formTerima = document.getElementById('formTerima');
+    if (!formTerima) return false;
+
+    // Coba pulihkan draft jika ada
+    const restored = restoreTerimaCreateDraft();
+
+    // Pasang event listener auto-save pada form
+    formTerima.addEventListener('input', saveTerimaCreateDraft);
+    formTerima.addEventListener('change', saveTerimaCreateDraft);
+
+    // Bersihkan draft saat submit berhasil
+    formTerima.addEventListener('submit', function () {
+        clearTerimaCreateDraft();
+    });
+
+    return restored;
+}
+
+function initAllTerimaWorkstationFeatures() {
+    const draftRestored = initTerimaDraftAutoSave();
+    initAutoLoadQcTicket(draftRestored);
+    initCreateTerimaDateNumberSync();
+    initCreatePreviousMonthProtection();
+}
+
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initAutoLoadQcTicket);
+    document.addEventListener('DOMContentLoaded', initAllTerimaWorkstationFeatures);
 } else {
-    initAutoLoadQcTicket();
+    initAllTerimaWorkstationFeatures();
 }

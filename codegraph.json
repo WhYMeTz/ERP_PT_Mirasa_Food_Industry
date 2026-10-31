@@ -1,0 +1,22 @@
+{
+  "$schema": "https://raw.githubusercontent.com/colbymchenry/codegraph/main/schema.json",
+  "exclude": [
+    "vendor/**",
+    "node_modules/**",
+    "storage/**",
+    "public/build/**",
+    "public/vendor/**",
+    "public/images/**",
+    "scratch/**",
+    "*.log"
+  ],
+  "include": [
+    "app/**",
+    "routes/**",
+    "config/**",
+    "database/**",
+    "resources/**",
+    "public/js/**",
+    "public/css/**"
+  ]
+}

@@ -134,7 +134,7 @@ class TerimaBarangService
                 throw new Exception("Minimal harus ada 1 item barang yang diterima.");
             }
 
-            $terimaNo = !empty($data['terima_no']) ? trim($data['terima_no']) : $this->codeGenerator->generateTerimaNo();
+            $terimaNo = !empty($data['terima_no']) ? trim($data['terima_no']) : $this->codeGenerator->generateTerimaNo($data['terima_tgl'] ?? null);
             $gudangId = (int) $data['gudang_id'];
             $supplierId = (int) $data['supplier_id'];
             $poId = !empty($data['po_id']) ? (int) $data['po_id'] : null;

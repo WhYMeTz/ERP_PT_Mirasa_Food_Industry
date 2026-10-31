@@ -475,12 +475,49 @@ class CodeGeneratorService
     }
 
     /**
-     * Generate Nomor Penerimaan Barang (Good Receipt) (format: GR-YYYYMM-0001)
+     * Generate Nomor Penerimaan Barang Resmi (Goods Receipt Note) (format: {seq}/GRN/MFI/{month}/{year})
+     * Contoh: 001/GRN/MFI/10/26
      */
-    public function generateTerimaNo(): string
+    public function generateTerimaNo(?string $date = null, ?int $excludeTerimaId = null): string
     {
-        $prefix = 'GR-' . date('Ym') . '-';
-        return $this->generate('dat_terima_hdr', 'terima_no', $prefix, 4);
+        $timestamp = strtotime($date ?? date('Y-m-d'));
+        $month = date('m', $timestamp);
+        $year = date('y', $timestamp);
+        $suffix = "/GRN/MFI/{$month}/{$year}";
+
+        // Cari nomor GRN yang berakhiran format resmi pada bulan & tahun ini
+        $query = DB::table('dat_terima_hdr')
+            ->where('terima_no', 'LIKE', '%' . $suffix);
+
+        if ($excludeTerimaId) {
+            $query->where('terima_id', '!=', $excludeTerimaId);
+        }
+
+        $existing = $query->pluck('terima_no');
+
+        $maxNumber = 0;
+        $regex = '/^(\d+)\/GRN\/MFI\/' . $month . '\/' . $year . '$/i';
+
+        foreach ($existing as $terimaNo) {
+            if (preg_match($regex, trim((string) $terimaNo), $matches)) {
+                $num = (int) $matches[1];
+                if ($num > $maxNumber) {
+                    $maxNumber = $num;
+                }
+            }
+        }
+
+        do {
+            $maxNumber++;
+            $generated = str_pad((string) $maxNumber, 3, '0', STR_PAD_LEFT) . $suffix;
+            $checkQuery = DB::table('dat_terima_hdr')->where('terima_no', $generated);
+            if ($excludeTerimaId) {
+                $checkQuery->where('terima_id', '!=', $excludeTerimaId);
+            }
+            $exists = $checkQuery->exists();
+        } while ($exists);
+
+        return $generated;
     }
 
     /**
@@ -675,13 +712,41 @@ class CodeGeneratorService
     }
 
     /**
-     * Generate Nomor Dokumen Inspeksi QC Masuk (format: QC-YYYYMMDD-0001)
+     * Generate Nomor Dokumen Inspeksi QC Masuk (format: 001/QC/MFI/MM/YY)
+     * Contoh: 001/QC/MFI/10/26
+     * Reset nomor urut ke 001 setiap awal bulan baru secara otomatis.
      */
-    public function generateQcNo(?string $date = null): string
+    public function generateQcNo(?string $date = null, ?int $excludeQcId = null): string
     {
-        $dateFormatted = date('Ymd', strtotime($date ?? date('Y-m-d')));
-        $prefix = 'QC-' . $dateFormatted . '-';
-        return $this->generate('dat_qc_inbound_hdr', 'qc_no', $prefix, 4);
+        $timestamp = strtotime($date ?? date('Y-m-d'));
+        $month = date('m', $timestamp);
+        $year = date('y', $timestamp);
+        $suffix = "/QC/MFI/{$month}/{$year}";
+
+        // Cari nomor QC yang berakhiran format resmi pada bulan & tahun ini
+        $query = DB::table('dat_qc_inbound_hdr')
+            ->where('qc_no', 'LIKE', '%' . $suffix);
+
+        if ($excludeQcId) {
+            $query->where('qc_id', '!=', $excludeQcId);
+        }
+
+        $existing = $query->pluck('qc_no');
+
+        $maxNumber = 0;
+        $regex = '/^(\d+)\/QC\/MFI\/' . $month . '\/' . $year . '$/i';
+
+        foreach ($existing as $qcNo) {
+            if (preg_match($regex, trim((string) $qcNo), $matches)) {
+                $num = (int) $matches[1];
+                if ($num > $maxNumber) {
+                    $maxNumber = $num;
+                }
+            }
+        }
+
+        $nextNumber = $maxNumber + 1;
+        return sprintf('%03d', $nextNumber) . $suffix;
     }
 
     /**

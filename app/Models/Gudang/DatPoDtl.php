@@ -78,6 +78,14 @@ class DatPoDtl extends Model
     }
 
     /**
+     * Alias relasi ke Header PO
+     */
+    public function po(): BelongsTo
+    {
+        return $this->belongsTo(DatPoHdr::class, 'po_id', 'po_id');
+    }
+
+    /**
      * Relasi ke Master Barang
      */
     public function barang(): BelongsTo

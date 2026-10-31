@@ -165,8 +165,9 @@ class HutangService
 
         $query = DatTerimaHdr::with([
             'supplier',
+            'po',
             'details.barang.satuanDasar',
-            'details.poDetail'
+            'details.poDetail.po'
         ])
             ->where('deleted_st', false)
             ->where('status_cd', 'COMPLETED')
@@ -193,26 +194,63 @@ class HutangService
             }
             $grnArr['potongan_global'] = max(0, (float)($grn->potongan_nominal ?? 0) - $totalItemPotongan);
 
+            $totalNettoKg = 0;
+
             if (!empty($grnArr['details'])) {
                 foreach ($grnArr['details'] as $idx => $dtl) {
                     $terimaQty = (float)($dtl['terima_qty'] ?? 0);
                     $rejectQty = (float)($dtl['reject_qty'] ?? 0);
                     $nettoQty = max(0, $terimaQty - $rejectQty);
 
-                    $harga = (float)($dtl['harga_nominal'] ?? 0);
-                    if ($harga <= 0 && !empty($dtl['po_detail']['harga_nominal'])) {
-                        $harga = (float)$dtl['po_detail']['harga_nominal'];
-                    }
-                    if ($harga <= 0 && !empty($dtl['barang']['harga_beli_standar'])) {
+                    // PO Details inheritance (harga, diskon, ppn_tipe dari PO wajib mewarisi jika barang dari PO)
+                    $poDtl = $dtl['po_detail'] ?? null;
+
+                    // 1. Harga Satuan (Utamakan kesepakatan komersial PO jika ada)
+                    $harga = 0;
+                    if (!empty($poDtl['harga_nominal']) && (float)$poDtl['harga_nominal'] > 0) {
+                        $harga = (float)$poDtl['harga_nominal'];
+                    } elseif (!empty($dtl['harga_nominal']) && (float)$dtl['harga_nominal'] > 0) {
+                        $harga = (float)$dtl['harga_nominal'];
+                    } elseif (!empty($dtl['barang']['harga_beli_standar'])) {
                         $harga = (float)$dtl['barang']['harga_beli_standar'];
                     }
 
-                    $subtotal = round($nettoQty * $harga, 2);
+                    // 2. Diskon Komersial (Utamakan dari PO jika ada, atau dari GRN)
+                    $diskonPersen = 0;
+                    $diskonNominalUnit = 0;
+                    if (!empty($poDtl['diskon_persen']) && (float)$poDtl['diskon_persen'] > 0) {
+                        $diskonPersen = (float)$poDtl['diskon_persen'];
+                    } elseif (!empty($dtl['diskon_persen']) && (float)$dtl['diskon_persen'] > 0) {
+                        $diskonPersen = (float)$dtl['diskon_persen'];
+                    }
 
-                    // Hitung diskon murni per-baris dari GRN (persen / nominal)
-                    $diskonPersen = (float)($dtl['diskon_persen'] ?? 0);
-                    $diskonNominalUnit = (float)($dtl['diskon_nominal'] ?? 0);
+                    if (!empty($poDtl['diskon_nominal']) && (float)$poDtl['diskon_nominal'] > 0) {
+                        $diskonNominalUnit = (float)$poDtl['diskon_nominal'];
+                    } elseif (!empty($dtl['diskon_nominal']) && (float)$dtl['diskon_nominal'] > 0) {
+                        $diskonNominalUnit = (float)$dtl['diskon_nominal'];
+                    }
+
+                    // 3. Potongan Mutu / Rafaksi Fisik
                     $potonganItem = (float)($dtl['potongan_nominal'] ?? 0);
+                    if ($potonganItem <= 0 && !empty($poDtl['potongan_nominal'])) {
+                        $potonganItem = (float)$poDtl['potongan_nominal'];
+                    }
+
+                    // 4. Perlakuan Pajak PPN (Utamakan dari PO: normalisasi PPN-11 / PPN_11 / PPN INCLUDE)
+                    $rawPpn = !empty($poDtl['ppn_tipe']) ? $poDtl['ppn_tipe'] : ($dtl['ppn_tipe'] ?? 'NON_PPN');
+                    $isInclude = !empty($poDtl['is_harga_termasuk_pajak']) || !empty($grn->po?->is_harga_termasuk_pajak);
+                    $poPpnNominal = (float)($poDtl['ppn_nominal'] ?? ($grn->po?->ppn_nominal ?? 0));
+
+                    $cleanPpn = strtoupper(trim(str_replace(['-', ' '], '_', (string)$rawPpn)));
+                    if ($isInclude || $cleanPpn === 'PPN_INCLUDE' || $cleanPpn === 'INCLUDE') {
+                        $ppnTipe = 'PPN_INCLUDE';
+                    } elseif ($cleanPpn === 'PPN_11' || $cleanPpn === 'PPN11' || str_contains($cleanPpn, '11') || $poPpnNominal > 0) {
+                        $ppnTipe = 'PPN_11';
+                    } else {
+                        $ppnTipe = 'NON_PPN';
+                    }
+
+                    $subtotal = round($nettoQty * $harga, 2);
 
                     $diskonTotal = 0;
                     if ($diskonPersen > 0) {
@@ -224,13 +262,23 @@ class HutangService
                         }
                     }
 
-                    // Hitung PPN per-baris dari GRN (setelah dikurangi diskon & potongan mutu fisik)
-                    $ppnNominal = (float)($dtl['ppn_nominal'] ?? 0);
-                    $ppnTipe = $dtl['ppn_tipe'] ?? ($ppnNominal > 0 ? 'PPN_11' : 'NON_PPN');
-                    if ($ppnNominal <= 0 && $ppnTipe === 'PPN_11') {
-                        $dpp = max(0, $subtotal - $diskonTotal - $potonganItem);
+                    // Hitung DPP & PPN Nominal akurat
+                    $dpp = max(0, $subtotal - $diskonTotal - $potonganItem);
+                    $ppnNominal = 0;
+                    if ($ppnTipe === 'PPN_11') {
                         $ppnNominal = round($dpp * 0.11, 2);
+                    } elseif ($ppnTipe === 'PPN_INCLUDE') {
+                        $dpp = round(($subtotal - $diskonTotal - $potonganItem) / 1.11, 2);
+                        $ppnNominal = round(($subtotal - $diskonTotal - $potonganItem) - $dpp, 2);
                     }
+
+                    // Catat tonase jika satuan KG
+                    $satuanCd = strtolower($dtl['barang']['satuan_dasar']['satuan_cd'] ?? 'kg');
+                    if ($satuanCd === 'kg' || $satuanCd === 'kilogram') {
+                        $totalNettoKg += $nettoQty;
+                    }
+
+                    $poNo = $poDtl['po']['po_no'] ?? ($grn->po?->po_no ?? null);
 
                     $grnArr['details'][$idx]['netto_qty'] = $nettoQty;
                     $grnArr['details'][$idx]['harga_nominal'] = $harga;
@@ -241,8 +289,10 @@ class HutangService
                     $grnArr['details'][$idx]['potongan_nominal'] = $potonganItem;
                     $grnArr['details'][$idx]['ppn_tipe'] = $ppnTipe;
                     $grnArr['details'][$idx]['ppn_total'] = $ppnNominal;
+                    $grnArr['details'][$idx]['po_no'] = $poNo;
                 }
             }
+            $grnArr['total_netto_kg'] = $totalNettoKg;
             return $grnArr;
         })->toArray();
     }
@@ -338,9 +388,19 @@ class HutangService
 
             $potonganRetur = (float)($payload['total_potongan_retur'] ?? 0);
             $biayaOngkir = (float)($payload['biaya_ongkir'] ?? 0);
+            $tonaseKg = (float)($payload['tonase_kg'] ?? 0);
+            $ongkirTarifPerKg = (float)($payload['ongkir_tarif_per_kg'] ?? 0);
+            $uangMukaNominal = (float)($payload['uang_muka_nominal'] ?? 0);
             
             // Formula Grand Total Tagihan: Akumulasi Seluruh Netto Item - Potongan Retur Global + Biaya Ongkir
             $totalNettoAkhir = max(0, ($totalNetto - $potonganRetur) + $biayaOngkir);
+
+            // Perhitungan pelunasan dengan Uang Muka / Down Payment (DP)
+            $totalDibayar = min($totalNettoAkhir, $uangMukaNominal);
+            $sisaHutang = max(0, $totalNettoAkhir - $totalDibayar);
+            $statusBayar = ($sisaHutang <= 0 && $totalNettoAkhir > 0) 
+                ? 'LUNAS' 
+                : (($totalDibayar > 0) ? 'SEBAGIAN' : 'BELUM_LUNAS');
 
             $hdr = DatHutangHdr::create([
                 'hutang_no'            => $hutangNo,
@@ -356,10 +416,13 @@ class HutangService
                 'total_potongan_retur' => $potonganRetur,
                 'total_ppn'            => $totalPpn,
                 'biaya_ongkir'         => $biayaOngkir,
+                'tonase_kg'            => $tonaseKg,
+                'ongkir_tarif_per_kg'  => $ongkirTarifPerKg,
+                'uang_muka_nominal'    => $uangMukaNominal,
                 'total_tagihan'        => $totalNettoAkhir,
-                'total_dibayar'        => 0,
-                'sisa_hutang'          => $totalNettoAkhir,
-                'status_pembayaran'    => 'BELUM_LUNAS',
+                'total_dibayar'        => $totalDibayar,
+                'sisa_hutang'          => $sisaHutang,
+                'status_pembayaran'    => $statusBayar,
                 'catatan'              => $catatan,
                 'created_by'           => $user->name ?? 'SYSTEM',
                 'updated_by'           => $user->name ?? 'SYSTEM',

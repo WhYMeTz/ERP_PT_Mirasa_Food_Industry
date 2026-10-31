@@ -84,6 +84,15 @@ class HutangController extends Controller
         if (isset($input['biaya_ongkir'])) {
             $input['biaya_ongkir'] = str_replace(',', '.', (string)$input['biaya_ongkir']);
         }
+        if (isset($input['tonase_kg'])) {
+            $input['tonase_kg'] = str_replace(',', '.', (string)$input['tonase_kg']);
+        }
+        if (isset($input['ongkir_tarif_per_kg'])) {
+            $input['ongkir_tarif_per_kg'] = str_replace(',', '.', (string)$input['ongkir_tarif_per_kg']);
+        }
+        if (isset($input['uang_muka_nominal'])) {
+            $input['uang_muka_nominal'] = str_replace(',', '.', (string)$input['uang_muka_nominal']);
+        }
         if (isset($input['total_potongan_retur'])) {
             $input['total_potongan_retur'] = str_replace(',', '.', (string)$input['total_potongan_retur']);
         }
@@ -116,6 +125,9 @@ class HutangController extends Controller
             'tgl_tagihan'          => 'required|date',
             'tgl_jatuh_tempo'      => 'required|date|after_or_equal:tgl_tagihan',
             'biaya_ongkir'         => 'nullable|numeric|min:0',
+            'tonase_kg'            => 'nullable|numeric|min:0',
+            'ongkir_tarif_per_kg'  => 'nullable|numeric|min:0',
+            'uang_muka_nominal'    => 'nullable|numeric|min:0',
             'total_potongan_retur' => 'nullable|numeric|min:0',
             'items'                => 'required|array|min:1',
             'items.*.barang_id'    => 'nullable|exists:mst_barang,barang_id',

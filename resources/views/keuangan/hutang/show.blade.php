@@ -387,18 +387,32 @@
 
             @if ($hutang->biaya_ongkir > 0)
                 <div style="display: flex; justify-content: space-between; padding: 0.45rem 0; font-size: 0.825rem; color: #7e22ce; border-bottom: 1px dashed #f1f5f9;">
-                    <span>+ Beban Angkut (Ongkir)</span>
+                    <div>
+                        <span>+ Beban Angkut (Akun 6112)</span>
+                        @if ($hutang->tonase_kg > 0 && $hutang->ongkir_tarif_per_kg > 0)
+                            <div style="font-size: 0.7rem; color: #a855f7;">
+                                {{ number_format($hutang->tonase_kg, 2, ',', '.') }} KG &times; Rp {{ number_format($hutang->ongkir_tarif_per_kg, 0, ',', '.') }}/KG
+                            </div>
+                        @endif
+                    </div>
                     <strong>+ Rp {{ number_format($hutang->biaya_ongkir, 0, ',', '.') }}</strong>
                 </div>
             @endif
 
             <div style="display: flex; justify-content: space-between; padding: 0.55rem 0; font-size: 0.9rem; font-weight: 800; color: #0f172a; border-bottom: 2px solid #e2e8f0;">
-                <span>Total Tagihan Netto</span>
+                <span>Total Tagihan (Faktur)</span>
                 <span>Rp {{ number_format($hutang->total_tagihan, 0, ',', '.') }}</span>
             </div>
 
+            @if ($hutang->uang_muka_nominal > 0)
+                <div style="display: flex; justify-content: space-between; padding: 0.45rem 0; font-size: 0.85rem; color: #15803d; font-weight: 700; border-bottom: 1px dashed #f1f5f9;">
+                    <span>- Uang Muka / DP Dibayar</span>
+                    <span>- Rp {{ number_format($hutang->uang_muka_nominal, 0, ',', '.') }}</span>
+                </div>
+            @endif
+
             <div style="display: flex; justify-content: space-between; padding: 0.45rem 0; font-size: 0.85rem; color: #16a34a; font-weight: 700; border-bottom: 1px dashed #f1f5f9;">
-                <span>Sudah Dibayar</span>
+                <span>Total Terbayar</span>
                 <span>Rp {{ number_format($hutang->total_dibayar, 0, ',', '.') }}</span>
             </div>
 

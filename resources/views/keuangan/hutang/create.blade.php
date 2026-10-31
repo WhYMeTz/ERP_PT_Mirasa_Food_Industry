@@ -352,7 +352,149 @@
                 </div>
             </div>
 
-            {{-- KARTU 4: CATATAN TAMBAHAN --}}
+            {{-- KARTU 4: ONGKOS BONGKAR / ANGKUT (TONASE X TARIF) & UANG MUKA (DP) --}}
+            <div class="card" style="padding: 1.25rem; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; margin-bottom: 1.25rem;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.25rem;">
+                    {{-- BAGIAN A: ONGKOS ANGKUT / BONGKAR MUAT --}}
+                    <div style="background: #faf5ff; border: 1.5px solid #e9d5ff; border-radius: 8px; padding: 1rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.65rem;">
+                            <div style="display: flex; align-items: center; gap: 0.4rem;">
+                                <span style="font-size: 1.1rem;">🚚</span>
+                                <strong style="font-size: 0.875rem; color: #581c87;">Ongkos Kirim / Upah Bongkar Muat</strong>
+                            </div>
+                            <span style="font-size: 0.7rem; background: #f3e8ff; color: #7e22ce; padding: 2px 7px; border-radius: 4px; font-weight: 800; border: 1px solid #d8b4fe;">
+                                Akun 6112 Beban Angkut
+                            </span>
+                        </div>
+                        <div style="font-size: 0.75rem; color: #6b21a8; margin-bottom: 0.85rem; line-height: 1.4;">
+                            Hitung otomatis dari tonase barang yang diturunkan atau masukkan nominal borongan:
+                        </div>
+
+                        {{-- PILIHAN MODE KALKULASI --}}
+                        <div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem;">
+                            <label style="display: flex; align-items: center; gap: 4px; font-size: 0.75rem; font-weight: 700; color: #581c87; cursor: pointer; background: #ffffff; padding: 4px 8px; border-radius: 6px; border: 1px solid #d8b4fe;">
+                                <input type="radio" name="ongkir_mode" id="ongkirModeTonase" value="tonase" checked onchange="toggleOngkirMode('tonase')">
+                                <span>Hitung Tonase (KG) &times; Tarif</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 4px; font-size: 0.75rem; font-weight: 700; color: #581c87; cursor: pointer; background: #ffffff; padding: 4px 8px; border-radius: 6px; border: 1px solid #d8b4fe;">
+                                <input type="radio" name="ongkir_mode" id="ongkirModeManual" value="manual" onchange="toggleOngkirMode('manual')">
+                                <span>Nominal Tetap / Flat</span>
+                            </label>
+                        </div>
+
+                        {{-- MODE 1: TONASE X TARIF --}}
+                        <div id="ongkirTonaseBox" style="display: block;">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.65rem;">
+                                <div>
+                                    <label style="display: block; font-size: 0.725rem; font-weight: 700; color: #6b21a8; margin-bottom: 0.25rem;">
+                                        Total Tonase Netto (KG)
+                                    </label>
+                                    <div style="position: relative;">
+                                        <input type="number" 
+                                               step="0.01" 
+                                               min="0" 
+                                               name="tonase_kg" 
+                                               id="tonaseKgInput" 
+                                               value="{{ old('tonase_kg', 0) }}" 
+                                               class="form-control" 
+                                               style="font-size: 0.825rem; height: 34px; padding-right: 2.25rem; font-weight: 700; color: #581c87; text-align: right;" 
+                                               placeholder="0"
+                                               oninput="calculateOngkirFromTonase()">
+                                        <span style="position: absolute; right: 8px; top: 8px; font-size: 0.725rem; color: #7e22ce; font-weight: 700; pointer-events: none;">KG</span>
+                                    </div>
+                                    <small style="font-size: 0.68rem; color: #7e22ce; display: block; margin-top: 2px;">
+                                        Akumulasi fisik lolos QC
+                                    </small>
+                                </div>
+
+                                <div>
+                                    <label style="display: block; font-size: 0.725rem; font-weight: 700; color: #6b21a8; margin-bottom: 0.25rem;">
+                                        Tarif Upah / KG (Rp)
+                                    </label>
+                                    <div style="position: relative;">
+                                        <input type="number" 
+                                               step="any" 
+                                               min="0" 
+                                               name="ongkir_tarif_per_kg" 
+                                               id="ongkirTarifPerKgInput" 
+                                               value="{{ old('ongkir_tarif_per_kg', 0) }}" 
+                                               class="form-control" 
+                                               style="font-size: 0.825rem; height: 34px; padding-right: 2.75rem; font-weight: 700; color: #581c87; text-align: right;" 
+                                               placeholder="150"
+                                               oninput="calculateOngkirFromTonase()">
+                                        <span style="position: absolute; right: 8px; top: 8px; font-size: 0.7rem; color: #7e22ce; font-weight: 700; pointer-events: none;">/ KG</span>
+                                    </div>
+                                    <small style="font-size: 0.68rem; color: #7e22ce; display: block; margin-top: 2px;">
+                                        Contoh: Rp 150 atau Rp 200
+                                    </small>
+                                </div>
+                            </div>
+
+                            {{-- PREVIEW RUMUS DINAMIS --}}
+                            <div style="background: #ffffff; border: 1px dashed #d8b4fe; border-radius: 6px; padding: 0.5rem 0.75rem; display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem;">
+                                <span style="color: #6b21a8; font-weight: 600;">Rumus Kalkulasi:</span>
+                                <span id="ongkirFormulaText" style="font-weight: 800; color: #581c87;">
+                                    0 KG &times; Rp 0 = Rp 0
+                                </span>
+                            </div>
+                        </div>
+
+                        {{-- INPUT NOMINAL ONGKIR (AKTIF BISA DIEDIT KEDUA MODE) --}}
+                        <div style="margin-top: 0.65rem;">
+                            <label style="display: block; font-size: 0.725rem; font-weight: 700; color: #6b21a8; margin-bottom: 0.25rem;">
+                                Total Biaya Ongkos Angkut yang Ditagihkan (Rp)
+                            </label>
+                            <input type="number" 
+                                   step="any" 
+                                   min="0" 
+                                   name="biaya_ongkir" 
+                                   id="biayaOngkirInput" 
+                                   value="{{ old('biaya_ongkir', 0) }}" 
+                                   class="form-control" 
+                                   style="font-size: 0.875rem; height: 34px; text-align: right; font-weight: 800; color: #6b21a8; background: #ffffff;" 
+                                   placeholder="0">
+                        </div>
+                    </div>
+
+                    {{-- BAGIAN B: UANG MUKA / DOWN PAYMENT (DP) --}}
+                    <div style="background: #f0fdf4; border: 1.5px solid #bbf7d0; border-radius: 8px; padding: 1rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.65rem;">
+                            <div style="display: flex; align-items: center; gap: 0.4rem;">
+                                <span style="font-size: 1.1rem;">💳</span>
+                                <strong style="font-size: 0.875rem; color: #14532d;">Uang Muka / DP yang Sudah Dibayar</strong>
+                            </div>
+                            <span style="font-size: 0.7rem; background: #dcfce7; color: #15803d; padding: 2px 7px; border-radius: 4px; font-weight: 800; border: 1px solid #86efac;">
+                                Potong Hutang (2100)
+                            </span>
+                        </div>
+                        <div style="font-size: 0.75rem; color: #166534; margin-bottom: 0.85rem; line-height: 1.4;">
+                            Jika pembelian ini sebelumnya telah dibayar uang muka (DP), masukkan nominal di bawah untuk langsung mengurangi sisa hutang:
+                        </div>
+
+                        <div style="margin-bottom: 0.75rem;">
+                            <label style="display: block; font-size: 0.725rem; font-weight: 700; color: #14532d; margin-bottom: 0.25rem;">
+                                Nominal Uang Muka / DP Terbayar (Rp)
+                            </label>
+                            <input type="number" 
+                                   step="any" 
+                                   min="0" 
+                                   name="uang_muka_nominal" 
+                                   id="uangMukaNominalInput" 
+                                   value="{{ old('uang_muka_nominal', 0) }}" 
+                                   class="form-control" 
+                                   style="font-size: 0.875rem; height: 34px; text-align: right; font-weight: 800; color: #15803d; background: #ffffff;" 
+                                   placeholder="0"
+                                   oninput="recalculateTotals()">
+                        </div>
+
+                        <div style="background: #ffffff; border: 1px solid #bbf7d0; border-radius: 6px; padding: 0.5rem 0.75rem; font-size: 0.72rem; color: #166534; line-height: 1.4;">
+                            💡 <strong>Informasi Jurnal:</strong> Pengeluaran kas DP dicatat saat kas keluar (Debet: <code>2100 Hutang Usaha</code>, Kredit: <code>1103 Bank BCA</code>). Tidak memerlukan COA baru sehingga tidak perlu izin perubahan bagan akun.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- KARTU 5: CATATAN TAMBAHAN --}}
             <div class="card" style="padding: 1rem 1.25rem; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px;">
                 <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">
                     Catatan / Keterangan Tagihan
@@ -410,33 +552,35 @@
                     </div>
                 </div>
 
-                <div style="padding: 0.75rem 0; border-bottom: 1px dashed #e2e8f0; background: #faf5ff; margin: 0 -0.5rem; padding: 0.75rem 0.5rem; border-radius: 6px;">
-                    <label style="display: block; font-size: 0.75rem; font-weight: 700; color: #6b21a8; margin-bottom: 0.25rem; display: flex; align-items: center; justify-content: space-between;">
-                        <span>🚚 Biaya Ongkos Angkut / Ekspedisi (Rp)</span>
-                        <span style="font-size: 0.68rem; background: #f3e8ff; color: #7e22ce; padding: 1px 6px; border-radius: 4px; font-weight: 800;">Akun 6112</span>
-                    </label>
-                    <input type="number" 
-                           step="any" 
-                           min="0" 
-                           name="biaya_ongkir" 
-                           id="biayaOngkirInput" 
-                           value="0" 
-                           class="form-control" 
-                           style="font-size: 0.85rem; height: 34px; text-align: right; font-weight: 700; color: #7e22ce;" 
-                           placeholder="0">
-                    <div style="font-size: 0.68rem; color: #7e22ce; margin-top: 3px;">
-                        Biaya angkutan / sewa truk logistik yang ditagihkan pemasok.
-                    </div>
-                </div>
-
-                <div class="summary-row" id="rowSummaryOngkir" style="display: none; color: #7e22ce;">
-                    <span>+ Ongkos Angkut</span>
+                <div class="summary-row" id="rowSummaryOngkir" style="display: none; color: #7e22ce; padding: 0.5rem 0; border-bottom: 1px dashed #e9d5ff;">
+                    <span>+ Ongkos Angkut (6112)</span>
                     <strong id="summaryBiayaOngkir" style="color: #7e22ce;">Rp 0</strong>
                 </div>
 
-                <div class="summary-row total-row">
-                    <span>Total Tagihan Netto</span>
+                <div class="summary-row total-row" style="margin-top: 0.5rem;">
+                    <span>Total Tagihan (Faktur)</span>
                     <strong id="summaryGrandTotal" style="color: #0284c7;">Rp 0</strong>
+                </div>
+
+                {{-- POTONGAN UANG MUKA / DP --}}
+                <div class="summary-row" id="rowSummaryUangMuka" style="display: none; color: #15803d; padding: 0.45rem 0; border-bottom: 1px dashed #bbf7d0;">
+                    <span>- Uang Muka / DP Dibayar</span>
+                    <strong id="summaryUangMukaNominal" style="color: #15803d;">Rp 0</strong>
+                </div>
+
+                {{-- SISA HUTANG YANG HARUS DIBAYAR --}}
+                <div id="boxSummarySisaHutang" style="margin-top: 0.75rem; padding: 0.75rem 0.85rem; background: #fef2f2; border-radius: 8px; border: 1.5px solid #fecaca; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <div style="font-size: 0.725rem; font-weight: 800; color: #991b1b; text-transform: uppercase;">
+                            Sisa Hutang Wajib Bayar
+                        </div>
+                        <div style="font-size: 0.68rem; color: #b91c1c;">
+                            Setelah dikurangi DP terbayar
+                        </div>
+                    </div>
+                    <strong id="summarySisaHutang" style="font-size: 1.15rem; font-weight: 900; color: #dc2626;">
+                        Rp 0
+                    </strong>
                 </div>
 
                 <div style="margin-top: 1.25rem;">

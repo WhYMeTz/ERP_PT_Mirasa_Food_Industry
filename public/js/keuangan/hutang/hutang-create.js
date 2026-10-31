@@ -116,6 +116,25 @@ document.addEventListener('DOMContentLoaded', function () {
             recalculateTotals();
         });
     }
+
+    const tonaseEl = document.getElementById('tonaseKgInput');
+    if (tonaseEl) {
+        tonaseEl.addEventListener('input', function () {
+            this.dataset.manualEdited = 'true';
+            calculateOngkirFromTonase();
+        });
+    }
+
+    const tarifOngkirEl = document.getElementById('ongkirTarifPerKgInput');
+    if (tarifOngkirEl) {
+        tarifOngkirEl.addEventListener('input', calculateOngkirFromTonase);
+    }
+
+    const dpEl = document.getElementById('uangMukaNominalInput');
+    if (dpEl) {
+        dpEl.addEventListener('input', recalculateTotals);
+    }
+
     document.getElementById('biayaOngkirInput')?.addEventListener('input', recalculateTotals);
     document.getElementById('biayaOngkirInput')?.addEventListener('change', recalculateTotals);
 
@@ -754,12 +773,18 @@ function rebuildItemsTable() {
                 </td>
             </tr>
         `;
+        const tonaseInput = document.getElementById('tonaseKgInput');
+        if (tonaseInput && !tonaseInput.dataset.manualEdited) {
+            tonaseInput.value = 0;
+        }
+        calculateOngkirFromTonase();
         recalculateTotals();
         return;
     }
 
     let html = '';
     let rowIndex = 0;
+    let totalNettoKg = 0;
 
     unbilledGrnData.forEach(grn => {
         if (!selectedGrnIds.has(grn.terima_id)) return;
@@ -774,6 +799,12 @@ function rebuildItemsTable() {
             const qty = (typeof dtl.netto_qty !== 'undefined') 
                 ? parseFloat(dtl.netto_qty) 
                 : Math.max(0, parseFloat(dtl.terima_qty || 0) - parseFloat(dtl.reject_qty || 0));
+
+            // Akumulasi tonase jika satuan KG
+            const satLower = String(satuan).toLowerCase().trim();
+            if (satLower === 'kg' || satLower === 'kilogram') {
+                totalNettoKg += qty;
+            }
 
             const harga = parseFloat(
                 dtl.harga_satuan || 
@@ -794,6 +825,15 @@ function rebuildItemsTable() {
 
             // PPN per-item: 'NON_PPN' | 'PPN_11' | 'PPN_INCLUDE'
             let ppnTipe = dtl.ppn_tipe || (dtl.ppn_total > 0 || dtl.ppn_nominal > 0 ? 'PPN_11' : 'NON_PPN');
+            const cleanPpn = String(ppnTipe).toUpperCase().replace(/[- ]/g, '_');
+            if (cleanPpn.includes('INC')) {
+                ppnTipe = 'PPN_INCLUDE';
+            } else if (cleanPpn.includes('11') || (typeof dtl.ppn_total !== 'undefined' && parseFloat(dtl.ppn_total) > 0)) {
+                ppnTipe = 'PPN_11';
+            } else {
+                ppnTipe = 'NON_PPN';
+            }
+
             let ppn = (typeof dtl.ppn_total !== 'undefined')
                 ? parseFloat(dtl.ppn_total)
                 : parseFloat(dtl.ppn_nominal || 0);
@@ -825,14 +865,19 @@ function rebuildItemsTable() {
                 netto = nilaiBersih;
             }
 
+            const poBadgeHtml = dtl.po_no 
+                ? `<span style="background: #e0f2fe; color: #0369a1; font-size: 0.68rem; font-weight: 700; padding: 1px 6px; border-radius: 4px; border: 1px solid #bae6fd; margin-right: 4px;">PO: ${dtl.po_no}</span>`
+                : '';
+
             html += `
                 <tr class="item-calc-row" data-index="${rowIndex}" style="border-bottom: 1px solid #f1f5f9;">
                     <td style="padding: 0.65rem 0.75rem;">
                         <input type="hidden" name="items[${rowIndex}][terima_id]" value="${grn.terima_id}">
                         <input type="hidden" name="items[${rowIndex}][terima_dtl_id]" value="${dtl.terimadtl_id || ''}">
                         <input type="hidden" name="items[${rowIndex}][barang_id]" value="${dtl.barang_id || ''}">
-                        <div style="font-weight: 700; color: #0f172a; font-size: 0.8125rem;">
-                            ${barangNm}
+                        <div style="font-weight: 700; color: #0f172a; font-size: 0.8125rem; display: flex; align-items: center; flex-wrap: wrap; gap: 4px;">
+                            ${poBadgeHtml}
+                            <span>${barangNm}</span>
                         </div>
                         <input type="text" 
                                name="items[${rowIndex}][deskripsi]" 
@@ -947,8 +992,52 @@ function rebuildItemsTable() {
         returInput.value = Math.round(autoPotonganGlobal);
     }
 
+    // Auto-update akumulasi Tonase KG yang diturunkan
+    const tonaseInput = document.getElementById('tonaseKgInput');
+    if (tonaseInput && !tonaseInput.dataset.manualEdited) {
+        tonaseInput.value = totalNettoKg > 0 ? parseFloat(totalNettoKg.toFixed(2)) : 0;
+    }
+
+    calculateOngkirFromTonase();
     recalculateTotals();
 }
+
+/**
+ * Toggle Mode Ongkir (Hitung dari Tonase vs Input Manual Flat)
+ */
+window.toggleOngkirMode = function (mode) {
+    const tonaseBox = document.getElementById('ongkirTonaseBox');
+    if (tonaseBox) {
+        tonaseBox.style.display = (mode === 'tonase') ? 'block' : 'none';
+    }
+    if (mode === 'tonase') {
+        calculateOngkirFromTonase();
+    }
+};
+
+/**
+ * Kalkulasi Biaya Ongkos Angkut / Bongkar Muat dari Tonase (KG Netto) x Tarif per KG
+ */
+window.calculateOngkirFromTonase = function () {
+    const tonase = parseDecimal(document.getElementById('tonaseKgInput')?.value);
+    const tarif = parseDecimal(document.getElementById('ongkirTarifPerKgInput')?.value);
+    const totalOngkir = Math.round(tonase * tarif);
+
+    const isTonaseMode = document.getElementById('ongkirModeTonase')?.checked ?? true;
+    if (isTonaseMode) {
+        const ongkirInput = document.getElementById('biayaOngkirInput');
+        if (ongkirInput) {
+            ongkirInput.value = totalOngkir > 0 ? totalOngkir : 0;
+        }
+    }
+
+    const formulaEl = document.getElementById('ongkirFormulaText');
+    if (formulaEl) {
+        formulaEl.innerHTML = `${tonase.toLocaleString('id-ID')} KG &times; Rp ${tarif.toLocaleString('id-ID')} = <strong>Rp ${totalOngkir.toLocaleString('id-ID')}</strong>`;
+    }
+
+    recalculateTotals();
+};
 
 /**
  * Hitung seluruh nilai akumulasi tagihan secara otomatis
@@ -996,6 +1085,9 @@ function recalculateTotals() {
     const biayaOngkir = parseFloat(document.getElementById('biayaOngkirInput')?.value || 0);
     const grandTotal = Math.max(0, (totalNetto - potonganRetur) + biayaOngkir);
 
+    const uangMuka = parseFloat(document.getElementById('uangMukaNominalInput')?.value || 0);
+    const sisaHutang = Math.max(0, grandTotal - uangMuka);
+
     // Update elemen sticky panel ringkasan
     const elBruto = document.getElementById('summaryTotalBruto');
     const elDiskon = document.getElementById('summaryTotalDiskon');
@@ -1006,6 +1098,9 @@ function recalculateTotals() {
     const rowOngkir = document.getElementById('rowSummaryOngkir');
     const elOngkir = document.getElementById('summaryBiayaOngkir');
     const elGrand = document.getElementById('summaryGrandTotal');
+    const rowUangMuka = document.getElementById('rowSummaryUangMuka');
+    const elUangMuka = document.getElementById('summaryUangMukaNominal');
+    const elSisaHutang = document.getElementById('summarySisaHutang');
 
     if (elBruto) elBruto.textContent = 'Rp ' + Math.round(totalBruto).toLocaleString('id-ID');
     if (elDiskon) elDiskon.textContent = totalDiskon > 0 ? '- Rp ' + Math.round(totalDiskon).toLocaleString('id-ID') : 'Rp 0';
@@ -1032,4 +1127,17 @@ function recalculateTotals() {
     }
 
     if (elGrand) elGrand.textContent = 'Rp ' + Math.round(grandTotal).toLocaleString('id-ID');
+
+    if (rowUangMuka && elUangMuka) {
+        if (uangMuka > 0) {
+            rowUangMuka.style.display = 'flex';
+            elUangMuka.textContent = '- Rp ' + Math.round(uangMuka).toLocaleString('id-ID');
+        } else {
+            rowUangMuka.style.display = 'none';
+        }
+    }
+
+    if (elSisaHutang) {
+        elSisaHutang.textContent = 'Rp ' + Math.round(sisaHutang).toLocaleString('id-ID');
+    }
 }

@@ -665,12 +665,20 @@
     text-transform: uppercase;
 }
 
-/* --- Form Grid & Balanced Alignments (Sejajar Sempurna di Segala Ukuran Layar) --- */
+/* --- Form Grid & Balanced Alignments (Satu Baris Penuh di Mobile Seperti Singkong) --- */
 .qc-grid-2col {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.65rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
     align-items: stretch;
+}
+
+@media (min-width: 769px) {
+    .qc-grid-2col {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.85rem;
+    }
 }
 
 .qc-grid-2col > div,
@@ -679,6 +687,7 @@
     flex-direction: column;
     justify-content: flex-end;
     margin-bottom: 0;
+    width: 100%;
 }
 
 .qc-field-header {

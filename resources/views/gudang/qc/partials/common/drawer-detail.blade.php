@@ -1,59 +1,49 @@
 {{-- 
     Partial: Expandable Sub-Row Drawer Rincian QC & Audit Trail 
-    File: resources/views/gudang/qc/partials/drawer-detail.blade.php
+    File: resources/views/gudang/qc/partials/common/drawer-detail.blade.php
 --}}
 <tr id="drawer-{{ $qc->qc_id }}" class="qc-drawer-row" style="display: none;">
     <td colspan="10" class="qc-drawer-cell">
         <div class="qc-drawer-box">
-            {{-- 1. HEADER DOSSIER & METADATA AUDIT --}}
+            {{-- 1. HEADER DOSSIER & METADATA AUDIT (CLEAN & ELEGANT) --}}
             <div class="qc-drawer-header">
                 <div>
-                    <div style="font-weight: 800; font-size: 0.95rem; color: #0f172a; display: flex; align-items: center; gap: 0.5rem;">
-                        <span>📋 Dossier Teknis &amp; Audit QC Kedatangan</span>
-                        <span style="font-size: 0.8rem; background: #e0f2fe; color: #0369a1; padding: 2px 8px; border-radius: 6px; font-family: monospace;">
+                    <div style="font-weight: 800; font-size: 0.95rem; color: #0f172a; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                        <span>📋 Dossier QC: <strong>#{{ $qc->qc_no }}</strong></span>
+                        <span style="font-size: 0.775rem; background: #0f172a; color: #ffffff; padding: 2px 8px; border-radius: 5px; font-weight: 700; letter-spacing: 0.02em;">
                             🚛 {{ $qc->plat_nomor_truk ?: 'Tanpa Plat' }}
                         </span>
                         @if ($qc->po)
-                            <a href="{{ route('gudang.po.show', $qc->po->po_id) }}" style="font-size: 0.75rem; background: #f1f5f9; color: #0284c7; padding: 2px 8px; border-radius: 6px; font-weight: 700; text-decoration: none;">
+                            <a href="{{ route('gudang.po.show', $qc->po->po_id) }}" style="font-size: 0.75rem; background: #f0f9ff; color: #0284c7; border: 1px solid #bae6fd; padding: 2px 8px; border-radius: 5px; font-weight: 700; text-decoration: none;">
                                 PO: #{{ $qc->po->po_no }}
                             </a>
                         @endif
                     </div>
-                    <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.25rem;">
-                        Supplier: <strong style="color: #1e293b;">{{ $qc->supplier?->supplier_nm ?: '-' }}</strong> &bull;
-                        Surat Jalan: <strong style="color: #1e293b;">{{ $qc->surat_jalan_supplier ?: '-' }}</strong> &bull;
-                        Muatan SJ: <strong style="color: #047857;">{{ number_format((float)$qc->jumlah_surat_jalan, 0, ',', '.') }} kg</strong>
+                    <div style="font-size: 0.775rem; color: #64748b; margin-top: 0.3rem;">
+                        Supplier: <strong style="color: #0f172a;">{{ $qc->supplier?->supplier_nm ?: '-' }}</strong> &bull;
+                        Surat Jalan: <strong style="color: #0f172a;">{{ $qc->surat_jalan_supplier ?: ($qc->nomor_do ?: '-') }}</strong> &bull;
+                        Muatan SJ: <strong style="color: #059669;">{{ number_format((float)$qc->jumlah_surat_jalan, 0, ',', '.') }} kg</strong>
                     </div>
                 </div>
 
-                {{-- Audit Chips --}}
-                <div class="qc-drawer-chips">
-                    <span class="qc-chip" title="Petugas yang melakukan sampling">
-                        👤 QC: <strong>{{ $qc->petugas_qc_nama ?: '-' }}</strong>
-                    </span>
+                {{-- Metadata Audit Rapi & Ringkas --}}
+                <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; font-size: 0.75rem; color: #475569;">
+                    <div style="background: #ffffff; border: 1px solid #cbd5e1; padding: 3px 8px; border-radius: 6px;">
+                        QC: <strong style="color: #0f172a;">{{ $qc->petugas_qc_nama ?: '-' }}</strong>
+                    </div>
                     @if($qc->qc_supervisor_nama)
-                        <span class="qc-chip" title="Supervisor yang memverifikasi">
-                            👔 Spv: <strong>{{ $qc->qc_supervisor_nama }}</strong>
-                        </span>
+                        <div style="background: #ffffff; border: 1px solid #cbd5e1; padding: 3px 8px; border-radius: 6px;">
+                            Spv: <strong style="color: #0f172a;">{{ $qc->qc_supervisor_nama }}</strong>
+                        </div>
                     @endif
                     @if($qc->sopir_nama)
-                        <span class="qc-chip" title="Nama Pengemudi Armada">
-                            🚚 Sopir: <strong>{{ $qc->sopir_nama }}</strong>
-                        </span>
+                        <div style="background: #ffffff; border: 1px solid #cbd5e1; padding: 3px 8px; border-radius: 6px;">
+                            Sopir: <strong style="color: #0f172a;">{{ $qc->sopir_nama }}</strong>
+                        </div>
                     @endif
-                    @if($qc->nomor_do)
-                        <span class="qc-chip" title="Nomor Delivery Order">
-                            📦 DO: <strong>{{ $qc->nomor_do }}</strong>
-                        </span>
-                    @endif
-                    @if($qc->batch_no)
-                        <span class="qc-chip" title="Nomor Batch / Lot">
-                            🏷 Batch: <strong>{{ $qc->batch_no }}</strong>
-                        </span>
-                    @endif
-                    <span class="qc-chip" title="Waktu dibuat di sistem">
-                        🕒 {{ $qc->created_at ? $qc->created_at->format('d/m/Y H:i') : '-' }}
-                    </span>
+                    <div style="background: #ffffff; border: 1px solid #cbd5e1; padding: 3px 8px; border-radius: 6px;">
+                        🕒 {{ $qc->tgl_periksa ? $qc->tgl_periksa->format('d/m/Y H:i') : ($qc->created_at ? $qc->created_at->format('d/m/Y H:i') : '-') }} WIB
+                    </div>
                 </div>
             </div>
 
@@ -74,79 +64,75 @@
             @endphp
 
             @if ($isOverPoDrawer)
-                <div style="background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 8px; padding: 0.75rem 1.15rem; margin-bottom: 0.85rem; display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap;">
-                    <div style="display: flex; align-items: center; gap: 0.65rem;">
-                        <span style="font-size: 1.25rem;">⚠️</span>
-                        <div>
-                            <div style="font-weight: 800; color: #92400e; font-size: 0.8125rem;">
-                                Peringatan Kelebihan Muatan Fisik (Over-Delivery dari PO)
-                            </div>
-                            <div style="font-size: 0.75rem; color: #78350f; margin-top: 0.2rem;">
-                                Total muatan fisik truk ini (<strong>{{ number_format($totalGross, 0, ',', '.') }} {{ $isBahanBaku ? 'kg' : $satuanCd }}</strong>) melebihi kuantitas pesanan pada <strong>PO #{{ $poObjDrawer->po_no }}</strong> (<strong>{{ number_format($poTotalPesanDrawer, 0, ',', '.') }} {{ $isBahanBaku ? 'kg' : $satuanCd }}</strong>). Selisih lebih: <strong style="color: #b45309;">+{{ number_format($selisihLebihDrawer, 0, ',', '.') }} {{ $isBahanBaku ? 'kg' : $satuanCd }} (+{{ $persenLebihDrawer }}%)</strong>.
-                            </div>
+                <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 0.65rem 1rem; margin: 0.85rem 1.25rem 0; display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="font-size: 1.15rem;">⚠️</span>
+                        <div style="font-size: 0.775rem; color: #92400e;">
+                            <strong>Kelebihan Muatan dari PO:</strong> Muatan fisik truk (<strong>{{ number_format($totalGross, 0, ',', '.') }} {{ $isBahanBaku ? 'kg' : $satuanCd }}</strong>) melebihi PO #{{ $poObjDrawer->po_no }} ({{ number_format($poTotalPesanDrawer, 0, ',', '.') }} {{ $isBahanBaku ? 'kg' : $satuanCd }}). Selisih: <strong style="color: #b45309;">+{{ number_format($selisihLebihDrawer, 0, ',', '.') }} (+{{ $persenLebihDrawer }}%)</strong>.
                         </div>
                     </div>
-                    <span style="font-size: 0.72rem; font-weight: 800; background: #fef3c7; color: #92400e; padding: 4px 10px; border-radius: 6px; border: 1px solid #fcd34d;">
-                        Status PO: Kuota Terpenuhi 100%+
+                    <span style="font-size: 0.7rem; font-weight: 800; background: #fef3c7; color: #92400e; padding: 3px 8px; border-radius: 5px; border: 1px solid #fcd34d;">
+                        Status: Kuota Terpenuhi
                     </span>
                 </div>
             @endif
 
             {{-- 2. GRID KOMPARASI PENGUJIAN --}}
             <div class="qc-stages-grid">
-                {{-- KARTU TAHAP 1: PENGUJIAN 1 (ATAU PENGUJIAN TUNGGAL BAHAN PENOLONG) --}}
+                {{-- KARTU TAHAP 1: PENGUJIAN 1 (KEDATANGAN & GERBANG TIMBANG) --}}
                 <div class="qc-stage-card stage-uji1">
                     <div class="qc-stage-card-header">
-                        <div style="display: flex; align-items: center; gap: 0.4rem;">
-                            <span>{{ $isSingkong ? '🚛 Pengujian 1 (Setengah Bak)' : '📦 Pemeriksaan Kedatangan Mutu' }}</span>
-                            <span style="font-family: monospace; font-size: 0.75rem; background: #ffffff; padding: 1px 6px; border-radius: 4px; color: #0284c7; border: 1px solid #bae6fd;">
+                        <div style="display: flex; align-items: center; gap: 0.45rem;">
+                            <span style="font-weight: 800; color: #0284c7;">
+                                {{ $isSingkong ? '🚛 Pengujian 1 (Kedatangan)' : '📦 Pemeriksaan Kedatangan' }}
+                            </span>
+                            <span style="font-family: monospace; font-size: 0.75rem; background: #ffffff; padding: 1px 6px; border-radius: 4px; color: #475569; border: 1px solid #cbd5e1;">
                                 #{{ $qc->qc_no }}
                             </span>
                         </div>
                         <div>
                             @if ($isSingkong)
                                 @if ($p1Grade === 'B')
-                                    <span class="badge" style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a; font-weight: 800; font-size: 0.72rem; padding: 2px 7px; border-radius: 4px;">
-                                        🟡 Grade B
+                                    <span style="background: #fffbeb; color: #92400e; border: 1px solid #fde68a; font-weight: 800; font-size: 0.72rem; padding: 2px 7px; border-radius: 4px;">
+                                        Grade B
                                     </span>
                                 @elseif ($p1Grade === 'REJECT')
-                                    <span class="badge" style="background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; font-weight: 800; font-size: 0.72rem; padding: 2px 7px; border-radius: 4px;">
-                                        ❌ Afkir
+                                    <span style="background: #fef2f2; color: #991b1b; border: 1px solid #fca5a5; font-weight: 800; font-size: 0.72rem; padding: 2px 7px; border-radius: 4px;">
+                                        Afkir / Reject
                                     </span>
                                 @else
-                                    <span class="badge" style="background: #dcfce7; color: #15803d; border: 1px solid #86efac; font-weight: 800; font-size: 0.72rem; padding: 2px 7px; border-radius: 4px;">
-                                        🟢 Grade A
+                                    <span style="background: #f0fdf4; color: #15803d; border: 1px solid #86efac; font-weight: 800; font-size: 0.72rem; padding: 2px 7px; border-radius: 4px;">
+                                        Grade A
                                     </span>
                                 @endif
                             @else
                                 @if ($qc->status_qc === 'DITOLAK_TOTAL' || $p1Netto <= 0)
-                                    <span class="badge" style="background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; font-weight: 800; font-size: 0.72rem; padding: 2px 7px; border-radius: 4px;">
-                                        ❌ Ditolak
+                                    <span style="background: #fef2f2; color: #991b1b; border: 1px solid #fca5a5; font-weight: 800; font-size: 0.72rem; padding: 2px 7px; border-radius: 4px;">
+                                        Ditolak
                                     </span>
                                 @elseif ($p1Reject > 0)
-                                    <span class="badge" style="background: #fff7ed; color: #c2410c; border: 1px solid #fdba74; font-weight: 800; font-size: 0.72rem; padding: 2px 7px; border-radius: 4px;">
-                                        ⚠️ Parsial
+                                    <span style="background: #fff7ed; color: #c2410c; border: 1px solid #fdba74; font-weight: 800; font-size: 0.72rem; padding: 2px 7px; border-radius: 4px;">
+                                        Parsial
                                     </span>
                                 @else
-                                    <span class="badge" style="background: #dcfce7; color: #15803d; border: 1px solid #86efac; font-weight: 800; font-size: 0.72rem; padding: 2px 7px; border-radius: 4px;">
-                                        🟢 Lolos Mutu
+                                    <span style="background: #f0fdf4; color: #15803d; border: 1px solid #86efac; font-weight: 800; font-size: 0.72rem; padding: 2px 7px; border-radius: 4px;">
+                                        Lolos Mutu
                                     </span>
                                 @endif
                             @endif
                         </div>
                     </div>
 
-                    {{-- 4 Stat Box Mini --}}
+                    {{-- 4 Stat Box Timbangan --}}
                     <div class="qc-stat-grid-4">
                         <div class="qc-stat-cell">
                             <div class="qc-stat-label">Gross Timbang</div>
                             <div class="qc-stat-val">{{ number_format($p1Gross, 0, ',', '.') }} {{ $isBahanBaku ? 'kg' : $satuanCd }}</div>
                         </div>
                         <div class="qc-stat-cell">
-                            <div class="qc-stat-label">{{ $isBahanBaku ? 'Refraksi' : 'Kotoran/Susut' }}</div>
+                            <div class="qc-stat-label">{{ $isBahanBaku ? 'Refraksi' : 'Kotoran' }}</div>
                             <div class="qc-stat-val" style="color: {{ $p1Refraksi > 0 ? '#d97706' : '#64748b' }};">
-                                -{{ number_format($p1Refraksi, 0, ',', '.') }} {{ $isBahanBaku ? 'kg' : $satuanCd }}
-                                <span style="font-size: 0.68rem; font-weight: 600;">({{ number_format($p1RefPersen, 1) }}%)</span>
+                                {{ $p1Refraksi > 0 ? '-'.number_format($p1Refraksi, 0, ',', '.').' kg ('.number_format($p1RefPersen, 1).'%)' : '0 kg (0%)' }}
                             </div>
                         </div>
                         <div class="qc-stat-cell">
@@ -157,27 +143,28 @@
                         </div>
                         <div class="qc-stat-cell">
                             <div class="qc-stat-label">Netto Bersih</div>
-                            <div class="qc-stat-val" style="color: #047857; font-size: 1rem;">
+                            <div class="qc-stat-val" style="color: #059669;">
                                 {{ number_format($p1Netto, 0, ',', '.') }} {{ $isBahanBaku ? 'kg' : $satuanCd }}
                             </div>
                         </div>
                     </div>
 
-                    {{-- Detail Parameter & Fisik --}}
-                    <div style="padding: 0.85rem 1rem; font-size: 0.78rem; color: #334155; flex-grow: 1;">
+                    {{-- Detail Parameter & Fisik & Uji Goreng Fryer --}}
+                    <div style="padding: 0.85rem 1rem; font-size: 0.775rem; color: #334155; flex-grow: 1; display: flex; flex-direction: column; gap: 0.55rem;">
                         @if ($isSingkong)
-                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.5rem; margin-bottom: 0.6rem;">
+                            {{-- Baris 1: Fisik & Diameter --}}
+                            <div style="display: flex; flex-wrap: wrap; gap: 0.85rem; padding-bottom: 0.45rem; border-bottom: 1px solid #f1f5f9;">
                                 <div>
-                                    <span style="color: #64748b;">Sample Diuji:</span>
+                                    <span style="color: #64748b;">Sampel:</span>
                                     <strong style="color: #0f172a;">{{ $qc->jumlah_sample_kg ? number_format((float)$qc->jumlah_sample_kg, 1).' kg' : '-' }}</strong>
                                 </div>
                                 <div>
-                                    <span style="color: #64748b;">Diameter &lt;4cm:</span>
-                                    <strong style="color: #0f172a;">{{ (float)($p1FirstDtl?->diameter_kurang_4cm_persen ?? 0) }}%</strong>
+                                    <span style="color: #64748b;">Kadar Air:</span>
+                                    <strong style="color: #0f172a;">{{ $p1FirstDtl?->kadar_air_persen !== null ? number_format((float)$p1FirstDtl->kadar_air_persen, 1).'%' : '-' }}</strong>
                                 </div>
                                 <div>
-                                    <span style="color: #64748b;">Diameter &gt;4cm:</span>
-                                    <strong style="color: #0f172a;">{{ (float)($p1FirstDtl?->diameter_lebih_4cm_persen ?? 0) }}%</strong>
+                                    <span style="color: #64748b;">Diameter:</span>
+                                    <strong style="color: #0f172a;">&lt;4cm: {{ (float)($p1FirstDtl?->diameter_kurang_4cm_persen ?? 0) }}% &bull; &ge;4cm: {{ (float)($p1FirstDtl?->diameter_lebih_4cm_persen ?? 0) }}%</strong>
                                 </div>
                                 <div>
                                     <span style="color: #64748b;">Kondisi:</span>
@@ -186,83 +173,122 @@
                                     </strong>
                                 </div>
                             </div>
-                        @else
-                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.5rem; margin-bottom: 0.6rem;">
+
+                            {{-- Baris 2: Hasil Lab Uji Goreng (Fryer Kedatangan) --}}
+                            @php
+                                $u1Rasa = $p1FirstDtl?->fryer_rasa;
+                                $u1Tekstur = $p1FirstDtl?->fryer_tekstur;
+                                $u1Minyak = $p1FirstDtl?->fryer_penampakan;
+                                $u1Breakage = (float) ($p1FirstDtl?->defect_breakage_persen ?? 0);
+                                $u1Gambos = (float) ($p1FirstDtl?->defect_gambos_persen ?? 0);
+                            @endphp
+                            <div style="display: flex; flex-wrap: wrap; gap: 0.85rem; padding-bottom: 0.45rem; border-bottom: 1px solid #f1f5f9;">
                                 <div>
-                                    <span style="color: #64748b;">Nama Komoditas:</span>
+                                    <span style="color: #64748b;">Rasa Goreng:</span>
+                                    <strong style="color: {{ $u1Rasa === 'PAHIT' ? '#dc2626' : '#15803d' }};">
+                                        {{ $u1Rasa === 'PAHIT' ? '✖ Pahit' : ($u1Rasa ? '✔ Gurih (Tidak Pahit)' : 'Normal') }}
+                                    </strong>
+                                </div>
+                                <div>
+                                    <span style="color: #64748b;">Tekstur:</span>
+                                    <strong style="color: #0f172a;">{{ $u1Tekstur ?: 'Renyah' }}</strong>
+                                </div>
+                                <div>
+                                    <span style="color: #64748b;">Minyak:</span>
+                                    <strong style="color: {{ $u1Minyak === 'OILSOAKED' ? '#dc2626' : '#0f172a' }};">
+                                        {{ $u1Minyak === 'OILSOAKED' ? 'Oilsoaked' : 'Normal' }}
+                                    </strong>
+                                </div>
+                                <div>
+                                    <span style="color: #64748b;">Cacat (Defect):</span>
+                                    <strong style="color: #0f172a;">
+                                        @if ($u1Breakage > 0 || $u1Gambos > 0)
+                                            @if ($u1Breakage > 0) Breakage {{ $u1Breakage }}% @endif
+                                            @if ($u1Gambos > 0) {{ $u1Breakage > 0 ? '&bull;' : '' }} Gambos {{ $u1Gambos }}% @endif
+                                        @else
+                                            Normal (Bebas Cacat)
+                                        @endif
+                                    </strong>
+                                </div>
+                            </div>
+                        @else
+                            <div style="display: flex; flex-wrap: wrap; gap: 0.85rem; padding-bottom: 0.45rem; border-bottom: 1px solid #f1f5f9;">
+                                <div>
+                                    <span style="color: #64748b;">Komoditas:</span>
                                     <strong style="color: #0f172a;">{{ $barangNm }}</strong>
                                 </div>
                                 <div>
                                     <span style="color: #64748b;">Sertifikat Halal:</span>
                                     <strong style="color: {{ $qc->ada_sertifikat_halal_st ? '#15803d' : '#dc2626' }};">
-                                        {{ $qc->ada_sertifikat_halal_st ? '✅ Ada & Berlaku' : '❌ Tidak Ada' }}
+                                        {{ $qc->ada_sertifikat_halal_st ? '✔ Ada & Berlaku' : '✖ Tidak Ada' }}
                                     </strong>
                                 </div>
                                 <div>
                                     <span style="color: #64748b;">Higienitas Armada:</span>
                                     <strong style="color: {{ $qc->bebas_cemaran_st ? '#15803d' : '#dc2626' }};">
-                                        {{ $qc->bebas_cemaran_st ? '✅ Bebas Cemaran' : '⚠️ Tercemar' }}
+                                        {{ $qc->bebas_cemaran_st ? '✔ Bebas Cemaran' : '⚠️ Tercemar' }}
                                     </strong>
                                 </div>
                             </div>
                         @endif
 
-                        <div style="background: #f8fafc; border-radius: 6px; padding: 0.5rem 0.75rem; border: 1px dashed #cbd5e1; font-size: 0.75rem;">
-                            <span style="font-weight: 700; color: #475569;">Catatan Pemeriksaan:</span>
-                            <span style="color: #1e293b;">
-                                {{ $p1FirstDtl?->catatan_dtl ?: ($qc->catatan_umum ?: 'Parameter mutu sesuai standar HACCP yang ditetapkan.') }}
-                            </span>
+                        {{-- Catatan Pemeriksaan (Clean Solid Box) --}}
+                        <div style="background: #f8fafc; border-radius: 6px; padding: 0.45rem 0.65rem; border: 1px solid #e2e8f0; font-size: 0.75rem; color: #475569;">
+                            <strong style="color: #0f172a;">Catatan:</strong>
+                            <span style="color: #334155;">{{ $p1FirstDtl?->catatan_dtl ?: ($qc->catatan_umum ?: 'Parameter mutu sesuai standar HACCP yang ditetapkan.') }}</span>
                         </div>
                     </div>
 
                     {{-- Action Footer Uji 1 --}}
-                    <div style="padding: 0.6rem 1rem; background: #fafcff; border-top: 1px solid #e0f2fe; display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                    <div style="padding: 0.55rem 0.95rem; background: #ffffff; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
                         <div style="display: flex; gap: 0.4rem; align-items: center;">
-                            <button type="button" class="btn btn-sm" onclick="openHaccpModal('{{ $qc->qc_id }}', '{{ $qc->qc_no }}')" style="font-size: 0.75rem; font-weight: 700; background: #ffffff; border: 1px solid #cbd5e1; color: #0284c7; padding: 3px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;">
+                            <button type="button" class="btn btn-sm" onclick="openHaccpModal('{{ $qc->qc_id }}', '{{ $qc->qc_no }}')" style="font-size: 0.75rem; font-weight: 700; background: #ffffff; border: 1.5px solid #cbd5e1; color: #0f172a; padding: 3px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;">
                                 <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                                 <span>{{ $isSingkong ? 'Preview HACCP Uji 1' : 'Preview Dokumen HACCP' }}</span>
                             </button>
-                            <button type="button" class="btn btn-sm" onclick="directPrintHaccp('{{ $qc->qc_id }}')" style="font-size: 0.75rem; font-weight: 600; background: #ffffff; border: 1px solid #cbd5e1; color: #475569; padding: 3px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;">
+                            <button type="button" class="btn btn-sm" onclick="directPrintHaccp('{{ $qc->qc_id }}')" style="font-size: 0.75rem; font-weight: 600; background: #ffffff; border: 1.5px solid #cbd5e1; color: #475569; padding: 3px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;">
                                 <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
                                 <span>Cetak A4</span>
                             </button>
                         </div>
                         @if (!$isLocked && Auth::user()?->canEditQcWeb())
-                            <a href="{{ route('qc.inbound.edit', [$qc->qc_id, 'ref' => 'index']) }}" style="font-size: 0.75rem; font-weight: 600; color: #64748b; text-decoration: none;">
+                            <a href="{{ route('qc.inbound.edit', [$qc->qc_id, 'ref' => 'index']) }}" style="font-size: 0.75rem; font-weight: 700; color: #0284c7; text-decoration: none;">
                                 ✏ Edit Data
                             </a>
                         @endif
                     </div>
                 </div>
 
-                {{-- KARTU TAHAP 2: PENGUJIAN 2 (SISA BAK LANTAI PRODUKSI) --}}
+                {{-- KARTU TAHAP 2: PENGUJIAN 2 (LANTAI PRODUKSI / SISA BAK) --}}
                 <div class="qc-stage-card stage-uji2">
                     @if ($p2)
                         <div class="qc-stage-card-header">
-                            <div style="display: flex; align-items: center; gap: 0.4rem;">
-                                <span>🍟 Pengujian 2 (Sisa Bak)</span>
-                                <span style="font-family: monospace; font-size: 0.75rem; background: #ffffff; padding: 1px 6px; border-radius: 4px; color: #7e22ce; border: 1px solid #e9d5ff;">
+                            <div style="display: flex; align-items: center; gap: 0.45rem;">
+                                <span style="font-weight: 800; color: #6366f1;">
+                                    🍟 Pengujian 2 (Lantai Produksi)
+                                </span>
+                                <span style="font-family: monospace; font-size: 0.75rem; background: #ffffff; padding: 1px 6px; border-radius: 4px; color: #475569; border: 1px solid #cbd5e1;">
                                     #{{ $p2->qc_no }}
                                 </span>
                             </div>
                             <div>
                                 @if ($p2Grade === 'B')
-                                    <span class="badge" style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a; font-weight: 800; font-size: 0.72rem; padding: 2px 7px; border-radius: 4px;">
-                                        🟡 Grade B
+                                    <span style="background: #fffbeb; color: #92400e; border: 1px solid #fde68a; font-weight: 800; font-size: 0.72rem; padding: 2px 7px; border-radius: 4px;">
+                                        Grade B
                                     </span>
                                 @elseif ($p2Grade === 'REJECT')
-                                    <span class="badge" style="background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; font-weight: 800; font-size: 0.72rem; padding: 2px 7px; border-radius: 4px;">
-                                        ❌ Afkir
+                                    <span style="background: #fef2f2; color: #991b1b; border: 1px solid #fca5a5; font-weight: 800; font-size: 0.72rem; padding: 2px 7px; border-radius: 4px;">
+                                        Afkir / Reject
                                     </span>
                                 @else
-                                    <span class="badge" style="background: #dcfce7; color: #15803d; border: 1px solid #86efac; font-weight: 800; font-size: 0.72rem; padding: 2px 7px; border-radius: 4px;">
-                                        🟢 Grade A
+                                    <span style="background: #f0fdf4; color: #15803d; border: 1px solid #86efac; font-weight: 800; font-size: 0.72rem; padding: 2px 7px; border-radius: 4px;">
+                                        Grade A
                                     </span>
                                 @endif
                             </div>
                         </div>
 
-                        {{-- 4 Stat Box Mini --}}
+                        {{-- 4 Stat Box Timbangan --}}
                         <div class="qc-stat-grid-4">
                             <div class="qc-stat-cell">
                                 <div class="qc-stat-label">Gross Timbang</div>
@@ -271,8 +297,7 @@
                             <div class="qc-stat-cell">
                                 <div class="qc-stat-label">Refraksi</div>
                                 <div class="qc-stat-val" style="color: {{ $p2Refraksi > 0 ? '#d97706' : '#64748b' }};">
-                                    -{{ number_format($p2Refraksi, 0, ',', '.') }} kg
-                                    <span style="font-size: 0.68rem; font-weight: 600;">({{ number_format($p2RefPersen, 1) }}%)</span>
+                                    {{ $p2Refraksi > 0 ? '-'.number_format($p2Refraksi, 0, ',', '.').' kg ('.number_format($p2RefPersen, 1).'%)' : '0 kg (0%)' }}
                                 </div>
                             </div>
                             <div class="qc-stat-cell">
@@ -283,55 +308,89 @@
                             </div>
                             <div class="qc-stat-cell">
                                 <div class="qc-stat-label">Netto Bersih</div>
-                                <div class="qc-stat-val" style="color: #7e22ce; font-size: 1rem;">
+                                <div class="qc-stat-val" style="color: #059669;">
                                     {{ number_format($p2Netto, 0, ',', '.') }} kg
                                 </div>
                             </div>
                         </div>
 
-                        {{-- Detail Parameter Fryer / Uji Goreng --}}
-                        <div style="padding: 0.85rem 1rem; font-size: 0.78rem; color: #334155; flex-grow: 1;">
-                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.5rem; margin-bottom: 0.6rem;">
+                        {{-- Detail Parameter Fryer / Uji Goreng Lantai Produksi --}}
+                        <div style="padding: 0.85rem 1rem; font-size: 0.775rem; color: #334155; flex-grow: 1; display: flex; flex-direction: column; gap: 0.55rem;">
+                            @php
+                                $u2Rasa = $p2FirstDtl?->fryer_rasa;
+                                $u2Tekstur = $p2FirstDtl?->fryer_tekstur;
+                                $u2Minyak = $p2FirstDtl?->fryer_penampakan;
+                                $u2Breakage = (float) ($p2FirstDtl?->defect_breakage_persen ?? 0);
+                                $u2Gambos = (float) ($p2FirstDtl?->defect_gambos_persen ?? 0);
+                            @endphp
+                            {{-- Baris 1: Status Lini & Sampel --}}
+                            <div style="display: flex; flex-wrap: wrap; gap: 0.85rem; padding-bottom: 0.45rem; border-bottom: 1px solid #f1f5f9;">
                                 <div>
-                                    <span style="color: #64748b;">Rasa Goreng:</span>
-                                    <strong style="color: #0f172a;">{{ $p2FirstDtl?->fryer_rasa ?: 'Normal' }}</strong>
+                                    <span style="color: #64748b;">Lini:</span>
+                                    <strong style="color: #0f172a;">Wafel Produksi (Wajan Penggorengan)</strong>
                                 </div>
                                 <div>
-                                    <span style="color: #64748b;">Tekstur:</span>
-                                    <strong style="color: #0f172a;">{{ $p2FirstDtl?->fryer_tekstur ?: 'Renyah' }}</strong>
+                                    <span style="color: #64748b;">Sampel:</span>
+                                    <strong style="color: #0f172a;">{{ $p2->jumlah_sample_kg ? number_format((float)$p2->jumlah_sample_kg, 1).' kg' : '-' }}</strong>
                                 </div>
                                 <div>
-                                    <span style="color: #64748b;">Breakage:</span>
-                                    <strong style="color: #0f172a;">{{ (float)($p2FirstDtl?->defect_breakage_persen ?? 0) }}%</strong>
-                                </div>
-                                <div>
-                                    <span style="color: #64748b;">Gambos:</span>
-                                    <strong style="color: #0f172a;">{{ (float)($p2FirstDtl?->defect_gambos_persen ?? 0) }}%</strong>
+                                    <span style="color: #64748b;">Jam Uji:</span>
+                                    <strong style="color: #0f172a;">{{ $p2->tgl_periksa ? $p2->tgl_periksa->format('H:i') : '-' }} WIB</strong>
                                 </div>
                             </div>
 
-                            <div style="background: #faf5ff; border-radius: 6px; padding: 0.5rem 0.75rem; border: 1px dashed #d8b4fe; font-size: 0.75rem;">
-                                <span style="font-weight: 700; color: #7e22ce;">Catatan Uji 2:</span>
-                                <span style="color: #1e293b;">
-                                    {{ $p2FirstDtl?->catatan_dtl ?: ($p2->catatan_umum ?: 'Sisa muatan bak sesuai standar produksi.') }}
-                                </span>
+                            {{-- Baris 2: Hasil Uji Goreng Wajan Produksi --}}
+                            <div style="display: flex; flex-wrap: wrap; gap: 0.85rem; padding-bottom: 0.45rem; border-bottom: 1px solid #f1f5f9;">
+                                <div>
+                                    <span style="color: #64748b;">Rasa Goreng:</span>
+                                    <strong style="color: {{ $u2Rasa === 'PAHIT' ? '#dc2626' : '#15803d' }};">
+                                        {{ $u2Rasa === 'PAHIT' ? '✖ Pahit' : ($u2Rasa ? '✔ Gurih (Tidak Pahit)' : 'Normal') }}
+                                    </strong>
+                                </div>
+                                <div>
+                                    <span style="color: #64748b;">Tekstur:</span>
+                                    <strong style="color: #0f172a;">{{ $u2Tekstur ?: 'Renyah' }}</strong>
+                                </div>
+                                <div>
+                                    <span style="color: #64748b;">Minyak:</span>
+                                    <strong style="color: {{ $u2Minyak === 'OILSOAKED' ? '#dc2626' : '#0f172a' }};">
+                                        {{ $u2Minyak === 'OILSOAKED' ? 'Oilsoaked' : 'Normal' }}
+                                    </strong>
+                                </div>
+                                <div>
+                                    <span style="color: #64748b;">Cacat (Defect):</span>
+                                    <strong style="color: #0f172a;">
+                                        @if ($u2Breakage > 0 || $u2Gambos > 0)
+                                            @if ($u2Breakage > 0) Breakage {{ $u2Breakage }}% @endif
+                                            @if ($u2Gambos > 0) {{ $u2Breakage > 0 ? '&bull;' : '' }} Gambos {{ $u2Gambos }}% @endif
+                                        @else
+                                            Normal (Bebas Cacat)
+                                        @endif
+                                    </strong>
+                                </div>
+                            </div>
+
+                            {{-- Catatan Uji 2 --}}
+                            <div style="background: #f8fafc; border-radius: 6px; padding: 0.45rem 0.65rem; border: 1px solid #e2e8f0; font-size: 0.75rem; color: #475569;">
+                                <strong style="color: #0f172a;">Catatan:</strong>
+                                <span style="color: #334155;">{{ $p2FirstDtl?->catatan_dtl ?: ($p2->catatan_umum ?: 'Sisa muatan bak sesuai standar mutu produksi.') }}</span>
                             </div>
                         </div>
 
                         {{-- Action Footer Uji 2 --}}
-                        <div style="padding: 0.6rem 1rem; background: #fdfbff; border-top: 1px solid #f3e8ff; display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                        <div style="padding: 0.55rem 0.95rem; background: #ffffff; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
                             <div style="display: flex; gap: 0.4rem; align-items: center;">
-                                <button type="button" class="btn btn-sm" onclick="openHaccpModal('{{ $p2->qc_id }}', '{{ $p2->qc_no }}')" style="font-size: 0.75rem; font-weight: 700; background: #ffffff; border: 1px solid #cbd5e1; color: #7e22ce; padding: 3px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;">
+                                <button type="button" class="btn btn-sm" onclick="openHaccpModal('{{ $p2->qc_id }}', '{{ $p2->qc_no }}')" style="font-size: 0.75rem; font-weight: 700; background: #ffffff; border: 1.5px solid #cbd5e1; color: #0f172a; padding: 3px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;">
                                     <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                                     <span>Preview HACCP Uji 2</span>
                                 </button>
-                                <button type="button" class="btn btn-sm" onclick="directPrintHaccp('{{ $p2->qc_id }}')" style="font-size: 0.75rem; font-weight: 600; background: #ffffff; border: 1px solid #cbd5e1; color: #475569; padding: 3px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;">
+                                <button type="button" class="btn btn-sm" onclick="directPrintHaccp('{{ $p2->qc_id }}')" style="font-size: 0.75rem; font-weight: 600; background: #ffffff; border: 1.5px solid #cbd5e1; color: #475569; padding: 3px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;">
                                     <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
                                     <span>Cetak A4</span>
                                 </button>
                             </div>
                             @if (!$isLocked && Auth::user()?->canEditQcWeb())
-                                <a href="{{ route('qc.inbound.edit', [$p2->qc_id, 'ref' => 'index']) }}" style="font-size: 0.75rem; font-weight: 600; color: #64748b; text-decoration: none;">
+                                <a href="{{ route('qc.inbound.edit', [$p2->qc_id, 'ref' => 'index']) }}" style="font-size: 0.75rem; font-weight: 700; color: #0284c7; text-decoration: none;">
                                     ✏ Edit Data
                                 </a>
                             @endif
@@ -339,32 +398,27 @@
                     @elseif ($isSingkong)
                         @if ($qc->status_qc === 'DITOLAK_TOTAL')
                             <div style="padding: 2.5rem 1.5rem; text-align: center; color: #dc2626; flex-grow: 1;">
-                                <div style="font-size: 2rem; margin-bottom: 0.5rem;">🚫</div>
-                                <div style="font-weight: 800; font-size: 0.9rem;">Truk Dipulangkan (Uji 1 Ditolak)</div>
-                                <div style="font-size: 0.78rem; color: #64748b; margin-top: 0.25rem;">
-                                    Pengujian 2 tidak dilaksanakan karena hasil sampling setengah bak pertama tidak memenuhi ambang batas mutu pabrik.
+                                <div style="font-size: 2rem; margin-bottom: 0.4rem;">🚫</div>
+                                <div style="font-weight: 800; font-size: 0.875rem;">Truk Ditolak di Gerbang (Uji 1 Afkir)</div>
+                                <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.25rem;">
+                                    Pengujian 2 ditiadakan karena muatan tidak memenuhi ambang batas mutu pabrik.
                                 </div>
                             </div>
                         @else
-                            <div style="padding: 1.5rem 1.25rem; flex-grow: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; background: #faf5ff;">
-                                <div style="width: 44px; height: 44px; border-radius: 50%; background: #f3e8ff; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; margin-bottom: 0.5rem;">
-                                    ⏳
+                            <div style="padding: 1.5rem 1.25rem; flex-grow: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; background: #ffffff;">
+                                <div style="font-size: 1.4rem; margin-bottom: 0.35rem;">⏳</div>
+                                <div style="font-weight: 800; font-size: 0.875rem; color: #0f172a;">
+                                    Menunggu Pengujian 2 (Lantai Produksi)
                                 </div>
-                                <div style="font-weight: 800; font-size: 0.9rem; color: #7e22ce;">
-                                    Menunggu Pengujian 2 (Sisa Bak)
-                                </div>
-                                <div style="font-size: 0.78rem; color: #64748b; max-width: 380px; margin-top: 0.35rem; line-height: 1.4;">
-                                    Truk telah selesai membongkar setengah bak awal. Saat sisa bak dibongkar ke lini produksi, lakukan input pengujian kedua.
-                                </div>
-                                <div style="margin-top: 0.65rem; font-size: 0.78rem; color: #475569; background: #ffffff; padding: 4px 12px; border-radius: 6px; border: 1px solid #e9d5ff;">
-                                    Estimasi Sisa Muatan: <strong style="color: #7e22ce;">{{ number_format(max(0, (float)$qc->jumlah_surat_jalan - $p1Gross), 0, ',', '.') }} kg</strong>
+                                <div style="font-size: 0.75rem; color: #64748b; max-width: 380px; margin-top: 0.25rem; line-height: 1.4;">
+                                    Estimasi sisa muatan bak truk yang belum dibongkar: <strong style="color: #0f172a;">{{ number_format(max(0, (float)$qc->jumlah_surat_jalan - $p1Gross), 0, ',', '.') }} kg</strong>. Lakukan uji saat sisa muatan dibongkar ke lini wafel.
                                 </div>
 
                                 @if (Auth::user()?->canCreateQcMobile() || Auth::user()?->canCreateQc())
-                                    <div style="margin-top: 1rem;">
+                                    <div style="margin-top: 0.85rem;">
                                         <a href="{{ route('qc.inbound.create', ['parent_qc_id' => $qc->qc_id, 'tahap' => 2, 'po_id' => $qc->po_id, 'supplier_id' => $qc->supplier_id]) }}" 
-                                           style="background: #7e22ce; color: #ffffff; font-size: 0.8rem; font-weight: 700; padding: 6px 14px; border-radius: 6px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 5px rgba(126,34,206,0.3);">
-                                            <span>🍟 Catat Pengujian 2 Sekarang</span>
+                                           style="background: #0f172a; color: #ffffff; font-size: 0.775rem; font-weight: 700; padding: 6px 14px; border-radius: 6px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.15);">
+                                            <span>🍟 Catat Pengujian 2 Sekarang &rarr;</span>
                                         </a>
                                     </div>
                                 @endif
@@ -375,54 +429,54 @@
                             <div style="font-size: 1.8rem; margin-bottom: 0.4rem;">📦</div>
                             <div style="font-weight: 700; font-size: 0.85rem; color: #64748b;">Pengujian Tunggal</div>
                             <div style="font-size: 0.75rem; margin-top: 0.2rem;">
-                                Komoditas ini tidak menggunakan mekanisme sampling 2 tahap bak.
+                                Komoditas ini tidak menggunakan mekanisme sampling 2 tahap.
                             </div>
                         </div>
                     @endif
                 </div>
             </div>
 
-            {{-- 3. STATUS INTEGRASI GUDANG (GRN) & FOOTER AKSI CEPAT --}}
-            <div style="padding: 0.85rem 1.25rem; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+            {{-- 3. STATUS INTEGRASI GUDANG (GRN) & FOOTER AKSI CEPAT (CLEAN SLATE) --}}
+            <div style="padding: 0.85rem 1.25rem; background: #ffffff; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
                 <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
                     @if ($terimaObj)
                         @if ($qc->status_qc === 'DITERIMA_PARSIAL' || $totalReject > 0)
-                            <div style="display: flex; align-items: center; gap: 0.4rem; background: #fff7ed; color: #c2410c; border: 1px solid #fdba74; padding: 4px 10px; border-radius: 6px; font-size: 0.78rem; font-weight: 700;">
-                                <span>⚠️ Diterima Sebagian ke Gudang (Parsial)</span>
-                                <span style="font-family: monospace;">(GRN: #{{ $terimaObj->terima_no }})</span>
+                            <div style="display: flex; align-items: center; gap: 0.4rem; background: #fff7ed; color: #c2410c; border: 1px solid #fdba74; padding: 3px 8px; border-radius: 5px; font-size: 0.775rem; font-weight: 700;">
+                                <span>⚠️ Diterima Parsial Gudang</span>
+                                <span style="font-family: monospace;">(#{{ $terimaObj->terima_no }})</span>
                             </div>
-                            <span style="font-size: 0.75rem; color: #c2410c; font-weight: 600;">
-                                Masuk: <strong>{{ number_format($terimaObj->details->sum('qty_terima'), 0, ',', '.') }} {{ $isBahanBaku ? 'kg' : $satuanCd }}</strong> &bull; Ditolak: <strong style="color: #dc2626;">{{ number_format($totalReject, 0, ',', '.') }} {{ $isBahanBaku ? 'kg' : $satuanCd }}</strong> (Ada Berita Acara)
+                            <span style="font-size: 0.75rem; color: #475569;">
+                                Masuk: <strong style="color: #059669;">{{ number_format($terimaObj->details->sum('qty_terima'), 0, ',', '.') }} {{ $isBahanBaku ? 'kg' : $satuanCd }}</strong> &bull; Ditolak: <strong style="color: #dc2626;">{{ number_format($totalReject, 0, ',', '.') }} {{ $isBahanBaku ? 'kg' : $satuanCd }}</strong>
                             </span>
                         @else
-                            <div style="display: flex; align-items: center; gap: 0.4rem; background: #dcfce7; color: #15803d; border: 1px solid #86efac; padding: 4px 10px; border-radius: 6px; font-size: 0.78rem; font-weight: 700;">
-                                <span>✅ Sudah Masuk Stok Gudang (Penuh)</span>
-                                <span style="font-family: monospace;">(GRN: #{{ $terimaObj->terima_no }})</span>
+                            <div style="display: flex; align-items: center; gap: 0.4rem; background: #f0fdf4; color: #15803d; border: 1px solid #86efac; padding: 3px 8px; border-radius: 5px; font-size: 0.775rem; font-weight: 700;">
+                                <span>✅ Masuk Penuh ke Gudang</span>
+                                <span style="font-family: monospace;">(#{{ $terimaObj->terima_no }})</span>
                             </div>
                             <span style="font-size: 0.75rem; color: #64748b;">
-                                Diterima pada: <strong>{{ $terimaObj->tgl_terima ? $terimaObj->tgl_terima->format('d/m/Y H:i') : '-' }}</strong>
+                                Diterima: <strong>{{ $terimaObj->tgl_terima ? $terimaObj->tgl_terima->format('d/m/Y H:i') : '-' }}</strong>
                             </span>
                         @endif
                     @elseif ($qc->status_qc === 'DITOLAK_TOTAL' && (!$p2 || $p2->status_qc === 'DITOLAK_TOTAL'))
-                        <div style="display: flex; align-items: center; gap: 0.4rem; background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; padding: 4px 10px; border-radius: 6px; font-size: 0.78rem; font-weight: 700;">
+                        <div style="display: flex; align-items: center; gap: 0.4rem; background: #fef2f2; color: #991b1b; border: 1px solid #fca5a5; padding: 3px 8px; border-radius: 5px; font-size: 0.775rem; font-weight: 700;">
                             <span>🚫 Truk Ditolak QC</span>
                         </div>
                         <span style="font-size: 0.75rem; color: #dc2626;">
-                            Muatan tidak ditarik ke stok pabrik. Silakan terbitkan Berita Acara Penolakan.
+                            Muatan tidak ditarik ke stok pabrik.
                         </span>
                     @elseif ($isSingkong && !$p2 && $qc->status_qc !== 'DITOLAK_TOTAL')
-                        <div style="display: flex; align-items: center; gap: 0.4rem; background: #fef3c7; color: #b45309; border: 1px solid #fde68a; padding: 4px 10px; border-radius: 6px; font-size: 0.78rem; font-weight: 700;">
+                        <div style="display: flex; align-items: center; gap: 0.4rem; background: #fffbeb; color: #92400e; border: 1px solid #fde68a; padding: 3px 8px; border-radius: 5px; font-size: 0.775rem; font-weight: 700;">
                             <span>⏳ Bongkar Setengah Bak Selesai</span>
                         </div>
                         <span style="font-size: 0.75rem; color: #64748b;">
-                            GRN akan menggabungkan total Netto Uji 1 ({{ number_format($p1Netto, 0, ',', '.') }} kg) dan Uji 2 setelah kedua tahap tervalidasi.
+                            GRN akan menggabungkan Netto Uji 1 ({{ number_format($p1Netto, 0, ',', '.') }} kg) dan Uji 2 setelah kedua tahap selesai.
                         </span>
                     @elseif ($qc->status_qc === 'SIAP_GUDANG' || ($p2 && $p2->status_qc === 'SIAP_GUDANG'))
-                        <div style="display: flex; align-items: center; gap: 0.4rem; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; padding: 4px 10px; border-radius: 6px; font-size: 0.78rem; font-weight: 700;">
-                            <span>📦 Lolos QC &bull; Siap Ditarik ke GRN</span>
+                        <div style="display: flex; align-items: center; gap: 0.4rem; background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; padding: 3px 8px; border-radius: 5px; font-size: 0.775rem; font-weight: 700;">
+                            <span>📦 Siap Ditarik ke GRN</span>
                         </div>
-                        <span style="font-size: 0.75rem; color: #047857; font-weight: 600;">
-                            Total Netto Bersih Lolos: <strong>{{ number_format($totalNetto, 0, ',', '.') }} {{ $isBahanBaku ? 'kg' : $satuanCd }}</strong>
+                        <span style="font-size: 0.75rem; color: #0f172a;">
+                            Total Netto Bersih Lolos: <strong style="color: #059669;">{{ number_format($totalNetto, 0, ',', '.') }} {{ $isBahanBaku ? 'kg' : $satuanCd }}</strong>
                         </span>
                     @endif
                 </div>
@@ -430,18 +484,18 @@
                 {{-- Quick Buttons Right --}}
                 <div style="display: flex; gap: 0.5rem; align-items: center;">
                     @if ($terimaObj)
-                        <a href="{{ route('gudang.terima.show', $terimaObj->terima_id) }}" class="btn btn-sm btn-primary" style="font-size: 0.78rem; font-weight: 700; padding: 4px 10px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;">
+                        <a href="{{ route('gudang.terima.show', $terimaObj->terima_id) }}" class="btn btn-sm btn-primary" style="font-size: 0.78rem; font-weight: 700; padding: 5px 12px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;">
                             <span>Buka Dokumen GRN &rarr;</span>
                         </a>
                     @elseif (!$terimaObj && ($qc->status_qc === 'SIAP_GUDANG' || ($p2 && $p2->status_qc === 'SIAP_GUDANG')) && Auth::user()?->canAccessTerima())
-                        <a href="{{ route('gudang.terima.create', ['qc_id' => $qc->qc_id]) }}" class="btn btn-sm" style="font-size: 0.78rem; font-weight: 700; background: #059669; color: #ffffff; padding: 4px 12px; border-radius: 6px; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 1px 3px rgba(5,150,105,0.25);">
+                        <a href="{{ route('gudang.terima.create', ['qc_id' => $qc->qc_id]) }}" class="btn btn-sm" style="font-size: 0.78rem; font-weight: 700; background: #059669; color: #ffffff; padding: 5px 14px; border-radius: 6px; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 1px 3px rgba(5,150,105,0.25);">
                             <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
                             <span>Tarik ke GRN Gudang</span>
                         </a>
                     @endif
 
                     @if ($qc->status_qc === 'DITOLAK_TOTAL' || $qc->details->sum('qty_reject') > 0 || ($p2 && ($p2->status_qc === 'DITOLAK_TOTAL' || $p2->details->sum('qty_reject') > 0)))
-                        <a href="{{ route('qc.inbound.berita_acara', ($p2 && $p2->details->sum('qty_reject') > 0 && $qc->details->sum('qty_reject') == 0) ? $p2->qc_id : $qc->qc_id) }}" class="btn btn-sm" style="font-size: 0.78rem; font-weight: 700; background: #dc2626; color: #ffffff; padding: 4px 10px; border-radius: 6px; text-decoration: none;">
+                        <a href="{{ route('qc.inbound.berita_acara', ($p2 && $p2->details->sum('qty_reject') > 0 && $qc->details->sum('qty_reject') == 0) ? $p2->qc_id : $qc->qc_id) }}" class="btn btn-sm" style="font-size: 0.78rem; font-weight: 700; background: #dc2626; color: #ffffff; padding: 5px 12px; border-radius: 6px; text-decoration: none;">
                             <span>Cetak Berita Acara</span>
                         </a>
                     @endif

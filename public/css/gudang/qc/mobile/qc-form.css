@@ -9,7 +9,7 @@
 }
 
 /* Container Formulir Google Forms Style */
-.gform-container, #qcForm {
+.gform-container, #qcForm, #qcMinyakForm {
     width: 100% !important;
     max-width: 800px;
     margin: 0 auto;
@@ -21,8 +21,10 @@
 /* Override seluruh grid sempit di mobile agar menjadi 1 kolom penuh */
 @media (max-width: 768px) {
     #qcForm div[style*="grid-template-columns"],
+    #qcMinyakForm div[style*="grid-template-columns"],
     .gform-container div[style*="grid-template-columns"],
-    .card-body div[style*="grid-template-columns"] {
+    .card-body div[style*="grid-template-columns"],
+    .qc-grid-2col {
         display: flex !important;
         flex-direction: column !important;
         gap: 0.85rem !important;

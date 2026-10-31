@@ -394,7 +394,12 @@ class QcInboundController extends Controller
             'details.barang.satuanDasar',
             'details.poDetail',
             'terima',
-            'pengujian2List',
+            'parentQc.supplier',
+            'parentQc.gudang',
+            'parentQc.po',
+            'parentQc.details.barang.satuanDasar',
+            'parentQc.pengujian2List.details.barang.satuanDasar',
+            'pengujian2List.details.barang.satuanDasar',
         ])->where('deleted_st', false)->findOrFail($id);
 
         $user = Auth::user();

@@ -4,10 +4,10 @@
 @section('hide_bottom_nav', '1')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/gudang/qc/mobile/qc-form.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/gudang/qc/mobile/qc-mobile-detail.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/gudang/qc/minyak/minyak.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/gudang/qc/minyak/minyak-detail.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/gudang/qc/mobile/qc-form.css') }}?v={{ filemtime(public_path('css/gudang/qc/mobile/qc-form.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/gudang/qc/mobile/qc-mobile-detail.css') }}?v={{ filemtime(public_path('css/gudang/qc/mobile/qc-mobile-detail.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/gudang/qc/minyak/minyak.css') }}?v={{ filemtime(public_path('css/gudang/qc/minyak/minyak.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/gudang/qc/minyak/minyak-detail.css') }}?v={{ filemtime(public_path('css/gudang/qc/minyak/minyak-detail.css')) }}">
 @endpush
 
 @php

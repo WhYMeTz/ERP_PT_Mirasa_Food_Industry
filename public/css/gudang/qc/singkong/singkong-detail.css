@@ -656,3 +656,140 @@
     justify-content: center;
     gap: 0.35rem;
 }
+
+/* ==========================================================================
+   UNIFIED UJI 1 + UJI 2 STYLES
+   ========================================================================== */
+/* CARD KHUSUS REKAP TRUK */
+.sk-card-rekap {
+    background: linear-gradient(135deg, #f8fafc 0%, #f0fdf4 100%);
+    border: 1.5px solid #86efac;
+    position: relative;
+    overflow: hidden;
+}
+
+.sk-card-rekap::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #10b981, #059669);
+}
+
+.sk-rekap-tag-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-bottom: 0.75rem;
+    font-size: 0.75rem;
+}
+
+/* KARTU PENGUJIAN 1 (BLUE THEME) */
+.sk-stage-card-p1 {
+    border-left: 4px solid #0284c7 !important;
+}
+
+.sk-stage-header-p1 {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 0.85rem;
+    padding-bottom: 0.55rem;
+    border-bottom: 1.5px solid #f0f9ff;
+}
+
+.sk-stage-title-p1 {
+    font-size: 0.9rem;
+    font-weight: 900;
+    color: #0369a1;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    letter-spacing: -0.01em;
+}
+
+/* KARTU PENGUJIAN 2 (PURPLE THEME) */
+.sk-stage-card-p2 {
+    border-left: 4px solid #7e22ce !important;
+}
+
+.sk-stage-header-p2 {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 0.85rem;
+    padding-bottom: 0.55rem;
+    border-bottom: 1.5px solid #faf5ff;
+}
+
+.sk-stage-title-p2 {
+    font-size: 0.9rem;
+    font-weight: 900;
+    color: #7e22ce;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    letter-spacing: -0.01em;
+}
+
+/* EMPTY STATE FOR PENGUJIAN 2 */
+.sk-p2-empty-state {
+    background: #faf5ff;
+    border: 1.5px dashed #d8b4fe;
+    border-radius: 12px;
+    padding: 1.25rem 1rem;
+    text-align: center;
+}
+
+.sk-p2-empty-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    width: 100%;
+    padding: 0.75rem 1.15rem;
+    border-radius: 10px;
+    background: #7e22ce;
+    color: #ffffff;
+    font-weight: 800;
+    font-size: 0.85rem;
+    text-decoration: none;
+    box-shadow: 0 3px 8px rgba(126, 34, 206, 0.3);
+    transition: all 0.15s ease;
+    margin-top: 0.85rem;
+}
+
+.sk-p2-empty-btn:hover {
+    background: #6b21a8;
+    color: #ffffff;
+    transform: translateY(-1px);
+}
+
+.sk-sub-detail-box {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 0.75rem 0.85rem;
+    margin-top: 0.75rem;
+}
+
+.sk-inspector-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    font-size: 0.725rem;
+    color: #64748b;
+    margin-top: 0.85rem;
+    padding-top: 0.65rem;
+    border-top: 1px dashed #e2e8f0;
+}

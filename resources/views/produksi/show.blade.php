@@ -172,7 +172,7 @@
                 </div>
             </div>
             <div class="executive-stat-subtext">
-                Akumulasi Bahan, Upah, Energi &amp; FOH
+                {{ $subtotalFoh > 0 ? 'Akumulasi Bahan, Upah, Energi & FOH' : 'Akumulasi Bahan, Upah & Energi' }}
             </div>
         </div>
 
@@ -411,43 +411,83 @@
                     <svg width="17" height="17" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #059669;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"/></svg>
                     <span>Rincian Hasil Timbangan Barang Jadi (WIP Output)</span>
                 </div>
-                <span style="font-size: 0.775rem; color: #64748b; font-weight: 600;">
-                    {{ $produksi->outputs->count() }} Varian Output Terdaftar
-                </span>
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <span style="font-size: 0.775rem; color: #64748b; font-weight: 600;">
+                        {{ $produksi->outputs->count() }} Varian Output Terdaftar
+                    </span>
+                    @if(Auth::user()->canCreateProduksi())
+                        <a href="{{ route('produksi.adjust', $produksi->produksi_id) }}" class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem; font-weight: 600; border-color: #cbd5e1; color: #334155; padding: 0.25rem 0.65rem;" title="Sesuaikan nilai HPP pecahan per barang">
+                            <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                            <span>Adjustment HPP</span>
+                        </a>
+                    @endif
+                </div>
             </div>
+
             <div style="overflow-x: auto;">
                 <table class="table-enterprise">
                     <thead>
                         <tr>
                             <th style="width: 45px; text-align: center;">No</th>
-                            <th style="width: 140px;">Kategori Varian</th>
+                            <th style="width: 150px;">Kategori Output</th>
                             <th>Kode &amp; Nama Barang WIP</th>
-                            <th style="width: 150px; text-align: center;">Batch Varian</th>
-                            <th style="width: 160px; text-align: right;">Kuantitas (Kg)</th>
-                            <th style="width: 160px; text-align: right;">HPP Satuan</th>
-                            <th style="width: 180px; text-align: right;">Total Nilai (Rp)</th>
+                            <th style="width: 130px; text-align: center;">Batch Varian</th>
+                            <th style="width: 130px; text-align: right;">Output (Kg)</th>
+                            <th style="width: 95px; text-align: center;">Porsi (%)</th>
+                            <th style="width: 150px; text-align: right;">HPP Satuan</th>
+                            <th style="width: 160px; text-align: right;">Total Nilai (Rp)</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse ($produksi->outputs as $idx => $out)
+                            @php
+                                $bNm = strtoupper($out->barang?->barang_nm ?? '');
+                                $bCd = strtoupper($out->barang?->barang_cd ?? '');
+                                $kat = strtoupper($out->kategori_output ?? '');
+                                
+                                $isLengket = str_contains($bNm, 'LENGKET') || str_contains($bCd, 'LGT') || str_contains($kat, 'LGT') || str_contains($kat, 'LENGKET');
+                                $isBerko = !$isLengket && (str_contains($bNm, 'BERKO') || str_contains($bCd, 'BRK') || str_contains($kat, 'BERKO') || str_contains($kat, 'BRK'));
+                                $isAfval = str_contains($bNm, 'AFVAL') || str_contains($bNm, 'REMAHAN') || str_contains($kat, 'AFVAL') || str_contains($bCd, 'AFV');
+                                $isUtama = !$isLengket && !$isBerko && !$isAfval;
+
+                                $totalWip = (float) $produksi->total_wip_qty > 0 ? (float) $produksi->total_wip_qty : 1;
+                                $porsiPersen = round(((float)$out->qty_kg / $totalWip) * 100, 1);
+                            @endphp
                             <tr>
                                 <td style="text-align: center; color: #94a3b8; font-weight: 700;">{{ $idx + 1 }}</td>
-                                <td style="font-weight: 700; color: #0f172a;">
-                                    <span style="background: #f1f5f9; color: #334155; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem;">
-                                        {{ $out->kategori_output }}
-                                    </span>
+                                <td>
+                                    @if($isUtama)
+                                        <span style="display: inline-block; padding: 0.2rem 0.5rem; background: #f1f5f9; color: #1e293b; border: 1px solid #e2e8f0; border-radius: 4px; font-size: 0.725rem; font-weight: 600;">
+                                            Produk Utama
+                                        </span>
+                                    @elseif($isBerko)
+                                        <span style="display: inline-block; padding: 0.2rem 0.5rem; background: #f8fafc; color: #475569; border: 1px solid #e2e8f0; border-radius: 4px; font-size: 0.725rem; font-weight: 600;">
+                                            KS Berko
+                                        </span>
+                                    @elseif($isLengket)
+                                        <span style="display: inline-block; padding: 0.2rem 0.5rem; background: #f8fafc; color: #475569; border: 1px solid #e2e8f0; border-radius: 4px; font-size: 0.725rem; font-weight: 600;">
+                                            KS Lengket
+                                        </span>
+                                    @else
+                                        <span style="display: inline-block; padding: 0.2rem 0.5rem; background: #f8fafc; color: #64748b; border: 1px solid #e2e8f0; border-radius: 4px; font-size: 0.725rem; font-weight: 600;">
+                                            Remahan / BS
+                                        </span>
+                                    @endif
                                 </td>
                                 <td>
-                                    <strong style="color: #0284c7; font-family: monospace;">{{ $out->barang?->barang_cd ?? '-' }}</strong> &ndash; 
-                                    <span style="font-weight: 600;">{{ $out->barang?->barang_nm ?? '-' }}</span>
+                                    <strong style="color: #0f172a; font-family: monospace;">{{ $out->barang?->barang_cd ?? '-' }}</strong> &ndash; 
+                                    <span style="font-weight: 600; color: #1e293b;">{{ $out->barang?->barang_nm ?? '-' }}</span>
                                 </td>
-                                <td style="font-family: monospace; font-weight: 700; color: #475569; text-align: center;">
+                                <td style="font-family: monospace; font-weight: 600; color: #475569; text-align: center;">
                                     {{ $out->batch_no }}
                                 </td>
-                                <td style="text-align: right; font-weight: 700; color: #059669; font-variant-numeric: tabular-nums;">
+                                <td style="text-align: right; font-weight: 700; color: #0f172a; font-variant-numeric: tabular-nums;">
                                     {{ number_format($out->qty_kg, 2, ',', '.') }} kg
                                 </td>
-                                <td style="text-align: right; color: #475569; font-variant-numeric: tabular-nums;">
+                                <td style="text-align: center; font-weight: 600; color: #475569; font-variant-numeric: tabular-nums;">
+                                    {{ number_format($porsiPersen, 1, ',', '.') }}%
+                                </td>
+                                <td style="text-align: right; font-family: monospace; font-weight: 700; color: #0f172a; font-variant-numeric: tabular-nums;">
                                     Rp {{ number_format($out->hpp_satuan, 2, ',', '.') }}
                                 </td>
                                 <td style="text-align: right; font-weight: 700; color: #0f172a; font-variant-numeric: tabular-nums;">
@@ -456,25 +496,28 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" style="text-align: center; padding: 2rem; color: #94a3b8;">
+                                <td colspan="8" style="text-align: center; padding: 2rem; color: #94a3b8;">
                                     Belum ada rincian output timbangan tersimpan.
                                 </td>
                             </tr>
                         @endforelse
                     </tbody>
-                    <tfoot style="background: #f8fafc; font-weight: 700; border-top: 2px solid #e2e8f0;">
+                    <tfoot style="background: #f8fafc; font-weight: 700; border-top: 2px solid #cbd5e1;">
                         <tr>
-                            <td colspan="4" style="padding: 0.75rem 1rem; text-align: right; font-size: 0.8rem; color: #475569;">
-                                TOTAL WIP TERTIMBANG:
+                            <td colspan="4" style="padding: 0.75rem 1rem; text-align: right; font-size: 0.78rem; color: #475569; text-transform: uppercase; letter-spacing: 0.03em;">
+                                TOTAL AKUMULASI HASIL:
                             </td>
-                            <td style="padding: 0.75rem 1rem; text-align: right; color: #059669; font-size: 0.95rem; font-variant-numeric: tabular-nums;">
+                            <td style="padding: 0.75rem 1rem; text-align: right; color: #0f172a; font-size: 0.95rem; font-variant-numeric: tabular-nums;">
                                 {{ number_format($produksi->total_wip_qty, 2, ',', '.') }} kg
                             </td>
-                            <td style="padding: 0.75rem 1rem; text-align: right; color: #64748b; font-size: 0.8rem;">
-                                HPP/KG:
+                            <td style="padding: 0.75rem 1rem; text-align: center; color: #475569; font-size: 0.85rem; font-variant-numeric: tabular-nums;">
+                                100.0%
                             </td>
-                            <td style="padding: 0.75rem 1rem; text-align: right; color: #0284c7; font-size: 0.95rem; font-variant-numeric: tabular-nums;">
+                            <td style="padding: 0.75rem 1rem; text-align: right; color: #0f172a; font-size: 0.95rem; font-family: monospace; font-variant-numeric: tabular-nums;">
                                 Rp {{ number_format($produksi->hpp_per_kg, 2, ',', '.') }}
+                            </td>
+                            <td style="padding: 0.75rem 1rem; text-align: right; color: #0f172a; font-size: 1rem; font-variant-numeric: tabular-nums;">
+                                Rp {{ number_format($produksi->total_biaya_produksi, 0, ',', '.') }}
                             </td>
                         </tr>
                     </tfoot>
@@ -508,10 +551,12 @@
                     <span class="cost-pill-label">Energi &amp; Tenaga Kerja (BTKL)</span>
                     <span class="cost-pill-val">Rp {{ number_format($subtotalEnergiBtkl, 0, ',', '.') }}</span>
                 </div>
+                @if($subtotalFoh > 0)
                 <div class="cost-summary-pill">
                     <span class="cost-pill-label">Overhead Pabrik (FOH)</span>
                     <span class="cost-pill-val">Rp {{ number_format($subtotalFoh, 0, ',', '.') }}</span>
                 </div>
+                @endif
             </div>
 
             {{-- 2. DISTRIBUSI KOMPOSISI BIAYA (COST PROPORTION BAR) --}}
@@ -523,7 +568,9 @@
                     <div class="cost-dist-segment seg-bahan" style="width: {{ $pctBahan }}%;" title="Bahan Baku: {{ number_format($pctBahan, 1) }}%"></div>
                     <div class="cost-dist-segment seg-kemasan" style="width: {{ $pctKemasan }}%;" title="Kemasan: {{ number_format($pctKemasan, 1) }}%"></div>
                     <div class="cost-dist-segment seg-energi" style="width: {{ $pctEnergiBtkl }}%;" title="Energi & BTKL: {{ number_format($pctEnergiBtkl, 1) }}%"></div>
+                    @if($subtotalFoh > 0)
                     <div class="cost-dist-segment seg-foh" style="width: {{ $pctFoh }}%;" title="FOH: {{ number_format($pctFoh, 1) }}%"></div>
+                    @endif
                 </div>
                 <div class="cost-dist-legend-grid">
                     <div class="cost-legend-item">
@@ -556,6 +603,7 @@
                             </div>
                         </div>
                     </div>
+                    @if($subtotalFoh > 0)
                     <div class="cost-legend-item">
                         <span class="cost-legend-dot seg-foh"></span>
                         <div>
@@ -566,6 +614,7 @@
                             </div>
                         </div>
                     </div>
+                    @endif
                 </div>
             </div>
 
@@ -639,22 +688,22 @@
                         </tr>
                         <tr>
                             <td style="padding-left: 1.5rem;">
-                                <span>Karton Baru (FL)</span>
+                                <span>{{ $isIfm ? 'Karton Baru IFM' : 'Karton Baru' }}</span>
                                 @if(!empty($produksi->bahan_baku_batch_map['karton_baru']))
                                     <span class="chip-batch-badge" style="font-size: 0.68rem; margin-left: 0.35rem; vertical-align: middle;">Batch: {{ implode(', ', $produksi->bahan_baku_batch_map['karton_baru']) }}</span>
                                 @endif
                             </td>
-                            <td>Kemasan karton baru box luar {{ (float) ($produksi->karton_baru_qty ?? 0) > 0 ? '(' . number_format($produksi->karton_baru_qty, 0, ',', '.') . ' Pcs)' : '' }}</td>
+                            <td>{{ $isIfm ? 'Kemasan karton baru box luar (100% harga beli)' : 'Kemasan karton baru' }} {{ (float) ($produksi->karton_baru_qty ?? 0) > 0 ? '(' . number_format($produksi->karton_baru_qty, 0, ',', '.') . ' Pcs)' : '' }}</td>
                             <td style="text-align: right; font-variant-numeric: tabular-nums;">Rp {{ number_format($produksi->karton_baru_nilai, 0, ',', '.') }}</td>
                         </tr>
                         <tr>
                             <td style="padding-left: 1.5rem;">
-                                <span>Karton Bekas</span>
+                                <span>{{ $isIfm ? 'Karton Puteran IFM' : 'Karton Reject / Rusak (Ex-IFM)' }}</span>
                                 @if(!empty($produksi->bahan_baku_batch_map['karton_bekas']))
                                     <span class="chip-batch-badge" style="font-size: 0.68rem; margin-left: 0.35rem; vertical-align: middle;">Batch: {{ implode(', ', $produksi->bahan_baku_batch_map['karton_bekas']) }}</span>
                                 @endif
                             </td>
-                            <td>Kemasan karton daur ulang / karton packing alternatif {{ (float) ($produksi->karton_bekas_qty ?? 0) > 0 ? '(' . number_format($produksi->karton_bekas_qty, 0, ',', '.') . ' Pcs)' : '' }}</td>
+                            <td>{{ $isIfm ? 'Kemasan karton sirkular (Tarif 1/5 siklus pemakaian)' : 'Karton daur ulang/reject sirkulasi IFM dialihkan ke lini manual (Rp 0)' }} {{ (float) ($produksi->karton_bekas_qty ?? 0) > 0 ? '(' . number_format($produksi->karton_bekas_qty, 0, ',', '.') . ' Pcs)' : '' }}</td>
                             <td style="text-align: right; font-variant-numeric: tabular-nums;">Rp {{ number_format($produksi->karton_bekas_nilai, 0, ',', '.') }}</td>
                         </tr>
                         <tr>
@@ -716,7 +765,8 @@
                             <td style="text-align: right; font-variant-numeric: tabular-nums;">Rp {{ number_format($subtotalEnergiBtkl, 0, ',', '.') }}</td>
                         </tr>
 
-                        {{-- 4. KELOMPOK D: BIAYA OVERHEAD PABRIK (FOH) & UTILITAS --}}
+                        @if($subtotalFoh > 0)
+                        {{-- 4. KELOMPOK D: BIAYA OVERHEAD PABRIK (FOH) & UTILITAS (DATA HISTORIS) --}}
                         <tr class="cost-group-header">
                             <td colspan="3">
                                 D. Biaya Overhead Pabrik (FOH) &amp; Utilitas
@@ -756,6 +806,7 @@
                             <td colspan="2" style="padding-left: 1.5rem;">SUBTOTAL BIAYA OVERHEAD PABRIK (FOH):</td>
                             <td style="text-align: right; font-variant-numeric: tabular-nums;">Rp {{ number_format($subtotalFoh, 0, ',', '.') }}</td>
                         </tr>
+                        @endif
                     </tbody>
                     <tfoot class="cost-total-footer">
                         <tr>
@@ -890,6 +941,7 @@
                                             <div class="audit-details-list">
                                                 @foreach($log->perubahan_field_json as $fKey => $fVal)
                                                     @php
+                                                        $isStock = isset($fVal['type']) && $fVal['type'] === 'STOCK_DEDUCTION';
                                                         $isQty = isset($fVal['type']) && $fVal['type'] === 'QUANTITY';
                                                         $oldVal = (float)($fVal['old'] ?? 0);
                                                         $newVal = (float)($fVal['new'] ?? 0);
@@ -916,26 +968,34 @@
                                                             $matchedBatches = $batchMap['tali_rafia'] ?? [];
                                                         }
                                                     @endphp
-                                                    <div class="audit-change-chip">
-                                                        <span class="chip-name">{{ $fVal['label'] ?? $fKey }}</span>
-                                                        @if(!empty($matchedBatches))
-                                                            <span class="chip-batch-badge" title="No. Batch Bahan Baku Pemakaian">
-                                                                Batch: {{ implode(', ', $matchedBatches) }}
+                                                    @if($isStock)
+                                                        <div class="audit-change-chip" style="background: #f0fdf4; border-color: #86efac; color: #166534;">
+                                                            <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                                                            <span class="chip-name"><strong>{{ $fVal['label'] ?? $fKey }}</strong>:</span>
+                                                            <span class="chip-new" style="color: #15803d; font-weight: 700;">{{ $fVal['new'] }}</span>
+                                                        </div>
+                                                    @else
+                                                        <div class="audit-change-chip">
+                                                            <span class="chip-name">{{ $fVal['label'] ?? $fKey }}</span>
+                                                            @if(!empty($matchedBatches))
+                                                                <span class="chip-batch-badge" title="No. Batch Bahan Baku Pemakaian">
+                                                                    Batch: {{ implode(', ', $matchedBatches) }}
+                                                                </span>
+                                                            @endif
+                                                            <span class="chip-old">
+                                                                {{ $isQty ? number_format($oldVal, 2, ',', '.') . ' ' . ($fVal['unit'] ?? '') : 'Rp ' . number_format($oldVal, 0, ',', '.') }}
                                                             </span>
-                                                        @endif
-                                                        <span class="chip-old">
-                                                            {{ $isQty ? number_format($oldVal, 2, ',', '.') . ' ' . ($fVal['unit'] ?? '') : 'Rp ' . number_format($oldVal, 0, ',', '.') }}
-                                                        </span>
-                                                        <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #94a3b8;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
-                                                        <span class="chip-new">
-                                                            {{ $isQty ? number_format($newVal, 2, ',', '.') . ' ' . ($fVal['unit'] ?? '') : 'Rp ' . number_format($newVal, 0, ',', '.') }}
-                                                        </span>
-                                                        @if($delta != 0)
-                                                            <span class="chip-delta {{ $delta > 0 ? 'pos' : 'neg' }}">
-                                                                ({{ $delta > 0 ? '+' : '' }}{{ $isQty ? number_format($delta, 2, ',', '.') . ' ' . ($fVal['unit'] ?? '') : 'Rp ' . number_format($delta, 0, ',', '.') }})
+                                                            <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #94a3b8;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                                                            <span class="chip-new">
+                                                                {{ $isQty ? number_format($newVal, 2, ',', '.') . ' ' . ($fVal['unit'] ?? '') : 'Rp ' . number_format($newVal, 0, ',', '.') }}
                                                             </span>
-                                                        @endif
-                                                    </div>
+                                                            @if($delta != 0)
+                                                                <span class="chip-delta {{ $delta > 0 ? 'pos' : 'neg' }}">
+                                                                    ({{ $delta > 0 ? '+' : '' }}{{ $isQty ? number_format($delta, 2, ',', '.') . ' ' . ($fVal['unit'] ?? '') : 'Rp ' . number_format($delta, 0, ',', '.') }})
+                                                                </span>
+                                                            @endif
+                                                        </div>
+                                                    @endif
                                                 @endforeach
                                             </div>
                                         </div>

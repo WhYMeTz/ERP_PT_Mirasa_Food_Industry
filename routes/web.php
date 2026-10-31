@@ -318,6 +318,19 @@ Route::middleware('auth')->group(function () {
             ->middleware('role:terima_view');
         Route::resource('terima', TerimaBarangController::class)->only(['index', 'show'])->middleware('role:terima_view');
 
+        // Penerimaan Kemasan Sirkular (Karton, Palet & Wadah Balikan Customer):
+        Route::get('kemasan-sirkular/mobile', [\App\Http\Controllers\Gudang\KemasanSirkularController::class, 'mobileCreate'])
+            ->name('kemasan-sirkular.mobile')
+            ->middleware('role:terima_create,gudang');
+        Route::get('kemasan-sirkular/pengeluaran-detail/{id}', [\App\Http\Controllers\Gudang\KemasanSirkularController::class, 'ajaxPengeluaranDetail'])
+            ->name('kemasan-sirkular.ajax-pengeluaran-detail');
+        Route::post('kemasan-sirkular/{id}/void', [\App\Http\Controllers\Gudang\KemasanSirkularController::class, 'void'])
+            ->name('kemasan-sirkular.void')
+            ->middleware('role:terima_create,gudang');
+        Route::resource('kemasan-sirkular', \App\Http\Controllers\Gudang\KemasanSirkularController::class)
+            ->except(['edit', 'update', 'destroy'])
+            ->middleware('role:terima_view,gudang');
+
         // Retur Pembelian ke Supplier (Outbound Retur Cacat/Reject): (Berdasarkan izin 'retur_create')
         Route::get('retur/batches', [ReturPembelianController::class, 'getBatches'])->name('retur.batches');
         Route::get('retur/po-data/{poId}', [ReturPembelianController::class, 'getPoData'])->name('retur.po-data');

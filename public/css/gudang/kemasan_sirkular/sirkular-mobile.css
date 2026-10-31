@@ -1,0 +1,653 @@
+/* ==========================================================================
+   QC MOBILE - PENERIMAAN KEMASAN SIRKULAR (ERP PT MIRASA FOOD INDUSTRY)
+   Khusus Smartphone & Tablet Checker Lapangan di Pintu Bongkar Muat Truk
+   Standardized with QC Mobile Karton Box Theme
+   ========================================================================== */
+
+.sirkular-mobile-wrap {
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+    padding-bottom: 110px; /* Safe space untuk sticky action bar di bawah */
+}
+
+/* Penyelarasan Navbar Atas Khusus Halaman Ini (Standar QC Gudang 600px) */
+.qc-top-appbar .qc-appbar-inner {
+    max-width: 600px !important;
+}
+
+.qc-top-appbar .qc-brand-title {
+    white-space: nowrap !important;
+}
+
+.qc-top-appbar .qc-brand-sub {
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+
+.qc-brand-badge-logistik {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+    color: #ffffff !important;
+    font-size: 0.65rem;
+    font-weight: 800;
+    padding: 0.15rem 0.45rem;
+    border-radius: 6px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+/* 1. Sub-Navigasi Halaman (Model Enterprise Mirasa QC Mobile Detail) */
+.sirkular-subnav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.85rem;
+    padding-top: 0.25rem;
+}
+
+.btn-subnav-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #334155;
+    background: #ffffff;
+    border: 1.5px solid #cbd5e1;
+    padding: 0.45rem 0.75rem;
+    border-radius: 8px;
+    text-decoration: none;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+    transition: all 0.15s ease;
+}
+
+.btn-subnav-back:hover {
+    background: #f1f5f9;
+    color: #0f172a;
+}
+
+.btn-subnav-office {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.775rem;
+    font-weight: 700;
+    color: #0284c7;
+    background: #f0f9ff;
+    border: 1.5px solid #bae6fd;
+    padding: 0.45rem 0.75rem;
+    border-radius: 8px;
+    text-decoration: none;
+    transition: all 0.15s ease;
+}
+
+.btn-subnav-office:hover {
+    background: #e0f2fe;
+    color: #0369a1;
+}
+
+/* 2. Header Halaman (Modern Enterprise Mobile Header) */
+.sirkular-page-head {
+    margin-bottom: 1rem;
+}
+
+.sirkular-head-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.35rem;
+}
+
+.sirkular-page-title {
+    font-size: 1.25rem;
+    font-weight: 900;
+    color: #0f172a;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin: 0;
+    letter-spacing: -0.01em;
+}
+
+.sirkular-doc-badge {
+    background: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    color: #475569;
+    font-size: 0.6875rem;
+    font-weight: 800;
+    letter-spacing: 0.03em;
+    padding: 0.2rem 0.55rem;
+    border-radius: 6px;
+    font-family: monospace;
+}
+
+.sirkular-page-desc {
+    font-size: 0.775rem;
+    color: #64748b;
+    margin: 0;
+    line-height: 1.4;
+}
+
+
+/* 2. Step Switcher Tab Bar (Mirip QC Karton) */
+.mobile-tab-nav {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.mobile-tab-btn {
+    border-radius: 10px;
+    font-size: 0.825rem;
+    font-weight: 700;
+    padding: 0.75rem 0.5rem;
+    text-align: center;
+    border: 1.5px solid #cbd5e1;
+    background: #ffffff;
+    color: #475569;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    transition: all 0.15s ease;
+}
+
+.mobile-tab-btn.active {
+    border-color: #059669;
+    background: #059669;
+    color: #ffffff;
+    box-shadow: 0 2px 4px rgba(5, 150, 105, 0.25);
+}
+
+/* 3. Live KPI Rekonsiliasi Bar */
+.mobile-kpi-bar {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.4rem;
+    margin-bottom: 1rem;
+}
+
+.mobile-kpi-card {
+    background: #ffffff;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 0.5rem 0.3rem;
+    text-align: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    min-width: 0;
+}
+
+.mobile-kpi-card-label {
+    font-size: 0.6rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #64748b;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.mobile-kpi-card-val {
+    font-size: 1.15rem;
+    font-weight: 800;
+    font-family: monospace;
+    color: #0f172a;
+    line-height: 1.2;
+    margin-top: 0.2rem;
+}
+
+/* 4. Form Cards & Inputs */
+.mobile-form-card {
+    background: #ffffff;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 12px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+    margin-bottom: 1rem;
+    overflow: hidden;
+}
+
+.mobile-form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.65rem;
+    margin-bottom: 0.95rem;
+}
+
+@media (max-width: 520px) {
+    .mobile-form-row {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+}
+
+.mobile-form-card-header {
+    background: #ffffff;
+    border-bottom: 1px solid #f1f5f9;
+    padding: 0.85rem 1.15rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.mobile-card-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+}
+
+.mobile-card-num-badge {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: #059669;
+    color: #ffffff;
+    font-size: 0.75rem;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mobile-card-title-text {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0;
+}
+
+.mobile-form-card-body {
+    padding: 1.15rem;
+}
+
+.mobile-form-group {
+    margin-bottom: 0.95rem;
+}
+
+.mobile-form-label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #334155;
+    margin-bottom: 0.35rem;
+}
+
+.mobile-form-control {
+    width: 100%;
+    height: 44px;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 0.5rem 0.85rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #1e293b;
+    background: #ffffff;
+    outline: none;
+    transition: all 0.15s ease;
+}
+
+.mobile-form-control:focus {
+    border-color: #059669;
+    box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15);
+}
+
+/* 5. Sortir Tally Card (Industrial Warehouse Inspection Sheet) */
+.qc-field-tag {
+    font-size: 0.65rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    color: #475569;
+    background: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-family: monospace;
+}
+
+.sortir-tally-row {
+    padding: 1rem 1.15rem;
+    border-bottom: 1px solid #f1f5f9;
+    background: #ffffff;
+    transition: background 0.15s ease;
+}
+
+.sortir-tally-row:hover {
+    background: #fafcff;
+}
+
+.sortir-tally-meta {
+    margin-bottom: 0.65rem;
+}
+
+.sortir-tally-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    font-size: 0.925rem;
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1.3;
+}
+
+.tally-pill {
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+    font-family: monospace;
+    white-space: nowrap;
+}
+
+.pill-success {
+    background: #ecfdf5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+}
+
+.pill-indigo {
+    background: #eef2ff;
+    color: #3730a3;
+    border: 1px solid #c7d2fe;
+}
+
+.pill-danger {
+    background: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+}
+
+.sortir-tally-desc {
+    font-size: 0.725rem;
+    color: #64748b;
+    margin-top: 0.15rem;
+}
+
+.font-mono {
+    font-family: monospace;
+    font-weight: 700;
+}
+
+.sortir-tally-control {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+}
+
+.tally-stepper-group {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    width: 100%;
+}
+
+.btn-stepper {
+    flex: 0 0 38px;
+    width: 38px;
+    height: 40px;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 6px;
+    background: #f8fafc;
+    color: #334155;
+    font-size: 0.875rem;
+    font-weight: 800;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    touch-action: manipulation;
+    user-select: none;
+    transition: all 0.1s ease;
+    padding: 0;
+}
+
+.btn-stepper:active {
+    background: #e2e8f0;
+    transform: scale(0.94);
+}
+
+.btn-stepper-plus {
+    background: #f0fdf4;
+    border-color: #86efac;
+    color: #166534;
+}
+
+.btn-stepper-plus:active {
+    background: #dcfce7;
+}
+
+.tally-input-wrap {
+    flex: 1 1 0%;
+    min-width: 0;
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.tally-input {
+    width: 100%;
+    height: 40px;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 0 2.5rem 0 0.65rem;
+    font-size: 1.2rem;
+    font-weight: 800;
+    font-family: monospace;
+    text-align: right;
+    color: #0f172a;
+    background: #ffffff;
+    outline: none;
+    transition: all 0.15s ease;
+}
+
+.tally-input:focus {
+    border-color: #059669;
+    box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15);
+}
+
+.tally-unit {
+    position: absolute;
+    right: 0.6rem;
+    font-size: 0.7rem;
+    font-weight: 800;
+    color: #64748b;
+    pointer-events: none;
+    user-select: none;
+}
+
+.tally-preset-chips {
+    display: flex;
+    gap: 0.3rem;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.chip-preset {
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    background: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    color: #475569;
+    cursor: pointer;
+    touch-action: manipulation;
+    transition: all 0.1s ease;
+}
+
+.chip-preset:active {
+    background: #e2e8f0;
+}
+
+.chip-preset-action {
+    background: #ecfdf5;
+    border-color: #a7f3d0;
+    color: #047857;
+}
+
+.chip-preset-action:active {
+    background: #d1fae5;
+}
+
+.chip-preset-reset {
+    color: #dc2626;
+    background: #fef2f2;
+    border-color: #fecaca;
+    margin-left: auto;
+}
+
+.chip-preset-reset:active {
+    background: #fee2e2;
+}
+
+@media (max-width: 380px) {
+    .btn-stepper {
+        flex: 0 0 32px;
+        width: 32px;
+        height: 38px;
+        font-size: 0.8rem;
+    }
+    .tally-input {
+        height: 38px;
+        font-size: 1.05rem;
+    }
+}
+
+/* Summary Tally Footer */
+.sortir-tally-footer {
+    background: #f8fafc;
+    border-top: 1.5px solid #e2e8f0;
+    padding: 0.75rem 1.15rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.tally-footer-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.tally-footer-label {
+    font-size: 0.725rem;
+    font-weight: 700;
+    color: #64748b;
+}
+
+.tally-footer-val {
+    font-size: 0.85rem;
+    font-weight: 800;
+    font-family: monospace;
+    color: #0f172a;
+}
+
+.tally-footer-badge {
+    font-size: 0.7rem;
+    font-weight: 800;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    background: #e2e8f0;
+    color: #475569;
+}
+
+.badge-match {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.badge-diff {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+/* 6. Sticky Bottom Action Bar */
+.mobile-fixed-bottom-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-top: 1px solid #cbd5e1;
+    padding: 0.75rem 1rem;
+    padding-bottom: max(0.85rem, env(safe-area-inset-bottom, 16px));
+    z-index: 1000;
+    box-shadow: 0 -4px 16px rgba(15, 23, 42, 0.08);
+}
+
+.mobile-bottom-bar-inner {
+    max-width: 600px;
+    margin: 0 auto;
+    display: flex;
+    gap: 0.65rem;
+}
+
+.btn-mobile-next {
+    flex: 1;
+    height: 48px;
+    background: #0f172a;
+    color: #ffffff;
+    border: none;
+    border-radius: 10px;
+    font-size: 0.925rem;
+    font-weight: 800;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn-mobile-next:active {
+    background: #1e293b;
+    transform: scale(0.98);
+}
+
+.btn-mobile-submit-primary {
+    flex: 1;
+    height: 48px;
+    background: #059669;
+    color: #ffffff;
+    border: none;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    font-weight: 800;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(5, 150, 105, 0.3);
+    transition: all 0.15s ease;
+}
+
+.btn-mobile-submit-primary:active {
+    background: #047857;
+    transform: scale(0.98);
+}
+
+.spin-animate {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+

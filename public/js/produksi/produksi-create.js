@@ -446,6 +446,22 @@
         // Update tampilan stiker karton / kemasan
         window.updateStickerPreview();
 
+        // Sinkronisasi otomatis ke kemasan karton sirkular jika baru input Qty Karton
+        if (typeof window.updateKartonMode === 'function') {
+            window.updateKartonMode(isIfm);
+        }
+        const elBaruQty = document.getElementById('karton_baru_qty');
+        const elBekasQty = document.getElementById('karton_bekas_qty');
+        if (qtyKarton > 0 && elBekasQty && (!elBaruQty || !elBaruQty.value || parseFloat(elBaruQty.value) === 0)) {
+            if (!elBekasQty.value || parseFloat(elBekasQty.value) === 0 || elBekasQty.dataset.syncedByKarton === 'true') {
+                elBekasQty.value = qtyKarton;
+                elBekasQty.dataset.syncedByKarton = 'true';
+                if (typeof window.calcKemasanItem === 'function') {
+                    window.calcKemasanItem('karton_bekas_qty');
+                }
+            }
+        }
+
         // Update highlight dokumen pengeluaran gudang yang cocok
         window.highlightMatchingPakai();
 
@@ -458,7 +474,13 @@
     // Otomatis menyesuaikan produk default di tabel hasil produksi, nomor batch, dan kartu kemasan
     window.onLiniProduksiChange = function () {
         const liniSelect = document.getElementById('lini_produksi');
-        const lini = liniSelect?.value || '';
+        const lini = (liniSelect?.value || '').toUpperCase();
+        const isIfm = lini.includes('IFM') || lini.includes('IFL') || lini.includes('INDOFOOD');
+
+        // Sesuaikan mode kemasan karton sirkular (IFM vs Manual)
+        if (typeof window.updateKartonMode === 'function') {
+            window.updateKartonMode(isIfm);
+        }
 
         // Auto-select baris pertama di tabel hasil produksi sesuai lini yang dipilih
         const tbody = document.getElementById('tbodyOutputFg');
@@ -734,11 +756,15 @@
         window.calcAll();
     };
 
-    // 9. Standar Harga Satuan & Hitung Otomatis Bahan Kemasan & Pembantu
+    // 9. Standar Harga Satuan & Hitung Otomatis Bahan Kemasan & Pembantu (Master Data Integration)
+    const initialKartonRates = window.appConfig?.kartonRates || {};
+    const defaultKartonBaruPrice = parseFloat(initialKartonRates.baru) || 8741;
+    const defaultKartonPuteranPrice = parseFloat(initialKartonRates.puteran) || 1748.20;
+
     window.standarHargaKemasan = {
         bumbu_qty: 35000,
-        karton_baru_qty: 10000,
-        karton_bekas_qty: 5000,
+        karton_baru_qty: defaultKartonBaruPrice,
+        karton_bekas_qty: defaultKartonPuteranPrice,
         plastik_hd_qty: 29400,
         lakban_besar_qty: 15000,
         lakban_kecil_qty: 6140,
@@ -753,6 +779,84 @@
         lakban_besar_qty: 'lakban_besar_nilai',
         lakban_kecil_qty: 'lakban_kecil_nilai',
         tali_rafia_qty: 'tali_rafia_nilai'
+    };
+
+    // Mode Kemasan Karton Sirkular (Lini IFM vs Lini Manual)
+    window.updateKartonMode = function (isIfm) {
+        const rates = window.appConfig?.kartonRates || { baru: 8741, puteran: 1748.20, reject: 0 };
+        const cardBaru = document.getElementById('card_karton_baru_item');
+        const lblBaruTitle = document.getElementById('label_karton_baru_title');
+        const badgeBaruDesc = document.getElementById('badge_karton_baru_desc');
+        const lblPuteranTitle = document.getElementById('label_karton_puteran_title');
+        const badgePuteranDesc = document.getElementById('badge_karton_puteran_desc');
+        const badgePuteranType = document.getElementById('badge_karton_puteran_type');
+        const inputBaruQty = document.getElementById('karton_baru_qty');
+        const inputBaruNilai = document.getElementById('karton_baru_nilai');
+        const inputBekasQty = document.getElementById('karton_bekas_qty');
+        const inputBekasNilai = document.getElementById('karton_bekas_nilai');
+
+        const formatRp = (n) => 'Rp ' + Math.round(n).toLocaleString('id-ID');
+
+        if (isIfm) {
+            // MODE LINI IFM:
+            // Hanya gunakan Karton Sirkular IFM (Tarif Flat 1/5 Siklus: Rp 1.748/box)
+            // Sembunyikan opsi Karton Baru agar HPP IFM tidak melonjak/kacau
+            if (cardBaru) cardBaru.style.display = 'none';
+            if (inputBaruQty) inputBaruQty.value = 0;
+            if (inputBaruNilai) inputBaruNilai.value = 0;
+
+            if (lblPuteranTitle) lblPuteranTitle.textContent = 'Karton Sirkular IFM';
+            if (badgePuteranDesc) {
+                badgePuteranDesc.innerHTML = 'Standar Sirkular 5x Pakai';
+                badgePuteranDesc.style.color = '#059669';
+            }
+            if (badgePuteranType) {
+                badgePuteranType.textContent = 'Sirkular 5x';
+                badgePuteranType.style.background = '#ecfdf5';
+                badgePuteranType.style.color = '#059669';
+                badgePuteranType.style.borderColor = '#a7f3d0';
+            }
+
+            window.standarHargaKemasan.karton_baru_qty = 0;
+            window.standarHargaKemasan.karton_bekas_qty = parseFloat(rates.puteran) || 1748.20;
+
+            if (inputBekasNilai) inputBekasNilai.readOnly = false;
+        } else {
+            // MODE LINI MANUAL:
+            // 1. Karton Reject / Rusak (Default Rp 0)
+            // 2. Karton Box Baru (Opsi tambahan jika ada pesanan khusus baru)
+            if (cardBaru) cardBaru.style.display = 'block';
+            if (lblBaruTitle) lblBaruTitle.textContent = 'Karton Box Baru (Opsional)';
+            if (badgeBaruDesc) {
+                badgeBaruDesc.innerHTML = 'Khusus Pesanan Baru Sekali Pakai';
+                badgeBaruDesc.style.color = '#b45309';
+            }
+
+            if (lblPuteranTitle) lblPuteranTitle.textContent = 'Karton Reject / Rusak (Ex-IFM)';
+            if (badgePuteranDesc) {
+                badgePuteranDesc.innerHTML = 'Limbah Sirkulasi Lunas di IFM';
+                badgePuteranDesc.style.color = '#0284c7';
+            }
+            if (badgePuteranType) {
+                badgePuteranType.textContent = 'Reject Rp 0';
+                badgePuteranType.style.background = '#f0f9ff';
+                badgePuteranType.style.color = '#0284c7';
+                badgePuteranType.style.borderColor = '#bae6fd';
+            }
+
+            window.standarHargaKemasan.karton_baru_qty = parseFloat(rates.baru) || 8741;
+            window.standarHargaKemasan.karton_bekas_qty = 0;
+
+            if (inputBekasNilai) {
+                inputBekasNilai.value = 0;
+                inputBekasNilai.readOnly = true;
+            }
+        }
+
+        if (typeof window.calcKemasanItem === 'function') {
+            window.calcKemasanItem('karton_bekas_qty');
+            window.calcKemasanItem('karton_baru_qty');
+        }
     };
 
     window.calcKemasanItem = function (qtyInputId) {
@@ -783,6 +887,7 @@
 
             if (qtyEl) {
                 qtyEl.addEventListener('input', () => {
+                    delete qtyEl.dataset.syncedByKarton;
                     window.calcKemasanItem(qtyId);
                 });
             }
@@ -965,40 +1070,24 @@
         return count;
     }
 
-    // Fungsi untuk mereset dan menghitung ulang seluruh nilai FOH berdasarkan Total Output KG WIP
+    // Fungsi untuk mereset dan menghitung ulang seluruh nilai FOH (Dinonaktifkan / diset 0 karena FOH dialihkan ke Jurnal Keuangan)
     window.recalcFohStandard = function (forceReset = false) {
-        let totalOutputKg = 0;
-        document.querySelectorAll('.input-fg-qty-kg').forEach(inp => {
-            totalOutputKg += parseFloat(inp.value) || 0;
-        });
-
         const syncField = (id, val) => {
             const el = document.getElementById(id);
             if (!el) return;
-            if (forceReset || el.dataset.userModified !== 'true') {
-                el.value = Math.round(val);
-                if (forceReset) delete el.dataset.userModified;
-            }
+            el.value = val;
+            if (forceReset) delete el.dataset.userModified;
         };
 
-        if (totalOutputKg > 0 || forceReset) {
-            syncField('qc_pengawasan_nilai', totalOutputKg * window.FOH_RATES.QC);
-            // Listrik & Air + Telp, Pemeliharaan & Penyusutan sementara di-hidden & dinolkan (dalam masa peninjauan)
-            syncField('listrik_air_telp_nilai', 0);
-            syncField('pemeliharaan_mesin_nilai', 0);
-            syncField('penyusutan_mesin_nilai', 0);
-            syncField('limbah_kimia_nilai', totalOutputKg * window.FOH_RATES.KIMIA);
-
-            // Fotocopy & ATK: Rumus Excel Asli PT Mirasa =(AF/6)*2*$V$2 -> (Karton IFL x 2 lbr stiker) x Rp 28
-            const kartonIflCount = getKartonIflCount(totalOutputKg);
-            syncField('fotocopy_nilai', kartonIflCount * 2 * (window.FOH_RATES.FOTOCOPY || 28.00));
-
-            const elLimbahP = document.getElementById('limbah_padat_nilai');
-            if (elLimbahP) {
-                elLimbahP.value = 0; // Limbah Padat di-hidden, cukup pakai Limbah IPAL
-                if (forceReset) delete elLimbahP.dataset.userModified;
-            }
-        }
+        syncField('qc_pengawasan_nilai', 0);
+        syncField('limbah_kimia_nilai', 0);
+        syncField('fotocopy_nilai', 0);
+        syncField('sarung_tangan_plastik_nilai', 0);
+        syncField('sarung_tangan_kain_nilai', 0);
+        syncField('listrik_air_telp_nilai', 0);
+        syncField('pemeliharaan_mesin_nilai', 0);
+        syncField('penyusutan_mesin_nilai', 0);
+        syncField('limbah_padat_nilai', 0);
 
         window.calcAll();
     };
@@ -1128,32 +1217,13 @@
             if (inpBerkoNonIfl) inpBerkoNonIfl.value = totalBerkoKg.toFixed(4);
         }
 
-        // 4. Kalkulasi Otomatis Standar FOH Sesuai Pengali Excel Asli PT Mirasa
-        // Rumus Umum: Total KG WIP × Tarif Standar Pengali (jika field belum diedit manual oleh user)
-        // Khusus Fotocopy: (Jumlah Karton IFL × 2 Lembar Stiker) × Rp 28/Lembar
-        if (totalOutputKg > 0 && typeof window.FOH_RATES === 'object') {
-            const autoSyncFoh = (id, val) => {
-                const el = document.getElementById(id);
-                if (el && el.dataset.userModified !== 'true') {
-                    el.value = Math.round(val);
-                }
-            };
-            autoSyncFoh('qc_pengawasan_nilai', totalOutputKg * window.FOH_RATES.QC);
-            // Listrik & Air + Telp, Pemeliharaan & Penyusutan sementara di-hidden & dinolkan (dalam masa peninjauan)
-            autoSyncFoh('listrik_air_telp_nilai', 0);
-            autoSyncFoh('pemeliharaan_mesin_nilai', 0);
-            autoSyncFoh('penyusutan_mesin_nilai', 0);
-            autoSyncFoh('limbah_kimia_nilai', totalOutputKg * window.FOH_RATES.KIMIA);
-
-            // Rumus Excel Asli Fotocopy: =(AF/6)*2*$V$2
-            const kartonIflCount = getKartonIflCount(totalOutputKg);
-            autoSyncFoh('fotocopy_nilai', kartonIflCount * 2 * (window.FOH_RATES.FOTOCOPY || 28.00));
-
-            const elLimbahP = document.getElementById('limbah_padat_nilai');
-            if (elLimbahP) {
-                elLimbahP.value = 0; // Limbah Padat di-hidden, cukup pakai Limbah IPAL
-            }
-        }
+        // 4. Biaya Overhead Pabrik (FOH) dialihkan ke Jurnal Keuangan / Accounting (Tidak masuk HPP Harian Produksi)
+        // Nilai input FOH disinkronkan ke 0
+        const autoZeroFoh = (id) => {
+            const el = document.getElementById(id);
+            if (el) el.value = 0;
+        };
+        ['qc_pengawasan_nilai', 'limbah_kimia_nilai', 'fotocopy_nilai', 'sarung_tangan_plastik_nilai', 'sarung_tangan_kain_nilai', 'listrik_air_telp_nilai', 'pemeliharaan_mesin_nilai', 'penyusutan_mesin_nilai', 'limbah_padat_nilai'].forEach(autoZeroFoh);
 
         // 5. FOH Overhead
         const fc = parseFloat(document.getElementById('fotocopy_nilai')?.value) || 0;

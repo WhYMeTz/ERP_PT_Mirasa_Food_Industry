@@ -250,11 +250,17 @@
                         {{-- HPP / Kg --}}
                         <td style="text-align: right;">
                             <div style="font-weight: 800; font-size: 0.925rem; color: #0f172a; font-family: monospace; font-variant-numeric: tabular-nums;">
-                                Rp {{ number_format($d['hpp_per_kg'], 0, ',', '.') }}
+                                Rp {{ number_format($d['hpp_utama'] ?? $d['hpp_per_kg'], 0, ',', '.') }}
                             </div>
-                            <span style="font-size: 0.625rem; color: #059669; font-weight: 600; text-transform: uppercase;">
-                                Beban Pokok / Kg
-                            </span>
+                            @if(!empty($d['has_berko']) && abs(($d['hpp_utama'] ?? 0) - ($d['hpp_berko'] ?? 0)) > 0.01)
+                                <div style="font-size: 0.65rem; color: #dc2626; font-weight: 600;">
+                                    Berko: Rp {{ number_format($d['hpp_berko'], 0, ',', '.') }}
+                                </div>
+                            @else
+                                <span style="font-size: 0.625rem; color: #059669; font-weight: 600; text-transform: uppercase;">
+                                    Beban Pokok / Kg
+                                </span>
+                            @endif
                         </td>
 
                         {{-- Aksi Expand Akordion (Audit Rincian Biaya) --}}
@@ -580,10 +586,31 @@
                                             <span style="font-weight: 700; color: #713f12;">Total Biaya:</span>
                                             <strong style="color: #713f12; font-size: 0.875rem;">Rp {{ number_format($d['total_biaya_produksi'], 0, ',', '.') }}</strong>
                                         </div>
-                                        <div class="mini-cost-row" style="background: #ffffff; padding: 0.35rem 0.5rem; border-radius: 4px; border: 1px solid #fef08a;">
-                                            <span style="font-weight: 800; color: #0f172a; font-size: 0.775rem;">HPP / Kg:</span>
-                                            <strong style="color: #047857; font-size: 1rem; font-family: monospace;">Rp {{ number_format($d['hpp_per_kg'], 0, ',', '.') }}</strong>
-                                        </div>
+
+                                        @if(!empty($d['has_berko']))
+                                            {{-- MODEL 2 KOLOM BERDAMPINGAN: HPP UTAMA vs HPP BERKO --}}
+                                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; margin-top: 0.35rem;">
+                                                <div style="background: #ffffff; padding: 0.35rem 0.45rem; border-radius: 4px; border: 1px solid #bae6fd; text-align: left;">
+                                                    <div style="font-size: 0.65rem; font-weight: 800; color: #0369a1; text-transform: uppercase; letter-spacing: 0.02em;">HPP Utama</div>
+                                                    <div style="color: #0284c7; font-size: 0.875rem; font-weight: 800; font-family: monospace; margin-top: 0.1rem; font-variant-numeric: tabular-nums;">
+                                                        Rp {{ number_format($d['hpp_utama'], 0, ',', '.') }}
+                                                    </div>
+                                                    <div style="font-size: 0.6rem; color: #64748b;">/ kg WIP</div>
+                                                </div>
+                                                <div style="background: #ffffff; padding: 0.35rem 0.45rem; border-radius: 4px; border: 1px solid #fecaca; text-align: left;">
+                                                    <div style="font-size: 0.65rem; font-weight: 800; color: #991b1b; text-transform: uppercase; letter-spacing: 0.02em;">HPP Berko</div>
+                                                    <div style="color: #dc2626; font-size: 0.875rem; font-weight: 800; font-family: monospace; margin-top: 0.1rem; font-variant-numeric: tabular-nums;">
+                                                        Rp {{ number_format($d['hpp_berko'], 0, ',', '.') }}
+                                                    </div>
+                                                    <div style="font-size: 0.6rem; color: #64748b;">/ kg Sampingan</div>
+                                                </div>
+                                            </div>
+                                        @else
+                                            <div class="mini-cost-row" style="background: #ffffff; padding: 0.35rem 0.5rem; border-radius: 4px; border: 1px solid #fef08a; margin-top: 0.35rem;">
+                                                <span style="font-weight: 800; color: #0f172a; font-size: 0.775rem;">HPP / Kg:</span>
+                                                <strong style="color: #047857; font-size: 1rem; font-family: monospace;">Rp {{ number_format($d['hpp_per_kg'], 0, ',', '.') }}</strong>
+                                            </div>
+                                        @endif
                                     </div>
                                 </div>
 

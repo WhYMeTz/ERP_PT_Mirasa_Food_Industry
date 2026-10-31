@@ -197,18 +197,21 @@
             window.onSingkongBarangChanged(bSel);
         }
 
-        // Update kuantitas
+        // Update kuantitas (Hanya auto-fill dari sisa PO jika bukan Pengujian 2)
         const sisaQty = targetItem.sisa_qty > 0 ? targetItem.sisa_qty : targetItem.pesan_qty;
         const inSJ = document.getElementById('inputJumlahSJ');
         const inPabrik = document.getElementById('inputJumlahPabrik');
+        const isUji2Active = (window.currentTahapUji === 2 || !!document.getElementById('parentQcIdInput')?.value);
 
-        if (inSJ && (!inSJ.value || inSJ.dataset.autoFilled === 'true' || inSJ.value == 0)) {
-            inSJ.value = sisaQty;
-            inSJ.dataset.autoFilled = 'true';
-        }
-        if (inPabrik && (!inPabrik.value || inPabrik.dataset.autoFilled === 'true' || inPabrik.value == 0)) {
-            inPabrik.value = sisaQty;
-            inPabrik.dataset.autoFilled = 'true';
+        if (!isUji2Active) {
+            if (inSJ && (!inSJ.value || inSJ.dataset.autoFilled === 'true' || inSJ.value == 0)) {
+                inSJ.value = sisaQty;
+                inSJ.dataset.autoFilled = 'true';
+            }
+            if (inPabrik && (!inPabrik.value || inPabrik.dataset.autoFilled === 'true' || inPabrik.value == 0)) {
+                inPabrik.value = sisaQty;
+                inPabrik.dataset.autoFilled = 'true';
+            }
         }
 
         // Update nama jenis

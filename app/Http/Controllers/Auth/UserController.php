@@ -150,6 +150,8 @@ class UserController extends Controller
                 'default_gudang'    => $user->gudang ? ($user->gudang->display_name ?? $user->gudang->gudang_nm) : null,
                 'created_at'        => $user->created_at?->format('d M Y H:i') ?? '-',
                 'updated_at'        => $user->updated_at?->format('d M Y H:i') ?? '-',
+                'signature_path'    => $user->signature_path,
+                'signature_url'     => $user->signature_url,
                 'can_view_password' => $isSuperAdmin,
                 'password'          => $passwordPlain,
                 'permissions'       => $rolePermissions,

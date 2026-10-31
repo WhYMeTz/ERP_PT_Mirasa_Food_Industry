@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/gudang/po/po-index.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/gudang/po/po-index.css') }}?v={{ file_exists(public_path('css/gudang/po/po-index.css')) ? filemtime(public_path('css/gudang/po/po-index.css')) : time() }}">
 @endpush
 
 @section('content')
@@ -137,6 +137,7 @@
             <select name="status" class="form-control" style="padding: 0.45rem 0.75rem; max-width: 175px; font-size: 0.85rem;" onchange="this.form.submit()">
                 <option value="">-- Semua Status --</option>
                 <option value="PENDING_APPROVAL" {{ ($currentStatus == 'PENDING_APPROVAL') ? 'selected' : '' }}>Menunggu Approval</option>
+                <option value="REVISION" {{ ($currentStatus == 'REVISION') ? 'selected' : '' }}>Perlu Revisi Atasan</option>
                 <option value="APPROVED" {{ ($currentStatus == 'APPROVED') ? 'selected' : '' }}>Disetujui (Approved)</option>
                 <option value="PARTIAL" {{ ($currentStatus == 'PARTIAL') ? 'selected' : '' }}>Sebagian Diterima</option>
                 <option value="COMPLETED_CLOSED" {{ ($currentStatus == 'COMPLETED_CLOSED') ? 'selected' : '' }}>Selesai / Ditutup</option>
@@ -259,6 +260,8 @@
                                 <div>
                                     @if ($po->status_cd == 'PENDING_APPROVAL')
                                         <span class="badge" style="background:#fef3c7; color:#b45309; border: 1px solid #fde68a; font-weight:700;">Menunggu Approval</span>
+                                    @elseif ($po->status_cd == 'REVISION')
+                                        <span class="badge" style="background:#eff6ff; color:#1d4ed8; border: 1px solid #bfdbfe; font-weight:700;">🔄 Perlu Revisi Atasan</span>
                                     @elseif ($po->status_cd == 'REJECTED')
                                         <span class="badge" style="background:#fee2e2; color:#b91c1c; border: 1px solid #fecaca; font-weight:700;">Ditolak Atasan</span>
                                     @elseif ($po->status_cd == 'COMPLETED')
@@ -279,6 +282,17 @@
                                         <span class="badge" style="background:#fee2e2; color:#b91c1c;">Dibatalkan</span>
                                     @endif
                                 </div>
+
+                                {{-- Memo Revisi / Catatan Tolak dari Atasan --}}
+                                @if ($po->status_cd == 'REVISION' && !empty($po->reject_reason))
+                                    <div style="font-size: 0.725rem; color: #1e40af; background: #eff6ff; padding: 2px 6px; border-radius: 4px; margin-top: 3px; border: 1px solid #dbeafe; line-height: 1.3;" title="{{ $po->reject_reason }}">
+                                        <strong>Memo Revisi:</strong> {{ \Illuminate\Support\Str::limit($po->reject_reason, 40) }}
+                                    </div>
+                                @elseif ($po->status_cd == 'REJECTED' && !empty($po->reject_reason))
+                                    <div style="font-size: 0.725rem; color: #991b1b; background: #fef2f2; padding: 2px 6px; border-radius: 4px; margin-top: 3px; border: 1px solid #fecaca; line-height: 1.3;" title="{{ $po->reject_reason }}">
+                                        <strong>Alasan Tolak:</strong> {{ \Illuminate\Support\Str::limit($po->reject_reason, 40) }}
+                                    </div>
+                                @endif
 
                                 {{-- Progress Bar Ramping --}}
                                 @php
@@ -369,10 +383,13 @@
                             <div id="poDropdown-{{ $po->po_id }}" class="action-dropdown-menu">
                                 
                                 {{-- 1. KELOMPOK DOKUMEN: LIHAT & CETAK --}}
-                                <a href="{{ route('gudang.po.show', $po->po_id) }}" class="action-dropdown-item">
+                                <button type="button" 
+                                        class="action-dropdown-item" 
+                                        onclick="closeAllActionDropdowns(); openPoDetailModal({{ $po->po_id }})" 
+                                        title="Buka pratinjau cepat rincian dokumen PO">
                                     <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                                     <span style="font-weight: 600;">Lihat Detail PO</span>
-                                </a>
+                                </button>
 
                                 <a href="{{ route('gudang.po.export-pdf', $po->po_id) }}" target="_blank" class="action-dropdown-item">
                                     <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
@@ -407,16 +424,6 @@
                                                 <span style="font-weight: 600; color: #b45309;">Kirim Ulang Approval</span>
                                             </button>
                                         </form>
-
-                                        @if (Auth::user()?->canApprovePo())
-                                            <form action="{{ route('gudang.po.approve_internal', $po->po_id) }}" method="POST" onsubmit="return confirm('Apakah Anda menyetujui dokumen Purchase Order {{ $po->po_no }} ini secara resmi?')" style="margin: 0;">
-                                                @csrf
-                                                <button type="submit" class="action-dropdown-item" style="color: #059669;">
-                                                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                                    <span style="font-weight: 700;">Setujui PO (Atasan)</span>
-                                                </button>
-                                            </form>
-                                        @endif
                                     @endif
 
                                     {{-- JIKA PO APPROVED: KIRIM KE SUPPLIER --}}
@@ -431,14 +438,14 @@
                                         </button>
                                     @endif
 
-                                    {{-- TERIMA BARANG (JIKA DAPAT DITERIMA) --}}
+                                    {{-- TERIMA BARANG (JIKA DAPAT DITERIMA: ARAHKAN KE FORM RESMI PENERIMAAN) --}}
                                     @if ($canReceive)
-                                        <button type="button" 
-                                                class="action-dropdown-item" 
-                                                onclick="closeAllActionDropdowns(); openQuickReceiveIndexModal({{ json_encode($poPayload) }})">
+                                        <a href="{{ route('gudang.terima.create', ['po_id' => $po->po_id]) }}" 
+                                           class="action-dropdown-item" 
+                                           title="Catat penerimaan barang resmi di modul Inbound Gudang">
                                             <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
                                             <span style="font-weight: 600; color: #0f172a;">Catat Terima Barang</span>
-                                        </button>
+                                        </a>
                                     @endif
 
                                     {{-- BATALKAN SISA & SELESAIKAN (JIKA PARTIAL & ADA SISA) --}}
@@ -473,9 +480,9 @@
                                     <div class="action-dropdown-divider"></div>
 
                                     @if ($canEdit)
-                                        <a href="{{ route('gudang.po.edit', $po->po_id) }}" class="action-dropdown-item">
+                                        <a href="{{ route('gudang.po.edit', $po->po_id) }}" class="action-dropdown-item" style="{{ $po->status_cd == 'REVISION' ? 'color: #1d4ed8; font-weight: 700;' : '' }}">
                                             <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                                            <span>Edit PO</span>
+                                            <span>{{ $po->status_cd == 'REVISION' ? 'Perbaiki / Revisi PO' : 'Edit PO' }}</span>
                                         </a>
                                     @endif
 
@@ -567,9 +574,6 @@
         </div>
     @endif
 </div>
-
-{{-- MODAL CEPAT CATAT BARANG MASUK (IN-PLACE QUICK RECEIVE) --}}
-@include('gudang.po.partials.modal-quick-receive-index')
 
 {{-- MODAL DETAIL DOKUMEN PO (QUICK VIEW POPUP) --}}
 @include('gudang.po.partials.modal-detail-po')

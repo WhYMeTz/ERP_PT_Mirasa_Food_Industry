@@ -50,7 +50,8 @@ class PoController extends Controller
                 COUNT(CASE WHEN status_cd = 'APPROVED' THEN 1 END) as approved_count,
                 COUNT(CASE WHEN status_cd = 'PARTIAL' THEN 1 END) as partial_count,
                 COUNT(CASE WHEN status_cd IN ('COMPLETED', 'CLOSED') THEN 1 END) as completed_count,
-                COUNT(CASE WHEN status_cd = 'REJECTED' THEN 1 END) as rejected_count
+                COUNT(CASE WHEN status_cd = 'REJECTED' THEN 1 END) as rejected_count,
+                COUNT(CASE WHEN status_cd = 'REVISION' THEN 1 END) as revision_count
             ")
             ->first();
 
@@ -61,6 +62,7 @@ class PoController extends Controller
             'partial'          => (int) ($rawCounts->partial_count ?? 0),
             'completed'        => (int) ($rawCounts->completed_count ?? 0),
             'rejected'         => (int) ($rawCounts->rejected_count ?? 0),
+            'revision'         => (int) ($rawCounts->revision_count ?? 0),
         ];
 
         if ($request->wantsJson()) {
@@ -347,6 +349,9 @@ class PoController extends Controller
             'gudang_id'                => 'required|exists:mst_gudang,gudang_id',
             'approver_id'              => 'required|exists:users,id',
             'is_harga_termasuk_pajak'         => 'nullable|boolean',
+            'diskon_persen'                   => 'nullable|numeric|min:0|max:100',
+            'potongan_nominal'                => 'nullable|numeric|min:0',
+            'pajak_id'                        => 'nullable|integer|exists:mst_pajak,pajak_id',
             'tgl_estimasi_datang'             => 'nullable|date',
             'catatan_txt'                     => 'nullable|string|max:1000',
             'items'                           => 'required|array|min:1',

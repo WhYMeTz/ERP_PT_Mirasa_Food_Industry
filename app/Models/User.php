@@ -26,6 +26,7 @@ class User extends Authenticatable
         'password_plain',
         'karyawan_id',
         'role_cd',
+        'signature_path',
         'gudang_id',
         'active_st',
         'deleted_st',
@@ -58,6 +59,30 @@ class User extends Authenticatable
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('deleted_st', false)->where('active_st', true);
+    }
+
+    /**
+     * URL / path tanda tangan dan stempel digital pengguna
+     */
+    public function getSignatureUrlAttribute(): ?string
+    {
+        if (empty($this->signature_path)) {
+            return null;
+        }
+
+        if (file_exists(public_path('images/signatures/' . $this->signature_path))) {
+            return asset('images/signatures/' . $this->signature_path);
+        }
+
+        if (file_exists(public_path('storage/' . $this->signature_path))) {
+            return asset('storage/' . $this->signature_path);
+        }
+
+        if (file_exists(public_path($this->signature_path))) {
+            return asset($this->signature_path);
+        }
+
+        return null;
     }
 
     /**
@@ -1096,6 +1121,10 @@ class User extends Authenticatable
      */
     public function getDashboardRoute(): string
     {
+        if (in_array(strtoupper((string) $this->role_cd), ['DIREKSI', 'MANAJER'])) {
+            return 'gudang.po.approval_center';
+        }
+
         if ($this->isOperatorPackaging()) {
             return 'produksi.packaging.mobile';
         }

@@ -38,7 +38,7 @@
             <div class="row-supplier-hint" style="font-size: 0.68rem; margin-top: 2px; display: none;"></div>
         </td>
         <td style="text-align: center;">
-            <span class="row-satuan" style="font-weight: 600; color: #475569;">-</span>
+            <span class="row-satuan" style="font-weight: 600; color: #475569; font-size: 0.8rem;">-</span>
         </td>
         <td>
             <input type="number" step="0.0001" min="0.0001" name="items[__INDEX__][pesan_qty]" class="form-control item-qty" value="1" oninput="calculateSubtotal(this)" style="text-align: right; font-weight: 700;" required>
@@ -46,31 +46,11 @@
         <td>
             <input type="number" step="0.01" min="0" name="items[__INDEX__][harga_nominal]" class="form-control item-harga" value="0" oninput="calculateSubtotal(this)" placeholder="0" style="text-align: right; font-weight: 600;">
         </td>
-        <td>
-            <input type="number" step="0.1" min="0" max="100" name="items[__INDEX__][diskon_persen]" class="form-control item-diskon" value="0" oninput="calculateSubtotal(this)" placeholder="0" style="text-align: right;">
-        </td>
-        <td>
-            <input type="number" step="0.01" min="0" name="items[__INDEX__][potongan_nominal]" class="form-control item-potongan" value="0" oninput="calculateSubtotal(this)" placeholder="0" style="text-align: right;">
-        </td>
-        <td>
-            <select name="items[__INDEX__][pajak_id]" class="form-control item-pajak-id" onchange="calculateSubtotal(this)" style="font-size: 0.75rem; font-weight: 600;">
-                <option value="" data-tarif="0" data-sifat="TAMBAH">Non-Pajak (0%)</option>
-                @foreach ($pajakList as $pjk)
-                    <option value="{{ $pjk->pajak_id }}" data-tarif="{{ (float)$pjk->tarif_persen }}" data-sifat="{{ $pjk->sifat_pajak }}" title="{{ $pjk->pajak_nm }}" {{ $pjk->is_default ? 'selected' : '' }}>
-                        {{ $pjk->pajak_cd }} ({{ (float)$pjk->tarif_persen }}%)
-                    </option>
-                @endforeach
-            </select>
-        </td>
-        <td style="text-align: center;">
-            <input type="hidden" name="items[__INDEX__][is_harga_termasuk_pajak]" value="0">
-            <input type="checkbox" name="items[__INDEX__][is_harga_termasuk_pajak]" value="1" class="item-include-tax" onchange="calculateSubtotal(this)" title="Centang jika harga item ini sudah termasuk PPN">
-        </td>
-        <td style="text-align: right; font-weight: 700; color: #0f172a; font-size: 0.85rem; font-family: monospace;" class="row-subtotal">
+        <td style="text-align: right; font-weight: 700; color: #0f172a; font-size: 0.9rem; font-family: monospace;" class="row-subtotal">
             Rp 0
         </td>
         <td style="text-align: center;">
-            <button type="button" onclick="removeRow(this)" class="btn btn-danger btn-sm" style="padding: 0.15rem 0.4rem; font-size: 0.8rem;" title="Hapus Baris">&times;</button>
+            <button type="button" onclick="removeRow(this)" class="btn btn-danger btn-sm" style="padding: 0.2rem 0.45rem; font-size: 0.8rem;" title="Hapus Baris">&times;</button>
         </td>
     </tr>
 </template>

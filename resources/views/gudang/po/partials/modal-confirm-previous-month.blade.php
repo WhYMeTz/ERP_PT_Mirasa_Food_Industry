@@ -11,8 +11,8 @@
                     </svg>
                 </div>
                 <div>
-                    <strong style="color: #92400e; font-size: 1.05rem; display: block; line-height: 1.25;">Peringatan Dokumen Periode Sebelumnya</strong>
-                    <span style="font-size: 0.775rem; color: #b45309;">Dokumen berasal dari bulan/periode yang telah lewat</span>
+                    <strong id="mcpmTitle" style="color: #92400e; font-size: 1.05rem; display: block; line-height: 1.25;">Peringatan Dokumen Pengadaan</strong>
+                    <span id="mcpmSubtitle" style="font-size: 0.775rem; color: #b45309;">Perhatian khusus penomoran dokumen &amp; periode pembukuan</span>
                 </div>
             </div>
             <button type="button" onclick="closePreviousMonthModal()" style="background: transparent; border: none; font-size: 1.35rem; color: #92400e; cursor: pointer; line-height: 1; padding: 0.2rem 0.45rem; border-radius: 6px;">&times;</button>
@@ -24,7 +24,7 @@
             {{-- Kartu Ringkasan Dokumen --}}
             <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.85rem 1rem; margin-bottom: 1.15rem; font-size: 0.85rem;">
                 <div style="display: flex; justify-content: space-between; padding-bottom: 0.45rem; border-bottom: 1px dashed #cbd5e1; margin-bottom: 0.45rem;">
-                    <span style="color: #64748b;">Nomor PO Dokumen:</span>
+                    <span style="color: #64748b;">Nomor PO Diinput:</span>
                     <strong id="mcpmPoNo" style="color: #0f172a; font-family: monospace; font-size: 0.95rem;">-</strong>
                 </div>
                 <div style="display: flex; justify-content: space-between; padding-bottom: 0.45rem; border-bottom: 1px dashed #cbd5e1; margin-bottom: 0.45rem;">
@@ -37,29 +37,26 @@
                 </div>
             </div>
 
-            {{-- Pesan Dampak Operasional --}}
+            {{-- Pesan Dampak Operasional Dinamis --}}
             <div class="alert" style="background: #fffbeb; border: 1px solid #fde68a; border-left: 4px solid #f59e0b; color: #92400e; padding: 0.85rem 1rem; font-size: 0.8125rem; border-radius: 6px; margin-bottom: 1.25rem; line-height: 1.5;">
-                <strong style="display: block; font-size: 0.85rem; margin-bottom: 0.25rem;">⚠️ Dampak Operasional &amp; Pembukuan:</strong>
-                Dokumen Purchase Order ini tercatat pada bulan/periode sebelumnya. Mengubah data atau tanggal pada dokumen periode lalu berpotensi memengaruhi:
-                <ul style="margin: 0.4rem 0 0 1.15rem; padding: 0;">
-                    <li>Laporan rekonsiliasi pengadaan bulanan</li>
-                    <li>Status penutupan buku (closing) bagian Finance / Akuntansi</li>
-                    <li>Urutan penomoran arsip dokumen pengadaan</li>
-                </ul>
+                <strong style="display: block; font-size: 0.85rem; margin-bottom: 0.35rem;">⚠️ Perhatian Operasional:</strong>
+                <div id="mcpmAlertContent">
+                    {{-- Diisi secara dinamis oleh JavaScript --}}
+                </div>
             </div>
 
-            <p style="font-size: 0.825rem; color: #475569; margin: 0 0 1.25rem 0; line-height: 1.45;">
-                Apakah Anda yakin data yang dimasukkan sudah benar dan ingin tetap menyimpan perubahan pada dokumen ini?
+            <p id="mcpmQuestion" style="font-size: 0.825rem; color: #475569; margin: 0 0 1.25rem 0; line-height: 1.45; font-weight: 500;">
+                Apakah Anda yakin data yang dimasukkan sudah benar dan ingin tetap melanjutkan penyimpanan dokumen ini?
             </p>
 
             {{-- Tombol Aksi --}}
             <div style="display: flex; justify-content: flex-end; gap: 0.65rem; border-top: 1px solid #f1f5f9; padding-top: 1rem;">
                 <button type="button" onclick="closePreviousMonthModal()" class="btn btn-secondary" style="padding: 0.6rem 1.15rem; font-size: 0.85rem; font-weight: 600;">
-                    Batal
+                    Periksa Kembali / Batal
                 </button>
                 <button type="button" id="btnConfirmSubmitPreviousMonth" style="background: #d97706; color: #ffffff; border: none; border-radius: 6px; padding: 0.6rem 1.25rem; font-size: 0.85rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.45rem; cursor: pointer; box-shadow: 0 2px 4px rgba(217, 119, 6, 0.3);">
                     <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                    Ya, Tetap Simpan Perubahan
+                    Ya, Lanjutkan Simpan
                 </button>
             </div>
         </div>

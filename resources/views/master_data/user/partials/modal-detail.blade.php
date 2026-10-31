@@ -122,6 +122,33 @@
                     </div>
                 </div>
 
+                {{-- SECTION: SPESIMEN TANDA TANGAN & STEMPEL --}}
+                <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 1.1rem; margin-bottom: 1.25rem; box-shadow: 0 2px 6px rgba(15, 23, 42, 0.03);">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.65rem;">
+                        <span style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; color: #475569; display: flex; align-items: center; gap: 6px;">
+                            <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                            Spesimen Tanda Tangan & Stempel Resmi
+                        </span>
+                        <span id="detailSignatureBadge" class="badge" style="font-size: 0.7rem; font-weight: 700;">
+                            -
+                        </span>
+                    </div>
+                    <div id="detailSignatureFilled" style="display: none; align-items: center; gap: 1rem; background: #fafafa; border: 1px dashed #cbd5e1; border-radius: 8px; padding: 0.75rem;">
+                        <div style="width: 140px; height: 75px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; display: flex; align-items: center; justify-content: center; padding: 4px;">
+                            <img id="detailSignatureImg" src="" alt="TTD & Cap" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+                        </div>
+                        <div>
+                            <strong id="detailSignatureFilename" style="color: #0f172a; font-size: 0.85rem; display: block; font-family: monospace;">-</strong>
+                            <span style="font-size: 0.725rem; color: #059669; font-weight: 600; display: block; margin-top: 0.2rem;">
+                                ✓ Siap digunakan untuk otorisasi dan tanda tangan otomatis lembar PO
+                            </span>
+                        </div>
+                    </div>
+                    <div id="detailSignatureEmpty" style="color: #94a3b8; font-size: 0.8rem; font-style: italic; padding: 0.5rem 0;">
+                        Pengguna ini belum dikonfigurasi spesimen tanda tangan dan stempel resmi.
+                    </div>
+                </div>
+
                 {{-- SECTION 3: RINGKASAN HAK AKSES PERAN (PERMISSION PRIVILEGES) --}}
                 <div style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 1.15rem; margin-bottom: 1.25rem;">
                     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.65rem;">

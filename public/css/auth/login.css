@@ -10,7 +10,7 @@
     --brand-red-50: #fef2f2;
     --brand-red-100: #fee2e2;
     --brand-red-200: #fecaca;
-    
+
     --bg-page: #f8fafc;
     --bg-card: #ffffff;
     --text-heading: #0f172a;
@@ -59,8 +59,13 @@ body.auth-body {
 }
 
 @keyframes slowZoom {
-    0% { transform: scale(1); }
-    100% { transform: scale(1.08); }
+    0% {
+        transform: scale(1);
+    }
+
+    100% {
+        transform: scale(1.08);
+    }
 }
 
 .page-bg-overlay {
@@ -79,7 +84,7 @@ body.auth-body {
     min-height: 620px;
     background: #ffffff;
     border-radius: 28px;
-    box-shadow: 
+    box-shadow:
         0 30px 70px -15px rgba(15, 23, 42, 0.22),
         0 12px 30px -5px rgba(15, 23, 42, 0.1);
     border: 1px solid rgba(255, 255, 255, 0.9);
@@ -90,8 +95,15 @@ body.auth-body {
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(16px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(16px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* ==========================================================================
@@ -208,8 +220,17 @@ body.auth-body {
 }
 
 @keyframes pulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.6; transform: scale(1.15); }
+
+    0%,
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 0.6;
+        transform: scale(1.15);
+    }
 }
 
 /* Footer Visual - Quote Box & Slide Dots */
@@ -660,7 +681,7 @@ body.auth-body {
         max-width: 580px;
         min-height: auto;
     }
-    
+
     .auth-visual-pane {
         min-height: 280px;
         padding: 2rem;
@@ -669,7 +690,7 @@ body.auth-body {
     .quote-box {
         display: none;
     }
-    
+
     .auth-form-pane {
         padding: 2.25rem 2rem;
     }
@@ -679,26 +700,26 @@ body.auth-body {
     body.auth-body {
         padding: 0;
     }
-    
+
     .auth-wrapper {
         border-radius: 0;
         min-height: 100vh;
         border: none;
     }
-    
+
     .auth-visual-pane {
         min-height: 240px;
         padding: 1.5rem;
     }
-    
+
     .auth-form-pane {
         padding: 2rem 1.25rem;
     }
-    
+
     .form-title {
         font-size: 1.65rem;
     }
-    
+
     .demo-grid {
         grid-template-columns: 1fr;
     }

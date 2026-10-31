@@ -165,7 +165,7 @@
                                 'umur_singkong'=> $p1->umur_singkong_bln,
                                 'tgl_panen'    => $p1->tgl_panen ? $p1->tgl_panen->format('Y-m-d') : null,
                                 'nama_jenis'   => $p1->nama_jenis,
-                                'sj_qty'       => (float) $p1->jumlah_surat_jalan,
+                                'sj_qty'       => (float) ($p1->jumlah_surat_jalan ?: ($firstDtl?->qty_timbang_gross ?: $p1->jumlah_di_pabrik)),
                                 'pabrik_qty'   => (float) $p1->jumlah_di_pabrik,
                                 'barang_id'    => $firstDtl?->barang_id,
                                 'grade_cd'     => $firstDtl?->grade_cd ?? 'A',
@@ -456,7 +456,7 @@
                                     <label class="qc-field-label">Jumlah Surat Jalan (KG)</label>
                                 </div>
                                 <div class="input-suffix-wrap">
-                                    <input type="number" step="0.01" min="0" name="jumlah_surat_jalan" id="inputJumlahSJ" class="form-control" placeholder="16000" value="{{ old('jumlah_surat_jalan') }}" oninput="syncQuantityFields('sj')" style="font-weight: 800;">
+                                    <input type="number" step="0.01" min="0" name="jumlah_surat_jalan" id="inputJumlahSJ" class="form-control" placeholder="16000" value="{{ old('jumlah_surat_jalan', $parentQc?->jumlah_surat_jalan ?? $parentQc?->details?->first()?->qty_timbang_gross) }}" oninput="syncQuantityFields('sj')" style="font-weight: 800;">
                                     <span class="input-suffix-text">KG</span>
                                 </div>
                             </div>
@@ -466,7 +466,7 @@
                                     <label class="qc-field-label">Jumlah di Pabrik (KG)</label>
                                 </div>
                                 <div class="input-suffix-wrap">
-                                    <input type="number" step="0.01" min="0" name="jumlah_di_pabrik" id="inputJumlahPabrik" class="form-control" placeholder="15985" value="{{ old('jumlah_di_pabrik') }}" oninput="syncQuantityFields('pabrik')" style="font-weight: 800;">
+                                    <input type="number" step="0.01" min="0" name="jumlah_di_pabrik" id="inputJumlahPabrik" class="form-control" placeholder="15985" value="{{ old('jumlah_di_pabrik', $parentQc ? max(0, (float)($parentQc->jumlah_surat_jalan ?? 0) - (float)($parentQc->details->first()?->qty_timbang_gross ?? 0)) : '') }}" oninput="syncQuantityFields('pabrik')" style="font-weight: 800;">
                                     <span class="input-suffix-text">KG</span>
                                 </div>
                             </div>
@@ -667,6 +667,7 @@
             hasParentQc: {{ !empty($parentQc) ? 'true' : 'false' }},
             parentQcItem: @if(!empty($parentQc)) {
                 gross: {{ (float) ($parentQc->details->first()?->qty_timbang_gross ?? $parentQc->jumlah_di_pabrik) }},
+                sj_qty: {{ (float) ($parentQc->jumlah_surat_jalan ?? $parentQc->details->first()?->qty_timbang_gross ?? 0) }},
                 barang_id: '{{ $parentQc->details->first()?->barang_id }}',
                 grade_cd: '{{ $parentQc->details->first()?->grade_cd ?? "A" }}',
                 refraksi_persen: '{{ (float) ($parentQc->details->first()?->refraksi_persen ?? 0) }}',

@@ -227,6 +227,10 @@ Route::middleware('auth')->group(function () {
 
     // Modul Transaksi Gudang (Inbound, Outbound & Inventory Engine)
     Route::prefix('gudang')->name('gudang.')->group(function () {
+        // Purchase Order (PO): Approval Center Khusus Eksekutif / Atasan
+        Route::get('po/approval-center', [PoApprovalController::class, 'approvalCenter'])
+            ->name('po.approval_center');
+
         // Purchase Order (PO): Create & Manage (Berdasarkan izin 'po_create')
         Route::post('po/{id}/cancel', [PoController::class, 'cancel'])
             ->name('po.cancel')
@@ -256,12 +260,21 @@ Route::middleware('auth')->group(function () {
         Route::get('po/{id}/berita-acara', [PoController::class, 'beritaAcara'])
             ->name('po.berita_acara')
             ->middleware('role:po_view');
+        Route::get('po/{id}/review', [PoApprovalController::class, 'review'])
+            ->name('po.review')
+            ->middleware('role:po_view');
         Route::post('po/{id}/resend-approval', [PoApprovalController::class, 'resendApprovalEmail'])
             ->name('po.resend_approval');
         Route::post('po/{id}/send-supplier', [PoApprovalController::class, 'sendToSupplier'])
             ->name('po.send_supplier');
+        Route::post('po/{id}/send-atasan-copy', [PoApprovalController::class, 'sendAtasanCopy'])
+            ->name('po.send_atasan_copy');
         Route::post('po/{id}/approve-internal', [PoApprovalController::class, 'approveInternal'])
             ->name('po.approve_internal');
+        Route::post('po/{id}/reject-internal', [PoApprovalController::class, 'rejectInternal'])
+            ->name('po.reject_internal');
+        Route::post('po/{id}/request-revision', [PoApprovalController::class, 'requestRevision'])
+            ->name('po.request_revision');
         Route::resource('po', PoController::class)->only(['index', 'show'])->middleware('role:po_view');
 
         // Antrean Tiket QC Inbound -> Dialihkan terpadu ke Riwayat QC & Dokumen HACCP

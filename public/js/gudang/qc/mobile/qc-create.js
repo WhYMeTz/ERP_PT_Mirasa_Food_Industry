@@ -954,8 +954,21 @@
             estimasiGrossUji2 = p1Gross > 0 ? p1Gross : 4000;
         }
 
+        // Auto-fill Jumlah Surat Jalan (KG) dari Pengujian 1
+        const inputSJ = document.getElementById('inputJumlahSJ');
+        if (inputSJ) {
+            const sjVal = totalSJ > 0 ? totalSJ : (p1Gross > 0 ? p1Gross : '');
+            if (sjVal) {
+                inputSJ.value = sjVal;
+                inputSJ.dataset.autoFilled = 'true';
+            }
+        }
+
         const inputPabrik = document.getElementById('inputJumlahPabrik');
-        if (inputPabrik) inputPabrik.value = estimasiGrossUji2;
+        if (inputPabrik) {
+            inputPabrik.value = estimasiGrossUji2;
+            inputPabrik.dataset.autoFilled = 'true';
+        }
 
         // Auto-fill Singkong Item 0
         const sContainer = document.getElementById('singkongContainer');
@@ -2704,6 +2717,10 @@
             if (config.hasParentQc) {
                 if (config.parentQcItem && config.parentQcItem.netto) {
                     window.currentP1Netto = parseFloat(config.parentQcItem.netto) || 0;
+                }
+                const inputSJ = document.getElementById('inputJumlahSJ');
+                if (inputSJ && config.parentQcItem && config.parentQcItem.sj_qty && (!inputSJ.value || parseFloat(inputSJ.value) === 0)) {
+                    inputSJ.value = config.parentQcItem.sj_qty;
                 }
                 const p1Select = document.getElementById('selectPendingP1');
                 if (p1Select && p1Select.value) {

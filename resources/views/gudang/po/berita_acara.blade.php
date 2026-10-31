@@ -155,9 +155,6 @@
                         <td style="text-align: center; font-weight: 700;">{{ $idx + 1 }}.</td>
                         <td style="padding-left: 8px;">
                             <strong>{{ $d->barang?->barang_nm ?? '-' }}</strong>
-                            @if ($d->barang?->barang_cd)
-                                <div style="font-size: 8pt; color: #64748b; font-family: monospace;">Kode: {{ $d->barang->barang_cd }}</div>
-                            @endif
                         </td>
                         <td style="text-align: center;">{{ $sat }}</td>
                         <td style="text-align: right; padding-right: 8px;">{{ number_format($pQty, 2, ',', '.') }}</td>

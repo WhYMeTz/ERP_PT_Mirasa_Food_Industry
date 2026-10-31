@@ -29,6 +29,15 @@ class AuthController extends Controller
         $demoUsers = User::with(['karyawan', 'gudang'])
             ->where('active_st', true)
             ->where('deleted_st', false)
+            ->orderByRaw("CASE 
+                WHEN role_cd = 'DIREKSI' THEN 1 
+                WHEN role_cd = 'MANAJER' THEN 2 
+                WHEN role_cd = 'SUPERADMIN' THEN 3 
+                WHEN role_cd = 'PURCHASING' THEN 4
+                WHEN role_cd = 'ADMIN_GUDANG' THEN 5
+                WHEN role_cd = 'QC' THEN 6
+                WHEN role_cd = 'STAFF_PRODUKSI' THEN 7
+                ELSE 8 END")
             ->get();
 
         return view('auth.login', compact('demoUsers'));

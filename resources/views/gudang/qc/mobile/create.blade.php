@@ -177,7 +177,7 @@
                                     'umur_singkong'=> $p1->umur_singkong_bln,
                                     'tgl_panen'    => $p1->tgl_panen ? $p1->tgl_panen->format('Y-m-d') : null,
                                     'nama_jenis'   => $p1->nama_jenis,
-                                    'sj_qty'       => (float) $p1->jumlah_surat_jalan,
+                                    'sj_qty'       => (float) ($p1->jumlah_surat_jalan ?: ($firstDtl?->qty_timbang_gross ?: $p1->jumlah_di_pabrik)),
                                     'pabrik_qty'   => (float) $p1->jumlah_di_pabrik,
                                     'barang_id'    => $firstDtl?->barang_id,
                                     'grade_cd'     => $firstDtl?->grade_cd ?? 'A',
@@ -500,7 +500,7 @@
                         <label class="form-label" style="font-weight: 700;" id="labelJumlahSJ">
                             {{ ($defaultTahap ?? 'PENGUJIAN_1') === 'PENGUJIAN_2' ? '📄 Jumlah di Surat Jalan (KG)' : '📄 Jumlah di Surat Jalan (KG) *' }}
                         </label>
-                        <input type="number" step="0.01" min="0" name="jumlah_surat_jalan" id="inputJumlahSJ" class="form-control" placeholder="0.00" value="{{ old('jumlah_surat_jalan') }}" oninput="syncQuantityFields()" style="font-weight: 800; font-size: 1.05rem;">
+                        <input type="number" step="0.01" min="0" name="jumlah_surat_jalan" id="inputJumlahSJ" class="form-control" placeholder="0.00" value="{{ old('jumlah_surat_jalan', $parentQc?->jumlah_surat_jalan ?? $parentQc?->details?->first()?->qty_timbang_gross) }}" oninput="syncQuantityFields()" style="font-weight: 800; font-size: 1.05rem;">
                         <span id="hintJumlahSJ" style="font-size: 0.72rem; color: #64748b; margin-top: 0.25rem; display: block; line-height: 1.35;">
                             {{ ($defaultTahap ?? 'PENGUJIAN_1') === 'PENGUJIAN_2' ? 'Total muatan seluruh armada pada Surat Jalan (auto-fill dari Uji 1).' : 'Total muatan seluruh armada pada Surat Jalan (contoh: 7.000 KG).' }}
                         </span>

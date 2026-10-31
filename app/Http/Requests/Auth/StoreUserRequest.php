@@ -41,6 +41,17 @@ class StoreUserRequest extends FormRequest
                 'string',
                 'max:50',
             ],
+            'signature_path' => [
+                'nullable',
+                'string',
+                'max:255',
+            ],
+            'signature_file' => [
+                'nullable',
+                'image',
+                'mimes:png,jpg,jpeg,webp',
+                'max:2048',
+            ],
             'gudang_id' => [
                 'nullable',
                 'integer',

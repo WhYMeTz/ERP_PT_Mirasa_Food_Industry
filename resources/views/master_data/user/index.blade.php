@@ -1,5 +1,9 @@
 @extends('layouts.app')
 
+@push('styles')
+    <link rel="stylesheet" href="{{ asset('css/master/user/user-signature.css') }}">
+@endpush
+
 @section('title', 'Manajemen Pengguna & Hak Akses Gudang - ERP PT Mirasa')
 
 @section('content')
@@ -63,6 +67,7 @@
                     <th>Email Login</th>
                     <th>Profil Karyawan</th>
                     <th>Peran (Role)</th>
+                    <th>Tanda Tangan & Cap</th>
                     <th>Penugasan Perusahaan / Cabang</th>
                     <th>Status</th>
                     <th style="width: 150px; text-align: right;">Aksi</th>
@@ -100,6 +105,18 @@
                             <span class="badge" style="background: {{ $roleBg }}; color: {{ $roleClr }}; font-weight: 700;">
                                 {{ $item->role_cd }}
                             </span>
+                        </td>
+                        <td>
+                            @if ($item->signature_path && file_exists(public_path('images/signatures/' . $item->signature_path)))
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <div style="width: 52px; height: 32px; background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 6px; display: flex; align-items: center; justify-content: center; padding: 2px;">
+                                        <img src="{{ asset('images/signatures/' . $item->signature_path) }}" alt="TTD" style="max-height: 100%; max-width: 100%; object-fit: contain;">
+                                    </div>
+                                    <span class="badge" style="background: #f0fdf4; color: #166534; font-size: 0.685rem; font-weight: 700; border: 1px solid #bbf7d0;">Siap PO</span>
+                                </div>
+                            @else
+                                <span style="color: #94a3b8; font-size: 0.75rem; font-style: italic;">Belum Diatur</span>
+                            @endif
                         </td>
                         <td>
                             @if ($item->role_cd === 'SUPERADMIN')
@@ -175,7 +192,7 @@
                                 {{-- Aksi 3: Edit Data Akun --}}
                                 <button type="button" 
                                     class="action-dropdown-item" 
-                                    onclick='closeAllActionDropdowns(); editUser({{ $item->id }}, "{{ addslashes($item->name) }}", "{{ addslashes($item->email) }}", "{{ $item->karyawan_id ?? "" }}", "{{ $item->role_cd }}", "{{ $item->gudang_id ?? "" }}", @json($item->assignedGudangs->pluck("gudang_id")->toArray()))'>
+                                    onclick='closeAllActionDropdowns(); editUser({{ $item->id }}, "{{ addslashes($item->name) }}", "{{ addslashes($item->email) }}", "{{ $item->karyawan_id ?? "" }}", "{{ $item->role_cd }}", "{{ $item->gudang_id ?? "" }}", @json($item->assignedGudangs->pluck("gudang_id")->toArray()), "{{ $item->signature_path ?? "" }}")'>
                                     <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                                     <span>Edit Akun Pengguna</span>
                                 </button>
@@ -217,7 +234,7 @@
             <h2 class="modal-title">Tambah Akun Pengguna & Hak Akses</h2>
             <button type="button" class="modal-close" onclick="closeModal('modalTambahUser')">&times;</button>
         </div>
-        <form action="{{ route('admin.users.store') }}" method="POST">
+        <form action="{{ route('admin.users.store') }}" method="POST" enctype="multipart/form-data">
             @csrf
             <div class="modal-body">
                 <div class="form-group">
@@ -278,6 +295,9 @@
                         💡 <strong>Isolasi Data:</strong> Pengguna ini hanya akan melihat stok, dokumen penerimaan, dan pengeluaran pada perusahaan/cabang yang dicentang. Data entitas lain tidak akan tercampur dan tidak terlihat.
                     </small>
                 </div>
+
+                {{-- Tanda Tangan & Cap Spesimen --}}
+                @include('master_data.user.partials.signature-picker', ['prefix' => 'create'])
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" onclick="closeModal('modalTambahUser')">Batal</button>
@@ -294,7 +314,7 @@
             <h2 class="modal-title">Edit Akun Pengguna & Hak Akses</h2>
             <button type="button" class="modal-close" onclick="closeModal('modalEditUser')">&times;</button>
         </div>
-        <form id="formEditUser" method="POST">
+        <form id="formEditUser" method="POST" enctype="multipart/form-data">
             @csrf
             @method('PUT')
             <input type="hidden" name="id" id="edit_user_id">
@@ -356,6 +376,9 @@
                         💡 <strong>Isolasi Data:</strong> Pengguna ini hanya akan melihat stok, dokumen penerimaan, dan pengeluaran pada perusahaan/cabang yang dicentang. Data entitas lain tidak akan tercampur dan tidak terlihat.
                     </small>
                 </div>
+
+                {{-- Tanda Tangan & Cap Spesimen --}}
+                @include('master_data.user.partials.signature-picker', ['prefix' => 'edit'])
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" onclick="closeModal('modalEditUser')">Batal</button>
@@ -711,7 +734,7 @@
         }
     }
 
-    function editUser(id, name, email, karyawanId, role, gudangId, assignedGudangIds) {
+    function editUser(id, name, email, karyawanId, role, gudangId, assignedGudangIds, signaturePath) {
         document.getElementById('formEditUser').action = '{{ url("pengguna-sistem") }}/' + id;
         document.getElementById('edit_user_id').value = id;
         document.getElementById('edit_name').value = name;
@@ -719,6 +742,13 @@
         document.getElementById('edit_karyawan_id').value = karyawanId || '';
         document.getElementById('edit_role_cd').value = role;
         document.getElementById('edit_password').value = '';
+
+        // Inisialisasi Spesimen Tanda Tangan & Cap
+        if (signaturePath) {
+            selectSignatureTemplate('edit', signaturePath, '{{ asset("images/signatures") }}/' + signaturePath);
+        } else {
+            clearSignatureSelection('edit');
+        }
 
         // Reset semua checkbox gudang
         document.querySelectorAll('.edit-gudang-checkbox').forEach(function(chk) {
@@ -944,6 +974,33 @@
             permBox.innerHTML = '<span style="color: #94a3b8; font-size: 0.75rem; font-style: italic;">Tidak ada hak akses aktif.</span>';
         }
 
+        // Spesimen Tanda Tangan & Cap
+        const sigFilled = document.getElementById('detailSignatureFilled');
+        const sigEmpty = document.getElementById('detailSignatureEmpty');
+        const sigBadge = document.getElementById('detailSignatureBadge');
+        const sigImg = document.getElementById('detailSignatureImg');
+        const sigFilename = document.getElementById('detailSignatureFilename');
+
+        if (data.signature_path && data.signature_url) {
+            if (sigFilled) sigFilled.style.display = 'flex';
+            if (sigEmpty) sigEmpty.style.display = 'none';
+            if (sigBadge) {
+                sigBadge.innerText = 'Aktif Terpasang';
+                sigBadge.style.background = '#dcfce7';
+                sigBadge.style.color = '#15803d';
+            }
+            if (sigImg) sigImg.src = data.signature_url;
+            if (sigFilename) sigFilename.innerText = data.signature_path;
+        } else {
+            if (sigFilled) sigFilled.style.display = 'none';
+            if (sigEmpty) sigEmpty.style.display = 'block';
+            if (sigBadge) {
+                sigBadge.innerText = 'Belum Ada';
+                sigBadge.style.background = '#f1f5f9';
+                sigBadge.style.color = '#64748b';
+            }
+        }
+
         // Audit Trail Dates
         document.getElementById('detailCreatedAt').innerText = data.created_at;
         document.getElementById('detailUpdatedAt').innerText = data.updated_at;
@@ -952,7 +1009,7 @@
         document.getElementById('btnEditFromDetail').onclick = function() {
             closeModal('modalDetailUser');
             const assignedIds = (data.gudangs || []).map(g => g.id);
-            editUser(data.id, data.name, data.email, data.karyawan ? data.karyawan.id : '', data.role_cd, data.default_gudang ? '' : '', assignedIds);
+            editUser(data.id, data.name, data.email, data.karyawan ? data.karyawan.id : '', data.role_cd, data.default_gudang ? '' : '', assignedIds, data.signature_path);
         };
     }
 
@@ -993,6 +1050,7 @@
         });
     }
 </script>
+<script src="{{ asset('js/master/user/signature-picker.js') }}"></script>
 
 {{-- MODALS KELOLA PERAN & DETAIL AKUN --}}
 @include('master_data.user.partials.modal-role-create')

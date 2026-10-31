@@ -25,6 +25,7 @@
 @endphp
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <title>PO - {{ $po->po_no }} - PT Mirasa Food Industry</title>
@@ -33,9 +34,11 @@
             size: a4 portrait;
             margin: 12mm 15mm 12mm 15mm;
         }
+
         * {
             box-sizing: border-box;
         }
+
         body {
             font-family: 'Helvetica', 'Arial', sans-serif;
             font-size: 9pt;
@@ -51,25 +54,47 @@
             border-collapse: collapse;
             margin-bottom: 6px;
         }
+
         .kop-table td {
             vertical-align: middle;
             border: none;
         }
+
         .kop-logo {
-            width: 75px;
-            text-align: left;
-            padding-right: 8px;
+            width: 85px;
+            text-align: center;
+            vertical-align: middle;
+            padding: 0 2px;
         }
+
+        .kop-logo img {
+            display: inline-block;
+            margin: 0 auto;
+        }
+
+        .kop-slogan {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 5pt;
+            font-weight: 800;
+            color: #dc2626;
+            margin-top: 2px;
+            letter-spacing: 0.01em;
+            text-align: center;
+            white-space: nowrap;
+        }
+
         .kop-title {
             text-align: left;
             padding-left: 5px;
         }
+
         .company-name {
             font-size: 13pt;
             font-weight: 800;
             color: #000000;
             letter-spacing: 0.03em;
         }
+
         .form-name {
             font-size: 11pt;
             font-weight: 700;
@@ -77,29 +102,35 @@
             margin-top: 3px;
             letter-spacing: 0.02em;
         }
+
         .kop-meta {
             width: 255px;
             text-align: right;
             vertical-align: top;
         }
+
         .meta-table {
             width: 100%;
             border-collapse: collapse;
             font-size: 8pt;
         }
+
         .meta-table td {
             padding: 2px 3px;
             vertical-align: top;
         }
+
         .meta-label {
             width: 95px;
             text-align: left;
             font-weight: 600;
         }
+
         .meta-sep {
             width: 8px;
             text-align: center;
         }
+
         .meta-val {
             text-align: left;
             font-weight: 600;
@@ -127,6 +158,7 @@
             border-collapse: collapse;
             margin-bottom: 10px;
         }
+
         .info-table td {
             vertical-align: top;
             padding: 0;
@@ -136,9 +168,11 @@
             border-collapse: collapse;
             font-size: 9pt;
         }
+
         .po-params-table td {
             padding: 2px 4px;
         }
+
         .po-no-red {
             color: #dc2626;
             font-weight: 800;
@@ -161,6 +195,7 @@
             border-collapse: collapse;
             margin-bottom: 12px;
         }
+
         .address-box {
             border: 1px solid #000000;
             padding: 6px 10px;
@@ -176,6 +211,7 @@
             border: 1px solid #000000;
             margin-bottom: 0;
         }
+
         .items-table th {
             border: 1px solid #000000;
             background-color: #d1d5db;
@@ -185,6 +221,7 @@
             padding: 5px 4px;
             text-align: center;
         }
+
         .items-table td {
             border-left: 1px solid #000000;
             border-right: 1px solid #000000;
@@ -194,9 +231,11 @@
             font-size: 8.5pt;
             vertical-align: middle;
         }
+
         .items-table tr.data-row td {
             border-bottom: 1px solid #e5e7eb;
         }
+
         .items-table tr.blank-row td {
             border-bottom: none;
             height: 18px;
@@ -210,22 +249,26 @@
             border-top: 1px solid #000000;
             margin-bottom: 10px;
         }
+
         .summary-table td {
             border: 1px solid #000000;
             padding: 5px 8px;
             vertical-align: top;
             font-size: 8.5pt;
         }
+
         .note-cell {
             width: 62%;
             background: #ffffff;
             line-height: 1.4;
         }
+
         .total-box-table {
             width: 100%;
             border-collapse: collapse;
             font-size: 8.5pt;
         }
+
         .total-box-table td {
             border: none;
             padding: 2px 4px;
@@ -239,21 +282,25 @@
             margin-bottom: 12px;
             font-size: 8.5pt;
         }
+
         .terms-table td {
             border: 1px solid #000000;
             padding: 3px 8px;
         }
+
         .terms-label {
             width: 140px;
             font-weight: 700;
             border-right: none !important;
         }
+
         .terms-sep {
             width: 10px;
             text-align: center;
             border-left: none !important;
             border-right: none !important;
         }
+
         .terms-val {
             border-left: none !important;
         }
@@ -264,35 +311,43 @@
             border-collapse: collapse;
             margin-top: 6px;
         }
+
         .footer-table td {
             border: none;
             vertical-align: top;
         }
+
         .signature-block {
             text-align: center;
             width: 220px;
             float: right;
         }
+
         .nb-tax {
             font-size: 8pt;
-            font-style: italic;
-            font-weight: 700;
             color: #000000;
-            margin-top: 35px;
+            margin-top: 15px;
+        }
+
+        .nb-tax table td {
+            border: none;
+            padding: 1.5px 0;
+            line-height: 1.35;
         }
     </style>
 </head>
+
 <body>
 
     {{-- 1. KOP RESMI HACCP PT MIRASA FOOD INDUSTRY --}}
     <table class="kop-table">
         <tr>
-            <td class="kop-logo">
+            <td class="kop-logo" style="width: 85px; text-align: center; vertical-align: middle;">
                 @if (!empty($logoBase64))
-                    <img src="{{ $logoBase64 }}" style="width: 54px; height: auto; display: block;" alt="Logo Cap Payung">
+                    <img src="{{ $logoBase64 }}" style="width: 50px; height: auto; display: inline-block; margin: 0 auto;" alt="Logo Cap Payung">
                 @endif
-                <div style="font-size: 5.5pt; font-weight: 800; color: #dc2626; margin-top: 2px; letter-spacing: 0.02em; text-align: center;">
-                    ENAK &bull; GURIH &bull; LEZAT
+                <div class="kop-slogan">
+                    <nobr>ENAK &bull; GURIH &bull; LEZAT</nobr>
                 </div>
             </td>
             <td class="kop-title">
@@ -374,7 +429,8 @@
                         <tr>
                             <td style="padding: 0;">Telpon</td>
                             <td style="padding: 0;">:</td>
-                            <td style="padding: 0;">{{ $po->supplier?->kontak_no ?? $po->supplier?->telepon_no ?? '-' }}</td>
+                            <td style="padding: 0;">{{ $po->supplier?->kontak_no ?? $po->supplier?->telepon_no ?? '-' }}
+                            </td>
                         </tr>
                     </table>
                 </div>
@@ -433,9 +489,6 @@
                     <td style="text-align: center; font-weight: 600;">{{ $idx + 1 }}</td>
                     <td style="padding-left: 8px;">
                         <strong style="text-transform: uppercase;">{{ $d->barang?->barang_nm ?? '-' }}</strong>
-                        @if ($d->barang?->barang_cd)
-                            <span style="font-size: 7.5pt; color: #4b5563;">({{ $d->barang->barang_cd }})</span>
-                        @endif
                     </td>
                     <td style="text-align: right; padding-right: 6px; font-weight: 700;">
                         {{ number_format($qty, 0, ',', '.') }}
@@ -541,48 +594,67 @@
     {{-- 8. TANDA TANGAN & FOOTNOTE NB FAKTUR PAJAK --}}
     <table class="footer-table">
         <tr>
-            {{-- Kiri: Footnote NPWP & Faktur Pajak --}}
-            <td style="width: 60%; vertical-align: bottom;">
-                <div class="nb-tax">
-                    NB : FAKTUR PAJAK AN. PT MIRASA FOOD INDUSTRY (NPWP: 07.635.700.4-152.000)
+            {{-- Kiri: Footnote Alamat Kirim, NPWP, Faktur Pajak & Rekening Pembayaran --}}
+            <td style="width: 60%; vertical-align: bottom; padding-right: 15px;">
+                <div class="nb-tax" style="font-size: 8pt; line-height: 1.35; color: #000000;">
+                    <div style="font-weight: 800; font-size: 8.5pt; margin-bottom: 2px;">NB.</div>
+                    <div>Barang di kirim ke alamat:</div>
+                    <div style="font-weight: 800; font-size: 8.5pt;">PT. MIRASA FOOD INDUSTRY</div>
+                    <div>Magelang</div>
+                    <div style="margin-top: 4px; font-size: 7.5pt; color: #334155; line-height: 1.35;">
+                        Faktur Pajak a.n. <strong>PT. MIRASA FOOD INDUSTRY</strong> (NPWP 07.635.700.4-152.000)<br>
+                        Pembayaran via BCA <strong>104-9173332</strong> a.n. PT. MIRASA FOOD INDUSTRY
+                    </div>
                 </div>
             </td>
 
-            {{-- Kanan: Tanda Tangan Hormat Kami --}}
+            {{-- Kanan: Tanda Tangan Hormat Kami & Stempel Resmi --}}
             <td style="width: 40%; text-align: center; vertical-align: top;">
-                <div style="font-size: 9pt; font-weight: 600; margin-bottom: 4px;">
+                <div style="font-size: 9pt; font-weight: 600; margin-bottom: 2px;">
                     Hormat Kami,
                 </div>
 
                 @if ($po->isApproved() || in_array($po->status_cd, ['APPROVED', 'PARTIAL', 'COMPLETED']))
                     @php
-                        $verifyUrl = route('po.verify.qr', $po->approval_token ?? 'unverified');
-                        $qrCodeSvg = '';
-                        try {
-                            $qrCodeSvg = base64_encode(\SimpleSoftwareIO\QrCode\Facades\QrCode::format('svg')->size(52)->margin(0)->generate($verifyUrl));
-                        } catch (\Throwable $e) {}
+                        // Cari akun approver untuk mengambil spesimen tanda tangan & cap spesifik
+                        $approverUser = null;
+                        if (!empty($po->approved_by)) {
+                            $approverUser = \App\Models\User::where('name', $po->approved_by)->first();
+                        }
+                        if (!$approverUser) {
+                            $approverUser = $po->approver;
+                        }
+                        if (!$approverUser && !empty($po->approver_id)) {
+                            $approverUser = \App\Models\User::find($po->approver_id);
+                        }
+                        $sigFilename = $approverUser?->signature_path ?: 'ttd_stempel_1.png';
+                        $ttdImgPath = public_path('images/signatures/' . $sigFilename);
+                        if (!file_exists($ttdImgPath)) {
+                            $ttdImgPath = public_path('images/signatures/ttd_stempel_1.png');
+                        }
+                        $ttdBase64 = file_exists($ttdImgPath) ? 'data:image/png;base64,' . base64_encode(file_get_contents($ttdImgPath)) : '';
                     @endphp
 
-                    <div style="margin: 4px auto; text-align: center;">
-                        @if ($qrCodeSvg)
-                            <img src="data:image/svg+xml;base64,{{ $qrCodeSvg }}" width="50" height="50" style="display: inline-block; border: 1px solid #cbd5e1; padding: 2px; background: #ffffff;">
+                    <div style="margin: 2px auto; text-align: center; height: 80px;">
+                        @if ($ttdBase64)
+                            <img src="{{ $ttdBase64 }}" style="height: 78px; max-width: 145px; object-fit: contain; display: inline-block;">
                         @else
-                            <div style="height: 48px;"></div>
+                            <div style="height: 78px;"></div>
                         @endif
                     </div>
 
-                    <div style="font-size: 9.5pt; font-weight: 800; text-decoration: underline; margin-top: 4px;">
+                    <div style="font-size: 9.5pt; font-weight: 800; text-decoration: underline; margin-top: 2px;">
                         {{ $po->approved_by ?? $po->approver?->name ?? 'Habieb Soleh Yoenanto' }}
                     </div>
                     <div style="font-size: 7.5pt; color: #4b5563; font-style: italic;">
                         PT Mirasa Food Industry
                     </div>
                 @else
-                    <div style="height: 52px;"></div>
-                    <div style="font-size: 9.5pt; font-weight: 800; text-decoration: underline;">
-                        Habieb Soleh Yoenanto
+                    <div style="height: 80px;"></div>
+                    <div style="font-size: 9.5pt; font-weight: 800; text-decoration: underline; color: #64748b;">
+                        {{ $po->approver?->name ?? '.......................................' }}
                     </div>
-                    <div style="font-size: 7.5pt; color: #4b5563;">
+                    <div style="font-size: 7.5pt; color: #64748b;">
                         PT Mirasa Food Industry
                     </div>
                 @endif
@@ -591,4 +663,5 @@
     </table>
 
 </body>
+
 </html>

@@ -749,6 +749,28 @@
 
             @auth
                 <nav class="pill-nav">
+                    {{-- 0. PORTAL EKSEKUTIF / PERSETUJUAN PO KHUSUS ATASAN --}}
+                    @if (Auth::user()->canApprovePo())
+                        @php
+                            $execPendingBadge = \App\Models\Gudang\DatPoHdr::where('deleted_st', false)
+                                ->where('status_cd', 'PENDING_APPROVAL')
+                                ->count();
+                        @endphp
+                        <a href="{{ route('gudang.po.approval_center') }}" 
+                           class="pill-item {{ request()->routeIs('gudang.po.approval_center', 'gudang.po.review') ? 'active' : '' }}"
+                           style="background: #fef2f2; border: 1.5px solid #fecaca; color: #dc2626; font-weight: 700; display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.45rem 0.85rem; border-radius: 9999px; text-decoration: none;"
+                           title="Buka Ruang Kerja Eksekutif / Persetujuan PO">
+                            <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                            <span class="nav-text-full">Portal Persetujuan Atasan</span>
+                            <span class="nav-text-short">Approval</span>
+                            @if ($execPendingBadge > 0)
+                                <span style="background: #dc2626; color: #ffffff; font-size: 0.6875rem; font-weight: 800; padding: 1px 6px; border-radius: 9999px; line-height: 1.2;">
+                                    {{ $execPendingBadge }}
+                                </span>
+                            @endif
+                        </a>
+                    @endif
+
                     {{-- 1. PENGADAAN & BAHAN MASUK (INBOUND) --}}
                     @if (Auth::user()->canAccessPo() || Auth::user()->canAccessQc() || Auth::user()->canAccessTerima() || Auth::user()->canAccessRetur())
                         @php

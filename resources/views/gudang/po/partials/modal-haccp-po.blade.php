@@ -48,10 +48,10 @@
                 {{-- 1. KOP SURAT HACCP --}}
                 <table style="width: 100%; border-collapse: collapse; margin-bottom: 6px;">
                     <tr>
-                        <td style="width: 75px; vertical-align: middle; padding-right: 8px;">
-                            <img src="{{ asset('images/logo.png') }}" style="width: 54px; height: auto; display: block;" alt="Logo Cap Payung">
-                            <div style="font-size: 5.5pt; font-weight: 800; color: #dc2626; margin-top: 2px; letter-spacing: 0.02em; text-align: center;">
-                                ENAK &bull; GURIH &bull; LEZAT
+                        <td style="width: 85px; vertical-align: middle; text-align: center; padding-right: 4px;">
+                            <img src="{{ asset('images/logo.png') }}" style="width: 50px; height: auto; display: inline-block; margin: 0 auto;" alt="Logo Cap Payung">
+                            <div style="font-family: Arial, Helvetica, sans-serif; font-size: 5pt; font-weight: 800; color: #dc2626; margin-top: 2px; letter-spacing: 0.01em; text-align: center; white-space: nowrap;">
+                                <nobr>ENAK &bull; GURIH &bull; LEZAT</nobr>
                             </div>
                         </td>
                         <td style="vertical-align: middle; padding-left: 5px;">
@@ -230,8 +230,15 @@
                 <table style="width: 100%; border-collapse: collapse; margin-top: 6px;">
                     <tr>
                         <td style="width: 60%; vertical-align: bottom;">
-                            <div style="font-size: 8pt; font-style: italic; font-weight: 700; color: #000000; margin-top: 35px;">
-                                NB : FAKTUR PAJAK AN. PT MIRASA FOOD INDUSTRY (NPWP: 07.635.700.4-152.000)
+                            <div style="font-size: 8pt; line-height: 1.35; color: #000000; margin-top: 15px;">
+                                <div style="font-weight: 800; font-size: 8.5pt; margin-bottom: 2px;">NB.</div>
+                                <div>Barang di kirim ke alamat:</div>
+                                <div style="font-weight: 800; font-size: 8.5pt;">PT. MIRASA FOOD INDUSTRY</div>
+                                <div>Magelang</div>
+                                <div style="margin-top: 4px; font-size: 7.5pt; color: #334155; line-height: 1.35;">
+                                    Faktur Pajak a.n. <strong>PT. MIRASA FOOD INDUSTRY</strong> (NPWP 07.635.700.4-152.000)<br>
+                                    Pembayaran via BCA <strong>104-9173332</strong> a.n. PT. MIRASA FOOD INDUSTRY
+                                </div>
                             </div>
                         </td>
                         <td style="width: 40%; text-align: center; vertical-align: top;">

@@ -4,6 +4,20 @@
  * =========================================================================
  */
 
+function togglePoHeaderAccordion() {
+    const body = document.getElementById('poHeaderAccordionBody');
+    const btn = document.getElementById('btnToggleAccordion');
+    if (!body) return;
+    body.classList.toggle('open');
+    const isOpen = body.classList.contains('open');
+    if (btn) {
+        btn.innerHTML = isOpen
+            ? '▴ Sembunyikan Detail (Gudang, Penyetuju, TOP, Estimasi, Franco, Catatan, Pajak)'
+            : '▾ Lihat Selengkapnya (Gudang, Penyetuju, TOP, Estimasi, Franco, Catatan, Pajak)';
+    }
+}
+window.togglePoHeaderAccordion = togglePoHeaderAccordion;
+
 function handleBarangChange(selectEl) {
     const row = selectEl.closest('tr');
     const selectedOpt = selectEl.options[selectEl.selectedIndex];
@@ -27,18 +41,15 @@ function onHeaderTaxInclusiveToggle(headerCheckbox) {
     const badge = document.getElementById('badgeTaxMode');
     if (badge) {
         if (isInc) {
-            badge.innerText = 'Sudah Termasuk PPN (Gross)';
+            badge.innerText = 'Gross';
             badge.style.background = '#dcfce7';
             badge.style.color = '#15803d';
         } else {
-            badge.innerText = 'Belum Termasuk PPN (Net)';
+            badge.innerText = 'Net';
             badge.style.background = '#e2e8f0';
             badge.style.color = '#475569';
         }
     }
-    document.querySelectorAll('.item-include-tax').forEach(cb => {
-        cb.checked = isInc;
-    });
     calculateAllTotals();
 }
 
@@ -46,109 +57,108 @@ function calculateRow(element) {
     const row = element.closest('tr');
     const qty = parseFloat(row.querySelector('.input-qty')?.value) || 0;
     const harga = parseFloat(row.querySelector('.input-harga')?.value) || 0;
-    const diskonPersen = Math.min(100, Math.max(0, parseFloat(row.querySelector('.input-diskon')?.value) || 0));
-    const potonganNominal = parseFloat(row.querySelector('.input-potongan')?.value) || 0;
-
-    const pajakSelect = row.querySelector('.select-pajak');
-    const selectedOpt = pajakSelect ? pajakSelect.options[pajakSelect.selectedIndex] : null;
-    const tarif = selectedOpt ? (parseFloat(selectedOpt.dataset.tarif) || 0) : 0;
-    const sifat = selectedOpt ? (selectedOpt.dataset.sifat || 'TAMBAH') : 'TAMBAH';
-    const isInc = row.querySelector('.item-include-tax')?.checked || false;
-
-    const diskonUnit = harga * (diskonPersen / 100);
-    const hargaNetto = Math.max(0, harga - diskonUnit);
-    const grossRowTotal = Math.max(0, (qty * hargaNetto) - potonganNominal);
-
-    let subtotalNetto = 0;
-    let ppnNominal = 0;
-    let subtotalTagihan = 0;
-
-    if (isInc && tarif > 0) {
-        subtotalNetto = Math.round((grossRowTotal / (1 + (tarif / 100))) * 10000) / 10000;
-        ppnNominal = Math.round((grossRowTotal - subtotalNetto) * 10000) / 10000;
-        subtotalTagihan = grossRowTotal;
-    } else {
-        subtotalNetto = grossRowTotal;
-        ppnNominal = Math.round((subtotalNetto * (tarif / 100)) * 10000) / 10000;
-        subtotalTagihan = (sifat === 'POTONG')
-            ? Math.max(0, subtotalNetto - ppnNominal)
-            : (subtotalNetto + ppnNominal);
-    }
+    const rowSubtotal = qty * harga;
 
     const cellSubtotal = row.querySelector('.row-subtotal');
     if (cellSubtotal) {
-        cellSubtotal.textContent = 'Rp ' + Math.round(subtotalTagihan).toLocaleString('id-ID');
+        cellSubtotal.textContent = 'Rp ' + Math.round(rowSubtotal).toLocaleString('id-ID');
     }
 
     calculateAllTotals();
 }
 
 function calculateAllTotals() {
+    let totalQty = 0;
     let totalBruto = 0;
-    let totalDiskon = 0;
+    let rowCount = 0;
+
+    document.querySelectorAll('#tbodyPoItems tr.po-item-row').forEach(row => {
+        rowCount++;
+        const qty = parseFloat(row.querySelector('.input-qty')?.value) || 0;
+        const harga = parseFloat(row.querySelector('.input-harga')?.value) || 0;
+        const rowSubtotal = qty * harga;
+
+        const cellSubtotal = row.querySelector('.row-subtotal');
+        if (cellSubtotal) {
+            cellSubtotal.textContent = 'Rp ' + Math.round(rowSubtotal).toLocaleString('id-ID');
+        }
+
+        totalQty += qty;
+        totalBruto += rowSubtotal;
+    });
+
+    const diskonPersen = Math.min(100, Math.max(0, parseFloat(document.getElementById('global_diskon_persen')?.value) || 0));
+    const potonganNominal = Math.max(0, parseFloat(document.getElementById('global_potongan_nominal')?.value) || 0);
+
+    const pajakSelect = document.getElementById('global_pajak_id');
+    const selectedOpt = pajakSelect ? pajakSelect.options[pajakSelect.selectedIndex] : null;
+    const tarif = selectedOpt ? (parseFloat(selectedOpt.dataset.tarif) || 0) : 0;
+    const sifat = selectedOpt ? (selectedOpt.dataset.sifat || 'TAMBAH') : 'TAMBAH';
+    const isInc = document.getElementById('is_harga_termasuk_pajak')?.checked || false;
+
+    const totalDiskon = totalBruto * (diskonPersen / 100);
+    const totalPotongan = potonganNominal;
+    const subtotalNetto = Math.max(0, totalBruto - totalDiskon - totalPotongan);
+
     let totalDpp = 0;
     let totalPpn = 0;
     let grandTotal = 0;
 
-    document.querySelectorAll('#tbodyPoItems tr.po-item-row').forEach(row => {
-        const qty = parseFloat(row.querySelector('.input-qty')?.value) || 0;
-        const harga = parseFloat(row.querySelector('.input-harga')?.value) || 0;
-        const diskonPersen = Math.min(100, Math.max(0, parseFloat(row.querySelector('.input-diskon')?.value) || 0));
-        const potonganNominal = parseFloat(row.querySelector('.input-potongan')?.value) || 0;
+    if (isInc && tarif > 0 && sifat !== 'POTONG') {
+        totalDpp = Math.round((subtotalNetto / (1 + (tarif / 100))) * 10000) / 10000;
+        totalPpn = Math.round((subtotalNetto - totalDpp) * 10000) / 10000;
+        grandTotal = subtotalNetto;
+    } else {
+        totalDpp = subtotalNetto;
+        totalPpn = Math.round((totalDpp * (tarif / 100)) * 10000) / 10000;
+        grandTotal = (sifat === 'POTONG')
+            ? Math.max(0, totalDpp - totalPpn)
+            : (totalDpp + totalPpn);
+    }
 
-        const pajakSelect = row.querySelector('.select-pajak');
-        const selectedOpt = pajakSelect ? pajakSelect.options[pajakSelect.selectedIndex] : null;
-        const tarif = selectedOpt ? (parseFloat(selectedOpt.dataset.tarif) || 0) : 0;
-        const sifat = selectedOpt ? (selectedOpt.dataset.sifat || 'TAMBAH') : 'TAMBAH';
-        const isInc = row.querySelector('.item-include-tax')?.checked || false;
+    const elTotalQty = document.getElementById('totalQtyDisplay');
+    const elTotalSubtotalDisplay = document.getElementById('totalSubtotalDisplay');
+    if (elTotalQty) elTotalQty.innerText = totalQty.toFixed(2);
+    if (elTotalSubtotalDisplay) elTotalSubtotalDisplay.innerText = 'Rp ' + Math.round(totalBruto).toLocaleString('id-ID');
 
-        const diskonUnit = harga * (diskonPersen / 100);
-        const hargaNetto = Math.max(0, harga - diskonUnit);
-        const grossRowTotal = Math.max(0, (qty * hargaNetto) - potonganNominal);
-
-        let subtotalNetto = 0;
-        let ppnNominal = 0;
-        let subtotalTagihan = 0;
-
-        if (isInc && tarif > 0) {
-            subtotalNetto = Math.round((grossRowTotal / (1 + (tarif / 100))) * 10000) / 10000;
-            ppnNominal = Math.round((grossRowTotal - subtotalNetto) * 10000) / 10000;
-            subtotalTagihan = grossRowTotal;
-        } else {
-            subtotalNetto = grossRowTotal;
-            ppnNominal = Math.round((subtotalNetto * (tarif / 100)) * 10000) / 10000;
-            subtotalTagihan = (sifat === 'POTONG')
-                ? Math.max(0, subtotalNetto - ppnNominal)
-                : (subtotalNetto + ppnNominal);
-        }
-
-        const cellSubtotal = row.querySelector('.row-subtotal');
-        if (cellSubtotal) {
-            cellSubtotal.textContent = 'Rp ' + Math.round(subtotalTagihan).toLocaleString('id-ID');
-        }
-
-        totalBruto += (qty * harga);
-        totalDiskon += (qty * diskonUnit) + potonganNominal;
-        totalDpp += subtotalNetto;
-        totalPpn += ppnNominal;
-        grandTotal += subtotalTagihan;
-    });
-
+    const elSummaryTotalQty = document.getElementById('summaryTotalQty');
     const elSubtotalBruto = document.getElementById('summarySubtotalBruto');
     const elDiskon = document.getElementById('summaryDiskon');
+    const elPotongan = document.getElementById('summaryPotongan');
     const elDpp = document.getElementById('summaryDpp');
     const elPpn = document.getElementById('summaryPpn');
     const elGrandTotal = document.getElementById('summaryGrandTotal');
     const elBadgeItemCount = document.getElementById('badgeItemCount');
 
+    if (elSummaryTotalQty) elSummaryTotalQty.textContent = totalQty.toFixed(2);
     if (elSubtotalBruto) elSubtotalBruto.textContent = 'Rp ' + Math.round(totalBruto).toLocaleString('id-ID');
     if (elDiskon) elDiskon.textContent = totalDiskon > 0 ? '- Rp ' + Math.round(totalDiskon).toLocaleString('id-ID') : 'Rp 0';
-    if (elDpp) elDpp.textContent = 'Rp ' + Math.round(totalDpp).toLocaleString('id-ID');
-    if (elPpn) elPpn.textContent = totalPpn > 0 ? '+ Rp ' + Math.round(totalPpn).toLocaleString('id-ID') : 'Rp 0';
+    if (elPotongan) elPotongan.textContent = totalPotongan > 0 ? '- Rp ' + Math.round(totalPotongan).toLocaleString('id-ID') : 'Rp 0';
+    if (elDpp) {
+        elDpp.innerHTML = 'Rp ' + Math.round(totalDpp).toLocaleString('id-ID') + (isInc && tarif > 0 && sifat !== 'POTONG' ? ' <small style="color: #64748b; font-size: 0.7rem; font-weight: 500;">(DPP)</small>' : '');
+    }
+    if (elPpn) {
+        if (totalPpn > 0) {
+            if (sifat === 'POTONG') {
+                elPpn.innerHTML = `<span style="color: #dc2626;">- Rp ${Math.round(totalPpn).toLocaleString('id-ID')}</span> <small style="color: #ef4444; font-size: 0.7rem; font-weight: 600;">(Potong)</small>`;
+            } else if (isInc) {
+                elPpn.innerHTML = `<span style="color: #16a34a;">Rp ${Math.round(totalPpn).toLocaleString('id-ID')}</span> <small style="color: #15803d; font-size: 0.7rem; font-weight: 600;">(Termasuk)</small>`;
+            } else {
+                elPpn.innerHTML = `<span style="color: #0284c7;">+ Rp ${Math.round(totalPpn).toLocaleString('id-ID')}</span>`;
+            }
+        } else {
+            elPpn.innerHTML = '<span style="color: #64748b;">Rp 0</span>';
+        }
+    }
     if (elGrandTotal) elGrandTotal.textContent = 'Rp ' + Math.round(grandTotal).toLocaleString('id-ID');
 
-    const rowCount = document.querySelectorAll('#tbodyPoItems tr.po-item-row').length;
     if (elBadgeItemCount) elBadgeItemCount.textContent = `(${rowCount} item)`;
+
+    // Live KPI Widget di Siku Kanan Atas
+    const topLiveGrandTotal = document.getElementById('topLiveGrandTotal');
+    const topLiveItemCount = document.getElementById('topLiveItemCount');
+    if (topLiveGrandTotal) topLiveGrandTotal.innerText = 'Rp ' + Math.round(grandTotal).toLocaleString('id-ID');
+    if (topLiveItemCount) topLiveItemCount.innerText = rowCount + ' Item';
 }
 
 function addNewItemRow() {
@@ -164,14 +174,6 @@ function addNewItemRow() {
         .replace(/__NUM__/g, currentCount);
 
     tbody.insertAdjacentHTML('beforeend', html);
-    
-    // Sinkronkan include tax default baris baru dengan header
-    const headerIncCheck = document.getElementById('is_harga_termasuk_pajak');
-    const newlyAddedRow = tbody.lastElementChild;
-    if (newlyAddedRow && headerIncCheck) {
-        const rowInc = newlyAddedRow.querySelector('.item-include-tax');
-        if (rowInc) rowInc.checked = headerIncCheck.checked;
-    }
 
     renumberRows();
     calculateAllTotals();
@@ -217,13 +219,23 @@ function formatTanggalIndo(dateStr) {
     return dateStr;
 }
 
-function openPreviousMonthModal(poNo, poTgl) {
+function openPreviousMonthModal(options) {
     const modal = document.getElementById('modalConfirmPreviousMonth');
     if (!modal) return;
     const elPoNo = document.getElementById('mcpmPoNo');
     const elPoTgl = document.getElementById('mcpmPoTgl');
-    if (elPoNo) elPoNo.textContent = poNo || '-';
-    if (elPoTgl) elPoTgl.textContent = formatTanggalIndo(poTgl);
+    const elTitle = document.getElementById('mcpmTitle');
+    const elSubtitle = document.getElementById('mcpmSubtitle');
+    const elContent = document.getElementById('mcpmAlertContent');
+    const elQuestion = document.getElementById('mcpmQuestion');
+
+    if (elPoNo) elPoNo.textContent = options.poNo || '-';
+    if (elPoTgl) elPoTgl.textContent = formatTanggalIndo(options.poTgl);
+    if (elTitle) elTitle.textContent = options.title || 'Peringatan Dokumen Pengadaan';
+    if (elSubtitle) elSubtitle.textContent = options.subtitle || 'Perhatian khusus penomoran dokumen & periode pembukuan';
+    if (elContent) elContent.innerHTML = options.contentHtml || '';
+    if (elQuestion) elQuestion.textContent = options.question || 'Apakah Anda yakin ingin melanjutkan penyimpanan?';
+
     modal.style.display = 'flex';
 }
 
@@ -247,6 +259,8 @@ function parsePoNoParts(val) {
     return null;
 }
 
+let lastSystemSuggestedPoNo = '';
+
 function initPoDateNumberSync() {
     const poTglInput = document.getElementById('po_tgl');
     const poNoInput = document.getElementById('po_no');
@@ -254,6 +268,7 @@ function initPoDateNumberSync() {
 
     if (!poTglInput || !poNoInput) return;
 
+    lastSystemSuggestedPoNo = poNoInput.value.trim();
     let initialParts = parsePoNoParts(poNoInput.value);
     let activeMonthYear = initialParts 
         ? `${initialParts.year}-${initialParts.month}` 
@@ -272,6 +287,7 @@ function initPoDateNumberSync() {
             .then(data => {
                 if (data.status === 'success' && data.code) {
                     poNoInput.value = data.code;
+                    lastSystemSuggestedPoNo = data.code;
                     const newParts = parsePoNoParts(data.code);
                     if (newParts) {
                         activeMonthYear = `${newParts.year}-${newParts.month}`;
@@ -367,16 +383,61 @@ function initPreviousMonthProtection() {
         const poTglInput = document.getElementById('po_tgl');
         const poNoInput = document.getElementById('po_no');
         const poTglVal = poTglInput ? poTglInput.value : '';
+        const poNoVal = poNoInput ? poNoInput.value.trim() : '';
         const originalTglVal = window.originalPoTgl || '';
+        const originalPoNoVal = window.originalPoNo || '';
         const currentServerYM = window.currentServerYearMonth || (new Date().toISOString().slice(0, 7));
 
-        // Jika tanggal dokumen yang dipilih atau dokumen awal berada di bawah bulan berjalan
         const checkDate = poTglVal || originalTglVal;
         const docYM = checkDate ? checkDate.slice(0, 7) : '';
+        const isPreviousMonth = Boolean(docYM && docYM < currentServerYM);
 
-        if (docYM && docYM < currentServerYM) {
+        const currentParts = parsePoNoParts(poNoVal);
+        const baselineParts = parsePoNoParts(lastSystemSuggestedPoNo || originalPoNoVal);
+        const isManualSequence = Boolean(currentParts && baselineParts && (currentParts.seq !== baselineParts.seq));
+
+        if (isPreviousMonth || isManualSequence) {
             e.preventDefault();
-            openPreviousMonthModal(poNoInput ? poNoInput.value : '', checkDate);
+
+            let title = '';
+            let subtitle = '';
+            let alerts = [];
+
+            if (isPreviousMonth && isManualSequence) {
+                title = 'Peringatan: Dokumen Periode Sebelumnya & Nomor Urut Manual';
+                subtitle = 'Dua penyesuaian khusus terdeteksi pada pembaruan dokumen ini';
+            } else if (isPreviousMonth) {
+                title = 'Konfirmasi Perubahan Dokumen Periode Sebelumnya';
+                subtitle = 'Dokumen berasal dari bulan/periode yang telah lewat';
+            } else {
+                title = 'Peringatan: Nomor Urut PO Telah Diubah Manual';
+                subtitle = 'Nomor urut berbeda dari standar nomor resmi sistem';
+            }
+
+            if (isPreviousMonth) {
+                alerts.push(`
+                    <div style="margin-bottom: 0.45rem;">
+                        <strong>1. Periode Bulan Sebelumnya:</strong> Dokumen Purchase Order ini tercatat pada periode <strong>${formatTanggalIndo(checkDate)}</strong>, sedangkan periode aktif sistem saat ini adalah <strong>${formatTanggalIndo(new Date().toISOString().slice(0, 10))}</strong>. Mengubah data pada dokumen periode lalu berpotensi memengaruhi laporan penutupan buku (closing) dan rekonsiliasi pengadaan gudang.
+                    </div>
+                `);
+            }
+
+            if (isManualSequence) {
+                alerts.push(`
+                    <div style="margin-bottom: 0.45rem;">
+                        <strong>${isPreviousMonth ? '2. ' : ''}Nomor Urut Manual:</strong> Anda memasukkan nomor urut <strong>${currentParts.seq}</strong> (dokumen: <code>${poNoVal}</code>), sedangkan nomor urut yang disarankan sistem/sebelumnya adalah <strong>${baselineParts.seq}</strong> (dokumen: <code>${lastSystemSuggestedPoNo || originalPoNoVal}</code>). Mengubah nomor urut secara manual dapat menyebabkan nomor loncat atau potensi duplikasi arsip.
+                    </div>
+                `);
+            }
+
+            openPreviousMonthModal({
+                poNo: poNoVal,
+                poTgl: checkDate,
+                title: title,
+                subtitle: subtitle,
+                contentHtml: alerts.join(''),
+                question: 'Apakah Anda yakin data perubahan ini sudah benar dan ingin tetap menyimpannya?'
+            });
         }
     });
 

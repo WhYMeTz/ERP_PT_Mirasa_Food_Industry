@@ -387,7 +387,7 @@
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.65rem;">
                                 <div>
                                     <label style="display: block; font-size: 0.725rem; font-weight: 700; color: #6b21a8; margin-bottom: 0.25rem;">
-                                        Total Tonase Netto (KG)
+                                        Total Kuantitas Netto (<span id="spanSatuanTonase">KG</span>)
                                     </label>
                                     <div style="position: relative;">
                                         <input type="number" 
@@ -397,10 +397,10 @@
                                                id="tonaseKgInput" 
                                                value="{{ old('tonase_kg', 0) }}" 
                                                class="form-control" 
-                                               style="font-size: 0.825rem; height: 34px; padding-right: 2.25rem; font-weight: 700; color: #581c87; text-align: right;" 
+                                               style="font-size: 0.825rem; height: 34px; padding-right: 2.75rem; font-weight: 700; color: #581c87; text-align: right;" 
                                                placeholder="0"
                                                oninput="calculateOngkirFromTonase()">
-                                        <span style="position: absolute; right: 8px; top: 8px; font-size: 0.725rem; color: #7e22ce; font-weight: 700; pointer-events: none;">KG</span>
+                                        <span id="badgeSatuanTonase" style="position: absolute; right: 8px; top: 8px; font-size: 0.725rem; color: #7e22ce; font-weight: 700; pointer-events: none;">KG</span>
                                     </div>
                                     <small style="font-size: 0.68rem; color: #7e22ce; display: block; margin-top: 2px;">
                                         Akumulasi fisik lolos QC
@@ -409,9 +409,10 @@
 
                                 <div>
                                     <label style="display: block; font-size: 0.725rem; font-weight: 700; color: #6b21a8; margin-bottom: 0.25rem;">
-                                        Tarif Upah / KG (Rp)
+                                        Tarif Upah / <span id="spanSatuanTarif">KG</span> (Rp)
                                     </label>
                                     <div style="position: relative;">
+                                        <span style="position: absolute; left: 10px; top: 8px; font-size: 0.75rem; color: #7e22ce; font-weight: 700; pointer-events: none;">Rp</span>
                                         <input type="number" 
                                                step="any" 
                                                min="0" 
@@ -419,10 +420,10 @@
                                                id="ongkirTarifPerKgInput" 
                                                value="{{ old('ongkir_tarif_per_kg', 0) }}" 
                                                class="form-control" 
-                                               style="font-size: 0.825rem; height: 34px; padding-right: 2.75rem; font-weight: 700; color: #581c87; text-align: right;" 
+                                               style="font-size: 0.825rem; height: 34px; padding-left: 2rem; padding-right: 3.25rem; font-weight: 700; color: #581c87; text-align: right;" 
                                                placeholder="150"
                                                oninput="calculateOngkirFromTonase()">
-                                        <span style="position: absolute; right: 8px; top: 8px; font-size: 0.7rem; color: #7e22ce; font-weight: 700; pointer-events: none;">/ KG</span>
+                                        <span id="badgeSatuanTarif" style="position: absolute; right: 8px; top: 8px; font-size: 0.7rem; color: #7e22ce; font-weight: 700; pointer-events: none;">/ KG</span>
                                     </div>
                                     <small style="font-size: 0.68rem; color: #7e22ce; display: block; margin-top: 2px;">
                                         Contoh: Rp 150 atau Rp 200
@@ -444,15 +445,18 @@
                             <label style="display: block; font-size: 0.725rem; font-weight: 700; color: #6b21a8; margin-bottom: 0.25rem;">
                                 Total Biaya Ongkos Angkut yang Ditagihkan (Rp)
                             </label>
-                            <input type="number" 
-                                   step="any" 
-                                   min="0" 
-                                   name="biaya_ongkir" 
-                                   id="biayaOngkirInput" 
-                                   value="{{ old('biaya_ongkir', 0) }}" 
-                                   class="form-control" 
-                                   style="font-size: 0.875rem; height: 34px; text-align: right; font-weight: 800; color: #6b21a8; background: #ffffff;" 
-                                   placeholder="0">
+                            <div style="position: relative;">
+                                <span style="position: absolute; left: 10px; top: 8px; font-size: 0.8rem; color: #7e22ce; font-weight: 800; pointer-events: none;">Rp</span>
+                                <input type="number" 
+                                       step="any" 
+                                       min="0" 
+                                       name="biaya_ongkir" 
+                                       id="biayaOngkirInput" 
+                                       value="{{ old('biaya_ongkir', 0) }}" 
+                                       class="form-control" 
+                                       style="font-size: 0.875rem; height: 34px; padding-left: 2.2rem; text-align: right; font-weight: 800; color: #6b21a8; background: #ffffff;" 
+                                       placeholder="0">
+                            </div>
                         </div>
                     </div>
 
@@ -475,16 +479,19 @@
                             <label style="display: block; font-size: 0.725rem; font-weight: 700; color: #14532d; margin-bottom: 0.25rem;">
                                 Nominal Uang Muka / DP Terbayar (Rp)
                             </label>
-                            <input type="number" 
-                                   step="any" 
-                                   min="0" 
-                                   name="uang_muka_nominal" 
-                                   id="uangMukaNominalInput" 
-                                   value="{{ old('uang_muka_nominal', 0) }}" 
-                                   class="form-control" 
-                                   style="font-size: 0.875rem; height: 34px; text-align: right; font-weight: 800; color: #15803d; background: #ffffff;" 
-                                   placeholder="0"
-                                   oninput="recalculateTotals()">
+                            <div style="position: relative;">
+                                <span style="position: absolute; left: 10px; top: 8px; font-size: 0.8rem; color: #15803d; font-weight: 800; pointer-events: none;">Rp</span>
+                                <input type="number" 
+                                       step="any" 
+                                       min="0" 
+                                       name="uang_muka_nominal" 
+                                       id="uangMukaNominalInput" 
+                                       value="{{ old('uang_muka_nominal', 0) }}" 
+                                       class="form-control" 
+                                       style="font-size: 0.875rem; height: 34px; padding-left: 2.2rem; text-align: right; font-weight: 800; color: #15803d; background: #ffffff;" 
+                                       placeholder="0"
+                                       oninput="recalculateTotals()">
+                            </div>
                         </div>
 
                         <div style="background: #ffffff; border: 1px solid #bbf7d0; border-radius: 6px; padding: 0.5rem 0.75rem; font-size: 0.72rem; color: #166534; line-height: 1.4;">

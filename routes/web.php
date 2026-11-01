@@ -315,8 +315,12 @@ Route::middleware('auth')->group(function () {
             ->middleware('role:terima_create');
         Route::get('terima/{id}/export-pdf', [TerimaBarangController::class, 'exportPdf'])
             ->name('terima.export-pdf')
+            ->whereNumber('id')
             ->middleware('role:terima_view');
-        Route::resource('terima', TerimaBarangController::class)->only(['index', 'show'])->middleware('role:terima_view');
+        Route::resource('terima', TerimaBarangController::class)
+            ->only(['index', 'show'])
+            ->whereNumber('terima')
+            ->middleware('role:terima_view');
 
         // Retur Pembelian ke Supplier (Outbound Retur Cacat/Reject): (Berdasarkan izin 'retur_create')
         Route::get('retur/batches', [ReturPembelianController::class, 'getBatches'])->name('retur.batches');

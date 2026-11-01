@@ -198,6 +198,14 @@
                     </label>
                     <select id="po_id" name="po_id" class="po-field-select" onchange="onPoSelected(this.value)">
                         <option value="">-- Non-PO / Pembelian Langsung --</option>
+                        @if ($selectedPo && !$openPoList->contains('po_id', $selectedPo->po_id))
+                            <option value="{{ $selectedPo->po_id }}" 
+                                data-supplier="{{ $selectedPo->supplier_id }}" 
+                                data-gudang="{{ $selectedPo->gudang_id }}"
+                                selected>
+                                {{ $selectedPo->po_no }} - {{ $selectedPo->supplier?->supplier_nm }} ({{ $selectedPo->status_cd }})
+                            </option>
+                        @endif
                         @foreach ($openPoList as $po)
                             <option value="{{ $po->po_id }}" 
                                 data-supplier="{{ $po->supplier_id }}" 
@@ -223,7 +231,8 @@
                     <label for="tgl_jatuh_tempo" class="po-field-label">
                         Jatuh Tempo SJ (TOP)
                     </label>
-                    <input type="date" id="tgl_jatuh_tempo" name="tgl_jatuh_tempo" value="{{ old('tgl_jatuh_tempo') }}"
+                    <input type="date" id="tgl_jatuh_tempo" name="tgl_jatuh_tempo" 
+                        value="{{ old('tgl_jatuh_tempo', ($selectedPo ? ($selectedPo->tgl_estimasi_datang?->format('Y-m-d') ?? now()->addDays($selectedPo->supplier?->top_hari ?? 14)->format('Y-m-d')) : '')) }}"
                         class="po-field-input">
                 </div>
 
@@ -232,7 +241,8 @@
                     <label for="catatan_txt" class="po-field-label">
                         Keterangan Armada / Plat Truk
                     </label>
-                    <input type="text" id="catatan_txt" name="catatan_txt" value="{{ old('catatan_txt') }}"
+                    <input type="text" id="catatan_txt" name="catatan_txt" 
+                        value="{{ old('catatan_txt', $selectedPo?->catatan_txt) }}"
                         class="po-field-input" placeholder="Contoh: Plat AA 2382 KL (Sopir: Kumar)">
                 </div>
             </div>
@@ -344,70 +354,75 @@
                         @if ($selectedPo && $selectedPo->details->isNotEmpty())
                             {{-- Prefilled items from selected PO --}}
                             @foreach ($selectedPo->details as $idx => $pdtl)
-                                @if ((float) $pdtl->sisa_qty > 0)
-                                    @php
-                                        $acronym = app(\App\Services\Common\CodeGeneratorService::class)->extractBarangAcronym(
-                                            $pdtl->barang?->barang_nm, 
-                                            $pdtl->barang?->barang_cd
-                                        );
-                                        $batchPrefix = ($acronym ?: 'BRG') . '-';
-                                    @endphp
-                                    <tr class="terima-row" data-index="{{ $idx }}" data-sisa="{{ (float) $pdtl->sisa_qty }}" data-pesan="{{ (float) $pdtl->pesan_qty }}" data-barang-nm="{{ $pdtl->barang?->barang_nm }}">
-                                        <td class="row-num" style="font-weight: 700; text-align: center; color: #475569; background: #f8fafc;">{{ $idx + 1 }}</td>
-                                        <td>
-                                            <input type="hidden" name="items[{{ $idx }}][podtl_id]" value="{{ $pdtl->podtl_id }}">
-                                            <input type="hidden" name="items[{{ $idx }}][barang_id]" value="{{ $pdtl->barang_id }}" class="item-barang-id">
-                                            <strong style="color: #0f172a; display: block; font-size: 0.825rem;" class="item-barang-name">{{ $pdtl->barang?->barang_nm }}</strong>
-                                            <span style="font-size: 0.725rem; color: #64748b;">
-                                                Pesanan: {{ number_format((float) $pdtl->pesan_qty, 2) }} | <strong>Sisa: {{ number_format((float) $pdtl->sisa_qty, 2) }}</strong>
+                                @php
+                                    $sisaQty = (float) $pdtl->sisa_qty;
+                                    $pesanQty = (float) $pdtl->pesan_qty;
+                                    $defaultTerimaQty = max(0, $sisaQty);
+                                    $acronym = app(\App\Services\Common\CodeGeneratorService::class)->extractBarangAcronym(
+                                        $pdtl->barang?->barang_nm, 
+                                        $pdtl->barang?->barang_cd
+                                    );
+                                    $batchPrefix = ($acronym ?: 'BRG') . '-';
+                                @endphp
+                                <tr class="terima-row" data-index="{{ $idx }}" data-sisa="{{ $sisaQty }}" data-pesan="{{ $pesanQty }}" data-barang-nm="{{ $pdtl->barang?->barang_nm }}">
+                                    <td class="row-num" style="font-weight: 700; text-align: center; color: #475569; background: #f8fafc;">{{ $idx + 1 }}</td>
+                                    <td>
+                                        <input type="hidden" name="items[{{ $idx }}][podtl_id]" value="{{ $pdtl->podtl_id }}">
+                                        <input type="hidden" name="items[{{ $idx }}][barang_id]" value="{{ $pdtl->barang_id }}" class="item-barang-id">
+                                        <strong style="color: #0f172a; display: block; font-size: 0.825rem;" class="item-barang-name">{{ $pdtl->barang?->barang_nm }}</strong>
+                                        <div style="font-size: 0.725rem; color: #64748b; margin-top: 2px;">
+                                            Pesanan: <strong>{{ number_format($pesanQty, 2) }}</strong> | 
+                                            Sisa PO: <strong>{{ number_format($sisaQty, 2) }}</strong>
+                                            @if ($sisaQty <= 0)
+                                                <span class="badge" style="background: #e2e8f0; color: #475569; font-size: 0.675rem; font-weight: 700; margin-left: 4px;">Sudah Selesai</span>
+                                            @endif
+                                        </div>
+                                        <div class="row-over-po-badge" style="display: none; margin-top: 3px;">
+                                            <span class="badge" style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a; font-size: 0.7rem; font-weight: 700; padding: 1px 5px; border-radius: 4px; display: inline-flex; align-items: center; gap: 3px;">
+                                                ⚠️ Over PO (<span class="over-diff-text">+0</span>)
                                             </span>
-                                            <div class="row-over-po-badge" style="display: none; margin-top: 3px;">
-                                                <span class="badge" style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a; font-size: 0.7rem; font-weight: 700; padding: 1px 5px; border-radius: 4px; display: inline-flex; align-items: center; gap: 3px;">
-                                                    ⚠️ Over PO (<span class="over-diff-text">+0</span>)
-                                                </span>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <input type="text" name="items[{{ $idx }}][batch_no]" value="{{ old("items.{$idx}.batch_no", $batchPrefix) }}" placeholder="{{ $batchPrefix }}... (isi nomor batch)" class="form-control item-batch" style="font-family: monospace; font-weight: 700; color: #0284c7; width: 100%;" required>
-                                        </td>
-                                        <td>
-                                            <input type="date" name="items[{{ $idx }}][expired_tgl]" value="{{ old("items.{$idx}.expired_tgl") }}" class="form-control" style="font-size: 0.8rem;">
-                                        </td>
-                                        <td>
-                                            <select name="items[{{ $idx }}][grade_cd]" class="form-control po-grade-select">
-                                                <option value="A" selected>Grade A</option>
-                                                <option value="B">Grade B</option>
-                                                <option value="C">Grade C</option>
-                                                <option value="REJECT">Reject</option>
-                                            </select>
-                                        </td>
-                                        <td>
-                                            <input type="number" step="0.0001" min="0" name="items[{{ $idx }}][terima_qty]" value="{{ (float) $pdtl->sisa_qty }}" class="form-control item-terima-qty" style="text-align: right; font-weight: 700;" oninput="calculateTotalTerima()" required>
-                                        </td>
-                                        <td>
-                                            <input type="number" step="0.0001" min="0" name="items[{{ $idx }}][reject_qty]" value="0" class="form-control item-reject-qty" placeholder="0" style="text-align: right;" oninput="calculateTotalTerima()">
-                                        </td>
-                                        <td style="text-align: right; font-weight: 700; color: #047857; background: #f0fdf4;" class="row-netto">
-                                            {{ number_format((float) $pdtl->sisa_qty, 2, ',', '.') }}
-                                        </td>
-                                        <td style="text-align: center;">
-                                            <span class="row-satuan" style="font-weight: 600; color: #475569; font-size: 0.8rem;">{{ $pdtl->barang?->satuanDasar?->satuan_nm ?? '-' }}</span>
-                                        </td>
-                                        <td>
-                                            <input type="number" step="0.01" min="0" name="items[{{ $idx }}][harga_nominal]" value="{{ (float) $pdtl->harga_nominal }}" class="form-control item-harga" placeholder="0" style="text-align: right; font-weight: 600;" oninput="calculateTotalTerima()">
-                                            {{-- Nilai Finansial/Pajak Disimpan di Hidden Input untuk Finance --}}
-                                            <input type="hidden" name="items[{{ $idx }}][diskon_persen]" value="{{ old("items.{$idx}.diskon_persen", (float)($pdtl->diskon_persen ?? 0)) }}" class="item-diskon">
-                                            <input type="hidden" name="items[{{ $idx }}][potongan_nominal]" value="{{ old("items.{$idx}.potongan_nominal", (float)($pdtl->potongan_nominal ?? 0)) }}" class="item-potongan">
-                                            <input type="hidden" name="items[{{ $idx }}][ppn_tipe]" value="{{ old("items.{$idx}.ppn_tipe", $pdtl->ppn_tipe ?? 'NON_PPN') }}" class="item-ppn-tipe">
-                                        </td>
-                                        <td style="text-align: right; font-weight: 700; color: #0f172a; font-size: 0.875rem; font-family: monospace;" class="row-subtotal">
-                                            Rp {{ number_format((float)$pdtl->sisa_qty * (float)$pdtl->harga_nominal, 0, ',', '.') }}
-                                        </td>
-                                        <td style="text-align: center;">
-                                            <button type="button" onclick="removeTerimaRow(this)" class="btn btn-danger btn-sm" style="padding: 0.2rem 0.45rem; font-size: 0.8rem;" title="Hapus Baris">&times;</button>
-                                        </td>
-                                    </tr>
-                                @endif
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <input type="text" name="items[{{ $idx }}][batch_no]" value="{{ old("items.{$idx}.batch_no", $batchPrefix) }}" placeholder="{{ $batchPrefix }}... (isi nomor batch)" class="form-control item-batch" style="font-family: monospace; font-weight: 700; color: #0284c7; width: 100%;" required>
+                                    </td>
+                                    <td>
+                                        <input type="date" name="items[{{ $idx }}][expired_tgl]" value="{{ old("items.{$idx}.expired_tgl") }}" class="form-control" style="font-size: 0.8rem;">
+                                    </td>
+                                    <td>
+                                        <select name="items[{{ $idx }}][grade_cd]" class="form-control po-grade-select">
+                                            <option value="A" selected>Grade A</option>
+                                            <option value="B">Grade B</option>
+                                            <option value="C">Grade C</option>
+                                            <option value="REJECT">Reject</option>
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <input type="number" step="0.0001" min="0" name="items[{{ $idx }}][terima_qty]" value="{{ old("items.{$idx}.terima_qty", $defaultTerimaQty) }}" class="form-control item-terima-qty" style="text-align: right; font-weight: 700;" oninput="calculateTotalTerima()" required>
+                                    </td>
+                                    <td>
+                                        <input type="number" step="0.0001" min="0" name="items[{{ $idx }}][reject_qty]" value="{{ old("items.{$idx}.reject_qty", 0) }}" class="form-control item-reject-qty" placeholder="0" style="text-align: right;" oninput="calculateTotalTerima()">
+                                    </td>
+                                    <td style="text-align: right; font-weight: 700; color: #047857; background: #f0fdf4;" class="row-netto">
+                                        {{ number_format(max(0, $defaultTerimaQty), 2, ',', '.') }}
+                                    </td>
+                                    <td style="text-align: center;">
+                                        <span class="row-satuan" style="font-weight: 600; color: #475569; font-size: 0.8rem;">{{ $pdtl->barang?->satuanDasar?->satuan_nm ?? '-' }}</span>
+                                    </td>
+                                    <td>
+                                        <input type="number" step="0.01" min="0" name="items[{{ $idx }}][harga_nominal]" value="{{ (float) $pdtl->harga_nominal }}" class="form-control item-harga" placeholder="0" style="text-align: right; font-weight: 600;" oninput="calculateTotalTerima()">
+                                        {{-- Nilai Finansial/Pajak Disimpan di Hidden Input untuk Finance --}}
+                                        <input type="hidden" name="items[{{ $idx }}][diskon_persen]" value="{{ old("items.{$idx}.diskon_persen", (float)($pdtl->diskon_persen ?? 0)) }}" class="item-diskon">
+                                        <input type="hidden" name="items[{{ $idx }}][potongan_nominal]" value="{{ old("items.{$idx}.potongan_nominal", (float)($pdtl->potongan_nominal ?? 0)) }}" class="item-potongan">
+                                        <input type="hidden" name="items[{{ $idx }}][ppn_tipe]" value="{{ old("items.{$idx}.ppn_tipe", $pdtl->ppn_tipe ?? 'NON_PPN') }}" class="item-ppn-tipe">
+                                    </td>
+                                    <td style="text-align: right; font-weight: 700; color: #0f172a; font-size: 0.875rem; font-family: monospace;" class="row-subtotal">
+                                        Rp {{ number_format((float)$defaultTerimaQty * (float)$pdtl->harga_nominal, 0, ',', '.') }}
+                                    </td>
+                                    <td style="text-align: center;">
+                                        <button type="button" onclick="removeTerimaRow(this)" class="btn btn-danger btn-sm" style="padding: 0.2rem 0.45rem; font-size: 0.8rem;" title="Hapus Baris">&times;</button>
+                                    </td>
+                                </tr>
                             @endforeach
                         @else
                             {{-- Row Kosong Default --}}
@@ -556,14 +571,15 @@
 
             {{-- Sisi Kanan: Financial & Physical Summary Stack --}}
             <div class="po-financial-card">
-                <div style="font-size: 0.775rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em; color: #475569; margin-bottom: 0.65rem;">
-                    Ringkasan Fisik &amp; Nilai GRN
+                <div style="font-size: 0.775rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em; color: #475569; margin-bottom: 0.65rem; display: flex; justify-content: space-between; align-items: center;">
+                    <span>Ringkasan Fisik &amp; Nilai GRN</span>
+                    <span class="badge" style="background: #f1f5f9; color: #475569; font-size: 0.675rem; font-weight: 700; padding: 2px 6px;">Fisik &amp; Nilai</span>
                 </div>
 
                 {{-- 1. Total Bruto --}}
                 <div class="po-financial-row">
                     <span style="color: #64748b; font-weight: 600;">Total Bruto Timbangan:</span>
-                    <strong style="color: #0284c7; font-family: monospace; font-size: 0.95rem;">
+                    <strong style="color: #0284c7; font-family: monospace; font-size: 0.95rem; white-space: nowrap; flex-shrink: 0;">
                         <span id="sideTotalBruto">0,00 KG</span>
                     </strong>
                 </div>
@@ -571,26 +587,53 @@
                 {{-- 2. Total Afkir / Reject --}}
                 <div class="po-financial-row">
                     <span style="color: #64748b; font-weight: 600;">Total Afkir / Reject:</span>
-                    <strong style="color: #dc2626; font-family: monospace; font-size: 0.95rem;">
+                    <strong style="color: #dc2626; font-family: monospace; font-size: 0.95rem; white-space: nowrap; flex-shrink: 0;">
                         <span id="sideTotalAfkir">0,00 KG</span>
                     </strong>
                 </div>
 
                 {{-- 3. Total Netto Masuk --}}
-                <div class="po-financial-row">
+                <div class="po-financial-row" style="background: #f0fdf4; margin: 0.2rem -0.4rem; padding: 0.35rem 0.4rem; border-radius: 4px;">
                     <span style="color: #14532d; font-weight: 700;">Total Netto Masuk (Stok):</span>
-                    <strong style="color: #047857; font-family: monospace; font-size: 1.05rem;">
+                    <strong style="color: #047857; font-family: monospace; font-size: 1.05rem; white-space: nowrap; flex-shrink: 0;">
                         <span id="sideTotalNetto">0,00 KG</span>
                     </strong>
                 </div>
 
-                {{-- 4. DPP Nilai Barang Bersih --}}
-                <div class="po-financial-row" style="border-top: 1.5px dashed #cbd5e1; padding-top: 0.45rem; margin-top: 0.2rem;">
-                    <span style="color: #475569; font-weight: 700;">DPP Nilai Netto:</span>
-                    <span id="sideTotalDpp" style="font-weight: 700; font-family: monospace; color: #1e293b; font-size: 0.95rem;">Rp 0</span>
+                {{-- Divider Finansial --}}
+                <div style="border-top: 1.5px dashed #cbd5e1; margin: 0.5rem 0 0.35rem 0;"></div>
+
+                {{-- 4. Subtotal Nilai Kotor (Tampil jika ada diskon atau potongan) --}}
+                <div class="po-financial-row" id="rowSubtotalBruto" style="display: none;">
+                    <span style="color: #64748b; font-weight: 600;">Subtotal Kotor:</span>
+                    <span id="sideSubtotalBruto" style="font-family: monospace; color: #475569; font-size: 0.9rem; white-space: nowrap; flex-shrink: 0;">Rp 0</span>
                 </div>
 
-                {{-- 5. Grand Total Box --}}
+                {{-- 5. Diskon Item (Tampil jika > 0) --}}
+                <div class="po-financial-row" id="rowDiskon" style="display: none;">
+                    <span style="color: #b45309; font-weight: 600;">Diskon Item:</span>
+                    <span id="sideTotalDiskon" style="font-family: monospace; font-weight: 700; color: #d97706; font-size: 0.9rem; white-space: nowrap; flex-shrink: 0;">-Rp 0</span>
+                </div>
+
+                {{-- 6. Potongan Harga (Tampil jika > 0) --}}
+                <div class="po-financial-row" id="rowPotongan" style="display: none;">
+                    <span style="color: #b45309; font-weight: 600;">Potongan Harga:</span>
+                    <span id="sideTotalPotongan" style="font-family: monospace; font-weight: 700; color: #d97706; font-size: 0.9rem; white-space: nowrap; flex-shrink: 0;">-Rp 0</span>
+                </div>
+
+                {{-- 7. DPP Nilai Netto --}}
+                <div class="po-financial-row">
+                    <span style="color: #334155; font-weight: 700;">DPP Nilai Netto:</span>
+                    <span id="sideTotalDpp" style="font-weight: 700; font-family: monospace; color: #0f172a; font-size: 0.95rem; white-space: nowrap; flex-shrink: 0;">Rp 0</span>
+                </div>
+
+                {{-- 8. PPN 11% (Tampil jika ada PPN) --}}
+                <div class="po-financial-row" id="rowPpn" style="display: none;">
+                    <span style="color: #0369a1; font-weight: 600;">PPN (11%):</span>
+                    <span id="sideTotalPpn" style="font-family: monospace; font-weight: 700; color: #0284c7; font-size: 0.9rem; white-space: nowrap; flex-shrink: 0;">+Rp 0</span>
+                </div>
+
+                {{-- 9. Grand Total Box --}}
                 <div class="po-grand-total-box">
                     <div>
                         <span style="font-size: 0.725rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; color: #065f46; display: block;">
@@ -598,7 +641,7 @@
                         </span>
                         <span style="font-size: 0.7rem; color: #059669;">Berdasarkan Kuantitas Netto Masuk</span>
                     </div>
-                    <div class="po-grand-total-val" id="sideGrandTotal">
+                    <div class="po-grand-total-val" id="sideGrandTotal" style="white-space: nowrap; flex-shrink: 0;">
                         Rp 0
                     </div>
                 </div>
@@ -653,9 +696,10 @@
         window.qcSiapGudangUrl = "{{ route('qc.inbound.siap_gudang') }}";
         window.qcTicketDataBaseUrl = "{{ url('qc/inbound/ticket-data') }}";
         window.terimaCreateUrl = "{{ route('gudang.terima.create') }}";
+        window.selectedPoId = {{ $selectedPo ? $selectedPo->po_id : 'null' }};
         window.selectedPoDetailsCount = {{ $selectedPo ? count($selectedPo->details) : 1 }};
         window.currentServerYearMonth = "{{ date('Y-m') }}";
-        window.hasOldServerInput = {{ ($errors->any() || old('terima_no') || old('supplier_id')) ? 'true' : 'false' }};
+        window.hasOldServerInput = {{ ((isset($errors) && $errors->any()) || old('terima_no') || old('supplier_id')) ? 'true' : 'false' }};
         @if(old('supplier_id', $selectedPo?->supplier_id))
             window.oldSupplierId = {{ old('supplier_id', $selectedPo?->supplier_id) }};
         @endif

@@ -784,7 +784,8 @@ function rebuildItemsTable() {
 
     let html = '';
     let rowIndex = 0;
-    let totalNettoKg = 0;
+    let totalNettoTonase = 0;
+    let satuanSet = new Set();
 
     unbilledGrnData.forEach(grn => {
         if (!selectedGrnIds.has(grn.terima_id)) return;
@@ -800,11 +801,10 @@ function rebuildItemsTable() {
                 ? parseFloat(dtl.netto_qty) 
                 : Math.max(0, parseFloat(dtl.terima_qty || 0) - parseFloat(dtl.reject_qty || 0));
 
-            // Akumulasi tonase jika satuan KG
-            const satLower = String(satuan).toLowerCase().trim();
-            if (satLower === 'kg' || satLower === 'kilogram') {
-                totalNettoKg += qty;
-            }
+            // Akumulasi kuantitas fisik
+            const satStr = (satuan || 'KG').trim();
+            satuanSet.add(satStr);
+            totalNettoTonase += qty;
 
             const harga = parseFloat(
                 dtl.harga_satuan || 
@@ -992,10 +992,30 @@ function rebuildItemsTable() {
         returInput.value = Math.round(autoPotonganGlobal);
     }
 
-    // Auto-update akumulasi Tonase KG yang diturunkan
+    // Deteksi satuan utama
+    let detectedSatuan = 'KG';
+    if (satuanSet.size === 1) {
+        detectedSatuan = Array.from(satuanSet)[0];
+    } else if (satuanSet.has('KG') || satuanSet.has('Kilogram') || satuanSet.has('kg')) {
+        detectedSatuan = 'KG';
+    } else if (satuanSet.size > 0) {
+        detectedSatuan = Array.from(satuanSet)[0];
+    }
+
+    const spanTonase = document.getElementById('spanSatuanTonase');
+    const badgeTonase = document.getElementById('badgeSatuanTonase');
+    const spanTarif = document.getElementById('spanSatuanTarif');
+    const badgeTarif = document.getElementById('badgeSatuanTarif');
+
+    if (spanTonase) spanTonase.textContent = detectedSatuan;
+    if (badgeTonase) badgeTonase.textContent = detectedSatuan;
+    if (spanTarif) spanTarif.textContent = detectedSatuan;
+    if (badgeTarif) badgeTarif.textContent = '/ ' + detectedSatuan;
+
+    // Auto-update akumulasi Kuantitas / Tonase yang diturunkan
     const tonaseInput = document.getElementById('tonaseKgInput');
     if (tonaseInput && !tonaseInput.dataset.manualEdited) {
-        tonaseInput.value = totalNettoKg > 0 ? parseFloat(totalNettoKg.toFixed(2)) : 0;
+        tonaseInput.value = totalNettoTonase > 0 ? parseFloat(totalNettoTonase.toFixed(2)) : 0;
     }
 
     calculateOngkirFromTonase();
@@ -1016,7 +1036,7 @@ window.toggleOngkirMode = function (mode) {
 };
 
 /**
- * Kalkulasi Biaya Ongkos Angkut / Bongkar Muat dari Tonase (KG Netto) x Tarif per KG
+ * Kalkulasi Biaya Ongkos Angkut / Bongkar Muat dari Tonase / Kuantitas x Tarif
  */
 window.calculateOngkirFromTonase = function () {
     const tonase = parseDecimal(document.getElementById('tonaseKgInput')?.value);
@@ -1031,8 +1051,14 @@ window.calculateOngkirFromTonase = function () {
         }
     }
 
+    const detectedSatuan = document.getElementById('badgeSatuanTonase')?.textContent || 'KG';
     const formulaEl = document.getElementById('ongkirFormulaText');
     if (formulaEl) {
+        formulaEl.innerHTML = `${tonase.toLocaleString('id-ID')} ${detectedSatuan} &times; Rp ${tarif.toLocaleString('id-ID')} = <strong>Rp ${totalOngkir.toLocaleString('id-ID')}</strong>`;
+    }
+
+    recalculateTotals();
+};
         formulaEl.innerHTML = `${tonase.toLocaleString('id-ID')} KG &times; Rp ${tarif.toLocaleString('id-ID')} = <strong>Rp ${totalOngkir.toLocaleString('id-ID')}</strong>`;
     }
 

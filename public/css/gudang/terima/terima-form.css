@@ -668,3 +668,50 @@
     color: #111827 !important;
 }
 
+/* =========================================================================
+ * FINANCIAL SUMMARY & CARD STYLING ENHANCEMENTS
+ * ========================================================================= */
+.po-financial-card {
+    background: #ffffff;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 0.85rem 1.15rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+.po-financial-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.35rem 0;
+    font-size: 0.825rem;
+    border-bottom: 1px dashed #f1f5f9;
+}
+.po-financial-row span:last-child,
+.po-financial-row strong:last-child {
+    white-space: nowrap;
+    flex-shrink: 0;
+    text-align: right;
+}
+.po-financial-row:last-child {
+    border-bottom: none;
+}
+.po-grand-total-box {
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+    border: 1.5px solid #86efac;
+    border-radius: 8px;
+    padding: 0.75rem 0.95rem;
+    margin-top: 0.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 1px 2px rgba(16, 185, 129, 0.08);
+}
+.po-grand-total-val {
+    font-size: 1.35rem;
+    font-weight: 800;
+    font-family: monospace;
+    color: #047857;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+

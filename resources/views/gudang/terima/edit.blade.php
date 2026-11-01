@@ -47,7 +47,7 @@
         </div>
     </div>
 
-    @if ($errors->any())
+    @if (isset($errors) && $errors->any())
         <div class="alert alert-danger" style="margin-bottom: 0.85rem; background: #fef2f2; border: 1px solid #fecaca; border-left: 4px solid #ef4444; color: #991b1b; padding: 0.65rem 0.85rem; border-radius: 6px; font-size: 0.825rem;">
             <strong style="display: block; margin-bottom: 0.25rem;">⚠️ Terjadi kesalahan input:</strong>
             <ul style="margin: 0; padding-left: 1.25rem;">
@@ -376,34 +376,62 @@
             </div>
 
             <div class="po-financial-card">
-                <div style="font-size: 0.775rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em; color: #475569; margin-bottom: 0.65rem;">
-                    Ringkasan Fisik &amp; Nilai GRN
+                <div style="font-size: 0.775rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em; color: #475569; margin-bottom: 0.65rem; display: flex; justify-content: space-between; align-items: center;">
+                    <span>Ringkasan Fisik &amp; Nilai GRN</span>
+                    <span class="badge" style="background: #f1f5f9; color: #475569; font-size: 0.675rem; font-weight: 700; padding: 2px 6px;">Fisik &amp; Nilai</span>
                 </div>
 
                 <div class="po-financial-row">
                     <span style="color: #64748b; font-weight: 600;">Total Bruto Timbangan:</span>
-                    <strong style="color: #0284c7; font-family: monospace; font-size: 0.95rem;">
+                    <strong style="color: #0284c7; font-family: monospace; font-size: 0.95rem; white-space: nowrap; flex-shrink: 0;">
                         <span id="sideTotalBruto">0,00 KG</span>
                     </strong>
                 </div>
 
                 <div class="po-financial-row">
                     <span style="color: #64748b; font-weight: 600;">Total Afkir / Reject:</span>
-                    <strong style="color: #dc2626; font-family: monospace; font-size: 0.95rem;">
+                    <strong style="color: #dc2626; font-family: monospace; font-size: 0.95rem; white-space: nowrap; flex-shrink: 0;">
                         <span id="sideTotalAfkir">0,00 KG</span>
                     </strong>
                 </div>
 
-                <div class="po-financial-row">
+                <div class="po-financial-row" style="background: #f0fdf4; margin: 0.2rem -0.4rem; padding: 0.35rem 0.4rem; border-radius: 4px;">
                     <span style="color: #14532d; font-weight: 700;">Total Netto Masuk (Stok):</span>
-                    <strong style="color: #047857; font-family: monospace; font-size: 1.05rem;">
+                    <strong style="color: #047857; font-family: monospace; font-size: 1.05rem; white-space: nowrap; flex-shrink: 0;">
                         <span id="sideTotalNetto">0,00 KG</span>
                     </strong>
                 </div>
 
-                <div class="po-financial-row" style="border-top: 1.5px dashed #cbd5e1; padding-top: 0.45rem; margin-top: 0.2rem;">
-                    <span style="color: #475569; font-weight: 700;">DPP Nilai Netto:</span>
-                    <span id="sideTotalDpp" style="font-weight: 700; font-family: monospace; color: #1e293b; font-size: 0.95rem;">Rp 0</span>
+                {{-- Divider Finansial --}}
+                <div style="border-top: 1.5px dashed #cbd5e1; margin: 0.5rem 0 0.35rem 0;"></div>
+
+                {{-- Subtotal Kotor (Tampil jika ada diskon atau potongan) --}}
+                <div class="po-financial-row" id="rowSubtotalBruto" style="display: none;">
+                    <span style="color: #64748b; font-weight: 600;">Subtotal Kotor:</span>
+                    <span id="sideSubtotalBruto" style="font-family: monospace; color: #475569; font-size: 0.9rem; white-space: nowrap; flex-shrink: 0;">Rp 0</span>
+                </div>
+
+                {{-- Diskon Item (Tampil jika > 0) --}}
+                <div class="po-financial-row" id="rowDiskon" style="display: none;">
+                    <span style="color: #b45309; font-weight: 600;">Diskon Item:</span>
+                    <span id="sideTotalDiskon" style="font-family: monospace; font-weight: 700; color: #d97706; font-size: 0.9rem; white-space: nowrap; flex-shrink: 0;">-Rp 0</span>
+                </div>
+
+                {{-- Potongan Harga (Tampil jika > 0) --}}
+                <div class="po-financial-row" id="rowPotongan" style="display: none;">
+                    <span style="color: #b45309; font-weight: 600;">Potongan Harga:</span>
+                    <span id="sideTotalPotongan" style="font-family: monospace; font-weight: 700; color: #d97706; font-size: 0.9rem; white-space: nowrap; flex-shrink: 0;">-Rp 0</span>
+                </div>
+
+                <div class="po-financial-row">
+                    <span style="color: #334155; font-weight: 700;">DPP Nilai Netto:</span>
+                    <span id="sideTotalDpp" style="font-weight: 700; font-family: monospace; color: #0f172a; font-size: 0.95rem; white-space: nowrap; flex-shrink: 0;">Rp 0</span>
+                </div>
+
+                {{-- PPN 11% (Tampil jika ada PPN) --}}
+                <div class="po-financial-row" id="rowPpn" style="display: none;">
+                    <span style="color: #0369a1; font-weight: 600;">PPN (11%):</span>
+                    <span id="sideTotalPpn" style="font-family: monospace; font-weight: 700; color: #0284c7; font-size: 0.9rem; white-space: nowrap; flex-shrink: 0;">+Rp 0</span>
                 </div>
 
                 <div class="po-grand-total-box">
@@ -413,7 +441,7 @@
                         </span>
                         <span style="font-size: 0.7rem; color: #059669;">Berdasarkan Kuantitas Netto Masuk</span>
                     </div>
-                    <div class="po-grand-total-val" id="sideGrandTotal">
+                    <div class="po-grand-total-val" id="sideGrandTotal" style="white-space: nowrap; flex-shrink: 0;">
                         Rp 0
                     </div>
                 </div>

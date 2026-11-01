@@ -394,11 +394,15 @@ function applyBarangCategoryFilterToSelect(selectElem, category) {
 let terimaRowIndex = window.selectedPoDetailsCount || 1;
 
 function onPoSelected(poId) {
+    if (typeof clearTerimaCreateDraft === 'function') {
+        clearTerimaCreateDraft();
+    }
+    const baseUrl = window.terimaCreateUrl || '/gudang/terima/create';
     if (!poId) {
-        window.location.href = window.terimaCreateUrl || '/gudang/terima/create';
+        window.location.href = baseUrl;
         return;
     }
-    window.location.href = "{{ route('gudang.terima.create') }}?po_id=" + poId;
+    window.location.href = baseUrl + '?po_id=' + encodeURIComponent(poId);
 }
 
 // ⚡ Salin Semua Sisa PO langsung ke kolom Kuantitas Terima
@@ -743,7 +747,54 @@ function calculateTotalTerima() {
     if (sideTotalBruto) sideTotalBruto.innerText = totalBruto.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' KG';
     if (sideTotalAfkir) sideTotalAfkir.innerText = totalReject.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' KG';
     if (sideTotalNetto) sideTotalNetto.innerText = totalNetto.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' KG';
+
+    // Rincian Komersial & Finansial pada Card Ringkasan
+    const rowSubtotalBruto = document.getElementById('rowSubtotalBruto');
+    const sideSubtotalBruto = document.getElementById('sideSubtotalBruto');
+    if (rowSubtotalBruto && sideSubtotalBruto) {
+        if (totalDiskon > 0 || totalPotongan > 0) {
+            rowSubtotalBruto.style.display = 'flex';
+            sideSubtotalBruto.innerText = 'Rp ' + Math.round(totalSubtotalBruto).toLocaleString('id-ID');
+        } else {
+            rowSubtotalBruto.style.display = 'none';
+        }
+    }
+
+    const rowDiskon = document.getElementById('rowDiskon');
+    const sideTotalDiskon = document.getElementById('sideTotalDiskon');
+    if (rowDiskon && sideTotalDiskon) {
+        if (totalDiskon > 0) {
+            rowDiskon.style.display = 'flex';
+            sideTotalDiskon.innerText = '-Rp ' + Math.round(totalDiskon).toLocaleString('id-ID');
+        } else {
+            rowDiskon.style.display = 'none';
+        }
+    }
+
+    const rowPotongan = document.getElementById('rowPotongan');
+    const sideTotalPotongan = document.getElementById('sideTotalPotongan');
+    if (rowPotongan && sideTotalPotongan) {
+        if (totalPotongan > 0) {
+            rowPotongan.style.display = 'flex';
+            sideTotalPotongan.innerText = '-Rp ' + Math.round(totalPotongan).toLocaleString('id-ID');
+        } else {
+            rowPotongan.style.display = 'none';
+        }
+    }
+
     if (sideTotalDpp) sideTotalDpp.innerText = 'Rp ' + Math.round(totalSubtotalNetto).toLocaleString('id-ID');
+
+    const rowPpn = document.getElementById('rowPpn');
+    const sideTotalPpn = document.getElementById('sideTotalPpn');
+    if (rowPpn && sideTotalPpn) {
+        if (totalPpn > 0) {
+            rowPpn.style.display = 'flex';
+            sideTotalPpn.innerText = '+Rp ' + Math.round(totalPpn).toLocaleString('id-ID');
+        } else {
+            rowPpn.style.display = 'none';
+        }
+    }
+
     if (sideGrandTotal) sideGrandTotal.innerText = 'Rp ' + Math.round(grandTotal).toLocaleString('id-ID');
 
     // Update Card Ringkasan Tambahan / Halaman Edit
@@ -766,17 +817,8 @@ function calculateTotalTerima() {
     if (lblGrandTotal) lblGrandTotal.innerText = 'Rp ' + Math.round(finalGrandTotal).toLocaleString('id-ID');
 
     if (barTaxSummaryLine) {
-        if (totalPpn > 0 || totalDiskon > 0 || totalPotongan > 0) {
-            let parts = [];
-            if (totalDiskon > 0) parts.push(`Diskon: -Rp ${Math.round(totalDiskon).toLocaleString('id-ID')}`);
-            if (totalPotongan > 0) parts.push(`Potongan: -Rp ${Math.round(totalPotongan).toLocaleString('id-ID')}`);
-            if (totalPpn > 0) parts.push(`PPN 11%: +Rp ${Math.round(totalPpn).toLocaleString('id-ID')}`);
-            barTaxSummaryLine.style.display = 'block';
-            barTaxSummaryLine.innerHTML = `<span style="color:#0f172a; font-weight:600;">DPP Netto: Rp ${Math.round(totalSubtotalNetto).toLocaleString('id-ID')}</span> &bull; ${parts.join(' &bull; ')}`;
-        } else {
-            barTaxSummaryLine.style.display = 'none';
-            barTaxSummaryLine.innerHTML = '';
-        }
+        barTaxSummaryLine.style.display = 'none';
+        barTaxSummaryLine.innerHTML = '';
     }
 }
 
@@ -1488,9 +1530,9 @@ function applyQcTicket(qcId) {
                             </td>
                             <td>
                                 <input type="number" step="0.01" min="0" name="items[${idx}][harga_nominal]" value="${defaultHarga}" class="form-control item-harga" placeholder="0" style="text-align: right; font-weight: 600;" oninput="calculateTotalTerima()">
-                                <input type="hidden" name="items[${idx}][diskon_persen]" value="0" class="item-diskon">
-                                <input type="hidden" name="items[${idx}][potongan_nominal]" value="0" class="item-potongan">
-                                <input type="hidden" name="items[${idx}][ppn_tipe]" value="NON_PPN" class="item-ppn-tipe">
+                                <input type="hidden" name="items[${idx}][diskon_persen]" value="${it.diskon_persen || 0}" class="item-diskon">
+                                <input type="hidden" name="items[${idx}][potongan_nominal]" value="${it.potongan_nominal || 0}" class="item-potongan">
+                                <input type="hidden" name="items[${idx}][ppn_tipe]" value="${it.ppn_tipe || 'NON_PPN'}" class="item-ppn-tipe">
                             </td>
                             <td style="text-align: right; font-weight: 700; color: #0f172a; font-size: 0.875rem; font-family: monospace;" class="row-subtotal">
                                 Rp ${Math.round(rowNetto * defaultHarga).toLocaleString('id-ID')}
@@ -2007,6 +2049,15 @@ function restoreTerimaCreateDraft() {
 
         const urlParams = new URLSearchParams(window.location.search);
         const queryQcId = urlParams.get('qc_id');
+        const queryPoId = urlParams.get('po_id') || (window.selectedPoId ? String(window.selectedPoId) : null);
+
+        // Jika ada query po_id, data PO sudah dimuat lengkap dari database oleh server (Blade).
+        // Draft lama di localStorage TIDAK BOLEH menimpa data PO yang baru ditarik!
+        if (queryPoId) {
+            clearTerimaCreateDraft();
+            return false;
+        }
+
         // Jika ada URL query qc_id yang BERBEDA dari draft yang tersimpan, prioritaskan query baru
         if (queryQcId && draft.header.qc_id && String(draft.header.qc_id) !== String(queryQcId)) {
             clearTerimaCreateDraft();

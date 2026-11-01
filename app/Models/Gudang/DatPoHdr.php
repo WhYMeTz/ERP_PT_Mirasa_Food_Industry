@@ -120,7 +120,7 @@ class DatPoHdr extends Model
      */
     public function details(): HasMany
     {
-        return $this->hasMany(DatPoDtl::class, 'po_id', 'po_id');
+        return $this->hasMany(DatPoDtl::class, 'po_id', 'po_id')->where('deleted_st', false);
     }
 
     /**

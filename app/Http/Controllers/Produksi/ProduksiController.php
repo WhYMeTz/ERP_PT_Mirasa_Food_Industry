@@ -10,6 +10,7 @@ use App\Http\Controllers\Controller;
 use App\Imports\Produksi\HasilProduksiImport;
 use App\Imports\Produksi\RekapHppImport;
 use App\Models\Gudang\DatPakaiHdr;
+use App\Models\Gudang\DatStokBatch;
 use App\Models\Produksi\DatProduksiHdr;
 use App\Models\MasterData\MstBarang;
 use App\Models\MasterData\MstGudang;
@@ -169,6 +170,13 @@ class ProduksiController extends Controller
         $allTarif = $this->tarifService->getAllTarif();
         $defaultCngTarif = $energiTkRates['cng_tarif'] ?? 226800.00;
 
+        // Tarif Master Kemasan Karton Sirkular (Single Source of Truth dari mst_barang)
+        $kartonRates = [
+            'baru'    => (float) (MstBarang::where('barang_cd', 'KIF00G-BP1')->value('harga_beli_standar') ?? 8741.00),
+            'puteran' => (float) (MstBarang::where('barang_cd', 'KIF00G-PUT')->value('harga_beli_standar') ?? 1748.20),
+            'reject'  => (float) (MstBarang::where('barang_cd', 'KMS-KTN-REJ')->value('harga_beli_standar') ?? 0.00),
+        ];
+
         return view('produksi.create', compact(
             'gudangList',
             'pakaiList',
@@ -177,7 +185,8 @@ class ProduksiController extends Controller
             'defaultCngTarif',
             'fohRates',
             'energiTkRates',
-            'allTarif'
+            'allTarif',
+            'kartonRates'
         ));
     }
 
@@ -381,7 +390,66 @@ class ProduksiController extends Controller
     public function adjustPage(int $id): View
     {
         $produksi = $this->produksiService->getById($id);
-        return view('produksi.adjust', compact('produksi'));
+
+        // Ambil semua batch aktif gudang yang memiliki sisa stok untuk bahan baku & kemasan
+        $allBatches = DatStokBatch::with(['barang.satuan', 'gudang'])
+            ->where('deleted_st', false)
+            ->where('sisa_qty', '>', 0)
+            ->orderBy('stok_id', 'desc')
+            ->get();
+
+        $availableBatchesMap = [
+            'singkong'     => [],
+            'minyak'       => [],
+            'bumbu'        => [],
+            'karton_baru'  => [],
+            'karton_bekas' => [],
+            'plastik_hd'   => [],
+            'lakban_besar' => [],
+            'lakban_kecil' => [],
+            'tali_rafia'   => [],
+        ];
+
+        foreach ($allBatches as $sb) {
+            $barang = $sb->barang;
+            if (!$barang) continue;
+            $nm = strtoupper($barang->barang_nm ?? '');
+            $cd = strtoupper($barang->barang_cd ?? '');
+
+            $item = [
+                'stok_id'      => (int) $sb->stok_id,
+                'batch_no'     => (string) $sb->batch_no,
+                'sisa_qty'     => (float) $sb->sisa_qty,
+                'harga_satuan' => (float) $sb->harga_satuan,
+                'barang_nm'    => (string) ($barang->barang_nm ?? ''),
+                'satuan_nm'    => (string) ($barang->satuan?->satuan_nm ?? 'Unit'),
+                'gudang_nm'    => (string) ($sb->gudang?->gudang_nm ?? 'Gudang Utama'),
+            ];
+
+            if (str_contains($nm, 'SINGKONG') || str_contains($cd, 'SNG')) {
+                $availableBatchesMap['singkong'][] = $item;
+            } elseif (str_contains($nm, 'MINYAK') || str_contains($cd, 'MSW') || str_contains($cd, 'MKL')) {
+                $availableBatchesMap['minyak'][] = $item;
+            } elseif (str_contains($nm, 'BUMBU') || str_contains($nm, 'GARAM') || str_contains($nm, 'MSG') || str_contains($cd, 'BMB')) {
+                $availableBatchesMap['bumbu'][] = $item;
+            } elseif (str_contains($nm, 'KARTON') && str_contains($nm, 'BARU')) {
+                $availableBatchesMap['karton_baru'][] = $item;
+            } elseif (str_contains($nm, 'KARTON') && str_contains($nm, 'BEKAS')) {
+                $availableBatchesMap['karton_bekas'][] = $item;
+            } elseif (str_contains($nm, 'PLASTIK') || str_contains($nm, 'HD')) {
+                $availableBatchesMap['plastik_hd'][] = $item;
+            } elseif (str_contains($nm, 'LAKBAN') && str_contains($nm, 'BESAR')) {
+                $availableBatchesMap['lakban_besar'][] = $item;
+            } elseif (str_contains($nm, 'LAKBAN') && str_contains($nm, 'KECIL')) {
+                $availableBatchesMap['lakban_kecil'][] = $item;
+            } elseif (str_contains($nm, 'RAFIA') || str_contains($nm, 'TALI')) {
+                $availableBatchesMap['tali_rafia'][] = $item;
+            }
+        }
+
+        $availableSingkongBatches = $availableBatchesMap['singkong'];
+
+        return view('produksi.adjust', compact('produksi', 'availableBatchesMap', 'availableSingkongBatches'));
     }
 
     /**
@@ -424,6 +492,9 @@ class ProduksiController extends Controller
             // Bahan Baku Langsung (BBL) - Kuantitas & Nilai
             'singkong_qty'                => 'nullable|numeric|min:0',
             'singkong_nilai'              => 'nullable|numeric|min:0',
+            'singkong_stok_action'        => 'nullable|string|in:none,deduct_batch',
+            'additional_batch_no'         => 'nullable|string|max:100',
+            'additional_batch_qty'        => 'nullable|numeric|min:0',
             'minyak_qty'                  => 'nullable|numeric|min:0',
             'minyak_nilai'                => 'nullable|numeric|min:0',
             'bumbu_qty'                   => 'nullable|numeric|min:0',

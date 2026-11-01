@@ -44,7 +44,7 @@ class MstBomSeeder extends Seeder
             $singkongId = $barangMap['BB-SK001'];
             $minyakSawitId = $barangMap['MSW00G-BP2'];
             $perenyahId = $barangMap['PRH00G-BP2'] ?? null;
-            $kartonIfmId = $barangMap['KIF00G-BP1'] ?? null;
+            $kartonIfmId = $barangMap['KIF00G-PUT'] ?? $barangMap['KIF00G-BP1'] ?? null;
             $lakbanId = $barangMap['LBS00G-BP1'] ?? null;
 
             $bomIfm = MstBomHdr::create([

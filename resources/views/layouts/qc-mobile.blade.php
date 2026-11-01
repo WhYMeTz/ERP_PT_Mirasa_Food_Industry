@@ -12,24 +12,35 @@
     @stack('styles')
 </head>
 <body class="qc-mobile-body">
-    {{-- TOP APP BAR KHUSUS OPERASIONAL QC HP --}}
+    {{-- TOP APP BAR KHUSUS OPERASIONAL QC & LOGISTIK HP --}}
     <header class="qc-top-appbar">
         <div class="qc-appbar-inner">
-            <a href="{{ route('qc.inbound.create') }}" class="qc-brand-section">
+            <a href="@yield('top_brand_url', route('qc.inbound.create'))" class="qc-brand-section">
                 <img src="{{ asset('images/logo.png') }}" alt="Logo PT Mirasa" class="qc-brand-logo" onerror="this.style.display='none'">
                 <div class="qc-brand-text">
                     <div class="qc-brand-title">
                         <span>PT Mirasa</span>
-                        <span class="qc-brand-badge">QC Lapangan</span>
+                        @if (View::hasSection('top_brand_badge'))
+                            @yield('top_brand_badge')
+                        @else
+                            <span class="qc-brand-badge">QC Lapangan</span>
+                        @endif
                     </div>
-                    <span class="qc-brand-sub">{{ Auth::user()->name ?? 'Petugas QC' }} &bull; Inbound</span>
+                    <span class="qc-brand-sub">
+                        @if (View::hasSection('top_brand_sub'))
+                            @yield('top_brand_sub')
+                        @else
+                            {{ Auth::user()->name ?? 'Petugas QC' }} &bull; Inbound
+                        @endif
+                    </span>
                 </div>
             </a>
 
             <div class="qc-top-actions">
+                @yield('top_actions')
 
                 {{-- TOMBOL LOGOUT MINI --}}
-                <form action="{{ route('mobile.logout') }}" method="POST" style="margin: 0;" onsubmit="return confirm('Keluar dari sesi akun QC?');">
+                <form action="{{ route('mobile.logout') }}" method="POST" style="margin: 0;" onsubmit="return confirm('Keluar dari sesi akun?');">
                     @csrf
                     <button type="submit" class="qc-btn-logout-mini" title="Logout dari Sistem">
                         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>

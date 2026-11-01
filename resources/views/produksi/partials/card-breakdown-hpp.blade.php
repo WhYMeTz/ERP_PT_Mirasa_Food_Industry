@@ -6,7 +6,7 @@
     <div class="card-header" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0.85rem 1.25rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap;">
         <div style="min-width: 0;">
             <strong style="color: #0f172a; font-size: 0.95rem; display: flex; align-items: center; gap: 0.4rem;">
-                <span>8. Ringkasan Biaya Produksi &amp; Alokasi HPP Hasil Panen</span>
+                <span>7. Ringkasan Biaya Produksi &amp; Alokasi HPP Hasil Panen</span>
             </strong>
             <span style="color: #64748b; font-size: 0.75rem; display: block; margin-top: 0.15rem;">
                 Rekapitulasi total biaya kumulatif, performa rendemen singkong, dan alokasi nilai modal ke masing-masing barang hasil panen.
@@ -32,7 +32,7 @@
                         Rp 0
                     </div>
                     <small style="color: #64748b; font-size: 0.725rem;">
-                        Bahan + Kemasan + CNG + Upah + FOH
+                        Bahan + Kemasan + CNG + Upah
                     </small>
                 </div>
 

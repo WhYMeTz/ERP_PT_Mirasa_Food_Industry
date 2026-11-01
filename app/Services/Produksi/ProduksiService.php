@@ -248,15 +248,24 @@ class ProduksiService
                 $liniList = $dayRecords->pluck('lini_produksi')->filter()->unique()->values()->all();
                 $liniStr = !empty($liniList) ? implode(', ', $liniList) : 'Produksi Reguler';
 
-                // Ekstraksi Batch: Pisahkan Batch WIP Utama dan Batch Berko (Curah)
+                // Ekstraksi Batch & Akumulasi HPP per Komoditas (Utama vs Berko)
                 $mainBatches = [];
                 $berkoBatches = [];
+                $dayUtamaKg = 0;
+                $dayUtamaVal = 0;
+                $dayBerkoKg = 0;
+                $dayBerkoVal = 0;
 
                 foreach ($dayRecords as $rec) {
                     if ($rec->outputs && $rec->outputs->isNotEmpty()) {
                         foreach ($rec->outputs as $out) {
                             $bNo = trim($out->batch_no ?? '');
-                            if (empty($bNo) || $bNo === '-') continue;
+                            $qty = (float) $out->qty_kg;
+                            $hpp = (float) $out->hpp_satuan;
+                            $val = (float) $out->total_nilai;
+                            if ($val <= 0 && $hpp > 0) {
+                                $val = $qty * $hpp;
+                            }
 
                             $barangNmUpper = strtoupper($out->barang?->barang_nm ?? '');
                             $barangCdUpper = strtoupper($out->barang?->barang_cd ?? '');
@@ -272,9 +281,13 @@ class ProduksiService
                                 || str_contains($kategoriUpper, 'LENGKET');
 
                             if ($isBerko) {
-                                $berkoBatches[] = $bNo;
+                                if (!empty($bNo) && $bNo !== '-') $berkoBatches[] = $bNo;
+                                $dayBerkoKg += $qty;
+                                $dayBerkoVal += $val;
                             } else {
-                                $mainBatches[] = $bNo;
+                                if (!empty($bNo) && $bNo !== '-') $mainBatches[] = $bNo;
+                                $dayUtamaKg += $qty;
+                                $dayUtamaVal += $val;
                             }
                         }
                     }
@@ -293,6 +306,11 @@ class ProduksiService
                 $mainBatches = array_values(array_unique(array_filter($mainBatches)));
                 $berkoBatches = array_values(array_unique(array_filter($berkoBatches)));
                 $allBatches = array_values(array_unique(array_merge($mainBatches, $berkoBatches)));
+
+                $dayHppUtama = $dayUtamaKg > 0 && $dayUtamaVal > 0 ? round($dayUtamaVal / $dayUtamaKg, 2) : $dayHpp;
+                $dayHppBerko = $dayBerkoKg > 0 && $dayBerkoVal > 0 ? round($dayBerkoVal / $dayBerkoKg, 2) : $dayHpp;
+                $hasBerko = ($dayTotalBerko > 0 || $dayBerkoKg > 0);
+                $hasDifferentiatedHpp = ($dayBerkoKg > 0 && $dayUtamaKg > 0 && abs($dayHppUtama - $dayHppBerko) > 0.01);
 
                 $days[] = [
                     'day'                         => $day,
@@ -379,6 +397,12 @@ class ProduksiService
                     'total_wip_qty'               => $dayTotalWip,
                     'rendemen_persen'             => $dayRendemen,
                     'hpp_per_kg'                  => $dayHpp,
+                    'hpp_utama'                   => $dayHppUtama,
+                    'hpp_berko'                   => $dayHppBerko,
+                    'has_berko'                   => $hasBerko,
+                    'has_differentiated_hpp'      => $hasDifferentiatedHpp,
+                    'day_utama_kg'                => $dayUtamaKg,
+                    'day_berko_kg'                => $dayBerkoKg,
                 ];
             } else {
                 $days[] = [
@@ -386,6 +410,12 @@ class ProduksiService
                     'date'                        => $dateObj->format('Y-m-d'),
                     'hari_nm'                     => $hariNm,
                     'has_data'                    => false,
+                    'has_berko'                   => false,
+                    'has_differentiated_hpp'      => false,
+                    'hpp_utama'                   => 0,
+                    'hpp_berko'                   => 0,
+                    'day_utama_kg'                => 0,
+                    'day_berko_kg'                => 0,
                     'produksi_id'                 => null,
                     'produksi_ids'                => [],
                     'produksi_no'                 => null,
@@ -885,7 +915,7 @@ class ProduksiService
                 $summary['bumbu_qty'] += $qty;
                 $summary['bumbu_nilai'] += $subtotal;
             } elseif (str_contains($nm, 'KARTON') || str_contains($nm, 'BOX')) {
-                if (str_contains($nm, 'BEKAS')) {
+                if (str_contains($nm, 'PUTERAN') || str_contains($nm, 'BEKAS') || str_contains($nm, 'REJECT') || str_contains($nm, 'RUSAK') || str_contains($cd, 'PUT') || str_contains($cd, 'REJ')) {
                     $summary['karton_bekas_qty'] += $qty;
                     $summary['karton_bekas_nilai'] += $subtotal;
                 } else {
@@ -1059,42 +1089,10 @@ class ProduksiService
             $totalWipQty = $effectiveOutputKg;
         }
 
-        // Penerapan tarif standar pengali FOH per Kg WIP (berbasis database master dinamis mst_tarif_produksi)
-        if ($effectiveOutputKg > 0) {
-            $fohRates = $this->tarifService->getFohRates();
-
-            if ($qc <= 0 && (!isset($data['qc_pengawasan_nilai']) || $data['qc_pengawasan_nilai'] === '')) {
-                $qc = round($effectiveOutputKg * $fohRates['qc'], 2);
-            }
-            if ($listrik <= 0 && (!isset($data['listrik_air_telp_nilai']) || $data['listrik_air_telp_nilai'] === '')) {
-                $listrik = round($effectiveOutputKg * $fohRates['listrik'], 2);
-            }
-            if ($pemeliharaan <= 0 && (!isset($data['pemeliharaan_mesin_nilai']) || $data['pemeliharaan_mesin_nilai'] === '')) {
-                $pemeliharaan = round($effectiveOutputKg * $fohRates['pemeliharaan'], 2);
-            }
-            if ($penyusutan <= 0 && (!isset($data['penyusutan_mesin_nilai']) || $data['penyusutan_mesin_nilai'] === '')) {
-                $penyusutan = round($effectiveOutputKg * $fohRates['penyusutan'], 2);
-            }
-            if ($limbahKimia <= 0 && (!isset($data['limbah_kimia_nilai']) || $data['limbah_kimia_nilai'] === '')) {
-                $limbahKimia = round($effectiveOutputKg * $fohRates['kimia'], 2);
-            }
-            if ($fotocopy <= 0 && (!isset($data['fotocopy_nilai']) || $data['fotocopy_nilai'] === '')) {
-                // Rumus Asli Excel PT Mirasa: =(AF/6)*2*$V$2
-                $kartonCount = (float) ($data['qty_karton'] ?? 0);
-                if ($kartonCount <= 0 && $iflQty > 0) {
-                    $kartonCount = $iflQty / 6.0;
-                }
-                $tarifFotocopy = (float) ($fohRates['fotocopy'] ?? 28.00);
-                $fotocopy = round($kartonCount * 2 * $tarifFotocopy, 2);
-            }
-            if ($limbahPadat <= 0 && (!isset($data['limbah_padat_nilai']) || $data['limbah_padat_nilai'] === '')) {
-                $limbahPadat = $fohRates['limbah_padat'];
-            }
-
-            $totalOverheadNilai = $fotocopy + $sarungPlastik + $sarungKain + $qc + $listrik +
-                $pemeliharaan + $penyusutan + $limbahPadat + $limbahKimia;
-            $totalBiayaProduksi = $totalBahanNilai + $cngNilai + $tkTotalNilai + $totalOverheadNilai;
-        }
+        // FOH dialihkan ke Jurnal Keuangan / Beban Periodik (tidak di-injeksi ke HPP produksi harian)
+        $totalOverheadNilai = $fotocopy + $sarungPlastik + $sarungKain + $qc + $listrik +
+            $pemeliharaan + $penyusutan + $limbahPadat + $limbahKimia;
+        $totalBiayaProduksi = $totalBahanNilai + $cngNilai + $tkTotalNilai + $totalOverheadNilai;
 
         $berkoPersen = $totalWipQty > 0 ? ($totalBerkoQty / $totalWipQty) * 100 : 0;
         $berkoBiasaPersen = $totalWipQty > 0 ? ($berkoQty / $totalWipQty) * 100 : 0;
@@ -2132,6 +2130,67 @@ class ProduksiService
                         }
                         $kategoriList[] = $qDef['group'];
                     }
+                }
+            }
+
+            // Penanganan Alokasi Tambahan Stok Fisik Gudang dari Batch Lain (Universal Multi-Barang)
+            $additionalBatches = $data['additional_batches'] ?? [];
+            if (!empty($data['singkong_stok_action']) && $data['singkong_stok_action'] === 'deduct_batch' && empty($additionalBatches['singkong'])) {
+                $additionalBatches['singkong'] = [
+                    'batch_no' => trim($data['additional_batch_no'] ?? ''),
+                    'qty'      => (float) ($data['additional_batch_qty'] ?? 0),
+                ];
+            }
+
+            $componentLabels = [
+                'singkong'     => ['label' => 'Singkong Mentah Basah', 'group' => 'BBL', 'unit' => 'Kg'],
+                'minyak'       => ['label' => 'Minyak Goreng', 'group' => 'BBL', 'unit' => 'Kg'],
+                'bumbu'        => ['label' => 'Bumbu Masak & Perenyah', 'group' => 'BBL', 'unit' => 'Kg'],
+                'karton_baru'  => ['label' => 'Karton Box Baru', 'group' => 'KEMASAN', 'unit' => 'Pcs'],
+                'karton_bekas' => ['label' => 'Karton Box Bekas', 'group' => 'KEMASAN', 'unit' => 'Pcs'],
+                'plastik_hd'   => ['label' => 'Plastik HD / Inner Bag', 'group' => 'KEMASAN', 'unit' => 'Roll'],
+                'lakban_besar' => ['label' => 'Lakban Besar', 'group' => 'KEMASAN', 'unit' => 'Roll'],
+                'lakban_kecil' => ['label' => 'Lakban Kecil', 'group' => 'KEMASAN', 'unit' => 'Roll'],
+                'tali_rafia'   => ['label' => 'Tali Rafia / Strapping', 'group' => 'KEMASAN', 'unit' => 'Roll'],
+            ];
+
+            foreach ($additionalBatches as $cKey => $bInfo) {
+                $bNo = trim($bInfo['batch_no'] ?? '');
+                $bQty = round((float) ($bInfo['qty'] ?? 0), 4);
+
+                if (!empty($bNo) && $bQty > 0) {
+                    $stokBatch = DatStokBatch::where('batch_no', $bNo)
+                        ->where('deleted_st', false)
+                        ->first();
+
+                    $cDef = $componentLabels[$cKey] ?? ['label' => $cKey, 'group' => 'BAHAN', 'unit' => 'Unit'];
+
+                    if (!$stokBatch) {
+                        throw new Exception("Nomor batch gudang '{$bNo}' untuk {$cDef['label']} tidak ditemukan di sistem.");
+                    }
+
+                    if ((float) $stokBatch->sisa_qty < $bQty) {
+                        throw new Exception("Sisa stok gudang untuk {$cDef['label']} (Batch '{$bNo}') tidak mencukupi (Tersedia: " . number_format($stokBatch->sisa_qty, 2) . " {$cDef['unit']}, Diminta: " . number_format($bQty, 2) . " {$cDef['unit']}).");
+                    }
+
+                    // Potong stok fisik gudang secara resmi
+                    $this->stokService->deductStock(
+                        (int) $stokBatch->gudang_id,
+                        (int) $stokBatch->barang_id,
+                        $bNo,
+                        $bQty,
+                        $produksi->produksi_no,
+                        "Pengambilan Tambahan {$cDef['label']} Produksi: " . $alasan
+                    );
+
+                    $changedFields["{$cKey}_additional_batch"] = [
+                        'label' => "Potong Stok Gudang ({$cDef['label']})",
+                        'old'   => '-',
+                        'new'   => "Batch: {$bNo} (-" . number_format($bQty, 2) . " {$cDef['unit']})",
+                        'type'  => 'STOCK_DEDUCTION',
+                        'group' => $cDef['group']
+                    ];
+                    $kategoriList[] = $cDef['group'];
                 }
             }
 

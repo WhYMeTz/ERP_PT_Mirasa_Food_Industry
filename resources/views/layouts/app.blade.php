@@ -819,6 +819,15 @@
                                              <span style="font-size: 0.6875rem; color: #64748b;">Bongkar muat fisik &amp; nomor batch</span>
                                         </div>
                                     </a>
+                                    <div style="height: 1px; background: #f1f5f9; margin: 0.3rem 0;"></div>
+                                    <a href="{{ route('gudang.kemasan-sirkular.index') }}" class="mega-item {{ request()->routeIs('gudang.kemasan-sirkular.*') ? 'active' : '' }}">
+                                        {{-- Ikon Kardus Karton / Wadah Kemasan Sirkular --}}
+                                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg>
+                                        <div style="display: flex; flex-direction: column;">
+                                             <span style="font-weight: 600;">Penerimaan Kemasan Sirkular</span>
+                                             <span style="font-size: 0.6875rem; color: #64748b;">Sortir karton balikan &amp; rekonsiliasi DO</span>
+                                        </div>
+                                    </a>
                                 @endif
 
                                 @if (Auth::user()->canAccessRetur())

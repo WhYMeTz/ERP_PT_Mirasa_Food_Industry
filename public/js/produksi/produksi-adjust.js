@@ -640,4 +640,343 @@
             });
         }
     });
+    // Helper template alasan cepat untuk memudahkan staf audit dan operasional
+    window.setAdjTemplate = function (type) {
+        const textarea = document.getElementById('alasan_txt');
+        if (!textarea) return;
+
+        let templateText = '';
+        if (type === 'timbangan') {
+            templateText = 'Koreksi kuantitas timbangan fisik bahan baku (penyesuaian selisih timbang riil lantai produksi vs bukti penerimaan gudang).';
+        } else if (type === 'tambahan') {
+            templateText = 'Penambahan kuantitas bahan baku untuk pemenuhan target shift produksi (mengambil tambahan bahan dari gudang).';
+        } else if (type === 'faktur') {
+            templateText = 'Penyesuaian nilai nominal rupiah sesuai faktur tagihan riil dari supplier yang diterima akuntansi.';
+        } else if (type === 'wip') {
+            templateText = 'Koreksi kuantitas hasil panen keripik singkong jadi (WIP) pasca proses sortir mutu dan pengemasan akhir.';
+        }
+
+        if (templateText) {
+            textarea.value = templateText;
+            textarea.focus();
+        }
+    };
+
+    // Metadata Komponen Ber-Batch untuk Alokasi Stok Gudang Universal
+    const batchComponentMeta = {
+        'singkong':     { qtyKey: 'singkongQtyAwal', nilaiKey: 'singkong_nilai', unitPriceKey: 'singkong_qty', defaultPrice: 4500, label: 'Singkong Mentah Basah' },
+        'minyak':       { qtyKey: 'minyakQtyAwal', nilaiKey: 'minyak_nilai', unitPriceKey: 'minyak_qty', defaultPrice: 20000, label: 'Minyak Goreng' },
+        'bumbu':        { qtyKey: 'bumbuQtyAwal', nilaiKey: 'bumbu_nilai', unitPriceKey: 'bumbu_qty', defaultPrice: 5800, label: 'Bumbu Masak & Perenyah' },
+        'karton_baru':  { qtyKey: 'kartonBaruQtyAwal', nilaiKey: 'karton_baru_nilai', unitPriceKey: 'karton_baru_qty', defaultPrice: 3500, label: 'Karton Box Baru' },
+        'karton_bekas': { qtyKey: 'kartonBekasQtyAwal', nilaiKey: 'karton_bekas_nilai', unitPriceKey: 'karton_bekas_qty', defaultPrice: 875, label: 'Karton Box Bekas' },
+        'plastik_hd':   { qtyKey: 'plastikHdQtyAwal', nilaiKey: 'plastik_hd_nilai', unitPriceKey: 'plastik_hd_qty', defaultPrice: 15000, label: 'Plastik HD' },
+        'lakban_besar': { qtyKey: 'lakbanBesarQtyAwal', nilaiKey: 'lakban_besar_nilai', unitPriceKey: 'lakban_besar_qty', defaultPrice: 12000, label: 'Lakban Besar' },
+        'lakban_kecil': { qtyKey: 'lakbanKecilQtyAwal', nilaiKey: 'lakban_kecil_nilai', unitPriceKey: 'lakban_kecil_qty', defaultPrice: 5000, label: 'Lakban Kecil' },
+        'tali_rafia':   { qtyKey: 'taliRafiaQtyAwal', nilaiKey: 'tali_rafia_nilai', unitPriceKey: 'tali_rafia_qty', defaultPrice: 10000, label: 'Tali Rafia' },
+    };
+
+    window.activeBatchModalComponent = null;
+
+    // Modal Universal: Ambil Tambahan Fisik dari Batch Gudang (Pop-Up Melayang di Tengah)
+    window.openModalAlokasiBatch = function (key, nama, kode, unit) {
+        window.activeBatchModalComponent = { key, nama, kode, unit };
+        const modal = document.getElementById('modalAmbilBatchMaterial');
+        if (!modal) return;
+
+        // 1. Set Label Header & Satuan
+        const elNama = document.getElementById('modalBatchKomponenNama');
+        const elKode = document.getElementById('modalBatchKomponenKode');
+        const elAwalSatuan = document.getElementById('modalBatchAwalSatuan');
+        const elAddon = document.getElementById('modalBatchInputAddon');
+
+        if (elNama) elNama.textContent = nama;
+        if (elKode) elKode.textContent = `(${kode})`;
+        if (elAwalSatuan) elAwalSatuan.textContent = unit;
+        if (elAddon) elAddon.textContent = unit;
+
+        // 2. Set Nilai Awal Dokumen
+        const cfg = window.adjProdConfig || {};
+        const meta = batchComponentMeta[key] || {};
+        const qtyAwal = parseFloat(cfg[meta.qtyKey] || 0);
+        const elAwalQty = document.getElementById('modalBatchAwalQty');
+        if (elAwalQty) {
+            elAwalQty.textContent = new Intl.NumberFormat('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(qtyAwal);
+        }
+
+        // 3. Set Batch Utama Aktif Saat Ini
+        const batchMap = window.adjBahanBakuBatchMap || {};
+        const activeBatches = batchMap[key] || [];
+        const elBatchAwal = document.getElementById('modalBatchAwalList');
+        if (elBatchAwal) {
+            if (activeBatches.length > 0) {
+                elBatchAwal.textContent = activeBatches.join(', ');
+                elBatchAwal.style.background = '#ecfdf5';
+                elBatchAwal.style.color = '#065f46';
+                elBatchAwal.style.borderColor = '#a7f3d0';
+            } else {
+                elBatchAwal.textContent = 'Tidak Ada Batch Awal';
+                elBatchAwal.style.background = '#f1f5f9';
+                elBatchAwal.style.color = '#64748b';
+                elBatchAwal.style.borderColor = '#cbd5e1';
+            }
+        }
+
+        // 4. Isi Opsi Dropdown Batch Gudang Sesuai Komponen
+        const select = document.getElementById('modal_select_batch');
+        if (select) {
+            select.innerHTML = '<option value="">-- Pilih Nomor Batch Gudang --</option>';
+            const batches = (window.adjBatchesMap && window.adjBatchesMap[key]) ? window.adjBatchesMap[key] : [];
+
+            if (batches.length === 0) {
+                const opt = document.createElement('option');
+                opt.value = '';
+                opt.textContent = `(Tidak ada batch ${nama} yang tersedia di gudang)`;
+                opt.disabled = true;
+                select.appendChild(opt);
+            } else {
+                batches.forEach(b => {
+                    const opt = document.createElement('option');
+                    opt.value = b.batch_no;
+                    opt.setAttribute('data-sisa', b.sisa_qty);
+                    opt.setAttribute('data-harga', b.harga_satuan);
+                    opt.textContent = `Batch: ${b.batch_no} • Sisa: ${new Intl.NumberFormat('id-ID').format(b.sisa_qty)} ${b.satuan_nm} • Rp ${new Intl.NumberFormat('id-ID').format(b.harga_satuan)}/${b.satuan_nm} (${b.gudang_nm})`;
+                    select.appendChild(opt);
+                });
+            }
+        }
+
+        // 5. Reset Field Form & Simulasi
+        const qtyInput = document.getElementById('modal_input_qty');
+        if (qtyInput) qtyInput.value = '';
+        const hint = document.getElementById('modalBatchHint');
+        if (hint) hint.style.display = 'none';
+        const summary = document.getElementById('modalSummaryBox');
+        if (summary) summary.style.display = 'none';
+        const btn = document.getElementById('btnApplyBatchModal');
+        if (btn) btn.disabled = true;
+
+        modal.style.setProperty('display', 'flex', 'important');
+        document.body.style.overflow = 'hidden';
+        if (select) select.focus();
+    };
+
+    // Alias kompatibilitas jika masih dipanggil
+    window.openModalAmbilBatchSingkong = function () {
+        window.openModalAlokasiBatch('singkong', 'Singkong Mentah Basah', 'BBL-01', 'Kg');
+    };
+
+    window.closeModalAmbilBatchMaterial = function () {
+        const modal = document.getElementById('modalAmbilBatchMaterial') || document.getElementById('modalAmbilBatchSingkong');
+        if (modal) {
+            modal.style.setProperty('display', 'none', 'important');
+            document.body.style.overflow = '';
+        }
+        window.activeBatchModalComponent = null;
+    };
+
+    window.closeModalAmbilBatchSingkong = window.closeModalAmbilBatchMaterial;
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+            window.closeModalAmbilBatchMaterial();
+        }
+    });
+
+    window.onModalBatchChange = function (selectEl) {
+        const opt = selectEl.options[selectEl.selectedIndex];
+        const sisa = parseFloat(opt ? opt.getAttribute('data-sisa') : 0) || 0;
+        const harga = parseFloat(opt ? opt.getAttribute('data-harga') : 0) || 0;
+        const batchNo = selectEl.value;
+
+        const hint = document.getElementById('modalBatchHint');
+        const hintText = document.getElementById('modalBatchHintText');
+        const qtyInput = document.getElementById('modal_input_qty');
+        const activeComp = window.activeBatchModalComponent || { unit: 'Unit' };
+
+        if (batchNo && hint) {
+            hint.style.display = 'flex';
+            const msg = `Sisa tersedia di gudang: <strong>${new Intl.NumberFormat('id-ID').format(sisa)} ${activeComp.unit}</strong> &bull; Tarif: <strong>Rp ${new Intl.NumberFormat('id-ID').format(harga)}/${activeComp.unit}</strong>`;
+            if (hintText) {
+                hintText.innerHTML = msg;
+            } else {
+                hint.innerHTML = msg;
+            }
+            if (qtyInput) {
+                qtyInput.max = sisa;
+                qtyInput.focus();
+            }
+        } else if (hint) {
+            hint.style.display = 'none';
+        }
+
+        window.updateModalBatchSummary();
+    };
+
+    window.onModalQtyChange = function (qtyVal) {
+        window.updateModalBatchSummary();
+    };
+
+    window.updateModalBatchSummary = function () {
+        const select = document.getElementById('modal_select_batch');
+        const opt = select && select.selectedIndex >= 0 ? select.options[select.selectedIndex] : null;
+        const batchNo = select ? select.value : '';
+        const hargaBatch = opt ? (parseFloat(opt.getAttribute('data-harga')) || 0) : 0;
+        const qtyInput = document.getElementById('modal_input_qty');
+        const addQty = parseFloat(qtyInput ? qtyInput.value : 0) || 0;
+
+        const btnApply = document.getElementById('btnApplyBatchModal');
+        const summaryBox = document.getElementById('modalSummaryBox');
+        const txtTotalQty = document.getElementById('modalSummaryTotalQty');
+        const txtAddCost = document.getElementById('modalSummaryAddCost');
+
+        const activeComp = window.activeBatchModalComponent || {};
+        const key = activeComp.key || 'singkong';
+        const meta = batchComponentMeta[key] || {};
+        const cfg = window.adjProdConfig || {};
+        const qtyAwal = parseFloat(cfg[meta.qtyKey] || 0);
+
+        if (batchNo && addQty > 0) {
+            if (btnApply) btnApply.disabled = false;
+            if (summaryBox) summaryBox.style.display = 'block';
+            const unitPrice = hargaBatch > 0 ? hargaBatch : (cfg.unitPrices?.[meta.unitPriceKey] || meta.defaultPrice);
+            const totalQtyBaru = qtyAwal + addQty;
+            const addCost = addQty * unitPrice;
+
+            if (txtTotalQty) txtTotalQty.textContent = `${new Intl.NumberFormat('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(totalQtyBaru)} ${activeComp.unit || 'Kg'}`;
+            if (txtAddCost) txtAddCost.textContent = `+Rp ${new Intl.NumberFormat('id-ID').format(Math.round(addCost))}`;
+        } else {
+            if (btnApply) btnApply.disabled = true;
+            if (summaryBox) summaryBox.style.display = 'none';
+        }
+    };
+
+    // Terapkan hasil modal ke tabel lembar kerja
+    window.applyModalBatchToWorksheet = function () {
+        const select = document.getElementById('modal_select_batch');
+        const opt = select && select.selectedIndex >= 0 ? select.options[select.selectedIndex] : null;
+        const batchNo = select ? select.value : '';
+        const hargaBatch = opt ? (parseFloat(opt.getAttribute('data-harga')) || 0) : 0;
+        const qtyInput = document.getElementById('modal_input_qty');
+        const addQty = parseFloat(qtyInput ? qtyInput.value : 0) || 0;
+
+        if (!batchNo || addQty <= 0) return;
+
+        const activeComp = window.activeBatchModalComponent || {};
+        const key = activeComp.key || 'singkong';
+        const meta = batchComponentMeta[key] || {};
+        const cfg = window.adjProdConfig || {};
+
+        const qtyAwal = parseFloat(cfg[meta.qtyKey] || 0);
+        const nilaiAwal = parseFloat(cfg[meta.nilaiKey] || 0);
+        const unitPrice = hargaBatch > 0 ? hargaBatch : (cfg.unitPrices?.[meta.unitPriceKey] || meta.defaultPrice);
+
+        // 1. Set Hidden Inputs untuk Backend
+        const hBatch = document.getElementById(`additional_batch_no_${key}`);
+        const hQty = document.getElementById(`additional_batch_qty_${key}`);
+        const hHarga = document.getElementById(`additional_batch_harga_${key}`);
+        if (hBatch) hBatch.value = batchNo;
+        if (hQty) hQty.value = addQty;
+        if (hHarga) hHarga.value = unitPrice;
+
+        // Khusus backward compatibility singkong
+        if (key === 'singkong') {
+            const hAction = document.getElementById('singkong_stok_action');
+            const hLegacyBatch = document.getElementById('additional_batch_no');
+            const hLegacyQty = document.getElementById('additional_batch_qty');
+            if (hAction) hAction.value = 'deduct_batch';
+            if (hLegacyBatch) hLegacyBatch.value = batchNo;
+            if (hLegacyQty) hLegacyQty.value = addQty;
+        }
+
+        // 2. Set Nilai Input Form Worksheet
+        const inputQty = document.getElementById(`input_adj_${key}_qty`);
+        const inputNilai = document.getElementById(`input_adj_${key}_nilai`);
+        if (inputQty) {
+            inputQty.value = (qtyAwal + addQty).toFixed(2);
+        }
+        if (inputNilai) {
+            inputNilai.value = Math.round(nilaiAwal + (addQty * unitPrice));
+        }
+
+        // 3. Tampilkan Badge Aktif di Baris Tabel Komponen
+        const badgeBox = document.getElementById(`badgeActiveAdditionalBatch_${key}`);
+        const textBadge = document.getElementById(`textActiveAdditionalBatch_${key}`);
+        if (badgeBox && textBadge) {
+            badgeBox.style.display = 'block';
+            textBadge.textContent = `Tambahan: +${new Intl.NumberFormat('id-ID').format(addQty)} ${activeComp.unit || 'Kg'} (Batch: ${batchNo})`;
+        }
+
+        // 4. Update Alasan Dokumen Otomatis jika Diperlukan
+        const textarea = document.getElementById('alasan_txt');
+        const notifTxt = `Tambah ${addQty} ${activeComp.unit || 'Kg'} ${activeComp.nama || key} dari Batch ${batchNo} gudang.`;
+        if (textarea && !textarea.value.includes(batchNo)) {
+            textarea.value = textarea.value.trim() ? `${textarea.value.trim()}\n- ${notifTxt}` : `Penyesuaian bahan: ${notifTxt}`;
+        }
+
+        window.closeModalAmbilBatchMaterial();
+
+        if (typeof recalculateHppSimulation === 'function') {
+            recalculateHppSimulation();
+        }
+    };
+
+    // Fungsi Batalkan Tambahan Batch Tertentu
+    window.cancelAdditionalBatch = function (key) {
+        key = key || 'singkong';
+        const meta = batchComponentMeta[key] || {};
+        const cfg = window.adjProdConfig || {};
+
+        // Kosongkan hidden input
+        const hBatch = document.getElementById(`additional_batch_no_${key}`);
+        const hQty = document.getElementById(`additional_batch_qty_${key}`);
+        const hHarga = document.getElementById(`additional_batch_harga_${key}`);
+        if (hBatch) hBatch.value = '';
+        if (hQty) hQty.value = '0';
+        if (hHarga) hHarga.value = '0';
+
+        if (key === 'singkong') {
+            const hAction = document.getElementById('singkong_stok_action');
+            const hLegacyBatch = document.getElementById('additional_batch_no');
+            const hLegacyQty = document.getElementById('additional_batch_qty');
+            if (hAction) hAction.value = 'none';
+            if (hLegacyBatch) hLegacyBatch.value = '';
+            if (hLegacyQty) hLegacyQty.value = '0';
+        }
+
+        // Sembunyikan badge
+        const badgeBox = document.getElementById(`badgeActiveAdditionalBatch_${key}`);
+        if (badgeBox) badgeBox.style.display = 'none';
+
+        // Kembalikan input ke nilai awal
+        const inputQty = document.getElementById(`input_adj_${key}_qty`);
+        const inputNilai = document.getElementById(`input_adj_${key}_nilai`);
+        if (inputQty && meta.qtyKey) {
+            inputQty.value = (parseFloat(cfg[meta.qtyKey]) || 0).toFixed(2);
+        }
+        if (inputNilai && meta.nilaiKey) {
+            inputNilai.value = Math.round(parseFloat(cfg[meta.nilaiKey]) || 0);
+        }
+
+        if (typeof recalculateHppSimulation === 'function') {
+            recalculateHppSimulation();
+        }
+    };
+
+    // Batalkan pengambilan batch lain
+    window.cancelAdditionalBatch = function () {
+        const hAction = document.getElementById('singkong_stok_action');
+        const hBatch = document.getElementById('additional_batch_no');
+        const hQty = document.getElementById('additional_batch_qty');
+        if (hAction) hAction.value = 'none';
+        if (hBatch) hBatch.value = '';
+        if (hQty) hQty.value = '0';
+
+        const badgeBox = document.getElementById('badgeActiveAdditionalBatch');
+        if (badgeBox) badgeBox.style.display = 'none';
+
+        if (typeof resetAdjField === 'function') {
+            resetAdjField('singkong_qty');
+            resetAdjField('singkong_nilai');
+        }
+    };
 })();

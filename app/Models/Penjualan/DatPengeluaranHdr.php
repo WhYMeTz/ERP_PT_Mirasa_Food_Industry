@@ -71,6 +71,11 @@ class DatPengeluaranHdr extends Model
         return $this->hasOne(DatFakturHdr::class, 'pengeluaran_id', 'pengeluaran_id');
     }
 
+    public function kemasanSirkular(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(\App\Models\Gudang\DatKemasanSirkularHdr::class, 'pengeluaran_id', 'pengeluaran_id');
+    }
+
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('deleted_st', false)->where('active_st', true);

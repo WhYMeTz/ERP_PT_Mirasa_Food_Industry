@@ -49,6 +49,27 @@ class MstBarang extends Model
     ];
 
     /**
+     * The "booted" method of the model.
+     * Auto-sync harga beli standar Karton Puteran (KIF00G-PUT) = 1/5 dari Karton Baru (KIF00G-BP1).
+     */
+    protected static function booted(): void
+    {
+        static::saved(function (MstBarang $barang) {
+            if ($barang->barang_cd === 'KIF00G-BP1') {
+                $hargaBaru = (float) $barang->harga_beli_standar;
+                $hargaPuteran = round($hargaBaru / 5, 2);
+
+                $puteran = static::where('barang_cd', 'KIF00G-PUT')->first();
+                if ($puteran && abs((float) $puteran->harga_beli_standar - $hargaPuteran) > 0.001) {
+                    $puteran->harga_beli_standar = $hargaPuteran;
+                    $puteran->updated_by = $barang->updated_by ?? 'SYSTEM_SYNC';
+                    $puteran->saveQuietly();
+                }
+            }
+        });
+    }
+
+    /**
      * Resolusi harga jual barang berdasarkan mitra pelanggan (Customer Tier Pricing).
      */
     public function getHargaForCustomer($customer = null): float

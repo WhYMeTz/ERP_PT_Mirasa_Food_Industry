@@ -736,12 +736,89 @@
         if (el) el.textContent = `Hari: ${dayNm}`;
     };
 
-    // 7. Hitung Biaya Gas CNG
-    window.calcCng = function () {
-        const mmbtu = parseFloat(document.getElementById('cng_mmbtu')?.value) || 0;
-        const tarif = parseFloat(document.getElementById('cng_tarif')?.value) || 0;
-        const el = document.getElementById('cng_nilai');
-        if (el) el.value = Math.round(mmbtu * tarif);
+    // 7. Hitung Biaya Gas CNG (Integrasi Otomatis Kurs JISDOR, Nominal Harian, & Fleksibel Edit/0)
+    let userHasManuallyEditedKurs = false;
+
+    // Deteksi jika user mengetik sendiri angka pada input kurs JISDOR
+    document.addEventListener('DOMContentLoaded', () => {
+        const inputKurs = document.getElementById('cng_kurs_jisdor');
+        if (inputKurs) {
+            inputKurs.addEventListener('input', () => {
+                userHasManuallyEditedKurs = true;
+            });
+        }
+    });
+
+    // Otomatis tarik kurs JISDOR saat tanggal produksi berubah (tanpa tombol)
+    window.fetchKursJisdor = function (forceUpdate = false) {
+        const elDate = document.getElementById('produksi_tgl');
+        const elKurs = document.getElementById('cng_kurs_jisdor');
+        if (!elDate || !elKurs || !window.appConfig?.kursJisdorUrl) return;
+
+        // Jika user secara sengaja telah mengedit kurs secara manual (misal diganti 0), jangan ditimpa
+        if (userHasManuallyEditedKurs && !forceUpdate) return;
+
+        const dateVal = elDate.value;
+        if (!dateVal) return;
+
+        fetch(`${window.appConfig.kursJisdorUrl}?date=${encodeURIComponent(dateVal)}`)
+            .then(res => res.json())
+            .then(res => {
+                if (res && res.kurs !== undefined && (!userHasManuallyEditedKurs || forceUpdate)) {
+                    elKurs.value = res.kurs;
+                    window.calcCng('kurs');
+                }
+            })
+            .catch(err => {
+                console.warn('Gagal memuat kurs JISDOR harian otomatis:', err);
+            });
+    };
+
+    window.calcCng = function (fromField) {
+        const elMmbtu = document.getElementById('cng_mmbtu');
+        const elUsd = document.getElementById('cng_tarif_usd');
+        const elKurs = document.getElementById('cng_kurs_jisdor');
+        const elTarif = document.getElementById('cng_tarif');
+        const elNilai = document.getElementById('cng_nilai');
+        const elText = document.getElementById('cng_calc_text');
+
+        const usd = parseFloat(elUsd?.value) || 0;
+        const rawKurs = elKurs?.value;
+        const kurs = (rawKurs !== '' && !isNaN(rawKurs)) ? parseFloat(rawKurs) : 0;
+        const mmbtu = parseFloat(elMmbtu?.value) || 0;
+
+        // Jika perubahan berasal dari USD atau Kurs JISDOR:
+        if (fromField === 'usd' || fromField === 'kurs' || (!fromField && (!elTarif?.value || elTarif?.value == 0))) {
+            if (elTarif) {
+                if (kurs === 0) {
+                    // Jika kurs diisi 0, otomatis tarif jadi 0 saat event kurs dipicu
+                    if (fromField === 'kurs') {
+                        elTarif.value = 0;
+                    }
+                } else if (usd > 0) {
+                    elTarif.value = Math.round(usd * kurs);
+                }
+            }
+        }
+
+        const tarif = parseFloat(elTarif?.value) || 0;
+        const totalNilai = Math.round(mmbtu * tarif);
+
+        // Jika perubahan bukan dari input nominal manual, otomatis hitung nominal harian
+        if (elNilai && fromField !== 'nilai') {
+            elNilai.value = totalNilai;
+        }
+
+        // Tampilkan simulasi interaktif
+        if (elText) {
+            const formatRp = (num) => Math.round(num).toLocaleString('id-ID');
+            if (kurs === 0) {
+                elText.innerHTML = `⚠️ <strong>Kurs JISDOR diisi 0.</strong> Tarif: <strong>Rp ${formatRp(tarif)}/MMBTU</strong> &bull; Nominal: <strong>Rp ${formatRp(parseFloat(elNilai?.value) || 0)}</strong> (Tarif/Nominal harian dapat diisi manual jika sistem flat rate).`;
+            } else {
+                elText.innerHTML = `💡 <strong>Kontrak Gas:</strong> $${usd.toFixed(2)} &times; Kurs JISDOR Rp ${formatRp(kurs)} = <strong>Rp ${formatRp(tarif)}/MMBTU</strong> &bull; <strong>Nominal Harian:</strong> ${mmbtu.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 4 })} MMBTU = <strong style="color: #059669;">Rp ${formatRp(totalNilai)}</strong>`;
+            }
+        }
+
         window.calcAll();
     };
 

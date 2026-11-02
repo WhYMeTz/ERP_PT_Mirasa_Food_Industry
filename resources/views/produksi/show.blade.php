@@ -79,12 +79,14 @@
         $subtotalFoh = (float) ($produksi->fotocopy_nilai + $produksi->sarung_tangan_plastik_nilai + $produksi->sarung_tangan_kain_nilai + $produksi->qc_pengawasan_nilai + $produksi->listrik_air_telp_nilai + $produksi->pemeliharaan_mesin_nilai + $produksi->penyusutan_mesin_nilai + $produksi->limbah_padat_nilai + $produksi->limbah_kimia_nilai);
 
         $totBiaya = (float) $produksi->total_biaya_produksi;
+        $totBiayaDirect = (float) ($subtotalBahan + $subtotalKemasan + $subtotalEnergiBtkl);
         $totWip = (float) $produksi->total_wip_qty;
 
-        $pctBahan = $totBiaya > 0 ? ($subtotalBahan / $totBiaya) * 100 : 0;
-        $pctKemasan = $totBiaya > 0 ? ($subtotalKemasan / $totBiaya) * 100 : 0;
-        $pctEnergiBtkl = $totBiaya > 0 ? ($subtotalEnergiBtkl / $totBiaya) * 100 : 0;
-        $pctFoh = $totBiaya > 0 ? ($subtotalFoh / $totBiaya) * 100 : 0;
+        $pctBase = $totBiayaDirect > 0 ? $totBiayaDirect : $totBiaya;
+        $pctBahan = $pctBase > 0 ? ($subtotalBahan / $pctBase) * 100 : 0;
+        $pctKemasan = $pctBase > 0 ? ($subtotalKemasan / $pctBase) * 100 : 0;
+        $pctEnergiBtkl = $pctBase > 0 ? ($subtotalEnergiBtkl / $pctBase) * 100 : 0;
+        $pctFoh = 0;
     @endphp
 
     {{-- TAB SWITCHER SPLIT DATA PER LINI (JIKA PADA TANGGAL INI TERDAPAT LEBIH DARI 1 LINI PRODUKSI) --}}
@@ -172,7 +174,7 @@
                 </div>
             </div>
             <div class="executive-stat-subtext">
-                {{ $subtotalFoh > 0 ? 'Akumulasi Bahan, Upah, Energi & FOH' : 'Akumulasi Bahan, Upah & Energi' }}
+                Akumulasi Bahan, Kemasan, Upah &amp; Energi (CNG)
             </div>
         </div>
 
@@ -537,7 +539,7 @@
                 </span>
             </div>
 
-            {{-- 1. RINGKASAN 4 KELOMPOK BIAYA --}}
+            {{-- 1. RINGKASAN 3 KELOMPOK BIAYA LANGSUNG --}}
             <div class="cost-summary-bar">
                 <div class="cost-summary-pill">
                     <span class="cost-pill-label">Bahan Baku (Direct Material)</span>
@@ -551,26 +553,17 @@
                     <span class="cost-pill-label">Energi &amp; Tenaga Kerja (BTKL)</span>
                     <span class="cost-pill-val">Rp {{ number_format($subtotalEnergiBtkl, 0, ',', '.') }}</span>
                 </div>
-                @if($subtotalFoh > 0)
-                <div class="cost-summary-pill">
-                    <span class="cost-pill-label">Overhead Pabrik (FOH)</span>
-                    <span class="cost-pill-val">Rp {{ number_format($subtotalFoh, 0, ',', '.') }}</span>
-                </div>
-                @endif
             </div>
 
             {{-- 2. DISTRIBUSI KOMPOSISI BIAYA (COST PROPORTION BAR) --}}
             <div class="cost-distribution-card">
                 <div class="cost-distribution-header">
-                    <span class="cost-dist-title">Distribusi Biaya per Kg WIP (HPP: Rp {{ number_format($produksi->hpp_per_kg, 2, ',', '.') }} / kg)</span>
+                    <span class="cost-dist-title">Distribusi Biaya Operasional per Kg WIP (HPP: Rp {{ number_format($produksi->hpp_per_kg, 2, ',', '.') }} / kg)</span>
                 </div>
                 <div class="cost-dist-bar-track">
                     <div class="cost-dist-segment seg-bahan" style="width: {{ $pctBahan }}%;" title="Bahan Baku: {{ number_format($pctBahan, 1) }}%"></div>
                     <div class="cost-dist-segment seg-kemasan" style="width: {{ $pctKemasan }}%;" title="Kemasan: {{ number_format($pctKemasan, 1) }}%"></div>
                     <div class="cost-dist-segment seg-energi" style="width: {{ $pctEnergiBtkl }}%;" title="Energi & BTKL: {{ number_format($pctEnergiBtkl, 1) }}%"></div>
-                    @if($subtotalFoh > 0)
-                    <div class="cost-dist-segment seg-foh" style="width: {{ $pctFoh }}%;" title="FOH: {{ number_format($pctFoh, 1) }}%"></div>
-                    @endif
                 </div>
                 <div class="cost-dist-legend-grid">
                     <div class="cost-legend-item">
@@ -603,18 +596,6 @@
                             </div>
                         </div>
                     </div>
-                    @if($subtotalFoh > 0)
-                    <div class="cost-legend-item">
-                        <span class="cost-legend-dot seg-foh"></span>
-                        <div>
-                            <span class="cost-legend-label">Overhead Pabrik (FOH)</span>
-                            <div class="cost-legend-value">
-                                Rp {{ number_format($totWip > 0 ? $subtotalFoh / $totWip : 0, 2, ',', '.') }}/kg 
-                                <span class="cost-legend-pct">({{ number_format($pctFoh, 1) }}%)</span>
-                            </div>
-                        </div>
-                    </div>
-                    @endif
                 </div>
             </div>
 
@@ -752,7 +733,19 @@
                         </tr>
                         <tr>
                             <td style="font-weight: 700; color: #0f172a; padding-left: 1.5rem;">Gas Alam (CNG)</td>
-                            <td>{{ number_format($produksi->cng_mmbtu, 3, ',', '.') }} MMBTU (Tarif: Rp {{ number_format($produksi->cng_tarif, 0, ',', '.') }})</td>
+                            <td>
+                                <div>{{ number_format($produksi->cng_mmbtu, 3, ',', '.') }} MMBTU &times; Rp {{ number_format($produksi->cng_tarif, 0, ',', '.') }}/MMBTU</div>
+                                @if(($produksi->cng_kurs_jisdor ?? 0) > 0 || ($produksi->cng_tarif_usd ?? 0) > 0)
+                                    <div style="font-size: 0.72rem; color: #64748b; margin-top: 0.2rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                                        @if(($produksi->cng_tarif_usd ?? 0) > 0)
+                                            <span style="background: #f1f5f9; padding: 0.1rem 0.4rem; border-radius: 4px; border: 1px solid #e2e8f0;">Kontrak: ${{ number_format($produksi->cng_tarif_usd, 2, ',', '.') }}/MMBTU</span>
+                                        @endif
+                                        @if(($produksi->cng_kurs_jisdor ?? 0) > 0)
+                                            <span style="background: #ecfdf5; color: #047857; padding: 0.1rem 0.4rem; border-radius: 4px; border: 1px solid #a7f3d0; font-weight: 600;">Kurs JISDOR: Rp {{ number_format($produksi->cng_kurs_jisdor, 2, ',', '.') }}/$</span>
+                                        @endif
+                                    </div>
+                                @endif
+                            </td>
                             <td style="text-align: right; font-weight: 700; font-variant-numeric: tabular-nums;">Rp {{ number_format($produksi->cng_nilai, 0, ',', '.') }}</td>
                         </tr>
                         <tr>
@@ -765,48 +758,7 @@
                             <td style="text-align: right; font-variant-numeric: tabular-nums;">Rp {{ number_format($subtotalEnergiBtkl, 0, ',', '.') }}</td>
                         </tr>
 
-                        @if($subtotalFoh > 0)
-                        {{-- 4. KELOMPOK D: BIAYA OVERHEAD PABRIK (FOH) & UTILITAS (DATA HISTORIS) --}}
-                        <tr class="cost-group-header">
-                            <td colspan="3">
-                                D. Biaya Overhead Pabrik (FOH) &amp; Utilitas
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="padding-left: 1.5rem;">Listrik, Air &amp; Telepon (Utilitas)</td>
-                            <td>Utilitas operasional harian pabrik</td>
-                            <td style="text-align: right; font-variant-numeric: tabular-nums;">Rp {{ number_format($produksi->listrik_air_telp_nilai, 0, ',', '.') }}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding-left: 1.5rem;">Pemeliharaan &amp; Service Mesin</td>
-                            <td>Perawatan preventif &amp; suku cadang fryer/boiler</td>
-                            <td style="text-align: right; font-variant-numeric: tabular-nums;">Rp {{ number_format($produksi->pemeliharaan_mesin_nilai, 0, ',', '.') }}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding-left: 1.5rem;">Pengawasan Mutu (QC Lab)</td>
-                            <td>Inspeksi standar mutu, organoleptik &amp; sampling</td>
-                            <td style="text-align: right; font-variant-numeric: tabular-nums;">Rp {{ number_format($produksi->qc_pengawasan_nilai, 0, ',', '.') }}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding-left: 1.5rem;">Penyusutan Mesin &amp; Gedung</td>
-                            <td>Amortisasi aset fasilitas manufaktur</td>
-                            <td style="text-align: right; font-variant-numeric: tabular-nums;">Rp {{ number_format($produksi->penyusutan_mesin_nilai, 0, ',', '.') }}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding-left: 1.5rem;">Pengolahan Limbah &amp; IPAL</td>
-                            <td>Treatment limbah padat singkong &amp; kimia IPAL</td>
-                            <td style="text-align: right; font-variant-numeric: tabular-nums;">Rp {{ number_format($produksi->limbah_padat_nilai + $produksi->limbah_kimia_nilai, 0, ',', '.') }}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding-left: 1.5rem;">ATK &amp; Sanitasi Operator</td>
-                            <td>Fotocopy, sarung tangan plastik &amp; kain sanitasi</td>
-                            <td style="text-align: right; font-variant-numeric: tabular-nums;">Rp {{ number_format($produksi->fotocopy_nilai + $produksi->sarung_tangan_plastik_nilai + $produksi->sarung_tangan_kain_nilai, 0, ',', '.') }}</td>
-                        </tr>
-                        <tr class="cost-group-subtotal" style="color: #6d28d9;">
-                            <td colspan="2" style="padding-left: 1.5rem;">SUBTOTAL BIAYA OVERHEAD PABRIK (FOH):</td>
-                            <td style="text-align: right; font-variant-numeric: tabular-nums;">Rp {{ number_format($subtotalFoh, 0, ',', '.') }}</td>
-                        </tr>
-                        @endif
+
                     </tbody>
                     <tfoot class="cost-total-footer">
                         <tr>

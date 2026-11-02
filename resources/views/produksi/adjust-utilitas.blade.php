@@ -19,7 +19,7 @@
 
     $prodDays = collect($report['days'] ?? [])->filter(fn($d) => !empty($d['has_data']));
     $tarifListrikDefault = (float) ($fohRates['listrik'] ?? 223.80);
-    $tarifCngDefault = 232500.00;
+    $tarifCngDefault = (float) ($tarifCngDefault ?? 263001.00);
 @endphp
 
 <div style="margin-bottom: 1.25rem;">
@@ -96,27 +96,7 @@
         </div>
     </div>
 
-    {{-- METRIK 2: TOTAL OUTPUT WIP (BASIS ALOKASI LISTRIK) --}}
-    <div class="executive-stat-card">
-        <div class="executive-stat-card-header">
-            <div>
-                <span class="executive-stat-label" style="color: #059669;">
-                    Total Output WIP
-                </span>
-                <div class="executive-stat-value" style="color: #059669;">
-                    {{ number_format($modalTot['total_wip_qty'], 2, ',', '.') }} kg
-                </div>
-            </div>
-            <div class="executive-stat-icon-box" style="background: #d1fae5; color: #059669;">
-                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
-            </div>
-        </div>
-        <div class="executive-stat-subtext">
-            <span style="color: #059669; font-weight: 600;">Basis Pembagi Proporsional Listrik PLN</span>
-        </div>
-    </div>
-
-    {{-- METRIK 3: TOTAL PEMAKAIAN GAS CNG --}}
+    {{-- METRIK 2: TOTAL PEMAKAIAN GAS CNG (NOMOR 1 UTAMA) --}}
     <div class="executive-stat-card">
         <div class="executive-stat-card-header">
             <div>
@@ -136,6 +116,26 @@
         </div>
     </div>
 
+    {{-- METRIK 3: TOTAL OUTPUT WIP (NOMOR 2 / BASIS ALOKASI LISTRIK) --}}
+    <div class="executive-stat-card">
+        <div class="executive-stat-card-header">
+            <div>
+                <span class="executive-stat-label" style="color: #059669;">
+                    Total Output WIP
+                </span>
+                <div class="executive-stat-value" style="color: #059669;">
+                    {{ number_format($modalTot['total_wip_qty'], 2, ',', '.') }} kg
+                </div>
+            </div>
+            <div class="executive-stat-icon-box" style="background: #d1fae5; color: #059669;">
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+            </div>
+        </div>
+        <div class="executive-stat-subtext">
+            <span style="color: #059669; font-weight: 600;">Basis Pembagi Listrik PLN (FOH Keuangan)</span>
+        </div>
+    </div>
+
     {{-- METRIK 4: AKUMULASI BIAYA UTILITAS SAAT INI --}}
     <div class="executive-stat-card">
         <div class="executive-stat-card-header">
@@ -152,7 +152,7 @@
             </div>
         </div>
         <div class="executive-stat-subtext">
-            <span>PLN: Rp {{ number_format($modalTot['listrik_air_telp_nilai'], 0, ',', '.') }} | Gas: Rp {{ number_format($modalTot['cng_nilai'], 0, ',', '.') }}</span>
+            <span>Gas: Rp {{ number_format($modalTot['cng_nilai'], 0, ',', '.') }} | PLN: Rp {{ number_format($modalTot['listrik_air_telp_nilai'], 0, ',', '.') }}</span>
         </div>
     </div>
 </div>
@@ -173,7 +173,7 @@
     <div id="alertValidateAdjust" style="display: none; background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 8px; padding: 0.85rem 1.25rem; color: #92400e; margin-bottom: 1.25rem; font-size: 0.85rem; font-weight: 600; align-items: center; justify-content: space-between;">
         <div style="display: flex; align-items: center; gap: 0.5rem;">
             <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-            <span>Mohon aktifkan setidaknya salah satu opsi penyesuaian (Beban Listrik atau Beban Gas) sebelum menyimpan.</span>
+            <span>Mohon aktifkan setidaknya salah satu opsi penyesuaian (Beban Gas atau Beban Listrik) sebelum menyimpan.</span>
         </div>
         <button type="button" onclick="document.getElementById('alertValidateAdjust').style.display='none'" style="background: none; border: none; color: #92400e; font-size: 1.2rem; cursor: pointer; line-height: 1;">&times;</button>
     </div>
@@ -186,22 +186,129 @@
 
         <div class="utilitas-forms-grid">
 
-            {{-- KARTU 1: LISTRIK & AIR --}}
+            {{-- KARTU 1: GAS ALAM (CNG) (FOKUS UTAMA #1) --}}
+            <div class="card utilitas-card-box">
+                <div class="card-header" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0.85rem 1.25rem; display: flex; justify-content: space-between; align-items: center;">
+                    <label class="toggle-card-label" for="chk_adjust_cng" style="margin: 0; display: inline-flex; align-items: center; gap: 0.75rem; cursor: pointer;">
+                        <div class="custom-switch">
+                            <input type="checkbox" name="adjust_cng" id="chk_adjust_cng" value="1" checked>
+                            <span class="switch-slider switch-slider-amber"></span>
+                        </div>
+                        <span style="font-size: 0.925rem; font-weight: 700; color: #0f172a;">1. Beban Gas Alam CNG (Boiler &amp; Fryer)</span>
+                    </label>
+                    <span class="badge" style="font-size: 0.725rem; font-weight: 700; background: #fef3c7; color: #92400e; border: 1px solid #fde68a; padding: 0.2rem 0.55rem; border-radius: 4px;">
+                        Alokasi Pemakaian MMBTU
+                    </span>
+                </div>
+
+                <div class="card-body" id="section_body_cng" style="padding: 1.25rem; opacity: 1; pointer-events: auto;">
+                    <div class="mode-pill-container" style="margin-bottom: 1.15rem;">
+                        <label class="mode-pill-item active">
+                            <input type="radio" name="mode_cng" value="update_tarif" checked style="display: none;">
+                            <span>Tarif Resmi per MMBTU</span>
+                        </label>
+                        <label class="mode-pill-item">
+                            <input type="radio" name="mode_cng" value="total_tagihan" style="display: none;">
+                            <span>Total Tagihan Faktur Gas</span>
+                        </label>
+                    </div>
+
+                    {{-- Input 1: Tarif Gas Resmi dengan Kurs JISDOR & USD --}}
+                    <div id="box_cng_tarif_resmi">
+                        {{-- Baris Input USD Kontrak & Kurs JISDOR --}}
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
+                            <div>
+                                <label style="font-size: 0.72rem; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.04em; display: block; margin-bottom: 0.35rem;">
+                                    Tarif Kontrak ($/MMBTU):
+                                </label>
+                                <div class="input-addon-group">
+                                    <span class="addon-prefix">$</span>
+                                    <input type="number" step="0.01" min="0" 
+                                           name="cng_tarif_usd" 
+                                           id="input_cng_tarif_usd" 
+                                           class="form-control addon-input-field" 
+                                           value="{{ old('cng_tarif_usd', $energiRates['cng_tarif_usd'] ?? 14.50) }}"
+                                           oninput="calcCngAdjustRates()">
+                                </div>
+                            </div>
+                            <div>
+                                <label style="font-size: 0.72rem; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.04em; display: block; margin-bottom: 0.35rem;">
+                                    Kurs Rata-Rata JISDOR (Rp/$):
+                                </label>
+                                <div class="input-addon-group">
+                                    <span class="addon-prefix">Rp</span>
+                                    <input type="number" step="any" min="0" 
+                                           name="cng_kurs_jisdor" 
+                                           id="input_cng_kurs_jisdor" 
+                                           class="form-control addon-input-field" 
+                                           value="{{ old('cng_kurs_jisdor', $energiRates['cng_kurs_jisdor'] ?? 18138.00) }}"
+                                           oninput="calcCngAdjustRates()">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label style="font-size: 0.75rem; font-weight: 700; color: #047857; text-transform: uppercase; letter-spacing: 0.04em; display: block; margin-bottom: 0.4rem;">
+                                Tarif Gas Resmi per MMBTU (Rp):
+                            </label>
+                            <div class="input-addon-group">
+                                <span class="addon-prefix">Rp</span>
+                                <input type="number" step="0.01" min="0" 
+                                       name="cng_tarif_baru" 
+                                       id="input_cng_tarif_resmi" 
+                                       class="form-control addon-input-field" 
+                                       style="font-weight: 700; color: #065f46; background: #ecfdf5; border-color: #a7f3d0;"
+                                       value="{{ old('cng_tarif_baru', $tarifCngDefault) }}"
+                                       oninput="recalculateLiveSimulation()">
+                                <span class="addon-suffix">/ MMBTU</span>
+                            </div>
+                            <p style="font-size: 0.75rem; color: #64748b; margin: 0.45rem 0 0 0; line-height: 1.4;">
+                                Otomatis: <code>USD &times; Kurs JISDOR</code> atau ketik langsung tarif rupiah resmi.<br>
+                                <span style="font-size: 0.72rem; color: #047857; font-weight: 600;">💡 Acuan Kontrak Gas: ${{ number_format($energiRates['cng_tarif_usd'] ?? 14.50, 2) }} &times; Kurs JISDOR BI Rp {{ number_format($energiRates['cng_kurs_jisdor'] ?? 18138, 0, ',', '.') }} = Rp {{ number_format($tarifCngDefault, 0, ',', '.') }} / MMBTU</span>
+                            </p>
+                        </div>
+                    </div>
+
+                    {{-- Input 2: Total Faktur Gas Sebulan --}}
+                    <div id="box_cng_total_tagihan" style="display: none;">
+                        <label style="font-size: 0.75rem; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.04em; display: block; margin-bottom: 0.4rem;">
+                            Total Faktur Gas Vendor Sebulan:
+                        </label>
+                        <div class="input-addon-group">
+                            <span class="addon-prefix">Rp</span>
+                            <input type="number" step="1" min="0" 
+                                   name="total_cng_tagihan" 
+                                   id="input_total_cng_tagihan" 
+                                   class="form-control addon-input-field" 
+                                   value="{{ old('total_cng_tagihan', round($modalTot['cng_nilai'])) }}"
+                                   oninput="recalculateLiveSimulation()">
+                        </div>
+                        <p style="font-size: 0.75rem; color: #64748b; margin: 0.45rem 0 0 0; line-height: 1.4;">
+                            Total tagihan faktur akan dibagi proporsional ke tiap hari kerja berdasarkan porsi MMBTU masing-masing.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            {{-- KARTU 2: LISTRIK & AIR (DIALIHKAN KE KEUANGAN #2) --}}
             <div class="card utilitas-card-box">
                 <div class="card-header" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0.85rem 1.25rem; display: flex; justify-content: space-between; align-items: center;">
                     <label class="toggle-card-label" for="chk_adjust_listrik" style="margin: 0; display: inline-flex; align-items: center; gap: 0.75rem; cursor: pointer;">
                         <div class="custom-switch">
-                            <input type="checkbox" name="adjust_listrik" id="chk_adjust_listrik" value="1" checked>
+                            <input type="checkbox" name="adjust_listrik" id="chk_adjust_listrik" value="1">
                             <span class="switch-slider switch-slider-blue"></span>
                         </div>
-                        <span style="font-size: 0.925rem; font-weight: 700; color: #0f172a;">1. Beban Listrik &amp; Air (PLN)</span>
+                        <div>
+                            <span style="font-size: 0.925rem; font-weight: 700; color: #0f172a;">2. Beban Listrik &amp; Air (PLN)</span>
+                            <span style="font-size: 0.7rem; color: #64748b; margin-left: 0.35rem; font-weight: 500;">(FOH Keuangan)</span>
+                        </div>
                     </label>
-                    <span class="badge" style="font-size: 0.725rem; font-weight: 700; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; padding: 0.2rem 0.55rem; border-radius: 4px;">
-                        Alokasi Proporsional WIP
+                    <span class="badge" style="font-size: 0.725rem; font-weight: 700; background: #f1f5f9; color: #64748b; border: 1px solid #cbd5e1; padding: 0.2rem 0.55rem; border-radius: 4px;">
+                        Opsional
                     </span>
                 </div>
 
-                <div class="card-body" id="section_body_listrik" style="padding: 1.25rem;">
+                <div class="card-body" id="section_body_listrik" style="padding: 1.25rem; opacity: 0.45; pointer-events: none;">
                     <div class="mode-pill-container" style="margin-bottom: 1.15rem;">
                         <label class="mode-pill-item active">
                             <input type="radio" name="mode_alokasi_listrik" value="total_tagihan" checked style="display: none;">
@@ -249,74 +356,6 @@
                         </div>
                         <p style="font-size: 0.75rem; color: #64748b; margin: 0.45rem 0 0 0; line-height: 1.4;">
                             Mengalikan seluruh hari kerja di bulan ini dengan tarif flat: <code>Kg WIP &times; Rp/Kg</code>.
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            {{-- KARTU 2: GAS ALAM (CNG) --}}
-            <div class="card utilitas-card-box">
-                <div class="card-header" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0.85rem 1.25rem; display: flex; justify-content: space-between; align-items: center;">
-                    <label class="toggle-card-label" for="chk_adjust_cng" style="margin: 0; display: inline-flex; align-items: center; gap: 0.75rem; cursor: pointer;">
-                        <div class="custom-switch">
-                            <input type="checkbox" name="adjust_cng" id="chk_adjust_cng" value="1">
-                            <span class="switch-slider switch-slider-amber"></span>
-                        </div>
-                        <span style="font-size: 0.925rem; font-weight: 700; color: #0f172a;">2. Beban Gas Alam CNG (Boiler &amp; Fryer)</span>
-                    </label>
-                    <span class="badge" style="font-size: 0.725rem; font-weight: 700; background: #fef3c7; color: #92400e; border: 1px solid #fde68a; padding: 0.2rem 0.55rem; border-radius: 4px;">
-                        Alokasi Pemakaian MMBTU
-                    </span>
-                </div>
-
-                <div class="card-body" id="section_body_cng" style="padding: 1.25rem; opacity: 0.45;">
-                    <div class="mode-pill-container" style="margin-bottom: 1.15rem;">
-                        <label class="mode-pill-item active">
-                            <input type="radio" name="mode_cng" value="update_tarif" checked style="display: none;">
-                            <span>Tarif Resmi per MMBTU</span>
-                        </label>
-                        <label class="mode-pill-item">
-                            <input type="radio" name="mode_cng" value="total_tagihan" style="display: none;">
-                            <span>Total Tagihan Faktur Gas</span>
-                        </label>
-                    </div>
-
-                    {{-- Input 1: Tarif Gas Resmi --}}
-                    <div id="box_cng_tarif_resmi">
-                        <label style="font-size: 0.75rem; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.04em; display: block; margin-bottom: 0.4rem;">
-                            Tarif Gas Resmi per MMBTU:
-                        </label>
-                        <div class="input-addon-group">
-                            <span class="addon-prefix">Rp</span>
-                            <input type="number" step="0.01" min="0" 
-                                   name="cng_tarif_baru" 
-                                   id="input_cng_tarif_resmi" 
-                                   class="form-control addon-input-field" 
-                                   value="{{ old('cng_tarif_baru', $tarifCngDefault) }}"
-                                   oninput="recalculateLiveSimulation()">
-                            <span class="addon-suffix">/ MMBTU</span>
-                        </div>
-                        <p style="font-size: 0.75rem; color: #64748b; margin: 0.45rem 0 0 0; line-height: 1.4;">
-                            Tiap hari produksi dihitung otomatis: <code>MMBTU Gas Aktual &times; Tarif Resmi Gas</code>.
-                        </p>
-                    </div>
-
-                    {{-- Input 2: Total Faktur Gas Sebulan --}}
-                    <div id="box_cng_total_tagihan" style="display: none;">
-                        <label style="font-size: 0.75rem; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.04em; display: block; margin-bottom: 0.4rem;">
-                            Total Faktur Gas Vendor Sebulan:
-                        </label>
-                        <div class="input-addon-group">
-                            <span class="addon-prefix">Rp</span>
-                            <input type="number" step="1" min="0" 
-                                   name="total_cng_tagihan" 
-                                   id="input_total_cng_tagihan" 
-                                   class="form-control addon-input-field" 
-                                   value="{{ old('total_cng_tagihan', round($modalTot['cng_nilai'])) }}"
-                                   oninput="recalculateLiveSimulation()">
-                        </div>
-                        <p style="font-size: 0.75rem; color: #64748b; margin: 0.45rem 0 0 0; line-height: 1.4;">
-                            Total tagihan faktur akan dibagi proporsional ke tiap hari kerja berdasarkan porsi MMBTU masing-masing.
                         </p>
                     </div>
                 </div>

@@ -86,7 +86,7 @@
                         <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">
                             Tanggal Produksi <span style="color: #ef4444;">*</span>
                         </label>
-                        <input type="date" name="produksi_tgl" id="produksi_tgl" class="form-control" value="{{ old('produksi_tgl', date('Y-m-d')) }}" required onchange="updateHariLabel(); fetchNextKarton(); syncLaborFromKaryawan();">
+                        <input type="date" name="produksi_tgl" id="produksi_tgl" class="form-control" value="{{ old('produksi_tgl', date('Y-m-d')) }}" required onchange="updateHariLabel(); fetchNextKarton(); syncLaborFromKaryawan(); fetchKursJisdor();">
                         <div id="hariLabel" style="font-size: 0.75rem; color: #0284c7; font-weight: 600; margin-top: 0.25rem;"></div>
                     </div>
 
@@ -364,36 +364,68 @@
         </div>
 
         {{-- BAGIAN 5 & 6: ENERGI (CNG) & TENAGA KERJA --}}
-        <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 1.25rem; margin-bottom: 1.25rem;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem;">
             {{-- ENERGI GAS CNG --}}
             <div class="card">
                 <div class="card-header" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0.875rem 1.25rem; display: flex; justify-content: space-between; align-items: center;">
                     <strong style="color: #0f172a; font-size: 0.95rem;">5. Gas Alam / CNG (Boiler &amp; Fryer)</strong>
-                    <span style="font-size: 0.7rem; color: #475569; background: #f1f5f9; border: 1px solid #cbd5e1; padding: 0.15rem 0.45rem; border-radius: 4px; font-weight: 700;">Flow Meter Harian</span>
+                    <span style="font-size: 0.7rem; color: #475569; background: #f1f5f9; border: 1px solid #cbd5e1; padding: 0.15rem 0.45rem; border-radius: 4px; font-weight: 700;">Flow Meter Harian &amp; Kurs JISDOR</span>
                 </div>
                 <div style="padding: 1.25rem;">
+                    {{-- Baris 1: Meteran MMBTU --}}
+                    <div style="margin-bottom: 0.75rem;">
+                        <label style="display: block; font-size: 0.75rem; font-weight: 700; color: #334155; margin-bottom: 0.25rem;">
+                            Meteran CNG (MMBTU) <span style="color: #ef4444;">*</span>
+                        </label>
+                        <input type="number" step="0.0001" min="0" name="cng_mmbtu" id="cng_mmbtu" class="form-control calc-trigger" style="text-align: right; font-weight: 700; font-size: 1rem; color: #0284c7;" value="{{ old('cng_mmbtu', 0) }}" placeholder="0" oninput="calcCng('mmbtu')">
+                        <small style="color: #64748b; font-size: 0.7rem;">Delta pemakaian flow meter fisik boiler &amp; fryer.</small>
+                    </div>
+
+                    {{-- Baris 2: Tarif USD Kontrak & Kurs Harian JISDOR --}}
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
                         <div>
                             <label style="display: block; font-size: 0.75rem; font-weight: 700; color: #334155; margin-bottom: 0.25rem;">
-                                Meteran CNG (MMBTU) <span style="color: #ef4444;">*</span>
+                                Tarif Kontrak ($/MMBTU)
                             </label>
-                            <input type="number" step="0.0001" min="0" name="cng_mmbtu" id="cng_mmbtu" class="form-control calc-trigger" style="text-align: right; font-weight: 700;" value="{{ old('cng_mmbtu', 0) }}" placeholder="0" oninput="calcCng()">
-                            <small style="color: #64748b; font-size: 0.7rem;">Delta flow meter fisik.</small>
+                            <div style="position: relative;">
+                                <span style="position: absolute; left: 0.6rem; top: 50%; transform: translateY(-50%); font-size: 0.75rem; color: #64748b; font-weight: 700;">$</span>
+                                <input type="number" step="0.01" min="0" name="cng_tarif_usd" id="cng_tarif_usd" class="form-control calc-trigger" style="text-align: right; padding-left: 1.4rem; font-weight: 600;" value="{{ old('cng_tarif_usd', $defaultCngTarifUsd ?? 14.50) }}" placeholder="14.50" oninput="calcCng('usd')">
+                            </div>
+                            <small style="color: #64748b; font-size: 0.7rem;">Kontrak gas industri (USD).</small>
                         </div>
+                        <div>
+                            <label style="display: block; font-size: 0.75rem; font-weight: 700; color: #334155; margin-bottom: 0.25rem;">
+                                Kurs Harian JISDOR (Rp/$)
+                            </label>
+                            <div style="position: relative;">
+                                <span style="position: absolute; left: 0.6rem; top: 50%; transform: translateY(-50%); font-size: 0.72rem; color: #64748b; font-weight: 700;">Rp</span>
+                                <input type="number" step="any" min="0" name="cng_kurs_jisdor" id="cng_kurs_jisdor" class="form-control calc-trigger" style="text-align: right; padding-left: 1.8rem; font-weight: 600;" value="{{ old('cng_kurs_jisdor', $defaultCngKursJisdor ?? 18138.00) }}" placeholder="18138" oninput="calcCng('kurs')">
+                            </div>
+                            <small style="color: #64748b; font-size: 0.7rem;">Otomatis harian BI (bisa diedit bebas atau diisi 0).</small>
+                        </div>
+                    </div>
+
+                    {{-- Baris 3: Tarif per MMBTU (Rp) & Nominal Harian CNG (Rp) --}}
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
                         <div>
                             <label style="display: block; font-size: 0.75rem; font-weight: 700; color: #334155; margin-bottom: 0.25rem;">
                                 Tarif per MMBTU (Rp)
                             </label>
-                            <input type="number" step="0.01" min="0" name="cng_tarif" id="cng_tarif" class="form-control calc-trigger" style="text-align: right;" value="{{ old('cng_tarif', $defaultCngTarif ?? 226800.00) }}" oninput="calcCng()">
-                            <small style="color: #64748b; font-size: 0.7rem;">Tarif acuan (dapat diedit).</small>
+                            <input type="number" step="0.01" min="0" name="cng_tarif" id="cng_tarif" class="form-control calc-trigger" style="text-align: right; font-weight: 600;" value="{{ old('cng_tarif', $defaultCngTarif ?? 229825.00) }}" oninput="calcCng('tarif')">
+                            <small style="color: #64748b; font-size: 0.7rem;">Auto (USD × Kurs) atau manual.</small>
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 0.75rem; font-weight: 700; color: #047857; margin-bottom: 0.25rem;">
+                                Nominal Harian CNG (Rp) <span style="color: #ef4444;">*</span>
+                            </label>
+                            <input type="number" step="0.01" min="0" name="cng_nilai" id="cng_nilai" class="form-control calc-trigger" style="text-align: right; font-weight: 700; color: #065f46; background: #ecfdf5; border-color: #a7f3d0;" value="{{ old('cng_nilai', 0) }}" oninput="calcAll()">
+                            <small style="color: #047857; font-size: 0.7rem;">Auto (MMBTU × Tarif Rp).</small>
                         </div>
                     </div>
-                    <div>
-                        <label style="display: block; font-size: 0.75rem; font-weight: 700; color: #334155; margin-bottom: 0.25rem;">
-                            Total Rupiah CNG (Rp)
-                        </label>
-                        <input type="number" step="0.01" min="0" name="cng_nilai" id="cng_nilai" class="form-control calc-trigger" style="text-align: right; font-weight: 700; color: #0f172a; background: #f8fafc;" value="{{ old('cng_nilai', 0) }}" oninput="calcAll()">
-                        <small style="color: #64748b; font-size: 0.7rem;">Otomatis (MMBTU x Tarif) atau isi manual.</small>
+
+                    {{-- Live Calculation Badge --}}
+                    <div id="cng_calc_info" style="padding: 0.45rem 0.65rem; border-radius: 6px; background: #f8fafc; border: 1px dashed #cbd5e1; font-size: 0.72rem; color: #334155; line-height: 1.4;">
+                        <span id="cng_calc_text">💡 Memuat simulasi tarif CNG...</span>
                     </div>
                 </div>
             </div>
@@ -479,6 +511,7 @@
             nextKartonUrl: "{{ route('produksi.next-karton') }}",
             pakaiDataUrl: "{{ url('produksi/pakai-data') }}",
             syncKaryawanUrl: "{{ route('produksi.sync-karyawan') }}",
+            kursJisdorUrl: "{{ route('produksi.kurs-jisdor') }}",
             barangHasilList: @json($barangHasilList ?? []),
             oldOutputItems: @json(old('output_items', [])),
             initialFohRates: @json($fohRates ?? []),

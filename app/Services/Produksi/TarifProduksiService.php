@@ -59,16 +59,54 @@ class TarifProduksiService
     }
 
     /**
+     * Dapatkan kurs resmi JISDOR Bank Indonesia harian.
+     * Menggunakan tabel historis dat_kurs_harian & master tarif sebagai Single Source of Truth.
+     */
+    public function getJisdorRate(?string $date = null): float
+    {
+        $targetDate = $date ?: date('Y-m-d');
+
+        // 1. Cek tanggal spesifik di dat_kurs_harian
+        $exactRecord = \App\Models\Produksi\DatKursHarian::active()
+            ->where('tanggal', $targetDate)
+            ->first();
+
+        if ($exactRecord && $exactRecord->kurs_tengah > 0) {
+            return (float) $exactRecord->kurs_tengah;
+        }
+
+        // 2. Jika belum rilis atau hari libur/akhir pekan, ambil kurs hari kerja terakhir <= targetDate
+        $latestRecord = \App\Models\Produksi\DatKursHarian::active()
+            ->where('tanggal', '<=', $targetDate)
+            ->orderByDesc('tanggal')
+            ->first();
+
+        if ($latestRecord && $latestRecord->kurs_tengah > 0) {
+            return (float) $latestRecord->kurs_tengah;
+        }
+
+        // 3. Fallback ke master tarif produksi atau default 18138.00
+        $map = $this->getTarifMap();
+        return (float) ($map['KURS_JISDOR'] ?? 18138.00);
+    }
+
+    /**
      * Dapatkan tarif acuan Energi dan Tenaga Kerja
      *
      * @return array<string, float>
      */
-    public function getEnergiLaborRates(): array
+    public function getEnergiLaborRates(?string $date = null): array
     {
         $map = $this->getTarifMap();
 
+        $cngUsd = (float) ($map['TARIF_CNG_USD'] ?? 14.50);
+        $kursJisdor = $this->getJisdorRate($date);
+        $cngTarif = (float) ($cngUsd > 0 && $kursJisdor > 0 ? round($cngUsd * $kursJisdor, 2) : ($map['TARIF_CNG'] ?? 263001.00));
+
         return [
-            'cng_tarif'        => (float) ($map['TARIF_CNG'] ?? 226800.00),
+            'cng_tarif_usd'    => $cngUsd,
+            'cng_kurs_jisdor'  => $kursJisdor,
+            'cng_tarif'        => $cngTarif,
             'tk_tarif_per_org' => (float) ($map['TARIF_TK_HARIAN'] ?? 91300.00),
         ];
     }

@@ -94,6 +94,24 @@ function toggleCngModeBox(mode) {
 }
 
 /**
+ * Kalkulasi otomatis Tarif per MMBTU dari USD x Kurs JISDOR
+ */
+function calcCngAdjustRates() {
+    const elUsd = document.getElementById('input_cng_tarif_usd');
+    const elKurs = document.getElementById('input_cng_kurs_jisdor');
+    const elTarif = document.getElementById('input_cng_tarif_resmi');
+    if (!elTarif) return;
+
+    const usd = parseFloat(elUsd?.value) || 0;
+    const kurs = parseFloat(elKurs?.value) || 0;
+
+    if (usd > 0 && kurs > 0) {
+        elTarif.value = Math.round(usd * kurs);
+    }
+    recalculateLiveSimulation();
+}
+
+/**
  * Kalkulasi Pratinjau Interaktif Real-Time
  */
 function recalculateLiveSimulation() {

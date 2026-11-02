@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', function () {
     initProduksiSync();
     initLakbanUnitSync();
     initLakbanSync();
+    initKartonSync();
 });
 
 /**
@@ -79,6 +80,90 @@ function recalculateLakbanTotal() {
 
     const lblTotal = document.getElementById('lbl_lakban_total');
     if (lblTotal) lblTotal.textContent = total.toLocaleString('id-ID');
+}
+
+/**
+ * Handle Karton Sirkular (Puteran vs Baru) & Auto FIFO calculation
+ */
+function initKartonSync() {
+    const puteranInput = document.getElementById('karton_puteran_qty');
+    const baruInput = document.getElementById('karton_baru_qty');
+    const rejectInput = document.getElementById('karton_reject_qty');
+
+    if (puteranInput) puteranInput.addEventListener('input', updateKartonTotal);
+    if (baruInput) baruInput.addEventListener('input', updateKartonTotal);
+    if (rejectInput) rejectInput.addEventListener('input', updateKartonTotal);
+    updateKartonTotal();
+}
+
+function updateKartonTotal() {
+    const puteran = parseFloat(document.getElementById('karton_puteran_qty')?.value) || 0;
+    const baru = parseFloat(document.getElementById('karton_baru_qty')?.value) || 0;
+    const reject = parseFloat(document.getElementById('karton_reject_qty')?.value) || 0;
+    const customQty = parseFloat(document.getElementById('karton_custom_qty')?.value) || 0;
+
+    const customWrapper = document.getElementById('kartonCustomWrapper');
+    const isCustomActive = customWrapper && customWrapper.style.display !== 'none';
+
+    let total = 0;
+    if (isCustomActive && customQty > 0) {
+        total = customQty;
+    } else {
+        total = puteran + baru + reject;
+    }
+
+    const totalInput = document.getElementById('karton_qty');
+    if (totalInput) totalInput.value = total;
+
+    const totalBadge = document.getElementById('lbl_karton_total_dipakai');
+    if (totalBadge) totalBadge.textContent = total.toLocaleString('id-ID');
+}
+
+/**
+ * ⚡ Smart Auto-Allocate: Pakai stok Puteran dulu (FIFO), sisanya ambil Karton Baru
+ */
+function autoAllocateKartonFifo() {
+    const targetKarton = parseFloat(document.getElementById('hasil_karton_qty')?.value) || 0;
+    if (targetKarton <= 0) {
+        alert('Silakan isi "Jumlah Hasil Jadi Utama" terlebih dahulu di Seksi 4.');
+        document.getElementById('hasil_karton_qty')?.focus();
+        return;
+    }
+
+    const maxPuteranStok = parseFloat(window.stokKartonPuteranAvailable || 0);
+
+    const alokasiPuteran = Math.min(targetKarton, Math.max(0, maxPuteranStok));
+    const alokasiBaru = Math.max(0, targetKarton - alokasiPuteran);
+
+    const puteranInput = document.getElementById('karton_puteran_qty');
+    const baruInput = document.getElementById('karton_baru_qty');
+
+    if (puteranInput) puteranInput.value = alokasiPuteran;
+    if (baruInput) baruInput.value = alokasiBaru;
+
+    updateKartonTotal();
+}
+
+/**
+ * Toggle Dus Khusus / Non-IFM Dropdown
+ */
+function toggleCustomKarton() {
+    const wrap = document.getElementById('kartonCustomWrapper');
+    const sirkularGrid = document.getElementById('kartonSirkularGrid');
+    const btnToggle = document.getElementById('btnToggleKarton');
+
+    if (wrap && sirkularGrid) {
+        if (wrap.style.display === 'none') {
+            wrap.style.display = 'block';
+            sirkularGrid.style.display = 'none';
+            if (btnToggle) btnToggle.textContent = '← Kembali ke Karton Sirkular (Puteran & Baru)';
+        } else {
+            wrap.style.display = 'none';
+            sirkularGrid.style.display = 'grid';
+            if (btnToggle) btnToggle.textContent = '📦 Gunakan Dus Khusus / Non-IFM';
+        }
+        updateKartonTotal();
+    }
 }
 
 /**

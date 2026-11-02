@@ -618,6 +618,19 @@
                                 </td>
                                 <td>
                                     <strong style="color: #0f172a;">{{ $kem->barang?->barang_nm }}</strong>
+                                    @php
+                                        $bCdK = strtoupper($kem->barang?->barang_cd ?? '');
+                                        $bNmK = strtoupper($kem->barang?->barang_nm ?? '');
+                                    @endphp
+                                    @if($bCdK === 'KIF00G-BP1' || $bCdK === 'KIF00G-PUT' || (str_contains($bNmK, 'IFM') && str_contains($bNmK, 'KARTON')))
+                                        <span style="font-size: 0.685rem; font-weight: 700; color: #0284c7; background: #f0f9ff; border: 1px solid #bae6fd; padding: 1.5px 6px; border-radius: 4px; margin-left: 4px; display: inline-block;">
+                                            Amortisasi 5x (Rp 1.748/Lbr)
+                                        </span>
+                                    @elseif($bCdK === 'KMS-KTN-REJ' || str_contains($bNmK, 'REJECT') || str_contains($bNmK, 'MANUAL'))
+                                        <span style="font-size: 0.685rem; font-weight: 700; color: #b45309; background: #fffbeb; border: 1px solid #fde68a; padding: 1.5px 6px; border-radius: 4px; margin-left: 4px; display: inline-block;">
+                                            Manual (HPP Rp 0)
+                                        </span>
+                                    @endif
                                     @if($kem->batch_no)
                                         <span style="font-size: 0.7rem; color: #64748b; font-family: monospace;">({{ $kem->batch_no }})</span>
                                     @endif

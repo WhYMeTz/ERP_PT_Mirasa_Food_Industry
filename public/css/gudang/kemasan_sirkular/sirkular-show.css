@@ -1,0 +1,502 @@
+/**
+ * =========================================================================
+ * ERP PT MIRASA FOOD INDUSTRY - DETAIL KEMASAN SIRKULAR (SHOW STYLESHEET)
+ * Standard Enterprise UI (Clean, Corporate, Real ERP Architecture)
+ * =========================================================================
+ */
+
+.sirkular-show-container {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+/* Header Area */
+.sirkular-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.sirkular-back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.8125rem;
+    color: #64748b;
+    text-decoration: none;
+    font-weight: 600;
+    margin-bottom: 0.4rem;
+    transition: color 0.15s ease;
+}
+
+.sirkular-back-link:hover {
+    color: #0284c7;
+}
+
+.sirkular-title-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.sirkular-title {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #0f172a;
+    font-family: 'Consolas', 'Courier New', monospace;
+    letter-spacing: -0.02em;
+    margin: 0;
+}
+
+.sirkular-subtitle {
+    font-size: 0.825rem;
+    color: #64748b;
+    margin: 0.25rem 0 0 0;
+}
+
+/* Status Badges */
+.badge-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.3rem 0.65rem;
+    border-radius: 6px;
+    letter-spacing: 0.02em;
+}
+
+.badge-status.selesai {
+    background: #ecfdf5;
+    color: #047857;
+    border: 1px solid #a7f3d0;
+}
+
+.badge-status.batal {
+    background: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+}
+
+.badge-tag-neutral {
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+    font-size: 0.725rem;
+    font-weight: 700;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    display: inline-block;
+}
+
+.badge-tag-ifm {
+    background: #eff6ff;
+    color: #1e40af;
+    border: 1px solid #bfdbfe;
+    font-size: 0.725rem;
+    font-weight: 700;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+}
+
+/* Action Button Group */
+.sirkular-actions-group {
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.btn-enterprise-sec {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.825rem;
+    font-weight: 700;
+    background: #ffffff;
+    border: 1.5px solid #cbd5e1;
+    color: #334155;
+    padding: 0.5rem 0.85rem;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.15s ease;
+}
+
+.btn-enterprise-sec:hover {
+    background: #f8fafc;
+    border-color: #94a3b8;
+    color: #0f172a;
+}
+
+.btn-enterprise-primary-subtle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.825rem;
+    font-weight: 700;
+    background: #ffffff;
+    border: 1.5px solid #bae6fd;
+    color: #0284c7;
+    padding: 0.5rem 0.85rem;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.15s ease;
+}
+
+.btn-enterprise-primary-subtle:hover {
+    background: #f0f9ff;
+    border-color: #0284c7;
+}
+
+.btn-enterprise-danger {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.825rem;
+    font-weight: 700;
+    background: #ffffff;
+    border: 1.5px solid #fecaca;
+    color: #dc2626;
+    padding: 0.5rem 0.85rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn-enterprise-danger:hover {
+    background: #fef2f2;
+    border-color: #dc2626;
+}
+
+/* 2-Column Info Grid */
+.sirkular-grid-2-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+    margin-bottom: 1.25rem;
+}
+
+@media (max-width: 900px) {
+    .sirkular-grid-2-col {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Standard Cards */
+.sirkular-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+    overflow: hidden;
+    margin-bottom: 1.25rem;
+}
+
+.sirkular-card-header {
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 0.75rem 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.sirkular-card-header-left {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.sirkular-card-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 6px;
+    background: #eff6ff;
+    color: #0284c7;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.sirkular-card-icon.emerald {
+    background: #ecfdf5;
+    color: #059669;
+}
+
+.sirkular-card-icon.amber {
+    background: #fffbeb;
+    color: #d97706;
+}
+
+.sirkular-card-title {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0;
+}
+
+.sirkular-card-subtitle {
+    font-size: 0.75rem;
+    color: #64748b;
+    margin-top: 1px;
+}
+
+.sirkular-card-body {
+    padding: 1.15rem 1.25rem;
+}
+
+/* Key-Value Tables */
+.sirkular-kv-table {
+    width: 100%;
+    font-size: 0.8125rem;
+    border-collapse: collapse;
+}
+
+.sirkular-kv-table tr td {
+    padding: 0.42rem 0;
+    vertical-align: top;
+}
+
+.sirkular-kv-label {
+    width: 165px;
+    color: #64748b;
+    font-weight: 600;
+}
+
+.sirkular-kv-value {
+    color: #0f172a;
+    font-weight: 600;
+}
+
+.sirkular-kv-value.highlight-blue {
+    color: #0284c7;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-weight: 700;
+}
+
+.sirkular-kv-value.highlight-green {
+    color: #059669;
+    font-weight: 700;
+}
+
+/* Standard Detail Table */
+.sirkular-table-wrap {
+    overflow-x: auto;
+}
+
+.sirkular-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+    text-align: left;
+}
+
+.sirkular-table th {
+    background: #f8fafc;
+    color: #475569;
+    font-weight: 700;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    padding: 0.75rem 1rem;
+    border-bottom: 1.5px solid #e2e8f0;
+    white-space: nowrap;
+}
+
+.sirkular-table td {
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+    color: #1e293b;
+}
+
+.sirkular-table tr:hover td {
+    background: #f8fafc;
+}
+
+.cell-num {
+    text-align: right;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-weight: 700;
+    font-size: 0.925rem;
+    font-feature-settings: 'tnum';
+}
+
+.cell-center {
+    text-align: center;
+}
+
+.batch-box {
+    display: inline-block;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-weight: 700;
+    font-size: 0.775rem;
+    background: #f8fafc;
+    color: #334155;
+    border: 1px solid #cbd5e1;
+    padding: 0.2rem 0.45rem;
+    border-radius: 4px;
+    letter-spacing: 0.02em;
+}
+
+.batch-chip-mulus {
+    display: inline-flex;
+    align-items: center;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #065f46;
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+    letter-spacing: 0.01em;
+}
+
+.batch-chip-reject {
+    display: inline-flex;
+    align-items: center;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #991b1b;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+    letter-spacing: 0.01em;
+}
+
+/* Table Footer Summary Bar */
+.sirkular-table-footer-bar {
+    background: #f8fafc;
+    border-top: 1.5px solid #e2e8f0;
+    padding: 0.85rem 1.25rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.sirkular-footer-left {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    color: #475569;
+}
+
+.sirkular-footer-right {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.sirkular-summary-item {
+    text-align: right;
+}
+
+.sirkular-summary-label {
+    font-size: 0.725rem;
+    color: #64748b;
+    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+.sirkular-summary-value {
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-weight: 800;
+    font-size: 1.15rem;
+    color: #0f172a;
+}
+
+/* Modal Dialog */
+.sirkular-modal-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(2px);
+    align-items: center;
+    justify-content: center;
+}
+
+.sirkular-modal-content {
+    background: #ffffff;
+    width: 100%;
+    max-width: 500px;
+    border-radius: 8px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    overflow: hidden;
+    margin: 1rem;
+    border: 1px solid #fecaca;
+}
+
+.sirkular-modal-header {
+    background: #fef2f2;
+    border-bottom: 1px solid #fee2e2;
+    padding: 1rem 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.sirkular-modal-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: #fee2e2;
+    color: #dc2626;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+    border: 1.5px solid #fca5a5;
+}
+
+.sirkular-modal-body {
+    padding: 1.25rem;
+}
+
+.sirkular-modal-footer {
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+    padding: 0.85rem 1.25rem;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
+
+/* Print Styles */
+@media print {
+    .no-print, header, nav, .navbar, .pill-nav-container, .btn-action-trigger, .sirkular-back-link, .sirkular-actions-group {
+        display: none !important;
+    }
+    body, main {
+        background: #ffffff !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+    .sirkular-card {
+        border: 1px solid #cbd5e1 !important;
+        box-shadow: none !important;
+        break-inside: avoid;
+    }
+    .sirkular-table th, .sirkular-table td {
+        border: 1px solid #cbd5e1 !important;
+    }
+}

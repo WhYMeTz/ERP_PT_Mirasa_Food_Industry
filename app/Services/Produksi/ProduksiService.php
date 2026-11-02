@@ -915,10 +915,18 @@ class ProduksiService
                 $summary['bumbu_qty'] += $qty;
                 $summary['bumbu_nilai'] += $subtotal;
             } elseif (str_contains($nm, 'KARTON') || str_contains($nm, 'BOX')) {
-                if (str_contains($nm, 'PUTERAN') || str_contains($nm, 'BEKAS') || str_contains($nm, 'REJECT') || str_contains($nm, 'RUSAK') || str_contains($cd, 'PUT') || str_contains($cd, 'REJ')) {
+                // POIN 28: Amortisasi Karton IFM (Dibagi 5) & Karton Manual (Rp 0)
+                if (str_contains($nm, 'REJECT') || str_contains($nm, 'RUSAK') || str_contains($cd, 'REJ') || str_contains($nm, 'MANUAL')) {
+                    $subtotal = 0; // Manual karton tidak masuk hitungan HPP
+                    $summary['karton_bekas_qty'] += $qty;
+                    $summary['karton_bekas_nilai'] += 0;
+                } elseif (str_contains($nm, 'PUTERAN') || str_contains($nm, 'BEKAS') || str_contains($cd, 'PUT')) {
                     $summary['karton_bekas_qty'] += $qty;
                     $summary['karton_bekas_nilai'] += $subtotal;
                 } else {
+                    if (str_contains($nm, 'IFM') || $cd === 'KIF00G-BP1') {
+                        $subtotal = round($subtotal / 5, 2); // Khusus IFM baru langsung dibagi 5
+                    }
                     $summary['karton_baru_qty'] += $qty;
                     $summary['karton_baru_nilai'] += $subtotal;
                 }

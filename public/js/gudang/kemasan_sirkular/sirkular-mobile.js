@@ -28,13 +28,65 @@ document.addEventListener('DOMContentLoaded', function () {
         const inpKirim = document.getElementById('m_kirim_qty');
         const kirim = parseFloat(inpKirim?.value) || 0;
 
+        const inpBaru = document.getElementById('m_baru_qty');
         const inpMulus = document.getElementById('m_mulus_qty');
         const inpBmg = document.getElementById('m_bmg_qty');
         const inpRusak = document.getElementById('m_rusak_qty');
 
+        if (inpBaru) inpBaru.value = 0;
         if (inpMulus) inpMulus.value = kirim;
         if (inpBmg) inpBmg.value = 0;
         if (inpRusak) inpRusak.value = 0;
+
+        window.calcMobileSortir();
+    };
+
+    // 4. Reset Semua Inputan Sortir Fisik
+    window.resetAllSortir = function () {
+        const inpBaru = document.getElementById('m_baru_qty');
+        const inpMulus = document.getElementById('m_mulus_qty');
+        const inpBmg = document.getElementById('m_bmg_qty');
+        const inpRusak = document.getElementById('m_rusak_qty');
+
+        if (inpBaru) inpBaru.value = 0;
+        if (inpMulus) inpMulus.value = 0;
+        if (inpBmg) inpBmg.value = 0;
+        if (inpRusak) inpRusak.value = 0;
+
+        window.calcMobileSortir();
+    };
+
+    // 4. Set Siklus Pemakaian Karton (Putaran 1 s/d 5)
+    window.setCycle = function (cycleNum) {
+        const inpPuteran = document.getElementById('m_puteran_ke');
+        if (inpPuteran) inpPuteran.value = cycleNum;
+
+        // Toggle active class on cycle buttons
+        document.querySelectorAll('.cycle-btn').forEach(btn => {
+            const num = parseInt(btn.getAttribute('data-cycle'), 10);
+            if (num === cycleNum) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+
+        const alertBanner = document.getElementById('cycleAlertBanner');
+        const badgeCycleStatus = document.getElementById('badgeCycleStatus');
+
+        if (cycleNum === 5) {
+            if (alertBanner) alertBanner.classList.add('show');
+            if (badgeCycleStatus) {
+                badgeCycleStatus.textContent = 'Maksimal 5x (Pensiun/Afkir)';
+                badgeCycleStatus.className = 'tally-pill pill-danger';
+            }
+        } else {
+            if (alertBanner) alertBanner.classList.remove('show');
+            if (badgeCycleStatus) {
+                badgeCycleStatus.textContent = `Putaran ${cycleNum} (Layak IFM)`;
+                badgeCycleStatus.className = 'tally-pill pill-success';
+            }
+        }
 
         window.calcMobileSortir();
     };
@@ -105,20 +157,32 @@ document.addEventListener('DOMContentLoaded', function () {
         window.calcMobileSortir();
     }
 
-    // 5. Kalkulasi Live Rekonsiliasi & Indikator Selisih
+    // 6. Kalkulasi Live Rekonsiliasi & Indikator Selisih
     window.calcMobileSortir = function () {
         const inpKirim = document.getElementById('m_kirim_qty');
+        const inpBaru = document.getElementById('m_baru_qty');
         const inpMulus = document.getElementById('m_mulus_qty');
         const inpBmg = document.getElementById('m_bmg_qty');
         const inpRusak = document.getElementById('m_rusak_qty');
         const inpKembali = document.getElementById('m_kembali_qty');
+        const inpPuteran = document.getElementById('m_puteran_ke');
+        const inpAfkir5x = document.getElementById('m_afkir_siklus_qty');
 
         const kirim = parseFloat(inpKirim?.value) || 0;
+        const baru = parseFloat(inpBaru?.value) || 0;
         const mulus = parseFloat(inpMulus?.value) || 0;
         const bmg = parseFloat(inpBmg?.value) || 0;
         const rusak = parseFloat(inpRusak?.value) || 0;
+        const cycleNum = parseInt(inpPuteran?.value, 10) || 1;
 
-        const totalKembali = mulus + bmg + rusak;
+        // Jika siklus ke-5 dipilih, nilai mulus dicatat sebagai afkir limit 5x
+        if (cycleNum === 5 && inpAfkir5x) {
+            inpAfkir5x.value = mulus;
+        } else if (inpAfkir5x) {
+            inpAfkir5x.value = 0;
+        }
+
+        const totalKembali = baru + mulus + bmg + rusak;
         if (inpKembali) inpKembali.value = totalKembali;
 
         const selisih = Math.max(0, kirim - totalKembali);

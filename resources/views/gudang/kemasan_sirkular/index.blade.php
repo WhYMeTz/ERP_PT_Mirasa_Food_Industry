@@ -100,16 +100,15 @@
                 <thead>
                     <tr>
                         <th style="width: 45px; text-align: center;">No.</th>
-                        <th style="min-width: 180px;">Dokumen Penerimaan</th>
-                        <th style="min-width: 220px;">Customer &amp; Ref Pengiriman</th>
-                        <th style="min-width: 180px;">Ekspedisi &amp; Armada</th>
-                        <th style="width: 95px; text-align: right;">Terkirim</th>
-                        <th style="width: 95px; text-align: right;">Kembali</th>
-                        <th style="width: 125px; text-align: right;">Mulus (Puteran)</th>
-                        <th style="width: 80px; text-align: right;">BMG</th>
-                        <th style="width: 115px; text-align: right;">Rusak (Reject)</th>
-                        <th style="width: 110px; text-align: center;">Status</th>
-                        <th style="width: 90px; text-align: center;">Aksi</th>
+                        <th style="min-width: 170px;">Dokumen Penerimaan</th>
+                        <th style="min-width: 200px;">Customer &amp; Ref Pengiriman</th>
+                        <th style="min-width: 170px;">Ekspedisi &amp; Armada</th>
+                        <th style="width: 85px; text-align: right;">Terkirim</th>
+                        <th style="width: 85px; text-align: right;">Kembali</th>
+                        <th style="width: 140px; text-align: right;">Puteran (BMG)</th>
+                        <th style="width: 120px; text-align: right;">Rusak (Reject)</th>
+                        <th style="width: 100px; text-align: center;">Status</th>
+                        <th style="width: 85px; text-align: center;">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -153,13 +152,10 @@
                                 {{ number_format($row->total_kembali_qty, 0, ',', '.') }}
                             </td>
                             <td class="td-num td-mulus">
-                                {{ number_format($row->total_mulus_qty, 0, ',', '.') }}
-                            </td>
-                            <td class="td-num td-bmg">
-                                {{ number_format($row->total_bmg_qty, 0, ',', '.') }}
+                                {{ number_format($row->total_mulus_qty + $row->total_bmg_qty, 0, ',', '.') }}
                             </td>
                             <td class="td-num td-rusak">
-                                {{ number_format($row->total_rusak_qty, 0, ',', '.') }}
+                                {{ number_format($row->total_rusak_qty + $row->total_afkir_siklus_qty, 0, ',', '.') }}
                             </td>
                             <td style="text-align: center;">
                                 @if($row->status_cd === 'VOID')

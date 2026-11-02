@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Produksi;
 
 use App\Http\Controllers\Controller;
+use App\Models\Gudang\DatStokBatch;
 use App\Models\MasterData\MstBarang;
 use App\Models\MasterData\MstKaryawan;
 use App\Models\Produksi\DatProduksiHdr;
@@ -157,6 +158,14 @@ class PackagingOperatorController extends Controller
             ->orderBy('barang_nm')
             ->get();
 
+        // 10. Data Stok Karton Sirkular untuk Alokasi Otomatis (Puteran, Baru & Reject Manual)
+        $kartonPuteran = MstBarang::where('barang_cd', 'KIF00G-PUT')->first();
+        $kartonBaru = MstBarang::where('barang_cd', 'KIF00G-BP1')->first();
+        $kartonReject = MstBarang::where('barang_cd', 'KMS-KTN-REJ')->first();
+        $stokKartonPuteran = $kartonPuteran ? (float) DatStokBatch::where('barang_id', $kartonPuteran->barang_id)->where('deleted_st', false)->sum('sisa_qty') : 0;
+        $stokKartonBaru = $kartonBaru ? (float) DatStokBatch::where('barang_id', $kartonBaru->barang_id)->where('deleted_st', false)->sum('sisa_qty') : 0;
+        $stokKartonReject = $kartonReject ? (float) DatStokBatch::where('barang_id', $kartonReject->barang_id)->where('deleted_st', false)->sum('sisa_qty') : 0;
+
         return view('produksi.packaging_operator.create', compact(
             'barangJadiList',
             'wipList',
@@ -167,7 +176,13 @@ class PackagingOperatorController extends Controller
             'kartonList',
             'lakbanList',
             'expiredList',
-            'kemasanLainList'
+            'kemasanLainList',
+            'kartonPuteran',
+            'kartonBaru',
+            'kartonReject',
+            'stokKartonPuteran',
+            'stokKartonBaru',
+            'stokKartonReject'
         ));
     }
 
@@ -185,6 +200,12 @@ class PackagingOperatorController extends Controller
             'produksi_id'                  => 'nullable|exists:dat_produksi_hdr,produksi_id',
             'barang_jadi_id'               => 'required|exists:mst_barang,barang_id',
             'hasil_karton_qty'             => 'required|numeric|min:0.0001',
+            'karton_puteran_qty'           => 'nullable|numeric|min:0',
+            'karton_baru_qty'              => 'nullable|numeric|min:0',
+            'karton_reject_qty'            => 'nullable|numeric|min:0',
+            'karton_puteran_barang_id'     => 'nullable|exists:mst_barang,barang_id',
+            'karton_baru_barang_id'        => 'nullable|exists:mst_barang,barang_id',
+            'karton_reject_barang_id'      => 'nullable|exists:mst_barang,barang_id',
             'lakban_barang_id'             => 'nullable|exists:mst_barang,barang_id',
             'lakban_qty'                   => 'nullable|numeric|min:0',
             'expired_barang_id'            => 'nullable|exists:mst_barang,barang_id',

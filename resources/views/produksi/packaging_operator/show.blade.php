@@ -87,7 +87,33 @@
             </div>
         @endif
 
-        @if ($laporan->kartonBarang)
+        @if ($laporan->karton_puteran_qty > 0 || $laporan->karton_baru_qty > 0 || $laporan->karton_reject_qty > 0)
+            <div style="display: flex; justify-content: space-between; padding: 0.6rem 0; border-bottom: 1px solid var(--pkg-slate-100);">
+                <span style="color: var(--pkg-slate-500);">Karton Dus Terpakai:</span>
+                <div style="text-align: right;">
+                    <strong style="color: var(--pkg-slate-900); display: block;">
+                        Total: {{ number_format($laporan->karton_qty, 0, ',', '.') }} Lembar
+                    </strong>
+                    <div style="font-size: 0.75rem; color: var(--pkg-slate-600); margin-top: 2px;">
+                        @if ($laporan->karton_puteran_qty > 0)
+                            <span style="color: #059669; font-weight: 700;">Puteran: {{ number_format($laporan->karton_puteran_qty, 0, ',', '.') }} Lbr</span>
+                        @endif
+                        @if ($laporan->karton_puteran_qty > 0 && ($laporan->karton_baru_qty > 0 || $laporan->karton_reject_qty > 0))
+                            &bull;
+                        @endif
+                        @if ($laporan->karton_baru_qty > 0)
+                            <span style="color: #0284c7; font-weight: 700;">Baru: {{ number_format($laporan->karton_baru_qty, 0, ',', '.') }} Lbr</span>
+                        @endif
+                        @if ($laporan->karton_baru_qty > 0 && $laporan->karton_reject_qty > 0)
+                            &bull;
+                        @endif
+                        @if ($laporan->karton_reject_qty > 0)
+                            <span style="color: #b45309; font-weight: 700;">Reject/Manual: {{ number_format($laporan->karton_reject_qty, 0, ',', '.') }} Lbr</span>
+                        @endif
+                    </div>
+                </div>
+            </div>
+        @elseif ($laporan->kartonBarang)
             <div style="display: flex; justify-content: space-between; padding: 0.6rem 0; border-bottom: 1px solid var(--pkg-slate-100);">
                 <span style="color: var(--pkg-slate-500);">Karton Dus:</span>
                 <strong style="color: var(--pkg-slate-900);">{{ $laporan->kartonBarang->barang_nm }} ({{ number_format($laporan->karton_qty, 0, ',', '.') }} Lbr)</strong>

@@ -105,7 +105,8 @@
                         <button type="button" id="btnModeSingle" onclick="setPoMode('single')" class="po-mode-btn active">
                             🏢 Satu Supplier (Standar 1 PO)
                         </button>
-                        <button type="button" id="btnModeMulti" onclick="setPoMode('multi')" class="po-mode-btn">
+                        {{-- Tombol Multi-Supplier (Di-hide sementara, fungsi auto-split tetap utuh & siap ditampilkan kembali sewaktu-waktu) --}}
+                        <button type="button" id="btnModeMulti" onclick="setPoMode('multi')" class="po-mode-btn" style="display: none;">
                             ⚡ Multi-Supplier (Auto-Split PO)
                         </button>
                     </div>

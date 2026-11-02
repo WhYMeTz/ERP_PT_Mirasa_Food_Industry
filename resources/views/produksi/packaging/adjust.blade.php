@@ -261,7 +261,22 @@
                         @endphp
                         <tr class="adj-item-row" data-group="KEMASAN">
                             <td>
-                                <div class="adj-item-title">{{ $kem->barang?->barang_nm ?? 'Material Kemasan' }}</div>
+                                <div class="adj-item-title">
+                                    {{ $kem->barang?->barang_nm ?? 'Material Kemasan' }}
+                                    @php
+                                        $bCdA = strtoupper($kem->barang?->barang_cd ?? '');
+                                        $bNmA = strtoupper($kem->barang?->barang_nm ?? '');
+                                    @endphp
+                                    @if($bCdA === 'KIF00G-BP1' || $bCdA === 'KIF00G-PUT' || (str_contains($bNmA, 'IFM') && str_contains($bNmA, 'KARTON')))
+                                        <span style="font-size: 0.685rem; font-weight: 700; color: #0284c7; background: #f0f9ff; border: 1px solid #bae6fd; padding: 1px 5px; border-radius: 4px; margin-left: 4px;">
+                                            Amortisasi 5x
+                                        </span>
+                                    @elseif($bCdA === 'KMS-KTN-REJ' || str_contains($bNmA, 'REJECT') || str_contains($bNmA, 'MANUAL'))
+                                        <span style="font-size: 0.685rem; font-weight: 700; color: #b45309; background: #fffbeb; border: 1px solid #fde68a; padding: 1px 5px; border-radius: 4px; margin-left: 4px;">
+                                            Manual (HPP Rp 0)
+                                        </span>
+                                    @endif
+                                </div>
                                 <div class="adj-item-code">
                                     <span>{{ $kem->barang?->barang_cd ?? '-' }}</span>
                                     &bull; <span>{{ $kem->kategori_bahan }}</span>

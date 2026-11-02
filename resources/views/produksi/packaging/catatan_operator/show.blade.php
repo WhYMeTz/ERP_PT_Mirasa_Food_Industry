@@ -264,8 +264,83 @@
                                 </tr>
                             @endif
 
-                            {{-- 4. Karton Dus --}}
-                            @if ($laporan->kartonBarang && $laporan->karton_qty > 0)
+                            {{-- 4. Karton Dus (Mendukung split Karton Puteran & Karton Baru) --}}
+                            @if ($laporan->karton_puteran_qty > 0)
+                                <tr>
+                                    <td>
+                                        <span class="co-badge-kategori badge-kemasan" style="background: #ecfdf5; color: #047857; border-color: #a7f3d0;">PUTERAN</span>
+                                    </td>
+                                    <td>
+                                        <strong style="color: #0f172a; display: block; font-size: 0.85rem;">
+                                            {{ $laporan->kartonPuteranBarang?->barang_nm ?? 'KARTON POLOS IFM (PUTERAN)' }}
+                                        </strong>
+                                        <div style="font-size: 0.725rem; color: #64748b; margin-top: 2px;">
+                                            Kode: <code>{{ $laporan->kartonPuteranBarang?->barang_cd ?? 'KIF00G-PUT' }}</code> &bull; HPP: Rp 1.748,20
+                                        </div>
+                                    </td>
+                                    <td style="text-align: right;">
+                                        <strong style="color: #059669; font-family: ui-monospace, SFMono-Regular, monospace; font-size: 0.95rem;">
+                                            {{ number_format($laporan->karton_puteran_qty, 0, ',', '.') }}
+                                        </strong>
+                                        <span style="font-size: 0.75rem; color: #64748b; font-weight: 600;">Lbr</span>
+                                    </td>
+                                    <td style="font-size: 0.75rem; color: #059669; font-weight: 600;">
+                                        ✓ Kardus balikan mulus layak pakai
+                                    </td>
+                                </tr>
+                            @endif
+
+                            @if ($laporan->karton_baru_qty > 0)
+                                <tr>
+                                    <td>
+                                        <span class="co-badge-kategori badge-kemasan" style="background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe;">KARTON BARU</span>
+                                    </td>
+                                    <td>
+                                        <strong style="color: #0f172a; display: block; font-size: 0.85rem;">
+                                            {{ $laporan->kartonBaruBarang?->barang_nm ?? 'KARTON POLOS IFM (BARU)' }}
+                                        </strong>
+                                        <div style="font-size: 0.725rem; color: #64748b; margin-top: 2px;">
+                                            Kode: <code>{{ $laporan->kartonBaruBarang?->barang_cd ?? 'KIF00G-BP1' }}</code> &bull; HPP: Rp 8.741,00
+                                        </div>
+                                    </td>
+                                    <td style="text-align: right;">
+                                        <strong style="color: #0284c7; font-family: ui-monospace, SFMono-Regular, monospace; font-size: 0.95rem;">
+                                            {{ number_format($laporan->karton_baru_qty, 0, ',', '.') }}
+                                        </strong>
+                                        <span style="font-size: 0.75rem; color: #64748b; font-weight: 600;">Lbr</span>
+                                    </td>
+                                    <td style="font-size: 0.75rem; color: #0284c7; font-weight: 600;">
+                                        ✓ Kardus baru gres
+                                    </td>
+                                </tr>
+                            @endif
+
+                            @if ($laporan->karton_reject_qty > 0)
+                                <tr>
+                                    <td>
+                                        <span class="co-badge-kategori badge-kemasan" style="background: #fffbeb; color: #b45309; border-color: #fde68a;">REJECT MANUAL</span>
+                                    </td>
+                                    <td>
+                                        <strong style="color: #0f172a; display: block; font-size: 0.85rem;">
+                                            {{ $laporan->kartonRejectBarang?->barang_nm ?? 'KARTON REJECT / MANUAL' }}
+                                        </strong>
+                                        <div style="font-size: 0.725rem; color: #64748b; margin-top: 2px;">
+                                            Kode: <code>{{ $laporan->kartonRejectBarang?->barang_cd ?? 'KMS-KTN-REJ' }}</code> &bull; HPP: Rp 0,00
+                                        </div>
+                                    </td>
+                                    <td style="text-align: right;">
+                                        <strong style="color: #b45309; font-family: ui-monospace, SFMono-Regular, monospace; font-size: 0.95rem;">
+                                            {{ number_format($laporan->karton_reject_qty, 0, ',', '.') }}
+                                        </strong>
+                                        <span style="font-size: 0.75rem; color: #64748b; font-weight: 600;">Lbr</span>
+                                    </td>
+                                    <td style="font-size: 0.75rem; color: #b45309; font-weight: 600;">
+                                        ✓ Kardus afkir/sobek dimanfaatkan utk Produksi Manual
+                                    </td>
+                                </tr>
+                            @endif
+
+                            @if (!$laporan->karton_puteran_qty && !$laporan->karton_baru_qty && !$laporan->karton_reject_qty && $laporan->kartonBarang && $laporan->karton_qty > 0)
                                 <tr>
                                     <td>
                                         <span class="co-badge-kategori badge-kemasan">KARTON</span>

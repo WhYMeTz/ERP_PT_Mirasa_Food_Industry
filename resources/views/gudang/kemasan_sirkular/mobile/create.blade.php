@@ -159,7 +159,7 @@
         </div>
 
         {{-- ========================================================================= --}}
-        {{-- BAGIAN 2: HASIL SORTIR FISIK WADAH KARTON (TALLY INSPEKSI OPERASIONAL)    --}}
+        {{-- BAGIAN 2: HASIL SORTIR FISIK WADAH KARTON (DIRECT INPUT LAPANGAN)         --}}
         {{-- ========================================================================= --}}
         <div class="mobile-form-card" style="margin-top: 1rem;">
             <div class="mobile-form-card-header">
@@ -167,7 +167,18 @@
                     <span class="mobile-card-num-badge">2</span>
                     <h2 class="mobile-card-title-text">Hasil Sortir Fisik Wadah</h2>
                 </div>
-                <span class="qc-field-tag">3 KATEGORI FISIK</span>
+                <span class="qc-field-tag">2 KONDISI FISIK</span>
+            </div>
+
+            {{-- QUICK TOOLBAR (AUTO-FILL DARI DO & RESET) --}}
+            <div class="sortir-toolbar">
+                <button type="button" class="btn-toolbar-autofill" onclick="setAllFromDo()">
+                    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    <span>Samakan dengan DO (<span id="chip_kirim_target">0</span> Box)</span>
+                </button>
+                <button type="button" class="btn-toolbar-reset" onclick="resetAllSortir()">
+                    ↺ Kosongkan
+                </button>
             </div>
 
             <div class="mobile-form-card-body" style="padding: 0;">
@@ -178,79 +189,76 @@
                 <input type="hidden" name="items[0][barang_rusak_id]" value="{{ $barangKartonReject?->barang_id ?? 84 }}">
                 <input type="hidden" name="items[0][kirim_qty]" id="m_kirim_qty" value="{{ old('items.0.kirim_qty', 0) }}">
                 <input type="hidden" name="items[0][kembali_qty]" id="m_kembali_qty" value="{{ old('items.0.kembali_qty', 0) }}">
+                <input type="hidden" name="items[0][baru_qty]" id="m_baru_qty" value="0">
+                <input type="hidden" name="items[0][bmg_qty]" id="m_bmg_qty" value="0">
+                <input type="hidden" name="items[0][puteran_ke]" id="m_puteran_ke" value="{{ old('items.0.puteran_ke', 1) }}">
+                <input type="hidden" name="items[0][afkir_siklus_qty]" id="m_afkir_siklus_qty" value="{{ old('items.0.afkir_siklus_qty', 0) }}">
 
-                {{-- ITEM 1: KARTON PUTERAN / MULUS --}}
+                {{-- ITEM 1: KARTON PUTERAN / BMG (BEKAS MASIH BAGUS) --}}
                 <div class="sortir-tally-row">
                     <div class="sortir-tally-meta">
                         <div class="sortir-tally-title">
-                            <span>1. Karton Layak / Puteran</span>
-                            <span class="tally-pill pill-success">Puteran (Maks. 5x)</span>
+                            <span>1. Karton Puteran (BMG / Layak Pakai)</span>
+                            <span id="badgeCycleStatus" class="tally-pill pill-success">Putaran 1 (Layak IFM)</span>
                         </div>
                         <div class="sortir-tally-desc">
-                            Kardus mulus siap pakai lini IFM &bull; SKU: <span class="font-mono">KIF00G-PUT</span>
+                            Kardus balikan mulus &bull; Bekas Masih Good (Maks. 5x Pakai) &bull; SKU: <span class="font-mono">KIF00G-PUT</span>
                         </div>
                     </div>
 
-                    <div class="sortir-tally-control">
-                        <div class="tally-stepper-group">
-                            <button type="button" class="btn-stepper" onclick="stepQty('m_mulus_qty', -10)" title="Kurang 10">-10</button>
-                            <button type="button" class="btn-stepper" onclick="stepQty('m_mulus_qty', -1)" title="Kurang 1">-</button>
-                            <div class="tally-input-wrap">
-                                <input type="number" inputmode="numeric" step="1" min="0" name="items[0][mulus_qty]" id="m_mulus_qty" value="{{ old('items.0.mulus_qty', 0) }}" class="tally-input" required oninput="calcMobileSortir()">
-                                <span class="tally-unit">PCS</span>
-                            </div>
-                            <button type="button" class="btn-stepper btn-stepper-plus" onclick="stepQty('m_mulus_qty', 1)" title="Tambah 1">+</button>
-                            <button type="button" class="btn-stepper btn-stepper-plus" onclick="stepQty('m_mulus_qty', 10)" title="Tambah 10">+10</button>
+                    {{-- SELECTOR SIKLUS PEMAKAIAN KARTON 1 S/D 5 --}}
+                    <div class="cycle-selector-container">
+                        <div class="cycle-selector-label">
+                            <span>Siklus Pemakaian Kardus:</span>
+                            <span style="font-weight: 800; color: #059669;">Maks. 5x Pakai</span>
                         </div>
-
-                        <div class="tally-preset-chips">
-                            <button type="button" class="chip-preset chip-preset-action" onclick="setAllFromDo()">
-                                Samakan DO (<span id="chip_kirim_target">0</span>)
+                        <div class="cycle-btn-group">
+                            <button type="button" class="cycle-btn active" data-cycle="1" onclick="setCycle(1)">
+                                <span class="cycle-btn-num">1x</span>
+                                <span class="cycle-btn-sub">Puteran 1</span>
                             </button>
-                            <button type="button" class="chip-preset" onclick="stepQty('m_mulus_qty', 50)">+50</button>
-                            <button type="button" class="chip-preset" onclick="stepQty('m_mulus_qty', 100)">+100</button>
-                            <button type="button" class="chip-preset chip-preset-reset" onclick="setDirectQty('m_mulus_qty', 0)">Reset</button>
+                            <button type="button" class="cycle-btn" data-cycle="2" onclick="setCycle(2)">
+                                <span class="cycle-btn-num">2x</span>
+                                <span class="cycle-btn-sub">Puteran 2</span>
+                            </button>
+                            <button type="button" class="cycle-btn" data-cycle="3" onclick="setCycle(3)">
+                                <span class="cycle-btn-num">3x</span>
+                                <span class="cycle-btn-sub">Puteran 3</span>
+                            </button>
+                            <button type="button" class="cycle-btn" data-cycle="4" onclick="setCycle(4)">
+                                <span class="cycle-btn-num">4x</span>
+                                <span class="cycle-btn-sub">Puteran 4</span>
+                            </button>
+                            <button type="button" class="cycle-btn cycle-max" data-cycle="5" onclick="setCycle(5)" title="Batas Maksimal Pemakaian (Auto-Reject)">
+                                <span class="cycle-btn-num">5x</span>
+                                <span class="cycle-btn-sub">Limit Max</span>
+                            </button>
                         </div>
-                    </div>
-                </div>
 
-                {{-- ITEM 2: KARTON BMG --}}
-                <div class="sortir-tally-row">
-                    <div class="sortir-tally-meta">
-                        <div class="sortir-tally-title">
-                            <span>2. Karton BMG</span>
-                            <span class="tally-pill pill-indigo">Kelompok BMG</span>
-                        </div>
-                        <div class="sortir-tally-desc">
-                            Karton balikan khusus kelompok BMG &bull; SKU: <span class="font-mono">KIF00G-BMG</span>
-                        </div>
-                    </div>
-
-                    <div class="sortir-tally-control">
-                        <div class="tally-stepper-group">
-                            <button type="button" class="btn-stepper" onclick="stepQty('m_bmg_qty', -10)" title="Kurang 10">-10</button>
-                            <button type="button" class="btn-stepper" onclick="stepQty('m_bmg_qty', -1)" title="Kurang 1">-</button>
-                            <div class="tally-input-wrap">
-                                <input type="number" inputmode="numeric" step="1" min="0" name="items[0][bmg_qty]" id="m_bmg_qty" value="{{ old('items.0.bmg_qty', 0) }}" class="tally-input" oninput="calcMobileSortir()">
-                                <span class="tally-unit">PCS</span>
+                        {{-- PERINGATAN LIMIT MAKSIMAL 5X --}}
+                        <div id="cycleAlertBanner" class="cycle-alert-banner">
+                            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink: 0; margin-top: 1px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                            <div>
+                                <strong>⚠️ Batas SOP 5x Pemakaian Tercapai!</strong><br>
+                                Kardus putaran ke-5 tidak boleh dipakai lagi untuk pengiriman customer. Kuantitas ini otomatis dialihkan ke <strong>Karton Reject / Manual (KMS-KTN-REJ)</strong>.
                             </div>
-                            <button type="button" class="btn-stepper btn-stepper-plus" onclick="stepQty('m_bmg_qty', 1)" title="Tambah 1">+</button>
-                            <button type="button" class="btn-stepper btn-stepper-plus" onclick="stepQty('m_bmg_qty', 10)" title="Tambah 10">+10</button>
                         </div>
+                    </div>
 
-                        <div class="tally-preset-chips">
-                            <button type="button" class="chip-preset" onclick="stepQty('m_bmg_qty', 10)">+10</button>
-                            <button type="button" class="chip-preset" onclick="stepQty('m_bmg_qty', 25)">+25</button>
-                            <button type="button" class="chip-preset chip-preset-reset" onclick="setDirectQty('m_bmg_qty', 0)">Reset</button>
+                    <div class="direct-input-bar">
+                        <label for="m_mulus_qty" class="direct-input-label">Jumlah Fisik Puteran / BMG Diterima:</label>
+                        <div class="direct-input-suffix-wrap">
+                            <input type="number" inputmode="numeric" step="1" min="0" name="items[0][mulus_qty]" id="m_mulus_qty" value="{{ old('items.0.mulus_qty', 0) }}" class="direct-input-field" placeholder="0" oninput="calcMobileSortir()" onfocus="this.select()">
+                            <span class="direct-input-suffix">PCS</span>
                         </div>
                     </div>
                 </div>
 
-                {{-- ITEM 3: KARTON REJECT / RUSAK --}}
+                {{-- ITEM 2: KARTON REJECT / RUSAK FISIK --}}
                 <div class="sortir-tally-row" style="border-bottom: none;">
                     <div class="sortir-tally-meta">
                         <div class="sortir-tally-title">
-                            <span>3. Karton Reject / Rusak</span>
+                            <span>2. Karton Reject / Rusak Fisik</span>
                             <span class="tally-pill pill-danger">Lini Manual (Rp 0)</span>
                         </div>
                         <div class="sortir-tally-desc">
@@ -258,22 +266,11 @@
                         </div>
                     </div>
 
-                    <div class="sortir-tally-control">
-                        <div class="tally-stepper-group">
-                            <button type="button" class="btn-stepper" onclick="stepQty('m_rusak_qty', -10)" title="Kurang 10">-10</button>
-                            <button type="button" class="btn-stepper" onclick="stepQty('m_rusak_qty', -1)" title="Kurang 1">-</button>
-                            <div class="tally-input-wrap">
-                                <input type="number" inputmode="numeric" step="1" min="0" name="items[0][rusak_qty]" id="m_rusak_qty" value="{{ old('items.0.rusak_qty', 0) }}" class="tally-input" required oninput="calcMobileSortir()">
-                                <span class="tally-unit">PCS</span>
-                            </div>
-                            <button type="button" class="btn-stepper btn-stepper-plus" onclick="stepQty('m_rusak_qty', 1)" title="Tambah 1">+</button>
-                            <button type="button" class="btn-stepper btn-stepper-plus" onclick="stepQty('m_rusak_qty', 10)" title="Tambah 10">+10</button>
-                        </div>
-
-                        <div class="tally-preset-chips">
-                            <button type="button" class="chip-preset" onclick="stepQty('m_rusak_qty', 10)">+10</button>
-                            <button type="button" class="chip-preset" onclick="stepQty('m_rusak_qty', 25)">+25</button>
-                            <button type="button" class="chip-preset chip-preset-reset" onclick="setDirectQty('m_rusak_qty', 0)">Reset</button>
+                    <div class="direct-input-bar">
+                        <label for="m_rusak_qty" class="direct-input-label">Jumlah Fisik Rusak / Sobek:</label>
+                        <div class="direct-input-suffix-wrap">
+                            <input type="number" inputmode="numeric" step="1" min="0" name="items[0][rusak_qty]" id="m_rusak_qty" value="{{ old('items.0.rusak_qty', 0) }}" class="direct-input-field" placeholder="0" oninput="calcMobileSortir()" onfocus="this.select()">
+                            <span class="direct-input-suffix">PCS</span>
                         </div>
                     </div>
                 </div>

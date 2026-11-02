@@ -119,9 +119,11 @@ class KemasanSirkularService
 
             $totalKirim = 0;
             $totalKembali = 0;
+            $totalBaru = 0;
             $totalMulus = 0;
             $totalBmg = 0;
             $totalRusak = 0;
+            $totalAfkirSiklus = 0;
             $totalSelisih = 0;
 
             $items = $data['items'] ?? [];
@@ -160,21 +162,28 @@ class KemasanSirkularService
                 $barangRusakId = !empty($row['barang_rusak_id']) ? (int)$row['barang_rusak_id'] : ($defaultBarangRusak?->barang_id ?? null);
 
                 $kirimQty = (float) ($row['kirim_qty'] ?? 0);
-                $kembaliQty = (float) ($row['kembali_qty'] ?? 0);
+                $baruQty = (float) ($row['baru_qty'] ?? 0);
                 $mulusQty = (float) ($row['mulus_qty'] ?? 0);
+                $puteranKe = (int) ($row['puteran_ke'] ?? 1);
                 $bmgQty = (float) ($row['bmg_qty'] ?? 0);
                 $rusakQty = (float) ($row['rusak_qty'] ?? 0);
+                $afkirSiklusQty = (float) ($row['afkir_siklus_qty'] ?? 0);
 
-                // Validasi: mulus + bmg + rusak = kembali
-                if (abs(($mulusQty + $bmgQty + $rusakQty) - $kembaliQty) > 0.01) {
-                    $kembaliQty = $mulusQty + $bmgQty + $rusakQty;
+                // Jika puteran_ke >= 5 dan dicatat di mulus, otomatis alihkan ke afkir siklus 5x
+                if ($puteranKe >= 5 && $mulusQty > 0) {
+                    $afkirSiklusQty += $mulusQty;
+                    $mulusQty = 0;
                 }
 
+                $kembaliQty = $baruQty + $mulusQty + $bmgQty + $rusakQty + $afkirSiklusQty;
                 $selisihQty = max(0, $kirimQty - $kembaliQty);
 
-                $batchMulus = $mulusQty > 0 ? "PUT-{$dateSuffix}-" . str_pad((string)($idx + 1), 2, '0', STR_PAD_LEFT) : null;
-                $batchBmg = $bmgQty > 0 ? "BMG-{$dateSuffix}-" . str_pad((string)($idx + 1), 2, '0', STR_PAD_LEFT) : null;
-                $batchRusak = $rusakQty > 0 ? "REJ-{$dateSuffix}-" . str_pad((string)($idx + 1), 2, '0', STR_PAD_LEFT) : null;
+                $seqStr = str_pad((string)($idx + 1), 2, '0', STR_PAD_LEFT);
+                $batchBaru = $baruQty > 0 ? "BARU-{$dateSuffix}-{$seqStr}" : null;
+                $batchMulus = $mulusQty > 0 ? "PUT-P{$puteranKe}-{$dateSuffix}-{$seqStr}" : null;
+                $batchBmg = $bmgQty > 0 ? "BMG-{$dateSuffix}-{$seqStr}" : null;
+                $batchRusak = $rusakQty > 0 ? "REJ-{$dateSuffix}-{$seqStr}" : null;
+                $batchAfkir5x = $afkirSiklusQty > 0 ? "AFK5-{$dateSuffix}-{$seqStr}" : null;
 
                 DatKemasanSirkularDtl::create([
                     'kemasan_sirkular_id' => $header->kemasan_sirkular_id,
@@ -184,9 +193,12 @@ class KemasanSirkularService
                     'barang_rusak_id'     => $barangRusakId,
                     'kirim_qty'           => $kirimQty,
                     'kembali_qty'         => $kembaliQty,
+                    'baru_qty'            => $baruQty,
                     'mulus_qty'           => $mulusQty,
+                    'puteran_ke'          => $puteranKe,
                     'bmg_qty'             => $bmgQty,
                     'rusak_qty'           => $rusakQty,
+                    'afkir_siklus_qty'    => $afkirSiklusQty,
                     'selisih_qty'         => $selisihQty,
                     'batch_no_mulus'      => $batchMulus,
                     'batch_no_bmg'        => $batchBmg,
@@ -196,7 +208,23 @@ class KemasanSirkularService
                     'updated_by'          => $user,
                 ]);
 
-                // MUTASI FISIK 1: Tambah Stok Karton Puteran (Mulus) ke Gudang
+                // MUTASI FISIK 1: Tambah Stok Karton Masih Baru ke Gudang (Harga Baru Rp 8.741)
+                if ($baruQty > 0 && $barangAsalId) {
+                    $hargaBaru = (float) ($defaultBarangAsal?->harga_beli_standar ?? 8741.00);
+                    $this->stokService->addStock(
+                        gudangId: $gudangId,
+                        barangId: $barangAsalId,
+                        batchNo: $batchBaru,
+                        qty: $baruQty,
+                        expiredTgl: null,
+                        dokumenNo: $sirkularNo,
+                        keterangan: "Penerimaan Kemasan Sirkular Kondisi Baru (Doc: {$sirkularNo})",
+                        hargaSatuan: $hargaBaru,
+                        gradeCd: 'A'
+                    );
+                }
+
+                // MUTASI FISIK 2: Tambah Stok Karton Puteran Layak (Putaran 1 s/d 4)
                 if ($mulusQty > 0 && $barangMulusId) {
                     $hargaStandar = (float) ($defaultBarangMulus?->harga_beli_standar ?? 1748.20);
                     $this->stokService->addStock(
@@ -206,13 +234,28 @@ class KemasanSirkularService
                         qty: $mulusQty,
                         expiredTgl: null,
                         dokumenNo: $sirkularNo,
-                        keterangan: "Balikan Kemasan Sirkular Mulus (Doc: {$sirkularNo})",
+                        keterangan: "Balikan Kemasan Sirkular Mulus Putaran Ke-{$puteranKe} (Doc: {$sirkularNo})",
                         hargaSatuan: $hargaStandar,
                         gradeCd: 'A'
                     );
                 }
 
-                // MUTASI FISIK 2: Tambah Stok Karton BMG ke Gudang
+                // MUTASI FISIK 3: Tambah Stok Karton Afkir Limit 5x Pemakaian (Otomatis Masuk Reject)
+                if ($afkirSiklusQty > 0 && $barangRusakId) {
+                    $this->stokService->addStock(
+                        gudangId: $gudangId,
+                        barangId: $barangRusakId,
+                        batchNo: $batchAfkir5x,
+                        qty: $afkirSiklusQty,
+                        expiredTgl: null,
+                        dokumenNo: $sirkularNo,
+                        keterangan: "Balikan Kemasan Sirkular Pensiun/Afkir Limit 5x Pemakaian (Doc: {$sirkularNo})",
+                        hargaSatuan: 0.00,
+                        gradeCd: 'R'
+                    );
+                }
+
+                // MUTASI FISIK 4: Tambah Stok Karton BMG ke Gudang
                 if ($bmgQty > 0 && $barangBmgId) {
                     $this->stokService->addStock(
                         gudangId: $gudangId,
@@ -227,7 +270,7 @@ class KemasanSirkularService
                     );
                 }
 
-                // MUTASI FISIK 3: Tambah Stok Karton Reject Manual (Rusak) ke Gudang
+                // MUTASI FISIK 5: Tambah Stok Karton Reject Manual (Rusak Fisik) ke Gudang
                 if ($rusakQty > 0 && $barangRusakId) {
                     $this->stokService->addStock(
                         gudangId: $gudangId,
@@ -236,7 +279,7 @@ class KemasanSirkularService
                         qty: $rusakQty,
                         expiredTgl: null,
                         dokumenNo: $sirkularNo,
-                        keterangan: "Balikan Kemasan Sirkular Rusak / Reject Manual (Doc: {$sirkularNo})",
+                        keterangan: "Balikan Kemasan Sirkular Rusak Fisik / Sobek (Doc: {$sirkularNo})",
                         hargaSatuan: 0.00,
                         gradeCd: 'R'
                     );
@@ -244,19 +287,23 @@ class KemasanSirkularService
 
                 $totalKirim += $kirimQty;
                 $totalKembali += $kembaliQty;
+                $totalBaru += $baruQty;
                 $totalMulus += $mulusQty;
                 $totalBmg += $bmgQty;
                 $totalRusak += $rusakQty;
+                $totalAfkirSiklus += $afkirSiklusQty;
                 $totalSelisih += $selisihQty;
             }
 
             $header->update([
-                'total_kirim_qty'   => $totalKirim,
-                'total_kembali_qty' => $totalKembali,
-                'total_mulus_qty'   => $totalMulus,
-                'total_bmg_qty'     => $totalBmg,
-                'total_rusak_qty'   => $totalRusak,
-                'total_selisih_qty' => $totalSelisih,
+                'total_kirim_qty'        => $totalKirim,
+                'total_kembali_qty'      => $totalKembali,
+                'total_baru_qty'         => $totalBaru,
+                'total_mulus_qty'        => $totalMulus,
+                'total_bmg_qty'          => $totalBmg,
+                'total_rusak_qty'        => $totalRusak,
+                'total_afkir_siklus_qty' => $totalAfkirSiklus,
+                'total_selisih_qty'      => $totalSelisih,
             ]);
 
             return $header->fresh(['customer', 'pengeluaran', 'gudang', 'details']);
@@ -277,6 +324,19 @@ class KemasanSirkularService
             }
 
             foreach ($header->details as $dtl) {
+                // Rollback stok baru
+                if ($dtl->baru_qty > 0 && $dtl->barang_asal_id) {
+                    $this->stokService->deductStock(
+                        gudangId: $header->gudang_id,
+                        barangId: $dtl->barang_asal_id,
+                        batchNo: "BARU-" . Carbon::parse($header->sirkular_tgl)->format('ymd') . "-01",
+                        qty: (float) $dtl->baru_qty,
+                        dokumenNo: $header->sirkular_no,
+                        keterangan: "Rollback Pembatalan (Void) Penerimaan Kemasan Baru: {$reason}",
+                        gradeCd: 'A'
+                    );
+                }
+
                 // Rollback stok mulus
                 if ($dtl->mulus_qty > 0 && $dtl->barang_mulus_id) {
                     $this->stokService->deductStock(
@@ -285,7 +345,7 @@ class KemasanSirkularService
                         batchNo: $dtl->batch_no_mulus,
                         qty: (float) $dtl->mulus_qty,
                         dokumenNo: $header->sirkular_no,
-                        keterangan: "Rollback Pembatalan (Void) Penerimaan Kemasan Sirkular: {$reason}",
+                        keterangan: "Rollback Pembatalan (Void) Penerimaan Kemasan Sirkular Mulus: {$reason}",
                         gradeCd: 'A'
                     );
                 }
@@ -303,7 +363,7 @@ class KemasanSirkularService
                     );
                 }
 
-                // Rollback stok reject
+                // Rollback stok reject fisik
                 if ($dtl->rusak_qty > 0 && $dtl->barang_rusak_id) {
                     $this->stokService->deductStock(
                         gudangId: $header->gudang_id,
@@ -311,7 +371,20 @@ class KemasanSirkularService
                         batchNo: $dtl->batch_no_rusak,
                         qty: (float) $dtl->rusak_qty,
                         dokumenNo: $header->sirkular_no,
-                        keterangan: "Rollback Pembatalan (Void) Penerimaan Kemasan Sirkular: {$reason}",
+                        keterangan: "Rollback Pembatalan (Void) Penerimaan Kemasan Sirkular Reject: {$reason}",
+                        gradeCd: 'R'
+                    );
+                }
+
+                // Rollback stok afkir limit 5x
+                if ($dtl->afkir_siklus_qty > 0 && $dtl->barang_rusak_id) {
+                    $this->stokService->deductStock(
+                        gudangId: $header->gudang_id,
+                        barangId: $dtl->barang_rusak_id,
+                        batchNo: "AFK5-" . Carbon::parse($header->sirkular_tgl)->format('ymd') . "-01",
+                        qty: (float) $dtl->afkir_siklus_qty,
+                        dokumenNo: $header->sirkular_no,
+                        keterangan: "Rollback Pembatalan (Void) Penerimaan Kemasan Afkir Limit 5x: {$reason}",
                         gradeCd: 'R'
                     );
                 }

@@ -40,7 +40,13 @@ class DatLaporanKemasOperator extends Model
         'plastik_qty',
         'plastik_rusak_pcs',
         'karton_barang_id',
+        'karton_puteran_barang_id',
+        'karton_baru_barang_id',
+        'karton_reject_barang_id',
         'karton_qty',
+        'karton_puteran_qty',
+        'karton_baru_qty',
+        'karton_reject_qty',
         'karton_rusak_lembar',
         'lakban_atas_gr',
         'lakban_bawah_gr',
@@ -73,6 +79,9 @@ class DatLaporanKemasOperator extends Model
         'plastik_qty'            => 'float',
         'plastik_rusak_pcs'      => 'float',
         'karton_qty'             => 'float',
+        'karton_puteran_qty'     => 'float',
+        'karton_baru_qty'        => 'float',
+        'karton_reject_qty'      => 'float',
         'karton_rusak_lembar'    => 'float',
         'lakban_atas_gr'         => 'float',
         'lakban_bawah_gr'        => 'float',
@@ -127,6 +136,21 @@ class DatLaporanKemasOperator extends Model
     public function kartonBarang(): BelongsTo
     {
         return $this->belongsTo(MstBarang::class, 'karton_barang_id', 'barang_id');
+    }
+
+    public function kartonPuteranBarang(): BelongsTo
+    {
+        return $this->belongsTo(MstBarang::class, 'karton_puteran_barang_id', 'barang_id');
+    }
+
+    public function kartonBaruBarang(): BelongsTo
+    {
+        return $this->belongsTo(MstBarang::class, 'karton_baru_barang_id', 'barang_id');
+    }
+
+    public function kartonRejectBarang(): BelongsTo
+    {
+        return $this->belongsTo(MstBarang::class, 'karton_reject_barang_id', 'barang_id');
     }
 
     public function lakbanBarang(): BelongsTo

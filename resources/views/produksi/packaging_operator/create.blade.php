@@ -260,15 +260,73 @@
             </div>
         </div>
 
-        {{-- B. Karton Box Dus --}}
+        {{-- B. Karton Box Dus (Sirkular Puteran vs Baru FIFO) --}}
         <div class="pkg-sub-card">
             <div class="pkg-sub-card-header">
                 <span class="pkg-sub-card-title">
                     B. Karton Box (Dus Luar)
                 </span>
+                <span id="badgeKartonTotal" class="pkg-badge-ruby" style="background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe;">
+                    Total: <span id="lbl_karton_total_dipakai">{{ old('karton_qty', 0) }}</span> Lembar
+                </span>
             </div>
-            <div class="pkg-form-group">
-                <select id="karton_barang_id" name="karton_barang_id" class="pkg-select">
+
+            {{-- Toolbar Cepat: Tombol FIFO --}}
+            <div class="pkg-karton-toolbar">
+                <button type="button" class="pkg-btn-autofill-fifo" onclick="autoAllocateKartonFifo()" title="Otomatis gunakan stok Puteran terlebih dahulu (FIFO)">
+                    <span>⚡ Pakai Puteran Dulu (FIFO)</span>
+                </button>
+                <button type="button" class="pkg-toggle-custom-btn" id="btnToggleKarton" onclick="toggleCustomKarton()">
+                    📦 Gunakan Dus Khusus / Non-IFM
+                </button>
+            </div>
+
+            {{-- 1. Mode Sirkular IFM: Input Berdampingan Karton Puteran & Karton Baru --}}
+            <div id="kartonSirkularGrid" class="pkg-karton-card-grid">
+                {{-- Input 1: Karton Puteran --}}
+                <div class="pkg-karton-box-item" style="border-left: 3px solid #10b981;">
+                    <div class="pkg-karton-box-header">
+                        <span class="pkg-karton-box-title" style="color: #065f46;">Karton Puteran</span>
+                        <span class="pkg-stock-badge green" title="Sisa Stok Gudang">
+                            Stok: {{ number_format($stokKartonPuteran, 0, ',', '.') }}
+                        </span>
+                    </div>
+                    <input type="hidden" name="karton_puteran_barang_id" value="{{ $kartonPuteran?->barang_id ?? 82 }}">
+                    <div style="font-size: 0.7rem; color: #64748b; margin-bottom: 0.35rem;">Karton balikan layak (Maks. 5x)</div>
+                    <input type="number" step="any" min="0" id="karton_puteran_qty" name="karton_puteran_qty" class="pkg-input" placeholder="0" value="{{ old('karton_puteran_qty', 0) }}" style="font-weight: 700; color: #065f46;">
+                </div>
+
+                {{-- Input 2: Karton Baru --}}
+                <div class="pkg-karton-box-item" style="border-left: 3px solid #0284c7;">
+                    <div class="pkg-karton-box-header">
+                        <span class="pkg-karton-box-title" style="color: #0369a1;">Karton Baru</span>
+                        <span class="pkg-stock-badge blue" title="Sisa Stok Gudang">
+                            Stok: {{ number_format($stokKartonBaru, 0, ',', '.') }}
+                        </span>
+                    </div>
+                    <input type="hidden" name="karton_baru_barang_id" value="{{ $kartonBaru?->barang_id ?? 29 }}">
+                    <div style="font-size: 0.7rem; color: #64748b; margin-bottom: 0.35rem;">Karton baru belum terpakai</div>
+                    <input type="number" step="any" min="0" id="karton_baru_qty" name="karton_baru_qty" class="pkg-input" placeholder="0" value="{{ old('karton_baru_qty', 0) }}" style="font-weight: 700; color: #0369a1;">
+                </div>
+
+                {{-- Input 3: Karton Reject / Manual --}}
+                <div class="pkg-karton-box-item" style="border-left: 3px solid #f59e0b;">
+                    <div class="pkg-karton-box-header">
+                        <span class="pkg-karton-box-title" style="color: #b45309;">Karton Reject</span>
+                        <span class="pkg-stock-badge amber" title="Sisa Stok Gudang">
+                            Stok: {{ number_format($stokKartonReject, 0, ',', '.') }}
+                        </span>
+                    </div>
+                    <input type="hidden" name="karton_reject_barang_id" value="{{ $kartonReject?->barang_id ?? 84 }}">
+                    <div style="font-size: 0.7rem; color: #64748b; margin-bottom: 0.35rem;">Biasa utk Produksi Manual (HPP Rp 0)</div>
+                    <input type="number" step="any" min="0" id="karton_reject_qty" name="karton_reject_qty" class="pkg-input" placeholder="0" value="{{ old('karton_reject_qty', 0) }}" style="font-weight: 700; color: #b45309;">
+                </div>
+            </div>
+
+            {{-- 2. Mode Dus Khusus / Non-IFM (Hidden by default) --}}
+            <div id="kartonCustomWrapper" style="display: none; margin-bottom: 0.75rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.75rem;">
+                <label class="pkg-label" for="karton_barang_id">Pilih Master Dus Khusus / Regulir:</label>
+                <select id="karton_barang_id" name="karton_barang_id" class="pkg-select" style="margin-bottom: 0.5rem;">
                     <option value="">-- Pilih Dus Karton --</option>
                     @foreach ($kartonList as $ktn)
                         <option value="{{ $ktn->barang_id }}" {{ old('karton_barang_id') == $ktn->barang_id ? 'selected' : '' }}>
@@ -276,16 +334,15 @@
                         </option>
                     @endforeach
                 </select>
+                <label class="pkg-label" for="karton_custom_qty">Jumlah Pemakaian (Lembar):</label>
+                <input type="number" step="any" min="0" id="karton_custom_qty" class="pkg-input" placeholder="0" oninput="updateKartonTotal()">
             </div>
-            <div class="pkg-grid-2">
-                <div>
-                    <label class="pkg-label" for="karton_qty">Jml Dus (Lembar)</label>
-                    <input type="number" step="any" min="0" id="karton_qty" name="karton_qty" class="pkg-input" value="{{ old('karton_qty', 0) }}">
-                </div>
-                <div>
-                    <label class="pkg-label pkg-label-req" for="karton_rusak_lembar">Dus Rusak (Lembar)</label>
-                    <input type="number" step="any" min="0" id="karton_rusak_lembar" name="karton_rusak_lembar" class="pkg-input pkg-input-danger" placeholder="Afkir" value="{{ old('karton_rusak_lembar', 0) }}">
-                </div>
+
+            {{-- Total Karton Terhitung & Dus Rusak / Afkir --}}
+            <input type="hidden" id="karton_qty" name="karton_qty" value="{{ old('karton_qty', 0) }}">
+            <div>
+                <label class="pkg-label pkg-label-req" for="karton_rusak_lembar">Dus Rusak / Sobek Saat Packing (Afkir Lembar):</label>
+                <input type="number" step="any" min="0" id="karton_rusak_lembar" name="karton_rusak_lembar" class="pkg-input pkg-input-danger" placeholder="0" value="{{ old('karton_rusak_lembar', 0) }}">
             </div>
         </div>
 
@@ -388,6 +445,10 @@
 
 @push('scripts')
     <script>
+        window.stokKartonPuteranAvailable = {{ (float) $stokKartonPuteran }};
+        window.stokKartonBaruAvailable = {{ (float) $stokKartonBaru }};
+        window.stokKartonRejectAvailable = {{ (float) $stokKartonReject }};
+
         window.kemasanLainOptions = [
             @foreach ($kemasanLainList as $kml)
                 {

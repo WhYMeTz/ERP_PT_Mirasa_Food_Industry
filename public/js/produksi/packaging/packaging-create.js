@@ -660,7 +660,20 @@ function onManualBarangChange(selectEl, idx) {
 
     const kategori = opt.getAttribute('data-kategori') || 'KEMASAN';
     const satuan = opt.getAttribute('data-satuan') || 'PCS';
-    const harga = parseFloat(opt.getAttribute('data-harga')) || 0;
+    let harga = parseFloat(opt.getAttribute('data-harga')) || 0;
+    const kodeBrg = (opt.getAttribute('data-kode') || '').toUpperCase();
+    const namaBrg = (opt.getAttribute('data-nama') || '').toUpperCase();
+
+    // POIN 28: Rule Amortisasi HPP Karton Khusus IFM (Dibagi 5) & Karton Manual (Rp 0)
+    if (kodeBrg === 'KMS-KTN-REJ' || namaBrg.includes('REJECT') || namaBrg.includes('MANUAL')) {
+        harga = 0; // Manual karton tidak masuk hitungan HPP
+    } else if (kodeBrg === 'KIF00G-BP1' || (namaBrg.includes('IFM') && namaBrg.includes('KARTON'))) {
+        if (harga > 2000) {
+            harga = Math.round((harga / 5) * 100) / 100; // Khusus IFM langsung dibagi 5 = Rp 1.748,20
+        }
+    } else if (kodeBrg === 'KIF00G-PUT') {
+        harga = 1748.20;
+    }
 
     if (catBadge) {
         catBadge.className = 'cat-badge';
@@ -928,6 +941,11 @@ function findMasterKemasan(barangId) {
     return (window.masterKemasanList || []).find(m => parseInt(m.barang_id) === parseInt(barangId)) || null;
 }
 
+function findMasterKemasanByCode(code) {
+    if (!code) return null;
+    return (window.masterKemasanList || []).find(m => (m.barang_cd || '').toUpperCase() === code.toUpperCase()) || null;
+}
+
 function applyOperatorLaporan(itemOrIdx) {
     let item = null;
     if (typeof itemOrIdx === 'object' && itemOrIdx !== null) {
@@ -1138,8 +1156,84 @@ function buildMaterialRowsFromOperator(item) {
         });
     }
 
-    // 4. Karton Dus (Box)
-    if (item.karton_barang_id && parseFloat(item.karton_qty) > 0) {
+    // 4. Karton Dus (Mendukung split Karton Puteran, Karton Baru & Karton Reject Manual)
+    const puteranQty = parseFloat(item.karton_puteran_qty) || 0;
+    const baruQty = parseFloat(item.karton_baru_qty) || 0;
+    const rejectQty = parseFloat(item.karton_reject_qty) || 0;
+
+    if (puteranQty > 0 || baruQty > 0 || rejectQty > 0) {
+        if (puteranQty > 0) {
+            const puteranMaster = findMasterKemasan(item.karton_puteran_barang_id) || findMasterKemasanByCode('KIF00G-PUT');
+            const puteranObj = item.karton_puteran_barang || puteranMaster;
+            const bId = item.karton_puteran_barang_id || puteranObj?.barang_id || puteranMaster?.barang_id || 82;
+            const bNm = puteranObj?.barang_nm || puteranMaster?.barang_nm || 'KARTON POLOS IFM (PUTERAN)';
+            const bCd = puteranObj?.barang_cd || puteranMaster?.barang_cd || 'KIF00G-PUT';
+            const harga = parseFloat(puteranMaster?.harga_standar || puteranObj?.harga_beli_standar || 1748.20);
+
+            addMaterialRow({
+                kategori_bahan: 'KEMASAN',
+                barang_id: bId,
+                barang_nm: bNm,
+                barang_cd: bCd,
+                satuan_cd: 'LEMBAR',
+                qty_standar: puteranQty,
+                qty_aktual: puteranQty,
+                harga_satuan: harga,
+                subtotal_nilai: puteranQty * harga,
+                batch_no: '',
+                is_wip: false
+            });
+        }
+        if (baruQty > 0) {
+            const baruMaster = findMasterKemasan(item.karton_baru_barang_id) || findMasterKemasanByCode('KIF00G-BP1');
+            const baruObj = item.karton_baru_barang || baruMaster;
+            const bId = item.karton_baru_barang_id || baruObj?.barang_id || baruMaster?.barang_id || 29;
+            const bNm = baruObj?.barang_nm || baruMaster?.barang_nm || 'KARTON POLOS IFM (BARU)';
+            const bCd = baruObj?.barang_cd || baruMaster?.barang_cd || 'KIF00G-BP1';
+            
+            // POIN 28: Karton khusus IFM langsung dibagi 5 (Amortisasi 5x = Rp 1.748,20)
+            const hargaBeliPenuh = parseFloat(baruMaster?.harga_standar || baruObj?.harga_beli_standar || 8741.00);
+            const harga = Math.round((hargaBeliPenuh / 5) * 100) / 100;
+
+            addMaterialRow({
+                kategori_bahan: 'KEMASAN',
+                barang_id: bId,
+                barang_nm: bNm + ' (Amortisasi 5x: Rp 1.748,20/Lbr)',
+                barang_cd: bCd,
+                satuan_cd: 'LEMBAR',
+                qty_standar: baruQty,
+                qty_aktual: baruQty,
+                harga_satuan: harga,
+                subtotal_nilai: baruQty * harga,
+                batch_no: '',
+                is_wip: false
+            });
+        }
+        if (rejectQty > 0) {
+            const rejectMaster = findMasterKemasan(item.karton_reject_barang_id) || findMasterKemasanByCode('KMS-KTN-REJ');
+            const rejectObj = item.karton_reject_barang || rejectMaster;
+            const bId = item.karton_reject_barang_id || rejectObj?.barang_id || rejectMaster?.barang_id || 84;
+            const bNm = rejectObj?.barang_nm || rejectMaster?.barang_nm || 'KARTON REJECT / RUSAK (MANUAL)';
+            const bCd = rejectObj?.barang_cd || rejectMaster?.barang_cd || 'KMS-KTN-REJ';
+            // POIN 28: Manual karton tidak masuk hitungan HPP (Rp 0)
+            const harga = 0.00;
+
+            addMaterialRow({
+                kategori_bahan: 'KEMASAN',
+                barang_id: bId,
+                barang_nm: bNm + ' (Manual: HPP Rp 0)',
+                barang_cd: bCd,
+                satuan_cd: 'LEMBAR',
+                qty_standar: rejectQty,
+                qty_aktual: rejectQty,
+                harga_satuan: harga,
+                subtotal_nilai: 0,
+                batch_no: '',
+                is_wip: false
+            });
+        }
+    } else if (item.karton_barang_id && parseFloat(item.karton_qty) > 0) {
+        // Fallback untuk laporan lama atau karton dus jenis lain
         const kartonMaster = findMasterKemasan(item.karton_barang_id);
         const kartonObj = item.karton_barang || kartonMaster;
         const qtyKarton = parseFloat(item.karton_qty);

@@ -197,12 +197,26 @@ class PackagingService
                     } elseif (str_contains($nm, 'ROLL') || str_contains($nm, 'PLASTIK')) {
                         $hargaSatuan = 364830.00;
                     } elseif (str_contains($nm, 'LAKBAN')) {
+                        $satuan = strtoupper($b->satuanDasar?->satuan_cd ?? '');
                         $hargaSatuan = in_array($satuan, ['GR', 'GRAM', 'G']) ? 36.70 : 45880.00;
                     } elseif (str_contains($nm, 'EXP') || str_contains($nm, 'KERTAS')) {
                         $hargaSatuan = 250.00;
                     } else {
                         $hargaSatuan = (float) ($b->harga_beli_standar ?? 0);
                     }
+                }
+
+                // POIN 28: Rule Amortisasi HPP Karton Khusus IFM (Dibagi 5) & Karton Manual (Rp 0)
+                if ($b->barang_cd === 'KMS-KTN-REJ' || str_contains($nm, 'REJECT') || str_contains($nm, 'MANUAL')) {
+                    // Manual karton tidak masuk hitungan HPP (Rp 0)
+                    $hargaSatuan = 0.0;
+                } elseif ($b->barang_cd === 'KIF00G-BP1' || (str_contains($nm, 'IFM') && str_contains($nm, 'KARTON'))) {
+                    // Karton khusus IFM langsung dibagi 5 (Amortisasi pemakaian 5x siklus)
+                    if ($hargaSatuan > 2000) {
+                        $hargaSatuan = round($hargaSatuan / 5, 2); // Rp 8.741 / 5 = Rp 1.748,20
+                    }
+                } elseif ($b->barang_cd === 'KIF00G-PUT') {
+                    $hargaSatuan = 1748.20;
                 }
             } elseif ($activeBatch && (float) $activeBatch->harga_satuan > 0) {
                 $hargaSatuan = (float) $activeBatch->harga_satuan;
@@ -332,6 +346,24 @@ class PackagingService
                 $qtyAktual = (float) ($item['qty_aktual'] ?? 0);
                 $qtyStandar = (float) ($item['qty_standar'] ?? $qtyAktual);
                 $hargaSatuan = (float) ($item['harga_satuan'] ?? 0);
+
+                // POIN 28: Penegakan Aturan Finansial HPP Karton Khusus IFM (Dibagi 5) & Karton Manual (Rp 0)
+                $barangObj = MstBarang::find($barangId);
+                $bCd = strtoupper($barangObj?->barang_cd ?? '');
+                $bNm = strtoupper($barangObj?->barang_nm ?? '');
+
+                if ($bCd === 'KMS-KTN-REJ' || str_contains($bNm, 'REJECT') || str_contains($bNm, 'MANUAL')) {
+                    $hargaSatuan = 0.0; // Karton manual tidak masuk hitungan HPP (Rp 0)
+                } elseif ($bCd === 'KIF00G-BP1' || (str_contains($bNm, 'IFM') && str_contains($bNm, 'KARTON'))) {
+                    if ($hargaSatuan > 2000) {
+                        $hargaSatuan = round($hargaSatuan / 5, 2); // Khusus IFM langsung dibagi 5 = Rp 1.748,20
+                    }
+                } elseif ($bCd === 'KIF00G-PUT') {
+                    if ($hargaSatuan <= 0) {
+                        $hargaSatuan = 1748.20;
+                    }
+                }
+
                 $subtotal = round($qtyAktual * $hargaSatuan, 2);
                 $batchAsal = !empty($item['batch_no']) ? trim($item['batch_no']) : null;
                 $satuanCd = $item['satuan_cd'] ?? 'PCS';

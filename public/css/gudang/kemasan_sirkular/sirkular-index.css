@@ -154,6 +154,11 @@
     color: #0f172a;
 }
 
+.td-num.td-baru {
+    color: #0284c7;
+    font-weight: 700;
+}
+
 .td-num.td-mulus {
     color: #059669;
     font-weight: 700;

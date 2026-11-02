@@ -140,7 +140,7 @@
 
             <div class="sirkular-card-body">
                 {{-- RINGKASAN REKONSILIASI KORPORAT --}}
-                <div class="sirkular-summary-bar">
+                <div class="sirkular-summary-bar" style="grid-template-columns: repeat(5, 1fr);">
                     <div class="sirkular-summary-col">
                         <span class="summary-label">Total Kirim (DO)</span>
                         <span class="summary-val" id="stat_total_kirim">0 Box</span>
@@ -150,12 +150,8 @@
                         <span class="summary-val" id="stat_total_kembali" style="color: #0284c7;">0 Box</span>
                     </div>
                     <div class="sirkular-summary-col">
-                        <span class="summary-label">Layak (Puteran)</span>
+                        <span class="summary-label">Puteran (BMG)</span>
                         <span class="summary-val" id="stat_total_mulus" style="color: #059669;">0 Box</span>
-                    </div>
-                    <div class="sirkular-summary-col">
-                        <span class="summary-label">Karton BMG</span>
-                        <span class="summary-val" id="stat_total_bmg" style="color: #6366f1;">0 Box</span>
                     </div>
                     <div class="sirkular-summary-col">
                         <span class="summary-label">Rusak (Reject)</span>
@@ -173,42 +169,52 @@
                         <thead>
                             <tr>
                                 <th style="width: 36px; text-align: center;">No</th>
-                                <th style="text-align: left; min-width: 250px;">Nama Komoditas / Jenis Kemasan</th>
-                                <th style="width: 125px; text-align: right;">Qty Kirim (Box)</th>
-                                <th style="width: 140px; text-align: right;">Layak / Puteran (Pcs) <span style="color: #ef4444;">*</span></th>
-                                <th style="width: 130px; text-align: right;">Karton BMG (Pcs)</th>
-                                <th style="width: 140px; text-align: right;">Rusak / Reject (Pcs) <span style="color: #ef4444;">*</span></th>
-                                <th style="width: 125px; text-align: right; background: #064e3b; color: #ffffff;">Total Kembali</th>
-                                <th style="width: 110px; text-align: right;">Selisih DO</th>
-                                <th style="min-width: 220px; text-align: left;">Kondisi Fisik / Catatan</th>
+                                <th style="text-align: left; min-width: 230px;">Nama Komoditas / Jenis Kemasan</th>
+                                <th style="width: 110px; text-align: right;">Qty Kirim (Box)</th>
+                                <th style="width: 140px; text-align: right;">Puteran / BMG (Pcs)</th>
+                                <th style="width: 130px; text-align: center;">Siklus Puteran</th>
+                                <th style="width: 140px; text-align: right;">Rusak / Reject (Pcs)</th>
+                                <th style="width: 120px; text-align: right; background: #064e3b; color: #ffffff;">Total Kembali</th>
+                                <th style="width: 100px; text-align: right;">Selisih DO</th>
+                                <th style="min-width: 200px; text-align: left;">Kondisi Fisik / Catatan</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr>
                                 <td class="excel-row-num">1</td>
                                 <td>
-                                    <strong style="color: #0f172a; font-size: 0.85rem; display: block;">{{ $barangKartonBaru?->barang_nm ?? 'KARTON POLOS IFM (BARU)' }}</strong>
+                                    <strong style="color: #0f172a; font-size: 0.85rem; display: block;">{{ $barangKartonPuteran?->barang_nm ?? 'KARTON POLOS IFM (PUTERAN)' }}</strong>
                                     <div style="font-size: 0.725rem; color: #64748b; margin-top: 3px; display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;">
-                                        <span class="badge" style="background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; font-size: 0.6875rem; font-family: monospace;">{{ $barangKartonPuteran?->barang_cd ?? 'KIF00G-PUT' }} (Layak)</span>
-                                        <span class="badge" style="background: #eef2ff; border: 1px solid #c7d2fe; color: #4338ca; font-size: 0.6875rem; font-family: monospace;">{{ $barangKartonBmg?->barang_cd ?? 'KIF00G-BMG' }} (BMG)</span>
-                                        <span class="badge" style="background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; font-size: 0.6875rem; font-family: monospace;">{{ $barangKartonReject?->barang_cd ?? 'KMS-KTN-REJ' }} (Reject)</span>
+                                        <span class="badge" style="background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; font-size: 0.6875rem; font-family: monospace;">{{ $barangKartonPuteran?->barang_cd ?? 'KIF00G-PUT' }} (Maks. 5x)</span>
+                                        <span class="badge" style="background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; font-size: 0.6875rem; font-family: monospace;">{{ $barangKartonReject?->barang_cd ?? 'KMS-KTN-REJ' }}</span>
                                     </div>
                                     <input type="hidden" name="items[0][barang_asal_id]" value="{{ $barangKartonBaru?->barang_id ?? 29 }}">
                                     <input type="hidden" name="items[0][barang_mulus_id]" value="{{ $barangKartonPuteran?->barang_id ?? 82 }}">
                                     <input type="hidden" name="items[0][barang_bmg_id]" value="{{ $barangKartonBmg?->barang_id ?? 83 }}">
                                     <input type="hidden" name="items[0][barang_rusak_id]" value="{{ $barangKartonReject?->barang_id ?? 84 }}">
+                                    <input type="hidden" name="items[0][baru_qty]" id="baru_qty_0" value="0">
+                                    <input type="hidden" name="items[0][bmg_qty]" id="bmg_qty_0" value="0">
                                 </td>
                                 <td>
                                     <input type="number" step="1" min="0" name="items[0][kirim_qty]" id="kirim_qty_0" value="{{ old('items.0.kirim_qty', 0) }}" class="form-control" style="text-align: right;" placeholder="0" oninput="calcSortir(0)">
                                 </td>
                                 <td>
-                                    <input type="number" step="1" min="0" name="items[0][mulus_qty]" id="mulus_qty_0" value="{{ old('items.0.mulus_qty', 0) }}" class="form-control" style="text-align: right;" required placeholder="0" oninput="calcSortir(0)">
+                                    <input type="number" step="1" min="0" name="items[0][mulus_qty]" id="mulus_qty_0" value="{{ old('items.0.mulus_qty', 0) }}" class="form-control" style="text-align: right;" placeholder="0" oninput="calcSortir(0)">
                                 </td>
                                 <td>
-                                    <input type="number" step="1" min="0" name="items[0][bmg_qty]" id="bmg_qty_0" value="{{ old('items.0.bmg_qty', 0) }}" class="form-control" style="text-align: right;" placeholder="0" oninput="calcSortir(0)">
+                                    <select name="items[0][puteran_ke]" id="puteran_ke_0" class="form-control" style="font-weight: 700; text-align: center;" onchange="calcSortir(0)">
+                                        <option value="1" {{ old('items.0.puteran_ke', 1) == 1 ? 'selected' : '' }}>Puteran 1</option>
+                                        <option value="2" {{ old('items.0.puteran_ke') == 2 ? 'selected' : '' }}>Puteran 2</option>
+                                        <option value="3" {{ old('items.0.puteran_ke') == 3 ? 'selected' : '' }}>Puteran 3</option>
+                                        <option value="4" {{ old('items.0.puteran_ke') == 4 ? 'selected' : '' }}>Puteran 4</option>
+                                        <option value="5" {{ old('items.0.puteran_ke') == 5 ? 'selected' : '' }} style="color: #dc2626; font-weight: 800;">5x (Limit Maks)</option>
+                                    </select>
+                                    <small id="alert_puteran_5_0" style="display: none; color: #dc2626; font-size: 0.65rem; font-weight: 700; line-height: 1.1; margin-top: 2px;">
+                                        ⚠️ Auto-Afkir 5x
+                                    </small>
                                 </td>
                                 <td>
-                                    <input type="number" step="1" min="0" name="items[0][rusak_qty]" id="rusak_qty_0" value="{{ old('items.0.rusak_qty', 0) }}" class="form-control" style="text-align: right;" required placeholder="0" oninput="calcSortir(0)">
+                                    <input type="number" step="1" min="0" name="items[0][rusak_qty]" id="rusak_qty_0" value="{{ old('items.0.rusak_qty', 0) }}" class="form-control" style="text-align: right;" placeholder="0" oninput="calcSortir(0)">
                                 </td>
                                 <td>
                                     <input type="number" step="1" name="items[0][kembali_qty]" id="kembali_qty_0" value="{{ old('items.0.kembali_qty', 0) }}" class="form-control input-readonly-cell" style="text-align: right;" readonly>

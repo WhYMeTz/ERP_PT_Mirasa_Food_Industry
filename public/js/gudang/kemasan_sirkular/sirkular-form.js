@@ -88,17 +88,28 @@ document.addEventListener('DOMContentLoaded', function () {
     window.calcSortir = function (idx) {
         const inpKirim = document.getElementById(`kirim_qty_${idx}`);
         const inpKembali = document.getElementById(`kembali_qty_${idx}`);
+        const inpBaru = document.getElementById(`baru_qty_${idx}`);
         const inpMulus = document.getElementById(`mulus_qty_${idx}`);
+        const selPuteran = document.getElementById(`puteran_ke_${idx}`);
         const inpBmg = document.getElementById(`bmg_qty_${idx}`);
         const inpRusak = document.getElementById(`rusak_qty_${idx}`);
         const spanSelisih = document.getElementById(`selisih_qty_${idx}`);
+        const alertPuteran5 = document.getElementById(`alert_puteran_5_${idx}`);
 
         const kirim = parseFloat(inpKirim?.value) || 0;
+        const baru = parseFloat(inpBaru?.value) || 0;
         const mulus = parseFloat(inpMulus?.value) || 0;
         const bmg = parseFloat(inpBmg?.value) || 0;
         const rusak = parseFloat(inpRusak?.value) || 0;
+        const puteranKe = parseInt(selPuteran?.value, 10) || 1;
 
-        const totalKembali = mulus + bmg + rusak;
+        if (puteranKe === 5) {
+            if (alertPuteran5) alertPuteran5.style.display = 'block';
+        } else {
+            if (alertPuteran5) alertPuteran5.style.display = 'none';
+        }
+
+        const totalKembali = baru + mulus + bmg + rusak;
         if (inpKembali) inpKembali.value = totalKembali;
 
         const selisih = Math.max(0, kirim - totalKembali);
@@ -110,6 +121,7 @@ document.addEventListener('DOMContentLoaded', function () {
         // Update KPI Live Header
         const statKirim = document.getElementById('stat_total_kirim');
         const statKembali = document.getElementById('stat_total_kembali');
+        const statBaru = document.getElementById('stat_total_baru');
         const statMulus = document.getElementById('stat_total_mulus');
         const statBmg = document.getElementById('stat_total_bmg');
         const statRusak = document.getElementById('stat_total_rusak');
@@ -117,6 +129,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (statKirim && kirim > 0) statKirim.textContent = `${kirim.toLocaleString('id-ID')} Box`;
         if (statKembali) statKembali.textContent = `${totalKembali.toLocaleString('id-ID')} Box`;
+        if (statBaru) statBaru.textContent = `${baru.toLocaleString('id-ID')} Box`;
         if (statMulus) statMulus.textContent = `${mulus.toLocaleString('id-ID')} Box`;
         if (statBmg) statBmg.textContent = `${bmg.toLocaleString('id-ID')} Box`;
         if (statRusak) statRusak.textContent = `${rusak.toLocaleString('id-ID')} Box`;

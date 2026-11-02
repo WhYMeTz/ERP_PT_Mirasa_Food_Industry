@@ -187,6 +187,17 @@ class PackagingController extends Controller
                     }
                 }
 
+                // POIN 28: Rule Amortisasi HPP Karton Khusus IFM (Dibagi 5) & Karton Manual (Rp 0)
+                if ($b->barang_cd === 'KMS-KTN-REJ' || str_contains($nm, 'REJECT') || str_contains($nm, 'MANUAL')) {
+                    $hargaStandar = 0.00; // Manual karton tidak masuk hitungan HPP
+                } elseif ($b->barang_cd === 'KIF00G-BP1' || (str_contains($nm, 'IFM') && str_contains($nm, 'KARTON'))) {
+                    if ($hargaStandar > 2000) {
+                        $hargaStandar = round($hargaStandar / 5, 2); // Khusus IFM langsung dibagi 5 = Rp 1.748,20
+                    }
+                } elseif ($b->barang_cd === 'KIF00G-PUT') {
+                    $hargaStandar = 1748.20;
+                }
+
                 return [
                     'barang_id'      => $b->barang_id,
                     'barang_cd'      => $b->barang_cd,

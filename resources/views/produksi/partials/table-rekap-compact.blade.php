@@ -243,7 +243,7 @@
                                 Rp {{ number_format($d['total_biaya_produksi'], 0, ',', '.') }}
                             </div>
                             <div style="color: #64748b; font-size: 0.65rem;">
-                                Bahan + Energi + TK + FOH
+                                Bahan + Energi + TK
                             </div>
                         </td>
 
@@ -444,58 +444,11 @@
                                     </div>
                                 </div>
 
-                                {{-- KOMPARTEMEN 4: OVERHEAD PABRIK (FOH) --}}
-                                <div class="mini-cost-card">
-                                    <div class="mini-cost-header">
-                                        <div class="mini-cost-title">
-                                            <span>4. Biaya Overhead Pabrik (FOH)</span>
-                                        </div>
-                                        <span class="mini-cost-badge" style="background: #fdf2f8; color: #9d174d; border: 1px solid #fbcfe8;">Overhead</span>
-                                    </div>
-                                    <div class="mini-cost-list">
-                                        <div class="mini-cost-row">
-                                            <span>QC &amp; Pengawasan Mutu:</span>
-                                            <strong>Rp {{ number_format($d['qc_pengawasan_nilai'], 0, ',', '.') }}</strong>
-                                        </div>
-                                        <div class="mini-cost-row">
-                                            <span>Listrik, Air &amp; Telp:</span>
-                                            <strong>Rp {{ number_format($d['listrik_air_telp_nilai'], 0, ',', '.') }}</strong>
-                                        </div>
-                                        <div class="mini-cost-row">
-                                            <span>Pemeliharaan Mesin:</span>
-                                            <strong>Rp {{ number_format($d['pemeliharaan_mesin_nilai'], 0, ',', '.') }}</strong>
-                                        </div>
-                                        <div class="mini-cost-row">
-                                            <span>Penyusutan Mesin/Gdg:</span>
-                                            <strong>Rp {{ number_format($d['penyusutan_mesin_nilai'], 0, ',', '.') }}</strong>
-                                        </div>
-                                        <div class="mini-cost-row">
-                                            <span>Retribusi &amp; Kimia Limbah:</span>
-                                            <strong>Rp {{ number_format($d['limbah_padat_nilai'] + $d['limbah_kimia_nilai'], 0, ',', '.') }}</strong>
-                                        </div>
-                                        <div class="mini-cost-row">
-                                            <span>Sarung Tangan (Plastik/Kain):</span>
-                                            <strong>Rp {{ number_format($d['sarung_tangan_plastik_nilai'] + $d['sarung_tangan_kain_nilai'], 0, ',', '.') }}</strong>
-                                        </div>
-                                        <div class="mini-cost-row">
-                                            <span>Fotocopy &amp; Label Box:</span>
-                                            <strong>Rp {{ number_format($d['fotocopy_nilai'], 0, ',', '.') }}</strong>
-                                        </div>
-                                        @php
-                                            $totalFohDay = $d['fotocopy_nilai'] + $d['sarung_tangan_plastik_nilai'] + $d['sarung_tangan_kain_nilai'] + $d['qc_pengawasan_nilai'] + $d['listrik_air_telp_nilai'] + $d['pemeliharaan_mesin_nilai'] + $d['penyusutan_mesin_nilai'] + $d['limbah_padat_nilai'] + $d['limbah_kimia_nilai'];
-                                        @endphp
-                                        <div class="mini-cost-row" style="margin-top: 0.25rem; padding-top: 0.25rem; border-top: 1px dashed #e2e8f0;">
-                                            <span style="font-weight: 700;">Subtotal FOH:</span>
-                                            <strong style="color: #059669;">Rp {{ number_format($totalFohDay, 0, ',', '.') }}</strong>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {{-- KOMPARTEMEN 5: TOTAL AKUMULASI BIAYA, WIP & HPP --}}
+                                {{-- KOMPARTEMEN 4: TOTAL AKUMULASI BIAYA, WIP & HPP --}}
                                 <div class="mini-cost-card" style="border-color: #fde047; background: #fefce8;">
                                     <div class="mini-cost-header" style="border-bottom-color: #fef08a;">
                                         <div class="mini-cost-title" style="color: #713f12;">
-                                            <span>5. Output WIP, Rendemen &amp; HPP</span>
+                                            <span>4. Output WIP, Rendemen &amp; HPP</span>
                                         </div>
                                         <span class="mini-cost-badge" style="background: #ca8a04; color: #ffffff; font-weight: 700;">HPP Final</span>
                                     </div>

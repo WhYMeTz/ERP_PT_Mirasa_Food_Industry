@@ -37,12 +37,12 @@
                     <strong style="color: #0f172a;">{{ $prodDays->count() }} Hari ({{ $modalCount }} Dokumen)</strong>
                 </div>
                 <div style="display: flex; justify-content: space-between; margin-bottom: 0.4rem;">
-                    <span style="color: #64748b;">Beban Listrik PLN:</span>
-                    <strong id="confirmSummaryListrik" style="color: #0284c7; font-family: monospace;">-</strong>
-                </div>
-                <div style="display: flex; justify-content: space-between;">
                     <span style="color: #64748b;">Beban Gas CNG:</span>
                     <strong id="confirmSummaryGas" style="color: #d97706; font-family: monospace;">-</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <span style="color: #64748b;">Beban Listrik PLN:</span>
+                    <strong id="confirmSummaryListrik" style="color: #0284c7; font-family: monospace;">-</strong>
                 </div>
             </div>
 

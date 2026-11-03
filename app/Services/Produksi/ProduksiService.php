@@ -992,10 +992,22 @@ class ProduksiService
         $totalBahanNilai = $singkongNilai + $berkoBahanNilai + $minyakNilai + $bumbuNilai + $kartonBaruNilai +
             $kartonBekasNilai + $plastikHdNilai + $lakbanBesarNilai + $lakbanKecilNilai + $taliRafiaNilai;
 
-        // Gas CNG
+        // Gas CNG (Mendukung Kurs JISDOR & Tarif USD per MMBTU)
         $cngMmbtu = (float) ($data['cng_mmbtu'] ?? 0);
-        $cngTarif = (float) ($data['cng_tarif'] ?? 226800.00);
-        $cngNilai = (float) ($data['cng_nilai'] ?? ($cngMmbtu * $cngTarif));
+        $cngTarifUsd = (float) ($data['cng_tarif_usd'] ?? 0);
+        $cngKursJisdor = (float) ($data['cng_kurs_jisdor'] ?? 0);
+        $cngTarif = (float) ($data['cng_tarif'] ?? 0);
+
+        if ($cngTarifUsd > 0 && $cngKursJisdor > 0) {
+            $cngTarif = round($cngTarifUsd * $cngKursJisdor, 2);
+        } elseif ($cngTarif <= 0) {
+            $cngTarif = 226800.00;
+        }
+
+        $cngNilai = (float) ($data['cng_nilai'] ?? 0);
+        if ($cngNilai <= 0 && $cngMmbtu > 0) {
+            $cngNilai = round($cngMmbtu * $cngTarif, 2);
+        }
 
         // Tenaga Kerja (Pencatatan HPP Harian Terpadu Sesuai Arahan Mentor)
         // Jumlah orang dari absensi & total rupiah akumulasi gaji aktual (tiap orang beda jam kerja & gaji)
@@ -1158,6 +1170,8 @@ class ProduksiService
             'tali_rafia_nilai'            => $taliRafiaNilai,
             'total_bahan_nilai'           => $totalBahanNilai,
             'cng_mmbtu'                   => $cngMmbtu,
+            'cng_tarif_usd'               => $cngTarifUsd,
+            'cng_kurs_jisdor'             => $cngKursJisdor,
             'cng_tarif'                   => $cngTarif,
             'cng_nilai'                   => $cngNilai,
             'tk_jumlah_org'               => $tkJumlah,
@@ -1825,6 +1839,13 @@ class ProduksiService
 
                 // 2. Alokasi Gas CNG
                 if ($adjustCng) {
+                    if (!empty($payload['cng_tarif_usd'])) {
+                        $record->cng_tarif_usd = (float) $payload['cng_tarif_usd'];
+                    }
+                    if (!empty($payload['cng_kurs_jisdor'])) {
+                        $record->cng_kurs_jisdor = (float) $payload['cng_kurs_jisdor'];
+                    }
+
                     if ($modeCng === 'update_tarif' && $cngTarifBaru > 0) {
                         $record->cng_tarif = $cngTarifBaru;
                         $record->cng_nilai = round($record->cng_mmbtu * $cngTarifBaru, 2);
@@ -2139,6 +2160,16 @@ class ProduksiService
                         $kategoriList[] = $qDef['group'];
                     }
                 }
+            }
+
+            if (isset($data['cng_tarif_usd']) && $data['cng_tarif_usd'] !== '') {
+                $produksi->cng_tarif_usd = (float) $data['cng_tarif_usd'];
+            }
+            if (isset($data['cng_kurs_jisdor']) && $data['cng_kurs_jisdor'] !== '') {
+                $produksi->cng_kurs_jisdor = (float) $data['cng_kurs_jisdor'];
+            }
+            if (isset($data['cng_tarif']) && $data['cng_tarif'] !== '') {
+                $produksi->cng_tarif = (float) $data['cng_tarif'];
             }
 
             // Penanganan Alokasi Tambahan Stok Fisik Gudang dari Batch Lain (Universal Multi-Barang)

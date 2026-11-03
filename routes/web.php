@@ -426,6 +426,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/pakai-data/{pakaiId}', [ProduksiController::class, 'getPakaiData'])->name('pakai-data');
         Route::get('/next-karton', [ProduksiController::class, 'getNextKarton'])->name('next-karton');
         Route::get('/sync-karyawan', [ProduksiController::class, 'getKaryawanDataByDate'])->name('sync-karyawan');
+        Route::get('/kurs-jisdor', [ProduksiController::class, 'getKursJisdor'])->name('kurs-jisdor');
         Route::get('/{id}', [ProduksiController::class, 'show'])->name('show')->whereNumber('id');
         Route::get('/{id}/adjust', [ProduksiController::class, 'adjustPage'])->name('adjust')->middleware('role:produksi_create')->whereNumber('id');
         Route::post('/{id}/adjust-hpp', [ProduksiController::class, 'adjustHpp'])->name('adjust-hpp')->middleware('role:produksi_create')->whereNumber('id');

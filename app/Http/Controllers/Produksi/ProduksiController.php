@@ -168,7 +168,9 @@ class ProduksiController extends Controller
         $fohRates = $this->tarifService->getFohRates();
         $energiTkRates = $this->tarifService->getEnergiLaborRates();
         $allTarif = $this->tarifService->getAllTarif();
-        $defaultCngTarif = $energiTkRates['cng_tarif'] ?? 226800.00;
+        $defaultCngTarif = $energiTkRates['cng_tarif'] ?? round(14.50 * 18138.00, 2);
+        $defaultCngTarifUsd = $energiTkRates['cng_tarif_usd'] ?? 14.50;
+        $defaultCngKursJisdor = $energiTkRates['cng_kurs_jisdor'] ?? 18138.00;
 
         // Tarif Master Kemasan Karton Sirkular (Single Source of Truth dari mst_barang)
         $kartonRates = [
@@ -183,6 +185,8 @@ class ProduksiController extends Controller
             'liniList',
             'barangHasilList',
             'defaultCngTarif',
+            'defaultCngTarifUsd',
+            'defaultCngKursJisdor',
             'fohRates',
             'energiTkRates',
             'allTarif',
@@ -254,6 +258,31 @@ class ProduksiController extends Controller
     }
 
     /**
+     * Endpoint AJAX: Dapatkan kurs JISDOR otomatis berdasarkan tanggal produksi.
+     */
+    public function getKursJisdor(Request $request): JsonResponse
+    {
+        try {
+            $tgl = $request->input('date', date('Y-m-d'));
+            $rate = $this->tarifService->getJisdorRate($tgl);
+
+            return response()->json([
+                'status'         => 'success',
+                'date'           => $tgl,
+                'kurs'           => $rate,
+                'kurs_formatted' => number_format($rate, 2, ',', '.'),
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'status'         => 'error',
+                'kurs'           => 15850.00,
+                'kurs_formatted' => '15.850,00',
+                'message'        => $e->getMessage(),
+            ], 200);
+        }
+    }
+
+    /**
      * Simpan data hasil produksi harian & suntik stok fisik WIP jika POSTED.
      */
     public function store(Request $request): RedirectResponse
@@ -296,6 +325,8 @@ class ProduksiController extends Controller
 
             // Energi
             'cng_mmbtu'                   => 'nullable|numeric|min:0',
+            'cng_tarif_usd'               => 'nullable|numeric|min:0',
+            'cng_kurs_jisdor'             => 'nullable|numeric|min:0',
             'cng_tarif'                   => 'nullable|numeric|min:0',
             'cng_nilai'                   => 'nullable|numeric|min:0',
 
@@ -518,6 +549,9 @@ class ProduksiController extends Controller
             'tk_jumlah_org'               => 'nullable|integer|min:0',
             'tk_total_nilai'              => 'nullable|numeric|min:0',
             'cng_mmbtu'                   => 'nullable|numeric|min:0',
+            'cng_tarif_usd'               => 'nullable|numeric|min:0',
+            'cng_kurs_jisdor'             => 'nullable|numeric|min:0',
+            'cng_tarif'                   => 'nullable|numeric|min:0',
             'cng_nilai'                   => 'nullable|numeric|min:0',
             'listrik_air_telp_nilai'      => 'nullable|numeric|min:0',
 
@@ -723,7 +757,9 @@ class ProduksiController extends Controller
 
         $report = $this->produksiService->getMonthlyReport($year, $month);
         $fohRates = $this->tarifService->getFohRates();
+        $energiRates = $this->tarifService->getEnergiLaborRates();
         $allTarif = $this->tarifService->getAllTarif();
+        $tarifCngDefault = $energiRates['cng_tarif'] ?? round(14.50 * 18138, 2);
 
         $monthsList = [
             1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
@@ -731,7 +767,7 @@ class ProduksiController extends Controller
             9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
         ];
 
-        return view('produksi.adjust-utilitas', compact('year', 'month', 'report', 'fohRates', 'allTarif', 'monthsList'));
+        return view('produksi.adjust-utilitas', compact('year', 'month', 'report', 'fohRates', 'energiRates', 'tarifCngDefault', 'allTarif', 'monthsList'));
     }
 
     /**

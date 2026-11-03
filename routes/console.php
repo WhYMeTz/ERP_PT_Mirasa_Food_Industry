@@ -82,3 +82,11 @@ Artisan::command('produksi:sync-material-qty', function (\App\Services\Produksi\
 
     $this->info("Selesai! Sebanyak {$updatedCount} catatan produksi berhasil disinkronkan.");
 })->purpose('Sinkronisasi kuantitas bahan kemasan dan bumbu dari BPPB gudang ke dokumen produksi lama');
+
+// Jadwal Sinkronisasi Kurs JISDOR Bank Indonesia Otomatis Setiap Sore Hari Kerja (Senin-Jumat)
+\Illuminate\Support\Facades\Schedule::command('produksi:sync-jisdor')
+    ->weekdays()
+    ->dailyAt('16:00')
+    ->withoutOverlapping()
+    ->runInBackground();
+

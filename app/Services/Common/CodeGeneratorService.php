@@ -656,12 +656,56 @@ class CodeGeneratorService
     }
 
     /**
-     * Generate Nomor Pengeluaran / Pemakaian Barang (format: OUT-YYYYMM-0001)
+     * Generate Nomor Bukti Permintaan & Pengeluaran Barang (BPPB) / Pemakaian Bahan Resmi
+     * Sesuai standar enterprise PT Mirasa Food Industry:
+     * Format: [NOMOR_URUT]/BPPB/MFI/[BULAN]/[TAHUN]
+     * Contoh: 001/BPPB/MFI/11/26 atau 015/BPPB/MFI/11/26
+     * Reset nomor urut otomatis per bulan dan tahun, dengan padding 3 digit (atau dinamis jika > 999).
+     *
+     * @param string|null $date Tanggal Pemakaian (opsional, default: hari ini)
+     * @param int|null $excludePakaiId ID Pemakaian yang dikecualikan (berguna saat edit dokumen)
+     * @return string
      */
-    public function generatePakaiNo(): string
+    public function generatePakaiNo(?string $date = null, ?int $excludePakaiId = null): string
     {
-        $prefix = 'OUT-' . date('Ym') . '-';
-        return $this->generate('dat_pakai_hdr', 'pakai_no', $prefix, 4);
+        $timestamp = strtotime($date ?? date('Y-m-d'));
+        $month = date('m', $timestamp);
+        $year = date('y', $timestamp);
+        $suffix = "/BPPB/MFI/{$month}/{$year}";
+
+        // Cari nomor BPPB yang berakhiran format resmi pada bulan & tahun ini
+        $query = DB::table('dat_pakai_hdr')
+            ->where('pakai_no', 'LIKE', '%' . $suffix);
+
+        if ($excludePakaiId) {
+            $query->where('pakai_id', '!=', $excludePakaiId);
+        }
+
+        $existing = $query->pluck('pakai_no');
+
+        $maxNumber = 0;
+        $regex = '/^(\d+)\/BPPB\/MFI\/' . $month . '\/' . $year . '$/i';
+
+        foreach ($existing as $pakaiNo) {
+            if (preg_match($regex, trim((string) $pakaiNo), $matches)) {
+                $num = (int) $matches[1];
+                if ($num > $maxNumber) {
+                    $maxNumber = $num;
+                }
+            }
+        }
+
+        do {
+            $maxNumber++;
+            $generated = str_pad((string) $maxNumber, 3, '0', STR_PAD_LEFT) . $suffix;
+            $checkQuery = DB::table('dat_pakai_hdr')->where('pakai_no', $generated);
+            if ($excludePakaiId) {
+                $checkQuery->where('pakai_id', '!=', $excludePakaiId);
+            }
+            $exists = $checkQuery->exists();
+        } while ($exists);
+
+        return $generated;
     }
 
     /**

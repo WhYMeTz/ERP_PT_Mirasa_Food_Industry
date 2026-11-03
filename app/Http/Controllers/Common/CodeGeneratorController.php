@@ -38,6 +38,13 @@ class CodeGeneratorController extends Controller
                 $excludeTerimaId = $request->query('exclude_id');
                 $code = $this->codeGeneratorService->generateTerimaNo($date, $excludeTerimaId ? (int) $excludeTerimaId : null);
                 break;
+            case 'pemakaian':
+            case 'bppb':
+            case 'pakai':
+                $date = $request->query('date', date('Y-m-d'));
+                $excludePakaiId = $request->query('exclude_id');
+                $code = $this->codeGeneratorService->generatePakaiNo($date, $excludePakaiId ? (int) $excludePakaiId : null);
+                break;
             case 'qc':
                 $date = $request->query('date', date('Y-m-d'));
                 $excludeQcId = $request->query('exclude_id');

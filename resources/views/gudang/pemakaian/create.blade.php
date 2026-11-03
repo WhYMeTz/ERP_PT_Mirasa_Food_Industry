@@ -75,6 +75,7 @@
                     No. BPPB <span style="color:#ef4444;">*</span>
                 </label>
                 <input type="text" id="pakai_no" name="pakai_no" value="{{ old('pakai_no', $autoNo) }}" class="toolbar-input" style="font-family: monospace; font-weight: 700;" required>
+                <small id="pakai_no_help" style="display: none; color: #64748b; font-size: 0.725rem; margin-top: 2px;">Nomor urut otomatis Bukti Permintaan &amp; Pengeluaran Barang (BPPB).</small>
             </div>
             <div>
                 <label for="pakai_tgl" class="toolbar-label">
@@ -264,10 +265,13 @@
 @include('gudang.pemakaian.partials.modal-warning-stock-limit')
 @include('gudang.pemakaian.partials.modal-warning-fifo')
 @include('gudang.pemakaian.partials.modal-warning-grade-shortage')
+@include('gudang.pemakaian.partials.modal-confirm-previous-month')
 @endsection
 
 @push('scripts')
 <script>
+    window.currentServerYearMonth = '{{ date('Y-m') }}';
+    window.hasOldServerInput = {{ ((isset($errors) && $errors->any()) || old('pakai_no')) ? 'true' : 'false' }};
     window.appConfig = {
         barangList: @json($barangList),
         batchesUrl: "{{ route('gudang.pemakaian.batches', [], false) }}",

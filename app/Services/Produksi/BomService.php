@@ -257,7 +257,8 @@ class BomService
                 });
 
             // Format semua opsi batch untuk dimasukkan ke dropdown baris (agar user tetap bisa ganti manual jika mau)
-            $allBatchOptions = $availableBatches->values()->map(function ($b, $index) use ($draftAllocations) {
+            $firstAvailableFound = false;
+            $allBatchOptions = $availableBatches->values()->map(function ($b) use ($draftAllocations, &$firstAvailableFound) {
                 $gradeCd = strtoupper(trim($b->grade_cd ?: 'A'));
                 $lookupKey = trim($b->batch_no) . '_' . $gradeCd;
                 $group = $draftAllocations->get($lookupKey);
@@ -266,6 +267,13 @@ class BomService
                 $draftQty = $group ? (float) $group->sum('qty_keluar') : 0.0;
                 $draftDocNos = $group ? $group->pluck('header.pakai_no')->unique()->filter()->values()->toArray() : [];
                 $sisaBebas = max(0.0, round($sisaFisik - $draftQty, 4));
+                $isFullyBooked = $sisaBebas <= 0.0001;
+
+                $isFifoTop = false;
+                if (!$isFullyBooked && !$firstAvailableFound) {
+                    $isFifoTop = true;
+                    $firstAvailableFound = true;
+                }
 
                 $b->sisa_bebas = $sisaBebas;
                 $b->draft_qty = $draftQty;
@@ -280,11 +288,11 @@ class BomService
                     'draft_doc_nos'  => $draftDocNos,
                     'sisa_bebas'     => $sisaBebas,
                     'is_committed'   => $draftQty > 0,
-                    'is_fully_booked'=> $sisaBebas <= 0.0001,
+                    'is_fully_booked'=> $isFullyBooked,
                     'harga_satuan'   => (float) $b->harga_satuan,
                     'expired_tgl'    => $b->expired_tgl ? Carbon::parse($b->expired_tgl)->format('d/m/Y') : null,
                     'tgl_terima'     => $b->created_at ? $b->created_at->format('d/m/Y') : '-',
-                    'is_fifo_top'    => $index === 0,
+                    'is_fifo_top'    => $isFifoTop,
                 ];
             })->toArray();
 

@@ -25,6 +25,8 @@ class DatPakaiHdr extends Model
         'tujuan_pemakaian',
         'catatan_txt',
         'status_st',
+        'is_ada_koreksi',
+        'catatan_verifikasi',
         'posted_at',
         'posted_by',
         'jurnal_id',
@@ -36,10 +38,11 @@ class DatPakaiHdr extends Model
     ];
 
     protected $casts = [
-        'pakai_tgl'  => 'date',
-        'posted_at'  => 'datetime',
-        'deleted_st' => 'boolean',
-        'active_st'  => 'boolean',
+        'pakai_tgl'       => 'date',
+        'posted_at'       => 'datetime',
+        'is_ada_koreksi'  => 'boolean',
+        'deleted_st'      => 'boolean',
+        'active_st'       => 'boolean',
     ];
 
     public function isDraft(): bool
@@ -50,6 +53,34 @@ class DatPakaiHdr extends Model
     public function isPosted(): bool
     {
         return ($this->status_st ?? '') === 'POSTED';
+    }
+
+    /**
+     * Nama lengkap pembuat dokumen (Admin Gudang yang input)
+     */
+    public function getCreatorNameAttribute(): string
+    {
+        if (!empty($this->created_by)) {
+            if (is_numeric($this->created_by)) {
+                $user = \App\Models\User::find($this->created_by);
+                if ($user) {
+                    $role = $user->role_cd ? " ({$user->role_cd})" : '';
+                    return $user->name . $role;
+                }
+            }
+            return $this->created_by;
+        }
+        return 'Admin Gudang';
+    }
+
+    /**
+     * Relasi ke Riwayat Audit & Koreksi Verifikasi
+     */
+    public function revisiLogs(): HasMany
+    {
+        return $this->hasMany(DatPakaiRevisiLog::class, 'pakai_id', 'pakai_id')
+            ->where('deleted_st', false)
+            ->orderBy('revisi_tgl', 'desc');
     }
 
     /**

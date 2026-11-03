@@ -176,7 +176,8 @@ class PemakaianController extends Controller
                 return $b;
             });
 
-        $autoNo = $this->codeGenerator->generatePakaiNo();
+        $targetDate = $request->query('date', date('Y-m-d'));
+        $autoNo = $this->codeGenerator->generatePakaiNo($targetDate);
 
         // Ambil daftar master lini produksi aktif khusus peruntukan Work In Progress (WIP)
         $liniList = MstLiniProduksi::where('deleted_st', false)
@@ -321,6 +322,7 @@ class PemakaianController extends Controller
     public function update(Request $request, int $id): RedirectResponse|JsonResponse
     {
         $validated = $request->validate([
+            'pakai_no'         => ['nullable', 'string', 'max:100', \Illuminate\Validation\Rule::unique('dat_pakai_hdr', 'pakai_no')->ignore($id, 'pakai_id')],
             'pakai_tgl'        => 'required|date',
             'gudang_id'        => 'required|exists:mst_gudang,gudang_id',
             'tujuan_pemakaian' => 'required|string|max:100',
@@ -483,7 +485,8 @@ class PemakaianController extends Controller
             ->orderBy('stok_id', 'asc')
             ->get(['stok_id', 'batch_no', 'grade_cd', 'sisa_qty', 'harga_satuan', 'expired_tgl', 'created_at']);
 
-        $formattedBatches = $batches->values()->map(function ($b, $index) use ($draftAllocations) {
+        $firstAvailableFound = false;
+        $formattedBatches = $batches->values()->map(function ($b) use ($draftAllocations, &$firstAvailableFound) {
             $gradeCd = strtoupper(trim($b->grade_cd ?: 'A'));
             $lookupKey = trim($b->batch_no) . '_' . $gradeCd;
             $group = $draftAllocations->get($lookupKey);
@@ -492,6 +495,13 @@ class PemakaianController extends Controller
             $draftQty = $group ? (float) $group->sum('qty_keluar') : 0.0;
             $draftDocNos = $group ? $group->pluck('header.pakai_no')->unique()->filter()->values()->toArray() : [];
             $sisaBebas = max(0.0, round($sisaFisik - $draftQty, 4));
+            $isFullyBooked = $sisaBebas <= 0.0001;
+
+            $isFifoTop = false;
+            if (!$isFullyBooked && !$firstAvailableFound) {
+                $isFifoTop = true;
+                $firstAvailableFound = true;
+            }
 
             return [
                 'stok_id'        => $b->stok_id,
@@ -502,11 +512,11 @@ class PemakaianController extends Controller
                 'draft_doc_nos'  => $draftDocNos,
                 'sisa_bebas'     => $sisaBebas,
                 'is_committed'   => $draftQty > 0,
-                'is_fully_booked'=> $sisaBebas <= 0.0001,
+                'is_fully_booked'=> $isFullyBooked,
                 'harga_satuan'   => (float) $b->harga_satuan,
                 'expired_tgl'    => $b->expired_tgl ? \Carbon\Carbon::parse($b->expired_tgl)->format('d/m/Y') : null,
                 'tgl_terima'     => $b->created_at ? $b->created_at->format('d/m/Y') : '-',
-                'is_fifo_top'    => $index === 0,
+                'is_fifo_top'    => $isFifoTop,
             ];
         });
 

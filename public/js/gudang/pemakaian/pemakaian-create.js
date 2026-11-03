@@ -271,6 +271,7 @@
     }
 
     function saveFormDraft() {
+        if (isSubmitting) return; // Jangan simpan draft jika form sedang atau telah disubmit
         try {
             const rows = [];
             document.querySelectorAll('#itemsBody tr').forEach(tr => {
@@ -476,30 +477,39 @@
                 batchOptions = '<option value="">-- Pilih Barang Dulu --</option>';
             }
         } else {
+            let firstAvailInBomRow = false;
             batchesToShow.forEach(b => {
-                const isSelected = (b.batch_no === item.batch_no && (b.grade_cd || 'A') === curGrade) ? 'selected' : '';
-                const prefix = b.is_fifo_top ? '⭐ [FIFO Tertua] ' : '';
-                const gCd = (b.grade_cd || 'A').toUpperCase();
-                const gradeBadge = (gCd === 'A') ? '🟢 Grade A' : ((gCd === 'B') ? '🟡 Grade B' : `Grade ${gCd}`);
-                const expInfo = b.expired_tgl ? ` | Exp: ${b.expired_tgl}` : '';
-                const tglTerima = b.tgl_terima ? ` | Masuk: ${b.tgl_terima}` : '';
-
                 const sisaFisik = parseFloat(b.sisa_qty || 0);
                 const sisaBebas = (b.sisa_bebas !== undefined) ? parseFloat(b.sisa_bebas) : sisaFisik;
                 const draftQty = parseFloat(b.draft_qty || 0);
                 const draftDocs = Array.isArray(b.draft_doc_nos) ? b.draft_doc_nos.join(', ') : (b.draft_doc_nos || '');
                 const isFullyBooked = b.is_fully_booked || (sisaBebas <= 0.0001 && draftQty > 0);
 
+                let isFifoTop = false;
+                if (!isFullyBooked && sisaBebas > 0.0001 && !firstAvailInBomRow) {
+                    isFifoTop = true;
+                    firstAvailInBomRow = true;
+                }
+
+                const isSelected = (b.batch_no === item.batch_no && (b.grade_cd || 'A') === curGrade) ? 'selected' : '';
+                const prefix = isFifoTop ? '⭐ [FIFO Tertua] ' : '';
+                const gCd = (b.grade_cd || 'A').toUpperCase();
+                const gradeBadge = (gCd === 'A') ? '🟢 Grade A' : ((gCd === 'B') ? '🟡 Grade B' : `Grade ${gCd}`);
+                const expInfo = b.expired_tgl ? ` | Exp: ${b.expired_tgl}` : '';
+                const tglTerima = b.tgl_terima ? ` | Masuk: ${b.tgl_terima}` : '';
+
                 let labelText = '';
                 if (draftQty > 0) {
                     if (isFullyBooked) {
-                        labelText = `⛔ [HABIS DIBOOKING DRAFT] ${prefix}${b.batch_no} • [${gradeBadge}] (Sisa Bebas: 0 | Fisik: ${sisaFisik.toLocaleString('id-ID')} | ⚠️ ${draftQty.toLocaleString('id-ID')} di Draft [${draftDocs}])`;
+                        labelText = `⛔ [HABIS DIBOOKING DRAFT] ${b.batch_no} • [${gradeBadge}] (Sisa Bebas: 0 | Fisik: ${sisaFisik.toLocaleString('id-ID')} | ⚠️ ${draftQty.toLocaleString('id-ID')} di Draft [${draftDocs}])`;
                     } else {
                         labelText = `⚠️ [DRAFT ALLOCATED] ${prefix}${b.batch_no} • [${gradeBadge}] Sisa Bebas: ${sisaBebas.toLocaleString('id-ID')} (Fisik: ${sisaFisik.toLocaleString('id-ID')} | ⚠️ ${draftQty.toLocaleString('id-ID')} di Draft [${draftDocs}])`;
                     }
                 } else {
                     labelText = `${prefix}${b.batch_no} • [${gradeBadge}] (Sisa: ${sisaFisik.toLocaleString('id-ID')})${tglTerima}${expInfo}`;
                 }
+
+                const disabledAttr = (isFullyBooked && sisaBebas <= 0.0001) ? 'disabled style="color: #94a3b8; background: #f8fafc;"' : '';
 
                 batchOptions += `<option value="${b.batch_no}" 
                     data-stok-id="${b.stok_id || ''}" 
@@ -512,6 +522,7 @@
                     data-harga="${b.harga_satuan || 0}" 
                     data-masuk="${b.tgl_terima || '-'}" 
                     data-exp="${b.expired_tgl || '-'}" 
+                    ${disabledAttr}
                     ${isSelected}>
                     ${labelText}
                 </option>`;
@@ -597,30 +608,39 @@
         if (batchesToShow.length === 0) {
             batchOptions = '<option value="">(Stok Fisik Habis di Gudang ini)</option>';
         } else {
+            let firstAvailInBomRow = false;
             batchesToShow.forEach(b => {
-                const isSelected = (b.batch_no === item.batch_no && (b.grade_cd || 'A') === curGrade) ? 'selected' : '';
-                const prefix = b.is_fifo_top ? '⭐ [FIFO Tertua] ' : '';
-                const gCd = (b.grade_cd || 'A').toUpperCase();
-                const gradeBadge = (gCd === 'A') ? '🟢 Grade A' : ((gCd === 'B') ? '🟡 Grade B' : `Grade ${gCd}`);
-                const expInfo = b.expired_tgl ? ` | Exp: ${b.expired_tgl}` : '';
-                const tglTerima = b.tgl_terima ? ` | Masuk: ${b.tgl_terima}` : '';
-
                 const sisaFisik = parseFloat(b.sisa_qty || 0);
                 const sisaBebas = (b.sisa_bebas !== undefined) ? parseFloat(b.sisa_bebas) : sisaFisik;
                 const draftQty = parseFloat(b.draft_qty || 0);
                 const draftDocs = Array.isArray(b.draft_doc_nos) ? b.draft_doc_nos.join(', ') : (b.draft_doc_nos || '');
                 const isFullyBooked = b.is_fully_booked || (sisaBebas <= 0.0001 && draftQty > 0);
 
+                let isFifoTop = false;
+                if (!isFullyBooked && sisaBebas > 0.0001 && !firstAvailInBomRow) {
+                    isFifoTop = true;
+                    firstAvailInBomRow = true;
+                }
+
+                const isSelected = (b.batch_no === item.batch_no && (b.grade_cd || 'A') === curGrade) ? 'selected' : '';
+                const prefix = isFifoTop ? '⭐ [FIFO Tertua] ' : '';
+                const gCd = (b.grade_cd || 'A').toUpperCase();
+                const gradeBadge = (gCd === 'A') ? '🟢 Grade A' : ((gCd === 'B') ? '🟡 Grade B' : `Grade ${gCd}`);
+                const expInfo = b.expired_tgl ? ` | Exp: ${b.expired_tgl}` : '';
+                const tglTerima = b.tgl_terima ? ` | Masuk: ${b.tgl_terima}` : '';
+
                 let labelText = '';
                 if (draftQty > 0) {
                     if (isFullyBooked) {
-                        labelText = `⛔ [HABIS DIBOOKING DRAFT] ${prefix}${b.batch_no} • [${gradeBadge}] (Sisa Bebas: 0 | Fisik: ${sisaFisik.toLocaleString('id-ID')} | ⚠️ ${draftQty.toLocaleString('id-ID')} di Draft [${draftDocs}])`;
+                        labelText = `⛔ [HABIS DIBOOKING DRAFT] ${b.batch_no} • [${gradeBadge}] (Sisa Bebas: 0 | Fisik: ${sisaFisik.toLocaleString('id-ID')} | ⚠️ ${draftQty.toLocaleString('id-ID')} di Draft [${draftDocs}])`;
                     } else {
                         labelText = `⚠️ [DRAFT ALLOCATED] ${prefix}${b.batch_no} • [${gradeBadge}] Sisa Bebas: ${sisaBebas.toLocaleString('id-ID')} (Fisik: ${sisaFisik.toLocaleString('id-ID')} | ⚠️ ${draftQty.toLocaleString('id-ID')} di Draft [${draftDocs}])`;
                     }
                 } else {
                     labelText = `${prefix}${b.batch_no} • [${gradeBadge}] (Sisa: ${sisaFisik.toLocaleString('id-ID')})${tglTerima}${expInfo}`;
                 }
+
+                const disabledAttr = (isFullyBooked && sisaBebas <= 0.0001) ? 'disabled style="color: #94a3b8; background: #f8fafc;"' : '';
 
                 batchOptions += `<option value="${b.batch_no}" 
                     data-stok-id="${b.stok_id || ''}" 
@@ -633,6 +653,7 @@
                     data-harga="${b.harga_satuan || 0}" 
                     data-masuk="${b.tgl_terima || '-'}" 
                     data-exp="${b.expired_tgl || '-'}" 
+                    ${disabledAttr}
                     ${isSelected}>
                     ${labelText}
                 </option>`;
@@ -952,9 +973,23 @@
             }
         }
 
+        let firstAvailableIdx = -1;
+        filtered.forEach((b, idx) => {
+            const sisaFisik = parseFloat(b.sisa_qty || 0);
+            const sisaBebas = (b.sisa_bebas !== undefined) ? parseFloat(b.sisa_bebas) : sisaFisik;
+            const draftQty = parseFloat(b.draft_qty || 0);
+            const isFullyBooked = b.is_fully_booked || (sisaBebas <= 0.0001 && draftQty > 0);
+            if (!isFullyBooked && sisaBebas > 0.0001 && firstAvailableIdx === -1) {
+                firstAvailableIdx = idx;
+            }
+        });
+
+        // Jika semua habis, fallback ke 0
+        if (firstAvailableIdx === -1) firstAvailableIdx = 0;
+
         let html = '';
         filtered.forEach((b, idx) => {
-            const isTop = (idx === 0);
+            const isTop = (idx === firstAvailableIdx);
             const prefix = isTop ? '⭐ [FIFO Tertua] ' : '';
             const gCd = (b.grade_cd || 'A').toUpperCase();
             const gradeBadge = (gCd === 'A') ? '🟢 Grade A' : ((gCd === 'B') ? '🟡 Grade B' : `Grade ${gCd}`);
@@ -970,13 +1005,15 @@
             let labelText = '';
             if (draftQty > 0) {
                 if (isFullyBooked) {
-                    labelText = `⛔ [HABIS DIBOOKING DRAFT] ${prefix}${b.batch_no} • [${gradeBadge}] (Sisa Bebas: 0 | Fisik: ${sisaFisik.toLocaleString('id-ID')} | ⚠️ ${draftQty.toLocaleString('id-ID')} di Draft ${draftDocs})`;
+                    labelText = `⛔ [HABIS DIBOOKING DRAFT] ${b.batch_no} • [${gradeBadge}] (Sisa Bebas: 0 | Fisik: ${sisaFisik.toLocaleString('id-ID')} | ⚠️ ${draftQty.toLocaleString('id-ID')} di Draft ${draftDocs})`;
                 } else {
                     labelText = `⚠️ [DRAFT ALLOCATED] ${prefix}${b.batch_no} • [${gradeBadge}] Sisa Bebas: ${sisaBebas.toLocaleString('id-ID')} (Fisik: ${sisaFisik.toLocaleString('id-ID')} | ⚠️ ${draftQty.toLocaleString('id-ID')} di Draft ${draftDocs})`;
                 }
             } else {
                 labelText = `${prefix}${b.batch_no} • [${gradeBadge}] (Sisa: ${sisaFisik.toLocaleString('id-ID')})${tglTerima}${expInfo}`;
             }
+
+            const disabledAttr = (isFullyBooked && sisaBebas <= 0.0001) ? 'disabled style="color: #94a3b8; background: #f8fafc;"' : '';
 
             html += `<option value="${b.batch_no}" 
                 data-stok-id="${b.stok_id || ''}" 
@@ -989,6 +1026,7 @@
                 data-harga="${b.harga_satuan || 0}" 
                 data-masuk="${b.tgl_terima || '-'}" 
                 data-exp="${b.expired_tgl || '-'}" 
+                ${disabledAttr}
                 ${isTop ? 'selected' : ''}>
                 ${labelText}
             </option>`;
@@ -1070,7 +1108,7 @@
         }
 
         const sisa = parseFloat(selectedOpt.getAttribute('data-sisa') || 0);
-        const sisaBebas = parseFloat(selectedOpt.getAttribute('data-sisa-bebas') || sisa);
+        const sisaBebas = parseFloat(selectedOpt.getAttribute('data-sisa-bebas') !== null ? selectedOpt.getAttribute('data-sisa-bebas') : sisa);
         const draftQty = parseFloat(selectedOpt.getAttribute('data-draft-qty') || 0);
         const draftDocs = selectedOpt.getAttribute('data-draft-docs') || '';
         const tglMasuk = selectedOpt.getAttribute('data-masuk') || '-';
@@ -1082,24 +1120,48 @@
                 ? `<span style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a; font-weight: 700; padding: 1px 6px; border-radius: 4px; font-size: 0.725rem;">🟡 Grade B (Standar)</span>`
                 : `<span style="background: #f1f5f9; color: #334155; font-weight: 600; padding: 1px 6px; border-radius: 4px; font-size: 0.725rem;">Grade ${grade}</span>`);
 
-        const isFirstBatch = (batchSelect.selectedIndex === 0);
-        const oldestOpt = (batchSelect.options.length > 0 && batchSelect.options[0].value) ? batchSelect.options[0] : null;
-        const oldestSisa = oldestOpt ? parseFloat(oldestOpt.getAttribute('data-sisa') || 0) : 0;
+        // Hitung kuantitas batch yang sudah dipakai di baris-baris lain dalam form ini
+        const usedQtyByOtherRows = {};
+        document.querySelectorAll('#itemsBody tr').forEach(r => {
+            if (r !== row) {
+                const bVal = r.querySelector('.batch-select')?.value;
+                const gVal = (r.querySelector('.grade-input')?.value || '').toUpperCase();
+                const qVal = parseFloat(r.querySelector('.qty-input')?.value || 0);
+                if (bVal && qVal > 0) {
+                    const key = bVal + '_' + gVal;
+                    usedQtyByOtherRows[key] = (usedQtyByOtherRows[key] || 0) + qVal;
+                    usedQtyByOtherRows[bVal] = (usedQtyByOtherRows[bVal] || 0) + qVal;
+                }
+            }
+        });
+
+        // Temukan opsi batch terlama yang BENAR-BENAR MASIH MEMILIKI SISA BEBAS (> 0)
+        let oldestOpt = null;
+        for (let i = 0; i < batchSelect.options.length; i++) {
+            const opt = batchSelect.options[i];
+            if (!opt.value) continue;
+
+            const optGrade = (opt.getAttribute('data-grade') || 'A').toUpperCase();
+            if (grade && optGrade !== grade) continue;
+
+            const optSisaBebas = parseFloat(opt.getAttribute('data-sisa-bebas') !== null ? opt.getAttribute('data-sisa-bebas') : (opt.getAttribute('data-sisa') || 0));
+            const isFullyBooked = (opt.getAttribute('data-is-fully-booked') === '1') || opt.disabled;
+            const usedOther = usedQtyByOtherRows[opt.value + '_' + optGrade] || usedQtyByOtherRows[opt.value] || 0;
+            const netAvailable = optSisaBebas - usedOther;
+
+            if (!isFullyBooked && netAvailable > 0.0001) {
+                oldestOpt = opt;
+                break;
+            }
+        }
+
+        const isSameBatch = selectedOpt && oldestOpt && (selectedOpt.value === oldestOpt.value);
+        const oldestSisaBebas = oldestOpt ? parseFloat(oldestOpt.getAttribute('data-sisa-bebas') !== null ? oldestOpt.getAttribute('data-sisa-bebas') : (oldestOpt.getAttribute('data-sisa') || 0)) : 0;
         const oldestBatchNo = oldestOpt ? oldestOpt.value : '-';
         const oldestMasuk = oldestOpt ? (oldestOpt.getAttribute('data-masuk') || '-') : '-';
-        const isSameBatch = selectedOpt && oldestOpt && (selectedOpt.value === oldestOpt.value);
 
-        let oldestAlreadyUsedInOtherRows = false;
-        if (oldestOpt) {
-            document.querySelectorAll('#itemsBody tr').forEach(r => {
-                if (r !== row) {
-                    const otherBatch = r.querySelector('.batch-select')?.value;
-                    if (otherBatch && otherBatch === oldestOpt.value) {
-                        oldestAlreadyUsedInOtherRows = true;
-                    }
-                }
-            });
-        }
+        // Melompati batch tertua HANYA jika ada batch terlama dengan sisa bebas > 0 yang posisinya mendahului batch terpilih
+        const isSkippingOldest = oldestOpt && selectedOpt && (selectedOpt.index > oldestOpt.index);
 
         let draftWarningNotice = '';
         if (draftQty > 0) {
@@ -1115,7 +1177,7 @@
             `;
         }
 
-        if (isFirstBatch || isSameBatch || oldestAlreadyUsedInOtherRows) {
+        if (isSameBatch || !isSkippingOldest || !oldestOpt) {
             batchSelect.style.borderColor = '#cbd5e1';
             batchSelect.style.backgroundColor = '#ffffff';
             batchInfo.innerHTML = `
@@ -1127,7 +1189,7 @@
                 </div>
                 ${draftWarningNotice}
             `;
-        } else if (oldestOpt && oldestSisa > 0) {
+        } else if (isSkippingOldest && oldestSisaBebas > 0) {
             batchSelect.style.borderColor = '#f59e0b';
             batchSelect.style.backgroundColor = '#fffdf5';
             batchInfo.innerHTML = `
@@ -1141,12 +1203,12 @@
                                 </strong>
                             </div>
                             <div style="font-size: 0.735rem; color: #78350f; line-height: 1.35;">
-                                Batch <strong>${selectedOpt.value}</strong> lebih baru. Masih ada Batch Terlama <strong>[${oldestBatchNo}]</strong> (Sisa: <strong>${oldestSisa.toLocaleString('id-ID')} unit</strong> • Masuk: <strong>${oldestMasuk}</strong>) yang harus dihabiskan dahulu!
+                                Batch <strong>${selectedOpt.value}</strong> lebih baru. Masih ada Batch Terlama <strong>[${oldestBatchNo}]</strong> (Sisa Bebas: <strong>${oldestSisaBebas.toLocaleString('id-ID')} unit</strong> • Masuk: <strong>${oldestMasuk}</strong>) yang harus dihabiskan dahulu!
                             </div>
                         </div>
-                        <button type="button" onclick="window.pemakaianApp.selectOldestBatchInRow(this)" style="background: #059669; color: #ffffff; font-weight: 700; font-size: 0.725rem; padding: 3px 8px; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.25rem; box-shadow: 0 1px 2px rgba(5,150,105,0.25);" title="Otomatis pilih batch tertua">
+                        <button type="button" onclick="window.pemakaianApp.selectOldestBatchInRow(this)" style="background: #059669; color: #ffffff; font-weight: 700; font-size: 0.725rem; padding: 3px 8px; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.25rem; box-shadow: 0 1px 2px rgba(5,150,105,0.25);" title="Otomatis pilih batch tertua yang tersedia">
                             <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                            <span>Pakai Terlama</span>
+                            <span>Pakai Terlama (${oldestBatchNo})</span>
                         </button>
                     </div>
                 </div>
@@ -1196,7 +1258,21 @@
     function selectOldestBatchInRow(btn) {
         const row = btn.closest('tr');
         const batchSelect = row.querySelector('.batch-select');
-        if (batchSelect && batchSelect.options.length > 0) {
+        if (!batchSelect) return;
+
+        // Cari opsi pertama yang memiliki sisa bebas > 0 dan tidak disabled
+        for (let i = 0; i < batchSelect.options.length; i++) {
+            const opt = batchSelect.options[i];
+            const sisaBebas = parseFloat(opt.getAttribute('data-sisa-bebas') !== null ? opt.getAttribute('data-sisa-bebas') : (opt.getAttribute('data-sisa') || 0));
+            const isFullyBooked = (opt.getAttribute('data-is-fully-booked') === '1') || opt.disabled;
+            if (opt.value && !isFullyBooked && sisaBebas > 0.0001) {
+                batchSelect.selectedIndex = i;
+                onBatchSelect(batchSelect);
+                return;
+            }
+        }
+
+        if (batchSelect.options.length > 0) {
             batchSelect.selectedIndex = 0;
             onBatchSelect(batchSelect);
         }
@@ -1727,6 +1803,8 @@
                     batch_no: opt.value,
                     grade_cd: opt.getAttribute('data-grade') || 'A',
                     sisa_qty: parseFloat(opt.getAttribute('data-sisa') || 0),
+                    sisa_bebas: parseFloat(opt.getAttribute('data-sisa-bebas') !== null ? opt.getAttribute('data-sisa-bebas') : (opt.getAttribute('data-sisa') || 0)),
+                    is_fully_booked: (opt.getAttribute('data-is-fully-booked') === '1') || opt.disabled,
                     tgl_terima: opt.getAttribute('data-masuk') || '-'
                 })).filter(b => b.batch_no);
             }
@@ -1766,7 +1844,10 @@
                         usedInForm = totalUsedPerBatchNo[olderKeyBatch] || 0;
                     }
 
-                    const stockInWarehouse = parseFloat(older.sisa_qty || 0);
+                    const stockInWarehouse = parseFloat((older.sisa_bebas !== undefined ? older.sisa_bebas : older.sisa_qty) || 0);
+                    const isFullyBooked = older.is_fully_booked || (stockInWarehouse <= 0.0001);
+                    if (isFullyBooked) continue; // Abaikan batch lama yang sudah 0 / 100% dibooking dokumen draft lain
+
                     const realAvailableOlder = stockInWarehouse - usedInForm;
 
                     if (realAvailableOlder > 0.01) {
@@ -1847,6 +1928,8 @@
     }
 
     function proceedOverrideFifoSubmit() {
+        if (isSubmitting) return;
+
         const reasonInput = document.getElementById('override_reason_input');
         const reason = reasonInput ? reasonInput.value.trim() : '';
 
@@ -1864,6 +1947,22 @@
 
         allowFifoOverride = true;
         closeWarningFifoModal();
+
+        // Jika memerlukan konfirmasi periode bulan sebelumnya, serahkan ke validasi form submit
+        if (!previousMonthConfirmed) {
+            const form = document.getElementById('pemakaianForm');
+            if (form) {
+                if (typeof form.requestSubmit === 'function') {
+                    form.requestSubmit();
+                } else {
+                    form.submit();
+                }
+            }
+            return;
+        }
+
+        setSubmittingState(true, 'Menyimpan BPPB...');
+        clearFormDraft();
         document.getElementById('pemakaianForm').submit();
     }
 
@@ -1998,7 +2097,315 @@
             }
         }
 
+        // 3. Proteksi Periode Bulan Sebelumnya & Override Nomor Urut Manual
+        if (!previousMonthConfirmed) {
+            const pakaiTglInput = document.getElementById('pakai_tgl');
+            const pakaiNoInput = document.getElementById('pakai_no');
+            const pakaiTglVal = pakaiTglInput ? pakaiTglInput.value : '';
+            const pakaiNoVal = pakaiNoInput ? pakaiNoInput.value.trim() : '';
+            const currentServerYM = window.currentServerYearMonth || (new Date().toISOString().slice(0, 7));
+
+            const docYM = pakaiTglVal ? pakaiTglVal.slice(0, 7) : '';
+            const isPreviousMonth = Boolean(docYM && docYM < currentServerYM);
+
+            const currentParts = parsePakaiNoParts(pakaiNoVal);
+            const suggestedParts = parsePakaiNoParts(lastSystemSuggestedPakaiNo);
+            const isManualSequence = Boolean(currentParts && suggestedParts && (currentParts.seq !== suggestedParts.seq));
+
+            if (isPreviousMonth || isManualSequence) {
+                let title = '';
+                let subtitle = '';
+                let alerts = [];
+
+                if (isPreviousMonth && isManualSequence) {
+                    title = 'Peringatan: Periode Sebelumnya & Nomor Urut Manual';
+                    subtitle = 'Dua penyesuaian khusus terdeteksi pada dokumen pengeluaran ini';
+                } else if (isPreviousMonth) {
+                    title = 'Konfirmasi Penambahan Dokumen Periode Sebelumnya';
+                    subtitle = 'Dokumen pengeluaran ditujukan untuk periode bulan yang telah lewat';
+                } else {
+                    title = 'Peringatan: Nomor Urut BPPB Telah Diubah Manual';
+                    subtitle = 'Nomor urut berbeda dari rekomendasi otomatis sistem';
+                }
+
+                if (isPreviousMonth) {
+                    alerts.push(`
+                        <div style="margin-bottom: 0.45rem;">
+                            <strong>1. Periode Bulan Sebelumnya:</strong> Dokumen pengeluaran ini tercatat pada tanggal <strong>${formatTanggalIndo(pakaiTglVal)}</strong>, sedangkan periode operasional aktif saat ini adalah <strong>${formatTanggalIndo(new Date().toISOString().slice(0, 10))}</strong>. Menginput transaksi pengeluaran ke bulan sebelumnya dapat memengaruhi saldo akhir inventori dan laporan closing pembukuan.
+                        </div>
+                    `);
+                }
+
+                if (isManualSequence) {
+                    alerts.push(`
+                        <div style="margin-bottom: 0.45rem;">
+                            <strong>${isPreviousMonth ? '2. ' : ''}Nomor Urut Manual:</strong> Anda memasukkan nomor urut <strong>${currentParts.seq}</strong> (dokumen: <code>${pakaiNoVal}</code>), sedangkan nomor urut otomatis yang disarankan sistem untuk periode ini adalah <strong>${suggestedParts.seq}</strong> (dokumen: <code>${lastSystemSuggestedPakaiNo}</code>). Perubahan manual berisiko menyebabkan nomor loncat atau potensi duplikasi arsip di masa mendatang.
+                        </div>
+                    `);
+                }
+
+                openPreviousMonthModal({
+                    pakaiNo: pakaiNoVal,
+                    pakaiTgl: pakaiTglVal,
+                    title: title,
+                    subtitle: subtitle,
+                    contentHtml: alerts.join(''),
+                    question: 'Apakah Anda yakin data ini sudah benar dan tetap ingin menyimpan dokumen BPPB ini?'
+                });
+
+                return false;
+            }
+        }
+
         return true;
+    }
+
+    /**
+     * =========================================================================
+     * PROTEKSI PERIODE BULAN SEBELUMNYA & LIVE SYNC NOMOR BPPB DENGAN BULAN
+     * =========================================================================
+     */
+    function formatTanggalIndo(dateStr) {
+        if (!dateStr) return '-';
+        const months = [
+            'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+            'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+        ];
+        const parts = dateStr.split('-');
+        if (parts.length === 3) {
+            const year = parts[0];
+            const monthIdx = parseInt(parts[1], 10) - 1;
+            const day = parseInt(parts[2], 10);
+            return `${day} ${months[monthIdx] || ''} ${year}`;
+        }
+        return dateStr;
+    }
+
+    function openPreviousMonthModal(options) {
+        const modal = document.getElementById('modalConfirmPreviousMonth');
+        if (!modal) return;
+        const elPakaiNo = document.getElementById('mcpmPakaiNo');
+        const elPakaiTgl = document.getElementById('mcpmPakaiTgl');
+        const elTitle = document.getElementById('mcpmTitle');
+        const elSubtitle = document.getElementById('mcpmSubtitle');
+        const elContent = document.getElementById('mcpmAlertContent');
+        const elQuestion = document.getElementById('mcpmQuestion');
+
+        if (elPakaiNo) elPakaiNo.textContent = options.pakaiNo || '-';
+        if (elPakaiTgl) elPakaiTgl.textContent = formatTanggalIndo(options.pakaiTgl);
+        if (elTitle) elTitle.textContent = options.title || 'Peringatan Dokumen Pengeluaran (BPPB)';
+        if (elSubtitle) elSubtitle.textContent = options.subtitle || 'Perhatian khusus penomoran dokumen & periode pembukuan pemakaian';
+        if (elContent) elContent.innerHTML = options.contentHtml || '';
+        if (elQuestion) elQuestion.textContent = options.question || 'Apakah Anda yakin ingin melanjutkan penyimpanan?';
+
+        modal.style.display = 'flex';
+    }
+
+    function closePreviousMonthModal() {
+        const modal = document.getElementById('modalConfirmPreviousMonth');
+        if (modal) modal.style.display = 'none';
+    }
+
+    function parsePakaiNoParts(val) {
+        if (!val) return null;
+        const match = val.trim().match(/^(\d+)\/BPPB\/MFI\/(\d{1,2})\/(\d{2,4})$/i);
+        if (match) {
+            const rawYear = match[3];
+            const year2 = rawYear.length === 4 ? rawYear.slice(-2) : rawYear.padStart(2, '0');
+            return {
+                seq: match[1],
+                month: match[2].padStart(2, '0'),
+                year: year2,
+            };
+        }
+        return null;
+    }
+
+    let lastSystemSuggestedPakaiNo = '';
+    let previousMonthConfirmed = false;
+
+    function initCreatePakaiDateNumberSync() {
+        const pakaiTglInput = document.getElementById('pakai_tgl');
+        const pakaiNoInput = document.getElementById('pakai_no');
+        const pakaiNoHelp = document.getElementById('pakai_no_help');
+
+        if (!pakaiTglInput || !pakaiNoInput) return;
+
+        lastSystemSuggestedPakaiNo = pakaiNoInput.value.trim();
+        let initialParts = parsePakaiNoParts(pakaiNoInput.value);
+        let activeMonthYear = initialParts 
+            ? `${initialParts.year}-${initialParts.month}` 
+            : (pakaiTglInput.value ? pakaiTglInput.value.slice(2, 4) + '-' + pakaiTglInput.value.slice(5, 7) : '');
+
+        function fetchAndApplyPakaiCode(targetDateStr, reasonText) {
+            pakaiNoInput.style.opacity = '0.5';
+            pakaiNoInput.style.pointerEvents = 'none';
+            if (pakaiNoHelp) {
+                pakaiNoHelp.style.display = 'block';
+                pakaiNoHelp.innerHTML = `<span style="color:#0284c7;">⚡ Memeriksa urutan nomor BPPB untuk periode ${formatTanggalIndo(targetDateStr)}...</span>`;
+            }
+
+            fetch(`/ajax/generate-code?type=bppb&date=${encodeURIComponent(targetDateStr)}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success' && data.code) {
+                        pakaiNoInput.value = data.code;
+                        lastSystemSuggestedPakaiNo = data.code;
+                        const newParts = parsePakaiNoParts(data.code);
+                        if (newParts) {
+                            activeMonthYear = `${newParts.year}-${newParts.month}`;
+                        }
+
+                        // Visual highlight lembut
+                        pakaiNoInput.style.background = '#f0fdf4';
+                        setTimeout(() => {
+                            pakaiNoInput.style.background = '#ffffff';
+                        }, 1200);
+
+                        if (pakaiNoHelp) {
+                            pakaiNoHelp.style.display = 'block';
+                            pakaiNoHelp.innerHTML = `<span style="color:#15803d; font-weight:600;">✓ Nomor BPPB disesuaikan otomatis (${reasonText}): <strong>${data.code}</strong></span>`;
+                        }
+                    }
+                })
+                .catch(err => {
+                    console.error('Gagal generate nomor BPPB:', err);
+                    if (pakaiNoHelp) {
+                        pakaiNoHelp.style.display = 'block';
+                        pakaiNoHelp.innerHTML = `<span style="color:#dc2626;">Gagal menyinkronkan nomor urut otomatis. Anda dapat mengetiknya secara manual.</span>`;
+                    }
+                })
+                .finally(() => {
+                    pakaiNoInput.style.opacity = '1';
+                    pakaiNoInput.style.pointerEvents = 'auto';
+                });
+        }
+
+        // 1. KETIKA TANGGAL PEMAKAIAN DIUBAH PENGGUNA (LANGSUNG LIVE)
+        ['change', 'input'].forEach(evtName => {
+            pakaiTglInput.addEventListener(evtName, function () {
+                const newDate = this.value;
+                if (!newDate) return;
+
+                const newYM = newDate.slice(2, 4) + '-' + newDate.slice(5, 7);
+                if (newYM !== activeMonthYear) {
+                    fetchAndApplyPakaiCode(newDate, `urutan bulan ${formatTanggalIndo(newDate)}`);
+                }
+            });
+        });
+
+        // 2. KETIKA BULAN/TAHUN PADA INPUT NOMOR BPPB DIUBAH LANGSUNG
+        let pakaiNoDebounceTimer = null;
+
+        function handlePakaiNoInputSync() {
+            const parts = parsePakaiNoParts(pakaiNoInput.value);
+            if (!parts) return;
+
+            const mNum = parseInt(parts.month, 10);
+            if (isNaN(mNum) || mNum < 1 || mNum > 12) return;
+
+            const typedYM = `${parts.year}-${parts.month}`;
+            if (typedYM !== activeMonthYear) {
+                const targetDate = `20${parts.year}-${parts.month}-01`;
+                
+                if (pakaiTglInput.value) {
+                    const currentDay = pakaiTglInput.value.slice(8, 10);
+                    const safeDate = `20${parts.year}-${parts.month}-${currentDay}`;
+                    const testD = new Date(safeDate);
+                    pakaiTglInput.value = (!isNaN(testD.getTime())) ? safeDate : targetDate;
+                } else {
+                    pakaiTglInput.value = targetDate;
+                }
+
+                fetchAndApplyPakaiCode(targetDate, `bulan ${parts.month} tahun 20${parts.year}`);
+            }
+        }
+
+        pakaiNoInput.addEventListener('input', function () {
+            clearTimeout(pakaiNoDebounceTimer);
+            pakaiNoDebounceTimer = setTimeout(handlePakaiNoInputSync, 300);
+        });
+
+        ['change', 'blur'].forEach(evtName => {
+            pakaiNoInput.addEventListener(evtName, function () {
+                clearTimeout(pakaiNoDebounceTimer);
+                handlePakaiNoInputSync();
+            });
+        });
+    }
+
+    /**
+     * =========================================================================
+     * ANTI DOUBLE SUBMISSION & SCREEN LOCK LOADING STATE
+     * =========================================================================
+     */
+    let isSubmitting = false;
+    let submitSafetyTimeout = null;
+
+    function setSubmittingState(isSubmittingNow, customText = 'Menyimpan BPPB...') {
+        isSubmitting = isSubmittingNow;
+
+        const btnSubmit = document.getElementById('btnSubmitPemakaian');
+        const btnConfirmPrev = document.getElementById('btnConfirmSubmitPreviousMonth');
+        const allSubmitButtons = [btnSubmit, btnConfirmPrev].filter(Boolean);
+
+        allSubmitButtons.forEach(btn => {
+            btn.disabled = isSubmittingNow;
+            if (isSubmittingNow) {
+                if (!btn.dataset.originalHtml) {
+                    btn.dataset.originalHtml = btn.innerHTML;
+                }
+                btn.classList.add('btn-is-submitting');
+                btn.innerHTML = `
+                    <svg class="submit-spinner-icon" width="18" height="18" fill="none" viewBox="0 0 24 24">
+                        <circle style="opacity: 0.25;" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path style="opacity: 0.75;" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span>${customText}</span>
+                `;
+            } else {
+                if (btn.dataset.originalHtml) {
+                    btn.innerHTML = btn.dataset.originalHtml;
+                }
+                btn.classList.remove('btn-is-submitting');
+            }
+        });
+
+        // Overlay pelindung seluruh layar agar tidak bisa diklik dobel
+        let overlay = document.getElementById('screenSubmissionLockOverlay');
+        if (isSubmittingNow) {
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.id = 'screenSubmissionLockOverlay';
+                overlay.style.cssText = 'position: fixed; inset: 0; background: rgba(15, 23, 42, 0.45); z-index: 100000; cursor: wait; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(2px);';
+                overlay.innerHTML = `
+                    <div style="background: #ffffff; padding: 1.35rem 2rem; border-radius: 12px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); display: flex; align-items: center; gap: 1rem; border: 1.5px solid #059669; animation: slideDownFloatingWidget 0.2s ease-out;">
+                        <div style="width: 32px; height: 32px; border: 3px solid #e2e8f0; border-top-color: #059669; border-radius: 50%; animation: mirasaSpin 0.8s linear infinite; flex-shrink: 0;"></div>
+                        <div>
+                            <strong style="color: #0f172a; font-size: 0.95rem; display: block;">Sedang Menyimpan Data BPPB...</strong>
+                            <span style="color: #64748b; font-size: 0.8rem;">Mohon tunggu, sistem sedang memproses dokumen &amp; alokasi stok. Jangan menutup jendela.</span>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(overlay);
+            } else {
+                overlay.style.display = 'flex';
+            }
+
+            // Safety timeout 20 detik jika terjadi kendala jaringan agar UI tidak terkunci permanen
+            clearTimeout(submitSafetyTimeout);
+            submitSafetyTimeout = setTimeout(() => {
+                if (isSubmitting) {
+                    setSubmittingState(false);
+                    console.warn('Submission state reset due to timeout fallback.');
+                }
+            }, 20000);
+        } else {
+            clearTimeout(submitSafetyTimeout);
+            if (overlay) {
+                overlay.style.display = 'none';
+            }
+        }
     }
 
     // Inisialisasi awal saat dokumen siap (dengan pemulihan draft otomatis jika ada)
@@ -2009,6 +2416,22 @@
         }
         updateSidebarInfo();
         initFloatingWidget();
+        initCreatePakaiDateNumberSync();
+
+        const btnConfirmPrev = document.getElementById('btnConfirmSubmitPreviousMonth');
+        if (btnConfirmPrev) {
+            btnConfirmPrev.addEventListener('click', function () {
+                if (isSubmitting) return;
+                previousMonthConfirmed = true;
+                closePreviousMonthModal();
+                clearFormDraft();
+                setSubmittingState(true, 'Menyimpan BPPB...');
+                const form = document.getElementById('pemakaianForm');
+                if (form) {
+                    form.submit();
+                }
+            });
+        }
 
         document.getElementById('tujuan_pemakaian')?.addEventListener('change', () => {
             updateSidebarInfo();
@@ -2033,18 +2456,34 @@
 
         // Simpan langsung saat window sebelum unload (refresh / F5 / pindah tab)
         window.addEventListener('beforeunload', () => {
-            saveFormDraft();
+            if (!isSubmitting) {
+                saveFormDraft();
+            }
+        });
+
+        // Tangani bfcache (Back-Forward Cache): Jika pengguna menekan tombol "Back / Kembali" di browser
+        window.addEventListener('pageshow', (event) => {
+            setSubmittingState(false);
+            previousMonthConfirmed = false;
         });
 
         const form = document.getElementById('pemakaianForm');
         if (form) {
             form.addEventListener('submit', function(e) {
-                if (!validateFormBeforeSubmit()) {
+                if (isSubmitting) {
                     e.preventDefault();
                     e.stopPropagation();
                     return false;
                 }
 
+                if (!validateFormBeforeSubmit()) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setSubmittingState(false);
+                    return false;
+                }
+
+                setSubmittingState(true, 'Menyimpan BPPB...');
                 // Bersihkan draft tersimpan saat berhasil submit
                 clearFormDraft();
             });
@@ -2054,6 +2493,11 @@
         const btnSubmit = document.getElementById('btnSubmitPemakaian');
         if (btnSubmit) {
             btnSubmit.addEventListener('click', function(e) {
+                if (isSubmitting) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return false;
+                }
                 if (!form) return;
                 if (!form.checkValidity()) {
                     form.reportValidity();
@@ -2062,6 +2506,7 @@
                 if (!validateFormBeforeSubmit()) {
                     e.preventDefault();
                     e.stopPropagation();
+                    setSubmittingState(false);
                     return false;
                 }
             });
@@ -2101,6 +2546,7 @@
         saveFormDraft,
         restoreFormDraft,
         clearFormDraft,
+        closePreviousMonthModal,
     };
 
     // Alias global untuk fungsi-fungsi lama agar kompatibel
@@ -2125,5 +2571,6 @@
     window.closeWarningGradeShortageModal = closeWarningGradeShortageModal;
     window.switchBomGradeToCampurAndReload = switchBomGradeToCampurAndReload;
     window.clearAndResetDraft = clearAndResetDraft;
+    window.closePreviousMonthModal = closePreviousMonthModal;
 
 })();

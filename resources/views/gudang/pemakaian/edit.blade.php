@@ -65,6 +65,7 @@
                     No. BPPB <span style="color:#ef4444;">*</span>
                 </label>
                 <input type="text" id="pakai_no" name="pakai_no" value="{{ old('pakai_no', $pakai->pakai_no) }}" class="toolbar-input" style="font-family: monospace; font-weight: 700;" required>
+                <small id="pakai_no_help" style="display: none; color: #64748b; font-size: 0.725rem; margin-top: 2px;">Nomor urut resmi Bukti Permintaan &amp; Pengeluaran Barang (BPPB).</small>
             </div>
             <div>
                 <label for="pakai_tgl" class="toolbar-label">
@@ -247,10 +248,14 @@
 @include('gudang.pemakaian.partials.modal-warning-stock-limit')
 @include('gudang.pemakaian.partials.modal-warning-fifo')
 @include('gudang.pemakaian.partials.modal-warning-grade-shortage')
+@include('gudang.pemakaian.partials.modal-confirm-previous-month')
 @endsection
 
 @push('scripts')
 <script>
+    window.currentServerYearMonth = '{{ date('Y-m') }}';
+    window.originalPakaiTgl = '{{ $pakai->pakai_tgl ? $pakai->pakai_tgl->format('Y-m-d') : date('Y-m-d') }}';
+    window.originalPakaiNo = @json($pakai->pakai_no);
     window.appConfig = {
         pakaiId: {{ $pakai->pakai_id }},
         barangList: @json($barangList),

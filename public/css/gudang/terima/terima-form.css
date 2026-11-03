@@ -669,20 +669,33 @@
 }
 
 /* =========================================================================
- * FINANCIAL SUMMARY & CARD STYLING ENHANCEMENTS
+ * FINANCIAL SUMMARY & CARD STYLING ENHANCEMENTS (ENTERPRISE GRADE)
  * ========================================================================= */
+.po-bottom-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+    align-items: start;
+    margin-bottom: 1.25rem;
+}
+@media (max-width: 992px) {
+    .po-bottom-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
 .po-financial-card {
     background: #ffffff;
     border: 1.5px solid #cbd5e1;
-    border-radius: 8px;
-    padding: 0.85rem 1.15rem;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.04), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
 }
 .po-financial-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0.35rem 0;
+    padding: 0.4rem 0;
     font-size: 0.825rem;
     border-bottom: 1px dashed #f1f5f9;
 }
@@ -695,16 +708,67 @@
 .po-financial-row:last-child {
     border-bottom: none;
 }
+
+/* Badge Finansial Spesifik (Diskon, Potongan, PPN) */
+.badge-fin-diskon {
+    background: #fef2f2;
+    color: #dc2626;
+    border: 1px solid #fecaca;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 700;
+    font-family: monospace;
+    font-size: 0.85rem;
+}
+.badge-fin-potongan {
+    background: #fffbeb;
+    color: #b45309;
+    border: 1px solid #fde68a;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 700;
+    font-family: monospace;
+    font-size: 0.85rem;
+}
+.badge-fin-ppn {
+    background: #f0f9ff;
+    color: #0284c7;
+    border: 1px solid #bae6fd;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 700;
+    font-family: monospace;
+    font-size: 0.85rem;
+}
+
+.fin-section-divider {
+    border-top: 1.5px dashed #cbd5e1;
+    margin: 0.65rem 0 0.5rem 0;
+    position: relative;
+    text-align: center;
+}
+.fin-section-divider span {
+    position: absolute;
+    top: -9px;
+    background: #ffffff;
+    padding: 0 8px;
+    font-size: 0.675rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #94a3b8;
+}
+
 .po-grand-total-box {
     background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
     border: 1.5px solid #86efac;
     border-radius: 8px;
-    padding: 0.75rem 0.95rem;
-    margin-top: 0.5rem;
+    padding: 0.85rem 1rem;
+    margin-top: 0.65rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    box-shadow: 0 1px 2px rgba(16, 185, 129, 0.08);
+    box-shadow: 0 2px 4px rgba(16, 185, 129, 0.1);
 }
 .po-grand-total-val {
     font-size: 1.35rem;

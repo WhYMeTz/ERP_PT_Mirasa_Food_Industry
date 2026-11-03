@@ -181,3 +181,23 @@
         transform: translateY(0);
     }
 }
+
+/* ==========================================================================
+   ANTI-DOUBLE SUBMIT & SCREEN LOCK LOADING STATE
+   ========================================================================== */
+@keyframes mirasaSpin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.btn-is-submitting {
+    opacity: 0.75 !important;
+    cursor: not-allowed !important;
+    pointer-events: none !important;
+}
+
+.submit-spinner-icon {
+    display: inline-block;
+    animation: mirasaSpin 0.8s linear infinite;
+    vertical-align: middle;
+}

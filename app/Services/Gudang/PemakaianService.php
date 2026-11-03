@@ -332,7 +332,19 @@ class PemakaianService
                 throw new Exception("Minimal harus ada 1 item barang yang dikeluarkan.");
             }
 
-            $pakaiNo = !empty($data['pakai_no']) ? trim($data['pakai_no']) : $this->codeGenerator->generatePakaiNo();
+            $pakaiTgl = $data['pakai_tgl'] ?? date('Y-m-d');
+            $pakaiNo = !empty($data['pakai_no']) ? trim($data['pakai_no']) : $this->codeGenerator->generatePakaiNo($pakaiTgl);
+
+            // Lapisan Keamanan Ekstra Backend: Cek duplikasi nomor dokumen BPPB
+            if (DatPakaiHdr::where('pakai_no', $pakaiNo)->exists()) {
+                $newPakaiNo = $this->codeGenerator->generatePakaiNo($pakaiTgl);
+                if ($newPakaiNo !== $pakaiNo && !DatPakaiHdr::where('pakai_no', $newPakaiNo)->exists()) {
+                    $pakaiNo = $newPakaiNo;
+                } else {
+                    throw new Exception("Nomor dokumen BPPB '{$pakaiNo}' sudah pernah tersimpan sebelumnya. Permintaan dibatalkan untuk mencegah duplikasi data ganda.");
+                }
+            }
+
             $gudangId = (int) $data['gudang_id'];
             $tujuanPemakaian = !empty($data['tujuan_pemakaian']) ? trim($data['tujuan_pemakaian']) : 'PRODUKSI';
 
@@ -450,7 +462,7 @@ class PemakaianService
     public function update(int $pakaiId, array $data, ?User $user = null): DatPakaiHdr
     {
         return DB::transaction(function () use ($pakaiId, $data, $user) {
-            $header = DatPakaiHdr::where('pakai_id', $pakaiId)->firstOrFail();
+            $header = DatPakaiHdr::with('details.barang.satuanDasar')->where('pakai_id', $pakaiId)->firstOrFail();
 
             if ($header->status_st === 'POSTED') {
                 throw new Exception("Dokumen pemakaian '{$header->pakai_no}' sudah diposting dan stok telah dipotong. Dokumen tidak dapat diubah.");
@@ -464,21 +476,43 @@ class PemakaianService
             $gudangId = (int) ($data['gudang_id'] ?? $header->gudang_id);
             $tujuanPemakaian = !empty($data['tujuan_pemakaian']) ? trim($data['tujuan_pemakaian']) : $header->tujuan_pemakaian;
             $actor = $user?->name ?? auth()->user()?->name ?? 'SYSTEM';
+            $catatanVerifikasi = !empty($data['catatan_verifikasi']) ? trim($data['catatan_verifikasi']) : null;
+
+            // 0. Rekam snapshot data asli sebelum diubah untuk jejak audit kesalahan input
+            $oldDetailsSnapshot = $header->details->map(function ($d) {
+                return [
+                    'barang_id'     => (int) $d->barang_id,
+                    'barang_nm'     => $d->barang?->barang_nm ?? "Item #{$d->barang_id}",
+                    'barang_cd'     => $d->barang?->barang_cd ?? '',
+                    'satuan_nm'     => $d->barang?->satuanDasar?->satuan_nm ?? 'Kg',
+                    'batch_no'      => (string) $d->batch_no,
+                    'grade_cd'      => (string) ($d->grade_cd ?? 'A'),
+                    'qty_keluar'    => (float) $d->qty_keluar,
+                    'harga_satuan'  => (float) $d->harga_satuan,
+                    'total_harga'   => (float) $d->total_harga,
+                ];
+            })->values()->all();
 
             // 1. Update Header
-            $header->update([
-                'pakai_tgl'        => $data['pakai_tgl'] ?? $header->pakai_tgl,
-                'gudang_id'        => $gudangId,
-                'produksi_id'      => !empty($data['produksi_id']) ? (int) $data['produksi_id'] : null,
-                'tujuan_pemakaian' => $tujuanPemakaian,
-                'catatan_txt'      => $data['catatan_txt'] ?? $header->catatan_txt,
-                'updated_by'       => $actor,
-            ]);
+            $headerUpdateData = [
+                'pakai_tgl'          => $data['pakai_tgl'] ?? $header->pakai_tgl,
+                'gudang_id'          => $gudangId,
+                'produksi_id'        => !empty($data['produksi_id']) ? (int) $data['produksi_id'] : null,
+                'tujuan_pemakaian'   => $tujuanPemakaian,
+                'catatan_txt'        => $data['catatan_txt'] ?? $header->catatan_txt,
+                'catatan_verifikasi' => $catatanVerifikasi ?? $header->catatan_verifikasi,
+                'updated_by'         => $actor,
+            ];
+            if (!empty($data['pakai_no'])) {
+                $headerUpdateData['pakai_no'] = trim($data['pakai_no']);
+            }
+            $header->update($headerUpdateData);
 
             // 2. Hapus detail lama (karena DRAFT belum memotong stok)
             DatPakaiDtl::where('pakai_id', $header->pakai_id)->delete();
 
-            // 3. Simpan detail item yang baru
+            // 3. Simpan detail item yang baru & kumpulkan snapshot baru
+            $newDetailsSnapshot = [];
             foreach ($items as $item) {
                 $barangId = (int) $item['barang_id'];
                 $batchNo = trim($item['batch_no'] ?? '');
@@ -533,12 +567,12 @@ class PemakaianService
                     throw new Exception("Kuantitas pengeluaran '{$barangNm}' pada batch '{$batchNo}' (" . number_format($qtyKeluar, 2, ',', '.') . ") melebihi sisa fisik di gudang (" . number_format($sisaStokFisik, 2, ',', '.') . "). Silakan sesuaikan kuantitas atau pecah pemakaian ke batch berikutnya.");
                 }
 
+                $barang = MstBarang::with('satuanDasar')->find($barangId);
                 $hargaSatuan = !empty($item['harga_satuan']) && (float) $item['harga_satuan'] > 0
                     ? (float) $item['harga_satuan']
                     : (float) ($stokBatch?->harga_satuan ?? 0);
 
                 if ($hargaSatuan <= 0) {
-                    $barang = MstBarang::find($barangId);
                     $hargaSatuan = (float) ($barang?->harga_beli_standar ?? 0);
                 }
 
@@ -555,9 +589,111 @@ class PemakaianService
                     'total_harga'    => $totalHarga,
                     'keterangan_txt' => $keteranganDetail,
                 ]);
+
+                $newDetailsSnapshot[] = [
+                    'barang_id'     => $barangId,
+                    'barang_nm'     => $barang?->barang_nm ?? "Item #{$barangId}",
+                    'barang_cd'     => $barang?->barang_cd ?? '',
+                    'satuan_nm'     => $barang?->satuanDasar?->satuan_nm ?? 'Kg',
+                    'batch_no'      => $batchNo,
+                    'grade_cd'      => $gradeCd,
+                    'qty_keluar'    => $qtyKeluar,
+                    'harga_satuan'  => $hargaSatuan,
+                    'total_harga'   => $totalHarga,
+                ];
             }
 
-            return $header->fresh(['details.barang']);
+            // 4. Deteksi Selisih & Buat Jejak Audit Kesalahan Input jika Ada Perbedaan
+            $differences = [];
+            $kategoriList = [];
+
+            // Bandingkan item lama vs baru
+            foreach ($oldDetailsSnapshot as $old) {
+                // Cari item baru yang cocok
+                $match = collect($newDetailsSnapshot)->firstWhere('barang_id', $old['barang_id']);
+                if (!$match) {
+                    $differences[] = [
+                        'barang_nm'  => $old['barang_nm'],
+                        'tipe'       => 'HAPUS_ITEM',
+                        'keterangan' => "Barang '{$old['barang_nm']}' (Batch {$old['batch_no']}, {$old['qty_keluar']} {$old['satuan_nm']}) dihapus dari daftar.",
+                    ];
+                    $kategoriList[] = 'HAPUS_ITEM';
+                    continue;
+                }
+
+                // Cek perubahan nomor batch
+                if ($match['batch_no'] !== $old['batch_no']) {
+                    $differences[] = [
+                        'barang_nm'  => $old['barang_nm'],
+                        'tipe'       => 'KOREKSI_BATCH',
+                        'keterangan' => "Nomor batch diubah dari '{$old['batch_no']}' menjadi '{$match['batch_no']}'.",
+                    ];
+                    $kategoriList[] = 'SALAH_BATCH';
+                }
+
+                // Cek perubahan kuantitas
+                if (abs($match['qty_keluar'] - $old['qty_keluar']) > 0.0001) {
+                    $selisih = $match['qty_keluar'] - $old['qty_keluar'];
+                    $tanda = $selisih > 0 ? '+' : '';
+                    $differences[] = [
+                        'barang_nm'  => $old['barang_nm'],
+                        'tipe'       => 'KOREKSI_QTY',
+                        'keterangan' => "Kuantitas keluar dikoreksi dari " . number_format($old['qty_keluar'], 2, ',', '.') . " {$old['satuan_nm']} menjadi " . number_format($match['qty_keluar'], 2, ',', '.') . " {$old['satuan_nm']} (Selisih: {$tanda}" . number_format($selisih, 2, ',', '.') . " {$old['satuan_nm']}).",
+                    ];
+                    $kategoriList[] = 'SALAH_QTY';
+                }
+
+                // Cek perubahan grade
+                if ($match['grade_cd'] !== $old['grade_cd']) {
+                    $differences[] = [
+                        'barang_nm'  => $old['barang_nm'],
+                        'tipe'       => 'KOREKSI_GRADE',
+                        'keterangan' => "Grade kualitas diubah dari 'Grade {$old['grade_cd']}' menjadi 'Grade {$match['grade_cd']}'.",
+                    ];
+                    $kategoriList[] = 'SALAH_GRADE';
+                }
+            }
+
+            // Cek barang yang baru ditambahkan
+            foreach ($newDetailsSnapshot as $new) {
+                $wasThere = collect($oldDetailsSnapshot)->contains('barang_id', $new['barang_id']);
+                if (!$wasThere) {
+                    $differences[] = [
+                        'barang_nm'  => $new['barang_nm'],
+                        'tipe'       => 'TAMBAH_ITEM',
+                        'keterangan' => "Barang tambahan baru '{$new['barang_nm']}' (Batch {$new['batch_no']}, " . number_format($new['qty_keluar'], 2, ',', '.') . " {$new['satuan_nm']}) ditambahkan.",
+                    ];
+                    $kategoriList[] = 'TAMBAH_ITEM';
+                }
+            }
+
+            // Jika ada selisih koreksi atau ada catatan verifikasi tertulis
+            if (!empty($differences) || !empty($catatanVerifikasi)) {
+                $kategoriUnik = array_unique($kategoriList);
+                $kategoriFinal = !empty($kategoriUnik) ? implode(' & ', $kategoriUnik) : 'KOREKSI_ADMINISTRASI';
+
+                $revisiCount = \App\Models\Gudang\DatPakaiRevisiLog::where('pakai_id', $header->pakai_id)->count() + 1;
+
+                \App\Models\Gudang\DatPakaiRevisiLog::create([
+                    'pakai_id'           => $header->pakai_id,
+                    'revisi_no'          => "REV-{$header->pakai_no}-{$revisiCount}",
+                    'revisi_tgl'         => now(),
+                    'pembuat_nama'       => $header->creator_name,
+                    'verifikator_nama'   => $actor,
+                    'kategori_kesalahan' => $kategoriFinal,
+                    'catatan_koreksi'    => $catatanVerifikasi ?: "Koreksi data fisik pemakaian bahan oleh bagian verifikasi.",
+                    'data_sebelum_json'  => $oldDetailsSnapshot,
+                    'data_sesudah_json'  => $newDetailsSnapshot,
+                    'perubahan_json'     => $differences,
+                    'created_by'         => $actor,
+                ]);
+
+                $header->update([
+                    'is_ada_koreksi' => true,
+                ]);
+            }
+
+            return $header->fresh(['details.barang', 'revisiLogs']);
         });
     }
 

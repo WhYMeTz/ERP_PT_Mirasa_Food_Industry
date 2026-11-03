@@ -724,7 +724,7 @@ function calculateTotalTerima() {
     const barTotalReject = document.getElementById('barTotalReject');
     const barTotalItems = document.getElementById('barTotalItems');
     const barGrandTotal = document.getElementById('barGrandTotal');
-    const barTaxSummaryLine = document.getElementById('barTaxSummaryLine');
+    const barTaxSummaryLine = document.getElementById('barTaxSummaryLine'); // Remnant check, safely hidden/removed
 
     if (barTotalNetto) barTotalNetto.innerText = totalNetto.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     if (barTotalReject) barTotalReject.innerText = totalReject.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });

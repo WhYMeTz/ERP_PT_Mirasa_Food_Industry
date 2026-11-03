@@ -403,35 +403,37 @@
                 </div>
 
                 {{-- Divider Finansial --}}
-                <div style="border-top: 1.5px dashed #cbd5e1; margin: 0.5rem 0 0.35rem 0;"></div>
+                <div class="fin-section-divider">
+                    <span>Rincian Nilai &amp; Faktur</span>
+                </div>
 
                 {{-- Subtotal Kotor (Tampil jika ada diskon atau potongan) --}}
                 <div class="po-financial-row" id="rowSubtotalBruto" style="display: none;">
                     <span style="color: #64748b; font-weight: 600;">Subtotal Kotor:</span>
-                    <span id="sideSubtotalBruto" style="font-family: monospace; color: #475569; font-size: 0.9rem; white-space: nowrap; flex-shrink: 0;">Rp 0</span>
+                    <span id="sideSubtotalBruto" style="font-family: monospace; color: #475569; font-size: 0.9rem; font-weight: 700; white-space: nowrap; flex-shrink: 0;">Rp 0</span>
                 </div>
 
                 {{-- Diskon Item (Tampil jika > 0) --}}
                 <div class="po-financial-row" id="rowDiskon" style="display: none;">
-                    <span style="color: #b45309; font-weight: 600;">Diskon Item:</span>
-                    <span id="sideTotalDiskon" style="font-family: monospace; font-weight: 700; color: #d97706; font-size: 0.9rem; white-space: nowrap; flex-shrink: 0;">-Rp 0</span>
+                    <span style="color: #b91c1c; font-weight: 600;">Diskon Item:</span>
+                    <span id="sideTotalDiskon" class="badge-fin-diskon">-Rp 0</span>
                 </div>
 
                 {{-- Potongan Harga (Tampil jika > 0) --}}
                 <div class="po-financial-row" id="rowPotongan" style="display: none;">
                     <span style="color: #b45309; font-weight: 600;">Potongan Harga:</span>
-                    <span id="sideTotalPotongan" style="font-family: monospace; font-weight: 700; color: #d97706; font-size: 0.9rem; white-space: nowrap; flex-shrink: 0;">-Rp 0</span>
+                    <span id="sideTotalPotongan" class="badge-fin-potongan">-Rp 0</span>
                 </div>
 
-                <div class="po-financial-row">
-                    <span style="color: #334155; font-weight: 700;">DPP Nilai Netto:</span>
-                    <span id="sideTotalDpp" style="font-weight: 700; font-family: monospace; color: #0f172a; font-size: 0.95rem; white-space: nowrap; flex-shrink: 0;">Rp 0</span>
+                <div class="po-financial-row" style="margin-top: 0.2rem; padding-top: 0.45rem; border-top: 1.5px dashed #cbd5e1;">
+                    <span style="color: #0f172a; font-weight: 800; font-size: 0.85rem;">DPP Nilai Netto:</span>
+                    <strong id="sideTotalDpp" style="font-weight: 800; font-family: monospace; color: #0f172a; font-size: 1rem; white-space: nowrap; flex-shrink: 0;">Rp 0</strong>
                 </div>
 
                 {{-- PPN 11% (Tampil jika ada PPN) --}}
                 <div class="po-financial-row" id="rowPpn" style="display: none;">
                     <span style="color: #0369a1; font-weight: 600;">PPN (11%):</span>
-                    <span id="sideTotalPpn" style="font-family: monospace; font-weight: 700; color: #0284c7; font-size: 0.9rem; white-space: nowrap; flex-shrink: 0;">+Rp 0</span>
+                    <span id="sideTotalPpn" class="badge-fin-ppn">+Rp 0</span>
                 </div>
 
                 <div class="po-grand-total-box">
@@ -439,7 +441,7 @@
                         <span style="font-size: 0.725rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; color: #065f46; display: block;">
                             TOTAL NILAI PENERIMAAN:
                         </span>
-                        <span style="font-size: 0.7rem; color: #059669;">Berdasarkan Kuantitas Netto Masuk</span>
+                        <span style="font-size: 0.7rem; color: #059669; font-weight: 600;">Berdasarkan Kuantitas Netto Masuk</span>
                     </div>
                     <div class="po-grand-total-val" id="sideGrandTotal" style="white-space: nowrap; flex-shrink: 0;">
                         Rp 0
@@ -450,7 +452,6 @@
                 <span id="barTotalReject" style="display: none;">0,00</span>
                 <span id="barTotalItems" style="display: none;">0</span>
                 <span id="barGrandTotal" style="display: none;">Rp 0</span>
-                <div id="barTaxSummaryLine" style="display: none;"></div>
                 <input type="hidden" name="potongan_nominal" id="global_potongan" value="{{ old('potongan_nominal', (float) $terima->potongan_nominal) }}">
 
                 <div class="po-action-bar">

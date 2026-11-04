@@ -330,8 +330,10 @@ window.selectSupplierFromModal = function (id, name, code, grnCnt, contact, addr
         badgeEl.style.display = grnCnt > 0 ? 'inline-block' : 'none';
     }
 
-    document.getElementById('supplierPlaceholderBox').style.display = 'none';
-    document.getElementById('supplierActiveCard').style.display = 'flex';
+    const placeholderBox = document.getElementById('supplierPlaceholderBox');
+    if (placeholderBox) placeholderBox.style.display = 'none';
+    const activeCard = document.getElementById('supplierActiveCard');
+    if (activeCard) activeCard.style.display = 'flex';
 
     // Highlight matching quick pill badge (if any)
     syncActivePillBadge(id);
@@ -342,6 +344,27 @@ window.selectSupplierFromModal = function (id, name, code, grnCnt, contact, addr
     selectedGrnIds.clear();
     loadUnbilledGrn(id);
 };
+
+window.handleSupplierCardSelect = function (el) {
+    if (!el) return;
+    const id = parseInt(el.getAttribute('data-supplier-id'), 10);
+    const name = el.getAttribute('data-supplier-nm') || '';
+    const code = el.getAttribute('data-supplier-cd') || '';
+    const grnCnt = parseInt(el.getAttribute('data-grn-count') || '0', 10);
+    const contact = el.getAttribute('data-contact') || '';
+    const address = el.getAttribute('data-address') || '';
+    const topHari = parseInt(el.getAttribute('data-top') || '14', 10);
+    selectSupplierFromModal(id, name, code, grnCnt, contact, address, topHari);
+};
+
+document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+        const modal = document.getElementById('modalSupplierPicker');
+        if (modal && modal.style.display !== 'none') {
+            closeSupplierModal();
+        }
+    }
+});
 
 function syncActivePillBadge(supplierId) {
     document.querySelectorAll('.btn-supplier-pill').forEach(btn => {
@@ -693,8 +716,72 @@ function updateGrnStatusBar() {
 }
 
 /* ========================================================
-   TABLE RINCIAN ITEM & AKUMULASI NILAI
+   SKEMA PAJAK PPN & TAX CALCULATION (IDENTIK PO PEMBELIAN)
    ======================================================== */
+
+window.onHeaderTaxInclusiveToggle = function (el) {
+    const isChecked = el ? el.checked : false;
+    const badge = document.getElementById('badgeTaxMode');
+    if (badge) {
+        badge.textContent = isChecked ? 'Gross' : 'Net';
+        badge.style.background = isChecked ? '#dcfce7' : '#e2e8f0';
+        badge.style.color = isChecked ? '#15803d' : '#475569';
+    }
+
+    document.querySelectorAll('.item-calc-row').forEach(row => {
+        updateRowPpnState(row, false);
+    });
+    recalculateTotals();
+};
+
+window.applyGlobalTaxToAllRows = function (selectEl) {
+    if (!selectEl) return;
+    const selectedVal = selectEl.value;
+
+    document.querySelectorAll('.input-ppn-tipe').forEach(sel => {
+        sel.value = selectedVal;
+        const row = sel.closest('.item-calc-row');
+        if (row) updateRowPpnState(row, false);
+    });
+    recalculateTotals();
+};
+
+function buildRowTaxOptions(currentPajakId, currentPpnTipe, currentTarif, isItemInclude) {
+    const list = window.appConfig?.pajakList || [];
+    let isNonPpn = (!currentPajakId && !currentTarif && currentPpnTipe === 'NON_PPN');
+    let html = `<option value="NON_PPN" data-tarif="0" data-sifat="TAMBAH" ${isNonPpn ? 'selected' : ''}>Non PPN (0%)</option>`;
+
+    let hasSelected = isNonPpn;
+    if (list.length > 0) {
+        list.forEach(p => {
+            const tarif = parseFloat(p.tarif_persen) || 0;
+            const sifat = p.sifat_pajak || 'TAMBAH';
+            const code = p.pajak_cd || `PPN ${tarif}%`;
+            const val = p.pajak_id;
+
+            let isMatch = false;
+            if (!hasSelected) {
+                if (currentPajakId && (p.pajak_id == currentPajakId || p.pajak_cd == currentPajakId)) {
+                    isMatch = true;
+                } else if (!currentPajakId) {
+                    if (currentTarif > 0 && Math.abs(tarif - currentTarif) < 0.01) {
+                        isMatch = true;
+                    } else if (currentPpnTipe === 'PPN_11' && Math.abs(tarif - 11) < 0.01) {
+                        isMatch = true;
+                    } else if (currentPpnTipe === 'PPN_INCLUDE' && Math.abs(tarif - 11) < 0.01) {
+                        isMatch = true;
+                    }
+                }
+            }
+            if (isMatch) hasSelected = true;
+            html += `<option value="${val}" data-code="${code}" data-tarif="${tarif}" data-sifat="${sifat}" ${isMatch ? 'selected' : ''}>${code} (${tarif}%)</option>`;
+        });
+    } else {
+        html += `<option value="PPN_11" data-tarif="11" data-sifat="TAMBAH" ${(currentPpnTipe === 'PPN_11' || currentTarif == 11) ? 'selected' : ''}>PPN 11% (Exclude)</option>`;
+        html += `<option value="PPN_INCLUDE" data-tarif="11" data-sifat="TAMBAH" ${(currentPpnTipe === 'PPN_INCLUDE' || isItemInclude) ? 'selected' : ''}>Include PPN (11%)</option>`;
+    }
+    return html;
+}
 
 /**
  * Sinkronisasi status PPN, DPP, dan nilai input per baris tabel
@@ -712,12 +799,16 @@ function updateRowPpnState(row, manualPpnEdited = false) {
     const dppInput = row.querySelector('.input-dpp');
     const dppBadge = row.querySelector('.ppn-dpp-badge');
 
-    const ppnTipe = tipeSelect ? tipeSelect.value : 'NON_PPN';
+    const opt = tipeSelect ? tipeSelect.options[tipeSelect.selectedIndex] : null;
+    const tarif = opt ? (parseFloat(opt.dataset.tarif) || 0) : 0;
+    const sifat = opt ? (opt.dataset.sifat || 'TAMBAH') : 'TAMBAH';
+    const isHeaderInc = document.getElementById('is_harga_termasuk_pajak')?.checked || false;
+    const isInc = isHeaderInc || (tipeSelect?.value === 'PPN_INCLUDE');
 
     let ppn = manualPpnEdited ? parseDecimal(ppnInput?.value) : 0;
     let dpp = nilaiBersih;
 
-    if (ppnTipe === 'NON_PPN') {
+    if (tarif <= 0 || tipeSelect?.value === 'NON_PPN') {
         ppn = 0;
         dpp = nilaiBersih;
         if (ppnInput) {
@@ -727,21 +818,10 @@ function updateRowPpnState(row, manualPpnEdited = false) {
             ppnInput.style.color = '#94a3b8';
         }
         if (dppBadge) dppBadge.style.display = 'none';
-    } else if (ppnTipe === 'PPN_11') {
-        dpp = nilaiBersih;
+    } else if (isInc && sifat !== 'POTONG') {
+        // Inclusive: Total dibayar tetap, DPP dihitung mundur
         if (!manualPpnEdited) {
-            ppn = Math.round(dpp * 0.11);
-            if (ppnInput) ppnInput.value = ppn;
-        }
-        if (ppnInput) {
-            ppnInput.readOnly = false;
-            ppnInput.style.background = '#ffffff';
-            ppnInput.style.color = '#0284c7';
-        }
-        if (dppBadge) dppBadge.style.display = 'none';
-    } else if (ppnTipe === 'PPN_INCLUDE') {
-        if (!manualPpnEdited) {
-            dpp = Math.round((nilaiBersih / 1.11) * 100) / 100;
+            dpp = Math.round((nilaiBersih / (1 + (tarif / 100))) * 100) / 100;
             ppn = Math.round(nilaiBersih - dpp);
             if (ppnInput) ppnInput.value = ppn;
         } else {
@@ -750,11 +830,33 @@ function updateRowPpnState(row, manualPpnEdited = false) {
         if (ppnInput) {
             ppnInput.readOnly = false;
             ppnInput.style.background = '#ffffff';
-            ppnInput.style.color = '#0284c7';
+            ppnInput.style.color = '#15803d';
         }
         if (dppBadge) {
             dppBadge.style.display = 'block';
+            dppBadge.style.color = '#15803d';
             dppBadge.textContent = 'DPP: Rp ' + Math.round(dpp).toLocaleString('id-ID');
+        }
+    } else {
+        // Exclude atau Pajak Sifat Potong (PPh 22)
+        dpp = nilaiBersih;
+        if (!manualPpnEdited) {
+            ppn = Math.round(dpp * (tarif / 100));
+            if (ppnInput) ppnInput.value = ppn;
+        }
+        if (ppnInput) {
+            ppnInput.readOnly = false;
+            ppnInput.style.background = '#ffffff';
+            ppnInput.style.color = (sifat === 'POTONG') ? '#dc2626' : '#0284c7';
+        }
+        if (dppBadge) {
+            if (sifat === 'POTONG') {
+                dppBadge.style.display = 'block';
+                dppBadge.style.color = '#dc2626';
+                dppBadge.textContent = 'PPh Potong: -Rp ' + Math.round(ppn).toLocaleString('id-ID');
+            } else {
+                dppBadge.style.display = 'none';
+            }
         }
     }
 
@@ -780,6 +882,20 @@ function rebuildItemsTable() {
         calculateOngkirFromTonase();
         recalculateTotals();
         return;
+    }
+
+    // Cek pewarisan status "is_harga_termasuk_pajak" dari PO
+    let anyPoInclude = false;
+    unbilledGrnData.forEach(grn => {
+        if (selectedGrnIds.has(grn.terima_id) && grn.is_harga_termasuk_pajak) {
+            anyPoInclude = true;
+        }
+    });
+
+    const incCheckbox = document.getElementById('is_harga_termasuk_pajak');
+    if (incCheckbox && anyPoInclude && !incCheckbox.checked) {
+        incCheckbox.checked = true;
+        onHeaderTaxInclusiveToggle(incCheckbox);
     }
 
     let html = '';
@@ -823,16 +939,11 @@ function rebuildItemsTable() {
             // Potongan mutu / sortasi fisik timbangan
             const potonganNominal = (typeof dtl.potongan_nominal !== 'undefined') ? parseFloat(dtl.potongan_nominal) : 0;
 
-            // PPN per-item: 'NON_PPN' | 'PPN_11' | 'PPN_INCLUDE'
-            let ppnTipe = dtl.ppn_tipe || (dtl.ppn_total > 0 || dtl.ppn_nominal > 0 ? 'PPN_11' : 'NON_PPN');
-            const cleanPpn = String(ppnTipe).toUpperCase().replace(/[- ]/g, '_');
-            if (cleanPpn.includes('INC')) {
-                ppnTipe = 'PPN_INCLUDE';
-            } else if (cleanPpn.includes('11') || (typeof dtl.ppn_total !== 'undefined' && parseFloat(dtl.ppn_total) > 0)) {
-                ppnTipe = 'PPN_11';
-            } else {
-                ppnTipe = 'NON_PPN';
-            }
+            // Pajak PPN (warisan dari PO / GRN)
+            const poPajakId = dtl.pajak_id || null;
+            const poPpnPersen = parseFloat(dtl.ppn_persen || 0);
+            let ppnTipe = dtl.ppn_tipe || (dtl.ppn_total > 0 || dtl.ppn_nominal > 0 ? (poPajakId ? String(poPajakId) : 'PPN_11') : 'NON_PPN');
+            const isItemInclude = Boolean(dtl.is_harga_termasuk_pajak || anyPoInclude || document.getElementById('is_harga_termasuk_pajak')?.checked);
 
             let ppn = (typeof dtl.ppn_total !== 'undefined')
                 ? parseFloat(dtl.ppn_total)
@@ -844,20 +955,17 @@ function rebuildItemsTable() {
             let dpp = nilaiBersih;
             let netto = nilaiBersih;
 
-            if (ppnTipe === 'PPN_INCLUDE') {
+            const isPotong = (dtl.sifat_pajak === 'POTONG');
+            if (isItemInclude && (ppnTipe !== 'NON_PPN' || poPpnPersen > 0) && !isPotong) {
+                const rate = poPpnPersen > 0 ? (1 + (poPpnPersen / 100)) : 1.11;
+                dpp = Math.round((nilaiBersih / rate) * 100) / 100;
+                ppn = Math.round(nilaiBersih - dpp);
                 netto = nilaiBersih;
-                if (ppn > 0) {
-                    dpp = Math.max(0, nilaiBersih - ppn);
-                } else {
-                    dpp = Math.round((nilaiBersih / 1.11) * 100) / 100;
-                    ppn = Math.round(nilaiBersih - dpp);
-                }
-            } else if (ppnTipe === 'PPN_11') {
+            } else if (ppnTipe === 'PPN_11' || poPpnPersen > 0 || isPotong) {
+                const rate = poPpnPersen > 0 ? (poPpnPersen / 100) : 0.11;
                 dpp = nilaiBersih;
-                if (ppn <= 0) {
-                    ppn = Math.round(dpp * 0.11);
-                }
-                netto = dpp + ppn;
+                if (ppn <= 0) ppn = Math.round(dpp * rate);
+                netto = isPotong ? Math.max(0, dpp - ppn) : (dpp + ppn);
             } else {
                 ppnTipe = 'NON_PPN';
                 dpp = nilaiBersih;
@@ -868,6 +976,8 @@ function rebuildItemsTable() {
             const poBadgeHtml = dtl.po_no 
                 ? `<span style="background: #e0f2fe; color: #0369a1; font-size: 0.68rem; font-weight: 700; padding: 1px 6px; border-radius: 4px; border: 1px solid #bae6fd; margin-right: 4px;">PO: ${dtl.po_no}</span>`
                 : '';
+
+            const rowTaxOptions = buildRowTaxOptions(poPajakId, ppnTipe, poPpnPersen, isItemInclude);
 
             html += `
                 <tr class="item-calc-row" data-index="${rowIndex}" style="border-bottom: 1px solid #f1f5f9;">
@@ -949,9 +1059,7 @@ function rebuildItemsTable() {
                         <select name="items[${rowIndex}][ppn_tipe]" 
                                 class="form-control calc-trigger input-ppn-tipe" 
                                 style="font-size: 0.75rem; height: 30px; font-weight: 700; margin-bottom: 4px; padding: 2px 6px; border: 1.5px solid #cbd5e1;">
-                            <option value="NON_PPN" ${ppnTipe === 'NON_PPN' ? 'selected' : ''}>Non PPN (0%)</option>
-                            <option value="PPN_11" ${ppnTipe === 'PPN_11' ? 'selected' : ''}>PPN 11% (Exclude)</option>
-                            <option value="PPN_INCLUDE" ${ppnTipe === 'PPN_INCLUDE' ? 'selected' : ''}>Include PPN (11%)</option>
+                            ${rowTaxOptions}
                         </select>
                         <div style="display: flex; align-items: center; gap: 4px;">
                             <input type="number" 
@@ -960,13 +1068,13 @@ function rebuildItemsTable() {
                                    name="items[${rowIndex}][ppn_nominal]" 
                                    value="${ppnTipe === 'NON_PPN' ? 0 : Math.round(ppn)}" 
                                    class="form-control calc-trigger input-ppn" 
-                                   style="font-size: 0.775rem; height: 28px; text-align: right; color: #0284c7; font-weight: 600; flex: 1; min-width: 65px; ${ppnTipe === 'NON_PPN' ? 'background: #f8fafc; color: #94a3b8;' : ''}" 
+                                   style="font-size: 0.775rem; height: 28px; text-align: right; color: ${isPotong ? '#dc2626' : '#0284c7'}; font-weight: 600; flex: 1; min-width: 65px; ${ppnTipe === 'NON_PPN' ? 'background: #f8fafc; color: #94a3b8;' : ''}" 
                                    placeholder="0"
                                    ${ppnTipe === 'NON_PPN' ? 'readonly' : ''}>
                             <input type="hidden" name="items[${rowIndex}][dpp_nominal]" class="input-dpp" value="${dpp}">
                         </div>
-                        <div class="ppn-dpp-badge" style="font-size: 0.68rem; color: #0369a1; font-weight: 700; margin-top: 2px; ${ppnTipe === 'PPN_INCLUDE' ? '' : 'display: none;'}">
-                            DPP: Rp ${Math.round(dpp).toLocaleString('id-ID')}
+                        <div class="ppn-dpp-badge" style="font-size: 0.68rem; color: ${isPotong ? '#dc2626' : '#15803d'}; font-weight: 700; margin-top: 2px; ${isItemInclude || isPotong ? '' : 'display: none;'}">
+                            ${isPotong ? 'PPh Potong: -Rp ' + Math.round(ppn).toLocaleString('id-ID') : 'DPP: Rp ' + Math.round(dpp).toLocaleString('id-ID')}
                         </div>
                     </td>
                     <td style="padding: 0.65rem 0.75rem; width: 130px; text-align: right; font-weight: 800; color: #0284c7; font-size: 0.85rem;" class="cell-netto">
@@ -1059,11 +1167,6 @@ window.calculateOngkirFromTonase = function () {
 
     recalculateTotals();
 };
-        formulaEl.innerHTML = `${tonase.toLocaleString('id-ID')} KG &times; Rp ${tarif.toLocaleString('id-ID')} = <strong>Rp ${totalOngkir.toLocaleString('id-ID')}</strong>`;
-    }
-
-    recalculateTotals();
-};
 
 /**
  * Hitung seluruh nilai akumulasi tagihan secara otomatis
@@ -1072,8 +1175,11 @@ function recalculateTotals() {
     let totalBruto = 0;
     let totalDiskon = 0;
     let totalPotonganItem = 0;
+    let totalDpp = 0;
     let totalPpn = 0;
     let totalNetto = 0;
+
+    const isHeaderInc = document.getElementById('is_harga_termasuk_pajak')?.checked || false;
 
     document.querySelectorAll('.item-calc-row').forEach(row => {
         const qty = parseDecimal(row.querySelector('.input-qty')?.value);
@@ -1081,24 +1187,32 @@ function recalculateTotals() {
         const diskon = parseDecimal(row.querySelector('.input-diskon-nominal')?.value);
         const potongan = parseDecimal(row.querySelector('.input-potongan-item')?.value);
         const ppn = parseDecimal(row.querySelector('.input-ppn')?.value);
-        const ppnTipe = row.querySelector('.input-ppn-tipe')?.value || 'NON_PPN';
+        const dpp = parseDecimal(row.querySelector('.input-dpp')?.value);
+
+        const tipeSelect = row.querySelector('.input-ppn-tipe');
+        const opt = tipeSelect ? tipeSelect.options[tipeSelect.selectedIndex] : null;
+        const tarif = opt ? (parseFloat(opt.dataset.tarif) || 0) : 0;
+        const sifat = opt ? (opt.dataset.sifat || 'TAMBAH') : 'TAMBAH';
 
         const subtotal = qty * harga;
         const nilaiBersih = Math.max(0, subtotal - diskon - potongan);
 
         let netto = nilaiBersih;
-        if (ppnTipe === 'PPN_INCLUDE') {
-            netto = nilaiBersih; // Harga sudah include PPN
-        } else if (ppnTipe === 'PPN_11') {
-            netto = nilaiBersih + ppn; // Exclude PPN
-        } else {
-            netto = nilaiBersih;
+        if (tarif > 0) {
+            if (isHeaderInc && sifat !== 'POTONG') {
+                netto = nilaiBersih;
+            } else if (sifat === 'POTONG') {
+                netto = Math.max(0, nilaiBersih - ppn);
+            } else {
+                netto = nilaiBersih + ppn;
+            }
         }
 
         totalBruto += subtotal;
         totalDiskon += diskon;
         totalPotonganItem += potongan;
-        totalPpn += ppn;
+        totalDpp += dpp;
+        totalPpn += (sifat === 'POTONG' ? -ppn : ppn);
         totalNetto += netto;
 
         const cellNetto = row.querySelector('.cell-netto');
@@ -1119,6 +1233,7 @@ function recalculateTotals() {
     const elDiskon = document.getElementById('summaryTotalDiskon');
     const rowPotonganItem = document.getElementById('rowSummaryPotonganItem');
     const elPotonganItem = document.getElementById('summaryTotalPotonganItem');
+    const elDpp = document.getElementById('summaryTotalDpp');
     const elPpn = document.getElementById('summaryTotalPpn');
     const elRetur = document.getElementById('summaryPotonganRetur');
     const rowOngkir = document.getElementById('rowSummaryOngkir');
@@ -1140,7 +1255,24 @@ function recalculateTotals() {
         }
     }
 
-    if (elPpn) elPpn.textContent = totalPpn > 0 ? '+ Rp ' + Math.round(totalPpn).toLocaleString('id-ID') : 'Rp 0';
+    if (elDpp) {
+        elDpp.innerHTML = 'Rp ' + Math.round(totalDpp).toLocaleString('id-ID') + (isHeaderInc ? ' <small style="color: #64748b; font-size: 0.7rem; font-weight: 500;">(DPP)</small>' : '');
+    }
+
+    if (elPpn) {
+        if (totalPpn !== 0) {
+            if (totalPpn < 0) {
+                elPpn.innerHTML = `<span style="color: #dc2626;">- Rp ${Math.abs(Math.round(totalPpn)).toLocaleString('id-ID')}</span> <small style="color: #ef4444; font-size: 0.7rem; font-weight: 700;">(Potong)</small>`;
+            } else if (isHeaderInc) {
+                elPpn.innerHTML = `<span style="color: #16a34a;">Rp ${Math.round(totalPpn).toLocaleString('id-ID')}</span> <small style="color: #15803d; font-size: 0.7rem; font-weight: 700;">(Termasuk)</small>`;
+            } else {
+                elPpn.innerHTML = `<span style="color: #0284c7;">+ Rp ${Math.round(totalPpn).toLocaleString('id-ID')}</span>`;
+            }
+        } else {
+            elPpn.innerHTML = '<span style="color: #64748b;">Rp 0</span>';
+        }
+    }
+
     if (elRetur) elRetur.textContent = potonganRetur > 0 ? '- Rp ' + Math.round(potonganRetur).toLocaleString('id-ID') : 'Rp 0';
     
     if (rowOngkir && elOngkir) {
@@ -1153,6 +1285,17 @@ function recalculateTotals() {
     }
 
     if (elGrand) elGrand.textContent = 'Rp ' + Math.round(grandTotal).toLocaleString('id-ID');
+
+    // Live KPI Widget Header (Identik PO Pembelian)
+    const elTopGrand = document.getElementById('topLiveGrandTotal');
+    if (elTopGrand) {
+        elTopGrand.textContent = 'Rp ' + Math.round(grandTotal).toLocaleString('id-ID');
+    }
+    const elTopItems = document.getElementById('topLiveItemCount');
+    if (elTopItems) {
+        const rowCount = document.querySelectorAll('.item-calc-row').length;
+        elTopItems.textContent = rowCount + ' Item';
+    }
 
     if (rowUangMuka && elUangMuka) {
         if (uangMuka > 0) {

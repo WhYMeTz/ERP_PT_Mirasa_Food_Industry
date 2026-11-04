@@ -25,7 +25,7 @@ class TerimaBarangService
      */
     public function getAllPaginated(int $perPage = 15, ?string $search = null, int|array|null $gudangId = null, bool $hasReject = false): LengthAwarePaginator
     {
-        $query = DatTerimaHdr::with(['supplier', 'gudang', 'po', 'details.barang', 'qc.details'])
+        $query = DatTerimaHdr::with(['supplier', 'gudang', 'po', 'details.barang.satuanDasar', 'qc.details'])
             ->where('deleted_st', false);
 
         if (is_array($gudangId)) {
@@ -170,16 +170,17 @@ class TerimaBarangService
                 // Potongan khusus per-item (Rp)
                 $potonganItem = max(0, (float) ($item['potongan_nominal'] ?? 0));
                 
-                // Subtotal Netto = (Netto Qty * Harga setelah diskon) - Potongan Item (hanya dari kuantitas bersih yang diterima)
-                $subtotalNetto = max(0, round(($nettoQty * $hargaSetelahDiskon) - $potonganItem, 4));
-                // Harga perolehan bersih unit untuk HPP Kartu Stok FIFO
-                $hargaNetto = $nettoQty > 0 ? round($subtotalNetto / $nettoQty, 4) : 0;
+                // Subtotal Netto = Nilai Fisik Barang (Netto Qty * Harga Satuan PO)
+                // Diskon komersial, potongan kas, dan pajak ditangani oleh Departemen Keuangan saat penerbitan tagihan
+                $subtotalNetto = round($nettoQty * $hargaNominal, 4);
+                // Harga perolehan unit fisik
+                $hargaNetto = $hargaNominal;
 
                 // Pajak PPN per item (Bisa NON_PPN atau PPN_11)
                 $itemPpnTipe = ($item['ppn_tipe'] ?? 'NON_PPN') === 'PPN_11' ? 'PPN_11' : 'NON_PPN';
                 $itemPpnPersen = ($itemPpnTipe === 'PPN_11') ? 11.00 : 0.00;
-                $itemPpnNominal = ($itemPpnTipe === 'PPN_11') ? round($subtotalNetto * 0.11, 2) : 0.00;
-                $subtotalTagihan = round($subtotalNetto + $itemPpnNominal, 2);
+                $itemPpnNominal = 0.00;
+                $subtotalTagihan = $subtotalNetto;
 
                 if ($nettoQty > 0) {
                     if ($itemPpnTipe === 'PPN_11') {
@@ -243,8 +244,8 @@ class TerimaBarangService
                 $headerPpnTipe = 'PPN_11';
             }
 
-            $dppNominal = max(0, $totalDppPpn - $potonganGlobal);
-            $totalTagihan = round($subtotalNominal + $totalPpnNominal - $potonganGlobal, 2);
+            $dppNominal = $totalSubtotalBruto;
+            $totalTagihan = round($totalSubtotalBruto, 2);
 
             $terimaTglCarbon = !empty($data['terima_tgl']) ? \Carbon\Carbon::parse($data['terima_tgl']) : now();
             $supplierObj = MstSupplier::find($supplierId);
@@ -266,11 +267,11 @@ class TerimaBarangService
                 'status_cd'        => 'COMPLETED',
                 'catatan_txt'      => $data['catatan_txt'] ?? null,
                 'subtotal_nominal' => $totalSubtotalBruto,
-                'potongan_nominal' => $totalSemuaPotongan,
+                'potongan_nominal' => 0,
                 'dpp_nominal'      => $dppNominal,
                 'ppn_tipe'         => $headerPpnTipe,
                 'ppn_persen'       => $hasPpn ? 11.00 : 0.00,
-                'ppn_nominal'      => $totalPpnNominal,
+                'ppn_nominal'      => 0.00,
                 'total_tagihan'    => $totalTagihan,
             ]);
 
@@ -477,13 +478,14 @@ class TerimaBarangService
                 $hargaSetelahDiskon = max(0, $hargaNominal - $diskonNominalUnit);
 
                 $potonganItem = max(0, (float) ($item['potongan_nominal'] ?? 0));
-                $subtotalNetto = max(0, round(($nettoQty * $hargaSetelahDiskon) - $potonganItem, 4));
-                $hargaNetto = $nettoQty > 0 ? round($subtotalNetto / $nettoQty, 4) : 0;
+                // Subtotal Netto = Nilai Fisik Barang (Netto Qty * Harga Satuan PO)
+                $subtotalNetto = round($nettoQty * $hargaNominal, 4);
+                $hargaNetto = $hargaNominal;
 
                 $itemPpnTipe = ($item['ppn_tipe'] ?? 'NON_PPN') === 'PPN_11' ? 'PPN_11' : 'NON_PPN';
                 $itemPpnPersen = ($itemPpnTipe === 'PPN_11') ? 11.00 : 0.00;
-                $itemPpnNominal = ($itemPpnTipe === 'PPN_11') ? round($subtotalNetto * 0.11, 2) : 0.00;
-                $subtotalTagihan = round($subtotalNetto + $itemPpnNominal, 2);
+                $itemPpnNominal = 0.00;
+                $subtotalTagihan = $subtotalNetto;
 
                 if ($nettoQty > 0) {
                     if ($itemPpnTipe === 'PPN_11') {
@@ -545,8 +547,8 @@ class TerimaBarangService
                 $headerPpnTipe = 'PPN_11';
             }
 
-            $dppNominal = max(0, $totalDppPpn - $potonganGlobal);
-            $totalTagihan = round($subtotalNominal + $totalPpnNominal - $potonganGlobal, 2);
+            $dppNominal = $totalSubtotalBruto;
+            $totalTagihan = round($totalSubtotalBruto, 2);
 
             // Update Header
             $terima->update([
@@ -559,11 +561,11 @@ class TerimaBarangService
                 'tgl_jatuh_tempo'  => !empty($data['tgl_jatuh_tempo']) ? $data['tgl_jatuh_tempo'] : $terima->tgl_jatuh_tempo,
                 'catatan_txt'      => $data['catatan_txt'] ?? null,
                 'subtotal_nominal' => $totalSubtotalBruto,
-                'potongan_nominal' => $totalSemuaPotongan,
+                'potongan_nominal' => 0,
                 'dpp_nominal'      => $dppNominal,
                 'ppn_tipe'         => $headerPpnTipe,
                 'ppn_persen'       => $hasPpn ? 11.00 : 0.00,
-                'ppn_nominal'      => $totalPpnNominal,
+                'ppn_nominal'      => 0.00,
                 'total_tagihan'    => $totalTagihan,
             ]);
 

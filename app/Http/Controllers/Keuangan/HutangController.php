@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Keuangan;
 use App\Http\Controllers\Controller;
 use App\Models\Keuangan\DatHutangHdr;
 use App\Models\MasterData\MstGudang;
+use App\Models\MasterData\MstPajak;
 use App\Models\MasterData\MstSupplier;
 use App\Services\Keuangan\HutangService;
 use App\Services\Keuangan\KasBankService;
@@ -71,7 +72,13 @@ class HutangController extends Controller
             $unbilledGrn = $this->hutangService->getUnbilledGrnList((int) $selectedSupplierId);
         }
 
-        return view('keuangan.hutang.create', compact('suppliers', 'gudangs', 'selectedSupplierId', 'unbilledGrn', 'unbilledSupplierSummary'));
+        $pajakList = MstPajak::active()
+            ->pembelian()
+            ->orderBy('is_default', 'desc')
+            ->orderBy('pajak_nm')
+            ->get();
+
+        return view('keuangan.hutang.create', compact('suppliers', 'gudangs', 'selectedSupplierId', 'unbilledGrn', 'unbilledSupplierSummary', 'pajakList'));
     }
 
     /**
@@ -115,6 +122,9 @@ class HutangController extends Controller
                 }
                 if (isset($item['ppn_nominal'])) {
                     $input['items'][$idx]['ppn_nominal'] = str_replace(',', '.', (string)$item['ppn_nominal']);
+                }
+                if (isset($item['dpp_nominal'])) {
+                    $input['items'][$idx]['dpp_nominal'] = str_replace(',', '.', (string)$item['dpp_nominal']);
                 }
             }
         }

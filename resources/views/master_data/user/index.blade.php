@@ -29,7 +29,7 @@
 </div>
 
 {{-- TAB SWITCHER --}}
-<div style="display: flex; gap: 0.5rem; margin-bottom: 1.25rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 0.5rem;">
+<div style="display: flex; gap: 0.5rem; margin-bottom: 1.25rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 0.5rem; flex-wrap: wrap;">
     <a href="{{ route('admin.users.index') }}" 
        style="padding: 0.5rem 1rem; border-radius: 6px; text-decoration: none; font-size: 0.875rem; font-weight: 700; background: #0284c7; color: #ffffff;">
         👥 Daftar Akun Pengguna
@@ -37,6 +37,10 @@
     <a href="{{ route('admin.users.permissions') }}" 
        style="padding: 0.5rem 1rem; border-radius: 6px; text-decoration: none; font-size: 0.875rem; font-weight: 500; color: #64748b;">
         🛡️ Pengaturan Izin Peran (Permissions)
+    </a>
+    <a href="{{ route('admin.roles.index') }}" 
+       style="padding: 0.5rem 1rem; border-radius: 6px; text-decoration: none; font-size: 0.875rem; font-weight: 500; color: #64748b;">
+        ✨ Manajemen Peran (Roles)
     </a>
 </div>
 

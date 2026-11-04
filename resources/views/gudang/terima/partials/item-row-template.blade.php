@@ -81,9 +81,6 @@
             <input type="hidden" name="items[__INDEX__][potongan_nominal]" value="0" class="item-potongan">
             <input type="hidden" name="items[__INDEX__][ppn_tipe]" value="NON_PPN" class="item-ppn-tipe">
         </td>
-        <td style="text-align: right; font-weight: 700; color: #0f172a; font-size: 0.875rem; font-family: monospace;" class="row-subtotal">
-            Rp 0
-        </td>
         <td style="text-align: center;">
             <button type="button" onclick="removeTerimaRow(this)" class="btn btn-danger btn-sm" style="padding: 0.2rem 0.45rem; font-size: 0.8rem;" title="Hapus Baris">&times;</button>
         </td>

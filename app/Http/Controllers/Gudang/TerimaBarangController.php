@@ -34,7 +34,7 @@ class TerimaBarangController extends Controller
     {
         $perPage = (int) $request->input('per_page', 20);
         $search = $request->input('search');
-        $viewType = $request->input('view', 'item'); // 'item' (Excel format) atau 'header'
+        $viewType = $request->input('view', 'header'); // Default: 'header' (Daftar Dokumen GRN) atau 'item' (Rekap Per Item)
 
         $user = auth()->user();
         $allowedGudangIds = $user ? $user->getAllowedGudangIds() : [];

@@ -150,20 +150,20 @@
         </form>
 
         <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
-            {{-- Switcher Bersih & Halus (Tanpa Emoji) --}}
+            {{-- Switcher Bersih & Halus --}}
             <div style="display: inline-flex; background: #f1f5f9; padding: 0.2rem; border-radius: 6px; border: 1px solid #e2e8f0;">
-                <a href="{{ route('gudang.terima.index', array_merge(request()->query(), ['view' => 'item'])) }}" 
-                   style="text-decoration: none; padding: 0.35rem 0.75rem; border-radius: 4px; font-size: 0.8rem; font-weight: 600; background: {{ $viewType === 'item' ? '#ffffff' : 'transparent' }}; color: {{ $viewType === 'item' ? '#0f172a' : '#64748b' }}; box-shadow: {{ $viewType === 'item' ? '0 1px 2px rgba(0,0,0,0.06)' : 'none' }};">
-                    Buku Rekap Bahan (Excel Grid)
-                </a>
                 <a href="{{ route('gudang.terima.index', array_merge(request()->query(), ['view' => 'header'])) }}" 
                    style="text-decoration: none; padding: 0.35rem 0.75rem; border-radius: 4px; font-size: 0.8rem; font-weight: 600; background: {{ $viewType === 'header' ? '#ffffff' : 'transparent' }}; color: {{ $viewType === 'header' ? '#0f172a' : '#64748b' }}; box-shadow: {{ $viewType === 'header' ? '0 1px 2px rgba(0,0,0,0.06)' : 'none' }};">
                     Daftar Dokumen GRN
                 </a>
+                <a href="{{ route('gudang.terima.index', array_merge(request()->query(), ['view' => 'item'])) }}" 
+                   style="text-decoration: none; padding: 0.35rem 0.75rem; border-radius: 4px; font-size: 0.8rem; font-weight: 600; background: {{ $viewType === 'item' ? '#ffffff' : 'transparent' }}; color: {{ $viewType === 'item' ? '#0f172a' : '#64748b' }}; box-shadow: {{ $viewType === 'item' ? '0 1px 2px rgba(0,0,0,0.06)' : 'none' }};">
+                    Buku Rekap Bahan (Per Item)
+                </a>
             </div>
 
             <span style="color: #64748b; font-size: 0.85rem;">
-                Total: <strong style="color: #0f172a;">{{ $dataList->total() }}</strong> {{ $viewType === 'item' ? 'baris data' : 'dokumen' }}
+                Total: <strong style="color: #0f172a;">{{ $dataList->total() }}</strong> {{ $viewType === 'item' ? 'baris item' : 'dokumen' }}
             </span>
         </div>
     </div>
@@ -227,9 +227,16 @@
                                 @endif
                             </td>
                             <td>
-                                <strong style="color: #0f172a; font-size: 0.875rem;">
-                                    {{ $row->barang?->barang_nm ?? '-' }}
-                                </strong>
+                                <div style="display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;">
+                                    <strong style="color: #0f172a; font-size: 0.875rem;">
+                                        {{ $row->barang?->barang_nm ?? '-' }}
+                                    </strong>
+                                    @if ($row->grade_cd)
+                                        <span class="badge" style="background: {{ $row->grade_cd === 'A' ? '#ecfdf5; color: #065f46; border: 1px solid #a7f3d0;' : ($row->grade_cd === 'B' ? '#fef3c7; color: #92400e; border: 1px solid #fde68a;' : '#f1f5f9; color: #475569;') }} font-size: 0.68rem; font-weight: 800; padding: 0.1rem 0.4rem; border-radius: 4px;">
+                                            Grade {{ $row->grade_cd }}
+                                        </span>
+                                    @endif
+                                </div>
                                 <div style="display: flex; align-items: center; gap: 0.4rem; margin-top: 0.2rem;">
                                     <span style="font-family: monospace; font-size: 0.75rem; color: #64748b;">
                                         {{ $row->barang?->barang_cd ?? '-' }}
@@ -358,7 +365,7 @@
                         <th style="min-width: 130px;">Ref. PO</th>
                         <th style="min-width: 180px;">Supplier Pengirim</th>
                         <th style="min-width: 140px;">Gudang Simpan</th>
-                        <th style="min-width: 110px; text-align: center;">Total Item</th>
+                        <th style="min-width: 220px;">Bahan &amp; Grade Diterima</th>
                         <th style="min-width: 130px; text-align: right;">Total Fisik Netto</th>
                         <th style="width: 100px; text-align: right;">Aksi</th>
                     </tr>
@@ -424,10 +431,23 @@
                             <td>
                                 <span style="font-size: 0.85rem; color: #334155;">{{ $item->gudang?->gudang_nm ?? '-' }}</span>
                             </td>
-                            <td style="text-align: center;">
-                                <span class="badge" style="background: #ecfdf5; color: #065f46; font-weight: 700;">
-                                    {{ $item->details->count() }} Bahan
-                                </span>
+                            <td>
+                                <div style="display: flex; flex-direction: column; gap: 0.3rem;">
+                                    <span class="badge" style="background: #ecfdf5; color: #065f46; font-weight: 700; width: fit-content; font-size: 0.725rem;">
+                                        {{ $item->details->count() }} Bahan Diterima
+                                    </span>
+                                    <div style="font-size: 0.75rem; color: #334155; line-height: 1.4;">
+                                        @foreach ($item->details as $d)
+                                            <div style="white-space: nowrap;">
+                                                &bull; <strong>{{ $d->barang?->barang_nm ?? '-' }}</strong>
+                                                @if ($d->grade_cd)
+                                                    <span class="badge" style="background: #fef3c7; color: #92400e; font-size: 0.65rem; padding: 1px 5px; font-weight: 700; border: 1px solid #fde68a;">Grade {{ $d->grade_cd }}</span>
+                                                @endif
+                                                <span style="color: #64748b; font-family: monospace; font-size: 0.725rem;">({{ number_format((float) $d->terima_qty - (float) ($d->reject_qty ?? 0), 0, ',', '.') }} {{ $d->barang?->satuanDasar?->satuan_nm ?? 'KG' }})</span>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
                             </td>
                             <td style="text-align: right;">
                                 <strong style="color: #047857; font-size: 0.95rem; font-family: monospace;">

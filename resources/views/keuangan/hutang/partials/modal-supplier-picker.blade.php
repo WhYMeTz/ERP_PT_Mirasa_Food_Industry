@@ -1,5 +1,5 @@
 {{-- Modal Pop-up Pemilih Mitra Supplier (ERP PT Mirasa) --}}
-<div id="modalSupplierPicker" class="modal-backdrop-custom" style="display: none;">
+<div id="modalSupplierPicker" class="modal-backdrop-custom" style="display: none;" onclick="if(event.target === this) closeSupplierModal()">
     <div class="modal-dialog-custom modal-dialog-lg">
         {{-- HEADER MODAL --}}
         <div class="modal-header-custom">
@@ -53,10 +53,16 @@
                     @endphp
                     <div class="supplier-modal-card {{ $hasGrn ? 'has-grn' : 'no-grn' }}"
                          data-supplier-id="{{ $supp->supplier_id }}"
+                         data-supplier-nm="{{ $supp->supplier_nm }}"
+                         data-supplier-cd="{{ $supp->supplier_cd ?? '' }}"
+                         data-grn-count="{{ $grnCnt }}"
+                         data-contact="{{ $supp->kontak_no ?? '-' }}"
+                         data-address="{{ $supp->alamat_txt ?? '-' }}"
+                         data-top="{{ (int)($supp->top_hari ?? 14) }}"
                          data-name="{{ strtolower($supp->supplier_nm) }}"
                          data-code="{{ strtolower($supp->supplier_cd ?? '') }}"
                          data-has-grn="{{ $hasGrn ? '1' : '0' }}"
-                         onclick="selectSupplierFromModal({{ $supp->supplier_id }}, '{{ addslashes($supp->supplier_nm) }}', '{{ $supp->supplier_cd }}', {{ $grnCnt }}, '{{ addslashes($supp->kontak_no ?? '-') }}', '{{ addslashes($supp->alamat_txt ?? '-') }}', {{ (int)($supp->top_hari ?? 14) }})">
+                         onclick="handleSupplierCardSelect(this)">
                         
                         <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.75rem;">
                             <div style="flex: 1;">

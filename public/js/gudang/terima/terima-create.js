@@ -657,25 +657,18 @@ function calculateTotalTerima() {
             nettoSpan.innerText = netto.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         }
 
-        // Komersial & Pajak Baris (Dihitung dari Netto Bersih Diterima, barang afkir tidak ditagihkan)
-        const diskonUnit = hargaNominal * (diskonPersen / 100);
-        const hargaNetto = Math.max(0, hargaNominal - diskonUnit);
-        const rowSubtotalNetto = Math.max(0, (netto * hargaNetto) - potonganNominal);
-        const itemPpnNominal = isPpn11 ? Math.round(rowSubtotalNetto * 0.11) : 0;
-        const rowSubtotalTagihan = rowSubtotalNetto + itemPpnNominal;
+        // Nilai Fisik Baris (Kuantitas Netto x Harga Satuan PO - Tanpa potongan komersial/diskon karena urusan tagihan ada di Keuangan)
+        const rowTotalFisik = Math.round(netto * hargaNominal);
 
         const rowSubtotalCell = row.querySelector('.row-subtotal');
         if (rowSubtotalCell) {
-            rowSubtotalCell.innerText = 'Rp ' + Math.round(rowSubtotalTagihan).toLocaleString('id-ID');
+            rowSubtotalCell.innerText = 'Rp ' + rowTotalFisik.toLocaleString('id-ID');
         }
 
         totalBruto += terimaQty;
         totalReject += rejectQty;
-        totalSubtotalBruto += (netto * hargaNominal);
-        totalDiskon += (netto * diskonUnit);
-        totalPotongan += potonganNominal;
-        totalSubtotalNetto += rowSubtotalNetto;
-        totalPpn += itemPpnNominal;
+        totalSubtotalBruto += rowTotalFisik;
+        totalSubtotalNetto += rowTotalFisik;
     });
 
     const totalNetto = Math.max(0, totalBruto - totalReject);
@@ -717,7 +710,7 @@ function calculateTotalTerima() {
     if (diskonDisplay) diskonDisplay.innerText = totalDiskon > 0 ? '-Rp ' + Math.round(totalDiskon).toLocaleString('id-ID') : '-';
     if (potonganDisplay) potonganDisplay.innerText = totalPotongan > 0 ? '-Rp ' + Math.round(totalPotongan).toLocaleString('id-ID') : '-';
     if (ppnDisplay) ppnDisplay.innerText = totalPpn > 0 ? '+Rp ' + Math.round(totalPpn).toLocaleString('id-ID') : '-';
-    if (nilaiDisplay) nilaiDisplay.innerText = 'Rp ' + Math.round(grandTotal).toLocaleString('id-ID');
+    if (nilaiDisplay) nilaiDisplay.innerText = 'Rp ' + Math.round(totalSubtotalBruto).toLocaleString('id-ID');
 
     // Update Bar Ringkasan Terpadu di Footer Tabel & PO Workstation Live Widgets
     const barTotalNetto = document.getElementById('barTotalNetto');
@@ -748,52 +741,22 @@ function calculateTotalTerima() {
     if (sideTotalAfkir) sideTotalAfkir.innerText = totalReject.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' KG';
     if (sideTotalNetto) sideTotalNetto.innerText = totalNetto.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' KG';
 
-    // Rincian Komersial & Finansial pada Card Ringkasan
+    // Rincian Komersial disembunyikan di form penerimaan gudang (karena urusan tagihan/faktur diselesaikan di Keuangan)
     const rowSubtotalBruto = document.getElementById('rowSubtotalBruto');
-    const sideSubtotalBruto = document.getElementById('sideSubtotalBruto');
-    if (rowSubtotalBruto && sideSubtotalBruto) {
-        if (totalDiskon > 0 || totalPotongan > 0) {
-            rowSubtotalBruto.style.display = 'flex';
-            sideSubtotalBruto.innerText = 'Rp ' + Math.round(totalSubtotalBruto).toLocaleString('id-ID');
-        } else {
-            rowSubtotalBruto.style.display = 'none';
-        }
-    }
+    if (rowSubtotalBruto) rowSubtotalBruto.style.display = 'none';
 
     const rowDiskon = document.getElementById('rowDiskon');
-    const sideTotalDiskon = document.getElementById('sideTotalDiskon');
-    if (rowDiskon && sideTotalDiskon) {
-        if (totalDiskon > 0) {
-            rowDiskon.style.display = 'flex';
-            sideTotalDiskon.innerText = '-Rp ' + Math.round(totalDiskon).toLocaleString('id-ID');
-        } else {
-            rowDiskon.style.display = 'none';
-        }
-    }
+    if (rowDiskon) rowDiskon.style.display = 'none';
 
     const rowPotongan = document.getElementById('rowPotongan');
-    const sideTotalPotongan = document.getElementById('sideTotalPotongan');
-    if (rowPotongan && sideTotalPotongan) {
-        if (totalPotongan > 0) {
-            rowPotongan.style.display = 'flex';
-            sideTotalPotongan.innerText = '-Rp ' + Math.round(totalPotongan).toLocaleString('id-ID');
-        } else {
-            rowPotongan.style.display = 'none';
-        }
-    }
-
-    if (sideTotalDpp) sideTotalDpp.innerText = 'Rp ' + Math.round(totalSubtotalNetto).toLocaleString('id-ID');
+    if (rowPotongan) rowPotongan.style.display = 'none';
 
     const rowPpn = document.getElementById('rowPpn');
-    const sideTotalPpn = document.getElementById('sideTotalPpn');
-    if (rowPpn && sideTotalPpn) {
-        if (totalPpn > 0) {
-            rowPpn.style.display = 'flex';
-            sideTotalPpn.innerText = '+Rp ' + Math.round(totalPpn).toLocaleString('id-ID');
-        } else {
-            rowPpn.style.display = 'none';
-        }
-    }
+    if (rowPpn) rowPpn.style.display = 'none';
+
+    if (sideTotalDpp) sideTotalDpp.innerText = 'Rp ' + Math.round(totalSubtotalBruto).toLocaleString('id-ID');
+    if (sideGrandTotal) sideGrandTotal.innerText = 'Rp ' + Math.round(totalSubtotalBruto).toLocaleString('id-ID');
+    if (barGrandTotal) barGrandTotal.innerText = 'Rp ' + Math.round(totalSubtotalBruto).toLocaleString('id-ID');
 
     if (sideGrandTotal) sideGrandTotal.innerText = 'Rp ' + Math.round(grandTotal).toLocaleString('id-ID');
 
@@ -1503,7 +1466,7 @@ function applyQcTicket(qcId) {
                                 </div>
                             </td>
                             <td>
-                                <input type="text" name="items[${idx}][batch_no]" value="${escapeHtml(it.batch_prefix || 'BRG-')}" placeholder="${escapeHtml(it.batch_prefix || 'BRG-')}... (isi batch supplier)" class="form-control item-batch" style="font-family: monospace; font-weight: 700; color: #0284c7; width: 100%;" required>
+                                <input type="text" name="items[${idx}][batch_no]" value="${escapeHtml(it.batch_prefix || 'BRG-')}" placeholder="${escapeHtml(it.batch_prefix || 'BRG-')}... (ketik batch supplier)" class="form-control item-batch" style="font-family: monospace; font-weight: 700; color: #0284c7; width: 100%;" required>
                             </td>
                             <td>
                                 <input type="date" name="items[${idx}][expired_tgl]" class="form-control" style="font-size: 0.8rem;">
@@ -1533,9 +1496,6 @@ function applyQcTicket(qcId) {
                                 <input type="hidden" name="items[${idx}][diskon_persen]" value="${it.diskon_persen || 0}" class="item-diskon">
                                 <input type="hidden" name="items[${idx}][potongan_nominal]" value="${it.potongan_nominal || 0}" class="item-potongan">
                                 <input type="hidden" name="items[${idx}][ppn_tipe]" value="${it.ppn_tipe || 'NON_PPN'}" class="item-ppn-tipe">
-                            </td>
-                            <td style="text-align: right; font-weight: 700; color: #0f172a; font-size: 0.875rem; font-family: monospace;" class="row-subtotal">
-                                Rp ${Math.round(rowNetto * defaultHarga).toLocaleString('id-ID')}
                             </td>
                             <td style="text-align: center;">
                                 <button type="button" onclick="removeTerimaRow(this)" class="btn btn-danger btn-sm" style="padding: 0.2rem 0.45rem; font-size: 0.8rem;" title="Hapus Baris">&times;</button>
@@ -1895,6 +1855,7 @@ function initCreatePreviousMonthProtection() {
 const TERIMA_DRAFT_STORAGE_KEY = 'erp_mirasa_terima_create_draft_v1';
 let terimaDraftSaveDebounceTimer = null;
 let terimaDraftIndicatorTimer = null;
+let isTerimaSubmitting = false;
 
 function showTerimaDraftIndicator(text) {
     const ind = document.getElementById('draftSaveIndicator');
@@ -1912,6 +1873,7 @@ function showTerimaDraftIndicator(text) {
 window.showTerimaDraftIndicator = showTerimaDraftIndicator;
 
 function clearTerimaCreateDraft() {
+    clearTimeout(terimaDraftSaveDebounceTimer);
     try {
         localStorage.removeItem(TERIMA_DRAFT_STORAGE_KEY);
         const ind = document.getElementById('draftSaveIndicator');
@@ -1923,8 +1885,10 @@ function clearTerimaCreateDraft() {
 window.clearTerimaCreateDraft = clearTerimaCreateDraft;
 
 function saveTerimaCreateDraft() {
+    if (isTerimaSubmitting) return;
     clearTimeout(terimaDraftSaveDebounceTimer);
     terimaDraftSaveDebounceTimer = setTimeout(() => {
+        if (isTerimaSubmitting) return;
         try {
             const formTerima = document.getElementById('formTerima');
             if (!formTerima) return;
@@ -2066,15 +2030,13 @@ function restoreTerimaCreateDraft() {
 
         const h = draft.header;
 
-        // 1. Tanggal & Nomor GRN
+        // 1. Tanggal Fisik GRN
         if (h.terima_tgl) {
             const el = document.getElementById('terima_tgl');
             if (el) el.value = h.terima_tgl;
         }
-        if (h.terima_no) {
-            const el = document.getElementById('terima_no');
-            if (el) el.value = h.terima_no;
-        }
+        // CATATAN PENTING: terima_no TIDAK BOLEH ditimpa dari draft localStorage
+        // agar nomor dokumen selalu mengikuti urutan terbaru dari server / generator (contoh: 003/GRN/MFI/11/26)
 
         // 2. Supplier
         if (h.supplier_id) {
@@ -2214,9 +2176,6 @@ function restoreTerimaCreateDraft() {
                                 <input type="hidden" name="items[${idx}][potongan_nominal]" value="${it.potongan_nominal || 0}" class="item-potongan">
                                 <input type="hidden" name="items[${idx}][ppn_tipe]" value="${it.ppn_tipe || 'NON_PPN'}" class="item-ppn-tipe">
                             </td>
-                            <td style="text-align: right; font-weight: 700; color: #0f172a; font-size: 0.875rem; font-family: monospace;" class="row-subtotal">
-                                Rp ${Math.round(rowNetto * defaultHarga).toLocaleString('id-ID')}
-                            </td>
                             <td style="text-align: center;">
                                 <button type="button" onclick="removeTerimaRow(this)" class="btn btn-danger btn-sm" style="padding: 0.2rem 0.45rem; font-size: 0.8rem;" title="Hapus Baris">&times;</button>
                             </td>
@@ -2275,8 +2234,18 @@ function initTerimaDraftAutoSave() {
     formTerima.addEventListener('change', saveTerimaCreateDraft);
 
     // Bersihkan draft saat submit berhasil
-    formTerima.addEventListener('submit', function () {
+    formTerima.addEventListener('submit', function (e) {
+        if (isTerimaSubmitting) {
+            e.preventDefault();
+            return false;
+        }
+        isTerimaSubmitting = true;
         clearTerimaCreateDraft();
+    });
+
+    // Tangani navigasi kembali (bfcache)
+    window.addEventListener('pageshow', function () {
+        isTerimaSubmitting = false;
     });
 
     return restored;

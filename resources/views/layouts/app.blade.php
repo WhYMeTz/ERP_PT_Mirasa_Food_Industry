@@ -120,11 +120,12 @@
         }
         .pill-dropdown-arrow {
             display: inline-block;
-            font-size: 0.55rem;
             color: #94a3b8;
-            margin-left: 2px;
-            transition: transform 0.2s ease, color 0.2s ease;
+            margin-left: 3px;
+            transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), color 0.2s ease;
             line-height: 1;
+            flex-shrink: 0;
+            vertical-align: middle;
         }
         .pill-dropdown.active .pill-dropdown-arrow {
             transform: rotate(180deg);
@@ -254,7 +255,7 @@
             color: #0284c7;
         }
 
-        /* Header Right / User Chip */
+        /* Header Right / Enterprise User Chip */
         .header-right {
             display: flex;
             align-items: center;
@@ -265,25 +266,331 @@
         .user-chip-btn {
             display: inline-flex;
             align-items: center;
-            gap: 0.5rem;
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            padding: 0.28rem 0.65rem;
+            gap: 0.55rem;
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            padding: 0.25rem 0.65rem 0.25rem 0.35rem;
             border-radius: 9px;
             cursor: pointer;
-            transition: all 0.15s;
+            transition: all 0.15s ease;
             text-align: left;
             flex-shrink: 0;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
         }
         .user-chip-btn:hover, .pill-dropdown.active .user-chip-btn {
-            background: #f1f5f9;
-            border-color: #cbd5e1;
+            background: #f8fafc;
+            border-color: #94a3b8;
+            box-shadow: 0 2px 4px rgba(15, 23, 42, 0.06);
+        }
+        .user-avatar-badge {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            font-size: 0.7rem;
+            font-weight: 800;
+            letter-spacing: 0.02em;
+            position: relative;
+            flex-shrink: 0;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+        }
+        .user-online-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #22c55e;
+            border: 1.5px solid #ffffff;
+            position: absolute;
+            bottom: -1px;
+            right: -1px;
         }
         .user-chip-details {
             display: flex;
             flex-direction: column;
             overflow: hidden;
             text-align: left;
+            line-height: 1.2;
+        }
+        .user-chip-name {
+            font-size: 0.8125rem;
+            font-weight: 700;
+            color: #0f172a;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 140px;
+        }
+        .user-chip-sub {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-top: 1px;
+        }
+        .user-role-pill {
+            font-size: 0.625rem;
+            font-weight: 800;
+            padding: 0.5px 5px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            line-height: 1.3;
+        }
+        .role-badge-superadmin {
+            background: #fef2f2;
+            color: #b91c1c;
+            border: 1px solid #fecaca;
+        }
+        .role-badge-produksi {
+            background: #fff7ed;
+            color: #c2410c;
+            border: 1px solid #fed7aa;
+        }
+        .role-badge-purchasing {
+            background: #fffbeb;
+            color: #b45309;
+            border: 1px solid #fde68a;
+        }
+        .role-badge-gudang {
+            background: #f0fdf4;
+            color: #15803d;
+            border: 1px solid #bbf7d0;
+        }
+        .role-badge-default {
+            background: #f0f9ff;
+            color: #0369a1;
+            border: 1px solid #bae6fd;
+        }
+        .user-loc-text {
+            font-size: 0.65rem;
+            color: #64748b;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 80px;
+        }
+
+        /* User Profile Dropdown Card */
+        .dropdown-user-card {
+            padding: 0 !important;
+            border-radius: 12px !important;
+            overflow: hidden;
+            border: 1px solid #cbd5e1 !important;
+            box-shadow: 0 14px 28px -6px rgba(15, 23, 42, 0.12), 0 4px 10px -2px rgba(15, 23, 42, 0.04) !important;
+        }
+        .user-profile-header {
+            padding: 0.85rem 1rem;
+            background: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+        }
+        .user-profile-avatar {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            font-weight: 800;
+            font-size: 0.875rem;
+            flex-shrink: 0;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .user-profile-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            min-width: 0;
+            flex: 1;
+        }
+        .user-profile-name {
+            font-size: 0.875rem;
+            font-weight: 700;
+            color: #0f172a;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .user-profile-role {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .user-profile-meta {
+            font-size: 0.6875rem;
+            color: #64748b;
+            display: flex;
+            flex-direction: column;
+            margin-top: 1px;
+        }
+        .user-profile-actions {
+            padding: 0.35rem 0.5rem;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .user-action-item {
+            display: flex;
+            align-items: center;
+            gap: 0.55rem;
+            padding: 0.45rem 0.65rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #334155;
+            text-decoration: none;
+            border-radius: 6px;
+            transition: all 0.15s ease;
+        }
+        .user-action-item:hover {
+            background-color: #f1f5f9;
+            color: #0284c7;
+        }
+        .user-switch-section {
+            padding: 0.5rem 0.65rem 0.35rem;
+        }
+        .user-switch-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.2rem 0.35rem 0.4rem;
+            font-size: 0.675rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            color: #475569;
+            letter-spacing: 0.04em;
+        }
+        .user-switch-badge {
+            background: #e2e8f0;
+            color: #475569;
+            padding: 1px 5px;
+            border-radius: 4px;
+            font-size: 0.625rem;
+            font-weight: 700;
+        }
+        .user-switch-list {
+            max-height: 180px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            scrollbar-width: thin;
+            scrollbar-color: #cbd5e1 transparent;
+            overscroll-behavior: contain;
+            -webkit-overflow-scrolling: touch;
+        }
+        .user-switch-list::-webkit-scrollbar {
+            width: 5px;
+        }
+        .user-switch-list::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .user-switch-list::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 9999px;
+        }
+        .user-switch-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5rem;
+            padding: 0.4rem 0.55rem;
+            border-radius: 6px;
+            text-decoration: none;
+            transition: background 0.15s;
+            border-bottom: none !important;
+        }
+        .user-switch-item:hover {
+            background-color: #f1f5f9;
+        }
+        .user-switch-item.active {
+            background-color: #f0fdf4;
+            border: 1px solid #bbf7d0 !important;
+        }
+        .user-switch-avatar {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            font-size: 0.65rem;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+        .user-switch-meta {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            flex: 1;
+            text-align: left;
+        }
+        .user-switch-name {
+            font-size: 0.775rem;
+            font-weight: 600;
+            color: #0f172a;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .user-switch-role {
+            font-size: 0.675rem;
+            color: #64748b;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .user-switch-status {
+            font-size: 0.6875rem;
+            font-weight: 700;
+            color: #16a34a;
+            flex-shrink: 0;
+        }
+        .user-profile-footer {
+            padding: 0.5rem 0.65rem;
+            background: #f8fafc;
+            border-top: 1px solid #e2e8f0;
+        }
+        .user-logout-btn {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.45rem;
+            padding: 0.45rem 0.75rem;
+            background: #ffffff;
+            border: 1px solid #fecaca;
+            color: #dc2626;
+            font-size: 0.8rem;
+            font-weight: 700;
+            border-radius: 7px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .user-logout-btn:hover {
+            background: #fef2f2;
+            border-color: #f87171;
+            color: #b91c1c;
+        }
+        .user-quick-logout-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.42rem 0.55rem;
+            background: #f8fafc;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            color: #64748b;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .user-quick-logout-btn:hover {
+            background: #fef2f2;
+            border-color: #fecaca;
+            color: #dc2626;
         }
         main {
             flex: 1;
@@ -323,7 +630,13 @@
                 font-size: 0.75rem;
             }
             .user-chip-details {
-                max-width: 100px;
+                max-width: 110px;
+            }
+            .user-chip-name {
+                max-width: 95px;
+            }
+            .user-loc-text {
+                display: none;
             }
         }
         @media (max-width: 768px) {
@@ -342,7 +655,11 @@
                 height: 30px !important;
             }
             .user-chip-details {
+                max-width: 80px;
+            }
+            .user-chip-name {
                 max-width: 75px;
+                font-size: 0.75rem;
             }
             main {
                 padding: 0 0.85rem;
@@ -786,7 +1103,7 @@
                                 <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #0284c7; flex-shrink: 0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
                                 <span class="nav-text-full">Pengadaan &amp; Inbound</span>
                                 <span class="nav-text-short">Pengadaan</span>
-                                <span class="pill-dropdown-arrow">▼</span>
+                                <svg class="pill-dropdown-arrow" width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
                             </button>
                             <div class="dropdown-menu" style="min-width: 250px; padding: 0.45rem;">
                                 @if (Auth::user()->canAccessPo())
@@ -853,7 +1170,7 @@
                                 <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #059669; flex-shrink: 0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2 1.5 3 3.5 3h9c2 0 3.5-1 3.5-3V7M4 7c0-2 1.5-3 3.5-3h9c2 0 3.5 1 3.5 3M4 7h16m-8 4v6"/></svg>
                                 <span class="nav-text-full">Stok Gudang (Bahan)</span>
                                 <span class="nav-text-short">Gudang Bahan</span>
-                                <span class="pill-dropdown-arrow">▼</span>
+                                <svg class="pill-dropdown-arrow" width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
                             </button>
                             <div class="dropdown-menu" style="min-width: 250px; padding: 0.45rem;">
                                 @if (Auth::user()->canAccessStok())
@@ -906,7 +1223,7 @@
                                 <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #ea580c; flex-shrink: 0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
                                 <span class="nav-text-full">Produksi Pabrik</span>
                                 <span class="nav-text-short">Produksi</span>
-                                <span class="pill-dropdown-arrow">▼</span>
+                                <svg class="pill-dropdown-arrow" width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
                             </button>
                             <div class="dropdown-menu" style="min-width: 250px; padding: 0.45rem;">
                                 @if (Auth::user()->canAccessPemakaian())
@@ -1000,7 +1317,7 @@
                                 <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #0891b2; flex-shrink: 0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
                                 <span class="nav-text-full">Stok Hasil Produksi</span>
                                 <span class="nav-text-short">Hasil Produksi</span>
-                                <span class="pill-dropdown-arrow">▼</span>
+                                <svg class="pill-dropdown-arrow" width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
                             </button>
                             <div class="dropdown-menu" style="min-width: 250px; padding: 0.45rem;">
                                 <a href="{{ route('produksi.stok.index') }}" class="mega-item {{ request()->routeIs('produksi.stok.index') ? 'active' : '' }}">
@@ -1038,7 +1355,7 @@
                                 @if($pendingShipCount > 0)
                                     <span style="background: #f59e0b; color: #ffffff; font-size: 0.65rem; font-weight: 700; padding: 1px 5px; border-radius: 9999px; line-height: 1.2;">{{ $pendingShipCount }}</span>
                                 @endif
-                                <span class="pill-dropdown-arrow">▼</span>
+                                <svg class="pill-dropdown-arrow" width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
                             </button>
                             <div class="dropdown-menu" style="min-width: 275px; padding: 0.45rem;">
                                 <a href="{{ route('penjualan.so.index') }}" class="mega-item {{ request()->routeIs('penjualan.so.*') ? 'active' : '' }}">
@@ -1095,7 +1412,7 @@
                                 <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #059669; flex-shrink: 0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                                 <span class="nav-text-full">Keuangan &amp; Kas</span>
                                 <span class="nav-text-short">Keuangan</span>
-                                <span class="pill-dropdown-arrow">▼</span>
+                                <svg class="pill-dropdown-arrow" width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
                             </button>
                             <div class="dropdown-menu" style="min-width: 250px; padding: 0.45rem;">
                                 @if (Auth::user()->canAccessHutang())
@@ -1203,7 +1520,7 @@
                                         d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
                                 </svg>
                                 <span>Manajemen Karyawan</span>
-                                <span class="pill-dropdown-arrow">▼</span>
+                                <svg class="pill-dropdown-arrow" width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
                             </button>
 
                             <div class="dropdown-menu dropdown-mega">
@@ -1292,7 +1609,7 @@
                                     onclick="toggleNavDropdown('navDropdownMaster', event)">
                                 <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #7c3aed;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
                                 <span>Master Data</span>
-                                <span class="pill-dropdown-arrow">▼</span>
+                                <svg class="pill-dropdown-arrow" width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
                             </button>
                             <div class="dropdown-menu dropdown-mega">
                                 <div class="mega-grid">
@@ -1392,19 +1709,74 @@
                         </div>
                     @endif
 
-                    {{-- 7. HAK AKSES SISTEM & ALAT KHUSUS SUPERADMIN --}}
-                    @if (Auth::user()->canManageUsers())
-                        <a href="{{ route('admin.users.index') }}" class="pill-item {{ request()->routeIs('admin.users.*') ? 'active' : '' }}">
-                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #64748b; flex-shrink: 0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
-                            <span class="nav-text-full">Hak Akses User</span>
-                            <span class="nav-text-short">Hak Akses</span>
-                        </a>
-                    @endif
-                    @if (Auth::user()->isSuperAdmin())
-                        <a href="{{ route('qc.inbound.index', ['view' => 'mobile']) }}" class="pill-item {{ request()->routeIs('qc.inbound.*') ? 'active' : '' }}" title="Buka Aplikasi Web Mobile QC Lapangan">
-                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #0284c7; flex-shrink: 0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
-                            <span style="color: #0284c7; font-weight: 700;">QC Mobile</span>
-                        </a>
+                    {{-- 7. PUSAT ADMINISTRASI & SISTEM (SUPERADMIN / ADMIN) --}}
+                    @if (Auth::user()->canManageUsers() || Auth::user()->isSuperAdmin())
+                        @php
+                            $isAdminActive = request()->routeIs('admin.*') || (request()->routeIs('qc.inbound.*') && request('view') === 'mobile') || request()->routeIs('produksi.packaging.mobile');
+                        @endphp
+                        <div class="pill-dropdown" id="navDropdownAdmin">
+                            <button type="button" 
+                                    class="pill-dropdown-btn {{ $isAdminActive ? 'active' : '' }}" 
+                                    onclick="toggleNavDropdown('navDropdownAdmin', event)"
+                                    title="Pusat Otorisasi Sistem &amp; Alat Khusus">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #475569; flex-shrink: 0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                                <span class="nav-text-full">Sistem &amp; Akses</span>
+                                <span class="nav-text-short">Admin</span>
+                                <svg class="pill-dropdown-arrow" width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+                            </button>
+                            <div class="dropdown-menu" style="min-width: 275px; padding: 0.45rem;">
+                                @if (Auth::user()->canManageUsers())
+                                    <div style="padding: 0.35rem 0.65rem 0.2rem; font-size: 0.675rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b;">
+                                        Otorisasi &amp; Pengguna
+                                    </div>
+                                    <a href="{{ route('admin.users.index') }}" class="mega-item {{ request()->routeIs('admin.users.index') ? 'active' : '' }}">
+                                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                                        <div style="display: flex; flex-direction: column;">
+                                            <span style="font-weight: 600;">Data Pengguna Sistem</span>
+                                            <span style="font-size: 0.6875rem; color: #64748b;">Kelola akun staf, email &amp; status aktif</span>
+                                        </div>
+                                    </a>
+                                    <div style="height: 1px; background: #f1f5f9; margin: 0.25rem 0;"></div>
+                                    <a href="{{ route('admin.users.permissions') }}" class="mega-item {{ request()->routeIs('admin.users.permissions*') ? 'active' : '' }}">
+                                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                                        <div style="display: flex; flex-direction: column;">
+                                            <span style="font-weight: 600;">Matriks Hak Akses Peran</span>
+                                            <span style="font-size: 0.6875rem; color: #64748b;">Atur privilese CRUD tiap peran</span>
+                                        </div>
+                                    </a>
+                                    <div style="height: 1px; background: #f1f5f9; margin: 0.25rem 0;"></div>
+                                    <a href="{{ route('admin.roles.index') }}" class="mega-item {{ request()->routeIs('admin.roles.*') ? 'active' : '' }}">
+                                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"/></svg>
+                                        <div style="display: flex; flex-direction: column;">
+                                            <span style="font-weight: 600;">Manajemen Peran (Roles)</span>
+                                            <span style="font-size: 0.6875rem; color: #64748b;">Tambah &amp; kelola peran dinamis</span>
+                                        </div>
+                                    </a>
+                                @endif
+
+                                @if (Auth::user()->isSuperAdmin())
+                                    <div style="height: 1px; background: #e2e8f0; margin: 0.4rem 0;"></div>
+                                    <div style="padding: 0.35rem 0.65rem 0.2rem; font-size: 0.675rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: #0284c7;">
+                                        Aplikasi Lapangan (Mobile)
+                                    </div>
+                                    <a href="{{ route('qc.inbound.index', ['view' => 'mobile']) }}" class="mega-item {{ (request()->routeIs('qc.inbound.*') && request('view') === 'mobile') ? 'active' : '' }}" title="Buka Aplikasi Web Mobile QC Lapangan">
+                                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #0284c7;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                                        <div style="display: flex; flex-direction: column;">
+                                            <span style="font-weight: 600; color: #0284c7;">QC Lapangan (Mobile Web)</span>
+                                            <span style="font-size: 0.6875rem; color: #64748b;">Pemeriksaan truk singkong &amp; bahan</span>
+                                        </div>
+                                    </a>
+                                    <div style="height: 1px; background: #f1f5f9; margin: 0.25rem 0;"></div>
+                                    <a href="{{ route('produksi.packaging.mobile') }}" class="mega-item {{ request()->routeIs('produksi.packaging.mobile') ? 'active' : '' }}" title="Buka Form Mobile Packaging Lini">
+                                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #059669;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                                        <div style="display: flex; flex-direction: column;">
+                                            <span style="font-weight: 600; color: #059669;">Packaging Lini (Mobile Web)</span>
+                                            <span style="font-size: 0.6875rem; color: #64748b;">Catat output pengemasan per operator</span>
+                                        </div>
+                                    </a>
+                                @endif
+                            </div>
+                        </div>
                     @endif
                 </nav>
             @endauth
@@ -1415,55 +1787,147 @@
             @auth
                 @php
                     $roleBg = '#0284c7';
-                    if (Auth::user()->isSuperAdmin()) $roleBg = '#dc2626';
-                    elseif (Auth::user()->isProduksi()) $roleBg = '#ea580c';
-                    elseif (Auth::user()->isPurchasing()) $roleBg = '#d97706';
+                    $roleLabel = Auth::user()->role_cd;
+                    $roleTheme = 'role-badge-default';
+                    if (Auth::user()->isSuperAdmin()) {
+                        $roleBg = '#dc2626';
+                        $roleTheme = 'role-badge-superadmin';
+                    } elseif (Auth::user()->isProduksi()) {
+                        $roleBg = '#ea580c';
+                        $roleTheme = 'role-badge-produksi';
+                    } elseif (Auth::user()->isPurchasing()) {
+                        $roleBg = '#d97706';
+                        $roleTheme = 'role-badge-purchasing';
+                    } elseif (Auth::user()->isGudang()) {
+                        $roleBg = '#059669';
+                        $roleTheme = 'role-badge-gudang';
+                    }
+                    $nameParts = explode(' ', trim(Auth::user()->name));
+                    $userInitials = count($nameParts) > 1 
+                        ? strtoupper(substr($nameParts[0], 0, 1) . substr($nameParts[1], 0, 1))
+                        : strtoupper(substr(Auth::user()->name, 0, 2));
                 @endphp
                 <div class="pill-dropdown" id="navDropdownUser">
-                    <button type="button" class="user-chip-btn" onclick="toggleNavDropdown('navDropdownUser', event)" title="Klik untuk ganti peran">
-                        <span style="width: 9px; height: 9px; border-radius: 50%; background: {{ $roleBg }}; display: inline-block; flex-shrink: 0;"></span>
+                    <button type="button" class="user-chip-btn" onclick="toggleNavDropdown('navDropdownUser', event)" title="Profil &amp; Pengaturan Akun">
+                        <div class="user-avatar-badge" style="background: {{ $roleBg }};">
+                            <span>{{ $userInitials }}</span>
+                            <span class="user-online-dot"></span>
+                        </div>
                         <div class="user-chip-details">
-                            <div style="font-size: 0.8125rem; font-weight: 700; color: #0f172a; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                            <div class="user-chip-name">
                                 {{ Auth::user()->name }}
                             </div>
-                            <div style="font-size: 0.675rem; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                                <strong style="color: {{ $roleBg }};">{{ Auth::user()->role_cd }}</strong>
+                            <div class="user-chip-sub">
+                                <span class="user-role-pill {{ $roleTheme }}">{{ $roleLabel }}</span>
                                 @if (Auth::user()->gudang)
-                                    • {{ Auth::user()->gudang->gudang_nm }}
+                                    <span class="user-loc-text">• {{ Auth::user()->gudang->gudang_cd ?? Auth::user()->gudang->gudang_nm }}</span>
                                 @endif
                             </div>
                         </div>
-                        <span class="pill-dropdown-arrow">▼</span>
+                        <svg class="pill-dropdown-arrow" width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
                     </button>
 
-                    <div class="dropdown-menu dropdown-right" style="min-width: 250px;">
-                        <div style="padding: 0.6rem 0.95rem; background: #f8fafc; font-size: 0.7rem; font-weight: 700; color: #475569; text-transform: uppercase; border-bottom: 1px solid #e2e8f0;">
-                            ⚡ Ganti Peran Cepat (Testing)
-                        </div>
-                        @php
-                            $switchUsers = \App\Models\User::where('active_st', true)->where('deleted_st', false)->orderBy('id')->get();
-                        @endphp
-                        @foreach ($switchUsers as $su)
-                            <a href="{{ route('quick.login', $su->id) }}" style="padding: 0.6rem 0.95rem; {{ $su->id === Auth::id() ? 'background: #f0fdf4; font-weight: 700;' : '' }}">
-                                <div>
-                                    <div style="font-size: 0.8125rem; color: #0f172a;">{{ $su->name }}</div>
-                                    <div style="font-size: 0.6875rem; color: #64748b;">
-                                        Role: <strong>{{ $su->role_cd }}</strong>
-                                        @if ($su->gudang) ({{ $su->gudang->gudang_cd }}) @endif
-                                    </div>
+                    <div class="dropdown-menu dropdown-right dropdown-user-card" style="min-width: 290px;">
+                        {{-- KARTU INFO USER AKUN --}}
+                        <div class="user-profile-header">
+                            <div class="user-profile-avatar" style="background: {{ $roleBg }};">
+                                {{ $userInitials }}
+                            </div>
+                            <div class="user-profile-info">
+                                <div class="user-profile-name">{{ Auth::user()->name }}</div>
+                                <div class="user-profile-role">
+                                    <span class="user-role-pill {{ $roleTheme }}">{{ $roleLabel }}</span>
                                 </div>
-                                @if ($su->id === Auth::id())
-                                    <span style="color: #16a34a; font-size: 0.75rem;">✓ Aktif</span>
+                                <div class="user-profile-meta">
+                                    @if(Auth::user()->email)
+                                        <span>{{ Auth::user()->email }}</span>
+                                    @endif
+                                    @if(Auth::user()->gudang)
+                                        <span>Lokasi: {{ Auth::user()->gudang->gudang_nm }}</span>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- PINTASAN AKUN / ADMIN --}}
+                        @if (Auth::user()->canManageUsers() || Auth::user()->canApprovePo())
+                            <div class="user-profile-actions">
+                                @if (Auth::user()->canManageUsers())
+                                    <a href="{{ route('admin.users.index') }}" class="user-action-item">
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #64748b;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                                        <span>Kelola Akun &amp; Hak Akses</span>
+                                    </a>
                                 @endif
-                            </a>
-                        @endforeach
+                                @if (Auth::user()->canApprovePo())
+                                    <a href="{{ route('gudang.po.approval_center') }}" class="user-action-item" style="color: #dc2626;">
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                                        <span>Pusat Persetujuan PO Atasan</span>
+                                    </a>
+                                @endif
+                            </div>
+                        @endif
+
+                        {{-- GANTI PERAN CEPAT TESTING --}}
+                        <div class="user-switch-section">
+                            <div class="user-switch-title">
+                                <span>Ganti Pengguna Cepat</span>
+                                <span class="user-switch-badge">Dev / Testing</span>
+                            </div>
+                            <div class="user-switch-list">
+                                @php
+                                    $switchUsers = \App\Models\User::where('active_st', true)->where('deleted_st', false)->orderBy('id')->get();
+                                @endphp
+                                @foreach ($switchUsers as $su)
+                                    @php
+                                        $suParts = explode(' ', trim($su->name));
+                                        $suInitials = count($suParts) > 1 
+                                            ? strtoupper(substr($suParts[0], 0, 1) . substr($suParts[1], 0, 1))
+                                            : strtoupper(substr($su->name, 0, 2));
+                                        $suBg = '#64748b';
+                                        if ($su->isSuperAdmin()) $suBg = '#dc2626';
+                                        elseif ($su->isProduksi()) $suBg = '#ea580c';
+                                        elseif ($su->isPurchasing()) $suBg = '#d97706';
+                                        elseif ($su->isGudang()) $suBg = '#059669';
+                                        $isCurrent = $su->id === Auth::id();
+                                    @endphp
+                                    <a href="{{ route('quick.login', $su->id) }}" class="user-switch-item {{ $isCurrent ? 'active' : '' }}">
+                                        <div class="user-switch-avatar" style="background: {{ $suBg }};">
+                                            {{ $suInitials }}
+                                        </div>
+                                        <div class="user-switch-meta">
+                                            <div class="user-switch-name">{{ $su->name }}</div>
+                                            <div class="user-switch-role">
+                                                <span>{{ $su->role_cd }}</span>
+                                                @if ($su->gudang)
+                                                    <span>• {{ $su->gudang->gudang_cd ?? $su->gudang->gudang_nm }}</span>
+                                                @endif
+                                            </div>
+                                        </div>
+                                        @if ($isCurrent)
+                                            <span class="user-switch-status">✓ Aktif</span>
+                                        @endif
+                                    </a>
+                                @endforeach
+                            </div>
+                        </div>
+
+                        {{-- FOOTER LOGOUT --}}
+                        <div class="user-profile-footer">
+                            <form action="{{ route('logout') }}" method="POST" style="margin: 0; width: 100%;">
+                                @csrf
+                                <button type="submit" class="user-logout-btn">
+                                    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                                    <span>Keluar dari Sistem (Sign Out)</span>
+                                </button>
+                            </form>
+                        </div>
                     </div>
                 </div>
 
-                {{-- Logout Button --}}
+                {{-- Logout Shortcut Button --}}
                 <form action="{{ route('logout') }}" method="POST" style="display: inline;">
                     @csrf
-                    <button type="submit" class="btn btn-secondary btn-sm" style="padding: 0.45rem 0.65rem; color: #ef4444; border-radius: 8px;" title="Keluar / Logout">
+                    <button type="submit" class="user-quick-logout-btn" title="Keluar / Logout Cepat">
                         <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
                     </button>
                 </form>
@@ -1628,9 +2092,12 @@
             }
         });
 
-        // Close dropdown saat scroll atau resize layar
-        window.addEventListener('scroll', function() {
+        // Close dropdown saat scroll layar luar (abaikan jika scrolling di dalam menu dropdown)
+        window.addEventListener('scroll', function(e) {
             if (currentNavDropdown) {
+                if (e.target && (currentNavDropdown.contains(e.target) || (e.target.closest && e.target.closest('.dropdown-menu')))) {
+                    return;
+                }
                 currentNavDropdown.classList.remove('active');
                 const m = currentNavDropdown.querySelector('.dropdown-menu');
                 if (m) m.style.display = 'none';
@@ -1768,8 +2235,11 @@
             }
         });
 
-        window.addEventListener('scroll', function() {
+        window.addEventListener('scroll', function(e) {
             if (globalActiveActionDropdown) {
+                if (e.target && (globalActiveActionDropdown.contains(e.target) || (e.target.closest && e.target.closest('.action-dropdown-menu')))) {
+                    return;
+                }
                 globalActiveActionDropdown.style.display = 'none';
                 document.querySelectorAll('.btn-action-trigger.active').forEach(b => b.classList.remove('active'));
                 globalActiveActionDropdown = null;

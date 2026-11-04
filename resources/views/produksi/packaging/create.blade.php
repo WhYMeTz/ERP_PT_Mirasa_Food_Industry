@@ -138,6 +138,14 @@
                                                     $batchStr = $dtl->batch_no ?: ($p->batch_wip_no ?: ($p->produksi_tgl ? $p->produksi_tgl->format('d m Y') : '-'));
                                                     $hppVal = (float) ($dtl->hpp_satuan > 0 ? $dtl->hpp_satuan : $p->hpp_per_kg);
                                                     $isSelected = ($targetProdId == $p->produksi_id && ($targetWipId ? (int)$dtl->barang_id === (int)$targetWipId : $loop->first));
+                                                    $nmUpper = strtoupper($barangNm);
+                                                    $hasBumbuProd = (float) ($p->bumbu_qty ?? 0) > 0;
+                                                    $isBerbumbu = $hasBumbuProd
+                                                        || str_contains($nmUpper, 'BERBUMBU')
+                                                        || str_contains($nmUpper, 'BUMBU')
+                                                        || str_contains($nmUpper, 'BALADO')
+                                                        || str_contains($nmUpper, 'SEASALT')
+                                                        || str_contains($nmUpper, 'JAGUNG');
                                                 @endphp
                                                 <option value="{{ $p->produksi_id }}" 
                                                         data-hpp="{{ $hppVal }}" 
@@ -147,8 +155,9 @@
                                                         data-no="{{ $p->produksi_no }}"
                                                         data-barang-id="{{ $dtl->barang_id }}"
                                                         data-barang-nm="{{ $barangNm }}"
+                                                        data-is-berbumbu="{{ $isBerbumbu ? '1' : '0' }}"
                                                         {{ $isSelected ? 'selected' : '' }}>
-                                                    [{{ $p->produksi_no }}] {{ $tglStr }} • {{ $barangNm }} ({{ number_format($qtyKg, 0, ',', '.') }} Kg) • Batch: {{ $batchStr }} (HPP: Rp {{ number_format($hppVal, 0, ',', '.') }}/Kg)
+                                                    [{{ $p->produksi_no }}] {{ $tglStr }} • {{ $barangNm }} ({{ number_format($qtyKg, 0, ',', '.') }} Kg) • Batch: {{ $batchStr }} (HPP: Rp {{ number_format($hppVal, 0, ',', '.') }}/Kg) {{ $isBerbumbu ? '✨ [Sudah Berbumbu]' : '' }}
                                                 </option>
                                             @endforeach
                                         </optgroup>
@@ -160,6 +169,14 @@
                                                 $batchStr = $dtl->batch_no ?: ($p->batch_wip_no ?: ($p->produksi_tgl ? $p->produksi_tgl->format('d m Y') : '-'));
                                                 $hppVal = (float) ($dtl->hpp_satuan > 0 ? $dtl->hpp_satuan : $p->hpp_per_kg);
                                                 $isSelected = ($targetProdId == $p->produksi_id && ($targetWipId ? (int)$dtl->barang_id === (int)$targetWipId : true));
+                                                $nmUpper = strtoupper($barangNm);
+                                                $hasBumbuProd = (float) ($p->bumbu_qty ?? 0) > 0;
+                                                $isBerbumbu = $hasBumbuProd
+                                                    || str_contains($nmUpper, 'BERBUMBU')
+                                                    || str_contains($nmUpper, 'BUMBU')
+                                                    || str_contains($nmUpper, 'BALADO')
+                                                    || str_contains($nmUpper, 'SEASALT')
+                                                    || str_contains($nmUpper, 'JAGUNG');
                                             @endphp
                                             <option value="{{ $p->produksi_id }}" 
                                                     data-hpp="{{ $hppVal }}" 
@@ -169,8 +186,9 @@
                                                     data-no="{{ $p->produksi_no }}"
                                                     data-barang-id="{{ $dtl->barang_id }}"
                                                     data-barang-nm="{{ $barangNm }}"
+                                                    data-is-berbumbu="{{ $isBerbumbu ? '1' : '0' }}"
                                                     {{ $isSelected ? 'selected' : '' }}>
-                                                [{{ $p->produksi_no }}] {{ $tglStr }} • {{ $barangNm }} ({{ number_format($qtyKg, 0, ',', '.') }} Kg) • Batch: {{ $batchStr }} (HPP: Rp {{ number_format($hppVal, 0, ',', '.') }}/Kg)
+                                                [{{ $p->produksi_no }}] {{ $tglStr }} • {{ $barangNm }} ({{ number_format($qtyKg, 0, ',', '.') }} Kg) • Batch: {{ $batchStr }} (HPP: Rp {{ number_format($hppVal, 0, ',', '.') }}/Kg) {{ $isBerbumbu ? '✨ [Sudah Berbumbu]' : '' }}
                                             </option>
                                         @endforeach
                                     @endif
@@ -278,57 +296,88 @@
                 <div style="background: #f0fdf4; border: 1.5px solid #bbf7d0; border-radius: 8px; padding: 1rem 1.25rem; margin-top: 1rem;">
                     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.85rem;">
                         <div style="display: flex; align-items: center; gap: 0.5rem;">
-                            <span style="font-size: 1.15rem;">🏷️</span>
+                            <div style="width: 28px; height: 28px; border-radius: 6px; background: #be185d; color: #ffffff; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                            </div>
                             <div>
-                                <strong style="color: #065f46; font-size: 0.875rem;">Timbangan Lakban Segel Karton (Atas, Bawah &amp; Rupiah)</strong>
-                                <span style="display: block; font-size: 0.725rem; color: #047857;">
-                                    Sesuai buku log timbangan packing: catat timbangan gram Atas dan Bawah secara presisi.
+                                <strong style="color: #9d174d; font-size: 0.875rem;">Perhitungan Pemakaian Lakban Karton (Standar cm/Meter &amp; Roll)</strong>
+                                <span style="display: block; font-size: 0.725rem; color: #be185d;">
+                                    Otomatis dihitung dari jumlah karton hasil kemas &bull; Standar industri Mirasa: 120 cm / karton (1 Roll = 100 m)
                                 </span>
                             </div>
                         </div>
-                        <div style="font-size: 0.75rem; background: #ffffff; padding: 0.25rem 0.65rem; border-radius: 6px; border: 1px solid #86efac; color: #166534; font-weight: 700; display: inline-flex; align-items: center; gap: 0.4rem;">
-                            <span>Tarif Acuan: Rp <span id="tarifLakbanInfo">{{ number_format($tarifLakbanDefault ?? 36.70, 2, ',', '.') }}</span> / gram (Master Barang)</span>
+                        <div style="font-size: 0.75rem; background: #ffffff; padding: 0.25rem 0.65rem; border-radius: 6px; border: 1px solid #fbcfe8; color: #be185d; font-weight: 700; display: inline-flex; align-items: center; gap: 0.4rem;">
+                            <span>Total: <span id="lblDesktopLakbanMeter">0</span> Meter (<span id="lblDesktopLakbanRoll">0</span> Roll)</span>
                         </div>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; align-items: flex-end;">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 0.75rem; align-items: flex-end;">
                         <div>
-                            <label style="display: block; font-size: 0.775rem; font-weight: 700; color: #166534; margin-bottom: 0.35rem;">
-                                Lakban Bagian Atas (Gram)
+                            <label style="display: block; font-size: 0.75rem; font-weight: 700; color: #9d174d; margin-bottom: 0.35rem;">
+                                Standar Lakban / Karton (cm)
                             </label>
-                            <input type="number" step="any" min="0" id="lakban_atas_gr" name="lakban_atas_gr"
-                                   class="form-control" style="height: 38px; border-radius: 6px; font-size: 0.9rem; font-weight: 700; text-align: right;" 
-                                   value="{{ old('lakban_atas_gr', 0) }}" placeholder="Contoh: 1250" oninput="onLakbanInputsChanged()">
+                            <div style="position: relative;">
+                                <input type="number" step="any" min="1" id="lakban_standar_cm" name="lakban_standar_cm"
+                                       class="form-control" style="height: 38px; border-radius: 6px; font-size: 0.9rem; font-weight: 700; text-align: right; padding-right: 42px;" 
+                                       value="{{ old('lakban_standar_cm', 120) }}" oninput="recalculateDesktopLakban()">
+                                <span style="position: absolute; right: 10px; top: 9px; font-size: 0.75rem; color: #9d174d; font-weight: 600;">cm</span>
+                            </div>
+                            <div style="font-size: 0.65rem; color: #9d174d; margin-top: 2px;">Atas ~60cm + Bawah ~60cm</div>
                         </div>
 
                         <div>
-                            <label style="display: block; font-size: 0.775rem; font-weight: 700; color: #166534; margin-bottom: 0.35rem;">
-                                Lakban Bagian Bawah (Gram)
+                            <label style="display: block; font-size: 0.75rem; font-weight: 700; color: #9d174d; margin-bottom: 0.35rem;">
+                                Kebutuhan Normal (Meter)
                             </label>
-                            <input type="number" step="any" min="0" id="lakban_bawah_gr" name="lakban_bawah_gr"
-                                   class="form-control" style="height: 38px; border-radius: 6px; font-size: 0.9rem; font-weight: 700; text-align: right;" 
-                                   value="{{ old('lakban_bawah_gr', 0) }}" placeholder="Contoh: 800" oninput="onLakbanInputsChanged()">
+                            <div style="height: 38px; border-radius: 6px; font-size: 0.9rem; font-weight: 800; color: #0f172a; background: #ffffff; border: 1px solid #cbd5e1; display: flex; align-items: center; justify-content: flex-end; padding: 0 0.75rem;">
+                                <span id="lblDesktopLakbanKebutuhanM">0</span>&nbsp;<span style="font-size: 0.75rem; color: #64748b; font-weight: 600;">m</span>
+                            </div>
+                            <div style="font-size: 0.65rem; color: #64748b; margin-top: 2px;">Dari <span id="lblDesktopRefKarton">0</span> karton jadi</div>
                         </div>
 
                         <div>
-                            <label style="display: block; font-size: 0.775rem; font-weight: 700; color: #166534; margin-bottom: 0.35rem;">
-                                Total Timbangan (Gram)
+                            <label style="display: block; font-size: 0.75rem; font-weight: 700; color: #b91c1c; margin-bottom: 0.35rem;">
+                                Lakban Rusak / Kusut (Meter)
                             </label>
-                            <input type="number" step="any" min="0" id="lakban_jumlah_gr" name="lakban_jumlah_gr" readonly
-                                   class="form-control" style="height: 38px; border-radius: 6px; font-size: 0.95rem; font-weight: 800; text-align: right; background: #e2e8f0; color: #0f172a;" 
-                                   value="{{ old('lakban_jumlah_gr', 0) }}">
+                            <div style="position: relative;">
+                                <input type="number" step="any" min="0" id="lakban_rusak_m" name="lakban_rusak_m"
+                                       class="form-control" style="height: 38px; border-radius: 6px; font-size: 0.9rem; font-weight: 700; text-align: right; padding-right: 48px; border-color: #fca5a5;" 
+                                       value="{{ old('lakban_rusak_m', 0) }}" placeholder="0" oninput="recalculateDesktopLakban()">
+                                <span style="position: absolute; right: 10px; top: 9px; font-size: 0.75rem; color: #dc2626; font-weight: 600;">Meter</span>
+                            </div>
+                            <div style="font-size: 0.65rem; color: #b91c1c; margin-top: 2px;">Afkir lakban putus/kusut</div>
                         </div>
 
                         <div>
-                            <label style="display: block; font-size: 0.775rem; font-weight: 700; color: #166534; margin-bottom: 0.35rem;">
-                                Total Biaya Lakban (Rupiah)
+                            <label style="display: block; font-size: 0.75rem; font-weight: 700; color: #be185d; margin-bottom: 0.35rem;">
+                                Total Pemakaian (Roll)
+                            </label>
+                            <div style="position: relative;">
+                                <input type="number" step="0.01" min="0" id="lakban_roll_qty" name="lakban_roll_qty"
+                                       class="form-control" style="height: 38px; border-radius: 6px; font-size: 0.95rem; font-weight: 800; text-align: right; padding-right: 48px; color: #be185d; border-color: #f472b6;" 
+                                       value="{{ old('lakban_roll_qty', 0) }}" placeholder="0.00" oninput="onDesktopManualRollInput()">
+                                <span style="position: absolute; right: 10px; top: 9px; font-size: 0.75rem; color: #be185d; font-weight: 700;">Roll</span>
+                            </div>
+                            <div style="font-size: 0.65rem; color: #be185d; margin-top: 2px;">Bisa dikoreksi manual</div>
+                        </div>
+
+                        <div>
+                            <label style="display: block; font-size: 0.75rem; font-weight: 700; color: #166534; margin-bottom: 0.35rem;">
+                                Total Biaya Lakban (Rp)
                             </label>
                             <input type="hidden" id="lakban_nilai" name="lakban_nilai" value="{{ old('lakban_nilai', 0) }}">
-                            <div id="lakbanNilaiDisplay" style="height: 38px; border-radius: 6px; font-size: 1rem; font-weight: 800; color: #047857; background: #ffffff; border: 1.5px solid #10b981; display: flex; align-items: center; justify-content: flex-end; padding: 0 0.75rem;">
+                            <div id="lakbanNilaiDisplay" style="height: 38px; border-radius: 6px; font-size: 0.95rem; font-weight: 800; color: #047857; background: #ffffff; border: 1.5px solid #10b981; display: flex; align-items: center; justify-content: flex-end; padding: 0 0.75rem;">
                                 Rp 0
                             </div>
+                            <div style="font-size: 0.65rem; color: #15803d; margin-top: 2px;">Otomatis masuk ke HPP kemas</div>
                         </div>
                     </div>
+
+                    {{-- Hidden inputs untuk kompatibilitas database & HPP backend --}}
+                    <input type="hidden" id="lakban_atas_gr" name="lakban_atas_gr" value="{{ old('lakban_atas_gr', 0) }}">
+                    <input type="hidden" id="lakban_bawah_gr" name="lakban_bawah_gr" value="{{ old('lakban_bawah_gr', 0) }}">
+                    <input type="hidden" id="lakban_jumlah_gr" name="lakban_jumlah_gr" value="{{ old('lakban_jumlah_gr', 0) }}">
+                    <input type="hidden" id="lakban_qty" name="lakban_qty" value="{{ old('lakban_qty', 0) }}">
                 </div>
             </div>
         </div>

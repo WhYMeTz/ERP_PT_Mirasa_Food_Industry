@@ -35,11 +35,25 @@ class SyncJisdorDaily extends Command
         $force = $this->option('force');
         $this->info("Memulai sinkronisasi kurs JISDOR Bank Indonesia untuk tanggal: {$targetDate}");
 
+        // Coba sinkronisasi langsung dari portal resmi Bank Indonesia
+        $synced = $tarifService->syncFromBankIndonesia();
+        if (!empty($synced)) {
+            $this->info("Berhasil sinkronisasi dari portal resmi Bank Indonesia JISDOR:");
+            foreach (array_slice($synced, 0, 5) as $d => $r) {
+                $this->line(" - {$d}: Rp " . number_format($r, 2, ',', '.'));
+            }
+
+            $rate = $synced[$targetDate] ?? reset($synced);
+            $this->info("Kurs acuan aktif ({$targetDate}): Rp " . number_format($rate, 2, ',', '.'));
+            return Command::SUCCESS;
+        }
+
+        $this->warn("Koneksi langsung ke portal BI tidak merespon, memeriksa cadangan database...");
+
         // Cek hari libur akhir pekan
         $dayOfWeek = date('N', strtotime($targetDate)); // 6 = Sabtu, 7 = Minggu
         if ($dayOfWeek >= 6) {
             $this->warn("Tanggal {$targetDate} adalah akhir pekan (Sabtu/Minggu). Bank Indonesia libur.");
-            // Ambil kurs hari Jumat terakhir
             $latest = DatKursHarian::active()->orderByDesc('tanggal')->first();
             if ($latest) {
                 $this->info("Kurs aktif menggunakan hari kerja terakhir ({$latest->tanggal}): Rp " . number_format($latest->kurs_tengah, 2, ',', '.'));
@@ -47,46 +61,10 @@ class SyncJisdorDaily extends Command
             return Command::SUCCESS;
         }
 
-        // Cek jam rilis resmi Bank Indonesia (JISDOR baru dirilis pukul 15.15 WIB pada hari kerja)
-        $currentHour = (int) date('H');
-        $currentMinute = (int) date('i');
-        $isBeforeReleaseTime = ($targetDate === date('Y-m-d')) && ($currentHour < 15 || ($currentHour === 15 && $currentMinute < 15));
-
-        if ($isBeforeReleaseTime && !$force) {
-            $this->warn("Jam operasional rilis Bank Indonesia (15.15 WIB) belum tercapai. Menggunakan kurs resmi hari kerja terakhir.");
-            $latest = DatKursHarian::active()->where('tanggal', '<', $targetDate)->orderByDesc('tanggal')->first();
-            $rate = $latest ? (float) $latest->kurs_tengah : 18138.00;
-            $this->info("Kurs acuan aktif: Rp " . number_format($rate, 2, ',', '.'));
-            $this->syncMasterTarif($rate);
-            return Command::SUCCESS;
-        }
-
-        // Coba fetch kurs dari sumber Bank Indonesia / Financial API
-        $fetchedRate = null;
-        try {
-            $response = Http::timeout(4)
-                ->withoutVerifying()
-                ->get('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json');
-
-            if ($response->successful()) {
-                $json = $response->json();
-                $rate = (float) ($json['usd']['idr'] ?? 0);
-                if ($rate >= 14000 && $rate <= 25000) {
-                    $fetchedRate = round($rate, 2);
-                }
-            }
-        } catch (\Throwable $e) {
-            $this->warn("Koneksi eksternal tidak merespon: " . $e->getMessage());
-        }
-
-        if (!$fetchedRate) {
-            // Gunakan kurs hari kerja terakhir yang ada di database
-            $latest = DatKursHarian::active()->orderByDesc('tanggal')->first();
-            $fetchedRate = $latest ? (float) $latest->kurs_tengah : 18138.00;
-            $this->warn("Menggunakan kurs referensi hari kerja terakhir: Rp " . number_format($fetchedRate, 2, ',', '.'));
-        } else {
-            $this->info("Berhasil mendapatkan kurs terbaru: Rp " . number_format($fetchedRate, 2, ',', '.'));
-        }
+        // Ambil kurs hari kerja terakhir yang ada di database
+        $latest = DatKursHarian::active()->orderByDesc('tanggal')->first();
+        $fetchedRate = $latest ? (float) $latest->kurs_tengah : 18161.00;
+        $this->warn("Menggunakan kurs referensi hari kerja terakhir: Rp " . number_format($fetchedRate, 2, ',', '.'));
 
         // Simpan / update ke dat_kurs_harian
         DatKursHarian::updateOrCreate(
@@ -101,10 +79,8 @@ class SyncJisdorDaily extends Command
             ]
         );
 
-        // Sinkronkan ke mst_tarif_produksi
         $this->syncMasterTarif($fetchedRate);
 
-        // Bersihkan cache
         Cache::forget("jisdor_daily_rate_{$targetDate}");
         Cache::forget('mst_tarif_produksi_all');
         Cache::forget('mst_tarif_produksi_map');

@@ -59,12 +59,12 @@ document.addEventListener('DOMContentLoaded', function () {
     // Format nomor batch default berupa tanggal
     updateBatchNumber();
 
-    // Inisialisasi Timbangan Lakban
-    const lakbanAtasIn = document.getElementById('lakban_atas_gr');
-    const lakbanBawahIn = document.getElementById('lakban_bawah_gr');
-    lakbanAtasIn?.addEventListener('input', onLakbanInputsChanged);
-    lakbanBawahIn?.addEventListener('input', onLakbanInputsChanged);
-    onLakbanInputsChanged();
+    // Inisialisasi Kalkulasi Lakban Desktop (Standar cm/Meter & Roll - Poin 41)
+    hasilKartonInput?.addEventListener('input', recalculateDesktopLakban);
+    document.getElementById('lakban_standar_cm')?.addEventListener('input', recalculateDesktopLakban);
+    document.getElementById('lakban_rusak_m')?.addEventListener('input', recalculateDesktopLakban);
+    document.getElementById('lakban_roll_qty')?.addEventListener('input', onDesktopManualRollInput);
+    recalculateDesktopLakban();
 
     // Auto prefill jika datang dari link "Proses Jadi HPP FG" di web catatan operator
     if (window.preloadedOperatorLaporan) {
@@ -316,8 +316,10 @@ function onProduksiSelect(selectEl, skipAddRow = false) {
 
     // Tampilkan notifikasi sinkron ringkas & profesional
     if (syncBox && syncText) {
+        const isBerbumbu = opt.getAttribute('data-is-berbumbu') === '1';
+        const bumbuNotice = isBerbumbu ? ' <span style="background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; padding: 2px 7px; border-radius: 9999px; font-weight: 700; font-size: 0.725rem; margin-left: 6px;">✨ Sudah Berbumbu di Dapur (Poin 43)</span>' : '';
         syncBox.style.display = 'flex';
-        syncText.innerHTML = `Tersinkron dengan <strong>${prodNo}</strong>: <strong>${barangNm}</strong> &bull; Lot: <code>${batchVal}</code> &bull; Exp: <strong>${formatDateIndo(expVal)}</strong> (HPP: Rp ${formatRupiah(hppVal)}/Kg)`;
+        syncText.innerHTML = `Tersinkron dengan <strong>${prodNo}</strong>: <strong>${barangNm}</strong> &bull; Lot: <code>${batchVal}</code> &bull; Exp: <strong>${formatDateIndo(expVal)}</strong> (HPP: Rp ${formatRupiah(hppVal)}/Kg)${bumbuNotice}`;
     }
 
     // Cek apakah di tabel material sudah ada baris WIP
@@ -1044,18 +1046,36 @@ function applyOperatorLaporan(itemOrIdx) {
         }
     }
 
-    // 7. Sinkronkan Timbangan Lakban Atas & Bawah
+    // 7. Sinkronkan Lakban dari Laporan Operator (Roll, Meter & Gram)
+    const lakbanRollInput = document.getElementById('lakban_roll_qty');
+    const lakbanStandarInput = document.getElementById('lakban_standar_cm');
+    const lakbanRusakInput = document.getElementById('lakban_rusak_m');
     const lakbanAtasInput = document.getElementById('lakban_atas_gr');
     const lakbanBawahInput = document.getElementById('lakban_bawah_gr');
+
+    if (item.lakban_standar_cm && lakbanStandarInput) {
+        lakbanStandarInput.value = item.lakban_standar_cm;
+    }
+    if (item.lakban_rusak_m && lakbanRusakInput) {
+        lakbanRusakInput.value = item.lakban_rusak_m;
+    }
+    if (parseFloat(item.lakban_qty) > 0 && lakbanRollInput) {
+        lakbanRollInput.value = parseFloat(item.lakban_qty);
+    }
     let atasGr = parseFloat(item.lakban_atas_gr) || 0;
     let bawahGr = parseFloat(item.lakban_bawah_gr) || 0;
     if (atasGr <= 0 && bawahGr <= 0 && parseFloat(item.lakban_qty) > 0) {
-        atasGr = Math.round((parseFloat(item.lakban_qty) / 2) * 10) / 10;
-        bawahGr = Math.round((parseFloat(item.lakban_qty) / 2) * 10) / 10;
+        atasGr = Math.round((parseFloat(item.lakban_qty) * 1250 / 2) * 10) / 10;
+        bawahGr = Math.round((parseFloat(item.lakban_qty) * 1250 / 2) * 10) / 10;
     }
     if (lakbanAtasInput) lakbanAtasInput.value = atasGr;
     if (lakbanBawahInput) lakbanBawahInput.value = bawahGr;
-    onLakbanInputsChanged();
+
+    if (typeof recalculateDesktopLakban === 'function') {
+        recalculateDesktopLakban();
+    } else {
+        onLakbanInputsChanged();
+    }
 
     // 8. Tetap ambil ID BOM secara pasif tanpa mereset tabel material
     fetchBomPreview();
@@ -1383,32 +1403,68 @@ function buildMaterialRowsFromOperator(item) {
 }
 
 /**
- * Handler ketika input timbangan Lakban Atas atau Bawah diubah
+ * Kalkulasi Otomatis Pemakaian Lakban Desktop (Standar cm/Meter & Roll - Poin 41)
  */
-function onLakbanInputsChanged() {
-    const atas = parseFloat(document.getElementById('lakban_atas_gr')?.value) || 0;
-    const bawah = parseFloat(document.getElementById('lakban_bawah_gr')?.value) || 0;
-    const totalGr = Math.round((atas + bawah) * 10) / 10;
+function recalculateDesktopLakban() {
+    const hasilKarton = parseFloat(document.getElementById('hasil_karton_qty')?.value) || 0;
+    const standarCm = parseFloat(document.getElementById('lakban_standar_cm')?.value) || 120;
+    const rusakM = parseFloat(document.getElementById('lakban_rusak_m')?.value) || 0;
 
-    const totalInput = document.getElementById('lakban_jumlah_gr');
-    if (totalInput) totalInput.value = totalGr;
+    // 1. Kebutuhan Normal = hasil karton * (standar cm / 100)
+    const normalMeter = Math.round((hasilKarton * (standarCm / 100)) * 100) / 100;
 
-    // Ambil harga standar lakban timbangan (per gram) dari Master Data Tarif Kemasan
+    // 2. Total Meter = Normal + Rusak
+    const totalMeter = Math.round((normalMeter + rusakM) * 100) / 100;
+
+    // 3. Konversi ke Roll (1 Roll = 100 Meter)
+    const totalRoll = Math.round((totalMeter / 100) * 100) / 100;
+
+    // Update UI Elements
+    const lblRef = document.getElementById('lblDesktopRefKarton');
+    if (lblRef) lblRef.textContent = formatRupiah(hasilKarton);
+
+    const lblKebutuhan = document.getElementById('lblDesktopLakbanKebutuhanM');
+    if (lblKebutuhan) lblKebutuhan.textContent = formatRupiah(normalMeter);
+
+    const lblMeter = document.getElementById('lblDesktopLakbanMeter');
+    if (lblMeter) lblMeter.textContent = formatRupiah(totalMeter);
+
+    const lblRoll = document.getElementById('lblDesktopLakbanRoll');
+    if (lblRoll) lblRoll.textContent = formatRupiah(totalRoll);
+
+    const rollInput = document.getElementById('lakban_roll_qty');
+    if (rollInput && document.activeElement !== rollInput) {
+        rollInput.value = totalRoll > 0 ? totalRoll : '';
+    }
+
+    // 4. Estimasi Gramatisasi untuk Kompatibilitas Database (1 Roll ~ 1250 gr / ~12.5 gr per meter)
+    const totalGram = Math.round(totalMeter * 12.5 * 10) / 10;
+    const atasGram = Math.round((totalGram / 2) * 10) / 10;
+    const bawahGram = Math.round((totalGram / 2) * 10) / 10;
+
+    const atasInput = document.getElementById('lakban_atas_gr');
+    const bawahInput = document.getElementById('lakban_bawah_gr');
+    const totalGrInput = document.getElementById('lakban_jumlah_gr');
+    const hiddenQty = document.getElementById('lakban_qty');
+
+    if (atasInput) atasInput.value = atasGram;
+    if (bawahInput) bawahInput.value = bawahGram;
+    if (totalGrInput) totalGrInput.value = totalGram;
+    if (hiddenQty) hiddenQty.value = totalRoll > 0 ? totalRoll : 0;
+
+    // 5. Hitung Nilai Rupiah Lakban
     let tarif = (typeof window.tarifLakbanDefault !== 'undefined' && window.tarifLakbanDefault > 0)
         ? parseFloat(window.tarifLakbanDefault)
         : 36.70;
 
-    const tarifInfo = document.getElementById('tarifLakbanInfo');
-    if (tarifInfo) tarifInfo.textContent = formatRupiah(tarif);
-
-    const totalNilai = Math.round(totalGr * tarif);
+    const totalNilai = Math.round(totalGram * tarif);
     const hiddenNilai = document.getElementById('lakban_nilai');
     if (hiddenNilai) hiddenNilai.value = totalNilai;
 
     const displayNilai = document.getElementById('lakbanNilaiDisplay');
     if (displayNilai) displayNilai.textContent = 'Rp ' + formatRupiah(totalNilai);
 
-    // Sinkronkan ke baris tabel material jika ada baris komponen lakban
+    // 6. Sinkronkan ke baris tabel material BOM Kemas jika ada
     const rows = document.querySelectorAll('.material-row');
     rows.forEach(tr => {
         const catInput = tr.querySelector('input[name*="[kategori_bahan]"]');
@@ -1418,7 +1474,7 @@ function onLakbanInputsChanged() {
         if (cat === 'LAKBAN' || text.includes('LAKBAN') || text.includes('LKB')) {
             const qtyInput = tr.querySelector('.row-qty-input');
             const priceInput = tr.querySelector('.row-price-input');
-            if (qtyInput) qtyInput.value = totalGr;
+            if (qtyInput) qtyInput.value = totalGram;
             if (priceInput && (!priceInput.value || parseFloat(priceInput.value) <= 0)) {
                 priceInput.value = tarif;
             }
@@ -1430,6 +1486,56 @@ function onLakbanInputsChanged() {
     });
 
     recalculateTotals();
+}
+
+/**
+ * Handler jika Admin / User mengetik langsung jumlah Roll
+ */
+function onDesktopManualRollInput() {
+    const rollInput = document.getElementById('lakban_roll_qty');
+    const totalRoll = parseFloat(rollInput?.value) || 0;
+    const totalMeter = Math.round(totalRoll * 100 * 100) / 100;
+
+    const lblMeter = document.getElementById('lblDesktopLakbanMeter');
+    if (lblMeter) lblMeter.textContent = formatRupiah(totalMeter);
+
+    const lblRoll = document.getElementById('lblDesktopLakbanRoll');
+    if (lblRoll) lblRoll.textContent = formatRupiah(totalRoll);
+
+    // Estimasi Gramatisasi
+    const totalGram = Math.round(totalMeter * 12.5 * 10) / 10;
+    const atasGram = Math.round((totalGram / 2) * 10) / 10;
+    const bawahGram = Math.round((totalGram / 2) * 10) / 10;
+
+    const atasInput = document.getElementById('lakban_atas_gr');
+    const bawahInput = document.getElementById('lakban_bawah_gr');
+    const totalGrInput = document.getElementById('lakban_jumlah_gr');
+    const hiddenQty = document.getElementById('lakban_qty');
+
+    if (atasInput) atasInput.value = atasGram;
+    if (bawahInput) bawahInput.value = bawahGram;
+    if (totalGrInput) totalGrInput.value = totalGram;
+    if (hiddenQty) hiddenQty.value = totalRoll;
+
+    let tarif = (typeof window.tarifLakbanDefault !== 'undefined' && window.tarifLakbanDefault > 0)
+        ? parseFloat(window.tarifLakbanDefault)
+        : 36.70;
+
+    const totalNilai = Math.round(totalGram * tarif);
+    const hiddenNilai = document.getElementById('lakban_nilai');
+    if (hiddenNilai) hiddenNilai.value = totalNilai;
+
+    const displayNilai = document.getElementById('lakbanNilaiDisplay');
+    if (displayNilai) displayNilai.textContent = 'Rp ' + formatRupiah(totalNilai);
+
+    recalculateTotals();
+}
+
+/**
+ * Fallback alias untuk kompatibilitas
+ */
+function onLakbanInputsChanged() {
+    recalculateDesktopLakban();
 }
 
 function clearOperatorSync() {

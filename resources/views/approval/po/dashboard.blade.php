@@ -131,12 +131,12 @@
                         <th style="width: 44px; text-align: center;">
                             <input type="checkbox" class="macos-checkbox-head" id="selectAllCheckbox" onclick="toggleSelectAll(this)">
                         </th>
-                        <th style="width: 32%;">Nomor PO &amp; Komoditas</th>
-                        <th style="width: 20%;">Mitra Supplier</th>
-                        <th style="width: 14%;">Diajukan Oleh</th>
-                        <th style="width: 14%;">Total Anggaran</th>
+                        <th style="width: 30%;">Nomor PO &amp; Komoditas</th>
+                        <th style="width: 22%;">Mitra Supplier &amp; Tgl</th>
+                        <th style="width: 16%;">Diajukan Oleh</th>
+                        <th style="width: 15%;">Total Anggaran</th>
                         <th style="width: 10%; text-align: center;">Status</th>
-                        <th style="width: 10%; text-align: right;">Aksi</th>
+                        <th style="width: 7%; text-align: right;">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -147,7 +147,7 @@
                             if ($po->details->count() > 1) {
                                 $commodityDesc .= ' (+' . ($po->details->count() - 1) . ' item lain)';
                             }
-                            $creatorName = $po->created_by ?? 'Tim Gudang';
+                            $creatorName = $po->creator_name;
                             $formattedDate = \Carbon\Carbon::parse($po->po_tgl ?? $po->created_at)->translatedFormat('d M Y');
                             $nominalStr = 'Rp ' . number_format($po->total_tagihan ?? 0, 0, ',', '.');
                             $supplierNm = $po->supplier?->supplier_nm ?? 'Supplier Terdaftar';
@@ -176,7 +176,7 @@
                                 </div>
                             </td>
 
-                            {{-- Mitra Supplier --}}
+                            {{-- Mitra Supplier & Tanggal --}}
                             <td>
                                 <div class="supplier-cell-wrap">
                                     <span class="supplier-name-text">{{ Str::limit($supplierNm, 26) }}</span>
@@ -190,7 +190,7 @@
                                     <div class="shared-avatar">
                                         {{ strtoupper(substr($creatorName, 0, 1)) }}
                                     </div>
-                                    <span class="shared-name">{{ $creatorName }}</span>
+                                    <span class="shared-name">{{ Str::limit($creatorName, 22) }}</span>
                                 </div>
                             </td>
 
@@ -215,40 +215,26 @@
                                 @endif
                             </td>
 
-                            {{-- Action Buttons --}}
+                            {{-- Action Menu (Titik 3) --}}
                             <td style="text-align: right; position: relative;">
-                                <div style="display: inline-flex; align-items: center; gap: 4px;">
-                                    <a href="{{ route('gudang.po.review', $po->po_id) }}" 
-                                       class="btn-quick-tinjau {{ $po->status_cd === 'PENDING_APPROVAL' ? 'btn-urgent' : '' }}" 
-                                       title="Buka verifikasi & persetujuan">
-                                        <span>Tinjau</span>
-                                    </a>
-
+                                <div style="display: inline-flex; align-items: center; justify-content: flex-end;">
                                     <button type="button" 
                                             class="btn-row-action-dots" 
                                             onclick="toggleSmartActionDropdown(this, event, '{{ $menuId }}')"
-                                            title="Menu Pilihan">
-                                        <svg width="15" height="15" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+                                            title="Menu Tindakan">
+                                        <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24" style="pointer-events: none;"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
                                     </button>
                                 </div>
 
                                 {{-- Dropdown Floating Menu --}}
                                 <div id="{{ $menuId }}" class="action-dropdown-menu macos-action-popup">
-                                    <a href="{{ route('gudang.po.review', $po->po_id) }}" class="action-dropdown-item">
+                                    <a href="{{ route('gudang.po.review', $po->po_id) }}" class="action-dropdown-item {{ $po->status_cd === 'PENDING_APPROVAL' ? 'pending-action-item' : '' }}">
                                         <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
-                                        <span>Tinjau &amp; Setujui</span>
+                                        <span>{{ $po->status_cd === 'PENDING_APPROVAL' ? 'Tinjau & Setujui' : 'Lihat Detail PO' }}</span>
                                     </a>
                                     <a href="{{ route('gudang.po.export-pdf', $po->po_id) }}" target="_blank" class="action-dropdown-item">
                                         <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
                                         <span>Download PDF</span>
-                                    </a>
-                                    <a href="{{ route('gudang.po.show', $po->po_id) }}" class="action-dropdown-item">
-                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-                                        <span>Buka Dokumen PO</span>
-                                    </a>
-                                    <a href="{{ route('gudang.po.create') }}?copy={{ $po->po_id }}" class="action-dropdown-item">
-                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-                                        <span>Salin Pengajuan</span>
                                     </a>
                                     <div style="height: 1px; background: #f4f4f5; margin: 4px 0;"></div>
                                     <button type="button" class="action-dropdown-item danger-item" onclick="confirmDeletePo('{{ $po->po_id }}', '{{ $po->po_no }}')">
@@ -316,43 +302,6 @@
         });
     }
 
-    // Smart Action Dropdown Positioning (Fixed position to avoid table overflow)
-    function toggleSmartActionDropdown(triggerBtn, event, menuId) {
-        event.stopPropagation();
-        const menu = document.getElementById(menuId);
-        if (!menu) return;
-
-        const isCurrentlyOpen = menu.classList.contains('show');
-
-        // Close all other dropdowns
-        document.querySelectorAll('.action-dropdown-menu.show').forEach(m => {
-            m.classList.remove('show');
-        });
-
-        if (!isCurrentlyOpen) {
-            const rect = triggerBtn.getBoundingClientRect();
-            menu.style.position = 'fixed';
-            menu.style.top = (rect.bottom + 6) + 'px';
-            menu.style.left = (rect.right - 180) + 'px';
-            menu.style.zIndex = '99999';
-            menu.classList.add('show');
-        }
-    }
-
-    // Close when clicking outside
-    document.addEventListener('click', function(e) {
-        if (!e.target.closest('.action-dropdown-menu') && !e.target.closest('.btn-row-action-dots')) {
-            document.querySelectorAll('.action-dropdown-menu.show').forEach(m => {
-                m.classList.remove('show');
-            });
-        }
-    });
-
-    function confirmDeletePo(id, no) {
-        if (confirm('Apakah Anda yakin ingin membatalkan dokumen PO #' + no + '?')) {
-            // Can trigger post cancellation
-        }
-    }
 </script>
 @endpush
 @endsection

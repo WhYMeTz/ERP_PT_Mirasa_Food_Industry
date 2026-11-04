@@ -65,13 +65,45 @@
                     </span>
                 @endif
 
-                @if($po->is_harga_termasuk_pajak)
+                {{-- BADGE HASIL INSPEKSI MUTU QC INBOUND --}}
+                @php $qcInfo = $po->qc_status_info; @endphp
+                <span class="badge"
+                    style="background: {{ $qcInfo['bg'] }}; color: {{ $qcInfo['color'] }}; border: 1px solid {{ $qcInfo['border'] }}; font-weight: 700; display: inline-flex; align-items: center; gap: 5px; font-size: 0.8125rem; padding: 3px 10px;"
+                    title="{{ $qcInfo['summary'] }}">
+                    <span>{{ $qcInfo['icon'] }}</span>
+                    <span>{{ $qcInfo['label'] }}</span>
+                    @if ($qcInfo['tested'])
+                        <span style="background: rgba(0,0,0,0.06); padding: 1px 6px; border-radius: 9999px; font-size: 0.725rem;">{{ $qcInfo['count'] }} Tiket QC</span>
+                    @endif
+                </span>
+
+                @php
+                    $firstTaxItem = $po->details->first(fn($d) => !empty($d->pajak) || !empty($d->ppn_tipe));
+                    $taxSifatGlobal = $firstTaxItem?->pajak?->sifat_pajak ?? 'TAMBAH';
+                    $isPotongGlobal = ($taxSifatGlobal === 'POTONG');
+                    $taxCdGlobal = $firstTaxItem?->pajak?->pajak_cd ?? ($firstTaxItem?->ppn_tipe ?? 'Pajak');
+                    if ($taxCdGlobal === 'PPH-22-KOMODITAS') $taxCdGlobal = 'PPh 22';
+                @endphp
+
+                @if($isPotongGlobal)
+                    <span class="badge"
+                        style="background:#fef2f2; color:#dc2626; border: 1px solid #fecaca; font-weight:700;">Potongan Pajak ({{ $taxCdGlobal }})</span>
+                @elseif($po->is_harga_termasuk_pajak)
                     <span class="badge"
                         style="background:#dcfce7; color:#15803d; border: 1px solid #86efac; font-weight:700;">Harga Termasuk
                         PPN (Gross)</span>
                 @else
                     <span class="badge" style="background:#f1f5f9; color:#475569; border: 1px solid #cbd5e1;">Belum Termasuk PPN
                         (Net)</span>
+                @endif
+
+                @if ($po->is_ada_revisi)
+                    <span class="badge"
+                        style="background:#fffbeb; color:#b45309; border: 1px solid #fde68a; font-weight:700; display: inline-flex; align-items: center; gap: 4px; font-size: 0.8125rem; padding: 3px 10px;"
+                        title="Dokumen PO ini telah mengalami {{ $po->total_revisi_count }}x pengubahan data. Terakhir oleh {{ $po->terakhir_direvisi_by }} pada {{ $po->terakhir_direvisi_at ? \Carbon\Carbon::parse($po->terakhir_direvisi_at)->format('d/m/Y H:i') : '' }}">
+                        <span>🔄</span>
+                        <span>Diedit {{ $po->total_revisi_count }}x (Audit Trail)</span>
+                    </span>
                 @endif
             </div>
         </div>
@@ -735,18 +767,21 @@
                                             </td>
                                             <td style="text-align: center; white-space: nowrap;">
                                                 @if ($taxTarif > 0)
+                                                    @php
+                                                        $isPotongRow = ($item->pajak?->sifat_pajak === 'POTONG');
+                                                    @endphp
                                                     <span class="badge"
-                                                        style="background:#eff6ff; color:#0284c7; border: 1px solid #bfdbfe; font-size:0.75rem; font-weight:800; font-family: monospace;"
+                                                        style="background: {{ $isPotongRow ? '#fef2f2' : '#eff6ff' }}; color: {{ $isPotongRow ? '#dc2626' : '#0284c7' }}; border: 1px solid {{ $isPotongRow ? '#fecaca' : '#bfdbfe' }}; font-size:0.75rem; font-weight:800; font-family: monospace;"
                                                         title="{{ $item->pajak?->pajak_nm }}">
                                                         {{ $taxCode }}
                                                     </span>
-                                                    <div style="font-size: 0.675rem; color: {{ $taxInc ? '#1e40af' : '#15803d' }}; font-weight: 600; margin-top: 1px;">
-                                                        {{ $taxTarif }}% ({{ $taxInc ? 'Inc' : 'Exc' }})
+                                                    <div style="font-size: 0.675rem; color: {{ $isPotongRow ? '#dc2626' : ($taxInc ? '#1e40af' : '#15803d') }}; font-weight: 600; margin-top: 1px;">
+                                                        {{ $isPotongRow ? "-{$taxTarif}% (Potong)" : "{$taxTarif}% (" . ($taxInc ? 'Inc' : 'Exc') . ")" }}
                                                     </div>
                                                     @if ((float) ($item->ppn_nominal ?? 0) > 0)
                                                         <div
-                                                            style="font-size: 0.7rem; color: #64748b; font-family: monospace; margin-top: 2px;">
-                                                            Rp {{ number_format((float) $item->ppn_nominal, 0, ',', '.') }}
+                                                            style="font-size: 0.7rem; color: {{ $isPotongRow ? '#dc2626' : '#64748b' }}; font-family: monospace; margin-top: 2px;">
+                                                            {{ $isPotongRow ? '- ' : '' }}Rp {{ number_format((float) $item->ppn_nominal, 0, ',', '.') }}
                                                         </div>
                                                     @endif
                                                 @else
@@ -821,7 +856,7 @@
 
                             $grandTotalTagihan = $totalTagihanHdr > 0
                                 ? $totalTagihanHdr
-                                : ($totalNominalHdr > 0 ? $totalNominalHdr : ($calcDpp + $calcPpn));
+                                : ($totalNominalHdr > 0 ? $totalNominalHdr : ($isPotongGlobal ? max(0, $calcDpp - $calcPpn) : ($calcDpp + $calcPpn)));
 
                             if ($grandTotalTagihan <= 0 && $displayTotalPO > 0) {
                                 $grandTotalTagihan = $displayTotalPO;
@@ -864,12 +899,30 @@
                                         {{ number_format($calcDpp, 0, ',', '.') }}</strong>
                                 </div>
 
-                                <div
-                                    style="display: flex; justify-content: space-between; align-items: center; color: #0284c7;">
-                                    <span>Pajak (PPN):</span>
-                                    <strong style="font-family: monospace;">+ Rp
-                                        {{ number_format($calcPpn, 0, ',', '.') }}</strong>
-                                </div>
+                                @if ($calcPpn > 0)
+                                    @if ($isPotongGlobal)
+                                        <div
+                                            style="display: flex; justify-content: space-between; align-items: center; color: #dc2626;">
+                                            <span>Pemotongan Pajak ({{ $taxCdGlobal }}):</span>
+                                            <strong style="font-family: monospace;">- Rp
+                                                {{ number_format($calcPpn, 0, ',', '.') }}</strong>
+                                        </div>
+                                    @elseif ($po->is_harga_termasuk_pajak)
+                                        <div
+                                            style="display: flex; justify-content: space-between; align-items: center; color: #15803d;">
+                                            <span>Pajak PPN (Sudah Termasuk Gross):</span>
+                                            <strong style="font-family: monospace;">Rp
+                                                {{ number_format($calcPpn, 0, ',', '.') }}</strong>
+                                        </div>
+                                    @else
+                                        <div
+                                            style="display: flex; justify-content: space-between; align-items: center; color: #0284c7;">
+                                            <span>Pajak (PPN):</span>
+                                            <strong style="font-family: monospace;">+ Rp
+                                                {{ number_format($calcPpn, 0, ',', '.') }}</strong>
+                                        </div>
+                                    @endif
+                                @endif
 
                                 <div
                                     style="display: flex; justify-content: space-between; align-items: center; padding-top: 0.65rem; border-top: 2px solid #0f172a; font-size: 1.05rem;">
@@ -879,6 +932,184 @@
                                 </div>
                             </div>
                         </div>
+                    </div>
+
+                    {{-- KARTU: RIWAYAT HASIL UJI MUTU & INSPEKSI QC INBOUND --}}
+                    <div class="card" style="border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); margin-bottom: 1.5rem;">
+                        <div class="card-header"
+                            style="background: #ffffff; padding: 0.875rem 1.25rem; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <div style="width: 28px; height: 28px; border-radius: 6px; background: #f0fdf4; border: 1px solid #bbf7d0; display: flex; align-items: center; justify-content: center; font-size: 0.9rem;">
+                                    🔬
+                                </div>
+                                <div>
+                                    <strong style="color: #0f172a; font-size: 0.95rem;">Riwayat Hasil Uji Mutu &amp; Inspeksi QC Inbound</strong>
+                                    <span style="font-size: 0.75rem; color: #64748b; margin-left: 0.35rem;">({{ $po->qcInbound->count() }} Tiket Pengujian Truk)</span>
+                                </div>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                @if ($po->qcInbound->isNotEmpty())
+                                    <span class="badge" style="background: {{ $qcInfo['bg'] }}; color: {{ $qcInfo['color'] }}; border: 1px solid {{ $qcInfo['border'] }}; font-weight: 700; font-size: 0.75rem; padding: 3px 8px;">
+                                        {{ $qcInfo['icon'] }} {{ $qcInfo['label'] }}
+                                    </span>
+                                @endif
+                                <a href="{{ route('qc.inbound.index') }}" class="btn btn-secondary btn-sm no-print" style="padding: 0.25rem 0.65rem; font-size: 0.75rem;">
+                                    Buka Antrean QC &rarr;
+                                </a>
+                            </div>
+                        </div>
+
+                        @if ($po->qcInbound->isNotEmpty())
+                            <div style="overflow-x: auto;">
+                                <table style="width: 100%; border-collapse: collapse;">
+                                    <thead>
+                                        <tr style="border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
+                                            <th style="padding: 0.65rem 1rem; text-align: left; font-size: 0.8rem; font-weight: 700; color: #475569;">No. Tiket QC &amp; Tgl</th>
+                                            <th style="padding: 0.65rem 1rem; text-align: left; font-size: 0.8rem; font-weight: 700; color: #475569;">Armada &amp; Supir</th>
+                                            <th style="padding: 0.65rem 1rem; text-align: left; font-size: 0.8rem; font-weight: 700; color: #475569;">Komoditas / Petugas</th>
+                                            <th style="padding: 0.65rem 1rem; text-align: right; font-size: 0.8rem; font-weight: 700; color: #475569;">Hasil Timbang &amp; Uji Mutu</th>
+                                            <th style="padding: 0.65rem 1rem; text-align: center; font-size: 0.8rem; font-weight: 700; color: #475569;">Keputusan Mutu</th>
+                                            <th style="padding: 0.65rem 1rem; text-align: center; font-size: 0.8rem; font-weight: 700; color: #475569;">Status Gudang (GRN)</th>
+                                            <th style="padding: 0.65rem 1rem; text-align: right; font-size: 0.8rem; font-weight: 700; color: #475569; width: 140px;">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach ($po->qcInbound as $qc)
+                                            @php
+                                                $firstDtl = $qc->details->first();
+                                                $tglPeriksa = $qc->tgl_periksa ? \Carbon\Carbon::parse($qc->tgl_periksa) : null;
+                                                $grossTotal = (float) $qc->details->sum('qty_timbang_gross');
+                                                $nettoTotal = (float) $qc->details->sum('qty_netto_lolos');
+                                                $refraksiTotal = (float) $qc->details->sum('qty_refraksi');
+                                                $rejectTotal = (float) $qc->details->sum('qty_reject');
+                                                $satuanNm = $firstDtl?->barang?->satuanDasar?->satuan_nm ?? 'kg';
+                                                $gradeCd = $firstDtl?->grade_cd ?? 'A';
+                                                $terimaLinked = $qc->terima;
+                                            @endphp
+                                            <tr style="border-bottom: 1px solid #f1f5f9;">
+                                                <td style="padding: 0.75rem 1rem;">
+                                                    <a href="{{ route('qc.inbound.show', $qc->qc_id) }}"
+                                                        style="font-weight: 800; color: #0284c7; text-decoration: none; font-size: 0.85rem; font-family: monospace;">
+                                                        {{ $qc->qc_no }}
+                                                    </a>
+                                                    <div style="font-size: 0.725rem; color: #64748b; margin-top: 2px;">
+                                                        📅 {{ $tglPeriksa ? $tglPeriksa->format('d/m/Y H:i') : '-' }}
+                                                    </div>
+                                                </td>
+                                                <td style="padding: 0.75rem 1rem;">
+                                                    <div style="font-weight: 700; color: #0f172a; font-size: 0.85rem;">
+                                                        🚛 {{ $qc->plat_nomor_truk ?: '-' }}
+                                                    </div>
+                                                    <div style="font-size: 0.75rem; color: #475569; margin-top: 1px;">
+                                                        Sopir: {{ $qc->sopir_nama ?: '-' }}
+                                                    </div>
+                                                    @if ($qc->surat_jalan_supplier)
+                                                        <div style="font-size: 0.725rem; color: #64748b; margin-top: 1px;">
+                                                            SJ: {{ $qc->surat_jalan_supplier }}
+                                                        </div>
+                                                    @endif
+                                                </td>
+                                                <td style="padding: 0.75rem 1rem;">
+                                                    <div style="font-weight: 700; color: #0f172a; font-size: 0.825rem;">
+                                                        {{ $firstDtl?->barang?->barang_nm ?: ($qc->nama_jenis ?: $qc->kategori_barang) }}
+                                                    </div>
+                                                    <div style="font-size: 0.725rem; color: #64748b; margin-top: 1px;">
+                                                        Petugas: <strong style="color: #334155;">{{ $qc->petugas_qc_nama ?: '-' }}</strong>
+                                                    </div>
+                                                    @if ($qc->tahap_uji)
+                                                        <span class="badge" style="background: #f1f5f9; color: #475569; font-size: 0.65rem; padding: 1px 5px; margin-top: 2px;">
+                                                            {{ str_replace('_', ' ', $qc->tahap_uji) }}
+                                                        </span>
+                                                    @endif
+                                                </td>
+                                                <td style="padding: 0.75rem 1rem; text-align: right;">
+                                                    <div style="font-size: 0.85rem; font-weight: 800; color: #047857;">
+                                                        Netto: {{ number_format($nettoTotal, 2, ',', '.') }} {{ $satuanNm }}
+                                                    </div>
+                                                    <div style="font-size: 0.725rem; color: #64748b; margin-top: 2px;">
+                                                        Gross: {{ number_format($grossTotal, 2, ',', '.') }} {{ $satuanNm }}
+                                                    </div>
+                                                    @if ($refraksiTotal > 0 || ($firstDtl && $firstDtl->refraksi_persen > 0))
+                                                        <div style="font-size: 0.725rem; color: #b45309; font-weight: 600;">
+                                                            Refraksi: -{{ number_format($refraksiTotal, 2, ',', '.') }} {{ $satuanNm }} ({{ (float)($firstDtl->refraksi_persen ?? 0) }}%)
+                                                        </div>
+                                                    @endif
+                                                    @if ($rejectTotal > 0)
+                                                        <div style="font-size: 0.725rem; color: #dc2626; font-weight: 700;">
+                                                            Reject: -{{ number_format($rejectTotal, 2, ',', '.') }} {{ $satuanNm }}
+                                                        </div>
+                                                    @endif
+                                                </td>
+                                                <td style="padding: 0.75rem 1rem; text-align: center;">
+                                                    @if ($qc->status_qc === 'DITOLAK_TOTAL' || $qc->status_qc === 'DITOLAK')
+                                                        <span class="badge" style="background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; font-weight: 800; font-size: 0.75rem; padding: 3px 8px;">
+                                                            🔴 Ditolak QC (Reject)
+                                                        </span>
+                                                    @elseif ($qc->status_qc === 'DITERIMA_PARSIAL' || $rejectTotal > 0 || $refraksiTotal > 0)
+                                                        <span class="badge" style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a; font-weight: 800; font-size: 0.75rem; padding: 3px 8px;">
+                                                            🟡 Lolos Bersyarat
+                                                        </span>
+                                                        <div style="font-size: 0.675rem; color: #92400e; margin-top: 2px;">Grade: <strong>{{ $gradeCd }}</strong></div>
+                                                    @elseif ($qc->status_qc === 'DRAFT')
+                                                        <span class="badge" style="background: #f0f9ff; color: #0369a1; border: 1px solid #bae6fd; font-weight: 700; font-size: 0.75rem; padding: 3px 8px;">
+                                                            ⏳ Sedang Diuji
+                                                        </span>
+                                                    @else
+                                                        <span class="badge" style="background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; font-weight: 800; font-size: 0.75rem; padding: 3px 8px;">
+                                                            🟢 Lulus Uji Mutu
+                                                        </span>
+                                                        <div style="font-size: 0.675rem; color: #065f46; margin-top: 2px;">Grade: <strong>{{ $gradeCd }}</strong></div>
+                                                    @endif
+                                                </td>
+                                                <td style="padding: 0.75rem 1rem; text-align: center;">
+                                                    @if ($terimaLinked)
+                                                        <a href="{{ route('gudang.terima.show', $terimaLinked->terima_id) }}" style="font-size: 0.8rem; font-weight: 700; color: #0284c7; text-decoration: none;" title="Buka Dokumen Terima Gudang">
+                                                            {{ $terimaLinked->terima_no }}
+                                                        </a>
+                                                        <span class="badge badge-success" style="font-size: 0.65rem; display: block; margin-top: 2px; width: fit-content; margin-left: auto; margin-right: auto;">
+                                                            Sudah Terbit GRN
+                                                        </span>
+                                                    @elseif ($qc->status_qc === 'DITOLAK_TOTAL' || $qc->status_qc === 'DITOLAK')
+                                                        <span style="font-size: 0.75rem; color: #991b1b; font-weight: 600;">Muatan Ditolak</span>
+                                                    @else
+                                                        <span class="badge" style="background: #fef3c7; color: #92400e; border: 1px solid #fde68a; font-size: 0.675rem; font-weight: 700;">
+                                                            Menunggu GRN Fisik
+                                                        </span>
+                                                    @endif
+                                                </td>
+                                                <td style="padding: 0.75rem 1rem; text-align: right;">
+                                                    <div style="display: flex; gap: 0.35rem; justify-content: flex-end;">
+                                                        <a href="{{ route('qc.inbound.show', $qc->qc_id) }}"
+                                                            class="btn btn-secondary btn-sm no-print"
+                                                            style="padding: 0.25rem 0.5rem; font-size: 0.725rem;"
+                                                            title="Buka Lembar Hasil Uji QC">
+                                                            Detail QC
+                                                        </a>
+                                                        <a href="{{ route('gudang.qc.haccp_cetak', $qc->qc_id) }}"
+                                                            target="_blank"
+                                                            class="btn btn-secondary btn-sm no-print"
+                                                            style="padding: 0.25rem 0.5rem; font-size: 0.725rem; color: #0284c7; border-color: #bae6fd;"
+                                                            title="Cetak Dokumen Pemeriksaan Mutu (HACCP)">
+                                                            HACCP
+                                                        </a>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        @else
+                            <div style="text-align: center; padding: 2.25rem 1rem; color: #94a3b8;">
+                                <div style="width: 42px; height: 42px; margin: 0 auto 0.75rem; border-radius: 50%; background: #f8fafc; border: 1.5px dashed #cbd5e1; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">
+                                    🔬
+                                </div>
+                                <strong style="color: #64748b; font-size: 0.9rem; display: block;">Belum ada riwayat inspeksi mutu (QC Inbound)</strong>
+                                <p style="font-size: 0.8rem; margin-top: 0.25rem; margin-bottom: 0; max-width: 520px; margin-left: auto; margin-right: auto; line-height: 1.4;">
+                                    Bahan baku pesanan PO ini belum diinspeksi oleh tim QC Lapangan. Saat armada truk tiba di pabrik dan diperiksa oleh petugas QC, rekaman mutu, kadar air, dan persentase refraksi akan otomatis tersaji di sini.
+                                </p>
+                            </div>
+                        @endif
                     </div>
 
                     {{-- KARTU 2: RIWAYAT KEDATANGAN BARANG (SURAT JALAN / GOOD RECEIPTS) --}}
@@ -972,6 +1203,124 @@
                                 <p style="font-size: 0.8rem; margin-top: 0.25rem; margin-bottom: 0;">
                                     Barang belum pernah dicatat masuk. Saat armada supplier tiba di pabrik, gunakan tombol hijau
                                     <strong>"Terima Barang"</strong> di bagian atas.
+                                </p>
+                            </div>
+                        @endif
+                    </div>
+
+                    {{-- KARTU 3: RIWAYAT PERUBAHAN & AUDIT TRAIL PO --}}
+                    <div class="card" style="border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); margin-top: 1.5rem;">
+                        <div class="card-header"
+                            style="background: #ffffff; padding: 0.875rem 1.25rem; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <div style="width: 28px; height: 28px; border-radius: 6px; background: #eff6ff; border: 1px solid #bfdbfe; display: flex; align-items: center; justify-content: center; color: #1d4ed8; font-size: 0.9rem;">
+                                    📝
+                                </div>
+                                <div>
+                                    <strong style="color: #0f172a; font-size: 0.95rem;">Riwayat Perubahan &amp; Audit Trail Dokumen PO</strong>
+                                    <span style="font-size: 0.75rem; color: #64748b; margin-left: 0.35rem;">({{ $po->revisiLog->count() }} Catatan Revisi)</span>
+                                </div>
+                            </div>
+                            <div>
+                                @if ($po->revisiLog->isNotEmpty())
+                                    <span class="badge" style="background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; font-weight: 700; font-size: 0.75rem; padding: 3px 8px;">
+                                        🔄 Telah Direvisi {{ $po->revisiLog->count() }}x
+                                    </span>
+                                @else
+                                    <span class="badge" style="background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; font-weight: 700; font-size: 0.75rem; padding: 3px 8px;">
+                                        ✓ Dokumen Orisinal (Versi 1)
+                                    </span>
+                                @endif
+                            </div>
+                        </div>
+
+                        @if ($po->revisiLog->isNotEmpty())
+                            <div style="overflow-x: auto;">
+                                <table style="width: 100%; border-collapse: collapse;">
+                                    <thead>
+                                        <tr style="border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
+                                            <th style="padding: 0.65rem 1rem; text-align: left; font-size: 0.8rem; font-weight: 700; color: #475569; width: 140px;">Versi &amp; Waktu</th>
+                                            <th style="padding: 0.65rem 1rem; text-align: left; font-size: 0.8rem; font-weight: 700; color: #475569; width: 170px;">Diedit Oleh</th>
+                                            <th style="padding: 0.65rem 1rem; text-align: left; font-size: 0.8rem; font-weight: 700; color: #475569; width: 160px;">Kategori &amp; Alasan</th>
+                                            <th style="padding: 0.65rem 1rem; text-align: left; font-size: 0.8rem; font-weight: 700; color: #475569;">Poin Perubahan (Diffs)</th>
+                                            <th style="padding: 0.65rem 1rem; text-align: right; font-size: 0.8rem; font-weight: 700; color: #475569; width: 110px;">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach ($po->revisiLog as $log)
+                                            @php
+                                                $tglRev = $log->revisi_tgl ? \Carbon\Carbon::parse($log->revisi_tgl) : null;
+                                                $diffs = $log->perubahan_json ?? [];
+                                            @endphp
+                                            <tr style="border-bottom: 1px solid #f1f5f9;">
+                                                <td style="padding: 0.75rem 1rem;">
+                                                    <span class="badge" style="background: #0284c7; color: #ffffff; font-weight: 800; font-size: 0.75rem; padding: 2px 7px; border-radius: 4px; font-family: monospace;">
+                                                        {{ $log->revisi_no ?: 'REV' }}
+                                                    </span>
+                                                    <div style="font-size: 0.725rem; color: #64748b; margin-top: 4px;">
+                                                        📅 {{ $tglRev ? $tglRev->format('d/m/Y H:i') : '-' }} WIB
+                                                    </div>
+                                                </td>
+                                                <td style="padding: 0.75rem 1rem;">
+                                                    <strong style="color: #0f172a; font-size: 0.85rem; display: block;">
+                                                        {{ $log->user_nama ?: 'SYSTEM' }}
+                                                    </strong>
+                                                    <span class="badge" style="background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; font-size: 0.675rem; padding: 1px 5px; margin-top: 2px;">
+                                                        {{ $log->user_role ?: 'Operator' }}
+                                                    </span>
+                                                </td>
+                                                <td style="padding: 0.75rem 1rem;">
+                                                    <span class="badge" style="background: #fef3c7; color: #92400e; border: 1px solid #fde68a; font-size: 0.68rem; font-weight: 700; padding: 2px 6px;">
+                                                        {{ str_replace('_', ' ', $log->kategori_perubahan ?: 'KOMPREHENSIF') }}
+                                                    </span>
+                                                    <div style="font-size: 0.75rem; color: #475569; margin-top: 3px; font-style: italic;">
+                                                        &ldquo;{{ \Illuminate\Support\Str::limit($log->alasan_edit ?: 'Pembaruan Dokumen PO', 60) }}&rdquo;
+                                                    </div>
+                                                </td>
+                                                <td style="padding: 0.75rem 1rem;">
+                                                    @if (!empty($diffs) && is_array($diffs))
+                                                        <div style="display: flex; flex-direction: column; gap: 4px;">
+                                                            @foreach (array_slice($diffs, 0, 3) as $df)
+                                                                <div style="font-size: 0.775rem; color: #334155; line-height: 1.35;">
+                                                                    <strong style="color: #0f172a;">{{ $df['label'] ?? ($df['field'] ?? '') }}:</strong>
+                                                                    <span style="color: #dc2626; text-decoration: line-through; background: #fff1f2; padding: 0 3px; border-radius: 2px;">{{ $df['sebelum'] ?? '-' }}</span>
+                                                                    <span style="color: #64748b; font-weight: 700; margin: 0 2px;">➔</span>
+                                                                    <span style="color: #166534; font-weight: 700; background: #f0fdf4; padding: 0 4px; border-radius: 2px;">{{ $df['sesudah'] ?? '-' }}</span>
+                                                                </div>
+                                                            @endforeach
+                                                            @if (count($diffs) > 3)
+                                                                <small style="color: #0284c7; font-weight: 700;">+ {{ count($diffs) - 3 }} perubahan lainnya...</small>
+                                                            @endif
+                                                        </div>
+                                                    @elseif ($log->ringkasan_perubahan)
+                                                        <div style="font-size: 0.775rem; color: #475569;">
+                                                            {{ $log->ringkasan_perubahan }}
+                                                        </div>
+                                                    @else
+                                                        <span style="color: #94a3b8; font-size: 0.75rem;">-</span>
+                                                    @endif
+                                                </td>
+                                                <td style="padding: 0.75rem 1rem; text-align: right;">
+                                                    <button type="button"
+                                                        class="btn btn-secondary btn-sm no-print"
+                                                        onclick='openPoRevisiModal(@json($log))'
+                                                        style="padding: 0.25rem 0.6rem; font-size: 0.75rem; color: #0284c7; border-color: #bae6fd; background: #f0f9ff; font-weight: 700;">
+                                                        Lihat Detail
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        @else
+                            <div style="text-align: center; padding: 2.25rem 1rem; color: #94a3b8;">
+                                <div style="width: 42px; height: 42px; margin: 0 auto 0.75rem; border-radius: 50%; background: #f8fafc; border: 1.5px dashed #cbd5e1; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">
+                                    📋
+                                </div>
+                                <strong style="color: #64748b; font-size: 0.9rem; display: block;">Dokumen Masih Versi Asli (Belum Pernah Diedit)</strong>
+                                <p style="font-size: 0.8rem; margin-top: 0.25rem; margin-bottom: 0; max-width: 520px; margin-left: auto; margin-right: auto; line-height: 1.4;">
+                                    Purchase Order ini belum pernah mengalami pengubahan sejak diterbitkan pertama kali. Setiap perubahan kuantitas, harga satuan, supplier, tanggal tiba, atau penambahan item baru akan tercatat secara akurat di audit trail ini.
                                 </p>
                             </div>
                         @endif
@@ -1294,6 +1643,7 @@
         @include('gudang.po.partials.modal-force-close')
         @include('gudang.po.partials.modal-haccp-po')
         @include('gudang.po.partials.modal-kirim-supplier')
+        @include('gudang.po.partials.modal-revisi-po')
 
 @endsection
 

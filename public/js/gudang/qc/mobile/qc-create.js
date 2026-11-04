@@ -2620,13 +2620,17 @@
                 if (fContainer) fContainer.innerHTML = '';
                 itemIndex = 0;
 
-                // Singkong Pengujian 1: Tepat 1 komoditas singkong yang diperiksa
-                const it = (po.items && po.items.length > 0) ? po.items[0] : null;
+                // Singkong Pengujian 1: Prioritaskan varian singkong yang BELUM selesai diuji QC!
+                let it = (po.items && po.items.length > 0)
+                    ? (po.items.find(item => !item.is_selesai_qc && (typeof item.sisa_belum_qc === 'undefined' || item.sisa_belum_qc > 0)) || po.items[0])
+                    : null;
+                const sisaGross = it ? ((typeof it.sisa_belum_qc !== 'undefined' && it.sisa_belum_qc > 0) ? it.sisa_belum_qc : (it.sisa_qty > 0 ? it.sisa_qty : it.pesan_qty)) : 0;
+
                 if (it) {
                     window.createItemCard({
                         podtl_id: it.podtl_id,
                         barang_id: it.barang_id,
-                        gross: it.sisa_qty > 0 ? it.sisa_qty : it.pesan_qty,
+                        gross: sisaGross,
                         kadar_air: '12.0',
                         refraksi_persen: '0.0',
                         reject: '0',

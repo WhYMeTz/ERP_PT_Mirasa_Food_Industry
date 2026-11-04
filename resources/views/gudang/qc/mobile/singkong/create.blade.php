@@ -3,9 +3,9 @@
 @section('title', 'Sampling Mutu Singkong - PT Mirasa')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/gudang/qc/mobile/qc-form.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/gudang/qc/mobile/qc-create.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/gudang/qc/singkong/singkong.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/gudang/qc/mobile/qc-form.css') }}?v={{ filemtime(public_path('css/gudang/qc/mobile/qc-form.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/gudang/qc/mobile/qc-create.css') }}?v={{ filemtime(public_path('css/gudang/qc/mobile/qc-create.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/gudang/qc/singkong/singkong.css') }}?v={{ filemtime(public_path('css/gudang/qc/singkong/singkong.css')) }}">
 @endpush
 
 @section('content')
@@ -640,15 +640,26 @@
                 'items'       => $p->details->filter(function ($d) use ($classifyBarang) {
                     return $classifyBarang($d->barang?->barang_nm, $d->barang?->barang_cd) === 'SINGKONG';
                 })->map(function ($d) {
-                    return [
-                        'podtl_id'  => $d->podtl_id,
-                        'barang_id' => $d->barang_id,
-                        'barang_nm' => $d->barang?->barang_nm,
-                        'satuan'    => $d->barang?->satuanDasar?->satuan_nm ?? 'KG',
-                        'pesan_qty' => (float) $d->pesan_qty,
-                        'terima_qty'=> (float) $d->terima_qty,
-                        'sisa_qty'  => max(0, (float) $d->pesan_qty - (float) $d->terima_qty),
-                    ];
+                $pesanQty = (float) $d->pesan_qty;
+                $terimaQty = (float) $d->terima_qty;
+                $qcTestedQty = (float) $d->qc_tested_qty;
+                $sisaBelumQc = max(0, $pesanQty - max($terimaQty, $qcTestedQty));
+                $isSelesaiQc = $sisaBelumQc <= 0 || ($terimaQty >= $pesanQty);
+                $qcStatus = $isSelesaiQc ? 'SELESAI' : ($qcTestedQty > 0 ? 'SEBAGIAN' : 'BELUM');
+
+                return [
+                    'podtl_id'       => $d->podtl_id,
+                    'barang_id'      => $d->barang_id,
+                    'barang_nm'      => $d->barang?->barang_nm,
+                    'satuan'         => $d->barang?->satuanDasar?->satuan_nm ?? 'KG',
+                    'pesan_qty'      => $pesanQty,
+                    'terima_qty'     => $terimaQty,
+                    'sisa_qty'       => max(0, $pesanQty - $terimaQty),
+                    'qc_tested_qty'  => $qcTestedQty,
+                    'sisa_belum_qc'  => $sisaBelumQc,
+                    'qc_status'      => $qcStatus,
+                    'is_selesai_qc'  => $isSelesaiQc,
+                ];
                 })->values(),
             ]
         ];
@@ -679,7 +690,7 @@
             poListData: {!! json_encode($poListData) !!}
         };
     </script>
-    <script src="{{ asset('js/gudang/qc/mobile/qc-create.js') }}"></script>
-    <script src="{{ asset('js/gudang/qc/singkong/singkong.js') }}"></script>
+    <script src="{{ asset('js/gudang/qc/mobile/qc-create.js') }}?v={{ filemtime(public_path('js/gudang/qc/mobile/qc-create.js')) }}"></script>
+    <script src="{{ asset('js/gudang/qc/singkong/singkong.js') }}?v={{ filemtime(public_path('js/gudang/qc/singkong/singkong.js')) }}"></script>
 @endpush
 @endsection

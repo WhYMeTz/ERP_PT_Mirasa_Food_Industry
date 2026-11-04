@@ -318,26 +318,17 @@
                 {{-- 8. TANDA TANGAN & FOOTNOTE NB FAKTUR PAJAK --}}
                 <table class="footer-table">
                     <tr>
-                        {{-- Kiri: Footnote NPWP, Faktur Pajak & Rekening Pembayaran --}}
-                        <td style="width: 60%; vertical-align: bottom;">
-                            <div class="nb-tax">
-                                <div style="font-weight: 800; font-size: 8.5pt; margin-bottom: 2px;">NB :</div>
-                                <table style="width: 100%; border-collapse: collapse; font-size: 8pt;">
-                                    <tr>
-                                        <td style="width: 82px; vertical-align: top; font-weight: 700;">&bull; Faktur Pajak</td>
-                                        <td style="width: 10px; vertical-align: top; text-align: center;">:</td>
-                                        <td style="vertical-align: top;">
-                                            a.n. <strong>PT MIRASA FOOD INDUSTRY</strong> (NPWP: 07.635.700.4-152.000)
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td style="vertical-align: top; font-weight: 700;">&bull; Dari Rekening</td>
-                                        <td style="width: 10px; vertical-align: top; text-align: center;">:</td>
-                                        <td style="vertical-align: top;">
-                                            BCA <strong>104-9173332</strong> a.n. PT MIRASA FOOD INDUSTRY
-                                        </td>
-                                    </tr>
-                                </table>
+                        {{-- Kiri: Footnote Alamat Kirim, NPWP, Faktur Pajak & Rekening Pembayaran --}}
+                        <td style="width: 60%; vertical-align: bottom; padding-right: 15px;">
+                            <div class="nb-tax" style="font-size: 8.5pt; line-height: 1.35; color: #000000; margin-top: 10px;">
+                                <div style="font-weight: 800; font-size: 9pt; margin-bottom: 2px;">NB.</div>
+                                <div>Barang di kirim ke alamat:</div>
+                                <div style="font-weight: 800; font-size: 9pt;">PT. MIRASA FOOD INDUSTRY</div>
+                                <div>Magelang</div>
+                                <div style="margin-top: 5px; font-size: 8pt; color: #334155; line-height: 1.35;">
+                                    Faktur Pajak a.n. <strong>PT. MIRASA FOOD INDUSTRY</strong> (NPWP 07.635.700.4-152.000)<br>
+                                    Pembayaran via BCA <strong>104-9173332</strong> a.n. PT. MIRASA FOOD INDUSTRY
+                                </div>
                             </div>
                         </td>
 

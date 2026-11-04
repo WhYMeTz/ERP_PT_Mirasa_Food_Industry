@@ -706,9 +706,9 @@
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: rgba(10, 10, 15, 0.6);
-    backdrop-filter: blur(10px) saturate(150%);
-    -webkit-backdrop-filter: blur(10px) saturate(150%);
+    background: rgba(10, 10, 15, 0.65);
+    backdrop-filter: blur(14px) saturate(160%);
+    -webkit-backdrop-filter: blur(14px) saturate(160%);
     display: none;
     align-items: center;
     justify-content: center;
@@ -732,16 +732,97 @@
 .modal-review-content {
     background: #ffffff;
     border-radius: 16px;
-    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1) inset, 0 24px 60px -10px rgba(0, 0, 0, 0.45), 0 10px 24px rgba(0, 0, 0, 0.2);
-    border: 1px solid rgba(0, 0, 0, 0.18);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12) inset, 0 28px 75px -12px rgba(0, 0, 0, 0.45), 0 14px 30px rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(0, 0, 0, 0.22);
     width: 100%;
-    max-width: 480px;
+    max-width: 520px;
     overflow: hidden;
     animation: macModalPopIn 0.26s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .modal-review-backdrop.closing .modal-review-content {
     animation: macModalPopOut 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards !important;
+}
+
+/* macOS Alert Dialog Components */
+.mac-dialog-hero {
+    display: flex;
+    gap: 1.15rem;
+    align-items: flex-start;
+    margin-bottom: 1.15rem;
+}
+
+.mac-dialog-icon-box {
+    width: 46px;
+    height: 46px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.mac-dialog-icon-box.approve-icon {
+    background: #18181b;
+    color: #ffffff;
+}
+
+.mac-dialog-icon-box.revision-icon {
+    background: #eff6ff;
+    color: #2563eb;
+    border: 1px solid #bfdbfe;
+}
+
+.mac-dialog-icon-box.reject-icon {
+    background: #fef2f2;
+    color: #dc2626;
+    border: 1px solid #fecaca;
+}
+
+.mac-dialog-text h4 {
+    margin: 0 0 0.3rem 0;
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #09090b;
+    letter-spacing: -0.01em;
+}
+
+.mac-dialog-text p {
+    margin: 0;
+    font-size: 0.825rem;
+    color: #52525b;
+    line-height: 1.5;
+}
+
+.mac-dialog-kv-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 0.65rem 0.95rem;
+    margin-bottom: 1rem;
+    font-size: 0.8125rem;
+}
+
+.mac-dialog-kv-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.3rem 0;
+}
+
+.mac-dialog-kv-row:not(:last-child) {
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.mac-dialog-kv-key {
+    color: #64748b;
+    font-weight: 600;
+}
+
+.mac-dialog-kv-val {
+    color: #0f172a;
+    font-weight: 700;
 }
 
 .modal-review-header {
@@ -911,6 +992,131 @@
 .footer-table td { border: none; vertical-align: top; }
 .nb-tax { font-size: 8pt; color: #000; margin-top: 15px; }
 .nb-tax table td { border: none; padding: 1.5px 0; line-height: 1.35; }
+
+/* Wide Modal for Detailed Revision */
+.modal-review-content.modal-review-wide {
+    max-width: 680px;
+    width: 95%;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-review-scroll-body {
+    overflow-y: auto;
+    max-height: calc(90vh - 135px);
+    padding: 1.25rem 1.5rem;
+}
+
+.rev-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.65rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 0.85rem 1rem;
+    margin-bottom: 1rem;
+    font-size: 0.8125rem;
+}
+
+.rev-summary-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.rev-summary-label {
+    font-size: 0.725rem;
+    color: #64748b;
+    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+.rev-summary-val {
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.rev-items-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 1rem;
+}
+
+.rev-items-header {
+    background: #f1f5f9;
+    padding: 0.55rem 0.85rem;
+    font-size: 0.785rem;
+    font-weight: 800;
+    color: #334155;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.rev-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+}
+
+.rev-table th {
+    background: #f8fafc;
+    padding: 0.45rem 0.75rem;
+    text-align: left;
+    font-weight: 700;
+    font-size: 0.725rem;
+    color: #475569;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.rev-table td {
+    padding: 0.55rem 0.75rem;
+    border-bottom: 1px solid #f1f5f9;
+    color: #1e293b;
+    vertical-align: middle;
+}
+
+.rev-table tr:last-child td {
+    border-bottom: none;
+}
+
+.rev-chip-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 0.45rem;
+    margin-bottom: 0.75rem;
+}
+
+.rev-quick-chip {
+    background: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    border-radius: 20px;
+    padding: 0.2rem 0.65rem;
+    font-size: 0.725rem;
+    color: #334155;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.rev-quick-chip:hover {
+    background: #e2e8f0;
+    border-color: #94a3b8;
+    color: #0f172a;
+}
+
+@media (max-width: 640px) {
+    .rev-summary-grid {
+        grid-template-columns: 1fr;
+    }
+}
 
 /* Responsive Toolbar */
 @media (max-width: 768px) {

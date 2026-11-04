@@ -141,7 +141,7 @@ class QcInboundController extends Controller
 
         // PO aktif yang siap diterima (APPROVED atau PARTIAL) yang sesuai dengan akses perusahaan akun
         $allowedGudangIds = $user->getAllowedGudangIds();
-        $pos = DatPoHdr::with(['supplier', 'details.barang'])
+        $pos = DatPoHdr::with(['supplier', 'details.barang', 'details.qcDetails.header'])
             ->where('deleted_st', false)
             ->whereIn('status_cd', ['APPROVED', 'PARTIAL'])
             ->when(!$user->isSuperAdmin(), function($q) use ($allowedGudangIds) {

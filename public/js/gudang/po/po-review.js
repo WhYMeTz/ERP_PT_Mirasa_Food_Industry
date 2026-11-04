@@ -157,3 +157,14 @@ function setupFormSubmitHandling(formId, buttonId, loadingText) {
         `;
     });
 }
+
+function insertRevisionTemplate(text) {
+    const textarea = document.getElementById('revision_notes');
+    if (!textarea) return;
+    if (textarea.value.trim().length > 0) {
+        textarea.value = textarea.value.trim() + ' ' + text;
+    } else {
+        textarea.value = text;
+    }
+    textarea.focus();
+}

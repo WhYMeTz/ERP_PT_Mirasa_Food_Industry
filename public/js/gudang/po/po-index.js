@@ -328,6 +328,19 @@ function renderPoDetail(po) {
     badge.style.background = badgeBg;
     badge.style.color = badgeClr;
 
+    // Badge QC Inbound di Header Modal
+    const qcBadge = document.getElementById('poDetailQcBadge');
+    const qcInfo = po.qc_status_info || null;
+    if (qcBadge && qcInfo) {
+        qcBadge.style.display = 'inline-flex';
+        qcBadge.innerHTML = `${qcInfo.icon} ${qcInfo.label} ${qcInfo.tested ? `(${qcInfo.count})` : ''}`;
+        qcBadge.style.background = qcInfo.bg;
+        qcBadge.style.color = qcInfo.color;
+        qcBadge.style.borderColor = qcInfo.border;
+    } else if (qcBadge) {
+        qcBadge.style.display = 'none';
+    }
+
     // Banner Penolakan / Permintaan Revisi Atasan
     const rejectBanner = document.getElementById('poDetailRejectBanner');
     if (rejectBanner) {
@@ -347,10 +360,23 @@ function renderPoDetail(po) {
     // Parameter Dokumen & Box Metadata
     document.getElementById('poDetailTgl').textContent = formatDate(po.po_tgl);
     document.getElementById('poDetailEta').textContent = formatDate(po.tgl_estimasi_datang);
-    document.getElementById('poDetailCreatedBy').textContent = po.created_by || 'SYSTEM';
+    const creatorDisplay = po.creator_name || (po.created_by == 1 ? 'Super Administrator' : po.created_by) || 'SYSTEM';
+    document.getElementById('poDetailCreatedBy').textContent = creatorDisplay;
     const topText = po.term_of_payment || 'Standar Supplier';
     const elTopHeader = document.getElementById('poDetailTopHeader');
     if (elTopHeader) elTopHeader.textContent = topText;
+
+    // Riwayat Edit / Revisi di Modal Preview
+    const revRow = document.getElementById('poDetailRevisiRow');
+    const revText = document.getElementById('poDetailRevisiText');
+    if (revRow && revText) {
+        if (po.is_ada_revisi || (po.total_revisi_count && po.total_revisi_count > 0)) {
+            revRow.style.display = 'flex';
+            revText.textContent = `Diedit ${po.total_revisi_count}x (${po.terakhir_direvisi_by || 'Operator'})`;
+        } else {
+            revRow.style.display = 'none';
+        }
+    }
 
     // Supplier
     const sup = po.supplier || {};
@@ -371,10 +397,6 @@ function renderPoDetail(po) {
     if (elApprover) elApprover.textContent = approverNm;
     const elApprovedAt = document.getElementById('poDetailApprovedAt');
     if (elApprovedAt) elApprovedAt.textContent = po.approved_at ? formatDate(po.approved_at) : (po.status_cd === 'REJECTED' ? 'Ditolak' : 'Belum');
-    const elTaxSchemeHeader = document.getElementById('poDetailTaxSchemeHeader');
-    if (elTaxSchemeHeader) {
-        elTaxSchemeHeader.textContent = po.is_harga_termasuk_pajak ? 'Include PPN (Harga Termasuk)' : 'Exclude PPN (Plus Pajak)';
-    }
 
     // Rincian Item Komoditas & Skema Pajak / Diskon
     const details = po.details || [];
@@ -427,6 +449,7 @@ function renderPoDetail(po) {
         const pjk = d.pajak || {};
         const taxRate = parseFloat(d.ppn_persen) || parseFloat(pjk.tarif_persen) || 0;
         if (taxRate > maxTaxRate) maxTaxRate = taxRate;
+        const isPotongItem = (pjk.sifat_pajak === 'POTONG');
         
         let taxCode = pjk.pajak_cd || d.ppn_tipe || (taxRate > 0 ? `PPN ${taxRate}%` : 'NON');
         // Singkatkan jika berupa kode komoditas panjang
@@ -442,13 +465,13 @@ function renderPoDetail(po) {
         let taxCellHtml = '';
         if (taxRate > 0 || taxNominal > 0) {
             taxCellHtml = `
-                <span class="mac-badge-pill" style="background: #eff6ff; color: #0284c7; border-color: #bfdbfe; font-weight: 800; font-family: monospace; font-size: 0.675rem;">
+                <span class="mac-badge-pill" style="background: ${isPotongItem ? '#fef2f2' : '#eff6ff'}; color: ${isPotongItem ? '#dc2626' : '#0284c7'}; border-color: ${isPotongItem ? '#fecaca' : '#bfdbfe'}; font-weight: 800; font-family: monospace; font-size: 0.675rem;">
                     ${taxCode}
                 </span>
-                <div style="font-size: 0.675rem; color: ${isInclude ? '#1e40af' : '#15803d'}; font-weight: 600; margin-top: 1px; white-space: nowrap;">
-                    ${taxRate}% (${isInclude ? 'Inc' : 'Exc'})
+                <div style="font-size: 0.675rem; color: ${isPotongItem ? '#dc2626' : (isInclude ? '#1e40af' : '#15803d')}; font-weight: 600; margin-top: 1px; white-space: nowrap;">
+                    ${isPotongItem ? `-${taxRate}% (Potong)` : `${taxRate}% (${isInclude ? 'Inc' : 'Exc'})`}
                 </div>
-                ${taxNominal > 0 ? `<div style="font-size: 0.675rem; color: #64748b; font-family: monospace; white-space: nowrap;">Rp ${taxNominal.toLocaleString('id-ID')}</div>` : ''}
+                ${taxNominal > 0 ? `<div style="font-size: 0.675rem; color: ${isPotongItem ? '#dc2626' : '#64748b'}; font-family: monospace; white-space: nowrap;">${isPotongItem ? '- ' : ''}Rp ${taxNominal.toLocaleString('id-ID')}</div>` : ''}
             `;
         } else {
             taxCellHtml = '<span class="mac-badge-pill" style="background: #f1f5f9; color: #64748b; border-color: #e2e8f0; font-size: 0.675rem;">Bebas (0%)</span>';
@@ -519,11 +542,21 @@ function renderPoDetail(po) {
 
     // Pajak Details
     const taxNominal = parseFloat(po.ppn_nominal) || 0;
-    document.getElementById('poDetailPpn').textContent = formatRp(taxNominal);
+    const hasPotongTax = (po.details || []).some(d => d.pajak && d.pajak.sifat_pajak === 'POTONG');
+    const elPpn = document.getElementById('poDetailPpn');
+    if (elPpn) {
+        if (taxNominal > 0 && hasPotongTax) {
+            elPpn.innerHTML = `<span style="color: #dc2626; font-family: monospace;">- ${formatRp(taxNominal)}</span>`;
+        } else {
+            elPpn.innerHTML = `<span style="color: #0f172a; font-family: monospace;">${taxNominal > 0 ? '+ ' : ''}${formatRp(taxNominal)}</span>`;
+        }
+    }
     
-    const taxTreatmentText = po.is_harga_termasuk_pajak 
-        ? 'Harga Termasuk Pajak (Inclusive)' 
-        : 'Harga Belum Termasuk Pajak (Exclusive / Plus Pajak)';
+    const taxTreatmentText = hasPotongTax
+        ? 'Pemotongan Pajak PPh (Withholding Tax)'
+        : (po.is_harga_termasuk_pajak 
+            ? 'Harga Termasuk Pajak (Inclusive)' 
+            : 'Harga Belum Termasuk Pajak (Exclusive / Plus Pajak)');
     const taxNameCombined = allTaxes.size > 0 ? Array.from(allTaxes).join(', ') : 'PPN Standar';
     
     const elTaxTreatment = document.getElementById('poDetailTaxTreatment');
@@ -531,9 +564,20 @@ function renderPoDetail(po) {
     const elTaxName = document.getElementById('poDetailTaxName');
     if (elTaxName) elTaxName.textContent = taxNameCombined;
     const elTaxRate = document.getElementById('poDetailTaxRate');
-    if (elTaxRate) elTaxRate.textContent = maxTaxRate > 0 ? `${maxTaxRate}%` : (taxNominal > 0 ? 'Dikenakan Pajak' : '0% (Non-PPN)');
+    if (elTaxRate) elTaxRate.textContent = maxTaxRate > 0 ? (hasPotongTax ? `-${maxTaxRate}% (Potong)` : `${maxTaxRate}%`) : (taxNominal > 0 ? 'Dikenakan Pajak' : '0% (Non-PPN)');
     const elTaxSubNote = document.getElementById('poDetailTaxSubNote');
     if (elTaxSubNote) elTaxSubNote.textContent = `${taxNameCombined} • ${taxTreatmentText}`;
+
+    const elTaxSchemeHeader = document.getElementById('poDetailTaxSchemeHeader');
+    if (elTaxSchemeHeader) {
+        if (hasPotongTax) {
+            elTaxSchemeHeader.textContent = 'Potongan PPh 22';
+            elTaxSchemeHeader.style.color = '#dc2626';
+        } else {
+            elTaxSchemeHeader.textContent = po.is_harga_termasuk_pajak ? 'Include PPN (Harga Termasuk)' : 'Exclude PPN (Plus Pajak)';
+            elTaxSchemeHeader.style.color = '#0284c7';
+        }
+    }
 
     const elTopVal = document.getElementById('poDetailTopVal');
     if (elTopVal) elTopVal.textContent = topText;
@@ -545,6 +589,69 @@ function renderPoDetail(po) {
     if (po.catatan_txt) notesArr.push(`Catatan Purchasing: ${po.catatan_txt}`);
     if (po.remark_txt) notesArr.push(`Keterangan Tambahan: ${po.remark_txt}`);
     document.getElementById('poDetailCatatan').textContent = notesArr.length > 0 ? notesArr.join('\n') : 'Tidak ada catatan tambahan untuk dokumen PO ini.';
+
+    // Riwayat Hasil Uji Mutu QC Inbound
+    const qcList = po.qc_inbound || [];
+    const qcListEl = document.getElementById('poDetailQcList');
+    const qcSummaryBadge = document.getElementById('poDetailQcSummaryBadge');
+
+    if (qcSummaryBadge && qcInfo) {
+        qcSummaryBadge.textContent = qcInfo.label;
+        qcSummaryBadge.style.background = qcInfo.bg;
+        qcSummaryBadge.style.color = qcInfo.color;
+        qcSummaryBadge.style.borderColor = qcInfo.border;
+    }
+
+    if (qcListEl) {
+        qcListEl.innerHTML = '';
+        if (qcList.length > 0) {
+            qcList.forEach(qc => {
+                const dtl = (qc.details && qc.details.length > 0) ? qc.details[0] : {};
+                const gross = (qc.details || []).reduce((acc, d) => acc + (parseFloat(d.qty_timbang_gross) || 0), 0);
+                const netto = (qc.details || []).reduce((acc, d) => acc + (parseFloat(d.qty_netto_lolos) || 0), 0);
+                const ref = (qc.details || []).reduce((acc, d) => acc + (parseFloat(d.qty_refraksi) || 0), 0);
+                const rej = (qc.details || []).reduce((acc, d) => acc + (parseFloat(d.qty_reject) || 0), 0);
+                const grade = dtl.grade_cd || 'A';
+                
+                let qcBadgeHtml = '';
+                if (qc.status_qc === 'DITOLAK_TOTAL' || qc.status_qc === 'DITOLAK') {
+                    qcBadgeHtml = '<span class="badge" style="background:#fee2e2; color:#b91c1c; border:1px solid #fecaca; font-weight:800; font-size:0.7rem;">🔴 Ditolak QC</span>';
+                } else if (qc.status_qc === 'DITERIMA_PARSIAL' || ref > 0 || rej > 0) {
+                    qcBadgeHtml = `<span class="badge" style="background:#fffbeb; color:#b45309; border:1px solid #fde68a; font-weight:800; font-size:0.7rem;">🟡 Lolos Bersyarat (Gr. ${grade})</span>`;
+                } else if (qc.status_qc === 'DRAFT') {
+                    qcBadgeHtml = '<span class="badge" style="background:#f0f9ff; color:#0369a1; border:1px solid #bae6fd; font-weight:700; font-size:0.7rem;">⏳ Sedang Diuji</span>';
+                } else {
+                    qcBadgeHtml = `<span class="badge" style="background:#ecfdf5; color:#047857; border:1px solid #a7f3d0; font-weight:800; font-size:0.7rem;">🟢 Lolos Mutu (Gr. ${grade})</span>`;
+                }
+
+                const card = document.createElement('div');
+                card.style.cssText = 'background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.65rem 0.85rem; display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem;';
+                card.innerHTML = `
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <strong style="color: #0284c7; font-family: monospace;">${qc.qc_no || '-'}</strong>
+                            <span style="color: #64748b; font-size: 0.75rem;">• Tgl: ${formatDate(qc.tgl_periksa)}</span>
+                        </div>
+                        <div style="color: #475569; font-size: 0.75rem; margin-top: 0.2rem;">
+                            🚛 Truk: <strong>${qc.plat_nomor_truk || '-'}</strong> ${qc.sopir_nama ? `(Sopir: ${qc.sopir_nama})` : ''} ${qc.surat_jalan_supplier ? `• SJ: ${qc.surat_jalan_supplier}` : ''}
+                        </div>
+                        <div style="color: #64748b; font-size: 0.725rem; margin-top: 0.15rem;">
+                            Netto: <strong style="color: #047857;">${netto.toLocaleString('id-ID')}</strong> (Gross: ${gross.toLocaleString('id-ID')} ${ref > 0 ? `| Ref: -${ref.toLocaleString('id-ID')}` : ''} ${rej > 0 ? `| Rej: -${rej.toLocaleString('id-ID')}` : ''})
+                        </div>
+                    </div>
+                    <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
+                        ${qcBadgeHtml}
+                        <div style="font-size: 0.7rem; color: #64748b;">
+                            QC: <strong>${qc.petugas_qc_nama || '-'}</strong>
+                        </div>
+                    </div>
+                `;
+                qcListEl.appendChild(card);
+            });
+        } else {
+            qcListEl.innerHTML = '<div style="background: #ffffff; border: 1px dashed #cbd5e1; border-radius: 8px; padding: 0.85rem; text-align: center; color: #94a3b8; font-size: 0.8rem;">Belum ada riwayat sampling uji mutu (QC Inbound) untuk PO ini.</div>';
+        }
+    }
 
     // Riwayat Penerimaan GRN
     const penerimaan = po.penerimaan || [];

@@ -354,6 +354,7 @@ class PoController extends Controller
             'pajak_id'                        => 'nullable|integer|exists:mst_pajak,pajak_id',
             'tgl_estimasi_datang'             => 'nullable|date',
             'catatan_txt'                     => 'nullable|string|max:1000',
+            'alasan_edit'                     => 'nullable|string|max:500',
             'items'                           => 'required|array|min:1',
             'items.*.podtl_id'                => 'nullable|integer',
             'items.*.barang_id'               => 'required|exists:mst_barang,barang_id',

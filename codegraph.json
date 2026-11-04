@@ -17,6 +17,6 @@
     "database/**",
     "resources/**",
     "public/js/**",
-    "public/css/**"
+    "AI_AGENT/**"
   ]
 }

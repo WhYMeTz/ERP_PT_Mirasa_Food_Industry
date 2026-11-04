@@ -399,6 +399,18 @@
                 <textarea id="catatan_txt" name="catatan_txt" rows="3" class="form-control" placeholder="Contoh: *Mohon dikirim tanggal 29 Oktober 2026 jam 08.00 pagi..." style="border: 1.5px solid #cbd5e1; border-radius: 5px; font-size: 0.8125rem; padding: 0.5rem;">{{ old('catatan_txt', $po->catatan_txt) }}</textarea>
             </div>
 
+            {{-- Input Alasan / Catatan Perubahan untuk Audit Trail --}}
+            <div class="po-notes-card" style="border-left: 4px solid #0284c7; background: #f0f9ff;">
+                <label for="alasan_edit" class="po-field-label" style="display: flex; align-items: center; justify-content: space-between; color: #0369a1;">
+                    <span style="font-weight: 800;">📝 Alasan / Catatan Revisi PO (Audit Trail)</span>
+                    <small style="color: #0284c7; font-weight: 600;">Tercatat pada riwayat edit</small>
+                </label>
+                <input type="text" id="alasan_edit" name="alasan_edit" class="form-control"
+                    placeholder="Contoh: Penyesuaian kuantitas pesanan, perubahan harga negosiasi supplier, dll..."
+                    style="border: 1.5px solid #bae6fd; border-radius: 5px; font-size: 0.825rem; padding: 0.5rem; background: #ffffff;"
+                    value="{{ old('alasan_edit') }}">
+            </div>
+
             <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.5rem 0.85rem; font-size: 0.725rem; color: #64748b; line-height: 1.4;">
                 <strong style="color: #334155;">💡 Tips Pengubahan PO:</strong> Tekan <kbd style="background:#e2e8f0; padding:1px 3px; border-radius:3px; font-weight:700;">Enter</kbd> pada kuantitas/harga untuk langsung membuat baris baru. Item yang sudah diterima terkunci nama komoditasnya.
             </div>

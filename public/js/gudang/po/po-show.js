@@ -455,4 +455,80 @@ function submitKirimSupplier(event) {
     }
 }
 
+/**
+ * Membuka Modal Rincian Audit Trail Revisi PO
+ */
+function openPoRevisiModal(log) {
+    const modal = document.getElementById('modalRevisiPo');
+    if (!modal || !log) return;
+
+    const elNo = document.getElementById('revModalNo');
+    if (elNo) elNo.textContent = log.revisi_no || 'REV';
+    
+    // Format tanggal
+    let dateStr = log.revisi_tgl || '-';
+    try {
+        const d = new Date(log.revisi_tgl);
+        dateStr = d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) + ' ' +
+                  d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB';
+    } catch (e) {}
+
+    const elDate = document.getElementById('revModalDate');
+    if (elDate) elDate.textContent = dateStr;
+    const elUser = document.getElementById('revModalUser');
+    if (elUser) elUser.textContent = log.user_nama || 'SYSTEM';
+    const elRole = document.getElementById('revModalRole');
+    if (elRole) elRole.textContent = log.user_role || 'Operator';
+    const elCat = document.getElementById('revModalCategory');
+    if (elCat) elCat.textContent = (log.kategori_perubahan || 'KOMPREHENSIF').replace(/_/g, ' ');
+    const elAlasan = document.getElementById('revModalAlasan');
+    if (elAlasan) elAlasan.textContent = log.alasan_edit ? `“${log.alasan_edit}”` : 'Tidak ada catatan alasan khusus.';
+
+    const tbody = document.getElementById('revModalDiffsTbody');
+    if (tbody) {
+        tbody.innerHTML = '';
+        const diffs = log.perubahan_json || [];
+        if (diffs.length > 0) {
+            diffs.forEach(diff => {
+                const tr = document.createElement('tr');
+                tr.style.borderBottom = '1px solid #f1f5f9';
+                tr.innerHTML = `
+                    <td style="padding: 0.65rem 0.85rem; font-weight: 700; color: #1e293b;">
+                        ${diff.label || diff.field}
+                    </td>
+                    <td style="padding: 0.65rem 0.85rem; color: #b91c1c; background: #fff5f5; font-family: monospace; font-size: 0.8rem;">
+                        ${diff.sebelum || '-'}
+                    </td>
+                    <td style="padding: 0.65rem 0.85rem; color: #15803d; background: #f0fdf4; font-family: monospace; font-weight: 700; font-size: 0.8rem;">
+                        ${diff.sesudah || '-'}
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        } else {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="3" style="text-align: center; padding: 1.5rem; color: #94a3b8;">
+                        Tidak ada catatan perubahan field mendalam pada versi ini.
+                    </td>
+                </tr>
+            `;
+        }
+    }
+
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+window.openPoRevisiModal = openPoRevisiModal;
+
+function closePoRevisiModal() {
+    const modal = document.getElementById('modalRevisiPo');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+    }
+}
+window.closePoRevisiModal = closePoRevisiModal;
+
+
 

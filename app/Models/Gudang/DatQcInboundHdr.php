@@ -138,4 +138,71 @@ class DatQcInboundHdr extends Model
     {
         return $this->hasOne(DatTerimaHdr::class, 'qc_id', 'qc_id');
     }
+
+    /**
+     * Resolusi dokumen GRN lengkap:
+     * 1. Cek langsung dari dat_terima_hdr.qc_id
+     * 2. Cek via dat_terima_dtl.qcdtl_id (jika ditarik bersama tiket QC lain ke 1 GRN)
+     * 3. Cek via Parent QC (jika ini P2)
+     * 4. Cek via Child QC (jika ini P1)
+     */
+    public function getTerimaAttribute(): ?DatTerimaHdr
+    {
+        if (array_key_exists('terima_resolved', $this->relations)) {
+            return $this->relations['terima_resolved'];
+        }
+
+        // 1. Cek relasi langsung via header qc_id
+        $terima = null;
+        if (array_key_exists('terima', $this->relations)) {
+            $terima = $this->relations['terima'];
+        } else {
+            $terima = $this->hasOne(DatTerimaHdr::class, 'qc_id', 'qc_id')->first();
+        }
+
+        if ($terima && !$terima->deleted_st) {
+            $this->relations['terima_resolved'] = $terima;
+            return $terima;
+        }
+
+        // 2. Cek via dat_terima_dtl.qcdtl_id
+        $qcDtlIds = $this->relationLoaded('details')
+            ? $this->details->pluck('qcdtl_id')->filter()->all()
+            : $this->details()->pluck('qcdtl_id')->filter()->all();
+
+        if (!empty($qcDtlIds)) {
+            $terimaDtl = DatTerimaDtl::with('header')
+                ->whereIn('qcdtl_id', $qcDtlIds)
+                ->where('deleted_st', false)
+                ->first();
+
+            if ($terimaDtl?->header && !$terimaDtl->header->deleted_st) {
+                $this->relations['terima_resolved'] = $terimaDtl->header;
+                return $terimaDtl->header;
+            }
+        }
+
+        // 3. Cek via parent QC jika ini P2 (Pengujian 2)
+        if ($this->parent_qc_id) {
+            $parent = $this->relationLoaded('parentQc') ? $this->parentQc : $this->parentQc()->first();
+            if ($parent && $parent->terima) {
+                $this->relations['terima_resolved'] = $parent->terima;
+                return $parent->terima;
+            }
+        }
+
+        // 4. Cek via child QC jika ini P1 (Pengujian 1)
+        $children = $this->relationLoaded('pengujian2List') ? $this->pengujian2List : $this->pengujian2List()->get();
+        if ($children && $children->isNotEmpty()) {
+            foreach ($children as $p2) {
+                if ($p2->terima) {
+                    $this->relations['terima_resolved'] = $p2->terima;
+                    return $p2->terima;
+                }
+            }
+        }
+
+        $this->relations['terima_resolved'] = null;
+        return null;
+    }
 }

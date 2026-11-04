@@ -271,7 +271,6 @@
     }
 
     function saveFormDraft() {
-        if (isSubmitting) return; // Jangan simpan draft jika form sedang atau telah disubmit
         try {
             const rows = [];
             document.querySelectorAll('#itemsBody tr').forEach(tr => {
@@ -2456,15 +2455,7 @@
 
         // Simpan langsung saat window sebelum unload (refresh / F5 / pindah tab)
         window.addEventListener('beforeunload', () => {
-            if (!isSubmitting) {
-                saveFormDraft();
-            }
-        });
-
-        // Tangani bfcache (Back-Forward Cache): Jika pengguna menekan tombol "Back / Kembali" di browser
-        window.addEventListener('pageshow', (event) => {
-            setSubmittingState(false);
-            previousMonthConfirmed = false;
+            saveFormDraft();
         });
 
         const form = document.getElementById('pemakaianForm');

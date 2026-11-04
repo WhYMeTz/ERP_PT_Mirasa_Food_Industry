@@ -288,7 +288,8 @@ class PoApprovalController extends Controller
             'approver',
             'details.barang.satuanDasar',
             'details.barang.jenisBarang',
-            'details.pajak'
+            'details.pajak',
+            'revisiLog'
         ])->findOrFail($id);
 
         // Ambil stok riil gudang saat ini untuk setiap item komoditas
@@ -391,7 +392,7 @@ class PoApprovalController extends Controller
                 ]);
             }
 
-            return redirect()->route('gudang.po.show', $po->po_id)
+            return redirect()->route('gudang.po.review', $po->po_id)
                 ->with('success', "Arahan tinjauan untuk PO {$po->po_no} berhasil dicatat. Status dokumen kini 'BUTUH REVISI'.");
         } catch (Exception $e) {
             if ($request->wantsJson()) {
@@ -430,7 +431,7 @@ class PoApprovalController extends Controller
                 ]);
             }
 
-            return redirect()->route('gudang.po.show', $po->po_id)
+            return redirect()->route('gudang.po.review', $po->po_id)
                 ->with('success', "Purchase Order {$po->po_no} telah ditolak.");
         } catch (Exception $e) {
             if ($request->wantsJson()) {
@@ -503,7 +504,8 @@ class PoApprovalController extends Controller
                 ]);
             }
 
-            return back()->with('success', "Purchase Order {$po->po_no} berhasil disetujui resmi.");
+            return redirect()->route('gudang.po.review', $po->po_id)
+                ->with('success', "Purchase Order {$po->po_no} berhasil disetujui resmi.");
         } catch (Exception $e) {
             if ($request->wantsJson()) {
                 return response()->json([

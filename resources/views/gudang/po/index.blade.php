@@ -225,12 +225,19 @@
                                     </svg>
                                 </button>
                                 <div>
-                                    <a href="javascript:void(0)" 
-                                       onclick="openPoDetailModal({{ $po->po_id }})" 
-                                       style="font-weight: 700; color: #0284c7; text-decoration: none; font-size: 0.9rem;" 
-                                       title="Klik untuk melihat detail dokumen PO">
-                                        {{ $po->po_no }}
-                                    </a>
+                                    <div style="display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;">
+                                        <a href="javascript:void(0)" 
+                                           onclick="openPoDetailModal({{ $po->po_id }})" 
+                                           style="font-weight: 700; color: #0284c7; text-decoration: none; font-size: 0.9rem;" 
+                                           title="Klik untuk melihat detail dokumen PO">
+                                            {{ $po->po_no }}
+                                        </a>
+                                        @if ($po->is_ada_revisi)
+                                            <span class="badge" style="background:#fffbeb; color:#b45309; border:1px solid #fde68a; font-size:0.625rem; padding:1px 4px; border-radius:3px; font-weight:700;" title="Dokumen ini telah direvisi {{ $po->total_revisi_count }}x (Terakhir oleh: {{ $po->terakhir_direvisi_by }})">
+                                                🔄 Rev {{ $po->total_revisi_count }}
+                                            </span>
+                                        @endif
+                                    </div>
                                     <small style="display: block; font-size: 0.725rem; color: #64748b;">
                                         {{ $po->details->count() }} item bahan baku
                                     </small>
@@ -344,6 +351,21 @@
                                         </span>
                                     </div>
                                 @endif
+
+                                {{-- BADGE STATUS QC INBOUND --}}
+                                @php $qcInfo = $po->qc_status_info; @endphp
+                                <div style="margin-top: 3px;">
+                                    @if ($qcInfo['tested'])
+                                        <span class="badge" style="background: {{ $qcInfo['bg'] }}; color: {{ $qcInfo['color'] }}; border: 1px solid {{ $qcInfo['border'] }}; font-size: 0.675rem; padding: 2px 6px; display: inline-flex; align-items: center; gap: 4px; font-weight: 700;" title="{{ $qcInfo['label'] }} ({{ $qcInfo['count'] }} Tiket Uji QC Inbound)">
+                                            <span>{{ $qcInfo['icon'] }}</span>
+                                            <span>{{ $qcInfo['short_label'] }} ({{ $qcInfo['count'] }})</span>
+                                        </span>
+                                    @elseif (in_array($po->status_cd, ['APPROVED', 'PARTIAL']))
+                                        <span class="badge" style="background: #f8fafc; color: #64748b; border: 1px dashed #cbd5e1; font-size: 0.65rem; padding: 1px 5px;" title="Belum ada catatan inspeksi kedatangan oleh tim QC Lapangan">
+                                            🔬 Belum Diuji QC
+                                        </span>
+                                    @endif
+                                </div>
                             </div>
                         @php
                             $nominalRow = (float) $po->total_tagihan > 0 

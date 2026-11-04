@@ -114,10 +114,12 @@
         if (box) box.style.display = 'block';
         if (badgeCount) badgeCount.innerText = items.length;
 
-        // Tentukan podtl_id aktif
+        // Tentukan podtl_id aktif:
+        // Prioritaskan item yang BELUM SELESAI diuji QC!
         let activeId = selectedPodtlId;
         if (!activeId || !items.some(it => String(it.podtl_id) === String(activeId))) {
-            activeId = items[0].podtl_id;
+            const unTested = items.find(it => !it.is_selesai_qc && (typeof it.sisa_belum_qc === 'undefined' || it.sisa_belum_qc > 0));
+            activeId = unTested ? unTested.podtl_id : items[0].podtl_id;
         }
         currentPodtlId = activeId;
         const hiddenPodtl = document.getElementById('inputSelectedPodtlId');
@@ -129,11 +131,13 @@
             items.forEach(it => {
                 const opt = document.createElement('option');
                 opt.value = it.barang_id;
-                opt.text = `${it.barang_nm} • Sisa PO: ${it.sisa_qty.toLocaleString('id-ID')} ${it.satuan || 'KG'}`;
+                const sisa = (typeof it.sisa_belum_qc !== 'undefined') ? it.sisa_belum_qc : (it.sisa_qty > 0 ? it.sisa_qty : it.pesan_qty);
+                const statusTag = it.is_selesai_qc ? '[SELESAI DIUJI] ' : (it.qc_tested_qty > 0 ? '[UJI SEBAGIAN] ' : '');
+                opt.text = `${statusTag}${it.barang_nm} • Sisa Belum QC: ${sisa.toLocaleString('id-ID')} ${it.satuan || 'KG'}`;
                 opt.setAttribute('data-nama', it.barang_nm);
                 opt.setAttribute('data-satuan', it.satuan || 'KG');
                 opt.setAttribute('data-podtl-id', it.podtl_id);
-                opt.setAttribute('data-sisa-qty', it.sisa_qty);
+                opt.setAttribute('data-sisa-qty', sisa);
                 opt.setAttribute('data-pesan-qty', it.pesan_qty);
                 if (String(it.podtl_id) === String(activeId)) {
                     opt.selected = true;
@@ -147,25 +151,63 @@
             list.innerHTML = '';
             items.forEach((it) => {
                 const isActive = (String(it.podtl_id) === String(activeId));
-                const sisa = it.sisa_qty > 0 ? it.sisa_qty : it.pesan_qty;
+                const sisa = (typeof it.sisa_belum_qc !== 'undefined') ? it.sisa_belum_qc : (it.sisa_qty > 0 ? it.sisa_qty : it.pesan_qty);
+                const isCompleted = !!it.is_selesai_qc || sisa <= 0;
+                const isPartial = !isCompleted && (it.qc_tested_qty > 0);
+
                 const card = document.createElement('div');
-                card.className = `po-item-card ${isActive ? 'is-active' : ''}`;
+                card.className = `po-item-card ${isActive ? 'is-active' : ''} ${isCompleted ? 'is-completed' : (isPartial ? 'is-partial' : 'is-pending')}`;
                 card.id = `poItemCard_${it.podtl_id}`;
                 card.onclick = function () {
                     window.selectSingkongPoItem(it.podtl_id);
                 };
 
+                let radioCircleHtml = '<span class="po-item-radio-circle"></span>';
+                let badgeHtml = '';
+                let subHtml = `Pesan: ${it.pesan_qty.toLocaleString('id-ID')} ${it.satuan || 'KG'}`;
+
+                if (isCompleted) {
+                    radioCircleHtml = '<span class="po-item-check-icon" style="color: #16a34a; font-weight: 900; font-size: 1.1rem; width: 20px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;">✓</span>';
+                    badgeHtml = `
+                        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px;">
+                            <span class="po-item-badge-sisa badge-completed" style="background: #dcfce7; border-color: #86efac; color: #166534; font-weight: 800;">
+                                ✅ Selesai Diuji
+                            </span>
+                            <span style="font-size: 0.68rem; color: #16a34a; font-weight: 700;">Diuji: ${it.qc_tested_qty.toLocaleString('id-ID')} ${it.satuan || 'KG'}</span>
+                        </div>
+                    `;
+                    subHtml += ` • <strong style="color: #16a34a;">Sudah Diuji: ${it.qc_tested_qty.toLocaleString('id-ID')} ${it.satuan || 'KG'}</strong>`;
+                } else if (isPartial) {
+                    badgeHtml = `
+                        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px;">
+                            <span class="po-item-badge-sisa badge-partial" style="background: #fef3c7; border-color: #fde68a; color: #b45309; font-weight: 800;">
+                                ⚠️ Uji Sebagian
+                            </span>
+                            <span style="font-size: 0.68rem; color: #b45309; font-weight: 700;">Sisa Belum QC: ${sisa.toLocaleString('id-ID')} ${it.satuan || 'KG'}</span>
+                        </div>
+                    `;
+                    subHtml += ` • <span style="color: #b45309; font-weight: 700;">Sudah Diuji: ${it.qc_tested_qty.toLocaleString('id-ID')} ${it.satuan || 'KG'}</span>`;
+                } else {
+                    badgeHtml = `
+                        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px;">
+                            <span class="po-item-badge-sisa badge-pending" style="background: #e0f2fe; border-color: #bae6fd; color: #0284c7; font-weight: 800;">
+                                ⏳ Belum Diuji
+                            </span>
+                            <span style="font-size: 0.68rem; color: #0284c7; font-weight: 700;">Sisa: ${sisa.toLocaleString('id-ID')} ${it.satuan || 'KG'}</span>
+                        </div>
+                    `;
+                    subHtml += ` • <span style="color: #64748b;">Belum Ada Uji</span>`;
+                }
+
                 card.innerHTML = `
                     <div class="po-item-card-left">
-                        <span class="po-item-radio-circle"></span>
+                        ${radioCircleHtml}
                         <div class="po-item-info">
                             <span class="po-item-nama">${it.barang_nm}</span>
-                            <span class="po-item-sub">Pesan: ${it.pesan_qty.toLocaleString('id-ID')} ${it.satuan || 'KG'} • Masuk: ${it.terima_qty.toLocaleString('id-ID')}</span>
+                            <span class="po-item-sub">${subHtml}</span>
                         </div>
                     </div>
-                    <span class="po-item-badge-sisa">
-                        Sisa: ${sisa.toLocaleString('id-ID')} ${it.satuan || 'KG'}
-                    </span>
+                    ${badgeHtml}
                 `;
                 list.appendChild(card);
             });
@@ -198,7 +240,9 @@
         }
 
         // Update kuantitas (Hanya auto-fill dari sisa PO jika bukan Pengujian 2)
-        const sisaQty = targetItem.sisa_qty > 0 ? targetItem.sisa_qty : targetItem.pesan_qty;
+        const sisaQty = (typeof targetItem.sisa_belum_qc !== 'undefined' && targetItem.sisa_belum_qc > 0)
+            ? targetItem.sisa_belum_qc
+            : (targetItem.sisa_qty > 0 ? targetItem.sisa_qty : targetItem.pesan_qty);
         const inSJ = document.getElementById('inputJumlahSJ');
         const inPabrik = document.getElementById('inputJumlahPabrik');
         const isUji2Active = (window.currentTahapUji === 2 || !!document.getElementById('parentQcIdInput')?.value);
@@ -221,7 +265,14 @@
         }
 
         // Update input hidden podtl_id di dalam items[0]
-        const dtlPodtl = document.querySelector('input[name="items[0][podtl_id]"]');
+        let dtlPodtl = document.querySelector('input[name="items[0][podtl_id]"]');
+        if (!dtlPodtl) {
+            dtlPodtl = document.createElement('input');
+            dtlPodtl.type = 'hidden';
+            dtlPodtl.name = 'items[0][podtl_id]';
+            const qcForm = document.getElementById('qcForm') || document.querySelector('form');
+            if (qcForm) qcForm.appendChild(dtlPodtl);
+        }
         if (dtlPodtl) dtlPodtl.value = podtlId;
 
         // Update barang_select_0 di dalam kartu pemeriksaan Tahap 2
@@ -270,8 +321,10 @@
             const poList = window.qcConfig?.poList || window.appConfig?.poListData || {};
             const poData = poList[poSel.value];
             if (poData && poData.items && poData.items.length > 0) {
-                const initPodtlId = document.getElementById('inputSelectedPodtlId')?.value || poData.items[0].podtl_id;
+                const unTested = poData.items.find(it => !it.is_selesai_qc && (typeof it.sisa_belum_qc === 'undefined' || it.sisa_belum_qc > 0));
+                const initPodtlId = document.getElementById('inputSelectedPodtlId')?.value || (unTested ? unTested.podtl_id : poData.items[0].podtl_id);
                 window.renderSingkongPoItemsCards(poData.items, initPodtlId);
+                window.selectSingkongPoItem(initPodtlId);
             }
         }
     });

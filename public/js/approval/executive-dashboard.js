@@ -203,6 +203,11 @@
             const targetArea = document.getElementById('execContentArea') || document.querySelector('.exec-main-wrapper');
 
             if (newContentArea && targetArea) {
+                // Remove any reparented action menus currently attached to document.body
+                document.querySelectorAll('body > .action-dropdown-menu, body > .macos-action-popup').forEach(function(m) {
+                    m.remove();
+                });
+
                 // Sync any new stylesheets from fetched document head
                 doc.querySelectorAll('link[rel="stylesheet"]').forEach(function(l) {
                     const href = l.getAttribute('href');
@@ -344,5 +349,112 @@
     initFilterButtons();
     initTableInteractions();
     updateSidebarActiveStates(window.location.href);
+
+    // ========================================================================
+    // 6. SMART ACTION DROPDOWN FOR EXECUTIVE TABLES
+    // ========================================================================
+    let isOpeningDropdown = false;
+
+    window.toggleSmartActionDropdown = function(button, event, menuId) {
+        if (event) {
+            event.stopPropagation();
+            event.preventDefault();
+        }
+
+        const menu = document.getElementById(menuId);
+        if (!menu) return;
+
+        const isCurrentlyOpen = menu.classList.contains('show') && menu.style.display === 'block';
+
+        // Close all currently open dropdowns
+        document.querySelectorAll('.action-dropdown-menu, .macos-action-popup').forEach(m => {
+            m.classList.remove('show');
+            m.style.display = 'none';
+        });
+        document.querySelectorAll('.btn-row-action-dots').forEach(b => {
+            b.classList.remove('active');
+        });
+
+        if (isCurrentlyOpen) {
+            return;
+        }
+
+        // Reparent to document.body to prevent any transform ancestor or table overflow:hidden from clipping
+        if (menu.parentElement !== document.body) {
+            document.body.appendChild(menu);
+        }
+
+        isOpeningDropdown = true;
+        setTimeout(() => { isOpeningDropdown = false; }, 150);
+
+        button.classList.add('active');
+        menu.style.position = 'fixed';
+        menu.style.zIndex = '99999999';
+        menu.style.display = 'block';
+        menu.style.visibility = 'visible';
+        menu.style.opacity = '1';
+        menu.classList.add('show');
+
+        const rect = button.getBoundingClientRect();
+        const menuWidth = menu.offsetWidth || 185;
+        const menuHeight = menu.offsetHeight || 135;
+        const windowWidth = window.innerWidth;
+        const windowHeight = window.innerHeight;
+
+        const spaceBelow = windowHeight - rect.bottom;
+        const spaceAbove = rect.top;
+
+        let top;
+        if (spaceBelow < menuHeight && spaceAbove > spaceBelow) {
+            top = Math.round(rect.top - menuHeight - 4);
+        } else {
+            top = Math.round(rect.bottom + 4);
+        }
+
+        let left = Math.round(rect.right - menuWidth);
+        if (left < 10) left = 10;
+        if (left + menuWidth > windowWidth - 10) {
+            left = windowWidth - menuWidth - 10;
+        }
+
+        menu.style.top = `${top}px`;
+        menu.style.left = `${left}px`;
+    };
+
+    // Close on outside click
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.action-dropdown-menu') && !e.target.closest('.macos-action-popup') && !e.target.closest('.btn-row-action-dots')) {
+            document.querySelectorAll('.action-dropdown-menu, .macos-action-popup').forEach(m => {
+                m.classList.remove('show');
+                m.style.display = 'none';
+            });
+            document.querySelectorAll('.btn-row-action-dots').forEach(b => {
+                b.classList.remove('active');
+            });
+        }
+    });
+
+    // Close on window scroll
+    window.addEventListener('scroll', function() {
+        if (isOpeningDropdown) return;
+        document.querySelectorAll('.action-dropdown-menu.show, .macos-action-popup.show').forEach(m => {
+            m.classList.remove('show');
+            m.style.display = 'none';
+        });
+        document.querySelectorAll('.btn-row-action-dots.active').forEach(b => {
+            b.classList.remove('active');
+        });
+    }, true);
+
+    // Close on window resize
+    window.addEventListener('resize', function() {
+        document.querySelectorAll('.action-dropdown-menu.show, .macos-action-popup.show').forEach(m => {
+            m.classList.remove('show');
+            m.style.display = 'none';
+        });
+        document.querySelectorAll('.btn-row-action-dots.active').forEach(b => {
+            b.classList.remove('active');
+        });
+    });
 
 })();

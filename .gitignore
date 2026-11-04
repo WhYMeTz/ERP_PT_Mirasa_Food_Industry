@@ -6,6 +6,8 @@
 .phpactor.json
 .phpunit.result.cache
 /.codex
+/AI_SECURITY
+/.agents
 /.cursor/
 /.idea
 /.nova
@@ -26,19 +28,13 @@ Homestead.json
 Homestead.yaml
 Thumbs.db
 CHANGELOG.md
-PERMISSION_STANDARDIZATION.md
-ROW_LEVEL_SECURITY.md
-SECURITY_IMPROVEMENTS.md
-SECURITY_SUMMARY.md
-PO_FIT_SCREEN_CHANGELOG.md
-PO_INPUT_UX_CHANGELOG.md
-PO_FIT_SCREEN_DEV_NOTES.md
-PO_ZAHIR_LAYOUT_CHANGELOG.md
+
 
 
 .codegraph/
 
 AI_Agent/
+
 
 # Migration yang hanya digunakan di environment lokal (tidak di-push ke GitHub)
 database/migrations/2026_09_25_000002_create_mst_bom_tables.php

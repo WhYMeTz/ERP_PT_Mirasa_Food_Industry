@@ -2,6 +2,7 @@
 
 namespace App\Services\Gudang;
 
+use App\Models\Gudang\DatPoDtl;
 use App\Models\Gudang\DatPoHdr;
 use App\Models\Gudang\DatQcInboundDtl;
 use App\Models\Gudang\DatQcInboundHdr;
@@ -345,22 +346,22 @@ class QcInboundService
         // 3. KELOMPOKKAN ITEM BERDASARKAN KOMODITAS & GRADE
         // Aturan: Jika komoditas sama dan gradenya sama (misal Uji 1 Grade A & Uji 2 Grade A),
         // otomatis gabungkan menjadi 1 BARIS AKUMULASI TRUK (gross, reject, netto dijumlahkan).
-        // HANYA pecah menjadi 2 baris terpisah jika pengujian menghasilkan GRADE YANG BERBEDA.
+        // HANYA pecah menjadi 2 baris terpisah jika pengujian menghasilkan GRADE YANG BERBEDA (misal Grade A & Grade B),
+        // dengan memberikan akhiran batch (-A, -B) dan label jelas agar gudang memisahkan stoknya.
         $items = [];
         $groupedByBarang = collect($rawItems)->groupBy('barang_id');
 
         foreach ($groupedByBarang as $barangId => $subList) {
-            $distinctGrades = $subList->pluck('grade_cd')->unique()->values();
+            $distinctGrades = $subList->pluck('grade_cd')->filter()->unique()->values();
 
             if ($distinctGrades->count() <= 1) {
-                // Semua pengujian untuk komoditas ini memiliki grade yang sama -> Gabungkan jadi 1 baris bersih
+                // Semua pengujian komoditas ini memiliki grade yang sama -> Gabungkan jadi 1 baris bersih
                 $first = $subList->first();
                 $totalGross = (float) $subList->sum('gross_qty');
                 $totalReject = (float) $subList->sum('reject_qty');
                 $totalRefraksiQty = (float) $subList->sum('refraksi_qty');
                 $totalNetto = (float) $subList->sum('netto_qty');
 
-                // Rata-rata tertimbang kadar air & persentase refraksi
                 $avgKadarAir = $totalGross > 0
                     ? round($subList->sum(fn($it) => $it['kadar_air'] * $it['gross_qty']) / $totalGross, 1)
                     : (float) $first['kadar_air'];
@@ -368,13 +369,15 @@ class QcInboundService
                     ? round(($totalRefraksiQty / $totalGross) * 100, 1)
                     : (float) $first['refraksi_persen'];
 
+                $gradeCd = $distinctGrades->first() ?: 'A';
+
                 $items[] = [
                     'qcdtl_id'                   => $first['qcdtl_id'],
                     'qcdtl_ids'                  => $subList->pluck('qcdtl_id')->filter()->values()->all(),
                     'podtl_id'                   => $first['podtl_id'],
                     'barang_id'                  => $first['barang_id'],
                     'barang_cd'                  => $first['barang_cd'],
-                    'barang_nm'                  => $first['barang_nm'], // Nama komoditas bersih tanpa embel-embel
+                    'barang_nm'                  => $first['barang_nm'],
                     'satuan_nm'                  => $first['satuan_nm'],
                     'batch_prefix'               => $first['batch_prefix'],
                     'batch_no'                   => $first['batch_no'],
@@ -384,11 +387,12 @@ class QcInboundService
                     'refraksi_qty'               => $totalRefraksiQty,
                     'reject_qty'                 => $totalReject,
                     'netto_qty'                  => $totalNetto,
-                    'grade_cd'                   => $first['grade_cd'],
+                    'grade_cd'                   => $gradeCd,
+                    'grade_label'                => 'Grade ' . $gradeCd,
                     'kondisi_fisik'              => $first['kondisi_fisik'],
                     'keputusan_qc'               => $first['keputusan_qc'],
                     'status_raw_material'        => $first['status_raw_material'],
-                    'catatan'                    => 'Akumulasi Uji Kedatangan & Produksi (Truk Lengkap)',
+                    'catatan'                    => 'Akumulasi Uji QC (Truk Lengkap)',
                     'std_harga'                  => $first['std_harga'],
                     'diskon_persen'              => $first['diskon_persen'],
                     'ppn_tipe'                   => $first['ppn_tipe'],
@@ -396,7 +400,8 @@ class QcInboundService
                     'sisa_po'                    => $first['sisa_po'],
                 ];
             } else {
-                // Terdapat grade berbeda (misal Uji 1 Grade A, Uji 2 Grade B) -> Pecah sesuai kelompok grade
+                // Terdapat grade berbeda (misal Uji 1 Grade A & Uji 2 Grade B) -> Pecah sesuai kelompok grade
+                // Beri akhiran pembeda batch (-A dan -B) dan label jelas agar gudang memisahkan stoknya
                 $groupedByGrade = $subList->groupBy('grade_cd');
                 foreach ($groupedByGrade as $gradeCd => $gradeSubList) {
                     $firstG = $gradeSubList->first();
@@ -420,7 +425,7 @@ class QcInboundService
                         'podtl_id'                   => $firstG['podtl_id'],
                         'barang_id'                  => $firstG['barang_id'],
                         'barang_cd'                  => $firstG['barang_cd'],
-                        'barang_nm'                  => $firstG['barang_nm'] . ' (Grade ' . $gradeCd . ' - ' . $stagesText . ')',
+                        'barang_nm'                  => $firstG['barang_nm'] . ' [Grade ' . $gradeCd . ']',
                         'satuan_nm'                  => $firstG['satuan_nm'],
                         'batch_prefix'               => $firstG['batch_prefix'],
                         'batch_no'                   => $firstG['batch_no'],
@@ -431,6 +436,7 @@ class QcInboundService
                         'reject_qty'                 => $gReject,
                         'netto_qty'                  => $gNetto,
                         'grade_cd'                   => $gradeCd,
+                        'grade_label'                => 'Grade ' . $gradeCd,
                         'kondisi_fisik'              => $firstG['kondisi_fisik'],
                         'keputusan_qc'               => $firstG['keputusan_qc'],
                         'status_raw_material'        => $firstG['status_raw_material'],
@@ -637,10 +643,32 @@ class QcInboundService
                     }
                 }
 
+                $itemBarangId = (int) $row['barang_id'];
+                $itemPodtlId = !empty($row['podtl_id']) ? (int) $row['podtl_id'] : null;
+
+                // Pastikan podtl_id valid dan sesuai dengan barang_id di dalam PO bersangkutan
+                if (!empty($header->po_id)) {
+                    $matchingPoDtl = null;
+                    if ($itemPodtlId) {
+                        $matchingPoDtl = DatPoDtl::where('po_id', $header->po_id)
+                            ->where('podtl_id', $itemPodtlId)
+                            ->where('barang_id', $itemBarangId)
+                            ->first();
+                    }
+                    if (!$matchingPoDtl) {
+                        $matchingPoDtl = DatPoDtl::where('po_id', $header->po_id)
+                            ->where('barang_id', $itemBarangId)
+                            ->first();
+                        if ($matchingPoDtl) {
+                            $itemPodtlId = $matchingPoDtl->podtl_id;
+                        }
+                    }
+                }
+
                 DatQcInboundDtl::create([
                     'qc_id'                      => $header->qc_id,
-                    'podtl_id'                   => !empty($row['podtl_id']) ? (int)$row['podtl_id'] : null,
-                    'barang_id'                  => (int) $row['barang_id'],
+                    'podtl_id'                   => $itemPodtlId,
+                    'barang_id'                  => $itemBarangId,
                     'status_raw_material'        => $row['status_raw_material'] ?? 'OK',
                     'isi_kering'                 => isset($row['isi_kering']) ? (bool)$row['isi_kering'] : true,
                     'isi_basah'                  => !empty($row['isi_basah']),
@@ -1337,8 +1365,27 @@ class QcInboundService
                     $diffNetto = round($nettoLolos - $oldNetto, 4);
                     $deltaQtyPerBarang[$barangId] = ($deltaQtyPerBarang[$barangId] ?? 0) + $diffNetto;
 
+                    $itemPodtlId = !empty($row['podtl_id']) ? (int)$row['podtl_id'] : ($existingDtl?->podtl_id);
+                    if (!empty($qc->po_id)) {
+                        $matchingPoDtl = null;
+                        if ($itemPodtlId) {
+                            $matchingPoDtl = DatPoDtl::where('po_id', $qc->po_id)
+                                ->where('podtl_id', $itemPodtlId)
+                                ->where('barang_id', $barangId)
+                                ->first();
+                        }
+                        if (!$matchingPoDtl) {
+                            $matchingPoDtl = DatPoDtl::where('po_id', $qc->po_id)
+                                ->where('barang_id', $barangId)
+                                ->first();
+                            if ($matchingPoDtl) {
+                                $itemPodtlId = $matchingPoDtl->podtl_id;
+                            }
+                        }
+                    }
+
                     $payloadDtl = [
-                        'podtl_id'                   => !empty($row['podtl_id']) ? (int)$row['podtl_id'] : ($existingDtl?->podtl_id),
+                        'podtl_id'                   => $itemPodtlId,
                         'barang_id'                  => $barangId,
                         'status_raw_material'        => $row['status_raw_material'] ?? 'OK',
                         'isi_kering'                 => isset($row['isi_kering']) ? (bool)$row['isi_kering'] : true,

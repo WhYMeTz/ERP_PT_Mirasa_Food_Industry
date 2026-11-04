@@ -3,13 +3,13 @@
 @section('title', 'Form Uji QC Bahan Masuk (HACCP 7 Komoditas) - PT Mirasa')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/gudang/qc/mobile/qc-form.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/gudang/qc/mobile/qc-create.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/gudang/qc/singkong/singkong.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/gudang/qc/minyak/minyak.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/gudang/qc/plastik/plastik.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/gudang/qc/karton/karton.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/gudang/qc/bahan-penolong/bahan-penolong.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/gudang/qc/mobile/qc-form.css') }}?v={{ filemtime(public_path('css/gudang/qc/mobile/qc-form.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/gudang/qc/mobile/qc-create.css') }}?v={{ filemtime(public_path('css/gudang/qc/mobile/qc-create.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/gudang/qc/singkong/singkong.css') }}?v={{ filemtime(public_path('css/gudang/qc/singkong/singkong.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/gudang/qc/minyak/minyak.css') }}?v={{ filemtime(public_path('css/gudang/qc/minyak/minyak.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/gudang/qc/plastik/plastik.css') }}?v={{ filemtime(public_path('css/gudang/qc/plastik/plastik.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/gudang/qc/karton/karton.css') }}?v={{ filemtime(public_path('css/gudang/qc/karton/karton.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/gudang/qc/bahan-penolong/bahan-penolong.css') }}?v={{ filemtime(public_path('css/gudang/qc/bahan-penolong/bahan-penolong.css')) }}">
 @endpush
 
 @section('content')
@@ -768,14 +768,25 @@
                 'gudang_id'   => $p->gudang_id,
                 'komoditas'   => $getPoCommodities($p),
                 'items'       => $p->details->map(function ($d) {
+                    $pesanQty = (float) $d->pesan_qty;
+                    $terimaQty = (float) $d->terima_qty;
+                    $qcTestedQty = (float) $d->qc_tested_qty;
+                    $sisaBelumQc = max(0, $pesanQty - max($terimaQty, $qcTestedQty));
+                    $isSelesaiQc = $sisaBelumQc <= 0 || ($terimaQty >= $pesanQty);
+                    $qcStatus = $isSelesaiQc ? 'SELESAI' : ($qcTestedQty > 0 ? 'SEBAGIAN' : 'BELUM');
+
                     return [
-                        'podtl_id'  => $d->podtl_id,
-                        'barang_id' => $d->barang_id,
-                        'barang_nm' => $d->barang?->barang_nm,
-                        'satuan'    => $d->barang?->satuanDasar?->satuan_nm ?? 'KG',
-                        'pesan_qty' => (float) $d->pesan_qty,
-                        'terima_qty'=> (float) $d->terima_qty,
-                        'sisa_qty'  => max(0, (float) $d->pesan_qty - (float) $d->terima_qty),
+                        'podtl_id'       => $d->podtl_id,
+                        'barang_id'      => $d->barang_id,
+                        'barang_nm'      => $d->barang?->barang_nm,
+                        'satuan'         => $d->barang?->satuanDasar?->satuan_nm ?? 'KG',
+                        'pesan_qty'      => $pesanQty,
+                        'terima_qty'     => $terimaQty,
+                        'sisa_qty'       => max(0, $pesanQty - $terimaQty),
+                        'qc_tested_qty'  => $qcTestedQty,
+                        'sisa_belum_qc'  => $sisaBelumQc,
+                        'qc_status'      => $qcStatus,
+                        'is_selesai_qc'  => $isSelesaiQc,
                     ];
                 })->values(),
             ]
@@ -803,11 +814,11 @@
             } @else null @endif,
         };
     </script>
-    <script src="{{ asset('js/gudang/qc/singkong/singkong.js') }}"></script>
-    <script src="{{ asset('js/gudang/qc/minyak/minyak.js') }}"></script>
-    <script src="{{ asset('js/gudang/qc/plastik/plastik.js') }}"></script>
-    <script src="{{ asset('js/gudang/qc/karton/karton.js') }}"></script>
-    <script src="{{ asset('js/gudang/qc/bahan-penolong/bahan-penolong.js') }}"></script>
-    <script src="{{ asset('js/gudang/qc/mobile/qc-create.js') }}"></script>
+    <script src="{{ asset('js/gudang/qc/singkong/singkong.js') }}?v={{ filemtime(public_path('js/gudang/qc/singkong/singkong.js')) }}"></script>
+    <script src="{{ asset('js/gudang/qc/minyak/minyak.js') }}?v={{ filemtime(public_path('js/gudang/qc/minyak/minyak.js')) }}"></script>
+    <script src="{{ asset('js/gudang/qc/plastik/plastik.js') }}?v={{ filemtime(public_path('js/gudang/qc/plastik/plastik.js')) }}"></script>
+    <script src="{{ asset('js/gudang/qc/karton/karton.js') }}?v={{ filemtime(public_path('js/gudang/qc/karton/karton.js')) }}"></script>
+    <script src="{{ asset('js/gudang/qc/bahan-penolong/bahan-penolong.js') }}?v={{ filemtime(public_path('js/gudang/qc/bahan-penolong/bahan-penolong.js')) }}"></script>
+    <script src="{{ asset('js/gudang/qc/mobile/qc-create.js') }}?v={{ filemtime(public_path('js/gudang/qc/mobile/qc-create.js')) }}"></script>
 @endpush
 @endsection

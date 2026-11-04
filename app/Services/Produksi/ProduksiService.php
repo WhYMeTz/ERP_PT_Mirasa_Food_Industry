@@ -16,6 +16,7 @@ use Carbon\Carbon;
 use Exception;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
@@ -32,7 +33,7 @@ class ProduksiService
      */
     public function getMonthlyReport(int $year, int $month): array
     {
-        $records = DatProduksiHdr::with(['pemakaianBahan', 'gudang', 'outputs.barang'])
+        $records = DatProduksiHdr::with(['pemakaianBahan.details.barang', 'gudang', 'outputs.barang'])
             ->whereYear('produksi_tgl', $year)
             ->whereMonth('produksi_tgl', $month)
             ->where('deleted_st', false)
@@ -312,6 +313,40 @@ class ProduksiService
                 $hasBerko = ($dayTotalBerko > 0 || $dayBerkoKg > 0);
                 $hasDifferentiatedHpp = ($dayBerkoKg > 0 && $dayUtamaKg > 0 && abs($dayHppUtama - $dayHppBerko) > 0.01);
 
+                // Rincian Label Bumbu / Seasoning Harian (Transparansi Audit HPP)
+                $dayBumbuNames = [];
+                foreach ($dayRecords as $rec) {
+                    if ($rec->pemakaianBahan && $rec->pemakaianBahan->details) {
+                        foreach ($rec->pemakaianBahan->details as $dtl) {
+                            $bNm = $dtl->barang?->barang_nm ?? '';
+                            $bCd = $dtl->barang?->barang_cd ?? '';
+                            if (str_contains(strtoupper($bNm), 'BUMBU') || str_contains(strtoupper($bNm), 'GARAM') || str_contains(strtoupper($bNm), 'SEASONING') || str_contains(strtoupper($bNm), 'PERENYAH') || str_starts_with(strtoupper($bCd), 'BP-BMB')) {
+                                $clean = trim(preg_replace('/^(BUMBU\s+(TABUR\s+)?|BUBUK\s+)/i', '', $bNm));
+                                if (!empty($clean)) {
+                                    $dayBumbuNames[] = ucwords(strtolower($clean));
+                                }
+                            }
+                        }
+                    }
+                    if (empty($dayBumbuNames) && $rec->outputs) {
+                        foreach ($rec->outputs as $out) {
+                            $oNm = strtoupper($out->barang?->barang_nm ?? '');
+                            $oCd = strtoupper($out->barang?->barang_cd ?? '');
+                            if (str_contains($oNm, 'BARCO') || str_contains($oCd, 'ASB')) {
+                                $dayBumbuNames[] = 'Barco';
+                            } elseif (str_contains($oNm, 'SAWIT') || str_contains($oCd, 'ASW')) {
+                                $dayBumbuNames[] = 'Sawit';
+                            } elseif (str_contains($oNm, 'BALQI') || str_contains($oNm, 'BALADO') || str_contains($oCd, 'BLQ') || str_contains($oCd, 'BBB')) {
+                                $dayBumbuNames[] = 'Balado';
+                            } elseif (str_contains($oNm, 'CHILLI') || str_contains($oCd, 'KCL')) {
+                                $dayBumbuNames[] = 'Chilli';
+                            }
+                        }
+                    }
+                }
+                $dayBumbuNames = array_values(array_unique(array_filter($dayBumbuNames)));
+                $dayBumbuLabel = !empty($dayBumbuNames) ? implode(', ', $dayBumbuNames) : null;
+
                 $days[] = [
                     'day'                         => $day,
                     'date'                        => $dateObj->format('Y-m-d'),
@@ -359,6 +394,7 @@ class ProduksiService
                     'tk_total_nilai'              => $dayTkTotalNilai,
                     'bumbu_qty'                   => $dayBumbuQty,
                     'bumbu_nilai'                 => $dayBumbuNilai,
+                    'bumbu_label'                 => $dayBumbuLabel,
                     'karton_baru_qty'             => $dayKartonBaruQty,
                     'karton_baru_nilai'           => $dayKartonBaru,
                     'karton_bekas_qty'            => $dayKartonBekasQty,
@@ -445,6 +481,7 @@ class ProduksiService
                     'tk_total_nilai'              => 0,
                     'bumbu_qty'                   => 0,
                     'bumbu_nilai'                 => 0,
+                    'bumbu_label'                 => null,
                     'karton_baru_qty'             => 0,
                     'karton_baru_nilai'           => 0,
                     'karton_bekas_qty'            => 0,
@@ -1603,6 +1640,22 @@ class ProduksiService
             $query->where('kategori_output', $filters['kategori']);
         }
 
+        if (!empty($filters['grade_cd'])) {
+            $targetGrade = strtoupper($filters['grade_cd']);
+            if ($targetGrade === 'KW2') {
+                $query->where(function ($q) {
+                    $q->whereHas('barang', fn($b) => $b->where('grade_cd', 'KW2'))
+                      ->orWhere('kategori_output', 'KW2')
+                      ->orWhereHas('produksi', fn($p) => $p->where('lini_produksi', 'ILIKE', '%SORTIR%')->orWhere('lini_produksi', 'ILIKE', '%REWORK%'));
+                });
+            } elseif ($targetGrade === 'KW1') {
+                $query->where(function ($q) {
+                    $q->whereHas('barang', fn($b) => $b->where('grade_cd', 'KW1')->orWhereNull('grade_cd'))
+                      ->whereDoesntHave('barang', fn($b) => $b->where('grade_cd', 'KW2'));
+                })->whereDoesntHave('produksi', fn($p) => $p->where('lini_produksi', 'ILIKE', '%SORTIR%')->orWhere('lini_produksi', 'ILIKE', '%REWORK%'));
+            }
+        }
+
         if (!empty($filters['tgl_dari'])) {
             $query->whereHas('produksi', function ($p) use ($filters) {
                 $p->whereDate('produksi_tgl', '>=', $filters['tgl_dari']);
@@ -1737,6 +1790,22 @@ class ProduksiService
 
         if (!empty($filters['kategori'])) {
             $query->where('kategori_output', $filters['kategori']);
+        }
+
+        if (!empty($filters['grade_cd'])) {
+            $targetGrade = strtoupper($filters['grade_cd']);
+            if ($targetGrade === 'KW2') {
+                $query->where(function ($q) {
+                    $q->whereHas('barang', fn($b) => $b->where('grade_cd', 'KW2'))
+                      ->orWhere('kategori_output', 'KW2')
+                      ->orWhereHas('produksi', fn($p) => $p->where('lini_produksi', 'ILIKE', '%SORTIR%')->orWhere('lini_produksi', 'ILIKE', '%REWORK%'));
+                });
+            } elseif ($targetGrade === 'KW1') {
+                $query->where(function ($q) {
+                    $q->whereHas('barang', fn($b) => $b->where('grade_cd', 'KW1')->orWhereNull('grade_cd'))
+                      ->whereDoesntHave('barang', fn($b) => $b->where('grade_cd', 'KW2'));
+                })->whereDoesntHave('produksi', fn($p) => $p->where('lini_produksi', 'ILIKE', '%SORTIR%')->orWhere('lini_produksi', 'ILIKE', '%REWORK%'));
+            }
         }
 
         if (!empty($filters['tgl_dari'])) {
@@ -2451,6 +2520,221 @@ class ProduksiService
             }
 
             return $log;
+        });
+    }
+
+    /**
+     * Menyimpan transaksi Sortir Ulang / Rework KW 2 (Poin 23 & Poin 24).
+     * Memotong stok batch asal, menambah stok [WIP-KW2], limbah lengket, remahan,
+     * serta mencatat pemulihan kemasan dus sirkular.
+     */
+    public function storeRework(array $data): DatProduksiHdr
+    {
+        return DB::transaction(function () use ($data) {
+            $tgl = $data['produksi_tgl'] ?? date('Y-m-d');
+            $gudangId = (int) $data['gudang_id'];
+            $barangId = (int) $data['barang_id'];
+            $batchNo = trim($data['batch_no']);
+            $qtyRework = (float) $data['qty_rework'];
+            $qtyKw2 = (float) $data['qty_kw2'];
+            $qtyLengket = (float) ($data['qty_lengket'] ?? 0);
+            $qtyRemahan = (float) ($data['qty_remahan'] ?? 0);
+            $dusDibongkar = (int) ($data['dus_dibongkar'] ?? 0);
+            $dusPuteran = (int) ($data['dus_puteran'] ?? 0);
+            $dusRusak = (int) ($data['dus_rusak'] ?? 0);
+            $alasanQc = trim($data['alasan_qc']);
+            $catatan = trim($data['catatan_txt'] ?? '');
+
+            // 1. Validasi Barang Asal
+            $sourceBarang = MstBarang::findOrFail($barangId);
+
+            // 2. Cek Stok Batch Asal
+            $sourceBatch = DatStokBatch::where('gudang_id', $gudangId)
+                ->where('barang_id', $barangId)
+                ->where('batch_no', $batchNo)
+                ->first();
+
+            if (!$sourceBatch || (float) $sourceBatch->sisa_qty < $qtyRework) {
+                $tersedia = $sourceBatch ? (float) $sourceBatch->sisa_qty : 0;
+                throw new Exception("Sisa stok batch {$batchNo} untuk {$sourceBarang->barang_nm} tidak mencukupi (Tersedia: {$tersedia}, Diminta: {$qtyRework}).");
+            }
+
+            $hppSatuan = (float) $sourceBatch->harga_satuan;
+
+            // 3. Generate Nomor Dokumen Rework & Nomor Batch Baru Output KW 2
+            $docNo = $this->codeGenerator->generateProduksiNo($tgl);
+            $outputBatchNo = 'RWK-' . Carbon::parse($tgl)->format('ymd') . '-' . rand(100, 999);
+            $expiredDate = Carbon::parse($tgl)->addMonths(6)->toDateString();
+
+            // 4. Potong Stok Barang Asal
+            $this->stokService->deductStock(
+                $gudangId,
+                $barangId,
+                $batchNo,
+                $qtyRework,
+                $docNo,
+                "Rework / Sortir Ulang Batch {$batchNo}: {$alasanQc}"
+            );
+
+            // 5. Tambah Stok Hasil Sortir KW 2 (Item ID: 85 - WIP-KW2)
+            $barangKw2 = MstBarang::where('barang_cd', 'WIP-KW2')->first() ?? MstBarang::find(85);
+            if (!$barangKw2) {
+                throw new Exception("Master Barang KS CURAH SORTIR (KW 2) tidak ditemukan.");
+            }
+
+            $this->stokService->addStock(
+                $gudangId,
+                $barangKw2->barang_id,
+                $outputBatchNo,
+                $qtyKw2,
+                $expiredDate,
+                $docNo,
+                "Hasil Sortir KW 2 dari batch {$batchNo} ({$sourceBarang->barang_nm})",
+                $hppSatuan,
+                'KW2'
+            );
+
+            // 6. Tambah Stok Afkir Lengket jika ada (Item ID: 76 - WIP-LGT)
+            if ($qtyLengket > 0) {
+                $barangLgt = MstBarang::where('barang_cd', 'WIP-LGT')->first() ?? MstBarang::find(76);
+                if ($barangLgt) {
+                    $this->stokService->addStock(
+                        $gudangId,
+                        $barangLgt->barang_id,
+                        $outputBatchNo,
+                        $qtyLengket,
+                        $expiredDate,
+                        $docNo,
+                        "Afkir Lengket dari Sortir Ulang batch {$batchNo}",
+                        0,
+                        'KW2'
+                    );
+                }
+            }
+
+            // 7. Tambah Stok Afkir Remahan jika ada (Item ID: 81 - WIP-RMH)
+            if ($qtyRemahan > 0) {
+                $barangRmh = MstBarang::where('barang_cd', 'WIP-RMH')->first() ?? MstBarang::find(81);
+                if ($barangRmh) {
+                    $this->stokService->addStock(
+                        $gudangId,
+                        $barangRmh->barang_id,
+                        $outputBatchNo,
+                        $qtyRemahan,
+                        $expiredDate,
+                        $docNo,
+                        "Afkir Remahan dari Sortir Ulang batch {$batchNo}",
+                        0,
+                        'KW2'
+                    );
+                }
+            }
+
+            // 8. Kemasan Sirkular: Dus Puteran (Item ID: 82) & Afkir Dus (Item ID: 79)
+            if ($dusPuteran > 0) {
+                $barangPuteran = MstBarang::where('barang_cd', 'KIF00G-PUT')->first() ?? MstBarang::find(82);
+                if ($barangPuteran) {
+                    $this->stokService->addStock(
+                        $gudangId,
+                        $barangPuteran->barang_id,
+                        'PUT-' . Carbon::parse($tgl)->format('ymd'),
+                        $dusPuteran,
+                        null,
+                        $docNo,
+                        "Pengembalian Dus Puteran Layak Pakai dari Rework batch {$batchNo}"
+                    );
+                }
+            }
+
+            if ($dusRusak > 0) {
+                $barangDusRusak = MstBarang::where('barang_cd', 'RSK-KTN01')->first() ?? MstBarang::find(79);
+                if ($barangDusRusak) {
+                    $this->stokService->addStock(
+                        $gudangId,
+                        $barangDusRusak->barang_id,
+                        'REJ-' . Carbon::parse($tgl)->format('ymd'),
+                        $dusRusak,
+                        null,
+                        $docNo,
+                        "Afkir Dus Rusak dari Rework batch {$batchNo}"
+                    );
+                }
+            }
+
+            // 9. Simpan Header Produksi Rework
+            $totalNilai = round($qtyKw2 * $hppSatuan, 2);
+            $userId = Auth::user()->user_id ?? 'SYSTEM';
+            $headerData = [
+                'produksi_no'           => $docNo,
+                'produksi_tgl'          => $tgl,
+                'hari_nm'               => Carbon::parse($tgl)->isoFormat('dddd'),
+                'gudang_id'             => $gudangId,
+                'lini_produksi'         => 'SORTIR & REWORK KW 2',
+                'status_cd'             => 'POSTED',
+                'batch_wip_no'          => $outputBatchNo,
+                'total_wip_qty'         => $qtyKw2,
+                'waste_lengket_qty'     => $qtyLengket,
+                'waste_total_qty'       => $qtyLengket + $qtyRemahan,
+                'hpp_per_kg'            => $hppSatuan,
+                'total_biaya_produksi'  => $totalNilai,
+                'catatan_txt'           => "Sortir Ulang dari {$sourceBarang->barang_nm} (Batch {$batchNo}). Alasan QC: {$alasanQc}." . ($catatan ? " Catatan: {$catatan}" : ""),
+                'created_by'            => $userId,
+                'active_st'             => true,
+                'deleted_st'            => false,
+                'version_no'            => 1,
+            ];
+            $produksiHdr = DatProduksiHdr::create($headerData);
+
+            // 10. Simpan Detail Produksi: KW 2
+            DatProduksiDtl::create([
+                'produksi_id'     => $produksiHdr->produksi_id,
+                'barang_id'       => $barangKw2->barang_id,
+                'jenis_cd'        => 'WIP',
+                'kategori_output' => 'KW2',
+                'qty_hasil'       => $qtyKw2,
+                'satuan_cd'       => 'KG',
+                'qty_kg'          => $qtyKw2,
+                'batch_no'        => $outputBatchNo,
+                'hpp_satuan'      => $hppSatuan,
+                'total_nilai'     => $totalNilai,
+                'keterangan_txt'  => "Hasil Sortir KW 2 dari batch {$batchNo}",
+            ]);
+
+            // Simpan Detail Produksi: Lengket (jika ada)
+            if ($qtyLengket > 0 && isset($barangLgt)) {
+                DatProduksiDtl::create([
+                    'produksi_id'     => $produksiHdr->produksi_id,
+                    'barang_id'       => $barangLgt->barang_id,
+                    'jenis_cd'        => 'WIP',
+                    'kategori_output' => 'LENGKET',
+                    'qty_hasil'       => $qtyLengket,
+                    'satuan_cd'       => 'KG',
+                    'qty_kg'          => $qtyLengket,
+                    'batch_no'        => $outputBatchNo,
+                    'hpp_satuan'      => 0,
+                    'total_nilai'     => 0,
+                    'keterangan_txt'  => "Afkir Lengket dari Sortir Ulang batch {$batchNo}",
+                ]);
+            }
+
+            // Simpan Detail Produksi: Remahan (jika ada)
+            if ($qtyRemahan > 0 && isset($barangRmh)) {
+                DatProduksiDtl::create([
+                    'produksi_id'     => $produksiHdr->produksi_id,
+                    'barang_id'       => $barangRmh->barang_id,
+                    'jenis_cd'        => 'WIP',
+                    'kategori_output' => 'REMAHAN',
+                    'qty_hasil'       => $qtyRemahan,
+                    'satuan_cd'       => 'KG',
+                    'qty_kg'          => $qtyRemahan,
+                    'batch_no'        => $outputBatchNo,
+                    'hpp_satuan'      => 0,
+                    'total_nilai'     => 0,
+                    'keterangan_txt'  => "Afkir Remahan dari Sortir Ulang batch {$batchNo}",
+                ]);
+            }
+
+            return $produksiHdr;
         });
     }
 

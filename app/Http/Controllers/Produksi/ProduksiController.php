@@ -11,6 +11,7 @@ use App\Imports\Produksi\HasilProduksiImport;
 use App\Imports\Produksi\RekapHppImport;
 use App\Models\Gudang\DatPakaiHdr;
 use App\Models\Gudang\DatStokBatch;
+use App\Models\Produksi\DatKursHarian;
 use App\Models\Produksi\DatProduksiHdr;
 use App\Models\MasterData\MstBarang;
 use App\Models\MasterData\MstGudang;
@@ -61,6 +62,7 @@ class ProduksiController extends Controller
             'barang_nm'  => $request->input('barang_nm'),
             'batch_no'   => $request->input('batch_no'),
             'jenis_cd'   => $request->input('jenis_cd'),
+            'grade_cd'   => $request->input('grade_cd'),
             'kategori'   => $request->input('kategori'),
             'tgl_dari'   => $request->input('tgl_dari'),
             'tgl_sampai' => $request->input('tgl_sampai'),
@@ -263,20 +265,32 @@ class ProduksiController extends Controller
     public function getKursJisdor(Request $request): JsonResponse
     {
         try {
-            $tgl = $request->input('date', date('Y-m-d'));
-            $rate = $this->tarifService->getJisdorRate($tgl);
+            $tgl = $request->input('date') ?: $request->input('tgl', date('Y-m-d'));
+            $rate = $this->tarifService->getJisdorRate($tgl, true);
+
+            $record = DatKursHarian::active()
+                ->where('tanggal', '<=', $tgl)
+                ->orderByDesc('tanggal')
+                ->first();
+            $effectiveDate = $record ? Carbon::parse($record->tanggal)->format('d/m/Y') : Carbon::parse($tgl)->format('d/m/Y');
 
             return response()->json([
                 'status'         => 'success',
+                'success'        => true,
                 'date'           => $tgl,
+                'tanggal'        => $tgl,
+                'tanggal_acuan'  => $effectiveDate,
                 'kurs'           => $rate,
+                'rate'           => $rate,
                 'kurs_formatted' => number_format($rate, 2, ',', '.'),
             ]);
         } catch (Exception $e) {
             return response()->json([
                 'status'         => 'error',
-                'kurs'           => 15850.00,
-                'kurs_formatted' => '15.850,00',
+                'success'        => false,
+                'kurs'           => 18161.00,
+                'rate'           => 18161.00,
+                'kurs_formatted' => '18.161,00',
                 'message'        => $e->getMessage(),
             ], 200);
         }
@@ -394,6 +408,82 @@ class ProduksiController extends Controller
                 ->with('success', $msg);
         } catch (Exception $e) {
             return back()->withInput()->with('error', 'Gagal menyimpan hasil produksi: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * AJAX Endpoint: Mengambil daftar batch WIP & FG yang memiliki sisa stok untuk disortir ulang / rework (Poin 23 & 24).
+     */
+    public function ajaxBatchesRework(Request $request): JsonResponse
+    {
+        $gudangId = $request->input('gudang_id');
+
+        $query = DatStokBatch::with(['barang.satuanDasar', 'barang.jenisBarang', 'gudang'])
+            ->where('sisa_qty', '>', 0)
+            ->where('deleted_st', false)
+            ->whereHas('barang', function ($b) {
+                $b->whereIn('jenis_barang_id', [2, 4])
+                  ->orWhere('barang_cd', 'LIKE', 'WIP%')
+                  ->orWhere('barang_cd', 'LIKE', 'FG%');
+            });
+
+        if (!empty($gudangId)) {
+            $query->where('gudang_id', $gudangId);
+        }
+
+        $batches = $query->orderBy('updated_at', 'desc')->get()->map(function ($stok) {
+            $isFg = ($stok->barang?->jenis_barang_id == 4 || str_starts_with($stok->barang?->barang_cd ?? '', 'FG-'));
+            return [
+                'stok_id'      => $stok->stok_id,
+                'gudang_id'    => $stok->gudang_id,
+                'gudang_nm'    => $stok->gudang?->gudang_nm ?? '-',
+                'barang_id'    => $stok->barang_id,
+                'barang_cd'    => $stok->barang?->barang_cd ?? '-',
+                'barang_nm'    => $stok->barang?->barang_nm ?? '-',
+                'batch_no'     => $stok->batch_no,
+                'sisa_qty'     => (float) $stok->sisa_qty,
+                'harga_satuan' => (float) $stok->harga_satuan,
+                'satuan_nm'    => $stok->barang?->satuanDasar?->satuan_nm ?? ($isFg ? 'DUS' : 'KG'),
+                'is_fg'        => $isFg,
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'data'    => $batches,
+        ]);
+    }
+
+    /**
+     * Simpan Formulir Sortir Ulang / Rework KW 2 (Poin 23 & Poin 24).
+     */
+    public function storeRework(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'produksi_tgl'   => 'required|date',
+            'gudang_id'      => 'required|exists:mst_gudang,gudang_id',
+            'barang_id'      => 'required|exists:mst_barang,barang_id',
+            'batch_no'       => 'required|string|max:100',
+            'qty_rework'     => 'required|numeric|min:0.01',
+            'qty_kw2'        => 'required|numeric|min:0.01',
+            'qty_lengket'    => 'nullable|numeric|min:0',
+            'qty_remahan'    => 'nullable|numeric|min:0',
+            'dus_dibongkar'  => 'nullable|integer|min:0',
+            'dus_puteran'    => 'nullable|integer|min:0',
+            'dus_rusak'      => 'nullable|integer|min:0',
+            'alasan_qc'      => 'required|string|max:255',
+            'catatan_txt'    => 'nullable|string|max:1000',
+        ]);
+
+        try {
+            $produksi = $this->produksiService->storeRework($validated);
+
+            return redirect()->route('produksi.index', ['grade_cd' => 'KW2'])
+                ->with('success', "✅ Sortir Ulang / Rework KW 2 ({$produksi->produksi_no}) berhasil dicatat! Stok KS CURAH SORTIR (KW 2) telah ditambahkan ke gudang.");
+        } catch (Exception $e) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', "Gagal memproses Sortir Ulang / Rework: " . $e->getMessage());
         }
     }
 
@@ -593,6 +683,7 @@ class ProduksiController extends Controller
             'barang_nm'  => $request->input('barang_nm'),
             'batch_no'   => $request->input('batch_no'),
             'jenis_cd'   => $request->input('jenis_cd'),
+            'grade_cd'   => $request->input('grade_cd'),
             'kategori'   => $request->input('kategori'),
             'tgl_dari'   => $request->input('tgl_dari'),
             'tgl_sampai' => $request->input('tgl_sampai'),

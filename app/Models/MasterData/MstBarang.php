@@ -18,6 +18,7 @@ class MstBarang extends Model
         'barang_cd',
         'barang_nm',
         'jenis_barang_id',
+        'grade_cd',
         'satuan_dasar_id',
         'satuan_besar_id',
         'konversi_qty',
@@ -146,6 +147,33 @@ class MstBarang extends Model
         return $query->whereHas('jenisBarang', function ($q) {
             $q->whereIn('jenis_barang_cd', ['FG', 'WIP']);
         });
+    }
+
+    /**
+     * Scope & Helper Grade Kualitas Produk (Poin 24):
+     * KW1 = Kualitas Utama (Ekspor, Indofood, Grade A)
+     * KW2 = Kualitas Kedua (Sortir, Rework, Curah Lokal, Grade B)
+     */
+    public function scopeKw1($query)
+    {
+        return $query->where(function ($q) {
+            $q->where('grade_cd', 'KW1')->orWhereNull('grade_cd');
+        });
+    }
+
+    public function scopeKw2($query)
+    {
+        return $query->where('grade_cd', 'KW2');
+    }
+
+    public function isKw2(): bool
+    {
+        return strtoupper($this->grade_cd ?? '') === 'KW2';
+    }
+
+    public function isKw1(): bool
+    {
+        return !$this->isKw2();
     }
 
     /**

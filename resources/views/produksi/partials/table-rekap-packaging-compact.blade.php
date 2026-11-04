@@ -92,9 +92,10 @@
                 @foreach ($report['days'] as $d)
                     @php
                         // Filter Kebersihan Data:
-                        // Hari-hari sebelum tanggal pengemasan terakhir yang kosong dihilangkan agar tampilan clean.
-                        // Hari-hari berikutnya yang belum beroperasi tetap ditampilkan sebagai placeholder kalender.
-                        if (!$d['has_data'] && $lastDataDate && $d['date'] < $lastDataDate) {
+                        // Setiap data kosong yang tidak ada operasional pengemasan dan tanggalnya sudah terlewat (<= hari ini)
+                        // atau sebelum tanggal pengemasan terakhir dihilangkan agar tabel bersih dan rapi.
+                        $isPassedDate = $d['date'] <= date('Y-m-d');
+                        if (!$d['has_data'] && ($isPassedDate || ($lastDataDate && $d['date'] < $lastDataDate))) {
                             continue;
                         }
                     @endphp

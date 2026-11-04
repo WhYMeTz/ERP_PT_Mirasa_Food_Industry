@@ -4,6 +4,7 @@
 
 @push('styles')
     <link rel="stylesheet" href="{{ asset('css/produksi/produksi-index.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/produksi/modal-rework-kw2.css') }}">
 @endpush
 
 @section('content')
@@ -50,6 +51,17 @@
         </a>
 
         @if(Auth::user()->canCreateProduksi())
+            <button type="button" 
+                    onclick="openModalReworkKw2()" 
+                    class="btn btn-secondary" 
+                    style="background: #ffffff; border: 1.5px solid #d97706; color: #b45309; font-size: 0.85rem; font-weight: 700; padding: 0.55rem 0.95rem; box-shadow: 0 1px 2px rgba(0,0,0,0.03); display: inline-flex; align-items: center; gap: 0.35rem; transition: all 0.15s ease-in-out;" 
+                    onmouseover="this.style.background='#fffbeb'" 
+                    onmouseout="this.style.background='#ffffff'" 
+                    title="Sortir Ulang Batch IFM / Bongkar Ekspor Reject ke KW 2 (Poin 23 & 24)">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                <span>Sortir Ulang / Rework KW 2</span>
+            </button>
+
             <a href="{{ route('produksi.create') }}" 
                class="btn btn-primary" 
                style="background: #059669; font-size: 0.85rem; font-weight: 700; padding: 0.55rem 0.95rem; display: inline-flex; align-items: center; gap: 0.35rem;">
@@ -75,15 +87,23 @@
     
     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 0.75rem;">
         <div class="filter-pills-bar">
-            <a href="{{ route('produksi.index', array_merge(request()->except('jenis_cd', 'page'))) }}" 
-               class="filter-pill-link {{ empty(request('jenis_cd')) ? 'active' : '' }}">
+            <a href="{{ route('produksi.index', array_merge(request()->except('jenis_cd', 'grade_cd', 'page'))) }}" 
+               class="filter-pill-link {{ empty(request('jenis_cd')) && empty(request('grade_cd')) ? 'active' : '' }}">
                 <span>Semua Output</span>
             </a>
-            <a href="{{ route('produksi.index', array_merge(request()->except('page'), ['jenis_cd' => 'FG'])) }}" 
+            <a href="{{ route('produksi.index', array_merge(request()->except('page', 'jenis_cd'), ['grade_cd' => 'KW1'])) }}" 
+               class="filter-pill-link {{ request('grade_cd') == 'KW1' ? 'active' : '' }}">
+                <span>⭐ Produksi Reguler (KW 1)</span>
+            </a>
+            <a href="{{ route('produksi.index', array_merge(request()->except('page', 'jenis_cd'), ['grade_cd' => 'KW2'])) }}" 
+               class="filter-pill-link {{ request('grade_cd') == 'KW2' ? 'active' : '' }}">
+                <span>🔄 Hasil Sortir &amp; Rework (KW 2)</span>
+            </a>
+            <a href="{{ route('produksi.index', array_merge(request()->except('page', 'grade_cd'), ['jenis_cd' => 'FG'])) }}" 
                class="filter-pill-link {{ request('jenis_cd') == 'FG' ? 'active' : '' }}">
                 <span>Finish Good (FG)</span>
             </a>
-            <a href="{{ route('produksi.index', array_merge(request()->except('page'), ['jenis_cd' => 'WIP'])) }}" 
+            <a href="{{ route('produksi.index', array_merge(request()->except('page', 'grade_cd'), ['jenis_cd' => 'WIP'])) }}" 
                class="filter-pill-link {{ request('jenis_cd') == 'WIP' ? 'active' : '' }}">
                 <span>Olahan Curah (WIP)</span>
             </a>
@@ -94,6 +114,9 @@
         <form method="GET" action="{{ route('produksi.index') }}">
             @if(request('jenis_cd'))
                 <input type="hidden" name="jenis_cd" value="{{ request('jenis_cd') }}">
+            @endif
+            @if(request('grade_cd'))
+                <input type="hidden" name="grade_cd" value="{{ request('grade_cd') }}">
             @endif
             <div class="filter-grid">
                 <div>
@@ -189,13 +212,23 @@
 
                         {{-- 1. DOKUMEN & TANGGAL --}}
                         <td>
-                            @if($prod)
-                                <a href="{{ route('produksi.show', $prod->produksi_id) }}" class="cell-doc-link">
-                                    {{ $prod->produksi_no }}
-                                </a>
-                            @else
-                                <span style="color: #64748b;">-</span>
-                            @endif
+                            @php
+                                $isReworkDoc = str_contains(strtoupper($prod?->lini_produksi ?? ''), 'SORTIR') || str_contains(strtoupper($prod?->lini_produksi ?? ''), 'REWORK');
+                            @endphp
+                            <div style="display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;">
+                                @if($prod)
+                                    <a href="{{ route('produksi.show', $prod->produksi_id) }}" class="cell-doc-link">
+                                        {{ $prod->produksi_no }}
+                                    </a>
+                                @else
+                                    <span style="color: #64748b;">-</span>
+                                @endif
+                                @if($isReworkDoc)
+                                    <span style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a; padding: 0.05rem 0.3rem; border-radius: 4px; font-size: 0.65rem; font-weight: 800; letter-spacing: 0.02em;">
+                                        REWORK
+                                    </span>
+                                @endif
+                            </div>
                             <div class="cell-subtext">
                                 <span>{{ $prod ? \Carbon\Carbon::parse($prod->produksi_tgl)->format('d/m/Y') : '-' }}</span>
                                 <span>&bull;</span>
@@ -219,8 +252,13 @@
 
                         {{-- 4. PRODUK / BARANG --}}
                         <td>
-                            <div class="cell-primary-title">
-                                {{ $barang?->barang_nm ?? '-' }}
+                            <div class="cell-primary-title" style="display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;">
+                                <span>{{ $barang?->barang_nm ?? '-' }}</span>
+                                @if($barang?->isKw2() || $item->kategori_output === 'KW2')
+                                    <span style="background: #fef3c7; color: #92400e; border: 1px solid #fde68a; padding: 0.1rem 0.4rem; border-radius: 4px; font-size: 0.7rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.2rem;">
+                                        🔄 KW 2 (Sortir)
+                                    </span>
+                                @endif
                             </div>
                             <div class="cell-subtext">
                                 <code style="background: #f1f5f9; padding: 0.1rem 0.35rem; border-radius: 4px; font-weight: 700; color: #0284c7; font-size: 0.725rem;">
@@ -336,8 +374,10 @@
 {{-- MODALS PARTIALS --}}
 @include('produksi.partials.modal-import-hasil')
 @include('produksi.partials.modal-delete-confirm')
+@include('produksi.partials.modal-rework-kw2')
 
 @push('scripts')
     <script src="{{ asset('js/produksi/produksi-index.js') }}"></script>
+    <script src="{{ asset('js/produksi/modal-rework-kw2.js') }}"></script>
 @endpush
 @endsection

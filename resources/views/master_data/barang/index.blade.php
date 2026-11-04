@@ -74,7 +74,12 @@
                     <tr>
                         <td>{{ $barangs->firstItem() + $index }}</td>
                         <td><strong style="color: #0284c7; font-family: monospace;">{{ $item->barang_cd }}</strong></td>
-                        <td style="font-weight: 600; color: #0f172a;">{{ $item->barang_nm }}</td>
+                        <td style="font-weight: 600; color: #0f172a;">
+                            {{ $item->barang_nm }}
+                            @if($item->isKw2())
+                                <span style="font-size: 0.685rem; font-weight: 700; color: #b45309; background: #fffbeb; border: 1px solid #fde68a; padding: 1.5px 6px; border-radius: 4px; margin-left: 5px; display: inline-block;">🔄 KW 2 (Sortir)</span>
+                            @endif
+                        </td>
                         <td>
                             <span class="badge" style="background: #f1f5f9; color: #475569; font-weight: 600;">
                                 {{ $item->jenisBarang->jenis_barang_nm ?? ($item->jenisBarang->jenis_barang_cd ?? '-') }}
@@ -121,7 +126,12 @@
                                             '{{ $item->satuan_besar_id ?? '' }}',
                                             '{{ number_format($item->konversi_qty, 4, '.', '') }}',
                                             '{{ number_format($item->batas_minimum_qty ?? 0, 4, '.', '') }}',
-                                            '{{ number_format($item->harga_beli_standar ?? 0, 2, '.', '') }}'
+                                            '{{ number_format($item->harga_beli_standar ?? 0, 2, '.', '') }}',
+                                            '{{ number_format($item->harga_jual ?? 0, 2, '.', '') }}',
+                                            '{{ number_format($item->harga_jual_idm_alfa ?? 0, 2, '.', '') }}',
+                                            '{{ number_format($item->harga_jual_alfamidi ?? 0, 2, '.', '') }}',
+                                            '{{ number_format($item->harga_jual_ifm_smg ?? 0, 2, '.', '') }}',
+                                            '{{ number_format($item->harga_jual_ifm_ckl ?? 0, 2, '.', '') }}'
                                         )">
                                         <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                                         <span>Edit Data Barang</span>

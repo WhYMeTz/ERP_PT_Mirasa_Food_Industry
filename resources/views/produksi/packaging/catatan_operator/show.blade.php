@@ -111,24 +111,37 @@
             </div>
         </div>
 
-        {{-- Card 3: Timbangan Lakban --}}
-        <div class="co-stat-card" style="border-left: 4px solid #dc2626;">
+        {{-- Card 3: Pemakaian Lakban Dus (Poin 41) --}}
+        @php
+            $lakbanQtyVal = (float) $laporan->lakban_qty;
+            $lakbanMeter = 0;
+            $lakbanRoll = 0;
+            if ($lakbanQtyVal > 0) {
+                if ($lakbanQtyVal <= 30) {
+                    $lakbanRoll = $lakbanQtyVal;
+                    $lakbanMeter = $lakbanRoll * 100;
+                } else {
+                    $lakbanMeter = round($lakbanQtyVal / 12.5, 1);
+                    $lakbanRoll = round($lakbanMeter / 100, 2);
+                }
+            } elseif ($laporan->hasil_karton_qty > 0) {
+                $lakbanMeter = round($laporan->hasil_karton_qty * 1.2, 1);
+                $lakbanRoll = round($lakbanMeter / 100, 2);
+            }
+        @endphp
+        <div class="co-stat-card" style="border-left: 4px solid #db2777;">
             <div>
-                <span class="co-stat-label">Timbangan Lakban Dus</span>
-                <div class="co-stat-val" style="color: #dc2626;">
-                    {{ number_format($laporan->lakban_qty, 1, ',', '.') }}
-                    <span style="font-size: 0.9rem; font-weight: 700; color: #b91c1c;">Gram</span>
+                <span class="co-stat-label">Pemakaian Lakban Dus</span>
+                <div class="co-stat-val" style="color: #be185d;">
+                    {{ number_format($lakbanMeter, 1, ',', '.') }}
+                    <span style="font-size: 0.9rem; font-weight: 700; color: #be185d;">Meter</span>
                 </div>
                 <div class="co-stat-sub">
-                    @if ($laporan->lakban_atas_gr > 0 || $laporan->lakban_bawah_gr > 0)
-                        Atas: <strong>{{ number_format($laporan->lakban_atas_gr, 1, ',', '.') }}g</strong> &bull; Bawah: <strong>{{ number_format($laporan->lakban_bawah_gr, 1, ',', '.') }}g</strong>
-                    @else
-                        Timbangan Presisi Lapangan
-                    @endif
+                    Estimasi: <strong>{{ number_format($lakbanRoll, 2, ',', '.') }} Roll</strong> &bull; Standar 120cm/dus
                 </div>
             </div>
-            <div class="co-stat-icon" style="background: #fef2f2; color: #dc2626; font-size: 1.2rem; display: flex; align-items: center; justify-content: center;">
-                ⚖️
+            <div class="co-stat-icon" style="background: #fdf2f8; color: #db2777; font-size: 1.2rem; display: flex; align-items: center; justify-content: center;">
+                📏
             </div>
         </div>
 
@@ -399,24 +412,24 @@
                             @if ($laporan->lakban_qty > 0 || $laporan->lakban_atas_gr > 0 || $laporan->lakban_bawah_gr > 0)
                                 <tr>
                                     <td>
-                                        <span class="co-badge-kategori badge-lakban">LAKBAN</span>
+                                        <span class="co-badge-kategori badge-lakban" style="background: #fdf2f8; color: #be185d; border: 1px solid #fbcfe8;">LAKBAN</span>
                                     </td>
                                     <td>
                                         <strong style="color: #0f172a; display: block; font-size: 0.85rem;">
                                             {{ $laporan->lakbanBarang?->barang_nm ?? 'Lakban Dus (Selotip)' }}
                                         </strong>
                                         <div style="font-size: 0.725rem; color: #64748b; margin-top: 2px;">
-                                            Atas: <strong>{{ number_format($laporan->lakban_atas_gr, 1, ',', '.') }}g</strong> &bull; Bawah: <strong>{{ number_format($laporan->lakban_bawah_gr, 1, ',', '.') }}g</strong>
+                                            Standar: <strong>~120 cm / Karton</strong> &bull; Total: <strong>{{ number_format($lakbanMeter, 1, ',', '.') }} Meter</strong>
                                         </div>
                                     </td>
                                     <td style="text-align: right;">
-                                        <strong style="color: #dc2626; font-family: ui-monospace, SFMono-Regular, monospace; font-size: 0.95rem;">
-                                            {{ number_format($laporan->lakban_qty, 1, ',', '.') }}
+                                        <strong style="color: #be185d; font-family: ui-monospace, SFMono-Regular, monospace; font-size: 0.95rem;">
+                                            {{ number_format($lakbanRoll, 2, ',', '.') }}
                                         </strong>
-                                        <span style="font-size: 0.75rem; color: #64748b; font-weight: 600;">Gram</span>
+                                        <span style="font-size: 0.75rem; color: #64748b; font-weight: 600;">Roll ({{ number_format($lakbanMeter, 1, ',', '.') }} m)</span>
                                     </td>
                                     <td style="font-size: 0.75rem; color: #64748b;">
-                                        Timbangan Riil Lakban Dus
+                                        Otomatis dari {{ number_format($laporan->hasil_karton_qty, 0, ',', '.') }} karton + afkir lakban
                                     </td>
                                 </tr>
                             @endif

@@ -57,33 +57,110 @@ function initWipSatuanButtons() {
 }
 
 /**
- * Handle Timbangan Lakban Dus (Atas, Bawah, Total & Rupiah Live)
+ * Handle Lakban Dus (Poin 41: Otomatis cm/meter, Afkir Kerusakan & Konversi Roll)
  */
 function initLakbanSync() {
-    const atasInput = document.getElementById('lakban_atas_gr');
-    const bawahInput = document.getElementById('lakban_bawah_gr');
+    const hasilKartonIn = document.getElementById('hasil_karton_qty');
+    const standarCmIn = document.getElementById('lakban_standar_cm');
+    const rusakMIn = document.getElementById('lakban_rusak_m');
+    const rollIn = document.getElementById('lakban_roll_qty');
 
-    if (atasInput && bawahInput) {
-        atasInput.addEventListener('input', recalculateLakbanTotal);
-        bawahInput.addEventListener('input', recalculateLakbanTotal);
-        recalculateLakbanTotal();
+    if (hasilKartonIn) {
+        hasilKartonIn.addEventListener('input', recalculateLakbanFromKarton);
     }
-}
+    if (standarCmIn) {
+        standarCmIn.addEventListener('input', recalculateLakbanFromKarton);
+    }
+    if (rusakMIn) {
+        rusakMIn.addEventListener('input', recalculateLakbanFromKarton);
+    }
+    if (rollIn) {
+        rollIn.addEventListener('input', onManualRollInput);
+    }
 
-function recalculateLakbanTotal() {
-    const atas = parseFloat(document.getElementById('lakban_atas_gr')?.value) || 0;
-    const bawah = parseFloat(document.getElementById('lakban_bawah_gr')?.value) || 0;
-    const total = Math.round((atas + bawah) * 10) / 10;
-
-    const hiddenQty = document.getElementById('lakban_qty');
-    if (hiddenQty) hiddenQty.value = total;
-
-    const lblTotal = document.getElementById('lbl_lakban_total');
-    if (lblTotal) lblTotal.textContent = total.toLocaleString('id-ID');
+    recalculateLakbanFromKarton();
 }
 
 /**
- * Handle Karton Sirkular (Puteran vs Baru) & Auto FIFO calculation
+ * Kalkulasi otomatis kebutuhan lakban dari jumlah karton (Poin 41)
+ */
+function recalculateLakbanFromKarton() {
+    const hasilKarton = parseFloat(document.getElementById('hasil_karton_qty')?.value) || 0;
+    const standarCm = parseFloat(document.getElementById('lakban_standar_cm')?.value) || 120;
+    const rusakM = parseFloat(document.getElementById('lakban_rusak_m')?.value) || 0;
+
+    // 1. Kebutuhan Normal = hasil karton * standar cm / 100
+    const normalMeter = Math.round((hasilKarton * (standarCm / 100)) * 100) / 100;
+
+    // 2. Total Meter = Normal + Rusak
+    const totalMeter = Math.round((normalMeter + rusakM) * 100) / 100;
+
+    // 3. Konversi ke Roll (1 Roll = 100 Meter)
+    const totalRoll = Math.round((totalMeter / 100) * 100) / 100;
+
+    // Update UI elements
+    const lblRefKarton = document.getElementById('lbl_ref_karton_qty');
+    if (lblRefKarton) lblRefKarton.textContent = hasilKarton.toLocaleString('id-ID');
+
+    const lblKebutuhanM = document.getElementById('lbl_lakban_kebutuhan_m');
+    if (lblKebutuhanM) lblKebutuhanM.textContent = normalMeter.toLocaleString('id-ID');
+
+    const lblMeter = document.getElementById('lbl_lakban_meter');
+    if (lblMeter) lblMeter.textContent = totalMeter.toLocaleString('id-ID');
+
+    const lblRoll = document.getElementById('lbl_lakban_roll');
+    if (lblRoll) lblRoll.textContent = totalRoll.toLocaleString('id-ID');
+
+    const rollInput = document.getElementById('lakban_roll_qty');
+    if (rollInput && document.activeElement !== rollInput) {
+        rollInput.value = totalRoll > 0 ? totalRoll : '';
+    }
+
+    // Sinkronkan ke hidden input untuk backend (Roll & Gramatisasi kompatibilitas)
+    const hiddenQty = document.getElementById('lakban_qty');
+    if (hiddenQty) hiddenQty.value = totalRoll > 0 ? totalRoll : 0;
+
+    // Estimasi gram (1 roll ~1250g -> ~12.5g/meter)
+    const totalGram = Math.round(totalMeter * 12.5 * 10) / 10;
+    const atasGram = Math.round((totalGram / 2) * 10) / 10;
+    const bawahGram = Math.round((totalGram / 2) * 10) / 10;
+
+    const hiddenAtas = document.getElementById('lakban_atas_gr');
+    if (hiddenAtas) hiddenAtas.value = atasGram;
+
+    const hiddenBawah = document.getElementById('lakban_bawah_gr');
+    if (hiddenBawah) hiddenBawah.value = bawahGram;
+}
+
+/**
+ * Handle jika user mengedit total roll secara manual di lapangan
+ */
+function onManualRollInput() {
+    const rollVal = parseFloat(document.getElementById('lakban_roll_qty')?.value) || 0;
+    const meterVal = Math.round(rollVal * 100 * 100) / 100;
+
+    const lblMeter = document.getElementById('lbl_lakban_meter');
+    if (lblMeter) lblMeter.textContent = meterVal.toLocaleString('id-ID');
+
+    const lblRoll = document.getElementById('lbl_lakban_roll');
+    if (lblRoll) lblRoll.textContent = rollVal.toLocaleString('id-ID');
+
+    const hiddenQty = document.getElementById('lakban_qty');
+    if (hiddenQty) hiddenQty.value = rollVal;
+
+    const totalGram = Math.round(meterVal * 12.5 * 10) / 10;
+    const atasGram = Math.round((totalGram / 2) * 10) / 10;
+    const bawahGram = Math.round((totalGram / 2) * 10) / 10;
+
+    const hiddenAtas = document.getElementById('lakban_atas_gr');
+    if (hiddenAtas) hiddenAtas.value = atasGram;
+
+    const hiddenBawah = document.getElementById('lakban_bawah_gr');
+    if (hiddenBawah) hiddenBawah.value = bawahGram;
+}
+
+/**
+ * Handle Karton Sirkular (Puteran vs Baru) & Auto FIFO calculation (Poin 42)
  */
 function initKartonSync() {
     const puteranInput = document.getElementById('karton_puteran_qty');
@@ -100,17 +177,8 @@ function updateKartonTotal() {
     const puteran = parseFloat(document.getElementById('karton_puteran_qty')?.value) || 0;
     const baru = parseFloat(document.getElementById('karton_baru_qty')?.value) || 0;
     const reject = parseFloat(document.getElementById('karton_reject_qty')?.value) || 0;
-    const customQty = parseFloat(document.getElementById('karton_custom_qty')?.value) || 0;
 
-    const customWrapper = document.getElementById('kartonCustomWrapper');
-    const isCustomActive = customWrapper && customWrapper.style.display !== 'none';
-
-    let total = 0;
-    if (isCustomActive && customQty > 0) {
-        total = customQty;
-    } else {
-        total = puteran + baru + reject;
-    }
+    const total = puteran + baru + reject;
 
     const totalInput = document.getElementById('karton_qty');
     if (totalInput) totalInput.value = total;
@@ -247,8 +315,12 @@ function initProduksiSync() {
                 if (hiddenWipBarangId) hiddenWipBarangId.value = barangId;
                 if (hiddenWipBatchNo) hiddenWipBatchNo.value = batchNo;
 
+                const isBerbumbu = opt.getAttribute('data-is-berbumbu') === '1';
+                updateBumbuVisibility(isBerbumbu);
+
                 if (wipInfoBox && wipInfoText) {
-                    wipInfoText.textContent = `Varian: ${barangNama} • Batch: ${batchNo} • Tersedia: ${qtyKg} Kg`;
+                    const bumbuBadge = isBerbumbu ? ' • <span style="color: #059669; font-weight: 700;">✨ Sudah Berbumbu</span>' : '';
+                    wipInfoText.innerHTML = `Varian: <strong>${barangNama}</strong> • Batch: <code>${batchNo}</code> • Tersedia: <strong>${qtyKg} Kg</strong>${bumbuBadge}`;
                     wipInfoBox.style.display = 'block';
                 }
 
@@ -261,6 +333,7 @@ function initProduksiSync() {
                 if (hiddenWipBarangId) hiddenWipBarangId.value = '';
                 if (hiddenWipBatchNo) hiddenWipBatchNo.value = '';
                 if (wipInfoBox) wipInfoBox.style.display = 'none';
+                updateBumbuVisibility(false);
             }
         }
 
@@ -351,5 +424,54 @@ function onKemasanTambahanSelect(selectElem, rowId) {
     if (suffixSpan && selectedOpt) {
         const satuan = selectedOpt.getAttribute('data-satuan') || 'Pcs';
         suffixSpan.textContent = satuan;
+    }
+}
+
+/**
+ * Smart Bumbu Visibility Sync (Poin 43)
+ * Mencegah duplikasi biaya bumbu jika curah WIP sudah dibumbui di Dapur Goreng.
+ */
+let isBumbuOverridden = false;
+
+function toggleManualBumbuOverride() {
+    isBumbuOverridden = !isBumbuOverridden;
+    const container = document.getElementById('containerBumbuInputs');
+    const btn = document.getElementById('btnOverrideBumbu');
+    if (container) {
+        if (isBumbuOverridden) {
+            container.style.display = 'block';
+            if (btn) btn.textContent = '✖ Batalkan input bumbu manual (kembali ke otomatis)';
+        } else {
+            container.style.display = 'none';
+            if (btn) btn.textContent = '➕ Perlu tambah bumbu manual di meja kemas? Klik di sini';
+            resetBumbuInputs();
+        }
+    }
+}
+
+function resetBumbuInputs() {
+    const bumbuSelect = document.getElementById('bumbu_barang_id');
+    const bumbuQtyIn = document.getElementById('bumbu_qty_kg');
+    if (bumbuSelect) bumbuSelect.value = '';
+    if (bumbuQtyIn) bumbuQtyIn.value = '0';
+}
+
+function updateBumbuVisibility(isBerbumbu) {
+    const alertBox = document.getElementById('alertBumbuDapur');
+    const badgeStatus = document.getElementById('badgeBumbuStatus');
+    const container = document.getElementById('containerBumbuInputs');
+    const btn = document.getElementById('btnOverrideBumbu');
+
+    if (isBerbumbu && !isBumbuOverridden) {
+        if (alertBox) alertBox.style.display = 'block';
+        if (badgeStatus) badgeStatus.style.display = 'inline-block';
+        if (container) container.style.display = 'none';
+        resetBumbuInputs();
+    } else if (!isBerbumbu) {
+        isBumbuOverridden = false;
+        if (alertBox) alertBox.style.display = 'none';
+        if (badgeStatus) badgeStatus.style.display = 'none';
+        if (container) container.style.display = 'block';
+        if (btn) btn.textContent = '➕ Perlu tambah bumbu manual di meja kemas? Klik di sini';
     }
 }

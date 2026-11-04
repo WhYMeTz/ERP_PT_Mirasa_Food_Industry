@@ -761,12 +761,21 @@
         const dateVal = elDate.value;
         if (!dateVal) return;
 
-        fetch(`${window.appConfig.kursJisdorUrl}?date=${encodeURIComponent(dateVal)}`)
+        fetch(`${window.appConfig.kursJisdorUrl}?date=${encodeURIComponent(dateVal)}&tgl=${encodeURIComponent(dateVal)}`)
             .then(res => res.json())
             .then(res => {
-                if (res && res.kurs !== undefined && (!userHasManuallyEditedKurs || forceUpdate)) {
-                    elKurs.value = res.kurs;
+                const kursVal = (res && res.kurs !== undefined) ? res.kurs : (res && res.rate !== undefined ? res.rate : undefined);
+                if (kursVal !== undefined && (!userHasManuallyEditedKurs || forceUpdate)) {
+                    elKurs.value = kursVal;
                     window.calcCng('kurs');
+
+                    const elText = document.getElementById('cng_calc_text');
+                    if (elText && res.tanggal_acuan) {
+                        const currentHtml = elText.innerHTML;
+                        if (!currentHtml.includes('Acuan BI')) {
+                            elText.innerHTML += ` &bull; <span style="color: #0284c7; font-weight: 600;">(Acuan BI: ${res.tanggal_acuan})</span>`;
+                        }
+                    }
                 }
             })
             .catch(err => {
@@ -2168,25 +2177,73 @@
 
         const barangList = window.appConfig.barangHasilList || [];
         
-        const wipItems = [];
+        const fccItems = [];
+        const seasoningItems = [];
+        const tawarItems = [];
+        const kw2Items = [];
+
+        const seasoningCodes = ['WIP-ASB', 'WIP-ASW', 'WIP-BLQ', 'WIP-UCM', 'WIP-KCL', 'WIP-BBB', 'WIP-AJB', 'WIP-PJB', 'WIP-OPA', 'WIP-OPB', 'WIP-PYA', 'WIP-PYB', 'WIP-UBI', 'WIP-UBU'];
+
         barangList.forEach(b => {
-            const jenis = (b.jenis_barang?.jenis_barang_cd || (b.barang_cd.startsWith('WIP') ? 'WIP' : 'FG')).toUpperCase();
-            if (jenis === 'WIP' || b.barang_cd.startsWith('WIP')) wipItems.push(b);
+            const cd = (b.barang_cd || '').toUpperCase();
+            const nm = (b.barang_nm || '').toUpperCase();
+            const grade = (b.grade_cd || '').toUpperCase();
+            
+            // 1. Indofood FCC Non Bumbu
+            if (cd.startsWith('WIP-FCC') || nm.includes('IFL') || nm.includes('INDOFOOD') || nm.includes('TANPA BUMBU')) {
+                fccItems.push(b);
+            } 
+            // 2. Curah Berbumbu (Seasoning)
+            else if (seasoningCodes.includes(cd) || nm.includes('ASIN') || nm.includes('BUMBU') || nm.includes('BALADO') || nm.includes('LEMON') || nm.includes('PEDAS') || nm.includes('BARCO') || nm.includes('SAWIT') || nm.includes('BALQI') || nm.includes('UCAMP') || nm.includes('OPAK') || nm.includes('PUYUR')) {
+                seasoningItems.push(b);
+            } 
+            // 3. Hasil Sortiran & Rework (KW 2 - Poin 24)
+            else if (grade === 'KW2' || nm.includes('KW 2') || nm.includes('KW2') || cd.startsWith('WIP-KW')) {
+                kw2Items.push(b);
+            }
+            // 4. Curah Tawar & Sampingan / HACCP
+            else {
+                tawarItems.push(b);
+            }
         });
 
-        // Buat opsi dropdown barang (Khusus Olahan Setengah Jadi / WIP Curah)
-        let optionsHtml = '<option value="">-- Pilih Olahan Setengah Jadi (WIP) --</option>';
-
-        if (wipItems.length > 0) {
-            optionsHtml += '<optgroup label="── OLAHAN SETENGAH JADI (WIP CURAH) ──">';
-            wipItems.forEach(b => {
+        const buildOptGroup = (items) => {
+            let html = '';
+            items.forEach(b => {
                 const jenis = 'WIP';
                 const satuan = b.satuan_dasar?.satuan_cd || 'KG';
                 const selected = (initial && initial.barang_id == b.barang_id) ? 'selected' : '';
-                optionsHtml += `<option value="${b.barang_id}" data-cd="${b.barang_cd}" data-nm="${b.barang_nm}" data-jenis="${jenis}" data-satuan="${satuan}" ${selected}>
+                html += `<option value="${b.barang_id}" data-cd="${b.barang_cd}" data-nm="${b.barang_nm}" data-jenis="${jenis}" data-satuan="${satuan}" ${selected}>
                     [${b.barang_cd}] ${b.barang_nm} (${satuan})
                 </option>`;
             });
+            return html;
+        };
+
+        // Buat opsi dropdown barang dengan 3 grup terpadu
+        let optionsHtml = '<option value="">-- Pilih Hasil Penggorengan (WIP / FCC) --</option>';
+
+        if (fccItems.length > 0) {
+            optionsHtml += '<optgroup label="📦 1. KHUSUS INDOFOOD (FCC NON-BUMBU 6 KG/BOX)">';
+            optionsHtml += buildOptGroup(fccItems);
+            optionsHtml += '</optgroup>';
+        }
+
+        if (seasoningItems.length > 0) {
+            optionsHtml += '<optgroup label="🧂 2. CURAH BERBUMBU (HASIL SEASONING)">';
+            optionsHtml += buildOptGroup(seasoningItems);
+            optionsHtml += '</optgroup>';
+        }
+
+        if (tawarItems.length > 0) {
+            optionsHtml += '<optgroup label="🥔 3. CURAH TAWAR & HASIL SAMPINGAN (HACCP)">';
+            optionsHtml += buildOptGroup(tawarItems);
+            optionsHtml += '</optgroup>';
+        }
+
+        if (kw2Items.length > 0) {
+            optionsHtml += '<optgroup label="🔄 4. HASIL SORTIR & REWORK (KW 2)">';
+            optionsHtml += buildOptGroup(kw2Items);
             optionsHtml += '</optgroup>';
         }
 

@@ -95,10 +95,11 @@
             @else
                 @foreach ($report['days'] as $d)
                     @php
-                        // Filter Kebersihan Data (Arahan Mentor):
-                        // Hari-hari sebelum tanggal produksi terakhir yang kosong dihilangkan agar tampilan clean.
-                        // Hari-hari berikutnya yang belum beroperasi tetap ditampilkan sebagai placeholder kalender.
-                        if (!$d['has_data'] && $lastDataDate && $d['date'] < $lastDataDate) {
+                        // Filter Kebersihan Data:
+                        // Setiap data kosong yang tidak ada operasional produksi dan tanggalnya sudah terlewat (<= hari ini)
+                        // atau sebelum tanggal produksi terakhir dihilangkan agar tabel bersih dan rapi.
+                        $isPassedDate = $d['date'] <= date('Y-m-d');
+                        if (!$d['has_data'] && ($isPassedDate || ($lastDataDate && $d['date'] < $lastDataDate))) {
                             continue;
                         }
                     @endphp
@@ -343,9 +344,22 @@
                                             <span>Rasio Minyak (%):</span>
                                             <strong style="color: #002060;">{{ number_format($d['minyak_rasio_persen'], 2, ',', '.') }}%</strong>
                                         </div>
-                                        <div class="mini-cost-row">
-                                            <span>Bumbu &amp; Perenyah:</span>
-                                            <strong>Rp {{ number_format($d['bumbu_nilai'], 0, ',', '.') }}</strong>
+                                        <div class="mini-cost-row" style="{{ !empty($d['bumbu_nilai']) && $d['bumbu_nilai'] > 0 ? 'background: #faf5ff; border-radius: 4px; padding: 2px 5px; margin: 2px 0;' : '' }}">
+                                            <span style="{{ !empty($d['bumbu_nilai']) && $d['bumbu_nilai'] > 0 ? 'font-weight: 700; color: #6b21a8;' : '' }}">
+                                                Bumbu &amp; Seasoning:
+                                            </span>
+                                            <strong>
+                                                @if(!empty($d['bumbu_qty']) && $d['bumbu_qty'] > 0)
+                                                    <span style="font-size: 0.72rem; color: #7e22ce; font-weight: 700; margin-right: 0.25rem;">
+                                                        {{ number_format($d['bumbu_qty'], 1, ',', '.') }} kg
+                                                        @if(!empty($d['bumbu_label']))
+                                                            ({{ $d['bumbu_label'] }})
+                                                        @endif
+                                                        &bull;
+                                                    </span>
+                                                @endif
+                                                Rp {{ number_format($d['bumbu_nilai'], 0, ',', '.') }}
+                                            </strong>
                                         </div>
                                     </div>
                                 </div>

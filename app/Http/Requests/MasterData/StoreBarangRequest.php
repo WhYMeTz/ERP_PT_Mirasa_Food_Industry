@@ -38,6 +38,12 @@ class StoreBarangRequest extends FormRequest
                 'integer',
                 'exists:mst_jenis_barang,jenis_barang_id',
             ],
+            'grade_cd' => [
+                'nullable',
+                'string',
+                'max:10',
+                'in:KW1,KW2',
+            ],
             'satuan_dasar_id' => [
                 'required',
                 'integer',

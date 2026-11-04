@@ -141,6 +141,8 @@ Route::middleware('auth')->group(function () {
         ->name('master.tarif_produksi.api-rates');
     Route::post('master-tarif-produksi/quick-update', [TarifProduksiController::class, 'quickUpdate'])
         ->name('master.tarif_produksi.quick-update');
+    Route::post('master-tarif-produksi/sync-jisdor', [TarifProduksiController::class, 'syncJisdor'])
+        ->name('master.tarif_produksi.sync-jisdor');
     Route::get('master-tarif-produksi', [TarifProduksiController::class, 'index'])
         ->name('master.tarif_produksi.index');
     Route::put('master-tarif-produksi/{id}', [TarifProduksiController::class, 'update'])
@@ -423,6 +425,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/adjust-utilitas', [ProduksiController::class, 'adjustUtilitas'])->name('adjust-utilitas.store')->middleware('role:produksi_create');
         Route::get('/create', [ProduksiController::class, 'create'])->name('create')->middleware('role:produksi_create');
         Route::post('/', [ProduksiController::class, 'store'])->name('store')->middleware('role:produksi_create');
+        Route::get('/ajax-batches-rework', [ProduksiController::class, 'ajaxBatchesRework'])->name('ajax-batches-rework');
+        Route::post('/rework', [ProduksiController::class, 'storeRework'])->name('rework.store')->middleware('role:produksi_create');
         Route::get('/pakai-data/{pakaiId}', [ProduksiController::class, 'getPakaiData'])->name('pakai-data');
         Route::get('/next-karton', [ProduksiController::class, 'getNextKarton'])->name('next-karton');
         Route::get('/sync-karyawan', [ProduksiController::class, 'getKaryawanDataByDate'])->name('sync-karyawan');

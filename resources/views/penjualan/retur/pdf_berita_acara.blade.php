@@ -244,12 +244,13 @@
         <thead>
             <tr>
                 <th style="width: 25px; text-align: center;">No</th>
-                <th style="width: 75px;">Kode</th>
+                <th style="width: 70px;">Kode</th>
                 <th>Nama Produk Keripik</th>
-                <th style="width: 110px;">Kondisi Produk</th>
-                <th style="width: 65px; text-align: right;">Qty Retur</th>
-                <th style="width: 85px; text-align: right;">Harga Satuan</th>
-                <th style="width: 95px; text-align: right;">Subtotal Retur</th>
+                <th style="width: 100px;">Kondisi Produk</th>
+                <th style="width: 100px;">Disposisi Fisik</th>
+                <th style="width: 60px; text-align: right;">Qty Retur</th>
+                <th style="width: 80px; text-align: right;">Harga Satuan</th>
+                <th style="width: 90px; text-align: right;">Subtotal Retur</th>
             </tr>
         </thead>
         <tbody>
@@ -266,6 +267,16 @@
                     <td style="font-size: 7.5pt; color: #9a3412; font-weight: 600;">
                         {{ $item->kondisi_label }}
                     </td>
+                    <td style="font-size: 7.5pt;">
+                        @if($item->perlakuan_cd === 'DIMUSNAHKAN')
+                            <span style="color: #dc2626; font-weight: bold;">Dimusnahkan (Scrap)</span>
+                        @elseif($item->perlakuan_cd === 'CAMPUR')
+                            <span style="color: #166534; font-weight: bold;">KW2: {{ number_format((float)$item->qty_masuk_persediaan, 0) }}</span><br>
+                            <span style="color: #dc2626; font-weight: bold;">Musnah: {{ number_format((float)$item->qty_dimusnahkan, 0) }}</span>
+                        @else
+                            <span style="color: #166534; font-weight: bold;">Masuk Sortir KW 2</span>
+                        @endif
+                    </td>
                     <td style="text-align: right; font-weight: bold; font-family: monospace;">
                         {{ number_format((float) $item->qty_retur, 0) }} {{ $item->barang?->satuan_kecil ?? 'Karton' }}
                     </td>
@@ -280,7 +291,7 @@
         </tbody>
         <tfoot>
             <tr style="background-color: #fff7ed; font-weight: bold;">
-                <td colspan="4" style="text-align: right; padding: 6px 8px; color: #9a3412;">
+                <td colspan="5" style="text-align: right; padding: 6px 8px; color: #9a3412;">
                     TOTAL RETUR:
                 </td>
                 <td style="text-align: right; padding: 6px 8px; font-family: monospace; font-size: 9pt; color: #0f172a;">

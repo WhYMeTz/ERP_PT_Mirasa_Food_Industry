@@ -247,3 +247,123 @@
     background: #fef2f2;
     color: #dc2626;
 }
+
+/* Badge Disposisi Fisik Retur (Poin 25) */
+.badge-disposisi-persediaan {
+    background: #f0fdf4;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-size: 0.725rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    line-height: 1.25;
+}
+
+.badge-disposisi-musnah {
+    background: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-size: 0.725rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    line-height: 1.25;
+}
+
+/* Disposisi Button Group di Modal Retur */
+.disposisi-btn-group {
+    display: inline-flex;
+    border-radius: 6px;
+    border: 1px solid #cbd5e1;
+    overflow: hidden;
+    background: #f8fafc;
+}
+
+.disposisi-btn {
+    padding: 0.3rem 0.55rem;
+    font-size: 0.725rem;
+    font-weight: 700;
+    border: none;
+    background: transparent;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.15s ease-in-out;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    line-height: 1.2;
+}
+
+.disposisi-btn:not(:last-child) {
+    border-right: 1px solid #cbd5e1;
+}
+
+.disposisi-btn:hover {
+    background: #e2e8f0;
+    color: #0f172a;
+}
+
+.disposisi-btn.active-persediaan {
+    background: #15803d !important;
+    color: #ffffff !important;
+}
+
+.disposisi-btn.active-musnah {
+    background: #dc2626 !important;
+    color: #ffffff !important;
+}
+
+.disposisi-btn.active-campur {
+    background: #d97706 !important;
+    color: #ffffff !important;
+}
+
+.split-qty-box {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: #fffbeb;
+    border: 1px dashed #d97706;
+    padding: 0.25rem 0.4rem;
+    border-radius: 4px;
+    margin-top: 0.35rem;
+}
+
+.split-qty-input {
+    width: 60px;
+    padding: 0.2rem 0.35rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    font-family: monospace;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    text-align: right;
+    background: #ffffff;
+}
+
+.split-qty-input:focus {
+    border-color: #d97706;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.97) translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}

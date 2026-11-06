@@ -240,10 +240,13 @@ class SoController extends Controller
             'tindakan_cd'         => 'required|in:POTONG_TAGIHAN,TUKAR_GULING',
             'alasan_txt'          => 'nullable|string|max:500',
             'items'               => 'required|array|min:1',
-            'items.*.sodtl_id'    => 'required|integer',
-            'items.*.qty_retur'   => 'required|numeric|min:0',
-            'items.*.kondisi_cd'  => 'nullable|string|max:50',
-            'items.*.catatan_txt' => 'nullable|string|max:255',
+            'items.*.sodtl_id'             => 'required|integer',
+            'items.*.qty_retur'            => 'required|numeric|min:0',
+            'items.*.perlakuan_cd'         => 'nullable|string|in:MASUK_PERSEDIAAN,DIMUSNAHKAN,CAMPUR',
+            'items.*.qty_masuk_persediaan' => 'nullable|numeric|min:0',
+            'items.*.qty_dimusnahkan'      => 'nullable|numeric|min:0',
+            'items.*.kondisi_cd'           => 'nullable|string|max:50',
+            'items.*.catatan_txt'          => 'nullable|string|max:255',
         ], [
             'retur_tgl.required'   => 'Tanggal retur wajib diisi.',
             'gudang_id.required'   => 'Pilih gudang tujuan barang masuk.',
@@ -258,9 +261,17 @@ class SoController extends Controller
                 ? "Sisa tagihan SO otomatis dikurangi Rp " . number_format((float) $retur->total_nilai, 0, ',', '.')
                 : "Stok telah dicatat untuk ditukar guling secara fisik";
 
+            $successMsg = "Retur Penjualan {$retur->retur_no} ({$retur->total_qty} unit) berhasil dicatat! {$actionMsg}.";
+
+            if ($request->input('redirect_to') === 'retur_index') {
+                return redirect()
+                    ->route('penjualan.retur.index')
+                    ->with('toast_success', $successMsg);
+            }
+
             return redirect()
                 ->route('penjualan.so.show', $id)
-                ->with('toast_success', "Retur Penjualan {$retur->retur_no} ({$retur->total_qty} unit) berhasil dicatat! {$actionMsg}.");
+                ->with('toast_success', $successMsg);
         } catch (Exception $e) {
             return back()->with('error', 'Gagal memproses retur penjualan: ' . $e->getMessage());
         }

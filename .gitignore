@@ -35,6 +35,7 @@ CHANGELOG.md
 
 AI_Agent/
 
+.antislop/
 
 # Migration yang hanya digunakan di environment lokal (tidak di-push ke GitHub)
 database/migrations/2026_09_25_000002_create_mst_bom_tables.php
@@ -44,5 +45,7 @@ database/seeders/QcDummySeeder.php
 
 # Seeder dummy lokal manajemen karyawan (tidak di-push ke GitHub)
 database/seeders/ManajemenKaryawanDummySeeder.php
+
+
 
 

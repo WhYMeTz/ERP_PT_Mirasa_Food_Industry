@@ -492,9 +492,21 @@
                                     </td>
                                     <td style="padding: 0.6rem 0.85rem;">
                                         @foreach($retur->details as $rdtl)
-                                            <div style="font-size: 0.775rem; margin-bottom: 2px;">
+                                            <div style="font-size: 0.775rem; margin-bottom: 3px; line-height: 1.35;">
                                                 &bull; <strong>{{ $rdtl->barang?->barang_nm }}</strong>: {{ number_format((float)$rdtl->qty_retur, 0) }} unit 
                                                 <span style="color: #64748b;">({{ $rdtl->kondisi_label }})</span>
+                                                <div style="margin-left: 0.65rem; margin-top: 1px;">
+                                                    @if((float)$rdtl->qty_masuk_persediaan > 0)
+                                                        <span class="badge-disposisi-persediaan" style="font-size: 0.675rem; padding: 1px 5px;">
+                                                            ✓ KW 2: {{ number_format((float)$rdtl->qty_masuk_persediaan, 0) }}
+                                                        </span>
+                                                    @endif
+                                                    @if((float)$rdtl->qty_dimusnahkan > 0)
+                                                        <span class="badge-disposisi-musnah" style="font-size: 0.675rem; padding: 1px 5px;">
+                                                            ✕ Musnah: {{ number_format((float)$rdtl->qty_dimusnahkan, 0) }}
+                                                        </span>
+                                                    @endif
+                                                </div>
                                             </div>
                                         @endforeach
                                     </td>
@@ -516,6 +528,16 @@
                                             <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
                                             <span>PDF</span>
                                         </a>
+                                        @if((float)$retur->total_qty_dimusnahkan > 0)
+                                            <a href="{{ route('penjualan.retur.export-pemusnahan-pdf', $retur->retur_id) }}" 
+                                               target="_blank" 
+                                               class="btn btn-secondary btn-sm" 
+                                               style="font-size: 0.725rem; padding: 0.25rem 0.5rem; display: inline-flex; align-items: center; gap: 0.25rem; margin-right: 0.25rem; border-color: #fca5a5; color: #dc2626; background: #fff5f5;"
+                                               title="Cetak Berita Acara Pemusnahan Barang (PDF)">
+                                                <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                                <span>BAP Musnah</span>
+                                            </a>
+                                        @endif
                                         @if($retur->status_cd === 'CONFIRMED')
                                             <button type="button" 
                                                     onclick="openVoidReturModal({{ $retur->retur_id }}, '{{ $retur->retur_no }}')"

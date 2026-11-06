@@ -26,6 +26,8 @@ class DatSoReturHdr extends Model
         'gudang_id',
         'tindakan_cd',
         'total_qty',
+        'total_qty_masuk_persediaan',
+        'total_qty_dimusnahkan',
         'total_nilai',
         'alasan_txt',
         'status_cd',
@@ -38,9 +40,11 @@ class DatSoReturHdr extends Model
     ];
 
     protected $casts = [
-        'retur_tgl'   => 'date',
-        'total_qty'   => 'decimal:4',
-        'total_nilai' => 'decimal:4',
+        'retur_tgl'                  => 'date',
+        'total_qty'                  => 'decimal:4',
+        'total_qty_masuk_persediaan' => 'decimal:4',
+        'total_qty_dimusnahkan'      => 'decimal:4',
+        'total_nilai'                => 'decimal:4',
         'deleted_st'  => 'boolean',
         'active_st'   => 'boolean',
         'version_no'  => 'integer',

@@ -1,0 +1,787 @@
+/**
+ * public/css/produksi/hpp/hpp-create.css
+ * Styling untuk Formulir Kalkulasi Lembar HPP Produksi (Tahap 3 - Finance / Costing)
+ * PT Mirasa Food Industry
+ */
+
+.hpp-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1.5rem 1rem 3rem 1rem;
+}
+
+/* Header & Breadcrumb */
+.hpp-header-area {
+    margin-bottom: 1.5rem;
+}
+
+.hpp-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8125rem;
+    color: #64748b;
+    margin-bottom: 0.5rem;
+}
+
+.hpp-breadcrumb a {
+    color: #0284c7;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.hpp-breadcrumb a:hover {
+    text-decoration: underline;
+}
+
+.hpp-breadcrumb .separator {
+    color: #cbd5e1;
+}
+
+.hpp-breadcrumb .current {
+    color: #0f172a;
+    font-weight: 600;
+}
+
+.hpp-header-title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.hpp-title {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0 0 0.35rem 0;
+    letter-spacing: -0.02em;
+}
+
+.hpp-subtitle {
+    font-size: 0.875rem;
+    color: #64748b;
+    margin: 0;
+    max-width: 750px;
+    line-height: 1.45;
+}
+
+.hpp-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-hpp-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    padding: 0.5rem 0.9rem;
+    border-radius: 6px;
+    background: #ffffff;
+    border: 1.5px solid #cbd5e1;
+    color: #334155;
+    text-decoration: none;
+    transition: all 0.15s ease;
+}
+
+.btn-hpp-secondary:hover {
+    background: #f8fafc;
+    border-color: #94a3b8;
+    color: #0f172a;
+}
+
+/* Card Styles */
+.hpp-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    margin-bottom: 1.25rem;
+    overflow: hidden;
+}
+
+.hpp-card-highlight {
+    border: 1.5px solid #059669;
+    box-shadow: 0 4px 12px rgba(5, 150, 105, 0.08);
+}
+
+.hpp-card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 1rem 1.25rem;
+    background: #fafaf9;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.hpp-step-badge {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #0284c7;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.875rem;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.hpp-card-highlight .hpp-step-badge {
+    background: #059669;
+}
+
+.hpp-card-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0;
+}
+
+.hpp-card-desc {
+    font-size: 0.775rem;
+    color: #64748b;
+    margin: 0.15rem 0 0 0;
+}
+
+.hpp-card-body {
+    padding: 1.25rem;
+}
+
+/* Form Controls */
+.form-group-hpp {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    margin-bottom: 1rem;
+}
+
+.hpp-label {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #334155;
+}
+
+.hpp-label-sm {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #475569;
+}
+
+.hpp-label .required {
+    color: #dc2626;
+}
+
+.hpp-select {
+    padding: 0.6rem 0.85rem;
+    border-radius: 6px;
+    border: 1.5px solid #cbd5e1;
+    font-size: 0.875rem;
+    color: #0f172a;
+    background-color: #ffffff;
+    font-weight: 500;
+    width: 100%;
+}
+
+.hpp-select:focus,
+.hpp-input:focus,
+.hpp-input-rp:focus,
+.hpp-input-sm:focus,
+.hpp-textarea:focus {
+    outline: none;
+    border-color: #0284c7;
+    box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+}
+
+.hpp-input {
+    padding: 0.55rem 0.75rem;
+    border-radius: 6px;
+    border: 1.5px solid #cbd5e1;
+    font-size: 0.875rem;
+    color: #0f172a;
+    font-weight: 600;
+    width: 100%;
+}
+
+.hpp-input-sm {
+    padding: 0.4rem 0.65rem;
+    border-radius: 5px;
+    border: 1.5px solid #cbd5e1;
+    font-size: 0.8125rem;
+    color: #0f172a;
+    font-weight: 600;
+    width: 100%;
+}
+
+.helper-text {
+    font-size: 0.725rem;
+    color: #64748b;
+}
+
+/* Input Prefix Wrappers */
+.input-rp-wrap,
+.input-usd-wrap {
+    display: flex;
+    align-items: stretch;
+    width: 100%;
+}
+
+.prefix-rp,
+.prefix-usd {
+    display: flex;
+    align-items: center;
+    padding: 0 0.65rem;
+    background: #f1f5f9;
+    border: 1.5px solid #cbd5e1;
+    border-right: none;
+    border-top-left-radius: 6px;
+    border-bottom-left-radius: 6px;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: #475569;
+}
+
+.input-rp-wrap input,
+.input-usd-wrap input {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    width: 100%;
+}
+
+.hpp-input-rp {
+    padding: 0.55rem 0.75rem;
+    border-radius: 6px;
+    border: 1.5px solid #cbd5e1;
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: #0f172a;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Preview Box (Card 1) */
+.preview-fisik-box {
+    margin-top: 1rem;
+    border: 1.5px solid #e0e7ff;
+    border-radius: 8px;
+    background: #f8fafc;
+    overflow: hidden;
+}
+
+.preview-fisik-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.65rem 1rem;
+    background: #eef2ff;
+    border-bottom: 1px solid #e0e7ff;
+}
+
+.preview-fisik-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #3730a3;
+}
+
+.badge-status-calc {
+    font-size: 0.725rem;
+    font-weight: 700;
+    padding: 0.2rem 0.6rem;
+    border-radius: 9999px;
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fde68a;
+}
+
+.badge-status-calc.done {
+    background: #ecfdf5;
+    color: #065f46;
+    border-color: #a7f3d0;
+}
+
+.preview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.75rem;
+    padding: 1rem;
+}
+
+.pv-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.pv-label {
+    font-size: 0.725rem;
+    color: #64748b;
+    font-weight: 500;
+}
+
+.pv-val {
+    font-size: 0.875rem;
+    color: #0f172a;
+    font-weight: 700;
+}
+
+.pv-val.highlight-val {
+    color: #0284c7;
+    font-size: 0.9375rem;
+}
+
+.pv-val.highlight-rendemen {
+    color: #059669;
+    font-size: 0.9375rem;
+}
+
+.pv-table-wrap {
+    border-top: 1px solid #e2e8f0;
+    overflow-x: auto;
+}
+
+.pv-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+}
+
+.pv-table th {
+    background: #f1f5f9;
+    padding: 0.5rem 0.75rem;
+    font-weight: 600;
+    color: #475569;
+    text-align: left;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.pv-table td {
+    padding: 0.5rem 0.75rem;
+    color: #1e293b;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+/* Card 2: Cost Grid */
+.cost-grid-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+}
+
+.cost-group {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0.85rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.cost-group-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 0.25rem;
+}
+
+.cost-qty-badge {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #0284c7;
+    background: #e0f2fe;
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+}
+
+/* Sub-card Kemasan */
+.kemasan-subcard {
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    background: #ffffff;
+    overflow: hidden;
+}
+
+.kemasan-header-toggle {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.65rem 1rem;
+    background: #f8fafc;
+    cursor: pointer;
+    user-select: none;
+}
+
+.kemasan-header-toggle:hover {
+    background: #f1f5f9;
+}
+
+.kemasan-title {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #334155;
+}
+
+.badge-total-kemasan {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #475569;
+    background: #e2e8f0;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+}
+
+.kemasan-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 0.75rem;
+    padding: 1rem;
+    border-top: 1px solid #e2e8f0;
+    background: #ffffff;
+}
+
+/* Card 3: CNG Utilitas */
+.cng-calc-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.btn-sync-kurs {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    padding: 0.2rem 0.45rem;
+    background: #f0fdf4;
+    border: 1px solid #86efac;
+    color: #166534;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.btn-sync-kurs:hover {
+    background: #dcfce7;
+}
+
+.cng-result-banner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    padding: 0.85rem 1.25rem;
+    background: #f0fdf4;
+    border: 1.5px solid #86efac;
+    border-radius: 8px;
+}
+
+.cng-result-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.cng-res-label {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: #166534;
+}
+
+.cng-res-formula {
+    font-size: 0.75rem;
+    color: #15803d;
+}
+
+.hpp-input-result {
+    padding: 0.55rem 0.75rem;
+    border-radius: 6px;
+    border: 1.5px solid #86efac;
+    background: #ffffff;
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #166534;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    width: 100%;
+}
+
+/* Card 4: Tenaga Kerja */
+.tk-grid-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1.25rem;
+}
+
+/* Card 5: Ringkasan & Alokasi HPP */
+.hpp-stat-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+}
+
+.hpp-stat-box {
+    background: #f8fafc;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.stat-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.stat-value {
+    font-size: 1.35rem;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+}
+
+.stat-value.text-emerald {
+    color: #059669;
+}
+
+.stat-value.text-indigo {
+    color: #4f46e5;
+}
+
+.stat-value.text-amber {
+    color: #d97706;
+}
+
+.stat-meta {
+    font-size: 0.725rem;
+    color: #94a3b8;
+}
+
+.alokasi-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: #f1f5f9;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+}
+
+.toolbar-title {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: #334155;
+}
+
+.toolbar-buttons {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.btn-alloc-mode {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.775rem;
+    font-weight: 600;
+    padding: 0.45rem 0.8rem;
+    border-radius: 6px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.15s ease;
+}
+
+.btn-mode-rasio {
+    background: #ecfdf5;
+    color: #065f46;
+    border-color: #a7f3d0;
+}
+
+.btn-mode-rasio:hover {
+    background: #d1fae5;
+}
+
+.btn-mode-rata {
+    background: #ffffff;
+    color: #334155;
+    border-color: #cbd5e1;
+}
+
+.btn-mode-rata:hover {
+    background: #f8fafc;
+}
+
+/* Allocation Table */
+.hpp-table-wrapper {
+    overflow-x: auto;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+}
+
+.hpp-allocation-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+}
+
+.hpp-allocation-table th {
+    background: #f8fafc;
+    padding: 0.65rem 0.85rem;
+    font-weight: 700;
+    color: #334155;
+    text-align: left;
+    border-bottom: 1.5px solid #e2e8f0;
+}
+
+.hpp-allocation-table td {
+    padding: 0.65rem 0.85rem;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+}
+
+.hpp-table-foot td {
+    background: #f8fafc;
+    border-top: 2px solid #cbd5e1;
+    border-bottom: none;
+    padding: 0.75rem 0.85rem;
+}
+
+.input-table-hpp {
+    width: 100%;
+    padding: 0.4rem 0.6rem;
+    border-radius: 5px;
+    border: 1.5px solid #cbd5e1;
+    font-size: 0.875rem;
+    font-weight: 700;
+    text-align: right;
+    color: #0f172a;
+    font-variant-numeric: tabular-nums;
+}
+
+.input-table-hpp:focus {
+    outline: none;
+    border-color: #059669;
+    box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15);
+}
+
+.balance-status-alert {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.65rem 1rem;
+    border-radius: 6px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+}
+
+.alert-matched {
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    color: #065f46;
+}
+
+.alert-mismatched {
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    color: #92400e;
+}
+
+/* Card 6: Catatan & Submit */
+.hpp-textarea {
+    width: 100%;
+    padding: 0.6rem 0.85rem;
+    border-radius: 6px;
+    border: 1.5px solid #cbd5e1;
+    font-size: 0.875rem;
+    color: #0f172a;
+    resize: vertical;
+}
+
+.submit-action-row {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #f1f5f9;
+}
+
+.btn-cancel-hpp {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.65rem 1.25rem;
+    border-radius: 6px;
+    border: 1.5px solid #cbd5e1;
+    background: #ffffff;
+    color: #475569;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.btn-cancel-hpp:hover {
+    background: #f8fafc;
+    color: #0f172a;
+}
+
+.btn-save-hpp {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.65rem 1.5rem;
+    border-radius: 6px;
+    border: 1.5px solid #059669;
+    background: #059669;
+    color: #ffffff;
+    font-size: 0.875rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(5, 150, 105, 0.2);
+    transition: all 0.15s ease;
+}
+
+.btn-save-hpp:hover {
+    background: #047857;
+    border-color: #047857;
+}
+
+.alert-danger-hpp {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: #fef2f2;
+    border: 1.5px solid #fecaca;
+    color: #991b1b;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-bottom: 1.25rem;
+}
+

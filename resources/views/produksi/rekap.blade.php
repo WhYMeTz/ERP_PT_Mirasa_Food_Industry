@@ -29,6 +29,12 @@
         </a>
 
         @if(Auth::user()->canCreateProduksi())
+            <a href="{{ route('produksi.hpp.create') }}" 
+               class="btn btn-primary" 
+               style="background: #0d9488; font-size: 0.85rem; font-weight: 700; padding: 0.55rem 0.95rem; display: inline-flex; align-items: center; gap: 0.35rem; text-decoration: none;">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                <span>+ Kalkulasi Lembar HPP</span>
+            </a>
             <a href="{{ route('produksi.create') }}" 
                class="btn btn-primary" 
                style="background: #059669; font-size: 0.85rem; font-weight: 700; padding: 0.55rem 0.95rem; display: inline-flex; align-items: center; gap: 0.35rem;">

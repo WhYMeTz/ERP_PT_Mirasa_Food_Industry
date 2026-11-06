@@ -82,6 +82,7 @@ function toggleListrikModeBox(mode) {
 function toggleCngModeBox(mode) {
     const boxTarif = document.getElementById('box_cng_tarif_resmi');
     const boxTotal = document.getElementById('box_cng_total_tagihan');
+    const descTotal = document.getElementById('desc_cng_total_tagihan');
     if (!boxTarif || !boxTotal) return;
 
     if (mode === 'update_tarif') {
@@ -90,6 +91,9 @@ function toggleCngModeBox(mode) {
     } else {
         boxTarif.style.display = 'none';
         boxTotal.style.display = 'block';
+        if (descTotal) {
+            descTotal.innerHTML = 'Total tagihan faktur gas akan <strong>dibagi proporsional ke tiap hari kerja berdasarkan jumlah hasil produksi (Kg WIP)</strong>. Hari dengan hasil produksi lebih besar akan menyerap biaya lebih tinggi secara adil.';
+        }
     }
 }
 
@@ -168,8 +172,8 @@ function recalculateLiveSimulation() {
         if (isCngActive) {
             if (modeCng === 'update_tarif') {
                 newCng = dayMmbtu * tarifCngResmi;
-            } else if (modeCng === 'total_tagihan') {
-                newCng = dayMmbtu * effectiveCngRate;
+            } else if (modeCng === 'proporsional_wip' || modeCng === 'total_tagihan') {
+                newCng = totalWipMonth > 0 ? (totalTagihanCng * (dayWip / totalWipMonth)) : (totalTagihanCng / (countDays || 1));
             }
         }
 
@@ -253,7 +257,10 @@ function openModalConfirmAdjust() {
     if (summaryGas) {
         if (isCngActive) {
             const mode = document.querySelector('input[name="mode_cng"]:checked')?.value;
-            if (mode === 'total_tagihan') {
+            if (mode === 'proporsional_wip') {
+                const total = parseFloat(document.getElementById('input_total_cng_tagihan')?.value || 0);
+                summaryGas.textContent = 'Faktur (Bagi Hasil WIP): ' + formatRupiah(total);
+            } else if (mode === 'total_tagihan') {
                 const total = parseFloat(document.getElementById('input_total_cng_tagihan')?.value || 0);
                 summaryGas.textContent = 'Faktur Tagihan: ' + formatRupiah(total);
             } else {

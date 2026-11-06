@@ -4,16 +4,24 @@
 --}}
 
 <div class="card" style="margin-bottom: 1.25rem; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.03); background: #ffffff;">
-    <div class="card-header" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0.875rem 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
-        <strong id="cardHeaderTitle" style="color: #0f172a; font-size: 0.95rem; display: flex; align-items: center; gap: 0.4rem;">
-            <span>3. Penomoran Batch, Kemasan &amp; Kedaluwarsa Produk</span>
-        </strong>
-        <span id="cardHeaderBadge" style="font-size: 0.775rem; font-weight: 700; color: #334155; background: #f1f5f9; padding: 0.25rem 0.65rem; border-radius: 4px; border: 1px solid #cbd5e1;">
+    <div class="card-header" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0.85rem 1.25rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
+        <label class="toggle-card-label" for="chk_enable_batch" style="margin: 0; display: inline-flex; align-items: center; gap: 0.75rem; cursor: pointer; user-select: none;">
+            <div class="custom-switch">
+                <input type="checkbox" id="chk_enable_batch" value="1" {{ old('batch_option', 'include') === 'include' ? 'checked' : '' }} onchange="toggleBatchSwitch(this.checked)">
+                <span class="switch-slider switch-slider-blue"></span>
+            </div>
+            <strong id="cardHeaderTitle" style="color: #0f172a; font-size: 0.95rem;">
+                3. Penomoran Batch &amp; Kemasan Karton
+            </strong>
+        </label>
+        <input type="hidden" name="batch_option" id="batch_option" value="{{ old('batch_option', 'include') }}">
+
+        <span id="cardHeaderBadge" style="font-size: 0.725rem; font-weight: 700; background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; padding: 0.2rem 0.55rem; border-radius: 4px; white-space: nowrap;">
             Format Batch: Otomatis Standar Lini
         </span>
     </div>
 
-    <div style="padding: 1.25rem;">
+    <div class="card-body" id="section_body_batch" style="padding: 1.25rem; transition: opacity 0.2s ease;">
         {{-- BARIS 1: KUANTITAS KEMASAN & NOMOR SERI KARTON --}}
         <div id="rowShiftKartonGrid" style="display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem; align-items: start;">
 

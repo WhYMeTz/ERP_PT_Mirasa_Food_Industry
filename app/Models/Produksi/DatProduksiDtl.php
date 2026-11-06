@@ -26,6 +26,7 @@ class DatProduksiDtl extends Model
         'kategori_output',
         'qty_hasil',
         'satuan_cd',
+        'grade_cd',
         'qty_kg',
         'batch_no',
         'hpp_satuan',

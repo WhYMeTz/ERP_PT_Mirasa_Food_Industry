@@ -38,12 +38,43 @@
         </div>
 
         <div class="show-actions">
+            @if(Auth::user()->canCreateProduksi() && (in_array($produksi->batch_wip_no, ['BELUM TERBIT', 'PENDING']) || empty($produksi->batch_wip_no)))
+                <button type="button" onclick="openModalAssignBatch()" class="btn-print-doc" style="background: #f59e0b; color: #fff; text-decoration: none; border-color: #d97706; font-weight: 700;">
+                    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    <span>⚡ Beri Nomor Batch</span>
+                </button>
+            @endif
+            @if(Auth::user()->canCreateProduksi())
+                <a href="{{ route('produksi.hpp.create', ['produksi_id' => $produksi->produksi_id]) }}" class="btn-print-doc" style="background: #0d9488; color: #fff; text-decoration: none; border-color: #0f766e;">
+                    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                    <span>Kalkulasi / Alokasi HPP</span>
+                </a>
+            @endif
             <button type="button" onclick="window.print()" class="btn-print-doc">
                 <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
                 <span>Cetak Lembar HPP</span>
             </button>
         </div>
     </div>
+
+    {{-- BANNER KHUSUS BUFFER STOCK IFM (BATCH BELUM TERBIT) --}}
+    @if(in_array($produksi->batch_wip_no, ['BELUM TERBIT', 'PENDING']) || empty($produksi->batch_wip_no))
+        <div class="no-print" style="background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 8px; padding: 0.85rem 1.25rem; color: #92400e; margin-bottom: 1.25rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 0.6rem;">
+                <span style="font-size: 1.35rem;">📦</span>
+                <div>
+                    <strong style="display: block; font-size: 0.875rem;">Status Batch: Belum Diterbitkan (Buffer Stock IFM)</strong>
+                    <span style="font-size: 0.775rem; color: #b45309;">Produksi ini tersimpan di gudang sebagai persediaan buffer tanpa nomor batch pengiriman. Terbitkan nomor batch resmi saat jadwal keberangkatan truk Indofood tiba.</span>
+                </div>
+            </div>
+            @if(Auth::user()->canCreateProduksi())
+                <button type="button" onclick="openModalAssignBatch()" style="background: #d97706; color: #ffffff; border: none; padding: 0.45rem 1rem; border-radius: 6px; font-weight: 700; font-size: 0.825rem; cursor: pointer; display: flex; align-items: center; gap: 0.35rem; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    <span>Beri Nomor Batch Sekarang</span>
+                </button>
+            @endif
+        </div>
+    @endif
 
     {{-- ALERT NOTIFIKASI SUKSES / ERROR --}}
     @if(session('success'))
@@ -297,6 +328,23 @@
                                 <span>{{ $produksi->pemakaianBahan->pakai_no }}</span>
                             </a>
                             <span style="font-size: 0.725rem; color: #64748b; margin-left: 0.25rem;">({{ $produksi->pemakaianBahan->tujuan_pemakaian }})</span>
+                            @php
+                                $singkongDetails = $produksi->pemakaianBahan->details ? $produksi->pemakaianBahan->details->filter(function($d) {
+                                    $nm = strtoupper($d->barang?->barang_nm ?? '');
+                                    $cd = strtoupper($d->barang?->barang_cd ?? '');
+                                    return str_contains($nm, 'SINGKONG') || str_contains($cd, 'SK00') || str_contains($cd, 'BB-SK');
+                                }) : collect([]);
+                            @endphp
+                            @if($singkongDetails->isNotEmpty())
+                                <div style="margin-top: 0.35rem; font-size: 0.75rem; color: #334155; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; padding: 0.25rem 0.5rem; display: inline-block;">
+                                    <span style="font-weight: 600; color: #0f172a;">Komposisi Singkong:</span>
+                                    @foreach($singkongDetails as $sk)
+                                        <span class="badge" style="background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; font-size: 0.7rem; font-weight: 700; margin-left: 0.25rem;">
+                                            {{ $sk->grade_cd ?: 'Grade A' }}: {{ number_format($sk->qty_satuan, 0, ',', '.') }} kg
+                                        </span>
+                                    @endforeach
+                                </div>
+                            @endif
                         </td>
                     </tr>
                     @endif
@@ -344,8 +392,12 @@
                 <table class="spec-table">
                     <tr>
                         <td class="label-col">No. Batch Persediaan</td>
-                        <td class="value-col" style="font-family: monospace; color: #0284c7; font-weight: 700;">
-                            {{ $produksi->batch_wip_no ?: '-' }}
+                        <td class="value-col" style="font-family: monospace; font-weight: 700;">
+                            @if(in_array($produksi->batch_wip_no, ['BELUM TERBIT', 'PENDING']))
+                                <span style="background: #fffbeb; color: #b45309; border: 1.5px solid #f59e0b; padding: 0.2rem 0.55rem; border-radius: 4px; font-size: 0.825rem; font-weight: 700;">BELUM TERBIT (Buffer Stock IFM)</span>
+                            @else
+                                <span style="color: #0284c7;">{{ $produksi->batch_wip_no ?: '-' }}</span>
+                            @endif
                         </td>
                     </tr>
                     <tr>
@@ -433,6 +485,7 @@
                             <th style="width: 45px; text-align: center;">No</th>
                             <th style="width: 150px;">Kategori Output</th>
                             <th>Kode &amp; Nama Barang WIP</th>
+                            <th style="width: 85px; text-align: center;">Grade</th>
                             <th style="width: 130px; text-align: center;">Batch Varian</th>
                             <th style="width: 130px; text-align: right;">Output (Kg)</th>
                             <th style="width: 95px; text-align: center;">Porsi (%)</th>
@@ -454,6 +507,7 @@
 
                                 $totalWip = (float) $produksi->total_wip_qty > 0 ? (float) $produksi->total_wip_qty : 1;
                                 $porsiPersen = round(((float)$out->qty_kg / $totalWip) * 100, 1);
+                                $outGrade = strtoupper($out->grade_cd ?? 'KW1');
                             @endphp
                             <tr>
                                 <td style="text-align: center; color: #94a3b8; font-weight: 700;">{{ $idx + 1 }}</td>
@@ -480,6 +534,17 @@
                                     <strong style="color: #0f172a; font-family: monospace;">{{ $out->barang?->barang_cd ?? '-' }}</strong> &ndash; 
                                     <span style="font-weight: 600; color: #1e293b;">{{ $out->barang?->barang_nm ?? '-' }}</span>
                                 </td>
+                                <td style="text-align: center;">
+                                    @if($outGrade === 'KW2')
+                                        <span style="display: inline-block; padding: 0.15rem 0.5rem; background: #fef3c7; color: #92400e; border: 1px solid #fde68a; border-radius: 4px; font-size: 0.725rem; font-weight: 700;">
+                                            KW 2
+                                        </span>
+                                    @else
+                                        <span style="display: inline-block; padding: 0.15rem 0.5rem; background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; border-radius: 4px; font-size: 0.725rem; font-weight: 700;">
+                                            KW 1
+                                        </span>
+                                    @endif
+                                </td>
                                 <td style="font-family: monospace; font-weight: 600; color: #475569; text-align: center;">
                                     {{ $out->batch_no }}
                                 </td>
@@ -498,7 +563,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" style="text-align: center; padding: 2rem; color: #94a3b8;">
+                                <td colspan="9" style="text-align: center; padding: 2rem; color: #94a3b8;">
                                     Belum ada rincian output timbangan tersimpan.
                                 </td>
                             </tr>
@@ -506,7 +571,7 @@
                     </tbody>
                     <tfoot style="background: #f8fafc; font-weight: 700; border-top: 2px solid #cbd5e1;">
                         <tr>
-                            <td colspan="4" style="padding: 0.75rem 1rem; text-align: right; font-size: 0.78rem; color: #475569; text-transform: uppercase; letter-spacing: 0.03em;">
+                            <td colspan="5" style="padding: 0.75rem 1rem; text-align: right; font-size: 0.78rem; color: #475569; text-transform: uppercase; letter-spacing: 0.03em;">
                                 TOTAL AKUMULASI HASIL:
                             </td>
                             <td style="padding: 0.75rem 1rem; text-align: right; color: #0f172a; font-size: 0.95rem; font-variant-numeric: tabular-nums;">
@@ -741,7 +806,10 @@
                                             <span style="background: #f1f5f9; padding: 0.1rem 0.4rem; border-radius: 4px; border: 1px solid #e2e8f0;">Kontrak: ${{ number_format($produksi->cng_tarif_usd, 2, ',', '.') }}/MMBTU</span>
                                         @endif
                                         @if(($produksi->cng_kurs_jisdor ?? 0) > 0)
-                                            <span style="background: #ecfdf5; color: #047857; padding: 0.1rem 0.4rem; border-radius: 4px; border: 1px solid #a7f3d0; font-weight: 600;">Kurs JISDOR: Rp {{ number_format($produksi->cng_kurs_jisdor, 2, ',', '.') }}/$</span>
+                                            <a href="https://www.bi.go.id/id/statistik/informasi-kurs/jisdor/default.aspx" target="_blank" rel="noopener noreferrer" style="background: #ecfdf5; color: #047857; padding: 0.1rem 0.45rem; border-radius: 4px; border: 1px solid #a7f3d0; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 0.25rem;" title="Cek di website resmi Bank Indonesia">
+                                                <span>Kurs JISDOR: Rp {{ number_format($produksi->cng_kurs_jisdor, 2, ',', '.') }}/$</span>
+                                                <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                                            </a>
                                         @endif
                                     </div>
                                 @endif
@@ -979,9 +1047,19 @@
         </div>
     </div>
 </div>
+
+@include('produksi.partials.modal-assign-batch')
 @endsection
 
 @push('scripts')
+    <script>
+        window.produksiData = {
+            id: {{ $produksi->produksi_id }},
+            no: "{{ $produksi->produksi_no }}",
+            qtyKarton: {{ (int) $produksi->qty_karton }},
+            assignBatchUrl: "{{ route('produksi.assign-batch', $produksi->produksi_id) }}"
+        };
+    </script>
     <script src="{{ asset('js/produksi/produksi-show.js') }}?v={{ filemtime(public_path('js/produksi/produksi-show.js')) }}"></script>
 @endpush
 

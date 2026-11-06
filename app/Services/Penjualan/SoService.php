@@ -577,6 +577,8 @@ class SoService
 
             $detailsToSave = [];
             $totalQtyRetur = 0;
+            $totalQtyMasuk = 0;
+            $totalQtyMusnah = 0;
             $totalNilaiRetur = 0;
             $batchNo = 'RET-' . $header->so_no;
 
@@ -604,6 +606,31 @@ class SoService
                     throw new Exception("Kuantitas retur untuk '{$barangNm}' ({$qtyRetur}) melebihi sisa barang yang terkirim ({$maxReturnable}).");
                 }
 
+                // Hitung perlakuan fisik barang (Poin 25: Masuk Persediaan vs Dimusnahkan)
+                $perlakuanCd = trim((string) ($item['perlakuan_cd'] ?? 'MASUK_PERSEDIAAN'));
+                if (!in_array($perlakuanCd, ['MASUK_PERSEDIAAN', 'DIMUSNAHKAN', 'CAMPUR'])) {
+                    $perlakuanCd = 'MASUK_PERSEDIAAN';
+                }
+
+                $qtyMasuk = 0;
+                $qtyMusnah = 0;
+
+                if ($perlakuanCd === 'DIMUSNAHKAN') {
+                    $qtyMasuk = 0;
+                    $qtyMusnah = $qtyRetur;
+                } elseif ($perlakuanCd === 'CAMPUR') {
+                    $qtyMasuk = max(0, (float) ($item['qty_masuk_persediaan'] ?? 0));
+                    $qtyMusnah = max(0, (float) ($item['qty_dimusnahkan'] ?? 0));
+                    if (abs(($qtyMasuk + $qtyMusnah) - $qtyRetur) > 0.0001) {
+                        $barangNm = $dtl->barang?->barang_nm ?? "Item #{$sodtlId}";
+                        throw new Exception("Jumlah pecah Masuk Persediaan ({$qtyMasuk}) + Dimusnahkan ({$qtyMusnah}) harus sama dengan total retur ({$qtyRetur}) untuk item '{$barangNm}'.");
+                    }
+                } else {
+                    $perlakuanCd = 'MASUK_PERSEDIAAN';
+                    $qtyMasuk = $qtyRetur;
+                    $qtyMusnah = 0;
+                }
+
                 // Hitung harga efektif per satuan (termasuk diskon & proporsi tagihan netto)
                 $effectiveUnitPrice = (float) $dtl->pesan_qty > 0
                     ? ((float) $dtl->subtotal_tagihan / (float) $dtl->pesan_qty)
@@ -611,31 +638,38 @@ class SoService
 
                 $subtotalRow = round($qtyRetur * $effectiveUnitPrice, 2);
 
-                // Kembalikan fisik stok ke gudang yang dipilih dengan Batch khusus retur
-                $ket = "Retur Penjualan SO {$header->so_no} (" . ($data['alasan_txt'] ?? 'Retur Customer') . ")";
-                $this->stokService->addStock(
-                    gudangId: $gudangId,
-                    barangId: $dtl->barang_id,
-                    batchNo: $batchNo,
-                    qty: $qtyRetur,
-                    expiredTgl: null,
-                    dokumenNo: $returNo,
-                    keterangan: $ket,
-                    hargaSatuan: (float) $dtl->harga_satuan
-                );
+                // Kembalikan fisik stok ke gudang HANYA jika dialokasikan masuk persediaan (Sortir KW 2)
+                if ($qtyMasuk > 0) {
+                    $ket = "Retur Penjualan SO {$header->so_no} (Masuk Stok Sortir/KW2) - " . ($data['alasan_txt'] ?? 'Retur Customer');
+                    $this->stokService->addStock(
+                        gudangId: $gudangId,
+                        barangId: $dtl->barang_id,
+                        batchNo: $batchNo,
+                        qty: $qtyMasuk,
+                        expiredTgl: null,
+                        dokumenNo: $returNo,
+                        keterangan: $ket,
+                        hargaSatuan: (float) $dtl->harga_satuan
+                    );
+                }
 
                 $detailsToSave[] = [
-                    'sodtl_id'       => $sodtlId,
-                    'barang_id'      => $dtl->barang_id,
-                    'batch_no'       => $batchNo,
-                    'qty_retur'      => $qtyRetur,
-                    'harga_satuan'   => $effectiveUnitPrice,
-                    'subtotal_nilai' => $subtotalRow,
-                    'kondisi_cd'     => $item['kondisi_cd'] ?? 'RUSAK_KEMASAN',
-                    'catatan_txt'    => $item['catatan_txt'] ?? null,
+                    'sodtl_id'               => $sodtlId,
+                    'barang_id'              => $dtl->barang_id,
+                    'batch_no'               => $batchNo,
+                    'qty_retur'              => $qtyRetur,
+                    'qty_masuk_persediaan'   => $qtyMasuk,
+                    'qty_dimusnahkan'        => $qtyMusnah,
+                    'perlakuan_cd'           => $perlakuanCd,
+                    'harga_satuan'           => $effectiveUnitPrice,
+                    'subtotal_nilai'         => $subtotalRow,
+                    'kondisi_cd'             => $item['kondisi_cd'] ?? 'RUSAK_KEMASAN',
+                    'catatan_txt'            => $item['catatan_txt'] ?? null,
                 ];
 
                 $totalQtyRetur += $qtyRetur;
+                $totalQtyMasuk += $qtyMasuk;
+                $totalQtyMusnah += $qtyMusnah;
                 $totalNilaiRetur += $subtotalRow;
             }
 
@@ -646,20 +680,22 @@ class SoService
             $userName = $user instanceof \App\Models\User ? $user->nama_lengkap : ($user ?? auth()->user()?->nama_lengkap ?? 'System');
 
             $returHdr = DatSoReturHdr::create([
-                'retur_no'    => $returNo,
-                'retur_tgl'   => $tglRetur,
-                'so_id'       => $header->so_id,
-                'customer_id' => $header->customer_id,
-                'gudang_id'   => $gudangId,
-                'tindakan_cd' => $tindakanCd,
-                'total_qty'   => $totalQtyRetur,
-                'total_nilai' => $totalNilaiRetur,
-                'alasan_txt'  => $data['alasan_txt'] ?? null,
-                'status_cd'   => 'CONFIRMED',
-                'created_by'  => $userName,
-                'active_st'   => true,
-                'deleted_st'  => false,
-                'version_no'  => 1,
+                'retur_no'                   => $returNo,
+                'retur_tgl'                  => $tglRetur,
+                'so_id'                      => $header->so_id,
+                'customer_id'                => $header->customer_id,
+                'gudang_id'                  => $gudangId,
+                'tindakan_cd'                => $tindakanCd,
+                'total_qty'                  => $totalQtyRetur,
+                'total_qty_masuk_persediaan' => $totalQtyMasuk,
+                'total_qty_dimusnahkan'      => $totalQtyMusnah,
+                'total_nilai'                => $totalNilaiRetur,
+                'alasan_txt'                 => $data['alasan_txt'] ?? null,
+                'status_cd'                  => 'CONFIRMED',
+                'created_by'                 => $userName,
+                'active_st'                  => true,
+                'deleted_st'                 => false,
+                'version_no'                 => 1,
             ]);
 
             foreach ($detailsToSave as $dtlData) {
@@ -694,16 +730,23 @@ class SoService
                 throw new Exception("Hanya dokumen retur dengan status Terkonfirmasi yang dapat dibatalkan.");
             }
 
-            // Keluarkan kembali stok fisik dari gudang retur
+            // Keluarkan kembali stok fisik dari gudang retur (hanya untuk kuantitas yang pernah masuk persediaan)
             foreach ($retur->details as $dtl) {
-                $this->stokService->deductStock(
-                    gudangId: $retur->gudang_id,
-                    barangId: $dtl->barang_id,
-                    batchNo: $dtl->batch_no,
-                    qty: (float) $dtl->qty_retur,
-                    dokumenNo: $retur->retur_no,
-                    keterangan: "Pembatalan Retur Penjualan {$retur->retur_no}: {$reason}"
-                );
+                $qtyMasuk = (float) ($dtl->qty_masuk_persediaan ?? 0);
+                if ($dtl->qty_masuk_persediaan === null && (float) ($dtl->qty_dimusnahkan ?? 0) == 0) {
+                    $qtyMasuk = (float) $dtl->qty_retur;
+                }
+
+                if ($qtyMasuk > 0) {
+                    $this->stokService->deductStock(
+                        gudangId: $retur->gudang_id,
+                        barangId: $dtl->barang_id,
+                        batchNo: $dtl->batch_no,
+                        qty: $qtyMasuk,
+                        dokumenNo: $retur->retur_no,
+                        keterangan: "Pembatalan Retur Penjualan {$retur->retur_no}: {$reason}"
+                    );
+                }
             }
 
             $note = ($retur->alasan_txt ? $retur->alasan_txt . "\n" : "") . "[DIBATALKAN/VOID]: " . $reason;

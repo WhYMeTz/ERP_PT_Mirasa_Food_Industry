@@ -39,12 +39,12 @@
                 <thead>
                     <tr style="background: #f1f5f9; border-bottom: 1px solid #cbd5e1; color: #334155; font-weight: 700; font-size: 0.725rem; text-transform: uppercase;">
                         <th style="padding: 0.5rem 0.75rem; width: 35px; text-align: center;">No</th>
-                        <th style="padding: 0.5rem 0.75rem; width: 85px; text-align: center;">Jenis</th>
+                        <th style="padding: 0.5rem 0.75rem; width: 80px; text-align: center;">Jenis</th>
                         <th style="padding: 0.5rem 0.75rem; min-width: 260px;">Nama &amp; Kode Barang</th>
-                        <th style="padding: 0.5rem 0.75rem; width: 130px; text-align: right;">QTY Hasil</th>
-                        <th style="padding: 0.5rem 0.75rem; width: 90px; text-align: center;">Satuan</th>
-                        <th style="padding: 0.5rem 0.75rem; width: 130px; text-align: right;">Total Berat (Kg)</th>
-                        <th style="padding: 0.5rem 0.75rem; min-width: 140px; text-align: center;">Kode Batch (Otomatis)</th>
+                        <th style="padding: 0.5rem 0.75rem; width: 125px; text-align: right;">QTY Hasil</th>
+                        <th style="padding: 0.5rem 0.75rem; width: 85px; text-align: center;">Satuan</th>
+                        <th style="padding: 0.5rem 0.75rem; width: 125px; text-align: right;">Total Berat (Kg)</th>
+                        <th style="padding: 0.5rem 0.75rem; min-width: 135px; text-align: center;">Kode Batch (Otomatis)</th>
                         <th style="padding: 0.5rem 0.75rem; width: 50px; text-align: center;">Aksi</th>
                     </tr>
                 </thead>
@@ -146,6 +146,7 @@
                                     </optgroup>
                                 @endif
                             </select>
+                            <input type="hidden" name="output_items[0][grade_cd]" id="gradeCd_0" class="select-fg-grade" value="{{ old('output_items.0.grade_cd', 'KW1') }}">
                         </td>
                         <td style="padding: 0.5rem 0.75rem;">
                             <input type="number" step="0.0001" min="0" name="output_items[0][qty_hasil]" id="qtyHasil_0" class="form-control calc-trigger" style="text-align: right; font-weight: 700; color: #0f172a;" placeholder="0" value="{{ old('output_items.0.qty_hasil', '') }}" oninput="onQtyHasilInput(0)">

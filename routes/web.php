@@ -423,8 +423,15 @@ Route::middleware('auth')->group(function () {
         Route::post('/import-rekap-excel', [ProduksiController::class, 'importRekapExcel'])->name('import-rekap-excel')->middleware('role:produksi_create');
         Route::get('/adjust-utilitas', [ProduksiController::class, 'adjustUtilitasPage'])->name('adjust-utilitas');
         Route::post('/adjust-utilitas', [ProduksiController::class, 'adjustUtilitas'])->name('adjust-utilitas.store')->middleware('role:produksi_create');
+
+        // Kalkulasi HPP Produksi (Tahap 3 - Khusus Bagian Keuangan / Costing)
+        Route::get('/hpp/create', [ProduksiController::class, 'createHpp'])->name('hpp.create')->middleware('role:produksi_create');
+        Route::get('/hpp/produksi-data/{id}', [ProduksiController::class, 'getProduksiDataForHpp'])->name('hpp.produksi-data');
+        Route::post('/hpp/store', [ProduksiController::class, 'storeHpp'])->name('hpp.store')->middleware('role:produksi_create');
+
         Route::get('/create', [ProduksiController::class, 'create'])->name('create')->middleware('role:produksi_create');
         Route::post('/', [ProduksiController::class, 'store'])->name('store')->middleware('role:produksi_create');
+        Route::get('/rework/create', [ProduksiController::class, 'createRework'])->name('rework.create')->middleware('role:produksi_create');
         Route::get('/ajax-batches-rework', [ProduksiController::class, 'ajaxBatchesRework'])->name('ajax-batches-rework');
         Route::post('/rework', [ProduksiController::class, 'storeRework'])->name('rework.store')->middleware('role:produksi_create');
         Route::get('/pakai-data/{pakaiId}', [ProduksiController::class, 'getPakaiData'])->name('pakai-data');
@@ -432,6 +439,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/sync-karyawan', [ProduksiController::class, 'getKaryawanDataByDate'])->name('sync-karyawan');
         Route::get('/kurs-jisdor', [ProduksiController::class, 'getKursJisdor'])->name('kurs-jisdor');
         Route::get('/{id}', [ProduksiController::class, 'show'])->name('show')->whereNumber('id');
+        Route::post('/{id}/assign-batch', [ProduksiController::class, 'assignBatch'])->name('assign-batch')->middleware('role:produksi_create')->whereNumber('id');
         Route::get('/{id}/adjust', [ProduksiController::class, 'adjustPage'])->name('adjust')->middleware('role:produksi_create')->whereNumber('id');
         Route::post('/{id}/adjust-hpp', [ProduksiController::class, 'adjustHpp'])->name('adjust-hpp')->middleware('role:produksi_create')->whereNumber('id');
         Route::get('/{id}/cetak-stiker', [ProduksiController::class, 'cetakStiker'])->name('cetak-stiker')->whereNumber('id');
@@ -509,8 +517,10 @@ Route::middleware('auth')->group(function () {
 
         // Rekapitulasi Terpusat Retur Penjualan (Customer Returns)
         Route::get('retur', [SoReturController::class, 'index'])->name('retur.index');
+        Route::get('retur/so-data/{id}', [SoReturController::class, 'getSoData'])->name('retur.so-data');
         Route::get('retur/{id}', [SoReturController::class, 'show'])->name('retur.show');
         Route::get('retur/{id}/export-pdf', [SoReturController::class, 'exportPdf'])->name('retur.export-pdf');
+        Route::get('retur/{id}/export-pemusnahan-pdf', [SoReturController::class, 'exportPemusnahanPdf'])->name('retur.export-pemusnahan-pdf');
         Route::post('retur/{id}/void', [SoReturController::class, 'void'])->name('retur.void');
     });
 

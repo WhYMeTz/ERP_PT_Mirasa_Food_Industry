@@ -208,8 +208,8 @@
                             <span>Tarif Resmi per MMBTU</span>
                         </label>
                         <label class="mode-pill-item">
-                            <input type="radio" name="mode_cng" value="total_tagihan" style="display: none;">
-                            <span>Total Tagihan Faktur Gas</span>
+                            <input type="radio" name="mode_cng" value="proporsional_wip" style="display: none;">
+                            <span>Tagihan Faktur Bulanan (Bagi Hasil Produksi Kg WIP)</span>
                         </label>
                     </div>
 
@@ -244,6 +244,9 @@
                                            value="{{ old('cng_kurs_jisdor', $energiRates['cng_kurs_jisdor'] ?? 18138.00) }}"
                                            oninput="calcCngAdjustRates()">
                                 </div>
+                                <small style="color: #64748b; font-size: 0.725rem; display: block; margin-top: 0.25rem;">
+                                    Sumber BI &bull; <a href="https://www.bi.go.id/id/statistik/informasi-kurs/jisdor/default.aspx" target="_blank" rel="noopener noreferrer" style="color: #0284c7; font-weight: 600; text-decoration: underline;">Cek Kurs di Website BI ↗</a>
+                                </small>
                             </div>
                         </div>
 
@@ -264,7 +267,7 @@
                             </div>
                             <p style="font-size: 0.75rem; color: #64748b; margin: 0.45rem 0 0 0; line-height: 1.4;">
                                 Otomatis: <code>USD &times; Kurs JISDOR</code> atau ketik langsung tarif rupiah resmi.<br>
-                                <span style="font-size: 0.72rem; color: #047857; font-weight: 600;">💡 Acuan Kontrak Gas: ${{ number_format($energiRates['cng_tarif_usd'] ?? 14.50, 2) }} &times; Kurs JISDOR BI Rp {{ number_format($energiRates['cng_kurs_jisdor'] ?? 18138, 0, ',', '.') }} = Rp {{ number_format($tarifCngDefault, 0, ',', '.') }} / MMBTU</span>
+                                <span style="font-size: 0.72rem; color: #047857; font-weight: 600;">💡 Acuan Kontrak Gas: ${{ number_format($energiRates['cng_tarif_usd'] ?? 14.50, 2) }} &times; <a href="https://www.bi.go.id/id/statistik/informasi-kurs/jisdor/default.aspx" target="_blank" rel="noopener noreferrer" style="color: #047857; text-decoration: underline;" title="Buka website Bank Indonesia untuk cek kurs JISDOR">Kurs JISDOR BI</a> Rp {{ number_format($energiRates['cng_kurs_jisdor'] ?? 18138, 0, ',', '.') }} = Rp {{ number_format($tarifCngDefault, 0, ',', '.') }} / MMBTU</span>
                             </p>
                         </div>
                     </div>
@@ -283,8 +286,8 @@
                                    value="{{ old('total_cng_tagihan', round($modalTot['cng_nilai'])) }}"
                                    oninput="recalculateLiveSimulation()">
                         </div>
-                        <p style="font-size: 0.75rem; color: #64748b; margin: 0.45rem 0 0 0; line-height: 1.4;">
-                            Total tagihan faktur akan dibagi proporsional ke tiap hari kerja berdasarkan porsi MMBTU masing-masing.
+                        <p id="desc_cng_total_tagihan" style="font-size: 0.75rem; color: #64748b; margin: 0.45rem 0 0 0; line-height: 1.4;">
+                            Total tagihan faktur akan dibagi proporsional ke tiap hari kerja berdasarkan porsi hasil produksi (Kg WIP).
                         </p>
                     </div>
                 </div>

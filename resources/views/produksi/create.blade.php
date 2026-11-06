@@ -17,10 +17,10 @@
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
             <div>
                 <h1 style="font-size: 1.5rem; font-weight: 700; color: #0f172a; margin: 0;">
-                    Formulir Hasil Produksi &amp; Kalkulasi HPP Harian
+                    Pencatatan Hasil Produksi Fisik
                 </h1>
                 <p style="color: #64748b; font-size: 0.875rem; margin-top: 0.25rem; margin-bottom: 0;">
-                    Pencatatan aktual hasil produksi harian, pemakaian bahan baku, energi CNG, upah operator, dan kalkulasi rendemen otomatis.
+                    Pencatatan aktual hasil penggorengan, penimbangan olahan curah &amp; kemasan, flow meter gas CNG, dan absensi regu kerja berdasarkan dokumen pengeluaran gudang (BPPB).
                 </p>
             </div>
         </div>
@@ -66,27 +66,34 @@
                                 </option>
                             @endforeach
                         </select>
-                        <button type="button" class="btn btn-secondary btn-sm" onclick="loadPakaiData(document.getElementById('pakai_id').value)" style="padding: 0.45rem 0.85rem;">
-                            Tarik Ulang
+                        <button type="button" id="btnTarikPakai" class="btn btn-secondary btn-sm" onclick="loadPakaiData(document.getElementById('pakai_id').value)" style="padding: 0.45rem 0.95rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.4rem;">
+                            <svg id="iconTarikPakai" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                            <span id="btnTarikPakaiText">Tarik Ulang</span>
                         </button>
                     </div>
-                    <div id="pakaiMatchNotice" style="display: none; font-size: 0.75rem; font-weight: 600; margin-top: 0.4rem;"></div>
-                    <div id="pakaiLoading" style="display: none; font-size: 0.75rem; color: #0284c7; margin-top: 0.35rem; font-weight: 600;">
-                        Memuat rincian bahan dari dokumen gudang...
-                    </div>
+                    <div id="pakaiMatchNotice" style="display: none; font-size: 0.775rem; font-weight: 600; margin-top: 0.5rem;"></div>
 
                     {{-- TABEL PEMAKAIAN BAHAN BAKU (SESUAI BLUEPRINT 9.B.1) --}}
                     @include('produksi.partials.card-pemakaian-table')
                 </div>
 
-                {{-- PARAMETER OPERASIONAL PRODUKSI (TANGGAL, SHIFT, LINI, GUDANG) --}}
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; align-items: start;">
-                    {{-- 1. Tanggal Produksi --}}
+                {{-- PARAMETER OPERASIONAL PRODUKSI (NOMOR DOKUMEN, TANGGAL, SHIFT, LINI, GUDANG) --}}
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; align-items: start;">
+                    {{-- 1. No. Dokumen Produksi Resmi (Standar Mirasa: {seq}/PRD/MFI/{mm}/{yy}) --}}
+                    <div>
+                        <label for="produksi_no" style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">
+                            No. Dokumen Produksi <span style="color: #ef4444;">*</span>
+                        </label>
+                        <input type="text" name="produksi_no" id="produksi_no" class="form-control" value="{{ old('produksi_no', $autoProduksiNo ?? '') }}" style="font-family: monospace; font-weight: 700; color: #0f172a; background: #ffffff;" required>
+                        <small id="produksi_no_help" style="display: none; color: #64748b; font-size: 0.725rem; margin-top: 0.25rem;">Nomor urut resmi dokumen hasil produksi.</small>
+                    </div>
+
+                    {{-- 2. Tanggal Produksi --}}
                     <div>
                         <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">
                             Tanggal Produksi <span style="color: #ef4444;">*</span>
                         </label>
-                        <input type="date" name="produksi_tgl" id="produksi_tgl" class="form-control" value="{{ old('produksi_tgl', date('Y-m-d')) }}" required onchange="updateHariLabel(); fetchNextKarton(); syncLaborFromKaryawan(); fetchKursJisdor();">
+                        <input type="date" name="produksi_tgl" id="produksi_tgl" class="form-control" value="{{ old('produksi_tgl', date('Y-m-d')) }}" required onchange="updateHariLabel(); if(typeof window.fetchAndApplyProduksiNo === 'function') window.fetchAndApplyProduksiNo(this.value); fetchNextKarton(); syncLaborFromKaryawan(); fetchKursJisdor();">
                         <div id="hariLabel" style="font-size: 0.75rem; color: #0284c7; font-weight: 600; margin-top: 0.25rem;"></div>
                     </div>
 
@@ -110,7 +117,7 @@
                                 Shift B
                             </button>
                         </div>
-                        <small style="color: #64748b; font-size: 0.725rem; margin-top: 0.25rem; display: block;">Regu operasional lantai pabrik.</small>
+                        <small style="color: #64748b; font-size: 0.725rem; margin-top: 0.25rem; display: block;">Regu operasional shift.</small>
                     </div>
 
                     {{-- 3. Lini Produksi --}}
@@ -160,323 +167,128 @@
         {{-- BAGIAN 3: PENOMORAN BATCH, KEMASAN & KEDALUWARSA PRODUK --}}
         @include('produksi.partials.card-shift-karton')
 
-        {{-- BAGIAN 4: BIAYA BAHAN BAKU & KEMASAN (DIRECT MATERIALS) --}}
-        <div class="card" style="margin-bottom: 1.25rem;">
-            <div class="card-header" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0.875rem 1.25rem; display: flex; justify-content: space-between; align-items: center;">
+        {{-- BAGIAN 4: PEMANTAUAN RENDEMEN & PERFORMA MASAK FISIK (LIVE MONITOR) --}}
+        <div class="card" style="margin-bottom: 1.25rem; border: 1px solid #cbd5e1; border-radius: 8px; background: #ffffff;">
+            <div class="card-header" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0.875rem 1.25rem;">
                 <strong style="color: #0f172a; font-size: 0.95rem; display: flex; align-items: center; gap: 0.4rem;">
-                    <span>4. Biaya Bahan Baku &amp; Kemasan (Direct Materials)</span>
+                    <span>4. Pemantauan Rendemen &amp; Performa Masak Fisik</span>
                 </strong>
-                <span id="badgeSubtotalBahan" style="font-size: 0.8rem; font-weight: 700; color: #334155; background: #f1f5f9; border: 1px solid #cbd5e1; padding: 0.2rem 0.6rem; border-radius: 4px;">
-                    Subtotal Bahan: Rp 0
-                </span>
             </div>
             <div style="padding: 1.25rem;">
-                {{-- Baris 1: Singkong Mentah & Minyak Goreng --}}
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
-                    <div style="background: #ffffff; padding: 0.85rem; border-radius: 6px; border: 1px solid #e2e8f0;">
-                        <span style="display: block; font-size: 0.775rem; font-weight: 700; color: #1e293b; text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 0.5rem;">
-                            Singkong Mentah Masuk
+                {{-- 4 KOTAK KPI METRIK FISIK --}}
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+                    {{-- Metrik 1: Singkong Mentah Masuk --}}
+                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1rem; text-align: center;">
+                        <span style="font-size: 0.725rem; font-weight: 700; text-transform: uppercase; color: #64748b; letter-spacing: 0.04em; display: block;">
+                            Singkong Masuk (BPPB)
                         </span>
-                        <div style="display: flex; gap: 0.5rem;">
-                            <div style="flex: 1;">
-                                <label style="font-size: 0.7rem; color: #475569; font-weight: 600;">Kuantitas (Kg)</label>
-                                <input type="number" step="0.0001" min="0" name="singkong_qty" id="singkong_qty" class="form-control calc-trigger" style="font-weight: 700; text-align: right;" value="{{ old('singkong_qty', 0) }}" placeholder="0" oninput="calcAll()">
-                            </div>
-                            <div style="flex: 1.2;">
-                                <label style="font-size: 0.7rem; color: #475569; font-weight: 600;">Nilai Rupiah (Rp)</label>
-                                <input type="number" step="0.01" min="0" name="singkong_nilai" id="singkong_nilai" class="form-control calc-trigger" style="text-align: right;" value="{{ old('singkong_nilai', 0) }}" placeholder="0" oninput="calcAll()">
-                            </div>
+                        <div id="liveSingkongFisik" style="font-size: 1.4rem; font-weight: 800; color: #0f172a; margin-top: 0.25rem;">
+                            0.00 kg
                         </div>
+                        <small style="color: #64748b; font-size: 0.7rem;">Bahan baku dari gudang</small>
                     </div>
 
-                    <div style="background: #ffffff; padding: 0.85rem; border-radius: 6px; border: 1px solid #e2e8f0;">
-                        <span style="display: block; font-size: 0.775rem; font-weight: 700; color: #1e293b; text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 0.5rem;">
-                            Minyak Sawit &amp; Kelapa
+                    {{-- Metrik 2: Total Output Jadi --}}
+                    <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 1rem; text-align: center;">
+                        <span style="font-size: 0.725rem; font-weight: 700; text-transform: uppercase; color: #0369a1; letter-spacing: 0.04em; display: block;">
+                            Total Output Hasil Jadi
                         </span>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; margin-bottom: 0.4rem;">
-                            <div>
-                                <label style="font-size: 0.7rem; color: #475569; font-weight: 600;">Sawit (Kg)</label>
-                                <input type="number" step="0.0001" min="0" name="minyak_sawit_qty" id="minyak_sawit_qty" class="form-control calc-trigger" style="text-align: right;" value="{{ old('minyak_sawit_qty', 0) }}" placeholder="0" oninput="calcAll()">
-                            </div>
-                            <div>
-                                <label style="font-size: 0.7rem; color: #475569; font-weight: 600;">Kelapa (Kg)</label>
-                                <input type="number" step="0.0001" min="0" name="minyak_kelapa_qty" id="minyak_kelapa_qty" class="form-control calc-trigger" style="text-align: right;" value="{{ old('minyak_kelapa_qty', 0) }}" placeholder="0" oninput="calcAll()">
-                            </div>
+                        <div id="liveOutputFisik" style="font-size: 1.4rem; font-weight: 800; color: #0284c7; margin-top: 0.25rem;">
+                            0.00 kg
                         </div>
-                        <div>
-                            <label style="font-size: 0.7rem; color: #475569; font-weight: 600;">Total Rupiah Minyak (Rp)</label>
-                            <input type="number" step="0.01" min="0" name="minyak_nilai" id="minyak_nilai" class="form-control calc-trigger" style="text-align: right; font-weight: 600;" value="{{ old('minyak_nilai', 0) }}" placeholder="0" oninput="calcAll()">
-                        </div>
-                        <div id="liveMinyakRasio" style="font-size: 0.725rem; color: #475569; font-weight: 600; margin-top: 0.35rem;">
-                            Rasio Minyak: 0.00%
-                        </div>
+                        <small style="color: #0369a1; font-size: 0.7rem;">Karton + Curah + Berko</small>
                     </div>
 
-                    <div style="background: #ffffff; padding: 0.85rem; border-radius: 6px; border: 1px solid #e2e8f0;">
-                        <span style="display: block; font-size: 0.775rem; font-weight: 700; color: #1e293b; text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 0.5rem;">
-                            Bumbu &amp; Perenyah
+                    {{-- Metrik 3: Rendemen Masak --}}
+                    <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 1rem; text-align: center;">
+                        <span style="font-size: 0.725rem; font-weight: 700; text-transform: uppercase; color: #15803d; letter-spacing: 0.04em; display: block;">
+                            Rendemen Penggorengan
                         </span>
-                        <div style="display: flex; gap: 0.5rem;">
-                            <div style="flex: 1;">
-                                <label style="font-size: 0.7rem; color: #475569; font-weight: 600;">Kuantitas (Kg)</label>
-                                <input type="number" step="0.0001" min="0" name="bumbu_qty" id="bumbu_qty" class="form-control" style="text-align: right;" value="{{ old('bumbu_qty', 0) }}" placeholder="0" oninput="calcKemasanItem('bumbu_qty')">
-                            </div>
-                            <div style="flex: 1.2;">
-                                <label style="font-size: 0.7rem; color: #475569; font-weight: 600;">Nilai Rupiah (Rp)</label>
-                                <input type="number" step="0.01" min="0" name="bumbu_nilai" id="bumbu_nilai" class="form-control calc-trigger" style="text-align: right;" value="{{ old('bumbu_nilai', 0) }}" placeholder="0" oninput="calcAll()">
-                            </div>
+                        <div id="liveRendemenDisplay" style="font-size: 1.4rem; font-weight: 800; color: #16a34a; margin-top: 0.25rem;">
+                            0.00%
                         </div>
+                        <span id="liveRendemenStatusDisplay" style="font-size: 0.725rem; font-weight: 700; color: #15803d; display: block;">
+                            Menunggu timbangan
+                        </span>
+                    </div>
+
+                    {{-- Metrik 4: Rasio Minyak --}}
+                    <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 1rem; text-align: center;">
+                        <span style="font-size: 0.725rem; font-weight: 700; text-transform: uppercase; color: #b45309; letter-spacing: 0.04em; display: block;">
+                            Rasio Pemakaian Minyak
+                        </span>
+                        <div id="liveMinyakRasioDisplay" style="font-size: 1.4rem; font-weight: 800; color: #d97706; margin-top: 0.25rem;">
+                            0.00%
+                        </div>
+                        <small style="color: #b45309; font-size: 0.7rem;">Sawit &amp; kelapa vs singkong</small>
                     </div>
                 </div>
 
-                {{-- Baris 2: Kemasan & Packaging --}}
-                <div style="background: #f8fafc; padding: 1rem 1.15rem; border-radius: 8px; border: 1px solid #cbd5e1;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
-                        <span style="display: block; font-size: 0.8rem; font-weight: 800; color: #0f172a; text-transform: uppercase; letter-spacing: 0.03em;">
-                            Rincian Bahan Kemasan &amp; Packaging
-                        </span>
-                        <span style="font-size: 0.725rem; color: #64748b; font-weight: 600;">
-                            6 Komponen Material Kemas
-                        </span>
-                    </div>
-
-                    <div class="kemasan-grid-layout">
-                        {{-- 1. Karton Sirkular / Bekas (Karton Standar Utama) --}}
-                        <div class="kemasan-card-item" id="card_karton_puteran_item">
-                            <div class="kemasan-card-header" style="flex-wrap: wrap;">
-                                <div>
-                                    <span class="kemasan-card-title" id="label_karton_puteran_title">Karton Sirkular IFM</span>
-                                    <small id="badge_karton_puteran_desc" style="display: block; font-size: 0.675rem; color: #059669; font-weight: 600; margin-top: 1px;">
-                                        Standar Sirkular 5x Pakai
-                                    </small>
-                                </div>
-                                <span class="kemasan-card-badge" id="badge_karton_puteran_type" style="background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0;">Sirkular 5x</span>
-                            </div>
-                            <div class="kemasan-input-dual">
-                                <div class="kemasan-input-col col-qty">
-                                    <label class="kemasan-input-label">Kuantitas</label>
-                                    <input type="number" step="1" min="0" name="karton_bekas_qty" id="karton_bekas_qty" class="form-control" style="text-align: right; font-size: 0.825rem; font-weight: 600;" value="{{ old('karton_bekas_qty', 0) }}" placeholder="0" oninput="calcKemasanItem('karton_bekas_qty')">
-                                </div>
-                                <div class="kemasan-input-col col-val">
-                                    <label class="kemasan-input-label">Nilai Rupiah (Rp)</label>
-                                    <input type="number" step="0.01" min="0" name="karton_bekas_nilai" id="karton_bekas_nilai" class="form-control calc-trigger" style="text-align: right; font-size: 0.825rem; font-weight: 600;" value="{{ old('karton_bekas_nilai', 0) }}" placeholder="0" oninput="calcAll()">
-                                </div>
-                            </div>
-                        </div>
-
-                        {{-- 2. Karton Baru (Hanya Tampil di Lini Manual untuk Pesanan Khusus Baru Sekali Pakai) --}}
-                        <div class="kemasan-card-item" id="card_karton_baru_item" style="display: none;">
-                            <div class="kemasan-card-header" style="flex-wrap: wrap;">
-                                <div>
-                                    <span class="kemasan-card-title" id="label_karton_baru_title">Karton Box Baru (Opsional)</span>
-                                    <small id="badge_karton_baru_desc" style="display: block; font-size: 0.675rem; color: #b45309; font-weight: 600; margin-top: 1px;">
-                                        Khusus Pesanan Baru Sekali Pakai
-                                    </small>
-                                </div>
-                                <span class="kemasan-card-badge" id="badge_karton_baru_type" style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a;">Manual Baru</span>
-                            </div>
-                            <div class="kemasan-input-dual">
-                                <div class="kemasan-input-col col-qty">
-                                    <label class="kemasan-input-label">Kuantitas</label>
-                                    <input type="number" step="1" min="0" name="karton_baru_qty" id="karton_baru_qty" class="form-control" style="text-align: right; font-size: 0.825rem; font-weight: 600;" value="{{ old('karton_baru_qty', 0) }}" placeholder="0" oninput="calcKemasanItem('karton_baru_qty')">
-                                </div>
-                                <div class="kemasan-input-col col-val">
-                                    <label class="kemasan-input-label">Nilai Rupiah (Rp)</label>
-                                    <input type="number" step="0.01" min="0" name="karton_baru_nilai" id="karton_baru_nilai" class="form-control calc-trigger" style="text-align: right; font-size: 0.825rem; font-weight: 600;" value="{{ old('karton_baru_nilai', 0) }}" placeholder="0" oninput="calcAll()">
-                                </div>
-                            </div>
-                        </div>
-
-                        {{-- 3. Plastik HD 90x100 --}}
-                        <div class="kemasan-card-item">
-                            <div class="kemasan-card-header">
-                                <span class="kemasan-card-title">Plastik HD 90x100</span>
-                                <span class="kemasan-card-badge">Lbr</span>
-                            </div>
-                            <div class="kemasan-input-dual">
-                                <div class="kemasan-input-col col-qty">
-                                    <label class="kemasan-input-label">Kuantitas</label>
-                                    <input type="number" step="0.01" min="0" name="plastik_hd_qty" id="plastik_hd_qty" class="form-control" style="text-align: right; font-size: 0.825rem; font-weight: 600;" value="{{ old('plastik_hd_qty', 0) }}" placeholder="0" oninput="calcKemasanItem('plastik_hd_qty')">
-                                </div>
-                                <div class="kemasan-input-col col-val">
-                                    <label class="kemasan-input-label">Nilai Rupiah (Rp)</label>
-                                    <input type="number" step="0.01" min="0" name="plastik_hd_nilai" id="plastik_hd_nilai" class="form-control calc-trigger" style="text-align: right; font-size: 0.825rem; font-weight: 600;" value="{{ old('plastik_hd_nilai', 0) }}" placeholder="0" oninput="calcAll()">
-                                </div>
-                            </div>
-                        </div>
-
-                        {{-- 4. Lakban Besar --}}
-                        <div class="kemasan-card-item">
-                            <div class="kemasan-card-header">
-                                <span class="kemasan-card-title">Lakban Besar</span>
-                                <span class="kemasan-card-badge">Roll</span>
-                            </div>
-                            <div class="kemasan-input-dual">
-                                <div class="kemasan-input-col col-qty">
-                                    <label class="kemasan-input-label">Kuantitas</label>
-                                    <input type="number" step="0.01" min="0" name="lakban_besar_qty" id="lakban_besar_qty" class="form-control" style="text-align: right; font-size: 0.825rem; font-weight: 600;" value="{{ old('lakban_besar_qty', 0) }}" placeholder="0" oninput="calcKemasanItem('lakban_besar_qty')">
-                                </div>
-                                <div class="kemasan-input-col col-val">
-                                    <label class="kemasan-input-label">Nilai Rupiah (Rp)</label>
-                                    <input type="number" step="0.01" min="0" name="lakban_besar_nilai" id="lakban_besar_nilai" class="form-control calc-trigger" style="text-align: right; font-size: 0.825rem; font-weight: 600;" value="{{ old('lakban_besar_nilai', 0) }}" placeholder="0" oninput="calcAll()">
-                                </div>
-                            </div>
-                        </div>
-
-                        {{-- 5. Lakban Kecil --}}
-                        <div class="kemasan-card-item">
-                            <div class="kemasan-card-header">
-                                <span class="kemasan-card-title">Lakban Kecil</span>
-                                <span class="kemasan-card-badge">Roll</span>
-                            </div>
-                            <div class="kemasan-input-dual">
-                                <div class="kemasan-input-col col-qty">
-                                    <label class="kemasan-input-label">Kuantitas</label>
-                                    <input type="number" step="0.01" min="0" name="lakban_kecil_qty" id="lakban_kecil_qty" class="form-control" style="text-align: right; font-size: 0.825rem; font-weight: 600;" value="{{ old('lakban_kecil_qty', 0) }}" placeholder="0" oninput="calcKemasanItem('lakban_kecil_qty')">
-                                </div>
-                                <div class="kemasan-input-col col-val">
-                                    <label class="kemasan-input-label">Nilai Rupiah (Rp)</label>
-                                    <input type="number" step="0.01" min="0" name="lakban_kecil_nilai" id="lakban_kecil_nilai" class="form-control calc-trigger" style="text-align: right; font-size: 0.825rem; font-weight: 600;" value="{{ old('lakban_kecil_nilai', 0) }}" placeholder="0" oninput="calcAll()">
-                                </div>
-                            </div>
-                        </div>
-
-                        {{-- 6. Tali Rafia --}}
-                        <div class="kemasan-card-item">
-                            <div class="kemasan-card-header">
-                                <span class="kemasan-card-title">Tali Rafia / Strapping</span>
-                                <span class="kemasan-card-badge">Roll</span>
-                            </div>
-                            <div class="kemasan-input-dual">
-                                <div class="kemasan-input-col col-qty">
-                                    <label class="kemasan-input-label">Kuantitas</label>
-                                    <input type="number" step="0.01" min="0" name="tali_rafia_qty" id="tali_rafia_qty" class="form-control" style="text-align: right; font-size: 0.825rem; font-weight: 600;" value="{{ old('tali_rafia_qty', 0) }}" placeholder="0" oninput="calcKemasanItem('tali_rafia_qty')">
-                                </div>
-                                <div class="kemasan-input-col col-val">
-                                    <label class="kemasan-input-label">Nilai Rupiah (Rp)</label>
-                                    <input type="number" step="0.01" min="0" name="tali_rafia_nilai" id="tali_rafia_nilai" class="form-control calc-trigger" style="text-align: right; font-size: 0.825rem; font-weight: 600;" value="{{ old('tali_rafia_nilai', 0) }}" placeholder="0" oninput="calcAll()">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                {{-- CATATAN OPERASIONAL SHIFT --}}
+                <div>
+                    <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">
+                        Catatan &amp; Kendala Operasional Shift
+                    </label>
+                    <textarea name="catatan_txt" id="catatan_txt" rows="2" class="form-control" style="font-size: 0.825rem;" placeholder="Catatan kendala teknis mesin, karakteristik singkong hari ini, pergantian regu, atau keterangan tambahan lain...">{{ old('catatan_txt') }}</textarea>
                 </div>
             </div>
         </div>
 
-        {{-- BAGIAN 5 & 6: ENERGI (CNG) & TENAGA KERJA --}}
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem;">
-            {{-- ENERGI GAS CNG --}}
-            <div class="card">
-                <div class="card-header" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0.875rem 1.25rem; display: flex; justify-content: space-between; align-items: center;">
-                    <strong style="color: #0f172a; font-size: 0.95rem;">5. Gas Alam / CNG (Boiler &amp; Fryer)</strong>
-                    <span style="font-size: 0.7rem; color: #475569; background: #f1f5f9; border: 1px solid #cbd5e1; padding: 0.15rem 0.45rem; border-radius: 4px; font-weight: 700;">Flow Meter Harian &amp; Kurs JISDOR</span>
-                </div>
-                <div style="padding: 1.25rem;">
-                    {{-- Baris 1: Meteran MMBTU --}}
-                    <div style="margin-bottom: 0.75rem;">
-                        <label style="display: block; font-size: 0.75rem; font-weight: 700; color: #334155; margin-bottom: 0.25rem;">
-                            Meteran CNG (MMBTU) <span style="color: #ef4444;">*</span>
-                        </label>
-                        <input type="number" step="0.0001" min="0" name="cng_mmbtu" id="cng_mmbtu" class="form-control calc-trigger" style="text-align: right; font-weight: 700; font-size: 1rem; color: #0284c7;" value="{{ old('cng_mmbtu', 0) }}" placeholder="0" oninput="calcCng('mmbtu')">
-                        <small style="color: #64748b; font-size: 0.7rem;">Delta pemakaian flow meter fisik boiler &amp; fryer.</small>
-                    </div>
-
-                    {{-- Baris 2: Tarif USD Kontrak & Kurs Harian JISDOR --}}
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
-                        <div>
-                            <label style="display: block; font-size: 0.75rem; font-weight: 700; color: #334155; margin-bottom: 0.25rem;">
-                                Tarif Kontrak ($/MMBTU)
-                            </label>
-                            <div style="position: relative;">
-                                <span style="position: absolute; left: 0.6rem; top: 50%; transform: translateY(-50%); font-size: 0.75rem; color: #64748b; font-weight: 700;">$</span>
-                                <input type="number" step="0.01" min="0" name="cng_tarif_usd" id="cng_tarif_usd" class="form-control calc-trigger" style="text-align: right; padding-left: 1.4rem; font-weight: 600;" value="{{ old('cng_tarif_usd', $defaultCngTarifUsd ?? 14.50) }}" placeholder="14.50" oninput="calcCng('usd')">
-                            </div>
-                            <small style="color: #64748b; font-size: 0.7rem;">Kontrak gas industri (USD).</small>
-                        </div>
-                        <div>
-                            <label style="display: block; font-size: 0.75rem; font-weight: 700; color: #334155; margin-bottom: 0.25rem;">
-                                Kurs Harian JISDOR (Rp/$)
-                            </label>
-                            <div style="position: relative;">
-                                <span style="position: absolute; left: 0.6rem; top: 50%; transform: translateY(-50%); font-size: 0.72rem; color: #64748b; font-weight: 700;">Rp</span>
-                                <input type="number" step="any" min="0" name="cng_kurs_jisdor" id="cng_kurs_jisdor" class="form-control calc-trigger" style="text-align: right; padding-left: 1.8rem; font-weight: 600;" value="{{ old('cng_kurs_jisdor', $defaultCngKursJisdor ?? 18138.00) }}" placeholder="18138" oninput="calcCng('kurs')">
-                            </div>
-                            <small style="color: #64748b; font-size: 0.7rem;">Otomatis harian BI (bisa diedit bebas atau diisi 0).</small>
-                        </div>
-                    </div>
-
-                    {{-- Baris 3: Tarif per MMBTU (Rp) & Nominal Harian CNG (Rp) --}}
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
-                        <div>
-                            <label style="display: block; font-size: 0.75rem; font-weight: 700; color: #334155; margin-bottom: 0.25rem;">
-                                Tarif per MMBTU (Rp)
-                            </label>
-                            <input type="number" step="0.01" min="0" name="cng_tarif" id="cng_tarif" class="form-control calc-trigger" style="text-align: right; font-weight: 600;" value="{{ old('cng_tarif', $defaultCngTarif ?? 229825.00) }}" oninput="calcCng('tarif')">
-                            <small style="color: #64748b; font-size: 0.7rem;">Auto (USD × Kurs) atau manual.</small>
-                        </div>
-                        <div>
-                            <label style="display: block; font-size: 0.75rem; font-weight: 700; color: #047857; margin-bottom: 0.25rem;">
-                                Nominal Harian CNG (Rp) <span style="color: #ef4444;">*</span>
-                            </label>
-                            <input type="number" step="0.01" min="0" name="cng_nilai" id="cng_nilai" class="form-control calc-trigger" style="text-align: right; font-weight: 700; color: #065f46; background: #ecfdf5; border-color: #a7f3d0;" value="{{ old('cng_nilai', 0) }}" oninput="calcAll()">
-                            <small style="color: #047857; font-size: 0.7rem;">Auto (MMBTU × Tarif Rp).</small>
-                        </div>
-                    </div>
-
-                    {{-- Live Calculation Badge --}}
-                    <div id="cng_calc_info" style="padding: 0.45rem 0.65rem; border-radius: 6px; background: #f8fafc; border: 1px dashed #cbd5e1; font-size: 0.72rem; color: #334155; line-height: 1.4;">
-                        <span id="cng_calc_text">💡 Memuat simulasi tarif CNG...</span>
-                    </div>
-                </div>
+        {{-- BAGIAN 5: PEMAKAIAN ENERGI (GAS CNG) & KEHADIRAN TENAGA KERJA FISIK --}}
+        <div class="card" style="margin-bottom: 1.25rem; border: 1px solid #cbd5e1; border-radius: 8px; background: #ffffff;">
+            <div class="card-header" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0.875rem 1.25rem;">
+                <strong style="color: #0f172a; font-size: 0.95rem; display: flex; align-items: center; gap: 0.4rem;">
+                    <span>5. Pemakaian Energi (Gas CNG) &amp; Kehadiran Tenaga Kerja Fisik</span>
+                </strong>
             </div>
-
-            {{-- TENAGA KERJA --}}
-            <div class="card">
-                <div class="card-header" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0.875rem 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
-                    <strong style="color: #0f172a; font-size: 0.95rem;">6. Tenaga Kerja Produksi</strong>
-                    <div style="display: flex; align-items: center; gap: 0.4rem;">
-                        <button type="button" id="btnSyncKaryawan" class="btn btn-sm btn-outline-primary" onclick="syncLaborFromKaryawan(true, true)" style="font-size: 0.725rem; padding: 0.2rem 0.6rem; display: inline-flex; align-items: center; gap: 0.25rem; border-radius: 4px; font-weight: 600; cursor: pointer;" title="Muat ulang data presensi & upah dari modul Karyawan">
-                            <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                            <span>Muat Ulang Presensi</span>
-                        </button>
-                        <span style="font-size: 0.7rem; color: #0284c7; background: #e0f2fe; border: 1px solid #bae6fd; padding: 0.15rem 0.5rem; border-radius: 4px; font-weight: 700;">Otomatis dari Tanggal &amp; Lini</span>
+            <div style="padding: 1.25rem;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem;">
+                    <div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                            <label style="font-size: 0.8rem; font-weight: 700; color: #334155; margin: 0;">Meteran Gas Alam / CNG (MMBTU) <span style="color: #ef4444;">*</span></label>
+                            <span style="font-size: 0.7rem; font-weight: 600; color: #0284c7; background: #e0f2fe; padding: 0.15rem 0.45rem; border-radius: 4px;">Flow Meter Fisik</span>
+                        </div>
+                        <input type="number" step="0.0001" min="0" name="cng_mmbtu" id="cng_mmbtu" class="form-control" style="text-align: right; font-weight: 700; font-size: 1.1rem; color: #0284c7;" value="{{ old('cng_mmbtu', 0) }}" placeholder="0" required>
+                        <small style="color: #64748b; font-size: 0.725rem; display: block; margin-top: 0.25rem;">Masukkan angka delta pemakaian flow meter fisik boiler &amp; fryer untuk shift ini.</small>
+                    </div>
+                    <div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                            <label style="font-size: 0.8rem; font-weight: 700; color: #334155; margin: 0;">Tenaga Kerja Hadir (Orang) <span style="color: #ef4444;">*</span></label>
+                            <div style="display: flex; gap: 0.35rem;">
+                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="syncLaborFromKaryawan(true, true)" style="font-size: 0.7rem; padding: 0.15rem 0.45rem; display: inline-flex; align-items: center; gap: 0.25rem;">
+                                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                    <span>Muat Presensi</span>
+                                </button>
+                                <span style="font-size: 0.7rem; font-weight: 600; color: #059669; background: #ecfdf5; padding: 0.15rem 0.45rem; border-radius: 4px;">Regu Lini</span>
+                            </div>
+                        </div>
+                        <input type="number" min="0" name="tk_jumlah_org" id="tk_jumlah_org" class="form-control" style="text-align: right; font-weight: 700; font-size: 1.1rem; color: #0f172a;" value="{{ old('tk_jumlah_org', 0) }}" placeholder="0" required>
+                        <small style="color: #64748b; font-size: 0.725rem; display: block; margin-top: 0.25rem;">Jumlah personel/karyawan yang bertugas di lini produksi shift ini.</small>
                     </div>
                 </div>
-                <div style="padding: 1.25rem;">
-                    {{-- Hidden fields backward compatibility --}}
-                    <input type="hidden" name="tk_langsung_org" id="tk_langsung_org" value="{{ old('tk_langsung_org', old('tk_jumlah_org', 0)) }}">
-                    <input type="hidden" name="tk_tidak_langsung_org" id="tk_tidak_langsung_org" value="0">
-                    <input type="hidden" name="tk_training_org" id="tk_training_org" value="0">
-                    <input type="hidden" name="tk_tarif_per_org" id="tk_tarif_per_org" value="{{ old('tk_tarif_per_org', 0) }}">
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem; margin-bottom: 0.75rem;">
-                        <div>
-                            <label style="display: block; font-size: 0.75rem; font-weight: 700; color: #334155; margin-bottom: 0.25rem;">
-                                Tenaga Kerja Hadir (Orang) <span style="color: #ef4444;">*</span>
-                            </label>
-                            <input type="number" min="0" name="tk_jumlah_org" id="tk_jumlah_org" class="form-control calc-trigger" style="text-align: center; font-weight: 700; font-size: 1rem; color: #0f172a;" value="{{ old('tk_jumlah_org', old('tk_langsung_org', 0)) }}" placeholder="0" oninput="onTkJumlahChange()">
-                            <small style="color: #64748b; font-size: 0.7rem; display: block; margin-top: 0.25rem;">Otomatis terisi dari absensi kelompok lini kerja.</small>
-                        </div>
-                        <div>
-                            <label style="display: block; font-size: 0.75rem; font-weight: 700; color: #334155; margin-bottom: 0.25rem;">
-                                Total Upah Tenaga Kerja (Rp) <span style="color: #ef4444;">*</span>
-                            </label>
-                            <input type="number" step="0.01" min="0" name="tk_total_nilai" id="tk_total_nilai" class="form-control calc-trigger" style="text-align: right; font-weight: 700; font-size: 1rem; color: #0f172a;" value="{{ old('tk_total_nilai', 0) }}" placeholder="0" oninput="calcAll()">
-                            <small style="color: #64748b; font-size: 0.7rem; display: block; margin-top: 0.25rem;">Otomatis terisi dari akumulasi upah harian riil.</small>
-                        </div>
-                    </div>
-
-                    {{-- Status sinkronisasi modul karyawan --}}
-                    <div id="tkSyncStatus" style="font-size: 0.725rem; color: #64748b; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.4rem 0.75rem; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;">
-                        <span id="tkSyncText">Otomatis tersinkron saat Tanggal Produksi &amp; Lini Produksi dipilih.</span>
-                        <span id="tkSyncIndicator" style="display: none; font-weight: 600; color: #0284c7;">Memuat...</span>
-                    </div>
+                <div id="tkSyncStatus" style="font-size: 0.725rem; color: #64748b; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.4rem 0.75rem; margin-top: 0.75rem;">
+                    <span id="tkSyncText">Otomatis tersinkron saat Tanggal Produksi &amp; Lini Produksi dipilih. Nilai dapat diisi manual.</span>
                 </div>
             </div>
         </div>
 
-
-        {{-- BIAYA OVERHEAD PABRIK (FOH) DIALIHKAN KE JURNAL KEUANGAN & PEMAKAIAN BAHAN GUDANG --}}
+        {{-- VARIABEL BIAYA & FINANSIAL HPP (DIKELOLA & DIKALKULASI DI MODUL FINANCE: /produksi/hpp/create) --}}
+        <input type="hidden" name="singkong_nilai" id="singkong_nilai" value="{{ old('singkong_nilai', 0) }}">
+        <input type="hidden" name="minyak_nilai" id="minyak_nilai" value="{{ old('minyak_nilai', 0) }}">
+        <input type="hidden" name="bumbu_nilai" id="bumbu_nilai" value="{{ old('bumbu_nilai', 0) }}">
+        <input type="hidden" name="karton_baru_nilai" id="karton_baru_nilai" value="{{ old('karton_baru_nilai', 0) }}">
+        <input type="hidden" name="karton_bekas_nilai" id="karton_bekas_nilai" value="{{ old('karton_bekas_nilai', 0) }}">
+        <input type="hidden" name="plastik_hd_nilai" id="plastik_hd_nilai" value="{{ old('plastik_hd_nilai', 0) }}">
+        <input type="hidden" name="lakban_besar_nilai" id="lakban_besar_nilai" value="{{ old('lakban_besar_nilai', 0) }}">
+        <input type="hidden" name="lakban_kecil_nilai" id="lakban_kecil_nilai" value="{{ old('lakban_kecil_nilai', 0) }}">
+        <input type="hidden" name="tali_rafia_nilai" id="tali_rafia_nilai" value="{{ old('tali_rafia_nilai', 0) }}">
+        <input type="hidden" name="cng_tarif_usd" id="cng_tarif_usd" value="{{ old('cng_tarif_usd', 14.50) }}">
+        <input type="hidden" name="cng_kurs_jisdor" id="cng_kurs_jisdor" value="{{ old('cng_kurs_jisdor', 18138) }}">
+        <input type="hidden" name="cng_tarif" id="cng_tarif" value="{{ old('cng_tarif', 263001) }}">
+        <input type="hidden" name="cng_nilai" id="cng_nilai" value="{{ old('cng_nilai', 0) }}">
+        <input type="hidden" name="tk_total_nilai" id="tk_total_nilai" value="{{ old('tk_total_nilai', 0) }}">
+        <input type="hidden" name="total_biaya_produksi" id="total_biaya_produksi" value="0">
+        <input type="hidden" name="hpp_per_kg" id="hpp_per_kg" value="0">
         <input type="hidden" name="qc_pengawasan_nilai" id="qc_pengawasan_nilai" value="0">
         <input type="hidden" name="limbah_kimia_nilai" id="limbah_kimia_nilai" value="0">
         <input type="hidden" name="fotocopy_nilai" id="fotocopy_nilai" value="0">
@@ -489,9 +301,6 @@
         <input type="hidden" name="penyusutan_mesin_nilai" id="penyusutan_mesin_nilai" value="0">
         <input type="hidden" name="limbah_padat_nilai" id="limbah_padat_nilai" value="0">
 
-        {{-- RINGKASAN BIAYA PRODUKSI & ALOKASI HPP PER HASIL PRODUKSI (TERPADU) --}}
-        @include('produksi.partials.card-breakdown-hpp')
-
         {{-- ACTION BUTTONS --}}
         <div style="display: flex; justify-content: flex-end; gap: 0.75rem; align-items: center; margin-top: 1.25rem;">
             <a href="{{ route('produksi.index') }}" class="btn btn-secondary" style="padding: 0.65rem 1.25rem; font-weight: 600;">Batal</a>
@@ -501,9 +310,6 @@
         </div>
     </form>
 </div>
-
-{{-- MODAL PENGATURAN CEPAT STANDAR TARIF & FOH --}}
-@include('produksi.partials.modal-quick-tarif')
 
 @push('scripts')
     <script>

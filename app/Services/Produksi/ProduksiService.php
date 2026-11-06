@@ -4,6 +4,7 @@ namespace App\Services\Produksi;
 
 use App\Models\Gudang\DatPakaiHdr;
 use App\Models\Gudang\DatStokBatch;
+use App\Models\Gudang\DatStokLedger;
 use App\Models\MasterData\MstBarang;
 use App\Models\Produksi\DatProduksiHdr;
 use App\Models\Produksi\DatProduksiDtl;
@@ -865,14 +866,19 @@ class ProduksiService
      */
     public function extractPakaiSummary(int $pakaiId): array
     {
-        $pakai = DatPakaiHdr::with(['details.barang.jenisBarang'])->where('pakai_id', $pakaiId)->firstOrFail();
+        $pakai = DatPakaiHdr::with(['details.barang.jenisBarang', 'details.barang.satuanDasar', 'gudang'])->where('pakai_id', $pakaiId)->firstOrFail();
 
         $summary = [
             'pakai_id'           => $pakai->pakai_id,
             'pakai_no'           => $pakai->pakai_no,
             'pakai_tgl'          => $pakai->pakai_tgl ? $pakai->pakai_tgl->format('Y-m-d') : null,
+            'pakai_tgl_formatted'=> $pakai->pakai_tgl ? $pakai->pakai_tgl->format('d/m/Y') : '-',
+            'gudang_nm'          => $pakai->gudang?->gudang_nm ?? 'Gudang Bahan Baku',
             'tujuan_pemakaian'   => $pakai->tujuan_pemakaian,
             'gudang_id'          => $pakai->gudang_id,
+            'total_item_count'   => 0,
+            'total_bahan_qty'    => 0,
+            'total_bahan_nilai'  => 0,
             'singkong_qty'       => 0,
             'singkong_nilai'     => 0,
             'minyak_sawit_qty'   => 0,
@@ -905,6 +911,7 @@ class ProduksiService
         $varietasList = [];
         $kartonCount = 0;
         $items = [];
+        $singkongGrades = [];
 
         foreach ($pakai->details as $dtl) {
             $barang = $dtl->barang;
@@ -914,6 +921,23 @@ class ProduksiService
             $cd = strtoupper($barang->barang_cd);
             $qty = (float) $dtl->qty_keluar;
             $subtotal = (float) ($dtl->total_harga > 0 ? $dtl->total_harga : ($qty * $dtl->harga_satuan));
+            $dtlGrade = !empty($dtl->grade_cd) ? strtoupper(trim($dtl->grade_cd)) : ($barang->grade_cd ?? '-');
+
+            // Deteksi kelompok kategori bahan untuk kemudahan visualisasi manufaktur
+            $kategori = 'Bahan Penolong';
+            if (str_contains($nm, 'SINGKONG') || str_starts_with($cd, 'BB-SK')) {
+                $kategori = 'Bahan Utama';
+            } elseif (str_contains($nm, 'MINYAK')) {
+                $kategori = 'Minyak';
+            } elseif (str_contains($nm, 'BUMBU') || str_contains($nm, 'PERENYAH') || str_contains($nm, 'GARAM') || str_contains($nm, 'MSG') || str_contains($nm, 'SEASONING')) {
+                $kategori = 'Bumbu & Perasa';
+            } elseif (str_contains($nm, 'KARTON') || str_contains($nm, 'BOX') || str_contains($nm, 'PLASTIK') || str_contains($nm, 'LAKBAN') || str_contains($nm, 'RAFIA')) {
+                $kategori = 'Bahan Kemasan';
+            } elseif (str_contains($nm, 'SARUNG') || str_contains($nm, 'GLOVE')) {
+                $kategori = 'Alat Penolong';
+            } elseif (str_contains($nm, 'BERKO') || str_contains($nm, 'LENGKET')) {
+                $kategori = 'Rework / BS';
+            }
 
             // Hitung sisa stok fisik on hand barang tersebut di gudang asal BPPB
             $sisaStok = (float) \App\Models\Gudang\DatStokBatch::where('gudang_id', $pakai->gudang_id)
@@ -921,13 +945,21 @@ class ProduksiService
                 ->where('sisa_qty', '>', 0)
                 ->sum('sisa_qty');
 
+            $summary['total_bahan_qty'] += $qty;
+            $summary['total_bahan_nilai'] += $subtotal;
+
             $items[] = [
-                'pakai_tgl'  => $pakai->pakai_tgl ? $pakai->pakai_tgl->format('d/m/Y') : '-',
-                'barang_cd'  => $barang->barang_cd,
-                'barang_nm'  => $barang->barang_nm,
-                'qty_keluar' => $qty,
-                'satuan_cd'  => $dtl->satuan->satuan_cd ?? ($barang->satuanDasar->satuan_cd ?? 'KG'),
-                'sisa_stok'  => $sisaStok,
+                'pakai_tgl'    => $pakai->pakai_tgl ? $pakai->pakai_tgl->format('d/m/Y') : '-',
+                'barang_cd'    => $barang->barang_cd,
+                'barang_nm'    => $barang->barang_nm,
+                'kategori'     => $kategori,
+                'grade_cd'     => $dtlGrade,
+                'batch_no'     => $dtl->batch_no ?? '-',
+                'qty_keluar'   => $qty,
+                'satuan_cd'    => $barang->satuanDasar?->satuan_cd ?? 'KG',
+                'harga_satuan' => (float) $dtl->harga_satuan,
+                'subtotal'     => $subtotal,
+                'sisa_stok'    => $sisaStok,
             ];
 
             if (str_contains($nm, 'BERKO') || str_contains($nm, 'LENGKET') || str_starts_with($cd, 'WIP-BRK') || str_starts_with($cd, 'WIP-LGT') || str_starts_with($cd, 'WIP-B')) {
@@ -936,6 +968,7 @@ class ProduksiService
             } elseif (str_contains($nm, 'SINGKONG') || str_starts_with($cd, 'BB-SK')) {
                 $summary['singkong_qty'] += $qty;
                 $summary['singkong_nilai'] += $subtotal;
+                $singkongGrades[$dtlGrade] = ($singkongGrades[$dtlGrade] ?? 0) + $qty;
                 if (str_contains($nm, 'TAPE') || str_contains($cd, 'STP')) {
                     $varietasList[] = 'STP';
                 } elseif (str_contains($nm, 'MANGGU') || str_contains($cd, 'MGU')) {
@@ -996,8 +1029,23 @@ class ProduksiService
         if (!empty($varietasList)) {
             $summary['varietas_singkong'] = implode(' / ', array_unique($varietasList));
         }
+
+        if (!empty($singkongGrades)) {
+            $gradeParts = [];
+            foreach ($singkongGrades as $gName => $gQty) {
+                $gLabel = ($gName !== '-' && !empty($gName)) ? "Grade {$gName}" : "Tanpa Grade";
+                $gradeParts[] = "{$gLabel}: " . number_format($gQty, 2, ',', '.') . " kg";
+            }
+            $summary['singkong_grade_desc'] = implode(' + ', $gradeParts);
+            $summary['singkong_grades'] = $singkongGrades;
+        } else {
+            $summary['singkong_grade_desc'] = '-';
+            $summary['singkong_grades'] = [];
+        }
+
         $summary['karton_estimasi'] = $kartonCount;
         $summary['items'] = $items;
+        $summary['total_item_count'] = count($items);
 
         return $summary;
     }
@@ -1266,8 +1314,11 @@ class ProduksiService
             $tgl = $data['produksi_tgl'] ?? date('Y-m-d');
             $data['hari_nm'] = Carbon::parse($tgl)->isoFormat('dddd'); // Friday, Saturday, etc.
 
-            if (empty($data['produksi_no'])) {
+            $prodNo = !empty($data['produksi_no']) ? trim($data['produksi_no']) : null;
+            if (empty($prodNo) || DatProduksiHdr::where('produksi_no', $prodNo)->exists()) {
                 $data['produksi_no'] = $this->codeGenerator->generateProduksiNo($tgl);
+            } else {
+                $data['produksi_no'] = $prodNo;
             }
 
             // Cek apakah produk utama yang dihasilkan adalah standar Indofood IFM / WIP-FCC
@@ -1312,21 +1363,31 @@ class ProduksiService
             $data['jam_produksi'] = !empty($data['jam_produksi']) ? trim($data['jam_produksi']) : date('H:i');
             $data['varietas_singkong'] = !empty($data['varietas_singkong']) ? trim($data['varietas_singkong']) : 'STP / MGU';
 
-            // Generate Batch No jika belum ada
-            if (empty($data['batch_wip_no'])) {
-                if ($isIfm && $qtyKarton > 0 && !empty($noAwal) && !empty($noAkhir)) {
-                    $padAwal = str_pad((string) $noAwal, 4, '0', STR_PAD_LEFT);
-                    $padAkhir = str_pad((string) $noAkhir, 4, '0', STR_PAD_LEFT);
-                    $data['batch_wip_no'] = "{$shift}{$padAwal} - {$shift}{$padAkhir}";
-                } else {
-                    // Barang Jadi Reguler PT Mirasa: Format Tanggal Murni 'd m Y'
-                    $baseDate = Carbon::parse($tgl)->format('d m Y');
-                    $data['batch_wip_no'] = $baseDate;
-                }
+            // Opsi Penomoran Batch: Sertakan (Default) vs Tangguhkan (Buffer Stock IFM)
+            $isBatchExcluded = (!empty($data['batch_option']) && $data['batch_option'] === 'exclude') 
+                || (!empty($data['batch_wip_no']) && in_array(strtoupper(trim($data['batch_wip_no'])), ['BELUM TERBIT', 'PENDING']));
+
+            if ($isBatchExcluded) {
+                $data['batch_wip_no'] = 'BELUM TERBIT';
+                $data['no_karton_awal'] = null;
+                $data['no_karton_akhir'] = null;
             } else {
-                // Jika bukan IFM karton dan batch_wip_no mengandung suffix -01/-02 dari form lama, bersihkan ke format tanggal murni
-                if (!$isIfm && preg_match('/^\d{2}\s+\d{2}\s+\d{4}-\d+$/', trim($data['batch_wip_no']))) {
-                    $data['batch_wip_no'] = preg_replace('/-\d+$/', '', trim($data['batch_wip_no']));
+                // Generate Batch No jika belum ada
+                if (empty($data['batch_wip_no'])) {
+                    if ($isIfm && $qtyKarton > 0 && !empty($noAwal) && !empty($noAkhir)) {
+                        $padAwal = str_pad((string) $noAwal, 4, '0', STR_PAD_LEFT);
+                        $padAkhir = str_pad((string) $noAkhir, 4, '0', STR_PAD_LEFT);
+                        $data['batch_wip_no'] = "{$shift}{$padAwal} - {$shift}{$padAkhir}";
+                    } else {
+                        // Barang Jadi Reguler PT Mirasa: Format Tanggal Murni 'd m Y'
+                        $baseDate = Carbon::parse($tgl)->format('d m Y');
+                        $data['batch_wip_no'] = $baseDate;
+                    }
+                } else {
+                    // Jika bukan IFM karton dan batch_wip_no mengandung suffix -01/-02 dari form lama, bersihkan ke format tanggal murni
+                    if (!$isIfm && preg_match('/^\d{2}\s+\d{2}\s+\d{4}-\d+$/', trim($data['batch_wip_no']))) {
+                        $data['batch_wip_no'] = preg_replace('/-\d+$/', '', trim($data['batch_wip_no']));
+                    }
                 }
             }
 
@@ -1476,7 +1537,11 @@ class ProduksiService
                             $batchItem = $cleanBatch;
                         }
                     } else {
-                        $batchItem = (!empty($item['batch_no']) && $item['batch_no'] !== '-') ? $item['batch_no'] : $produksi->batch_wip_no;
+                        if ($isBatchExcluded) {
+                            $batchItem = 'BELUM TERBIT';
+                        } else {
+                            $batchItem = (!empty($item['batch_no']) && $item['batch_no'] !== '-') ? $item['batch_no'] : $produksi->batch_wip_no;
+                        }
                     }
 
                     $hppItem = isset($item['hpp_satuan']) && (float)$item['hpp_satuan'] > 0 ? (float)$item['hpp_satuan'] : $hppPerKg;
@@ -1484,6 +1549,17 @@ class ProduksiService
                     $finalQtyHasil = $qtyHasil > 0 ? $qtyHasil : $qtyKg;
                     $finalQtyKg = $qtyKg > 0 ? $qtyKg : $qtyHasil;
                     $subtotalNilai = round($finalQtyKg * $hppItem, 2);
+                    $isKw2 = (!empty($item['grade_cd']) && $item['grade_cd'] === 'KW2')
+                        || ($barang->grade_cd === 'KW2')
+                        || str_contains(strtoupper($barang->barang_nm), 'KW 2')
+                        || str_contains(strtoupper($barang->barang_nm), 'KW2')
+                        || str_contains(strtoupper($barang->barang_nm), 'BERKO')
+                        || str_contains(strtoupper($barang->barang_nm), 'REMAHAN')
+                        || str_contains(strtoupper($barang->barang_nm), 'LENGKET')
+                        || str_starts_with(strtoupper($barang->barang_cd), 'WIP-KW')
+                        || str_starts_with(strtoupper($barang->barang_cd), 'WIP-BRK');
+
+                    $itemGradeCd = $isKw2 ? 'KW2' : 'KW1';
 
                     DatProduksiDtl::create([
                         'produksi_id'     => $produksi->produksi_id,
@@ -1492,6 +1568,7 @@ class ProduksiService
                         'kategori_output' => $barang->barang_cd,
                         'qty_hasil'       => $finalQtyHasil,
                         'satuan_cd'       => $satuanCd,
+                        'grade_cd'        => $itemGradeCd,
                         'qty_kg'          => $finalQtyKg,
                         'batch_no'        => $batchItem,
                         'hpp_satuan'      => $hppItem,
@@ -1508,7 +1585,8 @@ class ProduksiService
                             $expiredDate,
                             $produksi->produksi_no,
                             "Hasil Produksi {$jenisCd} {$produksi->produksi_no}",
-                            $hppItem
+                            $hppItem,
+                            $itemGradeCd
                         );
                     }
                 }
@@ -1535,6 +1613,90 @@ class ProduksiService
         return DatProduksiHdr::with(['pemakaianBahan', 'gudang', 'outputs.barang', 'adjustmentLogs'])
             ->where('produksi_id', $id)
             ->firstOrFail();
+    }
+
+    /**
+     * Menerbitkan nomor batch resmi untuk produksi IFM yang sebelumnya berstatus Buffer Stock (PENDING).
+     *
+     * @param int $produksiId
+     * @param array $data ['tgl_keberangkatan' => 'Y-m-d', 'shift_cd' => 'A'|'B', 'no_karton_awal' => int]
+     * @return DatProduksiHdr
+     * @throws Exception
+     */
+    public function assignBatch(int $produksiId, array $data): DatProduksiHdr
+    {
+        return DB::transaction(function () use ($produksiId, $data) {
+            $produksi = DatProduksiHdr::with(['outputs.barang', 'gudang'])->findOrFail($produksiId);
+
+            $tglBerangkat = $data['tgl_keberangkatan'] ?? date('Y-m-d');
+            $shift = strtoupper($data['shift_cd'] ?? ($produksi->shift_cd ?: 'A'));
+            $noAwal = (int) ($data['no_karton_awal'] ?? 1);
+            $qtyKarton = (int) ($produksi->qty_karton > 0 ? $produksi->qty_karton : ($data['qty_karton'] ?? 0));
+            $noAkhir = $qtyKarton > 0 ? ($noAwal + $qtyKarton - 1) : $noAwal;
+
+            $padAwal = str_pad((string) $noAwal, 4, '0', STR_PAD_LEFT);
+            $padAkhir = str_pad((string) $noAkhir, 4, '0', STR_PAD_LEFT);
+            $newBatchNo = "{$shift}{$padAwal} - {$shift}{$padAkhir}";
+            $newExpDate = Carbon::parse($tglBerangkat)->addMonths(6)->toDateString();
+
+            // 1. Update Header Produksi
+            $produksi->shift_cd = $shift;
+            $produksi->no_karton_awal = $noAwal;
+            $produksi->no_karton_akhir = $noAkhir;
+            $produksi->batch_wip_no = $newBatchNo;
+            $produksi->exp_date = $newExpDate;
+            $produksi->updated_by = Auth::id() ?? 1;
+            $produksi->updated_dt = now();
+            $produksi->save();
+
+            // 2. Update Detail Produksi
+            $affectedBarangIds = [];
+            foreach ($produksi->outputs as $dtl) {
+                if (in_array($dtl->batch_no, ['BELUM TERBIT', 'PENDING']) || empty($dtl->batch_no) || str_contains(strtoupper($dtl->barang?->barang_cd ?? ''), 'FCC')) {
+                    $dtl->batch_no = $newBatchNo;
+                    $dtl->updated_by = Auth::id() ?? 1;
+                    $dtl->updated_dt = now();
+                    $dtl->save();
+                    $affectedBarangIds[] = $dtl->barang_id;
+                }
+            }
+
+            // 3. Update DatStokBatch dan DatStokLedger di Gudang jika sudah POSTED
+            $gudangId = (int) $produksi->gudang_id;
+            
+            // Cari stok batch BELUM TERBIT / PENDING untuk barang yang diproduksi di dokumen ini
+            $pendingBatches = DatStokBatch::where('gudang_id', $gudangId)
+                ->whereIn('batch_no', ['BELUM TERBIT', 'PENDING'])
+                ->whereIn('barang_id', $affectedBarangIds)
+                ->get();
+
+            foreach ($pendingBatches as $stk) {
+                $existingNewBatch = DatStokBatch::where('gudang_id', $gudangId)
+                    ->where('barang_id', $stk->barang_id)
+                    ->where('batch_no', $newBatchNo)
+                    ->where('grade_cd', $stk->grade_cd)
+                    ->first();
+
+                if ($existingNewBatch) {
+                    $existingNewBatch->qty_awal += $stk->qty_awal;
+                    $existingNewBatch->sisa_qty += $stk->sisa_qty;
+                    $existingNewBatch->expired_tgl = $newExpDate;
+                    $existingNewBatch->save();
+                    $stk->delete();
+                } else {
+                    $stk->batch_no = $newBatchNo;
+                    $stk->expired_tgl = $newExpDate;
+                    $stk->save();
+                }
+            }
+
+            // Update catatan ledger kartu stok terkait nomor dokumen produksi ini
+            DatStokLedger::where('dokumen_no', $produksi->produksi_no)
+                ->whereIn('batch_no', ['BELUM TERBIT', 'PENDING'])
+                ->update(['batch_no' => $newBatchNo]);
+
+            return $produksi;
+        });
     }
 
     /**
@@ -1644,15 +1806,29 @@ class ProduksiService
             $targetGrade = strtoupper($filters['grade_cd']);
             if ($targetGrade === 'KW2') {
                 $query->where(function ($q) {
-                    $q->whereHas('barang', fn($b) => $b->where('grade_cd', 'KW2'))
+                    $q->where('grade_cd', 'KW2')
+                      ->orWhereHas('barang', fn($b) => $b->where('grade_cd', 'KW2'))
                       ->orWhere('kategori_output', 'KW2')
                       ->orWhereHas('produksi', fn($p) => $p->where('lini_produksi', 'ILIKE', '%SORTIR%')->orWhere('lini_produksi', 'ILIKE', '%REWORK%'));
                 });
             } elseif ($targetGrade === 'KW1') {
                 $query->where(function ($q) {
-                    $q->whereHas('barang', fn($b) => $b->where('grade_cd', 'KW1')->orWhereNull('grade_cd'))
-                      ->whereDoesntHave('barang', fn($b) => $b->where('grade_cd', 'KW2'));
-                })->whereDoesntHave('produksi', fn($p) => $p->where('lini_produksi', 'ILIKE', '%SORTIR%')->orWhere('lini_produksi', 'ILIKE', '%REWORK%'));
+                    $q->where(function ($sub) {
+                        $sub->where('grade_cd', 'KW1')
+                            ->orWhere(function ($sub2) {
+                                $sub2->whereNull('grade_cd')
+                                     ->whereHas('barang', fn($b) => $b->where('grade_cd', 'KW1')->orWhereNull('grade_cd'));
+                            });
+                    })
+                    ->where(function ($sub3) {
+                        $sub3->whereNull('grade_cd')->orWhere('grade_cd', '!=', 'KW2');
+                    })
+                    ->where(function ($sub4) {
+                        $sub4->whereNull('kategori_output')->orWhere('kategori_output', '!=', 'KW2');
+                    })
+                    ->whereDoesntHave('barang', fn($b) => $b->where('grade_cd', 'KW2'))
+                    ->whereDoesntHave('produksi', fn($p) => $p->where('lini_produksi', 'ILIKE', '%SORTIR%')->orWhere('lini_produksi', 'ILIKE', '%REWORK%'));
+                });
             }
         }
 
@@ -1796,15 +1972,29 @@ class ProduksiService
             $targetGrade = strtoupper($filters['grade_cd']);
             if ($targetGrade === 'KW2') {
                 $query->where(function ($q) {
-                    $q->whereHas('barang', fn($b) => $b->where('grade_cd', 'KW2'))
+                    $q->where('grade_cd', 'KW2')
+                      ->orWhereHas('barang', fn($b) => $b->where('grade_cd', 'KW2'))
                       ->orWhere('kategori_output', 'KW2')
                       ->orWhereHas('produksi', fn($p) => $p->where('lini_produksi', 'ILIKE', '%SORTIR%')->orWhere('lini_produksi', 'ILIKE', '%REWORK%'));
                 });
             } elseif ($targetGrade === 'KW1') {
                 $query->where(function ($q) {
-                    $q->whereHas('barang', fn($b) => $b->where('grade_cd', 'KW1')->orWhereNull('grade_cd'))
-                      ->whereDoesntHave('barang', fn($b) => $b->where('grade_cd', 'KW2'));
-                })->whereDoesntHave('produksi', fn($p) => $p->where('lini_produksi', 'ILIKE', '%SORTIR%')->orWhere('lini_produksi', 'ILIKE', '%REWORK%'));
+                    $q->where(function ($sub) {
+                        $sub->where('grade_cd', 'KW1')
+                            ->orWhere(function ($sub2) {
+                                $sub2->whereNull('grade_cd')
+                                     ->whereHas('barang', fn($b) => $b->where('grade_cd', 'KW1')->orWhereNull('grade_cd'));
+                            });
+                    })
+                    ->where(function ($sub3) {
+                        $sub3->whereNull('grade_cd')->orWhere('grade_cd', '!=', 'KW2');
+                    })
+                    ->where(function ($sub4) {
+                        $sub4->whereNull('kategori_output')->orWhere('kategori_output', '!=', 'KW2');
+                    })
+                    ->whereDoesntHave('barang', fn($b) => $b->where('grade_cd', 'KW2'))
+                    ->whereDoesntHave('produksi', fn($p) => $p->where('lini_produksi', 'ILIKE', '%SORTIR%')->orWhere('lini_produksi', 'ILIKE', '%REWORK%'));
+                });
             }
         }
 
@@ -1918,6 +2108,13 @@ class ProduksiService
                     if ($modeCng === 'update_tarif' && $cngTarifBaru > 0) {
                         $record->cng_tarif = $cngTarifBaru;
                         $record->cng_nilai = round($record->cng_mmbtu * $cngTarifBaru, 2);
+                    } elseif ($modeCng === 'proporsional_wip') {
+                        $record->cng_nilai = $totalWipBulanIni > 0
+                            ? round($totalCngTagihan * ($record->total_wip_qty / $totalWipBulanIni), 2)
+                            : round($totalCngTagihan / $count, 2);
+                        if ($record->cng_mmbtu > 0) {
+                            $record->cng_tarif = round($record->cng_nilai / $record->cng_mmbtu, 2);
+                        }
                     } elseif ($modeCng === 'total_tagihan') {
                         $record->cng_tarif = $effectiveCngTarif;
                         $record->cng_nilai = round($record->cng_mmbtu * $effectiveCngTarif, 2);
@@ -2744,6 +2941,200 @@ class ProduksiService
     public function getNextBatchSequence(string $tgl): string
     {
         return Carbon::parse($tgl)->format('d m Y');
+    }
+
+    /**
+     * Ekstraksi ringkasan dokumen produksi fisik untuk ditarik ke Formulir Kalkulasi HPP (Finance).
+     */
+    public function getProduksiDataForHpp(int $id): array
+    {
+        $prod = DatProduksiHdr::with(['pemakaianBahan.details.barang.satuan', 'gudang', 'outputs.barang.satuanDasar'])->findOrFail($id);
+
+        $outputs = [];
+        foreach ($prod->outputs as $out) {
+            $barang = $out->barang;
+            $outputs[] = [
+                'output_id'       => $out->output_id,
+                'barang_id'       => $out->barang_id,
+                'barang_nm'       => $barang?->barang_nm ?? ($out->kategori_output ?? 'Output WIP'),
+                'barang_cd'       => $barang?->barang_cd ?? 'WIP',
+                'kategori_output' => $out->kategori_output,
+                'grade_cd'        => $out->grade_cd ?? 'KW1',
+                'batch_no'        => $out->batch_no ?: ($prod->batch_wip_no ?: '-'),
+                'qty_hasil'       => (float) $out->qty_hasil,
+                'satuan_cd'       => $out->satuan_cd ?: ($barang?->satuanDasar?->satuan_nm ?? 'KG'),
+                'qty_kg'          => (float) $out->qty_kg,
+                'hpp_satuan'      => (float) ($out->hpp_satuan > 0 ? $out->hpp_satuan : $prod->hpp_per_kg),
+                'total_nilai'     => (float) $out->total_nilai,
+            ];
+        }
+
+        return [
+            'produksi_id'          => $prod->produksi_id,
+            'produksi_no'          => $prod->produksi_no,
+            'produksi_tgl'         => $prod->produksi_tgl,
+            'produksi_tgl_fmt'     => Carbon::parse($prod->produksi_tgl)->format('d/m/Y'),
+            'hari_nm'              => $prod->hari_nm,
+            'shift_cd'             => $prod->shift_cd,
+            'lini_produksi'        => $prod->lini_produksi,
+            'gudang_id'            => $prod->gudang_id,
+            'gudang_nm'            => $prod->gudang?->gudang_nm ?? 'Gudang Utama',
+            'pakai_id'             => $prod->pakai_id,
+            'pakai_no'             => $prod->pemakaianBahan?->pakai_no ?? '-',
+            'varietas_singkong'    => $prod->varietas_singkong,
+            'qty_karton'           => $prod->qty_karton,
+            'batch_wip_no'         => $prod->batch_wip_no,
+
+            // Kuantitas Fisik Bahan (dari BPPB)
+            'singkong_qty'         => (float) $prod->singkong_qty,
+            'singkong_nilai'       => (float) $prod->singkong_nilai,
+            'minyak_sawit_qty'     => (float) $prod->minyak_sawit_qty,
+            'minyak_kelapa_qty'    => (float) $prod->minyak_kelapa_qty,
+            'minyak_nilai'         => (float) $prod->minyak_nilai,
+            'bumbu_qty'            => (float) $prod->bumbu_qty,
+            'bumbu_nilai'          => (float) $prod->bumbu_nilai,
+
+            // Kemasan
+            'karton_baru_qty'      => (float) $prod->karton_baru_qty,
+            'karton_baru_nilai'    => (float) $prod->karton_baru_nilai,
+            'karton_bekas_qty'     => (float) $prod->karton_bekas_qty,
+            'karton_bekas_nilai'   => (float) $prod->karton_bekas_nilai,
+            'plastik_hd_qty'       => (float) $prod->plastik_hd_qty,
+            'plastik_hd_nilai'     => (float) $prod->plastik_hd_nilai,
+            'lakban_besar_qty'     => (float) $prod->lakban_besar_qty,
+            'lakban_besar_nilai'   => (float) $prod->lakban_besar_nilai,
+            'lakban_kecil_qty'     => (float) $prod->lakban_kecil_qty,
+            'lakban_kecil_nilai'   => (float) $prod->lakban_kecil_nilai,
+            'tali_rafia_qty'       => (float) $prod->tali_rafia_qty,
+            'tali_rafia_nilai'     => (float) $prod->tali_rafia_nilai,
+
+            // Gas CNG
+            'cng_mmbtu'            => (float) $prod->cng_mmbtu,
+            'cng_tarif_usd'        => (float) ($prod->cng_tarif_usd > 0 ? $prod->cng_tarif_usd : 14.50),
+            'cng_kurs_jisdor'      => (float) ($prod->cng_kurs_jisdor > 0 ? $prod->cng_kurs_jisdor : 18138.00),
+            'cng_tarif'            => (float) ($prod->cng_tarif > 0 ? $prod->cng_tarif : round(14.50 * 18138, 2)),
+            'cng_nilai'            => (float) $prod->cng_nilai,
+
+            // Tenaga Kerja
+            'tk_jumlah_org'        => (int) $prod->tk_jumlah_org,
+            'tk_total_nilai'       => (float) $prod->tk_total_nilai,
+
+            // Metrik Fisik & Hasil
+            'total_wip_qty'        => (float) $prod->total_wip_qty,
+            'rendemen_persen'      => (float) $prod->rendemen_persen,
+            'total_biaya_produksi' => (float) $prod->total_biaya_produksi,
+            'hpp_per_kg'           => (float) $prod->hpp_per_kg,
+            'outputs'              => $outputs,
+        ];
+    }
+
+    /**
+     * Simpan Lembar Kalkulasi HPP Produksi Khusus Bagian Keuangan / Costing (Tahap 3).
+     */
+    public function saveHppCalculation(int $produksiId, array $data, string $userId): DatProduksiHdr
+    {
+        return DB::transaction(function () use ($produksiId, $data, $userId) {
+            $produksi = DatProduksiHdr::with(['outputs.barang', 'gudang'])->findOrFail($produksiId);
+
+            // Update biaya bahan baku & kemasan jika disesuaikan Finance
+            if (isset($data['singkong_nilai'])) $produksi->singkong_nilai = (float) $data['singkong_nilai'];
+            if (isset($data['minyak_nilai'])) $produksi->minyak_nilai = (float) $data['minyak_nilai'];
+            if (isset($data['bumbu_nilai'])) $produksi->bumbu_nilai = (float) $data['bumbu_nilai'];
+            if (isset($data['karton_baru_nilai'])) $produksi->karton_baru_nilai = (float) $data['karton_baru_nilai'];
+            if (isset($data['karton_bekas_nilai'])) $produksi->karton_bekas_nilai = (float) $data['karton_bekas_nilai'];
+            if (isset($data['plastik_hd_nilai'])) $produksi->plastik_hd_nilai = (float) $data['plastik_hd_nilai'];
+            if (isset($data['lakban_besar_nilai'])) $produksi->lakban_besar_nilai = (float) $data['lakban_besar_nilai'];
+            if (isset($data['lakban_kecil_nilai'])) $produksi->lakban_kecil_nilai = (float) $data['lakban_kecil_nilai'];
+            if (isset($data['tali_rafia_nilai'])) $produksi->tali_rafia_nilai = (float) $data['tali_rafia_nilai'];
+
+            // Update Gas CNG
+            if (isset($data['cng_mmbtu'])) $produksi->cng_mmbtu = (float) $data['cng_mmbtu'];
+            if (isset($data['cng_tarif_usd'])) $produksi->cng_tarif_usd = (float) $data['cng_tarif_usd'];
+            if (isset($data['cng_kurs_jisdor'])) $produksi->cng_kurs_jisdor = (float) $data['cng_kurs_jisdor'];
+            if (isset($data['cng_tarif'])) $produksi->cng_tarif = (float) $data['cng_tarif'];
+            if (isset($data['cng_nilai'])) $produksi->cng_nilai = (float) $data['cng_nilai'];
+
+            // Update Tenaga Kerja
+            if (isset($data['tk_jumlah_org'])) {
+                $produksi->tk_jumlah_org = (int) $data['tk_jumlah_org'];
+                $produksi->tk_langsung_org = (int) $data['tk_jumlah_org'];
+            }
+            if (isset($data['tk_total_nilai'])) $produksi->tk_total_nilai = (float) $data['tk_total_nilai'];
+
+            // Subtotal Bahan
+            $produksi->total_bahan_nilai = (float) $produksi->singkong_nilai +
+                (float) $produksi->minyak_nilai +
+                (float) $produksi->bumbu_nilai +
+                (float) $produksi->karton_baru_nilai +
+                (float) $produksi->karton_bekas_nilai +
+                (float) $produksi->plastik_hd_nilai +
+                (float) $produksi->lakban_besar_nilai +
+                (float) $produksi->lakban_kecil_nilai +
+                (float) $produksi->tali_rafia_nilai;
+
+            // Total Biaya Produksi: Bahan + CNG + TK + FOH
+            $newTotalBiaya = round(
+                (float) $produksi->total_bahan_nilai +
+                (float) $produksi->cng_nilai +
+                (float) $produksi->tk_total_nilai +
+                (float) ($produksi->total_overhead_nilai ?? 0),
+                2
+            );
+            $produksi->total_biaya_produksi = $newTotalBiaya;
+
+            // Rendemen Singkong (%) = (Total WIP Qty / Singkong Qty) * 100%
+            $effectiveSingkong = (float) $produksi->singkong_qty;
+            $produksi->rendemen_persen = $effectiveSingkong > 0 
+                ? round(($produksi->total_wip_qty / $effectiveSingkong) * 100, 2) 
+                : 0;
+
+            // HPP per Kg = Total Biaya / Total WIP Qty
+            $effectiveWip = (float) $produksi->total_wip_qty;
+            if ($effectiveWip <= 0 && $produksi->outputs && $produksi->outputs->isNotEmpty()) {
+                $effectiveWip = (float) $produksi->outputs->sum('qty_kg');
+            }
+            $newHppPerKg = $effectiveWip > 0 ? round($newTotalBiaya / $effectiveWip, 2) : 0;
+            $produksi->hpp_per_kg = $newHppPerKg;
+
+            // Catatan Keuangan / Finance
+            if (!empty($data['catatan_hpp'])) {
+                $prefix = "[HPP Finance " . date('d/m/Y H:i') . "]: ";
+                $produksi->catatan_txt = trim(($produksi->catatan_txt ? $produksi->catatan_txt . "\n" : '') . $prefix . $data['catatan_hpp']);
+            }
+
+            $produksi->updated_by = $userId;
+            $produksi->version_no = ((int) ($produksi->version_no ?? 1)) + 1;
+            $produksi->save();
+
+            // Alokasi HPP per Output Barang
+            if ($produksi->outputs && $produksi->outputs->isNotEmpty()) {
+                $customOutputPrices = $data['output_hpp'] ?? []; // [output_id => hpp_satuan]
+                foreach ($produksi->outputs as $out) {
+                    $outId = $out->output_id;
+                    $itemHpp = isset($customOutputPrices[$outId]) && (float)$customOutputPrices[$outId] > 0
+                        ? (float) $customOutputPrices[$outId] 
+                        : $newHppPerKg;
+                    $out->hpp_satuan = $itemHpp;
+                    $out->total_nilai = round((float) $out->qty_kg * $itemHpp, 2);
+                    $out->updated_by = $userId;
+                    $out->version_no = ((int) ($out->version_no ?? 1)) + 1;
+                    $out->save();
+
+                    // Update harga satuan di kartu stok batch
+                    if (!empty($out->batch_no) && $out->barang_id) {
+                        DatStokBatch::where('barang_id', $out->barang_id)
+                            ->where('batch_no', $out->batch_no)
+                            ->where('deleted_st', false)
+                            ->update([
+                                'harga_satuan' => $itemHpp,
+                                'updated_by'   => $userId,
+                            ]);
+                    }
+                }
+            }
+
+            return $produksi;
+        });
     }
 }
 

@@ -134,8 +134,112 @@ function recalcReturRow(input) {
         subtotalEl.textContent = 'Rp ' + subtotal.toLocaleString('id-ID');
     }
 
+    // Sync perlakuan values
+    const perlakuanInp = document.getElementById('returPerlakuan_' + idx);
+    const mode = perlakuanInp ? perlakuanInp.value : 'MASUK_PERSEDIAAN';
+    const inpMasuk = document.getElementById('returQtyMasuk_' + idx);
+    const inpMusnah = document.getElementById('returQtyMusnah_' + idx);
+
+    if (mode === 'MASUK_PERSEDIAAN') {
+        if (inpMasuk) inpMasuk.value = val;
+        if (inpMusnah) inpMusnah.value = 0;
+    } else if (mode === 'DIMUSNAHKAN') {
+        if (inpMasuk) inpMasuk.value = 0;
+        if (inpMusnah) inpMusnah.value = val;
+    } else if (mode === 'CAMPUR') {
+        let m = parseFloat(inpMasuk ? inpMasuk.value : 0) || 0;
+        if (m > val) m = val;
+        if (inpMasuk) inpMasuk.value = m;
+        if (inpMusnah) inpMusnah.value = Math.max(0, val - m);
+    }
+
+    updateReturSummaryTotals();
+}
+
+function setRowDisposisi(idx, mode) {
+    const perlakuanInp = document.getElementById('returPerlakuan_' + idx);
+    if (perlakuanInp) perlakuanInp.value = mode;
+
+    const row = document.getElementById('returRow_' + idx);
+    if (row) {
+        row.querySelectorAll('.disposisi-btn').forEach(btn => {
+            btn.classList.remove('active-persediaan', 'active-musnah', 'active-campur');
+        });
+
+        const activeBtn = row.querySelector(`.disposisi-btn[data-mode="${mode}"]`);
+        if (activeBtn) {
+            if (mode === 'MASUK_PERSEDIAAN') activeBtn.classList.add('active-persediaan');
+            else if (mode === 'DIMUSNAHKAN') activeBtn.classList.add('active-musnah');
+            else if (mode === 'CAMPUR') activeBtn.classList.add('active-campur');
+        }
+
+        const splitBox = document.getElementById('returSplitBox_' + idx);
+        const qtyInp = row.querySelector('input[name$="[qty_retur]"]');
+        const totalQty = parseFloat(qtyInp ? qtyInp.value : 0) || 0;
+        const inpMasuk = document.getElementById('returQtyMasuk_' + idx);
+        const inpMusnah = document.getElementById('returQtyMusnah_' + idx);
+
+        if (mode === 'CAMPUR') {
+            if (splitBox) splitBox.style.display = 'flex';
+            const half = Math.floor(totalQty / 2);
+            if (inpMasuk) inpMasuk.value = half;
+            if (inpMusnah) inpMusnah.value = Math.max(0, totalQty - half);
+        } else {
+            if (splitBox) splitBox.style.display = 'none';
+            if (mode === 'MASUK_PERSEDIAAN') {
+                if (inpMasuk) inpMasuk.value = totalQty;
+                if (inpMusnah) inpMusnah.value = 0;
+            } else {
+                if (inpMasuk) inpMasuk.value = 0;
+                if (inpMusnah) inpMusnah.value = totalQty;
+            }
+        }
+    }
+
+    updateReturSummaryTotals();
+}
+
+function onSplitQtyChange(idx, changedField) {
+    const row = document.getElementById('returRow_' + idx);
+    if (!row) return;
+
+    const qtyInp = row.querySelector('input[name$="[qty_retur]"]');
+    const totalQty = parseFloat(qtyInp ? qtyInp.value : 0) || 0;
+    const inpMasuk = document.getElementById('returQtyMasuk_' + idx);
+    const inpMusnah = document.getElementById('returQtyMusnah_' + idx);
+
+    if (changedField === 'MASUK') {
+        let masuk = parseFloat(inpMasuk ? inpMasuk.value : 0) || 0;
+        if (masuk < 0) masuk = 0;
+        if (masuk > totalQty) masuk = totalQty;
+        if (inpMasuk) inpMasuk.value = masuk;
+        if (inpMusnah) inpMusnah.value = Math.max(0, totalQty - masuk);
+    } else {
+        let musnah = parseFloat(inpMusnah ? inpMusnah.value : 0) || 0;
+        if (musnah < 0) musnah = 0;
+        if (musnah > totalQty) musnah = totalQty;
+        if (inpMusnah) inpMusnah.value = musnah;
+        if (inpMasuk) inpMasuk.value = Math.max(0, totalQty - musnah);
+    }
+
+    updateReturSummaryTotals();
+}
+
+function setAllDisposisi(mode) {
+    document.querySelectorAll('#modalReturPenjualan tr[id^="returRow_"]').forEach(row => {
+        const idx = row.getAttribute('data-idx');
+        if (idx !== null) {
+            setRowDisposisi(idx, mode);
+        }
+    });
+}
+
+function updateReturSummaryTotals() {
     let totalQty = 0;
     let totalNilai = 0;
+    let totalMasuk = 0;
+    let totalMusnah = 0;
+
     document.querySelectorAll('#modalReturPenjualan input[name$="[qty_retur]"]').forEach(inp => {
         const q = parseFloat(inp.value) || 0;
         const p = parseFloat(inp.getAttribute('data-price')) || 0;
@@ -143,10 +247,23 @@ function recalcReturRow(input) {
         totalNilai += Math.round(q * p);
     });
 
+    document.querySelectorAll('#modalReturPenjualan input[name$="[qty_masuk_persediaan]"]').forEach(inp => {
+        totalMasuk += (parseFloat(inp.value) || 0);
+    });
+
+    document.querySelectorAll('#modalReturPenjualan input[name$="[qty_dimusnahkan]"]').forEach(inp => {
+        totalMusnah += (parseFloat(inp.value) || 0);
+    });
+
     const lblQty = document.getElementById('lblTotalReturQty');
     const lblNilai = document.getElementById('lblTotalReturNilai');
+    const lblMasuk = document.getElementById('lblTotalReturMasuk');
+    const lblMusnah = document.getElementById('lblTotalReturMusnah');
+
     if (lblQty) lblQty.textContent = totalQty.toLocaleString('id-ID');
     if (lblNilai) lblNilai.textContent = 'Rp ' + totalNilai.toLocaleString('id-ID');
+    if (lblMasuk) lblMasuk.textContent = totalMasuk.toLocaleString('id-ID') + ' Karton';
+    if (lblMusnah) lblMusnah.textContent = totalMusnah.toLocaleString('id-ID') + ' Karton';
 }
 
 function openVoidReturModal(returId, returNo) {

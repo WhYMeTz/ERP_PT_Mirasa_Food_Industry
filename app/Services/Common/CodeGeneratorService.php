@@ -719,13 +719,48 @@ class CodeGeneratorService
     }
 
     /**
-     * Generate Nomor Dokumen Produksi Harian (format: PRD-YYYYMMDD-0001)
+     * Generate Nomor Dokumen Hasil Produksi Standar (format: {seq:3}/PRD/MFI/{month}/{year})
+     * Contoh: 001/PRD/MFI/11/26
      */
-    public function generateProduksiNo(?string $date = null): string
+    public function generateProduksiNo(?string $date = null, ?int $excludeProduksiId = null): string
     {
-        $dateFormatted = date('Ymd', strtotime($date ?? date('Y-m-d')));
-        $prefix = 'PRD-' . $dateFormatted . '-';
-        return $this->generate('dat_produksi_hdr', 'produksi_no', $prefix, 4);
+        $timestamp = strtotime($date ?? date('Y-m-d'));
+        $month = date('m', $timestamp);
+        $year = date('y', $timestamp);
+        $suffix = "/PRD/MFI/{$month}/{$year}";
+
+        $query = DB::table('dat_produksi_hdr')
+            ->where('produksi_no', 'LIKE', '%' . $suffix);
+
+        if ($excludeProduksiId) {
+            $query->where('produksi_id', '!=', $excludeProduksiId);
+        }
+
+        $existing = $query->pluck('produksi_no');
+
+        $maxNumber = 0;
+        $regex = '/^(\d+)\/PRD\/MFI\/' . $month . '\/' . $year . '$/i';
+
+        foreach ($existing as $prodNo) {
+            if (preg_match($regex, trim((string) $prodNo), $matches)) {
+                $num = (int) $matches[1];
+                if ($num > $maxNumber) {
+                    $maxNumber = $num;
+                }
+            }
+        }
+
+        do {
+            $maxNumber++;
+            $generated = str_pad((string) $maxNumber, 3, '0', STR_PAD_LEFT) . $suffix;
+            $checkQuery = DB::table('dat_produksi_hdr')->where('produksi_no', $generated);
+            if ($excludeProduksiId) {
+                $checkQuery->where('produksi_id', '!=', $excludeProduksiId);
+            }
+            $exists = $checkQuery->exists();
+        } while ($exists);
+
+        return $generated;
     }
 
     /**

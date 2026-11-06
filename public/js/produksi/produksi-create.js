@@ -24,6 +24,24 @@
         });
     }
 
+    // Toggle Section Finansial & Costing HPP (Khusus Bagian Keuangan)
+    window.toggleFinanceSection = function () {
+        const body = document.getElementById('financeSectionBody');
+        const text = document.getElementById('financeSectionToggleText');
+        const topText = document.getElementById('btnFinanceToggleTopText');
+        if (!body) return;
+        const isHidden = body.style.display === 'none' || body.style.display === '';
+        if (isHidden) {
+            body.style.display = 'block';
+            if (text) text.textContent = '[-] Tutup Rincian Finansial';
+            if (topText) topText.textContent = 'Tutup Rincian Finansial';
+        } else {
+            body.style.display = 'none';
+            if (text) text.textContent = '[+ Buka Rincian Finansial]';
+            if (topText) topText.textContent = 'Rincian Finansial & HPP';
+        }
+    };
+
     // 1. Pilih Shift A / B
     window.selectShift = function (shift) {
         const shiftUpper = shift.toUpperCase();
@@ -167,16 +185,27 @@
 
         const isCurah = isCurahWipProduct(cd, nm);
         const baseDate = getDateBatch();
+        const currentBatch = document.getElementById('batch_wip_no')?.value || '-';
         const batchForItem = isCurah
             ? (baseDate && baseDate !== '-' ? baseDate : '-')              // Curah → format tanggal murni (DD MM YYYY)
-            : (document.getElementById('batch_wip_no')?.value || '-');    // Kemasan → range karton
+            : currentBatch;                                               // Kemasan → range karton / PENDING
 
         const badgeFgBatch = document.getElementById(`badgeFgBatch_${idx}`);
         const batchFgInput = document.getElementById(`batchFg_${idx}`);
 
         if (badgeFgBatch) {
             badgeFgBatch.textContent = batchForItem;
-            if (isCurah) {
+            if (batchForItem === 'BELUM TERBIT' || batchForItem === 'PENDING') {
+                // Amber mencolok & tegas = nomor batch belum diterbitkan (Buffer Stock IFM)
+                badgeFgBatch.textContent = 'BELUM TERBIT';
+                badgeFgBatch.style.background = '#fffbeb';
+                badgeFgBatch.style.color = '#b45309';
+                badgeFgBatch.style.borderColor = '#f59e0b';
+                badgeFgBatch.style.borderWidth = '1.5px';
+                badgeFgBatch.style.borderStyle = 'solid';
+                badgeFgBatch.style.fontWeight = '700';
+                badgeFgBatch.title = 'Nomor batch belum diterbitkan (Buffer Stock IFM). Diterbitkan saat truk keberangkatan tiba.';
+            } else if (isCurah) {
                 // Hijau = curah/Berko → format tanggal murni
                 badgeFgBatch.style.background = '#f0fdf4';
                 badgeFgBatch.style.color = '#065f46';
@@ -198,6 +227,51 @@
         }
         if (batchFgInput) batchFgInput.value = batchForItem;
     }
+
+    // Toggle Switch (Standar Mirasa Mirip Utilitas Listrik): On = Aktif, Off = Ditangguhkan (Buffer Stock IFM)
+    window.toggleBatchSwitch = function (isEnabled) {
+        const mode = isEnabled ? 'include' : 'exclude';
+        window._batchOption = mode;
+
+        const hiddenOpt = document.getElementById('batch_option');
+        if (hiddenOpt) hiddenOpt.value = mode;
+
+        const sectionBody = document.getElementById('section_body_batch');
+        if (sectionBody) {
+            sectionBody.style.opacity = isEnabled ? '1' : '0.45';
+            sectionBody.style.pointerEvents = isEnabled ? 'auto' : 'none';
+        }
+
+        const inputAwal = document.getElementById('no_karton_awal');
+        const inputAkhir = document.getElementById('no_karton_akhir');
+        if (!isEnabled) {
+            if (inputAwal) {
+                if (!inputAwal.dataset.prevVal && inputAwal.value) {
+                    inputAwal.dataset.prevVal = inputAwal.value;
+                }
+                inputAwal.value = '';
+            }
+            if (inputAkhir) inputAkhir.value = '';
+        } else {
+            if (inputAwal) {
+                if (inputAwal.dataset.prevVal) {
+                    inputAwal.value = inputAwal.dataset.prevVal;
+                } else if (!inputAwal.value) {
+                    inputAwal.value = '1';
+                }
+            }
+        }
+
+        window.updateKartonRangeAndBatch();
+    };
+
+    // Alias kompatibilitas jika dipanggil dengan mode string
+    window.toggleBatchOption = function (mode) {
+        const isEnabled = (mode !== 'exclude');
+        const chk = document.getElementById('chk_enable_batch');
+        if (chk) chk.checked = isEnabled;
+        window.toggleBatchSwitch(isEnabled);
+    };
 
     // Helper: Sinkronisasi Kode Batch Bagian 2 ke seluruh Baris Output Barang Jadi (Bagian 7)
     // Per baris: kemasan IFM → range, WIP curah → tanggal murni harian (DD MM YYYY)
@@ -352,10 +426,15 @@
             }
         }
 
-        // Hitung nomor akhir: awal + qty - 1 (hanya jika nomor karton diisi)
+        const chkSwitch = document.getElementById('chk_enable_batch');
+        const isBatchExcluded = (chkSwitch ? !chkSwitch.checked : false) || (window._batchOption === 'exclude') || (document.getElementById('batch_option')?.value === 'exclude');
+
+        // Hitung nomor akhir: awal + qty - 1 (hanya jika nomor karton diisi dan tidak di-exclude)
         let noAkhir = noAwal;
         const inputAkhir = document.getElementById('no_karton_akhir');
-        if (hasKartonInput) {
+        if (isBatchExcluded) {
+            if (inputAkhir) inputAkhir.value = '';
+        } else if (hasKartonInput) {
             if (qtyKarton > 0) {
                 noAkhir = noAwal + qtyKarton - 1;
             }
@@ -364,16 +443,24 @@
             if (inputAkhir) inputAkhir.value = '';
         }
 
-        // Kode Batch: IFM vs Reguler Mirasa
+        // Kode Batch: IFM vs Reguler Mirasa vs Ditangguhkan (Buffer Stock)
         let batchCode = '';
-        if (isIfm && hasKartonInput) {
+        if (isBatchExcluded) {
+            batchCode = 'BELUM TERBIT';
+            if (cardHeaderBadge) {
+                cardHeaderBadge.textContent = 'Ditangguhkan (Buffer Stock)';
+                cardHeaderBadge.style.background = '#f1f5f9';
+                cardHeaderBadge.style.color = '#475569';
+                cardHeaderBadge.style.borderColor = '#cbd5e1';
+            }
+        } else if (isIfm && hasKartonInput) {
             if (qtyKarton > 0) {
                 batchCode = `${shift}${pad4(noAwal)} - ${shift}${pad4(noAkhir)}`;
             } else {
                 batchCode = `${shift}${pad4(noAwal)} - ${shift}${pad4(noAwal)}`;
             }
             if (cardHeaderBadge) {
-                cardHeaderBadge.innerHTML = 'Format Batch Karton: [Shift][NoAwal] - [Shift][NoAkhir]';
+                cardHeaderBadge.textContent = 'Format: [Shift][NoAwal] - [Shift][NoAkhir]';
                 cardHeaderBadge.style.background = '#f1f5f9';
                 cardHeaderBadge.style.color = '#334155';
                 cardHeaderBadge.style.borderColor = '#cbd5e1';
@@ -393,8 +480,8 @@
                 batchCode = `${d} ${m} ${y}`;
             }
 
-            if (cardHeaderBadge && isIfm && !hasKartonInput) {
-                cardHeaderBadge.innerHTML = 'Format Batch: Tanggal Murni (DD MM YYYY) <span style="font-weight: 500; font-size: 0.7rem; color: #64748b;">(No. Karton Dikosongkan)</span>';
+            if (cardHeaderBadge) {
+                cardHeaderBadge.textContent = 'Format: Otomatis Standar Lini';
                 cardHeaderBadge.style.background = '#f1f5f9';
                 cardHeaderBadge.style.color = '#334155';
                 cardHeaderBadge.style.borderColor = '#cbd5e1';
@@ -402,7 +489,9 @@
         }
 
         const liveBatch = document.getElementById('liveBatchCode');
-        if (liveBatch) liveBatch.textContent = batchCode;
+        if (liveBatch) {
+            liveBatch.textContent = batchCode;
+        }
 
         const inputBatch = document.getElementById('batch_wip_no');
         if (inputBatch) inputBatch.value = batchCode;
@@ -725,7 +814,7 @@
         }
     };
 
-    // 6. Update Hari Label
+    // 6. Update Hari Label & Nomor Dokumen Produksi jika tanggal berubah
     window.updateHariLabel = function () {
         const val = document.getElementById('produksi_tgl')?.value;
         if (!val) return;
@@ -734,6 +823,43 @@
         const dayNm = days[d.getDay()];
         const el = document.getElementById('hariLabel');
         if (el) el.textContent = `Hari: ${dayNm}`;
+    };
+
+    let userHasManuallyEditedProduksiNo = false;
+    document.getElementById('produksi_no')?.addEventListener('input', () => {
+        userHasManuallyEditedProduksiNo = true;
+    });
+
+    window.fetchAndApplyProduksiNo = function (targetDateStr) {
+        const prodNoInput = document.getElementById('produksi_no');
+        const prodNoHelp = document.getElementById('produksi_no_help');
+        if (!prodNoInput || !targetDateStr) return;
+
+        // Jika pengguna sudah mengetik nomor manual sendiri, jangan ditimpa otomatis
+        if (userHasManuallyEditedProduksiNo && prodNoInput.value.trim() !== '') {
+            return;
+        }
+
+        prodNoInput.style.opacity = '0.6';
+        if (prodNoHelp) {
+            prodNoHelp.style.display = 'block';
+            prodNoHelp.innerHTML = `<span style="color:#0284c7;">⚡ Memeriksa urutan No. PRD...</span>`;
+        }
+
+        fetch(`/ajax/generate-code?type=prd&date=${encodeURIComponent(targetDateStr)}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success' && data.code) {
+                    prodNoInput.value = data.code;
+                    prodNoInput.style.background = '#f0fdf4';
+                    setTimeout(() => { prodNoInput.style.background = '#ffffff'; }, 1000);
+                }
+            })
+            .catch(err => console.error('Error fetchAndApplyProduksiNo:', err))
+            .finally(() => {
+                prodNoInput.style.opacity = '1';
+                if (prodNoHelp) prodNoHelp.style.display = 'none';
+            });
     };
 
     // 7. Hitung Biaya Gas CNG (Integrasi Otomatis Kurs JISDOR, Nominal Harian, & Fleksibel Edit/0)
@@ -1335,6 +1461,35 @@
         const rendemen = singkongQty > 0 ? (totalOutputKg / singkongQty) * 100 : 0;
         const hppPerKg = totalOutputKg > 0 ? (totalBiaya / totalOutputKg) : 0;
 
+        // Update Kartu Monitor Fisik Lantai Pabrik
+        const elSingkongFisik = document.getElementById('liveSingkongFisik');
+        if (elSingkongFisik) elSingkongFisik.textContent = formatNumber(singkongQty, 2) + ' kg';
+
+        const elOutputFisik = document.getElementById('liveOutputFisik');
+        if (elOutputFisik) elOutputFisik.textContent = formatNumber(totalOutputKg, 2) + ' kg';
+
+        const elMinyakDisp = document.getElementById('liveMinyakRasioDisplay');
+        if (elMinyakDisp) elMinyakDisp.textContent = rasioMinyak.toFixed(2) + '%';
+
+        const liveRendemenDisp = document.getElementById('liveRendemenDisplay');
+        const liveRendemenStatusDisp = document.getElementById('liveRendemenStatusDisplay');
+        if (liveRendemenDisp) liveRendemenDisp.textContent = rendemen.toFixed(2) + '%';
+        if (liveRendemenStatusDisp) {
+            if (rendemen >= 33.0) {
+                if (liveRendemenDisp) liveRendemenDisp.style.color = '#16a34a';
+                liveRendemenStatusDisp.textContent = 'Rendemen Optimal (≥ 33%)';
+                liveRendemenStatusDisp.style.color = '#15803d';
+            } else if (rendemen >= 30.0) {
+                if (liveRendemenDisp) liveRendemenDisp.style.color = '#d97706';
+                liveRendemenStatusDisp.textContent = 'Rendemen Sedang (30% - 33%)';
+                liveRendemenStatusDisp.style.color = '#b45309';
+            } else {
+                if (liveRendemenDisp) liveRendemenDisp.style.color = '#dc2626';
+                liveRendemenStatusDisp.textContent = rendemen > 0 ? 'Rendemen Rendah (< 30%)' : 'Menunggu timbangan';
+                liveRendemenStatusDisp.style.color = rendemen > 0 ? '#b91c1c' : '#64748b';
+            }
+        }
+
         const liveRendemen = document.getElementById('liveRendemen');
         const liveRendemenStatus = document.getElementById('liveRendemenStatus');
 
@@ -1895,14 +2050,22 @@
 
     // 11. Load Pemakaian Data dari Dokumen Gudang (AJAX)
     window.loadPakaiData = function (pakaiId) {
+        const noticeEl = document.getElementById('pakaiMatchNotice');
+        const wrapper = document.getElementById('wrapperTabelPemakaian');
+        const tbody = document.getElementById('tbodyTabelPemakaian');
+        const tfoot = document.getElementById('tfootTabelPemakaian');
+        const btnTarik = document.getElementById('btnTarikPakai');
+        const btnText = document.getElementById('btnTarikPakaiText');
+        const iconTarik = document.getElementById('iconTarikPakai');
+        const pakaiSelect = document.getElementById('pakai_id');
+
         if (!pakaiId) {
-            const noticeEl = document.getElementById('pakaiMatchNotice');
             if (noticeEl) noticeEl.style.display = 'none';
+            if (wrapper) wrapper.style.display = 'none';
             return;
         }
 
         // Sinkronisasi instan lini produksi dari atribut data-tujuan option terpilih
-        const pakaiSelect = document.getElementById('pakai_id');
         const selectedPakaiOpt = pakaiSelect?.querySelector(`option[value="${pakaiId}"]`);
         const quickTujuan = selectedPakaiOpt?.getAttribute('data-tujuan');
         if (quickTujuan) {
@@ -1916,8 +2079,36 @@
             }
         }
 
-        const loading = document.getElementById('pakaiLoading');
-        if (loading) loading.style.display = 'block';
+        // UI Feedback: Aktifkan status loading seperti pada modul pemakaian gudang
+        if (btnTarik) btnTarik.disabled = true;
+        if (btnText) btnText.textContent = 'Memuat BPPB...';
+        if (iconTarik) iconTarik.classList.add('animate-spin');
+
+        if (wrapper && tbody) {
+            wrapper.style.display = 'block';
+            if (tfoot) tfoot.style.display = 'none';
+            const singkongNotice = document.getElementById('singkongGradeNotice');
+            if (singkongNotice) singkongNotice.style.display = 'none';
+
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="9" style="padding: 2.25rem 1rem; text-align: center; background: #ffffff;">
+                        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.65rem;">
+                            <svg class="animate-spin" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: #0284c7;">
+                                <circle cx="12" cy="12" r="10" stroke="#bae6fd" stroke-width="2.5"></circle>
+                                <path d="M12 2a10 10 0 0 1 10 10"></path>
+                            </svg>
+                            <div>
+                                <strong style="color: #0f172a; font-size: 0.875rem; display: block;">Memuat Rincian Bahan Baku dari Gudang...</strong>
+                                <span style="font-size: 0.75rem; color: #64748b; margin-top: 3px; display: block;">
+                                    Mengambil alokasi batch, grade bahan, dan menyinkronkan rincian lini produksi.
+                                </span>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
 
         const url = `${window.appConfig.pakaiDataUrl}/${pakaiId}`;
         fetch(url, {
@@ -1926,14 +2117,19 @@
                 'X-Requested-With': 'XMLHttpRequest'
             }
         })
-            .then(res => {
+            .then(async res => {
+                const json = await res.json().catch(() => null);
                 if (!res.ok) {
-                    throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+                    const msg = (json && json.message) ? json.message : `HTTP ${res.status}: ${res.statusText}`;
+                    throw new Error(msg);
                 }
-                return res.json();
+                return json;
             })
             .then(res => {
-                if (loading) loading.style.display = 'none';
+                if (btnTarik) btnTarik.disabled = false;
+                if (btnText) btnText.textContent = 'Tarik Ulang';
+                if (iconTarik) iconTarik.classList.remove('animate-spin');
+
                 if (res.status === 'success') {
                     const d = res.data;
                     try {
@@ -2042,11 +2238,10 @@
 
                         // 5. Render Tabel Pemakaian Bahan Baku (Blueprint 9.B.1)
                         if (d.items && Array.isArray(d.items)) {
-                            window.renderTabelPemakaian(d.items);
+                            window.renderTabelPemakaian(d.items, d);
                         }
 
                         // Notifikasi status penarikan data BPPB
-                        const noticeEl = document.getElementById('pakaiMatchNotice');
                         if (noticeEl) {
                             if (isLiniMatched) {
                                 const elLini = document.getElementById('lini_produksi');
@@ -2060,6 +2255,18 @@
                             noticeEl.style.display = 'block';
                         }
 
+                        // Notifikasi rincian komposisi grade singkong
+                        const gradeNoticeEl = document.getElementById('singkongGradeNotice');
+                        const gradeNoticeText = document.getElementById('singkongGradeNoticeText');
+                        if (gradeNoticeEl && gradeNoticeText) {
+                            if (d.singkong_grade_desc && d.singkong_grade_desc !== '-') {
+                                gradeNoticeText.innerHTML = `Komposisi Grade Bahan Baku Singkong: <strong>${d.singkong_grade_desc}</strong>`;
+                                gradeNoticeEl.style.display = 'flex';
+                            } else {
+                                gradeNoticeEl.style.display = 'none';
+                            }
+                        }
+
                         if (typeof window.calcAll === 'function') window.calcAll();
                     } catch (domErr) {
                         console.error('Error applying data to form:', domErr);
@@ -2069,49 +2276,100 @@
                 }
             })
             .catch(err => {
-                if (loading) loading.style.display = 'none';
+                if (btnTarik) btnTarik.disabled = false;
+                if (btnText) btnText.textContent = 'Tarik Ulang';
+                if (iconTarik) iconTarik.classList.remove('animate-spin');
                 console.error('Error loadPakaiData:', err);
                 alert('Terjadi kesalahan saat memuat data pemakaian bahan: ' + err.message);
             });
     };
 
     // 12. Render Tabel Pemakaian Bahan (Blueprint 9.B.1)
-    window.renderTabelPemakaian = function (items) {
+    window.renderTabelPemakaian = function (items, summary) {
         const wrapper = document.getElementById('wrapperTabelPemakaian');
         const tbody = document.getElementById('tbodyTabelPemakaian');
+        const tfoot = document.getElementById('tfootTabelPemakaian');
         const badgeCount = document.getElementById('badgeJumlahItemPakai');
+        const metaDoc = document.getElementById('bppbMetaDoc');
+        const badgeQty = document.getElementById('badgeTotalBahanQty');
+        const badgeNilai = document.getElementById('badgeTotalBahanNilai');
+        const tfootQty = document.getElementById('tfootTotalQty');
+        const tfootNilai = document.getElementById('tfootTotalNilai');
+
         if (!wrapper || !tbody) return;
 
         if (!items || items.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="6" style="padding: 1rem; text-align: center; color: #94a3b8; font-style: italic;">
+                    <td colspan="8" style="padding: 1.5rem 1rem; text-align: center; color: #94a3b8; font-style: italic;">
                         Tidak ada rincian bahan pada dokumen pengeluaran gudang ini.
                     </td>
                 </tr>
             `;
-            if (badgeCount) badgeCount.textContent = '0 Item';
+            if (badgeCount) badgeCount.textContent = '0 Item Bahan';
+            if (tfoot) tfoot.style.display = 'none';
             wrapper.style.display = 'block';
             return;
         }
 
+        // Tampilkan metadata dokumen di header tabel
+        if (summary) {
+            if (metaDoc) {
+                metaDoc.innerHTML = `&bull; <strong>[${summary.pakai_no || '-'}]</strong> &bull; ${summary.gudang_nm || 'Gudang Bahan'} &bull; ${summary.pakai_tgl_formatted || '-'}`;
+            }
+            if (badgeQty) {
+                badgeQty.textContent = `Total Bahan: ${formatNumber(summary.total_bahan_qty || 0, 2)} KG`;
+            }
+            if (badgeNilai) {
+                badgeNilai.style.display = 'none';
+            }
+        }
+
         let html = '';
+        let totalQtyCalc = 0;
+        let totalNilaiCalc = 0;
+
         items.forEach((it, idx) => {
+            const kat = it.kategori || 'Bahan Penolong';
+            const itemSubtotal = parseFloat(it.subtotal || 0);
+            const itemQty = parseFloat(it.qty_keluar || 0);
+            const sisaStok = parseFloat(it.sisa_stok || 0);
+            totalQtyCalc += itemQty;
+            totalNilaiCalc += itemSubtotal;
+
+            // Render Grade secara konsisten untuk seluruh item yang memiliki data grade
+            const rawGrade = (it.grade_cd || '').trim().toUpperCase();
+            let gradeHtml = '<span style="color: #94a3b8; font-weight: 500;">-</span>';
+
+            if (rawGrade && rawGrade !== '-') {
+                const isGradeA = rawGrade === 'A' || rawGrade === 'GRADE A';
+                const isGradeB = rawGrade === 'B' || rawGrade === 'GRADE B';
+                const gText = rawGrade.startsWith('GRADE') ? rawGrade : `Grade ${rawGrade}`;
+
+                if (isGradeA) {
+                    gradeHtml = `<span style="display: inline-block; font-size: 0.725rem; font-weight: 700; color: #065f46; background: #ecfdf5; border: 1px solid #a7f3d0; padding: 0.1rem 0.45rem; border-radius: 4px;">${gText}</span>`;
+                } else if (isGradeB) {
+                    gradeHtml = `<span style="display: inline-block; font-size: 0.725rem; font-weight: 700; color: #92400e; background: #fef3c7; border: 1px solid #fde68a; padding: 0.1rem 0.45rem; border-radius: 4px;">${gText}</span>`;
+                } else {
+                    gradeHtml = `<span style="display: inline-block; font-size: 0.725rem; font-weight: 700; color: #334155; background: #f1f5f9; border: 1px solid #cbd5e1; padding: 0.1rem 0.45rem; border-radius: 4px;">${gText}</span>`;
+                }
+            }
+
+            const rowBg = (idx % 2 === 1) ? '#f8fafc' : '#ffffff';
+
             html += `
-                <tr style="border-bottom: 1px solid #f1f5f9; transition: background 0.15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background=''">
-                    <td style="padding: 0.6rem 0.85rem; text-align: center; font-weight: 600; color: #64748b;">${idx + 1}</td>
-                    <td style="padding: 0.6rem 0.85rem; color: #334155; font-weight: 600;">${it.pakai_tgl || '-'}</td>
-                    <td style="padding: 0.6rem 0.85rem;">
-                        <span style="background: #e0f2fe; color: #0369a1; padding: 0.15rem 0.45rem; border-radius: 4px; font-weight: 700; font-family: monospace; font-size: 0.75rem;">
-                            ${it.barang_cd || '-'}
-                        </span>
+                <tr style="background: ${rowBg}; border-bottom: 1px solid #e2e8f0; transition: background 0.12s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='${rowBg}'">
+                    <td style="padding: 0.6rem 0.75rem; text-align: center; color: #64748b; font-weight: 600; font-size: 0.8rem;">${idx + 1}</td>
+                    <td style="padding: 0.6rem 0.75rem; color: #475569; font-weight: 500; font-size: 0.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${kat}</td>
+                    <td style="padding: 0.6rem 0.75rem; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.775rem; font-weight: 600; color: #334155; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${it.barang_cd || '-'}</td>
+                    <td style="padding: 0.6rem 0.75rem; font-weight: 600; color: #0f172a; font-size: 0.825rem; line-height: 1.35;">${it.barang_nm || '-'}</td>
+                    <td style="padding: 0.6rem 0.75rem; text-align: center;">${gradeHtml}</td>
+                    <td style="padding: 0.6rem 0.75rem; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.775rem; font-weight: 600; color: #334155; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${it.batch_no || '-'}</td>
+                    <td style="padding: 0.6rem 0.75rem; text-align: right; font-weight: 700; color: #0284c7; font-size: 0.85rem; font-variant-numeric: tabular-nums;">
+                        ${formatNumber(itemQty, 2)} <span style="font-weight: 500; font-size: 0.725rem; color: #64748b;">${it.satuan_cd || 'KG'}</span>
                     </td>
-                    <td style="padding: 0.6rem 0.85rem; font-weight: 700; color: #0f172a;">${it.barang_nm || '-'}</td>
-                    <td style="padding: 0.6rem 0.85rem; text-align: right; font-weight: 800; color: #0284c7;">
-                        ${formatNumber(it.qty_keluar, 2)} <span style="font-size: 0.725rem; font-weight: 600; color: #64748b;">${it.satuan_cd || 'KG'}</span>
-                    </td>
-                    <td style="padding: 0.6rem 0.85rem; text-align: right; font-weight: 700; color: #059669;">
-                        ${formatNumber(it.sisa_stok, 2)} <span style="font-size: 0.725rem; font-weight: 600; color: #64748b;">${it.satuan_cd || 'KG'}</span>
+                    <td style="padding: 0.6rem 0.75rem; text-align: right; font-weight: 700; color: ${sisaStok > 0 ? '#059669' : '#dc2626'}; font-size: 0.85rem; font-variant-numeric: tabular-nums;">
+                        ${formatNumber(sisaStok, 2)} <span style="font-weight: 500; font-size: 0.725rem; color: #64748b;">${it.satuan_cd || 'KG'}</span>
                     </td>
                 </tr>
             `;
@@ -2119,23 +2377,53 @@
 
         tbody.innerHTML = html;
         if (badgeCount) badgeCount.textContent = `${items.length} Item Bahan`;
+
+        if (tfoot) {
+            tfoot.style.display = 'table-footer-group';
+            if (tfootQty) tfootQty.textContent = `${formatNumber(totalQtyCalc, 2)} KG`;
+            if (tfootNilai) tfootNilai.style.display = 'none';
+        }
+
         wrapper.style.display = 'block';
     };
 
+    // Handler perubahan Grade pada baris output WIP (KW 1 vs KW 2)
+    window.onGradeOutputChange = function (sel, idx) {
+        if (!sel) return;
+        const val = sel.value;
+        if (sel.tagName === 'SELECT') {
+            if (val === 'KW2') {
+                sel.style.background = '#fef3c7';
+                sel.style.color = '#92400e';
+                sel.style.borderColor = '#fde68a';
+            } else {
+                sel.style.background = '#f0fdf4';
+                sel.style.color = '#166534';
+                sel.style.borderColor = '#bbf7d0';
+            }
+        }
+
+        if (typeof window.updateFgDuplicateProtection === 'function') {
+            window.updateFgDuplicateProtection();
+        }
+    };
+
     // Helper: Proteksi Anti-Duplikat Barang Hasil Produksi
-    // Mencegah pemilihan barang yang sama di baris lain dalam 1 formulir dokumen produksi
+    // Mencegah pemilihan barang dengan grade yang sama di baris lain dalam 1 formulir dokumen produksi
     window.updateFgDuplicateProtection = function () {
         const tbody = document.getElementById('tbodyOutputFg');
         if (!tbody) return;
 
-        const selects = Array.from(tbody.querySelectorAll('.select-fg-barang'));
-        const selectedValues = new Set();
-        selects.forEach(sel => {
-            if (sel.value) {
-                selectedValues.add(sel.value.toString());
+        const rows = Array.from(tbody.querySelectorAll('.row-output-fg'));
+        const itemCounts = {};
+        rows.forEach(r => {
+            const bId = r.querySelector('.select-fg-barang')?.value;
+            if (bId) {
+                itemCounts[bId] = (itemCounts[bId] || 0) + 1;
             }
         });
 
+        const selects = Array.from(tbody.querySelectorAll('.select-fg-barang'));
         selects.forEach(sel => {
             const currentVal = sel.value ? sel.value.toString() : '';
 
@@ -2144,13 +2432,15 @@
                 const optVal = opt.value.toString();
 
                 if (!opt.dataset.origText) {
-                    opt.dataset.origText = opt.textContent.trim().replace(/\s*──\s*\(Sudah Dipilih\)/g, '');
+                    opt.dataset.origText = opt.textContent.trim().replace(/\s*──\s*\(Sudah Dipilih\)/g, '').replace(/\s*──\s*\(Maks 2 Grade Terpakai\)/g, '');
                 }
 
-                if (selectedValues.has(optVal) && optVal !== currentVal) {
+                const count = itemCounts[optVal] || 0;
+                // Maksimum 2 baris untuk barang yang sama (1 untuk KW 1 dan 1 untuk KW 2)
+                if (count >= 2 && optVal !== currentVal) {
                     opt.disabled = true;
-                    if (!opt.textContent.includes('(Sudah Dipilih)')) {
-                        opt.textContent = `${opt.dataset.origText} ── (Sudah Dipilih)`;
+                    if (!opt.textContent.includes('(Maks 2 Grade Terpakai)')) {
+                        opt.textContent = `${opt.dataset.origText} ── (Maks 2 Grade Terpakai)`;
                     }
                 } else {
                     opt.disabled = false;
@@ -2265,6 +2555,7 @@
                 <select name="output_items[${idx}][barang_id]" class="form-control select-fg-barang" style="font-size: 0.8rem; font-weight: 600;" onchange="onFgBarangChange(this, ${idx})">
                     ${optionsHtml}
                 </select>
+                <input type="hidden" name="output_items[${idx}][grade_cd]" id="gradeCd_${idx}" class="select-fg-grade" value="${initial?.grade_cd || 'KW1'}">
             </td>
             <td style="padding: 0.5rem 0.75rem;">
                 <input type="number" step="0.0001" min="0" name="output_items[${idx}][qty_hasil]" id="qtyHasil_${idx}" class="form-control calc-trigger" style="text-align: right; font-weight: 700; color: #0f172a;" placeholder="0" value="${defaultQtyHasil}" oninput="onQtyHasilInput(${idx})">
@@ -2397,14 +2688,46 @@
             return;
         }
 
+        const cd = (opt.dataset.cd || '').toUpperCase();
+        const nm = (opt.dataset.nm || '').toUpperCase();
+        const gradeSel = document.getElementById(`gradeCd_${idx}`);
+
+        // Deteksi default grade: jika nama/kode mengandung KW 2 / Berko / Remahan / Lengket, set KW2; jika tidak set KW1
+        // Namun jika barang ini sudah ada di baris lain dengan grade KW1, otomatis alihkan baris ini ke KW2
+        let targetGrade = 'KW1';
+        if (cd.startsWith('WIP-KW') || nm.includes('KW 2') || nm.includes('KW2') || nm.includes('BERKO') || nm.includes('REMAHAN') || nm.includes('LENGKET')) {
+            targetGrade = 'KW2';
+        } else {
+            const tbody = document.getElementById('tbodyOutputFg');
+            const otherRows = Array.from(tbody?.querySelectorAll('.row-output-fg') || []).filter(r => r.id !== `fgRow_${idx}`);
+            const hasSameWithKw1 = otherRows.some(r => {
+                const otherB = r.querySelector('.select-fg-barang')?.value;
+                const otherG = r.querySelector('.select-fg-grade')?.value || 'KW1';
+                return otherB === sel.value && otherG === 'KW1';
+            });
+            if (hasSameWithKw1) {
+                targetGrade = 'KW2';
+            }
+        }
+
+        if (gradeSel) {
+            gradeSel.value = targetGrade;
+            if (typeof window.onGradeOutputChange === 'function') {
+                window.onGradeOutputChange(gradeSel, idx);
+            }
+        }
+
         // Proteksi Anti-Duplikat: Cek apakah barang ini sudah dipilih di baris lain
         const currentVal = sel.value;
         if (currentVal) {
             const tbody = document.getElementById('tbodyOutputFg');
-            const otherSelects = Array.from(tbody?.querySelectorAll('.select-fg-barang') || []).filter(s => s !== sel);
-            const isDuplicate = otherSelects.some(s => s.value === currentVal);
+            const otherRows = Array.from(tbody?.querySelectorAll('.row-output-fg') || []).filter(r => r.id !== `fgRow_${idx}`);
+            const isDuplicate = otherRows.some(r => {
+                const otherB = r.querySelector('.select-fg-barang')?.value;
+                return otherB === currentVal;
+            });
             if (isDuplicate) {
-                alert('⚠️ Barang ini sudah dipilih pada baris lain!\n\nUntuk produk yang sama dalam 1 dokumen produksi, silakan gabungkan jumlah kuantitasnya pada baris yang sudah ada.');
+                alert(`⚠️ Barang ini sudah dipilih pada baris lain!\n\nSilakan gabungkan kuantitas hasilnya pada baris yang sudah ada.`);
                 sel.value = '';
                 resetFgBarangRow(sel, idx);
                 if (typeof window.updateFgDuplicateProtection === 'function') {
@@ -2706,6 +3029,12 @@
         // Inisialisasi proteksi anti-duplikat pilihan barang hasil produksi
         if (typeof window.updateFgDuplicateProtection === 'function') {
             window.updateFgDuplicateProtection();
+        }
+
+        // Inisialisasi status toggler batch (aktif standar vs buffer stock IFM)
+        const chkBatch = document.getElementById('chk_enable_batch');
+        if (chkBatch) {
+            window.toggleBatchSwitch(chkBatch.checked);
         }
     });
 

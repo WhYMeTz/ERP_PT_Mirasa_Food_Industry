@@ -181,7 +181,11 @@ class ProduksiController extends Controller
             'reject'  => (float) (MstBarang::where('barang_cd', 'KMS-KTN-REJ')->value('harga_beli_standar') ?? 0.00),
         ];
 
+        // Nomor Dokumen Hasil Produksi Resmi Otomatis (Format Korporat: {seq}/PRD/MFI/{mm}/{yy})
+        $autoProduksiNo = $this->codeGenerator->generateProduksiNo(old('produksi_tgl', date('Y-m-d')));
+
         return view('produksi.create', compact(
+            'autoProduksiNo',
             'gudangList',
             'pakaiList',
             'liniList',
@@ -293,6 +297,105 @@ class ProduksiController extends Controller
                 'kurs_formatted' => '18.161,00',
                 'message'        => $e->getMessage(),
             ], 200);
+        }
+    }
+
+    /**
+     * Tampilkan formulir khusus penetapan / kalkulasi HPP Produksi (Tahap 3 - Bagian Keuangan / Costing).
+     */
+    public function createHpp(Request $request): View
+    {
+        $selectedProduksiId = $request->input('produksi_id');
+
+        // Daftar dokumen produksi fisik (30 hari terakhir) yang dapat dihitung / dialokasikan HPP-nya
+        $produksiList = DatProduksiHdr::with(['gudang', 'outputs'])
+            ->where('deleted_st', false)
+            ->orderBy('produksi_tgl', 'desc')
+            ->orderBy('produksi_id', 'desc')
+            ->take(60)
+            ->get();
+
+        $energiRates = $this->tarifService->getEnergiLaborRates();
+        $fohRates = $this->tarifService->getFohRates();
+        $defaultCngTarifUsd = 14.50;
+        $defaultCngKursJisdor = $this->tarifService->getJisdorRate(date('Y-m-d'), true) ?: 18138.00;
+        $defaultCngTarif = round($defaultCngTarifUsd * $defaultCngKursJisdor, 2);
+
+        return view('produksi.hpp.create', compact(
+            'produksiList',
+            'selectedProduksiId',
+            'energiRates',
+            'fohRates',
+            'defaultCngTarifUsd',
+            'defaultCngKursJisdor',
+            'defaultCngTarif'
+        ));
+    }
+
+    /**
+     * AJAX Endpoint: Tarik rincian fisik produksi untuk ditarik ke lembar kerja HPP.
+     */
+    public function getProduksiDataForHpp(int $id): JsonResponse
+    {
+        try {
+            $data = $this->produksiService->getProduksiDataForHpp($id);
+            return response()->json([
+                'status' => 'success',
+                'data'   => $data,
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Gagal memuat rincian produksi: ' . $e->getMessage(),
+            ], 422);
+        }
+    }
+
+    /**
+     * Simpan hasil kalkulasi lembar HPP produksi oleh Bagian Keuangan / Costing.
+     */
+    public function storeHpp(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'produksi_id'                 => 'required|exists:dat_produksi_hdr,produksi_id',
+            'singkong_nilai'              => 'nullable|numeric|min:0',
+            'minyak_nilai'                => 'nullable|numeric|min:0',
+            'bumbu_nilai'                 => 'nullable|numeric|min:0',
+            'karton_baru_nilai'           => 'nullable|numeric|min:0',
+            'karton_bekas_nilai'          => 'nullable|numeric|min:0',
+            'plastik_hd_nilai'            => 'nullable|numeric|min:0',
+            'lakban_besar_nilai'          => 'nullable|numeric|min:0',
+            'lakban_kecil_nilai'          => 'nullable|numeric|min:0',
+            'tali_rafia_nilai'            => 'nullable|numeric|min:0',
+
+            // Utilitas Gas CNG
+            'cng_mmbtu'                   => 'required|numeric|min:0',
+            'cng_tarif_usd'               => 'nullable|numeric|min:0',
+            'cng_kurs_jisdor'             => 'nullable|numeric|min:0',
+            'cng_tarif'                   => 'nullable|numeric|min:0',
+            'cng_nilai'                   => 'required|numeric|min:0',
+
+            // Tenaga Kerja
+            'tk_jumlah_org'               => 'required|integer|min:0',
+            'tk_total_nilai'              => 'required|numeric|min:0',
+
+            // Output Alokasi HPP
+            'output_hpp'                  => 'nullable|array',
+            'output_hpp.*'                => 'nullable|numeric|min:0',
+
+            'catatan_hpp'                 => 'nullable|string',
+        ]);
+
+        try {
+            $userId = Auth::user()?->username ?? 'FINANCE';
+            $produksi = $this->produksiService->saveHppCalculation((int) $validated['produksi_id'], $validated, $userId);
+
+            $msg = "✅ Lembar HPP Produksi {$produksi->produksi_no} berhasil dikalkulasi & disimpan! ";
+            $msg .= "Total Biaya: Rp " . number_format($produksi->total_biaya_produksi, 0, ',', '.') . " | HPP Riil: Rp " . number_format($produksi->hpp_per_kg, 2, ',', '.') . "/kg.";
+
+            return redirect()->route('produksi.show', $produksi->produksi_id)->with('success', $msg);
+        } catch (Exception $e) {
+            return back()->withInput()->with('error', 'Gagal menyimpan kalkulasi HPP: ' . $e->getMessage());
         }
     }
 
@@ -412,7 +515,20 @@ class ProduksiController extends Controller
     }
 
     /**
-     * AJAX Endpoint: Mengambil daftar batch WIP & FG yang memiliki sisa stok untuk disortir ulang / rework (Poin 23 & 24).
+     * Tampilkan formulir lengkap pengerjaan Sortir Ulang / Rework KW 2.
+     */
+    public function createRework(Request $request): View
+    {
+        $gudangList = MstGudang::where('deleted_st', false)
+            ->where('active_st', true)
+            ->orderBy('gudang_nm')
+            ->get();
+
+        return view('produksi.rework.create', compact('gudangList'));
+    }
+
+    /**
+     * AJAX Endpoint: Mengambil daftar batch WIP & FG yang memiliki sisa stok untuk disortir ulang / rework.
      */
     public function ajaxBatchesRework(Request $request): JsonResponse
     {
@@ -479,7 +595,7 @@ class ProduksiController extends Controller
             $produksi = $this->produksiService->storeRework($validated);
 
             return redirect()->route('produksi.index', ['grade_cd' => 'KW2'])
-                ->with('success', "✅ Sortir Ulang / Rework KW 2 ({$produksi->produksi_no}) berhasil dicatat! Stok KS CURAH SORTIR (KW 2) telah ditambahkan ke gudang.");
+                ->with('success', "Sortir Ulang / Rework KW 2 ({$produksi->produksi_no}) berhasil dicatat. Stok KS CURAH SORTIR (KW 2) telah ditambahkan ke gudang.");
         } catch (Exception $e) {
             return redirect()->back()
                 ->withInput()
@@ -503,6 +619,30 @@ class ProduksiController extends Controller
             ->get();
 
         return view('produksi.show', compact('produksi', 'sameDateProductions'));
+    }
+
+    /**
+     * Beri nomor batch resmi untuk produksi buffer stock saat jadwal keberangkatan truk tiba.
+     */
+    public function assignBatch(Request $request, int $id): RedirectResponse
+    {
+        $validated = $request->validate([
+            'tgl_keberangkatan' => ['required', 'date'],
+            'shift_cd'          => ['required', 'string', 'in:A,B'],
+            'no_karton_awal'    => ['required', 'integer', 'min:1'],
+            'qty_karton'        => ['nullable', 'integer', 'min:0'],
+        ]);
+
+        try {
+            $produksi = $this->produksiService->assignBatch($id, $validated);
+
+            return redirect()->route('produksi.show', $produksi->produksi_id)
+                ->with('success', "Nomor Batch resmi ({$produksi->batch_wip_no}) berhasil diterbitkan untuk keberangkatan tgl " . Carbon::parse($validated['tgl_keberangkatan'])->format('d/m/Y') . ".");
+        } catch (Exception $e) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Gagal menerbitkan nomor batch: ' . $e->getMessage());
+        }
     }
 
     /**

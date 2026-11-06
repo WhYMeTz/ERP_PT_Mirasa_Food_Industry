@@ -30,10 +30,29 @@
 
 @section('content')
 <div class="no-print" style="margin-bottom: 1.25rem;">
-    <a href="{{ route('keuangan.verifikasi_pemakaian.index', ['tab' => $pakai->status_st]) }}" style="color: #64748b; text-decoration: none; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.35rem; margin-bottom: 0.35rem;">
-        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-        Kembali ke Daftar Antrean Verifikasi
-    </a>
+    {{-- 1. CHEVRON BREADCRUMB NAVIGATION (GAYA AKUNTANSI ENTERPRISE) --}}
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem; flex-wrap: wrap; gap: 0.5rem;">
+        <nav class="erp-chevron-bar" aria-label="Breadcrumb">
+            <a href="{{ route('keuangan.verifikasi_pemakaian.index') }}" class="erp-chevron-item">
+                <span>Keuangan</span>
+            </a>
+            <span class="erp-chevron-sep">
+                <svg width="8" height="20" viewBox="0 0 8 20" fill="none"><path d="M1 2L6 10L1 18" stroke="#cbd5e1" stroke-width="1.5" stroke-linecap="round"/></svg>
+            </span>
+            <a href="{{ route('keuangan.verifikasi_pemakaian.index') }}" class="erp-chevron-item">
+                <span>Verifikasi Pemakaian</span>
+            </a>
+            <span class="erp-chevron-sep">
+                <svg width="8" height="20" viewBox="0 0 8 20" fill="none"><path d="M1 2L6 10L1 18" stroke="#cbd5e1" stroke-width="1.5" stroke-linecap="round"/></svg>
+            </span>
+            <span class="erp-chevron-item active">
+                <span>Pemeriksaan ({{ $pakai->pakai_no }})</span>
+            </span>
+            <span class="erp-chevron-end">
+                <svg width="10" height="32" viewBox="0 0 10 32" fill="none"><path d="M1 1L8 16L1 31" stroke="#dce4ec" stroke-width="1.5"/></svg>
+            </span>
+        </nav>
+    </div>
 
     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
         <div>
@@ -90,6 +109,38 @@
             @endif
 
             @if($pakai->isPosted())
+                <div class="live-kpi-widget" style="background: #f0fdf4; border-color: #86efac;">
+                    <div>
+                        <div style="font-size: 0.675rem; font-weight: 700; text-transform: uppercase; color: #059669; letter-spacing: 0.04em;">
+                            Total Fisik Keluar:
+                        </div>
+                        <div style="display: flex; align-items: baseline; gap: 0.25rem;">
+                            <span style="font-size: 1.65rem; font-weight: 800; font-family: monospace; color: #047857; line-height: 1;">
+                                {{ number_format((float) $pakai->details->sum('qty_keluar'), 2, ',', '.') }}
+                            </span>
+                            <span style="font-size: 0.85rem; font-weight: 700; color: #059669;">Kg</span>
+                        </div>
+                    </div>
+                    <div style="height: 32px; width: 1px; background: #bbf7d0;"></div>
+                    <div style="font-size: 0.775rem; line-height: 1.45;">
+                        <div style="color: #065f46; font-weight: 700;">🟢 Grade A: <strong style="font-family: monospace;">{{ number_format((float) $pakai->details->where('grade_cd', 'A')->sum('qty_keluar'), 2, ',', '.') }} Kg</strong></div>
+                        <div style="color: #b45309; font-weight: 700;">🟡 Grade B: <strong style="font-family: monospace;">{{ number_format((float) $pakai->details->where('grade_cd', 'B')->sum('qty_keluar'), 2, ',', '.') }} Kg</strong></div>
+                    </div>
+                    <div style="height: 32px; width: 1px; background: #bbf7d0;"></div>
+                    <div style="font-size: 0.775rem; color: #64748b; font-weight: 600;">
+                        <strong style="font-weight: 800; color: #0f172a;">{{ $pakai->details->count() }}</strong> Baris Item
+                    </div>
+                    <div style="height: 32px; width: 1px; background: #bbf7d0;"></div>
+                    <div>
+                        <div style="font-size: 0.675rem; font-weight: 700; text-transform: uppercase; color: #0284c7; letter-spacing: 0.04em;">
+                            Total Biaya HPP:
+                        </div>
+                        <span style="font-size: 1.25rem; font-weight: 800; font-family: monospace; color: #0284c7; line-height: 1;">
+                            Rp {{ number_format($totalNominal, 0, ',', '.') }}
+                        </span>
+                    </div>
+                </div>
+
                 @if($pakai->jurnal_id)
                     <button type="button" onclick="openModalDetailJurnal({{ $pakai->jurnal_id }})" class="btn btn-secondary" style="color: #065f46; border-color: #a7f3d0; background: #f0fdf4; font-weight: 700;">
                         <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
@@ -107,6 +158,9 @@
 
 {{-- JIKA DOKUMEN MASIH DRAFT: TAMPILKAN STASIUN INSPEKSI & EDIT LANGSUNG DI TEMPAT --}}
 @if($pakai->isDraft())
+
+    {{-- KARTU RIWAYAT AUDIT & KOREKSI DOKUMEN (JIKA PERNAH DIREVISI) --}}
+    @include('keuangan.verifikasi_pemakaian.partials.card-revisi-history')
 
     <div class="no-print" style="background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 8px; padding: 0.75rem 1.25rem; margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
         <div style="display: flex; align-items: center; gap: 0.75rem;">
@@ -256,8 +310,9 @@
                         <thead>
                             <tr>
                                 <th style="width: 50px; text-align: center;">No &amp; Status</th>
-                                <th style="min-width: 320px;">Kategori &amp; Nama Bahan Produksi <span style="color:#ef4444;">*</span></th>
-                                <th style="min-width: 340px;">Pilihan Grade &amp; Batch (FIFO) <span style="color:#ef4444;">*</span></th>
+                                <th style="min-width: 300px;">Kategori &amp; Nama Bahan Produksi <span style="color:#ef4444;">*</span></th>
+                                <th style="min-width: 320px;">Pilihan Grade &amp; Batch (FIFO) <span style="color:#ef4444;">*</span></th>
+                                <th style="width: 175px; text-align: center;">Sisa di Gudang</th>
                                 <th style="width: 140px; text-align: right;">Qty Keluar <span style="color:#ef4444;">*</span></th>
                                 <th style="width: 80px; text-align: center;">Satuan</th>
                                 <th style="width: 140px; text-align: right;">Harga Satuan (Rp)</th>
@@ -270,7 +325,7 @@
                         </tbody>
                         <tfoot>
                             <tr style="border-top: 2px solid #cbd5e1; font-weight: 700; background: #f8fafc;">
-                                <td colspan="3" style="padding: 0.75rem 1rem; text-align: right; color: #475569; font-size: 0.825rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                                <td colspan="4" style="padding: 0.75rem 1rem; text-align: right; color: #475569; font-size: 0.825rem; text-transform: uppercase; letter-spacing: 0.05em;">
                                     Total Akumulasi Fisik &amp; HPP:
                                     <span style="margin-left: 0.85rem; text-transform: none; font-size: 0.8rem; display: inline-flex; gap: 0.5rem; vertical-align: middle;">
                                          <span style="background: #ecfdf5; color: #065f46; border: 1.5px solid #a7f3d0; padding: 3px 8px; border-radius: 6px; font-weight: 700;">
@@ -362,6 +417,9 @@
             </div>
         </div>
     </div>
+
+    {{-- KARTU RIWAYAT AUDIT & KOREKSI DOKUMEN --}}
+    @include('keuangan.verifikasi_pemakaian.partials.card-revisi-history')
 
     {{-- TABEL VALIDASI FISIK BATCH & KETERSEDIAAN STOK (READ-ONLY) --}}
     <div class="verifikasi-card">
@@ -530,6 +588,7 @@
 @if($pakai->isDraft())
 <script>
     window.appConfig = {
+        pakaiId: {{ $pakai->pakai_id }},
         barangList: @json($barangList ?? []),
         initialItems: @json($initialItems ?? []),
         urlGetBatches: "{{ route('gudang.pemakaian.batches') }}",

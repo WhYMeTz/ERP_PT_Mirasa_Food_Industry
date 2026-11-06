@@ -2,6 +2,10 @@
 
 @section('title', 'Detail Dokumen Pemakaian Bahan ' . $pakai->pakai_no . ' - ERP PT Mirasa')
 
+@push('styles')
+    <link rel="stylesheet" href="{{ asset('css/gudang/pemakaian/pemakaian-form.css') }}?v={{ file_exists(public_path('css/gudang/pemakaian/pemakaian-form.css')) ? filemtime(public_path('css/gudang/pemakaian/pemakaian-form.css')) : time() }}">
+@endpush
+
 @section('content')
 <style>
     @media print {
@@ -47,12 +51,33 @@
     </div>
 </div>
 
+{{-- 1. CHEVRON BREADCRUMB NAVIGATION (GAYA AKUNTANSI ENTERPRISE) --}}
+<div class="no-print" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem; flex-wrap: wrap; gap: 0.5rem;">
+    <nav class="erp-chevron-bar" aria-label="Breadcrumb">
+        <a href="{{ route('gudang.pemakaian.index') }}" class="erp-chevron-item">
+            <span>Gudang</span>
+        </a>
+        <span class="erp-chevron-sep">
+            <svg width="8" height="20" viewBox="0 0 8 20" fill="none"><path d="M1 2L6 10L1 18" stroke="#cbd5e1" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </span>
+        <a href="{{ route('gudang.pemakaian.index') }}" class="erp-chevron-item">
+            <span>Pemakaian Bahan</span>
+        </a>
+        <span class="erp-chevron-sep">
+            <svg width="8" height="20" viewBox="0 0 8 20" fill="none"><path d="M1 2L6 10L1 18" stroke="#cbd5e1" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </span>
+        <span class="erp-chevron-item active">
+            <span>{{ $pakai->pakai_no }}</span>
+        </span>
+        <span class="erp-chevron-end">
+            <svg width="10" height="32" viewBox="0 0 10 32" fill="none"><path d="M1 1L8 16L1 31" stroke="#dce4ec" stroke-width="1.5"/></svg>
+        </span>
+    </nav>
+</div>
+
 <div class="no-print" style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
     <div>
-        <a href="{{ route('gudang.pemakaian.index') }}" style="color: #64748b; text-decoration: none; font-size: 0.875rem; display: inline-flex; align-items: center; gap: 0.25rem;">
-            &larr; Kembali ke Daftar Pemakaian Bahan
-        </a>
-        <h1 style="font-size: 1.5rem; font-weight: 700; color: #0f172a; margin-top: 0.5rem; display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+        <h1 style="font-size: 1.5rem; font-weight: 700; color: #0f172a; margin: 0; display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
             <span>{{ $pakai->pakai_no }}</span>
             <span class="badge" style="background: #fee2e2; color: #991b1b; font-size: 0.85rem;">{{ $pakai->tujuan_pemakaian }}</span>
             @if($pakai->isDraft())
@@ -165,6 +190,9 @@
         </div>
     @endif
 </div>
+
+{{-- KARTU AUDIT & CATATAN KOREKSI VERIFIKASI KEUANGAN --}}
+@include('gudang.pemakaian.partials.card-revisi-history')
 
 <div class="card" style="margin-bottom: 1.5rem;">
     <div class="card-header">

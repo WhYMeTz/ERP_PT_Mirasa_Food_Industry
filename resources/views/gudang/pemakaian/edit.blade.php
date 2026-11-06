@@ -7,13 +7,33 @@
 @endpush
 
 @section('content')
+{{-- 1. CHEVRON BREADCRUMB NAVIGATION (GAYA AKUNTANSI ENTERPRISE) --}}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem; flex-wrap: wrap; gap: 0.5rem;">
+    <nav class="erp-chevron-bar" aria-label="Breadcrumb">
+        <a href="{{ route('gudang.pemakaian.index') }}" class="erp-chevron-item">
+            <span>Gudang</span>
+        </a>
+        <span class="erp-chevron-sep">
+            <svg width="8" height="20" viewBox="0 0 8 20" fill="none"><path d="M1 2L6 10L1 18" stroke="#cbd5e1" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </span>
+        <a href="{{ route('gudang.pemakaian.index') }}" class="erp-chevron-item">
+            <span>Pemakaian Bahan</span>
+        </a>
+        <span class="erp-chevron-sep">
+            <svg width="8" height="20" viewBox="0 0 8 20" fill="none"><path d="M1 2L6 10L1 18" stroke="#cbd5e1" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </span>
+        <span class="erp-chevron-item active">
+            <span>Edit Dokumen ({{ $pakai->pakai_no }})</span>
+        </span>
+        <span class="erp-chevron-end">
+            <svg width="10" height="32" viewBox="0 0 10 32" fill="none"><path d="M1 1L8 16L1 31" stroke="#dce4ec" stroke-width="1.5"/></svg>
+        </span>
+    </nav>
+</div>
+
 {{-- HEADER BAR: JUDUL & WIDGET TOTAL LIVE DI POJOK KANAN (DENGAN FLOATING WRAPPER) --}}
 <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 0.85rem; flex-wrap: wrap; gap: 0.75rem;">
     <div>
-        <a href="{{ route('gudang.pemakaian.show', $pakai->pakai_id) }}" style="color: #64748b; text-decoration: none; font-size: 0.825rem; display: inline-flex; align-items: center; gap: 0.35rem; margin-bottom: 0.2rem;">
-            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-            Kembali ke Detail Pemakaian #{{ $pakai->pakai_no }}
-        </a>
         <div style="display: flex; align-items: center; gap: 0.65rem;">
             <h1 style="font-size: 1.45rem; font-weight: 800; color: #0f172a; margin: 0;">
                 Edit Pemakaian Bahan (BPPB): {{ $pakai->pakai_no }}

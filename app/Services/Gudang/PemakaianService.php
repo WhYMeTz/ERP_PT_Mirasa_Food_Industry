@@ -57,7 +57,14 @@ class PemakaianService
             $query->where(function ($q) use ($search) {
                 $q->where('pakai_no', 'ILIKE', "%{$search}%")
                   ->orWhere('tujuan_pemakaian', 'ILIKE', "%{$search}%")
-                  ->orWhere('catatan_txt', 'ILIKE', "%{$search}%");
+                  ->orWhere('catatan_txt', 'ILIKE', "%{$search}%")
+                  ->orWhereHas('details', function ($dq) use ($search) {
+                      $dq->where('batch_no', 'ILIKE', "%{$search}%")
+                        ->orWhereHas('barang', function ($bq) use ($search) {
+                            $bq->where('barang_nm', 'ILIKE', "%{$search}%")
+                               ->orWhere('barang_cd', 'ILIKE', "%{$search}%");
+                        });
+                  });
             });
         }
 

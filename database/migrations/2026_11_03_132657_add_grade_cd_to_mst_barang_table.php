@@ -26,11 +26,14 @@ return new class extends Migration
 
         // Daftarkan master item resmi: KS CURAH SORTIR (KW 2) untuk penampungan produk gagal rilis / sortiran (Poin 23 & 24)
         if (!DB::table('mst_barang')->where('barang_cd', 'WIP-KW2')->exists()) {
+            $wipJenisId = DB::table('mst_jenis_barang')->where('jenis_barang_cd', 'WIP')->value('jenis_barang_id') ?? 4;
+            $kgSatuanId = DB::table('mst_satuan')->where('satuan_cd', 'KG')->value('satuan_id') ?? 3;
+
             DB::table('mst_barang')->insert([
                 'barang_cd'          => 'WIP-KW2',
                 'barang_nm'          => 'KS CURAH SORTIR (KW 2)',
-                'jenis_barang_id'    => 2, // WIP
-                'satuan_dasar_id'    => 1, // KG
+                'jenis_barang_id'    => $wipJenisId, // WIP
+                'satuan_dasar_id'    => $kgSatuanId, // KG
                 'grade_cd'           => 'KW2',
                 'konversi_qty'       => 1.0000,
                 'active_st'          => true,

@@ -347,6 +347,46 @@ class HutangService
     }
 
     /**
+     * Dapatkan daftar Dokumen Retur Pembelian (Credit Note) supplier yang belum dipotongkan ke tagihan
+     */
+    public function getUncreditedReturList(?int $supplierId = null): array
+    {
+        if (!$supplierId) {
+            return [];
+        }
+
+        return \App\Models\Gudang\DatReturHdr::with(['details.barang.satuanDasar'])
+            ->where('supplier_id', $supplierId)
+            ->where('tindakan_cd', 'CREDIT_NOTE')
+            ->where('status_cd', 'COMPLETED')
+            ->whereNull('hutang_id')
+            ->where('deleted_st', false)
+            ->orderBy('retur_tgl', 'desc')
+            ->orderBy('retur_id', 'desc')
+            ->get()
+            ->map(function ($r) {
+                return [
+                    'retur_id'      => $r->retur_id,
+                    'retur_no'      => $r->retur_no,
+                    'retur_tgl'     => $r->retur_tgl ? $r->retur_tgl->format('d/m/Y') : null,
+                    'total_nominal' => (float)$r->total_nominal,
+                    'alasan_txt'    => $r->alasan_txt,
+                    'details'       => $r->details->map(function ($d) {
+                        return [
+                            'barang_nm'        => $d->barang?->barang_nm ?? 'Bahan Baku',
+                            'batch_no'         => $d->batch_no,
+                            'retur_qty'        => (float)$d->retur_qty,
+                            'satuan'           => $d->barang?->satuanDasar?->satuan_nm ?? $d->satuan ?? 'KG',
+                            'harga_satuan'     => (float)$d->harga_satuan,
+                            'subtotal_nominal' => (float)$d->subtotal_nominal,
+                            'alasan_reject'    => $d->alasan_reject,
+                        ];
+                    })->toArray(),
+                ];
+            })->toArray();
+    }
+
+    /**
      * Buat Tagihan Hutang Pembelian dari satu atau lebih Penerimaan Barang (GRN)
      */
     public function createFromGrn(array $payload, User $user): DatHutangHdr
@@ -425,6 +465,7 @@ class HutangService
                     'terima_id'        => $item['terima_id'] ?? null,
                     'terima_dtl_id'    => $item['terima_dtl_id'] ?? null,
                     'barang_id'        => $item['barang_id'] ?? null,
+                    'pajak_id'         => $pajakObj?->pajak_id ?? (is_numeric($ppnTipe) ? (int)$ppnTipe : null),
                     'deskripsi'        => $item['deskripsi'] ?? 'Penerimaan Bahan Baku',
                     'qty'              => $qty,
                     'satuan'           => $item['satuan'] ?? 'KG',
@@ -448,7 +489,22 @@ class HutangService
                 $totalNetto += $netto;
             }
 
-            $potonganRetur = (float)($payload['total_potongan_retur'] ?? 0);
+            $potonganRetur = 0;
+            $appliedReturIds = [];
+            if (!empty($payload['retur_ids']) && is_array($payload['retur_ids'])) {
+                $returRecords = \App\Models\Gudang\DatReturHdr::whereIn('retur_id', $payload['retur_ids'])
+                    ->where('supplier_id', $supplierId)
+                    ->where('tindakan_cd', 'CREDIT_NOTE')
+                    ->whereNull('hutang_id')
+                    ->where('deleted_st', false)
+                    ->get();
+                foreach ($returRecords as $ret) {
+                    $potonganRetur += (float)$ret->total_nominal;
+                    $appliedReturIds[] = $ret->retur_id;
+                }
+            } else {
+                $potonganRetur = (float)($payload['total_potongan_retur'] ?? 0);
+            }
             $biayaOngkir = (float)($payload['biaya_ongkir'] ?? 0);
             $tonaseKg = (float)($payload['tonase_kg'] ?? 0);
             $ongkirTarifPerKg = (float)($payload['ongkir_tarif_per_kg'] ?? 0);
@@ -489,6 +545,16 @@ class HutangService
                 'created_by'           => $user->name ?? 'SYSTEM',
                 'updated_by'           => $user->name ?? 'SYSTEM',
             ]);
+
+            // Tautkan dokumen retur pembelian (Credit Note) yang dikompensasikan ke tagihan ini
+            if (!empty($appliedReturIds)) {
+                \App\Models\Gudang\DatReturHdr::whereIn('retur_id', $appliedReturIds)
+                    ->update([
+                        'hutang_id'  => $hdr->hutang_id,
+                        'updated_by' => $user->name ?? 'SYSTEM',
+                        'updated_at' => now(),
+                    ]);
+            }
 
             foreach ($processedItems as $pItem) {
                 DatHutangDtl::create([
@@ -576,19 +642,39 @@ class HutangService
                     ];
                 }
 
-                // 2. Pajak: (Debet) PPN Masukan (Akun 1130) jika TAMBAH, atau (Kredit) Hutang Pajak PPh (Akun 2105) jika POTONG
+                // 2. Pajak: (Debet) PPN Masukan (Akun 1130) jika TAMBAH, atau (Kredit) Hutang Pajak PPh (Akun 2106 / 2105) jika POTONG
                 if ($ppn > 0) {
                     $itemSifat = $item['sifat_pajak'] ?? (str_contains(strtoupper((string)$ppnTipe), 'PPH') ? 'POTONG' : 'TAMBAH');
+                    $pajakObj = !empty($item['pajak_id']) 
+                        ? MstPajak::with('coaPembelian')->find($item['pajak_id']) 
+                        : (is_numeric($ppnTipe) ? MstPajak::with('coaPembelian')->find((int)$ppnTipe) : null);
+
                     if ($itemSifat === 'POTONG') {
+                        // Tentukan akun COA pajak secara presisi dari relasi master pajak atau deteksi kode
+                        $pajakCoaKode = $pajakObj?->coaPembelian?->kode_akun ?? $pajakObj?->coa?->kode_akun;
+                        if (!$pajakCoaKode) {
+                            $cdUpper = strtoupper((string)($pajakObj?->pajak_cd ?? $ppnTipe));
+                            if (str_contains($cdUpper, '22')) {
+                                $pajakCoaKode = '2106'; // PPH 22
+                            } elseif (str_contains($cdUpper, '23')) {
+                                $pajakCoaKode = '2105'; // PPH 23
+                            } else {
+                                $pajakCoaKode = '2106'; // default komoditas bahan baku
+                            }
+                        }
+
+                        $pajakNama = ($pajakCoaKode === '2106') ? 'PPh 22' : (($pajakCoaKode === '2105') ? 'PPh 23' : 'PPh');
+
                         $jurnalEntries[] = [
-                            'kode_akun'  => '2105', // Hutang Pajak Pemotongan PPh
+                            'kode_akun'  => $pajakCoaKode,
                             'debet'      => 0,
                             'kredit'     => $ppn,
-                            'keterangan' => "Potongan Pajak PPh - {$keteranganItem}",
+                            'keterangan' => "Potongan Pajak {$pajakNama} - {$keteranganItem}",
                         ];
                     } else {
+                        $pajakCoaKode = $pajakObj?->coaPembelian?->kode_akun ?? $pajakObj?->coa?->kode_akun ?? '1130';
                         $jurnalEntries[] = [
-                            'kode_akun'  => '1130', // PPN Masukan
+                            'kode_akun'  => $pajakCoaKode, // PPN Masukan
                             'debet'      => $ppn,
                             'kredit'     => 0,
                             'keterangan' => $keteranganItem,

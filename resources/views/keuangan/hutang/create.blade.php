@@ -454,27 +454,27 @@
                 </div>
             </div>
 
-            {{-- KARTU POTONGAN RETUR & CATATAN --}}
-            <div class="po-notes-card">
-                <div style="margin-bottom: 0.65rem; padding-bottom: 0.5rem; border-bottom: 1px dashed #e2e8f0; display: flex; justify-content: space-between; align-items: center; gap: 0.5rem;">
-                    <div>
-                        <label for="potonganReturInput" class="po-field-label" style="margin: 0; color: #b45309;">
-                            Potongan Retur / Afkir Barang Rusak (Rp)
-                        </label>
-                        <small style="color: #64748b; font-size: 0.68rem;">Kredit nota jika ada bahan afkir yang dipotongkan</small>
-                    </div>
-                    <input type="number" 
-                           step="any" 
-                           min="0" 
-                           name="total_potongan_retur" 
-                           id="potonganReturInput" 
-                           value="{{ old('total_potongan_retur', 0) }}" 
-                           class="form-control" 
-                           style="width: 140px; font-size: 0.825rem; height: 32px; text-align: right; font-weight: 700; color: #dc2626;" 
-                           placeholder="0">
+            {{-- KARTU INTEGRASI RETUR PEMBELIAN (CREDIT NOTE OTOMATIS DARI GUDANG) --}}
+            <div id="cardReturCreditNote" class="po-notes-card" style="display: none; background: #fffdf5; border: 1.5px solid #fde68a;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+                    <strong style="font-size: 0.825rem; color: #92400e; display: flex; align-items: center; gap: 0.35rem;">
+                        <span>🏷️</span> <span>Kompensasi Retur Pembelian (Credit Note Gudang)</span>
+                    </strong>
+                    <span id="badgeReturCount" class="badge" style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a; font-size: 0.68rem; font-weight: 700; padding: 2px 7px; border-radius: 4px;">
+                        0 Dokumen Tersedia
+                    </span>
                 </div>
+                <div style="font-size: 0.725rem; color: #78350f; margin-bottom: 0.5rem; line-height: 1.4;">
+                    Ditemukan pengembalian barang rusak yang disetujui untuk <strong>Potong Tagihan</strong>. Centang untuk memotongkan saldo nota kredit:
+                </div>
+                <div id="returItemsList" style="display: flex; flex-direction: column; gap: 0.45rem;">
+                    {{-- Di-render via JS saat supplier dipilih --}}
+                </div>
+            </div>
 
-                <div>
+            {{-- KARTU CATATAN & INPUT MANUAL RETUR (OPSIONAL / TERSEMBUNYI) --}}
+            <div class="po-notes-card">
+                <div style="margin-bottom: 0.5rem;">
                     <label for="catatan" class="po-field-label">
                         Catatan &amp; Keterangan Faktur
                     </label>
@@ -484,6 +484,29 @@
                               class="form-control" 
                               placeholder="Catatan termin pembayaran, transfer bank supplier, dsb..." 
                               style="font-size: 0.8rem; border-radius: 5px;">{{ old('catatan') }}</textarea>
+                </div>
+
+                {{-- Link Toggle & Box Input Manual Retur (Disembunyikan secara Default) --}}
+                <div style="display: flex; justify-content: flex-end; padding-top: 0.35rem; border-top: 1px dashed #e2e8f0;">
+                    <button type="button" onclick="toggleManualReturBox()" style="background: transparent; border: none; font-size: 0.7rem; color: #64748b; cursor: pointer; text-decoration: underline;">
+                        + Input Potongan Retur Manual Lainnya (Opsional)
+                    </button>
+                </div>
+                <div id="boxManualRetur" style="display: none; margin-top: 0.5rem; padding: 0.5rem 0.75rem; background: #fff1f2; border: 1px dashed #fecdd3; border-radius: 6px; justify-content: space-between; align-items: center; gap: 0.5rem;">
+                    <div>
+                        <span style="font-size: 0.725rem; color: #991b1b; font-weight: 700; display: block;">Nominal Potongan Manual:</span>
+                        <small style="font-size: 0.65rem; color: #b91c1c;">Hanya jika ada potongan khusus di luar dokumen retur</small>
+                    </div>
+                    <input type="number" 
+                           step="any" 
+                           min="0" 
+                           name="total_potongan_retur" 
+                           id="potonganReturInput" 
+                           value="{{ old('total_potongan_retur', 0) }}" 
+                           class="form-control" 
+                           style="width: 140px; font-size: 0.825rem; height: 32px; text-align: right; font-weight: 700; color: #dc2626;" 
+                           placeholder="0"
+                           oninput="recalculateTotals()">
                 </div>
             </div>
 
@@ -533,6 +556,12 @@
             <div class="po-financial-row" id="rowSummaryOngkir" style="display: none; color: #7e22ce;">
                 <span style="font-weight: 600;">+ Ongkos Angkut (6112):</span>
                 <strong id="summaryBiayaOngkir" style="font-family: monospace; font-size: 0.95rem; color: #7e22ce;">Rp 0</strong>
+            </div>
+
+            {{-- 6b. Potongan Retur (Credit Note) --}}
+            <div class="po-financial-row" id="rowSummaryRetur" style="display: none; color: #dc2626;">
+                <span style="font-weight: 600;">- Potongan Retur (Credit Note):</span>
+                <strong id="summaryPotonganRetur" style="font-family: monospace; font-size: 0.95rem; color: #dc2626;">- Rp 0</strong>
             </div>
 
             {{-- 7. Grand Total (Faktur Resmi) --}}
@@ -615,7 +644,8 @@
     window.appConfig = {
         baseUrl: '{{ url('') }}',
         initialTopHari: {{ (int)($initSupp?->top_hari ?? 14) }},
-        pajakList: @json($pajakList)
+        pajakList: @json($pajakList),
+        initialReturs: @json($uncreditedReturs ?? [])
     };
 </script>
 <script src="{{ asset('js/keuangan/hutang/hutang-create.js') }}?v={{ filemtime(public_path('js/keuangan/hutang/hutang-create.js')) }}"></script>

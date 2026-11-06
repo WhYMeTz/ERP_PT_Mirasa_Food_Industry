@@ -74,6 +74,14 @@ class DatPakaiHdr extends Model
     }
 
     /**
+     * Relasi ke Pengguna Pembuat Dokumen
+     */
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\User::class, 'created_by', 'id');
+    }
+
+    /**
      * Relasi ke Riwayat Audit & Koreksi Verifikasi
      */
     public function revisiLogs(): HasMany

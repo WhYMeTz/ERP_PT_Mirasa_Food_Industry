@@ -82,6 +82,11 @@ class DatHutangHdr extends Model
         return $this->hasMany(DatHutangDtl::class, 'hutang_id', 'hutang_id');
     }
 
+    public function returs(): HasMany
+    {
+        return $this->hasMany(\App\Models\Gudang\DatReturHdr::class, 'hutang_id', 'hutang_id');
+    }
+
     public function bayarDetails(): HasMany
     {
         return $this->hasMany(DatBayarHutangDtl::class, 'hutang_id', 'hutang_id');

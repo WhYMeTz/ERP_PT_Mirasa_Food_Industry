@@ -1,7 +1,8 @@
 {{-- Modal Pratinjau Dokumen Fisik PO (macOS Quick Look Modal) --}}
-<div id="modalDocumentPreview" class="macos-doc-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modalDocPreviewTitle">
+<div id="modalDocumentPreview" class="macos-doc-modal-backdrop" role="dialog" aria-modal="true"
+    aria-labelledby="modalDocPreviewTitle">
     <div class="macos-doc-modal-window">
-        
+
         {{-- macOS Window Titlebar --}}
         <div class="macos-doc-modal-header">
             {{-- Left: macOS Traffic Lights (Window Controls) --}}
@@ -12,15 +13,18 @@
                 <button type="button" class="mac-traffic-dot yellow" onclick="closeDocumentModal()" title="Minimalkan">
                     <span class="mac-traffic-icon">&minus;</span>
                 </button>
-                <button type="button" class="mac-traffic-dot green" onclick="zoomModalDoc('reset')" title="Reset Skala 100%">
+                <button type="button" class="mac-traffic-dot green" onclick="zoomModalDoc('reset')"
+                    title="Reset Skala 100%">
                     <span class="mac-traffic-icon">&plus;</span>
                 </button>
             </div>
 
             {{-- Center: macOS Document Proxy & Title --}}
             <div class="mac-window-title-center" id="modalDocPreviewTitle">
-                <svg class="mac-window-file-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                <svg class="mac-window-file-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
                 <span class="mac-window-filename">PO #{{ $po->po_no }} &mdash; Dokumen Resmi</span>
                 @if($isApprovedState)
@@ -34,25 +38,37 @@
             <div class="modal-header-actions">
                 <div class="mac-segmented-control">
                     <button type="button" class="btn-mac-seg" onclick="zoomModalDoc('out')" title="Perkecil (-)">
-                        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/></svg>
+                        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4" />
+                        </svg>
                     </button>
-                    <button type="button" class="btn-mac-seg btn-mac-seg-label" id="zoomLevelIndicator" onclick="zoomModalDoc('reset')" title="Reset Skala (100%)">
+                    <button type="button" class="btn-mac-seg btn-mac-seg-label" id="zoomLevelIndicator"
+                        onclick="zoomModalDoc('reset')" title="Reset Skala (100%)">
                         100%
                     </button>
                     <button type="button" class="btn-mac-seg" onclick="zoomModalDoc('in')" title="Perbesar (+)">
-                        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                        </svg>
                     </button>
                 </div>
 
                 <div class="modal-tool-divider"></div>
 
                 <button type="button" class="btn-modal-mac-action" onclick="printModalDocument()" title="Cetak Dokumen">
-                    <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                    <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                    </svg>
                     <span>Print</span>
                 </button>
 
-                <a href="{{ route('gudang.po.export-pdf', $po->po_id) }}" target="_blank" class="btn-modal-mac-action btn-mac-primary" title="Unduh PDF Resmi">
-                    <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                <a href="{{ route('gudang.po.export-pdf', $po->po_id) }}" target="_blank"
+                    class="btn-modal-mac-action btn-mac-primary" title="Unduh PDF Resmi">
+                    <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
                     <span>Unduh PDF</span>
                 </a>
             </div>
@@ -60,16 +76,19 @@
 
         {{-- Scrollable Canvas Desk --}}
         <div class="macos-doc-modal-body">
-            
+
             {{-- Kertas Fisik A4 Asli (Format Gambar 2) --}}
             <div class="modal-a4-paper-sheet" id="modalA4Paper">
-                
+
                 {{-- 1. KOP RESMI HACCP PT MIRASA FOOD INDUSTRY --}}
                 <table class="kop-table">
                     <tr>
                         <td class="kop-logo">
-                            <img src="{{ asset('images/logo.png') }}" style="width: 54px; height: auto; display: block; margin: 0 auto;" alt="Logo Cap Payung">
-                            <div style="font-size: 5.5pt; font-weight: 800; color: #dc2626; margin-top: 2px; letter-spacing: 0.02em; text-align: center;">
+                            <img src="{{ asset('images/logo.png') }}"
+                                style="width: 54px; height: auto; display: block; margin: 0 auto;"
+                                alt="Logo Cap Payung">
+                            <div
+                                style="font-size: 5.5pt; font-weight: 800; color: #dc2626; margin-top: 2px; letter-spacing: 0.02em; text-align: center;">
                                 ENAK &bull; GURIH &bull; LEZAT
                             </div>
                         </td>
@@ -143,7 +162,8 @@
                                     {{ $po->supplier?->nama_supplier ?? $po->supplier?->supplier_nm ?? '-' }}
                                 </strong>
                                 <div>{{ $po->supplier?->alamat ?? $po->supplier?->alamat_txt ?? '-' }}</div>
-                                <table style="width: 100%; border-collapse: collapse; margin-top: 3px; font-size: 8.5pt;">
+                                <table
+                                    style="width: 100%; border-collapse: collapse; margin-top: 3px; font-size: 8.5pt;">
                                     <tr>
                                         <td style="width: 45px; padding: 0;">Up</td>
                                         <td style="width: 8px; padding: 0;">:</td>
@@ -152,7 +172,9 @@
                                     <tr>
                                         <td style="padding: 0;">Telpon</td>
                                         <td style="padding: 0;">:</td>
-                                        <td style="padding: 0;">{{ $po->supplier?->telepon ?? $po->supplier?->kontak_no ?? '-' }}</td>
+                                        <td style="padding: 0;">
+                                            {{ $po->supplier?->telepon ?? $po->supplier?->kontak_no ?? '-' }}
+                                        </td>
                                     </tr>
                                 </table>
                             </div>
@@ -216,7 +238,9 @@
                                     <table style="width: 100%; border-collapse: collapse;">
                                         <tr>
                                             <td style="width: 25px; border: none; padding: 0;">Rp</td>
-                                            <td style="text-align: right; border: none; padding: 0;">{{ number_format($itemPrice, 0, ',', '.') }}</td>
+                                            <td style="text-align: right; border: none; padding: 0;">
+                                                {{ number_format($itemPrice, 0, ',', '.') }}
+                                            </td>
                                         </tr>
                                     </table>
                                 </td>
@@ -224,7 +248,9 @@
                                     <table style="width: 100%; border-collapse: collapse;">
                                         <tr>
                                             <td style="width: 25px; border: none; padding: 0; font-weight: 700;">Rp</td>
-                                            <td style="text-align: right; border: none; padding: 0; font-weight: 700;">{{ number_format($itemSubtotal, 0, ',', '.') }}</td>
+                                            <td style="text-align: right; border: none; padding: 0; font-weight: 700;">
+                                                {{ number_format($itemSubtotal, 0, ',', '.') }}
+                                            </td>
                                         </tr>
                                     </table>
                                 </td>
@@ -320,14 +346,18 @@
                     <tr>
                         {{-- Kiri: Footnote Alamat Kirim, NPWP, Faktur Pajak & Rekening Pembayaran --}}
                         <td style="width: 60%; vertical-align: bottom; padding-right: 15px;">
-                            <div class="nb-tax" style="font-size: 8.5pt; line-height: 1.35; color: #000000; margin-top: 10px;">
+                            <div class="nb-tax"
+                                style="font-size: 8.5pt; line-height: 1.35; color: #000000; margin-top: 10px;">
                                 <div style="font-weight: 800; font-size: 9pt; margin-bottom: 2px;">NB.</div>
                                 <div>Barang di kirim ke alamat:</div>
                                 <div style="font-weight: 800; font-size: 9pt;">PT. MIRASA FOOD INDUSTRY</div>
                                 <div>Magelang</div>
                                 <div style="margin-top: 5px; font-size: 8pt; color: #334155; line-height: 1.35;">
-                                    Faktur Pajak a.n. <strong>PT. MIRASA FOOD INDUSTRY</strong> (NPWP 07.635.700.4-152.000)<br>
-                                    Pembayaran via BCA <strong>104-9173332</strong> a.n. PT. MIRASA FOOD INDUSTRY
+                                    </strong> (NPWP
+                                    07.635.700.4-152.000)<br>
+                                    BCA <strong>104-9173332</strong> a.n. PT. MIRASA FOOD INDUSTRY
+                                    </strong> (NPWP
+                                    07.635.700.4-152.000)<br>
                                 </div>
                             </div>
                         </td>
@@ -339,16 +369,21 @@
                             </div>
 
                             @if ($isApprovedState)
-                                {{-- Jika sudah diapprove: Otomatis memunculkan tanda tangan & cap stempel basah approver --}}
-                                <div style="margin: 2px auto; text-align: center; height: 80px; display: flex; align-items: center; justify-content: center;">
-                                    <img src="{{ asset('images/signatures/' . $sigFilename) }}" style="height: 78px; max-width: 150px; object-fit: contain; display: inline-block;" alt="Tanda Tangan &amp; Cap Resmi">
+                                {{-- Jika sudah diapprove: Otomatis memunculkan tanda tangan & cap stempel basah approver
+                                --}}
+                                <div
+                                    style="margin: 2px auto; text-align: center; height: 80px; display: flex; align-items: center; justify-content: center;">
+                                    <img src="{{ asset('images/signatures/' . $sigFilename) }}"
+                                        style="height: 78px; max-width: 150px; object-fit: contain; display: inline-block;"
+                                        alt="Tanda Tangan &amp; Cap Resmi">
                                 </div>
                             @else
                                 {{-- Jika belum diapprove: Ruang kosong 80px siap tanda tangan --}}
                                 <div style="height: 80px;"></div>
                             @endif
 
-                            <div style="font-size: 9.5pt; font-weight: 800; text-decoration: underline; color: #1e3a8a; margin-top: 2px;">
+                            <div
+                                style="font-size: 9.5pt; font-weight: 800; text-decoration: underline; color: #1e3a8a; margin-top: 2px;">
                                 {{ $approverDisplayName }}
                             </div>
                             <div style="font-size: 7.5pt; color: #4b5563;">
@@ -364,4 +399,3 @@
 
     </div>
 </div>
-

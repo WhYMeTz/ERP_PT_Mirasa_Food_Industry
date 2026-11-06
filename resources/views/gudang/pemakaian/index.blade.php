@@ -2,6 +2,10 @@
 
 @section('title', 'Pemakaian Bahan (Outbound) - ERP PT Mirasa')
 
+@push('styles')
+    <link rel="stylesheet" href="{{ asset('css/gudang/pemakaian/pemakaian-index.css') }}?v={{ file_exists(public_path('css/gudang/pemakaian/pemakaian-index.css')) ? filemtime(public_path('css/gudang/pemakaian/pemakaian-index.css')) : time() }}">
+@endpush
+
 @section('content')
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 1rem;">
     <div>
@@ -178,15 +182,15 @@
     <div style="background: #ffffff; padding: 0.75rem 1.25rem; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
         {{-- View Switcher Tab --}}
         <div style="display: inline-flex; background: #f1f5f9; padding: 0.2rem; border-radius: 6px; border: 1px solid #e2e8f0;">
+            <a href="{{ route('gudang.pemakaian.index', array_merge(request()->query(), ['view' => 'header'])) }}" 
+               style="text-decoration: none; padding: 0.35rem 0.85rem; border-radius: 4px; font-size: 0.8rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.4rem; background: {{ ($viewType !== 'item') ? '#ffffff' : 'transparent' }}; color: {{ ($viewType !== 'item') ? '#0f172a' : '#64748b' }}; box-shadow: {{ ($viewType !== 'item') ? '0 1px 2px rgba(0,0,0,0.06)' : 'none' }};">
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                Daftar Dokumen (Standar PO)
+            </a>
             <a href="{{ route('gudang.pemakaian.index', array_merge(request()->query(), ['view' => 'item'])) }}" 
                style="text-decoration: none; padding: 0.35rem 0.85rem; border-radius: 4px; font-size: 0.8rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.4rem; background: {{ $viewType === 'item' ? '#ffffff' : 'transparent' }}; color: {{ $viewType === 'item' ? '#0f172a' : '#64748b' }}; box-shadow: {{ $viewType === 'item' ? '0 1px 2px rgba(0,0,0,0.06)' : 'none' }};">
                 <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 4h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                Buku Rekap Pemakaian (Excel Grid)
-            </a>
-            <a href="{{ route('gudang.pemakaian.index', array_merge(request()->query(), ['view' => 'header'])) }}" 
-               style="text-decoration: none; padding: 0.35rem 0.85rem; border-radius: 4px; font-size: 0.8rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.4rem; background: {{ $viewType === 'header' ? '#ffffff' : 'transparent' }}; color: {{ $viewType === 'header' ? '#0f172a' : '#64748b' }}; box-shadow: {{ $viewType === 'header' ? '0 1px 2px rgba(0,0,0,0.06)' : 'none' }};">
-                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                Daftar Dokumen Pengeluaran
+                Buku Rekap Bahan (Excel Grid)
             </a>
         </div>
 
@@ -291,6 +295,9 @@
                                 </a>
                                 @if(($row->header?->status_st ?? 'POSTED') === 'DRAFT')
                                     <span class="badge" style="background: #fef3c7; color: #92400e; font-size: 0.675rem; padding: 0.1rem 0.35rem; font-weight: 700; border: 1px solid #fde68a; margin-left: 0.25rem;">DRAFT</span>
+                                @endif
+                                @if($row->header?->is_ada_koreksi)
+                                    <span class="badge" style="background: #fffbeb; color: #b45309; font-size: 0.675rem; padding: 0.1rem 0.35rem; font-weight: 700; border: 1px solid #fde68a; margin-left: 0.25rem;" title="Data telah dikoreksi verifikator">🔄 Koreksi</span>
                                 @endif
                             </td>
                             <td>
@@ -411,63 +418,96 @@
             </table>
         </div>
     @else
-        {{-- VIEW 2: DAFTAR DOKUMEN PENGELUARAN (HEADER VIEW) --}}
+        {{-- VIEW 2: DAFTAR DOKUMEN PENGELUARAN (STANDAR PO PEMBELIAN - 1 BARIS PER BPPB DENGAN EXPANDABLE ITEMS) --}}
         <div style="overflow-x: auto;">
             <table style="width: 100%; border-collapse: collapse;">
                 <thead>
                     <tr>
                         <th style="width: 45px; text-align: center;">No</th>
-                        <th style="min-width: 160px;">Nomor Pengeluaran</th>
+                        <th style="min-width: 220px;">Nomor Pengeluaran (BPPB)</th>
                         <th style="min-width: 120px;">Tanggal Keluar</th>
-                        <th style="min-width: 150px;">Gudang Asal</th>
-                        <th style="min-width: 180px;">Tujuan Pemakaian / SPK</th>
-                        <th style="min-width: 110px; text-align: center;">Total Item</th>
-                        <th style="min-width: 120px; text-align: center;">Status</th>
-                        <th style="min-width: 160px;">Catatan</th>
+                        <th style="min-width: 160px;">Gudang Asal</th>
+                        <th style="min-width: 190px;">Tujuan Pemakaian / SPK</th>
+                        <th style="min-width: 150px; text-align: center;">Status Dokumen</th>
+                        <th style="min-width: 140px; text-align: right;">Total Fisik Keluar</th>
                         <th style="width: 110px; text-align: right;">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse ($dataList as $index => $hdr)
+                        @php
+                            $sumQty = (float) $hdr->details->sum('qty_keluar');
+                            $satuanFirst = $hdr->details->first()?->barang?->satuanDasar?->satuan_nm ?? 'Kg';
+                            $sumNilai = (float) $hdr->details->reduce(function($carry, $item) {
+                                return $carry + ((float) $item->qty_keluar * (float) $item->harga_satuan);
+                            }, 0);
+                        @endphp
                         <tr style="border-bottom: 1px solid #f1f5f9;">
                             <td style="text-align: center; color: #64748b; font-size: 0.85rem;">
                                 {{ $dataList->firstItem() + $index }}
                             </td>
                             <td>
-                                <a href="{{ route('gudang.pemakaian.show', $hdr->pakai_id) }}" style="font-weight: 700; color: #dc2626; text-decoration: none; font-size: 0.9rem;">
-                                    {{ $hdr->pakai_no }}
-                                </a>
+                                <div>
+                                    <div style="display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;">
+                                        <a href="javascript:void(0)" 
+                                           onclick="openPakaiDetailModal({{ $hdr->pakai_id }})" 
+                                           style="font-weight: 700; color: #dc2626; text-decoration: none; font-size: 0.9rem;"
+                                           title="Klik untuk membuka popup detail dokumen BPPB">
+                                            {{ $hdr->pakai_no }}
+                                        </a>
+                                        @if($hdr->is_ada_koreksi)
+                                            <span class="badge" style="background: #fffbeb; color: #b45309; border: 1.5px solid #fde68a; font-size: 0.675rem; font-weight: 700; padding: 1px 5px; border-radius: 4px;" title="Dokumen ini telah disesuaikan oleh Verifikator Keuangan">
+                                                🔄 Ada Koreksi
+                                            </span>
+                                        @endif
+                                    </div>
+                                    <small style="display: block; font-size: 0.725rem; color: #64748b; margin-top: 2px;">
+                                        {{ $hdr->details->count() }} item bahan fisik
+                                    </small>
+                                </div>
                             </td>
                             <td>
-                                <span style="font-size: 0.85rem; color: #334155; font-weight: 600;">
+                                <div style="font-weight: 600; color: #334155; font-size: 0.85rem;">
                                     {{ \Carbon\Carbon::parse($hdr->pakai_tgl)->format('d/m/Y') }}
-                                </span>
+                                </div>
+                                @if(!empty($hdr->created_dt))
+                                    <small style="display: block; font-size: 0.725rem; color: #64748b;">
+                                        {{ \Carbon\Carbon::parse($hdr->created_dt)->format('H:i') }} WIB
+                                    </small>
+                                @endif
                             </td>
                             <td>
-                                <span style="font-size: 0.85rem; color: #334155;">{{ $hdr->gudang?->gudang_nm ?? '-' }}</span>
+                                <strong style="color: #0f172a; font-size: 0.85rem; display: block;">{{ $hdr->gudang?->gudang_nm ?? '-' }}</strong>
+                                <small style="color: #64748b; font-size: 0.725rem;">{{ $hdr->gudang?->gudang_cd ?? '' }}</small>
                             </td>
                             <td>
-                                <span class="badge" style="background: #fee2e2; color: #991b1b; font-weight: 700;">
+                                <span class="badge" style="background: #fee2e2; color: #991b1b; font-weight: 700; font-size: 0.75rem; padding: 0.2rem 0.5rem; border-radius: 4px;">
                                     {{ $hdr->tujuan_pemakaian }}
                                 </span>
-                            </td>
-                            <td style="text-align: center;">
-                                <span class="badge" style="background: #f1f5f9; color: #475569; font-weight: 700;">
-                                    {{ $hdr->details->count() }} Bahan
-                                </span>
+                                @if(!empty($hdr->catatan_txt))
+                                    <small style="display: block; font-size: 0.725rem; color: #64748b; margin-top: 3px; max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{{ $hdr->catatan_txt }}">
+                                        Memo: {{ $hdr->catatan_txt }}
+                                    </small>
+                                @endif
                             </td>
                             <td style="text-align: center;">
                                 @if(($hdr->status_st ?? 'POSTED') === 'DRAFT')
-                                    <span class="badge" style="background: #fef3c7; color: #92400e; font-weight: 700; border: 1px solid #fde68a; font-size: 0.75rem; padding: 0.2rem 0.5rem;">
-                                        ⏳ DRAFT
+                                    <span class="badge" style="background: #fef3c7; color: #92400e; font-weight: 700; border: 1.5px solid #fde68a; font-size: 0.75rem; padding: 0.2rem 0.55rem; border-radius: 6px; display: inline-flex; align-items: center; gap: 0.3rem;">
+                                        <span>⏳</span> DRAFT GUDANG
                                     </span>
+                                    <small style="display: block; font-size: 0.7rem; color: #b45309; margin-top: 2px;">Menunggu verifikasi fisik</small>
                                 @else
-                                    <span class="badge" style="background: #ecfdf5; color: #065f46; font-weight: 700; border: 1px solid #a7f3d0; font-size: 0.75rem; padding: 0.2rem 0.5rem;">
-                                        ✓ POSTED
+                                    <span class="badge" style="background: #ecfdf5; color: #065f46; font-weight: 700; border: 1.5px solid #a7f3d0; font-size: 0.75rem; padding: 0.2rem 0.55rem; border-radius: 6px; display: inline-flex; align-items: center; gap: 0.3rem;">
+                                        <span>✓</span> POSTED
                                     </span>
+                                    <small style="display: block; font-size: 0.7rem; color: #047857; margin-top: 2px;">Stok fisik terpotong</small>
                                 @endif
                             </td>
-                            <td style="color: #64748b; font-size: 0.85rem;">{{ $hdr->catatan_txt ?? '-' }}</td>
+                            <td style="text-align: right;">
+                                <div style="font-weight: 800; color: #dc2626; font-family: monospace; font-size: 1.05rem;">
+                                    {{ number_format($sumQty, 2, ',', '.') }} <span style="font-size: 0.775rem; color: #64748b; font-family: sans-serif;">{{ $satuanFirst }}</span>
+                                </div>
+                            </td>
                             <td style="text-align: right; position: relative;">
                                 @php $hdrMenuId = 'dropdown-pakai-hdr-' . $hdr->pakai_id; @endphp
                                 <button type="button" class="btn-action-trigger" onclick="toggleSmartActionDropdown(this, event, '{{ $hdrMenuId }}')">
@@ -475,10 +515,10 @@
                                     <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                                 </button>
                                 <div id="{{ $hdrMenuId }}" class="action-dropdown-menu">
-                                    <a href="{{ route('gudang.pemakaian.show', $hdr->pakai_id) }}" class="action-dropdown-item">
+                                    <button type="button" class="action-dropdown-item" onclick="openPakaiDetailModal({{ $hdr->pakai_id }})">
                                         <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                                        <span>Lihat Detail BPPB</span>
-                                    </a>
+                                        <span>Lihat Detail BPPB (Popup)</span>
+                                    </button>
                                     <a href="{{ route('gudang.pemakaian.export-pdf', $hdr->pakai_id) }}" target="_blank" class="action-dropdown-item">
                                         <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
                                         <span>Cetak BPPB (PDF)</span>
@@ -512,7 +552,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="9" style="text-align: center; padding: 3rem 1rem; color: #94a3b8;">
+                            <td colspan="8" style="text-align: center; padding: 3rem 1rem; color: #94a3b8;">
                                 Belum ada riwayat dokumen pengeluaran barang.
                             </td>
                         </tr>
@@ -623,6 +663,14 @@
 {{-- MODAL PREVIEW DETAIL JURNAL UMUM --}}
 @include('keuangan.jurnal.partials.modal-detail-jurnal')
 
+{{-- MODAL DETAIL PEMAKAIAN BAHAN / BPPB (QUICK VIEW POPUP ALA PO PEMBELIAN) --}}
+@include('gudang.pemakaian.partials.modal-detail-pemakaian')
+
 {{-- MODAL HAPUS TRANSAKSI PEMAKAIAN BAHAN (DRAFT) --}}
 @include('gudang.pemakaian.partials.modal-delete-confirm')
+
+@push('scripts')
+    <script src="{{ asset('js/gudang/pemakaian/pemakaian-index.js') }}?v={{ file_exists(public_path('js/gudang/pemakaian/pemakaian-index.js')) ? filemtime(public_path('js/gudang/pemakaian/pemakaian-index.js')) : time() }}"></script>
+@endpush
+
 

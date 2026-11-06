@@ -36,23 +36,3 @@
     </div>
 </div>
 
-<script>
-    function openDeletePemakaianModal(id, no, tujuan) {
-        const modal = document.getElementById('modal-delete-pemakaian');
-        const form = document.getElementById('form-delete-pemakaian');
-        const noEl = document.getElementById('delete-pemakaian-no');
-        const tujuanEl = document.getElementById('delete-pemakaian-tujuan');
-
-        if (modal && form) {
-            form.action = "{{ url('gudang/pemakaian') }}/" + id;
-            if (noEl) noEl.innerText = no;
-            if (tujuanEl) tujuanEl.innerText = 'Tujuan: ' + tujuan;
-            modal.style.display = 'flex';
-        }
-    }
-
-    function closeDeletePemakaianModal() {
-        const modal = document.getElementById('modal-delete-pemakaian');
-        if (modal) modal.style.display = 'none';
-    }
-</script>

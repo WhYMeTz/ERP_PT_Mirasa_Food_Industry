@@ -68,8 +68,10 @@ class HutangController extends Controller
         $selectedSupplierId = $request->input('supplier_id');
 
         $unbilledGrn = [];
+        $uncreditedReturs = [];
         if ($selectedSupplierId) {
             $unbilledGrn = $this->hutangService->getUnbilledGrnList((int) $selectedSupplierId);
+            $uncreditedReturs = $this->hutangService->getUncreditedReturList((int) $selectedSupplierId);
         }
 
         $pajakList = MstPajak::active()
@@ -78,7 +80,7 @@ class HutangController extends Controller
             ->orderBy('pajak_nm')
             ->get();
 
-        return view('keuangan.hutang.create', compact('suppliers', 'gudangs', 'selectedSupplierId', 'unbilledGrn', 'unbilledSupplierSummary', 'pajakList'));
+        return view('keuangan.hutang.create', compact('suppliers', 'gudangs', 'selectedSupplierId', 'unbilledGrn', 'unbilledSupplierSummary', 'pajakList', 'uncreditedReturs'));
     }
 
     /**
@@ -342,11 +344,13 @@ class HutangController extends Controller
     {
         $supplierId = $request->input('supplier_id');
         $grnList = $this->hutangService->getUnbilledGrnList($supplierId ? (int) $supplierId : null);
+        $returList = $this->hutangService->getUncreditedReturList($supplierId ? (int) $supplierId : null);
         $supplier = $supplierId ? MstSupplier::find((int) $supplierId) : null;
 
         return response()->json([
             'status'   => 'success',
             'data'     => $grnList,
+            'returs'   => $returList,
             'supplier' => $supplier ? [
                 'id'        => $supplier->supplier_id,
                 'name'      => $supplier->supplier_nm,

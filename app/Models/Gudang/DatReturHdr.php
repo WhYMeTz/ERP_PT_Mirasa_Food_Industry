@@ -24,6 +24,7 @@ class DatReturHdr extends Model
         'gudang_id',
         'po_id',
         'terima_id',
+        'hutang_id',
         'tindakan_cd',
         'suratjalan_supplier_no',
         'total_nominal',
@@ -86,6 +87,14 @@ class DatReturHdr extends Model
     public function details(): HasMany
     {
         return $this->hasMany(DatReturDtl::class, 'retur_id', 'retur_id');
+    }
+
+    /**
+     * Relasi ke Header Tagihan Hutang (jika sudah dipotongkan)
+     */
+    public function hutang(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Keuangan\DatHutangHdr::class, 'hutang_id', 'hutang_id');
     }
 
     /**

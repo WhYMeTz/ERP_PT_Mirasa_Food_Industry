@@ -216,6 +216,7 @@ function populateQuickInspectModal(data) {
     const btnApprove = document.getElementById('qiBtnApprove');
     const btnReject = document.getElementById('qiBtnReject');
     const thAction = document.getElementById('qiThAction');
+    const footAction = document.getElementById('qiFootTdAction');
 
     if (isDraft) {
         btnAddRow.style.display = 'inline-flex';
@@ -223,12 +224,14 @@ function populateQuickInspectModal(data) {
         btnApprove.style.display = 'inline-flex';
         btnReject.style.display = 'inline-flex';
         thAction.style.display = 'table-cell';
+        if (footAction) footAction.style.display = 'table-cell';
     } else {
         btnAddRow.style.display = 'none';
         btnSaveDraft.style.display = 'none';
         btnApprove.style.display = 'none';
         btnReject.style.display = 'none';
         thAction.style.display = 'none';
+        if (footAction) footAction.style.display = 'none';
     }
 
     // Render Rows Tabel
@@ -240,6 +243,7 @@ function populateQuickInspectModal(data) {
         data.initialItems.forEach(item => {
             renderQiDraftRow(item);
         });
+        syncQiBatchOptionsAcrossRows();
     } else if (!isDraft && data.itemsCheck) {
         data.itemsCheck.forEach(item => {
             renderQiPostedRow(item);
@@ -320,6 +324,31 @@ function setQiRowCategory(btn, cat) {
     }
 }
 
+let isSyncingQiRows = false;
+
+// Sinkronisasi ketersediaan batch ke baris-baris lain dalam modal Quick Inspect
+function syncQiBatchOptionsAcrossRows(triggerRow = null) {
+    if (isSyncingQiRows) return;
+    isSyncingQiRows = true;
+    try {
+        const rows = document.querySelectorAll('#qiTableBody tr.qi-table-row');
+        rows.forEach(r => {
+            if (r !== triggerRow) {
+                const barangId = r.querySelector('.qi-item-barang')?.value;
+                const batchSelect = r.querySelector('.qi-item-batch');
+                const curBatch = batchSelect?.value;
+                const curGrade = (r.querySelector('.qi-item-grade')?.value || 'A').toUpperCase();
+
+                if (barangId && r._allBatches && r._allBatches.length > 0) {
+                    renderQiBatchOptionsInRow(r, curGrade, curBatch);
+                }
+            }
+        });
+    } finally {
+        isSyncingQiRows = false;
+    }
+}
+
 function setQiRowGrade(btn, grade) {
     const group = btn.closest('.grade-pill-group');
     if (group) {
@@ -332,7 +361,381 @@ function setQiRowGrade(btn, grade) {
     if (gradeInput) {
         gradeInput.value = grade;
     }
-    applyQiGradeFilter(tr);
+    const curBatch = tr.querySelector('.qi-item-batch')?.value;
+    renderQiBatchOptionsInRow(tr, grade, curBatch);
+}
+
+// Render Opsi Batch ke select row modal Quick Inspect dengan proteksi alokasi antar-baris (cross-row tracking)
+function renderQiBatchOptionsInRow(tr, gradeFilter = '', preferredBatchNo = null) {
+    const batchSelect = tr.querySelector('.qi-item-batch');
+    const batchInfo = tr.querySelector('.qi-batch-info');
+    if (!batchSelect) return;
+
+    const batches = tr._allBatches || [];
+
+    if (batches.length === 0) {
+        batchSelect.innerHTML = '<option value="">(Stok Fisik Kosong / Habis di Gudang ini)</option>';
+        if (batchInfo) {
+            batchInfo.innerHTML = '<span style="color: #dc2626; font-weight: 700; background: #fee2e2; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.725rem;">⚠️ Stok fisik bahan ini habis di gudang terpilih.</span>';
+        }
+        const hargaEl = tr.querySelector('.qi-item-harga');
+        if (hargaEl) hargaEl.value = 0;
+        recalculateQiRow(batchSelect);
+        return;
+    }
+
+    let filtered = gradeFilter 
+        ? batches.filter(b => (b.grade_cd || 'A').toUpperCase() === gradeFilter.toUpperCase())
+        : batches;
+
+    if (filtered.length === 0) {
+        filtered = batches;
+        const group = tr.querySelector('.grade-pill-group');
+        if (group) {
+            group.querySelectorAll('.btn-chip').forEach(b => b.classList.remove('active'));
+            group.children[0]?.classList.add('active');
+        }
+    }
+
+    // Hitung kuantitas batch yang sudah dipakai di baris-baris lain dalam modal Quick Inspect (khusus barang yang sama)
+    const usedQtyByOtherRows = {};
+    const usedDetailByOtherRows = {};
+    const rowBarangId = tr.querySelector('.qi-item-barang')?.value || '';
+    document.querySelectorAll('#qiTableBody tr.qi-table-row').forEach(r => {
+        if (r !== tr) {
+            const barVal = r.querySelector('.qi-item-barang')?.value || '';
+            const bVal = r.querySelector('.qi-item-batch')?.value;
+            const gVal = (r.querySelector('.qi-item-grade')?.value || '').toUpperCase();
+            const qVal = parseFloat(r.querySelector('.qi-item-qty')?.value || 0);
+            const rNum = r.querySelector('.qi-row-index')?.textContent.trim() || 'Baris';
+            if (barVal && rowBarangId && parseInt(barVal) === parseInt(rowBarangId) && bVal && qVal > 0) {
+                const key = `${bVal}_${gVal}`;
+                usedQtyByOtherRows[key] = (usedQtyByOtherRows[key] || 0) + qVal;
+                usedQtyByOtherRows[bVal] = (usedQtyByOtherRows[bVal] || 0) + qVal;
+
+                if (!usedDetailByOtherRows[key]) usedDetailByOtherRows[key] = [];
+                usedDetailByOtherRows[key].push(`Baris #${rNum} (${qVal.toLocaleString('id-ID')})`);
+            }
+        }
+    });
+
+    let firstAvailableIdx = -1;
+    filtered.forEach((b, idx) => {
+        const gCd = (b.grade_cd || 'A').toUpperCase();
+        const sisaFisik = parseFloat(b.sisa_qty || 0);
+        const sisaBebasServer = (b.sisa_bebas !== undefined) ? parseFloat(b.sisa_bebas) : sisaFisik;
+        const draftQty = parseFloat(b.draft_qty || 0);
+        const usedByOthers = usedQtyByOtherRows[`${b.batch_no}_${gCd}`] || usedQtyByOtherRows[b.batch_no] || 0;
+        const netSisaBebas = Math.max(0, sisaBebasServer - usedByOthers);
+        const isUsedUp = (sisaBebasServer > 0.0001 && netSisaBebas <= 0.0001);
+        const booked = b.is_fully_booked || (sisaBebasServer <= 0.0001 && draftQty > 0) || isUsedUp;
+
+        if (!booked && netSisaBebas > 0.0001 && firstAvailableIdx === -1) {
+            firstAvailableIdx = idx;
+        }
+    });
+
+    // Tentukan batch mana yang terpilih
+    let selectedIdx = -1;
+    if (preferredBatchNo) {
+        selectedIdx = filtered.findIndex(b => b.batch_no === preferredBatchNo);
+        if (selectedIdx !== -1) {
+            const b = filtered[selectedIdx];
+            const gCd = (b.grade_cd || 'A').toUpperCase();
+            const sisaBebasServer = (b.sisa_bebas !== undefined) ? parseFloat(b.sisa_bebas) : parseFloat(b.sisa_qty || 0);
+            const usedByOthers = usedQtyByOtherRows[`${b.batch_no}_${gCd}`] || usedQtyByOtherRows[b.batch_no] || 0;
+            const netSisaBebas = Math.max(0, sisaBebasServer - usedByOthers);
+            if (netSisaBebas <= 0.0001) {
+                // Batch pilihan sudah habis dipakai di baris lain -> alihkan otomatis ke batch tertua berikutnya yang masih tersedia
+                selectedIdx = firstAvailableIdx;
+            }
+        }
+    }
+
+    if (selectedIdx === -1) {
+        selectedIdx = firstAvailableIdx;
+    }
+
+    let html = '';
+    if (firstAvailableIdx === -1) {
+        html += `<option value="" disabled ${selectedIdx === -1 ? 'selected' : ''} style="color: #dc2626; font-weight: 700; background: #fee2e2;">⛔ SEMUA BATCH HABIS DIPAKAI DI BARIS LAIN</option>`;
+    }
+
+    filtered.forEach((b, idx) => {
+        const isSelected = (idx === selectedIdx);
+        const isTop = (idx === firstAvailableIdx);
+        const prefix = isTop ? '⭐ [FIFO Tertua] ' : '';
+        const gCd = (b.grade_cd || 'A').toUpperCase();
+        const expInfo = (b.expired_tgl && b.expired_tgl !== '-') ? ` | Exp: ${b.expired_tgl}` : '';
+        const tglTerima = (b.tgl_terima && b.tgl_terima !== '-') ? ` | Masuk: ${b.tgl_terima}` : '';
+        
+        const sisaFisik = parseFloat(b.sisa_qty || 0);
+        const sisaBebasServer = (b.sisa_bebas !== undefined) ? parseFloat(b.sisa_bebas) : sisaFisik;
+        const draftQty = parseFloat(b.draft_qty || 0);
+        const draftDocs = (Array.isArray(b.draft_doc_nos) ? b.draft_doc_nos.join(', ') : (b.draft_doc_nos || ''));
+
+        const usedByOthers = usedQtyByOtherRows[`${b.batch_no}_${gCd}`] || usedQtyByOtherRows[b.batch_no] || 0;
+        const usedDetails = (usedDetailByOtherRows[`${b.batch_no}_${gCd}`] || []).join(', ');
+        const netSisaBebas = Math.max(0, sisaBebasServer - usedByOthers);
+        const isUsedUpInForm = (sisaBebasServer > 0.0001 && netSisaBebas <= 0.0001);
+        const isFullyBooked = b.is_fully_booked || (sisaBebasServer <= 0.0001 && draftQty > 0) || isUsedUpInForm;
+
+        let labelText = '';
+        if (isUsedUpInForm) {
+            labelText = `⛔ ${b.batch_no} • [Grade ${gCd}] (HABIS - Dipakai di ${usedDetails || 'baris lain'})`;
+        } else if (b.is_fully_booked || (sisaBebasServer <= 0.0001 && draftQty > 0)) {
+            labelText = `⛔ ${b.batch_no} • [Grade ${gCd}] (HABIS di Draft [${draftDocs}])`;
+        } else if (usedByOthers > 0) {
+            labelText = `⚠️ ${prefix}${b.batch_no} • [Grade ${gCd}] (Sisa Bebas: ${netSisaBebas.toLocaleString('id-ID')} | ${usedByOthers.toLocaleString('id-ID')} dipakai di ${usedDetails || 'baris lain'})`;
+        } else if (draftQty > 0) {
+            labelText = `⚠️ ${prefix}${b.batch_no} • [Grade ${gCd}] (Sisa Bebas: ${netSisaBebas.toLocaleString('id-ID')})${expInfo}`;
+        } else {
+            labelText = `${prefix}${b.batch_no} • [Grade ${gCd}] (Sisa: ${netSisaBebas.toLocaleString('id-ID')})${tglTerima}${expInfo}`;
+        }
+
+        const disabledAttr = (isFullyBooked || netSisaBebas <= 0.0001) 
+            ? 'disabled style="color: #94a3b8; background: #f1f5f9; text-decoration: line-through; cursor: not-allowed;"' 
+            : '';
+
+        html += `<option value="${b.batch_no}" 
+            data-stok-id="${b.stok_id || ''}" 
+            data-grade="${gCd}" 
+            data-sisa="${sisaFisik}" 
+            data-sisa-bebas="${netSisaBebas}"
+            data-draft-qty="${draftQty}"
+            data-draft-docs="${draftDocs}"
+            data-is-fully-booked="${(isFullyBooked && netSisaBebas <= 0.0001) ? 1 : 0}"
+            data-harga="${b.harga_satuan || 0}" 
+            data-masuk="${b.tgl_terima || '-'}" 
+            data-exp="${b.expired_tgl || '-'}" 
+            ${disabledAttr}
+            ${isSelected ? 'selected' : ''}>
+            ${labelText}
+        </option>`;
+    });
+    batchSelect.innerHTML = html;
+
+    onQiBatchChange(batchSelect);
+}
+
+function selectOldestBatchInQiRow(btn) {
+    const tr = btn.closest('tr');
+    if (!tr) return;
+    const batchSelect = tr.querySelector('.qi-item-batch');
+    if (!batchSelect) return;
+
+    for (let i = 0; i < batchSelect.options.length; i++) {
+        const opt = batchSelect.options[i];
+        if (opt.value && !opt.disabled) {
+            batchSelect.selectedIndex = i;
+            onQiBatchChange(batchSelect);
+            break;
+        }
+    }
+}
+window.selectOldestBatchInQiRow = selectOldestBatchInQiRow;
+
+function autoSplitQiBatchForRow(btn) {
+    const tr = btn.closest('tr');
+    if (!tr) return;
+    const barangSelect = tr.querySelector('.qi-item-barang');
+    const batchSelect = tr.querySelector('.qi-item-batch');
+    const qtyInput = tr.querySelector('.qi-item-qty');
+    const gradeInput = tr.querySelector('.qi-item-grade');
+    if (!barangSelect || !batchSelect || !qtyInput) return;
+
+    const barangId = barangSelect.value;
+    const totalRequested = parseFloat(qtyInput.value || 0);
+    const selectedOpt = batchSelect.selectedOptions[0];
+    if (!selectedOpt) return;
+
+    const sisaFisik = parseFloat(selectedOpt.getAttribute('data-sisa') || 0);
+    const sisaBebas = parseFloat(selectedOpt.getAttribute('data-sisa-bebas') !== null ? selectedOpt.getAttribute('data-sisa-bebas') : sisaFisik);
+    if (totalRequested <= sisaBebas) return;
+
+    const takeCurrent = Math.min(totalRequested, sisaBebas);
+    qtyInput.value = takeCurrent;
+    recalculateQiRow(qtyInput);
+
+    let remainingQty = totalRequested - takeCurrent;
+    const currentGrade = (gradeInput?.value || selectedOpt.getAttribute('data-grade') || 'A').toUpperCase();
+
+    const allBatches = tr._allBatches || [];
+    let candidateBatches = allBatches.filter(b => (b.grade_cd || 'A').toUpperCase() === currentGrade);
+    if (candidateBatches.length === 0) candidateBatches = allBatches;
+
+    for (const b of candidateBatches) {
+        if (remainingQty <= 0.0001) break;
+        if (b.batch_no === selectedOpt.value) continue;
+
+        let usedOther = 0;
+        document.querySelectorAll('#qiTableBody tr.qi-table-row').forEach(r => {
+            const bId = r.querySelector('.qi-item-barang')?.value;
+            const bNo = r.querySelector('.qi-item-batch')?.value;
+            const q = parseFloat(r.querySelector('.qi-item-qty')?.value || 0);
+            if (bId === barangId && bNo === b.batch_no) {
+                usedOther += q;
+            }
+        });
+
+        const bSisaFisik = parseFloat(b.sisa_qty || 0);
+        const bSisaBebas = (b.sisa_bebas !== undefined) ? parseFloat(b.sisa_bebas) : bSisaFisik;
+        const netAvailable = Math.max(0, bSisaBebas - usedOther);
+
+        if (netAvailable > 0.0001) {
+            const takeFromThis = Math.min(remainingQty, netAvailable);
+            const itemObj = (currentQiData?.barangList || []).find(it => parseInt(it.barang_id) === parseInt(barangId));
+            const newItem = {
+                barang_id: barangId,
+                batch_no: b.batch_no,
+                grade_cd: b.grade_cd || currentGrade,
+                qty_keluar: takeFromThis,
+                harga_satuan: b.harga_satuan || parseFloat(tr.querySelector('.qi-item-harga')?.value || 0),
+                satuan_nm: tr.querySelector('.qi-item-satuan')?.textContent.trim() || '',
+                all_batches: allBatches
+            };
+            renderQiDraftRow(newItem, itemObj?.kategori_kelompok || '');
+            remainingQty -= takeFromThis;
+        }
+    }
+
+    if (remainingQty > 0.0001) {
+        showQiAlert(`Sebagian kuantitas (${remainingQty.toLocaleString('id-ID')}) tidak dapat dialokasikan karena stok batch gudang sudah habis.`, 'warning');
+    }
+
+    reindexQiRows();
+    updateQiTotals();
+    syncQiBatchOptionsAcrossRows();
+}
+window.autoSplitQiBatchForRow = autoSplitQiBatchForRow;
+
+function renderNormalQiBatchInfo(tr) {
+    const batchSelect = tr.querySelector('.qi-item-batch');
+    const info = tr.querySelector('.qi-batch-info');
+    if (!batchSelect || !info) return;
+
+    const selectedOpt = batchSelect.selectedOptions[0];
+    if (!selectedOpt || !selectedOpt.value) {
+        info.innerHTML = '';
+        return;
+    }
+
+    const sisa = parseFloat(selectedOpt.getAttribute('data-sisa') || 0);
+    const sisaBebas = parseFloat(selectedOpt.getAttribute('data-sisa-bebas') !== null ? selectedOpt.getAttribute('data-sisa-bebas') : sisa);
+    const draftQty = parseFloat(selectedOpt.getAttribute('data-draft-qty') || 0);
+    const draftDocs = selectedOpt.getAttribute('data-draft-docs') || '';
+    const tglMasuk = selectedOpt.getAttribute('data-masuk') || '-';
+    const grade = (tr.querySelector('.qi-item-grade')?.value || selectedOpt.getAttribute('data-grade') || 'A').toUpperCase();
+
+    const gradeBadge = (grade === 'A')
+        ? `<span style="background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; font-weight: 700; padding: 1px 5px; border-radius: 4px; font-size: 0.7rem;">🟢 Grade A</span>`
+        : ((grade === 'B')
+            ? `<span style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a; font-weight: 700; padding: 1px 5px; border-radius: 4px; font-size: 0.7rem;">🟡 Grade B</span>`
+            : `<span style="background: #f1f5f9; color: #334155; font-weight: 600; padding: 1px 5px; border-radius: 4px; font-size: 0.7rem;">Grade ${grade}</span>`);
+
+    let draftNotice = '';
+    if (draftQty > 0) {
+        draftNotice = `
+            <div style="background: #fffbeb; border: 1px solid #f59e0b; border-radius: 4px; padding: 0.2rem 0.4rem; margin-top: 0.2rem; font-size: 0.7rem; color: #92400e;">
+                ⚠️ <strong>${draftQty.toLocaleString('id-ID')} unit</strong> di DRAFT [${draftDocs}]. Sisa bebas: <strong style="color:#065f46;">${sisaBebas.toLocaleString('id-ID')}</strong>.
+            </div>
+        `;
+    }
+
+    // Hitung kuantitas batch yang sudah dipakai di baris-baris lain dalam form ini
+    const usedQtyByOtherRows = {};
+    const rowBarangId = tr.querySelector('.qi-item-barang')?.value || '';
+    document.querySelectorAll('#qiTableBody tr.qi-table-row').forEach(r => {
+        if (r !== tr) {
+            const barVal = r.querySelector('.qi-item-barang')?.value || '';
+            const bVal = r.querySelector('.qi-item-batch')?.value?.trim();
+            const gVal = (r.querySelector('.qi-item-grade')?.value || '').toUpperCase();
+            const qVal = parseFloat(r.querySelector('.qi-item-qty')?.value || 0);
+            if (barVal && rowBarangId && parseInt(barVal) === parseInt(rowBarangId) && bVal && qVal > 0) {
+                const key = bVal + '_' + gVal;
+                usedQtyByOtherRows[key] = (usedQtyByOtherRows[key] || 0) + qVal;
+                usedQtyByOtherRows[bVal] = (usedQtyByOtherRows[bVal] || 0) + qVal;
+            }
+        }
+    });
+
+    // Temukan opsi batch terlama yang BENAR-BENAR MASIH MEMILIKI SISA BEBAS (> 0)
+    let oldestOpt = null;
+    for (let i = 0; i < batchSelect.options.length; i++) {
+        const opt = batchSelect.options[i];
+        if (!opt.value) continue;
+
+        const optGrade = (opt.getAttribute('data-grade') || 'A').toUpperCase();
+        if (grade && optGrade !== grade) continue;
+
+        const optSisaBebas = parseFloat(opt.getAttribute('data-sisa-bebas') !== null ? opt.getAttribute('data-sisa-bebas') : (opt.getAttribute('data-sisa') || 0));
+        const optFullyBooked = (opt.getAttribute('data-is-fully-booked') === '1') || opt.disabled;
+        const usedOther = usedQtyByOtherRows[opt.value + '_' + optGrade] || usedQtyByOtherRows[opt.value] || 0;
+        const netAvailable = optSisaBebas - usedOther;
+
+        if (!optFullyBooked && netAvailable > 0.0001) {
+            oldestOpt = opt;
+            break;
+        }
+    }
+
+    const isSameBatch = selectedOpt && oldestOpt && (selectedOpt.value === oldestOpt.value);
+    const oldestSisaBebas = oldestOpt ? parseFloat(oldestOpt.getAttribute('data-sisa-bebas') !== null ? oldestOpt.getAttribute('data-sisa-bebas') : (oldestOpt.getAttribute('data-sisa') || 0)) : 0;
+    const oldestBatchNo = oldestOpt ? oldestOpt.value : '-';
+    const oldestMasuk = oldestOpt ? (oldestOpt.getAttribute('data-masuk') || '-') : '-';
+
+    const isSkippingOldest = oldestOpt && selectedOpt && (selectedOpt.index > oldestOpt.index);
+
+    if (isSameBatch || !isSkippingOldest || !oldestOpt) {
+        batchSelect.style.borderColor = '#cbd5e1';
+        batchSelect.style.backgroundColor = '#ffffff';
+        info.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 0.35rem; margin-top: 0.25rem;">
+                ${gradeBadge}
+                <span style="color: #065f46; font-weight: 700; background: #ecfdf5; padding: 0.15rem 0.5rem; border-radius: 4px; border: 1px solid #a7f3d0; font-size: 0.725rem;">
+                    ⭐ Urutan FIFO Tepat (Masuk: ${tglMasuk})
+                </span>
+            </div>
+            ${draftNotice}
+        `;
+    } else if (isSkippingOldest && oldestSisaBebas > 0) {
+        batchSelect.style.borderColor = '#f59e0b';
+        batchSelect.style.backgroundColor = '#fffdf5';
+        info.innerHTML = `
+            <div style="background: #fffbeb; border: 1.5px solid #f59e0b; border-radius: 6px; padding: 0.35rem 0.55rem; margin-top: 0.25rem; color: #92400e;">
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.35rem; flex-wrap: wrap;">
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 0.25rem; margin-bottom: 0.1rem;">
+                            ${gradeBadge}
+                            <strong style="color: #b45309; font-size: 0.75rem;">
+                                ⚠️ Ada Batch Lebih Lama: [${oldestBatchNo}]
+                            </strong>
+                        </div>
+                        <div style="font-size: 0.7rem; color: #78350f;">
+                            Masuk: <strong>${oldestMasuk}</strong> • Sisa Bebas: <strong>${oldestSisaBebas.toLocaleString('id-ID')} unit</strong>
+                        </div>
+                    </div>
+                    <button type="button" onclick="selectOldestBatchInQiRow(this)" style="background: #059669; color: #ffffff; font-weight: 700; font-size: 0.725rem; padding: 3px 8px; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.2rem; box-shadow: 0 1px 2px rgba(5,150,105,0.25);" title="Otomatis pilih batch tertua yang tersedia">
+                        <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                        <span>👉 Pakai Terlama Ini</span>
+                    </button>
+                </div>
+            </div>
+            ${draftNotice}
+        `;
+    } else {
+        batchSelect.style.borderColor = '#cbd5e1';
+        batchSelect.style.backgroundColor = '#ffffff';
+        info.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 0.35rem; margin-top: 0.25rem;">
+                ${gradeBadge}
+                <span style="color: #0369a1; font-weight: 600; background: #f0f9ff; padding: 0.15rem 0.5rem; border-radius: 4px; border: 1px solid #bae6fd; font-size: 0.725rem;">
+                    Pilihan Manual • Masuk: ${tglMasuk}
+                </span>
+            </div>
+            ${draftNotice}
+        `;
+    }
 }
 
 function renderQiDraftRow(item = null, defaultCategory = '') {
@@ -357,47 +760,6 @@ function renderQiDraftRow(item = null, defaultCategory = '') {
 
     // Opsi Barang dengan filter kategori
     const barangOptions = renderQiBarangOptions(curBarangId, activeCat);
-
-    // Opsi Batch disaring menurut Grade
-    let batchOptions = '';
-    let filteredBatches = tr._allBatches;
-    if (curGrade === 'A' || curGrade === 'B') {
-        const gradeBatches = tr._allBatches.filter(b => (b.grade_cd || 'A').toUpperCase() === curGrade);
-        if (gradeBatches.length > 0) filteredBatches = gradeBatches;
-    }
-
-    if (filteredBatches.length === 0) {
-        if (curBatchNo) {
-            batchOptions = `<option value="${curBatchNo}" selected>${curBatchNo} • [Grade ${curGrade}]</option>`;
-        } else {
-            batchOptions = `<option value="">-- Pilih Barang Dulu --</option>`;
-        }
-    } else {
-        filteredBatches.forEach((b, idx) => {
-            const isSel = (b.batch_no === curBatchNo) ? 'selected' : '';
-            const isTop = (idx === 0);
-            const prefix = isTop ? '⭐ [FIFO #1] ' : '';
-            const gCd = (b.grade_cd || 'A').toUpperCase();
-            const sisaFisik = parseFloat(b.sisa_qty || 0);
-            const sisaBebas = (b.sisa_bebas !== undefined) ? parseFloat(b.sisa_bebas) : sisaFisik;
-            const draftQty = parseFloat(b.draft_qty || 0);
-            const draftDocs = b.draft_doc_nos || '';
-            const isFullyBooked = (b.is_fully_booked || sisaBebas <= 0.0001) && draftQty > 0;
-            const isCommitted = draftQty > 0;
-
-            let tag = '';
-            if (isFullyBooked) {
-                tag = ' ⛔ [HABIS DIBOOKING DRAFT]';
-            } else if (isCommitted) {
-                tag = ` ⚠️ [DRAFT ALLOCATED: ${draftQty.toLocaleString('id-ID')}]`;
-            }
-
-            batchOptions += `<option value="${b.batch_no}" data-harga="${b.harga_satuan || 0}" data-sisa="${sisaFisik}" data-sisa-bebas="${sisaBebas}" data-draft-qty="${draftQty}" data-draft-docs="${draftDocs}" data-grade="${gCd}" ${isSel}>
-                ${prefix}${b.batch_no} • [Grade ${gCd}] (Sisa Bebas: ${sisaBebas.toLocaleString('id-ID')} / Fisik: ${sisaFisik.toLocaleString('id-ID')})${tag}
-            </option>`;
-        });
-    }
-
     const subtotal = parseFloat(curQty) * parseFloat(curHarga);
 
     tr.innerHTML = `
@@ -425,9 +787,9 @@ function renderQiDraftRow(item = null, defaultCategory = '') {
         </td>
         <td style="min-width: 250px;">
             <select class="qi-select qi-item-batch" onchange="onQiBatchChange(this)" style="font-family: monospace;">
-                ${batchOptions}
+                <option value="">Memuat batch...</option>
             </select>
-            <div class="qi-batch-info" style="font-size: 0.725rem; color: #059669; margin-top: 2px;"></div>
+            <div class="qi-batch-info" style="font-size: 0.725rem; margin-top: 2px;"></div>
         </td>
         <td>
             <input type="number" step="0.0001" min="0.0001" class="qi-input qi-item-qty" value="${curQty}" oninput="recalculateQiRow(this)" style="font-weight: 800; text-align: right; color: #0284c7;">
@@ -448,13 +810,12 @@ function renderQiDraftRow(item = null, defaultCategory = '') {
 
     tbody.appendChild(tr);
 
-    // Initial batch info preview
-    const bSel = tr.querySelector('.qi-item-batch');
-    if (bSel && bSel.selectedOptions[0]) {
-        const sisa = bSel.selectedOptions[0].getAttribute('data-sisa');
-        if (sisa) {
-            tr.querySelector('.qi-batch-info').innerHTML = `<span style="color: #059669; font-weight: 600;">Sisa gudang: ${parseFloat(sisa).toLocaleString('id-ID')} ${curSatuan}</span>`;
-        }
+    if (tr._allBatches && tr._allBatches.length > 0) {
+        renderQiBatchOptionsInRow(tr, curGrade, curBatchNo);
+    } else if (curBarangId) {
+        onQiBarangChange(tr.querySelector('.qi-item-barang'));
+    } else {
+        tr.querySelector('.qi-item-batch').innerHTML = '<option value="">-- Pilih Barang Dulu --</option>';
     }
 }
 
@@ -463,7 +824,9 @@ function renderQiPostedRow(item) {
     const tr = document.createElement('tr');
     tr.className = 'qi-table-row';
 
-    const subtotal = (parseFloat(item.qty_keluar) || 0) * (parseFloat(item.harga_satuan) || 0);
+    const qty = parseFloat(item.qty_keluar) || 0;
+    const harga = parseFloat(item.harga_satuan) || 0;
+    const subtotal = (parseFloat(item.total_harga) || (qty * harga)) || 0;
 
     tr.innerHTML = `
         <td style="text-align: center; color: #64748b; font-weight: 700;">
@@ -482,17 +845,17 @@ function renderQiPostedRow(item) {
             <span style="font-family: monospace; font-weight: 700; color: #0f172a;">${item.batch_no}</span>
             <div style="font-size: 0.725rem; color: #059669;">✓ Stok resmi dipotong</div>
         </td>
-        <td style="text-align: right; font-weight: 800; color: #0f172a; font-family: monospace;">
-            ${parseFloat(item.qty_keluar).toLocaleString('id-ID')}
+        <td style="text-align: right; font-weight: 800; color: #0284c7; font-family: monospace;" class="qi-item-qty-val" data-qty="${qty}">
+            ${qty.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}
         </td>
-        <td style="text-align: center; font-weight: 600; color: #64748b;">
-            ${item.satuan_nm}
+        <td style="text-align: center; font-weight: 600; color: #64748b;" class="qi-item-satuan">
+            ${item.satuan_nm || 'Kg'}
         </td>
         <td style="text-align: right; font-family: monospace;">
-            Rp ${parseFloat(item.harga_satuan).toLocaleString('id-ID')}
+            Rp ${Math.round(harga).toLocaleString('id-ID')}
         </td>
-        <td style="text-align: right; font-weight: 800; color: #059669; font-family: monospace;">
-            Rp ${subtotal.toLocaleString('id-ID')}
+        <td style="text-align: right; font-weight: 800; color: #059669; font-family: monospace;" class="qi-item-subtotal" data-subtotal="${subtotal}">
+            Rp ${Math.round(subtotal).toLocaleString('id-ID')}
         </td>
         <td style="display: none;"></td>
     `;
@@ -503,6 +866,7 @@ function renderQiPostedRow(item) {
 function addQiRow(defaultCategory = '') {
     renderQiDraftRow(null, defaultCategory);
     updateQiTotals();
+    syncQiBatchOptionsAcrossRows();
 }
 
 function removeQiRow(btn) {
@@ -514,6 +878,7 @@ function removeQiRow(btn) {
     btn.closest('tr').remove();
     reindexQiRows();
     updateQiTotals();
+    syncQiBatchOptionsAcrossRows();
 }
 
 function reindexQiRows() {
@@ -543,6 +908,7 @@ function onQiBarangChange(selectEl) {
         tr.querySelector('.qi-batch-info').textContent = '';
         tr._allBatches = [];
         recalculateQiRow(selectEl);
+        if (!isSyncingQiRows) syncQiBatchOptionsAcrossRows(tr);
         return;
     }
 
@@ -558,7 +924,11 @@ function onQiBarangChange(selectEl) {
         .then(res => {
             if (res.status === 'success') {
                 tr._allBatches = res.batches || [];
-                applyQiGradeFilter(tr);
+                const curGrade = (tr.querySelector('.qi-item-grade')?.value || 'A').toUpperCase();
+                renderQiBatchOptionsInRow(tr, curGrade, '');
+                if (!isSyncingQiRows) {
+                    syncQiBatchOptionsAcrossRows(tr);
+                }
             } else {
                 batchSelect.innerHTML = '<option value="">(Gagal memuat batch)</option>';
                 batchInfo.textContent = '';
@@ -571,82 +941,54 @@ function onQiBarangChange(selectEl) {
         });
 }
 
-function applyQiGradeFilter(tr) {
-    const gradeInput = tr.querySelector('.qi-item-grade');
-    const curGrade = (gradeInput?.value || 'A').toUpperCase();
-    const batchSelect = tr.querySelector('.qi-item-batch');
-    const batchInfo = tr.querySelector('.qi-batch-info');
-    const batches = tr._allBatches || [];
-
-    const filtered = (curGrade === 'A' || curGrade === 'B')
-        ? batches.filter(b => (b.grade_cd || 'A').toUpperCase() === curGrade)
-        : batches;
-
-    if (filtered.length === 0) {
-        const gradeText = (curGrade === 'A' || curGrade === 'B') ? `Grade ${curGrade}` : 'gudang ini';
-        batchSelect.innerHTML = `<option value="">(Tidak ada stok ${gradeText})</option>`;
-        batchInfo.innerHTML = `<span style="color: #dc2626; font-weight: 600;">⚠️ Stok fisik ${gradeText} kosong di gudang terpilih.</span>`;
-        tr.querySelector('.qi-item-harga').value = 0;
-        recalculateQiRow(batchSelect);
-        return;
-    }
-
-    let html = '';
-    filtered.forEach((b, idx) => {
-        const isTop = (idx === 0);
-        const prefix = isTop ? '⭐ [FIFO #1] ' : '';
-        const gCd = (b.grade_cd || 'A').toUpperCase();
-        const expInfo = (b.expired_tgl && b.expired_tgl !== '-') ? ` | Exp: ${b.expired_tgl}` : '';
-        const tglTerima = (b.tgl_terima && b.tgl_terima !== '-') ? ` | Masuk: ${b.tgl_terima}` : '';
-        const sisaFisik = parseFloat(b.sisa_qty || 0);
-        const sisaBebas = (b.sisa_bebas !== undefined) ? parseFloat(b.sisa_bebas) : sisaFisik;
-        const draftQty = parseFloat(b.draft_qty || 0);
-        const draftDocs = b.draft_doc_nos || '';
-        const isFullyBooked = (b.is_fully_booked || sisaBebas <= 0.0001) && draftQty > 0;
-        const isCommitted = draftQty > 0;
-
-        let tag = '';
-        if (isFullyBooked) {
-            tag = ' ⛔ [HABIS DIBOOKING DRAFT]';
-        } else if (isCommitted) {
-            tag = ` ⚠️ [DRAFT ALLOCATED: ${draftQty.toLocaleString('id-ID')}]`;
-        }
-
-        html += `<option value="${b.batch_no}" data-harga="${b.harga_satuan || 0}" data-sisa="${sisaFisik}" data-sisa-bebas="${sisaBebas}" data-draft-qty="${draftQty}" data-draft-docs="${draftDocs}" data-grade="${gCd}" ${isTop ? 'selected' : ''}>
-            ${prefix}${b.batch_no} • [Grade ${gCd}] (Sisa Bebas: ${sisaBebas.toLocaleString('id-ID')} / Fisik: ${sisaFisik.toLocaleString('id-ID')})${tag}${tglTerima}${expInfo}
-        </option>`;
-    });
-
-    batchSelect.innerHTML = html;
-    onQiBatchChange(batchSelect);
-}
-
 function onQiBatchChange(batchSelect) {
     const tr = batchSelect.closest('tr');
-    const selectedOpt = batchSelect.selectedOptions[0];
-    if (!selectedOpt) return;
+    let selectedOpt = batchSelect.selectedOptions[0];
+    if (!selectedOpt || !selectedOpt.value) return;
+
+    // Cegah pemilihan opsi disabled jika diklik paksa atau via panah keyboard
+    if (selectedOpt.disabled) {
+        let foundAvailable = false;
+        for (let i = 0; i < batchSelect.options.length; i++) {
+            if (!batchSelect.options[i].disabled && batchSelect.options[i].value) {
+                batchSelect.selectedIndex = i;
+                selectedOpt = batchSelect.options[i];
+                foundAvailable = true;
+                break;
+            }
+        }
+        if (!foundAvailable) {
+            renderNormalQiBatchInfo(tr);
+            recalculateQiRow(batchSelect);
+            return;
+        }
+    }
 
     const harga = parseFloat(selectedOpt.getAttribute('data-harga') || 0);
-    const sisaFisik = parseFloat(selectedOpt.getAttribute('data-sisa') || 0);
-    const sisaBebas = parseFloat(selectedOpt.getAttribute('data-sisa-bebas') || sisaFisik);
-    const draftQty = parseFloat(selectedOpt.getAttribute('data-draft-qty') || 0);
-    const draftDocs = selectedOpt.getAttribute('data-draft-docs') || '';
-    const satuan = tr.querySelector('.qi-item-satuan').textContent.trim();
+    const grade = (selectedOpt.getAttribute('data-grade') || 'A').toUpperCase();
 
-    if (harga > 0) {
-        tr.querySelector('.qi-item-harga').value = harga;
+    const gradeInput = tr.querySelector('.qi-item-grade');
+    if (gradeInput) gradeInput.value = grade;
+
+    const gradeGroup = tr.querySelector('.grade-pill-group');
+    if (gradeGroup) {
+        gradeGroup.querySelectorAll('.btn-chip').forEach(b => b.classList.remove('active'));
+        if (grade === 'A') gradeGroup.querySelector('.btn-chip-grade-a')?.classList.add('active');
+        else if (grade === 'B') gradeGroup.querySelector('.btn-chip-grade-b')?.classList.add('active');
+        else gradeGroup.children[0]?.classList.add('active');
     }
 
-    const batchInfo = tr.querySelector('.qi-batch-info');
-    if (batchInfo) {
-        let draftInfo = '';
-        if (draftQty > 0) {
-            draftInfo = ` <span style="color: #b45309; font-weight: 700;">⚠️ ${draftQty.toLocaleString('id-ID')} ${satuan} dibooking draft [${draftDocs}]!</span>`;
-        }
-        batchInfo.innerHTML = `<span style="color: #059669; font-weight: 600;">Sisa Bebas: ${sisaBebas.toLocaleString('id-ID')} ${satuan} (Fisik: ${sisaFisik.toLocaleString('id-ID')})</span>${draftInfo}`;
+    const hargaInput = tr.querySelector('.qi-item-harga');
+    if (harga > 0 && (!hargaInput.value || parseFloat(hargaInput.value) === 0)) {
+        hargaInput.value = harga;
     }
 
+    renderNormalQiBatchInfo(tr);
     recalculateQiRow(batchSelect);
+
+    if (!isSyncingQiRows) {
+        syncQiBatchOptionsAcrossRows(tr);
+    }
 }
 
 function recalculateQiRow(inputEl) {
@@ -660,20 +1002,50 @@ function recalculateQiRow(inputEl) {
 
     const batchSelect = tr.querySelector('.qi-item-batch');
     const selectedOpt = batchSelect ? batchSelect.selectedOptions[0] : null;
-    if (selectedOpt && qtyInput) {
+    const batchInfo = tr.querySelector('.qi-batch-info');
+
+    if (selectedOpt && selectedOpt.value && qtyInput) {
         const sisaFisik = parseFloat(selectedOpt.getAttribute('data-sisa') || 0);
-        const sisaBebas = parseFloat(selectedOpt.getAttribute('data-sisa-bebas') || sisaFisik);
+        const sisaBebas = parseFloat(selectedOpt.getAttribute('data-sisa-bebas') !== null ? selectedOpt.getAttribute('data-sisa-bebas') : sisaFisik);
         const draftQty = parseFloat(selectedOpt.getAttribute('data-draft-qty') || 0);
 
         if ((sisaBebas > 0 && qty > sisaBebas) || (sisaBebas <= 0.0001 && draftQty > 0 && qty > 0)) {
             qtyInput.style.borderColor = '#dc2626';
             qtyInput.style.backgroundColor = '#fef2f2';
             qtyInput.title = `Kuantitas (${qty}) melebihi sisa bebas (${sisaBebas})!`;
+
+            if (batchInfo) {
+                batchInfo.innerHTML = `
+                    <div style="background: #fef2f2; border: 1.5px solid #f87171; border-radius: 6px; padding: 0.35rem 0.55rem; margin-top: 0.25rem; color: #991b1b;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.35rem; flex-wrap: wrap;">
+                            <div>
+                                <div style="display: flex; align-items: center; gap: 0.25rem; margin-bottom: 0.1rem;">
+                                    <strong style="color: #b91c1c; font-size: 0.75rem;">
+                                        ⚠️ Kuantitas Melebihi Sisa Bebas Batch!
+                                    </strong>
+                                </div>
+                                <div style="font-size: 0.7rem; color: #7f1d1d;">
+                                    Sisa bebas: <strong>${sisaBebas.toLocaleString('id-ID')} unit</strong> (Minta: <strong>${qty.toLocaleString('id-ID')}</strong>)
+                                </div>
+                            </div>
+                            <button type="button" onclick="autoSplitQiBatchForRow(this)" style="background: #ea580c; color: #ffffff; font-weight: 700; font-size: 0.725rem; padding: 3px 8px; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.2rem; box-shadow: 0 1px 2px rgba(234,88,12,0.25);" title="Pecah otomatis sisa kuantitas ke batch berikutnya">
+                                <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                                <span>⚡ Pecah ke Batch Berikutnya</span>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
         } else {
             qtyInput.style.borderColor = '#cbd5e1';
             qtyInput.style.backgroundColor = '#ffffff';
             qtyInput.title = '';
+            renderNormalQiBatchInfo(tr);
         }
+    }
+
+    if (!isSyncingQiRows) {
+        syncQiBatchOptionsAcrossRows(tr);
     }
 
     updateQiTotals();
@@ -693,11 +1065,16 @@ function onQiGudangChange() {
 function updateQiTotals() {
     let grandQty = 0;
     let grandHpp = 0;
+    let mainSatuan = 'Kg';
 
     const rows = document.querySelectorAll('#qiTableBody tr');
     rows.forEach(tr => {
         const qtyEl = tr.querySelector('.qi-item-qty');
         const hargaEl = tr.querySelector('.qi-item-harga');
+        const satEl = tr.querySelector('.qi-item-satuan');
+        if (satEl && satEl.textContent.trim()) {
+            mainSatuan = satEl.textContent.trim();
+        }
 
         if (qtyEl && hargaEl) {
             const qty = parseFloat(qtyEl.value) || 0;
@@ -706,19 +1083,47 @@ function updateQiTotals() {
             grandHpp += (qty * harga);
         } else {
             // Read-only posted row fallback
+            const qtyValEl = tr.querySelector('.qi-item-qty-val');
+            if (qtyValEl) {
+                const q = parseFloat(qtyValEl.getAttribute('data-qty') || 0);
+                grandQty += q;
+            }
             const tdSubtotal = tr.querySelector('.qi-item-subtotal');
             if (tdSubtotal) {
-                const subStr = tdSubtotal.textContent.replace(/[^0-9]/g, '');
-                grandHpp += parseFloat(subStr) || 0;
+                const subAttr = tdSubtotal.getAttribute('data-subtotal');
+                if (subAttr !== null) {
+                    grandHpp += parseFloat(subAttr) || 0;
+                } else {
+                    const subStr = tdSubtotal.textContent.replace(/[^0-9]/g, '');
+                    grandHpp += parseFloat(subStr) || 0;
+                }
             }
         }
     });
 
     const formattedHpp = 'Rp ' + Math.round(grandHpp).toLocaleString('id-ID');
-    document.getElementById('qiTotalQty').textContent = grandQty.toLocaleString('id-ID', { maximumFractionDigits: 4 });
-    document.getElementById('qiTotalHpp').textContent = formattedHpp;
-    document.getElementById('qiJournalDebet').textContent = formattedHpp;
-    document.getElementById('qiJournalKredit').textContent = formattedHpp;
+    const formattedQty = grandQty.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+
+    const elTotalQty = document.getElementById('qiTotalQty');
+    if (elTotalQty) elTotalQty.textContent = formattedQty + ' ' + mainSatuan;
+
+    const elTotalHpp = document.getElementById('qiTotalHpp');
+    if (elTotalHpp) elTotalHpp.textContent = formattedHpp;
+
+    const elJournalDebet = document.getElementById('qiJournalDebet');
+    if (elJournalDebet) elJournalDebet.textContent = formattedHpp;
+
+    const elJournalKredit = document.getElementById('qiJournalKredit');
+    if (elJournalKredit) elJournalKredit.textContent = formattedHpp;
+
+    const elFootQty = document.getElementById('qiFootTotalQty');
+    if (elFootQty) elFootQty.textContent = formattedQty;
+
+    const elFootSatuan = document.getElementById('qiFootSatuan');
+    if (elFootSatuan) elFootSatuan.textContent = mainSatuan;
+
+    const elFootHpp = document.getElementById('qiFootTotalHpp');
+    if (elFootHpp) elFootHpp.textContent = formattedHpp;
 }
 
 function submitQiForm(actionType) {

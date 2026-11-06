@@ -44,7 +44,7 @@ class PemakaianController extends Controller
     {
         $perPage = (int) $request->input('per_page', 20);
         $search = $request->input('search');
-        $viewType = $request->input('view', 'item'); // 'item' (Excel view) atau 'header'
+        $viewType = $request->input('view', 'header'); // Default 'header' (1 baris per dokumen BPPB), atau 'item' (Excel Grid rincian per bahan)
         $tujuan = $request->input('tujuan');
         $kategori = $request->input('kategori');
         $startDate = $request->input('start_date');
@@ -417,9 +417,74 @@ class PemakaianController extends Controller
     /**
      * Tampilan detail dokumen pengeluaran barang.
      */
-    public function show(int $id): View
+    public function show(int $id, Request $request = null): View|JsonResponse
     {
         $pakai = $this->pemakaianService->getById($id);
+
+        if (request()->wantsJson() || request()->ajax()) {
+            $pakai->load(['gudang', 'details.barang.satuanDasar', 'details.barang.jenisBarang', 'revisiLogs']);
+            return response()->json([
+                'status' => 'success',
+                'data'   => [
+                    'pakai_id'         => $pakai->pakai_id,
+                    'pakai_no'         => $pakai->pakai_no,
+                    'pakai_tgl'        => $pakai->pakai_tgl,
+                    'gudang_id'        => $pakai->gudang_id,
+                    'tujuan_pemakaian' => $pakai->tujuan_pemakaian,
+                    'catatan_txt'      => $pakai->catatan_txt,
+                    'status_st'        => $pakai->status_st,
+                    'is_ada_koreksi'   => (bool) $pakai->is_ada_koreksi,
+                    'jurnal_id'        => $pakai->jurnal_id,
+                    'created_dt'       => $pakai->created_dt,
+                    'created_by'       => $pakai->creator_name,
+                    'creator_name'     => $pakai->creator_name,
+                    'revisi_logs'      => $pakai->revisiLogs->map(function ($log) {
+                        return [
+                            'revisi_no'          => $log->revisi_no,
+                            'revisi_tgl'         => $log->revisi_tgl ? $log->revisi_tgl->format('d/m/Y H:i') : '-',
+                            'pembuat_nama'       => $log->pembuat_nama ?? 'Admin Gudang',
+                            'verifikator_nama'   => $log->verifikator_nama ?? 'Verifikator Keuangan',
+                            'kategori_kesalahan' => $log->kategori_kesalahan,
+                            'catatan_koreksi'    => $log->catatan_koreksi,
+                            'perubahan_json'     => $log->perubahan_json ?? [],
+                        ];
+                    })->values(),
+                    'gudang'           => [
+                        'gudang_id' => $pakai->gudang?->gudang_id,
+                        'gudang_nm' => $pakai->gudang?->gudang_nm ?? '-',
+                        'gudang_cd' => $pakai->gudang?->gudang_cd ?? 'GUDANG',
+                        'lokasi'    => $pakai->gudang?->lokasi ?? '-',
+                    ],
+                    'details'          => $pakai->details->map(function ($d) {
+                        return [
+                            'pakaidtl_id'    => $d->pakaidtl_id,
+                            'barang_id'      => $d->barang_id,
+                            'batch_no'       => $d->batch_no,
+                            'grade_cd'       => $d->grade_cd,
+                            'qty_keluar'     => (float) $d->qty_keluar,
+                            'harga_satuan'   => (float) $d->harga_satuan,
+                            'subtotal'       => (float) $d->qty_keluar * (float) $d->harga_satuan,
+                            'keterangan_txt' => $d->keterangan_txt,
+                            'barang'         => [
+                                'barang_id'    => $d->barang?->barang_id,
+                                'barang_nm'    => $d->barang?->barang_nm ?? '-',
+                                'barang_cd'    => $d->barang?->barang_cd ?? '-',
+                                'satuan_dasar' => [
+                                    'satuan_nm' => $d->barang?->satuanDasar?->satuan_nm ?? '-',
+                                    'satuan_cd' => $d->barang?->satuanDasar?->satuan_cd ?? '-',
+                                ],
+                                'jenis_barang' => [
+                                    'jenis_barang_nm' => $d->barang?->jenisBarang?->jenis_barang_nm ?? ($d->barang?->jenisBarang?->jenis_barang_cd ?? 'Bahan'),
+                                    'jenis_barang_cd' => $d->barang?->jenisBarang?->jenis_barang_cd ?? 'BB',
+                                ],
+                            ],
+                        ];
+                    })->values(),
+                ],
+            ]);
+        }
+
+        $pakai->load(['revisiLogs']);
         return view('gudang.pemakaian.show', compact('pakai'));
     }
 

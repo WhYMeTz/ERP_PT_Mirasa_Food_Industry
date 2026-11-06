@@ -75,6 +75,24 @@
                     <tbody id="qiTableBody">
                         {{-- Dynamic rows by JS --}}
                     </tbody>
+                    <tfoot id="qiTableFoot">
+                        <tr style="background: #f8fafc; font-weight: 800; border-top: 2px solid #cbd5e1;">
+                            <td colspan="4" style="text-align: right; padding: 0.65rem 0.85rem; font-size: 0.8rem; color: #475569; text-transform: uppercase;">
+                                Total Kuantitas &amp; Biaya (HPP):
+                            </td>
+                            <td id="qiFootTotalQty" style="text-align: right; padding: 0.65rem 0.85rem; color: #0284c7; font-family: monospace; font-size: 0.95rem; font-weight: 800;">
+                                0
+                            </td>
+                            <td id="qiFootSatuan" style="text-align: center; color: #64748b; font-size: 0.75rem; font-weight: 600;">
+                                -
+                            </td>
+                            <td></td>
+                            <td id="qiFootTotalHpp" style="text-align: right; padding: 0.65rem 0.85rem; color: #ea580c; font-family: monospace; font-size: 0.95rem; font-weight: 800;">
+                                Rp 0
+                            </td>
+                            <td id="qiFootTdAction" style="display: none;"></td>
+                        </tr>
+                    </tfoot>
                 </table>
             </div>
 

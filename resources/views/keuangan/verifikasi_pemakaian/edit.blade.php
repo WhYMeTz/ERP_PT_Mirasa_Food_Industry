@@ -8,10 +8,36 @@
 
 @section('content')
 <div style="margin-bottom: 1.25rem;">
-    <a href="{{ route('keuangan.verifikasi_pemakaian.show', $pakai->pakai_id) }}" style="color: #64748b; text-decoration: none; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.35rem; margin-bottom: 0.35rem;">
-        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-        Kembali ke Detail Dokumen
-    </a>
+    {{-- 1. CHEVRON BREADCRUMB NAVIGATION (GAYA AKUNTANSI ENTERPRISE) --}}
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem; flex-wrap: wrap; gap: 0.5rem;">
+        <nav class="erp-chevron-bar" aria-label="Breadcrumb">
+            <a href="{{ route('keuangan.verifikasi_pemakaian.index') }}" class="erp-chevron-item">
+                <span>Keuangan</span>
+            </a>
+            <span class="erp-chevron-sep">
+                <svg width="8" height="20" viewBox="0 0 8 20" fill="none"><path d="M1 2L6 10L1 18" stroke="#cbd5e1" stroke-width="1.5" stroke-linecap="round"/></svg>
+            </span>
+            <a href="{{ route('keuangan.verifikasi_pemakaian.index') }}" class="erp-chevron-item">
+                <span>Verifikasi Pemakaian</span>
+            </a>
+            <span class="erp-chevron-sep">
+                <svg width="8" height="20" viewBox="0 0 8 20" fill="none"><path d="M1 2L6 10L1 18" stroke="#cbd5e1" stroke-width="1.5" stroke-linecap="round"/></svg>
+            </span>
+            <a href="{{ route('keuangan.verifikasi_pemakaian.show', $pakai->pakai_id) }}" class="erp-chevron-item">
+                <span>{{ $pakai->pakai_no }}</span>
+            </a>
+            <span class="erp-chevron-sep">
+                <svg width="8" height="20" viewBox="0 0 8 20" fill="none"><path d="M1 2L6 10L1 18" stroke="#cbd5e1" stroke-width="1.5" stroke-linecap="round"/></svg>
+            </span>
+            <span class="erp-chevron-item active">
+                <span>Koreksi &amp; Verifikasi HPP</span>
+            </span>
+            <span class="erp-chevron-end">
+                <svg width="10" height="32" viewBox="0 0 10 32" fill="none"><path d="M1 1L8 16L1 31" stroke="#dce4ec" stroke-width="1.5"/></svg>
+            </span>
+        </nav>
+    </div>
+
     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
         <div>
             <h1 style="font-size: 1.5rem; font-weight: 800; color: #0f172a; margin: 0; display: flex; align-items: center; gap: 0.5rem;">
@@ -148,6 +174,7 @@
                                 <th style="width: 35px; text-align: center;">No</th>
                                 <th style="min-width: 240px;">Kategori &amp; Nama Bahan Produksi <span style="color:#ef4444;">*</span></th>
                                 <th style="min-width: 260px;">Pilihan Grade &amp; Batch (FIFO) <span style="color:#ef4444;">*</span></th>
+                                <th style="width: 175px; text-align: center;">Sisa di Gudang</th>
                                 <th style="width: 115px; text-align: right;">Qty Keluar <span style="color:#ef4444;">*</span></th>
                                 <th style="width: 65px; text-align: center;">Satuan</th>
                                 <th style="width: 125px; text-align: right;">Harga Satuan (Rp)</th>
@@ -160,7 +187,7 @@
                         </tbody>
                         <tfoot>
                             <tr style="border-top: 2px solid #cbd5e1; font-weight: 700; background: #f8fafc;">
-                                <td colspan="3" style="padding: 0.65rem 0.75rem; text-align: right; color: #475569; font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                                <td colspan="4" style="padding: 0.65rem 0.75rem; text-align: right; color: #475569; font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.05em;">
                                     Total Akumulasi Fisik &amp; HPP:
                                     <span style="margin-left: 0.65rem; text-transform: none; font-size: 0.75rem; display: inline-flex; gap: 0.35rem; vertical-align: middle;">
                                         <span style="background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; padding: 2px 7px; border-radius: 4px; font-weight: 700;">

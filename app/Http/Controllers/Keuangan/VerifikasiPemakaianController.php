@@ -131,7 +131,8 @@ class VerifikasiPemakaianController extends Controller
             'gudang',
             'details.barang.satuanDasar',
             'details.barang.jenisBarang',
-            'jurnal.details.coa'
+            'jurnal.details.coa',
+            'revisiLogs'
         ])
         ->where('pakai_id', $id)
         ->where('deleted_st', false)

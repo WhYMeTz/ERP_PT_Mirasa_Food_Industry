@@ -412,6 +412,7 @@ function loadUnbilledGrn(supplierId) {
             emptyState.textContent = 'Silakan pilih mitra supplier di atas terlebih dahulu untuk menampilkan daftar GRN.';
             emptyState.style.display = 'block';
         }
+        renderReturCreditNotes([]);
         rebuildItemsTable();
         return;
     }
@@ -430,6 +431,13 @@ function loadUnbilledGrn(supplierId) {
             if (res.status === 'success') {
                 if (res.supplier) {
                     applySupplierTopData(res.supplier.top_hari, res.supplier.name, res.supplier.code, res.supplier.kontak_no, res.supplier.alamat);
+                }
+
+                // Render Dokumen Retur Pembelian (Credit Note) jika ada
+                if (res.returs) {
+                    renderReturCreditNotes(res.returs);
+                } else {
+                    renderReturCreditNotes([]);
                 }
 
                 if (res.data && res.data.length > 0) {
@@ -1169,6 +1177,86 @@ window.calculateOngkirFromTonase = function () {
 };
 
 /**
+ * Render Daftar Dokumen Retur Pembelian (Credit Note) yang siap dipotongkan
+ */
+function renderReturCreditNotes(returs) {
+    const card = document.getElementById('cardReturCreditNote');
+    const container = document.getElementById('returItemsList');
+    const badge = document.getElementById('badgeReturCount');
+
+    if (!card || !container) return;
+
+    if (!returs || returs.length === 0) {
+        card.style.display = 'none';
+        container.innerHTML = '';
+        recalculateTotals();
+        return;
+    }
+
+    card.style.display = 'block';
+    if (badge) badge.textContent = `${returs.length} Dokumen Tersedia`;
+
+    let html = '';
+    returs.forEach(ret => {
+        const itemInfo = (ret.details && ret.details.length > 0)
+            ? `${ret.details[0].retur_qty.toLocaleString('id-ID')} ${ret.details[0].satuan} ${ret.details[0].barang_nm} &bull; Alasan: <em>"${ret.details[0].alasan_reject || ret.alasan_txt || 'Cacat Mutu'}"</em>`
+            : (ret.alasan_txt || 'Barang Rusak');
+
+        html += `
+            <div style="background: #ffffff; border: 1.5px solid #fde68a; border-radius: 6px; padding: 0.5rem 0.75rem; display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; transition: all 0.15s ease;">
+                <label style="display: flex; align-items: flex-start; gap: 0.5rem; margin: 0; cursor: pointer; flex: 1;">
+                    <input type="checkbox" 
+                           name="retur_ids[]" 
+                           value="${ret.retur_id}" 
+                           data-nominal="${ret.total_nominal}" 
+                           onchange="onReturCheckboxChange(this)" 
+                           style="margin-top: 3px; width: 16px; height: 16px; accent-color: #d97706; cursor: pointer;">
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;">
+                            <span class="badge" style="background: #fef3c7; color: #92400e; font-family: monospace; font-size: 0.725rem; font-weight: 800; padding: 1px 6px; border-radius: 4px;">
+                                ${ret.retur_no}
+                            </span>
+                            <span style="font-size: 0.725rem; color: #78350f; font-weight: 600;">
+                                Tgl: ${ret.retur_tgl}
+                            </span>
+                        </div>
+                        <div style="font-size: 0.725rem; color: #475569; margin-top: 2px;">
+                            ${itemInfo}
+                        </div>
+                    </div>
+                </label>
+                <div style="text-align: right; flex-shrink: 0;">
+                    <strong style="color: #dc2626; font-family: monospace; font-size: 0.85rem;">
+                        - Rp ${Math.round(ret.total_nominal).toLocaleString('id-ID')}
+                    </strong>
+                    <div style="font-size: 0.65rem; color: #92400e; font-weight: 700;">
+                        Credit Note
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+    recalculateTotals();
+}
+
+window.onReturCheckboxChange = function () {
+    recalculateTotals();
+};
+
+window.toggleManualReturBox = function () {
+    const box = document.getElementById('boxManualRetur');
+    if (box) {
+        const isHidden = (box.style.display === 'none' || !box.style.display);
+        box.style.display = isHidden ? 'flex' : 'none';
+        if (isHidden) {
+            document.getElementById('potonganReturInput')?.focus();
+        }
+    }
+};
+
+/**
  * Hitung seluruh nilai akumulasi tagihan secara otomatis
  */
 function recalculateTotals() {
@@ -1221,7 +1309,14 @@ function recalculateTotals() {
         }
     });
 
-    const potonganRetur = parseFloat(document.getElementById('potonganReturInput')?.value || 0);
+    // Hitung total potongan retur: akumulasi retur terpilih (Credit Note) + input manual (jika ada)
+    let totalReturSelected = 0;
+    document.querySelectorAll('input[name="retur_ids[]"]:checked').forEach(cb => {
+        totalReturSelected += parseFloat(cb.getAttribute('data-nominal') || 0);
+    });
+
+    const manualRetur = parseFloat(document.getElementById('potonganReturInput')?.value || 0);
+    const potonganRetur = totalReturSelected + manualRetur;
     const biayaOngkir = parseFloat(document.getElementById('biayaOngkirInput')?.value || 0);
     const grandTotal = Math.max(0, (totalNetto - potonganRetur) + biayaOngkir);
 
@@ -1273,7 +1368,17 @@ function recalculateTotals() {
         }
     }
 
-    if (elRetur) elRetur.textContent = potonganRetur > 0 ? '- Rp ' + Math.round(potonganRetur).toLocaleString('id-ID') : 'Rp 0';
+    const rowRetur = document.getElementById('rowSummaryRetur');
+    if (rowRetur && elRetur) {
+        if (potonganRetur > 0) {
+            rowRetur.style.display = 'flex';
+            elRetur.textContent = '- Rp ' + Math.round(potonganRetur).toLocaleString('id-ID');
+        } else {
+            rowRetur.style.display = 'none';
+        }
+    } else if (elRetur) {
+        elRetur.textContent = potonganRetur > 0 ? '- Rp ' + Math.round(potonganRetur).toLocaleString('id-ID') : 'Rp 0';
+    }
     
     if (rowOngkir && elOngkir) {
         if (biayaOngkir > 0) {

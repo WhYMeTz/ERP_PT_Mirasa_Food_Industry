@@ -7,13 +7,33 @@
 @endpush
 
 @section('content')
+{{-- 1. CHEVRON BREADCRUMB NAVIGATION (GAYA AKUNTANSI ENTERPRISE) --}}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem; flex-wrap: wrap; gap: 0.5rem;">
+    <nav class="erp-chevron-bar" aria-label="Breadcrumb">
+        <a href="{{ route('gudang.pemakaian.index') }}" class="erp-chevron-item">
+            <span>Gudang</span>
+        </a>
+        <span class="erp-chevron-sep">
+            <svg width="8" height="20" viewBox="0 0 8 20" fill="none"><path d="M1 2L6 10L1 18" stroke="#cbd5e1" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </span>
+        <a href="{{ route('gudang.pemakaian.index') }}" class="erp-chevron-item">
+            <span>Pemakaian Bahan</span>
+        </a>
+        <span class="erp-chevron-sep">
+            <svg width="8" height="20" viewBox="0 0 8 20" fill="none"><path d="M1 2L6 10L1 18" stroke="#cbd5e1" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </span>
+        <span class="erp-chevron-item active">
+            <span>Catat Pemakaian (BPPB)</span>
+        </span>
+        <span class="erp-chevron-end">
+            <svg width="10" height="32" viewBox="0 0 10 32" fill="none"><path d="M1 1L8 16L1 31" stroke="#dce4ec" stroke-width="1.5"/></svg>
+        </span>
+    </nav>
+</div>
+
 {{-- HEADER BAR: JUDUL & WIDGET TOTAL LIVE DI POJOK KANAN (DENGAN FLOATING WRAPPER) --}}
 <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 0.85rem; flex-wrap: wrap; gap: 0.75rem;">
     <div>
-        <a href="{{ route('gudang.pemakaian.index') }}" style="color: #64748b; text-decoration: none; font-size: 0.825rem; display: inline-flex; align-items: center; gap: 0.35rem; margin-bottom: 0.2rem;">
-            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-            Kembali ke Daftar Pemakaian
-        </a>
         <div style="display: flex; align-items: center; gap: 0.65rem;">
             <h1 style="font-size: 1.45rem; font-weight: 800; color: #0f172a; margin: 0;">
                 Form Pemakaian Bahan (BPPB)
@@ -198,11 +218,12 @@
                 <thead>
                     <tr>
                         <th style="width: 45px; text-align: center;">No</th>
-                        <th style="min-width: 320px;">Kategori &amp; Nama Bahan Produksi <span style="color:#ef4444;">*</span></th>
-                        <th style="min-width: 340px;">Pilihan Grade &amp; Batch (FIFO) <span style="color:#ef4444;">*</span></th>
-                        <th style="width: 180px; text-align: right;">Qty Keluar <span style="color:#ef4444;">*</span></th>
-                        <th style="width: 90px; text-align: center;">Satuan</th>
-                        <th style="width: 55px; text-align: center;">Hapus</th>
+                        <th style="min-width: 280px;">Kategori &amp; Nama Bahan Produksi <span style="color:#ef4444;">*</span></th>
+                        <th style="min-width: 320px;">Pilihan Grade &amp; Batch (FIFO) <span style="color:#ef4444;">*</span></th>
+                        <th style="width: 175px; text-align: center;">Sisa di Gudang</th>
+                        <th style="width: 165px; text-align: right;">Qty Keluar <span style="color:#ef4444;">*</span></th>
+                        <th style="width: 85px; text-align: center;">Satuan</th>
+                        <th style="width: 50px; text-align: center;">Hapus</th>
                     </tr>
                 </thead>
                 <tbody id="itemsBody">
@@ -210,7 +231,7 @@
                 </tbody>
                 <tfoot>
                     <tr style="border-top: 2px solid #cbd5e1; font-weight: 700; background: #f8fafc;">
-                        <td colspan="3" style="padding: 0.75rem 1rem; text-align: right; color: #475569; font-size: 0.825rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                        <td colspan="4" style="padding: 0.75rem 1rem; text-align: right; color: #475569; font-size: 0.825rem; text-transform: uppercase; letter-spacing: 0.05em;">
                             Total Akumulasi Fisik:
                             <span style="margin-left: 0.85rem; text-transform: none; font-size: 0.8rem; display: inline-flex; gap: 0.5rem; vertical-align: middle;">
                                 <span style="background: #ecfdf5; color: #065f46; border: 1.5px solid #a7f3d0; padding: 3px 8px; border-radius: 6px; font-weight: 700;">

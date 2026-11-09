@@ -285,24 +285,28 @@
                                 @foreach ($pos as $p)
                                     @php
                                         $poCats = $getPoCommodities($p);
-                                        $itemNames = $p->details->map(fn($d) => $d->barang?->barang_nm)->filter()->unique()->implode(', ');
-                                        $totalSisa = $p->details->sum(fn($d) => max(0, (float)$d->pesan_qty - (float)$d->terima_qty));
+                                        $singkongItems = $p->details->filter(fn($d) => $classifyBarang($d->barang?->barang_nm, $d->barang?->barang_cd) === 'SINGKONG');
+                                        $itemNames = $singkongItems->map(fn($d) => $d->barang?->barang_nm)->filter()->unique()->implode(', ');
+                                        $totalSisa = $singkongItems->sum(fn($d) => $d->sisa_belum_qc_qty);
                                     @endphp
+                                    @if ($singkongItems->isNotEmpty() && ($totalSisa > 0 || old('po_id', $selectedPo?->po_id) == $p->po_id))
                                     <option value="{{ $p->po_id }}"
                                             data-komoditas="{{ implode(',', $poCats) }}"
                                             data-supplier-id="{{ $p->supplier_id }}"
                                             data-gudang-id="{{ $p->gudang_id }}"
                                             data-search="{{ strtolower($p->po_no . ' ' . ($p->supplier?->supplier_nm ?? '') . ' ' . $itemNames) }}"
                                             {{ old('po_id', $selectedPo?->po_id) == $p->po_id ? 'selected' : '' }}>
-                                        {{ $p->po_no }} &bull; {{ $p->supplier?->supplier_nm }} ({{ $itemNames ?: 'Item PO' }} - Sisa: {{ number_format($totalSisa, 0, ',', '.') }})
+                                        {{ $p->po_no }} &bull; {{ $p->supplier?->supplier_nm }} ({{ $itemNames ?: 'Singkong' }} - Sisa: {{ number_format($totalSisa, 0, ',', '.') }})
                                     </option>
+                                    @endif
                                 @endforeach
                             </select>
                         </div>
 
                         <div class="form-group" style="margin-bottom: 0;">
-                            <div class="qc-field-header">
+                            <div class="qc-field-header" style="display: flex; justify-content: space-between; align-items: center;">
                                 <label class="qc-field-label">Gudang Bongkar <span style="color:#ef4444;">*</span></label>
+                                <span id="badgeLockGudang" class="badge-po-locked" style="display: none; font-size: 0.7rem; font-weight: 800; color: #166534; background: #dcfce7; padding: 2px 8px; border-radius: 6px; border: 1px solid #bbf7d0;">🔒 Terkunci dari PO</span>
                             </div>
                             <select name="gudang_id" id="gudangSelect" class="form-control" required style="font-size: 0.85rem; font-weight: 700;">
                                 @foreach ($gudangs as $g)
@@ -334,10 +338,11 @@
                     {{-- 3. MITRA VENDOR / SUPPLIER & BAHAN BAKU (SUBCARD KELOMPOK) --}}
                     <div style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 0.85rem 1rem; display: flex; flex-direction: column; gap: 0.75rem;">
                         <div class="form-group" style="margin-bottom: 0;">
-                            <div class="qc-field-header">
+                            <div class="qc-field-header" style="display: flex; justify-content: space-between; align-items: center;">
                                 <label class="qc-field-label" style="font-weight: 800; color: #0f172a;">
                                     Mitra Vendor / Supplier Singkong <span style="color:#ef4444;">*</span>
                                 </label>
+                                <span id="badgeLockSupplier" class="badge-po-locked" style="display: none; font-size: 0.7rem; font-weight: 800; color: #166534; background: #dcfce7; padding: 2px 8px; border-radius: 6px; border: 1px solid #bbf7d0;">🔒 Terkunci dari PO</span>
                             </div>
                             <select name="supplier_id" id="supplierSelect" class="form-control" required onchange="onSupplierSelected(this)" style="font-weight: 700; font-size: 0.85rem;">
                                 <option value="">-- Pilih Mitra Vendor / Supplier Singkong --</option>
@@ -380,10 +385,11 @@
 
                         {{-- NAMA BAHAN BAKU (MASTER BARANG SINGKONG SATUAN KILOGRAM) --}}
                         <div class="form-group" style="margin-bottom: 0;">
-                            <div class="qc-field-header">
+                            <div class="qc-field-header" style="display: flex; justify-content: space-between; align-items: center;">
                                 <label class="qc-field-label" style="font-weight: 800; color: #0f172a;">
                                     Nama Bahan Baku <span style="color:#ef4444;">*</span>
                                 </label>
+                                <span id="badgeLockBarang" class="badge-po-locked" style="display: none; font-size: 0.7rem; font-weight: 800; color: #166534; background: #dcfce7; padding: 2px 8px; border-radius: 6px; border: 1px solid #bbf7d0;">🔒 Terkunci dari PO</span>
                             </div>
                             <select name="singkong_barang_id" id="singkongBarangSelect" class="form-control" style="font-weight: 700;" onchange="onSingkongBarangChanged(this)">
                                 @foreach ($barangs as $b)
@@ -405,20 +411,8 @@
                             </select>
                         </div>
 
-                        <div class="qc-grid-2col">
-                            <div class="form-group" style="margin-bottom: 0;">
-                                <div class="qc-field-header">
-                                    <label class="qc-field-label">Nama Produsen <span style="font-size: 0.72rem; color: #0284c7; font-weight: normal;">(Bisa diedit/ketik)</span></label>
-                                </div>
-                                <input type="text" name="nama_produsen" id="namaProdusenInput" class="form-control" placeholder="Petani Mitra / Kelompok Tani" value="{{ old('nama_produsen') }}" style="font-weight: 700;">
-                            </div>
-                            <div class="form-group" style="margin-bottom: 0;">
-                                <div class="qc-field-header">
-                                    <label class="qc-field-label">Negara Produsen <span style="font-size: 0.72rem; color: #0284c7; font-weight: normal;">(Bisa diedit)</span></label>
-                                </div>
-                                <input type="text" name="negara_produsen" class="form-control" value="{{ old('negara_produsen', 'Indonesia') }}" style="font-weight: 700;">
-                            </div>
-                        </div>
+                        <input type="hidden" name="nama_produsen" id="namaProdusenInput" value="{{ old('nama_produsen') }}">
+                        <input type="hidden" name="negara_produsen" value="{{ old('negara_produsen', 'Indonesia') }}">
                     </div>
 
                     {{-- 4. PLAT TRUK / KENDARAAN & NAMA SOPIR (2 KOLOM SEJAJAR) --}}
@@ -635,6 +629,7 @@
                 'po_id'       => $p->po_id,
                 'po_no'       => $p->po_no,
                 'supplier_id' => $p->supplier_id,
+                'supplier_nm' => $p->supplier?->supplier_nm,
                 'gudang_id'   => $p->gudang_id,
                 'komoditas'   => $getPoCommodities($p),
                 'items'       => $p->details->filter(function ($d) use ($classifyBarang) {

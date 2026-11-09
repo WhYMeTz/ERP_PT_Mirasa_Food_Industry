@@ -272,13 +272,13 @@
                 <div style="display: flex; flex-direction: column; gap: 0.75rem;">
                     <div>
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
-                            <label class="qc-info-label" style="font-weight: 700; margin: 0;">🏢 Mitra Supplier / Produsen *</label>
+                            <label class="qc-info-label" style="font-weight: 700; margin: 0;">🏢 Mitra Supplier *</label>
                             <span id="editSupplierBadge" style="font-size: 0.7rem; font-weight: 700; color: #0284c7; background: #e0f2fe; padding: 2px 6px; border-radius: 4px;">
                                 Komoditas: {{ $kat }}
                             </span>
                         </div>
                         <div style="margin-bottom: 0.4rem;">
-                            <input type="text" id="editSupplierSearch" class="form-control" placeholder="🔍 Cari supplier / produsen..." oninput="filterEditSuppliers(this.value)" style="min-height: 38px; font-size: 0.8rem; padding: 0.35rem 0.65rem; border-radius: 6px;">
+                            <input type="text" id="editSupplierSearch" class="form-control" placeholder="🔍 Cari supplier..." oninput="filterEditSuppliers(this.value)" style="min-height: 38px; font-size: 0.8rem; padding: 0.35rem 0.65rem; border-radius: 6px;">
                         </div>
                         <select name="supplier_id" id="editSupplierSelect" class="form-control" style="width: 100%; border-radius: 8px; font-weight: 700;" required onchange="onEditSupplierChange(this)">
                             @foreach ($suppliers as $sup)
@@ -298,16 +298,7 @@
                         </select>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem;">
-                        <div>
-                            <label class="qc-info-label" style="font-weight: 700; margin-bottom: 0.25rem;">Nama Produsen (Pabrik)</label>
-                            <input type="text" name="nama_produsen" id="editNamaProdusen" value="{{ old('nama_produsen', $qc->nama_produsen ?? $qc->supplier?->supplier_nm) }}" class="form-control" placeholder="Nama Pabrik Produsen" style="width: 100%; border-radius: 8px;">
-                        </div>
-                        <div>
-                            <label class="qc-info-label" style="font-weight: 700; margin-bottom: 0.25rem;">Negara Produsen</label>
-                            <input type="text" name="negara_produsen" value="{{ old('negara_produsen', $qc->negara_produsen ?? 'Indonesia') }}" class="form-control" style="width: 100%; border-radius: 8px;">
-                        </div>
-                    </div>
+                    <input type="hidden" name="negara_produsen" value="{{ old('negara_produsen', $qc->negara_produsen ?? 'Indonesia') }}">
 
                     <div>
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
@@ -691,9 +682,6 @@
                             </option>
                             <option value="B" {{ old('items.'.$qcdtlId.'.grade_cd', $firstDetail?->grade_cd) === 'B' ? 'selected' : '' }} style="color: #b45309; font-weight: 800;">
                                 🟡 Grade B (Standar - Ada Ukuran Kecil / Refraksi Tanah)
-                            </option>
-                            <option value="C" {{ old('items.'.$qcdtlId.'.grade_cd', $firstDetail?->grade_cd) === 'C' ? 'selected' : '' }} style="color: #64748b; font-weight: 800;">
-                                ⚪ Grade C (Campur / Sortir Lanjut)
                             </option>
                             <option value="REJECT" {{ old('items.'.$qcdtlId.'.grade_cd', $firstDetail?->grade_cd) === 'REJECT' ? 'selected' : '' }} style="color: #dc2626; font-weight: 900;">
                                 🔴 REJECT (Afkir / Tolak Total)

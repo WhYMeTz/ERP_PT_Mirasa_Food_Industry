@@ -241,13 +241,15 @@
 /* Modern Checkbox Cards untuk Cacat Kemasan: KOTOR, APEK, BASAH, SOBEK */
 .modern-checklist-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.75rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.65rem;
+    width: 100%;
+    box-sizing: border-box;
 }
 
-@media (min-width: 640px) {
+@media (min-width: 480px) {
     .modern-checklist-grid {
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 }
 

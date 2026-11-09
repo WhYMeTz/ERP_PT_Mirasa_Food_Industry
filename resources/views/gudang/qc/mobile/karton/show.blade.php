@@ -87,6 +87,21 @@
         <div class="kt-hero-badges">
             <span class="kt-pill kt-pill-commodity">📦 KARTON BOX</span>
             <span class="kt-pill kt-pill-doc">QC-RM-031</span>
+            @php
+                $showGA = $qc->details->firstWhere('grade_cd', 'A');
+                $showGB = $qc->details->firstWhere('grade_cd', 'B');
+                $qtyGA = (float) ($showGA?->qty_netto_lolos ?? ($qc->details->first()?->grade_cd === 'A' ? $totalNetto : 0));
+                $qtyGB = (float) ($showGB?->qty_netto_lolos ?? ($qc->details->first()?->grade_cd === 'B' ? $totalNetto : 0));
+                $hasBoth = $showGA && $showGB && $qtyGA > 0 && $qtyGB > 0;
+            @endphp
+            @if ($hasBoth)
+                <span class="kt-pill" style="background: rgba(16, 185, 129, 0.25); color: #34d399; font-weight: 800;">🟢 Gr. A: {{ number_format($qtyGA, 0, ',', '.') }}</span>
+                <span class="kt-pill" style="background: rgba(245, 158, 11, 0.25); color: #fbbf24; font-weight: 800;">🟡 Gr. B: {{ number_format($qtyGB, 0, ',', '.') }}</span>
+            @elseif ($qtyGB > 0)
+                <span class="kt-pill" style="background: rgba(245, 158, 11, 0.25); color: #fbbf24; font-weight: 800;">🟡 GRADE B (PUTERAN)</span>
+            @elseif ($qc->status_qc !== 'DITOLAK_TOTAL')
+                <span class="kt-pill" style="background: rgba(16, 185, 129, 0.25); color: #34d399; font-weight: 800;">🟢 GRADE A (BARU)</span>
+            @endif
         </div>
 
         <div class="kt-hero-title-row">
@@ -178,6 +193,47 @@
                 @else
                     <span style="color: #d97706; font-weight: 800;">Selisih: 0 {{ $satuanDtl }} (Sesuai)</span>
                 @endif
+            </div>
+        </div>
+
+        {{-- HASIL KUANTITAS PER GRADE KARTON (PERSIS INPUTAN) --}}
+        <div style="margin-top: 0.85rem; background: #fffdf5; border: 1.5px solid #fde68a; border-radius: 12px; padding: 0.85rem 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.65rem; flex-wrap: wrap; gap: 0.35rem;">
+                <span style="font-size: 0.78rem; font-weight: 800; color: #92400e; text-transform: uppercase; display: flex; align-items: center; gap: 5px;">
+                    <span>⚖️</span> <span>Hasil Kuantitas Per Grade Karton</span>
+                </span>
+                <span style="font-size: 0.75rem; font-weight: 800; color: #b45309; background: #ffffff; padding: 2px 8px; border-radius: 6px; border: 1px solid #fde68a;">
+                    Total Lolos: {{ number_format($totalNetto, 0, ',', '.') }} {{ $satuanDtl }}
+                </span>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; margin-bottom: 0.6rem;">
+                <div style="background: #f0fdf4; border: 1.5px solid #bbf7d0; border-radius: 10px; padding: 0.65rem 0.85rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+                        <span style="font-size: 0.75rem; font-weight: 800; color: #166534;">🟢 Grade A (Dus Baru)</span>
+                        <span style="font-size: 0.68rem; font-weight: 800; background: #dcfce7; color: #15803d; padding: 1px 5px; border-radius: 4px;">Baru</span>
+                    </div>
+                    <div style="font-size: 1.25rem; font-weight: 900; color: #166534;">
+                        {{ number_format($qtyGA, 0, ',', '.') }} <span style="font-size: 0.78rem; font-weight: 700;">{{ $satuanDtl }}</span>
+                    </div>
+                </div>
+
+                <div style="background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 10px; padding: 0.65rem 0.85rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+                        <span style="font-size: 0.75rem; font-weight: 800; color: #92400e;">🟡 Grade B (Puteran)</span>
+                        <span style="font-size: 0.68rem; font-weight: 800; background: #fef3c7; color: #b45309; padding: 1px 5px; border-radius: 4px;">Reuse</span>
+                    </div>
+                    <div style="font-size: 1.25rem; font-weight: 900; color: #92400e;">
+                        {{ number_format($qtyGB, 0, ',', '.') }} <span style="font-size: 0.78rem; font-weight: 700;">{{ $satuanDtl }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div style="background: #fef2f2; border: 1.5px solid #fecaca; border-radius: 10px; padding: 0.55rem 0.85rem; display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 0.75rem; font-weight: 800; color: #991b1b;">❌ Qty Reject / Rusak (Afkir)</span>
+                <div style="font-size: 1.05rem; font-weight: 900; color: #991b1b;">
+                    {{ number_format($totalReject, 0, ',', '.') }} <span style="font-size: 0.75rem; font-weight: 700;">{{ $satuanDtl }}</span>
+                </div>
             </div>
         </div>
     </div>
@@ -323,10 +379,8 @@
             </div>
 
             <div class="kt-cell">
-                <span class="kt-cell-label">Pabrik Produsen</span>
-                <span class="kt-cell-value">
-                    {{ $qc->nama_produsen ?: ($qc->supplier?->supplier_nm ?? '-') }} ({{ $qc->negara_produsen ?: 'Indonesia' }})
-                </span>
+                <span class="kt-cell-label">Negara Asal</span>
+                <span class="kt-cell-value">{{ $qc->negara_produsen ?: 'Indonesia' }}</span>
             </div>
 
             <div class="kt-cell">

@@ -311,10 +311,8 @@
             </div>
 
             <div class="bp-cell">
-                <span class="bp-cell-label">Pabrik Produsen</span>
-                <span class="bp-cell-value">
-                    {{ $qc->nama_produsen ?: ($qc->supplier?->supplier_nm ?? '-') }} ({{ $qc->negara_produsen ?: 'Indonesia' }})
-                </span>
+                <span class="bp-cell-label">Negara Asal</span>
+                <span class="bp-cell-value">{{ $qc->negara_produsen ?: 'Indonesia' }}</span>
             </div>
 
             <div class="bp-cell">

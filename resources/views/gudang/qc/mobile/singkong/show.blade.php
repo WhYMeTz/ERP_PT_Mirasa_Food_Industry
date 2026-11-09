@@ -251,7 +251,7 @@
                 <div class="sk-stage-title-p1">
                     <span>🚛</span> <span>Pengujian I &bull; Kedatangan Gerbang</span>
                 </div>
-                <div style="display: flex; align-items: center; gap: 0.35rem;">
+                <div style="display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;">
                     <span class="sk-pill sk-pill-tahap1">#{{ $p1->qc_no }}</span>
                     @if ($u1Grade === 'B')
                         <span class="sk-pill sk-pill-grade-b">GRADE B</span>
@@ -259,6 +259,12 @@
                         <span class="sk-pill sk-pill-grade-reject">REJECT</span>
                     @else
                         <span class="sk-pill sk-pill-grade-a">GRADE A</span>
+                    @endif
+                    @if (Auth::user()?->canEditQcMobile() && !$isLocked)
+                        <a href="{{ route('qc.inbound.edit', [$p1->qc_id, 'view' => 'mobile', 'ref' => 'detail']) }}" style="padding: 2px 7px; border-radius: 6px; background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd; font-size: 0.7rem; font-weight: 800; text-decoration: none; display: inline-flex; align-items: center; gap: 3px;" title="Koreksi data Pengujian 1 (Kedatangan Gerbang)">
+                            <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                            <span>Edit Uji 1</span>
+                        </a>
                     @endif
                 </div>
             </div>
@@ -440,7 +446,7 @@
                     <span>🍟</span> <span>Pengujian II &bull; Lantai Produksi (Wafel)</span>
                 </div>
                 @if ($hasP2)
-                    <div style="display: flex; align-items: center; gap: 0.35rem;">
+                    <div style="display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;">
                         <span class="sk-pill sk-pill-tahap2">#{{ $p2->qc_no }}</span>
                         @if ($u2Grade === 'B')
                             <span class="sk-pill sk-pill-grade-b">GRADE B</span>
@@ -448,6 +454,12 @@
                             <span class="sk-pill sk-pill-grade-reject">REJECT</span>
                         @else
                             <span class="sk-pill sk-pill-grade-a">GRADE A</span>
+                        @endif
+                        @if (Auth::user()?->canEditQcMobile() && !$isLocked)
+                            <a href="{{ route('qc.inbound.edit', [$p2->qc_id, 'view' => 'mobile', 'ref' => 'detail']) }}" style="padding: 2px 7px; border-radius: 6px; background: #f3e8ff; color: #7e22ce; border: 1px solid #d8b4fe; font-size: 0.7rem; font-weight: 800; text-decoration: none; display: inline-flex; align-items: center; gap: 3px;" title="Koreksi data Pengujian 2 (Lantai Produksi / Fryer)">
+                                <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                <span>Edit Uji 2</span>
+                            </a>
                         @endif
                     </div>
                 @else
@@ -738,10 +750,23 @@
         @endif
 
         @if (Auth::user()?->canEditQcMobile() && !$isLocked)
-            <a href="{{ route('qc.inbound.edit', [$qc->qc_id, 'view' => 'mobile', 'ref' => 'detail']) }}" class="sk-dock-btn-edit">
-                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                <span>Edit Uji</span>
-            </a>
+            @if ($hasP2)
+                <div style="display: flex; gap: 0.45rem; align-items: center;">
+                    <a href="{{ route('qc.inbound.edit', [$p1->qc_id, 'view' => 'mobile', 'ref' => 'detail']) }}" class="sk-dock-btn-edit" style="background: #0284c7; padding: 0.45rem 0.65rem; font-size: 0.78rem;" title="Edit Pengujian 1">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                        <span>✏️ Uji 1</span>
+                    </a>
+                    <a href="{{ route('qc.inbound.edit', [$p2->qc_id, 'view' => 'mobile', 'ref' => 'detail']) }}" class="sk-dock-btn-edit" style="background: #7e22ce; border-color: #6b21a8; padding: 0.45rem 0.65rem; font-size: 0.78rem;" title="Edit Pengujian 2">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                        <span>🍟 Uji 2</span>
+                    </a>
+                </div>
+            @else
+                <a href="{{ route('qc.inbound.edit', [$p1->qc_id, 'view' => 'mobile', 'ref' => 'detail']) }}" class="sk-dock-btn-edit">
+                    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                    <span>Edit Uji</span>
+                </a>
+            @endif
         @else
             <button type="button" class="sk-dock-btn-locked" disabled>
                 <span>🔒 Terkunci</span>

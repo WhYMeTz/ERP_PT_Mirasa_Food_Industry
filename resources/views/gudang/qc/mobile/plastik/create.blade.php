@@ -62,10 +62,13 @@
         return array_values(array_unique($cats));
     };
 
-    // Filter PO KHUSUS Plastik Kemasan Saja (Hanya PO yang memuat komoditas PLASTIK)
-    $plastikPos = $pos->filter(function($p) use ($getPoCommodities) {
+    // Filter PO KHUSUS Plastik Kemasan Saja (Hanya PO yang memuat komoditas PLASTIK dan masih ada sisa belum diuji QC)
+    $plastikPos = $pos->filter(function($p) use ($getPoCommodities, $classifyBarang, $selectedPo) {
+        if ($selectedPo && $selectedPo->po_id == $p->po_id) return true;
         $cats = $getPoCommodities($p);
-        return in_array('PLASTIK', $cats);
+        if (!in_array('PLASTIK', $cats)) return false;
+        $plastikItems = $p->details->filter(fn($d) => $classifyBarang($d) === 'PLASTIK');
+        return $plastikItems->some(fn($d) => $d->sisa_belum_qc_qty > 0);
     });
 
     // Mapping Data PO Lengkap ke Format JSON untuk Auto-Fill Instan Tanpa Delay
@@ -112,9 +115,11 @@
         ];
     });
 
-    // Filter Supplier khusus Plastik (Vendor Kemasan / Non-Petani)
-    $plastikSuppliers = $suppliers->filter(function($s) use ($selectedPo, $plastikPos) {
+    // Filter Supplier khusus Plastik (Vendor Kemasan / Non-Petani + pastikan supplier dari PO Plastik ikut disertakan)
+    $plastikPoSupplierIds = $plastikPos->pluck('supplier_id')->filter()->unique()->toArray();
+    $plastikSuppliers = $suppliers->filter(function($s) use ($selectedPo, $plastikPoSupplierIds) {
         if ($selectedPo && $selectedPo->supplier_id == $s->supplier_id) return true;
+        if (in_array($s->supplier_id, $plastikPoSupplierIds)) return true;
         $cd = strtoupper($s->supplier_cd ?? '');
         $isPetani = str_starts_with($cd, 'SKG-') || ($s->jenisSupplier?->jenis_supplier_cd === 'RAW');
         return !$isPetani;
@@ -261,8 +266,9 @@
                                     @foreach ($plastikPos as $p)
                                         @php
                                             $poCats = $getPoCommodities($p);
-                                            $itemNames = $p->details->map(fn($d) => $d->barang?->barang_nm)->filter()->unique()->implode(', ');
-                                            $totalSisa = $p->details->sum(fn($d) => max(0, (float)$d->pesan_qty - (float)$d->terima_qty));
+                                            $plastikItems = $p->details->filter(fn($d) => $classifyBarang($d) === 'PLASTIK');
+                                            $itemNames = $plastikItems->map(fn($d) => $d->barang?->barang_nm)->filter()->unique()->implode(', ');
+                                            $totalSisa = $plastikItems->sum(fn($d) => $d->sisa_belum_qc_qty);
                                         @endphp
                                         <option value="{{ $p->po_id }}"
                                                 data-komoditas="{{ implode(',', $poCats) }}"
@@ -277,8 +283,9 @@
                             </select>
                         </div>
                         <div class="form-group" style="margin-bottom: 0;">
-                            <div class="qc-field-header">
+                            <div class="qc-field-header" style="display: flex; justify-content: space-between; align-items: center;">
                                 <label class="qc-field-label">Gudang Bongkar <span style="color:#ef4444;">*</span></label>
+                                <span id="badgeLockGudang" class="badge-po-locked" style="display: none; font-size: 0.7rem; font-weight: 800; color: #166534; background: #dcfce7; padding: 2px 8px; border-radius: 6px; border: 1px solid #bbf7d0;">🔒 Terkunci dari PO</span>
                             </div>
                             <select name="gudang_id" id="gudangSelect" class="form-control" required style="font-size: 0.85rem; font-weight: 700;">
                                 @foreach ($gudangs as $g)
@@ -310,10 +317,11 @@
                     {{-- 3. MITRA VENDOR & NAMA PRODUSEN (SUBCARD KELOMPOK DENGAN DESAIN PERSIS SINGKONG) --}}
                     <div class="plastik-subcard">
                         <div class="form-group" style="margin-bottom: 0;">
-                            <div class="qc-field-header">
+                            <div class="qc-field-header" style="display: flex; justify-content: space-between; align-items: center;">
                                 <label class="qc-field-label" style="font-weight: 800; color: #0f172a;">
                                     Mitra Vendor / Supplier Kemasan <span style="color:#ef4444;">*</span>
                                 </label>
+                                <span id="badgeLockSupplier" class="badge-po-locked" style="display: none; font-size: 0.7rem; font-weight: 800; color: #166534; background: #dcfce7; padding: 2px 8px; border-radius: 6px; border: 1px solid #bbf7d0;">🔒 Terkunci dari PO</span>
                             </div>
                             <select name="supplier_id" id="supplierSelect" class="form-control" required onchange="onSupplierSelected(this)" style="font-weight: 700; font-size: 0.85rem;">
                                 <option value="">-- Pilih Mitra Vendor Kemasan --</option>
@@ -351,10 +359,11 @@
                         <div class="qc-grid-2col">
                             {{-- NAMA BAHAN BAKU (MASTER BARANG PLASTIK KEMASAN) --}}
                             <div class="form-group" style="margin-bottom: 0;">
-                                <div class="qc-field-header">
+                                <div class="qc-field-header" style="display: flex; justify-content: space-between; align-items: center;">
                                     <label class="qc-field-label" style="font-weight: 800; color: #0f172a;">
                                         Nama Bahan Baku Kemasan <span style="color:#ef4444;">*</span>
                                     </label>
+                                    <span id="badgeLockBarang" class="badge-po-locked" style="display: none; font-size: 0.7rem; font-weight: 800; color: #166534; background: #dcfce7; padding: 2px 8px; border-radius: 6px; border: 1px solid #bbf7d0;">🔒 Terkunci dari PO</span>
                                 </div>
                                 <select name="plastik_barang_id" id="plastikBarangSelect" class="form-control" style="font-weight: 700;" onchange="onPlastikBarangChanged(this)" required>
                                     @foreach ($barangs as $b)

@@ -6,7 +6,7 @@
 @push('styles')
     <link rel="stylesheet" href="{{ asset('css/gudang/qc/mobile/qc-form.css') }}">
     <link rel="stylesheet" href="{{ asset('css/gudang/qc/mobile/qc-mobile-detail.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/gudang/qc/bahan-penolong/bahan-penolong.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/gudang/qc/bahan-penolong/bahan-penolong.css') }}?v={{ filemtime(public_path('css/gudang/qc/bahan-penolong/bahan-penolong.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/gudang/qc/bahan-penolong/bahan-penolong-detail.css') }}">
 @endpush
 
@@ -169,7 +169,7 @@
         <input type="hidden" name="items[{{ $qcdtlId }}][qcdtl_id]" value="{{ $qcdtlId }}">
         <input type="hidden" name="items[{{ $qcdtlId }}][podtl_id]" value="{{ $firstDetail?->podtl_id }}">
         <input type="hidden" name="items[{{ $qcdtlId }}][barang_id]" value="{{ $barangId }}">
-        <input type="hidden" name="items[{{ $qcdtlId }}][grade_cd]" value="{{ $firstDetail?->grade_cd ?? 'A' }}">
+        <input type="hidden" name="items[{{ $qcdtlId }}][grade_cd]" value="{{ ($firstDetail?->grade_cd === 'REJECT' ? 'REJECT' : 'NON-GRADE') }}">
         <input type="hidden" name="items[{{ $qcdtlId }}][qty_netto_lolos]" id="inputQtyNettoLolos" value="{{ $totalNetto }}">
         <input type="hidden" name="items[{{ $qcdtlId }}][status_raw_material]" id="inputRawMaterial" value="{{ $firstDetail?->status_raw_material ?? 'OK' }}">
         <input type="hidden" name="items[{{ $qcdtlId }}][kemasan_kondisi]" id="inputKemasanKondisi" value="{{ $firstDetail?->kemasan_kondisi ?? 'OK' }}">
@@ -181,114 +181,254 @@
         <input type="hidden" name="qty_tolak" id="inputQtyTolak" value="{{ $totalReject }}">
 
         {{-- ========================================================================= --}}
-        {{-- CARD 1: INFORMASI BAHAN & KUANTITAS PENERIMAAN                           --}}
+        {{-- KARTU 1: INFO PENGIRIMAN, PO & VENDOR BAHAN PENOLONG                      --}}
         {{-- ========================================================================= --}}
-        <div class="card" style="border-radius: 14px; border: 1.5px solid #e2e8f0; margin-bottom: 1rem; box-shadow: 0 2px 6px rgba(0,0,0,0.03); background: #ffffff;">
-            <div class="card-header" style="background: #ffffff; padding: 1rem 1.25rem; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;">
-                <div style="display: flex; align-items: center; gap: 0.6rem;">
-                    <span style="font-size: 1.15rem;">⚖️</span>
-                    <div>
-                        <h2 style="font-size: 0.95rem; font-weight: 800; color: #0f172a; margin: 0;">1. Kuantitas Kedatangan &amp; Rekonsiliasi</h2>
-                        <span style="font-size: 0.72rem; color: #64748b;">Gross, Reject dan Netto lolos QC (Satuan: KG)</span>
-                    </div>
-                </div>
-                <span style="font-size: 0.72rem; font-weight: 800; background: #ede9fe; color: #6d28d9; padding: 2px 8px; border-radius: 6px;">
-                    Satuan: KG
-                </span>
-            </div>
+        <div class="qc-card-section">
+            <h2 class="qc-card-title">
+                <span>🚚</span> <span>1. Info Armada, PO &amp; Vendor {{ $commodityLabel }}</span>
+            </h2>
 
-            <div style="padding: 1.15rem 1.25rem; display: flex; flex-direction: column; gap: 0.9rem;">
-                {{-- Master Barang --}}
+            <div style="display: flex; flex-direction: column; gap: 0.85rem;">
+                {{-- PILIHAN PO --}}
                 <div class="form-group" style="margin-bottom: 0;">
-                    <label class="qc-field-label">Master Barang {{ $curKomoditas }} <span style="color:#ef4444;">*</span></label>
-                    <select name="items[{{ $qcdtlId }}][barang_id]" class="form-control" style="font-weight: 800; color: #0f172a;" required>
-                        @foreach ($filteredBarangs as $b)
-                            <option value="{{ $b->barang_id }}" {{ $b->barang_id == $barangId ? 'selected' : '' }}>
-                                {{ $b->barang_nm }} ({{ $b->barang_cd }})
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+                        <label class="qc-field-label" style="font-weight: 700; margin: 0;">Referensi Purchase Order (PO)</label>
+                        <span style="font-size: 0.7rem; font-weight: 700; color: #6d28d9; background: #ede9fe; padding: 2px 6px; border-radius: 4px;">
+                            PO {{ $curKomoditas }} ({{ $filteredPos->count() }} Tersedia)
+                        </span>
+                    </div>
+                    <select name="po_id" id="editPoSelect" class="form-control" style="font-weight: 700;" onchange="onEditPoChanged(this)">
+                        <option value="">-- Non-PO / Kiriman Langsung --</option>
+                        @foreach ($filteredPos as $p)
+                            @php
+                                $firstDtl = $p->details?->first();
+                                $poBarangId = $firstDtl?->barang_id;
+                            @endphp
+                            <option value="{{ $p->po_id }}"
+                                    data-supplier-id="{{ $p->supplier_id }}"
+                                    data-supplier-nm="{{ $p->supplier?->supplier_nm ?? '' }}"
+                                    data-gudang-id="{{ $p->gudang_id }}"
+                                    data-barang-id="{{ $poBarangId }}"
+                                    {{ $p->po_id == $qc->po_id ? 'selected' : '' }}>
+                                {{ $p->po_no }} &bull; {{ $p->supplier?->supplier_nm }}
                             </option>
                         @endforeach
                     </select>
                 </div>
 
-                {{-- Deskripsi Jenis / Spesifikasi --}}
+                {{-- VENDOR SUPPLIER --}}
                 <div class="form-group" style="margin-bottom: 0;">
-                    <label class="qc-field-label">Nama Komoditas / Spesifikasi <span style="font-size: 0.72rem; color: #64748b;">(Tercetak di Surat Jalan)</span></label>
-                    <input type="text" name="nama_jenis" value="{{ old('nama_jenis', $qc->nama_jenis ?: $curKomoditas) }}" class="form-control" style="font-weight: 700;">
+                    <div class="qc-field-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+                        <label class="qc-field-label" style="font-weight: 700; margin: 0;">🏢 Mitra Vendor / Supplier {{ $curKomoditas }} <span style="color:#ef4444;">*</span></label>
+                        <span id="badgeEditLockSupplier" class="badge-po-locked" style="{{ $qc->po_id ? 'display: inline-flex;' : 'display: none;' }} font-size: 0.7rem; font-weight: 800; color: #166534; background: #dcfce7; padding: 2px 8px; border-radius: 6px; border: 1px solid #bbf7d0;">🔒 Terkunci dari PO</span>
+                    </div>
+                    <select name="supplier_id" id="editSupplierSelect" class="form-control" style="font-weight: 800; color: #0f172a; {{ $qc->po_id ? 'pointer-events: none; background-color: #f1f5f9; border-color: #cbd5e1;' : '' }}" {{ $qc->po_id ? 'tabindex="-1"' : '' }} required onchange="onSupplierChanged(this)">
+                        @foreach ($filteredSuppliers as $s)
+                            <option value="{{ $s->supplier_id }}" {{ $s->supplier_id == $qc->supplier_id ? 'selected' : '' }}>
+                                {{ $s->supplier_nm }} ({{ $s->supplier_cd }})
+                            </option>
+                        @endforeach
+                    </select>
                 </div>
 
-                {{-- Grid Kuantitas: Gross & Reject --}}
+                {{-- GUDANG BONGKAR MUAT --}}
+                <div class="form-group" style="margin-bottom: 0;">
+                    <div class="qc-field-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+                        <label class="qc-field-label" style="font-weight: 700; margin: 0;">Gudang Bongkar Muat <span style="color:#ef4444;">*</span></label>
+                        <span id="badgeEditLockGudang" class="badge-po-locked" style="{{ $qc->po_id ? 'display: inline-flex;' : 'display: none;' }} font-size: 0.7rem; font-weight: 800; color: #166534; background: #dcfce7; padding: 2px 8px; border-radius: 6px; border: 1px solid #bbf7d0;">🔒 Terkunci dari PO</span>
+                    </div>
+                    <select name="gudang_id" id="editGudangSelect" class="form-control" style="font-weight: 800; {{ $qc->po_id ? 'pointer-events: none; background-color: #f1f5f9; border-color: #cbd5e1;' : '' }}" {{ $qc->po_id ? 'tabindex="-1"' : '' }} required>
+                        @foreach ($gudangs as $g)
+                            <option value="{{ $g->gudang_id }}" {{ $g->gudang_id == $qc->gudang_id ? 'selected' : '' }}>
+                                {{ $g->display_name ?? $g->gudang_nm }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                {{-- MASTER BARANG & SPESIFIKASI --}}
+                <div style="background: #faf5ff; border: 1.5px solid #ddd6fe; border-radius: 10px; padding: 0.85rem; display: flex; flex-direction: column; gap: 0.65rem;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <div class="qc-field-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+                            <label class="qc-field-label" style="font-weight: 800; color: #6d28d9; margin: 0;">
+                                Master Bahan Baku {{ $curKomoditas }} <span style="color:#ef4444;">*</span>
+                            </label>
+                            <span id="badgeEditLockBarang" class="badge-po-locked" style="{{ $qc->po_id ? 'display: inline-flex;' : 'display: none;' }} font-size: 0.7rem; font-weight: 800; color: #166534; background: #dcfce7; padding: 2px 8px; border-radius: 6px; border: 1px solid #bbf7d0;">🔒 Terkunci dari PO</span>
+                        </div>
+                        <select name="items[{{ $qcdtlId }}][barang_id]" id="editBarangSelect" class="form-control" style="font-weight: 800; color: #0f172a; {{ $qc->po_id ? 'pointer-events: none; background-color: #f1f5f9; border-color: #cbd5e1;' : '' }}" {{ $qc->po_id ? 'tabindex="-1"' : '' }} required>
+                            @foreach ($filteredBarangs as $b)
+                                <option value="{{ $b->barang_id }}" {{ $b->barang_id == $barangId ? 'selected' : '' }}>
+                                    {{ $b->barang_nm }} ({{ $b->barang_cd }})
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    {{-- Deskripsi Jenis / Spesifikasi --}}
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label class="qc-field-label" style="font-size: 0.75rem; color: #6d28d9; font-weight: 700;">Nama Komoditas / Spesifikasi <span style="font-size: 0.7rem; color: #64748b; font-weight: normal;">(Tercetak di Surat Jalan)</span></label>
+                        <input type="text" name="nama_jenis" value="{{ old('nama_jenis', $qc->nama_jenis ?: $curKomoditas) }}" class="form-control" style="font-weight: 700;">
+                    </div>
+                </div>
+
+                <input type="hidden" name="negara_produsen" value="{{ old('negara_produsen', $qc->negara_produsen ?: 'Indonesia') }}">
+
+                {{-- No DO / Surat Jalan & Plat Truk --}}
                 <div class="qc-grid-2col">
                     <div class="form-group" style="margin-bottom: 0;">
-                        <label class="qc-field-label">Gross Timbang Pabrik (KG) <span style="color:#ef4444;">*</span></label>
-                        <div class="input-suffix-wrap">
-                            <input type="number" step="any" min="0" name="items[{{ $qcdtlId }}][qty_timbang_gross]" id="editQtyGross" value="{{ old('items.'.$qcdtlId.'.qty_timbang_gross', $totalGross) }}" class="form-control" style="font-size: 1.15rem; font-weight: 900; color: #0f172a;" required oninput="calcBpEditNetto()">
-                            <span class="input-suffix-text">KG</span>
-                        </div>
+                        <label class="qc-field-label">No. Surat Jalan / DO</label>
+                        <input type="text" name="nomor_do" value="{{ old('nomor_do', $qc->nomor_do ?: $qc->surat_jalan_supplier) }}" class="form-control" style="font-weight: 800; color: #0f172a;">
                     </div>
 
                     <div class="form-group" style="margin-bottom: 0;">
-                        <label class="qc-field-label">Reject / Rusak (KG)</label>
-                        <div class="input-suffix-wrap">
-                            <input type="number" step="any" min="0" name="items[{{ $qcdtlId }}][qty_reject]" id="editQtyReject" value="{{ old('items.'.$qcdtlId.'.qty_reject', $totalReject) }}" class="form-control" style="font-size: 1.15rem; font-weight: 900; color: #dc2626;" oninput="calcBpEditNetto()">
-                            <span class="input-suffix-text">KG</span>
-                        </div>
+                        <label class="qc-field-label">Plat Nomor Truk</label>
+                        <input type="text" name="plat_nomor_truk" value="{{ old('plat_nomor_truk', $qc->plat_nomor_truk) }}" class="form-control" style="font-weight: 800; text-transform: uppercase;">
                     </div>
                 </div>
 
-                {{-- Netto Hasil Lolos QC (Live Preview) --}}
-                <div style="background: #faf5ff; border: 1.5px solid #ddd6fe; border-radius: 12px; padding: 0.85rem 1rem; display: flex; align-items: center; justify-content: space-between;">
-                    <div>
-                        <div style="font-size: 0.72rem; font-weight: 800; color: #6d28d9; text-transform: uppercase; letter-spacing: 0.04em;">
-                            Netto Lolos Inspeksi QC
-                        </div>
-                        <div style="font-size: 0.72rem; color: #64748b;">
-                            (Gross - Reject = Netto lolos)
-                        </div>
-                    </div>
-                    <div id="labelBpEditNetto" style="font-size: 1.4rem; font-weight: 900; color: #7c3aed;">
-                        {{ number_format($totalNetto, 2, ',', '.') }} KG
-                    </div>
-                </div>
-
-                {{-- Perbandingan Surat Jalan vs Pabrik & Sampel --}}
+                {{-- Nama Sopir & Tanggal Periksa --}}
                 <div class="qc-grid-2col">
                     <div class="form-group" style="margin-bottom: 0;">
-                        <label class="qc-field-label">Jumlah di Surat Jalan (DO)</label>
-                        <div class="input-suffix-wrap">
-                            <input type="number" step="any" min="0" name="jumlah_surat_jalan" value="{{ old('jumlah_surat_jalan', $qc->jumlah_surat_jalan ?? $totalGross) }}" class="form-control" style="font-weight: 800;">
-                            <span class="input-suffix-text">KG</span>
-                        </div>
+                        <label class="qc-field-label">Nama Pengemudi / Sopir</label>
+                        <input type="text" name="sopir_nama" value="{{ old('sopir_nama', $qc->sopir_nama) }}" class="form-control" style="font-weight: 700;">
                     </div>
 
                     <div class="form-group" style="margin-bottom: 0;">
-                        <label class="qc-field-label">Sampel Diperiksa (Gram) <span style="font-size: 0.72rem; color: #7c3aed;">(HACCP: 200 gr)</span></label>
-                        <div class="input-suffix-wrap">
-                            <input type="number" step="any" min="1" name="jumlah_sample_gr" value="{{ old('jumlah_sample_gr', $qc->jumlah_sample_gr ?: ($firstDetail?->jumlah_sample_gr ?: 200)) }}" class="form-control" style="font-weight: 800; color: #7c3aed;">
-                            <span class="input-suffix-text">gr</span>
-                        </div>
+                        <label class="qc-field-label">Waktu Periksa Lapangan</label>
+                        <input type="datetime-local" name="tgl_periksa" value="{{ old('tgl_periksa', $qc->tgl_periksa ? $qc->tgl_periksa->format('Y-m-d\TH:i') : now()->format('Y-m-d\TH:i')) }}" class="form-control" style="font-weight: 700;">
                     </div>
                 </div>
             </div>
         </div>
 
         {{-- ========================================================================= --}}
-        {{-- CARD 2: PENGUJIAN MUTU FISIK & KONDISI BAHAN PENOLONG                    --}}
+        {{-- KARTU 2: AUDIT SISTEM JAMINAN HALAL (SJH) & TRANSPORTASI                  --}}
         {{-- ========================================================================= --}}
-        <div class="card" style="border-radius: 14px; border: 1.5px solid #ddd6fe; margin-bottom: 1rem; box-shadow: 0 2px 6px rgba(0,0,0,0.03); background: #ffffff;">
-            <div class="card-header" style="background: #ffffff; padding: 1rem 1.25rem; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;">
-                <div style="display: flex; align-items: center; gap: 0.6rem;">
-                    <span style="font-size: 1.15rem;">🔬</span>
+        <div class="qc-card-section" style="border: 1.5px solid #bbf7d0; background: #ffffff; border-radius: 12px; overflow: hidden; padding: 0;">
+            <div style="background: #f0fdf4; padding: 0.85rem 1rem; border-bottom: 1px solid #dcfce7; display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span style="font-size: 1.15rem;">🛡️</span>
                     <div>
-                        <h2 style="font-size: 0.95rem; font-weight: 800; color: #581c87; margin: 0;">2. Pengujian Mutu Fisik Bahan Penolong</h2>
-                        <span style="font-size: 0.72rem; color: #6d28d9; font-weight: 700;">Analisa kondisi isi, kekeringan &amp; cacat kemasan zak</span>
+                        <h2 style="font-size: 0.95rem; font-weight: 800; color: #166534; margin: 0; line-height: 1.25;">2. Standar Transportasi &amp; Jaminan Halal</h2>
+                        <span style="font-size: 0.72rem; color: #15803d; font-weight: 700;">Sistem Jaminan Halal (SJH) &amp; Higiene Truk</span>
                     </div>
                 </div>
-                <span style="font-size: 0.72rem; font-weight: 800; background: #ede9fe; color: #6d28d9; padding: 2px 8px; border-radius: 6px;">
-                    FORM HACCP
+                <span style="font-size: 0.72rem; font-weight: 800; background: #dcfce7; color: #166534; padding: 2px 8px; border-radius: 6px; border: 1px solid #86efac;">
+                    AUDIT SJH
                 </span>
             </div>
 
-            <div style="padding: 1.15rem 1.25rem; display: flex; flex-direction: column; gap: 1rem;">
+            <div style="padding: 1.1rem 1.25rem; display: flex; flex-direction: column; gap: 0.85rem;">
+                {{-- 1. Kebersihan Armada --}}
+                <div class="halal-qa-row">
+                    <div class="halal-qa-header">
+                        <div class="halal-qa-info">
+                            <div class="halal-qa-title">1. Kebersihan Armada &amp; Bebas Najis / Cemaran</div>
+                            <div class="halal-qa-sub">Truk bersih dari oli, air kotor, bau menyengat atau zat kimia berbahaya</div>
+                        </div>
+                        <div class="segmented-toggle">
+                            <button type="button" class="segmented-toggle-btn {{ $qc->bebas_cemaran_st ? 'active ok' : '' }}" id="btnCemarBebas" onclick="setHalalToggle('bebas_cemaran', 1)">
+                                <span>✔</span> <span>Bebas</span>
+                            </button>
+                            <button type="button" class="segmented-toggle-btn {{ !$qc->bebas_cemaran_st ? 'active danger' : '' }}" id="btnCemarAda" onclick="setHalalToggle('bebas_cemaran', 0)">
+                                <span>✖</span> <span>Tercemar</span>
+                            </button>
+                        </div>
+                        <input type="hidden" name="bebas_cemaran_st" id="input_bebas_cemaran" value="{{ old('bebas_cemaran_st', $qc->bebas_cemaran_st ? 1 : 0) }}">
+                    </div>
+                    <input type="text" name="komentar_transportasi" value="{{ old('komentar_transportasi', $qc->komentar_transportasi) }}" class="form-control" placeholder="Komentar armada : -" style="font-size: 0.825rem;">
+                </div>
+
+                {{-- 2. Mengangkut Barang Haram --}}
+                <div class="halal-qa-row">
+                    <div class="halal-qa-header">
+                        <div class="halal-qa-info">
+                            <div class="halal-qa-title">2. Pemisahan Logistik Barang Haram</div>
+                            <div class="halal-qa-sub">Armada tidak pernah digunakan bersamaan untuk mengangkut barang non-halal</div>
+                        </div>
+                        <div class="segmented-toggle">
+                            <button type="button" class="segmented-toggle-btn {{ !$qc->angkut_barang_haram_st ? 'active ok' : '' }}" id="btnHaramTidak" onclick="setHalalToggle('angkut_barang_haram', 0)">
+                                <span>✔</span> <span>Tidak</span>
+                            </button>
+                            <button type="button" class="segmented-toggle-btn {{ $qc->angkut_barang_haram_st ? 'active danger' : '' }}" id="btnHaramYa" onclick="setHalalToggle('angkut_barang_haram', 1)">
+                                <span>✖</span> <span>Ya (Tercampur)</span>
+                            </button>
+                        </div>
+                        <input type="hidden" name="angkut_barang_haram_st" id="input_angkut_barang_haram" value="{{ old('angkut_barang_haram_st', $qc->angkut_barang_haram_st ? 1 : 0) }}">
+                    </div>
+                </div>
+
+                {{-- 3. Terdaftar LPPOM MUI / BPJPH --}}
+                <div class="halal-qa-row">
+                    <div class="halal-qa-header">
+                        <div class="halal-qa-info">
+                            <div class="halal-qa-title">3. Pendaftaran di LPPOM MUI / BPJPH</div>
+                            <div class="halal-qa-sub">Bahan penolong resmi terdaftar dalam approved list bahan halal</div>
+                        </div>
+                        <div class="segmented-toggle">
+                            <button type="button" class="segmented-toggle-btn {{ $qc->terdaftar_lppom_st ? 'active ok' : '' }}" id="btnLppomYa" onclick="setHalalToggle('terdaftar_lppom', 1)">
+                                <span>✔</span> <span>Ya</span>
+                            </button>
+                            <button type="button" class="segmented-toggle-btn {{ !$qc->terdaftar_lppom_st ? 'active danger' : '' }}" id="btnLppomTidak" onclick="setHalalToggle('terdaftar_lppom', 0)">
+                                <span>✖</span> <span>Tidak</span>
+                            </button>
+                        </div>
+                        <input type="hidden" name="terdaftar_lppom_st" id="input_terdaftar_lppom" value="{{ old('terdaftar_lppom_st', $qc->terdaftar_lppom_st ? 1 : 0) }}">
+                    </div>
+                    <input type="text" name="komentar_lppom" value="{{ old('komentar_lppom', $qc->komentar_lppom) }}" class="form-control" placeholder="Komentar LPPOM : -" style="font-size: 0.825rem;">
+                </div>
+
+                {{-- 4. Mempunyai Sertifikat Halal --}}
+                <div class="halal-qa-row">
+                    <div class="halal-qa-header">
+                        <div class="halal-qa-info">
+                            <div class="halal-qa-title">4. Kepemilikan Sertifikat Halal Produsen</div>
+                            <div class="halal-qa-sub">Salinan sertifikat halal resmi terlampir pada dokumen vendor</div>
+                        </div>
+                        <div class="segmented-toggle">
+                            <button type="button" class="segmented-toggle-btn {{ $qc->ada_sertifikat_halal_st ? 'active ok' : '' }}" id="btnSertifikatYa" onclick="setHalalToggle('ada_sertifikat', 1)">
+                                <span>✔</span> <span>Ada</span>
+                            </button>
+                            <button type="button" class="segmented-toggle-btn {{ !$qc->ada_sertifikat_halal_st ? 'active danger' : '' }}" id="btnSertifikatTidak" onclick="setHalalToggle('ada_sertifikat', 0)">
+                                <span>✖</span> <span>Tidak Ada</span>
+                            </button>
+                        </div>
+                        <input type="hidden" name="ada_sertifikat_halal_st" id="input_ada_sertifikat" value="{{ old('ada_sertifikat_halal_st', $qc->ada_sertifikat_halal_st ? 1 : 0) }}">
+                    </div>
+                    <input type="text" name="komentar_sertifikat" value="{{ old('komentar_sertifikat', $qc->komentar_sertifikat) }}" class="form-control" placeholder="Komentar Sertifikat : -" style="font-size: 0.825rem;">
+                </div>
+
+                {{-- 5. Masa Berlaku Sertifikat Halal --}}
+                <div class="halal-qa-row">
+                    <div class="halal-qa-header">
+                        <div class="halal-qa-info">
+                            <div class="halal-qa-title">5. Masa Berlaku Sertifikat Halal</div>
+                            <div class="halal-qa-sub">Masa berlaku dokumen sertifikat halal masih aktif dan sah</div>
+                        </div>
+                        <div class="segmented-toggle">
+                            <button type="button" class="segmented-toggle-btn {{ $qc->sertifikat_halal_berlaku_st ? 'active ok' : '' }}" id="btnBerlakuYa" onclick="setHalalToggle('sertifikat_berlaku', 1)">
+                                <span>✔</span> <span>Berlaku</span>
+                            </button>
+                            <button type="button" class="segmented-toggle-btn {{ !$qc->sertifikat_halal_berlaku_st ? 'active danger' : '' }}" id="btnBerlakuTidak" onclick="setHalalToggle('sertifikat_berlaku', 0)">
+                                <span>✖</span> <span>Kadaluarsa</span>
+                            </button>
+                        </div>
+                        <input type="hidden" name="sertifikat_halal_berlaku_st" id="input_sertifikat_berlaku" value="{{ old('sertifikat_halal_berlaku_st', $qc->sertifikat_halal_berlaku_st ? 1 : 0) }}">
+                    </div>
+                    <input type="text" name="komentar_berlaku" value="{{ old('komentar_berlaku', $qc->komentar_berlaku) }}" class="form-control" placeholder="Komentar Validitas : -" style="font-size: 0.825rem;">
+                </div>
+            </div>
+        </div>
+
+        {{-- ========================================================================= --}}
+        {{-- KARTU 3: PENGUJIAN MUTU FISIK BAHAN PENOLONG & CACAT KEMASAN              --}}
+        {{-- ========================================================================= --}}
+        <div class="qc-card-section">
+            <h2 class="qc-card-title">
+                <span>🔬</span> <span>3. Pengujian Mutu Fisik {{ $commodityLabel }} &amp; Cacat Kemasan</span>
+            </h2>
+
+            <div style="display: flex; flex-direction: column; gap: 0.85rem;">
                 {{-- SUBCARD: ISI RAW MATERIAL & KEMASAN STATUS --}}
                 <div class="bp-subcard">
                     <span class="bp-subcard-title">
@@ -424,240 +564,81 @@
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
 
-        {{-- ========================================================================= --}}
-        {{-- CARD 3: VENDOR, PO & ARMADA PENGIRIMAN                                   --}}
-        {{-- ========================================================================= --}}
-        <div class="card" style="border-radius: 14px; border: 1.5px solid #e2e8f0; margin-bottom: 1rem; box-shadow: 0 2px 6px rgba(0,0,0,0.03); background: #ffffff;">
-            <div class="card-header" style="background: #ffffff; padding: 1rem 1.25rem; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;">
-                <div style="display: flex; align-items: center; gap: 0.6rem;">
-                    <span style="font-size: 1.15rem;">🚚</span>
-                    <div>
-                        <h2 style="font-size: 0.95rem; font-weight: 800; color: #0f172a; margin: 0;">3. Rekanan Vendor &amp; Pengiriman</h2>
-                        <span style="font-size: 0.72rem; color: #64748b;">Referensi Purchase Order, Surat Jalan &amp; Truk Armada</span>
-                    </div>
-                </div>
-                <span style="font-size: 0.72rem; font-weight: 800; background: #ede9fe; color: #6d28d9; padding: 2px 8px; border-radius: 6px;">
-                    Logistik
-                </span>
-            </div>
-
-            <div style="padding: 1.15rem 1.25rem; display: flex; flex-direction: column; gap: 0.9rem;">
-                {{-- Vendor Supplier --}}
+                {{-- SAMPEL DIPERIKSA --}}
                 <div class="form-group" style="margin-bottom: 0;">
-                    <label class="qc-field-label">Mitra Vendor Supplier <span style="color:#ef4444;">*</span></label>
-                    <select name="supplier_id" id="supplierSelect" class="form-control" style="font-weight: 800; color: #0f172a;" required onchange="onSupplierChanged(this)">
-                        @foreach ($filteredSuppliers as $s)
-                            <option value="{{ $s->supplier_id }}" {{ $s->supplier_id == $qc->supplier_id ? 'selected' : '' }}>
-                                {{ $s->supplier_nm }} ({{ $s->supplier_cd }})
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-
-                {{-- Referensi PO & Gudang Bongkar --}}
-                <div class="qc-grid-2col">
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label class="qc-field-label">Referensi PO {{ $curKomoditas }} <span style="font-size: 0.72rem; color: #64748b;">(Opsional)</span></label>
-                        <select name="po_id" id="poSelect" class="form-control" style="font-weight: 700;">
-                            <option value="">-- Non-PO / Kiriman Langsung --</option>
-                            @foreach ($filteredPos as $p)
-                                <option value="{{ $p->po_id }}" data-supplier-id="{{ $p->supplier_id }}" {{ $p->po_id == $qc->po_id ? 'selected' : '' }}>
-                                    {{ $p->po_no }} &bull; {{ $p->supplier?->supplier_nm }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label class="qc-field-label">Gudang Bongkar Muat <span style="color:#ef4444;">*</span></label>
-                        <select name="gudang_id" class="form-control" style="font-weight: 800;" required>
-                            @foreach ($gudangs as $g)
-                                <option value="{{ $g->gudang_id }}" {{ $g->gudang_id == $qc->gudang_id ? 'selected' : '' }}>
-                                    {{ $g->display_name ?? $g->gudang_nm }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-                </div>
-
-                {{-- Pabrik Produsen & Negara --}}
-                <div class="qc-grid-2col">
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label class="qc-field-label">Pabrik Produsen Asal</label>
-                        <input type="text" name="nama_produsen" value="{{ old('nama_produsen', $qc->nama_produsen ?: ($qc->supplier?->supplier_nm ?? '')) }}" class="form-control" style="font-weight: 700;">
-                    </div>
-
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label class="qc-field-label">Negara Produsen</label>
-                        <input type="text" name="negara_produsen" value="{{ old('negara_produsen', $qc->negara_produsen ?: 'Indonesia') }}" class="form-control" style="font-weight: 700;">
-                    </div>
-                </div>
-
-                {{-- No DO / Surat Jalan & Plat Truk --}}
-                <div class="qc-grid-2col">
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label class="qc-field-label">No. Surat Jalan / DO</label>
-                        <input type="text" name="nomor_do" value="{{ old('nomor_do', $qc->nomor_do ?: $qc->surat_jalan_supplier) }}" class="form-control" style="font-weight: 800; color: #0f172a;">
-                    </div>
-
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label class="qc-field-label">Plat Nomor Truk</label>
-                        <input type="text" name="plat_nomor_truk" value="{{ old('plat_nomor_truk', $qc->plat_nomor_truk) }}" class="form-control" style="font-weight: 800; text-transform: uppercase;">
-                    </div>
-                </div>
-
-                {{-- Nama Sopir & Tanggal Periksa --}}
-                <div class="qc-grid-2col">
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label class="qc-field-label">Nama Pengemudi / Sopir</label>
-                        <input type="text" name="sopir_nama" value="{{ old('sopir_nama', $qc->sopir_nama) }}" class="form-control" style="font-weight: 700;">
-                    </div>
-
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label class="qc-field-label">Waktu Periksa Lapangan</label>
-                        <input type="datetime-local" name="tgl_periksa" value="{{ old('tgl_periksa', $qc->tgl_periksa ? $qc->tgl_periksa->format('Y-m-d\TH:i') : now()->format('Y-m-d\TH:i')) }}" class="form-control" style="font-weight: 700;">
+                    <label class="qc-field-label">Sampel Diperiksa (Gram) <span style="font-size: 0.72rem; color: #7c3aed;">(Standar HACCP: 200 gr)</span></label>
+                    <div class="input-suffix-wrap">
+                        <input type="number" step="any" min="1" name="jumlah_sample_gr" value="{{ old('jumlah_sample_gr', $qc->jumlah_sample_gr ?: ($firstDetail?->jumlah_sample_gr ?: 200)) }}" class="form-control" style="font-weight: 800; color: #7c3aed;">
+                        <span class="input-suffix-text">gr</span>
                     </div>
                 </div>
             </div>
         </div>
 
         {{-- ========================================================================= --}}
-        {{-- CARD 4: AUDIT SISTEM JAMINAN HALAL (SJH) & TRANSPORTASI                  --}}
+        {{-- KARTU 4: KUANTITAS KEDATANGAN & REKONSILIASI TIMBANGAN                     --}}
         {{-- ========================================================================= --}}
-        <div class="card" style="border-radius: 14px; border: 1.5px solid #ddd6fe; margin-bottom: 1rem; box-shadow: 0 2px 6px rgba(0,0,0,0.03); background: #ffffff;">
-            <div class="card-header" style="background: #ffffff; padding: 1rem 1.25rem; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;">
-                <div style="display: flex; align-items: center; gap: 0.6rem;">
-                    <span style="font-size: 1.15rem;">🛡️</span>
+        <div class="qc-card-section">
+            <h2 class="qc-card-title">
+                <span>⚖️</span> <span>4. Kuantitas Kedatangan &amp; Rekonsiliasi Timbangan</span>
+            </h2>
+
+            <div style="display: flex; flex-direction: column; gap: 0.85rem;">
+                {{-- Grid Kuantitas: Gross & Reject --}}
+                <div class="qc-grid-2col">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label class="qc-field-label">Gross Timbang Pabrik (KG) <span style="color:#ef4444;">*</span></label>
+                        <div class="input-suffix-wrap">
+                            <input type="number" step="any" min="0" name="items[{{ $qcdtlId }}][qty_timbang_gross]" id="editQtyGross" value="{{ old('items.'.$qcdtlId.'.qty_timbang_gross', $totalGross) }}" class="form-control" style="font-size: 1.15rem; font-weight: 900; color: #0f172a;" required oninput="calcBpEditNetto()">
+                            <span class="input-suffix-text">KG</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label class="qc-field-label">Reject / Rusak (KG)</label>
+                        <div class="input-suffix-wrap">
+                            <input type="number" step="any" min="0" name="items[{{ $qcdtlId }}][qty_reject]" id="editQtyReject" value="{{ old('items.'.$qcdtlId.'.qty_reject', $totalReject) }}" class="form-control" style="font-size: 1.15rem; font-weight: 900; color: #dc2626;" oninput="calcBpEditNetto()">
+                            <span class="input-suffix-text">KG</span>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Netto Hasil Lolos QC (Live Preview) --}}
+                <div style="background: #faf5ff; border: 1.5px solid #ddd6fe; border-radius: 12px; padding: 0.85rem 1rem; display: flex; align-items: center; justify-content: space-between;">
                     <div>
-                        <h2 style="font-size: 0.95rem; font-weight: 800; color: #581c87; margin: 0;">4. Standar Transportasi &amp; Jaminan Halal</h2>
-                        <span style="font-size: 0.72rem; color: #6d28d9; font-weight: 700;">Sistem Jaminan Halal (SJH) &amp; Higiene Truk</span>
+                        <div style="font-size: 0.72rem; font-weight: 800; color: #6d28d9; text-transform: uppercase; letter-spacing: 0.04em;">
+                            Netto Lolos Inspeksi QC
+                        </div>
+                        <div style="font-size: 0.72rem; color: #64748b;">
+                            (Gross - Reject = Netto lolos)
+                        </div>
                     </div>
-                </div>
-                <span style="font-size: 0.72rem; font-weight: 800; background: #dcfce7; color: #166534; padding: 2px 8px; border-radius: 6px;">
-                    AUDIT SJH
-                </span>
-            </div>
-
-            <div style="padding: 1.15rem 1.25rem; display: flex; flex-direction: column; gap: 1rem;">
-                {{-- 1. Kebersihan Armada --}}
-                <div class="halal-qa-row">
-                    <div class="halal-qa-header">
-                        <div class="halal-qa-info">
-                            <div class="halal-qa-title">1. Kebersihan Armada &amp; Bebas Najis / Cemaran</div>
-                            <div class="halal-qa-sub">Truk bersih dari oli, air kotor, bau menyengat atau zat kimia berbahaya</div>
-                        </div>
-                        <div class="segmented-toggle">
-                            <button type="button" class="segmented-toggle-btn {{ $qc->bebas_cemaran_st ? 'active ok' : '' }}" id="btnCemarBebas" onclick="setHalalToggle('bebas_cemaran', 1)">
-                                <span>✔</span> <span>Bebas</span>
-                            </button>
-                            <button type="button" class="segmented-toggle-btn {{ !$qc->bebas_cemaran_st ? 'active danger' : '' }}" id="btnCemarAda" onclick="setHalalToggle('bebas_cemaran', 0)">
-                                <span>✖</span> <span>Tercemar</span>
-                            </button>
-                        </div>
-                        <input type="hidden" name="bebas_cemaran_st" id="input_bebas_cemaran" value="{{ old('bebas_cemaran_st', $qc->bebas_cemaran_st ? 1 : 0) }}">
-                    </div>
-                    <input type="text" name="komentar_transportasi" value="{{ old('komentar_transportasi', $qc->komentar_transportasi) }}" class="form-control" placeholder="Komentar armada : -" style="font-size: 0.825rem;">
-                </div>
-
-                {{-- 2. Mengangkut Barang Haram --}}
-                <div class="halal-qa-row">
-                    <div class="halal-qa-header">
-                        <div class="halal-qa-info">
-                            <div class="halal-qa-title">2. Pemisahan Logistik Barang Haram</div>
-                            <div class="halal-qa-sub">Armada tidak pernah digunakan bersamaan untuk mengangkut barang non-halal</div>
-                        </div>
-                        <div class="segmented-toggle">
-                            <button type="button" class="segmented-toggle-btn {{ !$qc->angkut_barang_haram_st ? 'active ok' : '' }}" id="btnHaramTidak" onclick="setHalalToggle('angkut_barang_haram', 0)">
-                                <span>✔</span> <span>Tidak</span>
-                            </button>
-                            <button type="button" class="segmented-toggle-btn {{ $qc->angkut_barang_haram_st ? 'active danger' : '' }}" id="btnHaramYa" onclick="setHalalToggle('angkut_barang_haram', 1)">
-                                <span>✖</span> <span>Ya (Tercampur)</span>
-                            </button>
-                        </div>
-                        <input type="hidden" name="angkut_barang_haram_st" id="input_angkut_barang_haram" value="{{ old('angkut_barang_haram_st', $qc->angkut_barang_haram_st ? 1 : 0) }}">
+                    <div id="labelBpEditNetto" style="font-size: 1.4rem; font-weight: 900; color: #7c3aed;">
+                        {{ number_format($totalNetto, 2, ',', '.') }} KG
                     </div>
                 </div>
 
-                {{-- 3. Terdaftar LPPOM MUI / BPJPH --}}
-                <div class="halal-qa-row">
-                    <div class="halal-qa-header">
-                        <div class="halal-qa-info">
-                            <div class="halal-qa-title">3. Pendaftaran di LPPOM MUI / BPJPH</div>
-                            <div class="halal-qa-sub">Bahan penolong resmi terdaftar dalam approved list bahan halal</div>
-                        </div>
-                        <div class="segmented-toggle">
-                            <button type="button" class="segmented-toggle-btn {{ $qc->terdaftar_lppom_st ? 'active ok' : '' }}" id="btnLppomYa" onclick="setHalalToggle('terdaftar_lppom', 1)">
-                                <span>✔</span> <span>Ya</span>
-                            </button>
-                            <button type="button" class="segmented-toggle-btn {{ !$qc->terdaftar_lppom_st ? 'active danger' : '' }}" id="btnLppomTidak" onclick="setHalalToggle('terdaftar_lppom', 0)">
-                                <span>✖</span> <span>Tidak</span>
-                            </button>
-                        </div>
-                        <input type="hidden" name="terdaftar_lppom_st" id="input_terdaftar_lppom" value="{{ old('terdaftar_lppom_st', $qc->terdaftar_lppom_st ? 1 : 0) }}">
+                {{-- Jumlah di Surat Jalan (DO) --}}
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="qc-field-label">Jumlah di Surat Jalan (DO)</label>
+                    <div class="input-suffix-wrap">
+                        <input type="number" step="any" min="0" name="jumlah_surat_jalan" value="{{ old('jumlah_surat_jalan', $qc->jumlah_surat_jalan ?? $totalGross) }}" class="form-control" style="font-weight: 800;">
+                        <span class="input-suffix-text">KG</span>
                     </div>
-                    <input type="text" name="komentar_lppom" value="{{ old('komentar_lppom', $qc->komentar_lppom) }}" class="form-control" placeholder="Komentar LPPOM : -" style="font-size: 0.825rem;">
-                </div>
-
-                {{-- 4. Mempunyai Sertifikat Halal --}}
-                <div class="halal-qa-row">
-                    <div class="halal-qa-header">
-                        <div class="halal-qa-info">
-                            <div class="halal-qa-title">4. Kepemilikan Sertifikat Halal Produsen</div>
-                            <div class="halal-qa-sub">Salinan sertifikat halal resmi terlampir pada dokumen vendor</div>
-                        </div>
-                        <div class="segmented-toggle">
-                            <button type="button" class="segmented-toggle-btn {{ $qc->ada_sertifikat_halal_st ? 'active ok' : '' }}" id="btnSertifikatYa" onclick="setHalalToggle('ada_sertifikat', 1)">
-                                <span>✔</span> <span>Ada</span>
-                            </button>
-                            <button type="button" class="segmented-toggle-btn {{ !$qc->ada_sertifikat_halal_st ? 'active danger' : '' }}" id="btnSertifikatTidak" onclick="setHalalToggle('ada_sertifikat', 0)">
-                                <span>✖</span> <span>Tidak Ada</span>
-                            </button>
-                        </div>
-                        <input type="hidden" name="ada_sertifikat_halal_st" id="input_ada_sertifikat" value="{{ old('ada_sertifikat_halal_st', $qc->ada_sertifikat_halal_st ? 1 : 0) }}">
-                    </div>
-                    <input type="text" name="komentar_sertifikat" value="{{ old('komentar_sertifikat', $qc->komentar_sertifikat) }}" class="form-control" placeholder="Komentar Sertifikat : -" style="font-size: 0.825rem;">
-                </div>
-
-                {{-- 5. Masa Berlaku Sertifikat Halal --}}
-                <div class="halal-qa-row">
-                    <div class="halal-qa-header">
-                        <div class="halal-qa-info">
-                            <div class="halal-qa-title">5. Masa Berlaku Sertifikat Halal</div>
-                            <div class="halal-qa-sub">Masa berlaku dokumen sertifikat halal masih aktif dan sah</div>
-                        </div>
-                        <div class="segmented-toggle">
-                            <button type="button" class="segmented-toggle-btn {{ $qc->sertifikat_halal_berlaku_st ? 'active ok' : '' }}" id="btnBerlakuYa" onclick="setHalalToggle('sertifikat_berlaku', 1)">
-                                <span>✔</span> <span>Berlaku</span>
-                            </button>
-                            <button type="button" class="segmented-toggle-btn {{ !$qc->sertifikat_halal_berlaku_st ? 'active danger' : '' }}" id="btnBerlakuTidak" onclick="setHalalToggle('sertifikat_berlaku', 0)">
-                                <span>✖</span> <span>Kadaluarsa</span>
-                            </button>
-                        </div>
-                        <input type="hidden" name="sertifikat_halal_berlaku_st" id="input_sertifikat_berlaku" value="{{ old('sertifikat_halal_berlaku_st', $qc->sertifikat_halal_berlaku_st ? 1 : 0) }}">
-                    </div>
-                    <input type="text" name="komentar_berlaku" value="{{ old('komentar_berlaku', $qc->komentar_berlaku) }}" class="form-control" placeholder="Komentar Validitas : -" style="font-size: 0.825rem;">
                 </div>
             </div>
         </div>
 
         {{-- ========================================================================= --}}
-        {{-- CARD 5: KEPUTUSAN, OTORISASI & CATATAN QC                                --}}
+        {{-- KARTU 5: KEPUTUSAN, OTORISASI & CATATAN QC                                --}}
         {{-- ========================================================================= --}}
-        <div class="card" style="border-radius: 14px; border: 1.5px solid #e2e8f0; margin-bottom: 1.5rem; box-shadow: 0 2px 6px rgba(0,0,0,0.03); background: #ffffff;">
-            <div class="card-header" style="background: #ffffff; padding: 1rem 1.25rem; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;">
-                <div style="display: flex; align-items: center; gap: 0.6rem;">
-                    <span style="font-size: 1.15rem;">💬</span>
-                    <div>
-                        <h2 style="font-size: 0.95rem; font-weight: 800; color: #0f172a; margin: 0;">5. Disposisi Keputusan &amp; Tanda Tangan</h2>
-                        <span style="font-size: 0.72rem; color: #64748b;">Persetujuan bongkar &amp; otorisasi laboratorium</span>
-                    </div>
-                </div>
-            </div>
+        <div class="qc-card-section">
+            <h2 class="qc-card-title">
+                <span>💬</span> <span>5. Disposisi Keputusan &amp; Catatan QC</span>
+            </h2>
 
-            <div style="padding: 1.15rem 1.25rem; display: flex; flex-direction: column; gap: 1rem;">
+            <div style="display: flex; flex-direction: column; gap: 0.85rem;">
                 {{-- PILIHAN KEPUTUSAN TERIMA VS TOLAK (STANDAR ENTERPRISE QC DISPOSISI GRID) --}}
                 @php
                     $isTolakAwal = old('items.'.$qcdtlId.'.keputusan_qc', $firstDetail?->keputusan_qc ?? '') === 'REJECT_TOTAL' || $qc->status_qc === 'DITOLAK_TOTAL';
@@ -706,7 +687,7 @@
                 </div>
 
                 {{-- CATATAN UMUM & HASIL ANALISA --}}
-                <div>
+                <div class="form-group" style="margin-bottom: 0;">
                     <label class="qc-field-label">Catatan Pengujian Bahan Penolong</label>
                     <textarea name="catatan_umum" rows="3" class="form-control" placeholder="Contoh: Tekstur kering sesuai standar HACCP, kemasan utuh bebas bocor..." style="font-size: 0.85rem;">{{ old('catatan_umum', $firstDetail?->catatan_dtl ?: $qc->catatan_umum) }}</textarea>
                 </div>
@@ -760,5 +741,6 @@
 @endsection
 
 @push('scripts')
+    <script src="{{ asset('js/gudang/qc/mobile/qc-edit.js') }}"></script>
     <script src="{{ asset('js/gudang/qc/bahan-penolong/bahan-penolong-edit.js') }}"></script>
 @endpush

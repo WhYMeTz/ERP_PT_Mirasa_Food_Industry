@@ -176,6 +176,38 @@
                             📦 Batch: {{ $qc->batch_no }}
                         </span>
                     @endif
+                @elseif ($kat === 'KARTON')
+                    @php
+                        $gADtl = $qc->details->firstWhere('grade_cd', 'A');
+                        $gBDtl = $qc->details->firstWhere('grade_cd', 'B');
+                        $hasA = $gADtl && (float)$gADtl->qty_netto_lolos > 0;
+                        $hasB = $gBDtl && (float)$gBDtl->qty_netto_lolos > 0;
+                    @endphp
+                    @if ($hasA && $hasB)
+                        <span style="font-size: 0.75rem; font-weight: 800; background: #dcfce7; color: #15803d; padding: 0.2rem 0.55rem; border-radius: 12px; border: 1px solid #86efac;">
+                            🟢 Gr. A: {{ number_format((float)$gADtl->qty_netto_lolos, 0, ',', '.') }} pcs
+                        </span>
+                        <span style="font-size: 0.75rem; font-weight: 800; background: #fef3c7; color: #b45309; padding: 0.2rem 0.55rem; border-radius: 12px; border: 1px solid #fde68a;">
+                            🟡 Gr. B: {{ number_format((float)$gBDtl->qty_netto_lolos, 0, ',', '.') }} pcs
+                        </span>
+                    @elseif ($hasB)
+                        <span style="font-size: 0.75rem; font-weight: 800; background: #fef3c7; color: #b45309; padding: 0.2rem 0.55rem; border-radius: 12px; border: 1px solid #fde68a;">
+                            🟡 Grade B (Puteran)
+                        </span>
+                    @elseif ($qc->status_qc === 'DITOLAK_TOTAL')
+                        <span style="font-size: 0.75rem; font-weight: 800; background: #fee2e2; color: #991b1b; padding: 0.2rem 0.55rem; border-radius: 12px; border: 1px solid #fca5a5;">
+                            ❌ Afkir
+                        </span>
+                    @else
+                        <span style="font-size: 0.75rem; font-weight: 800; background: #dcfce7; color: #15803d; padding: 0.2rem 0.55rem; border-radius: 12px; border: 1px solid #86efac;">
+                            🟢 Grade A (Baru)
+                        </span>
+                    @endif
+                    @if ($qc->batch_no)
+                        <span style="font-size: 0.75rem; font-weight: 800; background: #f8fafc; color: #334155; padding: 0.2rem 0.55rem; border-radius: 12px; border: 1px solid #cbd5e1;">
+                            📦 Batch: {{ $qc->batch_no }}
+                        </span>
+                    @endif
                 @endif
                 @if ($qc->terima)
                     <a href="{{ route('gudang.terima.show', $qc->terima->terima_id) }}" style="font-size: 0.75rem; font-weight: 800; background: #dcfce7; color: #15803d; padding: 0.2rem 0.55rem; border-radius: 12px; text-decoration: none; border: 1px solid #86efac;">
@@ -205,9 +237,26 @@
                 @endif
 
                 @if (Auth::user()?->canEditQcWeb() && !$isLocked)
-                    <a href="{{ route('qc.inbound.edit', [$qc->qc_id, 'ref' => 'detail']) }}" class="btn btn-sm" style="background: #0284c7; color: #ffffff; border: none; font-weight: 800; border-radius: 8px; box-shadow: 0 2px 4px rgba(2, 132, 199, 0.3);">
-                        ✏️ Edit Seluruh Dokumen
-                    </a>
+                    @php
+                        $p1Singkong = ($kat === 'SINGKONG') ? (($qc->tahap_uji === 'PENGUJIAN_2') ? ($qc->parentQc ?: $qc) : $qc) : null;
+                        $p2Singkong = ($kat === 'SINGKONG') ? (($qc->tahap_uji === 'PENGUJIAN_2') ? $qc : ($qc->pengujian2List->first() ?? null)) : null;
+                    @endphp
+                    @if ($kat === 'SINGKONG' && $p2Singkong)
+                        <div style="display: inline-flex; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.08); overflow: hidden; border: 1px solid #cbd5e1;">
+                            <a href="{{ route('qc.inbound.edit', [$p1Singkong->qc_id, 'ref' => 'detail']) }}" class="btn btn-sm" style="background: #0284c7; color: #ffffff; border: none; font-weight: 800; border-radius: 0; padding: 0.4rem 0.75rem; display: inline-flex; align-items: center; gap: 4px;" title="Koreksi parameter kedatangan truk di gerbang (Pengujian 1)">
+                                <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                <span>✏️ Edit Uji 1 (Gerbang)</span>
+                            </a>
+                            <a href="{{ route('qc.inbound.edit', [$p2Singkong->qc_id, 'ref' => 'detail']) }}" class="btn btn-sm" style="background: #7e22ce; color: #ffffff; border: none; font-weight: 800; border-radius: 0; padding: 0.4rem 0.75rem; border-left: 1px solid rgba(255,255,255,0.3); display: inline-flex; align-items: center; gap: 4px;" title="Koreksi parameter sisa muatan bak & uji fryer produksi (Pengujian 2)">
+                                <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                <span>🍟 Edit Uji 2 (Produksi)</span>
+                            </a>
+                        </div>
+                    @else
+                        <a href="{{ route('qc.inbound.edit', [$qc->qc_id, 'ref' => 'detail']) }}" class="btn btn-sm" style="background: #0284c7; color: #ffffff; border: none; font-weight: 800; border-radius: 8px; box-shadow: 0 2px 4px rgba(2, 132, 199, 0.3);">
+                            ✏️ Edit Seluruh Dokumen
+                        </a>
+                    @endif
                 @endif
 
                 <button type="button" onclick="window.print()" class="btn btn-primary btn-sm" style="background: #1e293b; border: none; border-radius: 8px; font-weight: 700;">

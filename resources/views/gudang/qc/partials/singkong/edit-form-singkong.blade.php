@@ -238,9 +238,6 @@
                     <option value="B" {{ old("items.{$qcdtlId}.grade_cd", $firstDetail?->grade_cd) === 'B' ? 'selected' : '' }} style="color: #b45309;">
                         🟡 Grade B (Standar)
                     </option>
-                    <option value="C" {{ old("items.{$qcdtlId}.grade_cd", $firstDetail?->grade_cd) === 'C' ? 'selected' : '' }} style="color: #64748b;">
-                        ⚪ Grade C (Campur)
-                    </option>
                     <option value="REJECT" {{ old("items.{$qcdtlId}.grade_cd", $firstDetail?->grade_cd) === 'REJECT' ? 'selected' : '' }} style="color: #dc2626;">
                         🔴 REJECT (Afkir / Tolak)
                     </option>

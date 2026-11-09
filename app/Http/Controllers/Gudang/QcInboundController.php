@@ -141,6 +141,7 @@ class QcInboundController extends Controller
 
         // PO aktif yang siap diterima (APPROVED atau PARTIAL) yang sesuai dengan akses perusahaan akun
         $allowedGudangIds = $user->getAllowedGudangIds();
+        $selectedPoId = $request->input('po_id');
         $pos = DatPoHdr::with(['supplier', 'details.barang', 'details.qcDetails.header'])
             ->where('deleted_st', false)
             ->whereIn('status_cd', ['APPROVED', 'PARTIAL'])
@@ -148,9 +149,22 @@ class QcInboundController extends Controller
                 $q->whereIn('gudang_id', $allowedGudangIds);
             })
             ->orderBy('po_tgl', 'desc')
-            ->get();
+            ->orderBy('po_id', 'desc')
+            ->get()
+            ->filter(function ($po) use ($selectedPoId) {
+                // Pertahankan PO jika dipilih langsung dari parameter request
+                if ($selectedPoId && $po->po_id == $selectedPoId) {
+                    return true;
+                }
+                // Abaikan jika PO tidak memiliki detail item
+                if ($po->details->isEmpty()) {
+                    return false;
+                }
+                // Hanya tampilkan PO jika MASIH ADA item yang belum selesai diuji QC (sisa_belum_qc_qty > 0)
+                return $po->details->some(fn($d) => $d->sisa_belum_qc_qty > 0);
+            })
+            ->values();
 
-        $selectedPoId = $request->input('po_id');
         $selectedPo = $selectedPoId ? $pos->firstWhere('po_id', $selectedPoId) : null;
 
         // Mendukung Pengujian II Singkong: Ambil data QC asal jika diteruskan via parent_qc_id
@@ -458,6 +472,8 @@ class QcInboundController extends Controller
             'terima',
             'parentQc.details',
             'parentQc.supplier',
+            'pengujian2List.details.barang.satuanDasar',
+            'pengujian2List.supplier',
         ])->where('deleted_st', false)->findOrFail($id);
 
         $user = Auth::user();
@@ -497,7 +513,18 @@ class QcInboundController extends Controller
                 });
             })
             ->orderBy('po_tgl', 'desc')
-            ->get();
+            ->orderBy('po_id', 'desc')
+            ->get()
+            ->filter(function ($po) use ($qc) {
+                if ($qc->po_id && $po->po_id == $qc->po_id) {
+                    return true;
+                }
+                if ($po->details->isEmpty()) {
+                    return false;
+                }
+                return $po->details->some(fn($d) => $d->sisa_belum_qc_qty > 0);
+            })
+            ->values();
 
         $pendingPengujian1 = collect();
         if ($qc->kategori_barang === 'SINGKONG') {

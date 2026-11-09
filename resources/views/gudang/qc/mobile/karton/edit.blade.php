@@ -4,15 +4,18 @@
 @section('hide_bottom_nav', '1')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/gudang/qc/mobile/qc-form.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/gudang/qc/mobile/qc-mobile-detail.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/gudang/qc/karton/karton.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/gudang/qc/karton/karton-detail.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/gudang/qc/mobile/qc-form.css') }}?v={{ filemtime(public_path('css/gudang/qc/mobile/qc-form.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/gudang/qc/mobile/qc-mobile-detail.css') }}?v={{ filemtime(public_path('css/gudang/qc/mobile/qc-mobile-detail.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/gudang/qc/karton/karton.css') }}?v={{ filemtime(public_path('css/gudang/qc/karton/karton.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/gudang/qc/karton/karton-detail.css') }}?v={{ filemtime(public_path('css/gudang/qc/karton/karton-detail.css')) }}">
 @endpush
 
 @php
     $firstDetail = $qc->details->first();
     $qcdtlId = $firstDetail?->qcdtl_id ?? 0;
+    $totalGross = (float) $qc->details->sum('qty_timbang_gross');
+    $totalReject = (float) $qc->details->sum('qty_reject');
+    $totalNetto = (float) $qc->details->sum('qty_netto_lolos');
 
     // Filter daftar PO yang memuat Karton
     $classifyBarang = function ($nm, $cd) {
@@ -49,16 +52,24 @@
         $filteredPos = collect([$qc->po]);
     }
 
-    // Filter Supplier khusus Karton / Non-Petani
-    $filteredSuppliers = $suppliers->filter(function($s) use ($qc) {
+    // Filter Supplier khusus Kemasan / Plastik / Karton
+    $filteredSuppliers = $suppliers->filter(function($s) use ($qc, $filteredPos) {
         if ($s->supplier_id == $qc->supplier_id) return true;
-        $cd = strtoupper($s->supplier_cd ?? '');
-        $isPetani = str_starts_with($cd, 'SKG-') || ($s->jenisSupplier?->jenis_supplier_cd === 'RAW');
-        return !$isPetani;
+        if ($filteredPos->contains('supplier_id', $s->supplier_id)) return true;
+        $jCd = strtoupper($s->jenisSupplier?->jenis_supplier_cd ?? '');
+        $jNm = strtoupper($s->jenisSupplier?->jenis_supplier_nm ?? '');
+        return $jCd === 'KEMASAN' || str_contains($jNm, 'KEMASAN') || str_contains($jNm, 'KARTON') || str_contains($jNm, 'PLASTIK');
     });
     if ($filteredSuppliers->isEmpty()) {
         $filteredSuppliers = $suppliers;
     }
+
+    // Ambil data detail Grade A dan Grade B
+    $gADtl = $qc->details->firstWhere('grade_cd', 'A');
+    $gBDtl = $qc->details->firstWhere('grade_cd', 'B');
+    $valGradeA = (int) ($gADtl?->qty_netto_lolos ?? ($qc->details->first()?->grade_cd === 'A' ? $totalNetto : ($totalGross - $totalReject)));
+    $valGradeB = (int) ($gBDtl?->qty_netto_lolos ?? ($qc->details->first()?->grade_cd === 'B' ? $totalNetto : 0));
+    $valReject = (int) $totalReject;
 
     // Filter Master Barang Karton Box
     $filteredBarangs = $barangs->filter(function($b) use ($classifyBarang, $firstDetail) {
@@ -83,10 +94,6 @@
     $satuanRaw = $firstDetail?->barang?->satuanDasar?->satuan_nm
         ?: ($firstDetail?->barang?->satuanDasar?->satuan_cd ?: 'PCS');
     $satuanDtl = strtoupper(trim($satuanRaw)) === 'BOX' ? 'BOX' : 'PCS';
-
-    $totalGross = (float) $qc->details->sum('qty_timbang_gross');
-    $totalReject = (float) $qc->details->sum('qty_reject');
-    $totalNetto = (float) $qc->details->sum('qty_netto_lolos');
 @endphp
 
 @section('content')
@@ -150,9 +157,10 @@
         <input type="hidden" name="batch_no" value="{{ old('batch_no', $qc->batch_no) }}">
         <input type="hidden" name="tahap_uji" value="PENGUJIAN_1">
         <input type="hidden" name="status_uji_goreng" value="SELESAI">
-        <input type="hidden" name="items[{{ $qcdtlId }}][qcdtl_id]" value="{{ $qcdtlId }}">
-        <input type="hidden" name="items[{{ $qcdtlId }}][podtl_id]" value="{{ $firstDetail?->podtl_id }}">
-        <input type="hidden" name="items[{{ $qcdtlId }}][refraksi_persen]" value="0">
+        <input type="hidden" id="editQcdtlIdA" value="{{ $gADtl?->qcdtl_id ?? ($firstDetail?->grade_cd === 'A' ? $firstDetail->qcdtl_id : '') }}">
+        <input type="hidden" id="editQcdtlIdB" value="{{ $gBDtl?->qcdtl_id ?? ($firstDetail?->grade_cd === 'B' ? $firstDetail->qcdtl_id : '') }}">
+        <input type="hidden" id="editFirstQcdtlId" value="{{ $firstDetail?->qcdtl_id ?? '' }}">
+        <input type="hidden" id="editFirstPodtlId" value="{{ $firstDetail?->podtl_id ?? '' }}">
 
         {{-- KARTU 1: INFO PENGIRIMAN, PO & VENDOR KARTON --}}
         <div class="qc-card-section">
@@ -169,7 +177,7 @@
                             PO Karton ({{ $filteredPos->count() }} Tersedia)
                         </span>
                     </div>
-                    <select name="po_id" class="form-control" style="width: 100%; border-radius: 8px; font-weight: 700;">
+                    <select name="po_id" id="editPoSelect" class="form-control" style="width: 100%; border-radius: 8px; font-weight: 700;" onchange="onEditPoChanged(this)">
                         <option value="">-- Tanpa PO / Kiriman Langsung Karton --</option>
                         @foreach ($filteredPos as $po)
                             @php
@@ -177,21 +185,27 @@
                                 $terimaIni = ($po->po_id == $qc->po_id && $qc->terima) ? (float) $qc->terima->details->sum('terima_qty') : 0;
                                 $sudahMsk = max(0, (float) $po->details->sum('terima_qty') - $terimaIni);
                                 $sisaKta = max(0, $totPesan - $sudahMsk);
+                                $poBarangId = $po->details->first()?->barang_id;
                             @endphp
-                            <option value="{{ $po->po_id }}" {{ old('po_id', $qc->po_id) == $po->po_id ? 'selected' : '' }}>
+                            <option value="{{ $po->po_id }}"
+                                    data-supplier-id="{{ $po->supplier_id }}"
+                                    data-supplier-nm="{{ $po->supplier?->supplier_nm }}"
+                                    data-gudang-id="{{ $po->gudang_id }}"
+                                    data-barang-id="{{ $poBarangId }}"
+                                    {{ old('po_id', $qc->po_id) == $po->po_id ? 'selected' : '' }}>
                                 {{ $po->po_no }} - {{ $po->supplier?->supplier_nm }} (Sisa: {{ number_format($sisaKta, 0, ',', '.') }})
                             </option>
                         @endforeach
                     </select>
                 </div>
 
-                {{-- MITRA SUPPLIER DENGAN QUICK SEARCH --}}
+                {{-- MITRA SUPPLIER (FILTER KHUSUS KEMASAN) --}}
                 <div>
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
-                        <label class="qc-info-label" style="font-weight: 700; margin: 0;">Mitra Supplier Vendor *</label>
-                        <input type="text" placeholder="Cari vendor..." oninput="filterKartonSuppliers(this.value)" style="width: 120px; font-size: 0.72rem; padding: 2px 6px; border: 1px solid #cbd5e1; border-radius: 4px;">
+                        <label class="qc-info-label" style="font-weight: 700; margin-bottom: 0; display: block;">Mitra Supplier Vendor *</label>
+                        <span id="badgeEditLockSupplier" class="badge-po-locked" style="{{ $qc->po_id ? 'display: inline-flex;' : 'display: none;' }} font-size: 0.7rem; font-weight: 800; color: #166534; background: #dcfce7; padding: 2px 8px; border-radius: 6px; border: 1px solid #bbf7d0;">🔒 Terkunci ({{ $qc->supplier?->supplier_nm }})</span>
                     </div>
-                    <select name="supplier_id" id="editSupplierSelect" class="form-control" style="width: 100%; border-radius: 8px; font-weight: 700;" required onchange="onEditSupplierChange(this)">
+                    <select name="supplier_id" id="editSupplierSelect" class="form-control" style="width: 100%; border-radius: 8px; font-weight: 700; {{ $qc->po_id ? 'pointer-events: none; background-color: #f1f5f9; border-color: #cbd5e1;' : '' }}" required onchange="onEditSupplierChange(this)" tabindex="{{ $qc->po_id ? '-1' : '0' }}">
                         @foreach ($filteredSuppliers as $sup)
                             <option value="{{ $sup->supplier_id }}" data-supplier-nm="{{ $sup->supplier_nm }}" {{ old('supplier_id', $qc->supplier_id) == $sup->supplier_id ? 'selected' : '' }}>
                                 {{ $sup->supplier_nm }} ({{ $sup->supplier_cd }})
@@ -202,8 +216,11 @@
 
                 {{-- GUDANG BONGKAR MUAT --}}
                 <div>
-                    <label class="qc-info-label" style="font-weight: 700; margin-bottom: 0.25rem; display: block;">Gudang Bongkar Muat *</label>
-                    <select name="gudang_id" class="form-control" style="width: 100%; border-radius: 8px; font-weight: 700;" required>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+                        <label class="qc-info-label" style="font-weight: 700; margin-bottom: 0; display: block;">Gudang Bongkar Muat *</label>
+                        <span id="badgeEditLockGudang" class="badge-po-locked" style="{{ $qc->po_id ? 'display: inline-flex;' : 'display: none;' }} font-size: 0.7rem; font-weight: 800; color: #166534; background: #dcfce7; padding: 2px 8px; border-radius: 6px; border: 1px solid #bbf7d0;">🔒 Terkunci dari PO</span>
+                    </div>
+                    <select name="gudang_id" id="editGudangSelect" class="form-control" style="width: 100%; border-radius: 8px; font-weight: 700; {{ $qc->po_id ? 'pointer-events: none; background-color: #f1f5f9; border-color: #cbd5e1;' : '' }}" required tabindex="{{ $qc->po_id ? '-1' : '0' }}">
                         @foreach ($gudangs as $g)
                             <option value="{{ $g->gudang_id }}" {{ old('gudang_id', $qc->gudang_id) == $g->gudang_id ? 'selected' : '' }}>
                                 {{ $g->gudang_nm }} ({{ $g->gudang_cd }})
@@ -214,10 +231,13 @@
 
                 {{-- PILIH BARANG (KOMODITAS KARTON BOX) --}}
                 <div style="background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 10px; padding: 0.75rem;">
-                    <label class="qc-info-label" style="font-weight: 800; color: #92400e; margin-bottom: 0.35rem; display: block;">
-                        Komoditas Karton Box yang Diperiksa *
-                    </label>
-                    <select name="items[{{ $qcdtlId }}][barang_id]" id="selectEditBarang" class="form-control" style="width: 100%; border-radius: 8px; font-weight: 800; color: #0f172a;" required onchange="onEditBarangChanged(this)">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                        <label class="qc-info-label" style="font-weight: 800; color: #92400e; margin-bottom: 0; display: block;">
+                            Komoditas Karton Box yang Diperiksa *
+                        </label>
+                        <span id="badgeEditLockBarang" class="badge-po-locked" style="{{ $qc->po_id ? 'display: inline-flex;' : 'display: none;' }} font-size: 0.7rem; font-weight: 800; color: #166534; background: #dcfce7; padding: 2px 8px; border-radius: 6px; border: 1px solid #bbf7d0;">🔒 Terkunci dari PO</span>
+                    </div>
+                    <select name="items[{{ $qcdtlId }}][barang_id]" id="editBarangSelect" class="form-control" style="width: 100%; border-radius: 8px; font-weight: 800; color: #0f172a; {{ $qc->po_id ? 'pointer-events: none; background-color: #f1f5f9; border-color: #cbd5e1;' : '' }}" required onchange="onEditBarangChanged(this)" tabindex="{{ $qc->po_id ? '-1' : '0' }}">
                         @foreach ($filteredBarangs as $b)
                             <option value="{{ $b->barang_id }}"
                                     data-nama="{{ $b->barang_nm }}"
@@ -227,16 +247,11 @@
                         @endforeach
                     </select>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-top: 0.5rem;">
-                        <div>
-                            <label class="qc-info-label" style="font-size: 0.75rem; margin-bottom: 0.15rem; display: block;">Nama Jenis (Varian Box)</label>
-                            <input type="text" name="nama_jenis" id="editNamaJenis" value="{{ old('nama_jenis', $qc->nama_jenis ?: $firstDetail?->barang?->barang_nm) }}" class="form-control" placeholder="Contoh: Karton Box Corrugated" style="font-size: 0.8rem; font-weight: 700;">
-                        </div>
-                        <div>
-                            <label class="qc-info-label" style="font-size: 0.75rem; margin-bottom: 0.15rem; display: block;">Pabrik Produsen</label>
-                            <input type="text" name="nama_produsen" id="editNamaProdusen" value="{{ old('nama_produsen', $qc->nama_produsen ?: $qc->supplier?->supplier_nm) }}" class="form-control" placeholder="Nama Pabrik Box" style="font-size: 0.8rem; font-weight: 700;">
-                        </div>
+                    <div style="margin-top: 0.5rem;">
+                        <label class="qc-info-label" style="font-size: 0.75rem; margin-bottom: 0.15rem; display: block;">Nama Jenis (Varian Box)</label>
+                        <input type="text" name="nama_jenis" id="editNamaJenis" value="{{ old('nama_jenis', $qc->nama_jenis ?: $firstDetail?->barang?->barang_nm) }}" class="form-control" placeholder="Contoh: Karton Box Corrugated" style="font-size: 0.8rem; font-weight: 700;">
                     </div>
+                    <input type="hidden" name="negara_produsen" value="{{ old('negara_produsen', $qc->negara_produsen ?? 'Indonesia') }}">
                 </div>
 
                 {{-- LOGISTIK ARMADA PENGIRIMAN --}}
@@ -579,141 +594,175 @@
             </div>
         </div>
 
-        {{-- KARTU 4: HASIL PEMERIKSAAN KUANTITAS & DISPOSISI GUDANG --}}
+        {{-- KARTU 4: HASIL PEMERIKSAAN KUANTITAS & SPLIT GRADE MUTU --}}
         <div class="qc-card-section">
             <h2 class="qc-card-title">
-                <span>⚖️</span> <span>4. Kuantitas Hasil Uji &amp; Disposisi Gudang</span>
+                <span>⚖️</span> <span>4. Kuantitas Hasil Uji &amp; Split Grade Karton</span>
             </h2>
 
             <div style="display: flex; flex-direction: column; gap: 0.85rem;">
-                {{-- BANNER NETTO HASIL KALKULASI --}}
-                <div style="background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 10px; padding: 0.75rem 1rem; display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        <div style="font-size: 0.72rem; font-weight: 800; color: #92400e; text-transform: uppercase;">Netto Diterima Pabrik:</div>
-                        <div style="font-size: 0.72rem; color: #b45309;">Gross dikurangi reject kerusakan</div>
-                    </div>
-                    <div id="labelKartonEditNetto" style="font-size: 1.25rem; font-weight: 900; color: #b45309;">
-                        {{ number_format($totalNetto, 0, ',', '.') }} Pcs
-                    </div>
-                    <input type="hidden" name="items[{{ $qcdtlId }}][qty_netto_lolos]" id="inputQtyNettoLolos" value="{{ old('items.'.$qcdtlId.'.qty_netto_lolos', $firstDetail?->qty_netto_lolos ?? $totalNetto) }}">
-                </div>
-
-                {{-- INPUT GROSS & REJECT --}}
-                <div class="qc-grid-2col">
-                    <div>
-                        <label class="qc-info-label" style="font-weight: 800; color: #0f172a; margin-bottom: 0.25rem; display: block;">
-                            Jumlah Datang / Lolos (PCS) *
-                        </label>
-                        <input type="number" step="1" min="0" name="items[{{ $qcdtlId }}][qty_timbang_gross]" id="editQtyGross" value="{{ old('items.'.$qcdtlId.'.qty_timbang_gross', (int)($firstDetail?->qty_timbang_gross ?? $totalGross)) }}" class="form-control" style="font-size: 1rem; font-weight: 800;" required oninput="calcKartonEditNetto()">
-                    </div>
-
-                    <div>
-                        <label class="qc-info-label" style="font-weight: 800; color: #dc2626; margin-bottom: 0.25rem; display: block;">
-                            Qty Reject / Cacat (PCS)
-                        </label>
-                        <input type="number" step="1" min="0" name="items[{{ $qcdtlId }}][qty_reject]" id="editQtyReject" value="{{ old('items.'.$qcdtlId.'.qty_reject', (int)($firstDetail?->qty_reject ?? 0)) }}" class="form-control" style="font-size: 1rem; font-weight: 800; color: #dc2626;" oninput="calcKartonEditNetto()">
-                    </div>
-                </div>
-
-                {{-- PILIHAN DISPOSISI: TERIMA vs TOLAK --}}
-                @php
-                    $isTolakAwal = old('items.'.$qcdtlId.'.keputusan_qc', $firstDetail?->keputusan_qc ?? '') === 'REJECT_TOTAL' || $qc->status_qc === 'DITOLAK_TOTAL';
-                @endphp
-                <input type="hidden" name="karton_kesimpulan" id="inputKartonKesimpulan" value="{{ $isTolakAwal ? 'TOLAK' : 'TERIMA' }}">
-                <input type="hidden" name="kesimpulan_qc" id="inputKesimpulanQc" value="{{ $isTolakAwal ? 'TOLAK' : 'TERIMA' }}">
-
-                <div class="qc-disposisi-grid">
-                    <!-- KARTU TERIMA -->
-                    <div class="qc-disposisi-card {{ !$isTolakAwal ? 'active terima' : '' }}" id="cardDisposisiTerima" onclick="setKesimpulanKarton('TERIMA')">
-                        <div class="qc-disposisi-head">
-                            <div class="qc-disposisi-title-wrap">
-                                <span class="qc-disposisi-radio-icon"></span>
-                                <span class="qc-disposisi-title">TERIMA</span>
-                            </div>
-                            <span class="qc-disposisi-status-badge">✓</span>
+                {{-- SUBCARD: HASIL KUANTITAS PER GRADE KARTON (PERSIS INPUT) --}}
+                <div class="karton-subcard amber-accent">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 0.75rem;">
+                        <span class="karton-subcard-title">
+                            <span>⚖️</span> <span>HASIL KUANTITAS PER GRADE KARTON</span>
+                        </span>
+                        <div style="display: flex; align-items: center; gap: 0.4rem;">
+                            <span style="font-size: 0.75rem; color: #64748b; font-weight: 700;">Total Lolos:</span>
+                            <span id="labelKartonEditNetto" style="font-size: 0.95rem; font-weight: 900; color: #b45309; background: #ffffff; padding: 4px 12px; border-radius: 8px; border: 1.5px solid #fde68a;">
+                                {{ number_format($valGradeA + $valGradeB, 0, ',', '.') }} PCS
+                            </span>
                         </div>
-                        <div class="qc-disposisi-qty-wrap">
-                            <span class="qc-disposisi-qty-label">Kuantitas Diterima:</span>
-                            <div class="qc-disposisi-input-box">
-                                <input type="number" step="1" min="0" name="qty_terima" id="inputQtyTerima" class="qc-disposisi-input" value="{{ (int)$totalNetto }}" readonly>
-                                <span class="qc-disposisi-unit">pcs</span>
+                    </div>
+
+                    {{-- 2 INPUT GRADE A & GRADE B --}}
+                    <div class="qc-grid-2col" style="margin-bottom: 0.75rem;">
+                        <div class="form-group" style="margin-bottom: 0; background: #f0fdf4; border: 1.5px solid #bbf7d0; border-radius: 10px; padding: 0.65rem 0.75rem;">
+                            <label class="form-label" style="font-weight: 800; color: #166534; display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.35rem;">
+                                <span>🟢 Qty Grade A (Dus Baru)</span>
+                                <span style="font-size: 0.7rem; font-weight: 700; color: #15803d; background: #dcfce7; padding: 1px 6px; border-radius: 4px;">Baru</span>
+                            </label>
+                            <div class="input-suffix-wrap">
+                                <input type="number" step="1" min="0" name="karton_qty_grade_a" id="kartonQtyGradeA" class="form-control" placeholder="0" value="{{ old('karton_qty_grade_a', $valGradeA) }}" data-prev-a="{{ $valGradeA }}" data-prev-total="{{ $valGradeA + $valGradeB + $valReject }}" style="font-weight: 800; font-size: 1rem; color: #166534;" oninput="onKartonEditQtySplitChanged('grade_a')">
+                                <span class="input-suffix-text suffix-satuan-karton" style="font-weight: 800; color: #166534;">PCS</span>
+                            </div>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 0; background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 10px; padding: 0.65rem 0.75rem;">
+                            <label class="form-label" style="font-weight: 800; color: #92400e; display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.35rem;">
+                                <span>🟡 Qty Grade B (Puteran)</span>
+                                <span style="font-size: 0.7rem; font-weight: 700; color: #b45309; background: #fef3c7; padding: 1px 6px; border-radius: 4px;">Reuse</span>
+                            </label>
+                            <div class="input-suffix-wrap">
+                                <input type="number" step="1" min="0" name="karton_qty_grade_b" id="kartonQtyGradeB" class="form-control" placeholder="0" value="{{ old('karton_qty_grade_b', $valGradeB) }}" data-prev-b="{{ $valGradeB }}" style="font-weight: 800; font-size: 1rem; color: #92400e;" oninput="onKartonEditQtySplitChanged('grade_b')">
+                                <span class="input-suffix-text suffix-satuan-karton" style="font-weight: 800; color: #92400e;">PCS</span>
                             </div>
                         </div>
                     </div>
 
-                    <!-- KARTU TOLAK -->
-                    <div class="qc-disposisi-card {{ $isTolakAwal ? 'active tolak' : '' }}" id="cardDisposisiTolak" onclick="setKesimpulanKarton('TOLAK')">
-                        <div class="qc-disposisi-head">
-                            <div class="qc-disposisi-title-wrap">
-                                <span class="qc-disposisi-radio-icon"></span>
-                                <span class="qc-disposisi-title">TOLAK</span>
-                            </div>
-                            <span class="qc-disposisi-status-badge">✕</span>
-                        </div>
-                        <div class="qc-disposisi-qty-wrap">
-                            <span class="qc-disposisi-qty-label">Kuantitas Ditolak:</span>
-                            <div class="qc-disposisi-input-box">
-                                <input type="number" step="1" min="0" name="qty_tolak" id="inputQtyTolak" class="qc-disposisi-input" value="{{ (int)$totalReject }}" readonly>
-                                <span class="qc-disposisi-unit">pcs</span>
-                            </div>
+                    {{-- QTY REJECT / RUSAK --}}
+                    <div class="form-group" style="margin-bottom: 0; background: #fef2f2; border: 1.5px solid #fecaca; border-radius: 10px; padding: 0.65rem 0.75rem;">
+                        <label class="form-label" style="color: #991b1b; font-weight: 800; display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.35rem;">
+                            <span>❌ Qty Reject / Rusak (Afkir)</span>
+                            <span style="font-size: 0.7rem; font-weight: 700; color: #dc2626; background: #fee2e2; padding: 1px 6px; border-radius: 4px;">Tolak</span>
+                        </label>
+                        <div class="input-suffix-wrap">
+                            <input type="number" step="1" min="0" name="karton_qty_reject" id="kartonQtyReject" class="form-control" placeholder="0" value="{{ old('karton_qty_reject', $valReject) }}" style="font-weight: 800; color: #991b1b;" oninput="onKartonEditQtySplitChanged('reject')">
+                            <span class="input-suffix-text suffix-satuan-karton" style="font-weight: 800; color: #991b1b;">PCS</span>
                         </div>
                     </div>
                 </div>
 
-                {{-- CATATAN SPESIFIKASI MUTU FISIK & HIDDEN GRADE --}}
-                <div style="background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 10px; padding: 0.85rem;">
-                    {{-- Hidden grade_cd agar integritas DB aman tanpa menampilkan Grade UI --}}
-                    <input type="hidden" name="items[{{ $qcdtlId }}][grade_cd]" id="selectGradeCd" value="{{ old('items.'.$qcdtlId.'.grade_cd', $firstDetail?->grade_cd ?? 'A') }}">
-                    <label class="qc-info-label" style="display: block; font-weight: 700; margin-bottom: 0.35rem; font-size: 0.8rem; color: #0f172a;">Catatan Spesifikasi Mutu Fisik Box</label>
-                    <input type="text" name="items[{{ $qcdtlId }}][catatan_dtl]" value="{{ old('items.'.$qcdtlId.'.catatan_dtl', $firstDetail?->catatan_dtl) }}" class="form-control" placeholder="Contoh: Dimensi presisi, ketebalan corrugated sesuai standar, bersih..." style="width: 100%; border-radius: 6px; font-size: 0.85rem;">
-                </div>
-            </div>
-        </div>
+                {{-- SUBCARD: KESIMPULAN DISPOSISI & CATATAN PENGUJIAN --}}
+                <div class="karton-subcard">
+                    <span class="karton-subcard-title" style="color: #0f172a; margin-bottom: 0.65rem;">
+                        <span>📋</span> <span>Kesimpulan Disposisi &amp; Catatan Pengujian</span>
+                    </span>
 
-        {{-- KARTU 5: KEPUTUSAN KESIMPULAN & CATATAN OTORISASI --}}
-        <div class="qc-card-section">
-            <h2 class="qc-card-title">
-                <span>💬</span> <span>5. Keputusan &amp; Catatan QC Karton</span>
-            </h2>
+                    @php
+                        $isTolakAwal = old('items.'.$qcdtlId.'.keputusan_qc', $firstDetail?->keputusan_qc ?? '') === 'REJECT_TOTAL' || $qc->status_qc === 'DITOLAK_TOTAL';
+                    @endphp
+                    <input type="hidden" name="karton_kesimpulan" id="inputKartonKesimpulan" value="{{ $isTolakAwal ? 'TOLAK' : 'TERIMA' }}">
+                    <input type="hidden" name="kesimpulan_qc" id="inputKesimpulanQc" value="{{ $isTolakAwal ? 'TOLAK' : 'TERIMA' }}">
+                    <input type="hidden" name="items[{{ $qcdtlId }}][keputusan_qc]" id="hiddenKeputusanQc" value="{{ $isTolakAwal ? 'REJECT_TOTAL' : 'TERIMA' }}">
 
-            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-                <div>
-                    <label class="qc-info-label" style="display: block; font-weight: 700; margin-bottom: 0.35rem;">Keputusan Akhir QC:</label>
-                    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
-                        <label style="display: flex; align-items: center; gap: 0.4rem; font-weight: 800; cursor: pointer;">
-                            <input type="radio" name="items[{{ $qcdtlId }}][keputusan_qc]" id="radioTerima" value="TERIMA" {{ old('items.'.$qcdtlId.'.keputusan_qc', $firstDetail?->keputusan_qc ?? 'TERIMA') !== 'REJECT_TOTAL' ? 'checked' : '' }} onchange="setKesimpulanKarton('TERIMA')">
-                            <span style="color: #15803d;">Lolos Masuk Gudang (Diterima)</span>
+                    <div class="qc-disposisi-grid" style="margin-bottom: 0.85rem;">
+                        <!-- KARTU TERIMA -->
+                        <div class="qc-disposisi-card {{ !$isTolakAwal ? 'active terima' : '' }}" id="cardDisposisiTerima" onclick="setKesimpulanKarton('TERIMA')">
+                            <div class="qc-disposisi-head">
+                                <div class="qc-disposisi-title-wrap">
+                                    <span class="qc-disposisi-radio-icon"></span>
+                                    <span class="qc-disposisi-title">TERIMA</span>
+                                </div>
+                                <span class="qc-disposisi-status-badge">✓</span>
+                            </div>
+                            <div class="qc-disposisi-qty-wrap">
+                                <span class="qc-disposisi-qty-label">Kuantitas Diterima:</span>
+                                <div class="qc-disposisi-input-box">
+                                    <input type="number" step="1" min="0" name="qty_terima" id="inputQtyTerima" class="qc-disposisi-input" value="{{ $valGradeA + $valGradeB }}" readonly>
+                                    <span class="qc-disposisi-unit">pcs</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- KARTU TOLAK -->
+                        <div class="qc-disposisi-card {{ $isTolakAwal ? 'active tolak' : '' }}" id="cardDisposisiTolak" onclick="setKesimpulanKarton('TOLAK')">
+                            <div class="qc-disposisi-head">
+                                <div class="qc-disposisi-title-wrap">
+                                    <span class="qc-disposisi-radio-icon"></span>
+                                    <span class="qc-disposisi-title">TOLAK</span>
+                                </div>
+                                <span class="qc-disposisi-status-badge">✕</span>
+                            </div>
+                            <div class="qc-disposisi-qty-wrap">
+                                <span class="qc-disposisi-qty-label">Kuantitas Ditolak:</span>
+                                <div class="qc-disposisi-input-box">
+                                    <input type="number" step="1" min="0" name="qty_tolak" id="inputQtyTolak" class="qc-disposisi-input" value="{{ $valReject }}" readonly>
+                                    <span class="qc-disposisi-unit">pcs</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- CATATAN / KOMENTAR PENGUJIAN --}}
+                    <div class="form-group" style="margin-bottom: 0.75rem;">
+                        <label class="form-label" style="font-weight: 800; font-size: 0.825rem; color: #0f172a; margin-bottom: 0.35rem; display: block;">
+                            Catatan / Komentar Pengujian:
                         </label>
-                        <label style="display: flex; align-items: center; gap: 0.4rem; font-weight: 800; cursor: pointer;">
-                            <input type="radio" name="items[{{ $qcdtlId }}][keputusan_qc]" id="radioTolak" value="REJECT_TOTAL" {{ old('items.'.$qcdtlId.'.keputusan_qc', $firstDetail?->keputusan_qc) === 'REJECT_TOTAL' ? 'checked' : '' }} onchange="setKesimpulanKarton('TOLAK')">
-                            <span style="color: #dc2626;">Tolak Total (Afkir / Pulangkan)</span>
-                        </label>
+                        <textarea name="catatan_umum" id="catatanUmumInput" rows="3" class="form-control" placeholder="Tuliskan catatan kondisi box, kerusakan atau rekomendasi..." style="font-size: 0.85rem; line-height: 1.45;">{{ old('catatan_umum', $qc->catatan_umum ?: $qc->catatan_qc) }}</textarea>
+                    </div>
+
+                    {{-- CATATAN SPESIFIKASI MUTU FISIK --}}
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label class="qc-info-label" style="display: block; font-weight: 700; margin-bottom: 0.35rem; font-size: 0.8rem; color: #0f172a;">Catatan Spesifikasi Mutu Fisik Box (Opsional)</label>
+                        <input type="text" id="inputCatatanDtl" name="catatan_dtl" value="{{ old('catatan_dtl', $firstDetail?->catatan_dtl) }}" class="form-control" placeholder="Contoh: Dimensi presisi, ketebalan corrugated sesuai standar, bersih..." style="width: 100%; border-radius: 6px; font-size: 0.85rem;">
                     </div>
                 </div>
 
-                <div>
-                    <label class="qc-info-label" style="display: block; font-weight: 700; margin-bottom: 0.25rem;">Catatan Pengujian &amp; Rekomendasi</label>
-                    <textarea name="catatan_umum" rows="2" class="form-control" placeholder="Tuliskan catatan kondisi box, kerusakan atau rekomendasi...">{{ old('catatan_umum', $qc->catatan_umum) }}</textarea>
-                </div>
+                {{-- SUBCARD: OTORISASI & PEMERIKSA --}}
+                <div class="karton-subcard" style="padding: 0; background: transparent; border: none; box-shadow: none;">
+                    <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                        {{-- PETUGAS QC RAW MATERIAL --}}
+                        <div class="qc-auth-card">
+                            <div class="qc-auth-header">
+                                <div>
+                                    <div class="qc-auth-title">Petugas QC Raw Material</div>
+                                    <div class="qc-auth-sub">Pemeriksa kedatangan langsung</div>
+                                </div>
+                                <span class="qc-auth-badge verified">Terverifikasi ID</span>
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <div class="qc-field-header">
+                                    <label class="qc-field-label">Nama Petugas QC</label>
+                                </div>
+                                <input type="text" name="petugas_qc_nama" id="inputPetugasQc" class="form-control" placeholder="Nama Petugas QC" value="{{ old('petugas_qc_nama', $qc->petugas_qc_nama ?: (auth()->user()?->name ?? 'Petugas QC')) }}" style="font-weight: 800; color: #0f172a;" required>
+                            </div>
+                        </div>
 
-                {{-- PETUGAS QC & SUPERVISOR PENINJAU --}}
-                <div style="border-top: 1px dashed #cbd5e1; padding-top: 0.65rem; display: flex; flex-direction: column; gap: 0.65rem;">
-                    <div>
-                        <label class="qc-info-label" style="font-weight: 700; margin-bottom: 0.2rem; display: block;">Petugas QC Raw Material *</label>
-                        <input type="text" name="petugas_qc_nama" value="{{ old('petugas_qc_nama', $qc->petugas_qc_nama ?: auth()->user()?->name) }}" class="form-control" style="font-weight: 800; color: #0f172a;" required>
-                    </div>
-
-                    <div>
-                        <label class="qc-info-label" style="font-weight: 700; margin-bottom: 0.2rem; display: block;">QC Supervisor / Lab Head Peninjau</label>
-                        <input type="text" name="qc_supervisor_nama" list="listSupervisorQc" value="{{ old('qc_supervisor_nama', $qc->qc_supervisor_nama ?: 'Hendrawan, S.TP (SPV QC Shift Pagi)') }}" class="form-control" style="font-weight: 800; color: #0f172a;">
-                        <datalist id="listSupervisorQc">
-                            <option value="Hendrawan, S.TP (SPV QC Shift Pagi)">
-                            <option value="Rina Wijaya, S.Si (Supervisor QC Lab)">
-                            <option value="Dedi (QC Bahan Baku)">
-                            <option value="Bambang (Produksi Magelang)">
-                            <option value="Super Administrator">
-                            <option value="Ahmad Farhan, S.T (Ka. Gudang)">
-                        </datalist>
+                        {{-- QC SUPERVISOR / LAB HEAD --}}
+                        <div class="qc-auth-card">
+                            <div class="qc-auth-header">
+                                <div>
+                                    <div class="qc-auth-title">QC Supervisor / Lab Head</div>
+                                    <div class="qc-auth-sub">Peninjau &amp; Persetujuan Rilis Bahan</div>
+                                </div>
+                                <span class="qc-auth-badge pending">Peninjau</span>
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <div class="qc-field-header">
+                                    <label class="qc-field-label">Supervisor Peninjau</label>
+                                </div>
+                                <input type="text" name="qc_supervisor_nama" id="inputSupervisorQc" list="listSupervisorQc" class="form-control" placeholder="Pilih atau ketik nama Supervisor..." value="{{ old('qc_supervisor_nama', $qc->qc_supervisor_nama ?: 'Hendrawan, S.TP (SPV QC Shift Pagi)') }}" style="font-weight: 800; color: #0f172a;">
+                                <datalist id="listSupervisorQc">
+                                    <option value="Hendrawan, S.TP (SPV QC Shift Pagi)">
+                                    <option value="Rina Wijaya, S.Si (Supervisor QC Lab)">
+                                    <option value="Dedi (QC Bahan Baku)">
+                                    <option value="Bambang (Produksi Magelang)">
+                                    <option value="Super Administrator">
+                                    <option value="Ahmad Farhan, S.T (Ka. Gudang)">
+                                </datalist>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -745,6 +794,7 @@
 @endsection
 
 @push('scripts')
-    <script src="{{ asset('js/gudang/qc/karton/karton.js') }}"></script>
-    <script src="{{ asset('js/gudang/qc/karton/karton-edit.js') }}"></script>
+    <script src="{{ asset('js/gudang/qc/karton/karton.js') }}?v={{ filemtime(public_path('js/gudang/qc/karton/karton.js')) }}"></script>
+    <script src="{{ asset('js/gudang/qc/mobile/qc-edit.js') }}?v={{ filemtime(public_path('js/gudang/qc/mobile/qc-edit.js')) }}"></script>
+    <script src="{{ asset('js/gudang/qc/karton/karton-edit.js') }}?v={{ filemtime(public_path('js/gudang/qc/karton/karton-edit.js')) }}"></script>
 @endpush

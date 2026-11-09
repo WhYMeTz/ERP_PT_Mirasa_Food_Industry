@@ -1698,9 +1698,21 @@
         const materialsToUse = singkongMaterials.length > 0 ? singkongMaterials : RAW_MATERIALS;
 
         let effectiveBarangId = selectedBarangId;
+        const hSelInit = document.getElementById('singkongBarangSelect');
+        if (!effectiveBarangId && hSelInit && hSelInit.value) {
+            effectiveBarangId = hSelInit.value;
+        }
         if (!effectiveBarangId && materialsToUse.length > 0) {
             const defaultSk = materialsToUse.find(b => b.barang_cd === 'BB-SK001') || materialsToUse[0];
             effectiveBarangId = defaultSk.barang_id;
+        }
+
+        let selectedBarangNm = 'Singkong Kupas';
+        const foundMat = materialsToUse.find(b => b.barang_id == effectiveBarangId);
+        if (foundMat) {
+            selectedBarangNm = `${foundMat.barang_cd} - ${foundMat.barang_nm}`;
+        } else if (hSelInit && hSelInit.selectedOptions && hSelInit.selectedOptions[0]) {
+            selectedBarangNm = hSelInit.selectedOptions[0].text;
         }
 
         let barangOptions = '<option value="">-- Pilih Komoditas Singkong --</option>';
@@ -1833,46 +1845,39 @@
                 </div>
             </div>
 
-            <!-- 2. PENENTUAN GRADE MUTU SINGKONG & BAHAN BAKU -->
+            <!-- 2. PENENTUAN GRADE MUTU SINGKONG -->
             <div style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 1rem; margin-bottom: 1.15rem;">
-                <div class="qc-kondisi-header" style="margin-bottom: 0.85rem;">
-                    <div class="qc-kondisi-title-wrap">
+                <div class="qc-kondisi-header" style="margin-bottom: 0.85rem; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 0.35rem;">
+                    <div class="qc-kondisi-title-wrap" style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
                         <span class="qc-kondisi-badge-num" style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a;">2</span>
-                        <span class="qc-kondisi-title-main">PENENTUAN GRADE MUTU SINGKONG</span>
+                        <span class="qc-kondisi-title-main" style="white-space: normal;">PENENTUAN GRADE MUTU SINGKONG</span>
                     </div>
                     <span style="font-size: 0.72rem; color: #64748b; font-weight: 700;">Berdasarkan Hasil Uji Fisik &amp; Diameter</span>
                 </div>
 
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.85rem; margin-bottom: 0.5rem;">
-                    <div>
-                        <label class="form-label" style="font-size: 0.8rem; font-weight: 800; color: #0f172a; margin-bottom: 0.35rem; display: block;">
-                            Nama Bahan Baku <span style="color:red;">*</span>
-                        </label>
-                        <select name="items[${idx}][barang_id]" id="barang_select_${idx}" class="form-control item-barang-select" required onchange="onItemBarangChanged(${idx})" style="font-weight: 700;">
-                            ${barangOptions}
-                        </select>
-                    </div>
-                    <div>
-                        <label class="form-label" style="font-size: 0.8rem; font-weight: 800; color: #0f172a; margin-bottom: 0.35rem; display: block;">
-                            Grade Mutu Singkong <span style="color:red;">*</span>
-                        </label>
-                        <input type="hidden" name="items[${idx}][grade_cd]" id="grade_input_${idx}" value="A">
-                        <div class="qc-grade-pills">
-                            <button type="button" class="qc-grade-btn grade-a active" id="btn_grade_a_${idx}" onclick="selectItemGrade(${idx}, 'A')">
-                                <span class="qc-grade-dot green"></span>
-                                <div class="qc-grade-text">
-                                    <div class="qc-grade-title">Grade A</div>
-                                    <div class="qc-grade-sub">Super / Renyah</div>
-                                </div>
-                            </button>
-                            <button type="button" class="qc-grade-btn grade-b" id="btn_grade_b_${idx}" onclick="selectItemGrade(${idx}, 'B')">
-                                <span class="qc-grade-dot yellow"></span>
-                                <div class="qc-grade-text">
-                                    <div class="qc-grade-title">Grade B</div>
-                                    <div class="qc-grade-sub">Standar / Campur</div>
-                                </div>
-                            </button>
-                        </div>
+                <!-- Hidden input ID Bahan Baku (Tersinkron penuh dengan Nama Bahan Baku di Card 1) -->
+                <input type="hidden" name="items[${idx}][barang_id]" id="barang_select_${idx}" value="${effectiveBarangId}" data-nama="${selectedBarangNm}">
+
+                <div style="margin-bottom: 0.5rem;">
+                    <label class="form-label" style="font-size: 0.825rem; font-weight: 800; color: #0f172a; margin-bottom: 0.45rem; display: block;">
+                        Grade Mutu Singkong <span style="color:red;">*</span>
+                    </label>
+                    <input type="hidden" name="items[${idx}][grade_cd]" id="grade_input_${idx}" value="A">
+                    <div class="qc-grade-pills">
+                        <button type="button" class="qc-grade-btn grade-a active" id="btn_grade_a_${idx}" onclick="selectItemGrade(${idx}, 'A')">
+                            <span class="qc-grade-dot green"></span>
+                            <div class="qc-grade-text">
+                                <div class="qc-grade-title">Grade A</div>
+                                <div class="qc-grade-sub">Super / Renyah</div>
+                            </div>
+                        </button>
+                        <button type="button" class="qc-grade-btn grade-b" id="btn_grade_b_${idx}" onclick="selectItemGrade(${idx}, 'B')">
+                            <span class="qc-grade-dot yellow"></span>
+                            <div class="qc-grade-text">
+                                <div class="qc-grade-title">Grade B</div>
+                                <div class="qc-grade-sub">Standar / Campur</div>
+                            </div>
+                        </button>
                     </div>
                 </div>
 
@@ -2298,8 +2303,8 @@
 
         const sel = document.getElementById(`barang_select_${idx}`);
         if (sel) {
-            const opt = sel.selectedOptions[0];
-            const matNama = opt?.getAttribute('data-nama') || (opt?.text.split(' - ')[1]?.split(' (')[0]);
+            const opt = sel.selectedOptions ? sel.selectedOptions[0] : null;
+            const matNama = opt?.getAttribute('data-nama') || (opt?.text?.split(' - ')[1]?.split(' (')[0]) || sel.getAttribute('data-nama') || sel.dataset?.nama || '';
             const namaEl = document.getElementById('namaJenisInput');
             if (namaEl && matNama) {
                 namaEl.value = matNama.trim();
@@ -2472,11 +2477,12 @@
         if (!select) return;
         const opt = select.options[select.selectedIndex];
         const barangId = select.value;
-        const barangNm = opt ? opt.getAttribute('data-nama') : '';
+        const barangNm = opt ? (opt.getAttribute('data-nama') || opt.text) : '';
         
         const bSelect0 = document.getElementById('barang_select_0');
         if (bSelect0) {
             bSelect0.value = barangId;
+            bSelect0.setAttribute('data-nama', barangNm);
         }
         
         const namaJenis = document.getElementById('namaJenisInput');

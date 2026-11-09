@@ -281,10 +281,8 @@
             </div>
 
             <div class="pl-cell">
-                <span class="pl-cell-label">Pabrik Produsen</span>
-                <span class="pl-cell-value">
-                    {{ $qc->nama_produsen ?: ($qc->supplier?->supplier_nm ?? '-') }} ({{ $qc->negara_produsen ?: 'Indonesia' }})
-                </span>
+                <span class="pl-cell-label">Negara Asal</span>
+                <span class="pl-cell-value">{{ $qc->negara_produsen ?: 'Indonesia' }}</span>
             </div>
 
             <div class="pl-cell">

@@ -82,7 +82,20 @@
         if (opt && opt.value) {
             const bNm = opt.getAttribute('data-nama') || opt.text.split(' - ')[1]?.split(' (')[0] || opt.text;
             const namaEl = document.getElementById('editNamaJenis');
-            if (namaEl) namaEl.value = bNm.trim();
+            if (namaEl) {
+                const upper = bNm.toUpperCase();
+                if (upper.includes('KELAPA') && !upper.includes('SAWIT')) {
+                    namaEl.value = 'Minyak Kelapa (RBD CNO)';
+                } else if (upper.includes('MINYAK') || upper.includes('SAWIT')) {
+                    namaEl.value = 'RBD Palm Olein / Curah Sawit';
+                } else {
+                    namaEl.value = bNm.trim();
+                }
+            }
+            const satCd = opt.getAttribute('data-satuan-cd') || opt.getAttribute('data-satuan');
+            if (satCd && typeof window.setPlastikEditSatuan === 'function') {
+                window.setPlastikEditSatuan(satCd);
+            }
         }
     };
 
@@ -127,9 +140,119 @@
         }
     };
 
+    /**
+     * KUNCI / BUKA FIELD SESUAI STATUS PO (SUPPLIER, GUDANG, BARANG)
+     */
+    window.onEditPoChanged = function (select) {
+        if (!select) return;
+        const opt = select.selectedOptions ? select.selectedOptions[0] : select.options[select.selectedIndex];
+        const poId = select.value;
+
+        const supId = opt?.getAttribute('data-supplier-id');
+        const supNm = opt?.getAttribute('data-supplier-nm');
+        const gudangId = opt?.getAttribute('data-gudang-id');
+        const barangId = opt?.getAttribute('data-barang-id');
+
+        const sSelect = document.getElementById('editSupplierSelect');
+        const gSelect = document.getElementById('editGudangSelect') || document.querySelector('select[name="gudang_id"]');
+        const bSelect = document.getElementById('editBarangSelect') || document.getElementById('selectEditBarang');
+        const produsenInput = document.getElementById('editNamaProdusen');
+        const wrapSearch = document.getElementById('wrapEditSupplierSearch');
+
+        const badgeSup = document.getElementById('badgeEditLockSupplier');
+        const badgeGudang = document.getElementById('badgeEditLockGudang');
+        const badgeBarang = document.getElementById('badgeEditLockBarang');
+
+        if (poId) {
+            // Lock Supplier
+            if (supId && sSelect) {
+                sSelect.value = supId;
+                sSelect.style.pointerEvents = 'none';
+                sSelect.style.backgroundColor = '#f1f5f9';
+                sSelect.style.borderColor = '#cbd5e1';
+                sSelect.setAttribute('tabindex', '-1');
+                window.onEditSupplierChange(sSelect);
+            }
+            if (badgeSup) {
+                badgeSup.style.display = 'inline-flex';
+                if (supNm) badgeSup.innerText = `🔒 Terkunci (${supNm})`;
+            }
+            if (wrapSearch) wrapSearch.style.display = 'none';
+
+            // Lock Gudang
+            if (gudangId && gSelect) {
+                gSelect.value = gudangId;
+                gSelect.style.pointerEvents = 'none';
+                gSelect.style.backgroundColor = '#f1f5f9';
+                gSelect.style.borderColor = '#cbd5e1';
+                gSelect.setAttribute('tabindex', '-1');
+            }
+            if (badgeGudang) badgeGudang.style.display = 'inline-flex';
+
+            // Lock Barang
+            if (barangId && bSelect) {
+                bSelect.value = barangId;
+                bSelect.style.pointerEvents = 'none';
+                bSelect.style.backgroundColor = '#f1f5f9';
+                bSelect.style.borderColor = '#cbd5e1';
+                bSelect.setAttribute('tabindex', '-1');
+                window.onEditBarangChanged(bSelect);
+            }
+            if (badgeBarang) badgeBarang.style.display = 'inline-flex';
+
+            if (produsenInput && supNm) {
+                produsenInput.value = supNm;
+                produsenInput.readOnly = true;
+                produsenInput.style.backgroundColor = '#f1f5f9';
+            }
+        } else {
+            // Unlock Supplier
+            if (sSelect) {
+                sSelect.style.pointerEvents = 'auto';
+                sSelect.style.backgroundColor = '#ffffff';
+                sSelect.style.borderColor = '#e2e8f0';
+                sSelect.removeAttribute('tabindex');
+            }
+            if (badgeSup) badgeSup.style.display = 'none';
+            if (wrapSearch) wrapSearch.style.display = 'block';
+
+            // Unlock Gudang
+            if (gSelect) {
+                gSelect.style.pointerEvents = 'auto';
+                gSelect.style.backgroundColor = '#ffffff';
+                gSelect.style.borderColor = '#e2e8f0';
+                gSelect.removeAttribute('tabindex');
+            }
+            if (badgeGudang) badgeGudang.style.display = 'none';
+
+            // Unlock Barang
+            if (bSelect) {
+                bSelect.style.pointerEvents = 'auto';
+                bSelect.style.backgroundColor = '#ffffff';
+                bSelect.style.borderColor = '#e2e8f0';
+                bSelect.removeAttribute('tabindex');
+            }
+            if (badgeBarang) badgeBarang.style.display = 'none';
+
+            if (produsenInput) {
+                produsenInput.readOnly = false;
+                produsenInput.style.backgroundColor = '#ffffff';
+            }
+        }
+    };
+
     let isSubmitting = false;
     document.addEventListener('DOMContentLoaded', function () {
-        const form = document.getElementById('qcEditMobileForm');
+        const editPoSelect = document.getElementById('editPoSelect');
+        if (editPoSelect && editPoSelect.value) {
+            window.onEditPoChanged(editPoSelect);
+        }
+
+        const form = document.getElementById('qcEditMobileForm')
+            || document.getElementById('qcEditMinyakForm')
+            || document.getElementById('qcEditPlastikForm')
+            || document.getElementById('qcEditKartonForm')
+            || document.getElementById('qcBpEditForm');
         if (form) {
             form.addEventListener('submit', function (e) {
                 if (isSubmitting) {

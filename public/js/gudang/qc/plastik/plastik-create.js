@@ -60,7 +60,7 @@
                 const sup = document.getElementById('supplierSelect')?.value;
                 const gud = document.getElementById('gudangSelect')?.value;
                 if (!sup) {
-                    alert('Silakan pilih Mitra Supplier / Produsen Plastik terlebih dahulu!');
+                    alert('Silakan pilih Mitra Supplier Plastik terlebih dahulu!');
                     document.getElementById('supplierSelect')?.focus();
                     return;
                 }
@@ -689,9 +689,94 @@
         triggerSaveDraftDebounced();
     };
 
+    // =========================================================================
+    // KUNCI FIELD DARI PO (INTEGRITAS DATA PO - SUPPLIER, GUDANG & MASTER BARANG)
+    // =========================================================================
+    window.togglePlastikPoLockFields = function (isLocked, po) {
+        const sSelect = document.getElementById('supplierSelect');
+        const gSelect = document.getElementById('gudangSelect');
+        const bSelect = document.getElementById('plastikBarangSelect');
+        const produsenInput = document.getElementById('namaProdusenInput');
+
+        const badgeSupplier = document.getElementById('badgeLockSupplier');
+        const badgeGudang = document.getElementById('badgeLockGudang');
+        const badgeBarang = document.getElementById('badgeLockBarang');
+
+        if (isLocked) {
+            // Lock Supplier
+            if (sSelect) {
+                sSelect.style.pointerEvents = 'none';
+                sSelect.style.backgroundColor = '#f1f5f9';
+                sSelect.style.borderColor = '#cbd5e1';
+                sSelect.setAttribute('tabindex', '-1');
+            }
+            if (badgeSupplier) {
+                badgeSupplier.style.display = 'inline-flex';
+                if (po?.supplier_nm) badgeSupplier.innerText = `🔒 Terkunci (${po.supplier_nm})`;
+            }
+
+            // Lock Gudang
+            if (gSelect) {
+                gSelect.style.pointerEvents = 'none';
+                gSelect.style.backgroundColor = '#f1f5f9';
+                gSelect.style.borderColor = '#cbd5e1';
+                gSelect.setAttribute('tabindex', '-1');
+            }
+            if (badgeGudang) badgeGudang.style.display = 'inline-flex';
+
+            // Lock Master Barang Kemasan
+            if (bSelect) {
+                bSelect.style.pointerEvents = 'none';
+                bSelect.style.backgroundColor = '#f1f5f9';
+                bSelect.style.borderColor = '#cbd5e1';
+                bSelect.setAttribute('tabindex', '-1');
+            }
+            if (badgeBarang) badgeBarang.style.display = 'inline-flex';
+
+            if (produsenInput && po?.supplier_nm) {
+                produsenInput.value = po.supplier_nm;
+                produsenInput.readOnly = true;
+                produsenInput.style.backgroundColor = '#f1f5f9';
+            }
+        } else {
+            // Unlock Supplier
+            if (sSelect) {
+                sSelect.style.pointerEvents = 'auto';
+                sSelect.style.backgroundColor = '#ffffff';
+                sSelect.style.borderColor = '#e2e8f0';
+                sSelect.removeAttribute('tabindex');
+            }
+            if (badgeSupplier) badgeSupplier.style.display = 'none';
+
+            // Unlock Gudang
+            if (gSelect) {
+                gSelect.style.pointerEvents = 'auto';
+                gSelect.style.backgroundColor = '#ffffff';
+                gSelect.style.borderColor = '#e2e8f0';
+                gSelect.removeAttribute('tabindex');
+            }
+            if (badgeGudang) badgeGudang.style.display = 'none';
+
+            // Unlock Master Barang Kemasan
+            if (bSelect) {
+                bSelect.style.pointerEvents = 'auto';
+                bSelect.style.backgroundColor = '#ffffff';
+                bSelect.style.borderColor = '#e2e8f0';
+                bSelect.removeAttribute('tabindex');
+            }
+            if (badgeBarang) badgeBarang.style.display = 'none';
+
+            if (produsenInput) {
+                produsenInput.readOnly = false;
+                produsenInput.style.backgroundColor = '#ffffff';
+            }
+        }
+    };
+
     window.onPoSelected = function (select) {
         if (!select || !select.value) {
             renderPoItemsCards([], null);
+            window.togglePlastikPoLockFields(false);
             return;
         }
         const poId = select.value;
@@ -706,6 +791,7 @@
         const opt = select.selectedOptions[0];
         const supplierId = opt?.getAttribute('data-supplier-id');
         const gudangId = opt?.getAttribute('data-gudang-id');
+        const supplierNm = opt?.getAttribute('data-supplier-nm');
 
         const supplierSelect = document.getElementById('supplierSelect');
         if (supplierSelect && supplierId) {
@@ -717,6 +803,8 @@
         if (gudangSelect && gudangId) {
             gudangSelect.value = gudangId;
         }
+
+        window.togglePlastikPoLockFields(true, { supplier_nm: supplierNm });
 
         if (window.appConfig && window.appConfig.poDetailsUrl) {
             fetch(`${window.appConfig.poDetailsUrl}/${poId}`)
@@ -783,6 +871,10 @@
         } else {
             renderPoItemsCards([], null);
         }
+
+        // 4. Kunci field yang berasal dari PO
+        window.togglePlastikPoLockFields(true, poData);
+
         triggerSaveDraftDebounced();
     }
 
@@ -1077,7 +1169,7 @@
 
         const supplierSelect = document.getElementById('supplierSelect');
         if (!supplierSelect || !supplierSelect.value) {
-            alert('Silakan pilih Mitra Supplier / Produsen Plastik terlebih dahulu!');
+            alert('Silakan pilih Mitra Supplier Plastik terlebih dahulu!');
             window.switchPlastikTab(1);
             supplierSelect?.focus();
             return;
@@ -1143,6 +1235,8 @@
         injectHiddenInput('items[0][qty_reject]', reject);
         injectHiddenInput('items[0][qty_netto_lolos]', Math.max(0, finalGross - reject));
         injectHiddenInput('items[0][keputusan_qc]', kesimpulan === 'TERIMA' ? 'PASSED' : 'REJECT_TOTAL');
+        injectHiddenInput('items[0][grade_cd]', kesimpulan === 'TERIMA' ? 'NON-GRADE' : 'REJECT');
+        injectHiddenInput('grade_cd', kesimpulan === 'TERIMA' ? 'NON-GRADE' : 'REJECT');
         injectHiddenInput('items[0][status_raw_material]', rawMatStatus);
         injectHiddenInput('items[0][kemasan_kondisi]', kemasanKondisi);
         injectHiddenInput('items[0][kemasan_kotor]', document.getElementById('checkCacatKotor')?.checked ? 1 : 0);
@@ -1207,13 +1301,22 @@
         const hasDraft = restorePlastikDraft();
 
         // 3. Jika tidak ada draft tapi ada PO terpilih di form, inisialisasi PO
+        const poSelect = document.getElementById('poSelect');
         if (!hasDraft) {
-            const poSelect = document.getElementById('poSelect');
             if (poSelect && poSelect.value) {
                 window.onPoSelected(poSelect);
             } else {
+                window.togglePlastikPoLockFields(false);
                 const bSel = document.getElementById('plastikBarangSelect');
                 if (bSel) window.onPlastikBarangChanged(bSel);
+            }
+        } else {
+            if (poSelect && poSelect.value) {
+                const poId = poSelect.value;
+                const poData = window.appConfig?.poListData?.[poId] || window.qcConfig?.poList?.[poId];
+                window.togglePlastikPoLockFields(true, poData);
+            } else {
+                window.togglePlastikPoLockFields(false);
             }
         }
 

@@ -25,6 +25,39 @@
         saveDraftTimer = setTimeout(saveKartonDraft, 400);
     }
 
+    let currentKartonGrade = 'A';
+
+    window.selectKartonGrade = function (grade) {
+        currentKartonGrade = (grade === 'B') ? 'B' : 'A';
+        const inputHidden = document.getElementById('inputKartonGradeCd');
+        if (inputHidden) inputHidden.value = currentKartonGrade;
+
+        const btnA = document.getElementById('btnKartonGradeA');
+        const btnB = document.getElementById('btnKartonGradeB');
+        const badge = document.getElementById('badgeCurrentKartonGrade');
+
+        if (btnA && btnB) {
+            if (currentKartonGrade === 'B') {
+                btnA.classList.remove('active');
+                btnB.classList.add('active');
+                if (badge) {
+                    badge.style.background = '#fef3c7';
+                    badge.style.color = '#b45309';
+                    badge.innerHTML = '🟡 GRADE B (PUTERAN)';
+                }
+            } else {
+                btnB.classList.remove('active');
+                btnA.classList.add('active');
+                if (badge) {
+                    badge.style.background = '#dcfce7';
+                    badge.style.color = '#15803d';
+                    badge.innerHTML = '🟢 GRADE A (BARU)';
+                }
+            }
+        }
+        triggerSaveDraftDebounced();
+    };
+
     // 1. Tab Navigation (Tahap 1: Dokumen & Armada, Tahap 2: Mutu Karton Box)
     window.switchKartonTab = function (tabNumber, skipValidation) {
         const sec1 = document.getElementById('qcSection1');
@@ -38,7 +71,7 @@
             const sup = document.getElementById('supplierSelect')?.value;
             const gud = document.getElementById('gudangSelect')?.value;
             if (!sup) {
-                alert('Silakan pilih Mitra Supplier / Produsen Karton terlebih dahulu!');
+                alert('Silakan pilih Mitra Supplier Karton terlebih dahulu!');
                 document.getElementById('supplierSelect')?.focus();
                 return;
             }
@@ -260,24 +293,36 @@
         triggerSaveDraftDebounced();
     };
 
-    // 5. Sinkronisasi Kuantitas Real-Time
+    // 5. Sinkronisasi Kuantitas Real-Time (Mendukung Split Grade A & Grade B)
     window.syncKartonQuantity = function () {
         const inPabrik = document.getElementById('inputJumlahPabrik');
         const inSJ = document.getElementById('inputJumlahSJ');
-        const grossInput = document.getElementById('kartonQtyGross');
+        const inGradeA = document.getElementById('kartonQtyGradeA');
+        const inGradeB = document.getElementById('kartonQtyGradeB');
         const rejectInput = document.getElementById('kartonQtyReject');
         const labelNetto = document.getElementById('labelKartonNetto');
         const subcardNetto = document.getElementById('labelSubcardNetto');
 
-        if (grossInput && (!grossInput.value || grossInput.value == 0) && inPabrik && inPabrik.value) {
-            grossInput.value = inPabrik.value;
-        } else if (inPabrik && (!inPabrik.value || inPabrik.value == 0) && grossInput && grossInput.value) {
-            inPabrik.value = grossInput.value;
+        // Auto-fill Grade A jika kosong dan ada nilai di inSJ/inPabrik
+        if (inGradeA && (!inGradeA.value || inGradeA.value == 0) && (!inGradeB || !inGradeB.value || inGradeB.value == 0)) {
+            const defQty = parseFloat(inSJ?.value || inPabrik?.value || 0) || 0;
+            const defReject = parseFloat(rejectInput?.value || 0) || 0;
+            if (defQty > 0) {
+                inGradeA.value = Math.max(0, defQty - defReject);
+                inGradeA.dataset.autoFilled = 'true';
+            }
         }
 
-        const gross = parseFloat(grossInput?.value || inPabrik?.value || inSJ?.value || 0) || 0;
+        const qtyA = parseFloat(inGradeA?.value || 0) || 0;
+        const qtyB = parseFloat(inGradeB?.value || 0) || 0;
         const reject = parseFloat(rejectInput?.value || 0) || 0;
-        const netto = Math.max(0, gross - reject);
+        const netto = Math.max(0, qtyA + qtyB);
+        const gross = netto + reject;
+
+        if (inPabrik && (!inPabrik.value || inPabrik.dataset.autoFilled === 'true' || parseFloat(inPabrik.value) === 0)) {
+            inPabrik.value = gross;
+            inPabrik.dataset.autoFilled = 'true';
+        }
 
         const txt = `${netto.toLocaleString('id-ID')} ${currentKartonSatuan}`;
         if (labelNetto) labelNetto.innerText = txt;
@@ -297,6 +342,49 @@
         }
 
         triggerSaveDraftDebounced();
+    };
+
+    window.onKartonQtySplitChanged = function (source) {
+        const inPabrik = document.getElementById('inputJumlahPabrik');
+        const inSJ = document.getElementById('inputJumlahSJ');
+        const inGradeA = document.getElementById('kartonQtyGradeA');
+        const inGradeB = document.getElementById('kartonQtyGradeB');
+        const rejectInput = document.getElementById('kartonQtyReject');
+
+        const totalSJ = parseFloat(inSJ?.value || inPabrik?.value || 0) || 0;
+        let reject = parseFloat(rejectInput?.value || 0) || 0;
+        let qtyA = parseFloat(inGradeA?.value || 0) || 0;
+        let qtyB = parseFloat(inGradeB?.value || 0) || 0;
+
+        if (source === 'reject' || source === 'sj') {
+            if (totalSJ > 0) {
+                if (reject > totalSJ) {
+                    reject = totalSJ;
+                    if (rejectInput) rejectInput.value = reject;
+                }
+                const remaining = Math.max(0, totalSJ - reject);
+                if (qtyB > remaining) {
+                    qtyB = remaining;
+                    if (inGradeB) inGradeB.value = qtyB;
+                }
+                qtyA = Math.max(0, remaining - qtyB);
+                if (inGradeA) inGradeA.value = qtyA;
+            }
+        } else if (source === 'grade_b') {
+            if (totalSJ > 0) {
+                const remaining = Math.max(0, totalSJ - reject);
+                if (qtyB > remaining) {
+                    qtyB = remaining;
+                    if (inGradeB) inGradeB.value = qtyB;
+                }
+                qtyA = Math.max(0, remaining - qtyB);
+                if (inGradeA) inGradeA.value = qtyA;
+            }
+        } else if (source === 'grade_a') {
+            if (inGradeA) inGradeA.dataset.manuallyEdited = 'true';
+        }
+
+        window.syncKartonQuantity();
     };
 
     // 6. Transportasi & Halal Toggles
@@ -601,7 +689,8 @@
         const sisaQty = targetItem.sisa_qty > 0 ? targetItem.sisa_qty : targetItem.pesan_qty;
         const inSJ = document.getElementById('inputJumlahSJ');
         const inPabrik = document.getElementById('inputJumlahPabrik');
-        const grossInput = document.getElementById('kartonQtyGross');
+        const inGradeA = document.getElementById('kartonQtyGradeA');
+        const inGradeB = document.getElementById('kartonQtyGradeB');
 
         if (inSJ) {
             inSJ.value = sisaQty;
@@ -611,9 +700,16 @@
             inPabrik.value = sisaQty;
             inPabrik.dataset.autoFilled = 'true';
         }
-        if (grossInput) {
-            grossInput.value = sisaQty;
-            grossInput.dataset.autoFilled = 'true';
+        if (inGradeA) {
+            inGradeA.value = sisaQty;
+            inGradeA.dataset.autoFilled = 'true';
+        }
+        if (inGradeB) {
+            inGradeB.value = 0;
+        }
+        const inReject = document.getElementById('kartonQtyReject');
+        if (inReject) {
+            inReject.value = 0;
         }
 
         // Pertahankan Nama Jenis spesifikasi box (jangan ditimpa nama master barang)
@@ -626,46 +722,150 @@
         triggerSaveDraftDebounced();
     };
 
+    // =========================================================================
+    // KUNCI FIELD DARI PO (INTEGRITAS DATA PO - SUPPLIER, GUDANG & MASTER BARANG)
+    // =========================================================================
+    window.toggleKartonPoLockFields = function (isLocked, po) {
+        const sSelect = document.getElementById('supplierSelect');
+        const gSelect = document.getElementById('gudangSelect');
+        const bSelect = document.getElementById('kartonBarangSelect');
+        const produsenInput = document.getElementById('namaProdusenInput');
+
+        const badgeSupplier = document.getElementById('badgeLockSupplier');
+        const badgeGudang = document.getElementById('badgeLockGudang');
+        const badgeBarang = document.getElementById('badgeLockBarang');
+
+        if (isLocked) {
+            // Lock Supplier
+            if (sSelect) {
+                sSelect.style.pointerEvents = 'none';
+                sSelect.style.backgroundColor = '#f1f5f9';
+                sSelect.style.borderColor = '#cbd5e1';
+                sSelect.setAttribute('tabindex', '-1');
+            }
+            if (badgeSupplier) {
+                badgeSupplier.style.display = 'inline-flex';
+                if (po?.supplier_nm) badgeSupplier.innerText = `🔒 Terkunci (${po.supplier_nm})`;
+            }
+
+            // Lock Gudang
+            if (gSelect) {
+                gSelect.style.pointerEvents = 'none';
+                gSelect.style.backgroundColor = '#f1f5f9';
+                gSelect.style.borderColor = '#cbd5e1';
+                gSelect.setAttribute('tabindex', '-1');
+            }
+            if (badgeGudang) badgeGudang.style.display = 'inline-flex';
+
+            // Lock Master Barang Karton Box
+            if (bSelect) {
+                bSelect.style.pointerEvents = 'none';
+                bSelect.style.backgroundColor = '#f1f5f9';
+                bSelect.style.borderColor = '#cbd5e1';
+                bSelect.setAttribute('tabindex', '-1');
+            }
+            if (badgeBarang) badgeBarang.style.display = 'inline-flex';
+
+            if (produsenInput && po?.supplier_nm) {
+                produsenInput.value = po.supplier_nm;
+                produsenInput.readOnly = true;
+                produsenInput.style.backgroundColor = '#f1f5f9';
+            }
+        } else {
+            // Unlock Supplier
+            if (sSelect) {
+                sSelect.style.pointerEvents = 'auto';
+                sSelect.style.backgroundColor = '#ffffff';
+                sSelect.style.borderColor = '#e2e8f0';
+                sSelect.removeAttribute('tabindex');
+            }
+            if (badgeSupplier) badgeSupplier.style.display = 'none';
+
+            // Unlock Gudang
+            if (gSelect) {
+                gSelect.style.pointerEvents = 'auto';
+                gSelect.style.backgroundColor = '#ffffff';
+                gSelect.style.borderColor = '#e2e8f0';
+                gSelect.removeAttribute('tabindex');
+            }
+            if (badgeGudang) badgeGudang.style.display = 'none';
+
+            // Unlock Master Barang Karton Box
+            if (bSelect) {
+                bSelect.style.pointerEvents = 'auto';
+                bSelect.style.backgroundColor = '#ffffff';
+                bSelect.style.borderColor = '#e2e8f0';
+                bSelect.removeAttribute('tabindex');
+            }
+            if (badgeBarang) badgeBarang.style.display = 'none';
+
+            if (produsenInput) {
+                produsenInput.readOnly = false;
+                produsenInput.style.backgroundColor = '#ffffff';
+            }
+        }
+    };
+
     window.onPoSelected = function (select) {
         if (!select || !select.value) {
             renderPoItemsCards([], null);
+            window.toggleKartonPoLockFields(false);
             return;
         }
         const poId = select.value;
         const poData = window.appConfig?.poListData?.[poId];
+        const opt = select.selectedOptions ? select.selectedOptions[0] : select.options[select.selectedIndex];
+        const supplierId = poData?.supplier_id || opt?.getAttribute('data-supplier-id');
+        const supplierNm = poData?.supplier_nm || opt?.getAttribute('data-supplier-nm') || '';
+        const gudangId = poData?.gudang_id || opt?.getAttribute('data-gudang-id');
 
-        if (poData) {
-            if (poData.supplier_id) {
-                const sSel = document.getElementById('supplierSelect');
-                if (sSel) {
-                    sSel.value = poData.supplier_id;
-                    window.onSupplierSelected(sSel);
+        if (supplierId) {
+            const sSel = document.getElementById('supplierSelect');
+            if (sSel) {
+                let targetOpt = sSel.querySelector(`option[value="${supplierId}"]`);
+                if (!targetOpt && supplierNm) {
+                    targetOpt = document.createElement('option');
+                    targetOpt.value = supplierId;
+                    targetOpt.text = `${supplierNm}`;
+                    targetOpt.setAttribute('data-supplier-nm', supplierNm);
+                    sSel.appendChild(targetOpt);
                 }
+                sSel.value = supplierId;
+                window.onSupplierSelected(sSel);
             }
-            if (poData.gudang_id) {
-                const gSel = document.getElementById('gudangSelect');
-                if (gSel) gSel.value = poData.gudang_id;
-            }
+        }
+        if (gudangId) {
+            const gSel = document.getElementById('gudangSelect');
+            if (gSel) gSel.value = gudangId;
+        }
 
-            if (poData.items && poData.items.length > 0) {
-                renderPoItemsCards(poData.items, poData.items[0].podtl_id);
-                window.selectPoItem(poData.items[0].podtl_id);
-            } else {
-                renderPoItemsCards([], null);
-            }
+        // Auto-fill nama produsen dari nama supplier jika belum diisi manual
+        const namaProd = document.getElementById('namaProdusenInput');
+        if (namaProd && supplierNm && (!namaProd.value || namaProd.dataset.autoFilled === 'true')) {
+            namaProd.value = supplierNm;
+            namaProd.dataset.autoFilled = 'true';
+        }
+
+        if (poData && poData.items && poData.items.length > 0) {
+            renderPoItemsCards(poData.items, poData.items[0].podtl_id);
+            window.selectPoItem(poData.items[0].podtl_id);
         } else {
             renderPoItemsCards([], null);
         }
+
+        // Kunci field dari PO
+        window.toggleKartonPoLockFields(true, poData || { supplier_nm: supplierNm });
+
         triggerSaveDraftDebounced();
     };
 
     window.onSupplierSelected = function (select) {
         if (!select) return;
         const opt = select.selectedOptions ? select.selectedOptions[0] : select.options[select.selectedIndex];
-        if (opt) {
+        if (opt && opt.value) {
             const namaProd = document.getElementById('namaProdusenInput');
             if (namaProd && (!namaProd.value || namaProd.dataset.autoFilled === 'true')) {
-                const sNm = opt.getAttribute('data-supplier-nm') || opt.text.split(' - ')[1] || opt.text;
+                const sNm = opt.getAttribute('data-supplier-nm') || opt.text.split(' (')[0] || opt.text;
                 namaProd.value = sNm.trim();
                 namaProd.dataset.autoFilled = 'true';
             }
@@ -726,7 +926,8 @@
                 karton_spesifikasi_analisa: document.getElementById('inputSpesifikasiAnalisa')?.value || '',
                 karton_spesifikasi_standar: document.getElementById('inputSpesifikasiStandar')?.value || '',
 
-                karton_qty_gross: document.getElementById('kartonQtyGross')?.value || '',
+                karton_qty_grade_a: document.getElementById('kartonQtyGradeA')?.value || '',
+                karton_qty_grade_b: document.getElementById('kartonQtyGradeB')?.value || '',
                 karton_qty_reject: document.getElementById('kartonQtyReject')?.value || '0',
                 karton_satuan: currentKartonSatuan,
                 karton_komentar: document.getElementById('inputKartonKomentar')?.value || '',
@@ -911,9 +1112,13 @@
                 if (el) el.value = draft.karton_spesifikasi_standar;
             }
 
-            if (draft.karton_qty_gross !== undefined) {
-                const el = document.getElementById('kartonQtyGross');
-                if (el) el.value = draft.karton_qty_gross;
+            if (draft.karton_qty_grade_a !== undefined) {
+                const el = document.getElementById('kartonQtyGradeA');
+                if (el) el.value = draft.karton_qty_grade_a;
+            }
+            if (draft.karton_qty_grade_b !== undefined) {
+                const el = document.getElementById('kartonQtyGradeB');
+                if (el) el.value = draft.karton_qty_grade_b;
             }
             if (draft.karton_qty_reject !== undefined) {
                 const el = document.getElementById('kartonQtyReject');
@@ -982,7 +1187,7 @@
 
         const supplierSelect = document.getElementById('supplierSelect');
         if (!supplierSelect || !supplierSelect.value) {
-            alert('Silakan pilih Mitra Supplier / Produsen Karton terlebih dahulu!');
+            alert('Silakan pilih Mitra Supplier Karton terlebih dahulu!');
             window.switchKartonTab(1);
             supplierSelect?.focus();
             return;
@@ -1013,66 +1218,105 @@
             return;
         }
 
-        const grossInput = document.getElementById('kartonQtyGross');
-        const grossVal = parseFloat(grossInput?.value || 0);
-        const pabrikVal = parseFloat(document.getElementById('inputJumlahPabrik')?.value || 0);
-        if ((isNaN(grossVal) || grossVal <= 0) && (isNaN(pabrikVal) || pabrikVal <= 0)) {
-            alert('Kuantitas jumlah lolos kedatangan karton box wajib diisi!');
-            window.switchKartonTab(2);
-            grossInput?.focus();
-            return;
-        }
-
-        const finalGross = grossVal > 0 ? grossVal : (pabrikVal > 0 ? pabrikVal : sjVal);
-        const reject = parseFloat(document.getElementById('kartonQtyReject')?.value || 0) || 0;
-        const netto = Math.max(0, finalGross - reject);
-        const kesimpulan = document.getElementById('inputKesimpulanQc')?.value || 'TERIMA';
-
         const bId = kartonSelect.value;
         const bOpt = kartonSelect.selectedOptions ? kartonSelect.selectedOptions[0] : kartonSelect.options[kartonSelect.selectedIndex];
         const bNm = bOpt ? (bOpt.getAttribute('data-nama') || bOpt.text.split(' - ')[1]?.split(' (')[0] || bOpt.text) : 'Karton Box';
         const curNamaJenis = document.getElementById('kartonNamaJenisInput')?.value?.trim() || bNm;
 
-        // Injeksi items[0]
+        const qtyA = parseFloat(document.getElementById('kartonQtyGradeA')?.value || 0) || 0;
+        const qtyB = parseFloat(document.getElementById('kartonQtyGradeB')?.value || 0) || 0;
+        const reject = parseFloat(document.getElementById('kartonQtyReject')?.value || 0) || 0;
+        const totalNetto = qtyA + qtyB;
+        const totalGross = totalNetto + reject;
+
+        if (totalGross <= 0) {
+            alert('Kuantitas karton (Grade A, Grade B, atau Reject) wajib diisi lebih dari 0!');
+            window.switchKartonTab(2);
+            document.getElementById('kartonQtyGradeA')?.focus();
+            return;
+        }
+
+        const kesimpulan = document.getElementById('inputKesimpulanQc')?.value || 'TERIMA';
+        const komentarText = document.getElementById('inputKartonKomentar')?.value || '';
+
+        function injectCommonParams(idx) {
+            injectHiddenInput(`items[${idx}][status_raw_material]`, document.getElementById('inputRawMaterial')?.value || 'OK');
+            injectHiddenInput(`items[${idx}][kemasan_kondisi]`, document.getElementById('inputKemasanKondisi')?.value || 'OK');
+            injectHiddenInput(`items[${idx}][kemasan_kotor]`, document.getElementById('checkCacatKotor')?.checked ? 1 : 0);
+            injectHiddenInput(`items[${idx}][kemasan_apek]`, document.getElementById('checkCacatApek')?.checked ? 1 : 0);
+            injectHiddenInput(`items[${idx}][kemasan_basah]`, document.getElementById('checkCacatBasah')?.checked ? 1 : 0);
+            injectHiddenInput(`items[${idx}][kemasan_jamur]`, document.getElementById('checkCacatJamur')?.checked ? 1 : 0);
+            injectHiddenInput(`items[${idx}][kemasan_sobek]`, document.getElementById('checkCacatSobek')?.checked ? 1 : 0);
+            injectHiddenInput(`items[${idx}][kemasan_berminyak]`, document.getElementById('checkCacatBerminyak')?.checked ? 1 : 0);
+            injectHiddenInput(`items[${idx}][kemasan_berdebu]`, document.getElementById('checkCacatBerdebu')?.checked ? 1 : 0);
+
+            injectHiddenInput(`items[${idx}][dimensi_panjang_analisa]`, document.getElementById('inputPanjangAnalisa')?.value || '');
+            injectHiddenInput(`items[${idx}][dimensi_panjang_standar]`, document.getElementById('inputPanjangStandar')?.value || '40 cm');
+            injectHiddenInput(`items[${idx}][dimensi_lebar_analisa]`, document.getElementById('inputLebarAnalisa')?.value || '');
+            injectHiddenInput(`items[${idx}][dimensi_lebar_standar]`, document.getElementById('inputLebarStandar')?.value || '30 cm');
+            injectHiddenInput(`items[${idx}][dimensi_tinggi_analisa]`, document.getElementById('inputTinggiAnalisa')?.value || '');
+            injectHiddenInput(`items[${idx}][dimensi_tinggi_standar]`, document.getElementById('inputTinggiStandar')?.value || '25 cm');
+            injectHiddenInput(`items[${idx}][spesifikasi_analisa]`, document.getElementById('inputSpesifikasiAnalisa')?.value || '');
+            injectHiddenInput(`items[${idx}][spesifikasi_standar]`, document.getElementById('inputSpesifikasiStandar')?.value || 'Sesuai Spesifikasi MFI');
+            injectHiddenInput(`items[${idx}][satuan]`, currentKartonSatuan);
+        }
+
         injectHiddenInput('nama_jenis', curNamaJenis);
         if (currentPodtlId) {
-            injectHiddenInput('items[0][podtl_id]', currentPodtlId);
             injectHiddenInput('podtl_id', currentPodtlId);
         }
-        injectHiddenInput('items[0][barang_id]', bId);
-        injectHiddenInput('items[0][qty_timbang_gross]', finalGross);
-        injectHiddenInput('items[0][qty_reject]', reject);
-        injectHiddenInput('items[0][qty_netto_lolos]', netto);
-        injectHiddenInput('items[0][keputusan_qc]', kesimpulan === 'TERIMA' ? 'PASSED' : 'REJECT_TOTAL');
-        injectHiddenInput('items[0][status_raw_material]', document.getElementById('inputRawMaterial')?.value || 'OK');
-        injectHiddenInput('items[0][kemasan_kondisi]', document.getElementById('inputKemasanKondisi')?.value || 'OK');
-        injectHiddenInput('items[0][kemasan_kotor]', document.getElementById('checkCacatKotor')?.checked ? 1 : 0);
-        injectHiddenInput('items[0][kemasan_apek]', document.getElementById('checkCacatApek')?.checked ? 1 : 0);
-        injectHiddenInput('items[0][kemasan_basah]', document.getElementById('checkCacatBasah')?.checked ? 1 : 0);
-        injectHiddenInput('items[0][kemasan_jamur]', document.getElementById('checkCacatJamur')?.checked ? 1 : 0);
-        injectHiddenInput('items[0][kemasan_sobek]', document.getElementById('checkCacatSobek')?.checked ? 1 : 0);
-        injectHiddenInput('items[0][kemasan_berminyak]', document.getElementById('checkCacatBerminyak')?.checked ? 1 : 0);
-        injectHiddenInput('items[0][kemasan_berdebu]', document.getElementById('checkCacatBerdebu')?.checked ? 1 : 0);
 
-        injectHiddenInput('items[0][dimensi_panjang_analisa]', document.getElementById('inputPanjangAnalisa')?.value || '');
-        injectHiddenInput('items[0][dimensi_panjang_standar]', document.getElementById('inputPanjangStandar')?.value || '40 cm');
-        injectHiddenInput('items[0][dimensi_lebar_analisa]', document.getElementById('inputLebarAnalisa')?.value || '');
-        injectHiddenInput('items[0][dimensi_lebar_standar]', document.getElementById('inputLebarStandar')?.value || '30 cm');
-        injectHiddenInput('items[0][dimensi_tinggi_analisa]', document.getElementById('inputTinggiAnalisa')?.value || '');
-        injectHiddenInput('items[0][dimensi_tinggi_standar]', document.getElementById('inputTinggiStandar')?.value || '25 cm');
-        injectHiddenInput('items[0][spesifikasi_analisa]', document.getElementById('inputSpesifikasiAnalisa')?.value || '');
-        injectHiddenInput('items[0][spesifikasi_standar]', document.getElementById('inputSpesifikasiStandar')?.value || 'Sesuai Spesifikasi MFI');
+        if (qtyA > 0 && qtyB > 0) {
+            // MULTI-GRADE: Terdapat Grade A dan Grade B sekaligus dalam 1 kali inspeksi
+            // Item 0: Grade A (Dus Baru)
+            if (currentPodtlId) injectHiddenInput('items[0][podtl_id]', currentPodtlId);
+            injectHiddenInput('items[0][barang_id]', bId);
+            injectHiddenInput('items[0][qty_timbang_gross]', qtyA);
+            injectHiddenInput('items[0][qty_reject]', 0);
+            injectHiddenInput('items[0][qty_netto_lolos]', kesimpulan === 'TERIMA' ? qtyA : 0);
+            injectHiddenInput('items[0][grade_cd]', kesimpulan === 'TERIMA' ? 'A' : 'REJECT');
+            injectHiddenInput('items[0][keputusan_qc]', kesimpulan === 'TERIMA' ? 'PASSED' : 'REJECT_TOTAL');
+            injectHiddenInput('items[0][catatan_dtl]', (komentarText ? komentarText + ' | ' : '') + 'Grade A (Dus Baru)');
+            injectCommonParams(0);
 
-        const komentarText = document.getElementById('inputKartonKomentar')?.value || '';
-        injectHiddenInput('items[0][catatan_dtl]', komentarText);
+            // Item 1: Grade B (Dus Puteran/Reuse)
+            if (currentPodtlId) injectHiddenInput('items[1][podtl_id]', currentPodtlId);
+            injectHiddenInput('items[1][barang_id]', bId);
+            injectHiddenInput('items[1][qty_timbang_gross]', qtyB + reject);
+            injectHiddenInput('items[1][qty_reject]', reject);
+            injectHiddenInput('items[1][qty_netto_lolos]', kesimpulan === 'TERIMA' ? qtyB : 0);
+            injectHiddenInput('items[1][grade_cd]', kesimpulan === 'TERIMA' ? 'B' : 'REJECT');
+            injectHiddenInput('items[1][keputusan_qc]', kesimpulan === 'TERIMA' ? (reject > 0 ? 'REJECT_PARTIAL' : 'PASSED') : 'REJECT_TOTAL');
+            injectHiddenInput('items[1][catatan_dtl]', (komentarText ? komentarText + ' | ' : '') + 'Grade B (Dus Puteran)');
+            injectCommonParams(1);
+
+            injectHiddenInput('grade_cd', 'A');
+        } else {
+            // SINGLE-GRADE: Hanya Grade A saja atau Grade B saja
+            const singleGrade = (qtyB > 0 && qtyA === 0) ? 'B' : 'A';
+            const lolosQty = (qtyB > 0 && qtyA === 0) ? qtyB : qtyA;
+
+            if (currentPodtlId) injectHiddenInput('items[0][podtl_id]', currentPodtlId);
+            injectHiddenInput('items[0][barang_id]', bId);
+            injectHiddenInput('items[0][qty_timbang_gross]', totalGross);
+            injectHiddenInput('items[0][qty_reject]', reject);
+            injectHiddenInput('items[0][qty_netto_lolos]', kesimpulan === 'TERIMA' ? lolosQty : 0);
+            injectHiddenInput('items[0][grade_cd]', kesimpulan === 'TERIMA' ? singleGrade : 'REJECT');
+            injectHiddenInput('items[0][keputusan_qc]', kesimpulan === 'TERIMA' ? (reject > 0 ? 'REJECT_PARTIAL' : 'PASSED') : 'REJECT_TOTAL');
+            injectHiddenInput('items[0][catatan_dtl]', (komentarText ? komentarText + ' | ' : '') + `Grade ${singleGrade}`);
+            injectCommonParams(0);
+
+            injectHiddenInput('grade_cd', kesimpulan === 'TERIMA' ? singleGrade : 'REJECT');
+        }
+
         injectHiddenInput('catatan_umum', komentarText);
 
         // Header level
         injectHiddenInput('satuan', currentKartonSatuan);
         injectHiddenInput('items[0][satuan]', currentKartonSatuan);
         injectHiddenInput('kesimpulan_qc', kesimpulan);
-        injectHiddenInput('jumlah_di_pabrik', finalGross);
-        injectHiddenInput('jumlah_surat_jalan', sjVal > 0 ? sjVal : finalGross);
+        injectHiddenInput('jumlah_di_pabrik', totalGross);
+        injectHiddenInput('jumlah_surat_jalan', sjVal > 0 ? sjVal : totalGross);
         const samplePcs = document.getElementById('inputJumlahSamplePcs');
         injectHiddenInput('jumlah_sample_pcs', parseInt(samplePcs?.value || 10, 10) || 10);
 
@@ -1105,13 +1349,22 @@
 
         const hasDraft = restoreKartonDraft();
 
+        const poSelect = document.getElementById('poSelect');
         if (!hasDraft) {
-            const poSelect = document.getElementById('poSelect');
             if (poSelect && poSelect.value) {
                 window.onPoSelected(poSelect);
             } else {
+                window.toggleKartonPoLockFields(false);
                 const bSel = document.getElementById('kartonBarangSelect');
                 if (bSel) window.onKartonBarangChanged(bSel);
+            }
+        } else {
+            if (poSelect && poSelect.value) {
+                const poId = poSelect.value;
+                const poData = window.appConfig?.poListData?.[poId];
+                window.toggleKartonPoLockFields(true, poData);
+            } else {
+                window.toggleKartonPoLockFields(false);
             }
         }
 
@@ -1136,7 +1389,8 @@
             form.addEventListener('change', triggerSaveDraftDebounced);
         }
 
-        const inputGross = document.getElementById('kartonQtyGross');
+        const inputGradeA = document.getElementById('kartonQtyGradeA');
+        const inputGradeB = document.getElementById('kartonQtyGradeB');
         const inputReject = document.getElementById('kartonQtyReject');
         const inputPabrik = document.getElementById('inputJumlahPabrik');
         const inputSJ = document.getElementById('inputJumlahSJ');
@@ -1148,35 +1402,14 @@
             });
         }
 
-        if (inputPabrik) {
-            inputPabrik.addEventListener('input', function () {
-                this.dataset.autoFilled = 'false';
-                if (inputGross) {
-                    inputGross.value = this.value;
-                    inputGross.dataset.autoFilled = 'false';
-                }
-                window.syncKartonQuantity();
-            });
-        }
-        if (inputGross) {
-            inputGross.addEventListener('input', function () {
-                this.dataset.autoFilled = 'false';
-                if (inputPabrik) {
-                    inputPabrik.value = this.value;
-                    inputPabrik.dataset.autoFilled = 'false';
-                }
-                window.syncKartonQuantity();
-            });
-        }
-        if (inputReject) inputReject.addEventListener('input', window.syncKartonQuantity);
+        if (inputGradeA) inputGradeA.addEventListener('input', function () { window.onKartonQtySplitChanged('grade_a'); });
+        if (inputGradeB) inputGradeB.addEventListener('input', function () { window.onKartonQtySplitChanged('grade_b'); });
+        if (inputReject) inputReject.addEventListener('input', function () { window.onKartonQtySplitChanged('reject'); });
+
         if (inputSJ) {
             inputSJ.addEventListener('input', function () {
                 this.dataset.autoFilled = 'false';
-                if (inputPabrik && (!inputPabrik.value || inputPabrik.value == 0 || inputPabrik.dataset.autoFilled === 'true')) {
-                    inputPabrik.value = this.value;
-                    if (inputGross) inputGross.value = this.value;
-                    window.syncKartonQuantity();
-                }
+                window.onKartonQtySplitChanged('sj');
             });
         }
 

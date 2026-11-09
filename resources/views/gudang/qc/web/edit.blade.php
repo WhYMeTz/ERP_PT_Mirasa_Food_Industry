@@ -164,12 +164,43 @@
             </div>
             @if ($qc->parent_qc_id)
                 <div style="display: flex; gap: 0.5rem; align-items: center; flex-shrink: 0;">
-                    <a href="{{ route('qc.inbound.edit', $qc->parent_qc_id) }}" class="btn btn-sm" style="background: #ffffff; color: #7e22ce; border: 1.5px solid #d8b4fe; font-weight: 700; display: inline-flex; align-items: center; gap: 0.35rem; text-decoration: none; border-radius: 6px; padding: 0.4rem 0.8rem; box-shadow: 0 1px 2px rgba(0,0,0,0.05);" title="Buka dan tinjau dokumen Pengujian I">
-                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
-                        <span>Tinjau Uji 1 Induk</span>
+                    <a href="{{ route('qc.inbound.edit', [$qc->parent_qc_id, 'ref' => request('ref')]) }}" class="btn btn-sm" style="background: #ffffff; color: #7e22ce; border: 1.5px solid #d8b4fe; font-weight: 800; display: inline-flex; align-items: center; gap: 0.35rem; text-decoration: none; border-radius: 6px; padding: 0.45rem 0.9rem; box-shadow: 0 1px 3px rgba(0,0,0,0.06);" title="Buka dan edit formulir Pengujian I (Kedatangan)">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                        <span>🚛 Beralih Edit Uji 1</span>
                     </a>
                 </div>
             @endif
+        </div>
+    </div>
+@endif
+
+{{-- BANNER KHUSUS PENGUJIAN 1 (KEDATANGAN GERBANG DENGAN LANJUTAN UJI 2) --}}
+@php
+    $p2ChildWeb = ($kat === 'SINGKONG' && ($qc->tahap_uji ?? 'PENGUJIAN_1') !== 'PENGUJIAN_2') ? $qc->pengujian2List->first() : null;
+@endphp
+@if ($p2ChildWeb)
+    <div style="margin-bottom: 1.25rem; background: linear-gradient(135deg, #f0fdf4 0%, #eff6ff 100%); border: 1.5px solid #7dd3fc; border-radius: 10px; padding: 1rem 1.25rem; box-shadow: 0 2px 5px rgba(2, 132, 199, 0.06);">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap;">
+            <div style="display: flex; gap: 0.85rem; align-items: flex-start;">
+                <div style="width: 40px; height: 40px; border-radius: 8px; background: #0284c7; color: #ffffff; display: flex; align-items: center; justify-content: center; font-size: 1.35rem; flex-shrink: 0; box-shadow: 0 2px 4px rgba(2, 132, 199, 0.3);">
+                    🚛
+                </div>
+                <div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                        <strong style="color: #0369a1; font-size: 1rem;">Dokumen QC Pengujian I (Awal Kedatangan Truk di Gerbang)</strong>
+                        <span class="badge" style="background: #0284c7; color: #ffffff; font-weight: 800; font-size: 0.72rem;">TAHAP 1</span>
+                    </div>
+                    <div style="font-size: 0.825rem; color: #0c4a6e; margin-top: 0.25rem; line-height: 1.5;">
+                        Truk ini memiliki dokumen lanjutan <strong>Pengujian II (#{{ $p2ChildWeb->qc_no }})</strong> di lantai produksi dengan muatan <strong style="color: #15803d;">{{ number_format($p2ChildWeb->details->sum('qty_netto_lolos'), 0, ',', '.') }} kg</strong> (Grade {{ $p2ChildWeb->details->first()?->grade_cd ?? 'A' }}).
+                    </div>
+                </div>
+            </div>
+            <div style="display: flex; gap: 0.5rem; align-items: center; flex-shrink: 0;">
+                <a href="{{ route('qc.inbound.edit', [$p2ChildWeb->qc_id, 'ref' => request('ref')]) }}" class="btn btn-sm" style="background: #7e22ce; color: #ffffff; border: 1.5px solid #6b21a8; font-weight: 800; display: inline-flex; align-items: center; gap: 0.4rem; text-decoration: none; border-radius: 6px; padding: 0.45rem 0.9rem; box-shadow: 0 2px 4px rgba(126, 34, 206, 0.25);" title="Beralih untuk mengedit dokumen Pengujian II">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                    <span>🍟 Beralih Edit Uji 2 &rarr;</span>
+                </a>
+            </div>
         </div>
     </div>
 @endif

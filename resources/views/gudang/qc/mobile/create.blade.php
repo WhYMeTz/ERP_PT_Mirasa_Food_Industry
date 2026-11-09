@@ -327,7 +327,7 @@
                             @php
                                 $poCats = $getPoCommodities($p);
                                 $itemNames = $p->details->map(fn($d) => $d->barang?->barang_nm)->filter()->unique()->implode(', ');
-                                $totalSisa = $p->details->sum(fn($d) => max(0, (float)$d->pesan_qty - (float)$d->terima_qty));
+                                $totalSisa = $p->details->sum(fn($d) => $d->sisa_belum_qc_qty);
                             @endphp
                             <option value="{{ $p->po_id }}"
                                     data-komoditas="{{ implode(',', $poCats) }}"
@@ -365,7 +365,7 @@
                     <div class="form-group" style="margin-bottom: 0;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem; flex-wrap: wrap; gap: 0.25rem;">
                             <label class="form-label" style="font-weight: 800; margin: 0; color: #0f172a;">
-                                🏢 Mitra Supplier / Produsen <span style="color:#ef4444;">*</span>
+                                🏢 Mitra Supplier <span style="color:#ef4444;">*</span>
                             </label>
                             <span id="supplierFilterBadge" style="font-size: 0.7rem; font-weight: 800; color: #0284c7; background: #e0f2fe; padding: 2px 7px; border-radius: 6px;">
                                 {{ $isMinyak ? 'Filter: 🏭 Vendor Minyak' : 'Filter: Singkong' }}
@@ -396,7 +396,7 @@
 
                         {{-- SELECT MITRA SUPPLIER / PRODUSEN --}}
                         <select name="supplier_id" id="supplierSelect" class="form-control" required onchange="onSupplierSelected(this)" style="font-weight: 700;">
-                            <option value="">-- Pilih Supplier / Produsen --</option>
+                            <option value="">-- Pilih Mitra Supplier --</option>
                             @foreach ($suppliers as $s)
                                 @php
                                     $jenisCd = $s->jenisSupplier?->jenis_supplier_cd ?: (str_starts_with($s->supplier_cd, 'SKG-') ? 'RAW' : 'BP');
@@ -467,19 +467,7 @@
                     </div>
                 </div>
 
-                {{-- NAMA PRODUSEN & NEGARA PRODUSEN (KHUSUS KOMODITAS VENDOR / NON-SINGKONG) --}}
-                <div id="wrapProdusenNegara" style="display: {{ ($isMinyak || ($curKomoditas ?? '') !== 'SINGKONG') ? 'grid' : 'none' }}; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.85rem;">
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label class="form-label" style="font-weight: 700;">Nama Produsen (Pabrik Pembuat)</label>
-                        <input type="text" name="nama_produsen" id="namaProdusenInput" class="form-control" placeholder="Contoh: PT. SMART Tbk / Wilmar / Musim Mas" value="{{ old('nama_produsen') }}">
-                        <span style="font-size: 0.7rem; color: #64748b; margin-top: 2px; display: block;">Terisi otomatis dari supplier (dapat diubah jika produsennya berbeda)</span>
-                    </div>
-
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label class="form-label" style="font-weight: 700;">Negara Produsen</label>
-                        <input type="text" name="negara_produsen" class="form-control" value="{{ old('negara_produsen', 'Indonesia') }}">
-                    </div>
-                </div>
+                <input type="hidden" name="negara_produsen" value="{{ old('negara_produsen', 'Indonesia') }}">
 
                 {{-- 4. ARMADA: PLAT TRUK & SOPIR --}}
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">

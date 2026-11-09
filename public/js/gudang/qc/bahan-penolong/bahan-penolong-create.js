@@ -75,7 +75,7 @@
                 const sup = document.getElementById('supplierSelect')?.value;
                 const gud = document.getElementById('gudangSelect')?.value;
                 if (!sup) {
-                    alert('Silakan pilih Mitra Supplier / Produsen Bahan terlebih dahulu!');
+                    alert('Silakan pilih Mitra Supplier Bahan terlebih dahulu!');
                     document.getElementById('supplierSelect')?.focus();
                     return;
                 }
@@ -382,6 +382,90 @@
         }
     };
 
+    // =========================================================================
+    // KUNCI FIELD DARI PO (INTEGRITAS DATA PO - SUPPLIER, GUDANG & MASTER BARANG)
+    // =========================================================================
+    window.toggleBpPoLockFields = function (isLocked, po) {
+        const sSelect = document.getElementById('supplierSelect');
+        const gSelect = document.getElementById('gudangSelect');
+        const bSelect = document.getElementById('bpBarangSelect');
+        const produsenInput = document.getElementById('inputNamaProdusen');
+
+        const badgeSupplier = document.getElementById('badgeLockSupplier');
+        const badgeGudang = document.getElementById('badgeLockGudang');
+        const badgeBarang = document.getElementById('badgeLockBarang');
+
+        if (isLocked) {
+            // Lock Supplier
+            if (sSelect) {
+                sSelect.style.pointerEvents = 'none';
+                sSelect.style.backgroundColor = '#f1f5f9';
+                sSelect.style.borderColor = '#cbd5e1';
+                sSelect.setAttribute('tabindex', '-1');
+            }
+            if (badgeSupplier) {
+                badgeSupplier.style.display = 'inline-flex';
+                if (po?.supplier_nm) badgeSupplier.innerText = `🔒 Terkunci (${po.supplier_nm})`;
+            }
+
+            // Lock Gudang
+            if (gSelect) {
+                gSelect.style.pointerEvents = 'none';
+                gSelect.style.backgroundColor = '#f1f5f9';
+                gSelect.style.borderColor = '#cbd5e1';
+                gSelect.setAttribute('tabindex', '-1');
+            }
+            if (badgeGudang) badgeGudang.style.display = 'inline-flex';
+
+            // Lock Master Barang Bahan Penolong
+            if (bSelect) {
+                bSelect.style.pointerEvents = 'none';
+                bSelect.style.backgroundColor = '#f1f5f9';
+                bSelect.style.borderColor = '#cbd5e1';
+                bSelect.setAttribute('tabindex', '-1');
+            }
+            if (badgeBarang) badgeBarang.style.display = 'inline-flex';
+
+            if (produsenInput && po?.supplier_nm) {
+                produsenInput.value = po.supplier_nm;
+                produsenInput.readOnly = true;
+                produsenInput.style.backgroundColor = '#f1f5f9';
+            }
+        } else {
+            // Unlock Supplier
+            if (sSelect) {
+                sSelect.style.pointerEvents = 'auto';
+                sSelect.style.backgroundColor = '#ffffff';
+                sSelect.style.borderColor = '#e2e8f0';
+                sSelect.removeAttribute('tabindex');
+            }
+            if (badgeSupplier) badgeSupplier.style.display = 'none';
+
+            // Unlock Gudang
+            if (gSelect) {
+                gSelect.style.pointerEvents = 'auto';
+                gSelect.style.backgroundColor = '#ffffff';
+                gSelect.style.borderColor = '#e2e8f0';
+                gSelect.removeAttribute('tabindex');
+            }
+            if (badgeGudang) badgeGudang.style.display = 'none';
+
+            // Unlock Master Barang Bahan Penolong
+            if (bSelect) {
+                bSelect.style.pointerEvents = 'auto';
+                bSelect.style.backgroundColor = '#ffffff';
+                bSelect.style.borderColor = '#e2e8f0';
+                bSelect.removeAttribute('tabindex');
+            }
+            if (badgeBarang) badgeBarang.style.display = 'none';
+
+            if (produsenInput) {
+                produsenInput.readOnly = false;
+                produsenInput.style.backgroundColor = '#ffffff';
+            }
+        }
+    };
+
     // 10. Multi-Item PO Selector Cards
     window.onPoSelected = function (select, targetPodtlId = null) {
         const poId = select?.value;
@@ -391,6 +475,7 @@
         if (!poId) {
             if (boxSelector) boxSelector.style.display = 'none';
             if (podtlHidden) podtlHidden.value = '';
+            window.toggleBpPoLockFields(false);
             return;
         }
 
@@ -408,6 +493,9 @@
         if (gudangSelect && gudangId) {
             gudangSelect.value = gudangId;
         }
+
+        const poData = (window.appConfig && window.appConfig.poListData && window.appConfig.poListData[poId]) ? window.appConfig.poListData[poId] : null;
+        window.toggleBpPoLockFields(true, poData || { supplier_nm: opt?.text?.split('•')?.[1]?.trim() });
 
         renderPoItemsCards(poId, targetPodtlId);
     };
@@ -558,6 +646,7 @@
 
     function applyPoDetailData(poData) {
         if (!poData || !poData.items || poData.items.length === 0) return;
+        window.toggleBpPoLockFields(true, poData);
         const firstItem = poData.items[0];
         const bSel = document.getElementById('bpBarangSelect');
         if (bSel && firstItem.barang_id) {
@@ -606,7 +695,7 @@
 
         const supplierSelect = document.getElementById('supplierSelect');
         if (!supplierSelect || !supplierSelect.value) {
-            alert('Silakan pilih Mitra Supplier / Produsen Bahan terlebih dahulu!');
+            alert('Silakan pilih Mitra Supplier Bahan terlebih dahulu!');
             window.switchBpTab(1);
             supplierSelect?.focus();
             return;
@@ -666,6 +755,8 @@
         injectHiddenInput('items[0][qty_reject]', finalReject);
         injectHiddenInput('items[0][qty_netto_lolos]', finalNetto);
         injectHiddenInput('items[0][keputusan_qc]', kesimpulan === 'TOLAK' ? 'REJECT_TOTAL' : (finalReject > 0 ? 'REJECT_PARTIAL' : 'PASSED'));
+        injectHiddenInput('items[0][grade_cd]', kesimpulan === 'TOLAK' ? 'REJECT' : 'NON-GRADE');
+        injectHiddenInput('grade_cd', kesimpulan === 'TOLAK' ? 'REJECT' : 'NON-GRADE');
         injectHiddenInput('qty_terima', finalNetto);
         injectHiddenInput('qty_tolak', finalReject);
         injectHiddenInput('items[0][status_raw_material]', document.getElementById('inputRawMaterial')?.value || 'OK');
@@ -971,6 +1062,12 @@
             } else {
                 const bSel = document.getElementById('bpBarangSelect');
                 if (bSel) window.onBpBarangChanged(bSel);
+            }
+        } else {
+            const poSelect = document.getElementById('poSelect');
+            if (poSelect && poSelect.value) {
+                const poData = (window.appConfig && window.appConfig.poListData && window.appConfig.poListData[poSelect.value]) ? window.appConfig.poListData[poSelect.value] : null;
+                window.toggleBpPoLockFields(true, poData);
             }
         }
 

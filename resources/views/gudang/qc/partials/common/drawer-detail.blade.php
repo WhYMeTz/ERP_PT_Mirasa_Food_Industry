@@ -105,6 +105,44 @@
                                         Grade A
                                     </span>
                                 @endif
+                            @elseif ($kat === 'KARTON')
+                                @php
+                                    $gADtl = $qc->details->firstWhere('grade_cd', 'A');
+                                    $gBDtl = $qc->details->firstWhere('grade_cd', 'B');
+                                    $hasA = $gADtl && (float)$gADtl->qty_netto_lolos > 0;
+                                    $hasB = $gBDtl && (float)$gBDtl->qty_netto_lolos > 0;
+                                @endphp
+                                @if ($hasA && $hasB)
+                                    <div style="display: flex; gap: 4px; align-items: center; flex-wrap: wrap;">
+                                        <span style="background: #dcfce7; color: #15803d; border: 1px solid #86efac; font-weight: 800; font-size: 0.72rem; padding: 2px 7px; border-radius: 4px;">
+                                            🟢 Gr. A: {{ number_format((float)$gADtl->qty_netto_lolos, 0, ',', '.') }}
+                                        </span>
+                                        <span style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a; font-weight: 800; font-size: 0.72rem; padding: 2px 7px; border-radius: 4px;">
+                                            🟡 Gr. B: {{ number_format((float)$gBDtl->qty_netto_lolos, 0, ',', '.') }}
+                                        </span>
+                                        @if ($p1Reject > 0)
+                                            <span style="background: #fff7ed; color: #c2410c; border: 1px solid #fdba74; font-weight: 800; font-size: 0.72rem; padding: 2px 7px; border-radius: 4px;">
+                                                Parsial (-{{ number_format($p1Reject, 0, ',', '.') }})
+                                            </span>
+                                        @endif
+                                    </div>
+                                @elseif ($hasB || $p1Grade === 'B')
+                                    <span style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a; font-weight: 800; font-size: 0.72rem; padding: 2px 7px; border-radius: 4px;">
+                                        🟡 Grade B: {{ number_format((float)($gBDtl?->qty_netto_lolos ?? $p1Netto), 0, ',', '.') }}
+                                    </span>
+                                @elseif ($qc->status_qc === 'DITOLAK_TOTAL' || $p1Netto <= 0)
+                                    <span style="background: #fef2f2; color: #991b1b; border: 1px solid #fca5a5; font-weight: 800; font-size: 0.72rem; padding: 2px 7px; border-radius: 4px;">
+                                        Ditolak
+                                    </span>
+                                @elseif ($p1Reject > 0)
+                                    <span style="background: #fff7ed; color: #c2410c; border: 1px solid #fdba74; font-weight: 800; font-size: 0.72rem; padding: 2px 7px; border-radius: 4px;">
+                                        Parsial
+                                    </span>
+                                @else
+                                    <span style="background: #f0fdf4; color: #15803d; border: 1px solid #86efac; font-weight: 800; font-size: 0.72rem; padding: 2px 7px; border-radius: 4px;">
+                                        🟢 Grade A: {{ number_format((float)($gADtl?->qty_netto_lolos ?? $p1Netto), 0, ',', '.') }}
+                                    </span>
+                                @endif
                             @else
                                 @if ($qc->status_qc === 'DITOLAK_TOTAL' || $p1Netto <= 0)
                                     <span style="background: #fef2f2; color: #991b1b; border: 1px solid #fca5a5; font-weight: 800; font-size: 0.72rem; padding: 2px 7px; border-radius: 4px;">
@@ -146,6 +184,36 @@
                             <div class="qc-stat-val" style="color: #059669;">
                                 {{ number_format($p1Netto, 0, ',', '.') }} {{ $isBahanBaku ? 'kg' : $satuanCd }}
                             </div>
+                            @if ($kat === 'KARTON')
+                                @php
+                                    $gADtl = $gADtl ?? $qc->details->firstWhere('grade_cd', 'A');
+                                    $gBDtl = $gBDtl ?? $qc->details->firstWhere('grade_cd', 'B');
+                                    $hasA = $gADtl && (float)$gADtl->qty_netto_lolos > 0;
+                                    $hasB = $gBDtl && (float)$gBDtl->qty_netto_lolos > 0;
+                                @endphp
+                                @if ($hasA && $hasB)
+                                    <div style="display: flex; gap: 4px; justify-content: center; margin-top: 0.35rem; flex-wrap: wrap;">
+                                        <span class="badge" style="background: #dcfce7; color: #15803d; border: 1px solid #86efac; font-weight: 800; font-size: 0.68rem; padding: 1px 5px; border-radius: 4px;" title="Grade A (Dus Baru)">
+                                            🟢 A: {{ number_format((float)$gADtl->qty_netto_lolos, 0, ',', '.') }}
+                                        </span>
+                                        <span class="badge" style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a; font-weight: 800; font-size: 0.68rem; padding: 1px 5px; border-radius: 4px;" title="Grade B (Dus Puteran)">
+                                            🟡 B: {{ number_format((float)$gBDtl->qty_netto_lolos, 0, ',', '.') }}
+                                        </span>
+                                    </div>
+                                @elseif ($hasB || $p1Grade === 'B')
+                                    <div style="margin-top: 0.25rem;">
+                                        <span class="badge" style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a; font-weight: 800; font-size: 0.68rem; padding: 1px 5px; border-radius: 4px;">
+                                            🟡 Gr. B: {{ number_format((float)($gBDtl?->qty_netto_lolos ?? $p1Netto), 0, ',', '.') }}
+                                        </span>
+                                    </div>
+                                @elseif ($hasA || $p1Grade === 'A')
+                                    <div style="margin-top: 0.25rem;">
+                                        <span class="badge" style="background: #dcfce7; color: #15803d; border: 1px solid #86efac; font-weight: 800; font-size: 0.68rem; padding: 1px 5px; border-radius: 4px;">
+                                            🟢 Gr. A: {{ number_format((float)($gADtl?->qty_netto_lolos ?? $p1Netto), 0, ',', '.') }}
+                                        </span>
+                                    </div>
+                                @endif
+                            @endif
                         </div>
                     </div>
 
@@ -217,6 +285,27 @@
                                     <span style="color: #64748b;">Komoditas:</span>
                                     <strong style="color: #0f172a;">{{ $barangNm }}</strong>
                                 </div>
+                                @if ($kat === 'KARTON')
+                                    @php
+                                        $pGA = $qc->details->firstWhere('grade_cd', 'A');
+                                        $pGB = $qc->details->firstWhere('grade_cd', 'B');
+                                        $hasA = $pGA && (float)$pGA->qty_netto_lolos > 0;
+                                        $hasB = $pGB && (float)$pGB->qty_netto_lolos > 0;
+                                    @endphp
+                                    @if ($hasA || $hasB)
+                                        <div>
+                                            <span style="color: #64748b;">Alokasi:</span>
+                                            @if ($hasA)
+                                                <strong style="color: #15803d;">A: {{ number_format((float)$pGA->qty_netto_lolos, 0, ',', '.') }}</strong>
+                                            @endif
+                                            @if ($hasA && $hasB) &bull; @endif
+                                            @if ($hasB)
+                                                <strong style="color: #b45309;">B: {{ number_format((float)$pGB->qty_netto_lolos, 0, ',', '.') }}</strong>
+                                            @endif
+                                            <span style="color: #64748b; font-size: 0.72rem;">{{ $satuanCd }}</span>
+                                        </div>
+                                    @endif
+                                @endif
                                 <div>
                                     <span style="color: #64748b;">Sertifikat Halal:</span>
                                     <strong style="color: {{ $qc->ada_sertifikat_halal_st ? '#15803d' : '#dc2626' }};">
@@ -232,11 +321,66 @@
                             </div>
                         @endif
 
-                        {{-- Catatan Pemeriksaan (Clean Solid Box) --}}
-                        <div style="background: #f8fafc; border-radius: 6px; padding: 0.45rem 0.65rem; border: 1px solid #e2e8f0; font-size: 0.75rem; color: #475569;">
-                            <strong style="color: #0f172a;">Catatan:</strong>
-                            <span style="color: #334155;">{{ $p1FirstDtl?->catatan_dtl ?: ($qc->catatan_umum ?: 'Parameter mutu sesuai standar HACCP yang ditetapkan.') }}</span>
-                        </div>
+                        @if ($kat === 'KARTON' && $qc->details->count() > 1)
+                            {{-- KARTON MULTI-GRADE BREAKDOWN CARD --}}
+                            <div style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 0.55rem 0.85rem; font-size: 0.775rem;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem; flex-wrap: wrap; gap: 0.35rem;">
+                                    <span style="font-weight: 800; color: #0f172a; display: flex; align-items: center; gap: 0.35rem;">
+                                        <span>📦</span> <span>Rincian Hasil Uji Per Grade:</span>
+                                    </span>
+                                    <span style="font-size: 0.7rem; color: #64748b;">
+                                        Total Bersih: <strong style="color: #059669;">{{ number_format($p1Netto, 0, ',', '.') }} {{ $satuanCd }}</strong>
+                                    </span>
+                                </div>
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.5rem;">
+                                    @foreach ($qc->details as $dtl)
+                                        <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 0.45rem 0.65rem; display: flex; justify-content: space-between; align-items: center;">
+                                            <div>
+                                                @if ($dtl->grade_cd === 'A')
+                                                    <div style="display: flex; align-items: center; gap: 4px;">
+                                                        <span style="background: #dcfce7; color: #15803d; border: 1px solid #86efac; font-weight: 800; font-size: 0.72rem; padding: 1px 6px; border-radius: 4px;">
+                                                            🟢 Grade A
+                                                        </span>
+                                                        <span style="font-size: 0.72rem; color: #64748b; font-weight: 600;">Dus Baru</span>
+                                                    </div>
+                                                @elseif ($dtl->grade_cd === 'B')
+                                                    <div style="display: flex; align-items: center; gap: 4px;">
+                                                        <span style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a; font-weight: 800; font-size: 0.72rem; padding: 2px 6px; border-radius: 4px;">
+                                                            🟡 Grade B
+                                                        </span>
+                                                        <span style="font-size: 0.72rem; color: #64748b; font-weight: 600;">Dus Puteran</span>
+                                                    </div>
+                                                @else
+                                                    <div style="display: flex; align-items: center; gap: 4px;">
+                                                        <span style="background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; font-weight: 800; font-size: 0.72rem; padding: 1px 6px; border-radius: 4px;">
+                                                            ❌ Reject
+                                                        </span>
+                                                    </div>
+                                                @endif
+                                            </div>
+                                            <div style="text-align: right;">
+                                                <strong style="color: #0f172a; font-size: 0.875rem;">{{ number_format((float)$dtl->qty_netto_lolos, 0, ',', '.') }}</strong>
+                                                <span style="font-size: 0.72rem; color: #64748b;">{{ $satuanCd }}</span>
+                                                @if ((float)$dtl->qty_reject > 0)
+                                                    <div style="font-size: 0.68rem; color: #dc2626; font-weight: 700;">Reject: -{{ number_format((float)$dtl->qty_reject, 0, ',', '.') }}</div>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                                @if ($qc->catatan_umum)
+                                    <div style="font-size: 0.72rem; color: #475569; margin-top: 0.35rem; padding-top: 0.3rem; border-top: 1px dashed #cbd5e1;">
+                                        <strong>Catatan:</strong> {{ $qc->catatan_umum }}
+                                    </div>
+                                @endif
+                            </div>
+                        @else
+                            {{-- Catatan Pemeriksaan (Clean Solid Box) --}}
+                            <div style="background: #f8fafc; border-radius: 6px; padding: 0.45rem 0.65rem; border: 1px solid #e2e8f0; font-size: 0.75rem; color: #475569;">
+                                <strong style="color: #0f172a;">Catatan:</strong>
+                                <span style="color: #334155;">{{ $p1FirstDtl?->catatan_dtl ?: ($qc->catatan_umum ?: 'Parameter mutu sesuai standar HACCP yang ditetapkan.') }}</span>
+                            </div>
+                        @endif
                     </div>
 
                     {{-- Action Footer Uji 1 --}}
@@ -477,6 +621,17 @@
                         </div>
                         <span style="font-size: 0.75rem; color: #0f172a;">
                             Total Netto Bersih Lolos: <strong style="color: #059669;">{{ number_format($totalNetto, 0, ',', '.') }} {{ $isBahanBaku ? 'kg' : $satuanCd }}</strong>
+                            @if ($kat === 'KARTON')
+                                @php
+                                    $ftGA = $qc->details->firstWhere('grade_cd', 'A');
+                                    $ftGB = $qc->details->firstWhere('grade_cd', 'B');
+                                @endphp
+                                @if ($ftGA && $ftGB && (float)$ftGA->qty_netto_lolos > 0 && (float)$ftGB->qty_netto_lolos > 0)
+                                    <span style="color: #475569; font-size: 0.72rem; margin-left: 0.35rem;">
+                                        (🟢 A: <strong style="color: #15803d;">{{ number_format((float)$ftGA->qty_netto_lolos, 0, ',', '.') }}</strong> &bull; 🟡 B: <strong style="color: #b45309;">{{ number_format((float)$ftGB->qty_netto_lolos, 0, ',', '.') }}</strong> {{ $satuanCd }})
+                                    </span>
+                                @endif
+                            @endif
                         </span>
                     @endif
                 </div>

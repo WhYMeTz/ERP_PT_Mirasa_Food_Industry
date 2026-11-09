@@ -133,6 +133,7 @@
             if ($d->kemasan_basah) $alasanItems[] = 'KEMASAN BASAH';
             if ($d->status_raw_material === 'TDK_STD') $alasanItems[] = 'KETEBALAN / KEUTUHAN TIDAK STANDAR';
         } elseif ($kat === 'KARTON') {
+            if ($d->grade_cd === 'B') $alasanItems[] = 'KARTON GRADE B (DUS PUTERAN / REUSE)';
             if ($d->kemasan_sobek) $alasanItems[] = 'KARTON SOBEK / RUSAK';
             if ($d->kemasan_jamur) $alasanItems[] = 'KARTON BERJAMUR';
             if ($d->kemasan_basah) $alasanItems[] = 'KARTON BASAH';

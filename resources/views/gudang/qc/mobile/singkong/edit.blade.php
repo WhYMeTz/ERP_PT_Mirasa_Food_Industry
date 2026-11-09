@@ -144,12 +144,30 @@
                 @if ($isPengujian2)
                     Form koreksi data pengujian sensori &amp; fisik sisa muatan bak yang dibongkar pada lini produksi.
                     @if ($qc->parentQc)
-                        <div style="margin-top: 0.45rem; font-size: 0.75rem; color: #581c87; background: #ffffff; border: 1px solid #e9d5ff; border-radius: 6px; padding: 0.4rem 0.6rem;">
-                            🔗 <strong>Truk Induk Kedatangan:</strong> #{{ $qc->parentQc->qc_no }} &bull; Plat: <strong>{{ $qc->parentQc->plat_nomor_truk ?: '-' }}</strong> &bull; Sopir: <strong>{{ $qc->parentQc->sopir_nama ?: '-' }}</strong> &bull; Netto Uji 1: <strong style="color: #15803d;">{{ number_format($qc->parentQc->details->sum('qty_netto_lolos'), 0, ',', '.') }} kg</strong>
+                        <div style="margin-top: 0.55rem; font-size: 0.75rem; color: #581c87; background: #ffffff; border: 1px solid #e9d5ff; border-radius: 8px; padding: 0.5rem 0.65rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.4rem;">
+                            <div>
+                                🔗 <strong>Truk Induk Kedatangan:</strong> #{{ $qc->parentQc->qc_no }} &bull; Plat: <strong>{{ $qc->parentQc->plat_nomor_truk ?: '-' }}</strong> &bull; Sopir: <strong>{{ $qc->parentQc->sopir_nama ?: '-' }}</strong> &bull; Netto Uji 1: <strong style="color: #15803d;">{{ number_format($qc->parentQc->details->sum('qty_netto_lolos'), 0, ',', '.') }} kg</strong>
+                            </div>
+                            <a href="{{ route('qc.inbound.edit', [$qc->parent_qc_id, 'view' => 'mobile', 'ref' => $ref]) }}" style="font-size: 0.72rem; font-weight: 800; background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd; padding: 3px 8px; border-radius: 6px; text-decoration: none; display: inline-flex; align-items: center; gap: 3px;" title="Beralih ke formulir Pengujian 1">
+                                <span>🚛 Beralih ke Uji 1</span>
+                            </a>
                         </div>
                     @endif
                 @else
                     Form koreksi data inspeksi kedatangan truk awal saat tiba di gerbang pos penerimaan pabrik.
+                    @php
+                        $p2Child = $qc->pengujian2List->first();
+                    @endphp
+                    @if ($p2Child)
+                        <div style="margin-top: 0.55rem; font-size: 0.75rem; color: #581c87; background: #ffffff; border: 1px solid #e9d5ff; border-radius: 8px; padding: 0.5rem 0.65rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.4rem;">
+                            <div>
+                                🍟 <strong>Lanjutan Pengujian II:</strong> #{{ $p2Child->qc_no }} &bull; Netto Uji 2: <strong style="color: #7e22ce;">{{ number_format($p2Child->details->sum('qty_netto_lolos'), 0, ',', '.') }} kg</strong> (Grade {{ $p2Child->details->first()?->grade_cd ?? 'A' }})
+                            </div>
+                            <a href="{{ route('qc.inbound.edit', [$p2Child->qc_id, 'view' => 'mobile', 'ref' => $ref]) }}" style="font-size: 0.72rem; font-weight: 800; background: #f3e8ff; color: #7e22ce; border: 1px solid #d8b4fe; padding: 3px 8px; border-radius: 6px; text-decoration: none; display: inline-flex; align-items: center; gap: 3px;" title="Beralih ke formulir Pengujian 2">
+                                <span>🍟 Beralih ke Uji 2 &rarr;</span>
+                            </a>
+                        </div>
+                    @endif
                 @endif
             </div>
         </div>
@@ -165,6 +183,9 @@
 
             <div style="display: flex; flex-direction: column; gap: 0.75rem;">
                 {{-- PILIHAN PO KHUSUS SINGKONG --}}
+                @php
+                    $isLinkedToPo = !empty($qc->po_id);
+                @endphp
                 <div>
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
                         <label class="qc-info-label" style="font-weight: 700; margin: 0;">Referensi Purchase Order (PO)</label>
@@ -172,7 +193,7 @@
                             PO Singkong ({{ $filteredPos->count() }} Tersedia)
                         </span>
                     </div>
-                    <select name="po_id" class="form-control" style="width: 100%; border-radius: 8px; font-weight: 700;">
+                    <select name="po_id" id="editPoSelect" class="form-control" style="width: 100%; border-radius: 8px; font-weight: 700;" onchange="onEditPoChanged(this)">
                         <option value="">-- Tanpa PO / Non-PO (Pembelian Langsung) --</option>
                         @foreach ($filteredPos as $po)
                             @php
@@ -180,8 +201,15 @@
                                 $terimaIni = ($po->po_id == $qc->po_id && $qc->terima) ? (float) $qc->terima->details->sum('terima_qty') : 0;
                                 $sudahMsk = max(0, (float) $po->details->sum('terima_qty') - $terimaIni);
                                 $sisaKta = max(0, $totPesan - $sudahMsk);
+                                $firstPoItem = $po->details->filter(fn($d) => $classifyBarang($d->barang?->barang_nm, $d->barang?->barang_cd) === 'SINGKONG')->first() ?: $po->details->first();
                             @endphp
-                            <option value="{{ $po->po_id }}" {{ old('po_id', $qc->po_id) == $po->po_id ? 'selected' : '' }}>
+                            <option value="{{ $po->po_id }}"
+                                    data-supplier-id="{{ $po->supplier_id }}"
+                                    data-supplier-nm="{{ $po->supplier?->supplier_nm }}"
+                                    data-gudang-id="{{ $po->gudang_id }}"
+                                    data-barang-id="{{ $firstPoItem?->barang_id }}"
+                                    data-barang-nm="{{ $firstPoItem?->barang?->barang_nm }}"
+                                    {{ old('po_id', $qc->po_id) == $po->po_id ? 'selected' : '' }}>
                                 {{ $po->po_no }} - {{ $po->supplier?->supplier_nm }} (Sisa: {{ number_format($sisaKta, 0, ',', '.') }} kg)
                             </option>
                         @endforeach
@@ -193,14 +221,14 @@
                     <div>
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
                             <label class="qc-info-label" style="font-weight: 700; margin: 0;">🏢 Mitra Supplier / Petani *</label>
-                            <span style="font-size: 0.7rem; font-weight: 700; color: #0284c7; background: #e0f2fe; padding: 2px 6px; border-radius: 4px;">
-                                Petani Singkong
+                            <span id="badgeEditLockSupplier" class="badge-po-locked" style="{{ $isLinkedToPo ? 'display: inline-flex;' : 'display: none;' }} font-size: 0.7rem; font-weight: 800; color: #166534; background: #dcfce7; padding: 2px 8px; border-radius: 6px; border: 1px solid #bbf7d0;">
+                                🔒 Terkunci dari PO
                             </span>
                         </div>
-                        <div style="margin-bottom: 0.4rem;">
+                        <div id="wrapEditSupplierSearch" style="margin-bottom: 0.4rem; {{ $isLinkedToPo ? 'display: none;' : '' }}">
                             <input type="text" id="editSupplierSearch" class="form-control" placeholder="🔍 Cari nama petani / supplier..." oninput="filterEditSuppliers(this.value)" style="min-height: 38px; font-size: 0.8rem; padding: 0.35rem 0.65rem; border-radius: 6px;">
                         </div>
-                        <select name="supplier_id" id="editSupplierSelect" class="form-control" style="width: 100%; border-radius: 8px; font-weight: 700;" required onchange="onEditSupplierChange(this)">
+                        <select name="supplier_id" id="editSupplierSelect" class="form-control" style="width: 100%; border-radius: 8px; font-weight: 700; {{ $isLinkedToPo ? 'pointer-events: none; background: #f1f5f9; border-color: #cbd5e1;' : '' }}" required onchange="onEditSupplierChange(this)" {{ $isLinkedToPo ? 'tabindex=-1' : '' }}>
                             @foreach ($suppliers as $sup)
                                 @php
                                     $isPetani = str_starts_with($sup->supplier_cd, 'SKG-') || ($sup->jenisSupplier?->jenis_supplier_cd === 'RAW');
@@ -215,8 +243,13 @@
                     </div>
 
                     <div>
-                        <label class="qc-info-label" style="font-weight: 700; margin-bottom: 0.25rem;">🏢 Perusahaan / Gudang Bongkar *</label>
-                        <select name="gudang_id" class="form-control" style="width: 100%; border-radius: 8px; font-weight: 700;" required>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+                            <label class="qc-info-label" style="font-weight: 700; margin: 0;">🏢 Perusahaan / Gudang Bongkar *</label>
+                            <span id="badgeEditLockGudang" class="badge-po-locked" style="{{ $isLinkedToPo ? 'display: inline-flex;' : 'display: none;' }} font-size: 0.7rem; font-weight: 800; color: #166534; background: #dcfce7; padding: 2px 8px; border-radius: 6px; border: 1px solid #bbf7d0;">
+                                🔒 Terkunci dari PO
+                            </span>
+                        </div>
+                        <select name="gudang_id" id="editGudangSelect" class="form-control" style="width: 100%; border-radius: 8px; font-weight: 700; {{ $isLinkedToPo ? 'pointer-events: none; background: #f1f5f9; border-color: #cbd5e1;' : '' }}" required {{ $isLinkedToPo ? 'tabindex=-1' : '' }}>
                             @foreach ($gudangs as $g)
                                 <option value="{{ $g->gudang_id }}" {{ old('gudang_id', $qc->gudang_id) == $g->gudang_id ? 'selected' : '' }}>
                                     {{ $g->gudang_nm }} @if(!empty($g->tipe_gudang_cd) && $g->tipe_gudang_cd !== 'Pusat') ({{ $g->tipe_gudang_cd }}) @endif
@@ -229,8 +262,13 @@
                 {{-- PILIH BARANG & NAMA JENIS --}}
                 <div style="display: flex; flex-direction: column; gap: 0.75rem;">
                     <div>
-                        <label class="qc-info-label" style="display: block; font-weight: 700; margin-bottom: 0.25rem;">Komoditas Bahan (Master Data) *</label>
-                        <select name="items[{{ $qcdtlId }}][barang_id]" id="editBarangSelect" class="form-control" style="width: 100%; border-radius: 8px; font-weight: 800; color: #0284c7;" required onchange="onEditBarangChanged(this)">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+                            <label class="qc-info-label" style="display: block; font-weight: 700; margin: 0;">Komoditas Bahan (Master Data) *</label>
+                            <span id="badgeEditLockBarang" class="badge-po-locked" style="{{ $isLinkedToPo ? 'display: inline-flex;' : 'display: none;' }} font-size: 0.7rem; font-weight: 800; color: #166534; background: #dcfce7; padding: 2px 8px; border-radius: 6px; border: 1px solid #bbf7d0;">
+                                🔒 Terkunci dari PO
+                            </span>
+                        </div>
+                        <select name="items[{{ $qcdtlId }}][barang_id]" id="editBarangSelect" class="form-control" style="width: 100%; border-radius: 8px; font-weight: 800; color: #0284c7; {{ $isLinkedToPo ? 'pointer-events: none; background: #f1f5f9; border-color: #cbd5e1;' : '' }}" required onchange="onEditBarangChanged(this)" {{ $isLinkedToPo ? 'tabindex=-1' : '' }}>
                             @foreach ($filteredBarangs as $b)
                                 <option value="{{ $b->barang_id }}" data-nama="{{ $b->barang_nm }}" {{ old('items.'.$qcdtlId.'.barang_id', $barangId) == $b->barang_id ? 'selected' : '' }}>
                                     {{ $b->barang_cd }} - {{ $b->barang_nm }} ({{ $b->satuanDasar?->satuan_nm ?? 'kg' }})
@@ -539,9 +577,6 @@
                         <option value="B" {{ old('items.'.$qcdtlId.'.grade_cd', $firstDetail?->grade_cd) === 'B' ? 'selected' : '' }} style="color: #b45309; font-weight: 800;">
                             🟡 Grade B (Standar - Ada Ukuran Kecil / Refraksi Tanah)
                         </option>
-                        <option value="C" {{ old('items.'.$qcdtlId.'.grade_cd', $firstDetail?->grade_cd) === 'C' ? 'selected' : '' }} style="color: #64748b; font-weight: 800;">
-                            ⚪ Grade C (Campur / Sortir Lanjut)
-                        </option>
                         <option value="REJECT" {{ old('items.'.$qcdtlId.'.grade_cd', $firstDetail?->grade_cd) === 'REJECT' ? 'selected' : '' }} style="color: #dc2626; font-weight: 900;">
                             🔴 REJECT (Afkir / Tolak Total)
                         </option>
@@ -622,5 +657,5 @@
 @endsection
 
 @push('scripts')
-    <script src="{{ asset('js/gudang/qc/mobile/qc-edit.js') }}"></script>
+    <script src="{{ asset('js/gudang/qc/mobile/qc-edit.js') }}?v={{ filemtime(public_path('js/gudang/qc/mobile/qc-edit.js')) }}"></script>
 @endpush

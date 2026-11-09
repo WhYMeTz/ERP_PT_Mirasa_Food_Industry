@@ -646,6 +646,28 @@ class QcInboundService
                 $itemBarangId = (int) $row['barang_id'];
                 $itemPodtlId = !empty($row['podtl_id']) ? (int) $row['podtl_id'] : null;
 
+                // Tentukan apakah komoditas ber-grade (Hanya Singkong & Karton yang memiliki Grade A/B)
+                $kategoriHeaderUpper = strtoupper(trim((string)($header->kategori_barang ?? ($data['kategori_barang'] ?? ''))));
+                $isBarangHasGrade = in_array($kategoriHeaderUpper, ['SINGKONG', 'KARTON']);
+                if (!$isBarangHasGrade && !empty($itemBarangId)) {
+                    $bCheck = \App\Models\MasterData\MstBarang::find($itemBarangId);
+                    if ($bCheck) {
+                        $nmCheck = strtoupper($bCheck->barang_nm ?? '');
+                        $cdCheck = strtoupper($bCheck->barang_cd ?? '');
+                        if (str_contains($nmCheck, 'SINGKONG') || str_starts_with($cdCheck, 'BB-SK') || str_contains($nmCheck, 'KARTON') || str_contains($nmCheck, 'DUS') || str_contains($nmCheck, 'BOX') || str_starts_with($cdCheck, 'BP-KT') || str_starts_with($cdCheck, 'BP-BX')) {
+                            $isBarangHasGrade = true;
+                        }
+                    }
+                }
+
+                if ($grade === 'REJECT') {
+                    // Tetap REJECT
+                } elseif ($isBarangHasGrade) {
+                    $grade = in_array(strtoupper($grade), ['A', 'B']) ? strtoupper($grade) : 'A';
+                } else {
+                    $grade = 'NON-GRADE';
+                }
+
                 // Pastikan podtl_id valid dan sesuai dengan barang_id di dalam PO bersangkutan
                 if (!empty($header->po_id)) {
                     $matchingPoDtl = null;
@@ -1347,6 +1369,28 @@ class QcInboundService
                             $keputusan = 'PASSED';
                             $allRejected = false;
                         }
+                    }
+
+                    // Tentukan apakah komoditas ber-grade (Hanya Singkong & Karton yang memiliki Grade A/B)
+                    $kategoriUpper = strtoupper(trim((string)($qc->kategori_barang ?? ($data['kategori_barang'] ?? ''))));
+                    $isBarangHasGrade = in_array($kategoriUpper, ['SINGKONG', 'KARTON']);
+                    if (!$isBarangHasGrade && !empty($barangId)) {
+                        $bCheck = \App\Models\MasterData\MstBarang::find($barangId);
+                        if ($bCheck) {
+                            $nmCheck = strtoupper($bCheck->barang_nm ?? '');
+                            $cdCheck = strtoupper($bCheck->barang_cd ?? '');
+                            if (str_contains($nmCheck, 'SINGKONG') || str_starts_with($cdCheck, 'BB-SK') || str_contains($nmCheck, 'KARTON') || str_contains($nmCheck, 'DUS') || str_contains($nmCheck, 'BOX') || str_starts_with($cdCheck, 'BP-KT') || str_starts_with($cdCheck, 'BP-BX')) {
+                                $isBarangHasGrade = true;
+                            }
+                        }
+                    }
+
+                    if ($grade === 'REJECT') {
+                        // Tetap REJECT
+                    } elseif ($isBarangHasGrade) {
+                        $grade = in_array(strtoupper($grade), ['A', 'B']) ? strtoupper($grade) : 'A';
+                    } else {
+                        $grade = 'NON-GRADE';
                     }
 
                     // Cari detail existing

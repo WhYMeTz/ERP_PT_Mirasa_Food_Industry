@@ -932,15 +932,101 @@
         window.syncMinyakQuantity();
     };
 
+    // =========================================================================
+    // KUNCI FIELD DARI PO (INTEGRITAS DATA PO - SUPPLIER, GUDANG & MASTER BARANG)
+    // =========================================================================
+    window.toggleMinyakPoLockFields = function (isLocked, po) {
+        const sSelect = document.getElementById('supplierSelect');
+        const gSelect = document.getElementById('gudangSelect');
+        const bSelect = document.getElementById('minyakBarangSelect');
+        const produsenInput = document.getElementById('namaProdusenInput');
+
+        const badgeSupplier = document.getElementById('badgeLockSupplier');
+        const badgeGudang = document.getElementById('badgeLockGudang');
+        const badgeBarang = document.getElementById('badgeLockBarang');
+
+        if (isLocked) {
+            // Lock Supplier
+            if (sSelect) {
+                sSelect.style.pointerEvents = 'none';
+                sSelect.style.backgroundColor = '#f1f5f9';
+                sSelect.style.borderColor = '#cbd5e1';
+                sSelect.setAttribute('tabindex', '-1');
+            }
+            if (badgeSupplier) {
+                badgeSupplier.style.display = 'inline-flex';
+                if (po?.supplier_nm) badgeSupplier.innerText = `🔒 Terkunci (${po.supplier_nm})`;
+            }
+
+            // Lock Gudang
+            if (gSelect) {
+                gSelect.style.pointerEvents = 'none';
+                gSelect.style.backgroundColor = '#f1f5f9';
+                gSelect.style.borderColor = '#cbd5e1';
+                gSelect.setAttribute('tabindex', '-1');
+            }
+            if (badgeGudang) badgeGudang.style.display = 'inline-flex';
+
+            // Lock Master Barang Minyak
+            if (bSelect) {
+                bSelect.style.pointerEvents = 'none';
+                bSelect.style.backgroundColor = '#f1f5f9';
+                bSelect.style.borderColor = '#cbd5e1';
+                bSelect.setAttribute('tabindex', '-1');
+            }
+            if (badgeBarang) badgeBarang.style.display = 'inline-flex';
+
+            if (produsenInput && po?.supplier_nm) {
+                produsenInput.value = po.supplier_nm;
+                produsenInput.readOnly = true;
+                produsenInput.style.backgroundColor = '#f1f5f9';
+            }
+        } else {
+            // Unlock Supplier
+            if (sSelect) {
+                sSelect.style.pointerEvents = 'auto';
+                sSelect.style.backgroundColor = '#ffffff';
+                sSelect.style.borderColor = '#e2e8f0';
+                sSelect.removeAttribute('tabindex');
+            }
+            if (badgeSupplier) badgeSupplier.style.display = 'none';
+
+            // Unlock Gudang
+            if (gSelect) {
+                gSelect.style.pointerEvents = 'auto';
+                gSelect.style.backgroundColor = '#ffffff';
+                gSelect.style.borderColor = '#e2e8f0';
+                gSelect.removeAttribute('tabindex');
+            }
+            if (badgeGudang) badgeGudang.style.display = 'none';
+
+            // Unlock Master Barang Minyak
+            if (bSelect) {
+                bSelect.style.pointerEvents = 'auto';
+                bSelect.style.backgroundColor = '#ffffff';
+                bSelect.style.borderColor = '#e2e8f0';
+                bSelect.removeAttribute('tabindex');
+            }
+            if (badgeBarang) badgeBarang.style.display = 'none';
+
+            if (produsenInput) {
+                produsenInput.readOnly = false;
+                produsenInput.style.backgroundColor = '#ffffff';
+            }
+        }
+    };
+
     window.onPoSelected = function (select) {
         if (!select || !select.value) {
             renderPoItemsCards([], null);
+            window.toggleMinyakPoLockFields(false);
             return;
         }
         const poId = select.value;
         const poData = window.qcConfig?.poList?.[poId] || window.appConfig?.poListData?.[poId];
         if (!poData) {
             renderPoItemsCards([], null);
+            window.toggleMinyakPoLockFields(false);
             return;
         }
 
@@ -981,6 +1067,9 @@
         } else {
             renderPoItemsCards([], null);
         }
+
+        // 5. Terapkan kunci integritas data PO
+        window.toggleMinyakPoLockFields(true, poData);
     };
 
     // 9. Validasi & Submit Form Khusus Minyak
@@ -1016,7 +1105,7 @@
 
         const supplierSelect = document.getElementById('supplierSelect');
         if (!supplierSelect || !supplierSelect.value) {
-            alert('Silakan pilih Mitra Supplier / Produsen Minyak terlebih dahulu!');
+            alert('Silakan pilih Mitra Supplier Minyak terlebih dahulu!');
             window.switchMinyakTab(1);
             supplierSelect?.focus();
             return;
@@ -1087,6 +1176,8 @@
         injectHiddenInput('items[0][qty_reject]', reject);
         injectHiddenInput('items[0][qty_netto_lolos]', Math.max(0, finalGross - reject));
         injectHiddenInput('items[0][keputusan_qc]', kesimpulan === 'TERIMA' ? 'PASSED' : 'REJECT_TOTAL');
+        injectHiddenInput('items[0][grade_cd]', kesimpulan === 'TERIMA' ? 'NON-GRADE' : 'REJECT');
+        injectHiddenInput('grade_cd', kesimpulan === 'TERIMA' ? 'NON-GRADE' : 'REJECT');
         injectHiddenInput('items[0][status_raw_material]', document.querySelector('input[name="minyak_status_raw_material"]:checked')?.value || 'OK');
         injectHiddenInput('items[0][tipe_wadah_minyak]', document.querySelector('input[name="minyak_tipe_wadah"]:checked')?.value || 'TANGKI');
         injectHiddenInput('items[0][kondisi_tangki_jerigen]', document.querySelector('input[name="minyak_kondisi_wadah"]:checked')?.value || 'OK');
@@ -1156,6 +1247,7 @@
         if (poSelect && poSelect.value) {
             window.onPoSelected(poSelect);
         } else {
+            window.toggleMinyakPoLockFields(false);
             const bSel = document.getElementById('minyakBarangSelect');
             if (bSel) window.onMinyakBarangChanged(bSel);
         }

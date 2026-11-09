@@ -95,6 +95,34 @@
                                 🟢 GRADE A
                             </span>
                         @endif
+                    @elseif ($kat === 'KARTON')
+                        @php
+                            $gADtl = $qc->details->firstWhere('grade_cd', 'A');
+                            $gBDtl = $qc->details->firstWhere('grade_cd', 'B');
+                            $gRejDtl = $qc->details->firstWhere('grade_cd', 'REJECT');
+                            $hasA = $gADtl && (float)$gADtl->qty_netto_lolos > 0;
+                            $hasB = $gBDtl && (float)$gBDtl->qty_netto_lolos > 0;
+                        @endphp
+                        @if ($hasA && $hasB)
+                            <span style="font-size: 0.72rem; font-weight: 800; padding: 0.15rem 0.5rem; border-radius: 6px; background: #dcfce7; color: #15803d; border: 1px solid #86efac;">
+                                🟢 Gr. A: {{ number_format((float)$gADtl->qty_netto_lolos, 0, ',', '.') }}
+                            </span>
+                            <span style="font-size: 0.72rem; font-weight: 800; padding: 0.15rem 0.5rem; border-radius: 6px; background: #fef3c7; color: #b45309; border: 1px solid #fde68a;">
+                                🟡 Gr. B: {{ number_format((float)$gBDtl->qty_netto_lolos, 0, ',', '.') }}
+                            </span>
+                        @elseif ($hasB)
+                            <span style="font-size: 0.72rem; font-weight: 800; padding: 0.15rem 0.5rem; border-radius: 6px; background: #fef3c7; color: #b45309; border: 1px solid #fde68a;">
+                                🟡 GRADE B (PUTERAN)
+                            </span>
+                        @elseif ($qc->status_qc === 'DITOLAK_TOTAL')
+                            <span style="font-size: 0.72rem; font-weight: 800; padding: 0.15rem 0.5rem; border-radius: 6px; background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5;">
+                                ❌ AFKIR
+                            </span>
+                        @else
+                            <span style="font-size: 0.72rem; font-weight: 800; padding: 0.15rem 0.5rem; border-radius: 6px; background: #dcfce7; color: #15803d; border: 1px solid #86efac;">
+                                🟢 GRADE A (BARU)
+                            </span>
+                        @endif
                     @endif
                 </div>
                 <h1 class="qc-detail-ticket-no" style="margin-top: 0.35rem;">{{ $qc->qc_no }}</h1>
@@ -158,9 +186,9 @@
                 </span>
             </div>
             <div class="qc-info-item">
-                <span class="qc-info-label">Produsen &amp; Negara</span>
+                <span class="qc-info-label">Negara Asal</span>
                 <span class="qc-info-value">
-                    {{ $qc->nama_produsen ?: ($qc->supplier?->supplier_nm ?? '-') }} ({{ $qc->negara_produsen ?: 'Indonesia' }})
+                    {{ $qc->negara_produsen ?: 'Indonesia' }}
                 </span>
             </div>
             <div class="qc-info-item">
@@ -459,11 +487,11 @@
                         {{ $qc->nama_jenis ?: '-' }}
                     </span>
                 </div>
-                @if ($qc->nama_produsen)
+                @if ($qc->negara_produsen)
                     <div class="qc-param-row">
-                        <span class="qc-param-name">Produsen &amp; Negara</span>
+                        <span class="qc-param-name">Negara Asal</span>
                         <span class="qc-param-val">
-                            {{ $qc->nama_produsen }} ({{ $qc->negara_produsen ?: 'Indonesia' }})
+                            {{ $qc->negara_produsen }}
                         </span>
                     </div>
                 @endif

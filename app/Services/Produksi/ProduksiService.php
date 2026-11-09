@@ -348,11 +348,17 @@ class ProduksiService
                 $dayBumbuNames = array_values(array_unique(array_filter($dayBumbuNames)));
                 $dayBumbuLabel = !empty($dayBumbuNames) ? implode(', ', $dayBumbuNames) : null;
 
+                // Status Penetapan HPP oleh Finance (Apakah sudah memasukkan biaya Gas & TK, atau baru pemakaian bahan fisik)
+                $isDayHppFinal = $dayRecords->every(function ($r) {
+                    return ((float) $r->cng_nilai > 0 || (float) $r->tk_total_nilai > 0 || str_contains($r->catatan_txt ?? '', '[HPP FINAL') || str_contains($r->catatan_txt ?? '', 'HPP Finance'));
+                });
+
                 $days[] = [
                     'day'                         => $day,
                     'date'                        => $dateObj->format('Y-m-d'),
                     'hari_nm'                     => $hariNm,
                     'has_data'                    => true,
+                    'is_hpp_final'                => $isDayHppFinal,
                     'produksi_id'                 => $firstRec->produksi_id,
                     'produksi_ids'                => $dayRecords->pluck('produksi_id')->toArray(),
                     'produksi_no'                 => $shiftCount > 1 ? ($firstRec->produksi_no . " (+{$shiftCount} Shift)") : $firstRec->produksi_no,
@@ -376,6 +382,7 @@ class ProduksiService
                         'total_biaya'     => (float) $r->total_biaya_produksi,
                         'total_wip'       => (float) $r->total_wip_qty,
                         'hpp_per_kg'      => (float) $r->hpp_per_kg,
+                        'is_hpp_final'    => ((float) $r->cng_nilai > 0 || (float) $r->tk_total_nilai > 0 || str_contains($r->catatan_txt ?? '', '[HPP FINAL') || str_contains($r->catatan_txt ?? '', 'HPP Finance')),
                         'output_summary'  => $r->outputs && $r->outputs->isNotEmpty()
                             ? $r->outputs->map(fn($o) => ($o->barang?->barang_nm ?? $o->kategori_output) . ' (' . number_format($o->qty_kg, 0, ',', '.') . ' kg)')->implode(', ')
                             : ($r->total_wip_qty > 0 ? number_format($r->total_wip_qty, 0, ',', '.') . ' kg' : 'Produksi WIP'),
@@ -447,6 +454,7 @@ class ProduksiService
                     'date'                        => $dateObj->format('Y-m-d'),
                     'hari_nm'                     => $hariNm,
                     'has_data'                    => false,
+                    'is_hpp_final'                => false,
                     'has_berko'                   => false,
                     'has_differentiated_hpp'      => false,
                     'hpp_utama'                   => 0,
@@ -737,53 +745,76 @@ class ProduksiService
             $rincian = $payrollHarian->rincian($tgl);
             $rows = collect($rincian['rows'] ?? []);
 
-            $filtered = $rows->filter(function ($row) use ($targetKelompok) {
+            $isIfm = !empty($lini) && (str_contains(strtoupper($lini), 'IFM') || str_contains(strtoupper($lini), 'IFL'));
+            $isManualOnly = !empty($lini) && str_contains(strtoupper($lini), 'MANUAL');
+
+            // 1. Karyawan Langsung Produksi (Pengolahan / Penggorengan)
+            $prodRows = $rows->filter(function ($row) use ($isIfm, $isManualOnly) {
                 if (empty($row['masuk'])) {
                     return false;
                 }
                 $kAsli = strtoupper((string) ($row['kelompok_asli'] ?? $row['kelompok'] ?? ''));
-                if ($targetKelompok === 'Langsung IFM') {
+
+                // Pastikan bukan packaging dan bukan tidak langsung
+                if (str_contains($kAsli, 'PACK') || str_contains($kAsli, 'KEMAS') || str_contains($kAsli, 'TIDAK')) {
+                    return false;
+                }
+
+                if ($isIfm) {
                     return str_contains($kAsli, 'IFM') || str_contains($kAsli, 'IFL');
                 }
-                if ($targetKelompok === 'Langsung Packing') {
-                    return str_contains($kAsli, 'PACKING') || str_contains($kAsli, 'KEMAS');
-                }
-                if ($targetKelompok === 'Langsung Manual') {
+                if ($isManualOnly) {
                     return str_contains($kAsli, 'MANUAL');
                 }
-                // default / semua lini langsung
-                return str_contains($kAsli, 'LANGSUNG') && !str_contains($kAsli, 'TIDAK');
+                return str_contains($kAsli, 'MANUAL') || str_contains($kAsli, 'IFM') || str_contains($kAsli, 'IFL') || str_contains($kAsli, 'LANGSUNG');
             });
 
-            $orang = $filtered->count();
-            $biaya = (float) $filtered->sum('total');
-
-            // Jika kelompok spesifik kosong dan lini tidak dipilih secara eksplisit, ambil semua langsung
-            if ($orang === 0 && empty($lini)) {
-                $allLangsung = $rows->filter(function ($row) {
+            // Jika filter spesifik kosong tapi ada pekerja produksi langsung lain (selain packing & non-langsung)
+            if ($prodRows->count() === 0) {
+                $prodRows = $rows->filter(function ($row) {
                     if (empty($row['masuk'])) {
                         return false;
                     }
                     $kAsli = strtoupper((string) ($row['kelompok_asli'] ?? $row['kelompok'] ?? ''));
-                    return str_contains($kAsli, 'LANGSUNG') && !str_contains($kAsli, 'TIDAK');
+                    return !str_contains($kAsli, 'PACK') && !str_contains($kAsli, 'KEMAS') && !str_contains($kAsli, 'TIDAK');
                 });
-                if ($allLangsung->count() > 0) {
-                    $orang = $allLangsung->count();
-                    $biaya = (float) $allLangsung->sum('total');
-                    $kelompokLabel = 'Semua Lini Langsung';
-                }
             }
 
-            if ($orang > 0 || $biaya > 0) {
+            // 2. Karyawan Tidak Langsung Pabrik (Mandor, Mekanik, QC, Kebersihan)
+            $tidakRows = $rows->filter(function ($row) {
+                if (empty($row['masuk'])) {
+                    return false;
+                }
+                $kAsli = strtoupper((string) ($row['kelompok_asli'] ?? $row['kelompok'] ?? ''));
+                return str_contains($kAsli, 'TIDAK');
+            });
+
+            $langsungOrang = $prodRows->count();
+            $langsungBiaya = (float) $prodRows->sum('total');
+
+            // Karyawan tidak langsung (mandor, QC, kebersihan) diperlakukan sebagai operasional perusahaan,
+            // sehingga untuk HPP Produksi murni hanya menggunakan Biaya Tenaga Kerja Langsung (BTKL).
+            $totalOrang = $langsungOrang;
+            $totalBiaya = (float) $langsungBiaya;
+
+            $prodLabel = $isIfm ? 'Karyawan Langsung IFM' : ($isManualOnly ? 'Karyawan Langsung Manual' : 'Karyawan Langsung Produksi');
+
+            if ($totalOrang > 0 || $totalBiaya > 0) {
                 return [
-                    'tgl'            => $tgl,
-                    'tgl_format'     => $tglFormatted,
-                    'is_synced'      => true,
-                    'tk_jumlah_org'  => $orang,
-                    'tk_total_nilai' => $biaya,
-                    'kelompok'       => $kelompokLabel,
-                    'source'         => 'payroll_harian',
-                    'message'        => "Data presensi tersinkronisasi ({$kelompokLabel}: {$orang} orang, total Rp " . number_format($biaya, 0, ',', '.') . ").",
+                    'tgl'                     => $tgl,
+                    'tgl_format'              => $tglFormatted,
+                    'is_synced'               => true,
+                    'tk_langsung_org'         => $langsungOrang,
+                    'tk_langsung_nilai'       => $langsungBiaya,
+                    'tk_langsung_label'       => $prodLabel,
+                    'tk_tidak_langsung_org'   => 0,
+                    'tk_tidak_langsung_nilai' => 0,
+                    'tk_tidak_langsung_label' => '',
+                    'tk_jumlah_org'           => $totalOrang,
+                    'tk_total_nilai'          => $totalBiaya,
+                    'kelompok'                => $kelompokLabel,
+                    'source'                  => 'payroll_harian',
+                    'message'                 => "Data presensi tersinkronisasi ({$prodLabel}: {$langsungOrang} orang / Rp " . number_format($langsungBiaya, 0, ',', '.') . ").",
                 ];
             }
         } catch (\Throwable $e) {
@@ -850,14 +881,20 @@ class ProduksiService
         }
 
         return [
-            'tgl'            => $tgl,
-            'tgl_format'     => $tglFormatted,
-            'is_synced'      => false,
-            'tk_jumlah_org'  => 0,
-            'tk_total_nilai' => 0,
-            'kelompok'       => $kelompokLabel,
-            'source'         => 'none',
-            'message'        => "Data presensi per {$tglFormatted}" . (!empty($lini) ? " [{$kelompokLabel}]" : "") . " belum tersedia di modul Karyawan.",
+            'tgl'                     => $tgl,
+            'tgl_format'              => $tglFormatted,
+            'is_synced'               => false,
+            'tk_langsung_org'         => 0,
+            'tk_langsung_nilai'       => 0,
+            'tk_langsung_label'       => 'Karyawan Langsung Produksi',
+            'tk_tidak_langsung_org'   => 0,
+            'tk_tidak_langsung_nilai' => 0,
+            'tk_tidak_langsung_label' => 'Karyawan Tidak Langsung (Pendukung)',
+            'tk_jumlah_org'           => 0,
+            'tk_total_nilai'          => 0,
+            'kelompok'                => $kelompokLabel,
+            'source'                  => 'none',
+            'message'                 => "Data presensi per {$tglFormatted}" . (!empty($lini) ? " [{$kelompokLabel}]" : "") . " belum tersedia di modul Karyawan.",
         ];
     }
 
@@ -981,7 +1018,7 @@ class ProduksiService
                     $summary['minyak_sawit_qty'] += $qty;
                 }
                 $summary['minyak_nilai'] += $subtotal;
-            } elseif (str_contains($nm, 'BUMBU') || str_contains($nm, 'PERENYAH') || str_contains($nm, 'GARAM') || str_contains($nm, 'SEASONING')) {
+            } elseif (str_contains($nm, 'BUMBU') || str_contains($nm, 'PERENYAH') || str_contains($nm, 'GARAM') || str_contains($nm, 'SEASONING') || str_contains($nm, 'MSG') || str_contains($nm, 'GLUTAMAT') || str_contains($nm, 'PENYEDAP') || str_starts_with($cd, 'MSG') || str_starts_with($cd, 'BMB')) {
                 $summary['bumbu_qty'] += $qty;
                 $summary['bumbu_nilai'] += $subtotal;
             } elseif (str_contains($nm, 'KARTON') || str_contains($nm, 'BOX')) {
@@ -1312,7 +1349,10 @@ class ProduksiService
     {
         return DB::transaction(function () use ($data) {
             $tgl = $data['produksi_tgl'] ?? date('Y-m-d');
-            $data['hari_nm'] = Carbon::parse($tgl)->isoFormat('dddd'); // Friday, Saturday, etc.
+            $dayNamesIndo = [
+                0 => 'Minggu', 1 => 'Senin', 2 => 'Selasa', 3 => 'Rabu', 4 => 'Kamis', 5 => 'Jumat', 6 => 'Sabtu',
+            ];
+            $data['hari_nm'] = $dayNamesIndo[Carbon::parse($tgl)->dayOfWeek] ?? 'Senin';
 
             $prodNo = !empty($data['produksi_no']) ? trim($data['produksi_no']) : null;
             if (empty($prodNo) || DatProduksiHdr::where('produksi_no', $prodNo)->exists()) {
@@ -2773,10 +2813,10 @@ class ProduksiService
                 "Rework / Sortir Ulang Batch {$batchNo}: {$alasanQc}"
             );
 
-            // 5. Tambah Stok Hasil Sortir KW 2 (Item ID: 85 - WIP-KW2)
-            $barangKw2 = MstBarang::where('barang_cd', 'WIP-KW2')->first() ?? MstBarang::find(85);
+            // 5. Tambah Stok Hasil Sortir (Fallback ke Remahan jika tidak ada WIP khusus)
+            $barangKw2 = MstBarang::where('barang_cd', 'WIP-RMH')->first() ?? MstBarang::first();
             if (!$barangKw2) {
-                throw new Exception("Master Barang KS CURAH SORTIR (KW 2) tidak ditemukan.");
+                throw new Exception("Master Barang untuk penampungan sortir tidak ditemukan.");
             }
 
             $this->stokService->addStock(
@@ -2864,7 +2904,7 @@ class ProduksiService
             $headerData = [
                 'produksi_no'           => $docNo,
                 'produksi_tgl'          => $tgl,
-                'hari_nm'               => Carbon::parse($tgl)->isoFormat('dddd'),
+                'hari_nm'               => $dayNamesIndo[Carbon::parse($tgl)->dayOfWeek] ?? 'Senin',
                 'gudang_id'             => $gudangId,
                 'lini_produksi'         => 'SORTIR & REWORK KW 2',
                 'status_cd'             => 'POSTED',
@@ -2948,7 +2988,14 @@ class ProduksiService
      */
     public function getProduksiDataForHpp(int $id): array
     {
-        $prod = DatProduksiHdr::with(['pemakaianBahan.details.barang.satuan', 'gudang', 'outputs.barang.satuanDasar'])->findOrFail($id);
+        $prod = DatProduksiHdr::with([
+            'pemakaianBahan.details.barang.satuanDasar',
+            'pemakaianBahan.details.barang.jenisBarang',
+            'pemakaianBahan.gudang',
+            'gudang',
+            'outputs.barang.satuanDasar',
+            'outputs.barang.jenisBarang',
+        ])->findOrFail($id);
 
         $outputs = [];
         foreach ($prod->outputs as $out) {
@@ -2969,30 +3016,146 @@ class ProduksiService
             ];
         }
 
+        // Ekstraksi rincian barang pemakaian gudang (BPPB)
+        $pemakaianItems = [];
+        $totalPemakaianNilai = 0;
+        $calcSingkongNilai = 0;
+        $calcMinyakNilai = 0;
+        $calcBumbuNilai = 0;
+        $calcBumbuQty = 0;
+        $calcKemasanNilai = 0;
+
+        if ($prod->pemakaianBahan && $prod->pemakaianBahan->details) {
+            foreach ($prod->pemakaianBahan->details as $dtl) {
+                if ($dtl->deleted_st) continue;
+                $barang = $dtl->barang;
+                $nm = $barang?->barang_nm ?? 'Bahan';
+                $cd = $barang?->barang_cd ?? '-';
+                $satuan = $barang?->satuanDasar?->satuan_nm ?? ($barang?->satuan?->satuan_nm ?? 'KG');
+                $qty = (float) $dtl->qty_keluar;
+                $harga = (float) $dtl->harga_satuan;
+                $subtotal = (float) $dtl->total_harga;
+                if ($subtotal <= 0 && $qty > 0 && $harga > 0) {
+                    $subtotal = round($qty * $harga, 2);
+                }
+                $totalPemakaianNilai += $subtotal;
+
+                // Klasifikasi resmi kategori barang dari Master Data (mst_jenis_barang)
+                $jb = $barang?->jenisBarang;
+                $kategoriBahan = $jb?->jenis_barang_nm ?? ($jb?->jenis_barang_cd ?? 'Bahan Penolong');
+
+                // Akumulasi nilai komponen biaya bahan untuk formulir HPP
+                $nmUpper = strtoupper($nm);
+                $cdUpper = strtoupper($cd);
+                if (str_contains($nmUpper, 'SINGKONG') || str_starts_with($cdUpper, 'BB-SK') || str_contains($cdUpper, 'SNG')) {
+                    $calcSingkongNilai += $subtotal;
+                } elseif (str_contains($nmUpper, 'MINYAK') || str_contains($cdUpper, 'MSW') || str_contains($cdUpper, 'MKL')) {
+                    $calcMinyakNilai += $subtotal;
+                } elseif (str_contains($nmUpper, 'KARTON') || str_contains($nmUpper, 'PLASTIK') || str_contains($nmUpper, 'LAKBAN') || str_contains($nmUpper, 'RAFIA') || str_contains($nmUpper, 'SARUNG')) {
+                    $calcKemasanNilai += $subtotal;
+                } else {
+                    // Seluruh bumbu, garam, MSG, perenyah, maupun bahan penolong olahan lainnya
+                    $calcBumbuNilai += $subtotal;
+                    $calcBumbuQty += $qty;
+                }
+
+                $pemakaianItems[] = [
+                    'pakaidtl_id'     => $dtl->pakaidtl_id,
+                    'barang_id'       => $dtl->barang_id,
+                    'barang_nm'       => $nm,
+                    'barang_cd'       => $cd,
+                    'kategori_bahan'  => $kategoriBahan,
+                    'jenis_barang_nm' => $kategoriBahan,
+                    'jenis_barang_cd' => $jb?->jenis_barang_cd ?? 'BP',
+                    'batch_no'        => $dtl->batch_no ?: '-',
+                    'grade_cd'        => $dtl->grade_cd ?: '-',
+                    'qty_keluar'      => $qty,
+                    'satuan_cd'       => $satuan,
+                    'harga_satuan'    => $harga,
+                    'subtotal_nilai'  => $subtotal,
+                    'keterangan_txt'  => $dtl->keterangan_txt,
+                ];
+            }
+        }
+
+        // Kalkulasi nilai bahan: Prioritaskan akumulasi riil dari BPPB jika dokumen BPPB terhubung
+        $singkongNilai = $calcSingkongNilai > 0 ? $calcSingkongNilai : (float) $prod->singkong_nilai;
+        $minyakNilai = $calcMinyakNilai > 0 ? $calcMinyakNilai : (float) $prod->minyak_nilai;
+        $bumbuNilai = $calcBumbuNilai > 0 ? $calcBumbuNilai : (float) $prod->bumbu_nilai;
+        $bumbuQty = $calcBumbuQty > 0 ? $calcBumbuQty : (float) $prod->bumbu_qty;
+
+        // Utilitas Gas CNG
+        $cngMmbtu = (float) $prod->cng_mmbtu;
+        $cngTarifUsd = (float) ($prod->cng_tarif_usd > 0 ? $prod->cng_tarif_usd : 14.50);
+        $liveJisdor = app(\App\Services\Produksi\TarifProduksiService::class)->getJisdorRate($prod->produksi_tgl, true);
+        $cngKursJisdor = (float) ($prod->cng_kurs_jisdor > 0 ? $prod->cng_kurs_jisdor : ($liveJisdor ?: 18130.00));
+        $cngTarif = (float) ($prod->cng_tarif > 0 ? $prod->cng_tarif : round($cngTarifUsd * $cngKursJisdor, 2));
+        $cngNilai = (float) ($prod->cng_nilai > 0 ? $prod->cng_nilai : round($cngMmbtu * $cngTarif));
+
+        // Tenaga Kerja (Prioritas: Data Tersimpan SPK -> Modul Manajemen Karyawan / Absensi -> Standar Regu Pabrik)
+        $laborData = $this->getLaborDataFromKaryawan($prod->produksi_tgl, $prod->lini_produksi);
+        if ($laborData['is_synced'] && ($laborData['tk_jumlah_org'] > 0 || $laborData['tk_total_nilai'] > 0)) {
+            $tkLangsungOrg = (int) ($prod->tk_langsung_org ?: ($laborData['tk_langsung_org'] ?? 0));
+            $tkTidakLangsungOrg = (int) ($prod->tk_tidak_langsung_org ?: ($laborData['tk_tidak_langsung_org'] ?? 0));
+            $tkLangsungNilai = (float) ($laborData['tk_langsung_nilai'] ?? 0);
+            $tkTidakLangsungNilai = (float) ($laborData['tk_tidak_langsung_nilai'] ?? 0);
+
+            $tkJumlahOrg = (int) ($prod->tk_jumlah_org ?: ($tkLangsungOrg + $tkTidakLangsungOrg));
+            $tkTotalNilai = (float) ($prod->tk_total_nilai > 0 ? $prod->tk_total_nilai : ($tkLangsungNilai + $tkTidakLangsungNilai));
+            $tkTarifPerOrg = (float) ($prod->tk_tarif_per_org > 0 ? $prod->tk_tarif_per_org : ($tkJumlahOrg > 0 ? round($tkTotalNilai / $tkJumlahOrg) : 0));
+        } else {
+            $tkLangsungOrg = (int) ($prod->tk_langsung_org ?: ($prod->tk_jumlah_org ?: 0));
+            $tkTidakLangsungOrg = (int) ($prod->tk_tidak_langsung_org ?: 0);
+            $tkLangsungNilai = (float) ($prod->tk_total_nilai > 0 ? $prod->tk_total_nilai : 0);
+            $tkTidakLangsungNilai = 0;
+            $tkJumlahOrg = (int) ($prod->tk_jumlah_org ?: ($tkLangsungOrg + $tkTidakLangsungOrg));
+            $tkTotalNilai = (float) ($prod->tk_total_nilai > 0 ? $prod->tk_total_nilai : 0);
+            $tkTarifPerOrg = (float) ($prod->tk_tarif_per_org > 0 ? $prod->tk_tarif_per_org : 0);
+        }
+
+        $dayNamesIndo = [
+            0 => 'Minggu',
+            1 => 'Senin',
+            2 => 'Selasa',
+            3 => 'Rabu',
+            4 => 'Kamis',
+            5 => 'Jumat',
+            6 => 'Sabtu',
+        ];
+        $tglCarbon = Carbon::parse($prod->produksi_tgl);
+        $hariIndo = $dayNamesIndo[$tglCarbon->dayOfWeek] ?? 'Senin';
+
         return [
             'produksi_id'          => $prod->produksi_id,
             'produksi_no'          => $prod->produksi_no,
             'produksi_tgl'         => $prod->produksi_tgl,
-            'produksi_tgl_fmt'     => Carbon::parse($prod->produksi_tgl)->format('d/m/Y'),
-            'hari_nm'              => $prod->hari_nm,
+            'produksi_tgl_fmt'     => $tglCarbon->format('d/m/Y'),
+            'hari_nm'              => $hariIndo,
             'shift_cd'             => $prod->shift_cd,
             'lini_produksi'        => $prod->lini_produksi,
             'gudang_id'            => $prod->gudang_id,
             'gudang_nm'            => $prod->gudang?->gudang_nm ?? 'Gudang Utama',
             'pakai_id'             => $prod->pakai_id,
             'pakai_no'             => $prod->pemakaianBahan?->pakai_no ?? '-',
+            'pemakaian_bppb'       => $prod->pemakaianBahan ? [
+                'pakai_no'    => $prod->pemakaianBahan->pakai_no,
+                'pakai_tgl'   => Carbon::parse($prod->pemakaianBahan->pakai_tgl)->format('d/m/Y'),
+                'gudang_nm'   => $prod->pemakaianBahan->gudang?->gudang_nm ?? 'Gudang Bahan Baku',
+                'total_nilai' => $totalPemakaianNilai,
+            ] : null,
+            'pemakaian_items'      => $pemakaianItems,
             'varietas_singkong'    => $prod->varietas_singkong,
             'qty_karton'           => $prod->qty_karton,
             'batch_wip_no'         => $prod->batch_wip_no,
 
             // Kuantitas Fisik Bahan (dari BPPB)
             'singkong_qty'         => (float) $prod->singkong_qty,
-            'singkong_nilai'       => (float) $prod->singkong_nilai,
+            'singkong_nilai'       => $singkongNilai,
             'minyak_sawit_qty'     => (float) $prod->minyak_sawit_qty,
             'minyak_kelapa_qty'    => (float) $prod->minyak_kelapa_qty,
-            'minyak_nilai'         => (float) $prod->minyak_nilai,
-            'bumbu_qty'            => (float) $prod->bumbu_qty,
-            'bumbu_nilai'          => (float) $prod->bumbu_nilai,
+            'minyak_nilai'         => $minyakNilai,
+            'bumbu_qty'            => $bumbuQty,
+            'bumbu_nilai'          => $bumbuNilai,
 
             // Kemasan
             'karton_baru_qty'      => (float) $prod->karton_baru_qty,
@@ -3009,15 +3172,21 @@ class ProduksiService
             'tali_rafia_nilai'     => (float) $prod->tali_rafia_nilai,
 
             // Gas CNG
-            'cng_mmbtu'            => (float) $prod->cng_mmbtu,
-            'cng_tarif_usd'        => (float) ($prod->cng_tarif_usd > 0 ? $prod->cng_tarif_usd : 14.50),
-            'cng_kurs_jisdor'      => (float) ($prod->cng_kurs_jisdor > 0 ? $prod->cng_kurs_jisdor : 18138.00),
-            'cng_tarif'            => (float) ($prod->cng_tarif > 0 ? $prod->cng_tarif : round(14.50 * 18138, 2)),
-            'cng_nilai'            => (float) $prod->cng_nilai,
+            'cng_mmbtu'            => $cngMmbtu,
+            'cng_tarif_usd'        => $cngTarifUsd,
+            'cng_kurs_jisdor'      => $cngKursJisdor,
+            'cng_tarif'            => $cngTarif,
+            'cng_nilai'            => $cngNilai,
 
             // Tenaga Kerja
-            'tk_jumlah_org'        => (int) $prod->tk_jumlah_org,
-            'tk_total_nilai'       => (float) $prod->tk_total_nilai,
+            'tk_jumlah_org'           => $tkJumlahOrg,
+            'tk_tarif_per_org'        => $tkTarifPerOrg,
+            'tk_total_nilai'          => $tkTotalNilai,
+            'tk_langsung_org'         => $tkLangsungOrg,
+            'tk_langsung_nilai'       => $tkLangsungNilai,
+            'tk_tidak_langsung_org'   => $tkTidakLangsungOrg,
+            'tk_tidak_langsung_nilai' => $tkTidakLangsungNilai,
+            'labor_sync'              => $laborData,
 
             // Metrik Fisik & Hasil
             'total_wip_qty'        => (float) $prod->total_wip_qty,
@@ -3055,10 +3224,14 @@ class ProduksiService
             if (isset($data['cng_nilai'])) $produksi->cng_nilai = (float) $data['cng_nilai'];
 
             // Update Tenaga Kerja
+            if (isset($data['tk_langsung_org'])) $produksi->tk_langsung_org = (int) $data['tk_langsung_org'];
+            if (isset($data['tk_tidak_langsung_org'])) $produksi->tk_tidak_langsung_org = (int) $data['tk_tidak_langsung_org'];
             if (isset($data['tk_jumlah_org'])) {
                 $produksi->tk_jumlah_org = (int) $data['tk_jumlah_org'];
-                $produksi->tk_langsung_org = (int) $data['tk_jumlah_org'];
+            } elseif (isset($data['tk_langsung_org']) || isset($data['tk_tidak_langsung_org'])) {
+                $produksi->tk_jumlah_org = (int) (($data['tk_langsung_org'] ?? 0) + ($data['tk_tidak_langsung_org'] ?? 0));
             }
+            if (isset($data['tk_tarif_per_org'])) $produksi->tk_tarif_per_org = (float) $data['tk_tarif_per_org'];
             if (isset($data['tk_total_nilai'])) $produksi->tk_total_nilai = (float) $data['tk_total_nilai'];
 
             // Subtotal Bahan
@@ -3096,10 +3269,13 @@ class ProduksiService
             $newHppPerKg = $effectiveWip > 0 ? round($newTotalBiaya / $effectiveWip, 2) : 0;
             $produksi->hpp_per_kg = $newHppPerKg;
 
-            // Catatan Keuangan / Finance
+            // Catatan Keuangan / Finance & Audit Penetapan HPP
+            $auditFinanceTag = "[HPP FINAL " . date('d/m/Y H:i') . " oleh " . $userId . "]";
             if (!empty($data['catatan_hpp'])) {
-                $prefix = "[HPP Finance " . date('d/m/Y H:i') . "]: ";
+                $prefix = $auditFinanceTag . ": ";
                 $produksi->catatan_txt = trim(($produksi->catatan_txt ? $produksi->catatan_txt . "\n" : '') . $prefix . $data['catatan_hpp']);
+            } else {
+                $produksi->catatan_txt = trim(($produksi->catatan_txt ? $produksi->catatan_txt . "\n" : '') . $auditFinanceTag);
             }
 
             $produksi->updated_by = $userId;
@@ -3111,7 +3287,7 @@ class ProduksiService
                 $customOutputPrices = $data['output_hpp'] ?? []; // [output_id => hpp_satuan]
                 foreach ($produksi->outputs as $out) {
                     $outId = $out->output_id;
-                    $itemHpp = isset($customOutputPrices[$outId]) && (float)$customOutputPrices[$outId] > 0
+                    $itemHpp = isset($customOutputPrices[$outId]) && is_numeric($customOutputPrices[$outId])
                         ? (float) $customOutputPrices[$outId] 
                         : $newHppPerKg;
                     $out->hpp_satuan = $itemHpp;

@@ -18,28 +18,53 @@
     </div>
 
     <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
-        <a href="{{ route('produksi.index') }}" 
+        <a href="{{ route('produksi.export-rekap-pdf', ['tahun' => $year, 'bulan' => $month]) }}" 
+           target="_blank" 
            class="btn btn-secondary" 
-           style="background: #ffffff; border: 1.5px solid #cbd5e1; color: #475569; font-size: 0.85rem; font-weight: 700; padding: 0.55rem 0.95rem; box-shadow: 0 1px 2px rgba(0,0,0,0.03); display: inline-flex; align-items: center; gap: 0.35rem; transition: all 0.15s ease-in-out;" 
-           onmouseover="this.style.background='#f8fafc'" 
+           style="background: #ffffff; border: 1.5px solid #dc2626; color: #dc2626; font-size: 0.85rem; font-weight: 700; padding: 0.55rem 0.95rem; box-shadow: 0 1px 2px rgba(0,0,0,0.03); display: inline-flex; align-items: center; gap: 0.35rem; transition: all 0.15s ease-in-out; text-decoration: none;" 
+           onmouseover="this.style.background='#fef2f2'" 
            onmouseout="this.style.background='#ffffff'" 
-           title="Beralih ke daftar rincian barang hasil produksi">
-            <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
-            <span>Hasil Barang Produksi</span>
+           title="Buka &amp; Cetak Dokumen Rekapitulasi HPP PDF Resmi">
+            <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+            <span>Cetak Rekap (PDF)</span>
+        </a>
+
+        <a href="{{ route('produksi.export-rekap-excel', ['tahun' => $year, 'bulan' => $month]) }}" 
+           class="btn btn-secondary" 
+           style="background: #ffffff; border: 1.5px solid #059669; color: #059669; font-size: 0.85rem; font-weight: 700; padding: 0.55rem 0.95rem; box-shadow: 0 1px 2px rgba(0,0,0,0.03); display: inline-flex; align-items: center; gap: 0.35rem; transition: all 0.15s ease-in-out; text-decoration: none;" 
+           onmouseover="this.style.background='#ecfdf5'" 
+           onmouseout="this.style.background='#ffffff'" 
+           title="Download Rekapitulasi HPP format Excel (.xlsx)">
+            <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            <span>Export Excel</span>
         </a>
 
         @if(Auth::user()->canCreateProduksi())
+            <button type="button" 
+                    onclick="openModalImportRekap()" 
+                    class="btn btn-secondary" 
+                    style="background: #ffffff; border: 1.5px solid #7c3aed; color: #7c3aed; font-size: 0.85rem; font-weight: 700; padding: 0.55rem 0.95rem; box-shadow: 0 1px 2px rgba(0,0,0,0.03); display: inline-flex; align-items: center; gap: 0.35rem; transition: all 0.15s ease-in-out; cursor: pointer;" 
+                    onmouseover="this.style.background='#faf5ff'" 
+                    onmouseout="this.style.background='#ffffff'" 
+                    title="Import data spreadsheet harian dari file Excel">
+                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                <span>Import Excel</span>
+            </button>
+
+            <a href="{{ route('produksi.adjust-utilitas', ['tahun' => $year, 'bulan' => $month]) }}" 
+               class="btn btn-secondary" 
+               style="background: #ffffff; border: 1.5px solid #0284c7; color: #0284c7; font-size: 0.85rem; font-weight: 700; padding: 0.55rem 0.95rem; box-shadow: 0 1px 2px rgba(0,0,0,0.03); display: inline-flex; align-items: center; gap: 0.35rem; transition: all 0.15s ease-in-out; text-decoration: none;" 
+               onmouseover="this.style.background='#f0f9ff'" 
+               onmouseout="this.style.background='#ffffff'" 
+               title="Buka Halaman Rekonsiliasi Alokasi Tagihan Listrik PLN &amp; Gas CNG Bulanan ke HPP">
+                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                <span>Rekonsiliasi Utilitas</span>
+            </a>
+
             <a href="{{ route('produksi.hpp.create') }}" 
                class="btn btn-primary" 
-               style="background: #0d9488; font-size: 0.85rem; font-weight: 700; padding: 0.55rem 0.95rem; display: inline-flex; align-items: center; gap: 0.35rem; text-decoration: none;">
-                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+               style="background: #059669; border-color: #059669; font-weight: 700; padding: 0.55rem 1.15rem; font-size: 0.85rem; border-radius: 6px; text-decoration: none; display: inline-flex; align-items: center;">
                 <span>+ Kalkulasi Lembar HPP</span>
-            </a>
-            <a href="{{ route('produksi.create') }}" 
-               class="btn btn-primary" 
-               style="background: #059669; font-size: 0.85rem; font-weight: 700; padding: 0.55rem 0.95rem; display: inline-flex; align-items: center; gap: 0.35rem;">
-                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                <span>Catat Hasil Produksi</span>
             </a>
         @endif
     </div>
@@ -80,7 +105,7 @@
             <span style="font-size: 0.825rem; color: #64748b; line-height: 1.4; white-space: nowrap; margin-top: 0.15rem;">Audit kalkulasi biaya bahan, energi CNG, upah kerja, FOH, rendemen &amp; HPP/kg.</span>
         </div>
 
-        <div style="display: flex; gap: 0.3rem; align-items: center; flex-shrink: 0; flex-wrap: nowrap;">
+        <div>
             {{-- Filter Periode Kalender Terpadu --}}
             <form action="{{ route('produksi.rekap') }}" method="GET" style="display: flex; gap: 0.25rem; align-items: center; background: #ffffff; padding: 0.2rem 0.45rem; border-radius: 6px; border: 1px solid #cbd5e1; box-shadow: 0 1px 2px rgba(0,0,0,0.02); margin: 0;">
                 <input type="hidden" name="mode" value="harian">
@@ -95,48 +120,6 @@
                     @endforeach
                 </select>
             </form>
-
-            <a href="{{ route('produksi.export-rekap-pdf', ['tahun' => $year, 'bulan' => $month]) }}" 
-               target="_blank" 
-               class="btn btn-secondary" 
-               style="background: #ffffff; border: 1.5px solid #dc2626; color: #dc2626; font-size: 0.8125rem; font-weight: 700; padding: 0.42rem 0.65rem; box-shadow: 0 1px 2px rgba(0,0,0,0.03); display: inline-flex; align-items: center; gap: 0.3rem; transition: all 0.15s ease-in-out; white-space: nowrap;" 
-               onmouseover="this.style.background='#fef2f2'" 
-               onmouseout="this.style.background='#ffffff'" 
-               title="Buka &amp; Cetak Dokumen Rekapitulasi HPP PDF Resmi">
-                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
-                <span>Cetak Rekap (PDF)</span>
-            </a>
-
-            <a href="{{ route('produksi.export-rekap-excel', ['tahun' => $year, 'bulan' => $month]) }}" 
-               class="btn btn-secondary" 
-               style="background: #ffffff; border: 1.5px solid #059669; color: #059669; font-size: 0.8125rem; font-weight: 700; padding: 0.42rem 0.65rem; box-shadow: 0 1px 2px rgba(0,0,0,0.03); display: inline-flex; align-items: center; gap: 0.3rem; transition: all 0.15s ease-in-out; white-space: nowrap;" 
-               onmouseover="this.style.background='#ecfdf5'" 
-               onmouseout="this.style.background='#ffffff'" 
-               title="Download Rekapitulasi HPP format Excel (.xlsx)">
-                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                <span>Export Excel</span>
-            </a>
-
-            <button type="button" 
-                    onclick="openModalImportRekap()" 
-                    class="btn btn-secondary" 
-                    style="background: #ffffff; border: 1.5px solid #7c3aed; color: #7c3aed; font-size: 0.8125rem; font-weight: 700; padding: 0.42rem 0.65rem; box-shadow: 0 1px 2px rgba(0,0,0,0.03); display: inline-flex; align-items: center; gap: 0.3rem; transition: all 0.15s ease-in-out; white-space: nowrap;" 
-                    onmouseover="this.style.background='#faf5ff'" 
-                    onmouseout="this.style.background='#ffffff'" 
-                    title="Import data spreadsheet harian dari file Excel">
-                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-                <span>Import Excel</span>
-            </button>
-
-            <a href="{{ route('produksi.adjust-utilitas', ['tahun' => $year, 'bulan' => $month]) }}" 
-               class="btn btn-secondary" 
-               style="background: #ffffff; border: 1.5px solid #0284c7; color: #0284c7; font-size: 0.8125rem; font-weight: 700; padding: 0.42rem 0.65rem; box-shadow: 0 1px 2px rgba(0,0,0,0.03); display: inline-flex; align-items: center; gap: 0.3rem; transition: all 0.15s ease-in-out; text-decoration: none; white-space: nowrap;" 
-               onmouseover="this.style.background='#f0f9ff'" 
-               onmouseout="this.style.background='#ffffff'" 
-               title="Buka Halaman Rekonsiliasi Alokasi Tagihan Listrik PLN &amp; Gas CNG Bulanan ke HPP">
-                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                <span>Rekonsiliasi Utilitas (PLN &amp; Gas)</span>
-            </a>
         </div>
     </div>
 

@@ -315,7 +315,17 @@
 
                         {{-- HARGA POKOK PRODUKSI / KG --}}
                         <td style="border: {{ $cellBorder }}; font-weight: 800; color: #000000; padding: 0.45rem 0.65rem;">
-                            {{ $d['has_data'] && $d['hpp_per_kg'] > 0 ? number_format($d['hpp_per_kg'], 0, ',', '.') : '-' }}
+                            @if($d['has_data'] && $d['hpp_per_kg'] > 0)
+                                @if(!empty($d['is_hpp_final']))
+                                    {{ number_format($d['hpp_per_kg'], 0, ',', '.') }}
+                                @else
+                                    <span style="color: #b45309;" title="Estimasi bahan baku (Menunggu penetapan Finance)">
+                                        {{ number_format($d['hpp_per_kg'], 0, ',', '.') }}*
+                                    </span>
+                                @endif
+                            @else
+                                -
+                            @endif
                         </td>
 
                         {{-- Sticky Kolom Kanan Aksi --}}
@@ -327,9 +337,15 @@
                                     <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                                 </button>
                                 <div id="{{ $rekapMenuId }}" class="action-dropdown-menu">
-                                    <a href="{{ route('produksi.show', $d['produksi_id']) }}" class="action-dropdown-item">
+                                    @if(empty($d['is_hpp_final']))
+                                        <a href="{{ route('produksi.hpp.create', ['produksi_id' => $d['produksi_id']]) }}" class="action-dropdown-item" style="color: #0284c7; font-weight: 700; background: #f0f9ff;">
+                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                                            <span>Tetapkan Lembar HPP</span>
+                                        </a>
+                                    @endif
+                                    <a href="{{ route('produksi.hpp.show', $d['produksi_id']) }}" class="action-dropdown-item">
                                         <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                                        <span>Lihat Detail Dokumen</span>
+                                        <span>Lihat Lembar HPP</span>
                                     </a>
                                     @if(Auth::user()->canCreateProduksi())
                                         <a href="{{ route('produksi.adjust', $d['produksi_id']) }}" class="action-dropdown-item">

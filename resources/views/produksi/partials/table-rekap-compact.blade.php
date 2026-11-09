@@ -82,11 +82,10 @@
                                         <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
                                     </a>
                                 @endif
-                                <a href="{{ route('produksi.create') }}" 
+                                <a href="{{ route('produksi.hpp.create') }}" 
                                    class="btn btn-primary" 
-                                   style="font-size: 0.8rem; font-weight: 700; padding: 0.45rem 0.95rem; border-radius: 6px; background: #059669; border: 1px solid #047857; color: #ffffff; display: inline-flex; align-items: center; gap: 0.35rem; text-decoration: none;">
-                                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                                    <span>Input Produksi Baru</span>
+                                   style="font-size: 0.85rem; font-weight: 700; padding: 0.6rem 1.25rem; border-radius: 8px; background: #059669; border-color: #059669; color: #ffffff; display: inline-flex; align-items: center; text-decoration: none;">
+                                    <span>+ Kalkulasi Lembar HPP</span>
                                 </a>
                             </div>
                         </div>
@@ -192,7 +191,7 @@
                             {{-- Nomor Dokumen Transaksi Sistem (Ringkas Bersih) --}}
                             @if(!empty($d['primary_produksi_no'] ?? $d['produksi_no']))
                                 <div style="margin-top: 0.25rem; display: flex; align-items: center; gap: 0.25rem;">
-                                    <a href="{{ route('produksi.show', $d['produksi_id']) }}" style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.65rem; color: #64748b; text-decoration: none; display: inline-flex; align-items: center; gap: 0.2rem; white-space: nowrap;" title="Lihat Dokumen Transaksi {{ $d['primary_produksi_no'] ?? $d['produksi_no'] }}">
+                                    <a href="{{ route('produksi.hpp.show', $d['produksi_id']) }}" style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.65rem; color: #64748b; text-decoration: none; display: inline-flex; align-items: center; gap: 0.2rem; white-space: nowrap;" title="Lihat Lembar HPP {{ $d['primary_produksi_no'] ?? $d['produksi_no'] }}">
                                         <span style="color: #94a3b8;">#</span>
                                         <span style="font-weight: 600; color: #475569;">{{ $d['primary_produksi_no'] ?? $d['produksi_no'] }}</span>
                                     </a>
@@ -240,26 +239,44 @@
 
                         {{-- Total Biaya Produksi --}}
                         <td style="text-align: right;">
-                            <div style="font-weight: 700; font-size: 0.875rem; color: #0f172a; font-variant-numeric: tabular-nums;">
-                                Rp {{ number_format($d['total_biaya_produksi'], 0, ',', '.') }}
-                            </div>
-                            <div style="color: #64748b; font-size: 0.65rem;">
-                                Bahan + Energi + TK
-                            </div>
+                            @if(!empty($d['is_hpp_final']))
+                                <div style="font-weight: 700; font-size: 0.875rem; color: #0f172a; font-variant-numeric: tabular-nums;">
+                                    Rp {{ number_format($d['total_biaya_produksi'], 0, ',', '.') }}
+                                </div>
+                                <div style="color: #059669; font-size: 0.65rem; font-weight: 600;">
+                                    Bahan + Energi + TK
+                                </div>
+                            @else
+                                <div style="font-weight: 700; font-size: 0.875rem; color: #d97706; font-variant-numeric: tabular-nums;">
+                                    Rp {{ number_format($d['total_biaya_produksi'], 0, ',', '.') }}
+                                </div>
+                                <div style="color: #b45309; font-size: 0.625rem; font-weight: 600;" title="Biaya Gas CNG dan Tenaga Kerja belum dimasukkan oleh Tim Finance">
+                                    *Baru Biaya Bahan
+                                </div>
+                            @endif
                         </td>
 
                         {{-- HPP / Kg --}}
                         <td style="text-align: right;">
-                            <div style="font-weight: 800; font-size: 0.925rem; color: #0f172a; font-family: monospace; font-variant-numeric: tabular-nums;">
-                                Rp {{ number_format($d['hpp_utama'] ?? $d['hpp_per_kg'], 0, ',', '.') }}
-                            </div>
-                            @if(!empty($d['has_berko']) && abs(($d['hpp_utama'] ?? 0) - ($d['hpp_berko'] ?? 0)) > 0.01)
-                                <div style="font-size: 0.65rem; color: #dc2626; font-weight: 600;">
-                                    Berko: Rp {{ number_format($d['hpp_berko'], 0, ',', '.') }}
+                            @if(!empty($d['is_hpp_final']))
+                                <div style="font-weight: 800; font-size: 0.925rem; color: #0f172a; font-family: monospace; font-variant-numeric: tabular-nums;">
+                                    Rp {{ number_format($d['hpp_utama'] ?? $d['hpp_per_kg'], 0, ',', '.') }}
                                 </div>
+                                @if(!empty($d['has_berko']) && abs(($d['hpp_utama'] ?? 0) - ($d['hpp_berko'] ?? 0)) > 0.01)
+                                    <div style="font-size: 0.65rem; color: #dc2626; font-weight: 600;">
+                                        Berko: Rp {{ number_format($d['hpp_berko'], 0, ',', '.') }}
+                                    </div>
+                                @else
+                                    <span style="font-size: 0.625rem; color: #059669; font-weight: 600; text-transform: uppercase;">
+                                        Beban Pokok / Kg
+                                    </span>
+                                @endif
                             @else
-                                <span style="font-size: 0.625rem; color: #059669; font-weight: 600; text-transform: uppercase;">
-                                    Beban Pokok / Kg
+                                <div style="font-weight: 800; font-size: 0.925rem; color: #d97706; font-family: monospace; font-variant-numeric: tabular-nums;">
+                                    Rp {{ number_format($d['hpp_utama'] ?? $d['hpp_per_kg'], 0, ',', '.') }}
+                                </div>
+                                <span style="display: inline-block; font-size: 0.625rem; color: #b45309; background: #fef3c7; border: 1px solid #fde68a; padding: 1px 5px; border-radius: 3px; font-weight: 700;" title="Menunggu Tim Finance menetapkan biaya Gas & TK di Formulir Kalkulasi HPP">
+                                    Belum Ditetapkan Finance
                                 </span>
                             @endif
                         </td>
@@ -284,9 +301,15 @@
                                     <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                                 </button>
                                 <div id="{{ $compactMenuId }}" class="action-dropdown-menu">
-                                    <a href="{{ route('produksi.show', $d['produksi_id']) }}" class="action-dropdown-item">
+                                    @if(empty($d['is_hpp_final']))
+                                        <a href="{{ route('produksi.hpp.create', ['produksi_id' => $d['produksi_id']]) }}" class="action-dropdown-item" style="color: #0284c7; font-weight: 700; background: #f0f9ff;">
+                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                                            <span>Tetapkan Lembar HPP</span>
+                                        </a>
+                                    @endif
+                                    <a href="{{ route('produksi.hpp.show', $d['produksi_id']) }}" class="action-dropdown-item">
                                         <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                                        <span>Lihat Detail Dokumen</span>
+                                        <span>Lihat Lembar HPP</span>
                                     </a>
                                     @if(Auth::user()->canCreateProduksi())
                                         <a href="{{ route('produksi.adjust', $d['produksi_id']) }}" class="action-dropdown-item">
@@ -459,14 +482,23 @@
                                 </div>
 
                                 {{-- KOMPARTEMEN 4: TOTAL AKUMULASI BIAYA, WIP & HPP --}}
-                                <div class="mini-cost-card" style="border-color: #fde047; background: #fefce8;">
-                                    <div class="mini-cost-header" style="border-bottom-color: #fef08a;">
-                                        <div class="mini-cost-title" style="color: #713f12;">
+                                <div class="mini-cost-card" style="border-color: {{ !empty($d['is_hpp_final']) ? '#86efac' : '#fde047' }}; background: {{ !empty($d['is_hpp_final']) ? '#f0fdf4' : '#fffbeb' }};">
+                                    <div class="mini-cost-header" style="border-bottom-color: {{ !empty($d['is_hpp_final']) ? '#bbf7d0' : '#fef08a' }};">
+                                        <div class="mini-cost-title" style="color: {{ !empty($d['is_hpp_final']) ? '#166534' : '#713f12' }};">
                                             <span>4. Output WIP, Rendemen &amp; HPP</span>
                                         </div>
-                                        <span class="mini-cost-badge" style="background: #ca8a04; color: #ffffff; font-weight: 700;">HPP Final</span>
+                                        @if(!empty($d['is_hpp_final']))
+                                            <span class="mini-cost-badge" style="background: #059669; color: #ffffff; font-weight: 700;">HPP Final</span>
+                                        @else
+                                            <span class="mini-cost-badge" style="background: #f59e0b; color: #ffffff; font-weight: 700;" title="Biaya Gas CNG dan Tenaga Kerja belum diinput Finance">Menunggu Penetapan Finance</span>
+                                        @endif
                                     </div>
                                     <div class="mini-cost-list">
+                                        @if(empty($d['is_hpp_final']))
+                                            <div style="background: #fefce8; border: 1px dashed #fde047; padding: 0.4rem 0.55rem; border-radius: 4px; margin-bottom: 0.45rem; font-size: 0.7rem; color: #92400e; line-height: 1.35;">
+                                                <strong>Belum Ditetapkan Finance:</strong> Dokumen SPK ini baru mencatat hasil fisik timbangan &amp; pemakaian bahan baku gudang. Biaya energi Gas CNG &amp; upah tenaga kerja belum difinalisasi di Formulir Kalkulasi HPP.
+                                            </div>
+                                        @endif
                                         @if(!empty($d['ifl_qty']) && $d['ifl_qty'] > 0)
                                             <div class="mini-cost-row">
                                                 <span style="color: #0369a1;">• Lini IFM (Indofood):</span>

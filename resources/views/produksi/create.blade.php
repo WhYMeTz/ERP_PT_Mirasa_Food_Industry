@@ -10,9 +10,9 @@
 <div class="produksi-container">
     {{-- Breadcrumb & Header --}}
     <div style="margin-bottom: 1.25rem;">
-        <a href="{{ route('produksi.rekap') }}" style="color: #64748b; text-decoration: none; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.35rem; margin-bottom: 0.35rem;">
+        <a href="{{ route('produksi.index') }}" style="color: #64748b; text-decoration: none; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.35rem; margin-bottom: 0.35rem;">
             <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-            Kembali ke Buku Rekap HPP Produksi
+            Kembali ke Hasil Barang Produksi
         </a>
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
             <div>
@@ -20,7 +20,7 @@
                     Pencatatan Hasil Produksi Fisik
                 </h1>
                 <p style="color: #64748b; font-size: 0.875rem; margin-top: 0.25rem; margin-bottom: 0;">
-                    Pencatatan aktual hasil penggorengan, penimbangan olahan curah &amp; kemasan, flow meter gas CNG, dan absensi regu kerja berdasarkan dokumen pengeluaran gudang (BPPB).
+                    Pencatatan aktual hasil penggorengan, penimbangan output fisik barang setengah jadi (WIP), dan pemantauan rendemen olahan berdasarkan dokumen pengeluaran gudang (BPPB).
                 </p>
             </div>
         </div>
@@ -177,15 +177,16 @@
             <div style="padding: 1.25rem;">
                 {{-- 4 KOTAK KPI METRIK FISIK --}}
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
-                    {{-- Metrik 1: Singkong Mentah Masuk --}}
+                    {{-- Metrik 1: Singkong Mentah Masuk (Readonly dari Dokumen BPPB) --}}
                     <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1rem; text-align: center;">
                         <span style="font-size: 0.725rem; font-weight: 700; text-transform: uppercase; color: #64748b; letter-spacing: 0.04em; display: block;">
                             Singkong Masuk (BPPB)
                         </span>
                         <div id="liveSingkongFisik" style="font-size: 1.4rem; font-weight: 800; color: #0f172a; margin-top: 0.25rem;">
-                            0.00 kg
+                            {{ number_format((float)old('singkong_qty', 0), 2, ',', '.') }} kg
                         </div>
-                        <small style="color: #64748b; font-size: 0.7rem;">Bahan baku dari gudang</small>
+                        <input type="hidden" name="singkong_qty" id="singkong_qty" value="{{ old('singkong_qty', 0) }}">
+                        <small style="color: #64748b; font-size: 0.7rem; display: block; margin-top: 0.25rem;">Otomatis ditarik dari dokumen BPPB</small>
                     </div>
 
                     {{-- Metrik 2: Total Output Jadi --}}
@@ -196,7 +197,7 @@
                         <div id="liveOutputFisik" style="font-size: 1.4rem; font-weight: 800; color: #0284c7; margin-top: 0.25rem;">
                             0.00 kg
                         </div>
-                        <small style="color: #0369a1; font-size: 0.7rem;">Karton + Curah + Berko</small>
+                        <small style="color: #0369a1; font-size: 0.7rem;">WIP Utama + Curah + Berko &amp; Remahan</small>
                     </div>
 
                     {{-- Metrik 3: Rendemen Masak --}}
@@ -211,17 +212,6 @@
                             Menunggu timbangan
                         </span>
                     </div>
-
-                    {{-- Metrik 4: Rasio Minyak --}}
-                    <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 1rem; text-align: center;">
-                        <span style="font-size: 0.725rem; font-weight: 700; text-transform: uppercase; color: #b45309; letter-spacing: 0.04em; display: block;">
-                            Rasio Pemakaian Minyak
-                        </span>
-                        <div id="liveMinyakRasioDisplay" style="font-size: 1.4rem; font-weight: 800; color: #d97706; margin-top: 0.25rem;">
-                            0.00%
-                        </div>
-                        <small style="color: #b45309; font-size: 0.7rem;">Sawit &amp; kelapa vs singkong</small>
-                    </div>
                 </div>
 
                 {{-- CATATAN OPERASIONAL SHIFT --}}
@@ -234,45 +224,18 @@
             </div>
         </div>
 
-        {{-- BAGIAN 5: PEMAKAIAN ENERGI (GAS CNG) & KEHADIRAN TENAGA KERJA FISIK --}}
-        <div class="card" style="margin-bottom: 1.25rem; border: 1px solid #cbd5e1; border-radius: 8px; background: #ffffff;">
-            <div class="card-header" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0.875rem 1.25rem;">
-                <strong style="color: #0f172a; font-size: 0.95rem; display: flex; align-items: center; gap: 0.4rem;">
-                    <span>5. Pemakaian Energi (Gas CNG) &amp; Kehadiran Tenaga Kerja Fisik</span>
-                </strong>
-            </div>
-            <div style="padding: 1.25rem;">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem;">
-                    <div>
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
-                            <label style="font-size: 0.8rem; font-weight: 700; color: #334155; margin: 0;">Meteran Gas Alam / CNG (MMBTU) <span style="color: #ef4444;">*</span></label>
-                            <span style="font-size: 0.7rem; font-weight: 600; color: #0284c7; background: #e0f2fe; padding: 0.15rem 0.45rem; border-radius: 4px;">Flow Meter Fisik</span>
-                        </div>
-                        <input type="number" step="0.0001" min="0" name="cng_mmbtu" id="cng_mmbtu" class="form-control" style="text-align: right; font-weight: 700; font-size: 1.1rem; color: #0284c7;" value="{{ old('cng_mmbtu', 0) }}" placeholder="0" required>
-                        <small style="color: #64748b; font-size: 0.725rem; display: block; margin-top: 0.25rem;">Masukkan angka delta pemakaian flow meter fisik boiler &amp; fryer untuk shift ini.</small>
-                    </div>
-                    <div>
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
-                            <label style="font-size: 0.8rem; font-weight: 700; color: #334155; margin: 0;">Tenaga Kerja Hadir (Orang) <span style="color: #ef4444;">*</span></label>
-                            <div style="display: flex; gap: 0.35rem;">
-                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="syncLaborFromKaryawan(true, true)" style="font-size: 0.7rem; padding: 0.15rem 0.45rem; display: inline-flex; align-items: center; gap: 0.25rem;">
-                                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                                    <span>Muat Presensi</span>
-                                </button>
-                                <span style="font-size: 0.7rem; font-weight: 600; color: #059669; background: #ecfdf5; padding: 0.15rem 0.45rem; border-radius: 4px;">Regu Lini</span>
-                            </div>
-                        </div>
-                        <input type="number" min="0" name="tk_jumlah_org" id="tk_jumlah_org" class="form-control" style="text-align: right; font-weight: 700; font-size: 1.1rem; color: #0f172a;" value="{{ old('tk_jumlah_org', 0) }}" placeholder="0" required>
-                        <small style="color: #64748b; font-size: 0.725rem; display: block; margin-top: 0.25rem;">Jumlah personel/karyawan yang bertugas di lini produksi shift ini.</small>
-                    </div>
-                </div>
-                <div id="tkSyncStatus" style="font-size: 0.725rem; color: #64748b; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.4rem 0.75rem; margin-top: 0.75rem;">
-                    <span id="tkSyncText">Otomatis tersinkron saat Tanggal Produksi &amp; Lini Produksi dipilih. Nilai dapat diisi manual.</span>
-                </div>
-            </div>
-        </div>
-
         {{-- VARIABEL BIAYA & FINANSIAL HPP (DIKELOLA & DIKALKULASI DI MODUL FINANCE: /produksi/hpp/create) --}}
+        <input type="hidden" name="minyak_sawit_qty" id="minyak_sawit_qty" value="{{ old('minyak_sawit_qty', 0) }}">
+        <input type="hidden" name="minyak_kelapa_qty" id="minyak_kelapa_qty" value="{{ old('minyak_kelapa_qty', 0) }}">
+        <input type="hidden" name="bumbu_qty" id="bumbu_qty" value="{{ old('bumbu_qty', 0) }}">
+        <input type="hidden" name="karton_baru_qty" id="karton_baru_qty" value="{{ old('karton_baru_qty', 0) }}">
+        <input type="hidden" name="karton_bekas_qty" id="karton_bekas_qty" value="{{ old('karton_bekas_qty', 0) }}">
+        <input type="hidden" name="plastik_hd_qty" id="plastik_hd_qty" value="{{ old('plastik_hd_qty', 0) }}">
+        <input type="hidden" name="lakban_besar_qty" id="lakban_besar_qty" value="{{ old('lakban_besar_qty', 0) }}">
+        <input type="hidden" name="lakban_kecil_qty" id="lakban_kecil_qty" value="{{ old('lakban_kecil_qty', 0) }}">
+        <input type="hidden" name="tali_rafia_qty" id="tali_rafia_qty" value="{{ old('tali_rafia_qty', 0) }}">
+        <input type="hidden" name="cng_mmbtu" id="cng_mmbtu" value="{{ old('cng_mmbtu', 0) }}">
+        <input type="hidden" name="tk_jumlah_org" id="tk_jumlah_org" value="{{ old('tk_jumlah_org', 0) }}">
         <input type="hidden" name="singkong_nilai" id="singkong_nilai" value="{{ old('singkong_nilai', 0) }}">
         <input type="hidden" name="minyak_nilai" id="minyak_nilai" value="{{ old('minyak_nilai', 0) }}">
         <input type="hidden" name="bumbu_nilai" id="bumbu_nilai" value="{{ old('bumbu_nilai', 0) }}">
@@ -304,11 +267,14 @@
         {{-- ACTION BUTTONS --}}
         <div style="display: flex; justify-content: flex-end; gap: 0.75rem; align-items: center; margin-top: 1.25rem;">
             <a href="{{ route('produksi.index') }}" class="btn btn-secondary" style="padding: 0.65rem 1.25rem; font-weight: 600;">Batal</a>
-            <button type="submit" class="btn btn-primary" style="padding: 0.65rem 1.5rem; font-size: 0.9rem; font-weight: 700;">
+            <button type="button" onclick="openModalConfirmCreate()" class="btn btn-primary" style="padding: 0.65rem 1.5rem; font-size: 0.9rem; font-weight: 700;">
                 Simpan Lembar Produksi Harian
             </button>
         </div>
     </form>
+
+    {{-- MODAL KONFIRMASI SIMPAN & PRE-FLIGHT VERIFICATION --}}
+    @include('produksi.partials.modal-confirm-create')
 </div>
 
 @push('scripts')

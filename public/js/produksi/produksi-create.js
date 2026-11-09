@@ -179,56 +179,201 @@
 
     // Helper: Terapkan badge batch yang tepat ke satu baris tabel output (idx)
     function applyBatchBadgeToRow(idx, sel) {
+        const badgeFgBatch = document.getElementById(`badgeFgBatch_${idx}`);
+        const batchFgInput = document.getElementById(`batchFg_${idx}`);
+        if (!badgeFgBatch) return;
+
         const opt = sel?.selectedOptions?.[0];
         const cd = opt?.dataset?.cd || '';
         const nm = opt?.dataset?.nm || '';
 
+        // Status per baris: 'active' (nomor batch diterbitkan) atau 'excluded' (ditangguhkan / belum terbit)
+        let state = badgeFgBatch.dataset.batchState;
+        if (!state) {
+            const txt = badgeFgBatch.textContent.trim();
+            if (txt === 'BELUM TERBIT' || txt === 'PENDING') {
+                state = 'excluded';
+            } else if (txt && txt !== '-') {
+                state = 'active';
+            } else {
+                const chkBatch = document.getElementById('chk_enable_batch');
+                const isMasterOff = (window._batchOption === 'exclude') || (chkBatch && !chkBatch.checked);
+                state = isMasterOff ? 'excluded' : 'active';
+            }
+            badgeFgBatch.dataset.batchState = state;
+        }
+
+        const isRowExcluded = (state === 'excluded');
         const isCurah = isCurahWipProduct(cd, nm);
         const baseDate = getDateBatch();
         const currentBatch = document.getElementById('batch_wip_no')?.value || '-';
-        const batchForItem = isCurah
-            ? (baseDate && baseDate !== '-' ? baseDate : '-')              // Curah → format tanggal murni (DD MM YYYY)
-            : currentBatch;                                               // Kemasan → range karton / PENDING
-
-        const badgeFgBatch = document.getElementById(`badgeFgBatch_${idx}`);
-        const batchFgInput = document.getElementById(`batchFg_${idx}`);
-
-        if (badgeFgBatch) {
-            badgeFgBatch.textContent = batchForItem;
-            if (batchForItem === 'BELUM TERBIT' || batchForItem === 'PENDING') {
-                // Amber mencolok & tegas = nomor batch belum diterbitkan (Buffer Stock IFM)
-                badgeFgBatch.textContent = 'BELUM TERBIT';
-                badgeFgBatch.style.background = '#fffbeb';
-                badgeFgBatch.style.color = '#b45309';
-                badgeFgBatch.style.borderColor = '#f59e0b';
-                badgeFgBatch.style.borderWidth = '1.5px';
-                badgeFgBatch.style.borderStyle = 'solid';
-                badgeFgBatch.style.fontWeight = '700';
-                badgeFgBatch.title = 'Nomor batch belum diterbitkan (Buffer Stock IFM). Diterbitkan saat truk keberangkatan tiba.';
-            } else if (isCurah) {
-                // Hijau = curah/Berko → format tanggal murni
-                badgeFgBatch.style.background = '#f0fdf4';
-                badgeFgBatch.style.color = '#065f46';
-                badgeFgBatch.style.borderColor = '#a7f3d0';
-                badgeFgBatch.title = 'Batch Curah: Format Tanggal Murni (DD MM YYYY)';
-            } else if (batchForItem && batchForItem !== '-') {
-                // Biru = kemasan karton IFM → format range
-                badgeFgBatch.style.background = '#f0f9ff';
-                badgeFgBatch.style.color = '#0369a1';
-                badgeFgBatch.style.borderColor = '#bae6fd';
-                badgeFgBatch.title = 'Batch Karton: Format Range Shift [NoAwal]-[NoAkhir]';
-            } else {
-                // Abu-abu = belum ada batch
-                badgeFgBatch.style.background = '#f8fafc';
-                badgeFgBatch.style.color = '#64748b';
-                badgeFgBatch.style.borderColor = '#cbd5e1';
-                badgeFgBatch.title = 'Kode Batch otomatis setelah Lini dipilih';
-            }
+        
+        let batchForItem = '';
+        if (isRowExcluded) {
+            batchForItem = 'BELUM TERBIT';
+        } else if (isCurah) {
+            batchForItem = (baseDate && baseDate !== '-') ? baseDate : '-';
+        } else {
+            batchForItem = (currentBatch && currentBatch !== 'BELUM TERBIT') ? currentBatch : (baseDate || '-');
         }
-        if (batchFgInput) batchFgInput.value = batchForItem;
+
+        badgeFgBatch.textContent = batchForItem;
+        if (batchForItem === 'BELUM TERBIT' || batchForItem === 'PENDING') {
+            // Amber tegas: Nomor batch ditangguhkan (Buffer Stock)
+            badgeFgBatch.textContent = 'BELUM TERBIT';
+            badgeFgBatch.style.background = '#fffbeb';
+            badgeFgBatch.style.color = '#b45309';
+            badgeFgBatch.style.borderColor = '#f59e0b';
+            badgeFgBatch.style.borderWidth = '1.5px';
+            badgeFgBatch.style.borderStyle = 'solid';
+            badgeFgBatch.style.fontWeight = '700';
+            badgeFgBatch.style.cursor = 'pointer';
+            badgeFgBatch.title = 'Status: Ditangguhkan (Buffer Stock). Klik untuk menerbitkan nomor batch baris ini.';
+        } else if (isCurah) {
+            // Hijau: Curah/Berko -> Tanggal murni
+            badgeFgBatch.style.background = '#f0fdf4';
+            badgeFgBatch.style.color = '#065f46';
+            badgeFgBatch.style.borderColor = '#a7f3d0';
+            badgeFgBatch.style.borderWidth = '1px';
+            badgeFgBatch.style.borderStyle = 'solid';
+            badgeFgBatch.style.cursor = 'pointer';
+            badgeFgBatch.title = 'Status: Batch Curah Diterbitkan. Klik untuk menangguhkan (Buffer Stock).';
+        } else if (batchForItem && batchForItem !== '-') {
+            // Biru: Kemasan karton IFM -> Format range
+            badgeFgBatch.style.background = '#f0f9ff';
+            badgeFgBatch.style.color = '#0369a1';
+            badgeFgBatch.style.borderColor = '#bae6fd';
+            badgeFgBatch.style.borderWidth = '1px';
+            badgeFgBatch.style.borderStyle = 'solid';
+            badgeFgBatch.style.cursor = 'pointer';
+            badgeFgBatch.title = 'Status: Batch Karton Diterbitkan. Klik untuk menangguhkan (Buffer Stock).';
+        } else {
+            // Abu-abu: belum ada batch
+            badgeFgBatch.style.background = '#f8fafc';
+            badgeFgBatch.style.color = '#64748b';
+            badgeFgBatch.style.borderColor = '#cbd5e1';
+            badgeFgBatch.style.borderWidth = '1px';
+            badgeFgBatch.style.borderStyle = 'solid';
+            badgeFgBatch.style.cursor = 'pointer';
+            badgeFgBatch.title = 'Kode Batch otomatis setelah Lini dipilih';
+        }
+
+        if (batchFgInput) {
+            batchFgInput.value = (batchForItem === 'BELUM TERBIT' || batchForItem === '-') ? '' : batchForItem;
+        }
     }
 
-    // Toggle Switch (Standar Mirasa Mirip Utilitas Listrik): On = Aktif, Off = Ditangguhkan (Buffer Stock IFM)
+    // Toggle status batch per baris secara independen (Override Manual Click-to-Toggle)
+    window.toggleSingleRowBatch = function (idx) {
+        const badgeFgBatch = document.getElementById(`badgeFgBatch_${idx}`);
+        const tr = document.getElementById(`fgRow_${idx}`);
+        if (!badgeFgBatch || !tr) return;
+
+        // Toggle state baris ini: active <-> excluded
+        const currentState = badgeFgBatch.dataset.batchState || 
+            (badgeFgBatch.textContent.trim() === 'BELUM TERBIT' ? 'excluded' : 'active');
+        const nextState = (currentState === 'active') ? 'excluded' : 'active';
+        badgeFgBatch.dataset.batchState = nextState;
+
+        const sel = tr.querySelector('.select-fg-barang');
+        applyBatchBadgeToRow(idx, sel);
+
+        // Sinkronisasi dua arah ke Master Switch di Card 3
+        if (typeof window.syncMasterSwitchFromTable === 'function') {
+            window.syncMasterSwitchFromTable();
+        }
+    };
+
+    // Helper: Sinkronisasi status Master Switch di Card 3 secara dua arah berdasarkan status baris di tabel
+    window.syncMasterSwitchFromTable = function () {
+        const rows = document.querySelectorAll('#tbodyOutputFg .row-output-fg');
+        if (rows.length === 0) return;
+
+        let totalRows = rows.length;
+        let activeRows = 0;
+        let excludedRows = 0;
+
+        rows.forEach(tr => {
+            const badge = tr.querySelector('.badge-batch-wip');
+            const state = badge?.dataset?.batchState || 
+                (badge?.textContent.trim() === 'BELUM TERBIT' || badge?.textContent.trim() === 'PENDING' || !badge?.textContent.trim() ? 'excluded' : 'active');
+            if (state === 'active') {
+                activeRows++;
+            } else {
+                excludedRows++;
+            }
+        });
+
+        const chkBatch = document.getElementById('chk_enable_batch');
+        const hiddenOpt = document.getElementById('batch_option');
+        const sectionBody = document.getElementById('section_body_batch');
+        const cardHeaderBadge = document.getElementById('cardHeaderBadge');
+
+        if (activeRows === totalRows) {
+            // SEMUA BARIS AKTIF -> Switch Card 3 OTOMATIS MENYALA (ON)
+            if (chkBatch) chkBatch.checked = true;
+            if (hiddenOpt) hiddenOpt.value = 'include';
+            window._batchOption = 'include';
+
+            if (sectionBody) {
+                sectionBody.style.opacity = '1';
+                sectionBody.style.pointerEvents = 'auto';
+            }
+
+            const inputAwal = document.getElementById('no_karton_awal');
+            if (inputAwal && inputAwal.dataset.prevVal) {
+                inputAwal.value = inputAwal.dataset.prevVal;
+            }
+
+            // Hitung ulang kode batch resmi di Card 3 (skip sync table agar tidak menimpa status baris tabel)
+            window.updateKartonRangeAndBatch(true);
+        } else if (excludedRows === totalRows) {
+            // SEMUA BARIS DITANGGUHKAN -> Switch Card 3 OTOMATIS MATI (OFF)
+            if (chkBatch) chkBatch.checked = false;
+            if (hiddenOpt) hiddenOpt.value = 'exclude';
+            window._batchOption = 'exclude';
+
+            if (sectionBody) {
+                sectionBody.style.opacity = '0.45';
+                sectionBody.style.pointerEvents = 'none';
+            }
+
+            const liveBatch = document.getElementById('liveBatchCode');
+            if (liveBatch) liveBatch.textContent = 'BELUM TERBIT';
+
+            const inputBatch = document.getElementById('batch_wip_no');
+            if (inputBatch) inputBatch.value = 'BELUM TERBIT';
+
+            if (cardHeaderBadge) {
+                cardHeaderBadge.textContent = 'Ditangguhkan (Buffer Stock)';
+                cardHeaderBadge.style.background = '#f1f5f9';
+                cardHeaderBadge.style.color = '#475569';
+                cardHeaderBadge.style.borderColor = '#cbd5e1';
+            }
+        } else {
+            // SEBAGIAN BARIS AKTIF (CAMPURAN) -> Switch Card 3 tetap MENYALA (ON)
+            if (chkBatch) chkBatch.checked = true;
+            if (hiddenOpt) hiddenOpt.value = 'include';
+            window._batchOption = 'include';
+
+            if (sectionBody) {
+                sectionBody.style.opacity = '1';
+                sectionBody.style.pointerEvents = 'auto';
+            }
+
+            // Hitung ulang kode batch resmi di Card 3 (skip sync table agar tidak menimpa status baris tabel)
+            window.updateKartonRangeAndBatch(true);
+
+            if (cardHeaderBadge) {
+                cardHeaderBadge.textContent = `Batch Aktif Sebagian (${activeRows}/${totalRows} Baris)`;
+                cardHeaderBadge.style.background = '#f0fdf4';
+                cardHeaderBadge.style.color = '#15803d';
+                cardHeaderBadge.style.borderColor = '#bbf7d0';
+            }
+        }
+    };
+
+    // Toggle Switch di Card 3: On = Aktifkan Semua Baris, Off = Tangguhkan Semua Baris
     window.toggleBatchSwitch = function (isEnabled) {
         const mode = isEnabled ? 'include' : 'exclude';
         window._batchOption = mode;
@@ -262,7 +407,16 @@
             }
         }
 
-        window.updateKartonRangeAndBatch();
+        // Terapkan status master switch ke seluruh baris tabel secara serentak
+        const targetState = isEnabled ? 'active' : 'excluded';
+        document.querySelectorAll('#tbodyOutputFg .badge-batch-wip').forEach(el => {
+            el.dataset.batchState = targetState;
+        });
+
+        // Hitung ulang kode batch di Card 3
+        window.updateKartonRangeAndBatch(true);
+        // Sinkronkan seluruh baris tabel sesuai batchState masing-masing
+        window.syncBatchToOutputItems();
     };
 
     // Alias kompatibilitas jika dipanggil dengan mode string
@@ -274,7 +428,7 @@
     };
 
     // Helper: Sinkronisasi Kode Batch Bagian 2 ke seluruh Baris Output Barang Jadi (Bagian 7)
-    // Per baris: kemasan IFM → range, WIP curah → tanggal murni harian (DD MM YYYY)
+    // Per baris: menghormati batchState ('active' vs 'excluded') masing-masing baris
     window.syncBatchToOutputItems = function () {
         const tbody = document.getElementById('tbodyOutputFg');
         if (!tbody) return;
@@ -515,8 +669,10 @@
             liveEstimasiKg.textContent = formatNumber(estimasiKg, 2) + (isIfm ? ' Kg' : ' Unit/Kg');
         }
 
-        // Sinkronkan kode batch ke baris output barang jadi di Bagian 7
-        window.syncBatchToOutputItems();
+        // Sinkronkan kode batch ke baris output barang jadi di Bagian 7 HANYA jika tidak di-skip
+        if (!skipSyncTable) {
+            window.syncBatchToOutputItems();
+        }
 
         // Sinkronisasi otomatis ke baris QTY barang di tabel Bagian 7 jika dipicu dari perubahan Karton Selesai
         if (!skipSyncTable) {
@@ -580,6 +736,15 @@
                 autoSelectLiniBarang(0);
             }
         }
+
+        // Pastikan setiap baris tabel memiliki state batch yang konsisten dengan Master Switch
+        const chkBatchEl = document.getElementById('chk_enable_batch');
+        const isMasterOffNow = (window._batchOption === 'exclude') || (chkBatchEl && !chkBatchEl.checked);
+        document.querySelectorAll('.badge-batch-wip').forEach(el => {
+            if (!el.dataset.batchState) {
+                el.dataset.batchState = isMasterOffNow ? 'excluded' : 'active';
+            }
+        });
 
         window.updateKartonRangeAndBatch();
         window.syncBatchToOutputItems();
@@ -711,83 +876,13 @@
         }
     };
 
-    // 4.B Sinkronisasi Data Tenaga Kerja dari Modul Karyawan (Otomatis berdasarkan Tanggal & Lini)
-    window.syncLaborFromKaryawan = async function (isManualClick = false, forceUpdate = true) {
-        const tglInput = document.getElementById('produksi_tgl');
-        if (!tglInput || !tglInput.value) return;
-
-        const liniInput = document.getElementById('lini_produksi');
-        const lini = liniInput?.value || '';
-
-        const syncStatusText = document.getElementById('tkSyncText');
-        const syncIndicator = document.getElementById('tkSyncIndicator');
-        const btnSync = document.getElementById('btnSyncKaryawan');
-
-        const syncUrl = window.appConfig?.syncKaryawanUrl;
-        if (!syncUrl) return;
-
-        try {
-            if (syncIndicator) syncIndicator.style.display = 'inline';
-            if (btnSync) btnSync.disabled = true;
-
-            const res = await fetch(`${syncUrl}?tgl=${encodeURIComponent(tglInput.value)}&lini=${encodeURIComponent(lini)}`);
-            if (!res.ok) throw new Error('HTTP ' + res.status);
-            const json = await res.json();
-
-            if (json.status === 'success' && json.data) {
-                const data = json.data;
-                const inputJml = document.getElementById('tk_jumlah_org');
-                const inputTotal = document.getElementById('tk_total_nilai');
-                const inputLangsung = document.getElementById('tk_langsung_org');
-
-                const shouldUpdate = forceUpdate || isManualClick || !inputJml || !inputJml.value || inputJml.value === '0';
-
-                if (shouldUpdate && data.is_synced) {
-                    if (inputJml) {
-                        inputJml.value = data.tk_jumlah_org || 0;
-                        delete inputJml.dataset.userEdited;
-                    }
-                    if (inputLangsung) {
-                        inputLangsung.value = data.tk_jumlah_org || 0;
-                    }
-                    if (inputTotal) {
-                        inputTotal.value = data.tk_total_nilai || 0;
-                        delete inputTotal.dataset.userEdited;
-                    }
-                }
-
-                if (syncStatusText) {
-                    if (data.is_synced && data.tk_jumlah_org > 0) {
-                        syncStatusText.innerHTML = `✓ Otomatis terisi dari Presensi [<strong>${data.kelompok}</strong>]: <strong>${data.tk_jumlah_org} orang</strong> (Total upah: <strong>${formatRupiah(data.tk_total_nilai)}</strong>)`;
-                        syncStatusText.style.color = '#15803d';
-                    } else if (data.is_synced) {
-                        syncStatusText.innerHTML = `✓ Sinkron Presensi [<strong>${data.kelompok}</strong>]: 0 orang tercatat hadir pada <strong>${data.tgl_format}</strong>. Nilai dapat diisi manual.`;
-                        syncStatusText.style.color = '#64748b';
-                    } else {
-                        syncStatusText.innerHTML = `ℹ Belum ada data absensi [<strong>${data.kelompok || 'Langsung'}</strong>] per <strong>${data.tgl_format}</strong>. Nilai dapat diisi manual.`;
-                        syncStatusText.style.color = '#64748b';
-                    }
-                }
-                window.calcAll();
-            }
-        } catch (err) {
-            console.warn('Gagal sinkronisasi data presensi:', err);
-            if (syncStatusText && isManualClick) {
-                syncStatusText.innerHTML = 'Koneksi ke data presensi tidak merespons. Nilai dapat diinput manual.';
-                syncStatusText.style.color = '#b45309';
-            }
-        } finally {
-            if (syncIndicator) syncIndicator.style.display = 'none';
-            if (btnSync) btnSync.disabled = false;
-        }
+    // 4.B Sinkronisasi Data Tenaga Kerja (Dialihkan ke formulir penetapan HPP Keuangan: /produksi/hpp/create)
+    window.syncLaborFromKaryawan = function () {
+        // No-op di formulir operator fisik produksi. Dialihkan ke HPP Keuangan.
     };
 
     window.onTkJumlahChange = function () {
-        const inputJml = document.getElementById('tk_jumlah_org');
-        const jml = parseInt(inputJml?.value) || 0;
-        const inputLangsung = document.getElementById('tk_langsung_org');
-        if (inputLangsung) inputLangsung.value = jml;
-        if (inputJml) inputJml.dataset.userEdited = 'true';
+        // No-op
     };
 
     // 5. Salin Hasil Karton ke Timbangan Output WIP Kg
@@ -1361,9 +1456,33 @@
             }
         });
 
+        // Hitung dan perbarui persentase porsi fisik per baris hasil produksi secara otomatis
+        let totalPorsiPct = 0;
+        document.querySelectorAll('.row-output-fg').forEach(row => {
+            const kgInp = row.querySelector('.input-fg-qty-kg');
+            const kgVal = parseFloat(kgInp?.value) || 0;
+            const porsiEl = row.querySelector('.label-fg-porsi');
+            if (porsiEl) {
+                const porsiPct = totalOutputKg > 0 ? (kgVal / totalOutputKg) * 100 : 0;
+                totalPorsiPct += porsiPct;
+                porsiEl.textContent = formatNumber(porsiPct, 2) + '%';
+            }
+        });
+
+        // Ringkasan Total Output & Porsi pada Badge Header Atas
         const badgeTotalOutput = document.getElementById('badgeTotalOutputKg');
         if (badgeTotalOutput) {
             badgeTotalOutput.textContent = 'Total Output: ' + formatNumber(totalOutputKg, 2) + ' kg';
+        }
+
+        const badgeTotalPorsi = document.getElementById('badgeTotalPorsi');
+        if (badgeTotalPorsi) {
+            if (totalOutputKg > 0) {
+                badgeTotalPorsi.textContent = 'Total Porsi: 100,00%';
+                badgeTotalPorsi.style.display = 'inline-block';
+            } else {
+                badgeTotalPorsi.style.display = 'none';
+            }
         }
 
         const badgeBerko = document.getElementById('badgeBerkoOutput');
@@ -1469,11 +1588,11 @@
         if (elOutputFisik) elOutputFisik.textContent = formatNumber(totalOutputKg, 2) + ' kg';
 
         const elMinyakDisp = document.getElementById('liveMinyakRasioDisplay');
-        if (elMinyakDisp) elMinyakDisp.textContent = rasioMinyak.toFixed(2) + '%';
+        if (elMinyakDisp) elMinyakDisp.textContent = formatNumber(rasioMinyak, 2) + '%';
 
         const liveRendemenDisp = document.getElementById('liveRendemenDisplay');
         const liveRendemenStatusDisp = document.getElementById('liveRendemenStatusDisplay');
-        if (liveRendemenDisp) liveRendemenDisp.textContent = rendemen.toFixed(2) + '%';
+        if (liveRendemenDisp) liveRendemenDisp.textContent = formatNumber(rendemen, 2) + '%';
         if (liveRendemenStatusDisp) {
             if (rendemen >= 33.0) {
                 if (liveRendemenDisp) liveRendemenDisp.style.color = '#16a34a';
@@ -1493,7 +1612,7 @@
         const liveRendemen = document.getElementById('liveRendemen');
         const liveRendemenStatus = document.getElementById('liveRendemenStatus');
 
-        if (liveRendemen) liveRendemen.textContent = rendemen.toFixed(2) + '%';
+        if (liveRendemen) liveRendemen.textContent = formatNumber(rendemen, 2) + '%';
         if (liveRendemenStatus) {
             if (rendemen >= 33.0) {
                 if (liveRendemen) liveRendemen.style.color = '#059669';
@@ -2406,6 +2525,9 @@
         if (typeof window.updateFgDuplicateProtection === 'function') {
             window.updateFgDuplicateProtection();
         }
+        if (typeof window.syncMasterSwitchFromTable === 'function') {
+            window.syncMasterSwitchFromTable();
+        }
     };
 
     // Helper: Proteksi Anti-Duplikat Barang Hasil Produksi
@@ -2465,6 +2587,10 @@
             : (isFirstRow && currentQtyKarton > 0 ? currentQtyKarton : '');
         const defaultBatch = initial?.batch_no || (isFirstRow ? currentBatch : '-');
 
+        const chkBatch = document.getElementById('chk_enable_batch');
+        const isMasterExcluded = (window._batchOption === 'exclude') || (chkBatch && !chkBatch.checked);
+        const defaultBatchState = isMasterExcluded ? 'excluded' : 'active';
+
         const barangList = window.appConfig.barangHasilList || [];
         
         const fccItems = [];
@@ -2487,11 +2613,7 @@
             else if (seasoningCodes.includes(cd) || nm.includes('ASIN') || nm.includes('BUMBU') || nm.includes('BALADO') || nm.includes('LEMON') || nm.includes('PEDAS') || nm.includes('BARCO') || nm.includes('SAWIT') || nm.includes('BALQI') || nm.includes('UCAMP') || nm.includes('OPAK') || nm.includes('PUYUR')) {
                 seasoningItems.push(b);
             } 
-            // 3. Hasil Sortiran & Rework (KW 2 - Poin 24)
-            else if (grade === 'KW2' || nm.includes('KW 2') || nm.includes('KW2') || cd.startsWith('WIP-KW')) {
-                kw2Items.push(b);
-            }
-            // 4. Curah Tawar & Sampingan / HACCP
+            // 3. Curah Tawar & Hasil Sampingan / HACCP (Berko, Remahan, Lengket, dll.)
             else {
                 tawarItems.push(b);
             }
@@ -2531,11 +2653,7 @@
             optionsHtml += '</optgroup>';
         }
 
-        if (kw2Items.length > 0) {
-            optionsHtml += '<optgroup label="🔄 4. HASIL SORTIR & REWORK (KW 2)">';
-            optionsHtml += buildOptGroup(kw2Items);
-            optionsHtml += '</optgroup>';
-        }
+
 
         const tr = document.createElement('tr');
         tr.id = `fgRow_${idx}`;
@@ -2567,8 +2685,13 @@
             <td style="padding: 0.5rem 0.75rem;">
                 <input type="number" step="0.0001" min="0" name="output_items[${idx}][qty_kg]" id="qtyKg_${idx}" class="form-control input-fg-qty-kg calc-trigger" style="text-align: right; font-weight: 700; color: #0f172a; background: #ffffff;" placeholder="0" value="${initial?.qty_kg || ''}" oninput="calcAll()">
             </td>
+            <td style="padding: 0.5rem 0.75rem; text-align: right;">
+                <span class="label-fg-porsi" id="porsiFg_${idx}" style="font-weight: 700; font-size: 0.8rem; color: #0284c7; background: #f0f9ff; border: 1px solid #bae6fd; padding: 0.2rem 0.5rem; border-radius: 4px; display: inline-block;">
+                    0,00%
+                </span>
+            </td>
             <td style="padding: 0.5rem 0.75rem; text-align: center;">
-                <span class="badge-batch-wip" id="badgeFgBatch_${idx}" style="font-size: 0.75rem; font-weight: 700; color: #334155; background: #f8fafc; border: 1px solid #cbd5e1; padding: 0.2rem 0.5rem; border-radius: 4px; display: inline-block;">
+                <span class="badge-batch-wip" id="badgeFgBatch_${idx}" data-batch-state="${defaultBatchState}" onclick="toggleSingleRowBatch(${idx})" style="font-size: 0.75rem; font-weight: 700; color: #334155; background: #f8fafc; border: 1px solid #cbd5e1; padding: 0.2rem 0.5rem; border-radius: 4px; display: inline-block; cursor: pointer; user-select: none;" title="Status: Diterbitkan. Klik untuk menangguhkan (Buffer Stock)">
                     ${defaultBatch}
                 </span>
                 <input type="hidden" name="output_items[${idx}][batch_no]" id="batchFg_${idx}" value="${defaultBatch !== '-' ? defaultBatch : ''}">
@@ -2598,6 +2721,9 @@
         if (typeof window.updateFgDuplicateProtection === 'function') {
             window.updateFgDuplicateProtection();
         }
+        if (typeof window.syncMasterSwitchFromTable === 'function') {
+            window.syncMasterSwitchFromTable();
+        }
     };
 
 
@@ -2620,6 +2746,9 @@
         window.calcAll();
         if (typeof window.updateFgDuplicateProtection === 'function') {
             window.updateFgDuplicateProtection();
+        }
+        if (typeof window.syncMasterSwitchFromTable === 'function') {
+            window.syncMasterSwitchFromTable();
         }
     };
 
@@ -2772,6 +2901,9 @@
         }
         if (typeof window.updateFgDuplicateProtection === 'function') {
             window.updateFgDuplicateProtection();
+        }
+        if (typeof window.syncMasterSwitchFromTable === 'function') {
+            window.syncMasterSwitchFromTable();
         }
     };
 
@@ -3037,5 +3169,222 @@
             window.toggleBatchSwitch(chkBatch.checked);
         }
     });
+
+    // ==============================================================
+    // 10. MODAL KONFIRMASI SIMPAN (PRE-FLIGHT OPERATIONAL VERIFICATION)
+    // ==============================================================
+    function formatTglIndo(tglStr) {
+        if (!tglStr) return '-';
+        const parts = tglStr.split('-');
+        if (parts.length !== 3) return tglStr;
+        const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+        const d = parts[2];
+        const m = months[parseInt(parts[1]) - 1] || parts[1];
+        const y = parts[0];
+        return `${d} ${m} ${y}`;
+    }
+
+    window.openModalConfirmCreate = function () {
+        // 1. Validasi Input Kunci
+        const inpDoc = document.getElementById('produksi_no');
+        if (!inpDoc || !inpDoc.value.trim()) {
+            alert('Nomor Dokumen Produksi belum diisi. Silakan isi terlebih dahulu.');
+            inpDoc?.focus();
+            return;
+        }
+
+        const inpTgl = document.getElementById('produksi_tgl');
+        if (!inpTgl || !inpTgl.value) {
+            alert('Tanggal Produksi belum dipilih.');
+            inpTgl?.focus();
+            return;
+        }
+
+        const selLini = document.getElementById('lini_produksi');
+        if (!selLini || !selLini.value) {
+            alert('Silakan pilih Lini Produksi terlebih dahulu.');
+            selLini?.focus();
+            return;
+        }
+
+        const selGdg = document.getElementById('gudang_id');
+        if (!selGdg || !selGdg.value) {
+            alert('Silakan pilih Gudang Penerima Hasil Produksi.');
+            selGdg?.focus();
+            return;
+        }
+
+        // Cek tabel hasil output (minimal 1 baris hasil dengan kuantitas > 0)
+        const rows = document.querySelectorAll('#tableOutputFg .row-output-fg');
+        let totalOutputKg = 0;
+        let validItemCount = 0;
+        let itemsSummaryList = [];
+
+        rows.forEach((row, idx) => {
+            const selBarang = row.querySelector('.select-fg-barang');
+            const opt = selBarang?.selectedOptions?.[0];
+            const barangNm = opt?.dataset?.nm || opt?.text || '';
+            const barangCd = opt?.dataset?.cd || '';
+            const qtyHasil = parseFloat(row.querySelector('input[name*="[qty_hasil]"]')?.value) || 0;
+            const satuan = row.querySelector('.label-fg-satuan, [id*="labelSatuan_"]')?.textContent || '';
+            const qtyKg = parseFloat(row.querySelector('.input-fg-qty-kg')?.value) || 0;
+            const batchText = row.querySelector('.badge-batch-wip')?.textContent.trim() || '-';
+
+            if (selBarang?.value && qtyKg > 0) {
+                validItemCount++;
+                totalOutputKg += qtyKg;
+                itemsSummaryList.push({
+                    no: validItemCount,
+                    cd: barangCd,
+                    nm: barangNm,
+                    qty: qtyHasil,
+                    satuan: satuan,
+                    kg: qtyKg,
+                    batch: batchText
+                });
+            }
+        });
+
+        if (validItemCount === 0 || totalOutputKg <= 0) {
+            alert('Kuantitas hasil produksi belum diisi. Masukkan minimal 1 baris hasil timbangan fisik barang setengah jadi (WIP).');
+            document.querySelector('#tableOutputFg input[name*="[qty_hasil]"]')?.focus();
+            return;
+        }
+
+        // 2. Ekstrak Data untuk Ringkasan Modal
+        const docNo = inpDoc.value.trim();
+        const tglStr = inpTgl.value;
+        const shift = document.getElementById('shift_cd')?.value || 'A';
+        const liniText = selLini.options[selLini.selectedIndex]?.text || selLini.value;
+        const gdgText = selGdg.options[selGdg.selectedIndex]?.text || selGdg.value;
+        const singkongQty = parseFloat(document.getElementById('singkong_qty')?.value) || 0;
+        const rendemen = singkongQty > 0 ? (totalOutputKg / singkongQty) * 100 : 0;
+
+        // Pasang data ke elemen modal
+        const elDocNo = document.getElementById('modalSummaryDocNo');
+        if (elDocNo) elDocNo.textContent = docNo;
+
+        const elTglShift = document.getElementById('modalSummaryTglShift');
+        if (elTglShift) elTglShift.textContent = `${formatTglIndo(tglStr)} (Shift ${shift})`;
+
+        const elLini = document.getElementById('modalSummaryLini');
+        if (elLini) elLini.textContent = liniText;
+
+        const elGdg = document.getElementById('modalSummaryGudang');
+        if (elGdg) elGdg.textContent = gdgText;
+
+        const elSingkong = document.getElementById('modalSummarySingkong');
+        if (elSingkong) elSingkong.textContent = formatNumber(singkongQty, 2) + ' kg';
+
+        const elOutput = document.getElementById('modalSummaryOutput');
+        if (elOutput) elOutput.textContent = formatNumber(totalOutputKg, 2) + ' kg';
+
+        const elItemCount = document.getElementById('modalSummaryItemCount');
+        if (elItemCount) elItemCount.textContent = `${validItemCount} Baris Olahan`;
+
+        const elRendemen = document.getElementById('modalSummaryRendemen');
+        const elRendemenStatus = document.getElementById('modalSummaryRendemenStatus');
+        if (elRendemen) {
+            elRendemen.textContent = formatNumber(rendemen, 2) + '%';
+            if (rendemen >= 33.0) {
+                elRendemen.style.color = '#16a34a';
+                if (elRendemenStatus) {
+                    elRendemenStatus.textContent = 'Rendemen Optimal (≥ 33%)';
+                    elRendemenStatus.style.color = '#15803d';
+                }
+            } else if (rendemen >= 30.0) {
+                elRendemen.style.color = '#d97706';
+                if (elRendemenStatus) {
+                    elRendemenStatus.textContent = 'Rendemen Standar (30 - 33%)';
+                    elRendemenStatus.style.color = '#b45309';
+                }
+            } else {
+                elRendemen.style.color = '#dc2626';
+                if (elRendemenStatus) {
+                    elRendemenStatus.textContent = 'Rendemen Rendah (< 30%)';
+                    elRendemenStatus.style.color = '#b91c1c';
+                }
+            }
+        }
+
+        // Render Rincian Item di Tabel Modal
+        const elTbody = document.getElementById('modalSummaryItemsTableBody');
+        const elTableTotal = document.getElementById('modalSummaryTableTotalKg');
+        if (elTbody) {
+            let html = '';
+            itemsSummaryList.forEach((item, i) => {
+                const isBelumTerbit = item.batch === 'BELUM TERBIT';
+                const batchBadge = isBelumTerbit 
+                    ? `<span style="color: #92400e; background: #fffbeb; border: 1px solid #fde68a; padding: 1px 6px; border-radius: 4px; font-weight: 700; font-size: 0.7rem;">BELUM TERBIT</span>`
+                    : `<span style="color: #166534; background: #f0fdf4; border: 1px solid #bbf7d0; padding: 1px 6px; border-radius: 4px; font-weight: 700; font-size: 0.7rem;">${item.batch}</span>`;
+                
+                html += `
+                    <tr>
+                        <td style="text-align: center; color: #64748b; font-weight: 600;">${i + 1}</td>
+                        <td style="font-weight: 600; color: #0f172a;">${item.nm}</td>
+                        <td style="text-align: right; font-variant-numeric: tabular-nums;">${item.qty > 0 ? formatNumber(item.qty, 0) : '-'}</td>
+                        <td style="text-align: center; color: #475569; font-size: 0.75rem;">${item.satuan || '-'}</td>
+                        <td style="text-align: right; font-weight: 700; color: #0f172a; font-variant-numeric: tabular-nums;">${formatNumber(item.kg, 2)} kg</td>
+                        <td style="text-align: center;">${batchBadge}</td>
+                    </tr>
+                `;
+            });
+            elTbody.innerHTML = html;
+        }
+        if (elTableTotal) {
+            elTableTotal.textContent = formatNumber(totalOutputKg, 2) + ' kg';
+        }
+
+        // Tampilkan Modal
+        const modal = document.getElementById('modalConfirmCreate');
+        if (modal) {
+            modal.classList.add('show');
+            modal.style.display = 'flex';
+        }
+    };
+
+    window.closeModalConfirmCreate = function () {
+        const modal = document.getElementById('modalConfirmCreate');
+        if (modal) {
+            modal.classList.remove('show');
+            modal.style.display = 'none';
+        }
+    };
+
+    window.submitCreateForm = function () {
+        const btnSubmit = document.getElementById('btnSubmitConfirm');
+        const btnCancel = document.getElementById('btnCancelConfirm');
+        const btnCloseX = document.getElementById('btnCloseModalX');
+        const form = document.getElementById('formProduksi');
+
+        if (!form) return;
+
+        // Kunci tombol agar tidak double submit
+        if (btnSubmit) {
+            btnSubmit.disabled = true;
+            btnSubmit.style.opacity = '0.85';
+            btnSubmit.style.cursor = 'not-allowed';
+            btnSubmit.innerHTML = `
+                <svg class="spinner-btn-anim" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align: middle;">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-opacity="0.25"/>
+                    <path d="M12 2a10 10 0 0 1 10 10"/>
+                </svg>
+                <span>Menyimpan Dokumen...</span>
+            `;
+        }
+
+        if (btnCancel) {
+            btnCancel.disabled = true;
+            btnCancel.style.pointerEvents = 'none';
+        }
+
+        if (btnCloseX) {
+            btnCloseX.disabled = true;
+            btnCloseX.style.pointerEvents = 'none';
+        }
+
+        // Kirim form ke server
+        form.submit();
+    };
 
 })();

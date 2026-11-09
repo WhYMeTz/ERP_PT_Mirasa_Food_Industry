@@ -41,9 +41,9 @@
     {{-- 1. BREADCRUMBS & TOP HEADER --}}
     <div class="adjust-header">
         <div>
-            <a href="{{ route('produksi.show', $produksi->produksi_id) }}" class="btn-back-link">
+            <a href="{{ route('produksi.hpp.show', $produksi->produksi_id) }}" class="btn-back-link">
                 <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-                <span>Kembali ke Detail Lembar Produksi</span>
+                <span>Kembali ke Lembar HPP Produksi</span>
             </a>
             <div class="adjust-title-wrap">
                 <h1 class="adjust-title">Adjustment HPP</h1>

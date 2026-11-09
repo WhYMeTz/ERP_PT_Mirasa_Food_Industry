@@ -287,6 +287,13 @@ class ProduksiController extends Controller
                 'kurs'           => $rate,
                 'rate'           => $rate,
                 'kurs_formatted' => number_format($rate, 2, ',', '.'),
+                'data'           => [
+                    'rate'           => $rate,
+                    'kurs'           => $rate,
+                    'date'           => $effectiveDate,
+                    'tanggal_acuan'  => $effectiveDate,
+                    'kurs_formatted' => number_format($rate, 2, ',', '.'),
+                ],
             ]);
         } catch (Exception $e) {
             return response()->json([
@@ -307,9 +314,34 @@ class ProduksiController extends Controller
     {
         $selectedProduksiId = $request->input('produksi_id');
 
-        // Daftar dokumen produksi fisik (30 hari terakhir) yang dapat dihitung / dialokasikan HPP-nya
+        // Dokumen produksi fisik yang siap dikalkulasi HPP:
+        // 1. Memiliki kuantitas WIP (total_wip_qty > 0 atau tercatat di outputs)
+        // 2. Belum difinalisasi HPP-nya (total_biaya_produksi <= 0 ATAU komponen energi CNG & TK belum dihitung)
+        // 3. Atau dokumen yang secara eksplisit dipilih via query parameter ($selectedProduksiId)
         $produksiList = DatProduksiHdr::with(['gudang', 'outputs'])
             ->where('deleted_st', false)
+            ->where(function ($wipQ) {
+                $wipQ->where('total_wip_qty', '>', 0)
+                    ->orWhereHas('outputs', function ($outQ) {
+                        $outQ->where('qty_kg', '>', 0)->orWhere('qty_hasil', '>', 0);
+                    });
+            })
+            ->where(function ($q) use ($selectedProduksiId) {
+                $q->where(function ($sub) {
+                    $sub->whereNull('total_biaya_produksi')
+                        ->orWhere('total_biaya_produksi', '<=', 0)
+                        ->orWhere(function ($sub2) {
+                            $sub2->where(function ($s) {
+                                $s->whereNull('cng_nilai')->orWhere('cng_nilai', '<=', 0);
+                            })->where(function ($s) {
+                                $s->whereNull('tk_total_nilai')->orWhere('tk_total_nilai', '<=', 0);
+                            });
+                        });
+                });
+                if ($selectedProduksiId) {
+                    $q->orWhere('produksi_id', $selectedProduksiId);
+                }
+            })
             ->orderBy('produksi_tgl', 'desc')
             ->orderBy('produksi_id', 'desc')
             ->take(60)
@@ -375,8 +407,13 @@ class ProduksiController extends Controller
             'cng_tarif'                   => 'nullable|numeric|min:0',
             'cng_nilai'                   => 'required|numeric|min:0',
 
-            // Tenaga Kerja
+            // Tenaga Kerja (Langsung & Tidak Langsung)
+            'tk_langsung_org'             => 'nullable|integer|min:0',
+            'tk_langsung_nilai'           => 'nullable|numeric|min:0',
+            'tk_tidak_langsung_org'       => 'nullable|integer|min:0',
+            'tk_tidak_langsung_nilai'     => 'nullable|numeric|min:0',
             'tk_jumlah_org'               => 'required|integer|min:0',
+            'tk_tarif_per_org'            => 'nullable|numeric|min:0',
             'tk_total_nilai'              => 'required|numeric|min:0',
 
             // Output Alokasi HPP
@@ -393,7 +430,7 @@ class ProduksiController extends Controller
             $msg = "✅ Lembar HPP Produksi {$produksi->produksi_no} berhasil dikalkulasi & disimpan! ";
             $msg .= "Total Biaya: Rp " . number_format($produksi->total_biaya_produksi, 0, ',', '.') . " | HPP Riil: Rp " . number_format($produksi->hpp_per_kg, 2, ',', '.') . "/kg.";
 
-            return redirect()->route('produksi.show', $produksi->produksi_id)->with('success', $msg);
+            return redirect()->route('produksi.hpp.show', $produksi->produksi_id)->with('success', $msg);
         } catch (Exception $e) {
             return back()->withInput()->with('error', 'Gagal menyimpan kalkulasi HPP: ' . $e->getMessage());
         }
@@ -622,6 +659,24 @@ class ProduksiController extends Controller
     }
 
     /**
+     * Tampilkan detail lembar HPP Produksi, biaya manufaktur, dan riwayat audit (Khusus Finance / Costing).
+     */
+    public function showHpp(int $id): View
+    {
+        $produksi = $this->produksiService->getById($id);
+
+        // Ambil seluruh dokumen produksi pada tanggal yang sama untuk Tab Switcher Split View per Lini
+        $sameDateProductions = DatProduksiHdr::whereDate('produksi_tgl', $produksi->produksi_tgl)
+            ->where('deleted_st', false)
+            ->where('status_cd', '!=', 'VOID')
+            ->orderBy('shift_cd', 'asc')
+            ->orderBy('produksi_id', 'asc')
+            ->get();
+
+        return view('produksi.hpp.show', compact('produksi', 'sameDateProductions'));
+    }
+
+    /**
      * Beri nomor batch resmi untuk produksi buffer stock saat jadwal keberangkatan truk tiba.
      */
     public function assignBatch(Request $request, int $id): RedirectResponse
@@ -805,7 +860,7 @@ class ProduksiController extends Controller
             $msg = "✅ Berhasil melakukan adjustment HPP (No. BA: {$log->adj_no})! ";
             $msg .= "HPP baru: Rp " . number_format($log->hpp_sesudah, 2, ',', '.') . " / kg. Saldo batch stok di gudang telah disinkronkan.";
 
-            return redirect()->route('produksi.show', $id)->with('success', $msg);
+            return redirect()->route('produksi.hpp.show', $id)->with('success', $msg);
         } catch (Exception $e) {
             return redirect()->back()->withInput()->with('error', 'Gagal melakukan adjustment HPP: ' . $e->getMessage());
         }

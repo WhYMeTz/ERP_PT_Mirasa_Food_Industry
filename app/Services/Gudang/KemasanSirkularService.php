@@ -74,13 +74,11 @@ class KemasanSirkularService
     }
 
     /**
-     * Generate nomor dokumen otomatis (PKS-YYYYMM-XXXX).
+     * Generate nomor dokumen otomatis (Format Standar PT Mirasa: {seq}/PKB/MFI/{mm}/{yy}).
      */
     public function generateSirkularNo(?string $date = null): string
     {
-        $d = $date ? Carbon::parse($date) : Carbon::now();
-        $prefix = 'PKS-' . $d->format('Ym') . '-';
-        return $this->codeGenerator->generate('dat_kemasan_sirkular_hdr', 'sirkular_no', $prefix, 4);
+        return $this->codeGenerator->generateKartonBalikanNo($date);
     }
 
     /**
@@ -169,21 +167,15 @@ class KemasanSirkularService
                 $rusakQty = (float) ($row['rusak_qty'] ?? 0);
                 $afkirSiklusQty = (float) ($row['afkir_siklus_qty'] ?? 0);
 
-                // Jika puteran_ke >= 5 dan dicatat di mulus, otomatis alihkan ke afkir siklus 5x
-                if ($puteranKe >= 5 && $mulusQty > 0) {
-                    $afkirSiklusQty += $mulusQty;
-                    $mulusQty = 0;
-                }
-
                 $kembaliQty = $baruQty + $mulusQty + $bmgQty + $rusakQty + $afkirSiklusQty;
                 $selisihQty = max(0, $kirimQty - $kembaliQty);
 
                 $seqStr = str_pad((string)($idx + 1), 2, '0', STR_PAD_LEFT);
                 $batchBaru = $baruQty > 0 ? "BARU-{$dateSuffix}-{$seqStr}" : null;
-                $batchMulus = $mulusQty > 0 ? "PUT-P{$puteranKe}-{$dateSuffix}-{$seqStr}" : null;
+                $batchMulus = $mulusQty > 0 ? "PUT-{$dateSuffix}-{$seqStr}" : null;
                 $batchBmg = $bmgQty > 0 ? "BMG-{$dateSuffix}-{$seqStr}" : null;
                 $batchRusak = $rusakQty > 0 ? "REJ-{$dateSuffix}-{$seqStr}" : null;
-                $batchAfkir5x = $afkirSiklusQty > 0 ? "AFK5-{$dateSuffix}-{$seqStr}" : null;
+                $batchAfkir5x = $afkirSiklusQty > 0 ? "AFK-{$dateSuffix}-{$seqStr}" : null;
 
                 DatKemasanSirkularDtl::create([
                     'kemasan_sirkular_id' => $header->kemasan_sirkular_id,
@@ -234,7 +226,7 @@ class KemasanSirkularService
                         qty: $mulusQty,
                         expiredTgl: null,
                         dokumenNo: $sirkularNo,
-                        keterangan: "Balikan Kemasan Sirkular Mulus Putaran Ke-{$puteranKe} (Doc: {$sirkularNo})",
+                        keterangan: "Balikan Kemasan Puteran Layak Pakai (Doc: {$sirkularNo})",
                         hargaSatuan: $hargaStandar,
                         gradeCd: 'A'
                     );

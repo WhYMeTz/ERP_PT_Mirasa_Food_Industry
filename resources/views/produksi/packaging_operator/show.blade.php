@@ -135,15 +135,17 @@
                         {{ $laporan->lakbanBarang?->barang_nm ?? 'Lakban' }}
                     </strong>
                     @if ($laporan->lakban_atas_gr > 0 || $laporan->lakban_bawah_gr > 0)
-                        <div style="font-size: 0.725rem; color: var(--pkg-slate-400); margin: 2px 0;">
-                            Atas {{ number_format($laporan->lakban_atas_gr, 0, ',', '.') }}g &bull; Bwh {{ number_format($laporan->lakban_bawah_gr, 0, ',', '.') }}g
+                        <div style="font-size: 0.725rem; color: var(--pkg-slate-500); margin: 2px 0;">
+                            Atas {{ number_format($laporan->lakban_atas_gr, 1, ',', '.') }}g &bull; Bwh {{ number_format($laporan->lakban_bawah_gr, 1, ',', '.') }}g
                         </div>
+                    @endif
+                    @if ($laporan->lakban_qty >= 10)
                         <span style="font-weight: 800; color: var(--pkg-red-600); font-size: 0.85rem; font-family: var(--pkg-font-mono);">
                             Total: {{ number_format($laporan->lakban_qty, 0, ',', '.') }} Gram
                         </span>
                     @elseif ($laporan->lakban_qty > 0)
                         <span style="font-weight: 800; color: var(--pkg-red-600); font-size: 0.85rem; font-family: var(--pkg-font-mono);">
-                            {{ number_format($laporan->lakban_qty, 1, ',', '.') }} {{ $laporan->lakbanBarang?->satuanDasar?->satuan_nm ?? 'Gram/Roll' }}
+                            Total: {{ number_format($laporan->lakban_qty, 2, ',', '.') }} Roll
                         </span>
                     @endif
                 </div>

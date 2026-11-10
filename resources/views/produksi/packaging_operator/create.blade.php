@@ -327,7 +327,7 @@
                 </button>
             </div>
 
-            {{-- Alokasi 3 Jenis Karton: Puteran, Baru & Reject --}}
+            {{-- Alokasi 2 Jenis Karton: Puteran & Baru --}}
             <div id="kartonSirkularGrid" class="pkg-karton-card-grid">
                 {{-- Input 1: Karton Puteran --}}
                 <div class="pkg-karton-box-item" style="border-left: 3px solid #10b981;">
@@ -354,19 +354,6 @@
                     <div style="font-size: 0.7rem; color: #64748b; margin-bottom: 0.35rem;">Karton baru belum terpakai</div>
                     <input type="number" step="any" min="0" id="karton_baru_qty" name="karton_baru_qty" class="pkg-input" placeholder="0" value="{{ old('karton_baru_qty', 0) }}" style="font-weight: 700; color: #0369a1;" oninput="updateKartonTotal()">
                 </div>
-
-                {{-- Input 3: Karton Reject / Manual --}}
-                <div class="pkg-karton-box-item" style="border-left: 3px solid #f59e0b;">
-                    <div class="pkg-karton-box-header">
-                        <span class="pkg-karton-box-title" style="color: #b45309;">Karton Reject</span>
-                        <span class="pkg-stock-badge amber" title="Sisa Stok Gudang">
-                            Stok: {{ number_format($stokKartonReject, 0, ',', '.') }}
-                        </span>
-                    </div>
-                    <input type="hidden" name="karton_reject_barang_id" value="{{ $kartonReject?->barang_id ?? 84 }}">
-                    <div style="font-size: 0.7rem; color: #64748b; margin-bottom: 0.35rem;">Karton sortir/afkir (HPP Rp 0)</div>
-                    <input type="number" step="any" min="0" id="karton_reject_qty" name="karton_reject_qty" class="pkg-input" placeholder="0" value="{{ old('karton_reject_qty', 0) }}" style="font-weight: 700; color: #b45309;" oninput="updateKartonTotal()">
-                </div>
             </div>
 
             {{-- Total Karton Terhitung & Dus Rusak / Afkir --}}
@@ -377,14 +364,14 @@
             </div>
         </div>
 
-        {{-- C. Lakban Dus (Sesuai Poin 41: Otomatis cm/Meter & Roll) --}}
+        {{-- C. Lakban Dus (Pilihan Satuan: CM/Meter atau Gram Timbangan) --}}
         <div class="pkg-sub-card">
             <div class="pkg-sub-card-header">
                 <span class="pkg-sub-card-title">
-                    C. Lakban Dus (Otomatis cm/Meter &amp; Roll)
+                    C. Lakban Dus
                 </span>
                 <span id="badgeLakbanTotal" class="pkg-badge-ruby" style="background: #fdf2f8; color: #be185d; border-color: #fbcfe8;">
-                    Total: <span id="lbl_lakban_meter">0</span> Meter (<span id="lbl_lakban_roll">0</span> Roll)
+                    Total: <span id="lbl_lakban_summary">0 Meter (0 Roll)</span>
                 </span>
             </div>
             <div class="pkg-form-group">
@@ -401,55 +388,121 @@
                 </select>
             </div>
 
-            {{-- Acuan Standar Lakban per Karton (Default 120 cm) --}}
-            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.75rem; margin-bottom: 0.75rem;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                    <span style="font-size: 0.75rem; font-weight: 700; color: #334155;">📐 Acuan Standar Lakban:</span>
-                    <span style="font-size: 0.7rem; color: #64748b; font-weight: 600;">1 Roll = 100 Meter</span>
+            {{-- Pilihan Satuan Lakban: CM vs GRAM --}}
+            <div class="pkg-form-group">
+                <label class="pkg-label">Pilih Satuan / Metode Ukur Lakban:</label>
+                <div class="pkg-lakban-satuan-grid">
+                    <button type="button" class="pkg-lakban-satuan-btn active" data-unit="CM" id="btn_lakban_mode_cm">
+                        <span>📐</span>
+                        <span>Satuan CM (Panjang)</span>
+                    </button>
+                    <button type="button" class="pkg-lakban-satuan-btn" data-unit="GRAM" id="btn_lakban_mode_gram">
+                        <span>⚖️</span>
+                        <span>Satuan Gram (Timbangan)</span>
+                    </button>
                 </div>
+                <input type="hidden" id="lakban_satuan_mode" name="lakban_satuan_mode" value="{{ old('lakban_satuan_mode', 'CM') }}">
+            </div>
+
+            {{-- 1. KONTEN MODE CM: Panjang cm/Meter & Roll --}}
+            <div id="container_lakban_cm">
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.75rem; margin-bottom: 0.75rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <span style="font-size: 0.75rem; font-weight: 700; color: #334155;">📐 Acuan Standar Lakban Dus:</span>
+                        <span style="font-size: 0.7rem; color: #64748b; font-weight: 600;">1 Roll = 100 Meter</span>
+                    </div>
+                    <div class="pkg-grid-2">
+                        <div>
+                            <label class="pkg-label" for="lakban_standar_cm" style="font-size: 0.725rem;">Standar per Karton (cm):</label>
+                            <div class="pkg-input-suffix-wrapper">
+                                <input type="number" step="any" min="1" id="lakban_standar_cm" name="lakban_standar_cm" class="pkg-input" value="{{ old('lakban_standar_cm', 120) }}" style="padding-right: 45px; font-weight: 700;" oninput="recalculateLakbanFromKarton()">
+                                <span class="pkg-input-suffix-muted">cm</span>
+                            </div>
+                            <div style="font-size: 0.65rem; color: #64748b; margin-top: 2px;">Atas ~60cm + Bawah ~60cm</div>
+                        </div>
+                        <div>
+                            <label class="pkg-label" style="font-size: 0.725rem;">Kebutuhan Normal:</label>
+                            <div style="height: 38px; display: flex; align-items: center; padding: 0 0.75rem; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; font-weight: 700; font-size: 0.85rem; color: #0f172a;">
+                                <span id="lbl_lakban_kebutuhan_m">0</span>&nbsp;<span style="font-size: 0.725rem; font-weight: 600; color: #64748b;">Meter</span>
+                            </div>
+                            <div style="font-size: 0.65rem; color: #64748b; margin-top: 2px;">Dari <span id="lbl_ref_karton_qty">0</span> karton jadi</div>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Input Kerusakan / Afkir Lakban & Input Manual Roll --}}
                 <div class="pkg-grid-2">
-                    <div>
-                        <label class="pkg-label" for="lakban_standar_cm" style="font-size: 0.725rem;">Standar per Karton (cm):</label>
+                    <div class="pkg-form-group">
+                        <label class="pkg-label" for="lakban_rusak_m" style="color: #b91c1c;">Lakban Rusak / Kusut (Meter)</label>
                         <div class="pkg-input-suffix-wrapper">
-                            <input type="number" step="any" min="1" id="lakban_standar_cm" name="lakban_standar_cm" class="pkg-input" value="{{ old('lakban_standar_cm', 120) }}" style="padding-right: 45px; font-weight: 700;" oninput="recalculateLakbanFromKarton()">
-                            <span class="pkg-input-suffix-muted">cm</span>
+                            <input type="number" step="any" min="0" id="lakban_rusak_m" name="lakban_rusak_m" class="pkg-input pkg-input-danger" placeholder="0" value="{{ old('lakban_rusak_m', 0) }}" style="padding-right: 48px;" oninput="recalculateLakbanFromKarton()">
+                            <span class="pkg-input-suffix-muted">Meter</span>
                         </div>
-                        <div style="font-size: 0.65rem; color: #64748b; margin-top: 2px;">Atas ~60cm + Bawah ~60cm</div>
+                        <div style="font-size: 0.65rem; color: #94a3b8; margin-top: 2px;">Lakban putus/terbuang saat packing</div>
                     </div>
-                    <div>
-                        <label class="pkg-label" style="font-size: 0.725rem;">Kebutuhan Normal:</label>
-                        <div style="height: 38px; display: flex; align-items: center; padding: 0 0.75rem; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; font-weight: 700; font-size: 0.85rem; color: #0f172a;">
-                            <span id="lbl_lakban_kebutuhan_m">0</span>&nbsp;<span style="font-size: 0.725rem; font-weight: 600; color: #64748b;">Meter</span>
+                    <div class="pkg-form-group">
+                        <label class="pkg-label" for="lakban_roll_qty">Total Pemakaian (Roll)</label>
+                        <div class="pkg-input-suffix-wrapper">
+                            <input type="number" step="0.01" min="0" id="lakban_roll_qty" name="lakban_roll_qty" class="pkg-input" placeholder="0.00" value="{{ old('lakban_roll_qty', 0) }}" style="padding-right: 48px; font-weight: 700; color: #be185d;" oninput="onManualRollInput()">
+                            <span class="pkg-input-suffix-muted">Roll</span>
                         </div>
-                        <div style="font-size: 0.65rem; color: #64748b; margin-top: 2px;">Dari <span id="lbl_ref_karton_qty">0</span> karton jadi</div>
+                        <div style="font-size: 0.65rem; color: #94a3b8; margin-top: 2px;">Bisa edit jika hitung roll fisik</div>
                     </div>
                 </div>
             </div>
 
-            {{-- Input Kerusakan / Afkir Lakban & Input Manual Roll --}}
-            <div class="pkg-grid-2">
-                <div class="pkg-form-group">
-                    <label class="pkg-label" for="lakban_rusak_m" style="color: #b91c1c;">Lakban Rusak / Kusut (Meter)</label>
-                    <div class="pkg-input-suffix-wrapper">
-                        <input type="number" step="any" min="0" id="lakban_rusak_m" name="lakban_rusak_m" class="pkg-input pkg-input-danger" placeholder="0" value="{{ old('lakban_rusak_m', 0) }}" style="padding-right: 48px;" oninput="recalculateLakbanFromKarton()">
-                        <span class="pkg-input-suffix-muted">Meter</span>
+            {{-- 2. KONTEN MODE GRAM: Timbangan Lakban Sisi Atas & Bawah / Total Gram --}}
+            <div id="container_lakban_gram" style="display: none;">
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.75rem; margin-bottom: 0.75rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <span style="font-size: 0.75rem; font-weight: 700; color: #334155;">⚖️ Timbangan Lakban Segel Dus:</span>
+                        <span style="font-size: 0.7rem; color: #64748b; font-weight: 600;">Satuan Gram (gr)</span>
                     </div>
-                    <div style="font-size: 0.65rem; color: #94a3b8; margin-top: 2px;">Lakban putus/terbuang saat packing</div>
+                    <div class="pkg-grid-2">
+                        <div>
+                            <label class="pkg-label" for="input_lakban_atas_gr" style="font-size: 0.725rem;">Lakban Atas (Gram):</label>
+                            <div class="pkg-input-suffix-wrapper">
+                                <input type="number" step="any" min="0" id="input_lakban_atas_gr" class="pkg-input" placeholder="0" value="{{ old('lakban_atas_gr', '') }}" style="padding-right: 42px; font-weight: 700;" oninput="recalculateLakbanFromGram()">
+                                <span class="pkg-input-suffix-muted">gr</span>
+                            </div>
+                            <div style="font-size: 0.65rem; color: #64748b; margin-top: 2px;">Segel bagian atas dus</div>
+                        </div>
+                        <div>
+                            <label class="pkg-label" for="input_lakban_bawah_gr" style="font-size: 0.725rem;">Lakban Bawah (Gram):</label>
+                            <div class="pkg-input-suffix-wrapper">
+                                <input type="number" step="any" min="0" id="input_lakban_bawah_gr" class="pkg-input" placeholder="0" value="{{ old('lakban_bawah_gr', '') }}" style="padding-right: 42px; font-weight: 700;" oninput="recalculateLakbanFromGram()">
+                                <span class="pkg-input-suffix-muted">gr</span>
+                            </div>
+                            <div style="font-size: 0.65rem; color: #64748b; margin-top: 2px;">Segel bagian bawah dus</div>
+                        </div>
+                    </div>
                 </div>
-                <div class="pkg-form-group">
-                    <label class="pkg-label" for="lakban_roll_qty">Total Pemakaian (Roll)</label>
-                    <div class="pkg-input-suffix-wrapper">
-                        <input type="number" step="0.01" min="0" id="lakban_roll_qty" name="lakban_roll_qty" class="pkg-input" placeholder="0.00" value="{{ old('lakban_roll_qty', 0) }}" style="padding-right: 48px; font-weight: 700; color: #be185d;" oninput="onManualRollInput()">
-                        <span class="pkg-input-suffix-muted">Roll</span>
+
+                <div class="pkg-grid-2">
+                    <div class="pkg-form-group">
+                        <label class="pkg-label" for="input_lakban_rusak_gr" style="color: #b91c1c;">Lakban Rusak / Kusut (Gram)</label>
+                        <div class="pkg-input-suffix-wrapper">
+                            <input type="number" step="any" min="0" id="input_lakban_rusak_gr" class="pkg-input pkg-input-danger" placeholder="0" value="{{ old('lakban_rusak_gr', 0) }}" style="padding-right: 42px;" oninput="recalculateLakbanFromGram()">
+                            <span class="pkg-input-suffix-muted">gr</span>
+                        </div>
+                        <div style="font-size: 0.65rem; color: #94a3b8; margin-top: 2px;">Lakban putus/terbuang</div>
                     </div>
-                    <div style="font-size: 0.65rem; color: #94a3b8; margin-top: 2px;">Bisa edit jika hitung roll fisik</div>
+                    <div class="pkg-form-group">
+                        <label class="pkg-label" for="input_lakban_total_gr">Total Pemakaian (Gram)</label>
+                        <div class="pkg-input-suffix-wrapper">
+                            <input type="number" step="any" min="0" id="input_lakban_total_gr" class="pkg-input" placeholder="0" value="{{ old('lakban_qty', '') }}" style="padding-right: 42px; font-weight: 700; color: #be185d;" oninput="onManualGramInput()">
+                            <span class="pkg-input-suffix-muted">gr</span>
+                        </div>
+                        <div style="font-size: 0.65rem; color: #94a3b8; margin-top: 2px;">Bisa diisi timbangan total</div>
+                    </div>
                 </div>
             </div>
 
-            {{-- Hidden inputs untuk kompatibilitas database & HPP --}}
+            {{-- Hidden inputs untuk sinkronisasi ke backend & database --}}
             <input type="hidden" id="lakban_qty" name="lakban_qty" value="{{ old('lakban_qty', 0) }}">
             <input type="hidden" id="lakban_atas_gr" name="lakban_atas_gr" value="{{ old('lakban_atas_gr', 0) }}">
             <input type="hidden" id="lakban_bawah_gr" name="lakban_bawah_gr" value="{{ old('lakban_bawah_gr', 0) }}">
+        </div>
 
         {{-- D. Plastik / Kertas Expired (Label Batch Kadaluarsa) --}}
         <div class="pkg-sub-card">

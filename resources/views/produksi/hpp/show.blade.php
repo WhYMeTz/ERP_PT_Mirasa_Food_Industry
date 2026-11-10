@@ -723,7 +723,7 @@
                                     <span class="chip-batch-badge" style="font-size: 0.68rem; margin-left: 0.35rem; vertical-align: middle;">Batch: {{ implode(', ', $produksi->bahan_baku_batch_map['karton_baru']) }}</span>
                                 @endif
                             </td>
-                            <td>{{ $isIfm ? 'Kemasan karton baru box luar (100% harga beli)' : 'Kemasan karton baru' }} {{ (float) ($produksi->karton_baru_qty ?? 0) > 0 ? '(' . number_format($produksi->karton_baru_qty, 0, ',', '.') . ' Pcs)' : '' }}</td>
+                            <td>{{ $isIfm ? 'Kemasan karton baru box luar (Tarif 1/5 Siklus)' : 'Kemasan karton baru' }} {{ (float) ($produksi->karton_baru_qty ?? 0) > 0 ? '(' . number_format($produksi->karton_baru_qty, 0, ',', '.') . ' Pcs)' : '' }}</td>
                             <td style="text-align: right; font-variant-numeric: tabular-nums;">Rp {{ number_format($produksi->karton_baru_nilai, 0, ',', '.') }}</td>
                         </tr>
                         <tr>

@@ -56,6 +56,9 @@ function resetProduksiView() {
     const preview = document.getElementById('previewFisikSection');
     if (preview) preview.style.display = 'none';
 
+    const sameDayBox = document.getElementById('sameDayNoticeBox');
+    if (sameDayBox) sameDayBox.style.display = 'none';
+
     // Reset data text
     setTxt('pvProduksiNo', '-');
     setTxt('pvTgl', '-');
@@ -223,6 +226,7 @@ function loadProduksiData(produksiId) {
         renderPemakaianBahan(currentProduksiData.pemakaian_items, currentProduksiData.pemakaian_bppb);
         populateCostingForm(currentProduksiData);
         renderAllocationTable(currentProduksiData.outputs, currentProduksiData.hpp_per_kg);
+        renderSameDayNotice(currentProduksiData.same_day_spks, currentProduksiData.produksi_id, currentProduksiData.produksi_tgl_fmt);
         calcAllHpp();
         fetchLiveJisdor(false);
         syncLaborFromKaryawan(false);
@@ -240,6 +244,76 @@ function loadProduksiData(produksiId) {
     .finally(() => {
         hideLoadingState();
     });
+}
+
+/**
+ * Render notifikasi monitoring seluruh dokumen produksi pada tanggal yang sama.
+ * Memastikan tidak ada shift atau lini lain yang terlewat dari perhitungan HPP.
+ */
+function renderSameDayNotice(sameDaySpks, currentId, tglStr) {
+    const box = document.getElementById('sameDayNoticeBox');
+    const container = document.getElementById('sameDayListContainer');
+    const titleEl = document.getElementById('sameDayTitle');
+    const badgeEl = document.getElementById('sameDaySummaryBadge');
+
+    if (!box || !container) return;
+
+    if (!Array.isArray(sameDaySpks) || sameDaySpks.length <= 1) {
+        // Hanya ada 1 dokumen di hari tersebut, tidak perlu alert multi-shift
+        box.style.display = 'none';
+        return;
+    }
+
+    box.style.display = 'block';
+    if (titleEl) titleEl.textContent = `Daftar Seluruh Dokumen Produksi pada Tanggal ${tglStr || ''} (${sameDaySpks.length} Dokumen):`;
+
+    const pendingCount = sameDaySpks.filter(s => !s.is_hpp_final).length;
+    if (badgeEl) {
+        if (pendingCount > 0) {
+            badgeEl.textContent = `${pendingCount} Shift Belum Ditarik`;
+            badgeEl.style.background = '#fef2f2';
+            badgeEl.style.color = '#991b1b';
+            badgeEl.style.borderColor = '#fecaca';
+        } else {
+            badgeEl.textContent = 'Semua Shift Sudah Final';
+            badgeEl.style.background = '#f0fdf4';
+            badgeEl.style.color = '#166534';
+            badgeEl.style.borderColor = '#bbf7d0';
+        }
+    }
+
+    let html = '';
+    sameDaySpks.forEach(item => {
+        const isCurrent = (String(item.produksi_id) === String(currentId));
+        let statusBadge = '';
+        let actionBtn = '';
+
+        if (isCurrent) {
+            statusBadge = `<span style="background: #eff6ff; color: #1d4ed8; padding: 2px 7px; border-radius: 4px; font-size: 0.72rem; font-weight: 700; border: 1px solid #bfdbfe;">👉 Sedang Dipilih</span>`;
+        } else if (item.is_hpp_final) {
+            statusBadge = `<span style="background: #f0fdf4; color: #166534; padding: 2px 7px; border-radius: 4px; font-size: 0.72rem; font-weight: 700; border: 1px solid #bbf7d0;">✓ HPP Sudah Final (Rp ${Math.round(item.hpp_per_kg).toLocaleString('id-ID')}/kg)</span>`;
+            actionBtn = `<a href="/produksi/hpp/${item.produksi_id}" target="_blank" style="font-size: 0.72rem; color: #64748b; text-decoration: underline; margin-left: 0.5rem;">Lihat Lembar &rarr;</a>`;
+        } else {
+            statusBadge = `<span style="background: #fef2f2; color: #991b1b; padding: 2px 7px; border-radius: 4px; font-size: 0.72rem; font-weight: 700; border: 1px solid #fecaca;">⏳ Belum Ditarik HPP</span>`;
+            actionBtn = `<a href="/produksi/hpp/kalkulasi?produksi_id=${item.produksi_id}" style="font-size: 0.72rem; font-weight: 700; color: #0284c7; background: #f0f9ff; border: 1px solid #bae6fd; padding: 2px 6px; border-radius: 4px; text-decoration: none; margin-left: 0.5rem;">Tarik Dokumen Ini &rarr;</a>`;
+        }
+
+        html += `
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; background: ${isCurrent ? '#f0f9ff' : '#ffffff'}; padding: 0.35rem 0.65rem; border-radius: 5px; border: 1px solid ${isCurrent ? '#bae6fd' : '#e2e8f0'}; font-size: 0.775rem;">
+                <div style="display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;">
+                    <strong style="color: #0f172a;">Shift ${item.shift_cd || 'A'} &bull; ${item.lini_produksi || 'Lini Manual'}</strong>
+                    <span style="color: #64748b;">(SPK #${item.produksi_no || '-'})</span>
+                    <span style="color: #0284c7; font-weight: 600;">${(item.total_wip_qty || 0).toLocaleString('id-ID', { minimumFractionDigits: 1 })} kg WIP</span>
+                </div>
+                <div style="display: flex; align-items: center; white-space: nowrap;">
+                    ${statusBadge}
+                    ${actionBtn}
+                </div>
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
 }
 
 /**
@@ -655,20 +729,29 @@ function renderAllocationTable(outputs, defaultHppPerKg) {
         const kUpper = (item.kategori_output || '').toUpperCase();
         const gUpper = (item.grade_cd || '').toUpperCase();
 
-        const isKw2 = gUpper === 'KW2' || 
+        const isHold = gUpper === 'HOLD' || bCdUpper.includes('HLD') || bNmUpper.includes('HOLD');
+        const isAfkir = bCdUpper.includes('AFK') || bNmUpper.includes('AFKIR');
+        const isKw2 = isAfkir || gUpper === 'KW2' || 
                       bNmUpper.includes('BERKO') || bNmUpper.includes('LENGKET') || bNmUpper.includes('REMAHAN') ||
                       bCdUpper.includes('BRK') || bCdUpper.includes('LGT') || bCdUpper.includes('RMH') ||
                       kUpper.includes('BERKO') || kUpper.includes('LENGKET') || kUpper.includes('REMAHAN');
 
-        const itemHpp = isAlreadyFinalized && item.hpp_satuan > 0 ? item.hpp_satuan : freshAvgHpp;
+        let itemHpp = isAlreadyFinalized && item.hpp_satuan > 0 ? item.hpp_satuan : freshAvgHpp;
+        if (!isAlreadyFinalized && isAfkir) {
+            itemHpp = 0; // Barang langsung afkir otomatis HPP Rp 0
+        }
         const itemNilai = Math.round(item.qty_kg * itemHpp);
 
-        const categoryLabel = item.kategori_output || (isKw2 ? 'WIP-BRK' : 'WIP-ASB');
+        const categoryBadge = isHold
+            ? `<span class="badge-grade" style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a;">HOLD QC</span>`
+            : (isAfkir
+                ? `<span class="badge-grade" style="background: #fef2f2; color: #dc2626; border: 1px solid #fecaca;">AFKIR (Rp 0)</span>`
+                : `<span class="badge-grade ${isKw2 ? 'badge-kw2' : 'badge-kw1'}">${item.kategori_output || (isKw2 ? 'WIP-BRK' : 'WIP-ASB')}</span>`);
 
         const tr = document.createElement('tr');
         tr.setAttribute('data-output-id', item.output_id);
         tr.setAttribute('data-qty-kg', item.qty_kg);
-        tr.setAttribute('data-grade', isKw2 ? 'KW2' : 'KW1');
+        tr.setAttribute('data-grade', isHold ? 'HOLD' : (isKw2 ? 'KW2' : 'KW1'));
         tr.setAttribute('data-is-kw2', isKw2 ? '1' : '0');
 
         tr.innerHTML = `
@@ -678,9 +761,7 @@ function renderAllocationTable(outputs, defaultHppPerKg) {
                 <div style="font-size: 0.725rem; color: #64748b;">${item.barang_cd}</div>
             </td>
             <td>
-                <span class="badge-grade ${isKw2 ? 'badge-kw2' : 'badge-kw1'}">
-                    ${categoryLabel}
-                </span>
+                ${categoryBadge}
             </td>
             <td>
                 <span style="font-family: monospace; font-size: 0.775rem;">${item.batch_no || '-'}</span>
@@ -884,15 +965,15 @@ function syncLaborFromKaryawan(isManualClick = false) {
 }
 
 /**
- * Sinkronisasi Kurs JISDOR Bank Indonesia
+ * Sinkronisasi Kurs JISDOR Bank Indonesia (Selalu Menggunakan Kurs Terkini)
  * @param {boolean} isManualClick - jika true (diklik user) tampilkan dialog feedback; jika false (auto sync), senyap.
  */
 function fetchLiveJisdor(isManualClick = false) {
     const btn = document.querySelector('.btn-sync-kurs');
     if (btn && isManualClick) btn.disabled = true;
 
-    const tgl = currentProduksiData?.produksi_tgl || '';
-    const url = window.appConfig.jisdorUrl + (tgl ? `?date=${encodeURIComponent(tgl)}&tgl=${encodeURIComponent(tgl)}` : '');
+    // Selalu gunakan kurs terkini Bank Indonesia untuk penetapan HPP Finance
+    const url = window.appConfig.jisdorUrl + '?latest=1';
 
     fetch(url, {
         headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
@@ -901,6 +982,7 @@ function fetchLiveJisdor(isManualClick = false) {
     .then(res => {
         const rate = res.data?.rate || res.rate || res.kurs;
         const dateStr = res.data?.date || res.tanggal_acuan || res.date || '';
+        const ketAcuan = res.data?.keterangan_acuan || res.keterangan_acuan || 'Kurs terkini Bank Indonesia';
 
         if (rate && rate > 0) {
             document.getElementById('cng_kurs_jisdor').value = rate;
@@ -908,11 +990,16 @@ function fetchLiveJisdor(isManualClick = false) {
 
             const help = document.getElementById('helpKursJisdor');
             if (help) {
-                help.innerHTML = `Referensi resmi BI: <strong>Rp ${formatRp(rate)}</strong> (${dateStr})`;
+                let text = `Referensi resmi BI: <strong>Rp ${formatRp(rate)}</strong> (${dateStr}`;
+                if (ketAcuan) {
+                    text += ` &bull; <span style="color: #059669; font-weight: 600;">${ketAcuan}</span>`;
+                }
+                text += `)`;
+                help.innerHTML = text;
             }
 
             if (isManualClick) {
-                alert(`✅ Kurs JISDOR Bank Indonesia berhasil disinkronkan:\nRp ${formatRp(rate)} (Acuan BI: ${dateStr})`);
+                alert(`✅ Kurs JISDOR Bank Indonesia berhasil disinkronkan ke kurs terkini:\nRp ${formatRp(rate)} (Acuan BI: ${dateStr})`);
             }
         } else {
             if (isManualClick) {

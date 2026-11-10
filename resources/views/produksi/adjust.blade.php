@@ -473,7 +473,7 @@
                     <tr class="adj-item-row" data-group="KEMASAN">
                         <td>
                             <div class="adj-item-title">{{ $isIfm ? 'Karton Box Baru IFM' : 'Karton Box Baru' }}</div>
-                            <div class="adj-item-code">KIF00G-BP1 &bull; {{ $isIfm ? 'Box Luar Baru 100% Harga Beli' : 'Box Cetak Baru' }}</div>
+                            <div class="adj-item-code">KIF00G-BP1 &bull; {{ $isIfm ? 'Box Luar Baru (Tarif 1/5 Siklus)' : 'Box Cetak Baru' }}</div>
                             <div style="display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap; margin-top: 0.3rem;">
                                 @if(!empty($produksi->bahan_baku_batch_map['karton_baru']))
                                     <span class="adj-batch-pill" title="No. Batch Pemakaian Karton Baru">

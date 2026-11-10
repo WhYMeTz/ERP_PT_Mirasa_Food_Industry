@@ -8,30 +8,34 @@
 
 @section('content')
 <div class="hpp-container">
-    {{-- HEADER BREADCRUMB & JUDUL --}}
-    <div class="hpp-header-area">
-        <div class="hpp-breadcrumb">
-            <a href="{{ route('produksi.index') }}">Produksi</a>
-            <span class="separator">/</span>
-            <a href="{{ route('produksi.rekap') }}">Buku Rekap HPP</a>
-            <span class="separator">/</span>
-            <span class="current">Kalkulasi Lembar HPP (Finance)</span>
-        </div>
-        <div class="hpp-header-title-row">
+    {{-- Breadcrumb & Header Navigasi (Identik dengan Formulir Hasil Produksi & Pengemasan) --}}
+    <div style="margin-bottom: 1.25rem;">
+        <a href="{{ route('produksi.rekap') }}" 
+           style="color: #64748b; text-decoration: none; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.35rem; margin-bottom: 0.35rem; font-weight: 600; transition: color 0.15s ease;"
+           onmouseover="this.style.color='#0f172a'"
+           onmouseout="this.style.color='#64748b'"
+           title="Kembali ke Buku Rekapitulasi HPP">
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+            Kembali ke Buku Rekap HPP
+        </a>
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
             <div>
-                <h1 class="hpp-title">Kalkulasi &amp; Penetapan Lembar HPP Produksi</h1>
-                <p class="hpp-subtitle">
+                <h1 style="font-size: 1.5rem; font-weight: 700; color: #0f172a; margin: 0;">
+                    Kalkulasi &amp; Penetapan Lembar HPP Produksi
+                </h1>
+                <p style="color: #64748b; font-size: 0.875rem; margin-top: 0.25rem; margin-bottom: 0;">
                     Penetapan nilai rupiah bahan baku, utilitas energi gas CNG (kurs JISDOR BI), biaya tenaga kerja, dan alokasi HPP per jenis produk WIP.
                 </p>
             </div>
-            <div class="hpp-header-actions">
-                <a href="{{ route('produksi.rekap') }}" class="btn-hpp-secondary">
-                    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-                    <span>Buku Rekap HPP</span>
-                </a>
-            </div>
         </div>
     </div>
+
+    @if(session('warning'))
+        <div style="background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 8px; padding: 0.85rem 1.25rem; color: #92400e; margin-bottom: 1.25rem; font-size: 0.875rem; font-weight: 600; display: flex; align-items: flex-start; gap: 0.75rem;">
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink: 0; margin-top: 1px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+            <div>{!! nl2br(e(session('warning'))) !!}</div>
+        </div>
+    @endif
 
     @if(session('error'))
         <div class="alert-danger-hpp">
@@ -64,13 +68,33 @@
                             @endphp
                             <option value="{{ $p->produksi_id }}" 
                                     data-no="{{ $p->produksi_no }}"
+                                    data-tgl="{{ \Carbon\Carbon::parse($p->produksi_tgl)->format('d/m/Y') }}"
+                                    data-shift="{{ $p->shift_cd }}"
+                                    data-lini="{{ $p->lini_produksi ?? 'Lini Manual' }}"
                                     {{ (string) $p->produksi_id === (string) old('produksi_id', $selectedProduksiId) ? 'selected' : '' }}>
-                                [{{ $p->produksi_no }}] {{ \Carbon\Carbon::parse($p->produksi_tgl)->format('d/m/Y') }} - Shift {{ $p->shift_cd }} ({{ number_format($totalKg, 2, ',', '.') }} kg WIP)
+                                [{{ $p->produksi_no }}] {{ \Carbon\Carbon::parse($p->produksi_tgl)->format('d/m/Y') }} &mdash; Shift {{ $p->shift_cd }} &bull; {{ $p->lini_produksi ?? 'Lini Manual' }} ({{ number_format($totalKg, 2, ',', '.') }} kg WIP)
                             </option>
                         @empty
                             <option value="" disabled>(Tidak ada dokumen fisik baru yang belum dihitung HPP)</option>
                         @endforelse
                     </select>
+
+                    {{-- KOTAK MONITORING DOKUMEN LAIN PADA TANGGAL YANG SAMA (MENCEGAH DATA TERLEWAT) --}}
+                    <div id="sameDayNoticeBox" style="display: none; margin-top: 0.85rem; background: #fffdf5; border: 1.5px solid #fde68a; border-radius: 8px; padding: 0.75rem 1rem;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.4rem;">
+                            <div style="display: flex; align-items: center; gap: 0.4rem;">
+                                <span style="font-size: 0.9rem;">📅</span>
+                                <strong id="sameDayTitle" style="font-size: 0.825rem; color: #92400e;">Daftar Dokumen Produksi pada Tanggal Ini:</strong>
+                            </div>
+                            <span id="sameDaySummaryBadge" style="font-size: 0.7rem; font-weight: 700; background: #fef3c7; color: #92400e; padding: 1px 7px; border-radius: 4px; border: 1px solid #fde68a;">
+                                Multi-Shift
+                            </span>
+                        </div>
+                        <div id="sameDayListContainer" style="display: flex; flex-direction: column; gap: 0.35rem;">
+                            {{-- Diisi secara dinamis via JS loadProduksiData / renderSameDayNotice --}}
+                        </div>
+                    </div>
+
                     @if($produksiList->isEmpty())
                         <div class="spk-empty-alert">
                             <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
@@ -292,7 +316,7 @@
                                     <span class="prefix-rp">Rp</span>
                                     <input type="number" step="any" min="0" name="cng_kurs_jisdor" id="cng_kurs_jisdor" class="hpp-input-sm" value="{{ $defaultCngKursJisdor }}" oninput="calcCngFromTarif()">
                                 </div>
-                                <small class="helper-text" id="helpKursJisdor">Referensi resmi BI</small>
+                                <small class="helper-text" id="helpKursJisdor">Referensi resmi BI: <strong>Rp {{ number_format($defaultCngKursJisdor, 0, ',', '.') }}</strong> ({{ $latestKursDate ?? date('d/m/Y') }} &bull; <span style="color: #059669; font-weight: 600;">Kurs terkini BI</span>)</small>
                             </div>
                         </div>
 
@@ -526,7 +550,7 @@
                 {{-- CATATAN TAMBAHAN FINANCE & TOMBOL FINALISASI (TERINTEGRASI DI CARD 3) --}}
                 <div style="margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1.5px dashed #cbd5e1;">
                     <div class="form-group-hpp">
-                        <label for="catatan_hpp" class="hpp-label">Catatan Tambahan Finance / Dasar Penetapan Biaya</label>
+                        <label for="catatan_hpp" class="hpp-label">Catatan Tambahan / Dasar Penetapan Biaya</label>
                         <textarea name="catatan_hpp" id="catatan_hpp" rows="2" class="hpp-textarea" placeholder="Contoh: Menggunakan kurs JISDOR penutupan BI hari ini. Alokasi HPP disesuaikan proporsi mutu hasil olahan."></textarea>
                     </div>
 

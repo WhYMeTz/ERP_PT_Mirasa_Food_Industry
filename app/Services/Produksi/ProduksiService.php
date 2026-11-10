@@ -43,6 +43,12 @@ class ProduksiService
             ->orderBy('created_at', 'asc')
             ->get();
 
+        // Filter dokumen yang telah selesai dilakukan penarikan & finalisasi HPP oleh Finance
+        $finalizedRecords = $records->filter(function ($r) {
+            return ((float) $r->cng_nilai > 0 || (float) $r->tk_total_nilai > 0 || str_contains($r->catatan_txt ?? '', '[HPP FINAL') || str_contains($r->catatan_txt ?? '', 'HPP Finance'));
+        });
+        $hasFinalized = $finalizedRecords->isNotEmpty();
+
         // Hitung Grand Total Kumulatif Bulanan
         $totalWipSum = 0;
         foreach ($records as $r) {
@@ -53,52 +59,63 @@ class ProduksiService
             $totalWipSum += $w;
         }
 
-        $totals = [
-            'total_karton'                => (int) $records->sum('qty_karton'),
-            'singkong_qty'                => (float) $records->sum('singkong_qty'),
-            'singkong_nilai'              => (float) $records->sum('singkong_nilai'),
-            'minyak_sawit_qty'            => (float) $records->sum('minyak_sawit_qty'),
-            'minyak_kelapa_qty'           => (float) $records->sum('minyak_kelapa_qty'),
-            'minyak_nilai'                => (float) $records->sum('minyak_nilai'),
-            'cng_mmbtu'                   => (float) $records->sum('cng_mmbtu'),
-            'cng_nilai'                   => (float) $records->sum('cng_nilai'),
-            'tk_jumlah_org'               => (int) $records->sum(function ($r) {
-                return $r->tk_jumlah_org ?: ($r->tk_langsung_org + $r->tk_tidak_langsung_org + $r->tk_training_org);
-            }),
-            'tk_langsung_org'             => (int) $records->sum('tk_langsung_org'),
-            'tk_tidak_langsung_org'       => (int) $records->sum('tk_tidak_langsung_org'),
-            'tk_training_org'             => (int) $records->sum('tk_training_org'),
-            'tk_total_nilai'              => (float) $records->sum('tk_total_nilai'),
-            'bumbu_nilai'                 => (float) $records->sum('bumbu_nilai'),
-            'karton_baru_nilai'           => (float) $records->sum('karton_baru_nilai'),
-            'karton_bekas_nilai'          => (float) $records->sum('karton_bekas_nilai'),
-            'plastik_hd_nilai'            => (float) $records->sum('plastik_hd_nilai'),
-            'lakban_besar_nilai'          => (float) $records->sum('lakban_besar_nilai'),
-            'lakban_kecil_nilai'          => (float) $records->sum('lakban_kecil_nilai'),
-            'tali_rafia_nilai'            => (float) $records->sum('tali_rafia_nilai'),
-            'fotocopy_nilai'              => (float) $records->sum('fotocopy_nilai'),
-            'sarung_tangan_plastik_nilai' => (float) $records->sum('sarung_tangan_plastik_nilai'),
-            'sarung_tangan_kain_nilai'    => (float) $records->sum('sarung_tangan_kain_nilai'),
-            'qc_pengawasan_nilai'         => (float) $records->sum('qc_pengawasan_nilai'),
-            'listrik_air_telp_nilai'      => (float) $records->sum('listrik_air_telp_nilai'),
-            'pemeliharaan_mesin_nilai'    => (float) $records->sum('pemeliharaan_mesin_nilai'),
-            'penyusutan_mesin_nilai'      => (float) $records->sum('penyusutan_mesin_nilai'),
-            'limbah_padat_nilai'          => (float) $records->sum('limbah_padat_nilai'),
-            'limbah_kimia_nilai'          => (float) $records->sum('limbah_kimia_nilai'),
-            'total_biaya_produksi'        => (float) $records->sum('total_biaya_produksi'),
+        // Hitung Grand Total WIP khusus dari dokumen yang telah final HPP
+        $finalizedWipSum = 0;
+        foreach ($finalizedRecords as $r) {
+            $w = (float) $r->total_wip_qty;
+            if ($w <= 0 && $r->outputs && $r->outputs->isNotEmpty()) {
+                $w = (float) $r->outputs->sum('qty_kg');
+            }
+            $finalizedWipSum += $w;
+        }
 
-            // Hasil Output WIP (Kg) Sesuai Format Asli Excel
-            'ifl_qty'                     => (float) $records->sum('ifl_qty'),
-            'asin_barco_qty'              => (float) $records->sum('asin_barco_qty'),
-            'asin_sawit_qty'              => (float) $records->sum('asin_sawit_qty'),
-            'no_salt_qty'                 => (float) $records->sum('no_salt_qty'),
-            'ucamp_qty'                   => (float) $records->sum('ucamp_qty'),
-            'balo_gelombang_qty'          => (float) $records->sum('balo_gelombang_qty'),
-            'balqi_qty'                   => (float) $records->sum('balqi_qty'),
-            'berko_qty'                   => (float) $records->sum('berko_qty'),
-            'berko_me_qty'                => (float) $records->sum('berko_me_qty'),
-            'total_berko_qty'             => (float) $records->sum('total_berko_qty'),
-            'total_wip_qty'               => (float) $totalWipSum,
+        $totals = [
+            'total_karton'                => $hasFinalized ? (int) $finalizedRecords->sum('qty_karton') : 0,
+            'singkong_qty'                => $hasFinalized ? (float) $finalizedRecords->sum('singkong_qty') : 0,
+            'singkong_nilai'              => $hasFinalized ? (float) $finalizedRecords->sum('singkong_nilai') : 0,
+            'minyak_sawit_qty'            => $hasFinalized ? (float) $finalizedRecords->sum('minyak_sawit_qty') : 0,
+            'minyak_kelapa_qty'           => $hasFinalized ? (float) $finalizedRecords->sum('minyak_kelapa_qty') : 0,
+            'minyak_nilai'                => $hasFinalized ? (float) $finalizedRecords->sum('minyak_nilai') : 0,
+            'cng_mmbtu'                   => $hasFinalized ? (float) $finalizedRecords->sum('cng_mmbtu') : 0,
+            'cng_nilai'                   => $hasFinalized ? (float) $finalizedRecords->sum('cng_nilai') : 0,
+            'tk_jumlah_org'               => $hasFinalized ? (int) $finalizedRecords->sum(function ($r) {
+                return $r->tk_jumlah_org ?: ($r->tk_langsung_org + $r->tk_tidak_langsung_org + $r->tk_training_org);
+            }) : 0,
+            'tk_langsung_org'             => $hasFinalized ? (int) $finalizedRecords->sum('tk_langsung_org') : 0,
+            'tk_tidak_langsung_org'       => $hasFinalized ? (int) $finalizedRecords->sum('tk_tidak_langsung_org') : 0,
+            'tk_training_org'             => $hasFinalized ? (int) $finalizedRecords->sum('tk_training_org') : 0,
+            'tk_total_nilai'              => $hasFinalized ? (float) $finalizedRecords->sum('tk_total_nilai') : 0,
+            'bumbu_nilai'                 => $hasFinalized ? (float) $finalizedRecords->sum('bumbu_nilai') : 0,
+            'karton_baru_nilai'           => $hasFinalized ? (float) $finalizedRecords->sum('karton_baru_nilai') : 0,
+            'karton_bekas_nilai'          => $hasFinalized ? (float) $finalizedRecords->sum('karton_bekas_nilai') : 0,
+            'plastik_hd_nilai'            => $hasFinalized ? (float) $finalizedRecords->sum('plastik_hd_nilai') : 0,
+            'lakban_besar_nilai'          => $hasFinalized ? (float) $finalizedRecords->sum('lakban_besar_nilai') : 0,
+            'lakban_kecil_nilai'          => $hasFinalized ? (float) $finalizedRecords->sum('lakban_kecil_nilai') : 0,
+            'tali_rafia_nilai'            => $hasFinalized ? (float) $finalizedRecords->sum('tali_rafia_nilai') : 0,
+            'fotocopy_nilai'              => $hasFinalized ? (float) $finalizedRecords->sum('fotocopy_nilai') : 0,
+            'sarung_tangan_plastik_nilai' => $hasFinalized ? (float) $finalizedRecords->sum('sarung_tangan_plastik_nilai') : 0,
+            'sarung_tangan_kain_nilai'    => $hasFinalized ? (float) $finalizedRecords->sum('sarung_tangan_kain_nilai') : 0,
+            'qc_pengawasan_nilai'         => $hasFinalized ? (float) $finalizedRecords->sum('qc_pengawasan_nilai') : 0,
+            'listrik_air_telp_nilai'      => $hasFinalized ? (float) $finalizedRecords->sum('listrik_air_telp_nilai') : 0,
+            'pemeliharaan_mesin_nilai'    => $hasFinalized ? (float) $finalizedRecords->sum('pemeliharaan_mesin_nilai') : 0,
+            'penyusutan_mesin_nilai'      => $hasFinalized ? (float) $finalizedRecords->sum('penyusutan_mesin_nilai') : 0,
+            'limbah_padat_nilai'          => $hasFinalized ? (float) $finalizedRecords->sum('limbah_padat_nilai') : 0,
+            'limbah_kimia_nilai'          => $hasFinalized ? (float) $finalizedRecords->sum('limbah_kimia_nilai') : 0,
+            'total_biaya_produksi'        => $hasFinalized ? (float) $finalizedRecords->sum('total_biaya_produksi') : 0,
+
+            // Hasil Output WIP (Kg) Sesuai Format Asli Excel - Hanya akumulasi jika sudah final HPP
+            'ifl_qty'                     => $hasFinalized ? (float) $finalizedRecords->sum('ifl_qty') : 0,
+            'asin_barco_qty'              => $hasFinalized ? (float) $finalizedRecords->sum('asin_barco_qty') : 0,
+            'asin_sawit_qty'              => $hasFinalized ? (float) $finalizedRecords->sum('asin_sawit_qty') : 0,
+            'no_salt_qty'                 => $hasFinalized ? (float) $finalizedRecords->sum('no_salt_qty') : 0,
+            'ucamp_qty'                   => $hasFinalized ? (float) $finalizedRecords->sum('ucamp_qty') : 0,
+            'balo_gelombang_qty'          => $hasFinalized ? (float) $finalizedRecords->sum('balo_gelombang_qty') : 0,
+            'balqi_qty'                   => $hasFinalized ? (float) $finalizedRecords->sum('balqi_qty') : 0,
+            'berko_qty'                   => $hasFinalized ? (float) $finalizedRecords->sum('berko_qty') : 0,
+            'berko_me_qty'                => $hasFinalized ? (float) $finalizedRecords->sum('berko_me_qty') : 0,
+            'total_berko_qty'             => $hasFinalized ? (float) $finalizedRecords->sum('total_berko_qty') : 0,
+            'total_wip_qty'               => $hasFinalized ? (float) $finalizedWipSum : 0,
+            'finalized_wip_qty'           => (float) $finalizedWipSum,
         ];
 
         // Rasio & Rata-rata Tertimbang (Weighted Averages)
@@ -122,8 +139,9 @@ class ProduksiService
             ? ($totals['total_wip_qty'] / $totals['singkong_qty']) * 100
             : 0;
 
-        $totals['hpp_per_kg'] = $totals['total_wip_qty'] > 0
-            ? ($totals['total_biaya_produksi'] / $totals['total_wip_qty'])
+        // HPP per kg dihitung riil hanya dari dokumen yang sudah difinalisasi HPP oleh Finance
+        $totals['hpp_per_kg'] = ($hasFinalized && $finalizedWipSum > 0)
+            ? ($totals['total_biaya_produksi'] / $finalizedWipSum)
             : 0;
 
         // Susun daftar baris kalender per hari (1 s/d 28/30/31) seperti format spreadsheet Mirasa
@@ -348,17 +366,56 @@ class ProduksiService
                 $dayBumbuNames = array_values(array_unique(array_filter($dayBumbuNames)));
                 $dayBumbuLabel = !empty($dayBumbuNames) ? implode(', ', $dayBumbuNames) : null;
 
-                // Status Penetapan HPP oleh Finance (Apakah sudah memasukkan biaya Gas & TK, atau baru pemakaian bahan fisik)
-                $isDayHppFinal = $dayRecords->every(function ($r) {
-                    return ((float) $r->cng_nilai > 0 || (float) $r->tk_total_nilai > 0 || str_contains($r->catatan_txt ?? '', '[HPP FINAL') || str_contains($r->catatan_txt ?? '', 'HPP Finance'));
-                });
+                // Status Penetapan HPP per SPK / Shift Harian
+                $dayShiftRecords = $dayRecords->map(fn($r) => [
+                    'produksi_id'     => $r->produksi_id,
+                    'produksi_no'     => $r->produksi_no,
+                    'shift_cd'        => $r->shift_cd ?? 'A',
+                    'lini_produksi'   => $r->lini_produksi ?? 'Produksi Reguler',
+                    'batch_wip_no'    => $r->batch_wip_no ?? '-',
+                    'singkong_qty'    => (float) $r->singkong_qty,
+                    'singkong_nilai'  => (float) $r->singkong_nilai,
+                    'total_berko_qty' => (float) $r->total_berko_qty,
+                    'total_biaya'     => (float) $r->total_biaya_produksi,
+                    'total_wip'       => (float) ($r->total_wip_qty ?: ($r->outputs ? $r->outputs->sum('qty_kg') : 0)),
+                    'hpp_per_kg'      => (float) $r->hpp_per_kg,
+                    'is_hpp_final'    => ((float) $r->cng_nilai > 0 || (float) $r->tk_total_nilai > 0 || str_contains($r->catatan_txt ?? '', '[HPP FINAL') || str_contains($r->catatan_txt ?? '', 'HPP Finance')),
+                    'output_summary'  => $r->outputs && $r->outputs->isNotEmpty()
+                        ? $r->outputs->map(fn($o) => ($o->barang?->barang_nm ?? $o->kategori_output) . ' (' . number_format($o->qty_kg, 0, ',', '.') . ' kg)')->implode(', ')
+                        : ($r->total_wip_qty > 0 ? number_format($r->total_wip_qty, 0, ',', '.') . ' kg' : 'Produksi WIP'),
+                ]);
+
+                $finalizedCount = $dayShiftRecords->where('is_hpp_final', true)->count();
+                $pendingCount = $dayShiftRecords->where('is_hpp_final', false)->count();
+                $totalSpkCount = $dayShiftRecords->count();
+
+                if ($pendingCount === 0) {
+                    $dayHppStatus = 'all_final';
+                    $isDayHppFinal = true;
+                } elseif ($finalizedCount > 0) {
+                    $dayHppStatus = 'partial'; // Sebagian shift/lini sudah ditarik & final, sebagian belum!
+                    $isDayHppFinal = false;
+                } else {
+                    $dayHppStatus = 'none'; // Belum ada dokumen yang difinalisasi
+                    $isDayHppFinal = false;
+                }
+
+                $pendingSpks = $dayShiftRecords->where('is_hpp_final', false)->values()->toArray();
+                $finalizedSpks = $dayShiftRecords->where('is_hpp_final', true)->values()->toArray();
 
                 $days[] = [
                     'day'                         => $day,
                     'date'                        => $dateObj->format('Y-m-d'),
                     'hari_nm'                     => $hariNm,
                     'has_data'                    => true,
+                    'hpp_status'                  => $dayHppStatus,
                     'is_hpp_final'                => $isDayHppFinal,
+                    'is_hpp_partial'              => ($dayHppStatus === 'partial'),
+                    'finalized_spk_count'         => $finalizedCount,
+                    'pending_spk_count'           => $pendingCount,
+                    'total_spk_count'             => $totalSpkCount,
+                    'pending_spks'                => $pendingSpks,
+                    'finalized_spks'              => $finalizedSpks,
                     'produksi_id'                 => $firstRec->produksi_id,
                     'produksi_ids'                => $dayRecords->pluck('produksi_id')->toArray(),
                     'produksi_no'                 => $shiftCount > 1 ? ($firstRec->produksi_no . " (+{$shiftCount} Shift)") : $firstRec->produksi_no,
@@ -372,21 +429,7 @@ class ProduksiService
                     'main_batches'                => $mainBatches,
                     'berko_batches'               => $berkoBatches,
                     'berko_batch_no'              => !empty($berkoBatches) ? implode(', ', $berkoBatches) : null,
-                    'shift_records'               => $dayRecords->map(fn($r) => [
-                        'produksi_id'     => $r->produksi_id,
-                        'produksi_no'     => $r->produksi_no,
-                        'shift_cd'        => $r->shift_cd ?? 'A',
-                        'lini_produksi'   => $r->lini_produksi ?? 'Produksi Reguler',
-                        'batch_wip_no'    => $r->batch_wip_no ?? '-',
-                        'total_berko_qty' => (float) $r->total_berko_qty,
-                        'total_biaya'     => (float) $r->total_biaya_produksi,
-                        'total_wip'       => (float) $r->total_wip_qty,
-                        'hpp_per_kg'      => (float) $r->hpp_per_kg,
-                        'is_hpp_final'    => ((float) $r->cng_nilai > 0 || (float) $r->tk_total_nilai > 0 || str_contains($r->catatan_txt ?? '', '[HPP FINAL') || str_contains($r->catatan_txt ?? '', 'HPP Finance')),
-                        'output_summary'  => $r->outputs && $r->outputs->isNotEmpty()
-                            ? $r->outputs->map(fn($o) => ($o->barang?->barang_nm ?? $o->kategori_output) . ' (' . number_format($o->qty_kg, 0, ',', '.') . ' kg)')->implode(', ')
-                            : ($r->total_wip_qty > 0 ? number_format($r->total_wip_qty, 0, ',', '.') . ' kg' : 'Produksi WIP'),
-                    ])->toArray(),
+                    'shift_records'               => $dayShiftRecords->toArray(),
                     'singkong_qty'                => $daySingkongQty,
                     'singkong_nilai'              => $daySingkongNilai,
                     'minyak_sawit_qty'            => $daySawitQty,
@@ -533,35 +576,91 @@ class ProduksiService
             }
         }
 
-        // Sinkronisasi total output WIP dari daftar baris
-        $totals['ifl_qty'] = (float) collect($days)->where('has_data', true)->sum('ifl_qty');
-        $totals['asin_barco_qty'] = (float) collect($days)->where('has_data', true)->sum('asin_barco_qty');
-        $totals['asin_sawit_qty'] = (float) collect($days)->where('has_data', true)->sum('asin_sawit_qty');
-        $totals['no_salt_qty'] = (float) collect($days)->where('has_data', true)->sum('no_salt_qty');
-        $totals['ucamp_qty'] = (float) collect($days)->where('has_data', true)->sum('ucamp_qty');
-        $totals['balo_gelombang_qty'] = (float) collect($days)->where('has_data', true)->sum('balo_gelombang_qty');
-        $totals['balqi_qty'] = (float) collect($days)->where('has_data', true)->sum('balqi_qty');
-        $totals['berko_qty'] = (float) collect($days)->where('has_data', true)->sum('berko_qty');
-        $totals['berko_me_qty'] = (float) collect($days)->where('has_data', true)->sum('berko_me_qty');
-        $totals['total_berko_qty'] = (float) collect($days)->where('has_data', true)->sum('total_berko_qty');
-        $totals['total_wip_qty'] = (float) collect($days)->where('has_data', true)->sum('total_wip_qty');
-        $totals['berko_persen'] = $totals['total_wip_qty'] > 0
-            ? ($totals['total_berko_qty'] / $totals['total_wip_qty']) * 100
-            : 0;
-        $totals['berko_biasa_persen'] = $totals['total_wip_qty'] > 0
-            ? ($totals['berko_qty'] / $totals['total_wip_qty']) * 100
-            : 0;
-        $totals['berko_me_persen'] = $totals['total_wip_qty'] > 0
-            ? ($totals['berko_me_qty'] / $totals['total_wip_qty']) * 100
-            : 0;
+        $activeDays = collect($days)->where('has_data', true);
+        $finalizedDaysCount = $activeDays->where('is_hpp_final', true)->count();
+        $pendingDaysCount = $activeDays->where('is_hpp_final', false)->count();
+
+        // Sinkronisasi total output WIP & metrik fisik: HANYA mengakumulasi dokumen yang telah ditarik & difinalisasi HPP
+        if ($hasFinalized && $finalizedWipSum > 0) {
+            $totals['ifl_qty'] = (float) $finalizedRecords->sum('ifl_qty');
+            $totals['asin_barco_qty'] = (float) $finalizedRecords->sum('asin_barco_qty');
+            $totals['asin_sawit_qty'] = (float) $finalizedRecords->sum('asin_sawit_qty');
+            $totals['no_salt_qty'] = (float) $finalizedRecords->sum('no_salt_qty');
+            $totals['ucamp_qty'] = (float) $finalizedRecords->sum('ucamp_qty');
+            $totals['balo_gelombang_qty'] = (float) $finalizedRecords->sum('balo_gelombang_qty');
+            $totals['balqi_qty'] = (float) $finalizedRecords->sum('balqi_qty');
+            $totals['berko_qty'] = (float) $finalizedRecords->sum('berko_qty');
+            $totals['berko_me_qty'] = (float) $finalizedRecords->sum('berko_me_qty');
+            $totals['total_berko_qty'] = (float) $finalizedRecords->sum('total_berko_qty');
+            $totals['total_wip_qty'] = (float) $finalizedWipSum;
+            $totals['singkong_qty'] = (float) $finalizedRecords->sum('singkong_qty');
+            $totals['singkong_nilai'] = (float) $finalizedRecords->sum('singkong_nilai');
+            $totals['total_biaya_produksi'] = (float) $finalizedRecords->sum('total_biaya_produksi');
+            $totals['berko_persen'] = $totals['total_wip_qty'] > 0
+                ? ($totals['total_berko_qty'] / $totals['total_wip_qty']) * 100
+                : 0;
+            $totals['berko_biasa_persen'] = $totals['total_wip_qty'] > 0
+                ? ($totals['berko_qty'] / $totals['total_wip_qty']) * 100
+                : 0;
+            $totals['berko_me_persen'] = $totals['total_wip_qty'] > 0
+                ? ($totals['berko_me_qty'] / $totals['total_wip_qty']) * 100
+                : 0;
+            $totals['rendemen_persen'] = $totals['singkong_qty'] > 0
+                ? ($totals['total_wip_qty'] / $totals['singkong_qty']) * 100
+                : 0;
+            $totals['hpp_per_kg'] = $totals['total_biaya_produksi'] / $finalizedWipSum;
+        } else {
+            // Ketika belum difinalisasi HPP, seluruh metrik fisik dan finansial belum ditarik
+            $totals['ifl_qty'] = 0;
+            $totals['asin_barco_qty'] = 0;
+            $totals['asin_sawit_qty'] = 0;
+            $totals['no_salt_qty'] = 0;
+            $totals['ucamp_qty'] = 0;
+            $totals['balo_gelombang_qty'] = 0;
+            $totals['balqi_qty'] = 0;
+            $totals['berko_qty'] = 0;
+            $totals['berko_me_qty'] = 0;
+            $totals['total_berko_qty'] = 0;
+            $totals['total_wip_qty'] = 0;
+            $totals['singkong_qty'] = 0;
+            $totals['singkong_nilai'] = 0;
+            $totals['berko_persen'] = 0;
+            $totals['berko_biasa_persen'] = 0;
+            $totals['berko_me_persen'] = 0;
+            $totals['rendemen_persen'] = 0;
+            $totals['total_biaya_produksi'] = 0;
+            $totals['hpp_per_kg'] = 0;
+        }
+
+        // Agregasi seluruh dokumen SPK yang belum difinalisasi HPP pada bulan ini
+        $pendingSpksInMonth = [];
+        foreach ($days as $dayItem) {
+            if (!empty($dayItem['has_data']) && !empty($dayItem['pending_spks'])) {
+                foreach ($dayItem['pending_spks'] as $pSpk) {
+                    $pendingSpksInMonth[] = array_merge($pSpk, [
+                        'day'            => $dayItem['day'],
+                        'date'           => $dayItem['date'],
+                        'hari_nm'        => $dayItem['hari_nm'],
+                        'is_partial_day' => ($dayItem['hpp_status'] === 'partial'),
+                    ]);
+                }
+            }
+        }
 
         return [
-            'year'    => $year,
-            'month'   => $month,
-            'records' => $records,
-            'days'    => $days,
-            'totals'  => $totals,
-            'count'   => $records->count(),
+            'year'              => $year,
+            'month'             => $month,
+            'records'           => $records,
+            'days'              => $days,
+            'totals'            => $totals,
+            'count'             => $activeDays->count(),
+            'total_spk_count'   => $records->count(),
+            'finalized_count'   => $finalizedDaysCount,
+            'pending_count'     => $pendingDaysCount,
+            'is_all_final'      => ($finalizedDaysCount > 0 && $pendingDaysCount === 0),
+            'pending_spks'      => $pendingSpksInMonth,
+            'has_pending_hpp'   => !empty($pendingSpksInMonth),
+            'pending_spk_count' => count($pendingSpksInMonth),
         ];
     }
 
@@ -588,37 +687,45 @@ class ProduksiService
             });
 
             $count = $monthRecords->count();
-            $singkongQty = (float) $monthRecords->sum('singkong_qty');
-            $singkongNilai = (float) $monthRecords->sum('singkong_nilai');
-            $totalWipQty = (float) $monthRecords->sum('total_wip_qty');
-            $totalBiaya = (float) $monthRecords->sum('total_biaya_produksi');
 
-            $minyakNilai = (float) $monthRecords->sum('minyak_nilai');
-            $cngNilai = (float) $monthRecords->sum('cng_nilai');
-            $tkNilai = (float) $monthRecords->sum('tk_total_nilai');
+            $finalizedMonthRecords = $monthRecords->filter(function ($r) {
+                return ((float) $r->cng_nilai > 0 || (float) $r->tk_total_nilai > 0 || str_contains($r->catatan_txt ?? '', '[HPP FINAL') || str_contains($r->catatan_txt ?? '', 'HPP Finance'));
+            });
+            $hasFinalizedMonth = $finalizedMonthRecords->isNotEmpty();
+            $finalizedWipMonth = (float) $finalizedMonthRecords->sum('total_wip_qty');
 
-            $kemasanNilai = (float) (
-                $monthRecords->sum('karton_baru_nilai') +
-                $monthRecords->sum('karton_bekas_nilai') +
-                $monthRecords->sum('plastik_hd_nilai') +
-                $monthRecords->sum('lakban_besar_nilai') +
-                $monthRecords->sum('lakban_kecil_nilai') +
-                $monthRecords->sum('tali_rafia_nilai')
-            );
+            $singkongQty = $hasFinalizedMonth ? (float) $finalizedMonthRecords->sum('singkong_qty') : 0;
+            $totalWipQty = $hasFinalizedMonth ? $finalizedWipMonth : 0;
 
-            $fohNilai = (float) (
-                $monthRecords->sum('sarung_tangan_plastik_nilai') +
-                $monthRecords->sum('sarung_tangan_kain_nilai')
-            );
+            $singkongNilai = $hasFinalizedMonth ? (float) $finalizedMonthRecords->sum('singkong_nilai') : 0;
+            $totalBiaya = $hasFinalizedMonth ? (float) $finalizedMonthRecords->sum('total_biaya_produksi') : 0;
+            $minyakNilai = $hasFinalizedMonth ? (float) $finalizedMonthRecords->sum('minyak_nilai') : 0;
+            $cngNilai = $hasFinalizedMonth ? (float) $finalizedMonthRecords->sum('cng_nilai') : 0;
+            $tkNilai = $hasFinalizedMonth ? (float) $finalizedMonthRecords->sum('tk_total_nilai') : 0;
 
-            $rendemen = $singkongQty > 0 ? ($totalWipQty / $singkongQty) * 100 : 0;
-            $hppPerKg = $totalWipQty > 0 ? ($totalBiaya / $totalWipQty) : 0;
+            $kemasanNilai = $hasFinalizedMonth ? (float) (
+                $finalizedMonthRecords->sum('karton_baru_nilai') +
+                $finalizedMonthRecords->sum('karton_bekas_nilai') +
+                $finalizedMonthRecords->sum('plastik_hd_nilai') +
+                $finalizedMonthRecords->sum('lakban_besar_nilai') +
+                $finalizedMonthRecords->sum('lakban_kecil_nilai') +
+                $finalizedMonthRecords->sum('tali_rafia_nilai')
+            ) : 0;
+
+            $fohNilai = $hasFinalizedMonth ? (float) (
+                $finalizedMonthRecords->sum('sarung_tangan_plastik_nilai') +
+                $finalizedMonthRecords->sum('sarung_tangan_kain_nilai')
+            ) : 0;
+
+            $rendemen = ($hasFinalizedMonth && $singkongQty > 0) ? ($totalWipQty / $singkongQty) * 100 : 0;
+            $hppPerKg = ($hasFinalizedMonth && $finalizedWipMonth > 0) ? ($totalBiaya / $finalizedWipMonth) : 0;
 
             $months[$m] = [
                 'month_num'      => $m,
                 'month_name'     => $monthNames[$m],
                 'has_data'       => $count > 0,
                 'work_days'      => $count,
+                'finalized_days' => $finalizedMonthRecords->count(),
                 'singkong_qty'   => $singkongQty,
                 'singkong_nilai' => $singkongNilai,
                 'total_wip_qty'  => $totalWipQty,
@@ -633,18 +740,25 @@ class ProduksiService
             ];
         }
 
-        // Grand Total Tahunan
-        $annualSingkongQty = (float) $allRecords->sum('singkong_qty');
-        $annualSingkongNilai = (float) $allRecords->sum('singkong_nilai');
-        $annualWipQty = (float) $allRecords->sum('total_wip_qty');
-        $annualBiaya = (float) $allRecords->sum('total_biaya_produksi');
+        // Grand Total Tahunan: Hanya mengakumulasi dari data yang telah final HPP
+        $finalizedAllRecords = $allRecords->filter(function ($r) {
+            return ((float) $r->cng_nilai > 0 || (float) $r->tk_total_nilai > 0 || str_contains($r->catatan_txt ?? '', '[HPP FINAL') || str_contains($r->catatan_txt ?? '', 'HPP Finance'));
+        });
+        $hasFinalizedAll = $finalizedAllRecords->isNotEmpty();
+        $finalizedAnnualWip = (float) $finalizedAllRecords->sum('total_wip_qty');
+
+        $annualSingkongQty = $hasFinalizedAll ? (float) $finalizedAllRecords->sum('singkong_qty') : 0;
+        $annualSingkongNilai = $hasFinalizedAll ? (float) $finalizedAllRecords->sum('singkong_nilai') : 0;
+        $annualWipQty = $hasFinalizedAll ? $finalizedAnnualWip : 0;
+        $annualBiaya = $hasFinalizedAll ? (float) $finalizedAllRecords->sum('total_biaya_produksi') : 0;
         $annualWorkDays = $allRecords->count();
 
-        $annualRendemen = $annualSingkongQty > 0 ? ($annualWipQty / $annualSingkongQty) * 100 : 0;
-        $annualHppPerKg = $annualWipQty > 0 ? ($annualBiaya / $annualWipQty) : 0;
+        $annualRendemen = ($hasFinalizedAll && $annualSingkongQty > 0) ? ($annualWipQty / $annualSingkongQty) * 100 : 0;
+        $annualHppPerKg = ($hasFinalizedAll && $finalizedAnnualWip > 0) ? ($annualBiaya / $finalizedAnnualWip) : 0;
 
         $annualTotals = [
             'total_work_days' => $annualWorkDays,
+            'finalized_days'  => $finalizedAllRecords->count(),
             'singkong_qty'    => $annualSingkongQty,
             'singkong_nilai'  => $annualSingkongNilai,
             'total_wip_qty'   => $annualWipQty,
@@ -1589,17 +1703,25 @@ class ProduksiService
                     $finalQtyHasil = $qtyHasil > 0 ? $qtyHasil : $qtyKg;
                     $finalQtyKg = $qtyKg > 0 ? $qtyKg : $qtyHasil;
                     $subtotalNilai = round($finalQtyKg * $hppItem, 2);
-                    $isKw2 = (!empty($item['grade_cd']) && $item['grade_cd'] === 'KW2')
-                        || ($barang->grade_cd === 'KW2')
-                        || str_contains(strtoupper($barang->barang_nm), 'KW 2')
-                        || str_contains(strtoupper($barang->barang_nm), 'KW2')
+                    $isHold = str_contains(strtoupper($barang->barang_cd), 'HLD')
+                        || str_contains(strtoupper($barang->barang_nm), 'HOLD')
+                        || (($item['grade_cd'] ?? '') === 'HOLD');
+
+                    $isAfkir = str_contains(strtoupper($barang->barang_cd), 'AFK')
+                        || str_contains(strtoupper($barang->barang_nm), 'AFKIR')
+                        || (!empty($item['grade_cd']) && ($item['grade_cd'] === 'AFKIR' || $item['grade_cd'] === 'KW2'))
+                        || ($barang->grade_cd === 'AFKIR' || $barang->grade_cd === 'KW2')
                         || str_contains(strtoupper($barang->barang_nm), 'BERKO')
                         || str_contains(strtoupper($barang->barang_nm), 'REMAHAN')
                         || str_contains(strtoupper($barang->barang_nm), 'LENGKET')
-                        || str_starts_with(strtoupper($barang->barang_cd), 'WIP-KW')
                         || str_starts_with(strtoupper($barang->barang_cd), 'WIP-BRK');
 
-                    $itemGradeCd = $isKw2 ? 'KW2' : 'KW1';
+                    $itemGradeCd = $isHold ? 'HOLD' : ($isAfkir ? 'AFKIR' : 'RILIS');
+
+                    if ($isAfkir) {
+                        $hppItem = 0;
+                        $subtotalNilai = 0;
+                    }
 
                     DatProduksiDtl::create([
                         'produksi_id'     => $produksi->produksi_id,
@@ -3084,12 +3206,13 @@ class ProduksiService
         $bumbuNilai = $calcBumbuNilai > 0 ? $calcBumbuNilai : (float) $prod->bumbu_nilai;
         $bumbuQty = $calcBumbuQty > 0 ? $calcBumbuQty : (float) $prod->bumbu_qty;
 
-        // Utilitas Gas CNG
+        // Utilitas Gas CNG (Gunakan Kurs Terkini Bank Indonesia)
         $cngMmbtu = (float) $prod->cng_mmbtu;
         $cngTarifUsd = (float) ($prod->cng_tarif_usd > 0 ? $prod->cng_tarif_usd : 14.50);
-        $liveJisdor = app(\App\Services\Produksi\TarifProduksiService::class)->getJisdorRate($prod->produksi_tgl, true);
-        $cngKursJisdor = (float) ($prod->cng_kurs_jisdor > 0 ? $prod->cng_kurs_jisdor : ($liveJisdor ?: 18130.00));
-        $cngTarif = (float) ($prod->cng_tarif > 0 ? $prod->cng_tarif : round($cngTarifUsd * $cngKursJisdor, 2));
+        $latestRecord = \App\Models\Produksi\DatKursHarian::active()->orderByDesc('tanggal')->first();
+        $latestJisdor = $latestRecord ? (float) $latestRecord->kurs_tengah : app(\App\Services\Produksi\TarifProduksiService::class)->getJisdorRate(null, true);
+        $cngKursJisdor = (float) ($prod->cng_nilai > 0 && $prod->cng_kurs_jisdor > 0 ? $prod->cng_kurs_jisdor : ($latestJisdor ?: 18103.00));
+        $cngTarif = (float) ($prod->cng_nilai > 0 && $prod->cng_tarif > 0 ? $prod->cng_tarif : round($cngTarifUsd * $cngKursJisdor, 2));
         $cngNilai = (float) ($prod->cng_nilai > 0 ? $prod->cng_nilai : round($cngMmbtu * $cngTarif));
 
         // Tenaga Kerja (Prioritas: Data Tersimpan SPK -> Modul Manajemen Karyawan / Absensi -> Standar Regu Pabrik)
@@ -3194,6 +3317,26 @@ class ProduksiService
             'total_biaya_produksi' => (float) $prod->total_biaya_produksi,
             'hpp_per_kg'           => (float) $prod->hpp_per_kg,
             'outputs'              => $outputs,
+
+            // Dokumen SPK lain pada hari yang sama (Untuk notifikasi shift/lini lain yang belum difinalisasi)
+            'same_day_spks'        => DatProduksiHdr::whereDate('produksi_tgl', $prod->produksi_tgl)
+                ->where('deleted_st', false)
+                ->orderBy('shift_cd', 'asc')
+                ->orderBy('produksi_id', 'asc')
+                ->get()
+                ->map(function ($other) use ($prod) {
+                    $isFinal = ((float)$other->cng_nilai > 0 || (float)$other->tk_total_nilai > 0 || str_contains($other->catatan_txt ?? '', '[HPP FINAL') || str_contains($other->catatan_txt ?? '', 'HPP Finance'));
+                    return [
+                        'produksi_id'   => $other->produksi_id,
+                        'produksi_no'   => $other->produksi_no,
+                        'shift_cd'      => $other->shift_cd ?? 'A',
+                        'lini_produksi' => $other->lini_produksi ?? 'Lini Manual',
+                        'total_wip_qty' => (float) ($other->total_wip_qty ?: ($other->outputs ? $other->outputs->sum('qty_kg') : 0)),
+                        'hpp_per_kg'    => (float) $other->hpp_per_kg,
+                        'is_current'    => ($other->produksi_id === $prod->produksi_id),
+                        'is_hpp_final'  => $isFinal,
+                    ];
+                })->values()->toArray(),
         ];
     }
 

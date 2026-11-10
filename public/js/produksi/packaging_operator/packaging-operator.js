@@ -57,7 +57,7 @@ function initWipSatuanButtons() {
 }
 
 /**
- * Handle Lakban Dus (Poin 41: Otomatis cm/meter, Afkir Kerusakan & Konversi Roll)
+ * Handle Lakban Dus (Pilihan Satuan: CM/Meter & Roll vs Gram Timbangan)
  */
 function initLakbanSync() {
     const hasilKartonIn = document.getElementById('hasil_karton_qty');
@@ -65,8 +65,32 @@ function initLakbanSync() {
     const rusakMIn = document.getElementById('lakban_rusak_m');
     const rollIn = document.getElementById('lakban_roll_qty');
 
+    const atasGrIn = document.getElementById('input_lakban_atas_gr');
+    const bawahGrIn = document.getElementById('input_lakban_bawah_gr');
+    const rusakGrIn = document.getElementById('input_lakban_rusak_gr');
+    const totalGrIn = document.getElementById('input_lakban_total_gr');
+
+    const btnCm = document.getElementById('btn_lakban_mode_cm');
+    const btnGram = document.getElementById('btn_lakban_mode_gram');
+
+    if (btnCm) {
+        btnCm.addEventListener('click', function () {
+            setLakbanSatuanMode('CM');
+        });
+    }
+    if (btnGram) {
+        btnGram.addEventListener('click', function () {
+            setLakbanSatuanMode('GRAM');
+        });
+    }
+
     if (hasilKartonIn) {
-        hasilKartonIn.addEventListener('input', recalculateLakbanFromKarton);
+        hasilKartonIn.addEventListener('input', function () {
+            const currentMode = document.getElementById('lakban_satuan_mode')?.value || 'CM';
+            if (currentMode === 'CM') {
+                recalculateLakbanFromKarton();
+            }
+        });
     }
     if (standarCmIn) {
         standarCmIn.addEventListener('input', recalculateLakbanFromKarton);
@@ -78,13 +102,70 @@ function initLakbanSync() {
         rollIn.addEventListener('input', onManualRollInput);
     }
 
-    recalculateLakbanFromKarton();
+    if (atasGrIn) {
+        atasGrIn.addEventListener('input', recalculateLakbanFromGram);
+    }
+    if (bawahGrIn) {
+        bawahGrIn.addEventListener('input', recalculateLakbanFromGram);
+    }
+    if (rusakGrIn) {
+        rusakGrIn.addEventListener('input', recalculateLakbanFromGram);
+    }
+    if (totalGrIn) {
+        totalGrIn.addEventListener('input', onManualGramInput);
+    }
+
+    const initialMode = document.getElementById('lakban_satuan_mode')?.value || 'CM';
+    setLakbanSatuanMode(initialMode);
 }
 
 /**
- * Kalkulasi otomatis kebutuhan lakban dari jumlah karton (Poin 41)
+ * Switch mode satuan input lakban: 'CM' atau 'GRAM'
+ */
+function setLakbanSatuanMode(mode) {
+    const modeInput = document.getElementById('lakban_satuan_mode');
+    if (modeInput) modeInput.value = mode;
+
+    const btnCm = document.getElementById('btn_lakban_mode_cm');
+    const btnGram = document.getElementById('btn_lakban_mode_gram');
+    const containerCm = document.getElementById('container_lakban_cm');
+    const containerGram = document.getElementById('container_lakban_gram');
+
+    if (mode === 'GRAM') {
+        if (btnGram) btnGram.classList.add('active');
+        if (btnCm) btnCm.classList.remove('active');
+        if (containerGram) containerGram.style.display = 'block';
+        if (containerCm) containerCm.style.display = 'none';
+
+        // Jika input gram masih kosong dan ada nilai sebelumnya, sinkronkan
+        const totalGrIn = document.getElementById('input_lakban_total_gr');
+        const atasGrIn = document.getElementById('input_lakban_atas_gr');
+        const bawahGrIn = document.getElementById('input_lakban_bawah_gr');
+        if (totalGrIn && (!totalGrIn.value || parseFloat(totalGrIn.value) === 0)) {
+            const hAtas = parseFloat(document.getElementById('lakban_atas_gr')?.value) || 0;
+            const hBawah = parseFloat(document.getElementById('lakban_bawah_gr')?.value) || 0;
+            if (hAtas > 0 || hBawah > 0) {
+                if (atasGrIn) atasGrIn.value = hAtas;
+                if (bawahGrIn) bawahGrIn.value = hBawah;
+                if (totalGrIn) totalGrIn.value = hAtas + hBawah;
+            }
+        }
+        recalculateLakbanFromGram();
+    } else {
+        if (btnCm) btnCm.classList.add('active');
+        if (btnGram) btnGram.classList.remove('active');
+        if (containerCm) containerCm.style.display = 'block';
+        if (containerGram) containerGram.style.display = 'none';
+        recalculateLakbanFromKarton();
+    }
+}
+window.setLakbanSatuanMode = setLakbanSatuanMode;
+
+/**
+ * Kalkulasi otomatis kebutuhan lakban dari jumlah karton (Mode CM)
  */
 function recalculateLakbanFromKarton() {
+    const currentMode = document.getElementById('lakban_satuan_mode')?.value || 'CM';
     const hasilKarton = parseFloat(document.getElementById('hasil_karton_qty')?.value) || 0;
     const standarCm = parseFloat(document.getElementById('lakban_standar_cm')?.value) || 120;
     const rusakM = parseFloat(document.getElementById('lakban_rusak_m')?.value) || 0;
@@ -105,59 +186,140 @@ function recalculateLakbanFromKarton() {
     const lblKebutuhanM = document.getElementById('lbl_lakban_kebutuhan_m');
     if (lblKebutuhanM) lblKebutuhanM.textContent = normalMeter.toLocaleString('id-ID');
 
-    const lblMeter = document.getElementById('lbl_lakban_meter');
-    if (lblMeter) lblMeter.textContent = totalMeter.toLocaleString('id-ID');
-
-    const lblRoll = document.getElementById('lbl_lakban_roll');
-    if (lblRoll) lblRoll.textContent = totalRoll.toLocaleString('id-ID');
+    const summaryBadge = document.getElementById('lbl_lakban_summary');
+    if (summaryBadge && currentMode === 'CM') {
+        summaryBadge.textContent = `${totalMeter.toLocaleString('id-ID')} Meter (${totalRoll.toLocaleString('id-ID')} Roll)`;
+    }
 
     const rollInput = document.getElementById('lakban_roll_qty');
     if (rollInput && document.activeElement !== rollInput) {
         rollInput.value = totalRoll > 0 ? totalRoll : '';
     }
 
-    // Sinkronkan ke hidden input untuk backend (Roll & Gramatisasi kompatibilitas)
-    const hiddenQty = document.getElementById('lakban_qty');
-    if (hiddenQty) hiddenQty.value = totalRoll > 0 ? totalRoll : 0;
+    if (currentMode === 'CM') {
+        // Sinkronkan ke hidden input untuk backend (Roll & Gramatisasi kompatibilitas)
+        const hiddenQty = document.getElementById('lakban_qty');
+        if (hiddenQty) hiddenQty.value = totalRoll > 0 ? totalRoll : 0;
 
-    // Estimasi gram (1 roll ~1250g -> ~12.5g/meter)
-    const totalGram = Math.round(totalMeter * 12.5 * 10) / 10;
-    const atasGram = Math.round((totalGram / 2) * 10) / 10;
-    const bawahGram = Math.round((totalGram / 2) * 10) / 10;
+        // Estimasi gram (1 roll ~1250g -> ~12.5g/meter)
+        const totalGram = Math.round(totalMeter * 12.5 * 10) / 10;
+        const atasGram = Math.round((totalGram / 2) * 10) / 10;
+        const bawahGram = Math.round((totalGram / 2) * 10) / 10;
 
-    const hiddenAtas = document.getElementById('lakban_atas_gr');
-    if (hiddenAtas) hiddenAtas.value = atasGram;
+        const hiddenAtas = document.getElementById('lakban_atas_gr');
+        if (hiddenAtas) hiddenAtas.value = atasGram;
 
-    const hiddenBawah = document.getElementById('lakban_bawah_gr');
-    if (hiddenBawah) hiddenBawah.value = bawahGram;
+        const hiddenBawah = document.getElementById('lakban_bawah_gr');
+        if (hiddenBawah) hiddenBawah.value = bawahGram;
+    }
 }
+window.recalculateLakbanFromKarton = recalculateLakbanFromKarton;
 
 /**
- * Handle jika user mengedit total roll secara manual di lapangan
+ * Handle jika user mengedit total roll secara manual di lapangan (Mode CM)
  */
 function onManualRollInput() {
+    const currentMode = document.getElementById('lakban_satuan_mode')?.value || 'CM';
     const rollVal = parseFloat(document.getElementById('lakban_roll_qty')?.value) || 0;
     const meterVal = Math.round(rollVal * 100 * 100) / 100;
 
-    const lblMeter = document.getElementById('lbl_lakban_meter');
-    if (lblMeter) lblMeter.textContent = meterVal.toLocaleString('id-ID');
+    const summaryBadge = document.getElementById('lbl_lakban_summary');
+    if (summaryBadge && currentMode === 'CM') {
+        summaryBadge.textContent = `${meterVal.toLocaleString('id-ID')} Meter (${rollVal.toLocaleString('id-ID')} Roll)`;
+    }
 
-    const lblRoll = document.getElementById('lbl_lakban_roll');
-    if (lblRoll) lblRoll.textContent = rollVal.toLocaleString('id-ID');
+    if (currentMode === 'CM') {
+        const hiddenQty = document.getElementById('lakban_qty');
+        if (hiddenQty) hiddenQty.value = rollVal;
 
-    const hiddenQty = document.getElementById('lakban_qty');
-    if (hiddenQty) hiddenQty.value = rollVal;
+        const totalGram = Math.round(meterVal * 12.5 * 10) / 10;
+        const atasGram = Math.round((totalGram / 2) * 10) / 10;
+        const bawahGram = Math.round((totalGram / 2) * 10) / 10;
 
-    const totalGram = Math.round(meterVal * 12.5 * 10) / 10;
-    const atasGram = Math.round((totalGram / 2) * 10) / 10;
-    const bawahGram = Math.round((totalGram / 2) * 10) / 10;
+        const hiddenAtas = document.getElementById('lakban_atas_gr');
+        if (hiddenAtas) hiddenAtas.value = atasGram;
 
-    const hiddenAtas = document.getElementById('lakban_atas_gr');
-    if (hiddenAtas) hiddenAtas.value = atasGram;
-
-    const hiddenBawah = document.getElementById('lakban_bawah_gr');
-    if (hiddenBawah) hiddenBawah.value = bawahGram;
+        const hiddenBawah = document.getElementById('lakban_bawah_gr');
+        if (hiddenBawah) hiddenBawah.value = bawahGram;
+    }
 }
+window.onManualRollInput = onManualRollInput;
+
+/**
+ * Kalkulasi pemakaian lakban dari timbangan gram (Mode GRAM)
+ */
+function recalculateLakbanFromGram() {
+    const currentMode = document.getElementById('lakban_satuan_mode')?.value || 'CM';
+    const atasGr = parseFloat(document.getElementById('input_lakban_atas_gr')?.value) || 0;
+    const bawahGr = parseFloat(document.getElementById('input_lakban_bawah_gr')?.value) || 0;
+    const rusakGr = parseFloat(document.getElementById('input_lakban_rusak_gr')?.value) || 0;
+
+    const totalGr = Math.round((atasGr + bawahGr + rusakGr) * 100) / 100;
+
+    const totalGrIn = document.getElementById('input_lakban_total_gr');
+    if (totalGrIn && document.activeElement !== totalGrIn) {
+        totalGrIn.value = totalGr > 0 ? totalGr : '';
+    }
+
+    // Estimasi konversi ke roll (1 roll 100m ~ 1250g)
+    const estRoll = Math.round((totalGr / 1250) * 100) / 100;
+
+    const summaryBadge = document.getElementById('lbl_lakban_summary');
+    if (summaryBadge && currentMode === 'GRAM') {
+        summaryBadge.textContent = `${totalGr.toLocaleString('id-ID')} Gram (~${estRoll.toLocaleString('id-ID')} Roll)`;
+    }
+
+    if (currentMode === 'GRAM') {
+        const hiddenQty = document.getElementById('lakban_qty');
+        if (hiddenQty) hiddenQty.value = totalGr > 0 ? totalGr : 0;
+
+        const hiddenAtas = document.getElementById('lakban_atas_gr');
+        if (hiddenAtas) hiddenAtas.value = atasGr;
+
+        const hiddenBawah = document.getElementById('lakban_bawah_gr');
+        if (hiddenBawah) hiddenBawah.value = bawahGr;
+    }
+}
+window.recalculateLakbanFromGram = recalculateLakbanFromGram;
+
+/**
+ * Handle jika user mengedit total timbangan gram secara langsung di lapangan (Mode GRAM)
+ */
+function onManualGramInput() {
+    const currentMode = document.getElementById('lakban_satuan_mode')?.value || 'CM';
+    const totalGr = parseFloat(document.getElementById('input_lakban_total_gr')?.value) || 0;
+    const rusakGr = parseFloat(document.getElementById('input_lakban_rusak_gr')?.value) || 0;
+
+    const netGr = Math.max(0, totalGr - rusakGr);
+    const halfGr = Math.round((netGr / 2) * 10) / 10;
+
+    const atasGrIn = document.getElementById('input_lakban_atas_gr');
+    const bawahGrIn = document.getElementById('input_lakban_bawah_gr');
+    if (atasGrIn && document.activeElement !== atasGrIn) {
+        atasGrIn.value = halfGr > 0 ? halfGr : '';
+    }
+    if (bawahGrIn && document.activeElement !== bawahGrIn) {
+        bawahGrIn.value = halfGr > 0 ? halfGr : '';
+    }
+
+    const estRoll = Math.round((totalGr / 1250) * 100) / 100;
+    const summaryBadge = document.getElementById('lbl_lakban_summary');
+    if (summaryBadge && currentMode === 'GRAM') {
+        summaryBadge.textContent = `${totalGr.toLocaleString('id-ID')} Gram (~${estRoll.toLocaleString('id-ID')} Roll)`;
+    }
+
+    if (currentMode === 'GRAM') {
+        const hiddenQty = document.getElementById('lakban_qty');
+        if (hiddenQty) hiddenQty.value = totalGr;
+
+        const hiddenAtas = document.getElementById('lakban_atas_gr');
+        if (hiddenAtas) hiddenAtas.value = halfGr;
+
+        const hiddenBawah = document.getElementById('lakban_bawah_gr');
+        if (hiddenBawah) hiddenBawah.value = halfGr;
+    }
+}
+window.onManualGramInput = onManualGramInput;
 
 /**
  * Handle Karton Sirkular (Puteran vs Baru) & Auto FIFO calculation (Poin 42)

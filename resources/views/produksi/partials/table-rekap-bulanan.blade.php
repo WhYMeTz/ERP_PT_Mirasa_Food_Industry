@@ -77,66 +77,94 @@
 
                         {{-- Singkong Mentah (Kg & Nilai) --}}
                         <td style="text-align: right;">
-                            <div style="font-weight: 700; font-size: 0.85rem; color: #0f172a; font-variant-numeric: tabular-nums;">
-                                {{ number_format($m['singkong_qty'], 0, ',', '.') }} <span style="font-size: 0.675rem; color: #64748b; font-weight: 400;">kg</span>
-                            </div>
-                            <div style="color: #64748b; font-size: 0.675rem; font-variant-numeric: tabular-nums;">
-                                Rp {{ number_format($m['singkong_nilai'], 0, ',', '.') }}
-                            </div>
+                            @if(($m['finalized_days'] ?? 0) > 0)
+                                <div style="font-weight: 700; font-size: 0.85rem; color: #0f172a; font-variant-numeric: tabular-nums;">
+                                    {{ number_format($m['singkong_qty'], 0, ',', '.') }} <span style="font-size: 0.675rem; color: #64748b; font-weight: 400;">kg</span>
+                                </div>
+                                <div style="color: #64748b; font-size: 0.675rem; font-variant-numeric: tabular-nums;">
+                                    Rp {{ number_format($m['singkong_nilai'], 0, ',', '.') }}
+                                </div>
+                            @else
+                                <span style="color: #94a3b8;">-</span>
+                            @endif
                         </td>
 
                         {{-- Output WIP (Kg) --}}
                         <td style="text-align: right;">
-                            <div style="font-weight: 700; font-size: 0.85rem; color: #0284c7; font-variant-numeric: tabular-nums;">
-                                {{ number_format($m['total_wip_qty'], 2, ',', '.') }} <span style="font-size: 0.675rem; color: #64748b; font-weight: 400;">kg</span>
-                            </div>
+                            @if(($m['finalized_days'] ?? 0) > 0)
+                                <div style="font-weight: 700; font-size: 0.85rem; color: #0284c7; font-variant-numeric: tabular-nums;">
+                                    {{ number_format($m['total_wip_qty'], 2, ',', '.') }} <span style="font-size: 0.675rem; color: #64748b; font-weight: 400;">kg</span>
+                                </div>
+                            @else
+                                <span style="color: #94a3b8;">-</span>
+                            @endif
                         </td>
 
                         {{-- Rendemen (%) --}}
                         <td style="text-align: center;">
-                            <span style="display: inline-block; font-weight: 700; font-size: 0.775rem; background: {{ $rBadgeBg }}; color: {{ $rBadgeColor }}; border: 1px solid {{ $rBorder }}; padding: 0.18rem 0.45rem; border-radius: 4px; font-variant-numeric: tabular-nums;">
-                                {{ number_format($rendemen, 2, ',', '.') }}%
-                            </span>
+                            @if(($m['finalized_days'] ?? 0) > 0)
+                                <span style="display: inline-block; font-weight: 700; font-size: 0.775rem; background: {{ $rBadgeBg }}; color: {{ $rBadgeColor }}; border: 1px solid {{ $rBorder }}; padding: 0.18rem 0.45rem; border-radius: 4px; font-variant-numeric: tabular-nums;">
+                                    {{ number_format($rendemen, 2, ',', '.') }}%
+                                </span>
+                            @else
+                                <span style="color: #94a3b8; font-size: 0.75rem; font-weight: 600;">-</span>
+                            @endif
                         </td>
 
                         {{-- Biaya Bahan Baku & Minyak --}}
                         <td style="text-align: right;">
-                            <div style="font-weight: 600; font-size: 0.825rem; color: #334155; font-variant-numeric: tabular-nums;">
-                                Rp {{ number_format($biayaBahanMinyak, 0, ',', '.') }}
-                            </div>
-                            <div style="color: #94a3b8; font-size: 0.65rem;">
-                                Singkong + Minyak
-                            </div>
+                            @if(($m['finalized_days'] ?? 0) > 0)
+                                <div style="font-weight: 600; font-size: 0.825rem; color: #334155; font-variant-numeric: tabular-nums;">
+                                    Rp {{ number_format($biayaBahanMinyak, 0, ',', '.') }}
+                                </div>
+                                <div style="color: #94a3b8; font-size: 0.65rem;">
+                                    Singkong + Minyak
+                                </div>
+                            @else
+                                <span style="color: #94a3b8;">-</span>
+                            @endif
                         </td>
 
                         {{-- Biaya Energi CNG & Upah --}}
                         <td style="text-align: right;">
-                            <div style="font-weight: 600; font-size: 0.825rem; color: #334155; font-variant-numeric: tabular-nums;">
-                                Rp {{ number_format($biayaEnergiUpah, 0, ',', '.') }}
-                            </div>
-                            <div style="color: #94a3b8; font-size: 0.65rem;">
-                                Gas + Tenaga Kerja
-                            </div>
+                            @if(($m['finalized_days'] ?? 0) > 0)
+                                <div style="font-weight: 600; font-size: 0.825rem; color: #334155; font-variant-numeric: tabular-nums;">
+                                    Rp {{ number_format($biayaEnergiUpah, 0, ',', '.') }}
+                                </div>
+                                <div style="color: #94a3b8; font-size: 0.65rem;">
+                                    Gas + Tenaga Kerja
+                                </div>
+                            @else
+                                <span style="color: #94a3b8;">-</span>
+                            @endif
                         </td>
 
                         {{-- Total Biaya Produksi --}}
                         <td style="text-align: right;">
-                            <div style="font-weight: 700; font-size: 0.875rem; color: #0f172a; font-variant-numeric: tabular-nums;">
-                                Rp {{ number_format($m['total_biaya'], 0, ',', '.') }}
-                            </div>
-                            <div style="color: #64748b; font-size: 0.65rem;">
-                                Seluruh Beban Operasional
-                            </div>
+                            @if(($m['finalized_days'] ?? 0) > 0)
+                                <div style="font-weight: 700; font-size: 0.875rem; color: #0f172a; font-variant-numeric: tabular-nums;">
+                                    Rp {{ number_format($m['total_biaya'], 0, ',', '.') }}
+                                </div>
+                                <div style="color: #64748b; font-size: 0.65rem;">
+                                    {{ $m['finalized_days'] }} Hari Final
+                                </div>
+                            @else
+                                <span style="font-size: 0.75rem; color: #b45309; font-weight: 600;">Belum Final</span>
+                            @endif
                         </td>
 
                         {{-- HPP / Kg --}}
                         <td style="text-align: right;">
-                            <div style="font-weight: 800; font-size: 0.9rem; color: #0f172a; font-family: monospace; font-variant-numeric: tabular-nums;">
-                                Rp {{ number_format($m['hpp_per_kg'], 0, ',', '.') }}
-                            </div>
-                            <span style="font-size: 0.625rem; color: #059669; font-weight: 600; text-transform: uppercase;">
-                                Beban Pokok
-                            </span>
+                            @if(($m['finalized_days'] ?? 0) > 0)
+                                <div style="font-weight: 800; font-size: 0.9rem; color: #0f172a; font-family: monospace; font-variant-numeric: tabular-nums;">
+                                    Rp {{ number_format($m['hpp_per_kg'], 0, ',', '.') }}
+                                </div>
+                                <span style="font-size: 0.625rem; color: #059669; font-weight: 600; text-transform: uppercase;">
+                                    Beban Pokok
+                                </span>
+                            @else
+                                <span style="font-size: 0.75rem; color: #94a3b8; font-weight: 600;">-</span>
+                            @endif
                         </td>
 
                         {{-- Aksi: Buka Jurnal Harian --}}
@@ -179,14 +207,26 @@
                     {{ $an['total_work_days'] }} Hari
                 </td>
                 <td style="text-align: right; padding: 0.75rem 0.85rem; color: #0f172a;">
-                    <div>{{ number_format($an['singkong_qty'], 0, ',', '.') }} kg</div>
-                    <div style="color: #64748b; font-weight: 500; font-size: 0.675rem;">Rp {{ number_format($an['singkong_nilai'], 0, ',', '.') }}</div>
+                    @if(($an['finalized_days'] ?? 0) > 0)
+                        <div>{{ number_format($an['singkong_qty'], 0, ',', '.') }} kg</div>
+                        <div style="color: #64748b; font-weight: 500; font-size: 0.675rem;">Rp {{ number_format($an['singkong_nilai'], 0, ',', '.') }}</div>
+                    @else
+                        <span style="color: #94a3b8;">-</span>
+                    @endif
                 </td>
                 <td style="text-align: right; padding: 0.75rem 0.85rem; color: #0284c7;">
-                    {{ number_format($an['total_wip_qty'], 2, ',', '.') }} kg
+                    @if(($an['finalized_days'] ?? 0) > 0)
+                        {{ number_format($an['total_wip_qty'], 2, ',', '.') }} kg
+                    @else
+                        <span style="color: #94a3b8;">-</span>
+                    @endif
                 </td>
                 <td style="text-align: center; padding: 0.75rem 0.85rem; color: #0f172a;">
-                    {{ number_format($an['rendemen'], 2, ',', '.') }}%
+                    @if(($an['finalized_days'] ?? 0) > 0)
+                        {{ number_format($an['rendemen'], 2, ',', '.') }}%
+                    @else
+                        <span style="color: #94a3b8;">-</span>
+                    @endif
                 </td>
                 <td colspan="2" style="text-align: right; padding: 0.75rem 0.85rem; color: #64748b; font-weight: 500; font-size: 0.725rem;">
                     Akumulasi Biaya Setahun:

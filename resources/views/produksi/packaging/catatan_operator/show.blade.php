@@ -313,7 +313,7 @@
                                             {{ $laporan->kartonBaruBarang?->barang_nm ?? 'KARTON POLOS IFM (BARU)' }}
                                         </strong>
                                         <div style="font-size: 0.725rem; color: #64748b; margin-top: 2px;">
-                                            Kode: <code>{{ $laporan->kartonBaruBarang?->barang_cd ?? 'KIF00G-BP1' }}</code> &bull; HPP: Rp 8.741,00
+                                            Kode: <code>{{ $laporan->kartonBaruBarang?->barang_cd ?? 'KIF00G-BP1' }}</code> &bull; Beban HPP: Rp 1.748,20 (1/5 Siklus)
                                         </div>
                                     </td>
                                     <td style="text-align: right;">

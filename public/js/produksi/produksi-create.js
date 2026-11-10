@@ -184,8 +184,35 @@
         if (!badgeFgBatch) return;
 
         const opt = sel?.selectedOptions?.[0];
-        const cd = opt?.dataset?.cd || '';
-        const nm = opt?.dataset?.nm || '';
+        const cd = (opt?.dataset?.cd || opt?.getAttribute('data-cd') || '').toUpperCase();
+        const nm = (opt?.dataset?.nm || opt?.getAttribute('data-nm') || opt?.textContent || '').toUpperCase();
+
+        const isHold = cd.includes('HLD') || nm.includes('HOLD');
+        const isAfkir = cd.includes('AFK') || nm.includes('AFKIR');
+
+        if (isHold) {
+            badgeFgBatch.textContent = 'HOLD QC';
+            badgeFgBatch.style.background = '#fffbeb';
+            badgeFgBatch.style.color = '#b45309';
+            badgeFgBatch.style.borderColor = '#f59e0b';
+            badgeFgBatch.style.borderWidth = '1.5px';
+            badgeFgBatch.style.borderStyle = 'solid';
+            badgeFgBatch.style.fontWeight = '700';
+            badgeFgBatch.title = 'Status: Barang Hold QC Gudang (Karantina). Masuk gudang dulu, siap disortir ulang di lain hari.';
+            if (batchFgInput) batchFgInput.value = 'HOLD';
+            return;
+        } else if (isAfkir) {
+            badgeFgBatch.textContent = 'AFKIR';
+            badgeFgBatch.style.background = '#fef2f2';
+            badgeFgBatch.style.color = '#dc2626';
+            badgeFgBatch.style.borderColor = '#fca5a5';
+            badgeFgBatch.style.borderWidth = '1.5px';
+            badgeFgBatch.style.borderStyle = 'solid';
+            badgeFgBatch.style.fontWeight = '700';
+            badgeFgBatch.title = 'Status: Langsung Diafkir Hari Ini (Limbah Dapur). HPP Rp 0.';
+            if (batchFgInput) batchFgInput.value = '-';
+            return;
+        }
 
         // Status per baris: 'active' (nomor batch diterbitkan) atau 'excluded' (ditangguhkan / belum terbit)
         let state = badgeFgBatch.dataset.batchState;
@@ -1431,6 +1458,9 @@
 
         // 3. Output Hasil Produksi (Tabel Terpadu FG & WIP)
         let totalOutputKg = 0;
+        let totalRilisKg = 0;
+        let totalHoldKg = 0;
+        let totalAfkirKg = 0;
         let totalBerkoKg = 0;
         let totalLengketKg = 0;
         let totalRemahanKg = 0;
@@ -1446,6 +1476,18 @@
             const opt = selBarang?.selectedOptions?.[0];
             const nm = (opt?.dataset?.nm || opt?.getAttribute('data-nm') || '').toUpperCase();
             const cd = (opt?.dataset?.cd || opt?.getAttribute('data-cd') || '').toUpperCase();
+            const grade = (row.querySelector('.select-fg-grade')?.value || opt?.dataset?.grade || '').toUpperCase();
+
+            const isHold = cd.includes('HLD') || nm.includes('HOLD') || grade === 'HOLD';
+            const isAfkir = cd.includes('AFK') || nm.includes('AFKIR') || cd.includes('BRK') || cd.includes('LGT') || cd.includes('RMH') || nm.includes('BERKO') || nm.includes('LENGKET') || nm.includes('REMAHAN');
+
+            if (isHold) {
+                totalHoldKg += kgVal;
+            } else if (isAfkir) {
+                totalAfkirKg += kgVal;
+            } else {
+                totalRilisKg += kgVal;
+            }
 
             if (cd.includes('LGT') || nm.includes('LENGKET')) {
                 totalLengketKg += kgVal;
@@ -1469,10 +1511,35 @@
             }
         });
 
-        // Ringkasan Total Output & Porsi pada Badge Header Atas
+        // Ringkasan Total Output, Lolos Rilis, Hold & Afkir pada Badge Header Atas
         const badgeTotalOutput = document.getElementById('badgeTotalOutputKg');
         if (badgeTotalOutput) {
-            badgeTotalOutput.textContent = 'Total Output: ' + formatNumber(totalOutputKg, 2) + ' kg';
+            badgeTotalOutput.textContent = 'Total Timbangan: ' + formatNumber(totalOutputKg, 2) + ' kg';
+        }
+
+        const badgeRilis = document.getElementById('badgeRilisOutputKg');
+        if (badgeRilis) {
+            badgeRilis.textContent = '🟢 Lolos Rilis: ' + formatNumber(totalRilisKg, 2) + ' kg';
+        }
+
+        const badgeHold = document.getElementById('badgeHoldOutputKg');
+        if (badgeHold) {
+            if (totalHoldKg > 0) {
+                badgeHold.textContent = '🟡 Hold Gudang: ' + formatNumber(totalHoldKg, 2) + ' kg';
+                badgeHold.style.display = 'inline-block';
+            } else {
+                badgeHold.style.display = 'none';
+            }
+        }
+
+        const badgeAfkir = document.getElementById('badgeAfkirOutputKg');
+        if (badgeAfkir) {
+            if (totalAfkirKg > 0) {
+                badgeAfkir.textContent = '🔴 Afkir Langsung: ' + formatNumber(totalAfkirKg, 2) + ' kg';
+                badgeAfkir.style.display = 'inline-block';
+            } else {
+                badgeAfkir.style.display = 'none';
+            }
         }
 
         const badgeTotalPorsi = document.getElementById('badgeTotalPorsi');
@@ -2594,9 +2661,11 @@
         const barangList = window.appConfig.barangHasilList || [];
         
         const fccItems = [];
+        const exportItems = [];
         const seasoningItems = [];
         const tawarItems = [];
-        const kw2Items = [];
+        const holdItems = [];
+        const afkirItems = [];
 
         const seasoningCodes = ['WIP-ASB', 'WIP-ASW', 'WIP-BLQ', 'WIP-UCM', 'WIP-KCL', 'WIP-BBB', 'WIP-AJB', 'WIP-PJB', 'WIP-OPA', 'WIP-OPB', 'WIP-PYA', 'WIP-PYB', 'WIP-UBI', 'WIP-UBU'];
 
@@ -2605,51 +2674,83 @@
             const nm = (b.barang_nm || '').toUpperCase();
             const grade = (b.grade_cd || '').toUpperCase();
             
-            // 1. Indofood FCC Non Bumbu
-            if (cd.startsWith('WIP-FCC') || nm.includes('IFL') || nm.includes('INDOFOOD') || nm.includes('TANPA BUMBU')) {
+            // 1. Tidak Jadi Rilis (Hold QC Gudang)
+            if (cd.includes('HLD') || nm.includes('HOLD') || grade === 'HOLD') {
+                holdItems.push(b);
+            }
+            // 2. Reject / Langsung Afkir / Limbah Dapur
+            else if (cd.includes('AFK') || nm.includes('AFKIR') || cd.includes('BRK') || cd.includes('LGT') || cd.includes('RMH') || nm.includes('BERKO') || nm.includes('LENGKET') || nm.includes('REMAHAN')) {
+                afkirItems.push(b);
+            }
+            // 3. Indofood FCC Non Bumbu (Lolos Rilis)
+            else if (cd.startsWith('WIP-FCC') || nm.includes('IFL') || nm.includes('INDOFOOD') || nm.includes('TANPA BUMBU')) {
                 fccItems.push(b);
-            } 
-            // 2. Curah Berbumbu (Seasoning)
+            }
+            // 4. Produk Ekspor (Lolos Rilis)
+            else if (nm.includes('EKSPOR') || cd.startsWith('FG-EA') || cd.startsWith('FG-EC')) {
+                exportItems.push(b);
+            }
+            // 5. Curah Berbumbu (Seasoning)
             else if (seasoningCodes.includes(cd) || nm.includes('ASIN') || nm.includes('BUMBU') || nm.includes('BALADO') || nm.includes('LEMON') || nm.includes('PEDAS') || nm.includes('BARCO') || nm.includes('SAWIT') || nm.includes('BALQI') || nm.includes('UCAMP') || nm.includes('OPAK') || nm.includes('PUYUR')) {
                 seasoningItems.push(b);
             } 
-            // 3. Curah Tawar & Hasil Sampingan / HACCP (Berko, Remahan, Lengket, dll.)
+            // 6. Curah Tawar (Polos)
             else {
                 tawarItems.push(b);
             }
         });
 
-        const buildOptGroup = (items) => {
+        const buildOptGroup = (items, defaultGrade = 'RILIS') => {
             let html = '';
             items.forEach(b => {
-                const jenis = 'WIP';
+                const cd = (b.barang_cd || '').toUpperCase();
+                const jenis = cd.startsWith('FG') ? 'FG' : 'WIP';
                 const satuan = b.satuan_dasar?.satuan_cd || 'KG';
+                const itemGrade = b.grade_cd || defaultGrade;
                 const selected = (initial && initial.barang_id == b.barang_id) ? 'selected' : '';
-                html += `<option value="${b.barang_id}" data-cd="${b.barang_cd}" data-nm="${b.barang_nm}" data-jenis="${jenis}" data-satuan="${satuan}" ${selected}>
+                html += `<option value="${b.barang_id}" data-cd="${b.barang_cd}" data-nm="${b.barang_nm}" data-jenis="${jenis}" data-satuan="${satuan}" data-grade="${itemGrade}" ${selected}>
                     [${b.barang_cd}] ${b.barang_nm} (${satuan})
                 </option>`;
             });
             return html;
         };
 
-        // Buat opsi dropdown barang dengan 3 grup terpadu
-        let optionsHtml = '<option value="">-- Pilih Hasil Penggorengan (WIP / FCC) --</option>';
+        // Buat opsi dropdown barang dengan 6 grup terpadu
+        let optionsHtml = '<option value="">-- Pilih Hasil Penggorengan (WIP / FCC / Ekspor) --</option>';
 
         if (fccItems.length > 0) {
-            optionsHtml += '<optgroup label="📦 1. KHUSUS INDOFOOD (FCC NON-BUMBU 6 KG/BOX)">';
-            optionsHtml += buildOptGroup(fccItems);
+            optionsHtml += '<optgroup label="📦 1. KHUSUS INDOFOOD (FCC NON-BUMBU 6 KG/BOX - RILIS)">';
+            optionsHtml += buildOptGroup(fccItems, 'RILIS');
+            optionsHtml += '</optgroup>';
+        }
+
+        if (exportItems.length > 0) {
+            optionsHtml += '<optgroup label="🚢 2. PRODUK EKSPOR (LOLOS RILIS)">';
+            optionsHtml += buildOptGroup(exportItems, 'RILIS');
             optionsHtml += '</optgroup>';
         }
 
         if (seasoningItems.length > 0) {
-            optionsHtml += '<optgroup label="🧂 2. CURAH BERBUMBU (HASIL SEASONING)">';
-            optionsHtml += buildOptGroup(seasoningItems);
+            optionsHtml += '<optgroup label="🧂 3. CURAH BERBUMBU (HASIL SEASONING)">';
+            optionsHtml += buildOptGroup(seasoningItems, 'RILIS');
             optionsHtml += '</optgroup>';
         }
 
         if (tawarItems.length > 0) {
-            optionsHtml += '<optgroup label="🥔 3. CURAH TAWAR & HASIL SAMPINGAN (HACCP)">';
-            optionsHtml += buildOptGroup(tawarItems);
+            optionsHtml += '<optgroup label="🥔 4. CURAH TAWAR (POLOS)">';
+            optionsHtml += buildOptGroup(tawarItems, 'RILIS');
+            optionsHtml += '</optgroup>';
+        }
+
+        if (holdItems.length > 0) {
+            optionsHtml += '<optgroup label="⚠️ 5. TIDAK JADI RILIS (HOLD QC / KARANTINA GUDANG)">';
+            optionsHtml += buildOptGroup(holdItems, 'HOLD');
+            optionsHtml += '</optgroup>';
+        }
+
+        if (afkirItems.length > 0) {
+            optionsHtml += '<optgroup label="🗑️ 6. HASIL LANGSUNG AFKIR / LIMBAH DAPUR">';
+            optionsHtml += buildOptGroup(afkirItems, 'AFKIR');
             optionsHtml += '</optgroup>';
         }
 
@@ -2673,7 +2774,7 @@
                 <select name="output_items[${idx}][barang_id]" class="form-control select-fg-barang" style="font-size: 0.8rem; font-weight: 600;" onchange="onFgBarangChange(this, ${idx})">
                     ${optionsHtml}
                 </select>
-                <input type="hidden" name="output_items[${idx}][grade_cd]" id="gradeCd_${idx}" class="select-fg-grade" value="${initial?.grade_cd || 'KW1'}">
+                <input type="hidden" name="output_items[${idx}][grade_cd]" id="gradeCd_${idx}" class="select-fg-grade" value="${initial?.grade_cd || 'RILIS'}">
             </td>
             <td style="padding: 0.5rem 0.75rem;">
                 <input type="number" step="0.0001" min="0" name="output_items[${idx}][qty_hasil]" id="qtyHasil_${idx}" class="form-control calc-trigger" style="text-align: right; font-weight: 700; color: #0f172a;" placeholder="0" value="${defaultQtyHasil}" oninput="onQtyHasilInput(${idx})">
@@ -2821,10 +2922,11 @@
         const nm = (opt.dataset.nm || '').toUpperCase();
         const gradeSel = document.getElementById(`gradeCd_${idx}`);
 
-        // Deteksi default grade: jika nama/kode mengandung KW 2 / Berko / Remahan / Lengket, set KW2; jika tidak set KW1
-        // Namun jika barang ini sudah ada di baris lain dengan grade KW1, otomatis alihkan baris ini ke KW2
-        let targetGrade = 'KW1';
-        if (cd.startsWith('WIP-KW') || nm.includes('KW 2') || nm.includes('KW2') || nm.includes('BERKO') || nm.includes('REMAHAN') || nm.includes('LENGKET')) {
+        // Deteksi default grade: jika nama/kode mengandung HOLD set HOLD; jika KW 2 / Afkir / Berko / Remahan / Lengket set KW2; jika tidak set KW1
+        let targetGrade = opt.dataset.grade || 'KW1';
+        if (cd.includes('HLD') || nm.includes('HOLD') || targetGrade === 'HOLD') {
+            targetGrade = 'HOLD';
+        } else if (cd.includes('AFK') || nm.includes('AFKIR') || cd.startsWith('WIP-KW') || nm.includes('KW 2') || nm.includes('KW2') || nm.includes('BERKO') || nm.includes('REMAHAN') || nm.includes('LENGKET')) {
             targetGrade = 'KW2';
         } else {
             const tbody = document.getElementById('tbodyOutputFg');

@@ -70,6 +70,12 @@ document.addEventListener('DOMContentLoaded', function () {
             inpKirim.value = kirimBox;
         }
 
+        // Otomatis isi kuantitas puteran dengan jumlah kirim (default: kembali utuh)
+        const inpMulus = document.getElementById('mulus_qty_0');
+        if (inpMulus && parseFloat(inpMulus.value) === 0) {
+            inpMulus.value = kirimBox;
+        }
+
         const statKirim = document.getElementById('stat_total_kirim');
         if (statKirim) statKirim.textContent = `${kirimBox.toLocaleString('id-ID')} Box`;
 
@@ -81,6 +87,8 @@ document.addEventListener('DOMContentLoaded', function () {
         if (statKirim) statKirim.textContent = `0 Box`;
         const inpKirim = document.getElementById('kirim_qty_0');
         if (inpKirim) inpKirim.value = 0;
+        const inpMulus = document.getElementById('mulus_qty_0');
+        if (inpMulus) inpMulus.value = 0;
         window.calcSortir(0);
     }
 
@@ -90,24 +98,15 @@ document.addEventListener('DOMContentLoaded', function () {
         const inpKembali = document.getElementById(`kembali_qty_${idx}`);
         const inpBaru = document.getElementById(`baru_qty_${idx}`);
         const inpMulus = document.getElementById(`mulus_qty_${idx}`);
-        const selPuteran = document.getElementById(`puteran_ke_${idx}`);
         const inpBmg = document.getElementById(`bmg_qty_${idx}`);
         const inpRusak = document.getElementById(`rusak_qty_${idx}`);
         const spanSelisih = document.getElementById(`selisih_qty_${idx}`);
-        const alertPuteran5 = document.getElementById(`alert_puteran_5_${idx}`);
 
         const kirim = parseFloat(inpKirim?.value) || 0;
         const baru = parseFloat(inpBaru?.value) || 0;
         const mulus = parseFloat(inpMulus?.value) || 0;
         const bmg = parseFloat(inpBmg?.value) || 0;
         const rusak = parseFloat(inpRusak?.value) || 0;
-        const puteranKe = parseInt(selPuteran?.value, 10) || 1;
-
-        if (puteranKe === 5) {
-            if (alertPuteran5) alertPuteran5.style.display = 'block';
-        } else {
-            if (alertPuteran5) alertPuteran5.style.display = 'none';
-        }
 
         const totalKembali = baru + mulus + bmg + rusak;
         if (inpKembali) inpKembali.value = totalKembali;

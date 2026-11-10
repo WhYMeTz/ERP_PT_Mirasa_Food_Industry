@@ -512,6 +512,45 @@ body.packaging-mobile-body {
     box-shadow: 0 2px 8px rgba(225, 29, 72, 0.12);
 }
 
+/* Satuan Lakban Segmented Buttons (CM vs GRAM) */
+.pkg-lakban-satuan-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.pkg-lakban-satuan-btn {
+    border: 1.5px solid var(--pkg-border);
+    background: #ffffff;
+    padding: 0.65rem 0.5rem;
+    border-radius: var(--pkg-radius-sm);
+    font-size: 0.825rem;
+    font-weight: 700;
+    color: var(--pkg-text-body);
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+}
+
+.pkg-lakban-satuan-btn:hover {
+    border-color: #f472b6;
+    background: #fdf2f8;
+    color: #be185d;
+}
+
+.pkg-lakban-satuan-btn.active {
+    background: #fdf2f8;
+    border-color: #db2777;
+    color: #be185d;
+    font-weight: 800;
+    box-shadow: 0 2px 8px rgba(219, 39, 119, 0.15);
+}
+
 /* Satuan Hasil Kemas (Karton, Bal, Pack) */
 .pkg-satuan-grid {
     display: grid;
@@ -1042,7 +1081,7 @@ body.packaging-mobile-body {
 
 .pkg-karton-card-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    grid-template-columns: 1fr 1fr;
     gap: 0.65rem;
     margin-bottom: 0.75rem;
 }

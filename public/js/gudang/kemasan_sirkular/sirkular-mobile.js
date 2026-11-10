@@ -56,38 +56,11 @@ document.addEventListener('DOMContentLoaded', function () {
         window.calcMobileSortir();
     };
 
-    // 4. Set Siklus Pemakaian Karton (Putaran 1 s/d 5)
+    // 4. Status Layak Pakai Standar (Puteran)
     window.setCycle = function (cycleNum) {
+        // Fallback backward-compatibility jika dipanggil
         const inpPuteran = document.getElementById('m_puteran_ke');
-        if (inpPuteran) inpPuteran.value = cycleNum;
-
-        // Toggle active class on cycle buttons
-        document.querySelectorAll('.cycle-btn').forEach(btn => {
-            const num = parseInt(btn.getAttribute('data-cycle'), 10);
-            if (num === cycleNum) {
-                btn.classList.add('active');
-            } else {
-                btn.classList.remove('active');
-            }
-        });
-
-        const alertBanner = document.getElementById('cycleAlertBanner');
-        const badgeCycleStatus = document.getElementById('badgeCycleStatus');
-
-        if (cycleNum === 5) {
-            if (alertBanner) alertBanner.classList.add('show');
-            if (badgeCycleStatus) {
-                badgeCycleStatus.textContent = 'Maksimal 5x (Pensiun/Afkir)';
-                badgeCycleStatus.className = 'tally-pill pill-danger';
-            }
-        } else {
-            if (alertBanner) alertBanner.classList.remove('show');
-            if (badgeCycleStatus) {
-                badgeCycleStatus.textContent = `Putaran ${cycleNum} (Layak IFM)`;
-                badgeCycleStatus.className = 'tally-pill pill-success';
-            }
-        }
-
+        if (inpPuteran) inpPuteran.value = 1;
         window.calcMobileSortir();
     };
 
@@ -175,15 +148,9 @@ document.addEventListener('DOMContentLoaded', function () {
         const rusak = parseFloat(inpRusak?.value) || 0;
         const cycleNum = parseInt(inpPuteran?.value, 10) || 1;
 
-        // Jika siklus ke-5 dipilih, nilai mulus dicatat sebagai afkir limit 5x
-        if (cycleNum === 5 && inpAfkir5x) {
-            inpAfkir5x.value = mulus;
-        } else if (inpAfkir5x) {
-            inpAfkir5x.value = 0;
-        }
-
         const totalKembali = baru + mulus + bmg + rusak;
         if (inpKembali) inpKembali.value = totalKembali;
+        if (inpAfkir5x) inpAfkir5x.value = 0;
 
         const selisih = Math.max(0, kirim - totalKembali);
 
@@ -205,21 +172,15 @@ document.addEventListener('DOMContentLoaded', function () {
             textFooterKembali.textContent = totalKembali.toLocaleString('id-ID') + ' Pcs';
         }
 
+        const textFooterSelisih = document.getElementById('textFooterSelisih');
+        if (textFooterSelisih) {
+            textFooterSelisih.textContent = selisih.toLocaleString('id-ID') + ' Pcs';
+            textFooterSelisih.style.color = selisih > 0 ? '#dc2626' : '#059669';
+        }
+
         const badgeFooterStatus = document.getElementById('badgeFooterStatus');
         if (badgeFooterStatus) {
-            if (kirim > 0 && selisih > 0) {
-                badgeFooterStatus.textContent = 'Kurang ' + selisih.toLocaleString('id-ID') + ' Pcs';
-                badgeFooterStatus.className = 'tally-footer-badge badge-diff';
-            } else if (kirim > 0 && totalKembali === kirim) {
-                badgeFooterStatus.textContent = 'Cocok (Lengkap)';
-                badgeFooterStatus.className = 'tally-footer-badge badge-match';
-            } else if (totalKembali > kirim && kirim > 0) {
-                badgeFooterStatus.textContent = 'Lebih +' + (totalKembali - kirim).toLocaleString('id-ID') + ' Pcs';
-                badgeFooterStatus.className = 'tally-footer-badge badge-diff';
-            } else {
-                badgeFooterStatus.textContent = totalKembali > 0 ? 'Fisik: ' + totalKembali.toLocaleString('id-ID') + ' Pcs' : 'Belum Diisi';
-                badgeFooterStatus.className = 'tally-footer-badge';
-            }
+            badgeFooterStatus.textContent = selisih.toLocaleString('id-ID') + ' Pcs';
         }
 
         const chipKirim = document.getElementById('chip_kirim_target');

@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Penerimaan Kemasan Sirkular - ERP PT Mirasa')
+@section('title', 'Penerimaan Karton Balikan - ERP PT Mirasa')
 
 @push('styles')
     <link rel="stylesheet" href="{{ asset('css/gudang/kemasan_sirkular/sirkular-index.css') }}?v={{ time() }}">
@@ -13,7 +13,7 @@
         <div class="sirkular-title-group">
             <h1>
                 <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #059669;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg>
-                Penerimaan Kemasan Sirkular
+                Penerimaan Karton Balikan
             </h1>
             <p>Pencatatan &amp; Sortir Fisik Kardus Balikan, Palet, serta Rekonsiliasi Surat Jalan Pengiriman (DO)</p>
         </div>
@@ -24,7 +24,7 @@
             </a>
             <a href="{{ route('gudang.kemasan-sirkular.create') }}" class="btn btn-primary" style="padding: 0.6rem 1.25rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.4rem;">
                 <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                <span>Catat Kemasan Masuk</span>
+                <span>Catat Karton Balikan</span>
             </a>
         </div>
     </div>
@@ -79,8 +79,8 @@
     <div class="sirkular-table-card">
         <form method="GET" action="{{ route('gudang.kemasan-sirkular.index') }}" class="sirkular-filter-bar">
             <div style="display: flex; gap: 0.65rem; align-items: center; flex: 1; min-width: 280px;">
-                <input type="text" name="search" value="{{ request('search') }}" class="form-control" placeholder="Cari No. Dokumen, Surat Jalan, Nopol, Sopir..." style="font-size: 0.825rem;">
-                <select name="customer_id" class="form-control" style="font-size: 0.825rem; max-width: 250px;">
+                <input type="text" name="search" value="{{ request('search') }}" class="form-control" placeholder="Cari No. Dokumen, Surat Jalan, Nopol, Sopir..." style="font-size: 0.875rem;">
+                <select name="customer_id" class="form-control" style="font-size: 0.875rem; max-width: 260px;">
                     <option value="">-- Semua Customer / Mitra --</option>
                     @foreach($customerList as $c)
                         <option value="{{ $c->customer_id }}" {{ request('customer_id') == $c->customer_id ? 'selected' : '' }}>
@@ -88,9 +88,9 @@
                         </option>
                     @endforeach
                 </select>
-                <button type="submit" class="btn btn-secondary" style="font-size: 0.825rem; padding: 0.5rem 0.85rem;">Filter</button>
+                <button type="submit" class="btn btn-secondary" style="font-size: 0.875rem; padding: 0.5rem 0.95rem;">Filter</button>
                 @if(request()->anyFilled(['search', 'customer_id']))
-                    <a href="{{ route('gudang.kemasan-sirkular.index') }}" class="btn btn-outline-secondary" style="font-size: 0.825rem;">Reset</a>
+                    <a href="{{ route('gudang.kemasan-sirkular.index') }}" class="btn btn-outline-secondary" style="font-size: 0.875rem;">Reset</a>
                 @endif
             </div>
         </form>
@@ -105,8 +105,8 @@
                         <th style="min-width: 170px;">Ekspedisi &amp; Armada</th>
                         <th style="width: 85px; text-align: right;">Terkirim</th>
                         <th style="width: 85px; text-align: right;">Kembali</th>
-                        <th style="width: 140px; text-align: right;">Puteran (BMG)</th>
-                        <th style="width: 120px; text-align: right;">Rusak (Reject)</th>
+                        <th style="width: 140px; text-align: right;">Sortir Layak (Puteran)</th>
+                        <th style="width: 120px; text-align: right;">Sortir Rusak (Afkir)</th>
                         <th style="width: 100px; text-align: center;">Status</th>
                         <th style="width: 85px; text-align: center;">Aksi</th>
                     </tr>
@@ -117,44 +117,44 @@
                             $menuId = 'menu_sirkular_' . $row->kemasan_sirkular_id;
                         @endphp
                         <tr>
-                            <td style="text-align: center; color: #64748b; font-weight: 600;">
+                            <td style="text-align: center; color: #64748b; font-weight: 600; font-size: 0.875rem;">
                                 {{ $list->firstItem() + $idx }}
                             </td>
                             <td>
-                                <strong style="color: #0f172a; font-family: monospace;">{{ $row->sirkular_no }}</strong>
-                                <div style="font-size: 0.725rem; color: #64748b; margin-top: 2px;">
+                                <strong style="color: #0f172a; font-family: monospace; font-size: 0.95rem;">{{ $row->sirkular_no }}</strong>
+                                <div style="font-size: 0.8125rem; color: #64748b; margin-top: 3px;">
                                     {{ \Carbon\Carbon::parse($row->sirkular_tgl)->format('d/m/Y') }} &bull; {{ $row->gudang?->gudang_nm }}
                                 </div>
                             </td>
                             <td>
-                                <div style="font-weight: 700; color: #334155;">{{ $row->customer?->customer_nm ?? 'Mitra Umum' }}</div>
+                                <div style="font-weight: 700; color: #1e293b; font-size: 0.875rem;">{{ $row->customer?->customer_nm ?? 'Mitra Umum' }}</div>
                                 @if($row->pengeluaran)
-                                    <div style="font-size: 0.725rem; color: #0284c7; margin-top: 2px;">
+                                    <div style="font-size: 0.8125rem; color: #0284c7; margin-top: 3px;">
                                         DO: <strong>{{ $row->pengeluaran->pengeluaran_no }}</strong>
                                     </div>
                                 @endif
                                 @if($row->surat_jalan_customer_no)
-                                    <div style="font-size: 0.7rem; color: #64748b;">
+                                    <div style="font-size: 0.775rem; color: #64748b; margin-top: 2px;">
                                         SJ Balik: {{ $row->surat_jalan_customer_no }}
                                     </div>
                                 @endif
                             </td>
                             <td>
-                                <div style="font-weight: 600; color: #0f172a;">{{ $row->supir_nm ?: '-' }}</div>
-                                <div style="font-size: 0.725rem; color: #64748b;">
+                                <div style="font-weight: 600; color: #0f172a; font-size: 0.875rem;">{{ $row->supir_nm ?: '-' }}</div>
+                                <div style="font-size: 0.8125rem; color: #64748b; margin-top: 3px;">
                                     {{ $row->nopol_kendaraan ?: 'Tanpa Nopol' }} {{ $row->ekspedisi_nm ? "({$row->ekspedisi_nm})" : '' }}
                                 </div>
                             </td>
-                            <td class="td-num">
+                            <td class="td-num td-bold" style="font-size: 1.05rem; font-weight: 800; color: #0f172a;">
                                 {{ number_format($row->total_kirim_qty, 0, ',', '.') }}
                             </td>
-                            <td class="td-num td-bold">
+                            <td class="td-num td-bold" style="font-size: 1.05rem; font-weight: 800; color: #0f172a;">
                                 {{ number_format($row->total_kembali_qty, 0, ',', '.') }}
                             </td>
-                            <td class="td-num td-mulus">
+                            <td class="td-num td-mulus" style="font-size: 1.05rem; font-weight: 800; color: #059669;">
                                 {{ number_format($row->total_mulus_qty + $row->total_bmg_qty, 0, ',', '.') }}
                             </td>
-                            <td class="td-num td-rusak">
+                            <td class="td-num td-rusak" style="font-size: 1.05rem; font-weight: 800; color: #dc2626;">
                                 {{ number_format($row->total_rusak_qty + $row->total_afkir_siklus_qty, 0, ',', '.') }}
                             </td>
                             <td style="text-align: center;">

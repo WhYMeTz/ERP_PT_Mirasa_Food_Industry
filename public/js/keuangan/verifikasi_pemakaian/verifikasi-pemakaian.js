@@ -798,7 +798,7 @@ function renderQiDraftRow(item = null, defaultCategory = '') {
             ${curSatuan}
         </td>
         <td>
-            <input type="number" step="1" min="0" class="qi-input qi-item-harga" value="${curHarga}" oninput="recalculateQiRow(this)" style="text-align: right; font-family: monospace;">
+            <input type="number" step="1" min="0" class="qi-input qi-item-harga" value="${curHarga}" oninput="recalculateQiRow(this)" style="text-align: right; font-family: monospace; background-color: #f1f5f9; color: #475569; cursor: not-allowed; border-color: #cbd5e1; font-weight: 700;" readonly tabindex="-1" title="Harga Satuan terkunci otomatis dari saldo penerimaan FIFO batch">
         </td>
         <td style="text-align: right; font-weight: 800; color: #0f172a; font-family: monospace;" class="qi-item-subtotal">
             Rp ${Math.round(subtotal).toLocaleString('id-ID')}
@@ -979,7 +979,7 @@ function onQiBatchChange(batchSelect) {
     }
 
     const hargaInput = tr.querySelector('.qi-item-harga');
-    if (harga > 0 && (!hargaInput.value || parseFloat(hargaInput.value) === 0)) {
+    if (hargaInput) {
         hargaInput.value = harga;
     }
 

@@ -1277,7 +1277,7 @@ class QcInboundService
             $kategoriBarang = !empty($data['kategori_barang']) ? strtoupper(trim($data['kategori_barang'])) : ($qc->kategori_barang ?? 'SINGKONG');
 
             $supplier = !empty($data['supplier_id']) ? \App\Models\MasterData\MstSupplier::find($data['supplier_id']) : null;
-            $namaProdusen = !empty($data['nama_produsen']) ? trim($data['nama_produsen']) : ($supplier?->supplier_nm ?? $qc->nama_produsen);
+            $namaProdusen = !empty($data['nama_produsen']) ? trim($data['nama_produsen']) : ($supplier?->supplier_nm ?? $qc->supplier?->supplier_nm ?? $qc->nama_produsen);
 
             $firstItem = !empty($data['items']) && is_array($data['items']) ? reset($data['items']) : null;
             $firstBarangId = $firstItem['barang_id'] ?? ($data['minyak_barang_id'] ?? ($data['plastik_barang_id'] ?? ($data['karton_barang_id'] ?? ($data['bp_barang_id'] ?? null))));
@@ -1352,9 +1352,15 @@ class QcInboundService
                         $rejectQty = $gross > 0 ? $gross : 1;
                         $nettoLolos = 0;
                     } else {
+                        // Jika sebelumnya berstatus DITOLAK_TOTAL (rejectQty >= gross) dan user memilih TERIMA,
+                        // otomatis reset rejectQty ke 0 agar kuantitas netto lolos terpulihkan
+                        if (($explicitKeputusan === 'TERIMA' || $explicitKeputusan === 'PASSED') && $rejectQty >= $gross && $gross > 0) {
+                            $rejectQty = 0;
+                        }
+
                         $qtyRefraksi = round($gross * ($refraksiPersen / 100), 4);
                         $nettoLolos = max(0, round($gross - $qtyRefraksi - $rejectQty, 4));
-                        $grade = !empty($row['grade_cd']) ? $row['grade_cd'] : 'A';
+                        $grade = !empty($row['grade_cd']) && $row['grade_cd'] !== 'REJECT' ? $row['grade_cd'] : 'A';
 
                         if ($nettoLolos <= 0 && $gross > 0) {
                             $keputusan = 'REJECT_TOTAL';
@@ -1385,8 +1391,8 @@ class QcInboundService
                         }
                     }
 
-                    if ($grade === 'REJECT') {
-                        // Tetap REJECT
+                    if ($keputusan === 'REJECT_TOTAL') {
+                        $grade = 'REJECT';
                     } elseif ($isBarangHasGrade) {
                         $grade = in_array(strtoupper($grade), ['A', 'B']) ? strtoupper($grade) : 'A';
                     } else {

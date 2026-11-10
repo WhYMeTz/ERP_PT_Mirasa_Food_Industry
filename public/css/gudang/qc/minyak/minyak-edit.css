@@ -1,0 +1,461 @@
+/**
+ * QC INBOUND - MOBILE EDIT MINYAK GORENG STYLESHEET
+ * PT Mirasa Food Industry
+ * Tema Visual: Warm Amber / Navy (#b45309, #0f172a, #0284c7)
+ * Didesain rapi, ergonomis layar sentuh mobile, bebas AI-slop
+ */
+
+/* Container & Wrapper */
+.minyak-edit-wrap {
+    max-width: 680px;
+    margin: 0 auto;
+    padding-bottom: 6.5rem; /* Memberikan ruang aman untuk floating bottom bar */
+}
+
+/* Card Section Berjenjang */
+.minyak-edit-card {
+    background: #ffffff;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 14px;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+    overflow: hidden;
+    margin-bottom: 1.15rem;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.minyak-edit-card:hover {
+    border-color: #cbd5e1;
+}
+
+/* Card Header */
+.minyak-edit-card-header {
+    background: #f8fafc;
+    padding: 0.9rem 1.15rem;
+    border-bottom: 1.5px solid #f1f5f9;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.minyak-edit-card-header.theme-amber {
+    background: #fffbeb;
+    border-bottom-color: #fef3c7;
+}
+
+.minyak-edit-card-header.theme-green {
+    background: #f0fdf4;
+    border-bottom-color: #dcfce7;
+}
+
+.minyak-edit-card-header.theme-blue {
+    background: #f0f9ff;
+    border-bottom-color: #e0f2fe;
+}
+
+.minyak-edit-card-header-left {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+}
+
+.minyak-step-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    font-weight: 800;
+    font-size: 0.85rem;
+    background: #0284c7;
+    color: #ffffff;
+    flex-shrink: 0;
+}
+
+.minyak-step-badge.amber {
+    background: #d97706;
+}
+
+.minyak-step-badge.green {
+    background: #16a34a;
+}
+
+.minyak-edit-card-title {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0;
+    line-height: 1.3;
+}
+
+.minyak-edit-card-subtitle {
+    font-size: 0.72rem;
+    color: #64748b;
+    font-weight: 600;
+    margin-top: 1px;
+}
+
+/* Card Body */
+.minyak-edit-card-body {
+    padding: 1.15rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+}
+
+/* 2-Kolom Sejajar Rapi */
+.minyak-grid-2col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+}
+
+@media (max-width: 480px) {
+    .minyak-grid-2col.stack-on-mobile {
+        grid-template-columns: 1fr;
+        gap: 0.65rem;
+    }
+}
+
+/* Form Groups & Labels */
+.minyak-field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.minyak-field-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+}
+
+.minyak-field-label {
+    font-size: 0.825rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0;
+    line-height: 1.3;
+}
+
+.minyak-field-label .required-star {
+    color: #ef4444;
+    font-weight: 900;
+    margin-left: 2px;
+}
+
+/* Custom Segmented Buttons / Pill Toggles */
+.minyak-pill-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.65rem;
+    width: 100%;
+}
+
+.minyak-pill-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    padding: 0.7rem 0.85rem;
+    border-radius: 10px;
+    border: 1.5px solid #cbd5e1;
+    background: #ffffff;
+    color: #334155;
+    font-size: 0.825rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    user-select: none;
+    min-height: 44px;
+    box-sizing: border-box;
+}
+
+.minyak-pill-btn:hover {
+    border-color: #94a3b8;
+    background: #f8fafc;
+}
+
+.minyak-pill-btn input[type="radio"] {
+    display: none;
+}
+
+/* Active State Green (OK / Normal / Terima) */
+.minyak-pill-btn.is-active-ok {
+    background: #f0fdf4;
+    border-color: #22c55e;
+    color: #15803d;
+    box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.15);
+}
+
+.minyak-pill-btn.is-active-ok .pill-dot {
+    background: #16a34a;
+    box-shadow: 0 0 0 3px #bbf7d0;
+}
+
+/* Active State Red (Tolak / Menyimpang / Danger) */
+.minyak-pill-btn.is-active-danger {
+    background: #fef2f2;
+    border-color: #ef4444;
+    color: #b91c1c;
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.15);
+}
+
+.minyak-pill-btn.is-active-danger .pill-dot {
+    background: #dc2626;
+    box-shadow: 0 0 0 3px #fecaca;
+}
+
+/* Active State Primary Blue (Tangki / Jerigen) */
+.minyak-pill-btn.is-active-blue {
+    background: #f0f9ff;
+    border-color: #0284c7;
+    color: #0369a1;
+    box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.15);
+}
+
+.minyak-pill-btn.is-active-blue .pill-dot {
+    background: #0284c7;
+    box-shadow: 0 0 0 3px #bae6fd;
+}
+
+.pill-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #cbd5e1;
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+}
+
+/* Subsection Box (Dalam Card) */
+.minyak-subcard-box {
+    background: #f8fafc;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 0.95rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.minyak-subcard-box.theme-amber {
+    background: #fffbeb;
+    border-color: #fde68a;
+}
+
+.minyak-subcard-box.theme-blue {
+    background: #f0f9ff;
+    border-color: #bae6fd;
+}
+
+.minyak-subcard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.15rem;
+}
+
+.minyak-subcard-title {
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: #0f172a;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.minyak-subcard-badge {
+    font-size: 0.7rem;
+    font-weight: 800;
+    padding: 2px 7px;
+    border-radius: 5px;
+}
+
+/* Interactive Check Card (Jernih & Tangki Bersih) */
+.minyak-check-card-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.65rem;
+}
+
+@media (max-width: 480px) {
+    .minyak-check-card-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+.minyak-check-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    background: #ffffff;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 10px;
+    padding: 0.75rem 0.85rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    min-height: 48px;
+    box-sizing: border-box;
+}
+
+.minyak-check-card.is-checked {
+    background: #f0fdf4;
+    border-color: #22c55e;
+}
+
+.minyak-check-left {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+}
+
+.minyak-check-left input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: #16a34a;
+    cursor: pointer;
+}
+
+.minyak-check-title {
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: #1e293b;
+    line-height: 1.25;
+}
+
+.minyak-check-badge {
+    font-size: 0.68rem;
+    font-weight: 800;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: #e2e8f0;
+    color: #475569;
+    flex-shrink: 0;
+}
+
+.minyak-check-card.is-checked .minyak-check-badge {
+    background: #dcfce7;
+    color: #166534;
+}
+
+/* Parameter Box FFA */
+.minyak-ffa-box {
+    background: #ffffff;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 12px;
+    padding: 0.95rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.minyak-ffa-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.minyak-ffa-title {
+    font-size: 0.825rem;
+    font-weight: 800;
+    color: #0369a1;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    line-height: 1.25;
+}
+
+.minyak-ffa-limit-badge {
+    font-size: 0.7rem;
+    font-weight: 800;
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fde68a;
+    padding: 2px 7px;
+    border-radius: 5px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.minyak-ffa-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+}
+
+.minyak-ffa-grid .minyak-field-group {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 0.35rem;
+}
+
+.minyak-ffa-grid .minyak-field-label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    line-height: 1.25;
+    min-height: 2.2em;
+    display: flex;
+    align-items: flex-end;
+    margin: 0;
+}
+
+/* Suffix Wrapper untuk input numerik (% / kg / liter) */
+.minyak-suffix-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.minyak-suffix-wrap .form-control {
+    padding-right: 2.75rem !important;
+}
+
+.minyak-suffix-label {
+    position: absolute;
+    right: 0.75rem;
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: #64748b;
+    pointer-events: none;
+}
+
+/* Floating Bottom Bar */
+.minyak-mobile-bottom-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #ffffff;
+    padding: 0.85rem 1rem;
+    border-top: 1.5px solid #e2e8f0;
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.08);
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    z-index: 1000;
+}
+
+@media (min-width: 681px) {
+    .minyak-mobile-bottom-bar {
+        max-width: 680px;
+        left: 50%;
+        transform: translateX(-50%);
+        border-radius: 14px 14px 0 0;
+        border-left: 1.5px solid #e2e8f0;
+        border-right: 1.5px solid #e2e8f0;
+    }
+}
+

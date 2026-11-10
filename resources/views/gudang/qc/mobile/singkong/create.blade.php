@@ -44,9 +44,6 @@
                 <h1 id="titleFormHaccp" style="font-size: 1.35rem; font-weight: 900; margin: 0; line-height: 1.25;">
                     Sampling Mutu Singkong
                 </h1>
-                <p id="descFormHaccp" style="font-size: 0.825rem; margin: 0.35rem 0 0; opacity: 0.9;">
-                    Pencatatan sampling mutu kedatangan bahan baku di lapangan (Pengujian 1 &amp; Pengujian 2)
-                </p>
             </div>
             <div style="display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap;">
                 @if (Auth::user()?->isSuperAdmin())
@@ -340,12 +337,12 @@
                         <div class="form-group" style="margin-bottom: 0;">
                             <div class="qc-field-header" style="display: flex; justify-content: space-between; align-items: center;">
                                 <label class="qc-field-label" style="font-weight: 800; color: #0f172a;">
-                                    Mitra Vendor / Supplier Singkong <span style="color:#ef4444;">*</span>
+                                    Mitra Supplier / Petani Produsen Singkong <span style="color:#ef4444;">*</span>
                                 </label>
                                 <span id="badgeLockSupplier" class="badge-po-locked" style="display: none; font-size: 0.7rem; font-weight: 800; color: #166534; background: #dcfce7; padding: 2px 8px; border-radius: 6px; border: 1px solid #bbf7d0;">🔒 Terkunci dari PO</span>
                             </div>
                             <select name="supplier_id" id="supplierSelect" class="form-control" required onchange="onSupplierSelected(this)" style="font-weight: 700; font-size: 0.85rem;">
-                                <option value="">-- Pilih Mitra Vendor / Supplier Singkong --</option>
+                                <option value="">-- Pilih Mitra Supplier / Petani Produsen Singkong --</option>
                                 @foreach ($suppliers as $s)
                                     @php
                                         $jenisCd = $s->jenisSupplier?->jenis_supplier_cd ?: (str_starts_with($s->supplier_cd, 'SKG-') ? 'RAW' : 'BP');
@@ -411,8 +408,13 @@
                             </select>
                         </div>
 
+                        <div class="form-group" style="margin-top: 0.5rem; margin-bottom: 0;">
+                            <div class="qc-field-header">
+                                <label class="qc-field-label">Negara Produsen</label>
+                            </div>
+                            <input type="text" name="negara_produsen" class="form-control" value="{{ old('negara_produsen', 'Indonesia') }}" style="font-weight: 700;">
+                        </div>
                         <input type="hidden" name="nama_produsen" id="namaProdusenInput" value="{{ old('nama_produsen') }}">
-                        <input type="hidden" name="negara_produsen" value="{{ old('negara_produsen', 'Indonesia') }}">
                     </div>
 
                     {{-- 4. PLAT TRUK / KENDARAAN & NAMA SOPIR (2 KOLOM SEJAJAR) --}}

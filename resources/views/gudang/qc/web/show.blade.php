@@ -100,6 +100,7 @@
     }
 
     $satuanDtlUpper = $isLiter ? 'LITER' : ($kat === 'SINGKONG' ? 'KG' : strtoupper($firstDetail?->barang?->satuanDasar?->satuan_cd ?? 'KG'));
+    $namaBarangHeader = $qc->details->pluck('barang.barang_nm')->filter()->first() ?: ($qc->nama_jenis ?: ($qc->kategori_barang ?? 'kedatangan'));
 
     $revisi = '1';
     $tglTerbit = '11-09-2023';
@@ -273,7 +274,7 @@
                 <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink: 0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
                 <div style="font-size: 0.85rem; line-height: 1.4;">
                     <strong style="font-size: 0.95rem; color: #b91c1c;">TIKET DITOLAK TOTAL DI GERBANG / GUDANG</strong><br>
-                    Bahan baku {{ strtolower($namaBarangHeader ?: 'kedatangan') }} tidak memenuhi standar mutu pabrik. Muatan ditolak dan tidak diizinkan bongkar ke stok pabrik.
+                    Bahan baku {{ strtolower($namaBarangHeader ?? 'kedatangan') }} tidak memenuhi standar mutu pabrik. Muatan ditolak dan tidak diizinkan bongkar ke stok pabrik.
                 </div>
             </div>
             <button type="button" onclick="if (window.parent && window.parent.openBeritaAcaraModal) { window.parent.openBeritaAcaraModal('{{ $qc->qc_id }}', '{{ $qc->qc_no }}'); } else if (typeof openBeritaAcaraModal === 'function') { openBeritaAcaraModal('{{ $qc->qc_id }}', '{{ $qc->qc_no }}'); } else { window.location.href = '{{ route('qc.inbound.berita_acara', $qc->qc_id) }}'; }" class="btn btn-sm" style="background: #dc2626; color: #ffffff; border: none; font-weight: 800; border-radius: 8px; white-space: nowrap; cursor: pointer;">

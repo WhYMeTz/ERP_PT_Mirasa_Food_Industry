@@ -201,14 +201,14 @@
                 <div class="my-ffa-card">
                     <div class="my-ffa-label">FFA di COA Supplier</div>
                     <div class="my-ffa-value">
-                        {{ $ffaCoa !== null ? number_format($ffaCoa, 3) . '%' : '-' }}
+                        {{ $ffaCoa !== null ? str_replace('.', ',', (string)(float)round($ffaCoa, 4)) . '%' : '-' }}
                     </div>
                 </div>
 
                 <div class="my-ffa-card" style="border-color: {{ $ffaPass ? '#86efac' : '#fca5a5' }};">
                     <div class="my-ffa-label" style="color: #0284c7;">FFA Uji QC Mirasa *</div>
                     <div class="my-ffa-value {{ $ffaPass ? 'pass' : 'fail' }}">
-                        {{ $ffaQc !== null ? number_format($ffaQc, 3) . '%' : '-' }}
+                        {{ $ffaQc !== null ? str_replace('.', ',', (string)(float)round($ffaQc, 4)) . '%' : '-' }}
                     </div>
                 </div>
             </div>
@@ -216,10 +216,10 @@
             <div class="my-ffa-status-badge {{ $ffaPass ? 'pass' : 'fail' }}">
                 @if ($ffaPass)
                     <span>✔</span>
-                    <span>Lolos Standar Mutu Kimia (FFA ≤ 0,200%) &bull; Layak Produksi</span>
+                    <span>Lolos Standar Mutu Kimia (FFA ≤ 0,20%) &bull; Layak Produksi</span>
                 @else
                     <span>⚠️</span>
-                    <span>Melebihi Batas Standar (FFA > 0,200%) &bull; Waspada Bau Tengik / Mutu Menurun</span>
+                    <span>Melebihi Batas Standar (FFA > 0,20%) &bull; Waspada Bau Tengik / Mutu Menurun</span>
                 @endif
             </div>
         </div>

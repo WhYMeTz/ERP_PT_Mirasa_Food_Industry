@@ -576,11 +576,20 @@
     <div style="border: 2px solid #000000; margin-bottom: 0.5rem; padding: 6px 10px; font-size: 0.78rem;">
         <span style="font-weight: 800; text-decoration: underline;">KOMENTAR</span>
         <div style="margin-top: 4px;">
+            @php
+                $komentarDoc = trim((string)($qc->catatan_umum ?: ($qc->catatan_qc ?: '')));
+                if (!$komentarDoc && $firstDetail?->catatan_dtl) {
+                    $komentarDoc = trim(preg_replace('/\s*\|\s*Grade\s+[AB]\s*(\([^\)]*\))?/i', '', $firstDetail->catatan_dtl));
+                }
+                if (!$komentarDoc) {
+                    $komentarDoc = 'Kualitas Karton Box Sesuai Standar HACCP';
+                }
+            @endphp
             @if($isEdit)
-                <textarea name="catatan_umum" rows="2" class="excel-cell-input" style="border: 1px solid #cbd5e1; padding: 4px 6px;" placeholder="Catatan kondisi kualitas kedatangan karton box...">{{ old('catatan_umum', $firstDetail?->catatan_dtl ?: $qc->catatan_umum) }}</textarea>
+                <textarea name="catatan_umum" rows="2" class="excel-cell-input" style="border: 1px solid #cbd5e1; padding: 4px 6px;" placeholder="Catatan kondisi kualitas kedatangan karton box...">{{ old('catatan_umum', $komentarDoc) }}</textarea>
             @else
                 <div style="min-height: 24px; color: #1e293b;">
-                    {{ $firstDetail?->catatan_dtl ?: ($qc->catatan_umum ?: 'Kualitas Karton Box Sesuai Standar HACCP') }}
+                    {{ $komentarDoc }}
                 </div>
             @endif
         </div>
@@ -591,9 +600,9 @@
         $rawSatuan = $firstDetail?->satuan ?? ($qc->satuan ?? 'pcs');
         $satuanLower = strtolower($rawSatuan);
         
-        $nettoVal = $firstDetail?->qty_netto_lolos ?? $totalNetto;
-        $rejectVal = $firstDetail?->qty_reject ?? $totalReject;
-        $pabrikVal = $qc->jumlah_di_pabrik ?? $totalGross;
+        $nettoVal = $totalNetto > 0 ? (float) $totalNetto : (float) ($firstDetail?->qty_netto_lolos ?? 0);
+        $rejectVal = $totalReject > 0 ? (float) $totalReject : (float) ($firstDetail?->qty_reject ?? 0);
+        $pabrikVal = $qc->jumlah_di_pabrik !== null ? (float) $qc->jumlah_di_pabrik : (float) $totalGross;
 
         // Jika Ditolak Total tapi rejectVal masih 0, ambil kuantitas pabrik/gross
         if ($qc->status_qc === 'DITOLAK_TOTAL' && $rejectVal <= 0) {

@@ -67,7 +67,7 @@
                             <th style="min-width: 250px;">Batch Terpilih &amp; Sisa Stok</th>
                             <th style="width: 130px; text-align: right;">Qty Keluar</th>
                             <th style="width: 80px; text-align: center;">Satuan</th>
-                            <th style="width: 140px; text-align: right;">Harga Satuan (Rp)</th>
+                            <th style="width: 140px; text-align: right;">Harga Satuan (Rp) <span style="display: block; font-size: 0.65rem; color: #64748b; font-weight: normal;">🔒 Terkunci (FIFO)</span></th>
                             <th style="width: 150px; text-align: right;">Subtotal (Rp)</th>
                             <th style="width: 45px; text-align: center;" id="qiThAction">Aksi</th>
                         </tr>

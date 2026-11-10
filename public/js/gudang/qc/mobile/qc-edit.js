@@ -191,12 +191,17 @@
 
             // Lock Barang
             if (barangId && bSelect) {
-                bSelect.value = barangId;
+                const hasMatchingOption = Array.from(bSelect.options).some(o => o.value == barangId);
+                if (hasMatchingOption) {
+                    bSelect.value = barangId;
+                }
                 bSelect.style.pointerEvents = 'none';
                 bSelect.style.backgroundColor = '#f1f5f9';
                 bSelect.style.borderColor = '#cbd5e1';
                 bSelect.setAttribute('tabindex', '-1');
-                window.onEditBarangChanged(bSelect);
+                if (typeof window.onEditBarangChanged === 'function') {
+                    window.onEditBarangChanged(bSelect);
+                }
             }
             if (badgeBarang) badgeBarang.style.display = 'inline-flex';
 

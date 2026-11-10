@@ -1276,7 +1276,7 @@
             injectHiddenInput('items[0][qty_netto_lolos]', kesimpulan === 'TERIMA' ? qtyA : 0);
             injectHiddenInput('items[0][grade_cd]', kesimpulan === 'TERIMA' ? 'A' : 'REJECT');
             injectHiddenInput('items[0][keputusan_qc]', kesimpulan === 'TERIMA' ? 'PASSED' : 'REJECT_TOTAL');
-            injectHiddenInput('items[0][catatan_dtl]', (komentarText ? komentarText + ' | ' : '') + 'Grade A (Dus Baru)');
+            injectHiddenInput('items[0][catatan_dtl]', komentarText);
             injectCommonParams(0);
 
             // Item 1: Grade B (Dus Puteran/Reuse)
@@ -1287,7 +1287,7 @@
             injectHiddenInput('items[1][qty_netto_lolos]', kesimpulan === 'TERIMA' ? qtyB : 0);
             injectHiddenInput('items[1][grade_cd]', kesimpulan === 'TERIMA' ? 'B' : 'REJECT');
             injectHiddenInput('items[1][keputusan_qc]', kesimpulan === 'TERIMA' ? (reject > 0 ? 'REJECT_PARTIAL' : 'PASSED') : 'REJECT_TOTAL');
-            injectHiddenInput('items[1][catatan_dtl]', (komentarText ? komentarText + ' | ' : '') + 'Grade B (Dus Puteran)');
+            injectHiddenInput('items[1][catatan_dtl]', komentarText);
             injectCommonParams(1);
 
             injectHiddenInput('grade_cd', 'A');
@@ -1303,7 +1303,7 @@
             injectHiddenInput('items[0][qty_netto_lolos]', kesimpulan === 'TERIMA' ? lolosQty : 0);
             injectHiddenInput('items[0][grade_cd]', kesimpulan === 'TERIMA' ? singleGrade : 'REJECT');
             injectHiddenInput('items[0][keputusan_qc]', kesimpulan === 'TERIMA' ? (reject > 0 ? 'REJECT_PARTIAL' : 'PASSED') : 'REJECT_TOTAL');
-            injectHiddenInput('items[0][catatan_dtl]', (komentarText ? komentarText + ' | ' : '') + `Grade ${singleGrade}`);
+            injectHiddenInput('items[0][catatan_dtl]', komentarText);
             injectCommonParams(0);
 
             injectHiddenInput('grade_cd', kesimpulan === 'TERIMA' ? singleGrade : 'REJECT');

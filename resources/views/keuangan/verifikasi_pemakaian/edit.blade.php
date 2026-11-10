@@ -177,7 +177,7 @@
                                 <th style="width: 175px; text-align: center;">Sisa di Gudang</th>
                                 <th style="width: 115px; text-align: right;">Qty Keluar <span style="color:#ef4444;">*</span></th>
                                 <th style="width: 65px; text-align: center;">Satuan</th>
-                                <th style="width: 125px; text-align: right;">Harga Satuan (Rp)</th>
+                                <th style="width: 130px; text-align: right;">Harga Satuan (Rp) <span style="display: block; font-size: 0.65rem; color: #64748b; font-weight: normal;">🔒 Terkunci (FIFO)</span></th>
                                 <th style="width: 135px; text-align: right;">Total Biaya (HPP)</th>
                                 <th style="width: 40px; text-align: center;">Hapus</th>
                             </tr>

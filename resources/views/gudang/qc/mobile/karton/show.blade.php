@@ -525,10 +525,16 @@
             </div>
         </div>
 
-        @if ($qc->catatan_umum || $firstDetail?->catatan_dtl)
+        @php
+            $catatanShow = trim((string)($qc->catatan_umum ?: ($qc->catatan_qc ?: '')));
+            if (!$catatanShow && $firstDetail?->catatan_dtl) {
+                $catatanShow = trim(preg_replace('/\s*\|\s*Grade\s+[AB]\s*(\([^\)]*\))?/i', '', $firstDetail->catatan_dtl));
+            }
+        @endphp
+        @if ($catatanShow)
             <div style="margin-top: 0.75rem; padding: 0.65rem 0.85rem; background: #fffbeb; border-left: 3px solid #d97706; border-radius: 4px; font-size: 0.825rem; color: #451a03;">
                 <div style="font-weight: 800; margin-bottom: 0.2rem; color: #b45309;">Catatan Pengujian Box:</div>
-                {{ $firstDetail?->catatan_dtl ?: $qc->catatan_umum }}
+                {{ $catatanShow }}
             </div>
         @endif
     </div>

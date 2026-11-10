@@ -168,7 +168,6 @@
         {{-- Hidden Items Data --}}
         <input type="hidden" name="items[{{ $qcdtlId }}][qcdtl_id]" value="{{ $qcdtlId }}">
         <input type="hidden" name="items[{{ $qcdtlId }}][podtl_id]" value="{{ $firstDetail?->podtl_id }}">
-        <input type="hidden" name="items[{{ $qcdtlId }}][barang_id]" value="{{ $barangId }}">
         <input type="hidden" name="items[{{ $qcdtlId }}][grade_cd]" value="{{ ($firstDetail?->grade_cd === 'REJECT' ? 'REJECT' : 'NON-GRADE') }}">
         <input type="hidden" name="items[{{ $qcdtlId }}][qty_netto_lolos]" id="inputQtyNettoLolos" value="{{ $totalNetto }}">
         <input type="hidden" name="items[{{ $qcdtlId }}][status_raw_material]" id="inputRawMaterial" value="{{ $firstDetail?->status_raw_material ?? 'OK' }}">
@@ -201,8 +200,13 @@
                         <option value="">-- Non-PO / Kiriman Langsung --</option>
                         @foreach ($filteredPos as $p)
                             @php
-                                $firstDtl = $p->details?->first();
-                                $poBarangId = $firstDtl?->barang_id;
+                                $poDetailMatch = $p->details?->firstWhere('barang_id', $firstDetail?->barang_id)
+                                    ?: $p->details?->first(function($d) use ($classifyBarang, $curKomoditas) {
+                                        $cat = $classifyBarang($d->barang?->barang_nm, $d->barang?->barang_cd);
+                                        return $cat === $curKomoditas || ($curKomoditas === 'BAHAN_PENOLONG' && in_array($cat, ['MSG', 'GARAM', 'PERENYAH', 'BUMBU', 'BAHAN_PENOLONG']));
+                                    })
+                                    ?: $p->details?->first();
+                                $poBarangId = $poDetailMatch?->barang_id;
                             @endphp
                             <option value="{{ $p->po_id }}"
                                     data-supplier-id="{{ $p->supplier_id }}"
@@ -219,7 +223,7 @@
                 {{-- VENDOR SUPPLIER --}}
                 <div class="form-group" style="margin-bottom: 0;">
                     <div class="qc-field-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
-                        <label class="qc-field-label" style="font-weight: 700; margin: 0;">🏢 Mitra Vendor / Supplier {{ $curKomoditas }} <span style="color:#ef4444;">*</span></label>
+                        <label class="qc-field-label" style="font-weight: 700; margin: 0;">🏢 Mitra Supplier / Produsen {{ $curKomoditas }} <span style="color:#ef4444;">*</span></label>
                         <span id="badgeEditLockSupplier" class="badge-po-locked" style="{{ $qc->po_id ? 'display: inline-flex;' : 'display: none;' }} font-size: 0.7rem; font-weight: 800; color: #166534; background: #dcfce7; padding: 2px 8px; border-radius: 6px; border: 1px solid #bbf7d0;">🔒 Terkunci dari PO</span>
                     </div>
                     <select name="supplier_id" id="editSupplierSelect" class="form-control" style="font-weight: 800; color: #0f172a; {{ $qc->po_id ? 'pointer-events: none; background-color: #f1f5f9; border-color: #cbd5e1;' : '' }}" {{ $qc->po_id ? 'tabindex="-1"' : '' }} required onchange="onSupplierChanged(this)">
@@ -271,7 +275,12 @@
                     </div>
                 </div>
 
-                <input type="hidden" name="negara_produsen" value="{{ old('negara_produsen', $qc->negara_produsen ?: 'Indonesia') }}">
+                {{-- Negara Produsen --}}
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="qc-field-label">Negara Produsen</label>
+                    <input type="text" name="negara_produsen" value="{{ old('negara_produsen', $qc->negara_produsen ?: 'Indonesia') }}" class="form-control" placeholder="Indonesia" style="font-weight: 700;">
+                </div>
+                <input type="hidden" name="nama_produsen" id="editNamaProdusen" value="{{ old('nama_produsen', $qc->nama_produsen ?: $qc->supplier?->supplier_nm) }}">
 
                 {{-- No DO / Surat Jalan & Plat Truk --}}
                 <div class="qc-grid-2col">

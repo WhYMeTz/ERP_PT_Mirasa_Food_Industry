@@ -304,12 +304,12 @@
                         <div class="form-group" style="margin-bottom: 0;">
                             <div class="qc-field-header" style="display: flex; justify-content: space-between; align-items: center;">
                                 <label class="qc-field-label" style="font-weight: 800; color: #0f172a;">
-                                    Mitra Vendor / Supplier Karton Box <span style="color:#ef4444;">*</span>
+                                    Mitra Supplier / Produsen Box <span style="color:#ef4444;">*</span>
                                 </label>
                                 <span id="badgeLockSupplier" class="badge-po-locked" style="display: none; font-size: 0.7rem; font-weight: 800; color: #166534; background: #dcfce7; padding: 2px 8px; border-radius: 6px; border: 1px solid #bbf7d0;">🔒 Terkunci dari PO</span>
                             </div>
                             <select name="supplier_id" id="supplierSelect" class="form-control" required onchange="onSupplierSelected(this)" style="font-weight: 700; font-size: 0.85rem;">
-                                <option value="">-- Pilih Mitra Vendor Karton --</option>
+                                <option value="">-- Pilih Mitra Supplier / Produsen Box --</option>
                                 @foreach ($kartonSuppliers as $s)
                                     <option value="{{ $s->supplier_id }}"
                                             data-supplier-cd="{{ $s->supplier_cd }}"
@@ -384,13 +384,21 @@
                             </div>
                         </div>
 
-                        <div class="form-group" style="margin-bottom: 0;">
-                            <div class="qc-field-header">
-                                <label class="qc-field-label">Nomor Delivery Order (DO)</label>
+                        <div class="qc-grid-2col">
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <div class="qc-field-header">
+                                    <label class="qc-field-label">Nomor Delivery Order (DO)</label>
+                                </div>
+                                <input type="text" name="nomor_do" class="form-control" placeholder="Contoh: DO-BOX-2026/04" value="{{ old('nomor_do') }}" style="font-weight: 700;">
                             </div>
-                            <input type="text" name="nomor_do" class="form-control" placeholder="Contoh: DO-BOX-2026/04" value="{{ old('nomor_do') }}" style="font-weight: 700;">
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <div class="qc-field-header">
+                                    <label class="qc-field-label">Negara Produsen</label>
+                                </div>
+                                <input type="text" name="negara_produsen" class="form-control" value="{{ old('negara_produsen', 'Indonesia') }}" style="font-weight: 700;">
+                            </div>
                         </div>
-                        <input type="hidden" name="negara_produsen" value="{{ old('negara_produsen', 'Indonesia') }}">
+                        <input type="hidden" name="nama_produsen" id="namaProdusenInput" value="{{ old('nama_produsen') }}">
                     </div>
 
                     {{-- 4. PLAT TRUK / KENDARAAN & NAMA SOPIR (2 KOLOM SEJAJAR) --}}

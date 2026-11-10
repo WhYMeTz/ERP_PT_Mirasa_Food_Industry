@@ -298,8 +298,6 @@
                         </select>
                     </div>
 
-                    <input type="hidden" name="negara_produsen" value="{{ old('negara_produsen', $qc->negara_produsen ?? 'Indonesia') }}">
-
                     <div>
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
                             <label class="qc-info-label" style="font-weight: 700; margin: 0;">🏢 Perusahaan / Cabang Bongkar *</label>

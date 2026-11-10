@@ -185,7 +185,8 @@
                                 $terimaIni = ($po->po_id == $qc->po_id && $qc->terima) ? (float) $qc->terima->details->sum('terima_qty') : 0;
                                 $sudahMsk = max(0, (float) $po->details->sum('terima_qty') - $terimaIni);
                                 $sisaKta = max(0, $totPesan - $sudahMsk);
-                                $poBarangId = $po->details->first()?->barang_id;
+                                $poDetailMatch = $po->details?->firstWhere('barang_id', $firstDetail?->barang_id) ?: $po->details?->first();
+                                $poBarangId = $poDetailMatch?->barang_id;
                             @endphp
                             <option value="{{ $po->po_id }}"
                                     data-supplier-id="{{ $po->supplier_id }}"
@@ -202,7 +203,7 @@
                 {{-- MITRA SUPPLIER (FILTER KHUSUS KEMASAN) --}}
                 <div>
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
-                        <label class="qc-info-label" style="font-weight: 700; margin-bottom: 0; display: block;">Mitra Supplier Vendor *</label>
+                        <label class="qc-info-label" style="font-weight: 700; margin-bottom: 0; display: block;">Mitra Supplier / Produsen Box *</label>
                         <span id="badgeEditLockSupplier" class="badge-po-locked" style="{{ $qc->po_id ? 'display: inline-flex;' : 'display: none;' }} font-size: 0.7rem; font-weight: 800; color: #166534; background: #dcfce7; padding: 2px 8px; border-radius: 6px; border: 1px solid #bbf7d0;">🔒 Terkunci ({{ $qc->supplier?->supplier_nm }})</span>
                     </div>
                     <select name="supplier_id" id="editSupplierSelect" class="form-control" style="width: 100%; border-radius: 8px; font-weight: 700; {{ $qc->po_id ? 'pointer-events: none; background-color: #f1f5f9; border-color: #cbd5e1;' : '' }}" required onchange="onEditSupplierChange(this)" tabindex="{{ $qc->po_id ? '-1' : '0' }}">
@@ -211,32 +212,32 @@
                                 {{ $sup->supplier_nm }} ({{ $sup->supplier_cd }})
                             </option>
                         @endforeach
-                    </select>
-                </div>
+                            </select>
+                        </div>
 
-                {{-- GUDANG BONGKAR MUAT --}}
-                <div>
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
-                        <label class="qc-info-label" style="font-weight: 700; margin-bottom: 0; display: block;">Gudang Bongkar Muat *</label>
-                        <span id="badgeEditLockGudang" class="badge-po-locked" style="{{ $qc->po_id ? 'display: inline-flex;' : 'display: none;' }} font-size: 0.7rem; font-weight: 800; color: #166534; background: #dcfce7; padding: 2px 8px; border-radius: 6px; border: 1px solid #bbf7d0;">🔒 Terkunci dari PO</span>
-                    </div>
-                    <select name="gudang_id" id="editGudangSelect" class="form-control" style="width: 100%; border-radius: 8px; font-weight: 700; {{ $qc->po_id ? 'pointer-events: none; background-color: #f1f5f9; border-color: #cbd5e1;' : '' }}" required tabindex="{{ $qc->po_id ? '-1' : '0' }}">
-                        @foreach ($gudangs as $g)
-                            <option value="{{ $g->gudang_id }}" {{ old('gudang_id', $qc->gudang_id) == $g->gudang_id ? 'selected' : '' }}>
-                                {{ $g->gudang_nm }} ({{ $g->gudang_cd }})
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
+                        {{-- GUDANG BONGKAR MUAT --}}
+                        <div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+                                <label class="qc-info-label" style="font-weight: 700; margin-bottom: 0; display: block;">Gudang Bongkar Muat *</label>
+                                <span id="badgeEditLockGudang" class="badge-po-locked" style="{{ $qc->po_id ? 'display: inline-flex;' : 'display: none;' }} font-size: 0.7rem; font-weight: 800; color: #166534; background: #dcfce7; padding: 2px 8px; border-radius: 6px; border: 1px solid #bbf7d0;">🔒 Terkunci dari PO</span>
+                            </div>
+                            <select name="gudang_id" id="editGudangSelect" class="form-control" style="width: 100%; border-radius: 8px; font-weight: 700; {{ $qc->po_id ? 'pointer-events: none; background-color: #f1f5f9; border-color: #cbd5e1;' : '' }}" required tabindex="{{ $qc->po_id ? '-1' : '0' }}">
+                                @foreach ($gudangs as $g)
+                                    <option value="{{ $g->gudang_id }}" {{ old('gudang_id', $qc->gudang_id) == $g->gudang_id ? 'selected' : '' }}>
+                                        {{ $g->gudang_nm }} ({{ $g->gudang_cd }})
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
 
-                {{-- PILIH BARANG (KOMODITAS KARTON BOX) --}}
-                <div style="background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 10px; padding: 0.75rem;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
-                        <label class="qc-info-label" style="font-weight: 800; color: #92400e; margin-bottom: 0; display: block;">
-                            Komoditas Karton Box yang Diperiksa *
-                        </label>
-                        <span id="badgeEditLockBarang" class="badge-po-locked" style="{{ $qc->po_id ? 'display: inline-flex;' : 'display: none;' }} font-size: 0.7rem; font-weight: 800; color: #166534; background: #dcfce7; padding: 2px 8px; border-radius: 6px; border: 1px solid #bbf7d0;">🔒 Terkunci dari PO</span>
-                    </div>
+                        {{-- PILIH BARANG (KOMODITAS KARTON BOX) --}}
+                        <div style="background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 10px; padding: 0.75rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                                <label class="qc-info-label" style="font-weight: 800; color: #92400e; margin-bottom: 0; display: block;">
+                                    Komoditas Karton Box yang Diperiksa *
+                                </label>
+                                <span id="badgeEditLockBarang" class="badge-po-locked" style="{{ $qc->po_id ? 'display: inline-flex;' : 'display: none;' }} font-size: 0.7rem; font-weight: 800; color: #166534; background: #dcfce7; padding: 2px 8px; border-radius: 6px; border: 1px solid #bbf7d0;">🔒 Terkunci dari PO</span>
+                            </div>
                     <select name="items[{{ $qcdtlId }}][barang_id]" id="editBarangSelect" class="form-control" style="width: 100%; border-radius: 8px; font-weight: 800; color: #0f172a; {{ $qc->po_id ? 'pointer-events: none; background-color: #f1f5f9; border-color: #cbd5e1;' : '' }}" required onchange="onEditBarangChanged(this)" tabindex="{{ $qc->po_id ? '-1' : '0' }}">
                         @foreach ($filteredBarangs as $b)
                             <option value="{{ $b->barang_id }}"
@@ -251,7 +252,12 @@
                         <label class="qc-info-label" style="font-size: 0.75rem; margin-bottom: 0.15rem; display: block;">Nama Jenis (Varian Box)</label>
                         <input type="text" name="nama_jenis" id="editNamaJenis" value="{{ old('nama_jenis', $qc->nama_jenis ?: $firstDetail?->barang?->barang_nm) }}" class="form-control" placeholder="Contoh: Karton Box Corrugated" style="font-size: 0.8rem; font-weight: 700;">
                     </div>
-                    <input type="hidden" name="negara_produsen" value="{{ old('negara_produsen', $qc->negara_produsen ?? 'Indonesia') }}">
+
+                    <div style="margin-top: 0.5rem;">
+                        <label class="qc-info-label" style="font-size: 0.75rem; margin-bottom: 0.15rem; display: block;">Negara Produsen</label>
+                        <input type="text" name="negara_produsen" value="{{ old('negara_produsen', $qc->negara_produsen ?: 'Indonesia') }}" class="form-control" placeholder="Indonesia" style="font-size: 0.8rem; font-weight: 700;">
+                    </div>
+                    <input type="hidden" name="nama_produsen" id="editNamaProdusen" value="{{ old('nama_produsen', $qc->nama_produsen ?: $qc->supplier?->supplier_nm) }}">
                 </div>
 
                 {{-- LOGISTIK ARMADA PENGIRIMAN --}}
@@ -705,17 +711,17 @@
                     </div>
 
                     {{-- CATATAN / KOMENTAR PENGUJIAN --}}
-                    <div class="form-group" style="margin-bottom: 0.75rem;">
+                    @php
+                        $initCatatan = old('catatan_umum', $qc->catatan_umum ?: ($qc->catatan_qc ?: ''));
+                        if (!$initCatatan && $firstDetail?->catatan_dtl) {
+                            $initCatatan = trim(preg_replace('/\s*\|\s*Grade\s+[AB]\s*(\([^\)]*\))?/i', '', $firstDetail->catatan_dtl));
+                        }
+                    @endphp
+                    <div class="form-group" style="margin-bottom: 0;">
                         <label class="form-label" style="font-weight: 800; font-size: 0.825rem; color: #0f172a; margin-bottom: 0.35rem; display: block;">
                             Catatan / Komentar Pengujian:
                         </label>
-                        <textarea name="catatan_umum" id="catatanUmumInput" rows="3" class="form-control" placeholder="Tuliskan catatan kondisi box, kerusakan atau rekomendasi..." style="font-size: 0.85rem; line-height: 1.45;">{{ old('catatan_umum', $qc->catatan_umum ?: $qc->catatan_qc) }}</textarea>
-                    </div>
-
-                    {{-- CATATAN SPESIFIKASI MUTU FISIK --}}
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label class="qc-info-label" style="display: block; font-weight: 700; margin-bottom: 0.35rem; font-size: 0.8rem; color: #0f172a;">Catatan Spesifikasi Mutu Fisik Box (Opsional)</label>
-                        <input type="text" id="inputCatatanDtl" name="catatan_dtl" value="{{ old('catatan_dtl', $firstDetail?->catatan_dtl) }}" class="form-control" placeholder="Contoh: Dimensi presisi, ketebalan corrugated sesuai standar, bersih..." style="width: 100%; border-radius: 6px; font-size: 0.85rem;">
+                        <textarea name="catatan_umum" id="catatanUmumInput" rows="3" class="form-control" placeholder="Tuliskan catatan kondisi box, kerusakan atau rekomendasi..." style="font-size: 0.85rem; line-height: 1.45;">{{ $initCatatan }}</textarea>
                     </div>
                 </div>
 

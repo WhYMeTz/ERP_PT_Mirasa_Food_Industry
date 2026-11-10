@@ -136,8 +136,7 @@ function attachExcelKeyboardEvents(rowElement) {
                         lastRow.querySelector('.barang-select')?.focus();
                     } else {
                         const nextRow = allRows[currentRowIdx + 1];
-                        const targetClass = input.classList.contains('qty-input') ? '.qty-input' : '.harga-input';
-                        const target = nextRow.querySelector(targetClass);
+                        const target = nextRow.querySelector('.qty-input');
                         if (target) target.focus();
                     }
                 }
@@ -475,7 +474,7 @@ function addRow(initialCategory = '') {
             <span class="row-satuan" style="font-weight: 800; color: #475569; font-size: 0.85rem;">-</span>
         </td>
         <td style="padding: 0.45rem 0.55rem; vertical-align: top;">
-            <input type="number" step="0.01" min="0" name="items[${rowIndex}][harga_satuan]" class="form-control harga-input" placeholder="0" style="text-align: right; font-size: 0.85rem; height: 42px; font-family: monospace;" oninput="calcRow(this)">
+            <input type="number" step="0.01" min="0" name="items[${rowIndex}][harga_satuan]" class="form-control harga-input" placeholder="0" style="text-align: right; font-size: 0.85rem; height: 42px; font-family: monospace; background-color: #f1f5f9; color: #475569; cursor: not-allowed; border-color: #cbd5e1; font-weight: 700;" readonly tabindex="-1" oninput="calcRow(this)" title="Harga Satuan terkunci otomatis dari saldo penerimaan FIFO batch">
         </td>
         <td style="padding: 0.45rem 0.55rem; text-align: right; font-weight: 800; color: #0f172a; font-size: 0.95rem; font-family: monospace; vertical-align: top;" class="subtotal-cell">
             Rp 0
@@ -635,7 +634,7 @@ function addRowWithItemData(item) {
             <span class="row-satuan" style="font-weight: 800; color: #475569; font-size: 0.85rem;">${item.satuan_nm || '-'}</span>
         </td>
         <td style="padding: 0.45rem 0.55rem; vertical-align: top;">
-            <input type="number" step="0.01" min="0" name="items[${rowIndex}][harga_satuan]" value="${item.harga_satuan}" class="form-control harga-input" placeholder="0" style="text-align: right; font-size: 0.85rem; height: 42px; font-family: monospace;" oninput="calcRow(this)">
+            <input type="number" step="0.01" min="0" name="items[${rowIndex}][harga_satuan]" value="${item.harga_satuan}" class="form-control harga-input" placeholder="0" style="text-align: right; font-size: 0.85rem; height: 42px; font-family: monospace; background-color: #f1f5f9; color: #475569; cursor: not-allowed; border-color: #cbd5e1; font-weight: 700;" readonly tabindex="-1" oninput="calcRow(this)" title="Harga Satuan terkunci otomatis dari saldo penerimaan FIFO batch">
         </td>
         <td style="padding: 0.45rem 0.55rem; text-align: right; font-weight: 800; color: #0f172a; font-size: 0.95rem; font-family: monospace; vertical-align: top;" class="subtotal-cell">
             Rp ${subtotal.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
@@ -947,7 +946,7 @@ function onBatchSelect(selectEl) {
     }
 
     const hargaInput = row.querySelector('.harga-input');
-    if (harga > 0 && (!hargaInput.value || parseFloat(hargaInput.value) === 0)) {
+    if (hargaInput) {
         hargaInput.value = harga;
     }
 

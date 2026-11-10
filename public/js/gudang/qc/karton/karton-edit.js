@@ -189,6 +189,18 @@
             cardTerima?.classList.add('active', 'terima');
             cardTolak?.classList.remove('active', 'tolak');
             if (radioTerima) radioTerima.checked = true;
+
+            // Auto-recovery jika sebelumnya tiket ditolak total (reject >= total gross)
+            const rejectInput = document.getElementById('kartonQtyReject');
+            const inA = document.getElementById('kartonQtyGradeA');
+            const inB = document.getElementById('kartonQtyGradeB');
+            const currentReject = parseFloat(rejectInput?.value) || 0;
+            const currentA = parseFloat(inA?.value) || 0;
+            const currentB = parseFloat(inB?.value) || 0;
+            if (currentReject > 0 && currentA === 0 && currentB === 0) {
+                if (inA) inA.value = currentReject;
+                if (rejectInput) rejectInput.value = 0;
+            }
         } else {
             cardTolak?.classList.add('active', 'tolak');
             cardTerima?.classList.remove('active', 'terima');
@@ -270,52 +282,96 @@
                 return false;
             }
 
-            // Bersihkan input hidden items lama jika ada
-            form.querySelectorAll('input[name^="items["]').forEach(function (el) {
-                el.remove();
+            // 1. Ambil Komoditas Barang Karton dari select / fallback
+            const barangSelect = document.getElementById('editBarangSelect') ||
+                                 document.getElementById('selectEditBarang') ||
+                                 document.getElementById('kartonBarangSelect') ||
+                                 document.querySelector('select[name*="[barang_id]"]');
+            let bId = barangSelect ? barangSelect.value : '';
+
+            if (!bId || bId === 'undefined') {
+                const fallbackEl = document.querySelector('input[name*="[barang_id]"]');
+                if (fallbackEl && fallbackEl.value && fallbackEl.value !== 'undefined') {
+                    bId = fallbackEl.value;
+                }
+            }
+
+            if (!bId || bId === 'undefined') {
+                e.preventDefault();
+                alert('Silakan pilih Komoditas Barang Karton Box terlebih dahulu.');
+                return false;
+            }
+
+            const podtlId = document.getElementById('editFirstPodtlId')?.value || '';
+            const qcdtlIdA = document.getElementById('editQcdtlIdA')?.value || '';
+            const qcdtlIdB = document.getElementById('editQcdtlIdB')?.value || '';
+            const firstQcdtlId = document.getElementById('editFirstQcdtlId')?.value || '';
+            const isTolak = document.getElementById('inputKartonKesimpulan')?.value === 'TOLAK';
+            const catatanText = document.getElementById('catatanUmumInput')?.value?.trim() || document.getElementById('inputCatatanDtl')?.value?.trim() || '';
+
+            // Ambil semua parameter pemeriksaan sebelum input dibersihkan
+            const rawMaterialVal = document.getElementById('inputRawMaterial')?.value || 'OK';
+            const kemasanKondisiVal = document.getElementById('inputKemasanKondisi')?.value || 'OK';
+
+            const cacatKotor = document.getElementById('checkCacatKotor')?.checked ? '1' : '0';
+            const cacatApek = document.getElementById('checkCacatApek')?.checked ? '1' : '0';
+            const cacatBasah = document.getElementById('checkCacatBasah')?.checked ? '1' : '0';
+            const cacatJamur = document.getElementById('checkCacatJamur')?.checked ? '1' : '0';
+            const cacatSobek = document.getElementById('checkCacatSobek')?.checked ? '1' : '0';
+            const cacatBerminyak = document.getElementById('checkCacatBerminyak')?.checked ? '1' : '0';
+            const cacatBerdebu = document.getElementById('checkCacatBerdebu')?.checked ? '1' : '0';
+
+            const pjgAnalisa = document.getElementById('inputPanjangAnalisa')?.value || '';
+            const pjgStd = document.querySelector('input[name*="dimensi_panjang_standar"]')?.value || '40 cm';
+            const lbrAnalisa = document.getElementById('inputLebarAnalisa')?.value || '';
+            const lbrStd = document.querySelector('input[name*="dimensi_lebar_standar"]')?.value || '30 cm';
+            const tgiAnalisa = document.getElementById('inputTinggiAnalisa')?.value || '';
+            const tgiStd = document.querySelector('input[name*="dimensi_tinggi_standar"]')?.value || '25 cm';
+            const spekAnalisa = document.getElementById('inputSpesifikasiAnalisa')?.value || '';
+            const spekStd = document.querySelector('input[name*="spesifikasi_standar"]')?.value || 'Sesuai Spesifikasi MFI';
+
+            // 2. Bersihkan input items lama dan copot nama select agar tidak terjadi double submit
+            form.querySelectorAll('[name^="items["]').forEach(function (el) {
+                if (el.tagName === 'SELECT') {
+                    el.removeAttribute('name');
+                } else {
+                    el.remove();
+                }
             });
 
             function injectHiddenInput(name, value) {
                 const input = document.createElement('input');
                 input.type = 'hidden';
                 input.name = name;
-                input.value = value;
+                input.value = (value === undefined || value === null) ? '' : value;
                 form.appendChild(input);
             }
-
-            const bId = document.getElementById('selectEditBarang')?.value;
-            const podtlId = document.getElementById('editFirstPodtlId')?.value || '';
-            const qcdtlIdA = document.getElementById('editQcdtlIdA')?.value || '';
-            const qcdtlIdB = document.getElementById('editQcdtlIdB')?.value || '';
-            const firstQcdtlId = document.getElementById('editFirstQcdtlId')?.value || '';
-            const isTolak = document.getElementById('inputKartonKesimpulan')?.value === 'TOLAK';
-            const catatanText = document.getElementById('inputCatatanDtl')?.value || '';
 
             function injectCommonFields(idx) {
                 injectHiddenInput(`items[${idx}][barang_id]`, bId);
                 if (podtlId) injectHiddenInput(`items[${idx}][podtl_id]`, podtlId);
                 injectHiddenInput(`items[${idx}][refraksi_persen]`, 0);
-                injectHiddenInput(`items[${idx}][status_raw_material]`, document.getElementById('inputRawMaterial')?.value || 'OK');
-                injectHiddenInput(`items[${idx}][kemasan_kondisi]`, document.getElementById('inputKemasanKondisi')?.value || 'OK');
+                injectHiddenInput(`items[${idx}][status_raw_material]`, rawMaterialVal);
+                injectHiddenInput(`items[${idx}][kemasan_kondisi]`, kemasanKondisiVal);
 
                 // Checkbox 7 Cacat Kemasan
-                injectHiddenInput(`items[${idx}][kemasan_kotor]`, document.getElementById('checkCacatKotor')?.checked ? '1' : '0');
-                injectHiddenInput(`items[${idx}][kemasan_apek]`, document.getElementById('checkCacatApek')?.checked ? '1' : '0');
-                injectHiddenInput(`items[${idx}][kemasan_basah]`, document.getElementById('checkCacatBasah')?.checked ? '1' : '0');
-                injectHiddenInput(`items[${idx}][kemasan_jamur]`, document.getElementById('checkCacatJamur')?.checked ? '1' : '0');
-                injectHiddenInput(`items[${idx}][kemasan_sobek]`, document.getElementById('checkCacatSobek')?.checked ? '1' : '0');
-                injectHiddenInput(`items[${idx}][kemasan_berminyak]`, document.getElementById('checkCacatBerminyak')?.checked ? '1' : '0');
-                injectHiddenInput(`items[${idx}][kemasan_berdebu]`, document.getElementById('checkCacatBerdebu')?.checked ? '1' : '0');
+                injectHiddenInput(`items[${idx}][kemasan_kotor]`, cacatKotor);
+                injectHiddenInput(`items[${idx}][kemasan_apek]`, cacatApek);
+                injectHiddenInput(`items[${idx}][kemasan_basah]`, cacatBasah);
+                injectHiddenInput(`items[${idx}][kemasan_jamur]`, cacatJamur);
+                injectHiddenInput(`items[${idx}][kemasan_sobek]`, cacatSobek);
+                injectHiddenInput(`items[${idx}][kemasan_berminyak]`, cacatBerminyak);
+                injectHiddenInput(`items[${idx}][kemasan_berdebu]`, cacatBerdebu);
 
                 // Dimensi & Spesifikasi
-                injectHiddenInput(`items[${idx}][dimensi_panjang_analisa]`, document.getElementById('inputPanjangAnalisa')?.value || '');
-                injectHiddenInput(`items[${idx}][dimensi_panjang_standar]`, document.querySelector('input[name*="dimensi_panjang_standar"]')?.value || '40 cm');
-                injectHiddenInput(`items[${idx}][dimensi_lebar_analisa]`, document.getElementById('inputLebarAnalisa')?.value || '');
-                injectHiddenInput(`items[${idx}][dimensi_lebar_standar]`, document.querySelector('input[name*="dimensi_lebar_standar"]')?.value || '30 cm');
-                injectHiddenInput(`items[${idx}][dimensi_tinggi_analisa]`, document.getElementById('inputTinggiAnalisa')?.value || '');
-                injectHiddenInput(`items[${idx}][dimensi_tinggi_standar]`, document.querySelector('input[name*="dimensi_tinggi_standar"]')?.value || '25 cm');
-                injectHiddenInput(`items[${idx}][spesifikasi_analisa]`, document.getElementById('inputSpesifikasiAnalisa')?.value || '');
-                injectHiddenInput(`items[${idx}][spesifikasi_standar]`, document.querySelector('input[name*="spesifikasi_standar"]')?.value || 'Sesuai Spesifikasi MFI');
+                injectHiddenInput(`items[${idx}][dimensi_panjang_analisa]`, pjgAnalisa);
+                injectHiddenInput(`items[${idx}][dimensi_panjang_standar]`, pjgStd);
+                injectHiddenInput(`items[${idx}][dimensi_lebar_analisa]`, lbrAnalisa);
+                injectHiddenInput(`items[${idx}][dimensi_lebar_standar]`, lbrStd);
+                injectHiddenInput(`items[${idx}][dimensi_tinggi_analisa]`, tgiAnalisa);
+                injectHiddenInput(`items[${idx}][dimensi_tinggi_standar]`, tgiStd);
+                injectHiddenInput(`items[${idx}][spesifikasi_analisa]`, spekAnalisa);
+                injectHiddenInput(`items[${idx}][spesifikasi_standar]`, spekStd);
             }
 
             if (qtyA > 0 && qtyB > 0) {
@@ -327,7 +383,7 @@
                 injectHiddenInput('items[0][qty_netto_lolos]', isTolak ? 0 : qtyA);
                 injectHiddenInput('items[0][grade_cd]', isTolak ? 'REJECT' : 'A');
                 injectHiddenInput('items[0][keputusan_qc]', isTolak ? 'REJECT_TOTAL' : 'PASSED');
-                injectHiddenInput('items[0][catatan_dtl]', (catatanText ? catatanText + ' | ' : '') + 'Grade A (Dus Baru)');
+                injectHiddenInput('items[0][catatan_dtl]', catatanText);
                 injectCommonFields(0);
 
                 // Item 1: Grade B (Dus Puteran/Reuse)
@@ -337,7 +393,7 @@
                 injectHiddenInput('items[1][qty_netto_lolos]', isTolak ? 0 : qtyB);
                 injectHiddenInput('items[1][grade_cd]', isTolak ? 'REJECT' : 'B');
                 injectHiddenInput('items[1][keputusan_qc]', isTolak ? 'REJECT_TOTAL' : (reject > 0 ? 'REJECT_PARTIAL' : 'PASSED'));
-                injectHiddenInput('items[1][catatan_dtl]', (catatanText ? catatanText + ' | ' : '') + 'Grade B (Dus Puteran)');
+                injectHiddenInput('items[1][catatan_dtl]', catatanText);
                 injectCommonFields(1);
 
                 injectHiddenInput('grade_cd', 'A');
@@ -358,6 +414,9 @@
 
                 injectHiddenInput('grade_cd', singleGrade);
             }
+
+            // Simpan catatan umum ke header
+            injectHiddenInput('catatan_umum', catatanText);
 
             const overlay = document.getElementById('qcSubmitOverlay');
             if (overlay) overlay.style.display = 'flex';

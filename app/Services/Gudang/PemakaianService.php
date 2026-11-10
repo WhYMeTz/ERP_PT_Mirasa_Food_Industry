@@ -575,13 +575,11 @@ class PemakaianService
                 }
 
                 $barang = MstBarang::with('satuanDasar')->find($barangId);
-                $hargaSatuan = !empty($item['harga_satuan']) && (float) $item['harga_satuan'] > 0
-                    ? (float) $item['harga_satuan']
-                    : (float) ($stokBatch?->harga_satuan ?? 0);
-
-                if ($hargaSatuan <= 0) {
-                    $hargaSatuan = (float) ($barang?->harga_beli_standar ?? 0);
-                }
+                $hargaSatuan = ($stokBatch && (float) $stokBatch->harga_satuan > 0)
+                    ? (float) $stokBatch->harga_satuan
+                    : (!empty($item['harga_satuan']) && (float) $item['harga_satuan'] > 0
+                        ? (float) $item['harga_satuan']
+                        : (float) ($barang?->harga_beli_standar ?? 0));
 
                 $totalHarga = $qtyKeluar * $hargaSatuan;
                 $keteranganDetail = !empty($item['keterangan_txt']) ? trim($item['keterangan_txt']) : $tujuanPemakaian;

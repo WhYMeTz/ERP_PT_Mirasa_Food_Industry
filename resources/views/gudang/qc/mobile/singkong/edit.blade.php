@@ -220,7 +220,7 @@
                 <div style="display: flex; flex-direction: column; gap: 0.75rem;">
                     <div>
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
-                            <label class="qc-info-label" style="font-weight: 700; margin: 0;">🏢 Mitra Supplier / Petani *</label>
+                            <label class="qc-info-label" style="font-weight: 700; margin: 0;">🏢 Mitra Supplier / Petani Produsen *</label>
                             <span id="badgeEditLockSupplier" class="badge-po-locked" style="{{ $isLinkedToPo ? 'display: inline-flex;' : 'display: none;' }} font-size: 0.7rem; font-weight: 800; color: #166534; background: #dcfce7; padding: 2px 8px; border-radius: 6px; border: 1px solid #bbf7d0;">
                                 🔒 Terkunci dari PO
                             </span>
@@ -291,6 +291,12 @@
                             <option value="Singkong Mentega">
                         </datalist>
                     </div>
+
+                    <div>
+                        <label class="qc-info-label" style="display: block; font-weight: 700; margin-bottom: 0.25rem;">Negara Produsen</label>
+                        <input type="text" name="negara_produsen" value="{{ old('negara_produsen', $qc->negara_produsen ?: 'Indonesia') }}" class="form-control" style="width: 100%; border-radius: 8px; font-weight: 700;" placeholder="Indonesia">
+                    </div>
+                    <input type="hidden" name="nama_produsen" id="editNamaProdusen" value="{{ old('nama_produsen', $qc->nama_produsen ?: $qc->supplier?->supplier_nm) }}">
                 </div>
 
                 {{-- SURAT JALAN, PLAT NOMOR, SOPIR, WAKTU --}}
@@ -581,11 +587,6 @@
                             🔴 REJECT (Afkir / Tolak Total)
                         </option>
                     </select>
-
-                    <div style="margin-top: 0.5rem;">
-                        <label class="qc-info-label" style="display: block; font-weight: 700; margin-bottom: 0.2rem; font-size: 0.75rem;">Catatan Spesifikasi Mutu Fisik</label>
-                        <input type="text" name="items[{{ $qcdtlId }}][catatan_dtl]" value="{{ old('items.'.$qcdtlId.'.catatan_dtl', $firstDetail?->catatan_dtl) }}" class="form-control" placeholder="Contoh: Singkong segar, aroma khas tanah normal, rasa gurih renyah..." style="width: 100%; border-radius: 6px; font-size: 0.8rem;">
-                    </div>
                 </div>
             </div>
         </div>

@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Detail Penerimaan Kemasan Sirkular ' . $kemasan->sirkular_no . ' - ERP PT Mirasa')
+@section('title', 'Detail Penerimaan Karton Balikan ' . $kemasan->sirkular_no . ' - ERP PT Mirasa')
 
 @push('styles')
     <link rel="stylesheet" href="{{ asset('css/gudang/kemasan_sirkular/sirkular-show.css') }}?v={{ time() }}">
@@ -14,7 +14,7 @@
         <div>
             <a href="{{ route('gudang.kemasan-sirkular.index') }}" class="sirkular-back-link">
                 <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-                <span>Kembali ke Riwayat Kemasan Sirkular</span>
+                <span>Kembali ke Riwayat Karton Balikan</span>
             </a>
             <div class="sirkular-title-row">
                 <h1 class="sirkular-title">{{ $kemasan->sirkular_no }}</h1>
@@ -194,9 +194,8 @@
                         <th class="cell-center" style="width: 45px;">No.</th>
                         <th>Nama Kemasan / Dus</th>
                         <th class="cell-num" style="width: 110px;">Qty Kirim</th>
-                        <th class="cell-num" style="width: 130px;">Puteran (BMG)</th>
-                        <th class="cell-center" style="width: 110px;">Siklus Pakai</th>
-                        <th class="cell-num" style="width: 130px;">Rusak / Reject</th>
+                        <th class="cell-num" style="width: 140px;">Sortir Layak (Pcs)</th>
+                        <th class="cell-num" style="width: 140px;">Sortir Rusak (Pcs)</th>
                         <th class="cell-num" style="width: 120px;">Total Diterima</th>
                         <th class="cell-num" style="width: 100px;">Selisih DO</th>
                         <th style="min-width: 200px;">Keterangan Fisik</th>
@@ -235,13 +234,6 @@
                             <td class="cell-num" style="color: #059669;">
                                 {{ number_format($puteranTotal, 0, ',', '.') }}
                             </td>
-                            <td class="cell-center" style="font-size: 0.8125rem;">
-                                @if ($dtl->puteran_ke >= 5 || $dtl->afkir_siklus_qty > 0)
-                                    <span style="color: #dc2626; font-weight: 700;">Putaran 5 (Limit)</span>
-                                @else
-                                    <span style="color: #334155; font-weight: 600;">Putaran {{ $dtl->puteran_ke ?? 1 }}x</span>
-                                @endif
-                            </td>
                             <td class="cell-num" style="color: {{ $rejectTotal > 0 ? '#dc2626' : '#64748b' }};">
                                 {{ number_format($rejectTotal, 0, ',', '.') }}
                             </td>
@@ -257,7 +249,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="9" class="cell-center" style="padding: 2.5rem; color: #64748b;">
+                            <td colspan="8" class="cell-center" style="padding: 2.5rem; color: #64748b;">
                                 Tidak ada rincian kemasan tercatat pada dokumen ini.
                             </td>
                         </tr>

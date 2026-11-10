@@ -76,9 +76,6 @@
                         <td><strong style="color: #0284c7; font-family: monospace;">{{ $item->barang_cd }}</strong></td>
                         <td style="font-weight: 600; color: #0f172a;">
                             {{ $item->barang_nm }}
-                            @if($item->isKw2())
-                                <span style="font-size: 0.685rem; font-weight: 700; color: #b45309; background: #fffbeb; border: 1px solid #fde68a; padding: 1.5px 6px; border-radius: 4px; margin-left: 5px; display: inline-block;">🔄 KW 2 (Sortir)</span>
-                            @endif
                         </td>
                         <td>
                             <span class="badge" style="background: #f1f5f9; color: #475569; font-weight: 600;">

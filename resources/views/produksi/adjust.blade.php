@@ -41,9 +41,9 @@
     {{-- 1. BREADCRUMBS & TOP HEADER --}}
     <div class="adjust-header">
         <div>
-            <a href="{{ route('produksi.show', $produksi->produksi_id) }}" class="btn-back-link">
+            <a href="{{ route('produksi.hpp.show', $produksi->produksi_id) }}" class="btn-back-link">
                 <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-                <span>Kembali ke Detail Lembar Produksi</span>
+                <span>Kembali ke Lembar HPP Produksi</span>
             </a>
             <div class="adjust-title-wrap">
                 <h1 class="adjust-title">Adjustment HPP</h1>
@@ -473,7 +473,7 @@
                     <tr class="adj-item-row" data-group="KEMASAN">
                         <td>
                             <div class="adj-item-title">{{ $isIfm ? 'Karton Box Baru IFM' : 'Karton Box Baru' }}</div>
-                            <div class="adj-item-code">KIF00G-BP1 &bull; {{ $isIfm ? 'Box Luar Baru 100% Harga Beli' : 'Box Cetak Baru' }}</div>
+                            <div class="adj-item-code">KIF00G-BP1 &bull; {{ $isIfm ? 'Box Luar Baru (Tarif 1/5 Siklus)' : 'Box Cetak Baru' }}</div>
                             <div style="display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap; margin-top: 0.3rem;">
                                 @if(!empty($produksi->bahan_baku_batch_map['karton_baru']))
                                     <span class="adj-batch-pill" title="No. Batch Pemakaian Karton Baru">

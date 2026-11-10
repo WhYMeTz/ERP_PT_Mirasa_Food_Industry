@@ -156,11 +156,12 @@ class ProduksiController extends Controller
             ->orderBy('lini_id', 'asc')
             ->get();
 
-        // Ambil daftar barang hasil produksi aktif (Khusus Olahan Setengah Jadi / WIP)
+        // Ambil daftar barang hasil produksi aktif (Khusus Olahan Setengah Jadi / WIP, Ekspor & Produk Jadi)
         $barangHasilList = MstBarang::active()
             ->where(function ($q) {
-                $q->whereHas('jenisBarang', fn($j) => $j->where('jenis_barang_cd', 'WIP'))
-                  ->orWhere('barang_cd', 'LIKE', 'WIP%');
+                $q->whereHas('jenisBarang', fn($j) => $j->whereIn('jenis_barang_cd', ['WIP', 'FG']))
+                  ->orWhere('barang_cd', 'LIKE', 'WIP%')
+                  ->orWhere('barang_cd', 'LIKE', 'FG%');
             })
             ->with(['satuanDasar', 'satuanBesar', 'jenisBarang'])
             ->orderBy('barang_nm')
@@ -269,32 +270,72 @@ class ProduksiController extends Controller
     public function getKursJisdor(Request $request): JsonResponse
     {
         try {
-            $tgl = $request->input('date') ?: $request->input('tgl', date('Y-m-d'));
-            $rate = $this->tarifService->getJisdorRate($tgl, true);
+            $isLatest = $request->boolean('latest') || $request->input('mode') === 'latest' || !$request->filled('date');
 
-            $record = DatKursHarian::active()
-                ->where('tanggal', '<=', $tgl)
-                ->orderByDesc('tanggal')
-                ->first();
-            $effectiveDate = $record ? Carbon::parse($record->tanggal)->format('d/m/Y') : Carbon::parse($tgl)->format('d/m/Y');
+            if ($isLatest) {
+                $record = DatKursHarian::active()
+                    ->orderByDesc('tanggal')
+                    ->first();
+
+                if (!$record) {
+                    $rate = $this->tarifService->getJisdorRate(date('Y-m-d'), true);
+                    $record = DatKursHarian::active()->orderByDesc('tanggal')->first();
+                } else {
+                    $rate = (float) $record->kurs_tengah;
+                }
+
+                $effectiveDateCarbon = $record ? Carbon::parse($record->tanggal) : Carbon::today();
+                $effectiveDate = $effectiveDateCarbon->format('d/m/Y');
+                $keteranganAcuan = 'Kurs terkini Bank Indonesia';
+                $tgl = $effectiveDateCarbon->format('Y-m-d');
+            } else {
+                $tgl = $request->input('date') ?: $request->input('tgl', date('Y-m-d'));
+                $rate = $this->tarifService->getJisdorRate($tgl, true);
+
+                $record = DatKursHarian::active()
+                    ->where('tanggal', '<=', $tgl)
+                    ->orderByDesc('tanggal')
+                    ->first();
+
+                $prodDateCarbon = Carbon::parse($tgl);
+                $effectiveDateCarbon = $record ? Carbon::parse($record->tanggal) : $prodDateCarbon;
+                $effectiveDate = $effectiveDateCarbon->format('d/m/Y');
+
+                $keteranganAcuan = '';
+                if ($prodDateCarbon->isWeekend()) {
+                    $dayName = $prodDateCarbon->dayOfWeek === 6 ? 'Sabtu' : ($prodDateCarbon->dayOfWeek === 0 ? 'Minggu' : 'Hari libur');
+                    $keteranganAcuan = "Kurs hari kerja terakhir BI ({$dayName} bursa BI libur)";
+                } elseif ($record && !$effectiveDateCarbon->isSameDay($prodDateCarbon)) {
+                    $keteranganAcuan = "Kurs hari bursa terakhir";
+                }
+            }
 
             return response()->json([
-                'status'         => 'success',
-                'success'        => true,
-                'date'           => $tgl,
-                'tanggal'        => $tgl,
-                'tanggal_acuan'  => $effectiveDate,
-                'kurs'           => $rate,
-                'rate'           => $rate,
-                'kurs_formatted' => number_format($rate, 2, ',', '.'),
+                'status'           => 'success',
+                'success'          => true,
+                'date'             => $tgl,
+                'tanggal'          => $tgl,
+                'tanggal_acuan'    => $effectiveDate,
+                'keterangan_acuan' => $keteranganAcuan,
+                'kurs'             => $rate,
+                'rate'             => $rate,
+                'kurs_formatted'   => number_format($rate, 2, ',', '.'),
+                'data'             => [
+                    'rate'             => $rate,
+                    'kurs'             => $rate,
+                    'date'             => $effectiveDate,
+                    'tanggal_acuan'    => $effectiveDate,
+                    'keterangan_acuan' => $keteranganAcuan,
+                    'kurs_formatted'   => number_format($rate, 2, ',', '.'),
+                ],
             ]);
         } catch (Exception $e) {
             return response()->json([
                 'status'         => 'error',
                 'success'        => false,
-                'kurs'           => 18161.00,
-                'rate'           => 18161.00,
-                'kurs_formatted' => '18.161,00',
+                'kurs'           => 18103.00,
+                'rate'           => 18103.00,
+                'kurs_formatted' => '18.103,00',
                 'message'        => $e->getMessage(),
             ], 200);
         }
@@ -307,9 +348,34 @@ class ProduksiController extends Controller
     {
         $selectedProduksiId = $request->input('produksi_id');
 
-        // Daftar dokumen produksi fisik (30 hari terakhir) yang dapat dihitung / dialokasikan HPP-nya
+        // Dokumen produksi fisik yang siap dikalkulasi HPP:
+        // 1. Memiliki kuantitas WIP (total_wip_qty > 0 atau tercatat di outputs)
+        // 2. Belum difinalisasi HPP-nya (total_biaya_produksi <= 0 ATAU komponen energi CNG & TK belum dihitung)
+        // 3. Atau dokumen yang secara eksplisit dipilih via query parameter ($selectedProduksiId)
         $produksiList = DatProduksiHdr::with(['gudang', 'outputs'])
             ->where('deleted_st', false)
+            ->where(function ($wipQ) {
+                $wipQ->where('total_wip_qty', '>', 0)
+                    ->orWhereHas('outputs', function ($outQ) {
+                        $outQ->where('qty_kg', '>', 0)->orWhere('qty_hasil', '>', 0);
+                    });
+            })
+            ->where(function ($q) use ($selectedProduksiId) {
+                $q->where(function ($sub) {
+                    $sub->whereNull('total_biaya_produksi')
+                        ->orWhere('total_biaya_produksi', '<=', 0)
+                        ->orWhere(function ($sub2) {
+                            $sub2->where(function ($s) {
+                                $s->whereNull('cng_nilai')->orWhere('cng_nilai', '<=', 0);
+                            })->where(function ($s) {
+                                $s->whereNull('tk_total_nilai')->orWhere('tk_total_nilai', '<=', 0);
+                            });
+                        });
+                });
+                if ($selectedProduksiId) {
+                    $q->orWhere('produksi_id', $selectedProduksiId);
+                }
+            })
             ->orderBy('produksi_tgl', 'desc')
             ->orderBy('produksi_id', 'desc')
             ->take(60)
@@ -318,17 +384,49 @@ class ProduksiController extends Controller
         $energiRates = $this->tarifService->getEnergiLaborRates();
         $fohRates = $this->tarifService->getFohRates();
         $defaultCngTarifUsd = 14.50;
-        $defaultCngKursJisdor = $this->tarifService->getJisdorRate(date('Y-m-d'), true) ?: 18138.00;
+
+        // Ambil kurs JISDOR terkini Bank Indonesia untuk penetapan HPP Finance
+        $latestKursRecord = DatKursHarian::active()->orderByDesc('tanggal')->first();
+        $defaultCngKursJisdor = $latestKursRecord ? (float) $latestKursRecord->kurs_tengah : ($this->tarifService->getJisdorRate(date('Y-m-d'), true) ?: 18103.00);
+        $latestKursDate = $latestKursRecord ? Carbon::parse($latestKursRecord->tanggal)->format('d/m/Y') : date('d/m/Y');
         $defaultCngTarif = round($defaultCngTarifUsd * $defaultCngKursJisdor, 2);
+
+        // Cari seluruh dokumen produksi pada tanggal yang sama untuk notifikasi shift/lini lain
+        $sameDaySpks = [];
+        if ($selectedProduksiId) {
+            $selectedProduksi = DatProduksiHdr::find($selectedProduksiId);
+            if ($selectedProduksi) {
+                $sameDaySpks = DatProduksiHdr::whereDate('produksi_tgl', $selectedProduksi->produksi_tgl)
+                    ->where('deleted_st', false)
+                    ->orderBy('shift_cd', 'asc')
+                    ->orderBy('produksi_id', 'asc')
+                    ->get()
+                    ->map(function ($other) use ($selectedProduksiId) {
+                        $isFinal = ((float)$other->cng_nilai > 0 || (float)$other->tk_total_nilai > 0 || str_contains($other->catatan_txt ?? '', '[HPP FINAL') || str_contains($other->catatan_txt ?? '', 'HPP Finance'));
+                        return [
+                            'produksi_id'   => $other->produksi_id,
+                            'produksi_no'   => $other->produksi_no,
+                            'shift_cd'      => $other->shift_cd ?? 'A',
+                            'lini_produksi' => $other->lini_produksi ?? 'Lini Manual',
+                            'total_wip_qty' => (float) ($other->total_wip_qty ?: ($other->outputs ? $other->outputs->sum('qty_kg') : 0)),
+                            'hpp_per_kg'    => (float) $other->hpp_per_kg,
+                            'is_current'    => ((int)$other->produksi_id === (int)$selectedProduksiId),
+                            'is_hpp_final'  => $isFinal,
+                        ];
+                    })->values()->toArray();
+            }
+        }
 
         return view('produksi.hpp.create', compact(
             'produksiList',
             'selectedProduksiId',
+            'sameDaySpks',
             'energiRates',
             'fohRates',
             'defaultCngTarifUsd',
             'defaultCngKursJisdor',
-            'defaultCngTarif'
+            'defaultCngTarif',
+            'latestKursDate'
         ));
     }
 
@@ -375,8 +473,13 @@ class ProduksiController extends Controller
             'cng_tarif'                   => 'nullable|numeric|min:0',
             'cng_nilai'                   => 'required|numeric|min:0',
 
-            // Tenaga Kerja
+            // Tenaga Kerja (Langsung & Tidak Langsung)
+            'tk_langsung_org'             => 'nullable|integer|min:0',
+            'tk_langsung_nilai'           => 'nullable|numeric|min:0',
+            'tk_tidak_langsung_org'       => 'nullable|integer|min:0',
+            'tk_tidak_langsung_nilai'     => 'nullable|numeric|min:0',
             'tk_jumlah_org'               => 'required|integer|min:0',
+            'tk_tarif_per_org'            => 'nullable|numeric|min:0',
             'tk_total_nilai'              => 'required|numeric|min:0',
 
             // Output Alokasi HPP
@@ -390,10 +493,34 @@ class ProduksiController extends Controller
             $userId = Auth::user()?->username ?? 'FINANCE';
             $produksi = $this->produksiService->saveHppCalculation((int) $validated['produksi_id'], $validated, $userId);
 
-            $msg = "✅ Lembar HPP Produksi {$produksi->produksi_no} berhasil dikalkulasi & disimpan! ";
-            $msg .= "Total Biaya: Rp " . number_format($produksi->total_biaya_produksi, 0, ',', '.') . " | HPP Riil: Rp " . number_format($produksi->hpp_per_kg, 2, ',', '.') . "/kg.";
+            // Periksa apakah masih ada dokumen fisik SPK lain pada hari yang sama yang belum difinalisasi HPP
+            $otherPending = DatProduksiHdr::whereDate('produksi_tgl', $produksi->produksi_tgl)
+                ->where('deleted_st', false)
+                ->where('produksi_id', '!=', $produksi->produksi_id)
+                ->where(function ($sub) {
+                    $sub->whereNull('total_biaya_produksi')
+                        ->orWhere('total_biaya_produksi', '<=', 0)
+                        ->orWhere(function ($sub2) {
+                            $sub2->where(function ($s) {
+                                $s->whereNull('cng_nilai')->orWhere('cng_nilai', '<=', 0);
+                            })->where(function ($s) {
+                                $s->whereNull('tk_total_nilai')->orWhere('tk_total_nilai', '<=', 0);
+                            });
+                        });
+                })
+                ->orderBy('shift_cd', 'asc')
+                ->first();
 
-            return redirect()->route('produksi.show', $produksi->produksi_id)->with('success', $msg);
+            $msg = "✅ Lembar HPP Produksi {$produksi->produksi_no} (Shift {$produksi->shift_cd} • {$produksi->lini_produksi}) berhasil difinalisasi!";
+            $msg .= " Total Biaya: Rp " . number_format($produksi->total_biaya_produksi, 0, ',', '.') . " | HPP Riil: Rp " . number_format($produksi->hpp_per_kg, 2, ',', '.') . "/kg.";
+
+            if ($otherPending) {
+                $warnMsg = $msg . " ⚠️ PENGINGAT PENTING: Pada tanggal yang sama masih terdapat dokumen SPK #{$otherPending->produksi_no} (Shift {$otherPending->shift_cd} • {$otherPending->lini_produksi}) yang BELUM ditarik & difinalisasi HPP. Silakan lanjutkan pengisian biaya untuk dokumen ini.";
+                return redirect()->route('produksi.hpp.create', ['produksi_id' => $otherPending->produksi_id])
+                    ->with('warning', $warnMsg);
+            }
+
+            return redirect()->route('produksi.hpp.show', $produksi->produksi_id)->with('success', $msg);
         } catch (Exception $e) {
             return back()->withInput()->with('error', 'Gagal menyimpan kalkulasi HPP: ' . $e->getMessage());
         }
@@ -622,6 +749,24 @@ class ProduksiController extends Controller
     }
 
     /**
+     * Tampilkan detail lembar HPP Produksi, biaya manufaktur, dan riwayat audit (Khusus Finance / Costing).
+     */
+    public function showHpp(int $id): View
+    {
+        $produksi = $this->produksiService->getById($id);
+
+        // Ambil seluruh dokumen produksi pada tanggal yang sama untuk Tab Switcher Split View per Lini
+        $sameDateProductions = DatProduksiHdr::whereDate('produksi_tgl', $produksi->produksi_tgl)
+            ->where('deleted_st', false)
+            ->where('status_cd', '!=', 'VOID')
+            ->orderBy('shift_cd', 'asc')
+            ->orderBy('produksi_id', 'asc')
+            ->get();
+
+        return view('produksi.hpp.show', compact('produksi', 'sameDateProductions'));
+    }
+
+    /**
      * Beri nomor batch resmi untuk produksi buffer stock saat jadwal keberangkatan truk tiba.
      */
     public function assignBatch(Request $request, int $id): RedirectResponse
@@ -805,7 +950,7 @@ class ProduksiController extends Controller
             $msg = "✅ Berhasil melakukan adjustment HPP (No. BA: {$log->adj_no})! ";
             $msg .= "HPP baru: Rp " . number_format($log->hpp_sesudah, 2, ',', '.') . " / kg. Saldo batch stok di gudang telah disinkronkan.";
 
-            return redirect()->route('produksi.show', $id)->with('success', $msg);
+            return redirect()->route('produksi.hpp.show', $id)->with('success', $msg);
         } catch (Exception $e) {
             return redirect()->back()->withInput()->with('error', 'Gagal melakukan adjustment HPP: ' . $e->getMessage());
         }

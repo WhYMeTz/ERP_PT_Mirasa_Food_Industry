@@ -428,6 +428,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/hpp/create', [ProduksiController::class, 'createHpp'])->name('hpp.create')->middleware('role:produksi_create');
         Route::get('/hpp/produksi-data/{id}', [ProduksiController::class, 'getProduksiDataForHpp'])->name('hpp.produksi-data');
         Route::post('/hpp/store', [ProduksiController::class, 'storeHpp'])->name('hpp.store')->middleware('role:produksi_create');
+        Route::get('/hpp/{id}', [ProduksiController::class, 'showHpp'])->name('hpp.show')->whereNumber('id');
 
         Route::get('/create', [ProduksiController::class, 'create'])->name('create')->middleware('role:produksi_create');
         Route::post('/', [ProduksiController::class, 'store'])->name('store')->middleware('role:produksi_create');

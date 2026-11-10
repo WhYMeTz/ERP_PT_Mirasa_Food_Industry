@@ -1357,6 +1357,298 @@ input:checked + .switch-slider:before {
     padding: 0.75rem 0.85rem;
 }
 
+/* Badge Batch Interaktif (Click to Toggle Status) */
+.badge-batch-wip {
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.15s ease-in-out;
+}
+
+.badge-batch-wip:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+    filter: brightness(0.97);
+}
+
+.badge-batch-wip:active {
+    transform: translateY(0);
+}
+
+/* Modal Konfirmasi Penyimpanan Standar Mirasa */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(2px);
+    z-index: 999999;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-overlay.show {
+    display: flex !important;
+}
+
+.modal-dialog-custom {
+    background: #ffffff;
+    border-radius: 12px;
+    max-width: 540px;
+    width: 92%;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.25), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    animation: modalScaleUp 0.18s ease-out;
+}
+
+@keyframes modalScaleUp {
+    from {
+        opacity: 0;
+        transform: scale(0.96);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.spinner-btn-anim {
+    animation: spinLoader 0.75s linear infinite;
+}
+
+@keyframes spinLoader {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Modal Konfirmasi Penyimpanan Lembar Produksi - Enterprise Authentic */
+.modal-confirm-enterprise {
+    max-width: 720px !important;
+    width: 95% !important;
+    border-radius: 8px !important;
+    border: 1px solid #cbd5e1 !important;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.18), 0 2px 6px rgba(15, 23, 42, 0.08) !important;
+}
+
+.modal-confirm-header {
+    background: #ffffff;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 0.85rem 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.modal-confirm-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0;
+    letter-spacing: -0.01em;
+}
+
+.modal-confirm-meta {
+    font-size: 0.75rem;
+    color: #64748b;
+    margin-top: 0.2rem;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
+.meta-doc-badge {
+    font-family: monospace;
+    font-weight: 700;
+    color: #0369a1;
+    background: #f0f9ff;
+    border: 1px solid #bae6fd;
+    padding: 0.05rem 0.4rem;
+    border-radius: 4px;
+}
+
+.meta-separator {
+    color: #cbd5e1;
+}
+
+.btn-modal-close {
+    background: none;
+    border: none;
+    font-size: 1.4rem;
+    color: #94a3b8;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0.1rem 0.3rem;
+    transition: color 0.15s ease;
+}
+
+.btn-modal-close:hover {
+    color: #0f172a;
+}
+
+.modal-confirm-body {
+    padding: 1rem 1.25rem;
+    background: #ffffff;
+}
+
+.modal-kpi-bar {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.65rem;
+    margin-bottom: 0.85rem;
+}
+
+.modal-kpi-bar .kpi-cell {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+}
+
+.modal-kpi-bar .kpi-label {
+    display: block;
+    font-size: 0.675rem;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-bottom: 0.15rem;
+}
+
+.modal-kpi-bar .kpi-value {
+    display: block;
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #0f172a;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+}
+
+.modal-kpi-bar .kpi-value.kpi-output {
+    color: #0284c7;
+}
+
+.modal-kpi-bar .kpi-value.kpi-rendemen {
+    color: #16a34a;
+}
+
+.modal-kpi-bar .kpi-sub {
+    display: block;
+    font-size: 0.675rem;
+    color: #64748b;
+    margin-top: 0.1rem;
+}
+
+.modal-table-wrap {
+    margin-bottom: 0.75rem;
+}
+
+.modal-table-caption {
+    font-size: 0.725rem;
+    font-weight: 700;
+    color: #334155;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.35rem;
+}
+
+.table-responsive-modal {
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.table-modal-items {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.7875rem;
+    text-align: left;
+}
+
+.table-modal-items thead th {
+    background: #f8fafc;
+    color: #475569;
+    font-weight: 700;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0.45rem 0.75rem;
+    border-bottom: 1px solid #e2e8f0;
+    white-space: nowrap;
+}
+
+.table-modal-items tbody td {
+    padding: 0.425rem 0.75rem;
+    border-bottom: 1px solid #f1f5f9;
+    color: #1e293b;
+    vertical-align: middle;
+}
+
+.table-modal-items tbody tr:hover {
+    background: #f8fafc;
+}
+
+.table-modal-items tfoot td {
+    background: #f8fafc;
+    border-top: 1px solid #cbd5e1;
+    padding: 0.45rem 0.75rem;
+    font-size: 0.7875rem;
+    white-space: nowrap;
+}
+
+.modal-confirm-note {
+    font-size: 0.725rem;
+    color: #64748b;
+    margin: 0;
+    line-height: 1.4;
+}
+
+.modal-confirm-footer {
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+    padding: 0.75rem 1.25rem;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 0.65rem;
+}
+
+.btn-modal-cancel {
+    font-size: 0.8125rem !important;
+    padding: 0.4rem 0.95rem !important;
+    border: 1px solid #cbd5e1 !important;
+    background: #ffffff !important;
+    color: #475569 !important;
+    font-weight: 600 !important;
+    border-radius: 6px !important;
+}
+
+.btn-modal-cancel:hover {
+    background: #f1f5f9 !important;
+    color: #1e293b !important;
+}
+
+.btn-modal-submit {
+    font-size: 0.8125rem !important;
+    padding: 0.4rem 1.2rem !important;
+    background: #059669 !important;
+    border: 1px solid #059669 !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    border-radius: 6px !important;
+}
+
+.btn-modal-submit:hover {
+    background: #047857 !important;
+    border-color: #047857 !important;
+}
+
+
+
 
 
 

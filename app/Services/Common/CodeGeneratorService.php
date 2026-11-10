@@ -995,5 +995,51 @@ class CodeGeneratorService
         $prefix = 'RET-SO-' . date('Ym', strtotime($date ?? date('Y-m-d'))) . '-';
         return $this->generate('dat_so_retur_hdr', 'retur_no', $prefix, 4);
     }
+
+    /**
+     * Generate Nomor Dokumen Penerimaan Karton Balikan Resmi PT Mirasa
+     * Format Standar Korporat: {seq}/PKB/MFI/{mm}/{yy}
+     * Contoh: 001/PKB/MFI/11/26
+     */
+    public function generateKartonBalikanNo(?string $date = null, ?int $excludeId = null): string
+    {
+        $timestamp = strtotime($date ?? date('Y-m-d'));
+        $month = date('m', $timestamp);
+        $year = date('y', $timestamp);
+        $suffix = "/PKB/MFI/{$month}/{$year}";
+
+        $query = DB::table('dat_kemasan_sirkular_hdr')
+            ->where('sirkular_no', 'LIKE', '%' . $suffix);
+
+        if ($excludeId) {
+            $query->where('kemasan_sirkular_id', '!=', $excludeId);
+        }
+
+        $existing = $query->pluck('sirkular_no');
+
+        $maxNumber = 0;
+        $regex = '/^(\d+)\/PKB\/MFI\/' . $month . '\/' . $year . '$/i';
+
+        foreach ($existing as $no) {
+            if (preg_match($regex, trim((string) $no), $matches)) {
+                $num = (int) $matches[1];
+                if ($num > $maxNumber) {
+                    $maxNumber = $num;
+                }
+            }
+        }
+
+        do {
+            $maxNumber++;
+            $generated = str_pad((string) $maxNumber, 3, '0', STR_PAD_LEFT) . $suffix;
+            $checkQuery = DB::table('dat_kemasan_sirkular_hdr')->where('sirkular_no', $generated);
+            if ($excludeId) {
+                $checkQuery->where('kemasan_sirkular_id', '!=', $excludeId);
+            }
+            $exists = $checkQuery->exists();
+        } while ($exists);
+
+        return $generated;
+    }
 }
 

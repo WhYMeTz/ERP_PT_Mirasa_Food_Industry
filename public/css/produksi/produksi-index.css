@@ -73,37 +73,74 @@
     white-space: nowrap;
 }
 
-/* Unified Secondary Header Buttons (No Rainbow Outlines) */
-.btn-header-secondary {
+/* Standard Action Header Buttons (ERP Mirasa Standard: Green Export, Purple Import, Amber Rework) */
+.btn-export-excel {
     background: #ffffff;
-    border: 1px solid #cbd5e1;
-    color: #334155;
-    font-size: 0.825rem;
-    font-weight: 600;
-    padding: 0.5rem 0.85rem;
+    border: 1.5px solid #059669;
+    color: #059669;
+    font-size: 0.85rem;
+    font-weight: 700;
+    padding: 0.55rem 0.95rem;
     border-radius: 6px;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
     display: inline-flex;
     align-items: center;
-    gap: 0.4rem;
+    gap: 0.35rem;
     text-decoration: none;
     transition: all 0.15s ease-in-out;
     cursor: pointer;
 }
 
-.btn-header-secondary:hover {
-    background: #f8fafc;
-    border-color: #94a3b8;
-    color: #0f172a;
+.btn-export-excel:hover {
+    background: #ecfdf5;
+    border-color: #047857;
+    color: #047857;
 }
 
-.btn-header-secondary svg {
-    color: #64748b;
-    transition: color 0.15s ease-in-out;
+.btn-import-excel {
+    background: #ffffff;
+    border: 1.5px solid #7c3aed;
+    color: #7c3aed;
+    font-size: 0.85rem;
+    font-weight: 700;
+    padding: 0.55rem 0.95rem;
+    border-radius: 6px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    text-decoration: none;
+    transition: all 0.15s ease-in-out;
+    cursor: pointer;
 }
 
-.btn-header-secondary:hover svg {
-    color: #334155;
+.btn-import-excel:hover {
+    background: #faf5ff;
+    border-color: #6d28d9;
+    color: #6d28d9;
+}
+
+.btn-rework-amber {
+    background: #ffffff;
+    border: 1.5px solid #d97706;
+    color: #b45309;
+    font-size: 0.85rem;
+    font-weight: 700;
+    padding: 0.55rem 0.95rem;
+    border-radius: 6px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    text-decoration: none;
+    transition: all 0.15s ease-in-out;
+    cursor: pointer;
+}
+
+.btn-rework-amber:hover {
+    background: #fffbeb;
+    border-color: #b45309;
+    color: #92400e;
 }
 
 /* Smart Action Dropdown Button (Sama Persis dengan Standar Modul PO) */
@@ -352,33 +389,33 @@
    ═════════════════════════════════════════════════════════════ */
 .table-responsive-hasil {
     background: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 10px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     overflow: hidden;
 }
 
 .table-hasil {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.8rem;
+    font-size: 0.825rem;
     text-align: left;
 }
 
 .table-hasil th {
     background: #f8fafc;
-    color: #475569;
-    font-size: 0.725rem;
+    color: #334155;
+    font-size: 0.75rem;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
-    padding: 0.75rem 0.85rem;
-    border-bottom: 1px solid #e2e8f0;
+    letter-spacing: 0.04em;
+    padding: 0.85rem 1rem;
+    border-bottom: 2px solid #cbd5e1;
     white-space: nowrap;
 }
 
 .table-hasil td {
-    padding: 0.75rem 0.85rem;
+    padding: 0.85rem 1rem;
     border-bottom: 1px solid #f1f5f9;
     color: #1e293b;
     vertical-align: middle;
@@ -396,7 +433,21 @@
     background: #f8fafc;
     font-weight: 700;
     border-top: 2px solid #cbd5e1;
-    padding: 0.8rem 0.85rem;
+    padding: 0.85rem 1rem;
+}
+
+/* Badge Batch Ditangguhkan (Buffer Stock IFM) */
+.badge-batch-pending {
+    display: inline-block;
+    padding: 0.2rem 0.55rem;
+    background: #fffbeb;
+    color: #b45309;
+    border: 1.5px solid #f59e0b;
+    border-radius: 4px;
+    font-weight: 800;
+    font-size: 0.72rem;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
 }
 
 /* Multi-Tier Compact Cell Typography */

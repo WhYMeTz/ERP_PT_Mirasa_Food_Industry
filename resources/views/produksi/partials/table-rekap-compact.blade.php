@@ -82,11 +82,10 @@
                                         <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
                                     </a>
                                 @endif
-                                <a href="{{ route('produksi.create') }}" 
+                                <a href="{{ route('produksi.hpp.create') }}" 
                                    class="btn btn-primary" 
-                                   style="font-size: 0.8rem; font-weight: 700; padding: 0.45rem 0.95rem; border-radius: 6px; background: #059669; border: 1px solid #047857; color: #ffffff; display: inline-flex; align-items: center; gap: 0.35rem; text-decoration: none;">
-                                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                                    <span>Input Produksi Baru</span>
+                                   style="font-size: 0.85rem; font-weight: 700; padding: 0.6rem 1.25rem; border-radius: 8px; background: #059669; border-color: #059669; color: #ffffff; display: inline-flex; align-items: center; text-decoration: none;">
+                                    <span>+ Kalkulasi Lembar HPP</span>
                                 </a>
                             </div>
                         </div>
@@ -121,8 +120,9 @@
                         $isBarco = str_contains($liniUpper, 'BARCO');
                     @endphp
 
-                    {{-- 1. BARIS DATA UTAMA --}}
-                    <tr class="main-data-row" id="main-row-{{ $d['day'] }}">
+                    @if(!empty($d['is_hpp_final']))
+                        {{-- 1. BARIS DATA UTAMA RESMI (SUDAH DIFINALISASI FINANCE) --}}
+                        <tr class="main-data-row" id="main-row-{{ $d['day'] }}">
                         {{-- Tanggal & Shift --}}
                         <td>
                             <div style="font-weight: 700; color: #0f172a; font-size: 0.825rem;">
@@ -192,7 +192,7 @@
                             {{-- Nomor Dokumen Transaksi Sistem (Ringkas Bersih) --}}
                             @if(!empty($d['primary_produksi_no'] ?? $d['produksi_no']))
                                 <div style="margin-top: 0.25rem; display: flex; align-items: center; gap: 0.25rem;">
-                                    <a href="{{ route('produksi.show', $d['produksi_id']) }}" style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.65rem; color: #64748b; text-decoration: none; display: inline-flex; align-items: center; gap: 0.2rem; white-space: nowrap;" title="Lihat Dokumen Transaksi {{ $d['primary_produksi_no'] ?? $d['produksi_no'] }}">
+                                    <a href="{{ route('produksi.hpp.show', $d['produksi_id']) }}" style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.65rem; color: #64748b; text-decoration: none; display: inline-flex; align-items: center; gap: 0.2rem; white-space: nowrap;" title="Lihat Lembar HPP {{ $d['primary_produksi_no'] ?? $d['produksi_no'] }}">
                                         <span style="color: #94a3b8;">#</span>
                                         <span style="font-weight: 600; color: #475569;">{{ $d['primary_produksi_no'] ?? $d['produksi_no'] }}</span>
                                     </a>
@@ -243,9 +243,6 @@
                             <div style="font-weight: 700; font-size: 0.875rem; color: #0f172a; font-variant-numeric: tabular-nums;">
                                 Rp {{ number_format($d['total_biaya_produksi'], 0, ',', '.') }}
                             </div>
-                            <div style="color: #64748b; font-size: 0.65rem;">
-                                Bahan + Energi + TK
-                            </div>
                         </td>
 
                         {{-- HPP / Kg --}}
@@ -257,10 +254,6 @@
                                 <div style="font-size: 0.65rem; color: #dc2626; font-weight: 600;">
                                     Berko: Rp {{ number_format($d['hpp_berko'], 0, ',', '.') }}
                                 </div>
-                            @else
-                                <span style="font-size: 0.625rem; color: #059669; font-weight: 600; text-transform: uppercase;">
-                                    Beban Pokok / Kg
-                                </span>
                             @endif
                         </td>
 
@@ -284,9 +277,15 @@
                                     <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                                 </button>
                                 <div id="{{ $compactMenuId }}" class="action-dropdown-menu">
-                                    <a href="{{ route('produksi.show', $d['produksi_id']) }}" class="action-dropdown-item">
+                                    @if(empty($d['is_hpp_final']))
+                                        <a href="{{ route('produksi.hpp.create', ['produksi_id' => $d['produksi_id']]) }}" class="action-dropdown-item" style="color: #0284c7; font-weight: 700; background: #f0f9ff;">
+                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                                            <span>Tetapkan Lembar HPP</span>
+                                        </a>
+                                    @endif
+                                    <a href="{{ route('produksi.hpp.show', $d['produksi_id']) }}" class="action-dropdown-item">
                                         <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                                        <span>Lihat Detail Dokumen</span>
+                                        <span>Lihat Lembar HPP</span>
                                     </a>
                                     @if(Auth::user()->canCreateProduksi())
                                         <a href="{{ route('produksi.adjust', $d['produksi_id']) }}" class="action-dropdown-item">
@@ -459,12 +458,11 @@
                                 </div>
 
                                 {{-- KOMPARTEMEN 4: TOTAL AKUMULASI BIAYA, WIP & HPP --}}
-                                <div class="mini-cost-card" style="border-color: #fde047; background: #fefce8;">
-                                    <div class="mini-cost-header" style="border-bottom-color: #fef08a;">
-                                        <div class="mini-cost-title" style="color: #713f12;">
+                                <div class="mini-cost-card" style="border-color: #cbd5e1; background: #ffffff;">
+                                    <div class="mini-cost-header" style="border-bottom-color: #e2e8f0;">
+                                        <div class="mini-cost-title" style="color: #0f172a;">
                                             <span>4. Output WIP, Rendemen &amp; HPP</span>
                                         </div>
-                                        <span class="mini-cost-badge" style="background: #ca8a04; color: #ffffff; font-weight: 700;">HPP Final</span>
                                     </div>
                                     <div class="mini-cost-list">
                                         @if(!empty($d['ifl_qty']) && $d['ifl_qty'] > 0)
@@ -584,6 +582,188 @@
                             </div>
                         </td>
                     </tr>
+                    @else
+                        @if(!empty($d['is_hpp_partial']))
+                            {{-- 2. BARIS OPERASIONAL PARSIAL: SEBAGIAN SHIFT/LINI SUDAH FINAL, SEBAGIAN BELUM --}}
+                            <tr class="main-data-row" style="background: #fffdf5; border-bottom: 2px solid #fef3c7;">
+                                {{-- Tanggal & Shift --}}
+                                <td>
+                                    <div style="font-weight: 700; color: #0f172a; font-size: 0.825rem;">
+                                        {{ $d['hari_nm'] }}, {{ date('d M Y', strtotime($d['date'])) }}
+                                    </div>
+                                    <div style="display: flex; gap: 0.25rem; align-items: center; margin-top: 0.25rem; flex-wrap: wrap;">
+                                        @foreach($d['shift_records'] as $sRec)
+                                            @if($sRec['is_hpp_final'])
+                                                <span style="font-size: 0.65rem; font-weight: 700; padding: 0.1rem 0.35rem; border-radius: 3px; background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0;" title="Shift {{ $sRec['shift_cd'] }} ({{ $sRec['lini_produksi'] }}): HPP Sudah Final (Rp {{ number_format($sRec['hpp_per_kg'], 0, ',', '.') }}/kg)">
+                                                    Shift {{ $sRec['shift_cd'] }} ✓
+                                                </span>
+                                            @else
+                                                <span style="font-size: 0.65rem; font-weight: 700; padding: 0.1rem 0.35rem; border-radius: 3px; background: #fffbeb; color: #92400e; border: 1px solid #fde68a;" title="Shift {{ $sRec['shift_cd'] }} ({{ $sRec['lini_produksi'] }}): Belum Ditarik HPP">
+                                                    Shift {{ $sRec['shift_cd'] }} ⏳
+                                                </span>
+                                            @endif
+                                        @endforeach
+                                    </div>
+                                    <div style="margin-top: 0.25rem;">
+                                        <span style="font-size: 0.65rem; font-weight: 800; color: #b45309; background: #fef3c7; border: 1px solid #fde68a; padding: 1px 6px; border-radius: 4px; display: inline-block;">
+                                            Parsial ({{ $d['finalized_spk_count'] }}/{{ $d['total_spk_count'] }} Final)
+                                        </span>
+                                    </div>
+                                </td>
+
+                                {{-- Colspan 7: Rincian Notifikasi Informatif Parsial --}}
+                                <td colspan="7" style="padding: 0.75rem 0.85rem; vertical-align: middle;">
+                                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                            <span style="font-size: 0.85rem;">⚠️</span>
+                                            <div style="font-size: 0.825rem; font-weight: 700; color: #92400e;">
+                                                Sebagian Dokumen Produksi di Tanggal Ini Belum Difinalisasi HPP ({{ $d['pending_spk_count'] }} dari {{ $d['total_spk_count'] }} Dokumen Menunggu Penarikan Data &amp; Perhitungan HPP)
+                                            </div>
+                                        </div>
+
+                                        {{-- Daftar Shift Final vs Pending --}}
+                                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 0.5rem;">
+                                            {{-- Shift yang sudah Final --}}
+                                            @foreach($d['finalized_spks'] as $fSpk)
+                                                <div style="background: #ffffff; border: 1px solid #bbf7d0; border-radius: 6px; padding: 0.45rem 0.65rem; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;">
+                                                    <div>
+                                                        <div style="font-size: 0.75rem; font-weight: 700; color: #166534;">
+                                                            ✓ Shift {{ $fSpk['shift_cd'] }} &bull; {{ $fSpk['lini_produksi'] }}
+                                                        </div>
+                                                        <div style="font-size: 0.685rem; color: #64748b; font-family: monospace;">
+                                                            SPK #{{ $fSpk['produksi_no'] }} &bull; {{ number_format($fSpk['total_wip'], 1, ',', '.') }} kg &bull; Rp {{ number_format($fSpk['hpp_per_kg'], 0, ',', '.') }}/kg
+                                                        </div>
+                                                    </div>
+                                                    <a href="{{ route('produksi.hpp.show', $fSpk['produksi_id']) }}" style="font-size: 0.7rem; color: #059669; font-weight: 700; text-decoration: underline; white-space: nowrap;">
+                                                        Lihat HPP &rarr;
+                                                    </a>
+                                                </div>
+                                            @endforeach
+
+                                            {{-- Shift yang masih Pending --}}
+                                            @foreach($d['pending_spks'] as $pSpk)
+                                                <div style="background: #ffffff; border: 1.5px solid #fde68a; border-radius: 6px; padding: 0.45rem 0.65rem; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;">
+                                                    <div>
+                                                        <div style="font-size: 0.75rem; font-weight: 700; color: #92400e;">
+                                                            ⏳ Shift {{ $pSpk['shift_cd'] }} &bull; {{ $pSpk['lini_produksi'] }}
+                                                        </div>
+                                                        <div style="font-size: 0.685rem; color: #b45309; font-family: monospace;">
+                                                            SPK #{{ $pSpk['produksi_no'] }} &bull; {{ number_format($pSpk['total_wip'], 1, ',', '.') }} kg (Belum Ditarik)
+                                                        </div>
+                                                    </div>
+                                                    <a href="{{ route('produksi.hpp.create', ['produksi_id' => $pSpk['produksi_id']]) }}" 
+                                                       style="font-size: 0.725rem; font-weight: 700; color: #0284c7; background: #f0f9ff; border: 1px solid #bae6fd; padding: 0.25rem 0.6rem; border-radius: 4px; text-decoration: none; display: inline-flex; align-items: center; gap: 0.25rem; white-space: nowrap;">
+                                                        <span>Tarik Shift Ini &rarr;</span>
+                                                    </a>
+                                                </div>
+                                            @endforeach
+                                        </div>
+
+                                        <div style="font-size: 0.7rem; color: #b45309; font-style: italic;">
+                                            * Angka konsolidasi harian akan muncul penuh ditabel ini setelah seluruh shift/lini di atas selesai dilakukan penarikan data dan perhitungan HPP.
+                                        </div>
+                                    </div>
+                                </td>
+
+                                {{-- Aksi Dropdown --}}
+                                <td style="text-align: center; position: relative; vertical-align: middle;">
+                                    @php
+                                        $partialMenuId = 'dropdown-partial-' . $d['day'];
+                                        $formattedDate = sprintf('%02d/%02d/%04d', $d['day'], $month, $year);
+                                    @endphp
+                                    <button type="button" class="btn-action-trigger" onclick="toggleSmartActionDropdown(this, event, '{{ $partialMenuId }}')">
+                                        <span>Aksi</span>
+                                        <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                    </button>
+                                    <div id="{{ $partialMenuId }}" class="action-dropdown-menu">
+                                        @foreach($d['pending_spks'] as $pSpk)
+                                            <a href="{{ route('produksi.hpp.create', ['produksi_id' => $pSpk['produksi_id']]) }}" class="action-dropdown-item" style="color: #0284c7; font-weight: 700; background: #f0f9ff;">
+                                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                                                <span>Tarik Shift {{ $pSpk['shift_cd'] }} ({{ $pSpk['lini_produksi'] }})</span>
+                                            </a>
+                                        @endforeach
+                                        @foreach($d['finalized_spks'] as $fSpk)
+                                            <a href="{{ route('produksi.hpp.show', $fSpk['produksi_id']) }}" class="action-dropdown-item">
+                                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                                <span>Lihat HPP Shift {{ $fSpk['shift_cd'] }}</span>
+                                            </a>
+                                        @endforeach
+                                    </div>
+                                </td>
+                            </tr>
+                        @else
+                            {{-- 3. BARIS OPERASIONAL FISIK TERCATAT, LEMBAR HPP BELUM DIFINALISASI FINANCE SAMA SEKALI --}}
+                            <tr class="main-data-row" style="background: #fffdf5; border-bottom: 1px solid #fef3c7;">
+                            {{-- Tanggal & Shift --}}
+                            <td>
+                                <div style="font-weight: 700; color: #0f172a; font-size: 0.825rem;">
+                                    {{ $d['hari_nm'] }}, {{ date('d M Y', strtotime($d['date'])) }}
+                                </div>
+                                <div style="display: flex; gap: 0.35rem; align-items: center; margin-top: 0.2rem;">
+                                    @if(!empty($d['shift_cd']))
+                                        <span style="font-size: 0.65rem; font-weight: 700; padding: 0.1rem 0.35rem; border-radius: 3px; {{ str_contains($d['shift_cd'], 'B') && !str_contains($d['shift_cd'], 'A') ? 'background: #fdf4ff; color: #86198f; border: 1px solid #f5d0fe;' : 'background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe;' }}" title="Shift {{ $d['shift_cd'] }}">
+                                            Shift {{ $d['shift_cd'] }}
+                                        </span>
+                                    @endif
+                                    <span style="font-size: 0.7rem; color: #64748b;">
+                                        Tgl {{ $d['day'] }}
+                                    </span>
+                                </div>
+                            </td>
+
+                            {{-- Pesan Status Informatif: Hasil produksi belum dilakukan finalisasi HPP (Colspan 7) --}}
+                            <td colspan="7" style="padding: 0.65rem 0.85rem; vertical-align: middle;">
+                                <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap;">
+                                    <div style="display: flex; align-items: center; gap: 0.6rem;">
+                                        <span style="display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: #fef3c7; color: #b45309; font-size: 0.75rem; font-weight: 800; flex-shrink: 0; border: 1px solid #fde68a;">
+                                            ⏳
+                                        </span>
+                                        <div>
+                                            <div style="font-size: 0.825rem; font-weight: 700; color: #92400e;">
+                                                Hasil produksi fisik tercatat (SPK #{{ $d['primary_produksi_no'] ?? $d['produksi_no'] }} &bull; {{ $d['lini_produksi'] }}), belum dilakukan finalisasi HPP.
+                                            </div>
+                                            <div style="font-size: 0.725rem; color: #b45309; margin-top: 2px;">
+                                                Data biaya dan HPP akan muncul ditabel ini setelah dilakukan penarikan data dan perhitungan HPP.
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <a href="{{ route('produksi.hpp.create', ['produksi_id' => $d['produksi_id']]) }}" 
+                                       style="font-size: 0.75rem; font-weight: 700; color: #0284c7; background: #f0f9ff; border: 1px solid #bae6fd; padding: 0.35rem 0.75rem; border-radius: 5px; text-decoration: none; display: inline-flex; align-items: center; gap: 0.35rem; white-space: nowrap; transition: all 0.15s ease;">
+                                        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                                        <span>Tarik &amp; Finalisasi HPP</span>
+                                    </a>
+                                </div>
+                            </td>
+
+                            {{-- Aksi Dropdown --}}
+                            <td style="text-align: center; position: relative; vertical-align: middle;">
+                                @php
+                                    $pendingMenuId = 'dropdown-pending-' . $d['produksi_id'];
+                                    $formattedDate = sprintf('%02d/%02d/%04d', $d['day'], $month, $year);
+                                @endphp
+                                <button type="button" class="btn-action-trigger" onclick="toggleSmartActionDropdown(this, event, '{{ $pendingMenuId }}')">
+                                    <span>Aksi</span>
+                                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                </button>
+                                <div id="{{ $pendingMenuId }}" class="action-dropdown-menu">
+                                    <a href="{{ route('produksi.hpp.create', ['produksi_id' => $d['produksi_id']]) }}" class="action-dropdown-item" style="color: #0284c7; font-weight: 700; background: #f0f9ff;">
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                                        <span>Tarik &amp; Finalisasi HPP</span>
+                                    </a>
+                                    <a href="{{ route('produksi.show', $d['produksi_id']) }}" class="action-dropdown-item">
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                        <span>Lihat SPK Fisik</span>
+                                    </a>
+                                    <div class="action-dropdown-divider"></div>
+                                    <button type="button" class="action-dropdown-item danger-item" onclick="openDeleteProduksiModal({{ $d['produksi_id'] }}, '{{ $d['produksi_no'] }}', '{{ $formattedDate }}', '{{ $d['shift_cd'] }}', '{{ $d['batch_wip_no'] }}')">
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                        <span>Hapus Data Produksi</span>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        @endif
+                    @endif
                 @else
                     {{-- 3. BARIS HARI LIBUR / TIDAK BEROPERASI --}}
                     @php
@@ -606,28 +786,33 @@
         @php
             $cnt = $report['count'] > 0 ? $report['count'] : 1;
             $tot = $report['totals'];
+            $finalizedCount = collect($report['days'])->filter(fn($d) => !empty($d['has_data']) && !empty($d['is_hpp_final']))->count();
         @endphp
         @if ($report['count'] > 0)
             <tfoot style="background: #f8fafc; border-top: 2px solid #cbd5e1; font-weight: 700; font-size: 0.825rem;">
                 <tr>
                     <td colspan="2" style="padding: 0.75rem 0.85rem; color: #0f172a; text-transform: uppercase; font-size: 0.775rem;">
-                        TOTAL AKUMULASI ({{ $report['count'] }} HARI KERJA)
+                        TOTAL AKUMULASI ({{ $finalizedCount > 0 ? $finalizedCount . ' HARI FINAL' : $report['count'] . ' HARI KERJA' }})
                     </td>
                     <td style="text-align: right; padding: 0.75rem 0.85rem; color: #0f172a;">
-                        <div>{{ number_format($tot['singkong_qty'], 0, ',', '.') }} kg</div>
-                        <div style="color: #64748b; font-weight: 500; font-size: 0.675rem;">Rp {{ number_format($tot['singkong_nilai'], 0, ',', '.') }}</div>
+                        @if($finalizedCount > 0)
+                            <div>{{ number_format($tot['singkong_qty'], 0, ',', '.') }} kg</div>
+                            <div style="color: #64748b; font-weight: 500; font-size: 0.675rem;">Rp {{ number_format($tot['singkong_nilai'], 0, ',', '.') }}</div>
+                        @else
+                            <span style="color: #94a3b8;">-</span>
+                        @endif
                     </td>
                     <td style="text-align: right; padding: 0.75rem 0.85rem; color: #0284c7;">
-                        {{ number_format($tot['total_wip_qty'], 2, ',', '.') }} kg
+                        {{ $finalizedCount > 0 ? number_format($tot['total_wip_qty'], 2, ',', '.') . ' kg' : '-' }}
                     </td>
                     <td style="text-align: center; padding: 0.75rem 0.85rem; color: #0f172a;">
-                        {{ number_format($tot['rendemen_persen'], 2, ',', '.') }}%
+                        {{ $finalizedCount > 0 ? number_format($tot['rendemen_persen'], 2, ',', '.') . '%' : '-' }}
                     </td>
                     <td style="text-align: right; padding: 0.75rem 0.85rem; color: #0f172a;">
-                        Rp {{ number_format($tot['total_biaya_produksi'], 0, ',', '.') }}
+                        {{ $finalizedCount > 0 ? 'Rp ' . number_format($tot['total_biaya_produksi'], 0, ',', '.') : '-' }}
                     </td>
                     <td style="text-align: right; padding: 0.75rem 0.85rem; color: #0f172a; font-family: monospace;">
-                        Rp {{ number_format($tot['hpp_per_kg'], 0, ',', '.') }}
+                        {{ $finalizedCount > 0 ? 'Rp ' . number_format($tot['hpp_per_kg'], 0, ',', '.') : '-' }}
                     </td>
                     <td></td>
                     <td></td>

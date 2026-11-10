@@ -435,5 +435,75 @@ function updateLivePreview() {
     });
 }
 
+/**
+ * Modal Beri Nomor Batch (Buffer Stock IFM) pada Indeks Hasil Produksi
+ */
+function openAssignBatchModal(id, no, qtyKarton) {
+    closeAllActionDropdowns();
+    const modal = document.getElementById('modalAssignBatch');
+    if (!modal) return;
+
+    const docNoEl = document.getElementById('assignBatchDocNo');
+    const form = document.getElementById('formAssignBatch');
+    const qtyDisplay = document.getElementById('assign_qty_karton_display');
+    const qtyInput = document.getElementById('assign_qty_karton');
+
+    if (docNoEl) docNoEl.textContent = no || '-';
+    if (form) form.action = '/produksi/' + id + '/assign-batch';
+    if (qtyDisplay) qtyDisplay.value = (qtyKarton || 0) + ' Box';
+    if (qtyInput) qtyInput.value = qtyKarton || 0;
+
+    calculateAssignBatchPreview();
+
+    modal.style.display = 'flex';
+}
+window.openAssignBatchModal = openAssignBatchModal;
+
+function closeModalAssignBatch() {
+    const modal = document.getElementById('modalAssignBatch');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+window.closeModalAssignBatch = closeModalAssignBatch;
+
+function calculateAssignBatchPreview() {
+    const tglInput = document.getElementById('assign_tgl_keberangkatan');
+    const shiftSelect = document.getElementById('assign_shift_cd');
+    const awalInput = document.getElementById('assign_no_karton_awal');
+    const qtyInput = document.getElementById('assign_qty_karton');
+
+    const liveBatchText = document.getElementById('assignLiveBatchText');
+    const liveExpDate = document.getElementById('assignLiveExpDate');
+    const badgeRentang = document.getElementById('assignBadgeRentang');
+
+    const tgl = tglInput?.value || '';
+    const shift = shiftSelect?.value || 'A';
+    const noAwal = parseInt(awalInput?.value) || 1;
+    const qty = parseInt(qtyInput?.value) || 0;
+    const noAkhir = qty > 0 ? (noAwal + qty - 1) : noAwal;
+
+    const padAwal = String(noAwal).padStart(4, '0');
+    const padAkhir = String(noAkhir).padStart(4, '0');
+
+    const batchCode = `${shift}${padAwal} - ${shift}${padAkhir}`;
+
+    if (liveBatchText) liveBatchText.textContent = batchCode;
+    if (badgeRentang) badgeRentang.textContent = `${qty} Karton (No. ${padAwal} s/d ${padAkhir})`;
+
+    if (tgl && liveExpDate) {
+        const d = new Date(tgl);
+        if (!isNaN(d.getTime())) {
+            d.setMonth(d.getMonth() + 6);
+            const expDay = String(d.getDate()).padStart(2, '0');
+            const expMonth = String(d.getMonth() + 1).padStart(2, '0');
+            const expYear = d.getFullYear();
+            liveExpDate.textContent = `${expDay}/${expMonth}/${expYear}`;
+        }
+    }
+}
+window.calculateAssignBatchPreview = calculateAssignBatchPreview;
+
+
 
 

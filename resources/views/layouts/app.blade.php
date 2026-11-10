@@ -1138,10 +1138,10 @@
                                     </a>
                                     <div style="height: 1px; background: #f1f5f9; margin: 0.3rem 0;"></div>
                                     <a href="{{ route('gudang.kemasan-sirkular.index') }}" class="mega-item {{ request()->routeIs('gudang.kemasan-sirkular.*') ? 'active' : '' }}">
-                                        {{-- Ikon Kardus Karton / Wadah Kemasan Sirkular --}}
+                                        {{-- Ikon Kardus Karton / Wadah Kemasan Balikan --}}
                                         <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg>
                                         <div style="display: flex; flex-direction: column;">
-                                             <span style="font-weight: 600;">Penerimaan Kemasan Sirkular</span>
+                                             <span style="font-weight: 600;">Penerimaan Karton Balikan</span>
                                              <span style="font-size: 0.6875rem; color: #64748b;">Sortir karton balikan &amp; rekonsiliasi DO</span>
                                         </div>
                                     </a>
@@ -1243,13 +1243,6 @@
                                         <div style="display: flex; flex-direction: column;">
                                             <span style="font-weight: 600;">Hasil Barang Produksi</span>
                                             <span style="font-size: 0.6875rem; color: #64748b;">Riwayat output batch masak &amp; kemas</span>
-                                        </div>
-                                    </a>
-                                    <a href="{{ route('produksi.hpp.create') }}" class="mega-item {{ request()->routeIs('produksi.hpp.*') ? 'active' : '' }}">
-                                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #0d9488;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
-                                        <div style="display: flex; flex-direction: column;">
-                                            <span style="font-weight: 600; color: #0d9488;">Kalkulasi Lembar HPP</span>
-                                            <span style="font-size: 0.6875rem; color: #64748b;">Penetapan biaya gas, upah &amp; alokasi HPP</span>
                                         </div>
                                     </a>
                                     <a href="{{ route('produksi.rekap') }}" class="mega-item {{ request()->routeIs('produksi.rekap*') ? 'active' : '' }}">

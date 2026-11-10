@@ -1405,19 +1405,24 @@ class PackagingService
             $noRef = !empty($data['no_referensi_txt']) ? trim($data['no_referensi_txt']) : null;
             $fullAlasan = $noRef ? "[Ref: {$noRef}] " . $alasan : $alasan;
 
-            // Generate Nomor Berita Acara: ADJ-PCK-YYYYMM-0001
-            $prefix = 'ADJ-PCK-' . date('Ym') . '-';
-            $adjNo = $this->codeGenerator->generate('dat_packaging_adjustment_log', 'adj_no', $prefix, 4);
+            // Generate Nomor Berita Acara Penyesuaian Standar PT Mirasa: {seq:3}/BA-PCK/MFI/{mm}/{yy}
+            $adjNo = $this->codeGenerator->generateBeritaAcaraPackagingNo();
 
             $kategoriUnique = array_values(array_unique($kategoriList));
             $kategoriStr = count($kategoriUnique) === 1 ? $kategoriUnique[0] : (count($kategoriUnique) > 1 ? 'MULTI' : 'LAINNYA');
+
+            $authUser = auth()->user();
+            $logUserId = $authUser?->id;
+            $logRoleCd = $authUser?->role_cd ?? 'SUPERADMIN';
 
             // Simpan ke Log Audit Trail Akuntansi
             $log = DatPackagingAdjustmentLog::create([
                 'adj_no'               => $adjNo,
                 'pack_id'              => $header->pack_id,
+                'user_id'              => $logUserId,
                 'adj_tgl'              => now()->format('Y-m-d'),
                 'kategori_komponen'    => $kategoriStr,
+                'role_cd'              => $logRoleCd,
                 'total_biaya_sebelum'  => $oldTotalBiaya,
                 'total_biaya_sesudah'  => $newTotalBiaya,
                 'selisih_biaya'        => $selisihBiaya,

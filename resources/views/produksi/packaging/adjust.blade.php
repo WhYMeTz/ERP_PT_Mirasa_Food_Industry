@@ -536,7 +536,7 @@
                 <h3 class="adjust-audit-title">Riwayat Berita Acara Penyesuaian Dokumen Ini</h3>
             </div>
             <span style="font-size: 0.8rem; color: #64748b; font-weight: 600;">
-                {{ $header->adjustmentLogs ? $header->adjustmentLogs->count() : 0 }} Catatan
+                {{ $header->visibleAdjustmentLogs() ? $header->visibleAdjustmentLogs()->count() : 0 }} Catatan
             </span>
         </div>
 
@@ -554,7 +554,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse($header->adjustmentLogs as $log)
+                    @forelse($header->visibleAdjustmentLogs() as $log)
                         <tr>
                             <td>
                                 <span class="adjust-ba-badge">{{ $log->adj_no }}</span>
@@ -602,13 +602,16 @@
                                     <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
                                     <span>{{ $log->created_by ?? 'System' }}</span>
                                 </span>
+                                @if($log->role_cd)
+                                    <div style="font-size: 0.675rem; color: #64748b; margin-top: 2px;">{{ str_replace('_', ' ', $log->role_cd) }}</div>
+                                @endif
                             </td>
                         </tr>
                     @empty
                         <tr>
                             <td colspan="7" style="padding: 2.5rem 1rem; text-align: center; color: #94a3b8;">
-                                <div style="font-weight: 700; color: #64748b; font-size: 0.9rem;">Belum Ada Riwayat Penyesuaian HPP Kemas</div>
-                                <div style="font-size: 0.775rem; margin-top: 0.25rem;">Dokumen ini masih mencatat nilai kalkulasi pengemasan orisinal (Versi 1).</div>
+                                <div style="font-weight: 700; color: #64748b; font-size: 0.9rem;">Belum Ada Riwayat Penyesuaian</div>
+                                <div style="font-size: 0.775rem; margin-top: 0.25rem;">Tidak ada catatan penyesuaian yang sesuai dengan hak akses peran akun Anda.</div>
                             </td>
                         </tr>
                     @endforelse

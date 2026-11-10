@@ -986,17 +986,8 @@
             </div>
 
             <div class="adjust-auth-grid">
-                {{-- KOLOM 1: NOMOR REFERENSI --}}
-                <div class="form-group">
-                    <label for="no_referensi_txt" class="adjust-form-label">
-                        No. Referensi Faktur / Memo Fisik <span style="font-weight: normal; color: #94a3b8;">(Opsional)</span>
-                    </label>
-                    <input type="text" name="no_referensi_txt" id="no_referensi_txt" class="adjust-form-input" placeholder="Contoh: MEMO-ACC-202610-004 / INV-10928" value="{{ old('no_referensi_txt') }}">
-                    <div class="adjust-form-hint">Digunakan untuk mereferensikan dokumen tagihan fisik revisi atau memo pimpinan.</div>
-                </div>
-
-                {{-- KOLOM 2: ALASAN PENYESUAIAN --}}
-                <div class="form-group">
+                {{-- ALASAN PENYESUAIAN FULL WIDTH --}}
+                <div class="form-group" style="width: 100%;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem; flex-wrap: wrap; gap: 0.35rem;">
                         <label for="alasan_txt" class="adjust-form-label" style="margin-bottom: 0;">
                             Alasan Penyesuaian / Dasar Otorisasi <span style="color: #dc2626;">*</span>
@@ -1042,7 +1033,7 @@
                 <h3 class="adjust-audit-title">Riwayat Berita Acara Penyesuaian Dokumen Ini</h3>
             </div>
             <span style="font-size: 0.8rem; color: #64748b; font-weight: 600;">
-                {{ $produksi->adjustmentLogs ? $produksi->adjustmentLogs->count() : 0 }} Catatan
+                {{ $produksi->visibleAdjustmentLogs() ? $produksi->visibleAdjustmentLogs()->count() : 0 }} Catatan
             </span>
         </div>
 
@@ -1060,7 +1051,7 @@
                     </tr>
                 </thead>
             <tbody>
-                @forelse($produksi->adjustmentLogs as $log)
+                @forelse($produksi->visibleAdjustmentLogs() as $log)
                     <tr>
                         <td>
                             <span class="adjust-ba-badge">{{ $log->adj_no }}</span>
@@ -1088,7 +1079,7 @@
                         </td>
                         <td>
                             <div style="font-weight: 600; color: #0f172a; font-size: 0.825rem; line-height: 1.4;">
-                                {{ $log->alasan_txt }}
+                                {{ preg_replace('/\[Ref:\s*[^\]]+\]\s*/i', '', $log->alasan_txt) }}
                             </div>
                             @if(!empty($log->perubahan_field_json) && is_array($log->perubahan_field_json))
                                 <div style="display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.4rem;">
@@ -1123,13 +1114,16 @@
                                 <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
                                 <span>{{ $log->created_by ?? 'System' }}</span>
                             </span>
+                            @if($log->role_cd)
+                                <div style="font-size: 0.675rem; color: #64748b; margin-top: 2px;">{{ str_replace('_', ' ', $log->role_cd) }}</div>
+                            @endif
                         </td>
                     </tr>
                 @empty
                     <tr>
                         <td colspan="7" style="padding: 2.5rem 1rem; text-align: center; color: #94a3b8;">
-                            <div style="font-weight: 700; color: #64748b; font-size: 0.9rem;">Belum Ada Riwayat Penyesuaian HPP</div>
-                            <div style="font-size: 0.775rem; margin-top: 0.25rem;">Dokumen ini masih mencatat nilai kalkulasi produksi harian orisinal (Versi 1).</div>
+                            <div style="font-weight: 700; color: #64748b; font-size: 0.9rem;">Belum Ada Riwayat Penyesuaian</div>
+                            <div style="font-size: 0.775rem; margin-top: 0.25rem;">Tidak ada catatan penyesuaian yang sesuai dengan hak akses peran akun Anda.</div>
                         </td>
                     </tr>
                 @endforelse

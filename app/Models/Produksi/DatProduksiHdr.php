@@ -317,6 +317,34 @@ class DatProduksiHdr extends Model
     }
 
     /**
+     * Dapatkan riwayat penyesuaian HPP yang boleh dilihat oleh pengguna login berdasarkan role-nya.
+     * Super Administrator & Direksi dapat melihat seluruh riwayat berita acara.
+     * Role lain hanya dapat melihat berita acara yang diterbitkan oleh role yang bersangkutan.
+     */
+    public function visibleAdjustmentLogs(?\App\Models\User $user = null)
+    {
+        $user = $user ?? auth()->user();
+        $logs = $this->adjustmentLogs;
+
+        if (!$user || $user->isSuperAdmin() || in_array(strtoupper((string) $user->role_cd), ['SUPERADMIN', 'DIREKSI'])) {
+            return $logs;
+        }
+
+        $roleCd = strtoupper((string) $user->role_cd);
+
+        return $logs->filter(function ($log) use ($user, $roleCd) {
+            if (!empty($log->role_cd)) {
+                return strtoupper($log->role_cd) === $roleCd;
+            }
+            if (!empty($log->user_id) && $log->user_id == $user->id) {
+                return true;
+            }
+            $cb = strtoupper((string) $log->created_by);
+            return str_contains($cb, $roleCd) || str_contains($cb, strtoupper((string) $user->name));
+        });
+    }
+
+    /**
      * Relasi ke Dokumen Pengeluaran Bahan Kemas Gudang yang ditautkan ke produksi ini
      */
     public function pengeluaranKemasan(): HasMany

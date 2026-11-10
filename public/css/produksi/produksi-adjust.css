@@ -748,7 +748,7 @@
 
 .adjust-auth-grid {
     display: grid;
-    grid-template-columns: 360px 1fr;
+    grid-template-columns: 1fr;
     gap: 1.5rem;
     padding: 1.25rem;
 }

@@ -67,11 +67,21 @@ class ProduksiController extends Controller
             'tgl_dari'   => $request->input('tgl_dari'),
             'tgl_sampai' => $request->input('tgl_sampai'),
         ];
-        $hasilItems = $this->produksiService->getHasilProduksiList($filters, 20);
+        $viewType = $request->input('view', 'dokumen'); // Default 'dokumen' (1 baris per Dokumen Produksi), atau 'item' (grid rincian per barang)
+
+        if ($viewType === 'item') {
+            $hasilItems = $this->produksiService->getHasilProduksiList($filters, 20);
+            $produksiList = null;
+        } else {
+            $produksiList = $this->produksiService->getDokumenProduksiList($filters, 20);
+            $hasilItems = null;
+        }
 
         return view('produksi.index', compact(
             'gudangList',
             'filters',
+            'viewType',
+            'produksiList',
             'hasilItems'
         ));
     }
@@ -888,7 +898,6 @@ class ProduksiController extends Controller
     {
         $request->validate([
             'alasan_txt'                  => 'required|string|min:5',
-            'no_referensi_txt'            => 'nullable|string|max:100',
 
             // Output WIP Kuantitas (Hasil Timbangan Fisik)
             'total_wip_qty'               => 'nullable|numeric|min:0',

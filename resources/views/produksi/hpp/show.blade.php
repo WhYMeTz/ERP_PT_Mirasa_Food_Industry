@@ -44,12 +44,6 @@
                     <span>⚡ Beri Nomor Batch</span>
                 </button>
             @endif
-            @if(Auth::user()?->canCreateProduksi())
-                <a href="{{ route('produksi.hpp.create', ['produksi_id' => $produksi->produksi_id]) }}" class="btn-print-doc" style="background: #0d9488; color: #fff; text-decoration: none; border-color: #0f766e;">
-                    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
-                    <span>Kalkulasi / Alokasi HPP</span>
-                </a>
-            @endif
             <button type="button" onclick="window.print()" class="btn-print-doc">
                 <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
                 <span>Cetak Lembar HPP</span>
@@ -853,7 +847,7 @@
                             <th rowspan="2" style="width: 105px; vertical-align: middle;">Komponen</th>
                             <th rowspan="2" style="width: 190px; vertical-align: middle;">Perubahan Biaya Total</th>
                             <th colspan="3" class="audit-col-header-group">Harga Pokok Produksi (HPP / Kg)</th>
-                            <th rowspan="2" style="vertical-align: middle;">Alasan &amp; Dasar Dokumen</th>
+                            <th rowspan="2" style="vertical-align: middle;">Alasan &amp; Rincian Perubahan</th>
                             <th rowspan="2" style="width: 135px; vertical-align: middle;">Operator</th>
                         </tr>
                         <tr>
@@ -863,7 +857,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @forelse($produksi->adjustmentLogs as $log)
+                        @forelse($produksi->visibleAdjustmentLogs() as $log)
                             @php
                                 $isNaik = (float) $log->selisih_hpp > 0;
                                 $isTurun = (float) $log->selisih_hpp < 0;
@@ -879,8 +873,11 @@
                                 };
 
                                 $alasanText = $log->alasan_txt ?? '-';
-                                $hasRef = preg_match('/\[Ref:\s*([^\]]+)\]/', $alasanText, $matches);
-                                $cleanAlasan = $hasRef ? trim(str_replace($matches[0], '', $alasanText)) : $alasanText;
+                                // Bersihkan tag [Ref: ...] jika ada pada data lama
+                                $cleanAlasan = trim(preg_replace('/\[Ref:\s*[^\]]+\]\s*/i', '', $alasanText));
+                                if (empty($cleanAlasan)) {
+                                    $cleanAlasan = $alasanText;
+                                }
                             @endphp
                             <tr>
                                 <td>
@@ -927,14 +924,6 @@
                                     </span>
                                 </td>
                                 <td>
-                                    @if($hasRef)
-                                        <div>
-                                            <span class="badge-audit-ref">
-                                                <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
-                                                Ref: {{ $matches[1] }}
-                                            </span>
-                                        </div>
-                                    @endif
                                     <div class="audit-reason-title">{{ $cleanAlasan }}</div>
                                     @if(!empty($log->perubahan_field_json))
                                         <div class="audit-details-panel">
@@ -1009,7 +998,7 @@
                                         </div>
                                         <div>
                                             <div class="audit-operator-name">{{ $log->created_by ?? 'System' }}</div>
-                                            <div class="audit-operator-sub">Petugas Revisi</div>
+                                            <div class="audit-operator-sub">{{ $log->role_cd ? str_replace('_', ' ', $log->role_cd) : 'Petugas Revisi' }}</div>
                                         </div>
                                     </div>
                                 </td>
@@ -1017,8 +1006,8 @@
                         @empty
                             <tr>
                                 <td colspan="9" style="padding: 2.5rem 1rem; text-align: center; color: #94a3b8;">
-                                    <div style="font-weight: 700; color: #64748b; font-size: 0.9rem;">Belum Ada Riwayat Adjustment HPP</div>
-                                    <div style="font-size: 0.775rem; margin-top: 0.25rem;">Dokumen ini masih mencatat nilai kalkulasi biaya produksi orisinal (Versi v1).</div>
+                                    <div style="font-weight: 700; color: #64748b; font-size: 0.9rem;">Belum Ada Riwayat Penyesuaian</div>
+                                    <div style="font-size: 0.775rem; margin-top: 0.25rem;">Tidak ada catatan penyesuaian yang sesuai dengan hak akses peran akun Anda.</div>
                                 </td>
                             </tr>
                         @endforelse

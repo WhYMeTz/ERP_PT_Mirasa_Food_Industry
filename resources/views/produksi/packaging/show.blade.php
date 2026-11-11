@@ -763,12 +763,12 @@
                             <th style="width: 130px;">Komponen</th>
                             <th style="width: 160px; text-align: right;">Perubahan Biaya</th>
                             <th style="width: 160px; text-align: right;">Dampak HPP/Karton</th>
-                            <th>Alasan &amp; Dasar Dokumen</th>
+                            <th>Alasan &amp; Rincian Perubahan</th>
                             <th style="width: 120px;">Operator</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @forelse($header->adjustmentLogs as $log)
+                        @forelse($header->visibleAdjustmentLogs() as $log)
                             @php
                                 $isBiayaNaik = (float) $log->selisih_biaya > 0;
                                 $isBiayaTurun = (float) $log->selisih_biaya < 0;
@@ -824,14 +824,17 @@
                                     @endif
                                 </td>
                                 <td style="color: #475569; font-weight: 600;">
-                                    {{ $log->created_by ?? 'System' }}
+                                    <div>{{ $log->created_by ?? 'System' }}</div>
+                                    @if($log->role_cd)
+                                        <div style="font-size: 0.7rem; color: #94a3b8; font-weight: 500;">{{ str_replace('_', ' ', $log->role_cd) }}</div>
+                                    @endif
                                 </td>
                             </tr>
                         @empty
                             <tr>
                                 <td colspan="7" style="padding: 2rem 1rem; text-align: center; color: #94a3b8;">
-                                    <div style="font-weight: 700; color: #64748b; font-size: 0.85rem;">Belum Ada Riwayat Adjustment HPP</div>
-                                    <div style="font-size: 0.75rem; margin-top: 0.2rem;">Dokumen ini masih mencatat nilai kalkulasi pengemasan orisinal (Versi v1).</div>
+                                    <div style="font-weight: 700; color: #64748b; font-size: 0.85rem;">Belum Ada Riwayat Penyesuaian</div>
+                                    <div style="font-size: 0.75rem; margin-top: 0.2rem;">Tidak ada catatan penyesuaian yang sesuai dengan hak akses peran akun Anda.</div>
                                 </td>
                             </tr>
                         @endforelse

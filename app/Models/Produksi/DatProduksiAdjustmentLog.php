@@ -21,8 +21,10 @@ class DatProduksiAdjustmentLog extends Model
     protected $fillable = [
         'adj_no',
         'produksi_id',
+        'user_id',
         'adj_tgl',
         'kategori_komponen',
+        'role_cd',
         'total_biaya_sebelum',
         'total_biaya_sesudah',
         'selisih_biaya',
@@ -59,5 +61,38 @@ class DatProduksiAdjustmentLog extends Model
     public function produksi(): BelongsTo
     {
         return $this->belongsTo(DatProduksiHdr::class, 'produksi_id', 'produksi_id');
+    }
+
+    /**
+     * Relasi ke User Operator Pembuat Penyesuaian
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\User::class, 'user_id', 'id');
+    }
+
+    /**
+     * Scope untuk memfilter riwayat berita acara berdasarkan wewenang role user.
+     * Super Administrator & Direksi dapat melihat seluruh riwayat berita acara.
+     * Role lain hanya dapat melihat riwayat yang dibuat oleh role yang bersangkutan.
+     */
+    public function scopeForUser($query, ?\App\Models\User $user = null)
+    {
+        $user = $user ?? auth()->user();
+        if (!$user) {
+            return $query;
+        }
+
+        if ($user->isSuperAdmin() || in_array(strtoupper((string) $user->role_cd), ['SUPERADMIN', 'DIREKSI'])) {
+            return $query;
+        }
+
+        $roleCd = strtoupper((string) $user->role_cd);
+
+        return $query->where(function ($q) use ($user, $roleCd) {
+            $q->where('role_cd', $roleCd)
+              ->orWhere('user_id', $user->id)
+              ->orWhere('created_by', 'ILIKE', "%{$roleCd}%");
+        });
     }
 }

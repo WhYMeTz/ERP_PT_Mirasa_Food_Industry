@@ -1041,5 +1041,97 @@ class CodeGeneratorService
 
         return $generated;
     }
+
+    /**
+     * Generate Nomor Berita Acara Adjustment HPP Resmi PT Mirasa
+     * Format Standar Korporat: {seq:3}/BA/MFI/{mm}/{yy}
+     * Contoh: 001/BA/MFI/11/26
+     */
+    public function generateBeritaAcaraHppNo(?string $date = null, ?int $excludeAdjId = null): string
+    {
+        $timestamp = strtotime($date ?? date('Y-m-d'));
+        $month = date('m', $timestamp);
+        $year = date('y', $timestamp);
+        $suffix = "/BA/MFI/{$month}/{$year}";
+
+        $query = DB::table('dat_produksi_adjustment_log')
+            ->where('adj_no', 'LIKE', '%' . $suffix);
+
+        if ($excludeAdjId) {
+            $query->where('adj_id', '!=', $excludeAdjId);
+        }
+
+        $existing = $query->pluck('adj_no');
+
+        $maxNumber = 0;
+        $regex = '/^(\d+)\/BA\/MFI\/' . $month . '\/' . $year . '$/i';
+
+        foreach ($existing as $no) {
+            if (preg_match($regex, trim((string) $no), $matches)) {
+                $num = (int) $matches[1];
+                if ($num > $maxNumber) {
+                    $maxNumber = $num;
+                }
+            }
+        }
+
+        do {
+            $maxNumber++;
+            $generated = str_pad((string) $maxNumber, 3, '0', STR_PAD_LEFT) . $suffix;
+            $checkQuery = DB::table('dat_produksi_adjustment_log')->where('adj_no', $generated);
+            if ($excludeAdjId) {
+                $checkQuery->where('adj_id', '!=', $excludeAdjId);
+            }
+            $exists = $checkQuery->exists();
+        } while ($exists);
+
+        return $generated;
+    }
+
+    /**
+     * Generate Nomor Berita Acara Adjustment Packaging Resmi PT Mirasa
+     * Format Standar Korporat: {seq:3}/BA-PCK/MFI/{mm}/{yy}
+     * Contoh: 001/BA-PCK/MFI/11/26
+     */
+    public function generateBeritaAcaraPackagingNo(?string $date = null, ?int $excludeAdjId = null): string
+    {
+        $timestamp = strtotime($date ?? date('Y-m-d'));
+        $month = date('m', $timestamp);
+        $year = date('y', $timestamp);
+        $suffix = "/BA-PCK/MFI/{$month}/{$year}";
+
+        $query = DB::table('dat_packaging_adjustment_log')
+            ->where('adj_no', 'LIKE', '%' . $suffix);
+
+        if ($excludeAdjId) {
+            $query->where('adj_id', '!=', $excludeAdjId);
+        }
+
+        $existing = $query->pluck('adj_no');
+
+        $maxNumber = 0;
+        $regex = '/^(\d+)\/BA-PCK\/MFI\/' . $month . '\/' . $year . '$/i';
+
+        foreach ($existing as $no) {
+            if (preg_match($regex, trim((string) $no), $matches)) {
+                $num = (int) $matches[1];
+                if ($num > $maxNumber) {
+                    $maxNumber = $num;
+                }
+            }
+        }
+
+        do {
+            $maxNumber++;
+            $generated = str_pad((string) $maxNumber, 3, '0', STR_PAD_LEFT) . $suffix;
+            $checkQuery = DB::table('dat_packaging_adjustment_log')->where('adj_no', $generated);
+            if ($excludeAdjId) {
+                $checkQuery->where('adj_id', '!=', $excludeAdjId);
+            }
+            $exists = $checkQuery->exists();
+        } while ($exists);
+
+        return $generated;
+    }
 }
 

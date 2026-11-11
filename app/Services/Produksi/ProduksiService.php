@@ -1902,6 +1902,97 @@ class ProduksiService
      * Mengambil daftar rincian hasil barang produksi (Point 9 - Hasil Barang Produksi)
      * Dilengkapi paginasi, filter lengkap (Gudang, Nama Barang, Kode Barang, Kode Batch, Jenis), dan sisa stok riil on-hand.
      */
+    /**
+     * Mengambil daftar Dokumen Produksi Header (1 Baris per Dokumen SPK Produksi)
+     * lengkap dengan eager-loading rincian hasil output fisik (WIP/FG),
+     * kalkulasi akumulasi berat, dan status sisa stok batch.
+     */
+    public function getDokumenProduksiList(array $filters = [], int $perPage = 20): LengthAwarePaginator
+    {
+        $query = DatProduksiHdr::with([
+            'gudang',
+            'details.barang.satuan',
+            'details.barang.jenisBarang'
+        ])->where('deleted_st', false);
+
+        if (!empty($filters['gudang_id'])) {
+            $query->where('gudang_id', $filters['gudang_id']);
+        }
+
+        if (!empty($filters['search'])) {
+            $search = '%' . $filters['search'] . '%';
+            $query->where(function ($q) use ($search) {
+                $q->where('produksi_no', 'like', $search)
+                  ->orWhere('batch_wip_no', 'like', $search)
+                  ->orWhere('lini_produksi', 'like', $search)
+                  ->orWhere('po_ifl_no', 'like', $search)
+                  ->orWhereHas('details.barang', function ($b) use ($search) {
+                      $b->where('barang_cd', 'like', $search)
+                        ->orWhere('barang_nm', 'like', $search);
+                  })
+                  ->orWhereHas('details', function ($d) use ($search) {
+                      $d->where('batch_no', 'like', $search);
+                  });
+            });
+        }
+
+        if (!empty($filters['barang_cd'])) {
+            $query->whereHas('details.barang', function ($b) use ($filters) {
+                $b->where('barang_cd', 'like', '%' . $filters['barang_cd'] . '%');
+            });
+        }
+
+        if (!empty($filters['barang_nm'])) {
+            $query->whereHas('details.barang', function ($b) use ($filters) {
+                $b->where('barang_nm', 'like', '%' . $filters['barang_nm'] . '%');
+            });
+        }
+
+        if (!empty($filters['batch_no'])) {
+            $batchSearch = '%' . $filters['batch_no'] . '%';
+            $query->where(function ($q) use ($batchSearch) {
+                $q->where('batch_wip_no', 'like', $batchSearch)
+                  ->orWhereHas('details', function ($d) use ($batchSearch) {
+                      $d->where('batch_no', 'like', $batchSearch);
+                  });
+            });
+        }
+
+        if (!empty($filters['jenis_cd'])) {
+            $targetJenis = strtoupper($filters['jenis_cd']);
+            $query->whereHas('details', function ($q) use ($targetJenis) {
+                if ($targetJenis === 'FG') {
+                    $q->where('jenis_cd', 'FG')
+                      ->orWhereHas('barang.jenisBarang', fn($j) => $j->where('jenis_barang_cd', 'FG'));
+                } elseif ($targetJenis === 'WIP') {
+                    $q->where('jenis_cd', 'WIP')
+                      ->orWhereNull('jenis_cd')
+                      ->orWhereHas('barang.jenisBarang', fn($j) => $j->where('jenis_barang_cd', 'WIP'));
+                }
+            });
+        }
+
+        if (!empty($filters['tgl_dari'])) {
+            $query->whereDate('produksi_tgl', '>=', $filters['tgl_dari']);
+        }
+
+        if (!empty($filters['tgl_sampai'])) {
+            $query->whereDate('produksi_tgl', '<=', $filters['tgl_sampai']);
+        }
+
+        // Urutkan transaksi produksi dari yang terbaru
+        $paginator = $query->orderByDesc('produksi_tgl')
+            ->orderByDesc('produksi_id')
+            ->paginate($perPage)
+            ->withQueryString();
+
+        // Attach live sisa stok on-hand ke seluruh rincian output dokumen
+        $allDetails = $paginator->getCollection()->pluck('details')->flatten();
+        $this->attachSisaStok($allDetails);
+
+        return $paginator;
+    }
+
     public function getHasilProduksiList(array $filters = [], int $perPage = 20): LengthAwarePaginator
     {
         $query = DatProduksiDtl::with(['produksi.gudang', 'barang.satuan', 'barang.jenisBarang'])
@@ -2770,25 +2861,24 @@ class ProduksiService
             $produksi->updated_by = $userId;
             $produksi->save();
 
-            // Lampirkan nomor referensi faktur/memo jika diisi
-            if (!empty($data['no_referensi_txt'])) {
-                $refNo = trim($data['no_referensi_txt']);
-                $alasan = "[Ref: {$refNo}] " . $alasan;
-            }
-
-            // Generate Nomor Berita Acara Penyesuaian: ADJ-HPP-YYYYMM-0001
-            $prefix = 'ADJ-HPP-' . date('Ym') . '-';
-            $adjNo = $this->codeGenerator->generate('dat_produksi_adjustment_log', 'adj_no', $prefix, 4);
+            // Generate Nomor Berita Acara Penyesuaian Standar PT Mirasa: {seq:3}/BA/MFI/{mm}/{yy}
+            $adjNo = $this->codeGenerator->generateBeritaAcaraHppNo();
 
             $kategoriUnique = array_values(array_unique($kategoriList));
             $kategoriStr = count($kategoriUnique) === 1 ? $kategoriUnique[0] : (count($kategoriUnique) > 1 ? 'MULTI' : 'LAINNYA');
+
+            $authUser = auth()->user();
+            $logUserId = $authUser?->id;
+            $logRoleCd = $authUser?->role_cd ?? 'SUPERADMIN';
 
             // Simpan ke Log Audit Trail Akuntansi
             $log = DatProduksiAdjustmentLog::create([
                 'adj_no'               => $adjNo,
                 'produksi_id'          => $produksi->produksi_id,
+                'user_id'              => $logUserId,
                 'adj_tgl'              => now()->format('Y-m-d'),
                 'kategori_komponen'    => $kategoriStr,
+                'role_cd'              => $logRoleCd,
                 'total_biaya_sebelum'  => $oldTotalBiaya,
                 'total_biaya_sesudah'  => $newTotalBiaya,
                 'selisih_biaya'        => $selisihBiaya,

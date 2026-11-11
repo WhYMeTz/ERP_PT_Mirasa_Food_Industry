@@ -4,6 +4,14 @@
  */
 
 window.openModalDetailJurnal = function (jurnalId) {
+    // Tutup smart action dropdown jika sedang terbuka
+    if (window.globalActiveActionDropdown) {
+        window.globalActiveActionDropdown.style.display = 'none';
+        document.querySelectorAll('.btn-action-trigger.active').forEach(b => b.classList.remove('active'));
+        window.globalActiveActionDropdown = null;
+    }
+    document.querySelectorAll('.action-dropdown-menu').forEach(m => m.style.display = 'none');
+
     const modal = document.getElementById('modalDetailJurnal');
     const loading = document.getElementById('modalJurnalLoading');
     const content = document.getElementById('modalJurnalContent');

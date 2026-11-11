@@ -160,11 +160,19 @@
                                 </span>
                             </td>
                             <td style="text-align: center;">
-                                @if ($row->grade_cd === 'B')
+                                @php
+                                    $lgUpper = strtoupper(trim((string)$row->grade_cd));
+                                    $lgIsNonGrade = in_array($lgUpper, ['NON-GRADE', 'NON_GRADE', 'NON GRADE']) || ($row->barang && !$row->barang->hasGrade());
+                                @endphp
+                                @if ($lgIsNonGrade)
+                                    <span class="badge" style="background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; font-weight: 700; font-size: 0.72rem; padding: 2px 7px;">
+                                        ⚪ Non Grade
+                                    </span>
+                                @elseif ($lgUpper === 'B')
                                     <span class="badge" style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a; font-weight: 800; font-size: 0.72rem; padding: 2px 7px;">
                                         🟡 Grade B
                                     </span>
-                                @elseif ($row->grade_cd === 'REJECT')
+                                @elseif ($lgUpper === 'REJECT')
                                     <span class="badge" style="background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; font-weight: 800; font-size: 0.72rem; padding: 2px 7px;">
                                         ❌ Afkir
                                     </span>

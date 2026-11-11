@@ -266,6 +266,12 @@ class QcInboundService
                 $batchNo = app(CodeGeneratorService::class)->generateBatchNo($barang->barang_cd, $tglFisik, $barang->barang_nm);
             }
 
+            $barangHasGrade = $barang ? $barang->hasGrade() : in_array(strtoupper($qc->kategori_barang ?? ''), ['SINGKONG', 'KARTON']);
+            $resolvedGrade = strtoupper(trim((string) ($d->grade_cd ?: ($barangHasGrade ? 'A' : 'NON-GRADE'))));
+            if (!$barangHasGrade && $resolvedGrade !== 'REJECT') {
+                $resolvedGrade = 'NON-GRADE';
+            }
+
             $rawItems[] = [
                 'stage'                      => 'Uji 1',
                 'qcdtl_id'                   => $d->qcdtl_id,
@@ -275,6 +281,7 @@ class QcInboundService
                 'barang_cd'                  => $barang?->barang_cd,
                 'barang_nm'                  => $barang?->barang_nm ?? 'Bahan Baku',
                 'satuan_nm'                  => $barang?->satuanDasar?->satuan_nm ?? 'KG',
+                'has_grade'                  => $barangHasGrade,
                 'batch_prefix'               => $batchPrefix,
                 'batch_no'                   => $batchNo,
                 'gross_qty'                  => (float) $d->qty_timbang_gross,
@@ -283,7 +290,7 @@ class QcInboundService
                 'refraksi_qty'               => (float) $d->qty_refraksi,
                 'reject_qty'                 => (float) $d->qty_reject,
                 'netto_qty'                  => (float) $d->qty_netto_lolos,
-                'grade_cd'                   => strtoupper(trim((string) ($d->grade_cd ?: 'A'))),
+                'grade_cd'                   => $resolvedGrade,
                 'kondisi_fisik'              => $d->kondisi_fisik,
                 'keputusan_qc'               => $d->keputusan_qc,
                 'status_raw_material'        => $d->status_raw_material ?? 'OK',
@@ -313,6 +320,12 @@ class QcInboundService
                     $batchNo2 = app(CodeGeneratorService::class)->generateBatchNo($barang2->barang_cd, $tglFisik2, $barang2->barang_nm);
                 }
 
+                $barang2HasGrade = $barang2 ? $barang2->hasGrade() : in_array(strtoupper($qc->kategori_barang ?? ''), ['SINGKONG', 'KARTON']);
+                $resolvedGrade2 = strtoupper(trim((string) ($d2->grade_cd ?: ($barang2HasGrade ? 'A' : 'NON-GRADE'))));
+                if (!$barang2HasGrade && $resolvedGrade2 !== 'REJECT') {
+                    $resolvedGrade2 = 'NON-GRADE';
+                }
+
                 $rawItems[] = [
                     'stage'                      => 'Uji 2',
                     'qcdtl_id'                   => $d2->qcdtl_id,
@@ -322,6 +335,7 @@ class QcInboundService
                     'barang_cd'                  => $barang2?->barang_cd,
                     'barang_nm'                  => $barang2?->barang_nm ?? 'Bahan Baku',
                     'satuan_nm'                  => $barang2?->satuanDasar?->satuan_nm ?? 'KG',
+                    'has_grade'                  => $barang2HasGrade,
                     'batch_prefix'               => $batchPrefix2,
                     'batch_no'                   => $batchNo2,
                     'gross_qty'                  => (float) $d2->qty_timbang_gross,
@@ -330,7 +344,7 @@ class QcInboundService
                     'refraksi_qty'               => (float) $d2->qty_refraksi,
                     'reject_qty'                 => (float) $d2->qty_reject,
                     'netto_qty'                  => (float) $d2->qty_netto_lolos,
-                    'grade_cd'                   => strtoupper(trim((string) ($d2->grade_cd ?: 'A'))),
+                    'grade_cd'                   => $resolvedGrade2,
                     'kondisi_fisik'              => $d2->kondisi_fisik,
                     'keputusan_qc'               => $d2->keputusan_qc,
                     'status_raw_material'        => $d2->status_raw_material ?? 'OK',

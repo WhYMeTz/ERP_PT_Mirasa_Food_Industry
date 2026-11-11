@@ -392,11 +392,13 @@
                                         <input type="date" name="items[{{ $idx }}][expired_tgl]" value="{{ old("items.{$idx}.expired_tgl") }}" class="form-control" style="font-size: 0.8rem;">
                                     </td>
                                     <td>
+                                        @php
+                                            $curGrade = old("items.{$idx}.grade_cd", $pdtl->barang?->hasGrade() ? 'A' : 'NON-GRADE');
+                                        @endphp
                                         <select name="items[{{ $idx }}][grade_cd]" class="form-control po-grade-select">
-                                            <option value="A" selected>Grade A</option>
-                                            <option value="B">Grade B</option>
-                                            <option value="C">Grade C</option>
-                                            <option value="REJECT">Reject</option>
+                                            <option value="A" {{ $curGrade === 'A' ? 'selected' : '' }}>Grade A</option>
+                                            <option value="B" {{ $curGrade === 'B' ? 'selected' : '' }}>Grade B</option>
+                                            <option value="NON-GRADE" {{ in_array($curGrade, ['NON-GRADE', 'NON_GRADE', 'NON GRADE']) ? 'selected' : '' }}>Non Grade</option>
                                         </select>
                                     </td>
                                     <td>
@@ -484,8 +486,7 @@
                                     <select name="items[0][grade_cd]" class="form-control po-grade-select">
                                         <option value="A" selected>Grade A</option>
                                         <option value="B">Grade B</option>
-                                        <option value="C">Grade C</option>
-                                        <option value="REJECT">Reject</option>
+                                        <option value="NON-GRADE">Non Grade</option>
                                     </select>
                                 </td>
                                 <td>

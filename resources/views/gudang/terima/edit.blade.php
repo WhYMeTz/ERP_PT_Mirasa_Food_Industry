@@ -292,11 +292,13 @@
                                     <input type="date" name="items[{{ $idx }}][expired_tgl]" value="{{ old("items.{$idx}.expired_tgl", $dtl->expired_tgl ? $dtl->expired_tgl->format('Y-m-d') : '') }}" class="form-control" style="font-size: 0.8rem;">
                                 </td>
                                 <td>
+                                    @php
+                                        $dtlGrade = old("items.{$idx}.grade_cd", $dtl->grade_cd ?: ($dtl->barang?->hasGrade() ? 'A' : 'NON-GRADE'));
+                                    @endphp
                                     <select name="items[{{ $idx }}][grade_cd]" class="form-control po-grade-select">
-                                        <option value="A" {{ old("items.{$idx}.grade_cd", $dtl->grade_cd) == 'A' ? 'selected' : '' }}>Grade A</option>
-                                        <option value="B" {{ old("items.{$idx}.grade_cd", $dtl->grade_cd) == 'B' ? 'selected' : '' }}>Grade B</option>
-                                        <option value="C" {{ old("items.{$idx}.grade_cd", $dtl->grade_cd) == 'C' ? 'selected' : '' }}>Grade C</option>
-                                        <option value="REJECT" {{ old("items.{$idx}.grade_cd", $dtl->grade_cd) == 'REJECT' ? 'selected' : '' }}>Reject</option>
+                                        <option value="A" {{ $dtlGrade == 'A' ? 'selected' : '' }}>Grade A</option>
+                                        <option value="B" {{ $dtlGrade == 'B' ? 'selected' : '' }}>Grade B</option>
+                                        <option value="NON-GRADE" {{ in_array($dtlGrade, ['NON-GRADE', 'NON_GRADE', 'NON GRADE']) ? 'selected' : '' }}>Non Grade</option>
                                     </select>
                                 </td>
                                 <td>

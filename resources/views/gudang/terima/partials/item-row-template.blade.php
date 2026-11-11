@@ -58,8 +58,7 @@
             <select name="items[__INDEX__][grade_cd]" class="form-control po-grade-select">
                 <option value="A" selected>Grade A</option>
                 <option value="B">Grade B</option>
-                <option value="C">Grade C</option>
-                <option value="REJECT">Reject</option>
+                <option value="NON-GRADE">Non Grade</option>
             </select>
         </td>
         <td>

@@ -249,7 +249,43 @@ class MstBarang extends Model
     {
         return in_array($this->jenisBarang?->jenis_barang_cd, ['FG', 'WIP']);
     }
+
+    /**
+     * Cek apakah komoditas ini memiliki sistem penentuan Grade mutu (Grade A, B, Reject).
+     * Sesuai SOP Mutu PT Mirasa, hanya Bahan Baku Singkong dan Kemasan Karton Box yang ber-grade.
+     * Bahan lainnya (Minyak, Plastik, Bumbu, dll.) berstatus NON-GRADE.
+     */
+    public function hasGrade(): bool
+    {
+        return static::checkHasGrade($this->barang_nm, $this->barang_cd);
+    }
+
+    /**
+     * Helper statis untuk mengecek apakah nama / kode barang ber-grade.
+     */
+    public static function checkHasGrade(?string $barangNm, ?string $barangCd): bool
+    {
+        $nm = strtoupper(trim((string) $barangNm));
+        $cd = strtoupper(trim((string) $barangCd));
+
+        return str_contains($nm, 'SINGKONG')
+            || str_starts_with($cd, 'BB-SK')
+            || str_contains($nm, 'KARTON')
+            || str_contains($nm, 'DUS')
+            || str_contains($nm, 'BOX')
+            || str_starts_with($cd, 'BP-KT')
+            || str_starts_with($cd, 'BP-BX');
+    }
+
+    /**
+     * Mendapatkan kode grade bawaan untuk komoditas ('A' untuk ber-grade, 'NON-GRADE' untuk lainnya).
+     */
+    public function getDefaultGrade(): string
+    {
+        return $this->hasGrade() ? 'A' : 'NON-GRADE';
+    }
 }
+
 
 
 

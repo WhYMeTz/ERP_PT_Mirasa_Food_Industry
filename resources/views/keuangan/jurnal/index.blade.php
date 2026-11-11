@@ -23,6 +23,13 @@
         </div>
 
         <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+            <a href="{{ route('keuangan.jurnal.create') }}" 
+               class="btn" 
+               style="font-size: 0.8rem; font-weight: 700; padding: 0.5rem 0.95rem; display: inline-flex; align-items: center; gap: 0.4rem; background: #0284c7; color: #ffffff; border-radius: 6px; text-decoration: none; box-shadow: 0 2px 4px rgba(2, 132, 199, 0.25);">
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                <span>+ Entri Jurnal Manual</span>
+            </a>
+
             <button type="button" 
                     class="btn btn-secondary" 
                     onclick="toggleExpandAll()" 

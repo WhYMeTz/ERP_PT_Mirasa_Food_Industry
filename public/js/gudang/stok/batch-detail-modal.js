@@ -277,11 +277,15 @@ function renderTabSaldo(items, satuan) {
 
     let html = '';
     items.forEach((it, idx) => {
-        const gradeBadge = it.grade_cd === 'B' 
-            ? '<span class="badge" style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a; font-weight: 800; font-size: 0.72rem; padding: 2px 7px;">🟡 Grade B</span>'
-            : (it.grade_cd === 'REJECT'
-                ? '<span class="badge" style="background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; font-weight: 800; font-size: 0.72rem; padding: 2px 7px;">❌ Afkir</span>'
-                : '<span class="badge" style="background: #dcfce7; color: #15803d; border: 1px solid #86efac; font-weight: 800; font-size: 0.72rem; padding: 2px 7px;">🟢 Grade A</span>');
+        const itGradeUpper = (it.grade_cd || '').toUpperCase();
+        const isItNonGrade = ['NON-GRADE', 'NON_GRADE', 'NON GRADE'].includes(itGradeUpper);
+        const gradeBadge = isItNonGrade
+            ? '<span class="badge" style="background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; font-weight: 700; font-size: 0.72rem; padding: 2px 7px;">⚪ Non Grade</span>'
+            : (itGradeUpper === 'B' 
+                ? '<span class="badge" style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a; font-weight: 800; font-size: 0.72rem; padding: 2px 7px;">🟡 Grade B</span>'
+                : (itGradeUpper === 'REJECT'
+                    ? '<span class="badge" style="background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; font-weight: 800; font-size: 0.72rem; padding: 2px 7px;">❌ Afkir</span>'
+                    : '<span class="badge" style="background: #dcfce7; color: #15803d; border: 1px solid #86efac; font-weight: 800; font-size: 0.72rem; padding: 2px 7px;">🟢 Grade A</span>'));
 
         const sisaColor = it.is_habis ? '#94a3b8' : '#059669';
         const expColor = it.is_expired ? '#dc2626; font-weight: 700;' : '#64748b;';
@@ -380,7 +384,7 @@ function renderTabInbound(originType, inbound, satuan) {
                         <td>${t.suratjalan_no}</td>
                         <td>${t.po_no ? '#' + t.po_no : '<span style="color: #94a3b8;">-</span>'}</td>
                         <td>${t.gudang_nm}</td>
-                        <td style="text-align: center;">${t.grade_cd}</td>
+                        <td style="text-align: center;">${['NON-GRADE', 'NON_GRADE', 'NON GRADE'].includes((t.grade_cd || '').toUpperCase()) ? 'Non Grade' : (t.grade_cd || '-')}</td>
                         <td style="text-align: right; font-weight: 800; color: #059669;">
                             +${t.terima_qty.toLocaleString('id-ID')} ${satuan}
                         </td>
@@ -440,7 +444,7 @@ function renderTabInbound(originType, inbound, satuan) {
                             <div class="batch-qc-metric-cell">
                                 <div class="batch-qc-metric-title">Grade / Posisi</div>
                                 <div class="batch-qc-metric-val" style="font-size: 0.875rem;">
-                                    ${firstDtl.grade_cd || 'A'} &bull; ${qc.posisi_bak || 'Bak Umum'}
+                                    ${['NON-GRADE', 'NON_GRADE', 'NON GRADE'].includes((firstDtl.grade_cd || '').toUpperCase()) ? 'Non Grade' : (firstDtl.grade_cd || 'Non Grade')} &bull; ${qc.posisi_bak || 'Bak Umum'}
                                 </div>
                             </div>
                         </div>
@@ -475,7 +479,7 @@ function renderTabOutbound(items, satuan) {
                 <td>${p.pakai_tgl}</td>
                 <td>${p.gudang_nm}</td>
                 <td><strong style="color: #0f172a;">${p.tujuan_pemakaian}</strong></td>
-                <td style="text-align: center;">${p.grade_cd}</td>
+                <td style="text-align: center;">${['NON-GRADE', 'NON_GRADE', 'NON GRADE'].includes((p.grade_cd || '').toUpperCase()) ? 'Non Grade' : (p.grade_cd || '-')}</td>
                 <td style="text-align: right; font-weight: 800; color: #dc2626;">
                     -${p.qty_keluar.toLocaleString('id-ID')} ${satuan}
                 </td>

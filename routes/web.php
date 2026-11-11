@@ -556,7 +556,7 @@ Route::middleware('auth')->group(function () {
         Route::resource('coa', CoaController::class)->except(['create', 'show', 'edit']);
 
         // 6. Jurnal Umum (General Journal Ledger)
-        Route::resource('jurnal', JurnalController::class)->only(['index', 'show'])->middleware('role:jurnal_view,coa_view,hutang_view,kas_bank_view');
+        Route::resource('jurnal', JurnalController::class)->only(['index', 'create', 'store', 'show'])->middleware('role:jurnal_view,coa_view,hutang_view,kas_bank_view');
 
         // 7. Buku Besar Interaktif (Interactive General Ledger)
         Route::get('buku-besar', [BukuBesarController::class, 'index'])

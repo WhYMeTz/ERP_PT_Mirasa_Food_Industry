@@ -203,13 +203,19 @@ class TerimaBarangService
                     $batchNo = 'REJECT-' . date('Ymd');
                 }
 
+                $barangObj = MstBarang::find($barangId);
+                $itemGrade = !empty($item['grade_cd']) ? trim($item['grade_cd']) : ($barangObj?->hasGrade() ? 'A' : 'NON-GRADE');
+                if ($barangObj && !$barangObj->hasGrade() && strtoupper($itemGrade) !== 'REJECT') {
+                    $itemGrade = 'NON-GRADE';
+                }
+
                 $processedItems[] = [
                     'barang_id'        => $barangId,
                     'podtl_id'         => !empty($item['podtl_id']) ? (int) $item['podtl_id'] : null,
                     'qcdtl_id'         => !empty($item['qcdtl_id']) ? (int) $item['qcdtl_id'] : null,
                     'batch_no'         => $batchNo,
                     'expired_tgl'      => !empty($item['expired_tgl']) ? $item['expired_tgl'] : null,
-                    'grade_cd'         => !empty($item['grade_cd']) ? trim($item['grade_cd']) : null,
+                    'grade_cd'         => $itemGrade,
                     'kadar_air_persen' => !empty($item['kadar_air_persen']) ? (float) $item['kadar_air_persen'] : 0,
                     'refraksi_persen'  => !empty($item['refraksi_persen']) ? (float) $item['refraksi_persen'] : 0,
                     'terima_qty'       => $terimaQty,
@@ -329,7 +335,7 @@ class TerimaBarangService
                         $terimaNo,
                         "Penerimaan Barang Fisik No {$terimaNo}",
                         $row['harga_netto'],
-                        $row['grade_cd'] ?? 'A'
+                        $row['grade_cd'] ?: 'NON-GRADE'
                     );
 
                     // Update terima_qty di PO Detail jika barang ini terkait PO
@@ -508,13 +514,19 @@ class TerimaBarangService
                     $batchNo = 'REJECT-' . date('Ymd');
                 }
 
+                $barangObj = MstBarang::find($barangId);
+                $itemGrade = !empty($item['grade_cd']) ? trim($item['grade_cd']) : ($barangObj?->hasGrade() ? 'A' : 'NON-GRADE');
+                if ($barangObj && !$barangObj->hasGrade() && strtoupper($itemGrade) !== 'REJECT') {
+                    $itemGrade = 'NON-GRADE';
+                }
+
                 $processedItems[] = [
                     'barang_id'        => $barangId,
                     'podtl_id'         => !empty($item['podtl_id']) ? (int) $item['podtl_id'] : null,
                     'qcdtl_id'         => !empty($item['qcdtl_id']) ? (int) $item['qcdtl_id'] : null,
                     'batch_no'         => $batchNo,
                     'expired_tgl'      => !empty($item['expired_tgl']) ? $item['expired_tgl'] : null,
-                    'grade_cd'         => !empty($item['grade_cd']) ? trim($item['grade_cd']) : null,
+                    'grade_cd'         => $itemGrade,
                     'kadar_air_persen' => !empty($item['kadar_air_persen']) ? (float) $item['kadar_air_persen'] : 0,
                     'refraksi_persen'  => !empty($item['refraksi_persen']) ? (float) $item['refraksi_persen'] : 0,
                     'terima_qty'       => $terimaQty,
@@ -621,7 +633,7 @@ class TerimaBarangService
                         $terima->terima_no,
                         "Penerimaan Barang Fisik No {$terima->terima_no} (Update)",
                         $row['harga_netto'],
-                        $row['grade_cd'] ?? 'A'
+                        $row['grade_cd'] ?: 'NON-GRADE'
                     );
 
                     // Update terima_qty di PO Detail jika terkait PO

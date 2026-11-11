@@ -231,9 +231,25 @@
                                     <strong style="color: #0f172a; font-size: 0.875rem;">
                                         {{ $row->barang?->barang_nm ?? '-' }}
                                     </strong>
-                                    @if ($row->grade_cd)
-                                        <span class="badge" style="background: {{ $row->grade_cd === 'A' ? '#ecfdf5; color: #065f46; border: 1px solid #a7f3d0;' : ($row->grade_cd === 'B' ? '#fef3c7; color: #92400e; border: 1px solid #fde68a;' : '#f1f5f9; color: #475569;') }} font-size: 0.68rem; font-weight: 800; padding: 0.1rem 0.4rem; border-radius: 4px;">
-                                            Grade {{ $row->grade_cd }}
+                                    @php
+                                        $rowGrade = strtoupper(trim((string)$row->grade_cd));
+                                        $isNonGrade = in_array($rowGrade, ['NON-GRADE', 'NON_GRADE', 'NON GRADE']) || ($row->barang && !$row->barang->hasGrade());
+                                    @endphp
+                                    @if ($isNonGrade)
+                                        <span class="badge" style="background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; font-size: 0.68rem; font-weight: 700; padding: 0.1rem 0.4rem; border-radius: 4px;">
+                                            ⚪ Non Grade
+                                        </span>
+                                    @elseif ($rowGrade === 'B')
+                                        <span class="badge" style="background: #fef3c7; color: #92400e; border: 1px solid #fde68a; font-size: 0.68rem; font-weight: 800; padding: 0.1rem 0.4rem; border-radius: 4px;">
+                                            Grade B
+                                        </span>
+                                    @elseif ($rowGrade === 'REJECT')
+                                        <span class="badge" style="background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; font-size: 0.68rem; font-weight: 800; padding: 0.1rem 0.4rem; border-radius: 4px;">
+                                            Afkir
+                                        </span>
+                                    @elseif ($rowGrade)
+                                        <span class="badge" style="background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; font-size: 0.68rem; font-weight: 800; padding: 0.1rem 0.4rem; border-radius: 4px;">
+                                            Grade {{ $rowGrade }}
                                         </span>
                                     @endif
                                 </div>
@@ -440,8 +456,16 @@
                                         @foreach ($item->details as $d)
                                             <div style="white-space: nowrap;">
                                                 &bull; <strong>{{ $d->barang?->barang_nm ?? '-' }}</strong>
-                                                @if ($d->grade_cd)
-                                                    <span class="badge" style="background: #fef3c7; color: #92400e; font-size: 0.65rem; padding: 1px 5px; font-weight: 700; border: 1px solid #fde68a;">Grade {{ $d->grade_cd }}</span>
+                                                @php
+                                                    $dGrade = strtoupper(trim((string)$d->grade_cd));
+                                                    $dIsNonGrade = in_array($dGrade, ['NON-GRADE', 'NON_GRADE', 'NON GRADE']) || ($d->barang && !$d->barang->hasGrade());
+                                                @endphp
+                                                @if ($dIsNonGrade)
+                                                    <span class="badge" style="background: #f1f5f9; color: #475569; font-size: 0.65rem; padding: 1px 5px; font-weight: 700; border: 1px solid #cbd5e1;">Non Grade</span>
+                                                @elseif ($dGrade === 'B')
+                                                    <span class="badge" style="background: #fef3c7; color: #92400e; font-size: 0.65rem; padding: 1px 5px; font-weight: 700; border: 1px solid #fde68a;">Grade B</span>
+                                                @elseif ($dGrade)
+                                                    <span class="badge" style="background: #ecfdf5; color: #065f46; font-size: 0.65rem; padding: 1px 5px; font-weight: 700; border: 1px solid #a7f3d0;">Grade {{ $dGrade }}</span>
                                                 @endif
                                                 <span style="color: #64748b; font-family: monospace; font-size: 0.725rem;">({{ number_format((float) $d->terima_qty - (float) ($d->reject_qty ?? 0), 0, ',', '.') }} {{ $d->barang?->satuanDasar?->satuan_nm ?? 'KG' }})</span>
                                             </div>

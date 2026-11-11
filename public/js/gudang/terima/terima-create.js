@@ -568,6 +568,22 @@ function updateTerimaSatuanAndBatch(selectElem, isUserChange = true) {
         }
     }
 
+    // Auto-detect Grade vs Non-Grade
+    const gradeSelect = row.querySelector('.po-grade-select');
+    if (gradeSelect) {
+        const nmRaw = (selectedOption?.dataset?.nm || selectedOption?.text || '').toUpperCase().trim();
+        const cdRaw = (selectedOption?.dataset?.cd || '').toUpperCase().trim();
+        const hasGrade = nmRaw.includes('SINGKONG') || cdRaw.startsWith('BB-SK') 
+            || nmRaw.includes('KARTON') || nmRaw.includes('DUS') || nmRaw.includes('BOX') 
+            || cdRaw.startsWith('BP-KT') || cdRaw.startsWith('BP-BX');
+        
+        if (!hasGrade) {
+            gradeSelect.value = 'NON-GRADE';
+        } else if (gradeSelect.value === 'NON-GRADE') {
+            gradeSelect.value = 'A';
+        }
+    }
+
     const hargaInput = row.querySelector('.item-harga');
     if (hargaInput) {
         if (isUserChange) {
@@ -1432,6 +1448,9 @@ function applyQcTicket(qcId) {
                     const defaultHarga = parseFloat(it.std_harga) || 0;
                     const rowBruto = rowGross > 0 ? rowGross : (rowNetto + rowRejectQty);
 
+                    const itGrade = it.grade_cd || (it.has_grade ? 'A' : 'NON-GRADE');
+                    const isItNonGrade = ['NON-GRADE', 'NON_GRADE', 'NON GRADE'].includes(itGrade) || (it.has_grade === false && itGrade !== 'REJECT');
+
                     tr.innerHTML = `
                             <td class="row-num" style="font-weight: 700; text-align: center; color: #475569; background: #f1f5f9;">${idx + 1}</td>
                             <td>
@@ -1473,10 +1492,9 @@ function applyQcTicket(qcId) {
                             </td>
                             <td>
                                 <select name="items[${idx}][grade_cd]" class="form-control po-grade-select">
-                                    <option value="A" ${it.grade_cd === 'A' ? 'selected' : ''}>Grade A</option>
-                                    <option value="B" ${it.grade_cd === 'B' ? 'selected' : ''}>Grade B</option>
-                                    <option value="C" ${it.grade_cd === 'C' ? 'selected' : ''}>Grade C</option>
-                                    <option value="REJECT" ${it.grade_cd === 'REJECT' ? 'selected' : ''}>Reject</option>
+                                    <option value="A" ${!isItNonGrade && itGrade === 'A' ? 'selected' : ''}>Grade A</option>
+                                    <option value="B" ${!isItNonGrade && itGrade === 'B' ? 'selected' : ''}>Grade B</option>
+                                    <option value="NON-GRADE" ${isItNonGrade ? 'selected' : ''}>Non Grade</option>
                                 </select>
                             </td>
                             <td>
@@ -2114,7 +2132,10 @@ function restoreTerimaCreateDraft() {
                         const rowRefraksiPersen = parseFloat(it.refraksi_persen) || 0;
                         const rowNetto = Math.max(0, rowGross - rowRejectQty);
 
-                        tr.innerHTML = `
+                        const itGrade = it.grade_cd || (it.has_grade ? 'A' : 'NON-GRADE');
+                    const isItNonGrade = ['NON-GRADE', 'NON_GRADE', 'NON GRADE'].includes(itGrade) || (it.has_grade === false && itGrade !== 'REJECT');
+
+                    tr.innerHTML = `
                             <td class="row-num" style="font-weight: 700; text-align: center; color: #475569; background: #f1f5f9;">${idx + 1}</td>
                             <td>
                                 <input type="hidden" name="items[${idx}][podtl_id]" value="${escapeHtml(it.podtl_id || '')}">
@@ -2152,10 +2173,9 @@ function restoreTerimaCreateDraft() {
                             </td>
                             <td>
                                 <select name="items[${idx}][grade_cd]" class="form-control po-grade-select">
-                                    <option value="A" ${it.grade_cd === 'A' ? 'selected' : ''}>Grade A</option>
-                                    <option value="B" ${it.grade_cd === 'B' ? 'selected' : ''}>Grade B</option>
-                                    <option value="C" ${it.grade_cd === 'C' ? 'selected' : ''}>Grade C</option>
-                                    <option value="REJECT" ${it.grade_cd === 'REJECT' ? 'selected' : ''}>Reject</option>
+                                    <option value="A" ${!isItNonGrade && itGrade === 'A' ? 'selected' : ''}>Grade A</option>
+                                    <option value="B" ${!isItNonGrade && itGrade === 'B' ? 'selected' : ''}>Grade B</option>
+                                    <option value="NON-GRADE" ${isItNonGrade ? 'selected' : ''}>Non Grade</option>
                                 </select>
                             </td>
                             <td>

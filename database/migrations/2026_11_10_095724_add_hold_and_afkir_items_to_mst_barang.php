@@ -15,12 +15,16 @@ return new class extends Migration
     {
         $now = Carbon::now();
 
+        $wipId = DB::table('mst_jenis_barang')->where('jenis_barang_cd', 'WIP')->value('jenis_barang_id') ?? 4;
+        $fgId = DB::table('mst_jenis_barang')->where('jenis_barang_cd', 'FG')->value('jenis_barang_id') ?? 5;
+        $kgId = DB::table('mst_satuan')->where('satuan_cd', 'KG')->value('satuan_id') ?? 3;
+
         $items = [
             [
                 'barang_cd'          => 'WIP-FCC-HLD',
                 'barang_nm'          => 'KERIPIK SINGKONG IFL (HOLD QC GUDANG)',
-                'jenis_barang_id'    => 2, // WIP
-                'satuan_dasar_id'    => 1, // KG
+                'jenis_barang_id'    => $wipId, // WIP
+                'satuan_dasar_id'    => $kgId, // KG
                 'konversi_qty'       => 1.0000,
                 'batas_minimum_qty'  => 0,
                 'harga_beli_standar' => 0,
@@ -35,8 +39,8 @@ return new class extends Migration
             [
                 'barang_cd'          => 'FG-EXP-HLD',
                 'barang_nm'          => 'KS EKSPOR (HOLD QC GUDANG)',
-                'jenis_barang_id'    => 4, // FG
-                'satuan_dasar_id'    => 1, // KG
+                'jenis_barang_id'    => $fgId, // FG
+                'satuan_dasar_id'    => $kgId, // KG
                 'konversi_qty'       => 1.0000,
                 'batas_minimum_qty'  => 0,
                 'harga_beli_standar' => 0,
@@ -51,8 +55,8 @@ return new class extends Migration
             [
                 'barang_cd'          => 'WIP-AFK',
                 'barang_nm'          => 'KERIPIK AFKIR GORENG (LANGSUNG AFKIR)',
-                'jenis_barang_id'    => 2, // WIP
-                'satuan_dasar_id'    => 1, // KG
+                'jenis_barang_id'    => $wipId, // WIP
+                'satuan_dasar_id'    => $kgId, // KG
                 'konversi_qty'       => 1.0000,
                 'batas_minimum_qty'  => 0,
                 'harga_beli_standar' => 0,

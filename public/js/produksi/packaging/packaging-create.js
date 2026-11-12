@@ -1046,7 +1046,17 @@ function applyOperatorLaporan(itemOrIdx) {
         }
     }
 
-    // 7. Sinkronkan Lakban dari Laporan Operator (Roll, Meter & Gram)
+    // 7. Sinkronkan Kerusakan / Scrap Kemasan IFM (Dus Rusak, Plastik Rusak, Lakban Rusak)
+    const kartonRusakInput = document.getElementById('karton_rusak_lembar');
+    if (kartonRusakInput && item.karton_rusak_lembar !== undefined) {
+        kartonRusakInput.value = item.karton_rusak_lembar;
+    }
+    const plastikRusakInput = document.getElementById('plastik_rusak_pcs');
+    if (plastikRusakInput && item.plastik_rusak_pcs !== undefined) {
+        plastikRusakInput.value = item.plastik_rusak_pcs;
+    }
+
+    // Sinkronkan Lakban dari Laporan Operator (Roll, Meter & Gram)
     const lakbanRollInput = document.getElementById('lakban_roll_qty');
     const lakbanStandarInput = document.getElementById('lakban_standar_cm');
     const lakbanRusakInput = document.getElementById('lakban_rusak_m');

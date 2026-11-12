@@ -115,8 +115,9 @@ class BarangController extends Controller
         $jenisBarangList = MstJenisBarang::active()->orderBy('jenis_barang_nm')->get();
         $satuanList = MstSatuan::active()->orderBy('satuan_nm')->get();
         $nextBarangCode = $this->codeGeneratorService->generateBarangCode();
+        $kategoriOutputList = MstBarang::KATEGORI_OUTPUT_LIST;
 
-        return view('master_data.barang.create', compact('jenisBarangList', 'satuanList', 'nextBarangCode'));
+        return view('master_data.barang.create', compact('jenisBarangList', 'satuanList', 'nextBarangCode', 'kategoriOutputList'));
     }
 
     /**
@@ -169,8 +170,9 @@ class BarangController extends Controller
         $barang = $this->barangService->getById($id);
         $jenisBarangList = MstJenisBarang::active()->orderBy('jenis_barang_nm')->get();
         $satuanList = MstSatuan::active()->orderBy('satuan_nm')->get();
+        $kategoriOutputList = MstBarang::KATEGORI_OUTPUT_LIST;
 
-        return view('master_data.barang.edit', compact('barang', 'jenisBarangList', 'satuanList'));
+        return view('master_data.barang.edit', compact('barang', 'jenisBarangList', 'satuanList', 'kategoriOutputList'));
     }
 
     /**

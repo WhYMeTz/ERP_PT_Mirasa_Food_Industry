@@ -138,26 +138,52 @@
                                                     $batchStr = $dtl->batch_no ?: ($p->batch_wip_no ?: ($p->produksi_tgl ? $p->produksi_tgl->format('d m Y') : '-'));
                                                     $hppVal = (float) ($dtl->hpp_satuan > 0 ? $dtl->hpp_satuan : $p->hpp_per_kg);
                                                     $isSelected = ($targetProdId == $p->produksi_id && ($targetWipId ? (int)$dtl->barang_id === (int)$targetWipId : $loop->first));
+                                                    $cdUpper = strtoupper($dtl->barang?->barang_cd ?? '');
                                                     $nmUpper = strtoupper($barangNm);
+                                                    $isFcc = str_contains($cdUpper, 'WIP-FCC') || str_contains($cdUpper, 'NTP-FCC') || str_contains($nmUpper, 'IFL') || str_contains($nmUpper, 'INDOFOOD') || str_contains($nmUpper, 'TANPA BUMBU');
+                                                    $isSampingan = str_contains($nmUpper, 'BERKO') || str_contains($nmUpper, 'REMAHAN') || str_contains($nmUpper, 'LENGKET') || str_contains($cdUpper, 'BRK') || str_contains($cdUpper, 'RMH') || str_contains($cdUpper, 'LGT');
                                                     $hasBumbuProd = (float) ($p->bumbu_qty ?? 0) > 0;
                                                     $isBerbumbu = $hasBumbuProd
                                                         || str_contains($nmUpper, 'BERBUMBU')
                                                         || str_contains($nmUpper, 'BUMBU')
                                                         || str_contains($nmUpper, 'BALADO')
                                                         || str_contains($nmUpper, 'SEASALT')
-                                                        || str_contains($nmUpper, 'JAGUNG');
+                                                        || str_contains($nmUpper, 'JAGUNG')
+                                                        || str_contains($nmUpper, 'BARCO')
+                                                        || str_contains($nmUpper, 'SAWIT');
+
+                                                    $katOut = $dtl->barang?->kategori_output_cd;
+                                                    if ($katOut === 'FCC_NON_BUMBU') {
+                                                        $curahBadge = '[FCC Non Bumbu]';
+                                                    } elseif ($katOut === 'WIP_BERBUMBU') {
+                                                        $curahBadge = '[WIP Berbumbu]';
+                                                    } elseif ($katOut === 'WIP_AFKIR') {
+                                                        $curahBadge = '[WIP Sampingan]';
+                                                    } elseif ($katOut === 'WIP_HOLD') {
+                                                        $curahBadge = '[WIP Hold]';
+                                                    } elseif ($katOut === 'WIP_TAWAR') {
+                                                        $curahBadge = '[WIP Curah Tawar]';
+                                                    } elseif ($isFcc) {
+                                                        $curahBadge = '[FCC Non Bumbu]';
+                                                    } elseif ($isBerbumbu) {
+                                                        $curahBadge = '[WIP Berbumbu]';
+                                                    } elseif ($isSampingan) {
+                                                        $curahBadge = '[WIP Sampingan]';
+                                                    } else {
+                                                        $curahBadge = '[WIP Curah Tawar]';
+                                                    }
                                                 @endphp
                                                 <option value="{{ $p->produksi_id }}" 
                                                         data-hpp="{{ $hppVal }}" 
                                                         data-batch="{{ $batchStr }}" 
-                                                        data-exp="{{ $expDateStr }}"
+                                                        data-exp="{{ $expDateStr }}" 
                                                         data-qty="{{ $qtyKg }}"
                                                         data-no="{{ $p->produksi_no }}"
                                                         data-barang-id="{{ $dtl->barang_id }}"
                                                         data-barang-nm="{{ $barangNm }}"
                                                         data-is-berbumbu="{{ $isBerbumbu ? '1' : '0' }}"
                                                         {{ $isSelected ? 'selected' : '' }}>
-                                                    [{{ $p->produksi_no }}] {{ $tglStr }} • {{ $barangNm }} ({{ number_format($qtyKg, 0, ',', '.') }} Kg) • Batch: {{ $batchStr }} (HPP: Rp {{ number_format($hppVal, 0, ',', '.') }}/Kg) {{ $isBerbumbu ? '✨ [Sudah Berbumbu]' : '' }}
+                                                    [{{ $p->produksi_no }}] {{ $tglStr }} • {{ $barangNm }} ({{ number_format($qtyKg, 0, ',', '.') }} Kg) • Batch: {{ $batchStr }} (HPP: Rp {{ number_format($hppVal, 0, ',', '.') }}/Kg) {{ $curahBadge }}
                                                 </option>
                                             @endforeach
                                         </optgroup>
@@ -169,26 +195,52 @@
                                                 $batchStr = $dtl->batch_no ?: ($p->batch_wip_no ?: ($p->produksi_tgl ? $p->produksi_tgl->format('d m Y') : '-'));
                                                 $hppVal = (float) ($dtl->hpp_satuan > 0 ? $dtl->hpp_satuan : $p->hpp_per_kg);
                                                 $isSelected = ($targetProdId == $p->produksi_id && ($targetWipId ? (int)$dtl->barang_id === (int)$targetWipId : true));
+                                                $cdUpper = strtoupper($dtl->barang?->barang_cd ?? '');
                                                 $nmUpper = strtoupper($barangNm);
+                                                $isFcc = str_contains($cdUpper, 'WIP-FCC') || str_contains($cdUpper, 'NTP-FCC') || str_contains($nmUpper, 'IFL') || str_contains($nmUpper, 'INDOFOOD') || str_contains($nmUpper, 'TANPA BUMBU');
+                                                $isSampingan = str_contains($nmUpper, 'BERKO') || str_contains($nmUpper, 'REMAHAN') || str_contains($nmUpper, 'LENGKET') || str_contains($cdUpper, 'BRK') || str_contains($cdUpper, 'RMH') || str_contains($cdUpper, 'LGT');
                                                 $hasBumbuProd = (float) ($p->bumbu_qty ?? 0) > 0;
                                                 $isBerbumbu = $hasBumbuProd
                                                     || str_contains($nmUpper, 'BERBUMBU')
                                                     || str_contains($nmUpper, 'BUMBU')
                                                     || str_contains($nmUpper, 'BALADO')
                                                     || str_contains($nmUpper, 'SEASALT')
-                                                    || str_contains($nmUpper, 'JAGUNG');
+                                                    || str_contains($nmUpper, 'JAGUNG')
+                                                    || str_contains($nmUpper, 'BARCO')
+                                                    || str_contains($nmUpper, 'SAWIT');
+
+                                                $katOut = $dtl->barang?->kategori_output_cd;
+                                                if ($katOut === 'FCC_NON_BUMBU') {
+                                                    $curahBadge = '[FCC Non Bumbu]';
+                                                } elseif ($katOut === 'WIP_BERBUMBU') {
+                                                    $curahBadge = '[WIP Berbumbu]';
+                                                } elseif ($katOut === 'WIP_AFKIR') {
+                                                    $curahBadge = '[WIP Sampingan]';
+                                                } elseif ($katOut === 'WIP_HOLD') {
+                                                    $curahBadge = '[WIP Hold]';
+                                                } elseif ($katOut === 'WIP_TAWAR') {
+                                                    $curahBadge = '[WIP Curah Tawar]';
+                                                } elseif ($isFcc) {
+                                                    $curahBadge = '[FCC Non Bumbu]';
+                                                } elseif ($isBerbumbu) {
+                                                    $curahBadge = '[WIP Berbumbu]';
+                                                } elseif ($isSampingan) {
+                                                    $curahBadge = '[WIP Sampingan]';
+                                                } else {
+                                                    $curahBadge = '[WIP Curah Tawar]';
+                                                }
                                             @endphp
                                             <option value="{{ $p->produksi_id }}" 
                                                     data-hpp="{{ $hppVal }}" 
                                                     data-batch="{{ $batchStr }}" 
-                                                    data-exp="{{ $expDateStr }}"
+                                                    data-exp="{{ $expDateStr }}" 
                                                     data-qty="{{ $qtyKg }}"
                                                     data-no="{{ $p->produksi_no }}"
                                                     data-barang-id="{{ $dtl->barang_id }}"
                                                     data-barang-nm="{{ $barangNm }}"
                                                     data-is-berbumbu="{{ $isBerbumbu ? '1' : '0' }}"
                                                     {{ $isSelected ? 'selected' : '' }}>
-                                                [{{ $p->produksi_no }}] {{ $tglStr }} • {{ $barangNm }} ({{ number_format($qtyKg, 0, ',', '.') }} Kg) • Batch: {{ $batchStr }} (HPP: Rp {{ number_format($hppVal, 0, ',', '.') }}/Kg) {{ $isBerbumbu ? '✨ [Sudah Berbumbu]' : '' }}
+                                                [{{ $p->produksi_no }}] {{ $tglStr }} • {{ $barangNm }} ({{ number_format($qtyKg, 0, ',', '.') }} Kg) • Batch: {{ $batchStr }} (HPP: Rp {{ number_format($hppVal, 0, ',', '.') }}/Kg) {{ $curahBadge }}
                                             </option>
                                         @endforeach
                                     @endif
@@ -202,12 +254,15 @@
                                         <option value="{{ $p->produksi_id }}" 
                                                 data-hpp="{{ (float) $p->hpp_per_kg }}" 
                                                 data-batch="{{ $batchStr }}" 
-                                                data-exp="{{ $expDateStr }}"
+                                                data-exp="{{ $expDateStr }}" 
                                                 data-qty="{{ $qtyBerko }}"
                                                 data-no="{{ $p->produksi_no }}"
                                                 data-barang-nm="KS BERKO"
                                                 {{ $isSelected ? 'selected' : '' }}>
-                                            [{{ $p->produksi_no }}] {{ $tglStr }} • KS BERKO ({{ number_format($qtyBerko, 0, ',', '.') }} Kg) • Batch: {{ $batchStr }} (HPP: Rp {{ number_format($p->hpp_per_kg, 0, ',', '.') }}/Kg)
+                                            [{{ $p->produksi_no }}] {{ $tglStr }} • KS BERKO ({{ number_format($qtyBerko, 0, ',', '.') }} Kg) • Batch: {{ $batchStr }} (HPP: Rp {{ number_format($p->hpp_per_kg, 0, ',', '.') }}/Kg) [WIP Sampingan]
+                                        </option>
+                                    @endif
+                                @endif
                                         </option>
                                     @endif
                                 @endif
@@ -378,6 +433,54 @@
                     <input type="hidden" id="lakban_bawah_gr" name="lakban_bawah_gr" value="{{ old('lakban_bawah_gr', 0) }}">
                     <input type="hidden" id="lakban_jumlah_gr" name="lakban_jumlah_gr" value="{{ old('lakban_jumlah_gr', 0) }}">
                     <input type="hidden" id="lakban_qty" name="lakban_qty" value="{{ old('lakban_qty', 0) }}">
+                </div>
+
+                {{-- SUB-PANEL: REJECT & SCRAP KEMASAN (STANDAR OPERASIONAL IFM) --}}
+                <div style="background: #fef2f2; border: 1.5px solid #fecaca; border-radius: 8px; padding: 1rem 1.25rem; margin-top: 1rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.85rem;">
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <div style="width: 28px; height: 28px; border-radius: 6px; background: #dc2626; color: #ffffff; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                            </div>
+                            <div>
+                                <strong style="color: #991b1b; font-size: 0.875rem;">Pencatatan Reject &amp; Scrap Kemasan (Standar Baku IFM)</strong>
+                                <span style="display: block; font-size: 0.725rem; color: #b91c1c;">
+                                    Catatan afkir bahan kemas saat proses packaging untuk rekonsiliasi stok material &amp; audit mutu
+                                </span>
+                            </div>
+                        </div>
+                        <span class="badge" style="background: #ffffff; color: #dc2626; border: 1px solid #fca5a5; font-size: 0.725rem; font-weight: 700; padding: 0.25rem 0.65rem; border-radius: 6px;">
+                            Standar Audit Kemasan
+                        </span>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.85rem;">
+                        <div>
+                            <label style="display: block; font-size: 0.75rem; font-weight: 700; color: #991b1b; margin-bottom: 0.35rem;">
+                                Dus Rusak / Sobek Saat Packing (Lembar)
+                            </label>
+                            <div style="position: relative;">
+                                <input type="number" step="any" min="0" id="karton_rusak_lembar" name="karton_rusak_lembar"
+                                       class="form-control" style="height: 38px; border-radius: 6px; font-size: 0.9rem; font-weight: 700; text-align: right; padding-right: 58px; border-color: #fca5a5; background: #ffffff;" 
+                                       value="{{ old('karton_rusak_lembar', $selectedLaporan?->karton_rusak_lembar ?? 0) }}" placeholder="0">
+                                <span style="position: absolute; right: 10px; top: 9px; font-size: 0.75rem; color: #dc2626; font-weight: 600;">Lembar</span>
+                            </div>
+                            <div style="font-size: 0.65rem; color: #b91c1c; margin-top: 2px;">Karton cacat/afkir meja kemas</div>
+                        </div>
+
+                        <div>
+                            <label style="display: block; font-size: 0.75rem; font-weight: 700; color: #991b1b; margin-bottom: 0.35rem;">
+                                Plastik Rusak / Bocor Sealer (Pcs)
+                            </label>
+                            <div style="position: relative;">
+                                <input type="number" step="any" min="0" id="plastik_rusak_pcs" name="plastik_rusak_pcs"
+                                       class="form-control" style="height: 38px; border-radius: 6px; font-size: 0.9rem; font-weight: 700; text-align: right; padding-right: 48px; border-color: #fca5a5; background: #ffffff;" 
+                                       value="{{ old('plastik_rusak_pcs', $selectedLaporan?->plastik_rusak_pcs ?? 0) }}" placeholder="0">
+                                <span style="position: absolute; right: 10px; top: 9px; font-size: 0.75rem; color: #dc2626; font-weight: 600;">Pcs</span>
+                            </div>
+                            <div style="font-size: 0.65rem; color: #b91c1c; margin-top: 2px;">Plastik reject/press bocor</div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

@@ -291,6 +291,36 @@
                         </td>
                     </tr>
                     @endif
+                    @php
+                        $lko = $header->laporanKemasOperator;
+                        $dusAfkir = (float) ($lko?->karton_rusak_lembar ?? 0);
+                        $plastikAfkir = (float) ($lko?->plastik_rusak_pcs ?? 0);
+                        $lakbanRusak = (float) ($lko?->lakban_rusak_m ?? 0);
+                    @endphp
+                    @if($lko && ($dusAfkir > 0 || $plastikAfkir > 0 || $lakbanRusak > 0))
+                    <tr>
+                        <td class="label-col">Scrap Kemasan (IFM)</td>
+                        <td class="value-col">
+                            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                                @if($dusAfkir > 0)
+                                    <span class="badge" style="background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; font-size: 0.75rem; font-weight: 700; padding: 0.2rem 0.5rem; border-radius: 4px;">
+                                        Dus Afkir: {{ number_format($dusAfkir, 0, ',', '.') }} lbr
+                                    </span>
+                                @endif
+                                @if($plastikAfkir > 0)
+                                    <span class="badge" style="background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; font-size: 0.75rem; font-weight: 700; padding: 0.2rem 0.5rem; border-radius: 4px;">
+                                        Plastik Reject: {{ number_format($plastikAfkir, 0, ',', '.') }} pcs
+                                    </span>
+                                @endif
+                                @if($lakbanRusak > 0)
+                                    <span class="badge" style="background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; font-size: 0.75rem; font-weight: 700; padding: 0.2rem 0.5rem; border-radius: 4px;">
+                                        Lakban Kusut: {{ number_format($lakbanRusak, 1, ',', '.') }} m
+                                    </span>
+                                @endif
+                            </div>
+                        </td>
+                    </tr>
+                    @endif
                     <tr>
                         <td class="label-col">Catatan Operasional</td>
                         <td class="value-col">{{ $header->catatan_txt ?: 'Pengemasan standar finish goods retail snack.' }}</td>

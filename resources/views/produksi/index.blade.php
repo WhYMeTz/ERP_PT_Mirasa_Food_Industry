@@ -65,27 +65,16 @@
 @endif
 
 @php
-    if ($viewType !== 'item') {
-        $pageTotalBeratKg = $produksiList->getCollection()->sum(function($p) {
-            return $p->details->sum('qty_kg');
-        });
-        $pageTotalSisaStok = $produksiList->getCollection()->sum(function($p) {
-            return $p->details->sum(fn($d) => (float) ($d->sisa_stok ?? $d->qty_kg));
-        });
-        $totalCount = $produksiList->total();
-        $statLabel = 'Total Dokumen Produksi';
-        $statSubtext = 'SPK / Proses Produksi Pabrik';
-        $statUnit = 'Dokumen';
-    } else {
-        $pageTotalBeratKg = $hasilItems->sum('qty_kg');
-        $pageTotalSisaStok = $hasilItems->getCollection()->sum(function($i) {
-            return (float) ($i->sisa_stok ?? $i->qty_kg);
-        });
-        $totalCount = $hasilItems->total();
-        $statLabel = 'Total Rincian Output';
-        $statSubtext = 'Rincian fisik olahan curah (WIP)';
-        $statUnit = 'Baris';
-    }
+    $pageTotalBeratKg = $produksiList->getCollection()->sum(function($p) {
+        return $p->details->sum('qty_kg');
+    });
+    $pageTotalSisaStok = $produksiList->getCollection()->sum(function($p) {
+        return $p->details->sum(fn($d) => (float) ($d->sisa_stok ?? $d->qty_kg));
+    });
+    $totalCount = $produksiList->total();
+    $statLabel = 'Total Dokumen Produksi';
+    $statSubtext = 'SPK / Proses Produksi Pabrik';
+    $statUnit = 'Dokumen';
 @endphp
 
     {{-- 3 KARTU METRIK EKSEKUTIF (SUBTOTAL & STOK PRODUKSI LANGSUNG TERBACA DI ATAS) --}}
@@ -148,7 +137,6 @@
     {{-- FILTER CARD ENTERPRISE (TERPUSAT & ERGONOMIS) --}}
     <div class="filter-card">
         <form method="GET" action="{{ route('produksi.index') }}">
-            <input type="hidden" name="view" value="{{ $viewType }}">
             <div class="filter-grid">
                 <div>
                     <label class="filter-label">Gudang Simpan</label>
@@ -191,7 +179,7 @@
                     <button type="submit" class="btn btn-primary" style="padding: 0.45rem 0.85rem; font-size: 0.825rem; flex: 1;">
                         Terapkan Filter
                     </button>
-                    <a href="{{ route('produksi.index', ['view' => $viewType]) }}" class="btn btn-secondary" style="padding: 0.45rem 0.65rem; font-size: 0.825rem; background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; text-decoration: none; display: inline-flex; align-items: center; justify-content: center;">
+                    <a href="{{ route('produksi.index') }}" class="btn btn-secondary" style="padding: 0.45rem 0.65rem; font-size: 0.825rem; background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; text-decoration: none; display: inline-flex; align-items: center; justify-content: center;">
                         Reset
                     </a>
                 </div>
@@ -201,34 +189,23 @@
 
     {{-- WADAH TABEL UTAMA (SERAGAM DENGAN MODUL LAIN: CARD ENTERPRISE) --}}
     <div class="card" style="margin-bottom: 1.5rem; overflow: hidden;">
-        {{-- PERSPEKTIF VIEW SWITCHER & TOTAL HASIL --}}
-        <div class="view-switcher-bar">
-            <div class="view-mode-tabs">
-                <a href="{{ route('produksi.index', array_merge(request()->query(), ['view' => 'dokumen'])) }}" 
-                   class="view-mode-tab-item {{ ($viewType !== 'item') ? 'active' : '' }}">
-                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                    <span>Daftar Dokumen Produksi (Tergabung)</span>
-                </a>
-                <a href="{{ route('produksi.index', array_merge(request()->query(), ['view' => 'item'])) }}" 
-                   class="view-mode-tab-item {{ ($viewType === 'item') ? 'active' : '' }}">
-                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 4h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                    <span>Buku Rekap Output (Detail Grid)</span>
-                </a>
+        {{-- HEADER TABEL DAFTAR DOKUMEN HASIL PRODUKSI --}}
+        <div style="background: #ffffff; padding: 0.85rem 1.25rem; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+            <div style="display: flex; align-items: center; gap: 0.6rem;">
+                <h3 style="margin: 0; font-size: 0.95rem; font-weight: 700; color: #0f172a;">Daftar Dokumen Hasil Produksi</h3>
+                <span style="font-size: 0.75rem; color: #64748b; background: #f1f5f9; padding: 0.15rem 0.5rem; border-radius: 4px; font-weight: 600;">
+                    {{ number_format($totalCount, 0, ',', '.') }} Dokumen
+                </span>
             </div>
 
             <div style="display: flex; align-items: center; gap: 0.85rem; flex-wrap: wrap;">
-                <span style="color: #64748b; font-size: 0.85rem;">
-                    Total: <strong style="color: #0f172a; font-family: monospace;">{{ number_format($totalCount, 0, ',', '.') }}</strong> {{ $statUnit }}
-                </span>
                 <span style="background: #f0f9ff; color: #0369a1; border: 1.5px solid #bae6fd; font-size: 0.825rem; font-weight: 700; padding: 0.3rem 0.75rem; border-radius: 6px; display: inline-flex; align-items: center; gap: 0.4rem;">
                     <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"/></svg>
-                    <span>Total Berat Bersih:</span>
+                    <span>Total Berat Bersih Halaman:</span>
                     <strong style="font-size: 0.9rem; font-family: monospace;">{{ number_format($pageTotalBeratKg, 2, ',', '.') }} kg</strong>
                 </span>
             </div>
         </div>
-
-        @if($viewType !== 'item')
             {{-- VIEW 1: DAFTAR DOKUMEN PRODUKSI (STANDAR MANUFAKTUR ERP - 1 BARIS PER NOMOR PRODUKSI) --}}
             <div style="overflow-x: auto;">
                 <table style="width: 100%; border-collapse: collapse; margin: 0; font-size: 0.85rem;">
@@ -260,20 +237,18 @@
                                 </td>
 
                                 {{-- 2. DOKUMEN & TANGGAL --}}
-                                <td style="padding: 0.75rem 1rem; vertical-align: top;">
+                                <td style="padding: 0.65rem 0.85rem; vertical-align: top;">
                                     <div style="display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;">
-                                        <a href="{{ route('produksi.hpp.create', ['produksi_id' => $prod->produksi_id]) }}" 
-                                           style="font-weight: 700; color: #0284c7; font-size: 0.9rem; text-decoration: none;"
-                                           title="Klik untuk membuka kalkulasi HPP transaksi ini">
+                                        <a href="{{ route('produksi.show', $prod->produksi_id) }}" 
+                                           class="prod-doc-title"
+                                           title="Klik untuk melihat detail SPK dokumen produksi ini">
                                             {{ $prod->produksi_no }}
                                         </a>
                                         @if($isReworkDoc)
-                                            <span style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a; padding: 0.05rem 0.3rem; border-radius: 4px; font-size: 0.65rem; font-weight: 800; letter-spacing: 0.02em;">
-                                                REWORK
-                                            </span>
+                                            <span class="badge-rework-tag">REWORK</span>
                                         @endif
                                     </div>
-                                    <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.25rem;">
+                                    <div class="prod-doc-meta">
                                         <span>{{ \Carbon\Carbon::parse($prod->produksi_tgl)->format('d/m/Y') }}</span>
                                         @if($prod->shift_cd)
                                             <span>&bull;</span>
@@ -285,18 +260,18 @@
                                         @endif
                                     </div>
                                     @if($prod->po_ifl_no)
-                                        <div style="margin-top: 0.2rem; font-size: 0.72rem; color: #64748b;">
-                                            PO: <span style="font-family: monospace; font-weight: 600;">{{ $prod->po_ifl_no }}</span>
+                                        <div class="prod-doc-po">
+                                            PO: <span>{{ $prod->po_ifl_no }}</span>
                                         </div>
                                     @endif
                                 </td>
 
                                 {{-- 3. GUDANG SIMPAN & BATCH UTAMA --}}
-                                <td style="padding: 0.75rem 1rem; vertical-align: top;">
-                                    <div style="font-weight: 600; color: #0f172a; font-size: 0.85rem;">
+                                <td style="padding: 0.65rem 0.85rem; vertical-align: top;">
+                                    <div class="prod-gdg-title">
                                         {{ $prod->gudang?->gudang_nm ?? '-' }}
                                     </div>
-                                    <div style="font-size: 0.725rem; color: #64748b; font-family: monospace; margin-top: 0.15rem;">
+                                    <div class="prod-gdg-code">
                                         {{ $prod->gudang?->gudang_cd ?? '' }}
                                     </div>
                                     <div style="margin-top: 0.35rem;">
@@ -305,94 +280,100 @@
                                                 BATCH BELUM TERBIT
                                             </span>
                                         @else
-                                            <span class="prod-output-batch">
+                                            <span class="prod-batch-chip">
                                                 Batch: {{ $prod->batch_wip_no }}
                                             </span>
                                         @endif
                                     </div>
                                     @if($prod->exp_date)
-                                        <div style="font-size: 0.72rem; color: #64748b; margin-top: 0.2rem;">
+                                        <div class="prod-exp-date">
                                             Exp: {{ \Carbon\Carbon::parse($prod->exp_date)->format('d/m/Y') }}
                                         </div>
                                     @endif
                                 </td>
 
-                                {{-- 4. RINCIAN HASIL OLAHAN FISIK (DAFTAR BARANG DALAM 1 DOKUMEN) --}}
-                                <td style="padding: 0.75rem 1rem; vertical-align: top;">
-                                    <div class="prod-outputs-container">
-                                        @forelse($prod->details as $item)
-                                            @php
-                                                $barang = $item->barang;
-                                                $satuanNm = $item->satuan_cd ?: ($barang?->satuan?->satuan_nm ?? 'KG');
-                                                $qtyTampil = $item->qty_hasil > 0 ? (float) $item->qty_hasil : (float) $item->qty_kg;
-                                                $sisaStok = (float) ($item->sisa_stok ?? $item->qty_kg);
-                                            @endphp
-                                            <div class="prod-output-row">
-                                                <div class="prod-output-left">
-                                                    <span class="prod-output-barang">{{ $barang?->barang_nm ?? '-' }}</span>
-                                                    @if($barang?->barang_cd)
-                                                        <span class="prod-output-code">{{ $barang->barang_cd }}</span>
-                                                    @endif
-                                                    @if(!empty($item->batch_no) && $item->batch_no !== $prod->batch_wip_no)
-                                                        <span class="prod-output-batch">B: {{ $item->batch_no }}</span>
-                                                    @endif
-                                                </div>
-                                                <div class="prod-output-right">
-                                                    <span class="prod-output-qty">
-                                                        {{ number_format($qtyTampil, 2, ',', '.') }} <small style="color: #64748b; font-weight: 500;">{{ $satuanNm }}</small>
-                                                    </span>
-                                                    <span class="prod-output-kg">
-                                                        ({{ number_format((float) $item->qty_kg, 2, ',', '.') }} kg)
-                                                    </span>
-                                                    @if($sisaStok > 0)
-                                                        <span style="background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; font-size: 0.675rem; font-weight: 700; padding: 0.05rem 0.35rem; border-radius: 9999px;">
-                                                            Sisa: {{ number_format($sisaStok, 1, ',', '.') }} kg
-                                                        </span>
-                                                    @else
-                                                        <span style="background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; font-size: 0.675rem; font-weight: 700; padding: 0.05rem 0.35rem; border-radius: 9999px;">
-                                                            Habis
-                                                        </span>
-                                                    @endif
-                                                </div>
-                                            </div>
-                                        @empty
-                                            <span style="color: #94a3b8; font-style: italic; font-size: 0.8rem;">Tidak ada rincian output</span>
-                                        @endforelse
+                                {{-- 4. RINCIAN HASIL OLAHAN FISIK (SUB-TABLE TABULAR TERTATA) --}}
+                                <td style="padding: 0.5rem 0.75rem; vertical-align: top;">
+                                    <div class="prod-subtable-wrapper">
+                                        <table class="prod-subtable">
+                                            <tbody>
+                                                @forelse($prod->details as $item)
+                                                    @php
+                                                        $barang = $item->barang;
+                                                        $satuanNm = strtoupper(trim($item->satuan_cd ?: ($barang?->satuan?->satuan_nm ?? 'KG')));
+                                                        $qtyTampil = $item->qty_hasil > 0 ? (float) $item->qty_hasil : (float) $item->qty_kg;
+                                                        $qtyKg = (float) $item->qty_kg;
+                                                        $sisaStok = (float) ($item->sisa_stok ?? $item->qty_kg);
+                                                        $isDifferentUnit = ($satuanNm !== 'KG' && $satuanNm !== '') && abs($qtyTampil - $qtyKg) > 0.001;
+                                                    @endphp
+                                                    <tr>
+                                                        <td class="col-name">
+                                                            <span class="item-name">{{ $barang?->barang_nm ?? '-' }}</span>
+                                                            @if($barang?->barang_cd)
+                                                                <span class="item-code">{{ $barang->barang_cd }}</span>
+                                                            @endif
+                                                            @if(!empty($item->batch_no) && $item->batch_no !== $prod->batch_wip_no)
+                                                                <span class="item-batch">B: {{ $item->batch_no }}</span>
+                                                            @endif
+                                                        </td>
+                                                        <td class="col-qty">
+                                                            @if($isDifferentUnit)
+                                                                <span class="qty-main">{{ number_format($qtyTampil, 0, ',', '.') }}</span>
+                                                                <span class="qty-unit">{{ $satuanNm }}</span>
+                                                                <span class="qty-kg-alt">({{ number_format($qtyKg, 2, ',', '.') }} kg)</span>
+                                                            @else
+                                                                <span class="qty-main">{{ number_format($qtyKg, 2, ',', '.') }}</span>
+                                                                <span class="qty-unit">kg</span>
+                                                            @endif
+                                                        </td>
+                                                        <td class="col-stock">
+                                                            @if($sisaStok > 0)
+                                                                <span class="stock-badge" title="Sisa persediaan fisik">
+                                                                    <span class="stock-dot"></span>
+                                                                    <span>Sisa {{ number_format($sisaStok, $isDifferentUnit ? 0 : 1, ',', '.') }} {{ $isDifferentUnit ? $satuanNm : 'kg' }}</span>
+                                                                </span>
+                                                            @else
+                                                                <span class="stock-empty" title="Stok fisik habis">Habis</span>
+                                                            @endif
+                                                        </td>
+                                                    </tr>
+                                                @empty
+                                                    <tr>
+                                                        <td colspan="3" style="color: #94a3b8; font-style: italic; font-size: 0.8rem; padding: 0.5rem 0.75rem;">
+                                                            Tidak ada rincian output
+                                                        </td>
+                                                    </tr>
+                                                @endforelse
+                                            </tbody>
+                                        </table>
                                     </div>
                                 </td>
 
                                 {{-- 5. TOTAL BERAT DOKUMEN --}}
-                                <td style="padding: 0.75rem 1rem; text-align: right; vertical-align: top;">
-                                    <div style="font-weight: 800; color: #0f172a; font-size: 1rem; font-family: monospace;">
-                                        {{ number_format($totalDocKg, 2, ',', '.') }} <span style="font-size: 0.75rem; font-family: sans-serif; color: #64748b;">kg</span>
+                                <td style="padding: 0.65rem 0.85rem; text-align: right; vertical-align: top;">
+                                    <div class="prod-total-kg">
+                                        {{ number_format($totalDocKg, 2, ',', '.') }} <span class="prod-total-unit">kg</span>
                                     </div>
-                                    <small style="display: block; font-size: 0.72rem; color: #64748b; margin-top: 0.2rem;">
+                                    <small class="prod-total-count">
                                         {{ $prod->details->count() }} jenis output
                                     </small>
                                 </td>
 
                                 {{-- 6. STATUS KALKULASI HPP --}}
-                                <td style="padding: 0.75rem 1rem; text-align: center; vertical-align: top;">
+                                <td style="padding: 0.65rem 0.85rem; text-align: center; vertical-align: top;">
                                     @if($hasHpp)
-                                        <div class="badge-hpp-done">
-                                            <span>✓</span>
-                                            <span>Rp {{ number_format((float) $prod->hpp_per_kg, 0, ',', '.') }}/kg</span>
+                                        <div class="badge-hpp-pill done">
+                                            <span>Sudah Dihitung</span>
                                         </div>
-                                        @if($prod->total_biaya_produksi > 0)
-                                            <div style="font-size: 0.72rem; color: #64748b; margin-top: 0.25rem;">
-                                                Total: Rp {{ number_format((float) $prod->total_biaya_produksi, 0, ',', '.') }}
-                                            </div>
-                                        @endif
                                     @else
-                                        <div class="badge-hpp-pending">
-                                            <span>⏳</span>
+                                        <div class="badge-hpp-pill pending">
                                             <span>Belum Dihitung</span>
                                         </div>
                                     @endif
                                 </td>
 
                                 {{-- 7. TOMBOL AKSI TERPADU (1 KALI PER DOKUMEN) --}}
-                                <td style="padding: 0.75rem 1rem; text-align: right; position: relative; vertical-align: top;">
+                                <td style="padding: 0.65rem 0.85rem; text-align: right; position: relative; vertical-align: top;">
                                     <button type="button" 
                                             class="btn-action-trigger" 
                                             onclick="toggleSmartActionDropdown(this, event, '{{ $menuId }}')">
@@ -401,9 +382,9 @@
                                     </button>
 
                                     <div id="{{ $menuId }}" class="action-dropdown-menu">
-                                        <a href="{{ route('produksi.hpp.create', ['produksi_id' => $prod->produksi_id]) }}" class="action-dropdown-item">
-                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
-                                            <span>Kalkulasi Lembar HPP</span>
+                                        <a href="{{ route('produksi.show', $prod->produksi_id) }}" class="action-dropdown-item">
+                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                            <span>Lihat Detail Produksi</span>
                                         </a>
 
                                         @if(Auth::user()->canCreateProduksi() && (in_array($prod->batch_wip_no, ['BELUM TERBIT', 'PENDING']) || empty($prod->batch_wip_no)))
@@ -446,210 +427,6 @@
                     {{ $produksiList->links() }}
                 </div>
             </div>
-        @else
-
-        <div style="overflow-x: auto;">
-            <table style="width: 100%; border-collapse: collapse; margin: 0; font-size: 0.85rem;">
-                <thead style="background: #f8fafc; color: #475569; font-weight: 700; border-bottom: 2px solid #e2e8f0;">
-                    <tr>
-                        <th style="padding: 0.75rem 1rem; width: 45px; text-align: center;">No</th>
-                        <th style="padding: 0.75rem 1rem; min-width: 170px;">Dokumen &amp; Tanggal</th>
-                        <th style="padding: 0.75rem 1rem; min-width: 160px;">Gudang Simpan</th>
-                        <th style="padding: 0.75rem 1rem; min-width: 130px; text-align: center;">Kode Batch</th>
-                        <th style="padding: 0.75rem 1rem; min-width: 200px;">Produk / Barang</th>
-                        <th style="padding: 0.75rem 1rem; min-width: 100px; text-align: right;">Qty Hasil</th>
-                        <th style="padding: 0.75rem 1rem; min-width: 90px; text-align: center;">Satuan</th>
-                        <th style="padding: 0.75rem 1rem; min-width: 110px; text-align: right;">Berat (Kg)</th>
-                        <th style="padding: 0.75rem 1rem; min-width: 110px; text-align: center;">Sisa Stok</th>
-                        <th style="padding: 0.75rem 1rem; width: 95px; text-align: right;">Aksi</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @php
-                        $pageTotalQtyKg = 0;
-                        $pageTotalQtyHasil = 0;
-                    @endphp
-                    @forelse($hasilItems as $idx => $item)
-                        @php
-                            $prod = $item->produksi;
-                            $barang = $item->barang;
-                            $pageTotalQtyKg += (float) $item->qty_kg;
-                            $sisaStok = (float) ($item->sisa_stok ?? $item->qty_kg);
-                            $menuId = 'menu-hasil-' . $item->output_id;
-                            $satuanTampil = $item->satuan_cd ?: ($barang?->satuan?->satuan_nm ?? 'KG');
-                            $qtyHasilTampil = $item->qty_hasil > 0 ? (float) $item->qty_hasil : (float) $item->qty_kg;
-                            $pageTotalQtyHasil += $qtyHasilTampil;
-                            $batchVal = $item->batch_no ?? ($prod->batch_wip_no ?? '-');
-                            $isPendingBatch = in_array(strtoupper(trim($batchVal)), ['BELUM TERBIT', 'PENDING', '-']) || empty($batchVal);
-                            $isReworkDoc = str_contains(strtoupper($prod?->lini_produksi ?? ''), 'SORTIR') || str_contains(strtoupper($prod?->lini_produksi ?? ''), 'REWORK');
-                            $liniClean = trim(str_ireplace('PRODUKSI', '', $prod?->lini_produksi ?? ''));
-                        @endphp
-                        <tr style="border-bottom: 1px solid #f1f5f9;">
-                            <td style="padding: 0.75rem 1rem; text-align: center; color: #64748b; font-size: 0.85rem;">
-                                {{ $hasilItems->firstItem() + $idx }}
-                            </td>
-
-                            {{-- 1. DOKUMEN & TANGGAL --}}
-                            <td style="padding: 0.75rem 1rem;">
-                                <div style="display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;">
-                                    @if($prod)
-                                        <span style="font-weight: 700; color: #0f172a; font-size: 0.85rem;">
-                                            {{ $prod->produksi_no }}
-                                        </span>
-                                    @else
-                                        <span style="color: #64748b;">-</span>
-                                    @endif
-                                    @if($isReworkDoc)
-                                        <span style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a; padding: 0.05rem 0.3rem; border-radius: 4px; font-size: 0.65rem; font-weight: 800; letter-spacing: 0.02em;">
-                                            REWORK
-                                        </span>
-                                    @endif
-                                </div>
-                                <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.2rem;">
-                                    <span>{{ $prod ? \Carbon\Carbon::parse($prod->produksi_tgl)->format('d/m/Y') : '-' }}</span>
-                                    @if($prod?->shift_cd)
-                                        <span>&bull;</span>
-                                        <span>Shift {{ $prod->shift_cd }}</span>
-                                    @endif
-                                    @if($liniClean)
-                                        <span>&bull;</span>
-                                        <span>{{ $liniClean }}</span>
-                                    @endif
-                                </div>
-                            </td>
-
-                            {{-- 2. GUDANG SIMPAN --}}
-                            <td style="padding: 0.75rem 1rem;">
-                                <div style="font-weight: 600; color: #0f172a; font-size: 0.85rem;">
-                                    {{ $prod?->gudang?->gudang_nm ?? '-' }}
-                                </div>
-                                @if($prod?->gudang?->gudang_cd)
-                                    <div style="font-size: 0.725rem; color: #64748b; font-family: monospace; margin-top: 0.15rem;">
-                                        {{ $prod->gudang->gudang_cd }}
-                                    </div>
-                                @endif
-                            </td>
-
-                            {{-- 3. KODE BATCH --}}
-                            <td style="padding: 0.75rem 1rem; text-align: center;">
-                                @if($isPendingBatch)
-                                    <span class="badge-batch-pending" title="Batch ditangguhkan (Buffer Stock IFM). Siap diberi nomor batch resmi saat jadwal truk berangkat.">
-                                        BELUM TERBIT
-                                    </span>
-                                @else
-                                    <span style="font-family: monospace; font-size: 0.825rem; background: #f8fafc; border: 1px solid #cbd5e1; padding: 0.15rem 0.45rem; border-radius: 4px; font-weight: 700; color: #1e293b; display: inline-block;">
-                                        {{ $batchVal }}
-                                    </span>
-                                @endif
-                                @if($prod?->exp_date)
-                                    <small style="display: block; font-size: 0.72rem; color: #64748b; margin-top: 0.2rem;">
-                                        Exp: {{ \Carbon\Carbon::parse($prod->exp_date)->format('d/m/Y') }}
-                                    </small>
-                                @endif
-                            </td>
-
-                            {{-- 4. PRODUK / BARANG --}}
-                            <td style="padding: 0.75rem 1rem;">
-                                <div style="font-weight: 700; color: #0f172a; font-size: 0.875rem;">
-                                    {{ $barang?->barang_nm ?? '-' }}
-                                </div>
-                                <div style="margin-top: 0.2rem;">
-                                    <span style="font-family: monospace; font-size: 0.725rem; font-weight: 700; color: #0369a1; background: #e0f2fe; padding: 0.1rem 0.4rem; border-radius: 4px; border: 1px solid #bae6fd;">
-                                        {{ $barang?->barang_cd ?? '-' }}
-                                    </span>
-                                </div>
-                            </td>
-
-                            {{-- 5. QTY HASIL --}}
-                            <td style="padding: 0.75rem 1rem; text-align: right;">
-                                <span style="font-weight: 700; color: #0f172a; font-size: 0.9rem;">
-                                    {{ number_format($qtyHasilTampil, 2, ',', '.') }}
-                                </span>
-                            </td>
-
-                            {{-- 6. SATUAN --}}
-                            <td style="padding: 0.75rem 1rem; text-align: center;">
-                                <span class="badge" style="background: #f1f5f9; color: #475569; font-size: 0.725rem; padding: 0.15rem 0.45rem; border-radius: 4px; font-weight: 600;">
-                                    {{ $satuanTampil }}
-                                </span>
-                            </td>
-
-                            {{-- 7. BERAT (KG) --}}
-                            <td style="padding: 0.75rem 1rem; text-align: right;">
-                                <span style="font-weight: 700; color: #0f172a; font-size: 0.9rem;">
-                                    {{ number_format($item->qty_kg, 2, ',', '.') }} kg
-                                </span>
-                            </td>
-
-                            {{-- 8. SISA STOK GUDANG --}}
-                            <td style="padding: 0.75rem 1rem; text-align: center;">
-                                @if($sisaStok > 0)
-                                    <span class="badge" style="background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; font-weight: 700; font-size: 0.75rem; padding: 0.15rem 0.5rem; border-radius: 9999px;">
-                                        {{ number_format($sisaStok, 1, ',', '.') }} kg
-                                    </span>
-                                @else
-                                    <span class="badge" style="background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; font-weight: 700; font-size: 0.75rem; padding: 0.15rem 0.5rem; border-radius: 9999px;">
-                                        0 kg (Habis)
-                                    </span>
-                                @endif
-                            </td>
-
-                            {{-- 9. AKSI --}}
-                            <td style="padding: 0.75rem 1rem; text-align: right; position: relative;">
-                                <button type="button" 
-                                        class="btn-action-trigger" 
-                                        onclick="toggleSmartActionDropdown(this, event, '{{ $menuId }}')">
-                                    <span>Aksi</span>
-                                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-                                </button>
-
-                                <div id="{{ $menuId }}" class="action-dropdown-menu">
-                                    @if($prod)
-                                        <a href="{{ route('produksi.hpp.create', ['produksi_id' => $prod->produksi_id]) }}" class="action-dropdown-item">
-                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
-                                            <span>Kalkulasi Lembar HPP</span>
-                                        </a>
-                                        <div class="action-dropdown-divider"></div>
-                                        @if(Auth::user()->canCreateProduksi() && (in_array($prod->batch_wip_no, ['BELUM TERBIT', 'PENDING']) || empty($prod->batch_wip_no)))
-                                            <button type="button" 
-                                                    class="action-dropdown-item" 
-                                                    style="color: #d97706; font-weight: 700;" 
-                                                    onclick="openAssignBatchModal({{ $prod->produksi_id }}, '{{ $prod->produksi_no }}', {{ (int) $prod->qty_karton }})">
-                                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                                                <span>Beri Nomor Batch</span>
-                                            </button>
-                                            <div class="action-dropdown-divider"></div>
-                                        @endif
-                                        <button type="button" class="action-dropdown-item danger-item" onclick="openDeleteProduksiModal({{ $prod->produksi_id }}, '{{ $prod->produksi_no }}', '{{ \Carbon\Carbon::parse($prod->produksi_tgl)->format('d/m/Y') }}', '{{ $prod->shift_cd }}', '{{ $prod->batch_wip_no }}')">
-                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                            <span>Hapus Produksi</span>
-                                        </button>
-                                    @endif
-                                </div>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="10" style="text-align: center; padding: 2.5rem; color: #64748b;">
-                                <div style="font-size: 0.95rem; font-weight: 700; color: #334155;">Belum Ada Data Hasil Barang Produksi</div>
-                                <div style="font-size: 0.8rem; margin-top: 0.25rem;">Gunakan tombol <strong>+ Catat Hasil Produksi</strong> atau <strong>Import Excel</strong> di atas untuk menambahkan data.</div>
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-
-        {{-- PAGINASI TABEL (SERAGAM DI BAGIAN BAWAH KARTU) --}}
-        <div style="padding: 0.875rem 1.25rem; background: #ffffff; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
-            <div style="font-size: 0.8rem; color: #64748b;">
-                Menampilkan {{ $hasilItems->firstItem() ?? 0 }} - {{ $hasilItems->lastItem() ?? 0 }} dari total {{ $hasilItems->total() }} rincian data
-            </div>
-            <div>
-                {{ $hasilItems->links() }}
-            </div>
-        </div>
-        @endif
     </div>
 
 {{-- MODALS PARTIALS --}}

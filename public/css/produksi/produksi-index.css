@@ -1622,110 +1622,262 @@
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
-/* Container Rincian Output per Dokumen */
-.prod-outputs-container {
-    display: flex;
-    flex-direction: column;
-    gap: 0.45rem;
-}
-
-.prod-output-row {
-    background: #f8fafc;
+/* ═════════════════════════════════════════════════════════════
+   ENTERPRISE SUB-TABLE: RINCIAN OUTPUT FISIK PER DOKUMEN
+   Desain human-crafted, bersih, rapi, dan mudah dibaca
+   ═════════════════════════════════════════════════════════════ */
+/* Container pembungkus sub-table agar rapi dan berbatas jelas */
+.prod-subtable-wrapper {
+    background: #ffffff;
     border: 1px solid #e2e8f0;
     border-radius: 6px;
-    padding: 0.4rem 0.65rem;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.75rem;
-    transition: background 0.15s ease;
+    overflow: hidden;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
 }
 
-.prod-output-row:hover {
+.prod-subtable {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+    line-height: 1.35;
+    table-layout: auto;
+}
+
+.prod-subtable tr {
+    border-bottom: 1px solid #f1f5f9;
+    transition: background-color 0.15s ease;
+}
+
+.prod-subtable tr:hover {
+    background-color: #f8fafc;
+}
+
+.prod-subtable tr:last-child {
+    border-bottom: none;
+}
+
+.prod-subtable td {
+    padding: 0.4rem 0.6rem;
+    vertical-align: middle;
+}
+
+.prod-subtable .col-name {
+    color: #1e293b;
+    font-weight: 600;
+}
+
+.prod-subtable .item-name {
+    color: #0f172a;
+    font-weight: 700;
+    font-size: 0.8125rem;
+    letter-spacing: -0.01em;
+}
+
+.prod-subtable .item-code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: #475569;
     background: #f1f5f9;
-    border-color: #cbd5e1;
+    border: 1px solid #e2e8f0;
+    padding: 0.05rem 0.35rem;
+    border-radius: 3px;
+    margin-left: 0.35rem;
 }
 
-.prod-output-left {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    flex-wrap: wrap;
+.prod-subtable .item-batch {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.675rem;
+    font-weight: 600;
+    color: #0369a1;
+    background: #e0f2fe;
+    border: 1px solid #bae6fd;
+    padding: 0.05rem 0.35rem;
+    border-radius: 3px;
+    margin-left: 0.35rem;
 }
 
-.prod-output-barang {
+.prod-subtable .col-qty {
+    text-align: right;
+    white-space: nowrap;
+    padding-left: 0.75rem;
+    font-variant-numeric: tabular-nums;
+    min-width: 150px;
+}
+
+.prod-subtable .qty-main {
     font-weight: 700;
     color: #0f172a;
     font-size: 0.825rem;
 }
 
-.prod-output-code {
-    font-family: monospace;
-    font-size: 0.7rem;
-    font-weight: 700;
+.prod-subtable .qty-unit {
+    color: #64748b;
+    font-size: 0.725rem;
+    font-weight: 600;
+    margin-left: 0.15rem;
+}
+
+.prod-subtable .qty-kg-alt {
     color: #0369a1;
-    background: #e0f2fe;
-    padding: 0.1rem 0.35rem;
-    border-radius: 4px;
-    border: 1px solid #bae6fd;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-left: 0.25rem;
 }
 
-.prod-output-batch {
-    font-family: monospace;
-    font-size: 0.72rem;
-    color: #475569;
-    background: #ffffff;
-    padding: 0.1rem 0.35rem;
-    border-radius: 4px;
-    border: 1px solid #cbd5e1;
+.prod-subtable .col-stock {
+    text-align: right;
+    white-space: nowrap;
+    min-width: 105px;
+    padding-left: 0.75rem;
 }
 
-.prod-output-right {
-    display: flex;
+.prod-subtable .stock-badge {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #059669;
+    display: inline-flex;
     align-items: center;
-    gap: 0.6rem;
+    gap: 0.3rem;
+}
+
+.prod-subtable .stock-dot {
+    width: 6px;
+    height: 6px;
+    background: #10b981;
+    border-radius: 50%;
+    display: inline-block;
     flex-shrink: 0;
 }
 
-.prod-output-qty {
-    font-weight: 700;
-    color: #0f172a;
-    font-size: 0.85rem;
-    text-align: right;
-    font-variant-numeric: tabular-nums;
+.prod-subtable .stock-empty {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #94a3b8;
 }
 
-.prod-output-kg {
+/* Metadata Dokumen & Gudang Typography */
+.prod-doc-title {
     font-weight: 700;
     color: #0284c7;
+    font-size: 0.875rem;
+    text-decoration: none;
+    letter-spacing: -0.01em;
+}
+
+.prod-doc-title:hover {
+    color: #0369a1;
+    text-decoration: underline;
+}
+
+.prod-doc-meta {
+    font-size: 0.725rem;
+    color: #64748b;
+    margin-top: 0.25rem;
+    line-height: 1.3;
+}
+
+.prod-doc-po {
+    margin-top: 0.2rem;
+    font-size: 0.7rem;
+    color: #64748b;
+}
+
+.prod-doc-po span {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-weight: 600;
+    color: #334155;
+}
+
+.badge-rework-tag {
+    background: #fef3c7;
+    color: #b45309;
+    border: 1px solid #fde68a;
+    padding: 0.05rem 0.3rem;
+    border-radius: 4px;
+    font-size: 0.65rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+}
+
+.prod-gdg-title {
+    font-weight: 600;
+    color: #0f172a;
     font-size: 0.825rem;
+}
+
+.prod-gdg-code {
+    font-size: 0.7rem;
+    color: #64748b;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    margin-top: 0.1rem;
+}
+
+.prod-batch-chip {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.72rem;
+    color: #1e293b;
+    background: #f8fafc;
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+    border: 1px solid #e2e8f0;
+    display: inline-block;
+}
+
+.prod-exp-date {
+    font-size: 0.7rem;
+    color: #64748b;
+    margin-top: 0.2rem;
+}
+
+.prod-total-kg {
+    font-weight: 800;
+    color: #0f172a;
+    font-size: 0.95rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     font-variant-numeric: tabular-nums;
 }
 
-.badge-hpp-done {
+.prod-total-unit {
+    font-size: 0.725rem;
+    font-family: sans-serif;
+    color: #64748b;
+    font-weight: 600;
+}
+
+.prod-total-sub {
+    font-size: 0.7rem;
+    color: #64748b;
+    margin-top: 0.2rem;
+}
+
+.badge-hpp-pill {
+    font-weight: 700;
+    font-size: 0.75rem;
+    padding: 0.25rem 0.6rem;
+    border-radius: 5px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.badge-hpp-pill.done {
     background: #ecfdf5;
     color: #065f46;
     border: 1px solid #a7f3d0;
-    font-weight: 700;
-    font-size: 0.75rem;
-    padding: 0.2rem 0.55rem;
-    border-radius: 6px;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.3rem;
 }
 
-.badge-hpp-pending {
-    background: #fffbeb;
-    color: #92400e;
-    border: 1px solid #fde68a;
-    font-weight: 700;
-    font-size: 0.75rem;
-    padding: 0.2rem 0.55rem;
-    border-radius: 6px;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.3rem;
+.badge-hpp-pill.pending {
+    background: #f8fafc;
+    color: #64748b;
+    border: 1px solid #cbd5e1;
+}
+
+.hpp-nominal-sub {
+    font-size: 0.7rem;
+    color: #64748b;
+    margin-top: 0.25rem;
+    font-variant-numeric: tabular-nums;
 }
 
 

@@ -319,10 +319,46 @@
                                         <span class="mini-cost-badge" style="background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0;">Bahan Utama</span>
                                     </div>
                                     <div class="mini-cost-list">
+                                        @php
+                                            $singkongItems = collect($d['pemakaian_items'] ?? [])->filter(function($it) {
+                                                $nm = strtoupper($it['barang_nm'] ?? '');
+                                                $cd = strtoupper($it['barang_cd'] ?? '');
+                                                return str_contains($nm, 'SINGKONG') || str_starts_with($cd, 'BB-SK') || str_contains($cd, 'SNG') || str_contains($cd, 'SK00');
+                                            });
+                                            $rekapGradeGroups = [];
+                                            foreach ($singkongItems as $sk) {
+                                                $gRaw = trim((string) ($sk['grade_cd'] ?? 'A'));
+                                                if ($gRaw === '-' || empty($gRaw)) $gRaw = 'A';
+                                                $gName = strtoupper($gRaw);
+                                                if (!str_starts_with($gName, 'GRADE')) {
+                                                    $gName = 'Grade ' . $gName;
+                                                }
+                                                $qtyVal = (float) ($sk['qty_keluar'] ?? 0);
+                                                $rekapGradeGroups[$gName] = ($rekapGradeGroups[$gName] ?? 0) + $qtyVal;
+                                            }
+                                            $isCampuranRekap = count($rekapGradeGroups) > 1;
+                                        @endphp
                                         <div class="mini-cost-row">
                                             <span>Singkong Mentah (Kg):</span>
                                             <strong>{{ number_format($d['singkong_qty'], 0, ',', '.') }} kg</strong>
                                         </div>
+                                        @if(!empty($rekapGradeGroups))
+                                            <div style="margin: 0.2rem 0 0.45rem 0; padding: 0.25rem 0.45rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.25rem;">
+                                                <span style="font-size: 0.7rem; font-weight: 700; color: #475569;">Komposisi:</span>
+                                                <div style="display: inline-flex; align-items: center; gap: 0.25rem; flex-wrap: wrap;">
+                                                    @if($isCampuranRekap)
+                                                        <span style="background: #fef3c7; color: #92400e; border: 1px solid #fde68a; font-size: 0.65rem; font-weight: 800; padding: 0.1rem 0.35rem; border-radius: 3px;">
+                                                            CAMPURAN (MIX)
+                                                        </span>
+                                                    @endif
+                                                    @foreach($rekapGradeGroups as $gName => $gQty)
+                                                        <span style="background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; font-size: 0.675rem; font-weight: 700; padding: 0.1rem 0.35rem; border-radius: 3px;">
+                                                            {{ $gName }}: {{ number_format($gQty, 0, ',', '.') }} kg
+                                                        </span>
+                                                    @endforeach
+                                                </div>
+                                            </div>
+                                        @endif
                                         <div class="mini-cost-row">
                                             <span>Singkong Mentah (Rp):</span>
                                             <strong>Rp {{ number_format($d['singkong_nilai'], 0, ',', '.') }}</strong>

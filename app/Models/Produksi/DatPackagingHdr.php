@@ -118,6 +118,14 @@ class DatPackagingHdr extends Model
     }
 
     /**
+     * Relasi ke Laporan Kemas Operator (jika ditarik dari lapangan)
+     */
+    public function laporanKemasOperator(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(DatLaporanKemasOperator::class, 'pack_id', 'pack_id');
+    }
+
+    /**
      * Relasi ke Rincian Bahan yang Dikonsumsi
      */
     public function details(): HasMany

@@ -19,6 +19,7 @@ class MstBarang extends Model
         'barang_nm',
         'jenis_barang_id',
         'grade_cd',
+        'kategori_output_cd',
         'satuan_dasar_id',
         'satuan_besar_id',
         'konversi_qty',
@@ -34,6 +35,15 @@ class MstBarang extends Model
         'deleted_by',
         'deleted_st',
         'active_st',
+    ];
+
+    public const KATEGORI_OUTPUT_LIST = [
+        'FCC_NON_BUMBU' => 'Khusus Indofood (FCC Non Bumbu 6 kg/box - Rilis)',
+        'EKSPOR'        => 'Produk Ekspor (Lolos Rilis)',
+        'WIP_BERBUMBU'  => 'Curah Berbumbu (Hasil Seasoning)',
+        'WIP_TAWAR'     => 'Curah Tawar (Polos)',
+        'WIP_HOLD'      => 'Tidak Jadi Rilis (Hold QC / Karantina Gudang)',
+        'WIP_AFKIR'     => 'Hasil Langsung Afkir / Limbah Dapur (Berko, Remahan, Lengket)',
     ];
 
     protected $casts = [

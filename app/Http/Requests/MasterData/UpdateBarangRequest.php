@@ -49,6 +49,12 @@ class UpdateBarangRequest extends FormRequest
                 'max:10',
                 'in:KW1,KW2',
             ],
+            'kategori_output_cd' => [
+                'nullable',
+                'string',
+                'max:30',
+                'in:FCC_NON_BUMBU,EKSPOR,WIP_BERBUMBU,WIP_TAWAR,WIP_HOLD,WIP_AFKIR',
+            ],
             'satuan_dasar_id' => [
                 'required',
                 'integer',

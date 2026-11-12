@@ -1519,13 +1519,13 @@
 
         const badgeRilis = document.getElementById('badgeRilisOutputKg');
         if (badgeRilis) {
-            badgeRilis.textContent = '🟢 Lolos Rilis: ' + formatNumber(totalRilisKg, 2) + ' kg';
+            badgeRilis.textContent = 'Lolos Rilis: ' + formatNumber(totalRilisKg, 2) + ' kg';
         }
 
         const badgeHold = document.getElementById('badgeHoldOutputKg');
         if (badgeHold) {
             if (totalHoldKg > 0) {
-                badgeHold.textContent = '🟡 Hold Gudang: ' + formatNumber(totalHoldKg, 2) + ' kg';
+                badgeHold.textContent = 'Hold Gudang: ' + formatNumber(totalHoldKg, 2) + ' kg';
                 badgeHold.style.display = 'inline-block';
             } else {
                 badgeHold.style.display = 'none';
@@ -1535,7 +1535,7 @@
         const badgeAfkir = document.getElementById('badgeAfkirOutputKg');
         if (badgeAfkir) {
             if (totalAfkirKg > 0) {
-                badgeAfkir.textContent = '🔴 Afkir Langsung: ' + formatNumber(totalAfkirKg, 2) + ' kg';
+                badgeAfkir.textContent = 'Afkir Langsung: ' + formatNumber(totalAfkirKg, 2) + ' kg';
                 badgeAfkir.style.display = 'inline-block';
             } else {
                 badgeAfkir.style.display = 'none';
@@ -2670,37 +2670,42 @@
         const seasoningCodes = ['WIP-ASB', 'WIP-ASW', 'WIP-BLQ', 'WIP-UCM', 'WIP-KCL', 'WIP-BBB', 'WIP-AJB', 'WIP-PJB', 'WIP-OPA', 'WIP-OPB', 'WIP-PYA', 'WIP-PYB', 'WIP-UBI', 'WIP-UBU'];
 
         barangList.forEach(b => {
+            const kat = b.kategori_output_cd || '';
             const cd = (b.barang_cd || '').toUpperCase();
             const nm = (b.barang_nm || '').toUpperCase();
             const grade = (b.grade_cd || '').toUpperCase();
             
-            // 1. Tidak Jadi Rilis (Hold QC Gudang)
-            if (cd.includes('HLD') || nm.includes('HOLD') || grade === 'HOLD') {
-                holdItems.push(b);
-            }
-            // 2. Reject / Langsung Afkir / Limbah Dapur
-            else if (cd.includes('AFK') || nm.includes('AFKIR') || cd.includes('BRK') || cd.includes('LGT') || cd.includes('RMH') || nm.includes('BERKO') || nm.includes('LENGKET') || nm.includes('REMAHAN')) {
-                afkirItems.push(b);
-            }
-            // 3. Indofood FCC Non Bumbu (Lolos Rilis)
-            else if (cd.startsWith('WIP-FCC') || nm.includes('IFL') || nm.includes('INDOFOOD') || nm.includes('TANPA BUMBU')) {
+            // 1. Kategori Database Eksplisit (Prioritas Utama)
+            if (kat === 'FCC_NON_BUMBU') {
                 fccItems.push(b);
-            }
-            // 4. Produk Ekspor (Lolos Rilis)
-            else if (nm.includes('EKSPOR') || cd.startsWith('FG-EA') || cd.startsWith('FG-EC')) {
+            } else if (kat === 'EKSPOR') {
                 exportItems.push(b);
-            }
-            // 5. Curah Berbumbu (Seasoning)
-            else if (seasoningCodes.includes(cd) || nm.includes('ASIN') || nm.includes('BUMBU') || nm.includes('BALADO') || nm.includes('LEMON') || nm.includes('PEDAS') || nm.includes('BARCO') || nm.includes('SAWIT') || nm.includes('BALQI') || nm.includes('UCAMP') || nm.includes('OPAK') || nm.includes('PUYUR')) {
+            } else if (kat === 'WIP_BERBUMBU') {
                 seasoningItems.push(b);
-            } 
-            // 6. Curah Tawar (Polos)
-            else {
+            } else if (kat === 'WIP_HOLD') {
+                holdItems.push(b);
+            } else if (kat === 'WIP_AFKIR') {
+                afkirItems.push(b);
+            } else if (kat === 'WIP_TAWAR') {
+                tawarItems.push(b);
+            }
+            // 2. Fallback Heuristik Teks untuk data lama yang belum ber-kategori
+            else if (cd.includes('HLD') || nm.includes('HOLD') || grade === 'HOLD') {
+                holdItems.push(b);
+            } else if (cd.includes('AFK') || nm.includes('AFKIR') || cd.includes('BRK') || cd.includes('LGT') || cd.includes('RMH') || nm.includes('BERKO') || nm.includes('LENGKET') || nm.includes('REMAHAN')) {
+                afkirItems.push(b);
+            } else if (cd.startsWith('WIP-FCC') || nm.includes('IFL') || nm.includes('INDOFOOD') || nm.includes('TANPA BUMBU')) {
+                fccItems.push(b);
+            } else if (nm.includes('EKSPOR') || cd.startsWith('FG-EA') || cd.startsWith('FG-EC')) {
+                exportItems.push(b);
+            } else if (seasoningCodes.includes(cd) || nm.includes('ASIN') || nm.includes('BUMBU') || nm.includes('BALADO') || nm.includes('LEMON') || nm.includes('PEDAS') || nm.includes('BARCO') || nm.includes('SAWIT') || nm.includes('BALQI') || nm.includes('UCAMP') || nm.includes('OPAK') || nm.includes('PUYUR')) {
+                seasoningItems.push(b);
+            } else {
                 tawarItems.push(b);
             }
         });
 
-        const buildOptGroup = (items, defaultGrade = 'RILIS') => {
+        const buildOptGroup = (items, defaultGrade = 'RILIS', groupTag = '') => {
             let html = '';
             items.forEach(b => {
                 const cd = (b.barang_cd || '').toUpperCase();
@@ -2708,8 +2713,9 @@
                 const satuan = b.satuan_dasar?.satuan_cd || 'KG';
                 const itemGrade = b.grade_cd || defaultGrade;
                 const selected = (initial && initial.barang_id == b.barang_id) ? 'selected' : '';
+                const tagSuffix = groupTag ? ` ${groupTag}` : '';
                 html += `<option value="${b.barang_id}" data-cd="${b.barang_cd}" data-nm="${b.barang_nm}" data-jenis="${jenis}" data-satuan="${satuan}" data-grade="${itemGrade}" ${selected}>
-                    [${b.barang_cd}] ${b.barang_nm} (${satuan})
+                    [${b.barang_cd}] ${b.barang_nm} (${satuan})${tagSuffix}
                 </option>`;
             });
             return html;
@@ -2719,38 +2725,38 @@
         let optionsHtml = '<option value="">-- Pilih Hasil Penggorengan (WIP / FCC / Ekspor) --</option>';
 
         if (fccItems.length > 0) {
-            optionsHtml += '<optgroup label="📦 1. KHUSUS INDOFOOD (FCC NON-BUMBU 6 KG/BOX - RILIS)">';
-            optionsHtml += buildOptGroup(fccItems, 'RILIS');
+            optionsHtml += '<optgroup label="1. KHUSUS INDOFOOD (FCC NON-BUMBU 6 KG/BOX - RILIS)">';
+            optionsHtml += buildOptGroup(fccItems, 'RILIS', '[FCC Non Bumbu]');
             optionsHtml += '</optgroup>';
         }
 
         if (exportItems.length > 0) {
-            optionsHtml += '<optgroup label="🚢 2. PRODUK EKSPOR (LOLOS RILIS)">';
-            optionsHtml += buildOptGroup(exportItems, 'RILIS');
+            optionsHtml += '<optgroup label="2. PRODUK EKSPOR (LOLOS RILIS)">';
+            optionsHtml += buildOptGroup(exportItems, 'RILIS', '[Ekspor]');
             optionsHtml += '</optgroup>';
         }
 
         if (seasoningItems.length > 0) {
-            optionsHtml += '<optgroup label="🧂 3. CURAH BERBUMBU (HASIL SEASONING)">';
-            optionsHtml += buildOptGroup(seasoningItems, 'RILIS');
+            optionsHtml += '<optgroup label="3. CURAH BERBUMBU (HASIL SEASONING)">';
+            optionsHtml += buildOptGroup(seasoningItems, 'RILIS', '[WIP Berbumbu]');
             optionsHtml += '</optgroup>';
         }
 
         if (tawarItems.length > 0) {
-            optionsHtml += '<optgroup label="🥔 4. CURAH TAWAR (POLOS)">';
-            optionsHtml += buildOptGroup(tawarItems, 'RILIS');
+            optionsHtml += '<optgroup label="4. CURAH TAWAR (POLOS)">';
+            optionsHtml += buildOptGroup(tawarItems, 'RILIS', '[WIP Curah Tawar]');
             optionsHtml += '</optgroup>';
         }
 
         if (holdItems.length > 0) {
-            optionsHtml += '<optgroup label="⚠️ 5. TIDAK JADI RILIS (HOLD QC / KARANTINA GUDANG)">';
-            optionsHtml += buildOptGroup(holdItems, 'HOLD');
+            optionsHtml += '<optgroup label="5. TIDAK JADI RILIS (HOLD QC / KARANTINA GUDANG)">';
+            optionsHtml += buildOptGroup(holdItems, 'HOLD', '[WIP Hold]');
             optionsHtml += '</optgroup>';
         }
 
         if (afkirItems.length > 0) {
-            optionsHtml += '<optgroup label="🗑️ 6. HASIL LANGSUNG AFKIR / LIMBAH DAPUR">';
-            optionsHtml += buildOptGroup(afkirItems, 'AFKIR');
+            optionsHtml += '<optgroup label="6. HASIL LANGSUNG AFKIR / LIMBAH DAPUR">';
+            optionsHtml += buildOptGroup(afkirItems, 'AFKIR', '[WIP Sampingan]');
             optionsHtml += '</optgroup>';
         }
 

@@ -96,14 +96,41 @@
                         $batchStr = $wip->batch_no ?: ($wip->produksi?->batch_wip_no ?: ($wip->produksi?->produksi_tgl ? $wip->produksi->produksi_tgl->format('d m Y') : '-'));
                         $barangNm = $wip->barang?->barang_nm ?? 'Keripik Curah';
                         $qtyKg = (float) $wip->qty_kg;
+                        $cdUpper = strtoupper($wip->barang?->barang_cd ?? '');
                         $nmUpper = strtoupper($barangNm);
+
+                        $isFcc = str_contains($cdUpper, 'WIP-FCC') || str_contains($cdUpper, 'NTP-FCC') || str_contains($nmUpper, 'IFL') || str_contains($nmUpper, 'INDOFOOD') || str_contains($nmUpper, 'TANPA BUMBU');
+                        $isSampingan = str_contains($nmUpper, 'BERKO') || str_contains($nmUpper, 'REMAHAN') || str_contains($nmUpper, 'LENGKET') || str_contains($cdUpper, 'BRK') || str_contains($cdUpper, 'RMH') || str_contains($cdUpper, 'LGT');
                         $hasBumbuProd = (float) ($wip->produksi?->bumbu_qty ?? 0) > 0;
                         $isBerbumbu = $hasBumbuProd
                             || str_contains($nmUpper, 'BERBUMBU')
                             || str_contains($nmUpper, 'BUMBU')
                             || str_contains($nmUpper, 'BALADO')
                             || str_contains($nmUpper, 'SEASALT')
-                            || str_contains($nmUpper, 'JAGUNG');
+                            || str_contains($nmUpper, 'JAGUNG')
+                            || str_contains($nmUpper, 'BARCO')
+                            || str_contains($nmUpper, 'SAWIT');
+
+                        $katOut = $wip->barang?->kategori_output_cd;
+                        if ($katOut === 'FCC_NON_BUMBU') {
+                            $curahBadge = '[FCC Non Bumbu]';
+                        } elseif ($katOut === 'WIP_BERBUMBU') {
+                            $curahBadge = '[WIP Berbumbu]';
+                        } elseif ($katOut === 'WIP_AFKIR') {
+                            $curahBadge = '[WIP Sampingan]';
+                        } elseif ($katOut === 'WIP_HOLD') {
+                            $curahBadge = '[WIP Hold]';
+                        } elseif ($katOut === 'WIP_TAWAR') {
+                            $curahBadge = '[WIP Curah Tawar]';
+                        } elseif ($isFcc) {
+                            $curahBadge = '[FCC Non Bumbu]';
+                        } elseif ($isBerbumbu) {
+                            $curahBadge = '[WIP Berbumbu]';
+                        } elseif ($isSampingan) {
+                            $curahBadge = '[WIP Sampingan]';
+                        } else {
+                            $curahBadge = '[WIP Curah Tawar]';
+                        }
                     @endphp
                     <option value="{{ $wip->output_id }}"
                             data-produksi-id="{{ $wip->produksi_id }}"
@@ -113,7 +140,7 @@
                             data-qty="{{ $qtyKg }}"
                             data-is-berbumbu="{{ $isBerbumbu ? '1' : '0' }}"
                             {{ old('output_id') == $wip->output_id ? 'selected' : '' }}>
-                        [{{ $prodNo }}] {{ $barangNm }} &bull; Batch: {{ $batchStr }} (Tersedia: {{ number_format($qtyKg, 0, ',', '.') }} Kg) {{ $isBerbumbu ? '✨ [Sudah Berbumbu]' : '' }}
+                        [{{ $prodNo }}] {{ $barangNm }} &bull; Batch: {{ $batchStr }} (Tersedia: {{ number_format($qtyKg, 0, ',', '.') }} Kg) {{ $curahBadge }}
                     </option>
                 @endforeach
             </select>

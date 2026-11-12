@@ -15,13 +15,13 @@
                 Total Timbangan: 0.00 kg
             </span>
             <span id="badgeRilisOutputKg" style="font-size: 0.775rem; font-weight: 700; color: #059669; background: #f0fdf4; border: 1px solid #a7f3d0; padding: 0.25rem 0.65rem; border-radius: 6px; white-space: nowrap;" title="Total hasil penggorengan yang lolos rilis">
-                🟢 Lolos Rilis: 0.00 kg
+                Lolos Rilis: 0.00 kg
             </span>
             <span id="badgeHoldOutputKg" style="font-size: 0.775rem; font-weight: 700; color: #d97706; background: #fffbeb; border: 1px solid #fde68a; padding: 0.25rem 0.65rem; border-radius: 6px; white-space: nowrap; display: none;" title="Barang tidak jadi rilis yang disimpan ke gudang hold / karantina">
-                🟡 Hold Gudang: 0.00 kg
+                Hold Gudang: 0.00 kg
             </span>
             <span id="badgeAfkirOutputKg" style="font-size: 0.775rem; font-weight: 700; color: #dc2626; background: #fef2f2; border: 1px solid #fecaca; padding: 0.25rem 0.65rem; border-radius: 6px; white-space: nowrap; display: none;" title="Barang cacat masak yang langsung diafkir di hari itu">
-                🔴 Afkir Langsung: 0.00 kg
+                Afkir Langsung: 0.00 kg
             </span>
             <span id="badgeTotalPorsi" style="font-size: 0.775rem; font-weight: 700; color: #0369a1; background: #e0f2fe; border: 1px solid #7dd3fc; padding: 0.25rem 0.65rem; border-radius: 6px; white-space: nowrap; display: none;">
                 Total Porsi: 0.00%
@@ -69,6 +69,8 @@
 
                         // 1. Khusus Pesanan Indofood (FCC Non Bumbu 6 kg/box) - Lolos Rilis
                         $fccItems = $allOutputs->filter(function($b) {
+                            if ($b->kategori_output_cd === 'FCC_NON_BUMBU') return true;
+                            if (!empty($b->kategori_output_cd)) return false;
                             $cd = strtoupper($b->barang_cd ?? '');
                             $nm = strtoupper($b->barang_nm ?? '');
                             if (str_contains($cd, 'HLD') || str_contains($nm, 'HOLD') || str_contains($nm, 'AFKIR')) return false;
@@ -78,6 +80,8 @@
                         // 2. Produk Ekspor (Lolos Rilis)
                         $exportItems = $allOutputs->filter(function($b) use ($fccItems) {
                             if ($fccItems->contains('barang_id', $b->barang_id)) return false;
+                            if ($b->kategori_output_cd === 'EKSPOR') return true;
+                            if (!empty($b->kategori_output_cd)) return false;
                             $cd = strtoupper($b->barang_cd ?? '');
                             $nm = strtoupper($b->barang_nm ?? '');
                             if (str_contains($cd, 'HLD') || str_contains($nm, 'HOLD') || str_contains($nm, 'AFKIR')) return false;
@@ -85,19 +89,24 @@
                         });
 
                         // 3. Curah Berbumbu (Hasil Seasoning)
-                        $seasoningCodes = ['WIP-ASB', 'WIP-ASW', 'WIP-BLQ', 'WIP-UCM', 'WIP-KCL', 'WIP-BBB', 'WIP-AJB', 'WIP-PJB', 'WIP-OPA', 'WIP-OPB', 'WIP-PYA', 'WIP-PYB', 'WIP-UBI', 'WIP-UBU'];
-                        $seasoningItems = $allOutputs->filter(function($b) use ($fccItems, $exportItems, $seasoningCodes) {
+                        $seasoningItems = $allOutputs->filter(function($b) use ($fccItems, $exportItems) {
                             if ($fccItems->contains('barang_id', $b->barang_id)) return false;
                             if ($exportItems->contains('barang_id', $b->barang_id)) return false;
+                            if ($b->kategori_output_cd === 'WIP_BERBUMBU') return true;
+                            if (!empty($b->kategori_output_cd)) return false;
                             $cd = strtoupper($b->barang_cd ?? '');
                             $nm = strtoupper($b->barang_nm ?? '');
                             if (str_contains($cd, 'HLD') || str_contains($nm, 'HOLD') || str_contains($nm, 'AFKIR')) return false;
-                            if (in_array($cd, $seasoningCodes)) return true;
                             return str_contains($nm, 'ASIN') || str_contains($nm, 'BUMBU') || str_contains($nm, 'BALADO') || str_contains($nm, 'LEMON') || str_contains($nm, 'PEDAS') || str_contains($nm, 'BARCO') || str_contains($nm, 'SAWIT') || str_contains($nm, 'BALQI') || str_contains($nm, 'UCAMP') || str_contains($nm, 'OPAK') || str_contains($nm, 'PUYUR');
                         });
 
                         // 4. Tidak Jadi Rilis (Hold QC Gudang / Karantina)
-                        $holdItems = $allOutputs->filter(function($b) {
+                        $holdItems = $allOutputs->filter(function($b) use ($fccItems, $exportItems, $seasoningItems) {
+                            if ($fccItems->contains('barang_id', $b->barang_id)) return false;
+                            if ($exportItems->contains('barang_id', $b->barang_id)) return false;
+                            if ($seasoningItems->contains('barang_id', $b->barang_id)) return false;
+                            if ($b->kategori_output_cd === 'WIP_HOLD') return true;
+                            if (!empty($b->kategori_output_cd)) return false;
                             $cd = strtoupper($b->barang_cd ?? '');
                             $nm = strtoupper($b->barang_nm ?? '');
                             $grade = strtoupper($b->grade_cd ?? '');
@@ -110,6 +119,8 @@
                             if ($exportItems->contains('barang_id', $b->barang_id)) return false;
                             if ($seasoningItems->contains('barang_id', $b->barang_id)) return false;
                             if ($holdItems->contains('barang_id', $b->barang_id)) return false;
+                            if ($b->kategori_output_cd === 'WIP_AFKIR') return true;
+                            if (!empty($b->kategori_output_cd)) return false;
                             $cd = strtoupper($b->barang_cd ?? '');
                             $nm = strtoupper($b->barang_nm ?? '');
                             return str_contains($nm, 'BERKO') || str_contains($nm, 'LENGKET') || str_contains($nm, 'REMAHAN') || str_contains($nm, 'AFKIR') || str_contains($cd, 'BRK') || str_contains($cd, 'LGT') || str_contains($cd, 'RMH') || str_contains($cd, 'AFK');
@@ -144,66 +155,66 @@
                                 <option value="">-- Pilih Hasil Penggorengan (WIP / FCC / Ekspor) --</option>
                                 
                                 @if($fccItems->isNotEmpty())
-                                    <optgroup label="📦 1. KHUSUS INDOFOOD (FCC NON-BUMBU 6 KG/BOX - RILIS)">
+                                    <optgroup label="1. KHUSUS INDOFOOD (FCC NON-BUMBU 6 KG/BOX - RILIS)">
                                         @foreach($fccItems as $b)
                                             @php $satuan = $b->satuanDasar?->satuan_cd ?? 'KG'; @endphp
                                             <option value="{{ $b->barang_id }}" data-cd="{{ $b->barang_cd }}" data-nm="{{ $b->barang_nm }}" data-jenis="WIP" data-satuan="{{ $satuan }}" data-grade="RILIS" {{ $oldBarangId == $b->barang_id ? 'selected' : '' }}>
-                                                [{{ $b->barang_cd }}] {{ $b->barang_nm }} ({{ $satuan }})
+                                                [{{ $b->barang_cd }}] {{ $b->barang_nm }} ({{ $satuan }}) [FCC Non Bumbu]
                                             </option>
                                         @endforeach
                                     </optgroup>
                                 @endif
 
                                 @if($exportItems->isNotEmpty())
-                                    <optgroup label="🚢 2. PRODUK EKSPOR (LOLOS RILIS)">
+                                    <optgroup label="2. PRODUK EKSPOR (LOLOS RILIS)">
                                         @foreach($exportItems as $b)
                                             @php $satuan = $b->satuanDasar?->satuan_cd ?? 'KG'; @endphp
                                             <option value="{{ $b->barang_id }}" data-cd="{{ $b->barang_cd }}" data-nm="{{ $b->barang_nm }}" data-jenis="{{ str_starts_with($b->barang_cd, 'FG') ? 'FG' : 'WIP' }}" data-satuan="{{ $satuan }}" data-grade="RILIS" {{ $oldBarangId == $b->barang_id ? 'selected' : '' }}>
-                                                [{{ $b->barang_cd }}] {{ $b->barang_nm }} ({{ $satuan }})
+                                                [{{ $b->barang_cd }}] {{ $b->barang_nm }} ({{ $satuan }}) [Ekspor]
                                             </option>
                                         @endforeach
                                     </optgroup>
                                 @endif
 
                                 @if($seasoningItems->isNotEmpty())
-                                    <optgroup label="🧂 3. CURAH BERBUMBU (HASIL SEASONING)">
+                                    <optgroup label="3. CURAH BERBUMBU (HASIL SEASONING)">
                                         @foreach($seasoningItems as $b)
                                             @php $satuan = $b->satuanDasar?->satuan_cd ?? 'KG'; @endphp
                                             <option value="{{ $b->barang_id }}" data-cd="{{ $b->barang_cd }}" data-nm="{{ $b->barang_nm }}" data-jenis="WIP" data-satuan="{{ $satuan }}" data-grade="RILIS" {{ $oldBarangId == $b->barang_id ? 'selected' : '' }}>
-                                                [{{ $b->barang_cd }}] {{ $b->barang_nm }} ({{ $satuan }})
+                                                [{{ $b->barang_cd }}] {{ $b->barang_nm }} ({{ $satuan }}) [WIP Berbumbu]
                                             </option>
                                         @endforeach
                                     </optgroup>
                                 @endif
 
                                 @if($tawarItems->isNotEmpty())
-                                    <optgroup label="🥔 4. CURAH TAWAR (POLOS)">
+                                    <optgroup label="4. CURAH TAWAR (POLOS)">
                                         @foreach($tawarItems as $b)
                                             @php $satuan = $b->satuanDasar?->satuan_cd ?? 'KG'; @endphp
                                             <option value="{{ $b->barang_id }}" data-cd="{{ $b->barang_cd }}" data-nm="{{ $b->barang_nm }}" data-jenis="WIP" data-satuan="{{ $satuan }}" data-grade="RILIS" {{ $oldBarangId == $b->barang_id ? 'selected' : '' }}>
-                                                [{{ $b->barang_cd }}] {{ $b->barang_nm }} ({{ $satuan }})
+                                                [{{ $b->barang_cd }}] {{ $b->barang_nm }} ({{ $satuan }}) [WIP Curah Tawar]
                                             </option>
                                         @endforeach
                                     </optgroup>
                                 @endif
 
                                 @if($holdItems->isNotEmpty())
-                                    <optgroup label="⚠️ 5. TIDAK JADI RILIS (HOLD QC / KARANTINA GUDANG)">
+                                    <optgroup label="5. TIDAK JADI RILIS (HOLD QC / KARANTINA GUDANG)">
                                         @foreach($holdItems as $b)
                                             @php $satuan = $b->satuanDasar?->satuan_cd ?? 'KG'; @endphp
                                             <option value="{{ $b->barang_id }}" data-cd="{{ $b->barang_cd }}" data-nm="{{ $b->barang_nm }}" data-jenis="WIP" data-satuan="{{ $satuan }}" data-grade="HOLD" {{ $oldBarangId == $b->barang_id ? 'selected' : '' }}>
-                                                [{{ $b->barang_cd }}] {{ $b->barang_nm }} ({{ $satuan }})
+                                                [{{ $b->barang_cd }}] {{ $b->barang_nm }} ({{ $satuan }}) [WIP Hold]
                                             </option>
                                         @endforeach
                                     </optgroup>
                                 @endif
 
                                 @if($afkirItems->isNotEmpty())
-                                    <optgroup label="🗑️ 6. HASIL LANGSUNG AFKIR / LIMBAH DAPUR">
+                                    <optgroup label="6. HASIL LANGSUNG AFKIR / LIMBAH DAPUR">
                                         @foreach($afkirItems as $b)
                                             @php $satuan = $b->satuanDasar?->satuan_cd ?? 'KG'; @endphp
                                             <option value="{{ $b->barang_id }}" data-cd="{{ $b->barang_cd }}" data-nm="{{ $b->barang_nm }}" data-jenis="WIP" data-satuan="{{ $satuan }}" data-grade="AFKIR" {{ $oldBarangId == $b->barang_id ? 'selected' : '' }}>
-                                                [{{ $b->barang_cd }}] {{ $b->barang_nm }} ({{ $satuan }})
+                                                [{{ $b->barang_cd }}] {{ $b->barang_nm }} ({{ $satuan }}) [WIP Sampingan]
                                             </option>
                                         @endforeach
                                     </optgroup>

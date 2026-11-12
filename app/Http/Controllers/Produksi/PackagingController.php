@@ -421,6 +421,9 @@ class PackagingController extends Controller
             'lakban_bawah_gr'          => 'nullable|numeric|min:0',
             'lakban_jumlah_gr'         => 'nullable|numeric|min:0',
             'lakban_nilai'             => 'nullable|numeric|min:0',
+            'karton_rusak_lembar'      => 'nullable|numeric|min:0',
+            'plastik_rusak_pcs'        => 'nullable|numeric|min:0',
+            'lakban_rusak_m'           => 'nullable|numeric|min:0',
             'total_biaya_tenaga_kerja' => 'nullable|numeric|min:0',
             'total_biaya_lain'         => 'nullable|numeric|min:0',
             'catatan_txt'              => 'nullable|string|max:1000',
@@ -442,11 +445,38 @@ class PackagingController extends Controller
 
         $validated['target_karton_qty'] = $validated['target_karton_qty'] ?? $validated['hasil_karton_qty'];
 
+        $kartonRusak = (float) $request->input('karton_rusak_lembar', 0);
+        $plastikRusak = (float) $request->input('plastik_rusak_pcs', 0);
+        $lakbanRusak = (float) $request->input('lakban_rusak_m', 0);
+
+        if ($kartonRusak > 0 || $plastikRusak > 0 || $lakbanRusak > 0) {
+            $scrapParts = [];
+            if ($kartonRusak > 0) $scrapParts[] = "Dus Afkir: {$kartonRusak} lbr";
+            if ($plastikRusak > 0) $scrapParts[] = "Plastik Reject: {$plastikRusak} pcs";
+            if ($lakbanRusak > 0) $scrapParts[] = "Lakban Kusut: {$lakbanRusak} m";
+            $scrapNote = "[Scrap Kemasan IFM]: " . implode(', ', $scrapParts);
+
+            if (!empty($validated['catatan_txt'])) {
+                if (!str_contains($validated['catatan_txt'], 'Dus Afkir') && !str_contains($validated['catatan_txt'], 'Dus afkir')) {
+                    $validated['catatan_txt'] .= " | " . $scrapNote;
+                }
+            } else {
+                $validated['catatan_txt'] = $scrapNote;
+            }
+        }
+
         try {
             $header = $this->packagingService->storePackaging($validated, auth()->user()?->name);
 
             // Tautkan status laporan operator jika ditarik dari operator lapangan
             if ($request->filled('laporan_operator_id')) {
+                \App\Models\Produksi\DatLaporanKemasOperator::where('laporan_id', (int) $request->input('laporan_operator_id'))
+                    ->update([
+                        'karton_rusak_lembar' => $kartonRusak,
+                        'plastik_rusak_pcs'   => $plastikRusak,
+                        'lakban_rusak_m'      => $lakbanRusak,
+                    ]);
+
                 app(\App\Services\Produksi\LaporanKemasOperatorService::class)->markAsProcessed(
                     (int) $request->input('laporan_operator_id'),
                     $header->pack_id,
@@ -473,7 +503,8 @@ class PackagingController extends Controller
             'bom',
             'produksi',
             'pemakaian.details.barang',
-            'adjustmentLogs'
+            'adjustmentLogs',
+            'laporanKemasOperator',
         ])->findOrFail($id);
 
         // Ambil seluruh dokumen pengemasan pada tanggal yang sama untuk Tab Switcher Split View

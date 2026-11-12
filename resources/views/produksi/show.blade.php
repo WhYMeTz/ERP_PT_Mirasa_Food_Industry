@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Detail Dokumen SPK - ' . $produksi->produksi_no)
+@section('title', 'Detail Dokumen Hasil Produksi - ' . $produksi->produksi_no)
 
 @push('styles')
     <link rel="stylesheet" href="{{ asset('css/produksi/produksi-show.css') }}?v={{ filemtime(public_path('css/produksi/produksi-show.css')) }}">
@@ -302,6 +302,25 @@
                             {{ !empty($produksi->varietas_singkong) ? $produksi->varietas_singkong : 'Standar Pabrik (STP / MGU)' }}
                         </td>
                     </tr>
+                    @php
+                        $singkongDetails = ($produksi->pemakaianBahan && $produksi->pemakaianBahan->details) ? $produksi->pemakaianBahan->details->filter(function($d) {
+                            $nm = strtoupper($d->barang?->barang_nm ?? '');
+                            $cd = strtoupper($d->barang?->barang_cd ?? '');
+                            return str_contains($nm, 'SINGKONG') || str_contains($cd, 'SK00') || str_contains($cd, 'BB-SK');
+                        }) : collect([]);
+
+                        $gradeGroups = [];
+                        foreach ($singkongDetails as $sk) {
+                            $gRaw = trim((string) ($sk->grade_cd ?: ($sk->barang?->grade_cd ?: 'A')));
+                            $gName = strtoupper($gRaw);
+                            if (!str_starts_with($gName, 'GRADE')) {
+                                $gName = 'Grade ' . $gName;
+                            }
+                            $qtyVal = (float) ($sk->qty_keluar ?: ($sk->qty_satuan ?? 0));
+                            $gradeGroups[$gName] = ($gradeGroups[$gName] ?? 0) + $qtyVal;
+                        }
+                        $isCampuran = count($gradeGroups) > 1;
+                    @endphp
                     <tr>
                         <td class="label-col">Input Singkong Mentah</td>
                         <td class="value-col" style="font-weight: 700;">{{ number_format($produksi->singkong_qty, 0, ',', '.') }} kg</td>
@@ -310,28 +329,15 @@
                     <tr>
                         <td class="label-col">Dokumen Bahan Baku (BPPB)</td>
                         <td class="value-col">
-                            <a href="{{ route('gudang.pemakaian.show', $produksi->pakai_id) }}" style="color: #0284c7; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 0.35rem;" title="Lihat Dokumen Pengeluaran Gudang (BPPB)">
-                                <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
-                                <span>{{ $produksi->pemakaianBahan->pakai_no }}</span>
-                            </a>
-                            <span style="font-size: 0.725rem; color: #64748b; margin-left: 0.25rem;">({{ $produksi->pemakaianBahan->tujuan_pemakaian }})</span>
-                            @php
-                                $singkongDetails = $produksi->pemakaianBahan->details ? $produksi->pemakaianBahan->details->filter(function($d) {
-                                    $nm = strtoupper($d->barang?->barang_nm ?? '');
-                                    $cd = strtoupper($d->barang?->barang_cd ?? '');
-                                    return str_contains($nm, 'SINGKONG') || str_contains($cd, 'SK00') || str_contains($cd, 'BB-SK');
-                                }) : collect([]);
-                            @endphp
-                            @if($singkongDetails->isNotEmpty())
-                                <div style="margin-top: 0.35rem; font-size: 0.75rem; color: #334155; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; padding: 0.25rem 0.5rem; display: inline-block;">
-                                    <span style="font-weight: 600; color: #0f172a;">Komposisi Singkong:</span>
-                                    @foreach($singkongDetails as $sk)
-                                        <span class="badge" style="background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; font-size: 0.7rem; font-weight: 700; margin-left: 0.25rem;">
-                                            {{ $sk->grade_cd ?: 'Grade A' }}: {{ number_format($sk->qty_satuan, 0, ',', '.') }} kg
-                                        </span>
-                                    @endforeach
-                                </div>
-                            @endif
+                            <div style="display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;">
+                                <a href="{{ route('gudang.pemakaian.show', $produksi->pakai_id) }}" style="color: #0284c7; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 0.35rem;" title="Lihat Dokumen Pengeluaran Gudang (BPPB)">
+                                    <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                                    <span>{{ $produksi->pemakaianBahan->pakai_no }}</span>
+                                </a>
+                                @if($produksi->pemakaianBahan->tujuan_pemakaian)
+                                    <span style="font-size: 0.75rem; color: #64748b;">({{ $produksi->pemakaianBahan->tujuan_pemakaian }})</span>
+                                @endif
+                            </div>
                         </td>
                     </tr>
                     @endif
@@ -446,12 +452,12 @@
                 <thead>
                     <tr>
                         <th style="width: 45px; text-align: center;">No</th>
-                        <th style="width: 150px;">Kategori Output</th>
-                        <th>Kode &amp; Nama Barang WIP</th>
-                        <th style="width: 85px; text-align: center;">Grade</th>
+                        <th style="width: 160px;">Kategori Output</th>
+                        <th>Kode &amp; Nama Barang WIP / Olahan</th>
                         <th style="width: 140px; text-align: center;">Batch Varian</th>
-                        <th style="width: 150px; text-align: right;">Output (Kg)</th>
-                        <th style="width: 100px; text-align: center;">Porsi (%)</th>
+                        <th style="width: 130px; text-align: right;">Qty Kemasan</th>
+                        <th style="width: 140px; text-align: right;">Berat Bersih (Kg)</th>
+                        <th style="width: 90px; text-align: center;">Porsi (%)</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -468,14 +474,15 @@
 
                             $totalWip = (float) $produksi->total_wip_qty > 0 ? (float) $produksi->total_wip_qty : 1;
                             $porsiPersen = round(((float)$out->qty_kg / $totalWip) * 100, 1);
-                            $outGrade = strtoupper($out->grade_cd ?? 'KW1');
+                            $satuanTampil = $out->satuan_cd ?: ($out->barang?->satuan?->satuan_nm ?? 'KG');
+                            $hasQtyKemasan = (float) $out->qty_hasil > 0;
                         @endphp
                         <tr>
                             <td style="text-align: center; color: #94a3b8; font-weight: 700;">{{ $idx + 1 }}</td>
                             <td>
                                 @if($isUtama)
                                     <span style="display: inline-block; padding: 0.2rem 0.5rem; background: #f1f5f9; color: #1e293b; border: 1px solid #e2e8f0; border-radius: 4px; font-size: 0.725rem; font-weight: 600;">
-                                        Produk Utama
+                                        {{ $out->kategori_output ?: 'Produk Utama' }}
                                     </span>
                                 @elseif($isBerko)
                                     <span style="display: inline-block; padding: 0.2rem 0.5rem; background: #f8fafc; color: #475569; border: 1px solid #e2e8f0; border-radius: 4px; font-size: 0.725rem; font-weight: 600;">
@@ -495,19 +502,15 @@
                                 <strong style="color: #0f172a; font-family: monospace;">{{ $out->barang?->barang_cd ?? '-' }}</strong> &ndash; 
                                 <span style="font-weight: 600; color: #1e293b;">{{ $out->barang?->barang_nm ?? '-' }}</span>
                             </td>
-                            <td style="text-align: center;">
-                                @if($outGrade === 'KW2')
-                                    <span style="display: inline-block; padding: 0.15rem 0.5rem; background: #fef3c7; color: #92400e; border: 1px solid #fde68a; border-radius: 4px; font-size: 0.725rem; font-weight: 700;">
-                                        KW 2
-                                    </span>
-                                @else
-                                    <span style="display: inline-block; padding: 0.15rem 0.5rem; background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; border-radius: 4px; font-size: 0.725rem; font-weight: 700;">
-                                        KW 1
-                                    </span>
-                                @endif
-                            </td>
                             <td style="font-family: monospace; font-weight: 600; color: #475569; text-align: center;">
                                 {{ $out->batch_no }}
+                            </td>
+                            <td style="text-align: right; font-weight: 600; color: #334155;">
+                                @if($hasQtyKemasan)
+                                    {{ number_format((float) $out->qty_hasil, 0, ',', '.') }} {{ $satuanTampil }}
+                                @else
+                                    <span style="color: #94a3b8; font-size: 0.75rem;">Curah (Kg)</span>
+                                @endif
                             </td>
                             <td style="text-align: right; font-weight: 700; color: #0f172a; font-variant-numeric: tabular-nums;">
                                 {{ number_format($out->qty_kg, 2, ',', '.') }} kg

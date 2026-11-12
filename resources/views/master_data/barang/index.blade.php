@@ -128,7 +128,8 @@
                                             '{{ number_format($item->harga_jual_idm_alfa ?? 0, 2, '.', '') }}',
                                             '{{ number_format($item->harga_jual_alfamidi ?? 0, 2, '.', '') }}',
                                             '{{ number_format($item->harga_jual_ifm_smg ?? 0, 2, '.', '') }}',
-                                            '{{ number_format($item->harga_jual_ifm_ckl ?? 0, 2, '.', '') }}'
+                                            '{{ number_format($item->harga_jual_ifm_ckl ?? 0, 2, '.', '') }}',
+                                            '{{ $item->kategori_output_cd ?? '' }}'
                                         )">
                                         <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                                         <span>Edit Data Barang</span>
@@ -192,12 +193,28 @@
 
                 <div class="form-group">
                     <label for="create_jenis_barang_id" class="form-label">Jenis Barang <span style="color:#ef4444;">*</span></label>
-                    <select id="create_jenis_barang_id" name="jenis_barang_id" class="form-control" onchange="const opt = this.options[this.selectedIndex]; fetchNextCode('barang', 'create_barang_cd', {jenis: opt.dataset.cd || '', name: document.getElementById('create_barang_nm')?.value || ''})" required>
+                    <select id="create_jenis_barang_id" name="jenis_barang_id" class="form-control" onchange="toggleKategoriOutputVisibility(this, 'grp_create_kategori_output', 'create_kategori_output_cd'); const opt = this.options[this.selectedIndex]; fetchNextCode('barang', 'create_barang_cd', {jenis: opt.dataset.cd || '', name: document.getElementById('create_barang_nm')?.value || ''})" required>
                         <option value="">-- Pilih Jenis Barang --</option>
                         @foreach($jenisBarangList as $jenis)
                             <option value="{{ $jenis->jenis_barang_id }}" data-cd="{{ $jenis->jenis_barang_cd }}">{{ $jenis->jenis_barang_nm }} ({{ $jenis->jenis_barang_cd }})</option>
                         @endforeach
                     </select>
+                </div>
+
+                <div class="form-group" id="grp_create_kategori_output" style="display: none; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.75rem;">
+                    <label for="create_kategori_output_cd" class="form-label" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                        <span style="font-weight: 700; color: #0f172a;">Kategori Output Produksi</span>
+                        <span style="font-size: 0.725rem; color: #64748b; font-weight: normal;">Khusus Olahan WIP / FG</span>
+                    </label>
+                    <select id="create_kategori_output_cd" name="kategori_output_cd" class="form-control">
+                        <option value="">-- Bukan Output Produksi / Umum --</option>
+                        @foreach(\App\Models\MasterData\MstBarang::KATEGORI_OUTPUT_LIST as $kCd => $kNm)
+                            <option value="{{ $kCd }}">{{ $kNm }}</option>
+                        @endforeach
+                    </select>
+                    <small style="color: #64748b; font-size: 0.75rem; display: block; margin-top: 0.25rem;">
+                        Menentukan grup dropdown saat input hasil penggorengan curah di modul Produksi Pabrik.
+                    </small>
                 </div>
 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
@@ -274,12 +291,28 @@
 
                 <div class="form-group">
                     <label for="edit_jenis_barang_id" class="form-label">Jenis Barang <span style="color:#ef4444;">*</span></label>
-                    <select id="edit_jenis_barang_id" name="jenis_barang_id" class="form-control" required>
+                    <select id="edit_jenis_barang_id" name="jenis_barang_id" class="form-control" onchange="toggleKategoriOutputVisibility(this, 'grp_edit_kategori_output', 'edit_kategori_output_cd');" required>
                         <option value="">-- Pilih Jenis Barang --</option>
                         @foreach($jenisBarangList as $jenis)
-                            <option value="{{ $jenis->jenis_barang_id }}">{{ $jenis->jenis_barang_nm }} ({{ $jenis->jenis_barang_cd }})</option>
+                            <option value="{{ $jenis->jenis_barang_id }}" data-cd="{{ $jenis->jenis_barang_cd }}">{{ $jenis->jenis_barang_nm }} ({{ $jenis->jenis_barang_cd }})</option>
                         @endforeach
                     </select>
+                </div>
+
+                <div class="form-group" id="grp_edit_kategori_output" style="display: none; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.75rem;">
+                    <label for="edit_kategori_output_cd" class="form-label" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                        <span style="font-weight: 700; color: #0f172a;">Kategori Output Produksi</span>
+                        <span style="font-size: 0.725rem; color: #64748b; font-weight: normal;">Khusus Olahan WIP / FG</span>
+                    </label>
+                    <select id="edit_kategori_output_cd" name="kategori_output_cd" class="form-control">
+                        <option value="">-- Bukan Output Produksi / Umum --</option>
+                        @foreach(\App\Models\MasterData\MstBarang::KATEGORI_OUTPUT_LIST as $kCd => $kNm)
+                            <option value="{{ $kCd }}">{{ $kNm }}</option>
+                        @endforeach
+                    </select>
+                    <small style="color: #64748b; font-size: 0.75rem; display: block; margin-top: 0.25rem;">
+                        Menentukan grup dropdown saat input hasil penggorengan curah di modul Produksi Pabrik.
+                    </small>
                 </div>
 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">

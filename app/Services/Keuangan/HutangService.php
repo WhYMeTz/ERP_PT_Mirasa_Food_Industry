@@ -725,6 +725,23 @@ class HutangService
                 ];
             }
 
+            // 6. Penyesuaian Uang Muka / Down Payment (DP) yang telah dibayarkan
+            // Memindahkan saldo kewajiban dari Hutang Usaha (2100) ke akun Downpayment (2104)
+            if ($uangMukaNominal > 0 && $totalDibayar > 0) {
+                $jurnalEntries[] = [
+                    'kode_akun'  => '2100', // Hutang Usaha didebet (berkurang)
+                    'debet'      => $totalDibayar,
+                    'kredit'     => 0,
+                    'keterangan' => "Pelunasan Uang Muka (Downpayment) - {$suppName} - {$hdr->hutang_no}",
+                ];
+                $jurnalEntries[] = [
+                    'kode_akun'  => '2104', // Downpayment dikredit (realisasi pengurang DP)
+                    'debet'      => 0,
+                    'kredit'     => $totalDibayar,
+                    'keterangan' => "Penyelesaian Uang Muka (Downpayment) Pembelian - {$suppName} - {$hdr->hutang_no}",
+                ];
+            }
+
             if (!empty($jurnalEntries)) {
                 $this->jurnalService->catatJurnal(
                     tipeTransaksi: 'HUTANG_PEMBELIAN',

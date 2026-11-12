@@ -241,7 +241,7 @@ class KasBankService
             ]);
 
             // 5. Catat Jurnal Double-Entry ke Jurnal Umum
-            $kodeKas = !empty($kasBank->kode_akun) ? $kasBank->kode_akun : '1101';
+            $kodeKas = $kasBank->getCoaKodeAkun();
             $suppModel = $supplierId ? MstSupplier::find($supplierId) : null;
             $suppName = $suppModel?->supplier_nm ?? 'Supplier';
 
@@ -337,14 +337,8 @@ class KasBankService
                 'updated_by' => $user->name ?? 'SYSTEM',
             ]);
 
-            // 5. Batalkan Jurnal Terkait BKK
-            DatJurnalHdr::where('ref_no', $bkk->bayar_no)
-                ->where('deleted_st', false)
-                ->update([
-                    'deleted_st' => true,
-                    'deleted_by' => $user->name ?? 'SYSTEM',
-                    'updated_by' => $user->name ?? 'SYSTEM',
-                ]);
+            // 5. Batalkan Jurnal Terkait BKK dan Balikkan Saldo COA
+            $this->jurnalService->batalkanJurnal($bkk->bayar_no, $user);
         });
     }
 
@@ -615,5 +609,89 @@ class KasBankService
 
         $hasilClean = str_replace('Rupiah', '', $hasil);
         return trim(preg_replace('/\s+/', ' ', $hasilClean)) . ' Rupiah';
+    }
+
+    /**
+     * Hasilkan Data Rekening Koran Resmi per Rekening & Rentang Tanggal
+     */
+    public function getRekeningKoran(int $kasBankId, string $startDate, string $endDate): array
+    {
+        $kasBank = MstKasBank::with('coa')->where('deleted_st', false)->findOrFail($kasBankId);
+
+        // 1. Hitung Saldo Awal (sebelum $startDate)
+        $priorMutasi = DatKasMutasi::where('kas_bank_id', $kasBankId)
+            ->where('deleted_st', false)
+            ->where('tgl_mutasi', '<', $startDate)
+            ->selectRaw("
+                SUM(CASE WHEN tipe_mutasi = 'MASUK' THEN nominal ELSE 0 END) as sum_masuk,
+                SUM(CASE WHEN tipe_mutasi = 'KELUAR' THEN nominal ELSE 0 END) as sum_keluar
+            ")
+            ->first();
+
+        $priorMasuk = (float)($priorMutasi?->sum_masuk ?? 0);
+        $priorKeluar = (float)($priorMutasi?->sum_keluar ?? 0);
+        $saldoAwal = (float)($kasBank->saldo_awal ?? 0) + ($priorMasuk - $priorKeluar);
+
+        // 2. Ambil seluruh mutasi pada periode [$startDate, $endDate]
+        $mutasiList = DatKasMutasi::where('kas_bank_id', $kasBankId)
+            ->where('deleted_st', false)
+            ->whereBetween('tgl_mutasi', [$startDate, $endDate])
+            ->orderBy('tgl_mutasi', 'asc')
+            ->orderBy('mutasi_id', 'asc')
+            ->get();
+
+        $runningBalance = $saldoAwal;
+        $totalDebet = 0;   // Uang Keluar (DB)
+        $totalKredit = 0;  // Uang Masuk (CR)
+        $countDebet = 0;
+        $countKredit = 0;
+        $rows = [];
+
+        foreach ($mutasiList as $m) {
+            $nom = (float)$m->nominal;
+            $isKeluar = ($m->tipe_mutasi === 'KELUAR');
+
+            $debet = $isKeluar ? $nom : 0;
+            $kredit = !$isKeluar ? $nom : 0;
+
+            if ($isKeluar) {
+                $totalDebet += $nom;
+                $countDebet++;
+                $runningBalance -= $nom;
+            } else {
+                $totalKredit += $nom;
+                $countKredit++;
+                $runningBalance += $nom;
+            }
+
+            $rows[] = [
+                'mutasi_id'       => $m->mutasi_id,
+                'tgl_mutasi'      => $m->tgl_mutasi,
+                'jam_mutasi'      => $m->created_at ? $m->created_at->format('H:i') : '-',
+                'no_referensi'    => $m->ref_no ?: $m->no_referensi ?: '-',
+                'jenis_transaksi' => $m->jenis_transaksi,
+                'keterangan'      => $m->keterangan ?: "Transaksi {$m->ref_no}",
+                'debet'           => $debet,  // Uang Keluar (DB)
+                'kredit'          => $kredit, // Uang Masuk (CR)
+                'saldo_berjalan'  => $runningBalance,
+                'created_by'      => $m->created_by,
+            ];
+        }
+
+        $saldoAkhir = $runningBalance;
+
+        return [
+            'kas_bank'      => $kasBank,
+            'start_date'    => $startDate,
+            'end_date'      => $endDate,
+            'saldo_awal'    => $saldoAwal,
+            'total_debet'   => $totalDebet,
+            'total_kredit'  => $totalKredit,
+            'count_debet'   => $countDebet,
+            'count_kredit'  => $countKredit,
+            'saldo_akhir'   => $saldoAkhir,
+            'rows'          => $rows,
+            'total_baris'   => count($rows),
+        ];
     }
 }

@@ -61,6 +61,7 @@
             @php
                 $qpData = json_encode([
                     'hutang_id'     => $hutang->hutang_id,
+                    'supplier_id'   => $hutang->supplier_id,
                     'hutang_no'     => $hutang->hutang_no,
                     'supplier_nm'   => $hutang->supplier->supplier_nm ?? '-',
                     'sisa_hutang'   => (float)$hutang->sisa_hutang,

@@ -19,6 +19,11 @@
         </p>
     </div>
     <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+        <a href="{{ route('keuangan.kas_bank.rekening_koran') }}" class="btn" style="background: #f0fdf4; color: #166534; border: 1.5px solid #bbf7d0; font-weight: 700; font-size: 0.8125rem;">
+            <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            <span>Rekening Koran Bank</span>
+        </a>
+
         <a href="{{ route('keuangan.kas_bank.mutasi') }}" class="btn btn-secondary" style="font-weight: 700; font-size: 0.8125rem;">
             <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
             <span>Buku Mutasi Kas &amp; Bank</span>
@@ -206,6 +211,11 @@
                             </button>
 
                             <div id="{{ $menuId }}" class="action-dropdown-menu">
+                                <a href="{{ route('keuangan.kas_bank.rekening_koran', ['kas_bank_id' => $item->kas_bank_id]) }}" class="action-dropdown-item">
+                                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #0d9488;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                    <span>Lihat Rekening Koran</span>
+                                </a>
+
                                 <a href="{{ route('keuangan.kas_bank.mutasi', ['kas_bank_id' => $item->kas_bank_id]) }}" class="action-dropdown-item">
                                     <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
                                     <span>Lihat Buku Mutasi</span>

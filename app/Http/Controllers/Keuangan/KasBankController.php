@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Keuangan\DatKasMutasi;
 use App\Models\Keuangan\MstKasBank;
 use App\Services\Keuangan\KasBankService;
+use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -232,6 +233,71 @@ class KasBankController extends Controller
             'totalMasuk',
             'totalKeluar',
             'netFlow'
+        ));
+    }
+
+    /**
+     * Rekening Koran Bank Resmi (Official Bank Statement)
+     */
+    public function rekeningKoran(Request $request): View
+    {
+        $kasBanks = $this->kasBankService->getAllKasBank();
+
+        $selectedKasBankId = (int)$request->input('kas_bank_id');
+        if (!$selectedKasBankId && $kasBanks->isNotEmpty()) {
+            $selectedKasBankId = $kasBanks->first()->kas_bank_id;
+        }
+
+        $preset = $request->input('preset', 'this_month');
+        $now = now();
+
+        switch ($preset) {
+            case 'today':
+                $startDate = $now->toDateString();
+                $endDate = $now->toDateString();
+                $presetLabel = 'Hari Ini (' . $now->format('d/m/Y') . ')';
+                break;
+            case 'last_month':
+                $last = $now->copy()->subMonth();
+                $startDate = $last->startOfMonth()->toDateString();
+                $endDate = $last->endOfMonth()->toDateString();
+                $presetLabel = 'Bulan Lalu (' . $last->translatedFormat('F Y') . ')';
+                break;
+            case 'this_year':
+                $startDate = $now->copy()->startOfYear()->toDateString();
+                $endDate = $now->copy()->endOfYear()->toDateString();
+                $presetLabel = 'Tahun Ini (' . $now->year . ')';
+                break;
+            case 'custom':
+                $startDate = $request->input('start_date') ?: $now->copy()->startOfMonth()->toDateString();
+                $endDate = $request->input('end_date') ?: $now->copy()->endOfMonth()->toDateString();
+                $presetLabel = Carbon::parse($startDate)->format('d/m/Y') . ' - ' . Carbon::parse($endDate)->format('d/m/Y');
+                break;
+            case 'this_month':
+            default:
+                $preset = 'this_month';
+                $startDate = $now->copy()->startOfMonth()->toDateString();
+                $endDate = $now->copy()->endOfMonth()->toDateString();
+                $presetLabel = 'Bulan Ini (' . $now->translatedFormat('F Y') . ')';
+                break;
+        }
+
+        $statement = null;
+        if ($selectedKasBankId) {
+            $statement = $this->kasBankService->getRekeningKoran($selectedKasBankId, $startDate, $endDate);
+        }
+
+        $isPrint = $request->boolean('print');
+
+        return view('keuangan.kas_bank.rekening-koran', compact(
+            'kasBanks',
+            'selectedKasBankId',
+            'startDate',
+            'endDate',
+            'preset',
+            'presetLabel',
+            'statement',
+            'isPrint'
         ));
     }
 }

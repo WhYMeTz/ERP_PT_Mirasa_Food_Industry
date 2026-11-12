@@ -1,0 +1,823 @@
+/**
+ * ERP PT Mirasa Food Industry - Modul Rekening Koran Bank Resmi
+ * Stylesheet Spesifik: Format Cetak Bank Statement & Antislop Compliance
+ */
+
+/* ========================================================
+   1. PAGE CONTAINER & BREADCRUMB HEADER
+   ======================================================== */
+.rk-page-container {
+    padding: 0.5rem 0 3rem 0;
+    max-width: 1280px;
+    margin: 0 auto;
+}
+
+.rk-header-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.rk-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.775rem;
+    color: #64748b;
+    margin-bottom: 0.35rem;
+}
+
+.rk-breadcrumb a {
+    color: #0284c7;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.rk-breadcrumb a:hover {
+    text-decoration: underline;
+}
+
+.rk-breadcrumb-sep {
+    color: #cbd5e1;
+}
+
+.rk-page-title {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    letter-spacing: -0.01em;
+}
+
+.rk-page-subtitle {
+    font-size: 0.8125rem;
+    color: #64748b;
+    margin: 0.25rem 0 0 0;
+}
+
+/* ========================================================
+   2. BANK ACCOUNT SELECTOR GRID (EXECUTIVE CARDS)
+   ======================================================== */
+.rk-bank-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+}
+
+.rk-bank-card {
+    background: #ffffff;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    text-decoration: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    position: relative;
+    overflow: hidden;
+}
+
+.rk-bank-card:hover {
+    border-color: #0284c7;
+    box-shadow: 0 4px 12px rgba(2, 132, 199, 0.08);
+    transform: translateY(-1px);
+}
+
+.rk-bank-card.active {
+    border: 2px solid #0284c7;
+    background: #f0f9ff;
+    box-shadow: 0 4px 14px rgba(2, 132, 199, 0.12);
+}
+
+.rk-bank-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.75rem;
+}
+
+.rk-bank-logo-tag {
+    font-size: 0.7rem;
+    font-weight: 800;
+    padding: 3px 8px;
+    border-radius: 4px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.tag-bca {
+    background: #00529c;
+    color: #ffffff;
+}
+
+.tag-mandiri {
+    background: #003868;
+    color: #ffd100;
+}
+
+.tag-kas {
+    background: #059669;
+    color: #ffffff;
+}
+
+.tag-default {
+    background: #334155;
+    color: #ffffff;
+}
+
+.rk-card-coa-pill {
+    font-size: 0.7rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-weight: 800;
+    color: #64748b;
+    background: #f1f5f9;
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid #e2e8f0;
+}
+
+.rk-bank-card.active .rk-card-coa-pill {
+    background: #e0f2fe;
+    color: #0369a1;
+    border-color: #bae6fd;
+}
+
+.rk-bank-card-name {
+    font-size: 0.925rem;
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1.3;
+    margin-bottom: 0.25rem;
+}
+
+.rk-bank-card-norek {
+    font-size: 0.775rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.rk-bank-card-balance {
+    margin-top: 0.85rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+}
+
+.rk-bank-card.active .rk-bank-card-balance {
+    border-top-color: #bae6fd;
+}
+
+.rk-balance-lbl {
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    font-weight: 800;
+    color: #64748b;
+    letter-spacing: 0.03em;
+}
+
+.rk-balance-val {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: #0f172a;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-variant-numeric: tabular-nums;
+}
+
+.rk-bank-card.active .rk-balance-val {
+    color: #0369a1;
+}
+
+.rk-active-marker {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.6875rem;
+    font-weight: 800;
+    color: #0284c7;
+    background: #e0f2fe;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+/* ========================================================
+   3. UNIFIED FILTER TOOLBAR
+   ======================================================== */
+.rk-filter-card {
+    background: #ffffff;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 0.75rem 1.25rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.rk-preset-group {
+    display: inline-flex;
+    align-items: center;
+    background: #f1f5f9;
+    padding: 3px;
+    border-radius: 6px;
+    border: 1px solid #cbd5e1;
+    gap: 3px;
+}
+
+.rk-preset-btn {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.775rem;
+    font-weight: 700;
+    color: #475569;
+    text-decoration: none;
+    border-radius: 4px;
+    transition: all 0.15s ease;
+}
+
+.rk-preset-btn:hover {
+    color: #0f172a;
+    background: rgba(255, 255, 255, 0.6);
+}
+
+.rk-preset-btn.active {
+    background: #ffffff;
+    color: #0f172a;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.rk-filter-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    flex-wrap: wrap;
+}
+
+.filter-custom-form {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+}
+
+.filter-input-date {
+    height: 36px;
+    padding: 0 0.65rem;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 0.8125rem;
+    color: #0f172a;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    background: #ffffff;
+    transition: border-color 0.15s ease;
+}
+
+.filter-input-date:focus {
+    outline: none;
+    border-color: #0284c7;
+    box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+}
+
+.btn-filter-action {
+    height: 36px;
+    padding: 0 0.85rem;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.15s ease;
+}
+
+.btn-filter-primary {
+    background: #0284c7;
+    color: #ffffff;
+    border: 1.5px solid #0284c7;
+}
+
+.btn-filter-primary:hover {
+    background: #0369a1;
+    border-color: #0369a1;
+}
+
+.btn-filter-secondary {
+    background: #ffffff;
+    color: #334155;
+    border: 1.5px solid #cbd5e1;
+}
+
+.btn-filter-secondary:hover {
+    background: #f8fafc;
+    border-color: #94a3b8;
+    color: #0f172a;
+}
+
+.btn-filter-print {
+    background: #166534;
+    color: #ffffff;
+    border: 1.5px solid #166534;
+}
+
+.btn-filter-print:hover {
+    background: #14532d;
+    border-color: #14532d;
+}
+
+/* ========================================================
+   4. LEMBAR RESMI REKENING KORAN (STATEMENT PAPER CANVAS)
+   ======================================================== */
+.rk-sheet {
+    background: #ffffff;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 10px;
+    padding: 2.25rem 2.5rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    margin-bottom: 2rem;
+}
+
+/* Kop Surat Bank Statement */
+.rk-header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding-bottom: 1.25rem;
+    border-bottom: 2.5px solid #0f172a;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.rk-company-block {
+    display: flex;
+    flex-direction: column;
+}
+
+.rk-company-title {
+    font-size: 1.25rem;
+    font-weight: 900;
+    color: #0f172a;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin: 0;
+}
+
+.rk-company-subtitle {
+    font-size: 0.775rem;
+    font-weight: 700;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-top: 2px;
+}
+
+.rk-company-address {
+    font-size: 0.75rem;
+    color: #64748b;
+    margin-top: 0.35rem;
+    line-height: 1.4;
+}
+
+.rk-statement-badge-box {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    text-align: right;
+}
+
+.rk-bank-brand-title {
+    font-size: 1.15rem;
+    font-weight: 900;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #0f172a;
+}
+
+.rk-statement-subtitle {
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: #64748b;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-top: 2px;
+}
+
+.rk-bank-account-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-top: 0.45rem;
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+/* 6-Column Metadata Grid */
+.rk-meta-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    background: #f8fafc;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+}
+
+.rk-meta-item {
+    padding: 0.75rem 0.95rem;
+    border-right: 1px solid #cbd5e1;
+    display: flex;
+    flex-direction: column;
+}
+
+.rk-meta-item:last-child {
+    border-right: none;
+}
+
+.rk-meta-label {
+    font-size: 0.675rem;
+    font-weight: 800;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 3px;
+}
+
+.rk-meta-val {
+    font-weight: 800;
+    color: #0f172a;
+    font-size: 0.8125rem;
+    line-height: 1.3;
+}
+
+/* 4-Card Statement Summary */
+.rk-summary-bar {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.75rem;
+}
+
+.rk-summary-card {
+    border-radius: 8px;
+    padding: 1rem 1.15rem;
+    border: 1.5px solid #cbd5e1;
+    background: #ffffff;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.rk-card-saldo-awal {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+}
+
+.rk-card-kredit {
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+}
+
+.rk-card-debet {
+    background: #fef2f2;
+    border-color: #fecaca;
+}
+
+.rk-card-saldo-akhir {
+    background: #f0f9ff;
+    border-color: #bae6fd;
+}
+
+.rk-sum-label {
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.25rem;
+}
+
+.rk-card-saldo-awal .rk-sum-label { color: #475569; }
+.rk-card-kredit .rk-sum-label { color: #166534; }
+.rk-card-debet .rk-sum-label { color: #991b1b; }
+.rk-card-saldo-akhir .rk-sum-label { color: #0369a1; }
+
+.rk-sum-amount {
+    font-size: 1.25rem;
+    font-weight: 900;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-variant-numeric: tabular-nums;
+    margin: 0.2rem 0;
+}
+
+.rk-card-saldo-awal .rk-sum-amount { color: #0f172a; }
+.rk-card-kredit .rk-sum-amount { color: #15803d; }
+.rk-card-debet .rk-sum-amount { color: #b91c1c; }
+.rk-card-saldo-akhir .rk-sum-amount { color: #0284c7; }
+
+.rk-sum-count {
+    font-size: 0.725rem;
+    font-weight: 600;
+}
+
+.rk-card-saldo-awal .rk-sum-count { color: #64748b; }
+.rk-card-kredit .rk-sum-count { color: #166534; }
+.rk-card-debet .rk-sum-count { color: #991b1b; }
+.rk-card-saldo-akhir .rk-sum-count { color: #0369a1; }
+
+/* Tabel Mutasi Rekening Koran */
+.rk-table-wrapper {
+    overflow-x: auto;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 8px;
+    background: #ffffff;
+    margin-bottom: 2rem;
+}
+
+.rk-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+    color: #0f172a;
+}
+
+.rk-table thead th {
+    background: #1e293b;
+    color: #ffffff;
+    padding: 0.65rem 0.85rem;
+    font-weight: 800;
+    font-size: 0.725rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border: 1px solid #1e293b;
+    vertical-align: middle;
+}
+
+.rk-table tbody td {
+    padding: 0.65rem 0.85rem;
+    border: 1px solid #e2e8f0;
+    vertical-align: middle;
+    line-height: 1.35;
+}
+
+.rk-table tbody tr:nth-child(even) {
+    background: #f8fafc;
+}
+
+.rk-table tbody tr:hover {
+    background: #f1f5f9;
+}
+
+.rk-row-opening-balance {
+    background: #f1f5f9 !important;
+    font-weight: 700;
+}
+
+.rk-num {
+    text-align: right;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.rk-debet {
+    color: #dc2626;
+    font-weight: 700;
+}
+
+.rk-kredit {
+    color: #16a34a;
+    font-weight: 700;
+}
+
+.rk-running-balance {
+    color: #0f172a;
+    font-weight: 800;
+}
+
+/* Footer Total Baris */
+.rk-total-row td {
+    background: #e2e8f0 !important;
+    border-top: 2px solid #0f172a !important;
+    border-bottom: 3px double #0f172a !important;
+    font-weight: 900;
+    font-size: 0.875rem;
+    padding: 0.75rem 0.85rem;
+}
+
+/* Kolom Tanda Tangan Otorisasi */
+.rk-signature-grid {
+    margin-top: 3.5rem;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+    text-align: center;
+    font-size: 0.8125rem;
+}
+
+.rk-sign-card {
+    border: 1px dashed #cbd5e1;
+    border-radius: 6px;
+    padding: 1rem 1.25rem 1.25rem 1.25rem;
+    background: #ffffff;
+}
+
+.rk-sign-role {
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 4.5rem;
+}
+
+.rk-sign-line {
+    border-top: 1.5px solid #0f172a;
+    padding-top: 0.35rem;
+    font-weight: 800;
+    color: #0f172a;
+}
+
+.rk-sign-date {
+    font-size: 0.7rem;
+    color: #64748b;
+    margin-top: 2px;
+}
+
+/* ========================================================
+   5. PRINT STYLESHEET (A4 RESMI BANK STATEMENT)
+   ======================================================== */
+@media print {
+    @page {
+        size: A4 portrait;
+        margin: 10mm 8mm;
+    }
+
+    body {
+        background: #ffffff !important;
+        color: #000000 !important;
+        font-size: 8.5pt !important;
+    }
+
+    .no-print,
+    .app-header,
+    .app-sidebar,
+    .rk-bank-grid,
+    .rk-filter-card,
+    .rk-header-section,
+    .btn {
+        display: none !important;
+    }
+
+    .rk-page-container {
+        padding: 0 !important;
+        margin: 0 !important;
+        max-width: 100% !important;
+    }
+
+    .rk-sheet {
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    .rk-header-top {
+        border-bottom: 2pt solid #000000 !important;
+        padding-bottom: 8px !important;
+        margin-bottom: 10px !important;
+    }
+
+    .rk-company-title {
+        font-size: 11pt !important;
+    }
+
+    .rk-bank-brand-title {
+        font-size: 10.5pt !important;
+    }
+
+    .rk-meta-grid {
+        border: 1pt solid #000000 !important;
+        background: #ffffff !important;
+        margin-bottom: 10px !important;
+    }
+
+    .rk-meta-item {
+        border-right: 1pt solid #000000 !important;
+        padding: 4px 6px !important;
+    }
+
+    .rk-summary-bar {
+        gap: 6px !important;
+        margin-bottom: 10px !important;
+    }
+
+    .rk-summary-card {
+        border: 1pt solid #000000 !important;
+        background: #ffffff !important;
+        padding: 6px !important;
+    }
+
+    .rk-sum-amount {
+        font-size: 10pt !important;
+        color: #000000 !important;
+    }
+
+    .rk-table-wrapper {
+        border: 1pt solid #000000 !important;
+        margin-bottom: 15px !important;
+    }
+
+    .rk-table {
+        font-size: 7.5pt !important;
+    }
+
+    .rk-table thead th {
+        background: #e2e8f0 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        color: #000000 !important;
+        border: 1pt solid #000000 !important;
+        padding: 4px 5px !important;
+    }
+
+    .rk-table tbody td {
+        border: 0.5pt solid #64748b !important;
+        padding: 3.5px 5px !important;
+    }
+
+    .rk-row-opening-balance {
+        background: #f1f5f9 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .rk-total-row td {
+        border-top: 1.5pt solid #000000 !important;
+        border-bottom: 3pt double #000000 !important;
+        background: #e2e8f0 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        padding: 5px !important;
+    }
+
+    .rk-signature-grid {
+        margin-top: 25px !important;
+        gap: 15px !important;
+    }
+
+    .rk-sign-card {
+        border: 0.5pt solid #64748b !important;
+        padding: 6px !important;
+    }
+
+    .rk-sign-role {
+        margin-bottom: 45px !important;
+        font-size: 7.5pt !important;
+    }
+
+    .rk-sign-line {
+        border-top: 1pt solid #000000 !important;
+        font-size: 8pt !important;
+    }
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+    .rk-meta-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    .rk-summary-bar {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 640px) {
+    .rk-meta-grid {
+        grid-template-columns: 1fr;
+    }
+    .rk-summary-bar {
+        grid-template-columns: 1fr;
+    }
+    .rk-signature-grid {
+        grid-template-columns: 1fr;
+    }
+}

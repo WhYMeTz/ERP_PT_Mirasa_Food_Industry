@@ -515,7 +515,13 @@ class User extends Authenticatable
             || $this->canAccessKasMasuk()
             || $this->canAccessKasBank()
             || $this->canAccessCoa()
-            || $this->canAccessJurnal();
+            || $this->canAccessJurnal()
+            || $this->canAccessLaporanKeuangan();
+    }
+
+    public function canAccessLaporanKeuangan(): bool
+    {
+        return $this->isSuperAdmin() || $this->canAccessJurnal() || $this->canAccessCoa();
     }
 
     public function canAccessJurnal(): bool

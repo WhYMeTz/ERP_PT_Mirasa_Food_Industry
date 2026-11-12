@@ -116,6 +116,9 @@ function openQuickPayModal(hutangData) {
 
     // Populate Data Tagihan
     document.getElementById('qp_hutang_id').value = hutang.hutang_id;
+    if (document.getElementById('qp_supplier_id')) {
+        document.getElementById('qp_supplier_id').value = hutang.supplier_id || '';
+    }
     document.getElementById('qp_supplier_nm').textContent = hutang.supplier_nm || '-';
     document.getElementById('qp_hutang_no').textContent = hutang.hutang_no || '-';
     document.getElementById('qp_sisa_hutang_disp').textContent = formatRupiah(hutang.sisa_hutang);

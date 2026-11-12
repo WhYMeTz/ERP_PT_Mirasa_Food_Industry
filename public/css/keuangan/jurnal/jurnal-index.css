@@ -441,3 +441,311 @@
     background: #f8fafc;
     align-items: center;
 }
+
+/* ========================================================
+   VIEW MODE TOGGLE PILLS (VOUCHER VS SPREADSHEET)
+   ======================================================== */
+.view-mode-pill-group {
+    display: inline-flex;
+    align-items: center;
+    background: #f1f5f9;
+    padding: 3px;
+    border-radius: 8px;
+    border: 1px solid #cbd5e1;
+    gap: 3px;
+}
+
+.view-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.75rem;
+    font-size: 0.775rem;
+    font-weight: 700;
+    color: #475569;
+    text-decoration: none;
+    border-radius: 6px;
+    transition: all 0.15s ease;
+}
+
+.view-pill:hover {
+    color: #0f172a;
+    background: rgba(255, 255, 255, 0.6);
+}
+
+.view-pill.active {
+    background: #ffffff;
+    color: #0284c7;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* ========================================================
+   MODE LEMBAR LAJUR KONTINU (SPREADSHEET KLASIK EXCEL)
+   CV Bahtera Mandiri Bersama Style
+   ======================================================== */
+.sheet-outer-container {
+    background: #ffffff;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+    overflow: hidden;
+    margin-bottom: 2rem;
+}
+
+/* Control Bar atas Sheet */
+.sheet-control-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1.25rem;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.sheet-status-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.775rem;
+    font-weight: 800;
+    color: #166534;
+    background: #dcfce7;
+    padding: 3px 8px;
+    border-radius: 9999px;
+    border: 1px solid #bbf7d0;
+}
+
+.sheet-status-dot {
+    width: 7px;
+    height: 7px;
+    background: #16a34a;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+/* Kop Banner Hijau Spreadsheet Excel Klasik */
+.sheet-header-banner {
+    background: #235d3a;
+    color: #ffffff;
+    text-align: center;
+    padding: 1rem 1.5rem;
+    border-bottom: 2px solid #1a472c;
+}
+
+.sheet-banner-company {
+    font-size: 1.15rem;
+    font-weight: 900;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.sheet-banner-title {
+    font-size: 1rem;
+    font-weight: 800;
+    letter-spacing: 0.03em;
+    margin-top: 0.15rem;
+}
+
+.sheet-banner-period {
+    font-size: 0.75rem;
+    opacity: 0.88;
+    margin-top: 0.25rem;
+    font-weight: 600;
+}
+
+/* Scroll Container untuk Grid Spreadsheet */
+.sheet-table-scroll-wrapper {
+    overflow-x: auto;
+    width: 100%;
+    background: #ffffff;
+}
+
+/* Tabel Utama Spreadsheet */
+.spreadsheet-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+    white-space: nowrap;
+}
+
+.spreadsheet-table thead th {
+    background: #3b7a4c;
+    color: #ffffff;
+    font-size: 0.725rem;
+    font-weight: 800;
+    letter-spacing: 0.03em;
+    padding: 0.55rem 0.65rem;
+    border: 1px solid #2e613c;
+    user-select: none;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.th-content {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.excel-filter-arrow {
+    font-size: 0.6rem;
+    opacity: 0.7;
+    margin-left: 2px;
+}
+
+/* Baris Data Spreadsheet */
+.sheet-row td {
+    padding: 0.45rem 0.65rem;
+    border: 1px solid #cbd5e1;
+    line-height: 1.35;
+}
+
+/* Alternating Tint Per Voucher Transaksi */
+.voucher-tint-blue {
+    background-color: #f0f7ff;
+}
+
+.voucher-tint-blue:hover {
+    background-color: #e0f2fe;
+}
+
+.voucher-tint-white {
+    background-color: #ffffff;
+}
+
+.voucher-tint-white:hover {
+    background-color: #f8fafc;
+}
+
+/* Garis Pembatas Antar Voucher */
+.voucher-bottom-separator td {
+    border-bottom: 2px solid #64748b;
+}
+
+/* Typography Monospace Tabular untuk Angka Keuangan */
+.font-tabular {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-variant-numeric: tabular-nums;
+}
+
+.ref-subtext {
+    font-size: 0.675rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    color: #64748b;
+    margin-top: 1px;
+}
+
+/* Footer Total Baris */
+.sheet-footer-total td {
+    background: #f1f5f9;
+    padding: 0.65rem 0.65rem;
+    border: 1px solid #cbd5e1;
+    border-top: 2px solid #334155;
+}
+
+/* Paginasi */
+.sheet-pagination-box {
+    padding: 0.85rem 1.25rem;
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+/* ========================================================
+   PRINT STYLESHEET UNTUK SPREADSHEET KONTINU (A4 LANDSCAPE)
+   ======================================================== */
+@media print {
+    @page {
+        size: A4 landscape;
+        margin: 8mm 6mm;
+    }
+
+    body {
+        background: #ffffff !important;
+        color: #000000 !important;
+        font-size: 8pt !important;
+    }
+
+    .no-print,
+    .app-header,
+    .app-sidebar,
+    .jurnal-filter-card,
+    .metric-grid-4,
+    .view-mode-pill-group,
+    .btn,
+    .sheet-control-bar,
+    .sheet-pagination-box {
+        display: none !important;
+    }
+
+    .sheet-outer-container {
+        border: none !important;
+        box-shadow: none !important;
+        margin: 0 !important;
+        width: 100% !important;
+    }
+
+    .sheet-header-banner {
+        background: #235d3a !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        color: #ffffff !important;
+        padding: 6px 12px !important;
+    }
+
+    .sheet-banner-company {
+        font-size: 11pt !important;
+    }
+
+    .sheet-banner-title {
+        font-size: 9.5pt !important;
+    }
+
+    .spreadsheet-table {
+        font-size: 7pt !important;
+        width: 100% !important;
+    }
+
+    .spreadsheet-table thead th {
+        background: #3b7a4c !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        color: #ffffff !important;
+        padding: 3px 4px !important;
+        font-size: 6.5pt !important;
+    }
+
+    .excel-filter-arrow {
+        display: none !important;
+    }
+
+    .sheet-row td {
+        padding: 2.5px 4px !important;
+        border: 0.5pt solid #64748b !important;
+    }
+
+    .voucher-tint-blue {
+        background-color: #f1f5f9 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .voucher-bottom-separator td {
+        border-bottom: 1.5pt solid #000000 !important;
+    }
+
+    .sheet-footer-total td {
+        background: #e2e8f0 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        font-size: 7.5pt !important;
+        padding: 4px !important;
+    }
+}

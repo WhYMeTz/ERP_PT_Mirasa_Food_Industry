@@ -123,6 +123,44 @@ class JurnalService
     }
 
     /**
+     * Batalkan Jurnal dan Balikkan Saldo Berjalan COA
+     */
+    public function batalkanJurnal(string $refNo, ?User $user = null): void
+    {
+        $jurnals = DatJurnalHdr::with('details.coa')
+            ->where('ref_no', $refNo)
+            ->where('deleted_st', false)
+            ->get();
+
+        $userName = $user?->name ?? 'SYSTEM';
+
+        foreach ($jurnals as $jurnal) {
+            foreach ($jurnal->details as $dtl) {
+                $coa = $dtl->coa;
+                if ($coa) {
+                    if ($coa->saldo_normal === 'DEBET') {
+                        $coa->saldo_berjalan -= ($dtl->debet - $dtl->kredit);
+                    } else {
+                        $coa->saldo_berjalan -= ($dtl->kredit - $dtl->debet);
+                    }
+                    $coa->save();
+                }
+                $dtl->update([
+                    'deleted_st' => true,
+                    'deleted_by' => $userName,
+                    'updated_by' => $userName,
+                ]);
+            }
+
+            $jurnal->update([
+                'deleted_st' => true,
+                'deleted_by' => $userName,
+                'updated_by' => $userName,
+            ]);
+        }
+    }
+
+    /**
      * Generator Nomor Jurnal: JRN-YYYYMM-XXXX
      */
     public function generateJurnalNo(string $tgl): string

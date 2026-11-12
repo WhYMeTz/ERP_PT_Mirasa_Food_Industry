@@ -1,0 +1,451 @@
+/**
+ * ERP PT Mirasa Food Industry - Modul Laporan Keuangan
+ * Stylesheet Spesifik: Laba Rugi, Neraca, Neraca Saldo, Arus Kas & Hub
+ */
+
+/* Container & Layout */
+.laporan-container {
+    padding: 0.5rem 0 2rem 0;
+}
+
+/* Navigasi Tab Laporan */
+.laporan-nav-tabs {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0.35rem;
+    margin-bottom: 1rem;
+    overflow-x: auto;
+    scrollbar-width: thin;
+}
+
+.laporan-tab-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.5rem 0.95rem;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: #475569;
+    text-decoration: none;
+    border-radius: 6px;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+}
+
+.laporan-tab-btn:hover {
+    color: #0f172a;
+    background: #f1f5f9;
+}
+
+.laporan-tab-btn.active {
+    color: #047857;
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+}
+
+.laporan-tab-btn svg {
+    flex-shrink: 0;
+}
+
+/* Filter Bar Terpadu */
+.laporan-filter-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0.85rem 1.15rem;
+    margin-bottom: 1.25rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.85rem;
+}
+
+.filter-presets-group {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+}
+
+.filter-preset-pill {
+    padding: 0.35rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #475569;
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.filter-preset-pill:hover {
+    color: #0f172a;
+    border-color: #94a3b8;
+    background: #f1f5f9;
+}
+
+.filter-preset-pill.active {
+    color: #065f46;
+    background: #d1fae5;
+    border-color: #6ee7b7;
+}
+
+.filter-custom-form {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.filter-input-date {
+    height: 32px;
+    padding: 0 0.5rem;
+    font-size: 0.775rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    color: #0f172a;
+    font-weight: 600;
+    outline: none;
+}
+
+.filter-input-date:focus {
+    border-color: #059669;
+    box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.15);
+}
+
+.btn-filter-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    height: 32px;
+    padding: 0 0.75rem;
+    font-size: 0.775rem;
+    font-weight: 700;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.15s ease;
+}
+
+.btn-filter-primary {
+    background: #059669;
+    border: 1px solid #059669;
+    color: #ffffff;
+}
+
+.btn-filter-primary:hover {
+    background: #047857;
+}
+
+.btn-filter-secondary {
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    color: #334155;
+}
+
+.btn-filter-secondary:hover {
+    background: #f8fafc;
+    border-color: #94a3b8;
+}
+
+/* Executive Metric Grid */
+.executive-metric-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 0.85rem;
+    margin-bottom: 1.25rem;
+}
+
+.metric-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1rem 1.15rem;
+    position: relative;
+}
+
+.metric-card-label {
+    font-size: 0.725rem;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    margin-bottom: 0.35rem;
+}
+
+.metric-card-val {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #0f172a;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-variant-numeric: tabular-nums;
+}
+
+.metric-card-sub {
+    font-size: 0.725rem;
+    color: #64748b;
+    margin-top: 0.35rem;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.val-green {
+    color: #15803d;
+}
+
+.val-red {
+    color: #b91c1c;
+}
+
+.val-blue {
+    color: #0369a1;
+}
+
+/* Lembar Laporan Akuntansi (Corporate Statement Sheet) */
+.corporate-sheet {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1.75rem 2rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.sheet-header {
+    text-align: center;
+    padding-bottom: 1.25rem;
+    border-bottom: 2px solid #0f172a;
+    margin-bottom: 1.5rem;
+}
+
+.sheet-company-title {
+    font-size: 1.15rem;
+    font-weight: 900;
+    color: #0f172a;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin: 0;
+}
+
+.sheet-report-title {
+    font-size: 1rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0.25rem 0 0 0;
+}
+
+.sheet-period-subtitle {
+    font-size: 0.8125rem;
+    color: #475569;
+    margin-top: 0.25rem;
+    font-weight: 600;
+}
+
+/* Tabel Akuntansi Keuangan */
+.accounting-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.825rem;
+    color: #0f172a;
+}
+
+.accounting-table th {
+    background: #f8fafc;
+    border-top: 1px solid #cbd5e1;
+    border-bottom: 1.5px solid #cbd5e1;
+    padding: 0.65rem 0.85rem;
+    font-weight: 800;
+    color: #334155;
+    text-transform: uppercase;
+    font-size: 0.725rem;
+    letter-spacing: 0.02em;
+}
+
+.accounting-table td {
+    padding: 0.55rem 0.85rem;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+}
+
+.accounting-table tr:hover {
+    background: #fcfcfc;
+}
+
+/* Section Header Rows */
+.tr-section-title td {
+    background: #f8fafc;
+    font-weight: 800;
+    color: #0f172a;
+    font-size: 0.825rem;
+    padding-top: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+/* Subtotal Rows */
+.tr-subtotal td {
+    font-weight: 800;
+    background: #fbfcfe;
+    border-top: 1.5px solid #cbd5e1;
+    border-bottom: 1.5px solid #cbd5e1;
+    color: #0f172a;
+}
+
+/* Grand Total / Bottom Line */
+.tr-grand-total td {
+    font-size: 0.925rem;
+    font-weight: 900;
+    background: #f0fdf4;
+    border-top: 1.5px solid #059669;
+    border-bottom: 3px double #059669;
+    color: #065f46;
+}
+
+.tr-grand-total.danger td {
+    background: #fef2f2;
+    border-top: 1.5px solid #dc2626;
+    border-bottom: 3px double #dc2626;
+    color: #991b1b;
+}
+
+.coa-code-badge {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #0369a1;
+    background: #e0f2fe;
+    padding: 1px 6px;
+    border-radius: 4px;
+    margin-right: 0.45rem;
+}
+
+.cell-num {
+    text-align: right;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.cell-bold {
+    font-weight: 800;
+}
+
+/* Balance Check Status Pill */
+.balance-status-banner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    margin-bottom: 1.25rem;
+    font-size: 0.8125rem;
+    font-weight: 700;
+}
+
+.balance-status-banner.balanced {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    color: #166534;
+}
+
+.balance-status-banner.unbalanced {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+}
+
+/* Split Column Neraca (Skontro: Aktiva vs Pasiva) */
+.neraca-skontro-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+}
+
+.neraca-column {
+    display: flex;
+    flex-direction: column;
+}
+
+.neraca-col-header {
+    background: #0f172a;
+    color: #ffffff;
+    font-weight: 800;
+    font-size: 0.85rem;
+    padding: 0.65rem 0.85rem;
+    border-radius: 6px 6px 0 0;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+/* Print Friendly Styles */
+@media print {
+    body {
+        background: #ffffff !important;
+        color: #000000 !important;
+        font-size: 11pt !important;
+    }
+
+    .laporan-nav-tabs,
+    .laporan-filter-card,
+    .executive-metric-grid,
+    .no-print,
+    .sidebar,
+    .navbar,
+    .content-header {
+        display: none !important;
+    }
+
+    .corporate-sheet {
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    .sheet-header {
+        border-bottom: 2pt solid #000000 !important;
+    }
+
+    .accounting-table th {
+        background: #f1f5f9 !important;
+        color: #000000 !important;
+        border-color: #000000 !important;
+        -webkit-print-color-adjust: exact;
+    }
+
+    .accounting-table td {
+        border-color: #e2e8f0 !important;
+    }
+
+    .tr-subtotal td {
+        border-color: #000000 !important;
+        font-weight: bold !important;
+    }
+
+    .tr-grand-total td {
+        border-top: 1pt solid #000000 !important;
+        border-bottom: 3pt double #000000 !important;
+        background: #ffffff !important;
+        color: #000000 !important;
+    }
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+    .neraca-skontro-grid {
+        grid-template-columns: 1fr;
+    }
+    .corporate-sheet {
+        padding: 1rem;
+    }
+}
+

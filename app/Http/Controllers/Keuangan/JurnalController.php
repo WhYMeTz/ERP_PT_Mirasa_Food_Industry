@@ -24,15 +24,22 @@ class JurnalController extends Controller
      */
     public function index(Request $request): View
     {
+        $viewMode = $request->input('view', 'voucher');
+        if (!in_array($viewMode, ['voucher', 'sheet'])) {
+            $viewMode = 'voucher';
+        }
+
         $filters = [
             'search'         => $request->input('search'),
             'tipe_transaksi' => $request->input('tipe_transaksi'),
             'start_date'     => $request->input('start_date'),
             'end_date'       => $request->input('end_date'),
             'coa_id'         => $request->input('coa_id'),
+            'view'           => $viewMode,
         ];
 
-        $jurnals = $this->jurnalService->getAllPaginated($filters, 20);
+        $perPage = ($viewMode === 'sheet') ? 35 : 20;
+        $jurnals = $this->jurnalService->getAllPaginated($filters, $perPage);
         $metrics = $this->jurnalService->getSummaryMetrics($filters);
         $coaList = MstCoa::where('deleted_st', false)
             ->where('active_st', true)
@@ -54,7 +61,8 @@ class JurnalController extends Controller
             'metrics',
             'coaList',
             'tipeTransaksiList',
-            'filters'
+            'filters',
+            'viewMode'
         ));
     }
 

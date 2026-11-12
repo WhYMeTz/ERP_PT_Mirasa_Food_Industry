@@ -152,3 +152,71 @@ function populateModalData(j) {
         tbody.innerHTML = linesHtml;
     }
 }
+
+/**
+ * Export Lembar Lajur Spreadsheet ke File CSV / Excel
+ * Format persis 13 Kolom Lembar Lajur CV Bahtera Mandiri Bersama
+ */
+window.exportSpreadsheetToCsv = function () {
+    const table = document.getElementById('spreadsheetJurnalTable');
+    if (!table) {
+        alert('Tabel spreadsheet tidak ditemukan.');
+        return;
+    }
+
+    const rows = table.querySelectorAll('tbody tr.sheet-row');
+    if (rows.length === 0) {
+        alert('Tidak ada baris transaksi untuk diexport.');
+        return;
+    }
+
+    const headers = [
+        'TGL', 'NAMA AKUN', 'NO AKUN', 'KETERANGAN', 'DEBET', 'KREDIT', 
+        'SALDO', 'JP', 'BULAN', 'SN', 'POSISI', 'KEPALA AKUN', 'TAHUN'
+    ];
+
+    const csvLines = [];
+    csvLines.push(headers.map(h => `"${h}"`).join(','));
+
+    rows.forEach(tr => {
+        const cells = tr.querySelectorAll('td');
+        if (cells.length < 13) return;
+
+        const rowData = [
+            cells[0]?.innerText.trim() || '',
+            cells[1]?.innerText.trim() || '',
+            cells[2]?.innerText.trim() || '',
+            cells[3]?.querySelector('span:first-child')?.innerText.trim() || cells[3]?.innerText.trim() || '',
+            cleanNumberText(cells[4]?.innerText),
+            cleanNumberText(cells[5]?.innerText),
+            cleanNumberText(cells[6]?.innerText),
+            cells[7]?.innerText.trim() || '',
+            cells[8]?.innerText.trim() || '',
+            cells[9]?.innerText.trim() || '',
+            cells[10]?.innerText.trim() || '',
+            cells[11]?.innerText.trim() || '',
+            cells[12]?.innerText.trim() || ''
+        ];
+
+        csvLines.push(rowData.map(val => `"${String(val).replace(/"/g, '""')}"`).join(','));
+    });
+
+    // Tambahkan BOM untuk kompatibilitas penuh Microsoft Excel Windows
+    const blob = new Blob(["\uFEFF" + csvLines.join("\r\n")], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    link.href = url;
+    link.setAttribute('download', `Jurnal_Umum_Mirasa_${dateStr}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+};
+
+function cleanNumberText(text) {
+    if (!text) return '';
+    const clean = text.trim();
+    if (clean === '-') return '0';
+    return clean;
+}

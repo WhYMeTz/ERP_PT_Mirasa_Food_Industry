@@ -23,6 +23,22 @@
         </div>
 
         <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+            {{-- VIEW MODE TOGGLE PILLS --}}
+            <div class="view-mode-pill-group">
+                <a href="{{ request()->fullUrlWithQuery(['view' => 'voucher']) }}" 
+                   class="view-pill {{ $viewMode !== 'sheet' ? 'active' : '' }}"
+                   title="Tampilan ringkasan per voucher transaksi">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+                    <span>Mode Voucher</span>
+                </a>
+                <a href="{{ request()->fullUrlWithQuery(['view' => 'sheet']) }}" 
+                   class="view-pill {{ $viewMode === 'sheet' ? 'active' : '' }}"
+                   title="Tampilan lembar lajur kontinu multi-kolom seperti Excel">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                    <span>Lembar Lajur Klasik (Spreadsheet)</span>
+                </a>
+            </div>
+
             <a href="{{ route('keuangan.jurnal.create') }}" 
                class="btn" 
                style="font-size: 0.8rem; font-weight: 700; padding: 0.5rem 0.95rem; display: inline-flex; align-items: center; gap: 0.4rem; background: #0284c7; color: #ffffff; border-radius: 6px; text-decoration: none; box-shadow: 0 2px 4px rgba(2, 132, 199, 0.25);">
@@ -30,13 +46,15 @@
                 <span>+ Entri Jurnal Manual</span>
             </a>
 
-            <button type="button" 
-                    class="btn btn-secondary" 
-                    onclick="toggleExpandAll()" 
-                    style="font-size: 0.8rem; font-weight: 700; padding: 0.5rem 0.85rem; display: inline-flex; align-items: center; gap: 0.35rem;">
-                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-                <span id="textToggleExpandAll">Buka Semua Rincian</span>
-            </button>
+            @if ($viewMode !== 'sheet')
+                <button type="button" 
+                        class="btn btn-secondary" 
+                        onclick="toggleExpandAll()" 
+                        style="font-size: 0.8rem; font-weight: 700; padding: 0.5rem 0.85rem; display: inline-flex; align-items: center; gap: 0.35rem;">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                    <span id="textToggleExpandAll">Buka Semua Rincian</span>
+                </button>
+            @endif
 
             <a href="{{ route('keuangan.coa.index') }}" 
                class="btn btn-secondary" 
@@ -95,6 +113,7 @@
     {{-- KARTU FILTER TOOLBAR --}}
     <div class="jurnal-filter-card">
         <form method="GET" action="{{ route('keuangan.jurnal.index') }}" id="jurnalFilterForm">
+            <input type="hidden" name="view" value="{{ $viewMode }}">
             <div class="filter-grid">
                 <div class="filter-field" style="flex: 1; min-width: 220px;">
                     <label class="filter-label">Cari No. Jurnal / Ref / Keterangan</label>
@@ -162,8 +181,12 @@
         </form>
     </div>
 
-    {{-- TABEL JURNAL UMUM DENGAN EXPANDABLE SUB-ROWS --}}
-    <div class="jurnal-table-wrapper">
+    @if ($viewMode === 'sheet')
+        {{-- VIEW MODE: LEMBAR LAJUR CONTINUOUS SPREADSHEET (CV BAHTERA MANDIRI BERSAMA STYLE) --}}
+        @include('keuangan.jurnal.partials.sheet-view')
+    @else
+        {{-- TABEL JURNAL UMUM DENGAN EXPANDABLE SUB-ROWS --}}
+        <div class="jurnal-table-wrapper">
         <div style="overflow-x: auto;">
             <table class="jurnal-table">
                 <thead>
@@ -347,6 +370,7 @@
             </div>
         @endif
     </div>
+    @endif
 </div>
 
 {{-- MODAL DETAIL JURNAL POPUP --}}

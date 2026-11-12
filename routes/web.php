@@ -33,6 +33,7 @@ use App\Http\Controllers\Keuangan\KasMasukController;
 use App\Http\Controllers\Keuangan\JurnalController;
 use App\Http\Controllers\Keuangan\BukuBesarController;
 use App\Http\Controllers\Keuangan\VerifikasiPemakaianController;
+use App\Http\Controllers\Keuangan\LaporanKeuanganController;
 use App\Http\Controllers\Penjualan\SoController;
 use App\Http\Controllers\Penjualan\PengeluaranBarangController;
 use App\Http\Controllers\Penjualan\FakturPenjualanController;
@@ -540,6 +541,7 @@ Route::middleware('auth')->group(function () {
         Route::resource('bayar', BayarHutangController::class)->only(['index', 'create', 'store', 'show']);
 
         // 3. Kas & Rekening Bank
+        Route::get('kas-bank/rekening-koran', [KasBankController::class, 'rekeningKoran'])->name('kas_bank.rekening_koran')->middleware('role:kas_bank_view');
         Route::get('kas-bank/mutasi', [KasBankController::class, 'mutasi'])->name('kas_bank.mutasi')->middleware('role:kas_bank_view');
         Route::get('kas-bank', [KasBankController::class, 'index'])->name('kas_bank.index')->middleware('role:kas_bank_view');
         Route::post('kas-bank', [KasBankController::class, 'store'])->name('kas_bank.store')->middleware('role:kas_bank_manage');
@@ -582,5 +584,14 @@ Route::middleware('auth')->group(function () {
         Route::post('verifikasi-pemakaian/{id}/reject', [VerifikasiPemakaianController::class, 'reject'])
             ->name('verifikasi_pemakaian.reject')
             ->middleware('role:jurnal_view,coa_view,hutang_view,kas_bank_view');
+
+        // 9. Laporan Keuangan Komprehensif (Financial Statements)
+        Route::prefix('laporan')->name('laporan.')->middleware('role:jurnal_view,coa_view,hutang_view,kas_bank_view')->group(function () {
+            Route::get('/', [LaporanKeuanganController::class, 'index'])->name('index');
+            Route::get('laba-rugi', [LaporanKeuanganController::class, 'labaRugi'])->name('laba_rugi');
+            Route::get('neraca', [LaporanKeuanganController::class, 'neraca'])->name('neraca');
+            Route::get('neraca-saldo', [LaporanKeuanganController::class, 'neracaSaldo'])->name('neraca_saldo');
+            Route::get('arus-kas', [LaporanKeuanganController::class, 'arusKas'])->name('arus_kas');
+        });
     });
 });

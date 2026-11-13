@@ -104,7 +104,8 @@
                         $dayId = 'pck-day-' . $d['day'];
                     @endphp
 
-                    {{-- 1. BARIS DATA UTAMA --}}
+                    @if(!empty($d['is_hpp_final']))
+                    {{-- 1. BARIS DATA UTAMA RESMI (SUDAH DIFINALISASI FINANCE) --}}
                     <tr class="main-data-row" id="main-row-{{ $d['day'] }}">
                         {{-- Tanggal & Hari --}}
                         <td>
@@ -228,21 +229,33 @@
                                     <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                                 </button>
                                 <div id="{{ $pckMenuId }}" class="action-dropdown-menu">
-                                    <a href="{{ route('produksi.packaging.show', $d['primary_pack_id']) }}" class="action-dropdown-item">
-                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                                        <span>Lihat Detail Dokumen</span>
+                                    <a href="{{ route('produksi.packaging.show-hpp', $d['primary_pack_id']) }}" class="action-dropdown-item">
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                                        <span>Lihat Lembar HPP &amp; Biaya</span>
                                     </a>
-                                    @if(Auth::user()->canCreateProduksi() || Auth::user()->canCreatePackaging())
-                                        <a href="{{ route('produksi.packaging.adjust', $d['primary_pack_id']) }}" class="action-dropdown-item">
-                                            <svg width="14" height="14" fill="none" stroke="#d97706" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                                            <span>Adjustment HPP</span>
-                                        </a>
+                                    <a href="{{ route('produksi.packaging.show', $d['primary_pack_id']) }}" class="action-dropdown-item">
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                        <span>Bukti Serah Terima Fisik</span>
+                                    </a>
+                                    @if(empty($d['is_hpp_final']))
+                                        @if(Auth::user()->canCreateProduksi() || Auth::user()->canCreatePackaging())
+                                            <a href="{{ route('produksi.packaging.adjust', $d['primary_pack_id']) }}" class="action-dropdown-item">
+                                                <svg width="14" height="14" fill="none" stroke="#d97706" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                                <span>Adjustment HPP</span>
+                                            </a>
+                                        @endif
+                                        <div class="action-dropdown-divider"></div>
+                                        <button type="button" class="action-dropdown-item danger-item" onclick="openVoidPackagingModal({{ $d['primary_pack_id'] }}, '{{ $d['primary_pack_no'] }}', '{{ addslashes($d['primary_product_nm'] ?? '') }}')">
+                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                            <span>Batalkan (Void)</span>
+                                        </button>
+                                    @else
+                                        <div class="action-dropdown-divider"></div>
+                                        <div style="padding: 0.35rem 0.75rem; font-size: 0.7rem; color: #64748b; background: #f8fafc; display: flex; align-items: center; gap: 5px;">
+                                            <svg width="12" height="12" fill="none" stroke="#059669" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                                            <span>Terkunci (HPP Final)</span>
+                                        </div>
                                     @endif
-                                    <div class="action-dropdown-divider"></div>
-                                    <button type="button" class="action-dropdown-item danger-item" onclick="openVoidPackagingModal({{ $d['primary_pack_id'] }}, '{{ $d['primary_pack_no'] }}', '{{ addslashes($d['primary_product_nm'] ?? '') }}')">
-                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                        <span>Batalkan (Void)</span>
-                                    </button>
                                 </div>
                             @else
                                 <span style="color: #cbd5e1;">-</span>
@@ -254,6 +267,213 @@
                     <tr class="accordion-detail-row" id="detail-row-{{ $d['day'] }}">
                         <td colspan="10" class="accordion-detail-cell">
                             <div class="cost-breakdown-grid">
+                                
+                                {{-- KOMPARTEMEN 1: BAHAN KERIPIK & BUMBU BALADO --}}
+                                <div class="mini-cost-card">
+                                    <div class="mini-cost-header">
+                                        <div class="mini-cost-title">
+                                            <span>1. Curah &amp; Bumbu</span>
+                                        </div>
+                                        <span class="mini-cost-badge" style="background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0;">Bahan Baku</span>
+                                    </div>
+                                    <div class="mini-cost-list">
+                                        <div class="mini-cost-row">
+                                            <span>Bahan Keripik Curah:</span>
+                                            <strong>{{ number_format($d['wip_kg_total'], 1, ',', '.') }} kg</strong>
+                                        </div>
+                                        <div class="mini-cost-row">
+                                            <span>Nilai Curah (HPP):</span>
+                                            <strong style="color: #0284c7;">Rp {{ number_format($d['total_biaya_wip'], 0, ',', '.') }}</strong>
+                                        </div>
+                                        @if(($d['balado_kg'] ?? 0) > 0 || ($d['balado_nilai'] ?? 0) > 0)
+                                            <div class="mini-cost-row">
+                                                <span>Bumbu Balado:</span>
+                                                <strong>{{ number_format($d['balado_kg'] ?? 0, 1, ',', '.') }} kg &bull; Rp {{ number_format($d['balado_nilai'] ?? 0, 0, ',', '.') }}</strong>
+                                            </div>
+                                        @endif
+                                    </div>
+                                </div>
+
+                                {{-- KOMPARTEMEN 2: BAHAN KEMASAN (DUS, PLASTIK, LAKBAN) --}}
+                                <div class="mini-cost-card">
+                                    <div class="mini-cost-header">
+                                        <div class="mini-cost-title">
+                                            <span>2. Bahan Kemasan</span>
+                                        </div>
+                                        <span class="mini-cost-badge" style="background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe;">Packaging</span>
+                                    </div>
+                                    <div class="mini-cost-list">
+                                        <div class="mini-cost-row">
+                                            <span>Karton Box:</span>
+                                            <strong>{{ number_format($d['karton_pcs_total'], 0, ',', '.') }} pcs &bull; Rp {{ number_format($d['karton_nilai'] ?? 0, 0, ',', '.') }}</strong>
+                                        </div>
+                                        <div class="mini-cost-row">
+                                            <span>Plastik / Roll Kemas:</span>
+                                            <strong>{{ number_format($d['plastik_pcs_total'], 0, ',', '.') }} pcs &bull; Rp {{ number_format($d['roll_nilai'] ?? 0, 0, ',', '.') }}</strong>
+                                        </div>
+                                        <div class="mini-cost-row">
+                                            <span>Lakban Kemasan:</span>
+                                            <strong>Rp {{ number_format($d['lakban_nilai'] ?? 0, 0, ',', '.') }}</strong>
+                                        </div>
+                                        <div class="mini-cost-divider"></div>
+                                        <div class="mini-cost-row">
+                                            <span style="font-weight: 700;">Total Biaya Kemas:</span>
+                                            <strong style="color: #0284c7;">Rp {{ number_format($d['total_biaya_kemasan'], 0, ',', '.') }}</strong>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {{-- KOMPARTEMEN 3: UPAH TENAGA KERJA KEMAS & OVERHEAD --}}
+                                <div class="mini-cost-card">
+                                    <div class="mini-cost-header">
+                                        <div class="mini-cost-title">
+                                            <span>3. Upah &amp; Overhead</span>
+                                        </div>
+                                        <span class="mini-cost-badge" style="background: #faf5ff; color: #6b21a8; border: 1px solid #e9d5ff;">Biaya Kemas</span>
+                                    </div>
+                                    <div class="mini-cost-list">
+                                        <div class="mini-cost-row">
+                                            <span>Upah Borongan Packing:</span>
+                                            <strong style="color: #6b21a8;">Rp {{ number_format($d['total_biaya_tenaga_kerja'], 0, ',', '.') }}</strong>
+                                        </div>
+                                        <div class="mini-cost-row">
+                                            <span>Biaya Lain-Lain Kemas:</span>
+                                            <strong>Rp {{ number_format($d['total_biaya_lain'], 0, ',', '.') }}</strong>
+                                        </div>
+                                        <div class="mini-cost-divider"></div>
+                                        <div class="mini-cost-row">
+                                            <span style="font-weight: 800; color: #0f172a;">Total Biaya Pengemasan:</span>
+                                            <strong style="font-size: 0.9rem; color: #0f172a;">Rp {{ number_format($d['total_biaya_produksi'], 0, ',', '.') }}</strong>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {{-- KOMPARTEMEN 4: REKAPITULASI HPP PER KARTON & PCS --}}
+                                <div class="mini-cost-card" style="background: #f0fdf4; border: 1px solid #bbf7d0;">
+                                    <div class="mini-cost-header">
+                                        <div class="mini-cost-title">
+                                            <span style="color: #166534;">4. HPP Barang Jadi</span>
+                                        </div>
+                                        <span class="mini-cost-badge" style="background: #dcfce7; color: #15803d; border: 1px solid #86efac;">Final FG</span>
+                                    </div>
+                                    <div class="mini-cost-list">
+                                        <div class="mini-cost-row">
+                                            <span>Hasil Kemas:</span>
+                                            <strong style="color: #166534;">{{ number_format($d['hasil_karton'], 0, ',', '.') }} Karton ({{ number_format($d['hasil_pcs'], 0, ',', '.') }} Pcs)</strong>
+                                        </div>
+                                        <div class="mini-cost-row" style="background: #ffffff; padding: 0.35rem 0.5rem; border-radius: 4px; border: 1px solid #bbf7d0; margin: 0.25rem 0;">
+                                            <span style="font-weight: 800; color: #166534;">HPP per Karton:</span>
+                                            <strong style="font-family: monospace; font-size: 0.95rem; color: #15803d;">Rp {{ number_format($d['hpp_per_karton'], 0, ',', '.') }}</strong>
+                                        </div>
+                                        <div class="mini-cost-row">
+                                            <span>HPP per Pcs:</span>
+                                            <strong style="font-family: monospace; font-size: 0.85rem; color: #166534;">Rp {{ number_format($d['hpp_per_pcs'], 0, ',', '.') }}</strong>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </td>
+                    </tr>
+                    @else
+                    {{-- 3. BARIS PENGEMASAN FISIK TERCATAT, LEMBAR HPP BELUM DIFINALISASI FINANCE (IDENTIK HPP PRODUKSI) --}}
+                    @php
+                        $primaryPck = $d['pack_records']->first();
+                        $canCalculateThis = $primaryPck ? $primaryPck->canCalculateHpp() : true;
+                        $prodNoThis = $primaryPck?->produksi?->produksi_no ?? ($d['primary_produksi_no'] ?? '-');
+                        $wipHppThis = $primaryPck?->produksi?->hpp_per_kg ?? 0;
+                        $pendingPckMenuId = 'dropdown-pck-pending-' . $d['primary_pack_id'];
+                    @endphp
+                    <tr class="main-data-row" style="background: #fffdf5; border-bottom: 1px solid #fef3c7;">
+                        {{-- Tanggal & Hari --}}
+                        <td>
+                            <div style="font-weight: 700; color: #0f172a; font-size: 0.825rem;">
+                                {{ $d['hari_nm'] }}, {{ date('d M Y', strtotime($d['date'])) }}
+                            </div>
+                            <div style="display: flex; gap: 0.35rem; align-items: center; margin-top: 0.2rem;">
+                                <span style="font-size: 0.65rem; font-weight: 700; padding: 0.1rem 0.35rem; border-radius: 3px; background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe;">
+                                    {{ $d['count_dokumen'] }} Dokumen
+                                </span>
+                                <span style="font-size: 0.7rem; color: #64748b;">
+                                    Tgl {{ $d['day'] }}
+                                </span>
+                            </div>
+                        </td>
+
+                        {{-- Pesan Status Informatif: Colspan 8 --}}
+                        <td colspan="8" style="padding: 0.65rem 0.85rem; vertical-align: middle;">
+                            <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap;">
+                                <div style="display: flex; align-items: center; gap: 0.6rem;">
+                                    <span style="display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: #fef3c7; color: #b45309; font-size: 0.75rem; font-weight: 800; flex-shrink: 0; border: 1px solid #fde68a;">
+                                        ⏳
+                                    </span>
+                                    <div>
+                                        <div style="font-size: 0.825rem; font-weight: 700; color: #92400e;">
+                                            Hasil pengemasan fisik tercatat (Dokumen #{{ $d['primary_pack_no'] }} &bull; {{ $d['primary_product_nm'] }} &bull; {{ number_format($d['hasil_karton'], 0, ',', '.') }} Ktn), belum dilakukan finalisasi HPP.
+                                        </div>
+                                        <div style="font-size: 0.725rem; color: #b45309; margin-top: 2px;">
+                                            Data biaya dan HPP akan muncul ditabel ini setelah dilakukan penarikan data dan perhitungan HPP.
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {{-- Tombol Aksi Quick Tarik HPP --}}
+                                @if($canCalculateThis)
+                                    <button type="button" 
+                                            onclick="openFinalizeHppModal({{ $d['primary_pack_id'] }}, '{{ $d['primary_pack_no'] }}', '{{ addslashes($d['primary_product_nm']) }}', '{{ $prodNoThis }}', '{{ number_format($wipHppThis, 0, ',', '.') }}')"
+                                            style="font-size: 0.75rem; font-weight: 700; color: #0284c7; background: #f0f9ff; border: 1px solid #bae6fd; padding: 0.35rem 0.75rem; border-radius: 5px; cursor: pointer; display: inline-flex; align-items: center; gap: 0.35rem; white-space: nowrap; transition: all 0.15s ease;">
+                                        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                                        <span>Tarik &amp; Finalisasi HPP FG</span>
+                                    </button>
+                                @else
+                                    <button type="button" 
+                                            onclick="openWarningProdHppModal('{{ $d['primary_pack_no'] }}', '{{ $prodNoThis }}')"
+                                            style="font-size: 0.75rem; font-weight: 700; color: #b45309; background: #fef3c7; border: 1px solid #fde68a; padding: 0.35rem 0.75rem; border-radius: 5px; cursor: pointer; display: inline-flex; align-items: center; gap: 0.35rem; white-space: nowrap; transition: all 0.15s ease;"
+                                            title="Klik untuk info detail">
+                                        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                                        <span>⚠️ Menunggu HPP Produksi ({{ $prodNoThis }})</span>
+                                    </button>
+                                @endif
+                            </div>
+                        </td>
+
+                        {{-- Aksi Dropdown --}}
+                        <td style="text-align: center; position: relative; vertical-align: middle;">
+                            <button type="button" class="btn-action-trigger" onclick="toggleSmartActionDropdown(this, event, '{{ $pendingPckMenuId }}')">
+                                <span>Aksi</span>
+                                <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                            </button>
+                            <div id="{{ $pendingPckMenuId }}" class="action-dropdown-menu">
+                                @if($canCalculateThis)
+                                    <button type="button" class="action-dropdown-item" style="color: #0284c7; font-weight: 700; background: #f0f9ff;" 
+                                            onclick="openFinalizeHppModal({{ $d['primary_pack_id'] }}, '{{ $d['primary_pack_no'] }}', '{{ addslashes($d['primary_product_nm']) }}', '{{ $prodNoThis }}', '{{ number_format($wipHppThis, 0, ',', '.') }}')">
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                                        <span>Tarik &amp; Finalisasi HPP FG</span>
+                                    </button>
+                                @else
+                                    <button type="button" class="action-dropdown-item" style="color: #b45309; font-weight: 700; background: #fffbeb;" 
+                                            onclick="openWarningProdHppModal('{{ $d['primary_pack_no'] }}', '{{ $prodNoThis }}')">
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                                        <span>⚠️ Info HPP Produksi Belum Ada</span>
+                                    </button>
+                                @endif
+                                <a href="{{ route('produksi.packaging.show-hpp', $d['primary_pack_id']) }}" class="action-dropdown-item">
+                                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                                    <span>Lihat Lembar HPP &amp; Biaya</span>
+                                </a>
+                                <a href="{{ route('produksi.packaging.show', $d['primary_pack_id']) }}" class="action-dropdown-item">
+                                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                    <span>Bukti Serah Terima Fisik</span>
+                                </a>
+                                <div class="action-dropdown-divider"></div>
+                                <button type="button" class="action-dropdown-item danger-item" onclick="openVoidPackagingModal({{ $d['primary_pack_id'] }}, '{{ $d['primary_pack_no'] }}', '{{ addslashes($d['primary_product_nm'] ?? '') }}')">
+                                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                    <span>Batalkan (Void)</span>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    @endif
                                 
                                 {{-- KOMPARTEMEN 1: BAHAN KERIPIK & BUMBU BALADO --}}
                                 <div class="mini-cost-card">

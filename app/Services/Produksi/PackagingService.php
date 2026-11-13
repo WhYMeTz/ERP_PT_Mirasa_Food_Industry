@@ -83,12 +83,22 @@ class PackagingService
 
         $totalDokumen = (clone $base)->count();
         $totalKarton = (float) (clone $base)->where('status_cd', 'POSTED')->sum('hasil_karton_qty');
+        $totalPcs = (float) (clone $base)->where('status_cd', 'POSTED')->sum('hasil_pcs_qty');
+
+        $postedIds = (clone $base)->where('status_cd', 'POSTED')->pluck('pack_id');
+        $totalWipKg = (float) DatPackagingDtl::whereIn('pack_id', $postedIds)
+            ->where('deleted_st', false)
+            ->where('kategori_bahan', 'WIP')
+            ->sum('qty_aktual');
+
         $totalBiaya = (float) (clone $base)->where('status_cd', 'POSTED')->sum('total_biaya_produksi');
         $rataHppKarton = $totalKarton > 0 ? round($totalBiaya / $totalKarton, 2) : 0;
 
         return [
             'total_dokumen'        => $totalDokumen,
             'total_karton'         => $totalKarton,
+            'total_wip_kg'         => $totalWipKg,
+            'total_pcs'            => $totalPcs,
             'total_biaya_produksi' => $totalBiaya,
             'rata_hpp_karton'      => $rataHppKarton,
         ];
@@ -316,9 +326,10 @@ class PackagingService
             if ($isiPerKarton <= 0) $isiPerKarton = 1;
             $hasilPcs = $hasilKarton * $isiPerKarton;
 
-            // Generate Nomor Dokumen: PCK-YYYYMM-0001
-            $prefix = 'PCK-' . date('Ym', strtotime($packTgl)) . '-';
-            $packNo = $this->codeGenerator->generate('dat_packaging_hdr', 'pack_no', $prefix, 4);
+            // Generate Nomor Dokumen Standar Resmi PT Mirasa: {seq:3}/PCK/MFI/{month}/{year}
+            $packNo = !empty($data['pack_no']) 
+                ? trim($data['pack_no']) 
+                : $this->codeGenerator->generatePackagingNo($packTgl);
 
             // Generate Nomor Batch FG jika kosong
             $batchNo = !empty($data['batch_no']) 
@@ -451,12 +462,19 @@ class PackagingService
             $header = DatPackagingHdr::create([
                 'pack_no'                  => $packNo,
                 'pack_tgl'                 => $packTgl,
+                'shift'                    => $data['shift'] ?? 'A',
+                'operator_nama'            => $data['operator_nama'] ?? null,
+                'karyawan_id'              => !empty($data['karyawan_id']) ? (int) $data['karyawan_id'] : null,
+                'jumlah_personil'          => (int) ($data['jumlah_personil'] ?? 5),
+                'jumlah_mesin'             => (int) ($data['jumlah_mesin'] ?? 2),
                 'gudang_id'                => $gudangId,
                 'barang_jadi_id'           => $barangJadiId,
                 'bom_id'                   => $bomId,
                 'produksi_id'              => $prodId,
                 'target_karton_qty'        => $targetKarton,
                 'hasil_karton_qty'         => $hasilKarton,
+                'hasil_pack_qty'           => (float) ($data['hasil_pack_qty'] ?? 0),
+                'satuan_hasil'             => $data['satuan_hasil'] ?? 'KARTON',
                 'isi_per_karton_pcs'       => $isiPerKarton,
                 'gramatur_gr'              => (float) ($data['gramatur_gr'] ?? 0),
                 'hasil_pcs_qty'            => $hasilPcs,
@@ -473,6 +491,9 @@ class PackagingService
                 'total_biaya_produksi'     => $totalBiayaProduksi,
                 'hpp_per_karton'           => $hppPerKarton,
                 'hpp_per_pcs'              => $hppPerPcs,
+                'is_hpp_final'             => false,
+                'hpp_finalized_at'         => null,
+                'hpp_finalized_by'         => null,
                 'catatan_txt'              => $data['catatan_txt'] ?? null,
                 'status_cd'                => 'POSTED',
                 'created_by'               => $userName ?? auth()->user()?->name ?? 'System',
@@ -646,6 +667,82 @@ class PackagingService
     }
 
     /**
+     * Memfinalkan dan Menghitung Nilai Riil HPP Pengemasan (Packaging Final Costing).
+     * Guard Mutlak: Menolak kalkulasi jika Dokumen Produksi Asal belum memiliki HPP (belum difinalkan).
+     */
+    public function finalizeHppPackaging(int $packId, ?string $userName = null): DatPackagingHdr
+    {
+        return DB::transaction(function () use ($packId, $userName) {
+            $header = DatPackagingHdr::with(['details.barang.satuanDasar', 'barangJadi', 'produksi'])->findOrFail($packId);
+
+            if ($header->status_cd === 'VOID') {
+                throw new Exception("Dokumen {$header->pack_no} dalam status dibatalkan (VOID) dan tidak dapat difinalkan.");
+            }
+
+            // Validasi Prerequisite Guard: Pastikan HPP Produksi Asal sudah dihitung jika bertaut tiket produksi
+            if ($header->produksi_id) {
+                $prod = $header->produksi;
+                if (!$prod || (float) ($prod->hpp_per_kg ?? 0) <= 0) {
+                    $prodNo = $prod ? $prod->produksi_no : ('PRD-ID-' . $header->produksi_id);
+                    throw new Exception("HPP Produksi Asal [{$prodNo}] belum dihitung/difinalkan. Harap selesaikan kalkulasi HPP Produksi terlebih dahulu sebelum menghitung HPP Packing.");
+                }
+
+                // Tarik Nilai HPP WIP Riil dari SPK Produksi
+                $hppPerKgWip = (float) $prod->hpp_per_kg;
+                $newTotalWip = 0;
+
+                foreach ($header->details as $dtl) {
+                    if (strtoupper($dtl->kategori_bahan) === 'WIP') {
+                        $dtl->harga_satuan = $hppPerKgWip;
+                        $dtl->subtotal_nilai = round((float) $dtl->qty_aktual * $hppPerKgWip, 2);
+                        $dtl->updated_by = $userName ?? auth()->user()?->name ?? 'System';
+                        $dtl->save();
+                        $newTotalWip += (float) $dtl->subtotal_nilai;
+                    }
+                }
+                $header->total_biaya_wip = $newTotalWip;
+            }
+
+            // Hitung Ulang Total Biaya & HPP Akhir Barang Jadi (FG)
+            $totalBiaya = round(
+                (float) $header->total_biaya_wip +
+                (float) $header->total_biaya_kemasan +
+                (float) $header->total_biaya_tenaga_kerja +
+                (float) $header->total_biaya_lain,
+                2
+            );
+
+            $hasilKarton = (float) $header->hasil_karton_qty;
+            $hasilPcs = (float) $header->hasil_pcs_qty;
+
+            $hppKarton = $hasilKarton > 0 ? round($totalBiaya / $hasilKarton, 4) : 0;
+            $hppPcs = $hasilPcs > 0 ? round($totalBiaya / $hasilPcs, 4) : 0;
+
+            $header->total_biaya_produksi = $totalBiaya;
+            $header->hpp_per_karton = $hppKarton;
+            $header->hpp_per_pcs = $hppPcs;
+            $header->is_hpp_final = true;
+            $header->hpp_finalized_at = now();
+            $header->hpp_finalized_by = $userName ?? auth()->user()?->name ?? 'System';
+            $header->updated_by = $userName ?? auth()->user()?->name ?? 'System';
+            $header->save();
+
+            // Selaraskan Nilai Modal Persediaan Barang Jadi (FG) di Gudang
+            if (!empty($header->batch_no) && $header->barang_jadi_id > 0) {
+                DatStokBatch::where('barang_id', $header->barang_jadi_id)
+                    ->where('batch_no', $header->batch_no)
+                    ->where('deleted_st', false)
+                    ->update([
+                        'harga_satuan' => $hppKarton,
+                        'updated_by'   => $userName ?? auth()->user()?->name ?? 'System',
+                    ]);
+            }
+
+            return $header;
+        });
+    }
+
+    /**
      * Membatalkan (Void) Dokumen Pengemasan & Mengembalikan Mutasi Stok.
      */
     public function voidPackaging(int $packId, string $reason, ?string $userName = null): DatPackagingHdr
@@ -655,6 +752,10 @@ class PackagingService
 
             if ($header->status_cd === 'VOID') {
                 throw new Exception("Dokumen {$header->pack_no} sudah dalam status dibatalkan (VOID).");
+            }
+
+            if ($header->isHppFinal()) {
+                throw new Exception("Dokumen {$header->pack_no} tidak dapat dibatalkan (VOID) karena Harga Pokok Produksi (HPP) telah difinalisasi oleh Finance.");
             }
 
             // 1. Tarik kembali stok Barang Jadi (FG) yang sebelumnya ditambah
@@ -726,7 +827,8 @@ class PackagingService
         $query = DatPackagingHdr::with([
             'barangJadi.satuanDasar',
             'gudang',
-            'details.barang.satuanDasar'
+            'details.barang.satuanDasar',
+            'produksi'
         ])
             ->whereBetween('pack_tgl', [$startDate->toDateString(), $endDate->toDateString()])
             ->where('deleted_st', false)
@@ -918,15 +1020,32 @@ class PackagingService
                 $batchList = $dayRecords->pluck('batch_no')->unique()->filter()->values()->toArray();
                 $packNoList = $dayRecords->pluck('pack_no')->unique()->filter()->values()->toArray();
 
+                $isAllFinal = $dayRecords->every(fn($r) => (bool) $r->is_hpp_final);
+                $hasPending = $dayRecords->contains(fn($r) => !(bool) $r->is_hpp_final);
+                $hasFinal = $dayRecords->contains(fn($r) => (bool) $r->is_hpp_final);
+                $isPartial = $hasPending && $hasFinal;
+                $pendingRecords = $dayRecords->filter(fn($r) => !(bool) $r->is_hpp_final)->values();
+                $finalizedRecords = $dayRecords->filter(fn($r) => (bool) $r->is_hpp_final)->values();
+                $canCalculateAll = $pendingRecords->isNotEmpty() ? $pendingRecords->every(fn($r) => $r->canCalculateHpp()) : true;
+
                 $days[] = [
                     'day'                     => $day,
                     'date'                    => $dateStr,
                     'hari_nm'                 => $hariNm,
                     'has_data'                => true,
+                    'is_hpp_final'            => $isAllFinal,
+                    'is_partial'              => $isPartial,
+                    'has_pending'             => $hasPending,
+                    'can_calculate_hpp'       => $canCalculateAll,
+                    'pending_count'           => $pendingRecords->count(),
+                    'finalized_count'         => $finalizedRecords->count(),
+                    'pending_records'         => $pendingRecords,
+                    'finalized_records'       => $finalizedRecords,
                     'count_dokumen'           => $dayRecords->count(),
                     'pack_records'            => $dayRecords,
                     'primary_pack_id'         => $dayRecords->first()->pack_id,
                     'primary_pack_no'         => $dayRecords->first()->pack_no,
+                    'primary_produksi_no'     => $dayRecords->first()->produksi?->produksi_no,
                     'pack_no_list'            => $packNoList,
                     'product_names'           => $productNames,
                     'primary_product_nm'      => !empty($productNames) ? implode(', ', $productNames) : '-',
@@ -1397,6 +1516,9 @@ class PackagingService
             $header->total_biaya_produksi = $newTotalBiaya;
             $header->hpp_per_karton = $newHppKarton;
             $header->hpp_per_pcs = $newHppPcs;
+            $header->is_hpp_final = true;
+            $header->hpp_finalized_at = now();
+            $header->hpp_finalized_by = $userId;
             $header->version_no = ((int) $header->version_no) + 1;
             $header->updated_by = $userId;
             $header->save();

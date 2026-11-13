@@ -764,6 +764,52 @@ class CodeGeneratorService
     }
 
     /**
+     * Generate Nomor Dokumen Pengemasan Barang Jadi (Packaging) Standar PT Mirasa Food Industry:
+     * Format Standar Korporat: {seq:3}/PCK/MFI/{month}/{year}
+     * Contoh: 001/PCK/MFI/11/26
+     */
+    public function generatePackagingNo(?string $date = null, ?int $excludePackId = null): string
+    {
+        $timestamp = strtotime($date ?? date('Y-m-d'));
+        $month = date('m', $timestamp);
+        $year = date('y', $timestamp);
+        $suffix = "/PCK/MFI/{$month}/{$year}";
+
+        $query = DB::table('dat_packaging_hdr')
+            ->where('pack_no', 'LIKE', '%' . $suffix);
+
+        if ($excludePackId) {
+            $query->where('pack_id', '!=', $excludePackId);
+        }
+
+        $existing = $query->pluck('pack_no');
+
+        $maxNumber = 0;
+        $regex = '/^(\d+)\/PCK\/MFI\/' . $month . '\/' . $year . '$/i';
+
+        foreach ($existing as $packNo) {
+            if (preg_match($regex, trim((string) $packNo), $matches)) {
+                $num = (int) $matches[1];
+                if ($num > $maxNumber) {
+                    $maxNumber = $num;
+                }
+            }
+        }
+
+        do {
+            $maxNumber++;
+            $generated = str_pad((string) $maxNumber, 3, '0', STR_PAD_LEFT) . $suffix;
+            $checkQuery = DB::table('dat_packaging_hdr')->where('pack_no', $generated);
+            if ($excludePackId) {
+                $checkQuery->where('pack_id', '!=', $excludePackId);
+            }
+            $exists = $checkQuery->exists();
+        } while ($exists);
+
+        return $generated;
+    }
+
+    /**
      * Alias untuk generateProduksiNo
      */
     public function generateKodeProduksi(?string $date = null): string

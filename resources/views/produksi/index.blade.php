@@ -3,7 +3,7 @@
 @section('title', 'Modul Produksi & Manufaktur - PT Mirasa Food Industry')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/produksi/produksi-index.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/produksi/produksi-index.css') }}?v={{ filemtime(public_path('css/produksi/produksi-index.css')) }}">
 @endpush
 
 @section('content')
@@ -208,13 +208,19 @@
         </div>
             {{-- VIEW 1: DAFTAR DOKUMEN PRODUKSI (STANDAR MANUFAKTUR ERP - 1 BARIS PER NOMOR PRODUKSI) --}}
             <div style="overflow-x: auto;">
-                <table style="width: 100%; border-collapse: collapse; margin: 0; font-size: 0.85rem;">
-                    <thead style="background: #f8fafc; color: #475569; font-weight: 700; border-bottom: 2px solid #e2e8f0;">
+                <table class="table-prod-main">
+                    <thead>
                         <tr>
                             <th style="padding: 0.75rem 1rem; width: 45px; text-align: center;">No</th>
                             <th style="padding: 0.75rem 1rem; min-width: 180px;">Dokumen &amp; Tanggal</th>
                             <th style="padding: 0.75rem 1rem; min-width: 150px;">Gudang Simpan</th>
-                            <th style="padding: 0.75rem 1rem; min-width: 380px;">Rincian Hasil Olahan Fisik</th>
+                            <th style="padding: 0.75rem 0.85rem; min-width: 480px;">
+                                <div class="prod-item-header-grid">
+                                    <span class="sub-col-title">Varian Produk (WIP)</span>
+                                    <span class="sub-col-title">Output Fisik</span>
+                                    <span class="sub-col-title">Sisa Gudang</span>
+                                </div>
+                            </th>
                             <th style="padding: 0.75rem 1rem; min-width: 120px; text-align: right;">Total Berat</th>
                             <th style="padding: 0.75rem 1rem; min-width: 130px; text-align: center;">Status Kalkulasi HPP</th>
                             <th style="padding: 0.75rem 1rem; width: 95px; text-align: right;">Aksi</th>
@@ -230,7 +236,7 @@
                                 $totalDocKg = (float) $prod->details->sum('qty_kg');
                                 $hasHpp = (float) ($prod->hpp_per_kg ?? 0) > 0;
                             @endphp
-                            <tr style="border-bottom: 1px solid #f1f5f9;">
+                            <tr class="prod-main-row">
                                 {{-- 1. NO --}}
                                 <td style="padding: 0.75rem 1rem; text-align: center; color: #64748b; font-size: 0.85rem; vertical-align: top;">
                                     {{ $produksiList->firstItem() + $idx }}
@@ -292,60 +298,58 @@
                                     @endif
                                 </td>
 
-                                {{-- 4. RINCIAN HASIL OLAHAN FISIK (SUB-TABLE TABULAR TERTATA) --}}
-                                <td style="padding: 0.5rem 0.75rem; vertical-align: top;">
-                                    <div class="prod-subtable-wrapper">
-                                        <table class="prod-subtable">
-                                            <tbody>
-                                                @forelse($prod->details as $item)
-                                                    @php
-                                                        $barang = $item->barang;
-                                                        $satuanNm = strtoupper(trim($item->satuan_cd ?: ($barang?->satuan?->satuan_nm ?? 'KG')));
-                                                        $qtyTampil = $item->qty_hasil > 0 ? (float) $item->qty_hasil : (float) $item->qty_kg;
-                                                        $qtyKg = (float) $item->qty_kg;
-                                                        $sisaStok = (float) ($item->sisa_stok ?? $item->qty_kg);
-                                                        $isDifferentUnit = ($satuanNm !== 'KG' && $satuanNm !== '') && abs($qtyTampil - $qtyKg) > 0.001;
-                                                    @endphp
-                                                    <tr>
-                                                        <td class="col-name">
-                                                            <span class="item-name">{{ $barang?->barang_nm ?? '-' }}</span>
-                                                            @if($barang?->barang_cd)
-                                                                <span class="item-code">{{ $barang->barang_cd }}</span>
-                                                            @endif
-                                                            @if(!empty($item->batch_no) && $item->batch_no !== $prod->batch_wip_no)
-                                                                <span class="item-batch">B: {{ $item->batch_no }}</span>
-                                                            @endif
-                                                        </td>
-                                                        <td class="col-qty">
-                                                            @if($isDifferentUnit)
-                                                                <span class="qty-main">{{ number_format($qtyTampil, 0, ',', '.') }}</span>
-                                                                <span class="qty-unit">{{ $satuanNm }}</span>
-                                                                <span class="qty-kg-alt">({{ number_format($qtyKg, 2, ',', '.') }} kg)</span>
-                                                            @else
-                                                                <span class="qty-main">{{ number_format($qtyKg, 2, ',', '.') }}</span>
-                                                                <span class="qty-unit">kg</span>
-                                                            @endif
-                                                        </td>
-                                                        <td class="col-stock">
-                                                            @if($sisaStok > 0)
-                                                                <span class="stock-badge" title="Sisa persediaan fisik">
-                                                                    <span class="stock-dot"></span>
-                                                                    <span>Sisa {{ number_format($sisaStok, $isDifferentUnit ? 0 : 1, ',', '.') }} {{ $isDifferentUnit ? $satuanNm : 'kg' }}</span>
-                                                                </span>
-                                                            @else
-                                                                <span class="stock-empty" title="Stok fisik habis">Habis</span>
-                                                            @endif
-                                                        </td>
-                                                    </tr>
-                                                @empty
-                                                    <tr>
-                                                        <td colspan="3" style="color: #94a3b8; font-style: italic; font-size: 0.8rem; padding: 0.5rem 0.75rem;">
-                                                            Tidak ada rincian output
-                                                        </td>
-                                                    </tr>
-                                                @endforelse
-                                            </tbody>
-                                        </table>
+                                {{-- 4. RINCIAN HASIL OLAHAN FISIK (FORMAT LIST BERSIH, TERSTRUKTUR & NYAMAN DIBACA) --}}
+                                <td style="padding: 0.5rem 0.85rem; vertical-align: top;">
+                                    <div class="prod-item-list">
+                                        @forelse($prod->details as $item)
+                                            @php
+                                                $barang = $item->barang;
+                                                $satuanNm = strtoupper(trim($item->satuan_cd ?: ($barang?->satuan?->satuan_nm ?? 'KG')));
+                                                $qtyTampil = $item->qty_hasil > 0 ? (float) $item->qty_hasil : (float) $item->qty_kg;
+                                                $qtyKg = (float) $item->qty_kg;
+                                                $sisaStok = (float) ($item->sisa_stok ?? $item->qty_kg);
+                                                $isDifferentUnit = ($satuanNm !== 'KG' && $satuanNm !== '') && abs($qtyTampil - $qtyKg) > 0.001;
+                                            @endphp
+                                            <div class="prod-item-row">
+                                                {{-- KOLOM 1: NAMA BARANG & KODE (RATA KIRI) --}}
+                                                <div class="prod-item-left">
+                                                    <span class="prod-item-name">{{ $barang?->barang_nm ?? '-' }}</span>
+                                                    @if($barang?->barang_cd)
+                                                        <span class="prod-item-code">{{ $barang->barang_cd }}</span>
+                                                    @endif
+                                                    @if(!empty($item->batch_no) && $item->batch_no !== $prod->batch_wip_no)
+                                                        <span class="prod-item-batch">B: {{ $item->batch_no }}</span>
+                                                    @endif
+                                                </div>
+
+                                                {{-- KOLOM 2: OUTPUT FISIK (RATA KIRI) --}}
+                                                <div class="prod-item-qty">
+                                                    @if($isDifferentUnit)
+                                                        <strong>{{ number_format($qtyTampil, 0, ',', '.') }}</strong>
+                                                        <span class="unit-text">{{ $satuanNm }}</span>
+                                                        <span class="kg-alt">({{ number_format($qtyKg, 2, ',', '.') }} kg)</span>
+                                                    @else
+                                                        <strong>{{ number_format($qtyKg, 2, ',', '.') }}</strong>
+                                                        <span class="unit-text">kg</span>
+                                                    @endif
+                                                </div>
+
+                                                {{-- KOLOM 3: SISA STOK GUDANG (RATA KIRI) --}}
+                                                <div class="prod-item-stock">
+                                                    @if($sisaStok > 0)
+                                                        <span class="badge-stock-pill" title="Sisa persediaan fisik di gudang">
+                                                            Sisa {{ number_format($sisaStok, $isDifferentUnit ? 0 : 1, ',', '.') }} {{ $isDifferentUnit ? $satuanNm : 'kg' }}
+                                                        </span>
+                                                    @else
+                                                        <span class="badge-stock-empty">Habis</span>
+                                                    @endif
+                                                </div>
+                                            </div>
+                                        @empty
+                                            <div style="color: #94a3b8; font-style: italic; font-size: 0.8rem; padding: 0.25rem 0;">
+                                                Tidak ada rincian output
+                                            </div>
+                                        @endforelse
                                     </div>
                                 </td>
 

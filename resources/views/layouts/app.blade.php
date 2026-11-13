@@ -1600,7 +1600,54 @@
                                     </div>
                                 </div>
                                 @if (Auth::user()->canAccessProduksi())
-                                    <div style="border-top: 1px solid #f1f5f9; padding-top: 0.35rem; margin-top: 0.25rem;">
+                                    <div style="height: 1px; background: #f1f5f9; margin: 0.3rem 0;"></div>
+                                    <a href="{{ route('produksi.index') }}" class="mega-item {{ request()->routeIs('produksi.index') ? 'active' : '' }}">
+                                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                                        <div style="display: flex; flex-direction: column;">
+                                            <span style="font-weight: 600;">Hasil Barang Produksi</span>
+                                            <span style="font-size: 0.6875rem; color: #64748b;">Riwayat output batch masak &amp; kemas</span>
+                                        </div>
+                                    </a>
+                                    <a href="{{ route('produksi.rekap') }}" class="mega-item {{ request()->routeIs('produksi.rekap*') ? 'active' : '' }}">
+                                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                        <div style="display: flex; flex-direction: column;">
+                                            <span style="font-weight: 600;">Buku Rekap HPP Curah (WIP)</span>
+                                            <span style="font-size: 0.6875rem; color: #64748b;">Audit biaya olahan curah &amp; rendemen</span>
+                                        </div>
+                                    </a>
+                                    <div style="height: 1px; background: #f1f5f9; margin: 0.3rem 0;"></div>
+                                    <a href="{{ route('produksi.packaging.index') }}" class="mega-item {{ request()->routeIs('produksi.packaging.index') || request()->routeIs('produksi.packaging.show') ? 'active' : '' }}">
+                                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg>
+                                        <div style="display: flex; flex-direction: column;">
+                                            <span style="font-weight: 600;">Riwayat Pengemasan (FG)</span>
+                                            <span style="font-size: 0.6875rem; color: #64748b;">Pencatatan konversi kemas ke barang jadi</span>
+                                        </div>
+                                    </a>
+                                    <a href="{{ route('produksi.packaging.rekap') }}" class="mega-item {{ request()->routeIs('produksi.packaging.rekap*') || request()->routeIs('produksi.packaging.show-hpp') || request()->routeIs('produksi.packaging.adjust') ? 'active' : '' }}">
+                                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                                        <div style="display: flex; flex-direction: column;">
+                                            <span style="font-weight: 600;">Buku Rekap HPP Kemas</span>
+                                            <span style="font-size: 0.6875rem; color: #64748b;">Audit biaya bahan kemasan &amp; HPP/karton</span>
+                                        </div>
+                                    </a>
+                                    @if (Auth::user()->canCreateProduksi())
+                                        <div style="height: 1px; background: #f1f5f9; margin: 0.3rem 0;"></div>
+                                        <a href="{{ route('produksi.create') }}" class="mega-item {{ request()->routeIs('produksi.create') ? 'active' : '' }}">
+                                            <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                                            <div style="display: flex; flex-direction: column;">
+                                                <span style="font-weight: 600;">Input Hasil Produksi (WIP)</span>
+                                                <span style="font-size: 0.6875rem; color: #64748b;">Catat hasil masak &amp; olahan curah</span>
+                                            </div>
+                                        </a>
+                                        <a href="{{ route('produksi.packaging.create') }}" class="mega-item {{ request()->routeIs('produksi.packaging.create') ? 'active' : '' }}">
+                                            <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                            <div style="display: flex; flex-direction: column;">
+                                                <span style="font-weight: 600;">Catat Pengemasan (FG)</span>
+                                                <span style="font-size: 0.6875rem; color: #64748b;">Kemas curah ke karton barang jadi</span>
+                                            </div>
+                                        </a>
+
+                                        <div style="height: 1px; background: #f1f5f9; margin: 0.3rem 0;"></div>
                                         <a href="{{ route('produksi.packaging.mobile') }}" target="_blank" class="mega-item">
                                             <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"
                                                 style="color: #059669;">

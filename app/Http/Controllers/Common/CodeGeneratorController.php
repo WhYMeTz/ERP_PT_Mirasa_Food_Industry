@@ -56,6 +56,12 @@ class CodeGeneratorController extends Controller
                 $excludeQcId = $request->query('exclude_id');
                 $code = $this->codeGeneratorService->generateQcNo($date, $excludeQcId ? (int) $excludeQcId : null);
                 break;
+            case 'packaging':
+            case 'pck':
+                $date = $request->query('date', date('Y-m-d'));
+                $excludePackId = $request->query('exclude_id');
+                $code = $this->codeGeneratorService->generatePackagingNo($date, $excludePackId ? (int) $excludePackId : null);
+                break;
             case 'so':
                 $date = $request->query('date', date('Y-m-d'));
                 $code = $this->codeGeneratorService->generateSoNo($date);

@@ -20,6 +20,11 @@ class DatPackagingHdr extends Model
     protected $fillable = [
         'pack_no',
         'pack_tgl',
+        'shift',
+        'operator_nama',
+        'karyawan_id',
+        'jumlah_personil',
+        'jumlah_mesin',
         'gudang_id',
         'barang_jadi_id',
         'bom_id',
@@ -27,6 +32,8 @@ class DatPackagingHdr extends Model
         'pakai_id',
         'target_karton_qty',
         'hasil_karton_qty',
+        'hasil_pack_qty',
+        'satuan_hasil',
         'isi_per_karton_pcs',
         'gramatur_gr',
         'hasil_pcs_qty',
@@ -43,6 +50,9 @@ class DatPackagingHdr extends Model
         'total_biaya_produksi',
         'hpp_per_karton',
         'hpp_per_pcs',
+        'is_hpp_final',
+        'hpp_finalized_at',
+        'hpp_finalized_by',
         'catatan_txt',
         'status_cd',
         'created_by',
@@ -72,6 +82,8 @@ class DatPackagingHdr extends Model
         'total_biaya_produksi'     => 'decimal:4',
         'hpp_per_karton'           => 'decimal:4',
         'hpp_per_pcs'              => 'decimal:4',
+        'is_hpp_final'             => 'boolean',
+        'hpp_finalized_at'         => 'datetime',
         'deleted_st'               => 'boolean',
         'active_st'                => 'boolean',
         'version_no'               => 'integer',
@@ -91,6 +103,14 @@ class DatPackagingHdr extends Model
     public function barangJadi(): BelongsTo
     {
         return $this->belongsTo(MstBarang::class, 'barang_jadi_id', 'barang_id');
+    }
+
+    /**
+     * Relasi ke Master Karyawan (Operator / Leader Kemas)
+     */
+    public function karyawan(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\MasterData\MstKaryawan::class, 'karyawan_id', 'karyawan_id');
     }
 
     /**
@@ -175,5 +195,41 @@ class DatPackagingHdr extends Model
     public function scopeActive($query)
     {
         return $query->where('deleted_st', false);
+    }
+
+    /**
+     * Mengecek apakah dokumen HPP pengemasan ini sudah difinalisasi oleh Keuangan
+     */
+    public function isHppFinal(): bool
+    {
+        return (bool) ($this->is_hpp_final ?? false);
+    }
+
+    /**
+     * Mengecek apakah HPP pengemasan ini sudah siap dihitung (memerlukan HPP produksi asal sudah final)
+     */
+    public function canCalculateHpp(): bool
+    {
+        if (!$this->produksi_id) {
+            return true;
+        }
+        $prod = $this->produksi;
+        return $prod && (float) ($prod->hpp_per_kg ?? 0) > 0;
+    }
+
+    /**
+     * Dapatkan status kesiapan HPP: 'FINAL', 'READY', 'WAITING_PROD_HPP'
+     */
+    public function getHppStatusAttribute(): string
+    {
+        if ($this->isHppFinal()) {
+            return 'FINAL';
+        }
+
+        if ($this->produksi_id && !$this->canCalculateHpp()) {
+            return 'WAITING_PROD_HPP';
+        }
+
+        return 'READY';
     }
 }

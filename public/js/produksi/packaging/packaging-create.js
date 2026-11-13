@@ -148,8 +148,7 @@ function fetchBomPreview() {
             bannerBox.innerHTML = `
                 <div class="bom-banner" style="background: #f0fdf4; border-color: #86efac;">
                     <div style="color: #166534; font-size: 0.825rem; display: flex; align-items: center; gap: 0.5rem;">
-                        <span style="font-size: 1rem;">💡</span>
-                        <span>Produk jadi terpilih. Masukkan <strong>Jumlah Hasil Kemas (Karton)</strong> di Bagian 4 untuk otomatis menarik estimasi standar bahan resep BOM.</span>
+                        <span>Produk jadi terpilih. Masukkan <strong>Jumlah Hasil Kemas (Karton)</strong> untuk otomatis menarik estimasi standar bahan resep BOM.</span>
                     </div>
                 </div>
             `;
@@ -180,7 +179,7 @@ function fetchBomPreview() {
                     bannerBox.innerHTML = `
                         <div class="bom-banner" style="background: #fffbeb; border-color: #fde68a;">
                             <div style="color: #92400e; font-size: 0.825rem;">
-                                ⚠️ ${response.message || 'Formula BOM tidak ditemukan. Anda dapat menambahkan bahan secara manual.'}
+                                ${response.message || 'Formula BOM tidak ditemukan. Anda dapat menambahkan bahan secara manual.'}
                             </div>
                         </div>
                     `;
@@ -208,7 +207,7 @@ function fetchBomPreview() {
                                 </div>
                             </div>
                             <div style="font-size: 0.725rem; color: #15803d; font-weight: 600;">
-                                ⚡ Kebutuhan bahan terhitung proporsional untuk target ${data.target_karton} karton &amp; otomatis tercatat di Gudang.
+                                Kebutuhan bahan terhitung proporsional untuk target ${data.target_karton} karton &amp; otomatis tercatat di Gudang.
                             </div>
                         </div>
                     `;
@@ -216,7 +215,7 @@ function fetchBomPreview() {
                     bannerBox.innerHTML = `
                         <div class="bom-banner" style="background: #fffbeb; border-color: #fde68a;">
                             <div style="color: #92400e; font-size: 0.825rem;">
-                                ⚠️ ${data.message}
+                                ${data.message}
                             </div>
                         </div>
                     `;
@@ -317,7 +316,7 @@ function onProduksiSelect(selectEl, skipAddRow = false) {
     // Tampilkan notifikasi sinkron ringkas & profesional
     if (syncBox && syncText) {
         const isBerbumbu = opt.getAttribute('data-is-berbumbu') === '1';
-        const bumbuNotice = isBerbumbu ? ' <span style="background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; padding: 2px 7px; border-radius: 9999px; font-weight: 700; font-size: 0.725rem; margin-left: 6px;">✨ Sudah Berbumbu di Dapur (Poin 43)</span>' : '';
+        const bumbuNotice = isBerbumbu ? ' <span style="background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; padding: 2px 7px; border-radius: 9999px; font-weight: 700; font-size: 0.725rem; margin-left: 6px;">Sudah Berbumbu di Dapur</span>' : '';
         syncBox.style.display = 'flex';
         syncText.innerHTML = `Tersinkron dengan <strong>${prodNo}</strong>: <strong>${barangNm}</strong> &bull; Lot: <code>${batchVal}</code> &bull; Exp: <strong>${formatDateIndo(expVal)}</strong> (HPP: Rp ${formatRupiah(hppVal)}/Kg)${bumbuNotice}`;
     }
@@ -341,7 +340,7 @@ function onProduksiSelect(selectEl, skipAddRow = false) {
                 const rowBarangNm = tr.querySelector('.barang-name-cell strong')?.textContent?.trim() || barangNm;
                 originTag.innerHTML = `
                     <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                    ✓ HPP Produksi ${prodNo} (${rowBarangNm})
+                    HPP Produksi ${prodNo} (${rowBarangNm})
                 `;
                 originTag.style.background = '#dcfce7';
                 originTag.style.color = '#15803d';
@@ -518,10 +517,10 @@ function addMaterialRow(item = {}) {
         // Tampilkan dropdown pilihan bahan langsung di dalam baris
         let optionsHtml = '<option value="">-- Pilih Komponen Bahan --</option>';
         const groups = {
-            'KEMASAN': { label: '📦 Dus & Kemasan (Karton, Roll, Lakban, Rafia)', items: [] },
-            'BUMBU':   { label: '🧂 Bumbu & Perasa Makanan', items: [] },
-            'WIP':     { label: '🍘 Keripik Curah (WIP / KS Berko)', items: [] },
-            'LAIN':    { label: '⚙️ Bahan Penolong Lainnya', items: [] },
+            'KEMASAN': { label: 'Dus & Kemasan (Karton, Roll, Lakban, Rafia)', items: [] },
+            'BUMBU':   { label: 'Bumbu & Perasa Makanan', items: [] },
+            'WIP':     { label: 'Keripik Curah (WIP / KS Berko)', items: [] },
+            'LAIN':    { label: 'Bahan Penolong Lainnya', items: [] },
         };
 
         const list = window.masterKemasanList || [];
@@ -562,7 +561,7 @@ function addMaterialRow(item = {}) {
             ${stokTersedia !== null ? `
                 <div style="margin-top: 0.15rem;">
                     <span class="${cukupStok ? 'stock-tag-ok' : 'stock-tag-warn'}">
-                        Stok: ${formatNumber(stokTersedia)} ${satuanCd} ${cukupStok ? '✓ Cukup' : '⚠️ Kurang'}
+                        Stok: ${formatNumber(stokTersedia)} ${satuanCd} ${cukupStok ? '(Cukup)' : '(Kurang)'}
                     </span>
                 </div>
             ` : ''}
@@ -913,7 +912,7 @@ function renderPullOperatorTable(list) {
         tr.innerHTML = `
             <td style="padding: 0.65rem 0.75rem;">
                 <strong style="color: #0f172a; font-family: ui-monospace, monospace;">${item.laporan_no}</strong>
-                <div style="font-size: 0.725rem; color: #64748b; margin-top: 2px;">📅 ${tglKemas}</div>
+                <div style="font-size: 0.725rem; color: #64748b; margin-top: 2px;">${tglKemas}</div>
             </td>
             <td style="padding: 0.65rem 0.75rem;">
                 <span style="display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; background: #eff6ff; color: #1d4ed8;">Shift ${item.shift}</span>
@@ -961,22 +960,100 @@ function applyOperatorLaporan(itemOrIdx) {
     const hiddenId = document.getElementById('laporan_operator_id');
     if (hiddenId) hiddenId.value = item.laporan_id;
 
-    // 2. Set Tanggal & Produk Jadi
+    // 2. Set Tanggal & Shift
     const packTgl = document.getElementById('pack_tgl');
     if (packTgl && item.tgl_kemas) {
         packTgl.value = typeof item.tgl_kemas === 'string' ? item.tgl_kemas.split('T')[0] : item.tgl_kemas;
     }
 
+    if (item.shift) {
+        if (typeof window.selectWebShift === 'function') {
+            window.selectWebShift(item.shift);
+        } else {
+            const inputShift = document.getElementById('inputShift');
+            if (inputShift) inputShift.value = item.shift;
+        }
+        document.querySelectorAll('.pkg-shift-btn').forEach(btn => {
+            if (btn.getAttribute('data-shift') === item.shift) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+    }
+
+    // Leader / Operator & Tim
+    if (item.karyawan_id && document.getElementById('karyawan_id')) {
+        document.getElementById('karyawan_id').value = item.karyawan_id;
+    }
+    if (item.operator_nama && document.getElementById('operator_nama')) {
+        document.getElementById('operator_nama').value = item.operator_nama;
+    }
+    if (item.jumlah_personil && document.getElementById('jumlah_personil')) {
+        document.getElementById('jumlah_personil').value = item.jumlah_personil;
+    }
+    if (item.jumlah_mesin && document.getElementById('jumlah_mesin')) {
+        document.getElementById('jumlah_mesin').value = item.jumlah_mesin;
+    }
+
+    // 3. Set Curah WIP (Output ID atau Produksi ID)
+    const outputSelect = document.getElementById('output_id');
+    if (outputSelect) {
+        let matched = null;
+        if (item.output_id) {
+            matched = Array.from(outputSelect.options).find(opt => opt.value == item.output_id);
+        }
+        if (!matched && item.produksi_id) {
+            matched = Array.from(outputSelect.options).find(opt => opt.getAttribute('data-produksi-id') == item.produksi_id && opt.getAttribute('data-barang-id') == item.wip_barang_id);
+            if (!matched) {
+                matched = Array.from(outputSelect.options).find(opt => opt.getAttribute('data-produksi-id') == item.produksi_id);
+            }
+        }
+        if (matched) {
+            outputSelect.selectedIndex = matched.index;
+            outputSelect.dispatchEvent(new Event('change'));
+        }
+    }
+
+    if (item.wip_qty_kg && document.getElementById('wip_qty_kg')) {
+        document.getElementById('wip_qty_kg').value = item.wip_qty_kg;
+    }
+    if (item.wip_satuan) {
+        const wipSatInput = document.getElementById('inputWipSatuan');
+        if (wipSatInput) wipSatInput.value = item.wip_satuan;
+        const wipSatSuffix = document.getElementById('wipSatuanSuffix');
+        if (wipSatSuffix) wipSatSuffix.textContent = item.wip_satuan;
+        document.querySelectorAll('.pkg-wip-satuan-btn').forEach(b => {
+            if (b.getAttribute('data-satuan') === item.wip_satuan) b.classList.add('active');
+            else b.classList.remove('active');
+        });
+    }
+
+    // 4. Set Produk Jadi & Hasil Kemas
     const barangSelect = document.getElementById('barang_jadi_id');
     if (barangSelect && item.barang_jadi_id) {
         barangSelect.value = item.barang_jadi_id;
     }
 
-    // 3. Set Jumlah Hasil Kemas & Target
     const hasilInput = document.getElementById('hasil_karton_qty');
     const targetInput = document.getElementById('target_karton_qty');
     if (hasilInput) hasilInput.value = item.hasil_karton_qty;
     if (targetInput) targetInput.value = item.hasil_karton_qty;
+
+    if (item.satuan_hasil) {
+        const satInput = document.getElementById('inputSatuanHasil');
+        if (satInput) satInput.value = item.satuan_hasil;
+        const satLabel = document.getElementById('satuanDisplayLabel');
+        if (satLabel) satLabel.textContent = item.satuan_hasil;
+        document.querySelectorAll('.pkg-satuan-btn').forEach(b => {
+            if (b.getAttribute('data-satuan') === item.satuan_hasil) b.classList.add('active');
+            else b.classList.remove('active');
+        });
+    }
+
+    if (item.hasil_pack_qty !== undefined && document.getElementById('hasil_pack_qty')) {
+        document.getElementById('hasil_pack_qty').value = item.hasil_pack_qty;
+    }
 
     // Set isi per karton jika ada
     const isiPerKartonInput = document.getElementById('isi_per_karton_pcs');
@@ -993,31 +1070,103 @@ function applyOperatorLaporan(itemOrIdx) {
         batchInput.value = item.wip_batch_no;
     }
 
-    // 4. Bangun baris-baris material LANGSUNG DARI DATA INPUT OPERATOR terlebih dahulu
-    buildMaterialRowsFromOperator(item);
-
-    // 5. Set Produksi WIP jika ada (dengan skipAddRow = true agar tidak memunculkan baris WIP phantom)
-    const prodSelect = document.getElementById('produksi_id');
-    if (prodSelect && item.produksi_id) {
-        const targetWipId = item.wip_barang_id || (item.wip_barang ? item.wip_barang.barang_id : null);
-        let matchedOpt = null;
-        if (targetWipId) {
-            matchedOpt = Array.from(prodSelect.options).find(opt => 
-                opt.value == item.produksi_id && opt.getAttribute('data-barang-id') == targetWipId
-            );
-        }
-        if (!matchedOpt) {
-            matchedOpt = Array.from(prodSelect.options).find(opt => opt.value == item.produksi_id);
-        }
-        if (matchedOpt) {
-            prodSelect.selectedIndex = matchedOpt.index;
-        } else {
-            prodSelect.value = item.produksi_id;
-        }
-        onProduksiSelect(prodSelect, true);
+    // 5. Set Pemakaian Bumbu Tabur
+    if (document.getElementById('bumbu_barang_id') && item.bumbu_barang_id) {
+        document.getElementById('bumbu_barang_id').value = item.bumbu_barang_id;
+    }
+    if (document.getElementById('bumbu_qty_kg') && item.bumbu_qty_kg !== undefined) {
+        document.getElementById('bumbu_qty_kg').value = item.bumbu_qty_kg;
     }
 
-    // 6. Tampilkan Banner Status Tarik Data
+    // 6. Set Plastik Kemasan & Afkir
+    if (document.getElementById('plastik_barang_id') && item.plastik_barang_id) {
+        document.getElementById('plastik_barang_id').value = item.plastik_barang_id;
+    }
+    if (document.getElementById('plastik_qty') && item.plastik_qty !== undefined) {
+        document.getElementById('plastik_qty').value = item.plastik_qty;
+    }
+    if (document.getElementById('plastik_rusak_pcs') && item.plastik_rusak_pcs !== undefined) {
+        document.getElementById('plastik_rusak_pcs').value = item.plastik_rusak_pcs;
+    }
+
+    // 7. Set Karton Box (Puteran & Baru)
+    if (document.getElementById('karton_barang_id') && item.karton_barang_id) {
+        document.getElementById('karton_barang_id').value = item.karton_barang_id;
+    }
+    if (document.getElementById('karton_puteran_qty') && item.karton_puteran_qty !== undefined) {
+        document.getElementById('karton_puteran_qty').value = item.karton_puteran_qty;
+    }
+    if (document.getElementById('karton_baru_qty') && item.karton_baru_qty !== undefined) {
+        document.getElementById('karton_baru_qty').value = item.karton_baru_qty;
+    }
+    if (document.getElementById('karton_rusak_lembar') && item.karton_rusak_lembar !== undefined) {
+        document.getElementById('karton_rusak_lembar').value = item.karton_rusak_lembar;
+    }
+    if (typeof calculateKartonTotal === 'function') {
+        calculateKartonTotal();
+    }
+
+    // 8. Set Lakban (CM vs GRAM)
+    const lakbanMode = item.lakban_satuan_mode || 'CM';
+    if (typeof setLakbanSatuanMode === 'function') {
+        setLakbanSatuanMode(lakbanMode);
+    }
+    if (lakbanMode === 'CM') {
+        if (document.getElementById('lakban_standar_cm') && item.lakban_standar_cm) {
+            document.getElementById('lakban_standar_cm').value = item.lakban_standar_cm;
+        }
+        if (document.getElementById('lakban_rusak_m') && item.lakban_rusak_m !== undefined) {
+            document.getElementById('lakban_rusak_m').value = item.lakban_rusak_m;
+        }
+        if (document.getElementById('lakban_roll_qty')) {
+            document.getElementById('lakban_roll_qty').value = item.lakban_roll_qty || item.lakban_qty || 0;
+        }
+        if (typeof recalculateLakbanFromKarton === 'function') {
+            recalculateLakbanFromKarton();
+        }
+    } else {
+        if (document.getElementById('input_lakban_atas_gr')) {
+            document.getElementById('input_lakban_atas_gr').value = item.lakban_atas_gr || 0;
+        }
+        if (document.getElementById('input_lakban_bawah_gr')) {
+            document.getElementById('input_lakban_bawah_gr').value = item.lakban_bawah_gr || 0;
+        }
+        if (document.getElementById('input_lakban_rusak_gr')) {
+            document.getElementById('input_lakban_rusak_gr').value = item.lakban_rusak_gr || 0;
+        }
+        if (document.getElementById('input_lakban_total_gr')) {
+            document.getElementById('input_lakban_total_gr').value = item.lakban_qty || 0;
+        }
+        if (typeof recalculateLakbanFromGram === 'function') {
+            recalculateLakbanFromGram();
+        }
+    }
+
+    // 9. Set Label Expired & Kemasan Tambahan
+    if (document.getElementById('expired_barang_id') && item.expired_barang_id) {
+        document.getElementById('expired_barang_id').value = item.expired_barang_id;
+    }
+    if (document.getElementById('expired_qty') && item.expired_qty !== undefined) {
+        document.getElementById('expired_qty').value = item.expired_qty;
+    }
+    const kemasanContainer = document.getElementById('kemasanTambahanList');
+    if (kemasanContainer) {
+        kemasanContainer.innerHTML = '';
+        if (item.kemasan_tambahan && Array.isArray(item.kemasan_tambahan)) {
+            item.kemasan_tambahan.forEach(kt => {
+                if (typeof addKemasanTambahanRow === 'function') {
+                    addKemasanTambahanRow(kt.barang_id, kt.qty);
+                }
+            });
+        }
+    }
+
+    // Jika tabel material lama ada (untuk backward compatibility)
+    if (document.getElementById('materialItemsTbody')) {
+        buildMaterialRowsFromOperator(item);
+    }
+
+    // 10. Tampilkan Banner Status Tarik Data
     const badge = document.getElementById('operatorSyncBadge');
     const title = document.getElementById('operatorSyncTitle');
     const subtitle = document.getElementById('operatorSyncSubtitle');
@@ -1045,50 +1194,6 @@ function applyOperatorLaporan(itemOrIdx) {
             catatanInput.value = extraNote;
         }
     }
-
-    // 7. Sinkronkan Kerusakan / Scrap Kemasan IFM (Dus Rusak, Plastik Rusak, Lakban Rusak)
-    const kartonRusakInput = document.getElementById('karton_rusak_lembar');
-    if (kartonRusakInput && item.karton_rusak_lembar !== undefined) {
-        kartonRusakInput.value = item.karton_rusak_lembar;
-    }
-    const plastikRusakInput = document.getElementById('plastik_rusak_pcs');
-    if (plastikRusakInput && item.plastik_rusak_pcs !== undefined) {
-        plastikRusakInput.value = item.plastik_rusak_pcs;
-    }
-
-    // Sinkronkan Lakban dari Laporan Operator (Roll, Meter & Gram)
-    const lakbanRollInput = document.getElementById('lakban_roll_qty');
-    const lakbanStandarInput = document.getElementById('lakban_standar_cm');
-    const lakbanRusakInput = document.getElementById('lakban_rusak_m');
-    const lakbanAtasInput = document.getElementById('lakban_atas_gr');
-    const lakbanBawahInput = document.getElementById('lakban_bawah_gr');
-
-    if (item.lakban_standar_cm && lakbanStandarInput) {
-        lakbanStandarInput.value = item.lakban_standar_cm;
-    }
-    if (item.lakban_rusak_m && lakbanRusakInput) {
-        lakbanRusakInput.value = item.lakban_rusak_m;
-    }
-    if (parseFloat(item.lakban_qty) > 0 && lakbanRollInput) {
-        lakbanRollInput.value = parseFloat(item.lakban_qty);
-    }
-    let atasGr = parseFloat(item.lakban_atas_gr) || 0;
-    let bawahGr = parseFloat(item.lakban_bawah_gr) || 0;
-    if (atasGr <= 0 && bawahGr <= 0 && parseFloat(item.lakban_qty) > 0) {
-        atasGr = Math.round((parseFloat(item.lakban_qty) * 1250 / 2) * 10) / 10;
-        bawahGr = Math.round((parseFloat(item.lakban_qty) * 1250 / 2) * 10) / 10;
-    }
-    if (lakbanAtasInput) lakbanAtasInput.value = atasGr;
-    if (lakbanBawahInput) lakbanBawahInput.value = bawahGr;
-
-    if (typeof recalculateDesktopLakban === 'function') {
-        recalculateDesktopLakban();
-    } else {
-        onLakbanInputsChanged();
-    }
-
-    // 8. Tetap ambil ID BOM secara pasif tanpa mereset tabel material
-    fetchBomPreview();
 
     closePullOperatorModal();
 }
@@ -1502,6 +1607,9 @@ function recalculateDesktopLakban() {
  * Handler jika Admin / User mengetik langsung jumlah Roll
  */
 function onDesktopManualRollInput() {
+    if (typeof onManualRollInput === 'function') {
+        onManualRollInput();
+    }
     const rollInput = document.getElementById('lakban_roll_qty');
     const totalRoll = parseFloat(rollInput?.value) || 0;
     const totalMeter = Math.round(totalRoll * 100 * 100) / 100;
@@ -1682,3 +1790,288 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 });
+
+/**
+ * =========================================================================
+ * HELPER FORMULIR WEB DESKTOP PACKAGING (STANDAR ERP ENTERPRISE)
+ * =========================================================================
+ */
+let kemasanTambahanIndex = 0;
+
+function addKemasanTambahanRow(selectedId = '', defaultQty = '') {
+    const container = document.getElementById('kemasanTambahanList');
+    if (!container) return;
+
+    const optionsData = window.kemasanLainOptions || [];
+    let optionsHtml = '<option value="">-- Pilih Kemasan Tambahan --</option>';
+
+    optionsData.forEach(item => {
+        const isSelected = selectedId && parseInt(selectedId) === parseInt(item.barang_id) ? 'selected' : '';
+        const satuan = item.satuan_nm ? ` (${item.satuan_nm})` : '';
+        optionsHtml += `<option value="${item.barang_id}" data-satuan="${item.satuan_nm || 'PCS'}" ${isSelected}>${item.barang_nm}${satuan}</option>`;
+    });
+
+    const rowId = `kemasan_row_${kemasanTambahanIndex}`;
+    const rowDiv = document.createElement('div');
+    rowDiv.id = rowId;
+    rowDiv.style.cssText = 'display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.5rem;';
+
+    rowDiv.innerHTML = `
+        <div style="flex: 2;">
+            <select name="kemasan_tambahan[${kemasanTambahanIndex}][barang_id]" class="form-control" onchange="onKemasanTambahanSelect(this, '${rowId}')">
+                ${optionsHtml}
+            </select>
+        </div>
+        <div style="flex: 1; max-width: 170px;">
+            <div class="input-group-web">
+                <input type="number" step="any" min="0" name="kemasan_tambahan[${kemasanTambahanIndex}][qty]" class="form-control" placeholder="Qty" value="${defaultQty}">
+                <span class="input-group-addon unit-suffix">Pcs</span>
+            </div>
+        </div>
+        <div>
+            <button type="button" class="btn btn-sm" onclick="removeKemasanTambahanRow('${rowId}')" title="Hapus Baris" style="background: #fef2f2; border: 1.5px solid #fecaca; color: #dc2626; border-radius: 6px; height: 38px; width: 38px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer;">
+                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+            </button>
+        </div>
+    `;
+
+    container.appendChild(rowDiv);
+    kemasanTambahanIndex++;
+}
+window.addKemasanTambahanRow = addKemasanTambahanRow;
+
+function removeKemasanTambahanRow(rowId) {
+    const row = document.getElementById(rowId);
+    if (row) row.remove();
+}
+window.removeKemasanTambahanRow = removeKemasanTambahanRow;
+
+function onKemasanTambahanSelect(selectElem, rowId) {
+    const row = document.getElementById(rowId);
+    if (!row) return;
+
+    const suffixSpan = row.querySelector('.unit-suffix');
+    const selectedOpt = selectElem.options[selectElem.selectedIndex];
+    if (suffixSpan && selectedOpt) {
+        const satuan = selectedOpt.getAttribute('data-satuan') || 'Pcs';
+        suffixSpan.textContent = satuan;
+    }
+}
+window.onKemasanTambahanSelect = onKemasanTambahanSelect;
+
+function updateKartonTotal() {
+    const puteran = parseFloat(document.getElementById('karton_puteran_qty')?.value) || 0;
+    const baru = parseFloat(document.getElementById('karton_baru_qty')?.value) || 0;
+
+    const total = puteran + baru;
+
+    const totalInput = document.getElementById('karton_qty');
+    if (totalInput) totalInput.value = total;
+
+    const totalBadge = document.getElementById('lbl_karton_total_dipakai');
+    if (totalBadge) totalBadge.textContent = total.toLocaleString('id-ID');
+}
+window.updateKartonTotal = updateKartonTotal;
+
+function autoAllocateKartonFifo() {
+    const targetKarton = parseFloat(document.getElementById('hasil_karton_qty')?.value) || 0;
+    if (targetKarton <= 0) {
+        alert('Silakan isi "Jumlah Hasil Jadi Utama" terlebih dahulu di Seksi 3.');
+        document.getElementById('hasil_karton_qty')?.focus();
+        return;
+    }
+
+    const maxPuteranStok = parseFloat(window.stokKartonPuteranAvailable || 0);
+    const alokasiPuteran = Math.min(targetKarton, Math.max(0, maxPuteranStok));
+    const alokasiBaru = Math.max(0, targetKarton - alokasiPuteran);
+
+    const puteranInput = document.getElementById('karton_puteran_qty');
+    const baruInput = document.getElementById('karton_baru_qty');
+
+    if (puteranInput) puteranInput.value = alokasiPuteran;
+    if (baruInput) baruInput.value = alokasiBaru;
+
+    updateKartonTotal();
+}
+window.autoAllocateKartonFifo = autoAllocateKartonFifo;
+
+function recalculateLakbanFromKarton() {
+    const currentMode = document.getElementById('lakban_satuan_mode')?.value || 'CM';
+    const hasilKarton = parseFloat(document.getElementById('hasil_karton_qty')?.value) || 0;
+    const standarCm = parseFloat(document.getElementById('lakban_standar_cm')?.value) || 120;
+    const rusakM = parseFloat(document.getElementById('lakban_rusak_m')?.value) || 0;
+    const satuan = (document.getElementById('lakban_satuan')?.value || 'ROLL').toUpperCase();
+
+    const normalMeter = Math.round((hasilKarton * (standarCm / 100)) * 100) / 100;
+    const totalMeter = Math.round((normalMeter + rusakM) * 100) / 100;
+    const totalRoll = Math.round((totalMeter / 100) * 100) / 100;
+    const totalGram = Math.round(totalMeter * 12.5 * 10) / 10;
+
+    const lblKebutuhanM = document.getElementById('lbl_lakban_kebutuhan_m');
+    if (lblKebutuhanM) lblKebutuhanM.textContent = normalMeter.toLocaleString('id-ID');
+
+    const summaryBadge = document.getElementById('lbl_lakban_summary');
+    if (summaryBadge) {
+        if (totalMeter <= 0) {
+            summaryBadge.textContent = 'Standar 120cm / karton dus.';
+        } else if (satuan === 'GRAM') {
+            summaryBadge.textContent = `${totalGram.toLocaleString('id-ID')} Gram (~${totalRoll.toLocaleString('id-ID')} Roll)`;
+        } else if (satuan === 'METER') {
+            summaryBadge.textContent = `${totalMeter.toLocaleString('id-ID')} Meter (~${totalRoll.toLocaleString('id-ID')} Roll)`;
+        } else {
+            summaryBadge.textContent = `${totalMeter.toLocaleString('id-ID')} Meter (${totalRoll.toLocaleString('id-ID')} Roll)`;
+        }
+    }
+
+    const rollInput = document.getElementById('lakban_roll_qty');
+    if (rollInput && document.activeElement !== rollInput) {
+        if (satuan === 'METER') {
+            rollInput.value = totalMeter > 0 ? totalMeter : '';
+        } else if (satuan === 'GRAM') {
+            rollInput.value = totalGram > 0 ? totalGram : '';
+        } else {
+            rollInput.value = totalRoll > 0 ? totalRoll : '';
+        }
+    }
+
+    const hiddenQty = document.getElementById('lakban_qty');
+    if (hiddenQty) hiddenQty.value = (satuan === 'GRAM') ? totalGram : totalRoll;
+
+    const atasGram = Math.round((totalGram / 2) * 10) / 10;
+    const bawahGram = Math.round((totalGram / 2) * 10) / 10;
+
+    const hiddenAtas = document.getElementById('lakban_atas_gr');
+    if (hiddenAtas) hiddenAtas.value = atasGram;
+
+    const hiddenBawah = document.getElementById('lakban_bawah_gr');
+    if (hiddenBawah) hiddenBawah.value = bawahGram;
+}
+window.recalculateLakbanFromKarton = recalculateLakbanFromKarton;
+
+function onManualRollInput() {
+    const satuan = (document.getElementById('lakban_satuan')?.value || 'ROLL').toUpperCase();
+    const inputVal = parseFloat(document.getElementById('lakban_roll_qty')?.value) || 0;
+    
+    let rollVal = inputVal;
+    let meterVal = 0;
+    let totalGram = 0;
+
+    if (satuan === 'ROLL') {
+        rollVal = inputVal;
+        meterVal = Math.round(rollVal * 100 * 100) / 100;
+        totalGram = Math.round(meterVal * 12.5 * 10) / 10;
+    } else if (satuan === 'METER') {
+        meterVal = inputVal;
+        rollVal = Math.round((meterVal / 100) * 100) / 100;
+        totalGram = Math.round(meterVal * 12.5 * 10) / 10;
+    } else if (satuan === 'GRAM') {
+        totalGram = inputVal;
+        rollVal = Math.round((totalGram / 1250) * 100) / 100;
+        meterVal = Math.round(rollVal * 100 * 100) / 100;
+    }
+
+    const summaryBadge = document.getElementById('lbl_lakban_summary');
+    if (summaryBadge) {
+        if (inputVal <= 0) {
+            summaryBadge.textContent = 'Standar 120cm / karton dus.';
+        } else if (satuan === 'GRAM') {
+            summaryBadge.textContent = `${totalGram.toLocaleString('id-ID')} Gram (~${rollVal.toLocaleString('id-ID')} Roll)`;
+        } else if (satuan === 'METER') {
+            summaryBadge.textContent = `${meterVal.toLocaleString('id-ID')} Meter (~${rollVal.toLocaleString('id-ID')} Roll)`;
+        } else {
+            summaryBadge.textContent = `${meterVal.toLocaleString('id-ID')} Meter (${rollVal.toLocaleString('id-ID')} Roll)`;
+        }
+    }
+
+    const hiddenQty = document.getElementById('lakban_qty');
+    if (hiddenQty) hiddenQty.value = (satuan === 'GRAM') ? totalGram : rollVal;
+
+    const atasGram = Math.round((totalGram / 2) * 10) / 10;
+    const bawahGram = Math.round((totalGram / 2) * 10) / 10;
+
+    const hiddenAtas = document.getElementById('lakban_atas_gr');
+    if (hiddenAtas) hiddenAtas.value = atasGram;
+
+    const hiddenBawah = document.getElementById('lakban_bawah_gr');
+    if (hiddenBawah) hiddenBawah.value = bawahGram;
+}
+window.onManualRollInput = onManualRollInput;
+
+function recalculateLakbanFromGram() {
+    const currentMode = document.getElementById('lakban_satuan_mode')?.value || 'CM';
+    const atasGr = parseFloat(document.getElementById('input_lakban_atas_gr')?.value) || 0;
+    const bawahGr = parseFloat(document.getElementById('input_lakban_bawah_gr')?.value) || 0;
+    const rusakGr = parseFloat(document.getElementById('input_lakban_rusak_gr')?.value) || 0;
+
+    const totalGr = Math.round((atasGr + bawahGr + rusakGr) * 100) / 100;
+
+    const totalGrIn = document.getElementById('input_lakban_total_gr');
+    if (totalGrIn && document.activeElement !== totalGrIn) {
+        totalGrIn.value = totalGr > 0 ? totalGr : '';
+    }
+
+    const estRoll = Math.round((totalGr / 1250) * 100) / 100;
+
+    const summaryBadge = document.getElementById('lbl_lakban_summary');
+    if (summaryBadge && currentMode === 'GRAM') {
+        summaryBadge.textContent = `${totalGr.toLocaleString('id-ID')} Gram (~${estRoll.toLocaleString('id-ID')} Roll)`;
+    }
+
+    if (currentMode === 'GRAM') {
+        const hiddenQty = document.getElementById('lakban_qty');
+        if (hiddenQty) hiddenQty.value = totalGr > 0 ? totalGr : 0;
+
+        const hiddenAtas = document.getElementById('lakban_atas_gr');
+        if (hiddenAtas) hiddenAtas.value = atasGr;
+
+        const hiddenBawah = document.getElementById('lakban_bawah_gr');
+        if (hiddenBawah) hiddenBawah.value = bawahGr;
+    }
+}
+window.recalculateLakbanFromGram = recalculateLakbanFromGram;
+
+function onManualGramInput() {
+    const currentMode = document.getElementById('lakban_satuan_mode')?.value || 'CM';
+    const totalGr = parseFloat(document.getElementById('input_lakban_total_gr')?.value) || 0;
+    const rusakGr = parseFloat(document.getElementById('input_lakban_rusak_gr')?.value) || 0;
+
+    const netGr = Math.max(0, totalGr - rusakGr);
+    const halfGr = Math.round((netGr / 2) * 10) / 10;
+
+    const atasGrIn = document.getElementById('input_lakban_atas_gr');
+    const bawahGrIn = document.getElementById('input_lakban_bawah_gr');
+    if (atasGrIn && document.activeElement !== atasGrIn) {
+        atasGrIn.value = halfGr > 0 ? halfGr : '';
+    }
+    if (bawahGrIn && document.activeElement !== bawahGrIn) {
+        bawahGrIn.value = halfGr > 0 ? halfGr : '';
+    }
+
+    const estRoll = Math.round((totalGr / 1250) * 100) / 100;
+    const summaryBadge = document.getElementById('lbl_lakban_summary');
+    if (summaryBadge && currentMode === 'GRAM') {
+        summaryBadge.textContent = `${totalGr.toLocaleString('id-ID')} Gram (~${estRoll.toLocaleString('id-ID')} Roll)`;
+    }
+
+    if (currentMode === 'GRAM') {
+        const hiddenQty = document.getElementById('lakban_qty');
+        if (hiddenQty) hiddenQty.value = totalGr;
+
+        const hiddenAtas = document.getElementById('lakban_atas_gr');
+        if (hiddenAtas) hiddenAtas.value = halfGr;
+
+        const hiddenBawah = document.getElementById('lakban_bawah_gr');
+        if (hiddenBawah) hiddenBawah.value = halfGr;
+    }
+}
+window.onManualGramInput = onManualGramInput;
+
+let isBumbuOverridden = false;
+function toggleManualBumbuOverride() {
+    isBumbuOverridden = !isBumbuOverridden;
+    const container = document.getElementById('containerBumbuInputs');
+    if (container) {
+        container.style.opacity = isBumbuOverridden ? '1' : '0.6';
+    }
+}
+window.toggleManualBumbuOverride = toggleManualBumbuOverride;

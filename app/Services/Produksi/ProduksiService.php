@@ -1019,6 +1019,10 @@ class ProduksiService
     {
         $pakai = DatPakaiHdr::with(['details.barang.jenisBarang', 'details.barang.satuanDasar', 'gudang'])->where('pakai_id', $pakaiId)->firstOrFail();
 
+        if ($pakai->status_st !== 'POSTED') {
+            throw new Exception("Dokumen BPPB [{$pakai->pakai_no}] masih berstatus DRAFT dan belum diverifikasi/diposting oleh Bagian Gudang. Harap minta bagian gudang untuk memverifikasi dan memposting pengeluaran bahan terlebih dahulu.");
+        }
+
         $summary = [
             'pakai_id'           => $pakai->pakai_id,
             'pakai_no'           => $pakai->pakai_no,
@@ -1475,6 +1479,14 @@ class ProduksiService
                 $data['produksi_no'] = $prodNo;
             }
 
+            // Validasi status Dokumen BPPB (Pengeluaran Bahan Baku Gudang)
+            if (!empty($data['pakai_id'])) {
+                $pakaiHdr = DatPakaiHdr::find($data['pakai_id']);
+                if (!$pakaiHdr || $pakaiHdr->status_st !== 'POSTED') {
+                    throw new Exception("Dokumen BPPB [{$pakaiHdr?->pakai_no}] masih berstatus DRAFT atau belum diverifikasi oleh Bagian Gudang. Hanya dokumen BPPB berstatus POSTED yang dapat diproses ke Laporan Produksi.");
+                }
+            }
+
             // Cek apakah produk utama yang dihasilkan adalah standar Indofood IFM / WIP-FCC
             $lini = strtoupper($data['lini_produksi'] ?? 'PRODUKSI IFM');
             $isIfm = false;
@@ -1754,12 +1766,11 @@ class ProduksiService
                 }
             }
 
-            // Auto-posting Dokumen Pemakaian Bahan (BPPB) jika berstatus DRAFT saat Laporan Produksi diposting
+            // Verifikasi integritas dokumen BPPB (harus sudah POSTED dari Gudang)
             if (!empty($produksi->pakai_id)) {
                 $pakaiHdr = DatPakaiHdr::find($produksi->pakai_id);
-                if ($pakaiHdr && $pakaiHdr->isDraft() && $produksi->status_cd === 'POSTED') {
-                    $pemakaianService = app(\App\Services\Gudang\PemakaianService::class);
-                    $pemakaianService->postPemakaian($pakaiHdr->pakai_id, Auth::user());
+                if ($pakaiHdr && $pakaiHdr->status_st !== 'POSTED') {
+                    throw new Exception("Dokumen BPPB [{$pakaiHdr->pakai_no}] belum berstatus POSTED oleh Bagian Gudang.");
                 }
             }
 

@@ -1623,69 +1623,74 @@
 }
 
 /* ═════════════════════════════════════════════════════════════
-   ENTERPRISE SUB-TABLE: RINCIAN OUTPUT FISIK PER DOKUMEN
-   Desain human-crafted, bersih, rapi, dan mudah dibaca
+   ENTERPRISE ITEM LIST: RINCIAN OUTPUT FISIK HASIL PRODUKSI
+   Desain flex modern, bersih, proporsional, dan sangat mudah dibaca
    ═════════════════════════════════════════════════════════════ */
-/* Container pembungkus sub-table agar rapi dan berbatas jelas */
-.prod-subtable-wrapper {
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
-    overflow: hidden;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
-}
-
-.prod-subtable {
+.prod-item-list {
+    display: flex;
+    flex-direction: column;
     width: 100%;
-    border-collapse: collapse;
-    font-size: 0.8125rem;
-    line-height: 1.35;
-    table-layout: auto;
 }
 
-.prod-subtable tr {
+/* Header Sub-Kolom Rincian Hasil Olahan Fisik */
+.prod-item-header-grid {
+    display: grid;
+    grid-template-columns: minmax(180px, 1.8fr) minmax(140px, 1.2fr) minmax(110px, 1fr);
+    gap: 0.85rem;
+    padding: 0 0.25rem;
+    align-items: center;
+}
+
+.prod-item-header-grid .sub-col-title {
+    font-size: 0.825rem;
+    font-weight: 600;
+    color: #64748b;
+    text-align: left;
+}
+
+.prod-item-row {
+    display: grid;
+    grid-template-columns: minmax(180px, 1.8fr) minmax(140px, 1.2fr) minmax(110px, 1fr);
+    align-items: center;
+    padding: 0.35rem 0.25rem;
     border-bottom: 1px solid #f1f5f9;
-    transition: background-color 0.15s ease;
+    gap: 0.85rem;
+    background: transparent;
 }
 
-.prod-subtable tr:hover {
-    background-color: #f8fafc;
-}
-
-.prod-subtable tr:last-child {
+.prod-item-row:last-child {
     border-bottom: none;
 }
 
-.prod-subtable td {
-    padding: 0.4rem 0.6rem;
-    vertical-align: middle;
+/* Kolom 1: Nama Produk & Kode Barang (Rata Kiri) */
+.prod-item-left {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    min-width: 0;
+    text-align: left;
 }
 
-.prod-subtable .col-name {
-    color: #1e293b;
-    font-weight: 600;
-}
-
-.prod-subtable .item-name {
-    color: #0f172a;
+.prod-item-name {
     font-weight: 700;
-    font-size: 0.8125rem;
+    color: #0f172a;
+    font-size: 0.825rem;
     letter-spacing: -0.01em;
 }
 
-.prod-subtable .item-code {
+.prod-item-code {
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     font-size: 0.6875rem;
     font-weight: 600;
-    color: #475569;
+    color: #64748b;
     background: #f1f5f9;
     border: 1px solid #e2e8f0;
     padding: 0.05rem 0.35rem;
-    border-radius: 3px;
-    margin-left: 0.35rem;
+    border-radius: 4px;
 }
 
-.prod-subtable .item-batch {
+.prod-item-batch {
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     font-size: 0.675rem;
     font-weight: 600;
@@ -1693,67 +1698,57 @@
     background: #e0f2fe;
     border: 1px solid #bae6fd;
     padding: 0.05rem 0.35rem;
-    border-radius: 3px;
-    margin-left: 0.35rem;
+    border-radius: 4px;
 }
 
-.prod-subtable .col-qty {
-    text-align: right;
+/* Kolom 2: Output Fisik (Rata Kiri Terstruktur) */
+.prod-item-qty {
+    text-align: left;
     white-space: nowrap;
-    padding-left: 0.75rem;
     font-variant-numeric: tabular-nums;
-    min-width: 150px;
-}
-
-.prod-subtable .qty-main {
-    font-weight: 700;
-    color: #0f172a;
     font-size: 0.825rem;
 }
 
-.prod-subtable .qty-unit {
+.prod-item-qty strong {
+    font-weight: 800;
+    color: #0f172a;
+}
+
+.prod-item-qty .unit-text {
     color: #64748b;
     font-size: 0.725rem;
     font-weight: 600;
     margin-left: 0.15rem;
 }
 
-.prod-subtable .qty-kg-alt {
+.prod-item-qty .kg-alt {
     color: #0369a1;
     font-size: 0.75rem;
     font-weight: 600;
-    margin-left: 0.25rem;
+    margin-left: 0.3rem;
 }
 
-.prod-subtable .col-stock {
-    text-align: right;
+/* Kolom 3: Sisa Stok Gudang (Rata Kiri) */
+.prod-item-stock {
+    text-align: left;
     white-space: nowrap;
-    min-width: 105px;
-    padding-left: 0.75rem;
 }
 
-.prod-subtable .stock-badge {
-    font-size: 0.7rem;
-    font-weight: 600;
+.badge-stock-pill {
+    background: #ecfdf5;
     color: #059669;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.3rem;
-}
-
-.prod-subtable .stock-dot {
-    width: 6px;
-    height: 6px;
-    background: #10b981;
-    border-radius: 50%;
+    border: 1px solid #a7f3d0;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 0.15rem 0.55rem;
+    border-radius: 9999px;
     display: inline-block;
-    flex-shrink: 0;
 }
 
-.prod-subtable .stock-empty {
+.badge-stock-empty {
+    color: #94a3b8;
     font-size: 0.7rem;
     font-weight: 600;
-    color: #94a3b8;
 }
 
 /* Metadata Dokumen & Gudang Typography */
@@ -1878,6 +1873,50 @@
     color: #64748b;
     margin-top: 0.25rem;
     font-variant-numeric: tabular-nums;
+}
+
+/* ═════════════════════════════════════════════════════════════
+   STANDAR TABEL ERP MIRASA DENGAN ZEBRA STRIPING HALUS
+   Warna transparan semu selang-seling yang nyaman di mata
+   ═════════════════════════════════════════════════════════════ */
+.table-prod-main {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0;
+    font-size: 0.85rem;
+}
+
+.table-prod-main thead th {
+    background: #f8fafc;
+    color: #64748b;
+    font-weight: 600;
+    font-size: 0.825rem;
+    border-top: none;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.table-prod-main tbody tr.prod-main-row {
+    border-bottom: 1px solid #e2e8f0;
+    transition: background-color 0.15s ease-in-out;
+}
+
+/* Baris ganjil: Putih bersih */
+.table-prod-main tbody tr.prod-main-row:nth-child(odd) > td {
+    background-color: #ffffff !important;
+    border-bottom: 1px solid #e2e8f0;
+    transition: background-color 0.15s ease;
+}
+
+/* Baris genap: Abu-abu semu transparan lembut yang jelas terlihat (#f1f5f9) */
+.table-prod-main tbody tr.prod-main-row:nth-child(even) > td {
+    background-color: #f1f5f9 !important;
+    border-bottom: 1px solid #e2e8f0;
+    transition: background-color 0.15s ease;
+}
+
+/* Hover interaktif */
+.table-prod-main tbody tr.prod-main-row:hover > td {
+    background-color: #e2e8f0 !important;
 }
 
 

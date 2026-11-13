@@ -1,148 +1,308 @@
 /**
  * =========================================================================
  * ERP PT MIRASA - PENGEMASAN BARANG JADI & HPP (PACKAGING) CREATE CSS
- * Diseragamkan 100% dengan Standar Desain HPP Produksi (produksi-create.css)
+ * Standar Antarmuka Web Desktop Enterprise PT Mirasa Food Industry
+ * Diselaraskan 100% dengan Layout Formulir Produksi Web Pabrik (Table Layout)
  * =========================================================================
  */
 
 @import url('/css/produksi/produksi-create.css');
 
 .create-packaging-container {
-    max-width: 1300px;
-    margin: 0 auto;
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding-bottom: 3rem;
 }
 
-/* Banner Info Resep BOM */
-.bom-banner {
-    background: #f0fdf4;
-    border: 1.5px solid #86efac;
-    border-radius: 8px;
-    padding: 0.85rem 1.15rem;
-    margin-bottom: 1rem;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    flex-wrap: wrap;
-}
-
-.bom-banner-info {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-}
-
-.bom-banner-badge {
-    background: #dcfce7;
-    color: #15803d;
-    font-weight: 800;
-    font-size: 0.7rem;
-    padding: 0.2rem 0.5rem;
-    border-radius: 6px;
-    border: 1px solid #86efac;
-}
-
-/* Badges Kategori Bahan */
-.cat-badge {
-    display: inline-block;
-    padding: 0.15rem 0.45rem;
-    border-radius: 4px;
-    font-size: 0.675rem;
-    font-weight: 800;
-    letter-spacing: 0.02em;
-}
-
-.cat-wip { background: #ffedd5; color: #c2410c; }
-.cat-kemasan { background: #e0f2fe; color: #0369a1; }
-.cat-bumbu { background: #fef3c7; color: #b45309; }
-.cat-lain { background: #f1f5f9; color: #475569; }
-
-.stock-tag-ok {
-    font-size: 0.6875rem;
-    color: #16a34a;
-    font-weight: 600;
-}
-
-.stock-tag-warn {
-    font-size: 0.6875rem;
-    color: #dc2626;
-    font-weight: 700;
-}
-
-/* Badge Asal HPP Satuan Bahan */
-.wip-origin-tag {
-    font-size: 0.675rem;
-    color: #059669;
-    font-weight: 700;
-    margin-top: 3px;
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 3px;
-}
-
-.pack-origin-tag {
-    font-size: 0.675rem;
-    color: #64748b;
-    font-weight: 600;
-    margin-top: 3px;
-    text-align: right;
-}
-
-/* Modal Overlay & Custom Dialog */
-.modal-overlay {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(15, 23, 42, 0.6);
-    backdrop-filter: blur(2px);
-    z-index: 999999;
-    align-items: center;
-    justify-content: center;
-    padding: 1rem;
-}
-
-.modal-overlay.show {
-    display: flex;
-}
-
-@keyframes modalPop {
-    0% {
-        opacity: 0;
-        transform: scale(0.96) translateY(8px);
-    }
-    100% {
-        opacity: 1;
-        transform: scale(1) translateY(0);
-    }
-}
-
-/* Filter Pill Buttons */
-.btn-filter-pill {
+/* Card Section Formulir Web Desktop */
+.create-packaging-container .card-web-form {
     background: #ffffff;
-    border: 1.5px solid #cbd5e1;
-    color: #475569;
-    padding: 0.3rem 0.65rem;
-    border-radius: 9999px;
-    font-size: 0.75rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    margin-bottom: 1.25rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    overflow: hidden;
+}
+
+.create-packaging-container .card-web-header {
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 0.875rem 1.25rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.create-packaging-container .card-web-title {
+    font-size: 0.95rem;
     font-weight: 700;
-    cursor: pointer;
-    transition: all 0.15s ease-in-out;
+    color: #0f172a;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
+}
+
+.create-packaging-container .card-web-num {
     display: inline-flex;
     align-items: center;
-    gap: 0.25rem;
-}
-
-.btn-filter-pill:hover {
-    border-color: #0284c7;
-    color: #0284c7;
-    background: #f0f9ff;
-}
-
-.btn-filter-pill.active {
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
     background: #0284c7;
-    border-color: #0284c7;
     color: #ffffff;
-    box-shadow: 0 1px 2px rgba(2, 132, 199, 0.3);
+    font-size: 0.75rem;
+    font-weight: 800;
 }
 
+.create-packaging-container .card-web-body {
+    padding: 1.25rem;
+}
+
+/* Form Groups & Labels */
+.create-packaging-container .form-group {
+    margin-bottom: 1rem;
+}
+
+.create-packaging-container .form-label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #334155;
+    margin-bottom: 0.35rem;
+}
+
+.create-packaging-container .form-label .req {
+    color: #ef4444;
+}
+
+.create-packaging-container .form-control {
+    width: 100%;
+    height: 38px;
+    padding: 0.45rem 0.75rem;
+    font-size: 0.85rem;
+    color: #0f172a;
+    background-color: #ffffff;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 6px;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    box-sizing: border-box;
+}
+
+.create-packaging-container .form-control:focus {
+    border-color: #0284c7;
+    outline: 0;
+    box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.12);
+}
+
+.create-packaging-container textarea.form-control {
+    height: auto;
+    min-height: 75px;
+    resize: vertical;
+}
+
+/* Input Group (Berdampingan Presisi) */
+.create-packaging-container .input-group-web {
+    display: flex;
+    width: 100%;
+}
+
+.create-packaging-container .input-group-web .form-control:first-child {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    flex: 1;
+}
+
+.create-packaging-container .input-group-web .form-control:last-child,
+.create-packaging-container .input-group-web .input-group-addon {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    margin-left: -1px;
+}
+
+.create-packaging-container .input-group-addon {
+    display: flex;
+    align-items: center;
+    padding: 0 0.85rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #64748b;
+    background-color: #f8fafc;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 6px;
+    white-space: nowrap;
+}
+
+/* Grids Web Desktop */
+.create-packaging-container .grid-web-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.create-packaging-container .grid-web-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1rem;
+}
+
+.create-packaging-container .grid-web-4 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+@media (max-width: 900px) {
+    .create-packaging-container .grid-web-3 {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+@media (max-width: 640px) {
+    .create-packaging-container .grid-web-2,
+    .create-packaging-container .grid-web-3,
+    .create-packaging-container .grid-web-4 {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Segmented Control Desktop Compact (Identik dengan Shift Kerja Produksi) */
+.create-packaging-container .shift-segmented-active {
+    background: #0284c7 !important;
+    color: #ffffff !important;
+    box-shadow: 0 1px 3px rgba(2, 132, 199, 0.3) !important;
+}
+
+.create-packaging-container .shift-segmented-inactive {
+    background: transparent !important;
+    color: #475569 !important;
+}
+
+.create-packaging-container .shift-segmented-inactive:hover {
+    background: #e2e8f0 !important;
+    color: #0f172a !important;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════ */
+/* TABEL FORMULIR WEB DESKTOP (RINGKAS & ENTERPRISE)                        */
+/* ══════════════════════════════════════════════════════════════════════════ */
+.create-packaging-container .table-web-form {
+    width: 100%;
+    border-collapse: collapse;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.create-packaging-container .table-web-form th {
+    background: #f1f5f9;
+    padding: 0.65rem 0.85rem;
+    font-size: 0.775rem;
+    font-weight: 700;
+    color: #334155;
+    border-bottom: 1.5px solid #cbd5e1;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+}
+
+.create-packaging-container .table-web-form td {
+    padding: 0.75rem 0.85rem;
+    border-bottom: 1px solid #e2e8f0;
+    vertical-align: middle;
+}
+
+.create-packaging-container .table-web-form tr:last-child td {
+    border-bottom: none;
+}
+
+.create-packaging-container .table-web-form tr:hover {
+    background-color: #fcfdfe;
+}
+
+/* Kategori Tag & Badges (Enterprise Neutral Palette) */
+.create-packaging-container .cat-badge-web {
+    display: inline-block;
+    padding: 0.25rem 0.6rem;
+    border-radius: 4px;
+    font-size: 0.725rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+    background: #f8fafc;
+    color: #334155;
+    border: 1px solid #cbd5e1;
+}
+
+.cat-bumbu-web,
+.cat-plastik-web,
+.cat-karton-web,
+.cat-lakban-web,
+.cat-lain-web {
+    background: #f8fafc;
+    color: #334155;
+    border: 1px solid #cbd5e1;
+}
+
+/* Tombol Aksi Tabel */
+.create-packaging-container .btn-fifo-sm {
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    color: #047857;
+    font-size: 0.725rem;
+    font-weight: 700;
+    padding: 0.35rem 0.65rem;
+    border-radius: 4px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+    transition: all 0.15s ease;
+}
+
+.create-packaging-container .btn-fifo-sm:hover {
+    background: #d1fae5;
+    border-color: #6ee7b7;
+}
+
+.create-packaging-container .btn-add-table-row {
+    background: #ffffff;
+    border: 1.5px dashed #0284c7;
+    color: #0284c7;
+    font-size: 0.775rem;
+    font-weight: 700;
+    padding: 0.4rem 0.85rem;
+    border-radius: 6px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    transition: all 0.15s ease;
+}
+
+.create-packaging-container .btn-add-table-row:hover {
+    background: #f0f9ff;
+    border-color: #0369a1;
+}
+
+.create-packaging-container .btn-remove-row {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #dc2626;
+    border-radius: 4px;
+    height: 34px;
+    width: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.create-packaging-container .btn-remove-row:hover {
+    background: #fee2e2;
+}

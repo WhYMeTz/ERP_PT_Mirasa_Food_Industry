@@ -53,18 +53,20 @@
                             <span>Tarik Data Dokumen Pengeluaran Gudang (BPPB):</span>
                         </span>
                         <span style="font-size: 0.75rem; color: #64748b;">
-                            Memilih dokumen BPPB otomatis menyinkronkan Lini Produksi dan Rincian Bahan Baku.
+                            Hanya dokumen BPPB yang telah diverifikasi dan berstatus POSTED oleh Bagian Gudang yang dapat ditarik.
                         </span>
                     </div>
 
                     <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
                         <select name="pakai_id" id="pakai_id" class="form-control" style="flex: 1; min-width: 280px; font-size: 0.85rem;" onchange="loadPakaiData(this.value)">
-                            <option value="">-- Pilih Dokumen Pengeluaran Bahan (BPPB Siap Proses) --</option>
-                            @foreach ($pakaiList as $pk)
+                            <option value="">-- Pilih Dokumen Pengeluaran Bahan (BPPB Berstatus POSTED) --</option>
+                            @forelse ($pakaiList as $pk)
                                 <option value="{{ $pk->pakai_id }}" data-tujuan="{{ $pk->tujuan_pemakaian }}" data-tgl="{{ Carbon\Carbon::parse($pk->pakai_tgl)->format('Y-m-d') }}" {{ (string)old('pakai_id', request('pakai_id')) === (string)$pk->pakai_id ? 'selected' : '' }}>
                                     [{{ $pk->pakai_no }}] {{ Carbon\Carbon::parse($pk->pakai_tgl)->format('d/m/Y') }} - {{ $pk->tujuan_pemakaian }} ({{ $pk->details->count() }} item bahan)
                                 </option>
-                            @endforeach
+                            @empty
+                                <option value="" disabled>-- Tidak ada dokumen BPPB berstatus POSTED yang siap diproses --</option>
+                            @endforelse
                         </select>
                         <button type="button" id="btnTarikPakai" class="btn btn-secondary btn-sm" onclick="loadPakaiData(document.getElementById('pakai_id').value)" style="padding: 0.45rem 0.95rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.4rem;">
                             <svg id="iconTarikPakai" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>

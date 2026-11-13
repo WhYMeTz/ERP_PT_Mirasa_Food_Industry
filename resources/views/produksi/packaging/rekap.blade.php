@@ -344,6 +344,10 @@
 {{-- MODAL VOID DANGER --}}
 @include('produksi.packaging.partials.modal-void')
 
+{{-- MODAL FINALISASI HPP & PERINGATAN HPP PRODUKSI --}}
+@include('produksi.packaging.partials.modal-finalize-hpp')
+@include('produksi.packaging.partials.modal-warning-prod-hpp')
+
 @endsection
 
 @push('scripts')

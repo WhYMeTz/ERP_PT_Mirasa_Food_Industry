@@ -26,6 +26,7 @@ use App\Http\Controllers\MasterData\SupplierController;
 use App\Http\Controllers\MasterData\TarifProduksiController;
 use App\Http\Controllers\MasterData\TarifKemasanController;
 use App\Http\Controllers\Keuangan\BayarHutangController;
+use App\Http\Controllers\Keuangan\KasKeluarController;
 use App\Http\Controllers\Keuangan\CoaController;
 use App\Http\Controllers\Keuangan\HutangController;
 use App\Http\Controllers\Keuangan\KasBankController;
@@ -536,9 +537,15 @@ Route::middleware('auth')->group(function () {
         Route::patch('hutang/{id}/update-tempo', [HutangController::class, 'updateTempo'])->name('hutang.update-tempo')->middleware('role:hutang_create');
         Route::resource('hutang', HutangController::class)->except(['edit', 'update']);
 
-        // 2. Pelunasan Hutang (Bukti Kas Keluar - BKK)
+        // 2. Pelunasan Hutang & Kas Keluar (Bukti Kas Keluar - BKK)
         Route::post('bayar/{id}/void', [BayarHutangController::class, 'void'])->name('bayar.void')->middleware('role:bayar_hutang_void');
         Route::resource('bayar', BayarHutangController::class)->only(['index', 'create', 'store', 'show']);
+
+        // 2b. Kas Keluar Operasional (BKK Pengeluaran Langsung / Non-Hutang)
+        Route::get('kas-keluar/create', [KasKeluarController::class, 'create'])->name('kas_keluar.create')->middleware('role:bayar_hutang_create');
+        Route::post('kas-keluar', [KasKeluarController::class, 'store'])->name('kas_keluar.store')->middleware('role:bayar_hutang_create');
+        Route::get('kas-keluar/{id}', [KasKeluarController::class, 'show'])->name('kas_keluar.show')->middleware('role:bayar_hutang_view');
+        Route::post('kas-keluar/{id}/void', [KasKeluarController::class, 'void'])->name('kas_keluar.void')->middleware('role:bayar_hutang_void');
 
         // 3. Kas & Rekening Bank
         Route::get('kas-bank/rekening-koran', [KasBankController::class, 'rekeningKoran'])->name('kas_bank.rekening_koran')->middleware('role:kas_bank_view');

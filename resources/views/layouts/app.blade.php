@@ -1829,10 +1829,10 @@
                         </div>
                     @endif
 
-                    {{-- PILAR 5: KEUANGAN & AKUNTING --}}
+                    {{-- PILAR 5: KEUANGAN (OPERASIONAL & TRANSAKSI) --}}
                     @if (Auth::user()->canAccessKeuangan())
                         @php
-                            $isKeuanganActive = request()->routeIs('keuangan.*');
+                            $isKeuanganActive = request()->routeIs('keuangan.*') && !request()->routeIs('keuangan.laporan.*');
                         @endphp
                         <div class="pill-dropdown" id="navDropdownKeuangan">
                             <button type="button" class="pill-dropdown-btn {{ $isKeuanganActive ? 'active' : '' }}"
@@ -1853,34 +1853,30 @@
                             <div class="dropdown-menu dropdown-mega">
                                 <div class="mega-grid">
                                     <div class="mega-col">
-                                        <div class="mega-col-title">Hutang &amp; Kas Operasional</div>
-                                        @if (Auth::user()->canAccessHutang())
-                                            <a href="{{ route('keuangan.hutang.index') }}"
-                                                class="mega-item {{ request()->routeIs('keuangan.hutang.*') ? 'active' : '' }}">
+                                        <div class="mega-col-title">Kas, Bank &amp; Penerimaan</div>
+                                        @if (Auth::user()->canAccessKasBank())
+                                            <a href="{{ route('keuangan.kas_bank.index') }}"
+                                                class="mega-item {{ (request()->routeIs('keuangan.kas_bank.*') && !request()->routeIs('keuangan.kas_bank.rekening_koran')) ? 'active' : '' }}">
                                                 <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                                                    style="color: #dc2626;">
+                                                    style="color: #0284c7;">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                                                </svg>
+                                                <div style="display: flex; flex-direction: column;">
+                                                    <span style="font-weight: 600;">Kas &amp; Rekening Bank</span>
+                                                    <span style="font-size: 0.6875rem; color: #64748b;">Saldo Kas Kecil, BCA, Mandiri &amp; mutasi</span>
+                                                </div>
+                                            </a>
+                                            <a href="{{ route('keuangan.kas_bank.rekening_koran') }}"
+                                                class="mega-item {{ request()->routeIs('keuangan.kas_bank.rekening_koran') ? 'active' : '' }}">
+                                                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                                    style="color: #0d9488;">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                         d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                                 </svg>
                                                 <div style="display: flex; flex-direction: column;">
-                                                    <span style="font-weight: 600;">Hutang &amp; Tagihan Supplier</span>
-                                                    <span style="font-size: 0.6875rem; color: #64748b;">Tagihan GRN, gas &amp;
-                                                        jadwal jatuh tempo</span>
-                                                </div>
-                                            </a>
-                                        @endif
-                                        @if (Auth::user()->canAccessBayarHutang())
-                                            <a href="{{ route('keuangan.bayar.index') }}"
-                                                class="mega-item {{ request()->routeIs('keuangan.bayar.*') ? 'active' : '' }}">
-                                                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                                                    style="color: #ef4444;">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                        d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-                                                </svg>
-                                                <div style="display: flex; flex-direction: column;">
-                                                    <span style="font-weight: 600;">Pelunasan (Bukti Kas Keluar)</span>
-                                                    <span style="font-size: 0.6875rem; color: #64748b;">Catat bayar cash, transfer
-                                                        &amp; cicilan BKK</span>
+                                                    <span style="font-weight: 600; color: #0f172a;">Rekening Koran Bank</span>
+                                                    <span style="font-size: 0.6875rem; color: #64748b;">Statement resmi bank, saldo berjalan &amp; cetak A4</span>
                                                 </div>
                                             </a>
                                         @endif
@@ -1894,55 +1890,41 @@
                                                 </svg>
                                                 <div style="display: flex; flex-direction: column;">
                                                     <span style="font-weight: 600;">Penerimaan (Bukti Kas Masuk)</span>
-                                                    <span style="font-size: 0.6875rem; color: #64748b;">Uang masuk limbah, modal
-                                                        &amp; piutang BKM</span>
-                                                </div>
-                                            </a>
-                                        @endif
-                                        @if (Auth::user()->canAccessKasBank())
-                                            <a href="{{ route('keuangan.kas_bank.index') }}"
-                                                class="mega-item {{ (request()->routeIs('keuangan.kas_bank.*') && !request()->routeIs('keuangan.kas_bank.rekening_koran')) ? 'active' : '' }}">
-                                                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                                                    style="color: #0284c7;">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                        d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                                                </svg>
-                                                <div style="display: flex; flex-direction: column;">
-                                                    <span style="font-weight: 600;">Kas &amp; Rekening Bank</span>
-                                                    <span style="font-size: 0.6875rem; color: #64748b;">Saldo Kas Kecil, BCA,
-                                                        Mandiri &amp; mutasi</span>
-                                                </div>
-                                            </a>
-                                            <a href="{{ route('keuangan.kas_bank.rekening_koran') }}"
-                                                class="mega-item {{ request()->routeIs('keuangan.kas_bank.rekening_koran') ? 'active' : '' }}">
-                                                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                                                    style="color: #0d9488;">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                                </svg>
-                                                <div style="display: flex; flex-direction: column;">
-                                                    <span style="font-weight: 600; color: #0f172a;">Rekening Koran Bank</span>
-                                                    <span style="font-size: 0.6875rem; color: #64748b;">Statement resmi bank, saldo
-                                                        berjalan &amp; cetak A4</span>
+                                                    <span style="font-size: 0.6875rem; color: #64748b;">Uang masuk limbah, modal &amp; piutang BKM</span>
                                                 </div>
                                             </a>
                                         @endif
                                     </div>
                                     <div class="mega-col">
-                                        <div class="mega-col-title">Akuntansi, Jurnal &amp; Laporan</div>
-                                        <a href="{{ route('keuangan.laporan.index') }}"
-                                            class="mega-item {{ request()->routeIs('keuangan.laporan.*') ? 'active' : '' }}">
-                                            <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                                                style="color: #4f46e5;">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                            </svg>
-                                            <div style="display: flex; flex-direction: column;">
-                                                <span style="font-weight: 700; color: #0f172a;">Laporan Keuangan</span>
-                                                <span style="font-size: 0.6875rem; color: #64748b;">Laba Rugi, Neraca, Neraca
-                                                    Saldo &amp; Arus Kas</span>
-                                            </div>
-                                        </a>
+                                        <div class="mega-col-title">Hutang &amp; Pembukuan</div>
+                                        @if (Auth::user()->canAccessHutang())
+                                            <a href="{{ route('keuangan.hutang.index') }}"
+                                                class="mega-item {{ request()->routeIs('keuangan.hutang.*') ? 'active' : '' }}">
+                                                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                                    style="color: #dc2626;">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                </svg>
+                                                <div style="display: flex; flex-direction: column;">
+                                                    <span style="font-weight: 600;">Hutang &amp; Tagihan Supplier</span>
+                                                    <span style="font-size: 0.6875rem; color: #64748b;">Tagihan GRN, gas &amp; jadwal jatuh tempo</span>
+                                                </div>
+                                            </a>
+                                        @endif
+                                        @if (Auth::user()->canAccessBayarHutang())
+                                            <a href="{{ route('keuangan.bayar.index') }}"
+                                                class="mega-item {{ request()->routeIs('keuangan.bayar.*') || request()->routeIs('keuangan.kas_keluar.*') ? 'active' : '' }}">
+                                                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                                    style="color: #ef4444;">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                                                </svg>
+                                                <div style="display: flex; flex-direction: column;">
+                                                    <span style="font-weight: 600;">Bukti Kas Keluar (BKK)</span>
+                                                    <span style="font-size: 0.6875rem; color: #64748b;">Bayar hutang supplier &amp; biaya operasional kas</span>
+                                                </div>
+                                            </a>
+                                        @endif
                                         @if (Auth::user()->canAccessJurnal())
                                             <a href="{{ route('keuangan.jurnal.index') }}"
                                                 class="mega-item {{ request()->routeIs('keuangan.jurnal.*') ? 'active' : '' }}">
@@ -1952,24 +1934,8 @@
                                                         d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                                                 </svg>
                                                 <div style="display: flex; flex-direction: column;">
-                                                    <span style="font-weight: 600; color: #0f172a;">Jurnal Umum (General
-                                                        Journal)</span>
-                                                    <span style="font-size: 0.6875rem; color: #64748b;">Histori entri double-entry
-                                                        debet &amp; kredit</span>
-                                                </div>
-                                            </a>
-                                            <a href="{{ route('keuangan.buku_besar.index') }}"
-                                                class="mega-item {{ request()->routeIs('keuangan.buku_besar.*') ? 'active' : '' }}">
-                                                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                                                    style="color: #059669;">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                                                </svg>
-                                                <div style="display: flex; flex-direction: column;">
-                                                    <span style="font-weight: 600; color: #0f172a;">Buku Besar (General
-                                                        Ledger)</span>
-                                                    <span style="font-size: 0.6875rem; color: #64748b;">Mutasi akun interaktif &amp;
-                                                        saldo berjalan</span>
+                                                    <span style="font-weight: 600; color: #0f172a;">Jurnal Umum (General Journal)</span>
+                                                    <span style="font-size: 0.6875rem; color: #64748b;">Histori entri double-entry debet &amp; kredit</span>
                                                 </div>
                                             </a>
                                         @endif
@@ -1983,8 +1949,7 @@
                                                 </svg>
                                                 <div style="display: flex; flex-direction: column;">
                                                     <span style="font-weight: 600; color: #0f172a;">Daftar Akun (COA)</span>
-                                                    <span style="font-size: 0.6875rem; color: #64748b;">Bagan perkiraan akuntansi
-                                                        &amp; kode pos</span>
+                                                    <span style="font-size: 0.6875rem; color: #64748b;">Bagan perkiraan akuntansi &amp; kode pos</span>
                                                 </div>
                                             </a>
                                         @endif
@@ -1996,10 +1961,8 @@
                                                     d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                                             </svg>
                                             <div style="display: flex; flex-direction: column;">
-                                                <span style="font-weight: 600; color: #0f172a;">Verifikasi Pemakaian
-                                                    Bahan</span>
-                                                <span style="font-size: 0.6875rem; color: #64748b;">Periksa batch fisik &amp;
-                                                    jurnal HPP</span>
+                                                <span style="font-weight: 600; color: #0f172a;">Verifikasi Pemakaian Bahan</span>
+                                                <span style="font-size: 0.6875rem; color: #64748b;">Periksa batch fisik &amp; jurnal HPP</span>
                                             </div>
                                             @php
                                                 $draftPakaiBadge = \App\Models\Gudang\DatPakaiHdr::where('status_st', 'DRAFT')->where('deleted_st', false)->count();
@@ -2011,6 +1974,131 @@
                                                 </span>
                                             @endif
                                         </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    @endif
+
+                    {{-- PILAR 6: LAPORAN KEUANGAN --}}
+                    @if (Auth::user()->canAccessKeuangan())
+                        @php
+                            $isLaporanActive = request()->routeIs('keuangan.laporan.*');
+                        @endphp
+                        <div class="pill-dropdown" id="navDropdownLaporan">
+                            <button type="button" class="pill-dropdown-btn {{ $isLaporanActive ? 'active' : '' }}"
+                                onclick="toggleNavDropdown('navDropdownLaporan', event)">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                    style="color: #4f46e5; flex-shrink: 0;">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                <span class="nav-text-full">Laporan Keuangan</span>
+                                <span class="nav-text-short">Laporan</span>
+                                <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                    class="chevron">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                        d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
+                            <div class="dropdown-menu dropdown-mega">
+                                <div class="mega-grid">
+                                    {{-- Kolom 1: Laporan Pokok Finansial --}}
+                                    <div class="mega-col">
+                                        <div class="mega-col-title" style="color: #4f46e5;">Laporan Pokok Finansial</div>
+                                        <a href="{{ route('keuangan.laporan.laba_rugi') }}"
+                                            class="mega-item {{ request()->routeIs('keuangan.laporan.laba_rugi') ? 'active' : '' }}">
+                                            <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                                style="color: #10b981;">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                                            </svg>
+                                            <div style="display: flex; flex-direction: column;">
+                                                <span style="font-weight: 700; color: #0f172a;">Laporan Laba Rugi</span>
+                                                <span style="font-size: 0.6875rem; color: #64748b;">Pendapatan usaha, HPP &amp; laba bersih</span>
+                                            </div>
+                                        </a>
+                                        <a href="{{ route('keuangan.laporan.neraca') }}"
+                                            class="mega-item {{ request()->routeIs('keuangan.laporan.neraca') ? 'active' : '' }}">
+                                            <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                                style="color: #0284c7;">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M3 6l3 18h12l3-18H3z" />
+                                            </svg>
+                                            <div style="display: flex; flex-direction: column;">
+                                                <span style="font-weight: 700; color: #0f172a;">Neraca Keuangan</span>
+                                                <span style="font-size: 0.6875rem; color: #64748b;">Posisi aset riil, hutang &amp; modal ekuitas</span>
+                                            </div>
+                                        </a>
+                                        <a href="{{ route('keuangan.laporan.arus_kas') }}"
+                                            class="mega-item {{ request()->routeIs('keuangan.laporan.arus_kas') ? 'active' : '' }}">
+                                            <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                                style="color: #0d9488;">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                            <div style="display: flex; flex-direction: column;">
+                                                <span style="font-weight: 700; color: #0f172a;">Laporan Arus Kas</span>
+                                                <span style="font-size: 0.6875rem; color: #64748b;">Arus kas masuk &amp; keluar operasional</span>
+                                            </div>
+                                        </a>
+                                        <a href="{{ route('keuangan.laporan.neraca_saldo') }}"
+                                            class="mega-item {{ request()->routeIs('keuangan.laporan.neraca_saldo') ? 'active' : '' }}">
+                                            <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                                style="color: #6366f1;">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                            <div style="display: flex; flex-direction: column;">
+                                                <span style="font-weight: 700; color: #0f172a;">Neraca Saldo (Trial Balance)</span>
+                                                <span style="font-size: 0.6875rem; color: #64748b;">Audit keseimbangan saldo Debet vs Kredit</span>
+                                            </div>
+                                        </a>
+                                    </div>
+
+                                    {{-- Kolom 2: Hub Eksekutif & Buku Pembantu --}}
+                                    <div class="mega-col">
+                                        <div class="mega-col-title" style="color: #64748b;">Hub &amp; Buku Pembantu</div>
+                                        <a href="{{ route('keuangan.laporan.index') }}"
+                                            class="mega-item {{ (request()->routeIs('keuangan.laporan.index') || request()->is('keuangan/laporan')) ? 'active' : '' }}">
+                                            <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                                style="color: #4f46e5;">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                                            </svg>
+                                            <div style="display: flex; flex-direction: column;">
+                                                <span style="font-weight: 700; color: #0f172a;">Executive Financial Hub</span>
+                                                <span style="font-size: 0.6875rem; color: #64748b;">Dashboard metrik performa &amp; KPI keuangan</span>
+                                            </div>
+                                        </a>
+                                        @if (Auth::user()->canAccessJurnal())
+                                            <a href="{{ route('keuangan.buku_besar.index') }}"
+                                                class="mega-item {{ request()->routeIs('keuangan.buku_besar.*') ? 'active' : '' }}">
+                                                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                                    style="color: #059669;">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                                </svg>
+                                                <div style="display: flex; flex-direction: column;">
+                                                    <span style="font-weight: 600; color: #0f172a;">Buku Besar (General Ledger)</span>
+                                                    <span style="font-size: 0.6875rem; color: #64748b;">Mutasi akun interaktif &amp; saldo berjalan</span>
+                                                </div>
+                                            </a>
+                                        @endif
+                                        @if (Auth::user()->canAccessKasBank())
+                                            <a href="{{ route('keuangan.kas_bank.rekening_koran') }}"
+                                                class="mega-item {{ request()->routeIs('keuangan.kas_bank.rekening_koran') ? 'active' : '' }}">
+                                                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                                    style="color: #0d9488;">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                </svg>
+                                                <div style="display: flex; flex-direction: column;">
+                                                    <span style="font-weight: 600; color: #0f172a;">Rekening Koran Bank</span>
+                                                    <span style="font-size: 0.6875rem; color: #64748b;">Statement resmi bank, saldo berjalan &amp; cetak A4</span>
+                                                </div>
+                                            </a>
+                                        @endif
                                     </div>
                                 </div>
                             </div>

@@ -3,7 +3,7 @@
 @section('title', 'Buku Rekapitulasi Harga Pokok Produksi (HPP) - PT Mirasa Food Industry')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/produksi/produksi-index.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/produksi/produksi-index.css') }}?v={{ filemtime(public_path('css/produksi/produksi-index.css')) }}">
 @endpush
 
 @section('content')

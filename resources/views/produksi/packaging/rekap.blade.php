@@ -3,8 +3,8 @@
 @section('title', 'Buku Rekapitulasi HPP Pengemasan (Packaging) - PT Mirasa Food Industry')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/produksi/produksi-index.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/produksi/packaging/packaging-index.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/produksi/produksi-index.css') }}?v={{ filemtime(public_path('css/produksi/produksi-index.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/produksi/packaging/packaging-index.css') }}?v={{ filemtime(public_path('css/produksi/packaging/packaging-index.css')) }}">
 @endpush
 
 @section('content')

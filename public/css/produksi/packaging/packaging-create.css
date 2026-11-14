@@ -495,3 +495,30 @@
     border: 1px solid #e2e8f0;
     border-radius: 6px;
 }
+
+/* Row Bersebelahan untuk Card 1 & Card 2 (Desktop Two-Column Grid) */
+.create-packaging-container .cards-grid-row-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+    align-items: stretch;
+    margin-bottom: 1.25rem;
+}
+
+.create-packaging-container .cards-grid-row-2 .card-web-form {
+    margin-bottom: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.create-packaging-container .cards-grid-row-2 .card-web-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+@media (max-width: 1024px) {
+    .create-packaging-container .cards-grid-row-2 {
+        grid-template-columns: 1fr;
+    }
+}

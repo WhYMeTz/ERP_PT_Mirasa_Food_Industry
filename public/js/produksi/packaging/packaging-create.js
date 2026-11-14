@@ -2075,3 +2075,97 @@ function toggleManualBumbuOverride() {
     }
 }
 window.toggleManualBumbuOverride = toggleManualBumbuOverride;
+
+/**
+ * Kalkulasi & Tampilan Banner BTKL Pengemasan (Card 2)
+ */
+function calcPackagingLabor() {
+    const jmlInput = document.getElementById('jumlah_personil');
+    const biayaInput = document.getElementById('total_biaya_tenaga_kerja');
+    const lblFormula = document.getElementById('lblTkPackingFormula');
+    const dispTotal = document.getElementById('disp_tk_packing_total');
+
+    const jml = parseInt(jmlInput?.value, 10) || 0;
+    const biaya = parseFloat(biayaInput?.value) || 0;
+
+    if (lblFormula) {
+        lblFormula.textContent = `${jml} Orang Langsung Packing`;
+    }
+    if (dispTotal) {
+        dispTotal.textContent = Math.round(biaya).toLocaleString('id-ID');
+    }
+
+    if (typeof recalculateTotals === 'function') {
+        recalculateTotals();
+    }
+}
+window.calcPackagingLabor = calcPackagingLabor;
+
+/**
+ * Sinkronisasi Presensi Tenaga Kerja Langsung Packing dari Modul Manajemen Karyawan
+ * @param {boolean} isManualClick
+ */
+function syncLaborPackingFromKaryawan(isManualClick = false) {
+    const tglInput = document.getElementById('pack_tgl');
+    const tgl = tglInput ? tglInput.value : '';
+    const btn = document.querySelector('.btn-sync-tk-pack') || document.querySelector('.btn-sync-tk');
+    if (btn && isManualClick) btn.disabled = true;
+
+    const url = `/produksi/sync-karyawan?tgl=${encodeURIComponent(tgl)}&lini=Langsung%20Packing`;
+
+    fetch(url, {
+        headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(res => res.json())
+    .then(res => {
+        if (res.status === 'success' && res.data) {
+            const data = res.data;
+            const org = data.tk_langsung_org || data.tk_jumlah_org || 0;
+            const nilai = data.tk_langsung_nilai || data.tk_total_nilai || 0;
+
+            const elJml = document.getElementById('jumlah_personil');
+            const elBiaya = document.getElementById('total_biaya_tenaga_kerja');
+            const elHelp = document.getElementById('helpLaborPacking');
+
+            if (elJml) elJml.value = org;
+            if (elBiaya) elBiaya.value = nilai;
+
+            calcPackagingLabor();
+
+            if (elHelp) {
+                if (data.is_synced && (org > 0 || nilai > 0)) {
+                    const fmtNilai = Math.round(nilai).toLocaleString('id-ID');
+                    elHelp.innerHTML = `✓ Tersinkron dari Modul Absensi: <strong>${org} Orang</strong> (Rp ${fmtNilai})`;
+                    elHelp.style.color = '#059669';
+                } else {
+                    elHelp.innerHTML = `Data absensi belum tercatat di Modul Karyawan untuk tanggal ini (nilai 0, dapat diisi manual).`;
+                    elHelp.style.color = '#64748b';
+                }
+            }
+
+            if (isManualClick) {
+                const fmtNilai = Math.round(nilai).toLocaleString('id-ID');
+                alert(`✅ Data presensi kemas berhasil ditarik dari Manajemen Karyawan:\n• Karyawan Langsung Packing: ${org} orang\n• Total Upah BTKL: Rp ${fmtNilai}`);
+            }
+        }
+    })
+    .catch(err => {
+        console.error('Sync labor packing error:', err);
+    })
+    .finally(() => {
+        if (btn && isManualClick) btn.disabled = false;
+    });
+}
+window.syncLaborPackingFromKaryawan = syncLaborPackingFromKaryawan;
+
+document.addEventListener('DOMContentLoaded', function () {
+    const packTglInput = document.getElementById('pack_tgl');
+    if (packTglInput) {
+        packTglInput.addEventListener('change', function () {
+            syncLaborPackingFromKaryawan(false);
+        });
+    }
+
+    // Inisialisasi awal tampilan BTKL
+    calcPackagingLabor();
+});

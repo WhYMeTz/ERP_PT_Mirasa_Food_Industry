@@ -4,6 +4,7 @@ namespace App\Services\Produksi;
 
 use App\Models\MasterData\MstTarifProduksi;
 use App\Models\Produksi\DatKursHarian;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -71,7 +72,7 @@ class TarifProduksiService
 
         // 1. Cek tanggal spesifik di dat_kurs_harian
         $exactRecord = DatKursHarian::active()
-            ->where('tanggal', $targetDate)
+            ->whereDate('tanggal', $targetDate)
             ->first();
 
         if ($exactRecord && $exactRecord->kurs_tengah > 0) {
@@ -80,7 +81,7 @@ class TarifProduksiService
 
         // 2. Jika belum ada dan autoSync diaktifkan, otomatis ambil data resmi portal Bank Indonesia
         if ($allowAutoSync) {
-            $synced = $this->syncFromBankIndonesia();
+            $synced = $this->syncFromBankIndonesia($targetDate);
             if (isset($synced[$targetDate]) && $synced[$targetDate] > 0) {
                 return (float) $synced[$targetDate];
             }
@@ -88,7 +89,7 @@ class TarifProduksiService
 
         // 3. Jika hari libur/akhir pekan atau jam rilis BI belum tercapai, ambil kurs hari kerja terakhir <= targetDate
         $latestRecord = DatKursHarian::active()
-            ->where('tanggal', '<=', $targetDate)
+            ->whereDate('tanggal', '<=', $targetDate)
             ->orderByDesc('tanggal')
             ->first();
 
@@ -103,11 +104,12 @@ class TarifProduksiService
 
     /**
      * Sinkronisasi data resmi JISDOR langsung dari portal resmi Bank Indonesia.
-     * Mengambil tabel kurs resmi BI (10 hari kerja terakhir) dan menyimpannya ke dat_kurs_harian & mst_tarif_produksi.
+     * Mengambil tabel kurs resmi BI (baik tanggal historis spesifik maupun 10 hari kerja terakhir)
+     * dan menyimpannya ke dat_kurs_harian & mst_tarif_produksi.
      *
      * @return array<string, float>
      */
-    public function syncFromBankIndonesia(): array
+    public function syncFromBankIndonesia(?string $targetDate = null): array
     {
         $monthMap = [
             'januari' => '01', 'februari' => '02', 'maret' => '03', 'april' => '04',
@@ -116,19 +118,46 @@ class TarifProduksiService
         ];
 
         try {
-            $response = Http::timeout(6)
-                ->withoutVerifying()
-                ->withHeaders([
+            $cookieJar = new \GuzzleHttp\Cookie\CookieJar();
+            $client = new \GuzzleHttp\Client([
+                'cookies' => $cookieJar,
+                'verify'  => false,
+                'timeout' => 8,
+                'headers' => [
                     'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                     'Accept'     => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                ])
-                ->get('https://www.bi.go.id/id/statistik/informasi-kurs/jisdor/default.aspx');
+                ],
+            ]);
 
-            if (!$response->successful()) {
-                return [];
+            $url = 'https://www.bi.go.id/id/statistik/informasi-kurs/jisdor/default.aspx';
+            $res = $client->get($url);
+            $html = (string) $res->getBody();
+
+            // Jika ada target date historis yang diminta, lakukan filter tanggal spesifik ke form SharePoint BI
+            if ($targetDate) {
+                $targetCarbon = Carbon::parse($targetDate)->timezone(config('app.timezone', 'Asia/Jakarta'));
+                $fromDate = $targetCarbon->copy()->subDays(7)->format('d/m/Y');
+                $toDate = $targetCarbon->copy()->addDays(7)->min(Carbon::today(config('app.timezone', 'Asia/Jakarta')))->format('d/m/Y');
+
+                preg_match('/id="__VIEWSTATE"\s+value="([^"]+)"/', $html, $vs);
+                preg_match('/id="__VIEWSTATEGENERATOR"\s+value="([^"]+)"/', $html, $vsg);
+                preg_match('/id="__EVENTVALIDATION"\s+value="([^"]+)"/', $html, $ev);
+
+                if (!empty($vs[1])) {
+                    $postRes = $client->post($url, [
+                        'form_params' => [
+                            '__VIEWSTATE'          => $vs[1],
+                            '__VIEWSTATEGENERATOR' => $vsg[1] ?? '',
+                            '__EVENTVALIDATION'    => $ev[1] ?? '',
+                            'ctl00$ctl51$g_8e393016_c37f_48c2_9aa2_ab195a9c1128$ctl00$TextBoxFrom' => $fromDate,
+                            'ctl00$ctl51$g_8e393016_c37f_48c2_9aa2_ab195a9c1128$ctl00$TextBoxDateTo' => $toDate,
+                            'ctl00$ctl51$g_8e393016_c37f_48c2_9aa2_ab195a9c1128$ctl00$ButtonCari' => 'Cari',
+                        ]
+                    ]);
+                    $html = (string) $postRes->getBody();
+                }
             }
 
-            $html = $response->body();
             preg_match_all('/<tr[^>]*>.*?<\/tr>/is', $html, $rows);
 
             $synced = [];
@@ -136,8 +165,8 @@ class TarifProduksiService
                 if (str_contains($r, 'table-search')) continue;
                 preg_match_all('/<td[^>]*>(.*?)<\/td>/is', $r, $cells);
                 if (!empty($cells[1]) && count($cells[1]) >= 2) {
-                    $c0 = trim(strip_tags($cells[1][0])); // contoh: "2 November 2026"
-                    $c1 = trim(strip_tags($cells[1][1])); // contoh: "Rp 18.161,00"
+                    $c0 = trim(strip_tags($cells[1][0])); // contoh: "2 Oktober 2026"
+                    $c1 = trim(strip_tags($cells[1][1])); // contoh: "Rp 17.898,00"
 
                     if (preg_match('/^(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})$/', $c0, $mDate)) {
                         $day = str_pad($mDate[1], 2, '0', STR_PAD_LEFT);

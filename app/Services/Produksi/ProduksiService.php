@@ -861,16 +861,25 @@ class ProduksiService
 
             $isIfm = !empty($lini) && (str_contains(strtoupper($lini), 'IFM') || str_contains(strtoupper($lini), 'IFL'));
             $isManualOnly = !empty($lini) && str_contains(strtoupper($lini), 'MANUAL');
+            $isPacking = !empty($lini) && (str_contains(strtoupper($lini), 'PACK') || str_contains(strtoupper($lini), 'KEMAS'));
 
-            // 1. Karyawan Langsung Produksi (Pengolahan / Penggorengan)
-            $prodRows = $rows->filter(function ($row) use ($isIfm, $isManualOnly) {
+            // 1. Karyawan Langsung Produksi / Pengemasan
+            $prodRows = $rows->filter(function ($row) use ($isIfm, $isManualOnly, $isPacking) {
                 if (empty($row['masuk'])) {
                     return false;
                 }
                 $kAsli = strtoupper((string) ($row['kelompok_asli'] ?? $row['kelompok'] ?? ''));
 
-                // Pastikan bukan packaging dan bukan tidak langsung
-                if (str_contains($kAsli, 'PACK') || str_contains($kAsli, 'KEMAS') || str_contains($kAsli, 'TIDAK')) {
+                if (str_contains($kAsli, 'TIDAK')) {
+                    return false;
+                }
+
+                if ($isPacking) {
+                    return str_contains($kAsli, 'PACK') || str_contains($kAsli, 'KEMAS');
+                }
+
+                // Untuk Dapur / Masak: pastikan bukan packaging
+                if (str_contains($kAsli, 'PACK') || str_contains($kAsli, 'KEMAS')) {
                     return false;
                 }
 
@@ -884,7 +893,7 @@ class ProduksiService
             });
 
             // Jika filter spesifik kosong tapi ada pekerja produksi langsung lain (selain packing & non-langsung)
-            if ($prodRows->count() === 0) {
+            if ($prodRows->count() === 0 && !$isPacking) {
                 $prodRows = $rows->filter(function ($row) {
                     if (empty($row['masuk'])) {
                         return false;
@@ -911,7 +920,7 @@ class ProduksiService
             $totalOrang = $langsungOrang;
             $totalBiaya = (float) $langsungBiaya;
 
-            $prodLabel = $isIfm ? 'Karyawan Langsung IFM' : ($isManualOnly ? 'Karyawan Langsung Manual' : 'Karyawan Langsung Produksi');
+            $prodLabel = $isPacking ? 'Karyawan Langsung Packing' : ($isIfm ? 'Karyawan Langsung IFM' : 'Karyawan Langsung Manual');
 
             if ($totalOrang > 0 || $totalBiaya > 0) {
                 return [
@@ -977,14 +986,17 @@ class ProduksiService
 
                         if ($count > 0 || $totalUpah > 0) {
                             return [
-                                'tgl'            => $tgl,
-                                'tgl_format'     => $tglFormatted,
-                                'is_synced'      => true,
-                                'tk_jumlah_org'  => $count,
-                                'tk_total_nilai' => $totalUpah,
-                                'kelompok'       => $kelompokLabel,
-                                'source'         => $tableName,
-                                'message'        => "Data presensi tersinkronisasi ({$count} orang hadir, total Rp " . number_format($totalUpah, 0, ',', '.') . ").",
+                                'tgl'                     => $tgl,
+                                'tgl_format'              => $tglFormatted,
+                                'is_synced'               => true,
+                                'tk_langsung_org'         => $count,
+                                'tk_langsung_nilai'       => $totalUpah,
+                                'tk_langsung_label'       => $prodLabel,
+                                'tk_jumlah_org'           => $count,
+                                'tk_total_nilai'          => $totalUpah,
+                                'kelompok'                => $kelompokLabel,
+                                'source'                  => $tableName,
+                                'message'                 => "Data presensi tersinkronisasi ({$count} orang hadir, total Rp " . number_format($totalUpah, 0, ',', '.') . ").",
                             ];
                         }
                     }
@@ -1000,7 +1012,7 @@ class ProduksiService
             'is_synced'               => false,
             'tk_langsung_org'         => 0,
             'tk_langsung_nilai'       => 0,
-            'tk_langsung_label'       => 'Karyawan Langsung Produksi',
+            'tk_langsung_label'       => $isPacking ? 'Karyawan Langsung Packing' : ($isIfm ? 'Karyawan Langsung IFM' : 'Karyawan Langsung Manual'),
             'tk_tidak_langsung_org'   => 0,
             'tk_tidak_langsung_nilai' => 0,
             'tk_tidak_langsung_label' => 'Karyawan Tidak Langsung (Pendukung)',
@@ -2369,7 +2381,19 @@ class ProduksiService
                         $record->cng_kurs_jisdor = (float) $payload['cng_kurs_jisdor'];
                     }
 
-                    if ($modeCng === 'update_tarif' && $cngTarifBaru > 0) {
+                    if ($modeCng === 'total_tagihan') {
+                        if ($totalMmbtuBulanIni > 0) {
+                            $record->cng_tarif = $effectiveCngTarif;
+                            $record->cng_nilai = round($record->cng_mmbtu * $effectiveCngTarif, 2);
+                        } else {
+                            $record->cng_nilai = $totalWipBulanIni > 0
+                                ? round($totalCngTagihan * ($record->total_wip_qty / $totalWipBulanIni), 2)
+                                : round($totalCngTagihan / $count, 2);
+                            if ($record->cng_mmbtu > 0) {
+                                $record->cng_tarif = round($record->cng_nilai / $record->cng_mmbtu, 2);
+                            }
+                        }
+                    } elseif ($modeCng === 'update_tarif' && $cngTarifBaru > 0) {
                         $record->cng_tarif = $cngTarifBaru;
                         $record->cng_nilai = round($record->cng_mmbtu * $cngTarifBaru, 2);
                     } elseif ($modeCng === 'proporsional_wip') {
@@ -2379,9 +2403,6 @@ class ProduksiService
                         if ($record->cng_mmbtu > 0) {
                             $record->cng_tarif = round($record->cng_nilai / $record->cng_mmbtu, 2);
                         }
-                    } elseif ($modeCng === 'total_tagihan') {
-                        $record->cng_tarif = $effectiveCngTarif;
-                        $record->cng_nilai = round($record->cng_mmbtu * $effectiveCngTarif, 2);
                     }
                 }
 
@@ -3307,12 +3328,32 @@ class ProduksiService
         $bumbuNilai = $calcBumbuNilai > 0 ? $calcBumbuNilai : (float) $prod->bumbu_nilai;
         $bumbuQty = $calcBumbuQty > 0 ? $calcBumbuQty : (float) $prod->bumbu_qty;
 
-        // Utilitas Gas CNG (Gunakan Kurs Terkini Bank Indonesia)
+        // Utilitas Gas CNG (Gunakan Kurs JISDOR BI Sesuai Tanggal Produksi SPK)
         $cngMmbtu = (float) $prod->cng_mmbtu;
         $cngTarifUsd = (float) ($prod->cng_tarif_usd > 0 ? $prod->cng_tarif_usd : 14.50);
-        $latestRecord = \App\Models\Produksi\DatKursHarian::active()->orderByDesc('tanggal')->first();
-        $latestJisdor = $latestRecord ? (float) $latestRecord->kurs_tengah : app(\App\Services\Produksi\TarifProduksiService::class)->getJisdorRate(null, true);
-        $cngKursJisdor = (float) ($prod->cng_nilai > 0 && $prod->cng_kurs_jisdor > 0 ? $prod->cng_kurs_jisdor : ($latestJisdor ?: 18103.00));
+        $prodCarbon = $prod->produksi_tgl ? Carbon::parse($prod->produksi_tgl)->timezone(config('app.timezone', 'Asia/Jakarta')) : Carbon::today(config('app.timezone', 'Asia/Jakarta'));
+        $prodDateStr = $prodCarbon->format('Y-m-d');
+        $tarifProdService = app(\App\Services\Produksi\TarifProduksiService::class);
+        $prodDateJisdor = $tarifProdService->getJisdorRate($prodDateStr, true);
+
+        // Ambil tanggal referensi efektif kurs yang dipakai
+        $kursRecord = \App\Models\Produksi\DatKursHarian::active()
+            ->whereDate('tanggal', '<=', $prodDateStr)
+            ->orderByDesc('tanggal')
+            ->first();
+
+        $kursEffectiveCarbon = $kursRecord ? Carbon::parse($kursRecord->tanggal)->timezone(config('app.timezone', 'Asia/Jakarta')) : $prodCarbon;
+        $kursEffectiveDateFmt = $kursEffectiveCarbon->format('d/m/Y');
+
+        $keteranganAcuan = 'Kurs tanggal produksi';
+        if ($prodCarbon->isWeekend()) {
+            $dayName = $prodCarbon->dayOfWeek === 6 ? 'Sabtu' : ($prodCarbon->dayOfWeek === 0 ? 'Minggu' : 'Hari libur');
+            $keteranganAcuan = "Kurs hari bursa terakhir ({$dayName} libur)";
+        } elseif ($kursRecord && !$kursEffectiveCarbon->isSameDay($prodCarbon)) {
+            $keteranganAcuan = "Kurs hari bursa terakhir";
+        }
+
+        $cngKursJisdor = (float) ($prod->cng_nilai > 0 && $prod->cng_kurs_jisdor > 0 ? $prod->cng_kurs_jisdor : ($prodDateJisdor ?: 16218.00));
         $cngTarif = (float) ($prod->cng_nilai > 0 && $prod->cng_tarif > 0 ? $prod->cng_tarif : round($cngTarifUsd * $cngKursJisdor, 2));
         $cngNilai = (float) ($prod->cng_nilai > 0 ? $prod->cng_nilai : round($cngMmbtu * $cngTarif));
 
@@ -3346,13 +3387,13 @@ class ProduksiService
             5 => 'Jumat',
             6 => 'Sabtu',
         ];
-        $tglCarbon = Carbon::parse($prod->produksi_tgl);
+        $tglCarbon = Carbon::parse($prod->produksi_tgl)->timezone(config('app.timezone', 'Asia/Jakarta'));
         $hariIndo = $dayNamesIndo[$tglCarbon->dayOfWeek] ?? 'Senin';
 
         return [
             'produksi_id'          => $prod->produksi_id,
             'produksi_no'          => $prod->produksi_no,
-            'produksi_tgl'         => $prod->produksi_tgl,
+            'produksi_tgl'         => $tglCarbon->format('Y-m-d'),
             'produksi_tgl_fmt'     => $tglCarbon->format('d/m/Y'),
             'hari_nm'              => $hariIndo,
             'shift_cd'             => $prod->shift_cd,
@@ -3399,6 +3440,8 @@ class ProduksiService
             'cng_mmbtu'            => $cngMmbtu,
             'cng_tarif_usd'        => $cngTarifUsd,
             'cng_kurs_jisdor'      => $cngKursJisdor,
+            'cng_kurs_date'        => $kursEffectiveDateFmt,
+            'cng_kurs_ket'         => $keteranganAcuan,
             'cng_tarif'            => $cngTarif,
             'cng_nilai'            => $cngNilai,
 

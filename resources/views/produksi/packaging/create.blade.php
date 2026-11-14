@@ -107,7 +107,7 @@
                     </div>
                 </div>
 
-                <div class="grid-web-3">
+                <div class="grid-web-2">
                     {{-- 4. Leader / Operator Kemas --}}
                     <div class="form-group" style="margin-bottom: 0;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
@@ -129,13 +129,7 @@
                         <input type="text" id="operator_nama" name="operator_nama" class="form-control" placeholder="Nama operator pengemasan..." value="{{ old('operator_nama', $selectedLaporan?->operator_nama ?? (Auth::user()->name ?? '')) }}" style="display: none; margin-top: 0.35rem;" required>
                     </div>
 
-                    {{-- 5. Jumlah Personil --}}
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label class="form-label" for="jumlah_personil">Jumlah Personil (Orang)</label>
-                        <input type="number" id="jumlah_personil" name="jumlah_personil" class="form-control" min="1" placeholder="0" value="{{ old('jumlah_personil', $selectedLaporan?->jumlah_personil) }}">
-                    </div>
-
-                    {{-- 6. Mesin Aktif --}}
+                    {{-- 5. Mesin Aktif --}}
                     <div class="form-group" style="margin-bottom: 0;">
                         <label class="form-label" for="jumlah_mesin">Mesin Aktif (Unit)</label>
                         <input type="number" id="jumlah_mesin" name="jumlah_mesin" class="form-control" min="1" placeholder="0" value="{{ old('jumlah_mesin', $selectedLaporan?->jumlah_mesin) }}">
@@ -145,12 +139,94 @@
         </div>
 
         {{-- ═════════════════════════════════════════════════════════════════ --}}
-        {{-- KARTU 2: TABEL KONVERSI PENGEMASAN (CURAH WIP KE BARANG JADI FG)   --}}
+        {{-- KARTU 2: BIAYA TENAGA KERJA LANGSUNG (BTKL PENGEMASAN)            --}}
         {{-- ═════════════════════════════════════════════════════════════════ --}}
         <div class="card-web-form">
             <div class="card-web-header">
                 <h2 class="card-web-title">
                     <span class="card-web-num">2</span>
+                    <div style="display: flex; align-items: center; gap: 0.45rem;">
+                        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                        <span>Biaya Tenaga Kerja Langsung (BTKL)</span>
+                    </div>
+                </h2>
+                <div style="display: flex; gap: 0.35rem; align-items: center;">
+                    <button type="button" class="btn-sync-tk" onclick="syncLaborPackingFromKaryawan(true)" title="Sinkronkan presensi dari Modul Manajemen Karyawan">
+                        <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                        <span>Sync Presensi</span>
+                    </button>
+                    <a href="{{ route('manajemen.absensi.index') }}" target="_blank" rel="noopener noreferrer" class="btn-link-bi" title="Buka Modul Absensi Manajemen Karyawan">
+                        <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                        <span>Data Absensi</span>
+                    </a>
+                </div>
+            </div>
+            <div class="card-web-body">
+                @php
+                    $initOrg = old('jumlah_personil', $selectedLaporan?->jumlah_personil ?? ($initialLabor['tk_jumlah_org'] ?? 0));
+                    $initNilai = old('total_biaya_tenaga_kerja', $selectedLaporan?->total_biaya_tenaga_kerja ?? ($initialLabor['tk_total_nilai'] ?? 0));
+                @endphp
+                <div class="btkl-breakdown-container">
+                    <div class="btkl-group-card">
+                        <div class="btkl-group-header">
+                            <div class="btkl-badge-prod">
+                                <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+                                <span>Karyawan Langsung Packing</span>
+                            </div>
+                        </div>
+                        <div class="btkl-group-inputs">
+                            <div class="btkl-input-item">
+                                <label for="jumlah_personil" class="btkl-sublabel">Jumlah Karyawan <span class="req" style="color: #ef4444;">*</span></label>
+                                <div class="input-suffix-wrap">
+                                    <input type="number" step="1" min="0" name="jumlah_personil" id="jumlah_personil" class="form-control" value="{{ $initOrg }}" required oninput="calcPackagingLabor()">
+                                    <span class="suffix-org">Orang</span>
+                                </div>
+                            </div>
+                            <div class="btkl-input-item">
+                                <label for="total_biaya_tenaga_kerja" class="btkl-sublabel">Total Upah Tenaga Kerja (Rp) <span class="req" style="color: #ef4444;">*</span></label>
+                                <div class="input-rp-wrap">
+                                    <span class="prefix-rp">Rp</span>
+                                    <input type="number" step="any" min="0" name="total_biaya_tenaga_kerja" id="total_biaya_tenaga_kerja" class="form-control" value="{{ $initNilai }}" required oninput="calcPackagingLabor()">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <small class="helper-text" id="helpLaborPacking" style="margin-top: 0.35rem; display: block; font-size: 0.75rem; color: #64748b;">
+                    @if (!empty($initialLabor['is_synced']) && ($initialLabor['tk_jumlah_org'] > 0 || $initialLabor['tk_total_nilai'] > 0))
+                        ✓ Tersinkron dari Modul Absensi: <strong>{{ $initialLabor['tk_jumlah_org'] }} Orang</strong> (Rp {{ number_format($initialLabor['tk_total_nilai'], 0, ',', '.') }})
+                    @else
+                        Ditarik langsung dari kehadiran &amp; tarif upah riil Tenaga Kerja Langsung Packing di Modul Absensi.
+                    @endif
+                </small>
+
+                <!-- Total BTKL Banner -->
+                <div class="labor-result-banner" style="margin-top: 0.75rem;">
+                    <div class="labor-result-info">
+                        <span class="labor-res-label">TOTAL BIAYA TENAGA KERJA (BTKL)</span>
+                        <span class="labor-res-formula" id="lblTkPackingFormula">{{ $initOrg }} Orang Langsung Packing</span>
+                    </div>
+                    <div class="banner-total-value labor-value-text">
+                        <span class="banner-val-currency">Rp</span>
+                        <span class="banner-val-amount" id="disp_tk_packing_total">{{ number_format($initNilai, 0, ',', '.') }}</span>
+                    </div>
+                </div>
+
+                <div class="labor-notes-box" style="margin-top: 0.75rem;">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <span>Khusus tenaga kerja langsung pengemasan (packing). Tenaga kerja dapur masak dan operasional tidak langsung dicatat terpisah.</span>
+                </div>
+            </div>
+        </div>
+
+        {{-- ═════════════════════════════════════════════════════════════════ --}}
+        {{-- KARTU 3: TABEL KONVERSI PENGEMASAN (CURAH WIP KE BARANG JADI FG)   --}}
+        {{-- ═════════════════════════════════════════════════════════════════ --}}
+        <div class="card-web-form">
+            <div class="card-web-header">
+                <h2 class="card-web-title">
+                    <span class="card-web-num">3</span>
                     <span>Tabel Konversi Pengemasan (Curah WIP &rarr; Barang Jadi FG)</span>
                 </h2>
                 <span style="font-size: 0.75rem; color: #64748b; font-weight: 600;">Matriks Pengambilan Bahan Curah &amp; Target Hasil Kemas Jadi</span>
@@ -252,12 +328,12 @@
         </div>
 
         {{-- ═════════════════════════════════════════════════════════════════ --}}
-        {{-- KARTU 3: TABEL PEMAKAIAN BAHAN KEMASAN & PENOLONG (RINGKAS)       --}}
+        {{-- KARTU 4: TABEL PEMAKAIAN BAHAN KEMASAN & PENOLONG (RINGKAS)       --}}
         {{-- ═════════════════════════════════════════════════════════════════ --}}
         <div class="card-web-form">
             <div class="card-web-header">
                 <h2 class="card-web-title">
-                    <span class="card-web-num">3</span>
+                    <span class="card-web-num">4</span>
                     <span>Tabel Pemakaian Bahan Kemasan, Dus, Lakban &amp; Afkir</span>
                 </h2>
                 <div style="display: flex; align-items: center; gap: 0.5rem;">
@@ -558,12 +634,12 @@
         </div>
 
         {{-- ═════════════════════════════════════════════════════════════════ --}}
-        {{-- KARTU 4: CATATAN OPERASIONAL PENGEMASAN                            --}}
+        {{-- KARTU 5: CATATAN OPERASIONAL PENGEMASAN                            --}}
         {{-- ═════════════════════════════════════════════════════════════════ --}}
         <div class="card-web-form">
             <div class="card-web-header">
                 <h2 class="card-web-title">
-                    <span class="card-web-num">4</span>
+                    <span class="card-web-num">5</span>
                     <span>Catatan Operasional &amp; Kendala Lapangan</span>
                 </h2>
                 <span style="font-size: 0.75rem; color: #64748b; font-weight: 600;">Keterangan Tambahan Shift</span>

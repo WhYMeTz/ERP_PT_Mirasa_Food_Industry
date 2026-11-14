@@ -295,7 +295,7 @@ function renderSameDayNotice(sameDaySpks, currentId, tglStr) {
             actionBtn = `<a href="/produksi/hpp/${item.produksi_id}" target="_blank" style="font-size: 0.72rem; color: #64748b; text-decoration: underline; margin-left: 0.5rem;">Lihat Lembar &rarr;</a>`;
         } else {
             statusBadge = `<span style="background: #fef2f2; color: #991b1b; padding: 2px 7px; border-radius: 4px; font-size: 0.72rem; font-weight: 700; border: 1px solid #fecaca;">⏳ Belum Ditarik HPP</span>`;
-            actionBtn = `<a href="/produksi/hpp/kalkulasi?produksi_id=${item.produksi_id}" style="font-size: 0.72rem; font-weight: 700; color: #0284c7; background: #f0f9ff; border: 1px solid #bae6fd; padding: 2px 6px; border-radius: 4px; text-decoration: none; margin-left: 0.5rem;">Tarik Dokumen Ini &rarr;</a>`;
+            actionBtn = `<button type="button" onclick="switchSelectedSpk(${item.produksi_id})" style="font-size: 0.72rem; font-weight: 700; color: #0284c7; background: #f0f9ff; border: 1px solid #bae6fd; padding: 2px 8px; border-radius: 4px; cursor: pointer; margin-left: 0.5rem;" title="Muat dokumen shift ini ke formulir kalkulasi">Tarik Dokumen Ini &rarr;</button>`;
         }
 
         html += `
@@ -314,6 +314,41 @@ function renderSameDayNotice(sameDaySpks, currentId, tglStr) {
     });
 
     container.innerHTML = html;
+}
+
+/**
+ * Berpindah ke dokumen SPK lain pada tanggal yang sama secara instan tanpa reload halaman
+ */
+function switchSelectedSpk(produksiId) {
+    const sel = document.getElementById('produksi_id');
+    if (!sel) return;
+
+    let optFound = false;
+    for (let i = 0; i < sel.options.length; i++) {
+        if (String(sel.options[i].value) === String(produksiId)) {
+            sel.selectedIndex = i;
+            optFound = true;
+            break;
+        }
+    }
+
+    if (!optFound) {
+        const opt = document.createElement('option');
+        opt.value = produksiId;
+        opt.textContent = `Dokumen SPK #${produksiId}`;
+        opt.selected = true;
+        sel.appendChild(opt);
+    }
+
+    sel.value = String(produksiId);
+    onProduksiSelectChange(produksiId);
+
+    // Update parameter query URL di address bar browser tanpa reload
+    try {
+        const newUrl = new URL(window.location.href);
+        newUrl.searchParams.set('produksi_id', produksiId);
+        window.history.replaceState({}, '', newUrl);
+    } catch (e) {}
 }
 
 /**
@@ -655,6 +690,13 @@ function populateCostingForm(data) {
     if (elDispCng) elDispCng.textContent = formatRp(cngNilai);
     updateCngFormulaLabel(data.cng_mmbtu || 0, data.cng_tarif || window.appConfig.defaultCngTarif || 263001.00);
 
+    const helpKurs = document.getElementById('helpKursJisdor');
+    if (helpKurs && data.cng_kurs_date) {
+        const effectiveKurs = data.cng_kurs_jisdor || window.appConfig?.defaultCngKursJisdor || 18218;
+        const ket = data.cng_kurs_ket || 'Kurs tanggal produksi';
+        helpKurs.innerHTML = `Referensi resmi BI: <strong>Rp ${formatRp(effectiveKurs)}</strong> (${data.cng_kurs_date} &bull; <span style="color: #059669; font-weight: 600;">${ket}</span>)`;
+    }
+
     // Tenaga Kerja Langsung Produksi (BTKL) dari Manajemen Karyawan
     const langsungOrg = parseInt(data.tk_langsung_org) || parseInt(data.tk_jumlah_org) || (data.labor_sync?.tk_langsung_org ?? 0);
     const langsungNilai = parseFloat(data.tk_langsung_nilai) || parseFloat(data.tk_total_nilai) || (data.labor_sync?.tk_langsung_nilai ?? 0);
@@ -669,8 +711,9 @@ function populateCostingForm(data) {
     if (elTidakOrg) elTidakOrg.value = 0;
     if (elTidakNilai) elTidakNilai.value = 0;
 
-    if (document.getElementById('lblLangsungGroup') && data.labor_sync?.tk_langsung_label) {
-        document.getElementById('lblLangsungGroup').textContent = data.labor_sync.tk_langsung_label;
+    const targetLaborLabel = getLaborCategoryLabel(data.lini_produksi, data.labor_sync?.tk_langsung_label);
+    if (document.getElementById('lblLangsungGroup')) {
+        document.getElementById('lblLangsungGroup').textContent = targetLaborLabel;
     }
 
     calcLaborSplit();
@@ -864,13 +907,24 @@ function calcLaborBreakdown() {
     calcLaborSplit();
 }
 
+function getLaborCategoryLabel(lini, rawLabel = '') {
+    const liniStr = String(lini || '').toUpperCase();
+    const rawStr = String(rawLabel || '').toUpperCase();
+    if (liniStr.includes('IFM') || liniStr.includes('IFL') || rawStr.includes('IFM') || rawStr.includes('IFL')) {
+        return 'Karyawan Langsung IFM';
+    }
+    return 'Karyawan Langsung Manual';
+}
+
 function updateLaborFormulaLabel(langsungOrg, langsungNilai) {
     const lbl = document.getElementById('lblTkFormula');
     if (lbl) {
+        const catLabel = getLaborCategoryLabel(currentProduksiData?.lini_produksi, document.getElementById('lblLangsungGroup')?.textContent);
+        const subName = catLabel.replace('Karyawan ', '');
         if (langsungOrg > 0 || langsungNilai > 0) {
-            lbl.textContent = `${langsungOrg} Orang Produksi`;
+            lbl.textContent = `${langsungOrg} Orang ${subName}`;
         } else {
-            lbl.textContent = `0 Orang Produksi`;
+            lbl.textContent = `0 Orang ${subName}`;
         }
     }
 }
@@ -900,6 +954,7 @@ function syncLaborFromKaryawan(isManualClick = false) {
         if (res.status === 'success' && res.data) {
             const data = res.data;
             const help = document.getElementById('helpTkSync');
+            const targetLaborLabel = getLaborCategoryLabel(lini, data.tk_langsung_label);
 
             if (data.is_synced && (data.tk_langsung_org > 0 || data.tk_langsung_nilai > 0 || data.tk_total_nilai > 0)) {
                 const org = data.tk_langsung_org || data.tk_jumlah_org || 0;
@@ -917,8 +972,8 @@ function syncLaborFromKaryawan(isManualClick = false) {
                 if (document.getElementById('tk_tidak_langsung_nilai')) {
                     document.getElementById('tk_tidak_langsung_nilai').value = 0;
                 }
-                if (document.getElementById('lblLangsungGroup') && data.tk_langsung_label) {
-                    document.getElementById('lblLangsungGroup').textContent = data.tk_langsung_label;
+                if (document.getElementById('lblLangsungGroup')) {
+                    document.getElementById('lblLangsungGroup').textContent = targetLaborLabel;
                 }
 
                 calcLaborSplit();
@@ -929,9 +984,12 @@ function syncLaborFromKaryawan(isManualClick = false) {
                 }
 
                 if (isManualClick) {
-                    alert(`✅ Data presensi berhasil ditarik dari Manajemen Karyawan:\n• Karyawan Produksi Langsung: ${org} orang\n• Total Biaya BTKL: Rp ${formatRp(nilai)}\n\n(Catatan: Karyawan packaging & operasional tidak langsung dihitung terpisah).`);
+                    alert(`✅ Data presensi berhasil ditarik dari Manajemen Karyawan:\n• ${targetLaborLabel}: ${org} orang\n• Total Biaya BTKL: Rp ${formatRp(nilai)}\n\n(Catatan: Karyawan packaging & operasional tidak langsung dihitung terpisah).`);
                 }
             } else {
+                if (document.getElementById('lblLangsungGroup')) {
+                    document.getElementById('lblLangsungGroup').textContent = targetLaborLabel;
+                }
                 // Sesuai instruksi: Jika data absensi kosong / belum tercatat, biarkan 0 (jangan diisi estimasi)
                 if (document.getElementById('tk_langsung_org')) document.getElementById('tk_langsung_org').value = 0;
                 if (document.getElementById('tk_langsung_nilai')) document.getElementById('tk_langsung_nilai').value = 0;
@@ -972,8 +1030,10 @@ function fetchLiveJisdor(isManualClick = false) {
     const btn = document.querySelector('.btn-sync-kurs');
     if (btn && isManualClick) btn.disabled = true;
 
-    // Selalu gunakan kurs terkini Bank Indonesia untuk penetapan HPP Finance
-    const url = window.appConfig.jisdorUrl + '?latest=1';
+    // Utamakan kurs JISDOR sesuai tanggal produksi SPK terpilih
+    const tglProd = currentProduksiData?.produksi_tgl || window.appConfig?.selectedProduksiTgl || '';
+    const baseUrl = window.appConfig?.jisdorUrl || '/produksi/kurs-jisdor';
+    const url = tglProd ? `${baseUrl}?date=${encodeURIComponent(tglProd)}` : `${baseUrl}?latest=1`;
 
     fetch(url, {
         headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
@@ -982,7 +1042,7 @@ function fetchLiveJisdor(isManualClick = false) {
     .then(res => {
         const rate = res.data?.rate || res.rate || res.kurs;
         const dateStr = res.data?.date || res.tanggal_acuan || res.date || '';
-        const ketAcuan = res.data?.keterangan_acuan || res.keterangan_acuan || 'Kurs terkini Bank Indonesia';
+        const ketAcuan = res.keterangan_acuan || res.data?.keterangan_acuan || (tglProd ? 'Kurs tanggal produksi' : 'Kurs Bank Indonesia');
 
         if (rate && rate > 0) {
             document.getElementById('cng_kurs_jisdor').value = rate;
@@ -999,15 +1059,16 @@ function fetchLiveJisdor(isManualClick = false) {
             }
 
             if (isManualClick) {
-                alert(`✅ Kurs JISDOR Bank Indonesia berhasil disinkronkan ke kurs terkini:\nRp ${formatRp(rate)} (Acuan BI: ${dateStr})`);
+                alert(`✅ Kurs JISDOR Bank Indonesia berhasil disinkronkan:\nRp ${formatRp(rate)} (Acuan BI: ${dateStr} • ${ketAcuan})`);
             }
         } else {
             if (isManualClick) {
-                alert('Gagal mengambil kurs JISDOR Bank Indonesia terkini.');
+                alert('Gagal mengambil kurs JISDOR Bank Indonesia.');
             }
         }
     })
     .catch(err => {
+        console.error('Fetch JISDOR error:', err);
         if (isManualClick) {
             alert('Terjadi kesalahan jaringan saat sync JISDOR: ' + err.message);
         }

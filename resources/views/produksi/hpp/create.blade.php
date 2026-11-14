@@ -316,7 +316,7 @@
                                     <span class="prefix-rp">Rp</span>
                                     <input type="number" step="any" min="0" name="cng_kurs_jisdor" id="cng_kurs_jisdor" class="hpp-input-sm" value="{{ $defaultCngKursJisdor }}" oninput="calcCngFromTarif()">
                                 </div>
-                                <small class="helper-text" id="helpKursJisdor">Referensi resmi BI: <strong>Rp {{ number_format($defaultCngKursJisdor, 0, ',', '.') }}</strong> ({{ $latestKursDate ?? date('d/m/Y') }} &bull; <span style="color: #059669; font-weight: 600;">Kurs terkini BI</span>)</small>
+                                <small class="helper-text" id="helpKursJisdor">Referensi resmi BI: <strong>Rp {{ number_format($defaultCngKursJisdor, 0, ',', '.') }}</strong> ({{ $latestKursDate ?? date('d/m/Y') }} &bull; <span style="color: #059669; font-weight: 600;">Kurs tanggal produksi</span>)</small>
                             </div>
                         </div>
 
@@ -367,7 +367,7 @@
                                 <div class="btkl-group-header">
                                     <div class="btkl-badge-prod">
                                         <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
-                                        <span id="lblLangsungGroup">Karyawan Produksi Langsung</span>
+                                        <span id="lblLangsungGroup">Karyawan Langsung Manual</span>
                                     </div>
                                 </div>
                                 <div class="btkl-group-inputs">
@@ -389,7 +389,7 @@
                             </div>
                         </div>
 
-                        <small class="helper-text" id="helpTkSync" style="margin-top: 0.35rem; display: block;">Ditarik langsung dari kehadiran &amp; tarif upah riil Karyawan Produksi Langsung di Modul Absensi.</small>
+                        <small class="helper-text" id="helpTkSync" style="margin-top: 0.35rem; display: block;">Ditarik langsung dari kehadiran &amp; tarif upah riil Tenaga Kerja Langsung di Modul Absensi.</small>
 
                         <!-- Total BTKL Banner -->
                         <div class="labor-result-banner">
@@ -592,6 +592,7 @@
             jisdorUrl: "{{ route('produksi.kurs-jisdor') }}",
             syncKaryawanUrl: "{{ route('produksi.sync-karyawan') }}",
             selectedProduksiId: {{ $selectedProduksiId ? (int)$selectedProduksiId : 'null' }},
+            selectedProduksiTgl: "{{ $prodDateStr ?? '' }}",
             defaultCngTarifUsd: {{ $defaultCngTarifUsd }},
             defaultCngKursJisdor: {{ $defaultCngKursJisdor }},
             defaultCngTarif: {{ $defaultCngTarif }}

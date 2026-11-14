@@ -338,6 +338,28 @@ class PackagingService
 
             $expiredTgl = !empty($data['expired_tgl']) ? $data['expired_tgl'] : null;
             $upahTk = (float) ($data['total_biaya_tenaga_kerja'] ?? 0);
+            $jmlPersonil = (int) ($data['jumlah_personil'] ?? 0);
+
+            // Jika upah atau personil belum terisi, otomatis tarik dari presensi riil Langsung Packing di Modul Karyawan
+            if ($upahTk <= 0 || $jmlPersonil <= 0) {
+                try {
+                    $laborData = app(\App\Services\Produksi\ProduksiService::class)->getLaborDataFromKaryawan($packTgl, 'Langsung Packing');
+                    if (!empty($laborData['is_synced'])) {
+                        if ($upahTk <= 0 && (float)($laborData['tk_total_nilai'] ?? 0) > 0) {
+                            $upahTk = (float) $laborData['tk_total_nilai'];
+                        }
+                        if ($jmlPersonil <= 0 && (int)($laborData['tk_jumlah_org'] ?? 0) > 0) {
+                            $jmlPersonil = (int) $laborData['tk_jumlah_org'];
+                        }
+                    }
+                } catch (\Throwable $e) {
+                    // Graceful fallback
+                }
+            }
+            if ($jmlPersonil <= 0) {
+                $jmlPersonil = 5;
+            }
+
             $biayaLain = (float) ($data['total_biaya_lain'] ?? 0);
 
             $rawItems = $data['items'] ?? [];
@@ -465,7 +487,7 @@ class PackagingService
                 'shift'                    => $data['shift'] ?? 'A',
                 'operator_nama'            => $data['operator_nama'] ?? null,
                 'karyawan_id'              => !empty($data['karyawan_id']) ? (int) $data['karyawan_id'] : null,
-                'jumlah_personil'          => (int) ($data['jumlah_personil'] ?? 5),
+                'jumlah_personil'          => $jmlPersonil,
                 'jumlah_mesin'             => (int) ($data['jumlah_mesin'] ?? 2),
                 'gudang_id'                => $gudangId,
                 'barang_jadi_id'           => $barangJadiId,

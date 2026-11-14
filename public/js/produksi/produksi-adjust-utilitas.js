@@ -1,122 +1,62 @@
 /**
  * ═════════════════════════════════════════════════════════════════
- * JAVASCRIPT LOGIKA PENYESUAIAN UTILITAS BULANAN (LISTRIK & GAS)
+ * JAVASCRIPT LOGIKA PENYESUAIAN TOTAL FAKTUR GAS BULANAN
  * ERP PT Mirasa Food Industry - Modul Produksi
  * ═════════════════════════════════════════════════════════════════
  */
 
 document.addEventListener('DOMContentLoaded', function () {
-    initAdjustUtilitas();
+    // Jalankan kalkulasi simulasi pertama kali saat halaman dimuat
+    recalculateLiveSimulation();
 });
 
-function initAdjustUtilitas() {
-    // 1. Jalankan kalkulasi simulasi pertama kali saat halaman dimuat
-    recalculateLiveSimulation();
-
-    // 2. Event listener untuk segmented pill mode listrik
-    document.querySelectorAll('.mode-pill-container').forEach(container => {
-        container.querySelectorAll('.mode-pill-item').forEach(pill => {
-            pill.addEventListener('click', function () {
-                const radio = this.querySelector('input[type="radio"]');
-                if (!radio) return;
-
-                radio.checked = true;
-
-                // Update active state di container yang sama
-                container.querySelectorAll('.mode-pill-item').forEach(p => p.classList.remove('active'));
-                this.classList.add('active');
-
-                // Trigger perubahan view box & kalkulasi
-                if (radio.name === 'mode_alokasi_listrik') {
-                    toggleListrikModeBox(radio.value);
-                } else if (radio.name === 'mode_cng') {
-                    toggleCngModeBox(radio.value);
-                }
-
-                recalculateLiveSimulation();
-            });
-        });
-    });
-
-    // 3. Event listener untuk checkbox aktivasi listrik
-    const chkListrik = document.getElementById('chk_adjust_listrik');
-    if (chkListrik) {
-        chkListrik.addEventListener('change', function () {
-            const container = document.getElementById('section_body_listrik');
-            if (container) {
-                container.style.opacity = this.checked ? '1' : '0.45';
-                container.style.pointerEvents = this.checked ? 'auto' : 'none';
-            }
-            recalculateLiveSimulation();
-        });
-    }
-
-    // 4. Event listener untuk checkbox aktivasi gas CNG
-    const chkCng = document.getElementById('chk_adjust_cng');
-    if (chkCng) {
-        chkCng.addEventListener('change', function () {
-            const container = document.getElementById('section_body_cng');
-            if (container) {
-                container.style.opacity = this.checked ? '1' : '0.45';
-                container.style.pointerEvents = this.checked ? 'auto' : 'none';
-            }
-            recalculateLiveSimulation();
-        });
-    }
-}
-
-function toggleListrikModeBox(mode) {
-    const boxTotal = document.getElementById('box_listrik_total_tagihan');
-    const boxTarif = document.getElementById('box_listrik_tarif_kg');
-    if (!boxTotal || !boxTarif) return;
-
-    if (mode === 'total_tagihan' || mode === 'proporsional_wip') {
-        boxTotal.style.display = 'block';
-        boxTarif.style.display = 'none';
-    } else {
-        boxTotal.style.display = 'none';
-        boxTarif.style.display = 'block';
-    }
-}
-
-function toggleCngModeBox(mode) {
-    const boxTarif = document.getElementById('box_cng_tarif_resmi');
-    const boxTotal = document.getElementById('box_cng_total_tagihan');
-    const descTotal = document.getElementById('desc_cng_total_tagihan');
-    if (!boxTarif || !boxTotal) return;
-
-    if (mode === 'update_tarif') {
-        boxTarif.style.display = 'block';
-        boxTotal.style.display = 'none';
-    } else {
-        boxTarif.style.display = 'none';
-        boxTotal.style.display = 'block';
-        if (descTotal) {
-            descTotal.innerHTML = 'Total tagihan faktur gas akan <strong>dibagi proporsional ke tiap hari kerja berdasarkan jumlah hasil produksi (Kg WIP)</strong>. Hari dengan hasil produksi lebih besar akan menyerap biaya lebih tinggi secara adil.';
-        }
-    }
-}
-
 /**
- * Kalkulasi otomatis Tarif per MMBTU dari USD x Kurs JISDOR
+ * Kalkulasi otomatis Tarif per MMBTU saat nilai USD atau Kurs JISDOR diubah
  */
-function calcCngAdjustRates() {
+function calcContractRateFromInputs() {
     const elUsd = document.getElementById('input_cng_tarif_usd');
     const elKurs = document.getElementById('input_cng_kurs_jisdor');
     const elTarif = document.getElementById('input_cng_tarif_resmi');
     if (!elTarif) return;
 
-    const usd = parseFloat(elUsd?.value) || 0;
-    const kurs = parseFloat(elKurs?.value) || 0;
+    const usd = parseFloat(elUsd?.value || 0);
+    const kurs = parseFloat(elKurs?.value || 0);
 
     if (usd > 0 && kurs > 0) {
         elTarif.value = Math.round(usd * kurs);
     }
+}
+
+/**
+ * Handler ketika input tarif resmi diubah manual oleh user
+ */
+function onManualTarifResmiChange() {
+    // Memungkinkan user mengetik tarif khusus jika diperlukan
+}
+
+/**
+ * Terapkan nilai acuan kontrak vendor gas ($ x Kurs x Total MMBTU) ke input total faktur
+ */
+function applyContractRateToInvoice() {
+    const table = document.getElementById('simGridTable');
+    const totalMmbtuMonth = parseFloat(table?.dataset.monthMmbtu || 0);
+    const elTarif = document.getElementById('input_cng_tarif_resmi');
+    const tarifKontrak = parseFloat(elTarif?.value || 0);
+
+    const inputFaktur = document.getElementById('input_total_cng_tagihan');
+    if (!inputFaktur) return;
+
+    if (totalMmbtuMonth > 0 && tarifKontrak > 0) {
+        inputFaktur.value = Math.round(tarifKontrak * totalMmbtuMonth);
+    } else if (tarifKontrak > 0) {
+        inputFaktur.value = Math.round(tarifKontrak);
+    }
+
     recalculateLiveSimulation();
 }
 
 /**
- * Kalkulasi Pratinjau Interaktif Real-Time
+ * Kalkulasi Pratinjau Interaktif Real-Time Alokasi Faktur Gas
  */
 function recalculateLiveSimulation() {
     const table = document.getElementById('simGridTable');
@@ -126,26 +66,24 @@ function recalculateLiveSimulation() {
     const totalMmbtuMonth = parseFloat(table.dataset.monthMmbtu || 0);
     const countDays = parseInt(table.dataset.monthDays || 0);
 
-    // 1. Parameter Listrik PLN
-    const isListrikActive = document.getElementById('chk_adjust_listrik')?.checked ?? true;
-    const modeListrik = document.querySelector('input[name="mode_alokasi_listrik"]:checked')?.value || 'total_tagihan';
-    const totalTagihanListrik = parseFloat(document.getElementById('input_total_listrik_tagihan')?.value || 0);
-    const tarifListrikKg = parseFloat(document.getElementById('input_listrik_tarif_kg')?.value || 0);
+    // Ambil total tagihan faktur gas dari input
+    const inputFaktur = document.getElementById('input_total_cng_tagihan');
+    const totalTagihanCng = Math.max(0, parseFloat(inputFaktur?.value || 0));
 
-    // 2. Parameter Gas CNG
-    const isCngActive = document.getElementById('chk_adjust_cng')?.checked ?? false;
-    const modeCng = document.querySelector('input[name="mode_cng"]:checked')?.value || 'update_tarif';
-    const tarifCngResmi = parseFloat(document.getElementById('input_cng_tarif_resmi')?.value || 0);
-    const totalTagihanCng = parseFloat(document.getElementById('input_total_cng_tagihan')?.value || 0);
-
+    // Hitung tarif efektif per MMBTU (Total Faktur / Total Pemakaian MMBTU)
     let effectiveCngRate = 0;
-    if (isCngActive && modeCng === 'total_tagihan' && totalMmbtuMonth > 0) {
+    if (totalMmbtuMonth > 0) {
         effectiveCngRate = totalTagihanCng / totalMmbtuMonth;
     }
 
-    // 3. Iterasi setiap baris tanggal produksi
+    // Update display tarif efektif aktual
+    const rateDisplay = document.getElementById('effective_cng_rate_display');
+    if (rateDisplay) {
+        rateDisplay.textContent = formatRupiah(effectiveCngRate);
+    }
+
+    // Iterasi setiap baris tanggal produksi
     const rows = document.querySelectorAll('.sim-data-row');
-    let sumNewListrik = 0;
     let sumNewCng = 0;
     let sumNewTotalBiaya = 0;
     let sumWip = 0;
@@ -153,43 +91,30 @@ function recalculateLiveSimulation() {
     rows.forEach(row => {
         const dayWip = parseFloat(row.dataset.wip || 0);
         const dayMmbtu = parseFloat(row.dataset.mmbtu || 0);
-        const oldListrik = parseFloat(row.dataset.oldListrik || 0);
         const oldCng = parseFloat(row.dataset.oldCng || 0);
         const oldTotalBiaya = parseFloat(row.dataset.oldTotalBiaya || 0);
 
-        // Hitung Listrik Baru
-        let newListrik = oldListrik;
-        if (isListrikActive) {
-            if (modeListrik === 'total_tagihan' || modeListrik === 'proporsional_wip') {
-                newListrik = totalWipMonth > 0 ? (totalTagihanListrik * (dayWip / totalWipMonth)) : (totalTagihanListrik / (countDays || 1));
-            } else if (modeListrik === 'tarif_per_kg') {
-                newListrik = dayWip * tarifListrikKg;
-            }
+        // Alokasi Gas Baru:
+        // Jika ada MMBTU fisik, gunakan dayMmbtu * effectiveCngRate
+        // Jika MMBTU = 0, alokasikan proporsional WIP
+        let newCng = 0;
+        if (totalMmbtuMonth > 0) {
+            newCng = dayMmbtu * effectiveCngRate;
+        } else if (totalWipMonth > 0) {
+            newCng = totalTagihanCng * (dayWip / totalWipMonth);
+        } else {
+            newCng = totalTagihanCng / (countDays || 1);
         }
 
-        // Hitung Gas CNG Baru
-        let newCng = oldCng;
-        if (isCngActive) {
-            if (modeCng === 'update_tarif') {
-                newCng = dayMmbtu * tarifCngResmi;
-            } else if (modeCng === 'proporsional_wip' || modeCng === 'total_tagihan') {
-                newCng = totalWipMonth > 0 ? (totalTagihanCng * (dayWip / totalWipMonth)) : (totalTagihanCng / (countDays || 1));
-            }
-        }
-
-        // Hitung Total Biaya & HPP Baru
-        const newTotalBiaya = oldTotalBiaya - oldListrik - oldCng + newListrik + newCng;
+        // Total biaya produksi baru (kurangi beban gas lama, tambahkan beban gas baru)
+        const newTotalBiaya = oldTotalBiaya - oldCng + newCng;
         const newHppPerKg = dayWip > 0 ? (newTotalBiaya / dayWip) : 0;
 
-        sumNewListrik += newListrik;
         sumNewCng += newCng;
         sumNewTotalBiaya += newTotalBiaya;
         sumWip += dayWip;
 
-        // Render ke tabel
-        const cellListrik = row.querySelector('.cell-sim-listrik');
-        if (cellListrik) cellListrik.textContent = formatRupiah(newListrik);
-
+        // Render cell simulasi
         const cellCng = row.querySelector('.cell-sim-cng');
         if (cellCng) cellCng.textContent = formatRupiah(newCng);
 
@@ -197,10 +122,7 @@ function recalculateLiveSimulation() {
         if (cellHpp) cellHpp.textContent = formatRupiah(newHppPerKg);
     });
 
-    // 4. Update Footer Total & Rata-rata
-    const footListrik = document.getElementById('foot_total_listrik');
-    if (footListrik) footListrik.textContent = formatRupiah(sumNewListrik);
-
+    // Update Footer Total & Rata-rata
     const footCng = document.getElementById('foot_total_cng');
     if (footCng) footCng.textContent = formatRupiah(sumNewCng);
 
@@ -218,60 +140,20 @@ function formatRupiah(val) {
  * Modal Dialog Konfirmasi (Sesuai Standar AGENTS.md: Dilarang confirm browser)
  */
 function openModalConfirmAdjust() {
-    const isListrikActive = document.getElementById('chk_adjust_listrik')?.checked ?? false;
-    const isCngActive = document.getElementById('chk_adjust_cng')?.checked ?? false;
-    const alertBox = document.getElementById('alertValidateAdjust');
-
-    if (!isListrikActive && !isCngActive) {
-        if (alertBox) {
-            alertBox.style.display = 'flex';
-            alertBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-        return;
-    }
-
-    if (alertBox) {
-        alertBox.style.display = 'none';
-    }
-
-    // Isi ringkasan di modal konfirmasi
-    const summaryListrik = document.getElementById('confirmSummaryListrik');
-    if (summaryListrik) {
-        if (isListrikActive) {
-            const mode = document.querySelector('input[name="mode_alokasi_listrik"]:checked')?.value;
-            if (mode === 'tarif_per_kg') {
-                const tarif = parseFloat(document.getElementById('input_listrik_tarif_kg')?.value || 0);
-                summaryListrik.textContent = 'Tarif Flat: Rp ' + tarif.toLocaleString('id-ID') + ' / Kg';
-            } else {
-                const total = parseFloat(document.getElementById('input_total_listrik_tagihan')?.value || 0);
-                summaryListrik.textContent = 'Tagihan: ' + formatRupiah(total) + ' (Proporsional WIP)';
-            }
-            summaryListrik.style.color = '#0284c7';
-        } else {
-            summaryListrik.textContent = 'Tidak Disesuaikan';
-            summaryListrik.style.color = '#94a3b8';
-        }
-    }
+    const inputFaktur = document.getElementById('input_total_cng_tagihan');
+    const totalTagihanCng = parseFloat(inputFaktur?.value || 0);
+    const table = document.getElementById('simGridTable');
+    const totalMmbtuMonth = parseFloat(table?.dataset.monthMmbtu || 0);
 
     const summaryGas = document.getElementById('confirmSummaryGas');
     if (summaryGas) {
-        if (isCngActive) {
-            const mode = document.querySelector('input[name="mode_cng"]:checked')?.value;
-            if (mode === 'proporsional_wip') {
-                const total = parseFloat(document.getElementById('input_total_cng_tagihan')?.value || 0);
-                summaryGas.textContent = 'Faktur (Bagi Hasil WIP): ' + formatRupiah(total);
-            } else if (mode === 'total_tagihan') {
-                const total = parseFloat(document.getElementById('input_total_cng_tagihan')?.value || 0);
-                summaryGas.textContent = 'Faktur Tagihan: ' + formatRupiah(total);
-            } else {
-                const tarif = parseFloat(document.getElementById('input_cng_tarif_resmi')?.value || 0);
-                summaryGas.textContent = 'Tarif: Rp ' + tarif.toLocaleString('id-ID') + ' / MMBTU';
-            }
-            summaryGas.style.color = '#d97706';
-        } else {
-            summaryGas.textContent = 'Tidak Disesuaikan';
-            summaryGas.style.color = '#94a3b8';
-        }
+        summaryGas.textContent = formatRupiah(totalTagihanCng);
+    }
+
+    const summaryRate = document.getElementById('confirmSummaryRate');
+    if (summaryRate) {
+        const rate = totalMmbtuMonth > 0 ? (totalTagihanCng / totalMmbtuMonth) : 0;
+        summaryRate.textContent = 'Rp ' + Math.round(rate).toLocaleString('id-ID') + ' / MMBTU';
     }
 
     const modal = document.getElementById('modalConfirmAdjust');

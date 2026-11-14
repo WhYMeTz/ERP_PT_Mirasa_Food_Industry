@@ -428,6 +428,7 @@ Route::middleware('auth')->group(function () {
 
         // Kalkulasi HPP Produksi (Tahap 3 - Khusus Bagian Keuangan / Costing)
         Route::get('/hpp/create', [ProduksiController::class, 'createHpp'])->name('hpp.create')->middleware('role:produksi_create');
+        Route::get('/hpp/kalkulasi', fn(\Illuminate\Http\Request $r) => redirect()->route('produksi.hpp.create', $r->all()))->name('hpp.kalkulasi');
         Route::get('/hpp/produksi-data/{id}', [ProduksiController::class, 'getProduksiDataForHpp'])->name('hpp.produksi-data');
         Route::post('/hpp/store', [ProduksiController::class, 'storeHpp'])->name('hpp.store')->middleware('role:produksi_create');
         Route::get('/hpp/{id}', [ProduksiController::class, 'showHpp'])->name('hpp.show')->whereNumber('id');

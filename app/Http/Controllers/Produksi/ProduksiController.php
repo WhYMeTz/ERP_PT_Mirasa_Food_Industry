@@ -290,16 +290,17 @@ class ProduksiController extends Controller
                 $keteranganAcuan = 'Kurs terkini Bank Indonesia';
                 $tgl = $effectiveDateCarbon->format('Y-m-d');
             } else {
-                $tgl = $request->input('date') ?: $request->input('tgl', date('Y-m-d'));
+                $rawTgl = $request->input('date') ?: $request->input('tgl', date('Y-m-d'));
+                $prodDateCarbon = Carbon::parse($rawTgl)->timezone(config('app.timezone', 'Asia/Jakarta'));
+                $tgl = $prodDateCarbon->format('Y-m-d');
                 $rate = $this->tarifService->getJisdorRate($tgl, true);
 
                 $record = DatKursHarian::active()
-                    ->where('tanggal', '<=', $tgl)
+                    ->whereDate('tanggal', '<=', $tgl)
                     ->orderByDesc('tanggal')
                     ->first();
 
-                $prodDateCarbon = Carbon::parse($tgl);
-                $effectiveDateCarbon = $record ? Carbon::parse($record->tanggal) : $prodDateCarbon;
+                $effectiveDateCarbon = $record ? Carbon::parse($record->tanggal)->timezone(config('app.timezone', 'Asia/Jakarta')) : $prodDateCarbon;
                 $effectiveDate = $effectiveDateCarbon->format('d/m/Y');
 
                 $keteranganAcuan = '';
@@ -386,41 +387,58 @@ class ProduksiController extends Controller
         $fohRates = $this->tarifService->getFohRates();
         $defaultCngTarifUsd = 14.50;
 
-        // Ambil kurs JISDOR terkini Bank Indonesia untuk penetapan HPP Finance
-        $latestKursRecord = DatKursHarian::active()->orderByDesc('tanggal')->first();
-        $defaultCngKursJisdor = $latestKursRecord ? (float) $latestKursRecord->kurs_tengah : ($this->tarifService->getJisdorRate(date('Y-m-d'), true) ?: 18103.00);
-        $latestKursDate = $latestKursRecord ? Carbon::parse($latestKursRecord->tanggal)->format('d/m/Y') : date('d/m/Y');
+        // Ambil dokumen terpilih atau dokumen pertama untuk acuan tanggal produksi
+        $selectedProduksi = null;
+        if ($selectedProduksiId) {
+            $selectedProduksi = DatProduksiHdr::find($selectedProduksiId);
+        }
+        if (!$selectedProduksi && $produksiList->isNotEmpty()) {
+            $selectedProduksi = $produksiList->first();
+        }
+
+        $prodCarbon = $selectedProduksi && $selectedProduksi->produksi_tgl
+            ? Carbon::parse($selectedProduksi->produksi_tgl)->timezone(config('app.timezone', 'Asia/Jakarta'))
+            : Carbon::today(config('app.timezone', 'Asia/Jakarta'));
+        $prodDateStr = $prodCarbon->format('Y-m-d');
+
+        // Ambil kurs JISDOR Bank Indonesia sesuai tanggal produksi SPK (bukan kurs hari ini)
+        $defaultCngKursJisdor = (float) $this->tarifService->getJisdorRate($prodDateStr) ?: 18103.00;
+        $kursRecord = DatKursHarian::active()
+            ->whereDate('tanggal', '<=', $prodDateStr)
+            ->orderByDesc('tanggal')
+            ->first();
+        $latestKursDate = $kursRecord
+            ? Carbon::parse($kursRecord->tanggal)->timezone(config('app.timezone', 'Asia/Jakarta'))->format('d/m/Y')
+            : $prodCarbon->format('d/m/Y');
         $defaultCngTarif = round($defaultCngTarifUsd * $defaultCngKursJisdor, 2);
 
         // Cari seluruh dokumen produksi pada tanggal yang sama untuk notifikasi shift/lini lain
         $sameDaySpks = [];
-        if ($selectedProduksiId) {
-            $selectedProduksi = DatProduksiHdr::find($selectedProduksiId);
-            if ($selectedProduksi) {
-                $sameDaySpks = DatProduksiHdr::whereDate('produksi_tgl', $selectedProduksi->produksi_tgl)
-                    ->where('deleted_st', false)
-                    ->orderBy('shift_cd', 'asc')
-                    ->orderBy('produksi_id', 'asc')
-                    ->get()
-                    ->map(function ($other) use ($selectedProduksiId) {
-                        $isFinal = ((float)$other->cng_nilai > 0 || (float)$other->tk_total_nilai > 0 || str_contains($other->catatan_txt ?? '', '[HPP FINAL') || str_contains($other->catatan_txt ?? '', 'HPP Finance'));
-                        return [
-                            'produksi_id'   => $other->produksi_id,
-                            'produksi_no'   => $other->produksi_no,
-                            'shift_cd'      => $other->shift_cd ?? 'A',
-                            'lini_produksi' => $other->lini_produksi ?? 'Lini Manual',
-                            'total_wip_qty' => (float) ($other->total_wip_qty ?: ($other->outputs ? $other->outputs->sum('qty_kg') : 0)),
-                            'hpp_per_kg'    => (float) $other->hpp_per_kg,
-                            'is_current'    => ((int)$other->produksi_id === (int)$selectedProduksiId),
-                            'is_hpp_final'  => $isFinal,
-                        ];
-                    })->values()->toArray();
-            }
+        if ($selectedProduksi) {
+            $sameDaySpks = DatProduksiHdr::whereDate('produksi_tgl', $selectedProduksi->produksi_tgl)
+                ->where('deleted_st', false)
+                ->orderBy('shift_cd', 'asc')
+                ->orderBy('produksi_id', 'asc')
+                ->get()
+                ->map(function ($other) use ($selectedProduksiId) {
+                    $isFinal = ((float)$other->cng_nilai > 0 || (float)$other->tk_total_nilai > 0 || str_contains($other->catatan_txt ?? '', '[HPP FINAL') || str_contains($other->catatan_txt ?? '', 'HPP Finance'));
+                    return [
+                        'produksi_id'   => $other->produksi_id,
+                        'produksi_no'   => $other->produksi_no,
+                        'shift_cd'      => $other->shift_cd ?? 'A',
+                        'lini_produksi' => $other->lini_produksi ?? 'Lini Manual',
+                        'total_wip_qty' => (float) ($other->total_wip_qty ?: ($other->outputs ? $other->outputs->sum('qty_kg') : 0)),
+                        'hpp_per_kg'    => (float) $other->hpp_per_kg,
+                        'is_current'    => ((int)$other->produksi_id === (int)$selectedProduksiId),
+                        'is_hpp_final'  => $isFinal,
+                    ];
+                })->values()->toArray();
         }
 
         return view('produksi.hpp.create', compact(
             'produksiList',
             'selectedProduksiId',
+            'prodDateStr',
             'sameDaySpks',
             'energiRates',
             'fohRates',

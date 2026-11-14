@@ -294,6 +294,11 @@
             max-width: 90vw !important;
         }
 
+        .dropdown-mega-xl {
+            min-width: 820px !important;
+            max-width: 95vw !important;
+        }
+
         .mega-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -303,6 +308,12 @@
         .mega-grid-3 {
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
+            gap: 0.55rem;
+        }
+
+        .mega-grid-4 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
             gap: 0.55rem;
         }
 
@@ -836,7 +847,9 @@
                 max-width: calc(100vw - 20px) !important;
             }
 
-            .mega-grid {
+            .mega-grid,
+            .mega-grid-3,
+            .mega-grid-4 {
                 grid-template-columns: 1fr;
             }
         }
@@ -1476,8 +1489,8 @@
                                         d="M19 9l-7 7-7-7" />
                                 </svg>
                             </button>
-                            <div class="dropdown-menu dropdown-mega">
-                                <div class="mega-grid">
+                            <div class="dropdown-menu dropdown-mega dropdown-mega-lg">
+                                <div class="mega-grid-3">
                                     <div class="mega-col">
                                         <div class="mega-col-title">Olahan Masak &amp; WIP</div>
                                         @if (Auth::user()->canAccessPemakaian())
@@ -1507,19 +1520,6 @@
                                                     <span style="font-weight: 600;">Hasil Olahan Masak (WIP)</span>
                                                     <span style="font-size: 0.6875rem; color: #64748b;">Riwayat output batch masak
                                                         curah</span>
-                                                </div>
-                                            </a>
-                                            <a href="{{ route('produksi.rekap') }}"
-                                                class="mega-item {{ request()->routeIs('produksi.rekap*') ? 'active' : '' }}">
-                                                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                                                    style="color: #0284c7;">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                        d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                                </svg>
-                                                <div style="display: flex; flex-direction: column;">
-                                                    <span style="font-weight: 600;">Rekap HPP Masak Curah</span>
-                                                    <span style="font-size: 0.6875rem; color: #64748b;">Audit biaya bahan baku &amp;
-                                                        rendemen</span>
                                                 </div>
                                             </a>
                                             @if (Auth::user()->canCreateProduksi())
@@ -1555,19 +1555,6 @@
                                                         barang jadi</span>
                                                 </div>
                                             </a>
-                                            <a href="{{ route('produksi.packaging.rekap') }}"
-                                                class="mega-item {{ request()->routeIs('produksi.packaging.rekap*') ? 'active' : '' }}">
-                                                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                                                    style="color: #6366f1;">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                                                </svg>
-                                                <div style="display: flex; flex-direction: column;">
-                                                    <span style="font-weight: 600;">Rekap HPP Kemas</span>
-                                                    <span style="font-size: 0.6875rem; color: #64748b;">HPP produk jadi + upah
-                                                        borongan</span>
-                                                </div>
-                                            </a>
                                             @if (Auth::user()->canCreateProduksi())
                                                 <a href="{{ route('produksi.packaging.create') }}"
                                                     class="mega-item {{ request()->routeIs('produksi.packaging.create') ? 'active' : '' }}">
@@ -1583,6 +1570,23 @@
                                                     </div>
                                                 </a>
                                             @endif
+                                        @endif
+                                    </div>
+                                    <div class="mega-col">
+                                        <div class="mega-col-title">Rekapitulasi HPP Pabrik</div>
+                                        @if (Auth::user()->canAccessProduksi())
+                                            <a href="{{ route('produksi.rekap') }}"
+                                                class="mega-item {{ request()->routeIs('produksi.rekap*') || request()->routeIs('produksi.packaging.rekap*') || request()->routeIs('produksi.hpp.create') ? 'active' : '' }}">
+                                                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                                    style="color: #0284c7;">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                </svg>
+                                                <div style="display: flex; flex-direction: column;">
+                                                    <span style="font-weight: 600;">Buku Rekapitulasi HPP</span>
+                                                    <span style="font-size: 0.6875rem; color: #64748b;">Tab Dapur (Curah) &amp; Kemas (FG)</span>
+                                                </div>
+                                            </a>
                                         @endif
                                     </div>
                                 </div>

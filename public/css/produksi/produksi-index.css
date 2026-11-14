@@ -1919,6 +1919,222 @@
     background-color: #e2e8f0 !important;
 }
 
+/* ═════════════════════════════════════════════════════════════
+   UNIFIED HPP HUB NAVIGATION & TOOLBAR (TAB 1 & TAB 2 CONSOLIDATION)
+   Enterprise Mirasa Standard: High information density, crisp 1px borders
+   ═════════════════════════════════════════════════════════════ */
+.hpp-hub-header {
+    margin-bottom: 1.25rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.hpp-hub-title {
+    font-size: 1.45rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0;
+    letter-spacing: -0.02em;
+}
+
+.hpp-hub-subtitle {
+    margin: 0.25rem 0 0 0;
+    font-size: 0.825rem;
+    color: #64748b;
+}
+
+.hpp-master-nav {
+    display: flex;
+    gap: 0.5rem;
+    background: #f8fafc;
+    padding: 0.35rem;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    margin-bottom: 1.25rem;
+}
+
+.hpp-master-tab {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.65rem 1rem;
+    border-radius: 6px;
+    text-decoration: none;
+    background: transparent;
+    border: 1.5px solid transparent;
+    transition: all 0.15s ease-in-out;
+    color: #64748b;
+}
+
+.hpp-master-tab:hover {
+    background: #ffffff;
+    color: #1e293b;
+    border-color: #cbd5e1;
+}
+
+.hpp-master-tab.active {
+    background: #ffffff;
+    color: #0f172a;
+    border-color: #059669;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.hpp-master-tab.active-purple {
+    background: #ffffff;
+    color: #0f172a;
+    border-color: #7c3aed;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.hpp-master-tab.active-purple .hpp-master-tab-icon {
+    background: #f5f3ff;
+    color: #7c3aed;
+}
+
+.hpp-master-tab.active-purple .hpp-master-tab-tag {
+    background: #f5f3ff;
+    color: #6d28d9;
+    border-color: #ddd6fe;
+}
+
+.hpp-master-tab-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 6px;
+    background: #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #64748b;
+    flex-shrink: 0;
+    font-weight: 800;
+    font-size: 0.85rem;
+}
+
+.hpp-master-tab.active .hpp-master-tab-icon {
+    background: #ecfdf5;
+    color: #059669;
+}
+
+.hpp-master-tab-content {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.hpp-master-tab-title {
+    font-weight: 800;
+    font-size: 0.925rem;
+    letter-spacing: -0.01em;
+    line-height: 1.25;
+}
+
+.hpp-master-tab-desc {
+    font-size: 0.75rem;
+    color: #64748b;
+    margin-top: 0.15rem;
+}
+
+.hpp-master-tab.active .hpp-master-tab-desc {
+    color: #475569;
+}
+
+.hpp-master-tab-tag {
+    margin-left: auto;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 0.2rem 0.55rem;
+    border-radius: 4px;
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+    white-space: nowrap;
+}
+
+.hpp-master-tab.active .hpp-master-tab-tag {
+    background: #f0fdf4;
+    color: #166534;
+    border-color: #bbf7d0;
+}
+
+/* Sub-toolbar: Segmented mode filter (Harian vs Bulanan) + Kalender Dropdown */
+.hpp-sub-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+    padding: 0.65rem 0.85rem;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+.hpp-view-segmented {
+    display: inline-flex;
+    background: #f1f5f9;
+    padding: 3px;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+    gap: 3px;
+}
+
+.hpp-view-btn {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: #64748b;
+    border-radius: 4px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    transition: all 0.15s ease-in-out;
+}
+
+.hpp-view-btn:hover {
+    color: #1e293b;
+    background: rgba(255, 255, 255, 0.7);
+}
+
+.hpp-view-btn.active {
+    background: #ffffff;
+    color: #059669;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.hpp-filter-form {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin: 0;
+}
+
+.hpp-select-control {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: #1e293b;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 0.3rem 0.65rem;
+    height: 32px;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.15s ease;
+}
+
+.hpp-select-control:focus {
+    border-color: #059669;
+}
+
+
 
 
 

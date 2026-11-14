@@ -375,6 +375,9 @@ class PackagingController extends Controller
             ];
         }
 
+        $initialPackTgl = old('pack_tgl', $selectedLaporan?->laporan_tgl?->format('Y-m-d') ?? date('Y-m-d'));
+        $initialLabor = app(\App\Services\Produksi\ProduksiService::class)->getLaborDataFromKaryawan($initialPackTgl, 'Langsung Packing');
+
         return view('produksi.packaging.create', compact(
             'gudangList', 
             'barangJadiList', 
@@ -382,6 +385,7 @@ class PackagingController extends Controller
             'produksiList', 
             'wipList',
             'selectedLaporan', 
+            'initialLabor',
             'tarifLakbanDefault', 
             'tarifs',
             'karyawanList',

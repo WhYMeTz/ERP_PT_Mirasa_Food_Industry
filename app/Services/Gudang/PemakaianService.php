@@ -402,33 +402,10 @@ class PemakaianService
                 }
 
                 // Cek apakah batch ini sedang terikat di dokumen DRAFT lain yang belum diposting/acc
-                $otherDraftQuery = DatPakaiDtl::where('barang_id', $barangId)
-                    ->where('batch_no', $batchNo)
-                    ->whereHas('header', function ($q) use ($gudangId) {
-                        $q->where('gudang_id', $gudangId)
-                          ->where('status_st', 'DRAFT')
-                          ->where('deleted_st', false);
-                    });
-
-                $draftQtyOther = (float) $otherDraftQuery->sum('qty_keluar');
                 $sisaStokFisik = (float) ($stokBatch->sisa_qty ?? 0);
-                $sisaBebas = max(0.0, round($sisaStokFisik - $draftQtyOther, 4));
-
-                if ($qtyKeluar > $sisaBebas) {
+                if ($qtyKeluar > $sisaStokFisik) {
                     $barang = MstBarang::find($barangId);
                     $barangNm = $barang ? $barang->barang_nm : "Barang #{$barangId}";
-
-                    if ($qtyKeluar <= $sisaStokFisik && $draftQtyOther > 0) {
-                        $otherDocNos = $otherDraftQuery->with('header:pakai_id,pakai_no')
-                            ->get()
-                            ->pluck('header.pakai_no')
-                            ->unique()
-                            ->filter()
-                            ->implode(', ');
-
-                        throw new Exception("Batch '{$batchNo}' untuk '{$barangNm}' sudah teralokasi di dokumen DRAFT lain: [{$otherDocNos}] sebesar " . number_format($draftQtyOther, 2, ',', '.') . ". Sisa bebas yang dapat diambil hanya " . number_format($sisaBebas, 2, ',', '.') . " (dari total fisik " . number_format($sisaStokFisik, 2, ',', '.') . "). Silakan pilih batch lain atau sesuaikan kuantitas.");
-                    }
-
                     throw new Exception("Kuantitas pengeluaran '{$barangNm}' pada batch '{$batchNo}' (" . number_format($qtyKeluar, 2, ',', '.') . ") melebihi sisa fisik di gudang (" . number_format($sisaStokFisik, 2, ',', '.') . "). Silakan sesuaikan kuantitas atau pecah pemakaian ke batch berikutnya.");
                 }
 
@@ -446,7 +423,7 @@ class PemakaianService
                 $totalHarga = $qtyKeluar * $hargaSatuan;
                 $keteranganDetail = !empty($item['keterangan_txt']) ? trim($item['keterangan_txt']) : $tujuanPemakaian;
 
-                // Simpan baris detail pemakaian
+                // 1. Simpan baris detail pemakaian
                 DatPakaiDtl::create([
                     'pakai_id'       => $header->pakai_id,
                     'barang_id'      => $barangId,
@@ -457,6 +434,17 @@ class PemakaianService
                     'total_harga'    => $totalHarga,
                     'keterangan_txt' => $keteranganDetail,
                 ]);
+
+                // 2. LANGSUNG POTONG STOK FISIK REAL-TIME DI GUDANG
+                $this->stokService->deductStock(
+                    $gudangId,
+                    $barangId,
+                    $batchNo,
+                    $qtyKeluar,
+                    $header->pakai_no,
+                    "Pengeluaran ({$tujuanPemakaian}) - " . ($keteranganDetail ?: $tujuanPemakaian),
+                    $gradeCd
+                );
             }
 
             return $header->fresh(['details.barang']);
@@ -515,7 +503,23 @@ class PemakaianService
             }
             $header->update($headerUpdateData);
 
-            // 2. Hapus detail lama (karena DRAFT belum memotong stok)
+            // 2. Kembalikan stok lama (Reversal) sebelum detail lama diganti
+            foreach ($header->details as $oldDtl) {
+                if ((float) $oldDtl->qty_keluar > 0) {
+                    $this->stokService->addStock(
+                        $header->gudang_id,
+                        $oldDtl->barang_id,
+                        $oldDtl->batch_no,
+                        (float) $oldDtl->qty_keluar,
+                        null,
+                        $header->pakai_no,
+                        "Koreksi Dokumen Pemakaian (Reversal) - {$header->pakai_no}",
+                        (float) $oldDtl->harga_satuan,
+                        $oldDtl->grade_cd
+                    );
+                }
+            }
+
             DatPakaiDtl::where('pakai_id', $header->pakai_id)->delete();
 
             // 3. Simpan detail item yang baru & kumpulkan snapshot baru
@@ -542,35 +546,10 @@ class PemakaianService
                     throw new Exception("Batch '{$batchNo}' tidak ditemukan di gudang yang dipilih.");
                 }
 
-                // Cek apakah batch ini sedang terikat di dokumen DRAFT lain yang belum diposting/acc (kecuali dokumen yang sedang diedit ini)
-                $otherDraftQuery = DatPakaiDtl::where('barang_id', $barangId)
-                    ->where('batch_no', $batchNo)
-                    ->whereHas('header', function ($q) use ($gudangId, $pakaiId) {
-                        $q->where('gudang_id', $gudangId)
-                          ->where('pakai_id', '!=', $pakaiId)
-                          ->where('status_st', 'DRAFT')
-                          ->where('deleted_st', false);
-                    });
-
-                $draftQtyOther = (float) $otherDraftQuery->sum('qty_keluar');
                 $sisaStokFisik = (float) ($stokBatch->sisa_qty ?? 0);
-                $sisaBebas = max(0.0, round($sisaStokFisik - $draftQtyOther, 4));
-
-                if ($qtyKeluar > $sisaBebas) {
+                if ($qtyKeluar > $sisaStokFisik) {
                     $barang = MstBarang::find($barangId);
                     $barangNm = $barang ? $barang->barang_nm : "Barang #{$barangId}";
-
-                    if ($qtyKeluar <= $sisaStokFisik && $draftQtyOther > 0) {
-                        $otherDocNos = $otherDraftQuery->with('header:pakai_id,pakai_no')
-                            ->get()
-                            ->pluck('header.pakai_no')
-                            ->unique()
-                            ->filter()
-                            ->implode(', ');
-
-                        throw new Exception("Batch '{$batchNo}' untuk '{$barangNm}' sudah teralokasi di dokumen DRAFT lain: [{$otherDocNos}] sebesar " . number_format($draftQtyOther, 2, ',', '.') . ". Sisa bebas yang dapat diambil hanya " . number_format($sisaBebas, 2, ',', '.') . " (dari total fisik " . number_format($sisaStokFisik, 2, ',', '.') . "). Silakan pilih batch lain atau sesuaikan kuantitas.");
-                    }
-
                     throw new Exception("Kuantitas pengeluaran '{$barangNm}' pada batch '{$batchNo}' (" . number_format($qtyKeluar, 2, ',', '.') . ") melebihi sisa fisik di gudang (" . number_format($sisaStokFisik, 2, ',', '.') . "). Silakan sesuaikan kuantitas atau pecah pemakaian ke batch berikutnya.");
                 }
 
@@ -594,6 +573,17 @@ class PemakaianService
                     'total_harga'    => $totalHarga,
                     'keterangan_txt' => $keteranganDetail,
                 ]);
+
+                // Potong stok batch fisik yang baru secara real-time
+                $this->stokService->deductStock(
+                    $gudangId,
+                    $barangId,
+                    $batchNo,
+                    $qtyKeluar,
+                    $header->pakai_no,
+                    "Pengeluaran ({$tujuanPemakaian}) - " . ($keteranganDetail ?: $tujuanPemakaian),
+                    $gradeCd
+                );
 
                 $newDetailsSnapshot[] = [
                     'barang_id'     => $barangId,
@@ -727,25 +717,14 @@ class PemakaianService
 
             $totalNominal = 0;
 
-            // 1. Potong Stok Fisik untuk Setiap Baris Detail
+            // 1. Akumulasi Total Nominal untuk Penerbitan Jurnal
+            // (Catatan: Stok fisik gudang sudah langsung dipotong secara real-time saat pembuatan dokumen DRAFT)
             foreach ($header->details as $dtl) {
                 $qtyKeluar = (float) $dtl->qty_keluar;
                 if ($qtyKeluar <= 0) {
                     continue;
                 }
-
                 $totalNominal += (float) $dtl->total_harga;
-
-                // Potong stok batch & catat kartu stok OUT
-                $this->stokService->deductStock(
-                    $header->gudang_id,
-                    $dtl->barang_id,
-                    $dtl->batch_no,
-                    $qtyKeluar,
-                    $header->pakai_no,
-                    "Pengeluaran ({$header->tujuan_pemakaian}) - " . ($dtl->keterangan_txt ?? $header->tujuan_pemakaian),
-                    $dtl->grade_cd ?? 'A'
-                );
             }
 
             // 2. Terbitkan Jurnal Umum Otomatis
@@ -803,10 +782,27 @@ class PemakaianService
     public function delete(int $pakaiId, ?User $user = null): bool
     {
         return DB::transaction(function () use ($pakaiId, $user) {
-            $header = DatPakaiHdr::where('pakai_id', $pakaiId)->firstOrFail();
+            $header = DatPakaiHdr::with('details')->where('pakai_id', $pakaiId)->firstOrFail();
 
             if ($header->status_st === 'POSTED') {
-                throw new Exception("Dokumen pemakaian '{$header->pakai_no}' sudah diposting dan stok telah dipotong. Dokumen tidak dapat dihapus langsung.");
+                throw new Exception("Dokumen pemakaian '{$header->pakai_no}' sudah diposting dan jurnal telah dibukukan. Dokumen tidak dapat dihapus langsung.");
+            }
+
+            // Kembalikan stok fisik untuk seluruh item yang dibatalkan (Stock Reversal)
+            foreach ($header->details as $dtl) {
+                if ((float) $dtl->qty_keluar > 0) {
+                    $this->stokService->addStock(
+                        $header->gudang_id,
+                        $dtl->barang_id,
+                        $dtl->batch_no,
+                        (float) $dtl->qty_keluar,
+                        null,
+                        $header->pakai_no,
+                        "Pembatalan Dokumen Pemakaian (Reversal) - {$header->pakai_no}",
+                        (float) $dtl->harga_satuan,
+                        $dtl->grade_cd
+                    );
+                }
             }
 
             $actor = $user?->name ?? auth()->user()?->name ?? 'SYSTEM';

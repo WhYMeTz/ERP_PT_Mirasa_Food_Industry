@@ -622,6 +622,8 @@ class HutangService
                 $hargaStr = $formatNum($harga, 2);
 
                 $namaBarang = trim($item['deskripsi'] ?? '');
+                // Bersihkan teks (GRN: ...) agar keterangan jurnal ringkas dan standar
+                $namaBarang = trim(preg_replace('/\s*\(GRN:?[^)]*\)/i', '', $namaBarang));
                 if (empty($namaBarang) && !empty($item['barang_id'])) {
                     $namaBarang = MstBarang::find($item['barang_id'])?->barang_nm ?? 'Bahan Baku';
                 }
@@ -669,7 +671,7 @@ class HutangService
                             'kode_akun'  => $pajakCoaKode,
                             'debet'      => 0,
                             'kredit'     => $ppn,
-                            'keterangan' => "Potongan Pajak {$pajakNama} - {$keteranganItem}",
+                            'keterangan' => $keteranganItem,
                         ];
                     } else {
                         $pajakCoaKode = $pajakObj?->coaPembelian?->kode_akun ?? $pajakObj?->coa?->kode_akun ?? '1130';
@@ -728,17 +730,18 @@ class HutangService
             // 6. Penyesuaian Uang Muka / Down Payment (DP) yang telah dibayarkan
             // Memindahkan saldo kewajiban dari Hutang Usaha (2100) ke akun Downpayment (2104)
             if ($uangMukaNominal > 0 && $totalDibayar > 0) {
+                $ketDp = "Penyelesaian Uang Muka (Downpayment) - {$suppName} - {$hdr->hutang_no}";
                 $jurnalEntries[] = [
                     'kode_akun'  => '2100', // Hutang Usaha didebet (berkurang)
                     'debet'      => $totalDibayar,
                     'kredit'     => 0,
-                    'keterangan' => "Pelunasan Uang Muka (Downpayment) - {$suppName} - {$hdr->hutang_no}",
+                    'keterangan' => $ketDp,
                 ];
                 $jurnalEntries[] = [
                     'kode_akun'  => '2104', // Downpayment dikredit (realisasi pengurang DP)
                     'debet'      => 0,
                     'kredit'     => $totalDibayar,
-                    'keterangan' => "Penyelesaian Uang Muka (Downpayment) Pembelian - {$suppName} - {$hdr->hutang_no}",
+                    'keterangan' => $ketDp,
                 ];
             }
 
@@ -882,12 +885,13 @@ class HutangService
 
             // Otomasi Jurnal Pengakuan Beban Utilitas Gas Pabrik
             $jurnalEntries = [];
+            $ketGas = "Tagihan Gas Pabrik Periode {$periodeBulan} - {$suppName} ({$hdr->hutang_no})";
             if ($totalBruto > 0) {
                 $jurnalEntries[] = [
                     'kode_akun'  => '6102', // Beban air & Listrik (dan Gas)
                     'debet'      => $totalBruto,
                     'kredit'     => 0,
-                    'keterangan' => "Beban Gas Pabrik Periode {$periodeBulan} ({$hdr->hutang_no})",
+                    'keterangan' => $ketGas,
                 ];
             }
             if ($totalPpn > 0) {
@@ -895,7 +899,7 @@ class HutangService
                     'kode_akun'  => '1130', // PPN Masukan
                     'debet'      => $totalPpn,
                     'kredit'     => 0,
-                    'keterangan' => "PPN Masukan Gas Periode {$periodeBulan} ({$hdr->hutang_no})",
+                    'keterangan' => $ketGas,
                 ];
             }
             if ($totalNetto > 0) {
@@ -903,7 +907,7 @@ class HutangService
                     'kode_akun'  => '2100', // Hutang usaha
                     'debet'      => 0,
                     'kredit'     => $totalNetto,
-                    'keterangan' => "Hutang Tagihan Gas Periode {$periodeBulan} ({$hdr->hutang_no})",
+                    'keterangan' => $ketGas,
                 ];
             }
 
@@ -1063,7 +1067,7 @@ class HutangService
                     'terima_id'      => $header->terima_id,
                     'terima_dtl_id'  => $dtl->terimadtl_id,
                     'barang_id'      => $dtl->barang_id,
-                    'deskripsi'      => ($dtl->barang?->barang_nm ?? 'Barang') . " (GRN {$header->terima_no})",
+                    'deskripsi'      => ($dtl->barang?->barang_nm ?? 'Barang'),
                     'qty'            => $row['netto_qty'],
                     'satuan'         => $row['satuan'],
                     'harga_satuan'   => $row['harga_satuan'],

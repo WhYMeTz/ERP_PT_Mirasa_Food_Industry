@@ -80,7 +80,7 @@ function populateGlobalModalJurnalData(j) {
 
     if (elNo) elNo.textContent = j.jurnal_no;
     if (elTgl) elTgl.textContent = new Date(j.tgl_jurnal).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
-    if (elTipe) elTipe.textContent = j.tipe_transaksi;
+    if (elTipe) elTipe.innerHTML = `<span class="badge-tipe-jurnal">${j.tipe_transaksi || '-'}</span>`;
     if (elRef) elRef.textContent = j.ref_no || '-';
     if (elKet) elKet.textContent = j.keterangan || '-';
     if (elUser) elUser.textContent = j.created_by || 'SYSTEM';
@@ -97,18 +97,18 @@ function populateGlobalModalJurnalData(j) {
             const kredit = parseFloat(dtl.kredit || 0);
 
             linesHtml += `
-                <tr style="border-bottom: 1px solid #f1f5f9; font-size: 0.8rem;">
-                    <td style="padding: 0.6rem 0.75rem;">
+                <tr>
+                    <td style="padding: 0.65rem 0.95rem;">
                         <span class="coa-code-pill">${coaCode}</span>
                         <strong style="color: #0f172a; margin-left: 6px;">${coaName}</strong>
                     </td>
-                    <td style="padding: 0.6rem 0.75rem; color: #64748b;">
+                    <td style="padding: 0.65rem 0.95rem; color: #475569; font-size: 0.8rem;">
                         ${dtl.keterangan || '-'}
                     </td>
-                    <td style="padding: 0.6rem 0.75rem; text-align: right; font-weight: 700; color: ${debet > 0 ? '#0f172a' : '#cbd5e1'}; font-family: monospace;">
+                    <td style="padding: 0.65rem 0.95rem; text-align: right; font-weight: 800; color: ${debet > 0 ? '#047857' : '#cbd5e1'}; font-family: 'SF Mono', Consolas, monospace;">
                         ${debet > 0 ? 'Rp ' + Math.round(debet).toLocaleString('id-ID') : '-'}
                     </td>
-                    <td style="padding: 0.6rem 0.75rem; text-align: right; font-weight: 700; color: ${kredit > 0 ? '#0f172a' : '#cbd5e1'}; font-family: monospace;">
+                    <td style="padding: 0.65rem 0.95rem; text-align: right; font-weight: 800; color: ${kredit > 0 ? '#4338ca' : '#cbd5e1'}; font-family: 'SF Mono', Consolas, monospace;">
                         ${kredit > 0 ? 'Rp ' + Math.round(kredit).toLocaleString('id-ID') : '-'}
                     </td>
                 </tr>

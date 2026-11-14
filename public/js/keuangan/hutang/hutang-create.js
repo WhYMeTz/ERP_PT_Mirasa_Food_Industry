@@ -999,7 +999,7 @@ function rebuildItemsTable() {
                         </div>
                         <input type="text" 
                                name="items[${rowIndex}][deskripsi]" 
-                               value="${barangNm} (GRN: ${grn.terima_no})" 
+                               value="${barangNm}" 
                                class="form-control" 
                                style="font-size: 0.72rem; height: 26px; padding: 2px 6px; margin-top: 3px;">
                     </td>

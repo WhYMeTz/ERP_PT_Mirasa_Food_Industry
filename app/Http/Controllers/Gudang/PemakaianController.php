@@ -143,10 +143,7 @@ class PemakaianController extends Controller
         $userGudangId = ($gudangList->count() === 1 && !$user?->isSuperAdmin()) ? $gudangList->first()->gudang_id : null;
 
         $barangList = MstBarang::active()
-            ->where(function ($query) {
-                $query->bahanProduksi()
-                      ->orWhereHas('jenisBarang', fn($j) => $j->where('jenis_barang_cd', 'WIP'));
-            })
+            ->bahanProduksi()
             ->with(['satuanDasar', 'jenisBarang'])
             ->orderBy('barang_nm')
             ->get()
@@ -154,9 +151,9 @@ class PemakaianController extends Controller
                 $cd = strtoupper($b->jenisBarang->jenis_barang_cd ?? '');
                 $nm = strtoupper($b->barang_nm ?? '');
 
-                if ($cd === 'BB' || $cd === 'RAW' || $cd === 'WIP' || str_contains($nm, 'SINGKONG') || str_contains($nm, 'UBI') || str_contains($nm, 'OPAK') || str_contains($nm, 'PUYUR') || str_contains($nm, 'BERKO') || str_starts_with($cd, 'WIP')) {
+                if ($cd === 'BB' || $cd === 'RAW' || str_contains($nm, 'SINGKONG') || str_contains($nm, 'UBI') || str_contains($nm, 'OPAK') || str_contains($nm, 'PUYUR') || str_contains($nm, 'BERKO')) {
                     $b->kategori_kelompok = 'BAHAN_BAKU';
-                    $b->kategori_label = 'Bahan Baku & Olahan WIP';
+                    $b->kategori_label = 'Bahan Baku';
                 } elseif (str_contains($nm, 'KARTON') || str_contains($nm, 'PLASTIK') || str_contains($nm, 'ROLL') || str_contains($nm, 'LAKBAN') || str_contains($nm, 'RAFIA') || str_contains($nm, 'SARUNG TANGAN') || $cd === 'PACK') {
                     $b->kategori_kelompok = 'KEMASAN';
                     $b->kategori_label = 'Kemasan & Packaging';
@@ -206,7 +203,7 @@ class PemakaianController extends Controller
         try {
             $header = $this->pemakaianService->store($request->validated());
 
-            $msg = "Dokumen pengeluaran {$header->pakai_no} berhasil disimpan sebagai DRAFT (Stok belum dipotong). Silakan lakukan verifikasi fisik sebelum memposting.";
+            $msg = "Dokumen pengeluaran {$header->pakai_no} berhasil disimpan. Stok fisik gudang telah langsung dipotong secara real-time.";
 
             if ($request->wantsJson()) {
                 return response()->json([
@@ -247,10 +244,7 @@ class PemakaianController extends Controller
         $userGudangId = $pakai->gudang_id;
 
         $barangList = MstBarang::active()
-            ->where(function ($query) {
-                $query->bahanProduksi()
-                      ->orWhereHas('jenisBarang', fn($j) => $j->where('jenis_barang_cd', 'WIP'));
-            })
+            ->bahanProduksi()
             ->with(['satuanDasar', 'jenisBarang'])
             ->orderBy('barang_nm')
             ->get()
@@ -258,9 +252,9 @@ class PemakaianController extends Controller
                 $cd = strtoupper($b->jenisBarang->jenis_barang_cd ?? '');
                 $nm = strtoupper($b->barang_nm ?? '');
 
-                if ($cd === 'BB' || $cd === 'RAW' || $cd === 'WIP' || str_contains($nm, 'SINGKONG') || str_contains($nm, 'UBI') || str_contains($nm, 'OPAK') || str_contains($nm, 'PUYUR') || str_contains($nm, 'BERKO') || str_starts_with($cd, 'WIP')) {
+                if ($cd === 'BB' || $cd === 'RAW' || str_contains($nm, 'SINGKONG') || str_contains($nm, 'UBI') || str_contains($nm, 'OPAK') || str_contains($nm, 'PUYUR') || str_contains($nm, 'BERKO')) {
                     $b->kategori_kelompok = 'BAHAN_BAKU';
-                    $b->kategori_label = 'Bahan Baku & Olahan WIP';
+                    $b->kategori_label = 'Bahan Baku';
                 } elseif (str_contains($nm, 'KARTON') || str_contains($nm, 'PLASTIK') || str_contains($nm, 'ROLL') || str_contains($nm, 'LAKBAN') || str_contains($nm, 'RAFIA') || str_contains($nm, 'SARUNG TANGAN') || $cd === 'PACK') {
                     $b->kategori_kelompok = 'KEMASAN';
                     $b->kategori_label = 'Kemasan & Packaging';
@@ -391,7 +385,7 @@ class PemakaianController extends Controller
             $user = Auth::user();
             $this->pemakaianService->delete($id, $user);
 
-            $msg = "Dokumen pengeluaran DRAFT berhasil dibatalkan / dihapus.";
+            $msg = "Dokumen pengeluaran DRAFT berhasil dibatalkan dan stok fisik barang telah dikembalikan ke gudang (reversal).";
 
             if ($request->wantsJson()) {
                 return response()->json([
@@ -541,9 +535,10 @@ class PemakaianController extends Controller
             $group = $draftAllocations->get($lookupKey);
 
             $sisaFisik = (float) $b->sisa_qty;
-            $draftQty = $group ? (float) $group->sum('qty_keluar') : 0.0;
-            $draftDocNos = $group ? $group->pluck('header.pakai_no')->unique()->filter()->values()->toArray() : [];
-            $sisaBebas = max(0.0, round($sisaFisik - $draftQty, 4));
+            // Dokumen pemakaian DRAFT kini langsung memotong stok fisik real-time
+            $draftQty = 0.0;
+            $draftDocNos = [];
+            $sisaBebas = $sisaFisik;
             $isFullyBooked = $sisaBebas <= 0.0001;
 
             $isFifoTop = false;

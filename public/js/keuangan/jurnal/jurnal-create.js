@@ -107,6 +107,18 @@ function attachRowEvents(row) {
             if (parseFloat(this.value) > 0 && kreditInput) {
                 kreditInput.value = '';
             }
+
+            // Auto-sync nominal ke baris kedua jika transaksi 2-baris standar
+            const allRows = document.querySelectorAll('tr.entry-row');
+            if (allRows.length === 2 && row === allRows[0]) {
+                const secondRow = allRows[1];
+                const secondKredit = secondRow.querySelector('.input-kredit');
+                const secondDebet = secondRow.querySelector('.input-debet');
+                if (secondKredit && (!secondDebet || !secondDebet.value || parseFloat(secondDebet.value) === 0)) {
+                    secondKredit.value = this.value;
+                }
+            }
+
             calculateTotals();
         });
 
@@ -350,7 +362,7 @@ window.filterCoaCategory = function (category, btnElement) {
 
 window.filterCoaPickerModal = function () {
     const query = (document.getElementById('modalCoaSearchInput')?.value || '').trim().toLowerCase();
-    const items = document.querySelectorAll('.coa-picker-item');
+    const items = document.querySelectorAll('.coa-picker-item, .coa-pair-item');
     let visibleCount = 0;
 
     items.forEach(item => {
@@ -383,11 +395,53 @@ window.selectCoaFromModal = function (item) {
     const coaData = {
         id: item.getAttribute('data-id'),
         kode: item.getAttribute('data-kode'),
-        nama: item.getAttribute('data-nama'),
+        nama: item.getAttribute('data-nama') || item.querySelector('strong')?.textContent?.trim() || '',
         kategori: item.getAttribute('data-kategori')
     };
 
     setRowCoa(row, coaData);
+
+    // Auto-pairing pintar: Jika memilih akun di Baris 1 dan Baris 2 masih kosong, otomatis isi Baris 2 dengan pasangan alaminya
+    const allRows = document.querySelectorAll('tr.entry-row');
+    if (allRows.length >= 2 && row === allRows[0]) {
+        const secondRow = allRows[1];
+        const secondCoaInput = secondRow.querySelector('.input-coa-id');
+        if (secondCoaInput && !secondCoaInput.value) {
+            let defaultCounterpartCode = null;
+            const code = String(coaData.kode || '');
+
+            if (code.startsWith('6')) {
+                // Beban Operasional -> Kas Operasional
+                defaultCounterpartCode = '1104';
+            } else if (code === '1150' || code === '1151') {
+                // Persediaan -> Hutang Usaha
+                defaultCounterpartCode = '2100';
+            } else if (code.startsWith('4')) {
+                // Pendapatan -> Piutang Usaha
+                defaultCounterpartCode = '1120';
+            } else if (code === '1104') {
+                // Kas Operasional -> Bank BCA (Tarik Tunai)
+                defaultCounterpartCode = '1103';
+            } else if (code === '2100') {
+                // Hutang Usaha -> Bank BCA
+                defaultCounterpartCode = '1103';
+            }
+
+            if (defaultCounterpartCode) {
+                const allCoaItems = Array.from(document.querySelectorAll('.coa-picker-item[data-id]'));
+                const counterpartItem = allCoaItems.find(it => it.getAttribute('data-kode') === defaultCounterpartCode);
+                if (counterpartItem) {
+                    setRowCoa(secondRow, {
+                        id: counterpartItem.getAttribute('data-id'),
+                        kode: counterpartItem.getAttribute('data-kode'),
+                        nama: counterpartItem.getAttribute('data-nama') || counterpartItem.querySelector('strong')?.textContent?.trim() || '',
+                        kategori: counterpartItem.getAttribute('data-kategori')
+                    });
+                }
+            }
+        }
+    }
+
     closeCoaPickerModal();
 
     // Focus ke kolom nominal
@@ -406,6 +460,86 @@ window.selectCoaFromModal = function (item) {
         } else {
             if (inputDebet) inputDebet.focus();
         }
+    }
+};
+
+/**
+ * Handler Pemilihan dari Elemen DOM Pasangan Cepat
+ */
+window.selectCoaPairItem = function (el) {
+    if (!el) return;
+    const dId = el.getAttribute('data-did');
+    const dCode = el.getAttribute('data-dcode');
+    const dName = el.getAttribute('data-dname') || '';
+    const kId = el.getAttribute('data-kid');
+    const kCode = el.getAttribute('data-kcode');
+    const kName = el.getAttribute('data-kname') || '';
+    const desc = el.getAttribute('data-desc') || '';
+
+    window.selectCoaPairDirect(dId, dCode, dName, kId, kCode, kName, desc);
+};
+
+/**
+ * Pemilihan Paket Pasangan Cepat Langsung (Dengan Data Lengkap)
+ */
+window.selectCoaPairDirect = function (dId, dCode, dName, kId, kCode, kName, defaultDesc) {
+    const tableBody = document.getElementById('entriesTableBody');
+    if (!tableBody) return;
+
+    let rows = tableBody.querySelectorAll('tr.entry-row');
+    while (rows.length < 2) {
+        addEntryRow();
+        rows = tableBody.querySelectorAll('tr.entry-row');
+    }
+
+    // Isi Baris 1 (Debet)
+    setRowCoa(rows[0], {
+        id: dId,
+        kode: dCode,
+        nama: dName,
+        kategori: 'DEBET'
+    });
+
+    // Isi Baris 2 (Kredit)
+    setRowCoa(rows[1], {
+        id: kId,
+        kode: kCode,
+        nama: kName,
+        kategori: 'KREDIT'
+    });
+
+    // Isi Keterangan Header jika masih kosong
+    const inputKet = document.getElementById('keterangan');
+    if (inputKet && (!inputKet.value || inputKet.value.trim() === '')) {
+        inputKet.value = defaultDesc;
+    }
+
+    closeCoaPickerModal();
+    calculateTotals();
+
+    // Auto-focus ke kolom Debet Baris 1
+    const debetRow1 = rows[0].querySelector('.input-debet');
+    if (debetRow1) debetRow1.focus();
+};
+
+/**
+ * Pemilihan Paket Pasangan Cepat (Fallback)
+ */
+window.selectCoaPairFromModal = function (debetCode, kreditCode, defaultDesc) {
+    const allCoaItems = Array.from(document.querySelectorAll('.coa-picker-item[data-id]'));
+    const itemD = allCoaItems.find(it => it.getAttribute('data-kode') === String(debetCode));
+    const itemK = allCoaItems.find(it => it.getAttribute('data-kode') === String(kreditCode));
+
+    if (itemD && itemK) {
+        window.selectCoaPairDirect(
+            itemD.getAttribute('data-id'),
+            debetCode,
+            itemD.getAttribute('data-nama') || itemD.querySelector('strong')?.textContent?.trim() || '',
+            itemK.getAttribute('data-id'),
+            kreditCode,
+            itemK.getAttribute('data-nama') || itemK.querySelector('strong')?.textContent?.trim() || '',
+            defaultDesc
+        );
     }
 };
 

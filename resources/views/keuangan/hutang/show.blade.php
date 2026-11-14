@@ -4,6 +4,7 @@
 
 @push('styles')
     <link rel="stylesheet" href="{{ asset('css/keuangan/hutang/hutang-index.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/keuangan/jurnal/modal-detail-jurnal.css') }}?v={{ file_exists(public_path('css/keuangan/jurnal/modal-detail-jurnal.css')) ? filemtime(public_path('css/keuangan/jurnal/modal-detail-jurnal.css')) : time() }}">
 @endpush
 
 @section('content')

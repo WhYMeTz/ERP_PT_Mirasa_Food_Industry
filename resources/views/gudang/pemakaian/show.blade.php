@@ -155,9 +155,9 @@
                     ⏳
                 </div>
                 <div>
-                    <h4 style="margin: 0; font-size: 0.95rem; font-weight: 700; color: #92400e;">Status Dokumen: DRAFT (Menunggu Verifikasi &amp; Posting)</h4>
+                    <h4 style="margin: 0; font-size: 0.95rem; font-weight: 700; color: #92400e;">Status Dokumen: DRAFT (Stok Fisik Telah Dipotong)</h4>
                     <p style="margin: 0.2rem 0 0; font-size: 0.825rem; color: #b45309; line-height: 1.45;">
-                        Dokumen ini dicatat oleh petugas gudang sebagai bukti pengeluaran fisik. <strong>Stok belum dipotong</strong> dan <strong>Jurnal Umum belum terbit</strong>. Office / Admin Produksi akan memvalidasi sebelum stok terpotong secara sistem.
+                        Dokumen dicatat petugas gudang. <strong>Stok fisik gudang telah langsung dipotong secara real-time</strong>. Jurnal Umum akuntansi akan diterbitkan saat kalkulasi HPP disahkan.
                     </p>
                 </div>
             </div>

@@ -65,7 +65,7 @@ class JurnalService
                     'coa'        => $coa,
                     'debet'      => $debet,
                     'kredit'     => $kredit,
-                    'keterangan' => $line['keterangan'] ?? $keterangan,
+                    'keterangan' => !empty(trim($line['keterangan'] ?? '')) ? trim($line['keterangan']) : $keterangan,
                 ];
             }
 

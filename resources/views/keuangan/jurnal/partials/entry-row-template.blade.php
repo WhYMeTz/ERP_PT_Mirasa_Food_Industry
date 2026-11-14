@@ -17,12 +17,6 @@
             </div>
         </td>
         <td>
-            <input type="text" 
-                   name="entries[__INDEX__][keterangan]" 
-                   class="jurnal-input input-keterangan" 
-                   placeholder="Keterangan baris...">
-        </td>
-        <td>
             <div class="input-currency-group">
                 <span class="prefix-rp">Rp</span>
                 <input type="number" 

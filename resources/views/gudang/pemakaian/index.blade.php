@@ -495,12 +495,12 @@
                                     <span class="badge" style="background: #fef3c7; color: #92400e; font-weight: 700; border: 1.5px solid #fde68a; font-size: 0.75rem; padding: 0.2rem 0.55rem; border-radius: 6px; display: inline-flex; align-items: center; gap: 0.3rem;">
                                         <span>⏳</span> DRAFT GUDANG
                                     </span>
-                                    <small style="display: block; font-size: 0.7rem; color: #b45309; margin-top: 2px;">Menunggu verifikasi fisik</small>
+                                    <small style="display: block; font-size: 0.7rem; color: #047857; margin-top: 2px;">Stok fisik terpotong</small>
                                 @else
                                     <span class="badge" style="background: #ecfdf5; color: #065f46; font-weight: 700; border: 1.5px solid #a7f3d0; font-size: 0.75rem; padding: 0.2rem 0.55rem; border-radius: 6px; display: inline-flex; align-items: center; gap: 0.3rem;">
                                         <span>✓</span> POSTED
                                     </span>
-                                    <small style="display: block; font-size: 0.7rem; color: #047857; margin-top: 2px;">Stok fisik terpotong</small>
+                                    <small style="display: block; font-size: 0.7rem; color: #047857; margin-top: 2px;">Stok &amp; Jurnal Tuntas</small>
                                 @endif
                             </td>
                             <td style="text-align: right;">

@@ -146,10 +146,7 @@ class VerifikasiPemakaianController extends Controller
             $gudangList = MstGudang::active()->orderBy('gudang_nm')->get();
 
             $barangList = MstBarang::active()
-                ->where(function ($query) {
-                    $query->bahanProduksi()
-                          ->orWhereHas('jenisBarang', fn($j) => $j->where('jenis_barang_cd', 'WIP'));
-                })
+                ->bahanProduksi()
                 ->with(['satuanDasar', 'jenisBarang'])
                 ->orderBy('barang_nm')
                 ->get()
@@ -157,9 +154,9 @@ class VerifikasiPemakaianController extends Controller
                     $cd = strtoupper($b->jenisBarang->jenis_barang_cd ?? '');
                     $nm = strtoupper($b->barang_nm ?? '');
 
-                    if ($cd === 'BB' || $cd === 'RAW' || $cd === 'WIP' || str_contains($nm, 'SINGKONG') || str_contains($nm, 'UBI') || str_contains($nm, 'OPAK') || str_contains($nm, 'PUYUR') || str_contains($nm, 'BERKO') || str_starts_with($cd, 'WIP')) {
+                    if ($cd === 'BB' || $cd === 'RAW' || str_contains($nm, 'SINGKONG') || str_contains($nm, 'UBI') || str_contains($nm, 'OPAK') || str_contains($nm, 'PUYUR') || str_contains($nm, 'BERKO')) {
                         $b->kategori_kelompok = 'BAHAN_BAKU';
-                        $b->kategori_label = 'Bahan Baku & Olahan WIP';
+                        $b->kategori_label = 'Bahan Baku';
                     } elseif (str_contains($nm, 'KARTON') || str_contains($nm, 'PLASTIK') || str_contains($nm, 'ROLL') || str_contains($nm, 'LAKBAN') || str_contains($nm, 'RAFIA') || str_contains($nm, 'SARUNG TANGAN') || $cd === 'PACK') {
                         $b->kategori_kelompok = 'KEMASAN';
                         $b->kategori_label = 'Kemasan & Packaging';

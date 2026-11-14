@@ -1362,6 +1362,54 @@
         }
     }
 
+    // Helper menemukan batch terlama dengan sisa bebas > 0
+    function findOldestAvailableBatch(row, targetGrade = null) {
+        const batchSelect = row.querySelector('.batch-select');
+        if (!batchSelect || batchSelect.options.length === 0) return null;
+
+        const usedQtyByOtherRows = {};
+        document.querySelectorAll('#itemsBody tr').forEach(r => {
+            if (r !== row) {
+                const bVal = r.querySelector('.batch-select')?.value;
+                const gVal = (r.querySelector('.grade-input')?.value || '').toUpperCase();
+                const qVal = parseFloat(r.querySelector('.qty-input')?.value || 0);
+                if (bVal && qVal > 0) {
+                    const key = bVal + '_' + gVal;
+                    usedQtyByOtherRows[key] = (usedQtyByOtherRows[key] || 0) + qVal;
+                    usedQtyByOtherRows[bVal] = (usedQtyByOtherRows[bVal] || 0) + qVal;
+                }
+            }
+        });
+
+        for (let i = 0; i < batchSelect.options.length; i++) {
+            const opt = batchSelect.options[i];
+            if (!opt.value) continue;
+
+            const optGrade = (opt.getAttribute('data-grade') || 'A').toUpperCase();
+            if (targetGrade && optGrade !== targetGrade) continue;
+
+            const optSisaBebas = parseFloat(opt.getAttribute('data-sisa-bebas') !== null ? opt.getAttribute('data-sisa-bebas') : (opt.getAttribute('data-sisa') || 0));
+            const optFullyBooked = (opt.getAttribute('data-is-fully-booked') === '1') || opt.disabled;
+            const usedOther = usedQtyByOtherRows[opt.value + '_' + optGrade] || usedQtyByOtherRows[opt.value] || 0;
+            const netAvailable = optSisaBebas - usedOther;
+
+            if (!optFullyBooked && netAvailable > 0.0001) {
+                return {
+                    opt: opt,
+                    index: i,
+                    batch_no: opt.value,
+                    grade: optGrade,
+                    tgl_masuk: opt.getAttribute('data-masuk') || '-',
+                    sisa_bebas: netAvailable,
+                    sisa_fisik: parseFloat(opt.getAttribute('data-sisa') || 0),
+                    harga: parseFloat(opt.getAttribute('data-harga') || 0),
+                    stok_id: opt.getAttribute('data-stok-id') || ''
+                };
+            }
+        }
+        return null;
+    }
+
     // Tampilkan rincian status batch normal / badge peringatan
     function renderNormalBatchInfo(row) {
         const batchSelect = row.querySelector('.batch-select');
@@ -1393,50 +1441,16 @@
                 ? `<span style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a; font-weight: 700; padding: 1px 6px; border-radius: 4px; font-size: 0.725rem;">🟡 Grade B</span>`
                 : `<span style="background: #f1f5f9; color: #334155; font-weight: 600; padding: 1px 6px; border-radius: 4px; font-size: 0.725rem;">Grade ${grade}</span>`);
 
-        // Hitung kuantitas batch yang sudah dipakai di baris-baris lain dalam form ini
-        const usedQtyByOtherRows = {};
-        document.querySelectorAll('#itemsBody tr').forEach(r => {
-            if (r !== row) {
-                const bVal = r.querySelector('.batch-select')?.value;
-                const gVal = (r.querySelector('.grade-input')?.value || '').toUpperCase();
-                const qVal = parseFloat(r.querySelector('.qty-input')?.value || 0);
-                if (bVal && qVal > 0) {
-                    const key = bVal + '_' + gVal;
-                    usedQtyByOtherRows[key] = (usedQtyByOtherRows[key] || 0) + qVal;
-                    usedQtyByOtherRows[bVal] = (usedQtyByOtherRows[bVal] || 0) + qVal;
-                }
-            }
-        });
-
-        // Temukan opsi batch terlama yang BENAR-BENAR MASIH MEMILIKI SISA BEBAS (> 0)
-        let oldestOpt = null;
-        for (let i = 0; i < batchSelect.options.length; i++) {
-            const opt = batchSelect.options[i];
-            if (!opt.value) continue;
-
-            const optGrade = (opt.getAttribute('data-grade') || 'A').toUpperCase();
-            if (grade && optGrade !== grade) continue;
-
-            const optSisaBebas = parseFloat(opt.getAttribute('data-sisa-bebas') !== null ? opt.getAttribute('data-sisa-bebas') : (opt.getAttribute('data-sisa') || 0));
-            const optFullyBooked = (opt.getAttribute('data-is-fully-booked') === '1') || opt.disabled;
-            const usedOther = usedQtyByOtherRows[opt.value + '_' + optGrade] || usedQtyByOtherRows[opt.value] || 0;
-            const netAvailable = optSisaBebas - usedOther;
-
-            if (!optFullyBooked && netAvailable > 0.0001) {
-                oldestOpt = opt;
-                break;
-            }
-        }
-
-        const isSameBatch = selectedOpt && oldestOpt && (selectedOpt.value === oldestOpt.value);
-        const oldestSisaBebas = oldestOpt ? parseFloat(oldestOpt.getAttribute('data-sisa-bebas') !== null ? oldestOpt.getAttribute('data-sisa-bebas') : (oldestOpt.getAttribute('data-sisa') || 0)) : 0;
-        const oldestBatchNo = oldestOpt ? oldestOpt.value : '-';
-        const oldestMasuk = oldestOpt ? (oldestOpt.getAttribute('data-masuk') || '-') : '-';
+        const oldestInfo = findOldestAvailableBatch(row, grade) || findOldestAvailableBatch(row, null);
+        const isSameBatch = selectedOpt && oldestInfo && (selectedOpt.value === oldestInfo.batch_no);
+        const oldestSisaBebas = oldestInfo ? oldestInfo.sisa_bebas : 0;
+        const oldestBatchNo = oldestInfo ? oldestInfo.batch_no : '-';
+        const oldestMasuk = oldestInfo ? oldestInfo.tgl_masuk : '-';
 
         // Melompati batch tertua HANYA jika ada batch terlama dengan sisa bebas > 0 yang posisinya mendahului batch terpilih
-        const isSkippingOldest = oldestOpt && selectedOpt && (selectedOpt.index > oldestOpt.index);
+        const isSkippingOldest = oldestInfo && selectedOpt && (selectedOpt.index > oldestInfo.index);
 
-        if (isSameBatch || !isSkippingOldest || !oldestOpt) {
+        if (isSameBatch || !isSkippingOldest || !oldestInfo) {
             batchSelect.style.borderColor = '#cbd5e1';
             batchSelect.style.backgroundColor = '#ffffff';
             batchInfo.innerHTML = `
@@ -1534,9 +1548,18 @@
     function selectOldestBatchInRow(btn) {
         const row = btn.closest('tr');
         const batchSelect = row.querySelector('.batch-select');
+        const gradeInput = row.querySelector('.grade-input');
         if (!batchSelect) return;
 
-        // Cari opsi pertama yang memiliki sisa bebas > 0 dan tidak disabled
+        const grade = (gradeInput?.value || 'A').toUpperCase();
+        let oldestInfo = findOldestAvailableBatch(row, grade) || findOldestAvailableBatch(row, null);
+        if (oldestInfo && oldestInfo.opt) {
+            batchSelect.selectedIndex = oldestInfo.index;
+            onBatchSelect(batchSelect);
+            return;
+        }
+
+        // Fallback jika tidak terdeteksi via helper
         for (let i = 0; i < batchSelect.options.length; i++) {
             const opt = batchSelect.options[i];
             const sisaBebas = parseFloat(opt.getAttribute('data-sisa-bebas') !== null ? opt.getAttribute('data-sisa-bebas') : (opt.getAttribute('data-sisa') || 0));
@@ -1552,6 +1575,31 @@
             batchSelect.selectedIndex = 0;
             onBatchSelect(batchSelect);
         }
+    }
+
+    // Auto-split batch dengan prioritas ketat mulai dari batch tertua (FIFO)
+    function autoSplitFifoStrict(row, splitMode = 'SAME_GRADE') {
+        if (!row) return;
+        const barangSelect = row.querySelector('.barang-select');
+        const batchSelect = row.querySelector('.batch-select');
+        const qtyInput = row.querySelector('.qty-input');
+        const gradeInput = row.querySelector('.grade-input');
+
+        if (!barangSelect || !barangSelect.value || !batchSelect) return;
+
+        const totalRequested = parseFloat(qtyInput?.value || 0);
+        if (totalRequested <= 0) return;
+
+        const grade = (gradeInput?.value || 'A').toUpperCase();
+        const oldestInfo = findOldestAvailableBatch(row, (splitMode === 'SAME_GRADE' ? grade : null)) || findOldestAvailableBatch(row, null);
+
+        if (oldestInfo && oldestInfo.opt) {
+            batchSelect.selectedIndex = oldestInfo.index;
+            onBatchSelect(batchSelect);
+            qtyInput.value = totalRequested;
+        }
+
+        autoSplitBatchForRow(row, splitMode);
     }
 
     // Kalkulasi kuantitas baris & validasi komitmen draft / limit stok
@@ -1590,62 +1638,118 @@
             }
 
             const selisih = qty - sisaBebas;
+            const oldestInfo = findOldestAvailableBatch(row, grade) || findOldestAvailableBatch(row, null);
+            const isSkippingOldest = oldestInfo && selectedBatchOpt && (selectedBatchOpt.index > oldestInfo.index) && (oldestInfo.sisa_bebas > 0);
+
             if (qtyWarning) {
-                qtyWarning.innerHTML = `
-                    <div style="background: #fef2f2; border: 1.5px solid #f87171; border-radius: 6px; padding: 0.35rem 0.5rem; color: #991b1b; text-align: left;">
-                        <div style="font-weight: 800; font-size: 0.74rem; color: #dc2626; display: flex; align-items: center; gap: 0.25rem;">
-                            ⛔ Melebihi Sisa!
+                if (isSkippingOldest) {
+                    qtyWarning.innerHTML = `
+                        <div style="background: #fffbeb; border: 1.5px solid #f59e0b; border-radius: 6px; padding: 0.35rem 0.5rem; color: #92400e; text-align: left;">
+                            <div style="font-weight: 800; font-size: 0.74rem; color: #b45309; display: flex; align-items: center; gap: 0.25rem;">
+                                ⚠️ Bukan Batch Tertua!
+                            </div>
+                            <div style="font-size: 0.7rem; color: #78350f; margin-top: 2px; line-height: 1.3;">
+                                Ada <strong>${oldestInfo.batch_no}</strong> (Sisa: ${oldestInfo.sisa_bebas.toLocaleString('id-ID')}).
+                            </div>
+                            <div style="margin-top: 0.35rem; display: flex; gap: 0.25rem; flex-wrap: wrap;">
+                                <button type="button" onclick="window.pemakaianApp.selectOldestBatchInRow(this)" style="background: #059669; color: #ffffff; font-weight: 700; font-size: 0.715rem; padding: 3px 6px; border: none; border-radius: 4px; cursor: pointer;" title="Alihkan ke batch tertua">
+                                    👉 Pakai ${oldestInfo.batch_no}
+                                </button>
+                            </div>
                         </div>
-                        <div style="font-size: 0.7rem; color: #7f1d1d; margin-top: 2px; line-height: 1.3;">
-                            Kurang <strong>${selisih.toLocaleString('id-ID')} ${satuanNm}</strong>.
+                    `;
+                } else {
+                    qtyWarning.innerHTML = `
+                        <div style="background: #fef2f2; border: 1.5px solid #f87171; border-radius: 6px; padding: 0.35rem 0.5rem; color: #991b1b; text-align: left;">
+                            <div style="font-weight: 800; font-size: 0.74rem; color: #dc2626; display: flex; align-items: center; gap: 0.25rem;">
+                                ⛔ Melebihi Sisa!
+                            </div>
+                            <div style="font-size: 0.7rem; color: #7f1d1d; margin-top: 2px; line-height: 1.3;">
+                                Kurang <strong>${selisih.toLocaleString('id-ID')} ${satuanNm}</strong>.
+                            </div>
+                            <div style="margin-top: 0.35rem;">
+                                <button type="button" onclick="window.pemakaianApp.autoSplitBatchForRow(this.closest('tr'), 'SAME_GRADE')" style="background: #dc2626; color: #ffffff; font-weight: 700; font-size: 0.715rem; padding: 3px 8px; border: none; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem; box-shadow: 0 1px 2px rgba(220,38,38,0.25);" title="Pecah otomatis">
+                                    ⚡ Pecah Otomatis
+                                </button>
+                            </div>
                         </div>
-                        <div style="margin-top: 0.35rem;">
-                            <button type="button" onclick="window.pemakaianApp.autoSplitBatchForRow(this.closest('tr'), 'SAME_GRADE')" style="background: #dc2626; color: #ffffff; font-weight: 700; font-size: 0.715rem; padding: 3px 8px; border: none; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem; box-shadow: 0 1px 2px rgba(220,38,38,0.25);" title="Pecah otomatis">
-                                ⚡ Pecah Otomatis
-                            </button>
+                    `;
+                }
+            }
+
+            const isDraftConflict = (qty <= sisaFisik && draftQty > 0);
+
+            if (isSkippingOldest) {
+                batchInfo.innerHTML = `
+                    <div style="background: #fffbeb; border: 1.5px solid #f59e0b; border-radius: 6px; padding: 0.55rem 0.75rem; margin-top: 0.35rem; color: #92400e; box-shadow: 0 1px 3px rgba(245,158,11,0.15);">
+                        <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 0.6rem; flex-wrap: wrap;">
+                            <div style="flex: 1; min-width: 280px;">
+                                <div style="display: flex; align-items: center; gap: 0.35rem; margin-bottom: 0.25rem;">
+                                    ${gradeBadge}
+                                    <strong style="color: #b45309; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 0.3rem;">
+                                        ⚠️ Prioritas FIFO: Masih Ada Batch Lebih Lama [${oldestInfo.batch_no}]!
+                                    </strong>
+                                </div>
+                                <div style="font-size: 0.74rem; color: #78350f; line-height: 1.4;">
+                                    Batch yang dipilih (<strong>${selectedBatchOpt.value}</strong>) bukan batch tertua dan stoknya tidak mencukupi (sisa <strong>${sisaBebas.toLocaleString('id-ID')} unit</strong> dari kebutuhan <strong>${qty.toLocaleString('id-ID')} unit</strong>).<br>
+                                    Sesuai aturan FIFO, batch tertua <strong>[${oldestInfo.batch_no}]</strong> (Masuk: <strong>${oldestInfo.tgl_masuk}</strong>, Sisa Bebas: <strong>${oldestInfo.sisa_bebas.toLocaleString('id-ID')} unit</strong>) wajib dihabiskan terlebih dahulu!
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 0.35rem; align-items: center; flex-wrap: wrap;">
+                                <button type="button" onclick="window.pemakaianApp.selectOldestBatchInRow(this)" style="background: #059669; color: #ffffff; font-weight: 700; font-size: 0.735rem; padding: 6px 12px; border: none; border-radius: 5px; cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.35rem; box-shadow: 0 1px 3px rgba(5,150,105,0.3);" title="Ganti pilihan baris ini ke batch tertua">
+                                    <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                    <span>👉 Alihkan ke Batch Tertua (${oldestInfo.batch_no})</span>
+                                </button>
+                                <button type="button" onclick="window.pemakaianApp.autoSplitFifoStrict(this.closest('tr'), 'SAME_GRADE')" style="background: #0284c7; color: #ffffff; font-weight: 700; font-size: 0.735rem; padding: 6px 12px; border: none; border-radius: 5px; cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.35rem; box-shadow: 0 1px 3px rgba(2,132,199,0.3);" title="Alokasikan mulai dari batch tertua secara otomatis sesuai urutan FIFO">
+                                    <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                                    <span>⚡ Pecah Mulai dari Tertua (FIFO)</span>
+                                </button>
+                                <button type="button" onclick="window.pemakaianApp.autoSplitBatchForRow(this.closest('tr'), 'SAME_GRADE')" style="background: #ffffff; color: #dc2626; border: 1.5px solid #f87171; font-weight: 700; font-size: 0.715rem; padding: 5px 9px; border-radius: 5px; cursor: pointer; white-space: nowrap;" title="Abaikan rekomendasi FIFO dan tetap pecah mulai dari batch ini">
+                                    <span>Bypass FIFO (Pecah dari ${selectedBatchOpt.value})</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                const titleMsg = isDraftConflict
+                    ? `⚠️ Melebihi Sisa Bebas! Terikat di DRAFT Lain`
+                    : (sisaBebas <= 0.0001 && draftQty > 0 ? `⛔ Batch Habis Ter-booking di DRAFT Lain!` : `⚠️ Kuantitas Melebihi Sisa Fisik Batch!`);
+
+                const descMsg = isDraftConflict
+                    ? `Batch <strong>${selectedBatchOpt.value}</strong> memiliki fisik <strong>${sisaFisik.toLocaleString('id-ID')} unit</strong>, namun <strong>${draftQty.toLocaleString('id-ID')} unit</strong> telah dibooking di draft <strong>[${draftDocs}]</strong>. Sisa bebas hanya <strong>${sisaBebas.toLocaleString('id-ID')} unit</strong>. Sisa <strong>${(qty - sisaBebas).toLocaleString('id-ID')} unit</strong> harus diambil dari batch lain!`
+                    : (sisaBebas <= 0.0001 && draftQty > 0
+                        ? `Batch <strong>${selectedBatchOpt.value}</strong> memiliki fisik <strong>${sisaFisik.toLocaleString('id-ID')} unit</strong>, tapi seluruhnya telah di-booking di dokumen DRAFT <strong>[${draftDocs}]</strong> yang belum di-acc/potong stok. Sisa bebas: <strong>0 unit</strong>.`
+                        : `Batch <strong>${selectedBatchOpt.value}</strong> hanya bersisa <strong>${sisaFisik.toLocaleString('id-ID')} unit</strong>. Sisa <strong>${(qty - sisaFisik).toLocaleString('id-ID')} unit</strong> harus diambil dari batch lain!`);
+
+                batchInfo.innerHTML = `
+                    <div style="background: #fef2f2; border: 1.5px solid #f87171; border-radius: 6px; padding: 0.5rem 0.75rem; margin-top: 0.35rem; color: #991b1b;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap;">
+                            <div>
+                                <div style="display: flex; align-items: center; gap: 0.35rem; margin-bottom: 0.2rem;">
+                                    ${gradeBadge}
+                                    <strong style="color: #dc2626; font-size: 0.775rem; display: inline-flex; align-items: center; gap: 0.25rem;">
+                                        ${titleMsg}
+                                    </strong>
+                                </div>
+                                <div style="font-size: 0.735rem; color: #7f1d1d; line-height: 1.35;">
+                                    ${descMsg}
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 0.35rem; align-items: center; flex-wrap: wrap;">
+                                <button type="button" onclick="window.pemakaianApp.autoSplitBatchForRow(this.closest('tr'), 'SAME_GRADE')" style="background: ${grade === 'A' ? '#059669' : '#d97706'}; color: #ffffff; font-weight: 700; font-size: 0.725rem; padding: 5px 10px; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.35rem; box-shadow: 0 1px 3px rgba(0,0,0,0.15);" title="Pecah dan ambil lanjutan HANYA dari sesama Grade ${grade}">
+                                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                                    <span>⚡ Pecah (Grade ${grade} Saja)</span>
+                                </button>
+                                <button type="button" onclick="window.pemakaianApp.autoSplitBatchForRow(this.closest('tr'), 'CAMPUR')" style="background: #dc2626; color: #ffffff; font-weight: 700; font-size: 0.725rem; padding: 5px 10px; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.35rem; box-shadow: 0 1px 3px rgba(220,38,38,0.25);" title="Pecah dan ambil lanjutan dari batch tertua apa saja (Campur / Bebas Grade)">
+                                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                    <span>🔄 Pecah Campur (Semua Grade)</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 `;
             }
-
-            const isDraftConflict = (qty <= sisaFisik && draftQty > 0);
-            const titleMsg = isDraftConflict
-                ? `⚠️ Melebihi Sisa Bebas! Terikat di DRAFT Lain`
-                : (sisaBebas <= 0.0001 && draftQty > 0 ? `⛔ Batch Habis Ter-booking di DRAFT Lain!` : `⚠️ Kuantitas Melebihi Sisa Fisik Batch!`);
-
-            const descMsg = isDraftConflict
-                ? `Batch <strong>${selectedBatchOpt.value}</strong> memiliki fisik <strong>${sisaFisik.toLocaleString('id-ID')} unit</strong>, namun <strong>${draftQty.toLocaleString('id-ID')} unit</strong> telah dibooking di draft <strong>[${draftDocs}]</strong>. Sisa bebas hanya <strong>${sisaBebas.toLocaleString('id-ID')} unit</strong>. Sisa <strong>${(qty - sisaBebas).toLocaleString('id-ID')} unit</strong> harus diambil dari batch lain!`
-                : (sisaBebas <= 0.0001 && draftQty > 0
-                    ? `Batch <strong>${selectedBatchOpt.value}</strong> memiliki fisik <strong>${sisaFisik.toLocaleString('id-ID')} unit</strong>, tapi seluruhnya telah di-booking di dokumen DRAFT <strong>[${draftDocs}]</strong> yang belum di-acc/potong stok. Sisa bebas: <strong>0 unit</strong>.`
-                    : `Batch <strong>${selectedBatchOpt.value}</strong> hanya bersisa <strong>${sisaFisik.toLocaleString('id-ID')} unit</strong>. Sisa <strong>${(qty - sisaFisik).toLocaleString('id-ID')} unit</strong> harus diambil dari batch lain!`);
-
-            batchInfo.innerHTML = `
-                <div style="background: #fef2f2; border: 1.5px solid #f87171; border-radius: 6px; padding: 0.5rem 0.75rem; margin-top: 0.35rem; color: #991b1b;">
-                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap;">
-                        <div>
-                            <div style="display: flex; align-items: center; gap: 0.35rem; margin-bottom: 0.2rem;">
-                                ${gradeBadge}
-                                <strong style="color: #dc2626; font-size: 0.775rem; display: inline-flex; align-items: center; gap: 0.25rem;">
-                                    ${titleMsg}
-                                </strong>
-                            </div>
-                            <div style="font-size: 0.735rem; color: #7f1d1d; line-height: 1.35;">
-                                ${descMsg}
-                            </div>
-                        </div>
-                        <div style="display: flex; gap: 0.35rem; align-items: center; flex-wrap: wrap;">
-                            <button type="button" onclick="window.pemakaianApp.autoSplitBatchForRow(this.closest('tr'), 'SAME_GRADE')" style="background: ${grade === 'A' ? '#059669' : '#d97706'}; color: #ffffff; font-weight: 700; font-size: 0.725rem; padding: 5px 10px; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.35rem; box-shadow: 0 1px 3px rgba(0,0,0,0.15);" title="Pecah dan ambil lanjutan HANYA dari sesama Grade ${grade}">
-                                <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                                <span>⚡ Pecah (Grade ${grade} Saja)</span>
-                            </button>
-                            <button type="button" onclick="window.pemakaianApp.autoSplitBatchForRow(this.closest('tr'), 'CAMPUR')" style="background: #dc2626; color: #ffffff; font-weight: 700; font-size: 0.725rem; padding: 5px 10px; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.35rem; box-shadow: 0 1px 3px rgba(220,38,38,0.25);" title="Pecah dan ambil lanjutan dari batch tertua apa saja (Campur / Bebas Grade)">
-                                <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                                <span>🔄 Pecah Campur (Semua Grade)</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `;
         } else if (selectedBatchOpt && selectedBatchOpt.value) {
             qtyInput.style.borderColor = '#cbd5e1';
             qtyInput.style.backgroundColor = '#ffffff';
@@ -2856,6 +2960,7 @@
         closePreviousMonthModal,
         fillMaxQtyForRow,
         updateSisaStokCell,
+        autoSplitFifoStrict,
     };
 
     // Alias global untuk fungsi-fungsi lama agar kompatibel
@@ -2871,6 +2976,7 @@
     window.onBarangSelect = onBarangSelect;
     window.onBatchSelect = onBatchSelect;
     window.selectOldestBatchInRow = selectOldestBatchInRow;
+    window.autoSplitFifoStrict = autoSplitFifoStrict;
     window.calcRow = calcRow;
     window.autoSplitBatchForRow = autoSplitBatchForRow;
     window.splitSpecificRowFromModal = splitSpecificRowFromModal;

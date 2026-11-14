@@ -129,9 +129,12 @@
                                name="keterangan" 
                                id="keterangan" 
                                class="jurnal-input" 
-                               placeholder="Tuliskan tujuan pencatatan jurnal (misal: Pembayaran upah borongan kemas keripik minggu ke-2)..." 
+                               placeholder="Tuliskan keterangan transaksi (misal: PT. Karyawangsa - Karton Mr Pho 2.556 @2.450,45)..." 
                                value="{{ old('keterangan') }}" 
                                required>
+                        <div style="font-size: 0.725rem; color: #64748b; margin-top: 3px;">
+                            💡 Keterangan ini otomatis diseragamkan ke seluruh baris akun di bawah (baris 1, 2, 3, 4, dst).
+                        </div>
                     </div>
                 </div>
             </div>
@@ -152,19 +155,18 @@
                     <table class="table-entries">
                         <thead>
                             <tr>
-                                <th style="width: 40px; text-align: center;">No</th>
-                                <th style="min-width: 320px;">Akun Bagan (COA) <span style="color: #dc2626;">*</span></th>
-                                <th style="min-width: 200px;">Keterangan Baris</th>
-                                <th style="width: 180px; text-align: right;">Debet (Rp)</th>
-                                <th style="width: 180px; text-align: right;">Kredit (Rp)</th>
-                                <th style="width: 75px; text-align: center;">Aksi</th>
+                                <th style="width: 45px; text-align: center;">No</th>
+                                <th style="min-width: 360px;">Akun Bagan (COA) <span style="color: #dc2626;">*</span></th>
+                                <th style="width: 220px; text-align: right;">Debet (Rp)</th>
+                                <th style="width: 220px; text-align: right;">Kredit (Rp)</th>
+                                <th style="width: 85px; text-align: center;">Aksi</th>
                             </tr>
                         </thead>
                         <tbody id="entriesTableBody">
                             @php
                                 $oldEntries = old('entries', [
-                                    ['coa_id' => '', 'keterangan' => '', 'debet' => '', 'kredit' => ''],
-                                    ['coa_id' => '', 'keterangan' => '', 'debet' => '', 'kredit' => ''],
+                                    ['coa_id' => '', 'debet' => '', 'kredit' => ''],
+                                    ['coa_id' => '', 'debet' => '', 'kredit' => ''],
                                 ]);
                             @endphp
 
@@ -192,13 +194,6 @@
                                                 <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin-left: auto; color: #94a3b8;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                                             </button>
                                         </div>
-                                    </td>
-                                    <td>
-                                        <input type="text" 
-                                               name="entries[{{ $idx }}][keterangan]" 
-                                               class="jurnal-input input-keterangan" 
-                                               placeholder="Keterangan baris..." 
-                                               value="{{ $entry['keterangan'] ?? '' }}">
                                     </td>
                                     <td>
                                         <div class="input-currency-group">
@@ -246,7 +241,7 @@
                         </tbody>
                         <tfoot>
                             <tr>
-                                <td colspan="3" style="text-align: right; font-weight: 800; color: #1e293b; text-transform: uppercase;">
+                                <td colspan="2" style="text-align: right; font-weight: 800; color: #1e293b; text-transform: uppercase;">
                                     Total Akumulasi:
                                 </td>
                                 <td style="text-align: right; font-weight: 800; font-family: monospace; color: #15803d; font-size: 0.95rem;" id="lblTotalDebet">

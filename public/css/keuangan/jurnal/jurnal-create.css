@@ -544,6 +544,67 @@
     transform: translateX(2px);
 }
 
+/* Template Paket Pasangan Akun */
+.coa-pair-item {
+    background: #ffffff;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 0.65rem 0.95rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+}
+
+.coa-pair-item:hover {
+    border-color: #059669;
+    background: #f0fdf4;
+    transform: translateX(3px);
+    box-shadow: 0 3px 8px rgba(5, 150, 105, 0.12);
+}
+
+.coa-pair-title {
+    font-size: 0.825rem;
+    font-weight: 800;
+    color: #0f172a;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin-bottom: 0.35rem;
+}
+
+.coa-pair-flow {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.775rem;
+    flex-wrap: wrap;
+}
+
+.coa-pair-tag-d {
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    color: #065f46;
+    padding: 2px 7px;
+    border-radius: 5px;
+    font-weight: 700;
+    font-family: monospace;
+}
+
+.coa-pair-tag-k {
+    background: #faf5ff;
+    border: 1px solid #e9d5ff;
+    color: #6b21a8;
+    padding: 2px 7px;
+    border-radius: 5px;
+    font-weight: 700;
+    font-family: monospace;
+}
+
+.coa-pair-arrow {
+    color: #94a3b8;
+    font-weight: 800;
+}
+
 .badge-coa-cat {
     font-size: 0.675rem;
     font-weight: 800;

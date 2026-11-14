@@ -1597,4 +1597,253 @@ class PackagingService
             return $log;
         });
     }
+
+    /**
+     * Mengambil daftar dokumen pengemasan fisik yang siap dikalkulasi HPP oleh Bagian Keuangan / Costing.
+     */
+    public function getPackagingListForHpp(?int $selectedPackId = null)
+    {
+        return DatPackagingHdr::with(['barangJadi.satuanDasar', 'gudang', 'produksi'])
+            ->where('deleted_st', false)
+            ->where('status_cd', '!=', 'VOID')
+            ->where(function ($q) use ($selectedPackId) {
+                $q->where('is_hpp_final', false)
+                  ->orWhereNull('hpp_per_karton')
+                  ->orWhere('hpp_per_karton', '<=', 0);
+                if ($selectedPackId) {
+                    $q->orWhere('pack_id', $selectedPackId);
+                }
+            })
+            ->orderBy('pack_tgl', 'desc')
+            ->orderBy('pack_id', 'desc')
+            ->get();
+    }
+
+    /**
+     * Mengambil data lengkap dokumen catatan hasil pengemasan untuk ditarik ke Lembar Kalkulasi HPP.
+     */
+    public function getPackagingDataForHpp(int $id): array
+    {
+        $header = DatPackagingHdr::with([
+            'barangJadi.satuanDasar',
+            'gudang',
+            'details.barang.satuanDasar',
+            'details.barang.jenisBarang',
+            'produksi'
+        ])
+            ->where('deleted_st', false)
+            ->findOrFail($id);
+
+        // 1. Ekstraksi Informasi Curah WIP & Nilai HPP Masak Dapur
+        $wipItems = [];
+        $totalWipNilai = 0;
+        $hppPerKgWip = (float) ($header->produksi?->hpp_per_kg ?? 0);
+
+        foreach ($header->details as $dtl) {
+            if ($dtl->deleted_st) continue;
+            if (strtoupper($dtl->kategori_bahan) === 'WIP') {
+                $hargaSatuan = $hppPerKgWip > 0 ? $hppPerKgWip : (float) ($dtl->harga_satuan > 0 ? $dtl->harga_satuan : 25500);
+                $subtotal = round((float) $dtl->qty_aktual * $hargaSatuan, 2);
+                $wipItems[] = [
+                    'packdtl_id'   => $dtl->packdtl_id,
+                    'barang_id'    => $dtl->barang_id,
+                    'barang_cd'    => $dtl->barang?->barang_cd ?? 'WIP',
+                    'barang_nm'    => $dtl->barang?->barang_nm ?? 'Keripik Curah WIP',
+                    'batch_no'     => $dtl->batch_no ?: ($header->batch_no ?? '-'),
+                    'qty_aktual'   => (float) $dtl->qty_aktual,
+                    'satuan_cd'    => $dtl->satuan_cd ?? 'KG',
+                    'harga_satuan' => $hargaSatuan,
+                    'subtotal'     => $subtotal,
+                ];
+                $totalWipNilai += $subtotal;
+            }
+        }
+
+        // 2. Ekstraksi Bahan Kemasan (BOM Kemas)
+        $kemasanItems = [];
+        $totalKemasanNilai = 0;
+        foreach ($header->details as $dtl) {
+            if ($dtl->deleted_st) continue;
+            if (strtoupper($dtl->kategori_bahan) !== 'WIP') {
+                $hargaSatuan = (float) $dtl->harga_satuan;
+                $subtotal = (float) ($dtl->subtotal_nilai > 0 ? $dtl->subtotal_nilai : round((float)$dtl->qty_aktual * $hargaSatuan, 2));
+                $kemasanItems[] = [
+                    'packdtl_id'     => $dtl->packdtl_id,
+                    'barang_id'      => $dtl->barang_id,
+                    'barang_cd'      => $dtl->barang?->barang_cd ?? '-',
+                    'barang_nm'      => $dtl->barang?->barang_nm ?? 'Bahan Kemasan',
+                    'kategori_bahan' => $dtl->kategori_bahan,
+                    'qty_aktual'     => (float) $dtl->qty_aktual,
+                    'satuan_cd'      => $dtl->satuan_cd ?? 'PCS',
+                    'harga_satuan'   => $hargaSatuan,
+                    'subtotal'       => $subtotal,
+                ];
+                $totalKemasanNilai += $subtotal;
+            }
+        }
+
+        // 3. Tarik Biaya Tenaga Kerja Langsung (BTKL Kemas) dari Modul Absensi / Karyawan
+        $packTglStr = Carbon::parse($header->pack_tgl)->toDateString();
+        $laborData = app(\App\Services\Produksi\ProduksiService::class)->getLaborDataFromKaryawan($packTglStr, 'Langsung Packing');
+        
+        $jmlPersonil = (int) ($header->jumlah_personil > 0 ? $header->jumlah_personil : ($laborData['jumlah_karyawan'] ?? 0));
+        $totalUpahTk = (float) ($header->total_biaya_tenaga_kerja > 0 ? $header->total_biaya_tenaga_kerja : ($laborData['total_upah'] ?? 0));
+
+        // 4. Kalkulasi Rekapitulasi Biaya & HPP
+        $biayaLain = (float) ($header->total_biaya_lain ?? 0);
+        $totalBiaya = round($totalWipNilai + $totalKemasanNilai + $totalUpahTk + $biayaLain, 2);
+
+        $hasilKarton = (float) $header->hasil_karton_qty;
+        $hasilPcs = (float) $header->hasil_pcs_qty;
+
+        $hppKarton = $hasilKarton > 0 ? round($totalBiaya / $hasilKarton, 4) : 0;
+        $hppPcs = $hasilPcs > 0 ? round($totalBiaya / $hasilPcs, 4) : 0;
+
+        return [
+            'pack_id'                   => $header->pack_id,
+            'pack_no'                   => $header->pack_no,
+            'pack_tgl'                  => $packTglStr,
+            'pack_tgl_formatted'        => Carbon::parse($header->pack_tgl)->locale('id')->isoFormat('dddd, D MMMM Y'),
+            'shift'                     => $header->shift ?? 'A',
+            'operator_nama'             => $header->operator_nama ?? '-',
+            'karyawan_id'               => $header->karyawan_id,
+            'gudang_id'                 => $header->gudang_id,
+            'gudang_nm'                 => $header->gudang?->gudang_nm ?? 'Gudang Hasil Produksi (FG)',
+            'barang_jadi_id'            => $header->barang_jadi_id,
+            'barang_jadi_cd'            => $header->barangJadi?->barang_cd ?? '-',
+            'barang_jadi_nm'            => $header->barangJadi?->barang_nm ?? '-',
+            'batch_no'                  => $header->batch_no ?: '-',
+            'expired_tgl'               => $header->expired_tgl ? Carbon::parse($header->expired_tgl)->format('Y-m-d') : null,
+            'expired_tgl_formatted'     => $header->expired_tgl ? Carbon::parse($header->expired_tgl)->format('d/m/Y') : '-',
+            'target_karton_qty'         => (float) $header->target_karton_qty,
+            'hasil_karton_qty'          => $hasilKarton,
+            'hasil_pcs_qty'             => $hasilPcs,
+            'isi_per_karton_pcs'        => (float) ($header->isi_per_karton_pcs ?: 20),
+            'gramatur_gr'               => (float) $header->gramatur_gr,
+            
+            // Info SPK Dapur asal
+            'produksi_id'               => $header->produksi_id,
+            'produksi_no'               => $header->produksi?->produksi_no ?? '-',
+            'produksi_tgl'              => $header->produksi?->produksi_tgl ? Carbon::parse($header->produksi->produksi_tgl)->format('d/m/Y') : '-',
+            'hpp_per_kg_wip'            => $hppPerKgWip,
+            'is_wip_hpp_ready'          => ($hppPerKgWip > 0),
+
+            // Rincian WIP & Kemasan
+            'wip_items'                 => $wipItems,
+            'kemasan_items'             => $kemasanItems,
+
+            // BTKL
+            'jumlah_personil'           => $jmlPersonil,
+            'total_biaya_tenaga_kerja'  => $totalUpahTk,
+            'labor_source'              => !empty($laborData['jumlah_karyawan']) ? 'Modul Presensi Karyawan' : 'Input Standar Shift',
+            'labor_karyawan_list'       => $laborData['karyawan_list'] ?? [],
+
+            // Biaya Lain & Ringkasan
+            'total_biaya_wip'           => $totalWipNilai,
+            'total_biaya_kemasan'       => $totalKemasanNilai,
+            'total_biaya_lain'          => $biayaLain,
+            'total_biaya_produksi'      => $totalBiaya,
+            'hpp_per_karton'            => $hppKarton,
+            'hpp_per_pcs'               => $hppPcs,
+            'is_hpp_final'              => (bool) $header->is_hpp_final,
+        ];
+    }
+
+    /**
+     * Menyimpan dan memfinalkan hasil kalkulasi HPP Pengemasan oleh Costing / Keuangan.
+     */
+    public function storePackagingHppCalculation(int $packId, array $data, ?string $userName = null): DatPackagingHdr
+    {
+        return DB::transaction(function () use ($packId, $data, $userName) {
+            $header = DatPackagingHdr::with(['details', 'barangJadi'])->findOrFail($packId);
+
+            if ($header->status_cd === 'VOID') {
+                throw new Exception("Dokumen {$header->pack_no} telah dibatalkan (VOID) dan tidak dapat dikalkulasi HPP.");
+            }
+
+            $user = $userName ?? auth()->user()?->name ?? 'System';
+
+            // 1. Update harga dan subtotal komponen WIP jika dikoreksi
+            $totalWip = 0;
+            if (isset($data['wip_items']) && is_array($data['wip_items'])) {
+                foreach ($data['wip_items'] as $dtlId => $row) {
+                    $dtl = $header->details->where('packdtl_id', $dtlId)->first();
+                    if ($dtl) {
+                        $harga = (float) ($row['harga_satuan'] ?? $dtl->harga_satuan);
+                        $qty = (float) $dtl->qty_aktual;
+                        $subtotal = round($qty * $harga, 2);
+                        $dtl->harga_satuan = $harga;
+                        $dtl->subtotal_nilai = $subtotal;
+                        $dtl->updated_by = $user;
+                        $dtl->save();
+                        $totalWip += $subtotal;
+                    }
+                }
+            } else {
+                $totalWip = (float) ($data['total_biaya_wip'] ?? $header->total_biaya_wip);
+            }
+
+            // 2. Update komponen Kemasan jika dikoreksi
+            $totalKemasan = 0;
+            if (isset($data['kemasan_items']) && is_array($data['kemasan_items'])) {
+                foreach ($data['kemasan_items'] as $dtlId => $row) {
+                    $dtl = $header->details->where('packdtl_id', $dtlId)->first();
+                    if ($dtl) {
+                        $harga = (float) ($row['harga_satuan'] ?? $dtl->harga_satuan);
+                        $qty = (float) $dtl->qty_aktual;
+                        $subtotal = round($qty * $harga, 2);
+                        $dtl->harga_satuan = $harga;
+                        $dtl->subtotal_nilai = $subtotal;
+                        $dtl->updated_by = $user;
+                        $dtl->save();
+                        $totalKemasan += $subtotal;
+                    }
+                }
+            } else {
+                $totalKemasan = (float) ($data['total_biaya_kemasan'] ?? $header->total_biaya_kemasan);
+            }
+
+            // 3. Update BTKL Kemas
+            $jmlPersonil = isset($data['jumlah_personil']) ? (int) $data['jumlah_personil'] : (int) $header->jumlah_personil;
+            $totalUpahTk = isset($data['total_biaya_tenaga_kerja']) ? round((float) $data['total_biaya_tenaga_kerja'], 2) : (float) $header->total_biaya_tenaga_kerja;
+            $totalLain = isset($data['total_biaya_lain']) ? round((float) $data['total_biaya_lain'], 2) : (float) $header->total_biaya_lain;
+
+            // 4. Kalkulasi Total Biaya & HPP
+            $totalBiaya = round($totalWip + $totalKemasan + $totalUpahTk + $totalLain, 2);
+            $hasilKarton = (float) $header->hasil_karton_qty;
+            $hasilPcs = (float) $header->hasil_pcs_qty;
+
+            $hppKarton = $hasilKarton > 0 ? round($totalBiaya / $hasilKarton, 4) : 0;
+            $hppPcs = $hasilPcs > 0 ? round($totalBiaya / $hasilPcs, 4) : 0;
+
+            // 5. Simpan ke Header
+            $header->total_biaya_wip = $totalWip;
+            $header->total_biaya_kemasan = $totalKemasan;
+            $header->jumlah_personil = $jmlPersonil;
+            $header->total_biaya_tenaga_kerja = $totalUpahTk;
+            $header->total_biaya_lain = $totalLain;
+            $header->total_biaya_produksi = $totalBiaya;
+            $header->hpp_per_karton = $hppKarton;
+            $header->hpp_per_pcs = $hppPcs;
+            $header->is_hpp_final = true;
+            $header->hpp_finalized_at = now();
+            $header->hpp_finalized_by = $user;
+            $header->updated_by = $user;
+            $header->version_no = ($header->version_no ?? 1) + 1;
+            $header->save();
+
+            // 6. Sinkronisasi Kartu Stok Batch Gudang FG
+            if (!empty($header->batch_no) && $header->barang_jadi_id > 0) {
+                DatStokBatch::where('barang_id', $header->barang_jadi_id)
+                    ->where('batch_no', $header->batch_no)
+                    ->where('deleted_st', false)
+                    ->update([
+                        'harga_satuan' => $hppKarton,
+                        'updated_by'   => $user,
+                    ]);
+            }
+
+            return $header;
+        });
+    }
 }

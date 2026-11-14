@@ -50,12 +50,13 @@
             <span>Riwayat Pengemasan</span>
         </a>
 
-        @if(Auth::user()->canCreateProduksi())
-            <a href="{{ route('produksi.packaging.create') }}" 
+        @if(Auth::user()->canCreateProduksi() || Auth::user()->canCreatePackaging())
+            <a href="{{ route('produksi.packaging.hpp.create') }}" 
                class="btn btn-primary" 
-               style="background: #059669; border-color: #059669; font-weight: 700; padding: 0.5rem 1.15rem; font-size: 0.85rem; border-radius: 6px; text-decoration: none; display: inline-flex; align-items: center; gap: 0.35rem; box-shadow: 0 1px 2px rgba(5,150,105,0.2);">
+               style="background: #059669; border-color: #059669; font-weight: 700; padding: 0.5rem 1.15rem; font-size: 0.85rem; border-radius: 6px; text-decoration: none; display: inline-flex; align-items: center; gap: 0.35rem; box-shadow: 0 1px 2px rgba(5,150,105,0.2);"
+               title="Buka Formulir Kalkulasi Lembar HPP Pengemasan Barang Jadi (FG)">
                 <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                <span>+ Catat Pengemasan Baru</span>
+                <span>Kalkulasi HPP Kemas</span>
             </a>
         @endif
     </div>

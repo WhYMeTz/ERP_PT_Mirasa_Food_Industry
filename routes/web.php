@@ -450,6 +450,9 @@ Route::middleware('auth')->group(function () {
         Route::delete('/{id}', [ProduksiController::class, 'destroy'])->name('destroy')->middleware('role:produksi_create')->whereNumber('id');
 
         // Pengemasan Barang Jadi & HPP (Packaging)
+        Route::get('/packaging/hpp/create', [PackagingController::class, 'createHpp'])->name('packaging.hpp.create')->middleware('role:produksi_create');
+        Route::get('/packaging/hpp/packaging-data/{id}', [PackagingController::class, 'getPackagingDataForHpp'])->name('packaging.hpp.packaging-data');
+        Route::post('/packaging/hpp/store', [PackagingController::class, 'storeHpp'])->name('packaging.hpp.store')->middleware('role:produksi_create');
         Route::get('/packaging/ajax-bom-preview', [PackagingController::class, 'ajaxBomPreview'])->name('packaging.ajax-bom-preview');
         Route::get('/packaging/ajax-produksi-details', [PackagingController::class, 'ajaxProduksiDetails'])->name('packaging.ajax-produksi-details');
         Route::get('/packaging/ajax-pakai-details', [PackagingController::class, 'ajaxPakaiDetails'])->name('packaging.ajax-pakai-details');

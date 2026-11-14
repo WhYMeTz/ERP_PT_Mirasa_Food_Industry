@@ -1167,4 +1167,66 @@ class PackagingController extends Controller
             ->setPaper('legal', 'landscape');
         return $pdf->stream("Rekap_HPP_Packaging_{$monthName}_{$year}.pdf");
     }
+
+    /**
+     * Halaman Formulir Kalkulasi Lembar HPP Pengemasan (Tahap 2 Costing).
+     */
+    public function createHpp(Request $request): View
+    {
+        $selectedPackId = $request->filled('pack_id') ? (int) $request->input('pack_id') : null;
+        $packagingList = $this->packagingService->getPackagingListForHpp($selectedPackId);
+
+        return view('produksi.packaging.hpp.create', compact('packagingList', 'selectedPackId'));
+    }
+
+    /**
+     * AJAX endpoint mengambil data rincian catatan hasil pengemasan untuk Lembar HPP.
+     */
+    public function getPackagingDataForHpp(int $id): JsonResponse
+    {
+        try {
+            $data = $this->packagingService->getPackagingDataForHpp($id);
+            return response()->json([
+                'status' => 'success',
+                'data'   => $data,
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Gagal memuat rincian dokumen pengemasan: ' . $e->getMessage(),
+            ], 422);
+        }
+    }
+
+    /**
+     * Simpan & finalkan lembar kalkulasi HPP Pengemasan Barang Jadi (FG).
+     */
+    public function storeHpp(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'pack_id'                  => 'required|exists:dat_packaging_hdr,pack_id',
+            'total_biaya_wip'          => 'required|numeric|min:0',
+            'total_biaya_kemasan'      => 'required|numeric|min:0',
+            'jumlah_personil'          => 'required|integer|min:0',
+            'total_biaya_tenaga_kerja' => 'required|numeric|min:0',
+            'total_biaya_lain'         => 'nullable|numeric|min:0',
+            'wip_items'                => 'nullable|array',
+            'kemasan_items'            => 'nullable|array',
+        ], [
+            'pack_id.required'         => 'Dokumen pengemasan fisik wajib dipilih.',
+            'total_biaya_tenaga_kerja' => 'Total biaya tenaga kerja kemas wajib diisi.',
+        ]);
+
+        try {
+            $user = auth()->user()?->name ?? 'System';
+            $header = $this->packagingService->storePackagingHppCalculation((int) $validated['pack_id'], $request->all(), $user);
+
+            $msg = "✅ Lembar HPP Pengemasan [{$header->pack_no}] berhasil dikalkulasi & difinalkan! ";
+            $msg .= "HPP Terbentuk: Rp " . number_format($header->hpp_per_karton, 0, ',', '.') . "/Karton (Rp " . number_format($header->hpp_per_pcs, 0, ',', '.') . "/Pcs). Persediaan FG di gudang telah disinkronkan.";
+
+            return redirect()->route('produksi.packaging.rekap')->with('success', $msg);
+        } catch (Exception $e) {
+            return redirect()->back()->withInput()->with('error', 'Gagal memfinalkan HPP Pengemasan: ' . $e->getMessage());
+        }
+    }
 }

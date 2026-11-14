@@ -365,6 +365,6 @@
 @endsection
 
 @push('scripts')
-    <script src="{{ asset('js/produksi/produksi-index.js') }}"></script>
+    <script src="{{ asset('js/produksi/produksi-index.js') }}?v={{ filemtime(public_path('js/produksi/produksi-index.js')) }}"></script>
     <script src="{{ asset('js/produksi/packaging/packaging-index.js') }}"></script>
 @endpush

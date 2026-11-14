@@ -504,6 +504,103 @@ function calculateAssignBatchPreview() {
 }
 window.calculateAssignBatchPreview = calculateAssignBatchPreview;
 
+/**
+ * ═════════════════════════════════════════════════════════════════
+ * MASTER TAB SWITCHING TRANSITION & ENTERPRISE AUDIT LOADING
+ * Memberikan feedback instan, elegan, dan informatif saat berpindah
+ * antara 1. HPP Olahan Dapur & 2. HPP Pengemasan
+ * ═════════════════════════════════════════════════════════════════
+ */
+
+let hppProgressBarEl = null;
+let hppOverlayEl = null;
+let isHppTransitionActive = false;
+
+function initHppTabTransitions() {
+    // 1. Buat slim top progress bar jika belum ada
+    if (!document.getElementById('hppTopProgressBar')) {
+        hppProgressBarEl = document.createElement('div');
+        hppProgressBarEl.id = 'hppTopProgressBar';
+        hppProgressBarEl.className = 'hpp-top-progress-bar';
+        document.body.appendChild(hppProgressBarEl);
+    } else {
+        hppProgressBarEl = document.getElementById('hppTopProgressBar');
+    }
+
+    // 2. Buat overlay loading bersih & minimalis (hanya spinner + Memuat...)
+    if (!document.getElementById('hppTabTransitionOverlay')) {
+        hppOverlayEl = document.createElement('div');
+        hppOverlayEl.id = 'hppTabTransitionOverlay';
+        hppOverlayEl.className = 'hpp-transition-overlay';
+        hppOverlayEl.innerHTML = `
+            <div class="hpp-loading-box">
+                <div class="hpp-spinner"></div>
+                <span class="hpp-loading-text">Memuat...</span>
+            </div>
+        `;
+        document.body.appendChild(hppOverlayEl);
+    } else {
+        hppOverlayEl = document.getElementById('hppTabTransitionOverlay');
+    }
+
+    // 3. Pasang Event Listener pada tab master yang tidak aktif
+    document.querySelectorAll('.hpp-master-tab:not(.active)').forEach(tab => {
+        tab.addEventListener('click', function (e) {
+            if (isHppTransitionActive) {
+                e.preventDefault();
+                return;
+            }
+
+            const targetHref = this.getAttribute('href');
+            if (!targetHref || targetHref === '#' || targetHref.startsWith('javascript:')) return;
+
+            triggerSimpleHppTransition(this);
+        });
+    });
+
+    // 4. Pasang Event Listener pada toggle Harian vs Bulanan
+    document.querySelectorAll('.hpp-view-btn:not(.active)').forEach(btn => {
+        btn.addEventListener('click', function (e) {
+            if (isHppTransitionActive) {
+                e.preventDefault();
+                return;
+            }
+            const targetHref = this.getAttribute('href');
+            if (!targetHref || targetHref === '#') return;
+
+            triggerSimpleHppTransition(this);
+        });
+    });
+}
+
+function triggerSimpleHppTransition(clickedEl) {
+    isHppTransitionActive = true;
+    if (clickedEl) clickedEl.classList.add('is-switching');
+
+    if (hppProgressBarEl) {
+        hppProgressBarEl.style.width = '35%';
+        setTimeout(() => { if (isHppTransitionActive) hppProgressBarEl.style.width = '75%'; }, 120);
+        setTimeout(() => { if (isHppTransitionActive) hppProgressBarEl.style.width = '95%'; }, 350);
+    }
+
+    if (hppOverlayEl) {
+        hppOverlayEl.classList.add('is-visible');
+    }
+}
+
+// Bersihkan overlay jika halaman dipulihkan dari cache peramban (misal tombol Back ditekan)
+window.addEventListener('pageshow', function () {
+    isHppTransitionActive = false;
+    if (hppOverlayEl) hppOverlayEl.classList.remove('is-visible');
+    if (hppProgressBarEl) hppProgressBarEl.style.width = '0%';
+    document.querySelectorAll('.is-switching').forEach(el => el.classList.remove('is-switching'));
+});
+
+// Jalankan inisialisasi saat DOM siap
+document.addEventListener('DOMContentLoaded', function () {
+    initHppTabTransitions();
+});
+
 
 
 

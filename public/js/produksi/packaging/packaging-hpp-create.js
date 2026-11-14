@@ -101,6 +101,11 @@ function renderPackagingData(data) {
     document.getElementById('pvBatchNo').innerText = data.batch_no || '-';
     document.getElementById('pvHasilKarton').innerText = `${Number(data.hasil_karton_qty).toLocaleString('id-ID')} Karton (${Number(data.hasil_pcs_qty).toLocaleString('id-ID')} Pcs)`;
 
+    const elShift = document.getElementById('dispShiftKemas');
+    if (elShift) elShift.innerText = 'Shift ' + (data.shift || 'A');
+    const elOp = document.getElementById('dispOperatorKemas');
+    if (elOp) elOp.innerText = data.operator_nama || '-';
+
     // 2. Info SPK Dapur Asal & Curah WIP (Card 2)
     const spkBanner = document.getElementById('spkMasakBanner');
     if (data.produksi_id) {
@@ -342,6 +347,11 @@ function recalcAllPackagingHpp() {
 }
 
 function resetHppDisplays() {
+    const elShift = document.getElementById('dispShiftKemas');
+    if (elShift) elShift.innerText = 'Shift A';
+    const elOp = document.getElementById('dispOperatorKemas');
+    if (elOp) elOp.innerText = '-';
+
     document.getElementById('disp_tk_total_nilai').innerText = '0';
     document.getElementById('lblTkFormula').innerText = '0 Orang Langsung Packing';
     document.getElementById('statWipNilai').innerText = 'Rp 0';

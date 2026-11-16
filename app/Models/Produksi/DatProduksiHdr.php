@@ -122,6 +122,9 @@ class DatProduksiHdr extends Model
         'batch_wip_no',
         'exp_date',
         'catatan_txt',
+        'jurnal_id',
+        'hpp_finalized_at',
+        'hpp_finalized_by',
 
         // Audit Trail
         'created_by',
@@ -360,5 +363,13 @@ class DatProduksiHdr extends Model
     {
         return $this->hasMany(DatPackagingHdr::class, 'produksi_id', 'produksi_id')
             ->where('deleted_st', false);
+    }
+
+    /**
+     * Relasi ke Dokumen Jurnal Umum Otomatis saat HPP WIP difinalisasi
+     */
+    public function jurnal(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Keuangan\DatJurnalHdr::class, 'jurnal_id', 'jurnal_id');
     }
 }

@@ -12,6 +12,8 @@ use App\Models\Produksi\DatProduksiAdjustmentLog;
 use App\Services\Common\CodeGeneratorService;
 use App\Services\Gudang\StokService;
 use App\Services\Manajemen\PayrollHarianService;
+use App\Services\Keuangan\JurnalService;
+use App\Services\Keuangan\PengaturanJurnalService;
 use App\Services\Produksi\TarifProduksiService;
 use Carbon\Carbon;
 use Exception;
@@ -26,7 +28,9 @@ class ProduksiService
     public function __construct(
         protected CodeGeneratorService $codeGenerator,
         protected StokService $stokService,
-        protected TarifProduksiService $tarifService
+        protected TarifProduksiService $tarifService,
+        protected JurnalService $jurnalService,
+        protected PengaturanJurnalService $pengaturanJurnalService
     ) {}
 
     /**
@@ -1795,7 +1799,7 @@ class ProduksiService
      */
     public function getById(int $id): DatProduksiHdr
     {
-        return DatProduksiHdr::with(['pemakaianBahan', 'gudang', 'outputs.barang', 'adjustmentLogs'])
+        return DatProduksiHdr::with(['pemakaianBahan', 'gudang', 'outputs.barang', 'adjustmentLogs', 'jurnal'])
             ->where('produksi_id', $id)
             ->firstOrFail();
     }
@@ -1915,6 +1919,11 @@ class ProduksiService
                 }
             }
 
+            // Batalkan Jurnal Umum jika dokumen HPP WIP sudah pernah diterbitkan
+            if ($produksi->jurnal_id) {
+                $this->jurnalService->batalkanJurnal($produksi->produksi_no, Auth::user());
+            }
+
             DatProduksiDtl::where('produksi_id', $produksi->produksi_id)->delete();
             return $produksi->delete();
         });
@@ -1935,7 +1944,8 @@ class ProduksiService
         $query = DatProduksiHdr::with([
             'gudang',
             'details.barang.satuan',
-            'details.barang.jenisBarang'
+            'details.barang.jenisBarang',
+            'jurnal'
         ])->where('deleted_st', false);
 
         if (!empty($filters['gudang_id'])) {
@@ -3000,6 +3010,11 @@ class ProduksiService
                 }
             }
 
+            // Sinkronkan Jurnal Umum jika dokumen HPP WIP sudah pernah diterbitkan
+            if ($produksi->jurnal_id) {
+                $this->syncJournalHppWip($produksi, $userId);
+            }
+
             return $log;
         });
     }
@@ -3596,8 +3611,131 @@ class ProduksiService
                 }
             }
 
+            // Terbitkan Jurnal Umum Otomatis untuk Biaya Produksi & HPP WIP
+            $this->syncJournalHppWip($produksi, $userId);
+
             return $produksi;
         });
+    }
+
+    /**
+     * Terbitkan atau sinkronkan Jurnal Umum Otomatis saat HPP WIP difinalisasi / disesuaikan.
+     * Format Keterangan seragam tanpa kode dokumen:
+     * "Biaya Produksi & HPP WIP (dd/mm/yyyy) - Shift {Shift} ({Qty} kg WIP)"
+     */
+    public function syncJournalHppWip(DatProduksiHdr $produksi, ?string $userId = null): ?\App\Models\Keuangan\DatJurnalHdr
+    {
+        $totalBiaya = (float) $produksi->total_biaya_produksi;
+        $totalBahan = (float) $produksi->total_bahan_nilai;
+        $cngNilai = (float) $produksi->cng_nilai;
+        $tkNilai = (float) $produksi->tk_total_nilai;
+        $overhead = (float) ($produksi->total_overhead_nilai ?? 0);
+
+        if ($totalBiaya <= 0) {
+            return null;
+        }
+
+        $userObj = Auth::user();
+
+        // Batalkan jurnal lama jika sebelumnya sudah pernah diterbitkan (koreksi/re-kalkulasi)
+        if ($produksi->jurnal_id) {
+            $this->jurnalService->batalkanJurnal($produksi->produksi_no, $userObj);
+            $produksi->jurnal_id = null;
+        }
+
+        // Ambil konfigurasi akun dari Pengaturan Pemetaan Jurnal Otomatis
+        $akunWip = $this->pengaturanJurnalService->getCoaKode('HPP_WIP_AKUN_WIP', '1151');
+        $akunBahan = $this->pengaturanJurnalService->getCoaKode('HPP_WIP_AKUN_BAHAN', '1150');
+        $akunGas = $this->pengaturanJurnalService->getCoaKode('HPP_WIP_AKUN_GAS', '2100');
+        $akunTk = $this->pengaturanJurnalService->getCoaKode('HPP_WIP_AKUN_TENAGA_KERJA', '2102');
+        $akunOverhead = $this->pengaturanJurnalService->getCoaKode('HPP_WIP_AKUN_OVERHEAD', '2100');
+
+        // Format keterangan seragam sesuai template dinamis (tanpa kode dokumen):
+        $tglFormat = $produksi->produksi_tgl ? Carbon::parse($produksi->produksi_tgl)->format('d/m/Y') : date('d/m/Y');
+        $effectiveKg = (float) ($produksi->total_wip_qty ?: ($produksi->outputs ? $produksi->outputs->sum('qty_kg') : 0));
+        $totalKgStr = number_format($effectiveKg, 2, ',', '.');
+        $shiftStr = !empty($produksi->shift_cd) ? (string) $produksi->shift_cd : '1';
+
+        $keteranganJurnal = $this->pengaturanJurnalService->renderTemplate(
+            'HPP_WIP_TEMPLATE_KET',
+            'Biaya Produksi & HPP WIP ({tgl}) - Shift {shift} ({total_kg} kg WIP)',
+            [
+                'tgl'      => $tglFormat,
+                'shift'    => $shiftStr,
+                'total_kg' => $totalKgStr,
+                'lini'     => $produksi->lini_produksi ?? '-',
+            ]
+        );
+
+        $entries = [];
+
+        // 1. DEBET: Persediaan WIP & FG (Konfigurasi: HPP_WIP_AKUN_WIP)
+        $entries[] = [
+            'kode_akun'  => $akunWip,
+            'debet'      => $totalBiaya,
+            'kredit'     => 0,
+            'keterangan' => $keteranganJurnal,
+        ];
+
+        // 2. KREDIT: Persediaan Bahan Baku & Penolong (Konfigurasi: HPP_WIP_AKUN_BAHAN)
+        if ($totalBahan > 0) {
+            $entries[] = [
+                'kode_akun'  => $akunBahan,
+                'debet'      => 0,
+                'kredit'     => $totalBahan,
+                'keterangan' => $keteranganJurnal,
+            ];
+        }
+
+        // 3. KREDIT: Hutang Usaha - Akrual Gas CNG (Konfigurasi: HPP_WIP_AKUN_GAS)
+        if ($cngNilai > 0) {
+            $entries[] = [
+                'kode_akun'  => $akunGas,
+                'debet'      => 0,
+                'kredit'     => $cngNilai,
+                'keterangan' => $keteranganJurnal,
+            ];
+        }
+
+        // 4. KREDIT: Hutang Gaji - BTKL (Konfigurasi: HPP_WIP_AKUN_TENAGA_KERJA)
+        if ($tkNilai > 0) {
+            $entries[] = [
+                'kode_akun'  => $akunTk,
+                'debet'      => 0,
+                'kredit'     => $tkNilai,
+                'keterangan' => $keteranganJurnal,
+            ];
+        }
+
+        // 5. KREDIT: Overhead Pabrik jika ada (Konfigurasi: HPP_WIP_AKUN_OVERHEAD)
+        if ($overhead > 0) {
+            $entries[] = [
+                'kode_akun'  => $akunOverhead,
+                'debet'      => 0,
+                'kredit'     => $overhead,
+                'keterangan' => $keteranganJurnal,
+            ];
+        }
+
+        $tglJurnal = $produksi->produksi_tgl ? Carbon::parse($produksi->produksi_tgl)->format('Y-m-d') : date('Y-m-d');
+
+        $jurnal = $this->jurnalService->catatJurnal(
+            'HPP_WIP',
+            $tglJurnal,
+            $produksi->produksi_no,
+            $produksi->produksi_id,
+            $keteranganJurnal,
+            $entries,
+            $userObj
+        );
+
+        $produksi->update([
+            'jurnal_id'        => $jurnal->jurnal_id,
+            'hpp_finalized_at' => now(),
+            'hpp_finalized_by' => $userId ?: ($userObj?->name ?? 'SYSTEM'),
+        ]);
+
+        return $jurnal;
     }
 }
 

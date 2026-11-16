@@ -19,10 +19,14 @@ use Exception;
 class HutangService
 {
     protected JurnalService $jurnalService;
+    protected PengaturanJurnalService $pengaturanJurnalService;
 
-    public function __construct(JurnalService $jurnalService)
-    {
+    public function __construct(
+        JurnalService $jurnalService,
+        PengaturanJurnalService $pengaturanJurnalService
+    ) {
         $this->jurnalService = $jurnalService;
+        $this->pengaturanJurnalService = $pengaturanJurnalService;
     }
 
     /**
@@ -632,19 +636,36 @@ class HutangService
                 }
 
                 $ppnSuffix = ($ppnTipe === 'PPN_INCLUDE') ? ' (Inc PPN)' : '';
-                $keteranganItem = "{$suppName} - {$qtyStr} {$satuanStr} {$namaBarang} @{$hargaStr}{$ppnSuffix}";
+                $keteranganItem = $this->pengaturanJurnalService->renderTemplate(
+                    'PEMBELIAN_TEMPLATE_KET',
+                    '{supplier} - {qty} {satuan} {nama_barang} @{harga}',
+                    [
+                        'supplier'    => $suppName,
+                        'qty'         => $qtyStr,
+                        'satuan'      => $satuanStr,
+                        'nama_barang' => $namaBarang,
+                        'harga'       => $hargaStr,
+                        'no_faktur'   => $hdr->no_faktur_supplier ?? '-',
+                    ]
+                ) . $ppnSuffix;
 
-                // 1. (Debet) Persediaan Bahan Baku & Penolong (Akun 1150)
+                $akunPersediaan = $this->pengaturanJurnalService->getCoaKode('PEMBELIAN_AKUN_PERSEDIAAN', '1150');
+                $akunHutang = $this->pengaturanJurnalService->getCoaKode('PEMBELIAN_AKUN_HUTANG', '2100');
+                $akunPpnMasukan = $this->pengaturanJurnalService->getCoaKode('PEMBELIAN_AKUN_PPN_MASUKAN', '1130');
+                $akunPph22 = $this->pengaturanJurnalService->getCoaKode('PEMBELIAN_AKUN_PPH_22', '2106');
+                $akunPph23 = $this->pengaturanJurnalService->getCoaKode('PEMBELIAN_AKUN_PPH_23', '2105');
+
+                // 1. (Debet) Persediaan Bahan Baku & Penolong (Konfigurasi: PEMBELIAN_AKUN_PERSEDIAAN)
                 if ($dppItem > 0) {
                     $jurnalEntries[] = [
-                        'kode_akun'  => '1150',
+                        'kode_akun'  => $akunPersediaan,
                         'debet'      => $dppItem,
                         'kredit'     => 0,
                         'keterangan' => $keteranganItem,
                     ];
                 }
 
-                // 2. Pajak: (Debet) PPN Masukan (Akun 1130) jika TAMBAH, atau (Kredit) Hutang Pajak PPh (Akun 2106 / 2105) jika POTONG
+                // 2. Pajak: (Debet) PPN Masukan jika TAMBAH, atau (Kredit) Hutang Pajak PPh jika POTONG
                 if ($ppn > 0) {
                     $itemSifat = $item['sifat_pajak'] ?? (str_contains(strtoupper((string)$ppnTipe), 'PPH') ? 'POTONG' : 'TAMBAH');
                     $pajakObj = !empty($item['pajak_id']) 
@@ -652,20 +673,18 @@ class HutangService
                         : (is_numeric($ppnTipe) ? MstPajak::with('coaPembelian')->find((int)$ppnTipe) : null);
 
                     if ($itemSifat === 'POTONG') {
-                        // Tentukan akun COA pajak secara presisi dari relasi master pajak atau deteksi kode
+                        // Tentukan akun COA pajak secara presisi dari relasi master pajak atau konfigurasi
                         $pajakCoaKode = $pajakObj?->coaPembelian?->kode_akun ?? $pajakObj?->coa?->kode_akun;
                         if (!$pajakCoaKode) {
                             $cdUpper = strtoupper((string)($pajakObj?->pajak_cd ?? $ppnTipe));
                             if (str_contains($cdUpper, '22')) {
-                                $pajakCoaKode = '2106'; // PPH 22
+                                $pajakCoaKode = $akunPph22;
                             } elseif (str_contains($cdUpper, '23')) {
-                                $pajakCoaKode = '2105'; // PPH 23
+                                $pajakCoaKode = $akunPph23;
                             } else {
-                                $pajakCoaKode = '2106'; // default komoditas bahan baku
+                                $pajakCoaKode = $akunPph22;
                             }
                         }
-
-                        $pajakNama = ($pajakCoaKode === '2106') ? 'PPh 22' : (($pajakCoaKode === '2105') ? 'PPh 23' : 'PPh');
 
                         $jurnalEntries[] = [
                             'kode_akun'  => $pajakCoaKode,
@@ -674,7 +693,7 @@ class HutangService
                             'keterangan' => $keteranganItem,
                         ];
                     } else {
-                        $pajakCoaKode = $pajakObj?->coaPembelian?->kode_akun ?? $pajakObj?->coa?->kode_akun ?? '1130';
+                        $pajakCoaKode = $pajakObj?->coaPembelian?->kode_akun ?? $pajakObj?->coa?->kode_akun ?? $akunPpnMasukan;
                         $jurnalEntries[] = [
                             'kode_akun'  => $pajakCoaKode, // PPN Masukan
                             'debet'      => $ppn,
@@ -684,10 +703,10 @@ class HutangService
                     }
                 }
 
-                // 3. (Kredit) Hutang Usaha (Akun 2100) per item
+                // 3. (Kredit) Hutang Usaha (Konfigurasi: PEMBELIAN_AKUN_HUTANG) per item
                 if ($totalHutangItem > 0) {
                     $jurnalEntries[] = [
-                        'kode_akun'  => '2100',
+                        'kode_akun'  => $akunHutang,
                         'debet'      => 0,
                         'kredit'     => $totalHutangItem,
                         'keterangan' => $keteranganItem,
@@ -698,13 +717,13 @@ class HutangService
             // 4. Penyesuaian Potongan Retur Global (jika ada)
             if ($potonganRetur > 0) {
                 $jurnalEntries[] = [
-                    'kode_akun'  => '2100',
+                    'kode_akun'  => $akunHutang,
                     'debet'      => $potonganRetur,
                     'kredit'     => 0,
                     'keterangan' => "Potongan Retur Pembelian - {$suppName} - {$hdr->hutang_no}",
                 ];
                 $jurnalEntries[] = [
-                    'kode_akun'  => '1150',
+                    'kode_akun'  => $akunPersediaan,
                     'debet'      => 0,
                     'kredit'     => $potonganRetur,
                     'keterangan' => "Potongan Retur Pembelian - {$suppName} - {$hdr->hutang_no}",
@@ -1116,11 +1135,26 @@ class HutangService
                 $hargaStr = $formatNum($harga, 2);
                 $namaBarang = trim($row['dtl']->barang?->barang_nm ?? 'Bahan Baku');
 
-                $keteranganItem = "{$supplierName} - {$qtyStr} {$satuanStr} {$namaBarang} @{$hargaStr}";
+                $keteranganItem = $this->pengaturanJurnalService->renderTemplate(
+                    'PEMBELIAN_TEMPLATE_KET',
+                    '{supplier} - {qty} {satuan} {nama_barang} @{harga}',
+                    [
+                        'supplier'    => $supplierName,
+                        'qty'         => $qtyStr,
+                        'satuan'      => $satuanStr,
+                        'nama_barang' => $namaBarang,
+                        'harga'       => $hargaStr,
+                        'no_faktur'   => $hdr->no_faktur_supplier ?? '-',
+                    ]
+                );
+
+                $akunPersediaanAuto = $this->pengaturanJurnalService->getCoaKode('PEMBELIAN_AKUN_PERSEDIAAN', '1150');
+                $akunPpnMasukanAuto = $this->pengaturanJurnalService->getCoaKode('PEMBELIAN_AKUN_PPN_MASUKAN', '1130');
+                $akunHutangAuto = $this->pengaturanJurnalService->getCoaKode('PEMBELIAN_AKUN_HUTANG', '2100');
 
                 if ($dpp > 0) {
                     $jurnalEntries[] = [
-                        'kode_akun'  => '1150',
+                        'kode_akun'  => $akunPersediaanAuto,
                         'debet'      => $dpp,
                         'kredit'     => 0,
                         'keterangan' => $keteranganItem,
@@ -1128,7 +1162,7 @@ class HutangService
                 }
                 if ($ppn > 0) {
                     $jurnalEntries[] = [
-                        'kode_akun'  => '1130',
+                        'kode_akun'  => $akunPpnMasukanAuto,
                         'debet'      => $ppn,
                         'kredit'     => 0,
                         'keterangan' => $keteranganItem,
@@ -1136,7 +1170,7 @@ class HutangService
                 }
                 if ($totalHutang > 0) {
                     $jurnalEntries[] = [
-                        'kode_akun'  => '2100',
+                        'kode_akun'  => $akunHutangAuto,
                         'debet'      => 0,
                         'kredit'     => $totalHutang,
                         'keterangan' => $keteranganItem,

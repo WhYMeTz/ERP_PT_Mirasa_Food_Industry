@@ -369,6 +369,11 @@
                                         <div class="badge-hpp-pill done">
                                             <span>Sudah Dihitung</span>
                                         </div>
+                                        @if($prod->jurnal_id && $prod->jurnal)
+                                            <a href="{{ route('keuangan.jurnal.index', ['search' => $prod->jurnal->jurnal_no]) }}" style="display: inline-block; margin-top: 3px; font-size: 0.7rem; color: #059669; font-weight: 700; text-decoration: none;" title="Lihat Jurnal Umum">
+                                                {{ $prod->jurnal->jurnal_no }}
+                                            </a>
+                                        @endif
                                     @else
                                         <div class="badge-hpp-pill pending">
                                             <span>Belum Dihitung</span>

@@ -35,6 +35,7 @@ use App\Http\Controllers\Keuangan\JurnalController;
 use App\Http\Controllers\Keuangan\BukuBesarController;
 use App\Http\Controllers\Keuangan\VerifikasiPemakaianController;
 use App\Http\Controllers\Keuangan\LaporanKeuanganController;
+use App\Http\Controllers\Keuangan\PengaturanJurnalController;
 use App\Http\Controllers\Penjualan\SoController;
 use App\Http\Controllers\Penjualan\PengeluaranBarangController;
 use App\Http\Controllers\Penjualan\FakturPenjualanController;
@@ -606,5 +607,13 @@ Route::middleware('auth')->group(function () {
             Route::get('neraca-saldo', [LaporanKeuanganController::class, 'neracaSaldo'])->name('neraca_saldo');
             Route::get('arus-kas', [LaporanKeuanganController::class, 'arusKas'])->name('arus_kas');
         });
+
+        // 10. Pengaturan Pemetaan Akun Jurnal Otomatis
+        Route::get('pengaturan-jurnal', [PengaturanJurnalController::class, 'index'])
+            ->name('pengaturan_jurnal.index')
+            ->middleware('role:coa_view,jurnal_view,hutang_view');
+        Route::post('pengaturan-jurnal', [PengaturanJurnalController::class, 'update'])
+            ->name('pengaturan_jurnal.update')
+            ->middleware('role:coa_view,jurnal_view,hutang_view');
     });
 });

@@ -88,7 +88,7 @@
                             class="btn" 
                             style="font-size: 0.85rem; padding: 0.5rem 0.95rem; font-weight: 700; border-radius: 6px; display: inline-flex; align-items: center; gap: 0.4rem; background: #fffbeb; border: 1.5px solid #fde68a; color: #92400e;">
                         <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-                        <span>⚠️ Menunggu HPP Produksi ({{ $header->produksi?->produksi_no ?? 'SPK' }})</span>
+                        <span>Menunggu HPP Produksi ({{ $header->produksi?->produksi_no ?? 'SPK' }})</span>
                     </button>
                 @endif
             @endif
@@ -96,13 +96,19 @@
             @if(Auth::user()->canCreatePackaging())
                 <a href="{{ route('produksi.packaging.create') }}" class="btn-adjust-hpp" style="color: #059669; border-color: #10b981;" title="Buat Lembar Pengemasan Baru">
                     <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                    <span>+ Kemas Baru</span>
+                    <span>Kemas Baru</span>
                 </a>
             @endif
             @if($header->status_cd === 'POSTED' && !$header->isHppFinal() && Auth::user()->canCreatePackaging())
                 <a href="{{ route('produksi.packaging.adjust', $header->pack_id) }}" class="btn-adjust-hpp" title="Penyesuaian Biaya & HPP Pengemasan">
                     <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
                     <span>Adjustment HPP</span>
+                </a>
+            @endif
+            @if($header->produksi_id)
+                <a href="{{ route('produksi.hpp.terpadu', $header->produksi_id) }}" class="btn-print-doc" style="background: #0284c7; color: #fff; text-decoration: none; border-color: #0369a1; font-weight: 600;">
+                    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    <span>Lembar HPP Terpadu</span>
                 </a>
             @endif
             <button type="button" onclick="window.print()" class="btn-print-doc">
@@ -118,20 +124,7 @@
         </div>
     </div>
 
-    {{-- ALERT NOTIFIKASI SUKSES / ERROR --}}
-    @if(session('success'))
-        <div class="no-print" style="background: #ecfdf5; border: 1.5px solid #a7f3d0; border-radius: 8px; padding: 0.85rem 1.25rem; color: #065f46; margin-bottom: 1.25rem; font-size: 0.875rem; font-weight: 600; display: flex; align-items: center; gap: 0.5rem;">
-            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            <span>{{ session('success') }}</span>
-        </div>
-    @endif
 
-    @if(session('error'))
-        <div class="no-print" style="background: #fef2f2; border: 1.5px solid #fecaca; border-radius: 8px; padding: 0.85rem 1.25rem; color: #991b1b; margin-bottom: 1.25rem; font-size: 0.875rem; font-weight: 600; display: flex; align-items: center; gap: 0.5rem;">
-            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            <span>{{ session('error') }}</span>
-        </div>
-    @endif
 
     {{-- TAB SWITCHER SPLIT DOKUMEN PENGEMASAN (JIKA PADA TANGGAL INI TERDAPAT LEBIH DARI 1 DOKUMEN KEMAS) --}}
     @if(isset($sameDatePackaging) && $sameDatePackaging->count() > 1)
@@ -235,7 +228,7 @@
             </div>
         </div>
 
-        {{-- METRIK 4: HPP RIIL PER KARTON --}}
+        {{-- METRIK 4: HPP RIIL PER KARTON & PER PCS --}}
         <div class="executive-stat-card">
             <div class="executive-stat-card-header">
                 <div>
@@ -248,8 +241,8 @@
                     <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
                 </div>
             </div>
-            <div class="executive-stat-subtext">
-                Modal pokok persediaan FG di gudang
+            <div class="executive-stat-subtext" style="color: #047857; font-weight: 700;">
+                Setara Rp {{ number_format($header->hpp_per_pcs, 0, ',', '.') }} / Pcs Eceran
             </div>
         </div>
     </div>

@@ -238,7 +238,7 @@ class PackagingController extends Controller
 
         $tarifs = $this->tarifKemasanService->getAllTarif();
 
-        // 1. Varian Output WIP Hasil Masak Dapur
+        // 1. Varian Output WIP Hasil Masak Dapur (Hanya yang masih memiliki sisa stok / belum habis terkemas)
         $wipList = \App\Models\Produksi\DatProduksiDtl::with(['produksi', 'barang.satuanDasar'])
             ->where('deleted_st', false)
             ->whereHas('produksi', function ($q) {
@@ -247,7 +247,20 @@ class PackagingController extends Controller
             })
             ->where('qty_kg', '>', 0)
             ->orderByDesc('output_id')
-            ->get();
+            ->get()
+            ->filter(function ($wip) {
+                $totalPacked = (float) \App\Models\Produksi\DatPackagingDtl::whereHas('header', function ($q) use ($wip) {
+                    $q->where('deleted_st', false)
+                      ->where('status_cd', '!=', 'VOID')
+                      ->where('produksi_id', $wip->produksi_id);
+                })->where('kategori_bahan', 'WIP')
+                  ->where('barang_id', $wip->barang_id)
+                  ->sum('qty_aktual');
+
+                $wip->sisa_qty_kg = max(0, round((float)$wip->qty_kg - $totalPacked, 2));
+                return $wip->sisa_qty_kg > 0.05;
+            })
+            ->values();
 
         // 2. Karyawan (Operator & Leader Kemas)
         $karyawanList = \App\Models\MasterData\MstKaryawan::where('active_st', true)
@@ -816,7 +829,7 @@ class PackagingController extends Controller
             'shift'                    => 'nullable|string|in:A,B,C',
             'operator_nama'            => 'nullable|string|max:150',
             'karyawan_id'              => 'nullable|exists:mst_karyawan,karyawan_id',
-            'jumlah_personil'          => 'nullable|integer|min:1',
+            'jumlah_personil'          => 'nullable|integer|min:0',
             'jumlah_mesin'             => 'nullable|integer|min:1',
             'barang_jadi_id'           => 'required|exists:mst_barang,barang_id',
             'gudang_id'                => 'required|exists:mst_gudang,gudang_id',
@@ -903,7 +916,7 @@ class PackagingController extends Controller
             }
 
             return redirect()->route('produksi.packaging.show', $header->pack_id)
-                ->with('success', "Proses pengemasan nomor {$header->pack_no} berhasil disimpan! HPP terbentuk: Rp " . number_format($header->hpp_per_karton, 0, ',', '.') . "/Karton.");
+                ->with('success', "Proses pengemasan nomor {$header->pack_no} berhasil disimpan.");
         } catch (Exception $e) {
             return back()->withInput()->with('error', 'Gagal memproses pengemasan: ' . $e->getMessage());
         }
@@ -965,6 +978,19 @@ class PackagingController extends Controller
     }
 
     /**
+     * Alihkan akses HPP Terpadu dari modul Pengemasan ke Lembar Rincian Terpadu SPK Dapur asal.
+     */
+    public function showHppTerpadu(int $id): RedirectResponse
+    {
+        $header = DatPackagingHdr::findOrFail($id);
+        if ($header->produksi_id) {
+            return redirect()->route('produksi.hpp.terpadu', ['id' => $header->produksi_id, 'pack_id' => $id]);
+        }
+        return redirect()->route('produksi.packaging.show-hpp', $id)
+            ->with('error', 'Dokumen pengemasan ini tidak terhubung ke dokumen SPK Masak Dapur spesifik.');
+    }
+
+    /**
      * Halaman Khusus Penyesuaian / Koreksi HPP Pengemasan Barang Jadi (Worksheet Akuntansi Biaya Kemas).
      */
     public function adjustPage(int $id): View
@@ -1023,8 +1049,7 @@ class PackagingController extends Controller
             $user = Auth::user()?->name ?? (Auth::user()?->username ?? 'SYSTEM');
             $log = $this->packagingService->adjustPackagingHpp($id, $request->all(), $user);
 
-            $msg = "✅ Berhasil melakukan adjustment HPP Pengemasan (No. BA: {$log->adj_no})! ";
-            $msg .= "HPP baru: Rp " . number_format($log->hpp_karton_sesudah, 0, ',', '.') . "/Karton (Rp " . number_format($log->hpp_pcs_sesudah, 0, ',', '.') . "/Pcs). Persediaan FG di gudang telah disinkronkan.";
+            $msg = "Adjustment HPP Pengemasan {$log->adj_no} berhasil disimpan.";
 
             return redirect()->route('produksi.packaging.show', $id)->with('success', $msg);
         } catch (Exception $e) {
@@ -1041,8 +1066,7 @@ class PackagingController extends Controller
             $user = Auth::user()?->name ?? 'System';
             $header = $this->packagingService->finalizeHppPackaging($id, $user);
 
-            $msg = "✅ Dokumen {$header->pack_no} berhasil ditarik & difinalkan! ";
-            $msg .= "HPP FG terbentuk: Rp " . number_format($header->hpp_per_karton, 0, ',', '.') . "/Karton (Rp " . number_format($header->hpp_per_pcs, 0, ',', '.') . "/Pcs). Nilai modal persediaan FG telah disinkronkan ke gudang.";
+            $msg = "HPP Pengemasan {$header->pack_no} berhasil difinalisasi.";
 
             return redirect()->back()->with('success', $msg);
         } catch (Exception $e) {
@@ -1221,8 +1245,7 @@ class PackagingController extends Controller
             $user = auth()->user()?->name ?? 'System';
             $header = $this->packagingService->storePackagingHppCalculation((int) $validated['pack_id'], $request->all(), $user);
 
-            $msg = "✅ Lembar HPP Pengemasan [{$header->pack_no}] berhasil dikalkulasi & difinalkan! ";
-            $msg .= "HPP Terbentuk: Rp " . number_format($header->hpp_per_karton, 0, ',', '.') . "/Karton (Rp " . number_format($header->hpp_per_pcs, 0, ',', '.') . "/Pcs). Persediaan FG di gudang telah disinkronkan.";
+            $msg = "HPP Pengemasan {$header->pack_no} berhasil difinalisasi.";
 
             return redirect()->route('produksi.packaging.rekap')->with('success', $msg);
         } catch (Exception $e) {

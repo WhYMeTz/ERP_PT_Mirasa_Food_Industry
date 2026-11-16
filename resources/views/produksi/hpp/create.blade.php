@@ -566,20 +566,31 @@
         </div>
     </form>
 
-    {{-- OVERLAY LOADING MODAL INTERAKTIF --}}
+    {{-- OVERLAY LOADING MODAL UNIVERSAL "MEMUAT..." --}}
     <div id="hppLoadingOverlay" class="hpp-loading-backdrop" style="display: none;">
-        <div class="hpp-loading-card">
-            <div class="hpp-spinner-container">
-                <svg class="spin-svg-lg" width="40" height="40" viewBox="0 0 24 24" fill="none">
-                    <circle cx="12" cy="12" r="10" stroke="#e2e8f0" stroke-width="3"></circle>
-                    <path fill="#059669" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        <div class="hpp-modern-pill-loader">
+            <div class="hpp-gyro-container">
+                <svg class="hpp-gyro-svg" viewBox="0 0 40 40">
+                    <defs>
+                        <linearGradient id="hppGyroGradForm" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#059669" stop-opacity="1" />
+                            <stop offset="60%" stop-color="#10b981" stop-opacity="0.8" />
+                            <stop offset="100%" stop-color="#34d399" stop-opacity="0" />
+                        </linearGradient>
+                        <linearGradient id="hppInnerGradForm" x1="100%" y1="100%" x2="0%" y2="0%">
+                            <stop offset="0%" stop-color="#0284c7" stop-opacity="0.9" />
+                            <stop offset="100%" stop-color="#38bdf8" stop-opacity="0.1" />
+                        </linearGradient>
+                    </defs>
+                    <circle cx="20" cy="20" r="16" fill="none" stroke="#f1f5f9" stroke-width="2.5" />
+                    <circle class="hpp-gyro-outer" cx="20" cy="20" r="16" fill="none" stroke="url(#hppGyroGradForm)" stroke-width="2.75" stroke-linecap="round" />
+                    <circle class="hpp-gyro-inner" cx="20" cy="20" r="10.5" fill="none" stroke="url(#hppInnerGradForm)" stroke-width="2.25" stroke-linecap="round" />
+                    <circle class="hpp-gyro-core" cx="20" cy="20" r="3" fill="#059669" />
                 </svg>
             </div>
-            <h3 class="hpp-load-title" id="overlayLoadingTitle">Sinkronisasi Data Produksi</h3>
-            <p class="hpp-load-msg" id="overlayLoadingMsg">Sedang menarik rincian pemakaian bahan gudang (BPPB), hasil timbang olahan WIP, energi gas, dan absensi...</p>
-            <div class="hpp-load-progress-bar">
-                <div class="hpp-load-progress-fill"></div>
-            </div>
+            <span class="hpp-modern-label">
+                Memuat<span class="hpp-modern-dots"><span class="hpp-dot hpp-dot-1">.</span><span class="hpp-dot hpp-dot-2">.</span><span class="hpp-dot-3">.</span></span>
+            </span>
         </div>
     </div>
 </div>

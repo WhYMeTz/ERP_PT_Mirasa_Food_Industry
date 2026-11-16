@@ -432,6 +432,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/hpp/produksi-data/{id}', [ProduksiController::class, 'getProduksiDataForHpp'])->name('hpp.produksi-data');
         Route::post('/hpp/store', [ProduksiController::class, 'storeHpp'])->name('hpp.store')->middleware('role:produksi_create');
         Route::get('/hpp/{id}', [ProduksiController::class, 'showHpp'])->name('hpp.show')->whereNumber('id');
+        Route::get('/hpp/{id}/terpadu', [ProduksiController::class, 'showHppTerpadu'])->name('hpp.terpadu')->whereNumber('id');
 
         Route::get('/create', [ProduksiController::class, 'create'])->name('create')->middleware('role:produksi_create');
         Route::post('/', [ProduksiController::class, 'store'])->name('store')->middleware('role:produksi_create');
@@ -466,6 +467,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/packaging', [PackagingController::class, 'store'])->name('packaging.store')->middleware('role:produksi_create');
         Route::get('/packaging/{id}', [PackagingController::class, 'show'])->name('packaging.show')->whereNumber('id');
         Route::get('/packaging/{id}/hpp', [PackagingController::class, 'showHpp'])->name('packaging.show-hpp')->whereNumber('id');
+        Route::get('/packaging/{id}/hpp-terpadu', [PackagingController::class, 'showHppTerpadu'])->name('packaging.hpp.terpadu')->whereNumber('id');
         Route::get('/packaging/{id}/adjust', [PackagingController::class, 'adjustPage'])->name('packaging.adjust')->middleware('role:produksi_create')->whereNumber('id');
         Route::post('/packaging/{id}/adjust-hpp', [PackagingController::class, 'adjustHpp'])->name('packaging.adjust-hpp')->middleware('role:produksi_create')->whereNumber('id');
         Route::post('/packaging/{id}/finalize-hpp', [PackagingController::class, 'finalizeHpp'])->name('packaging.finalize-hpp')->middleware('role:produksi_create')->whereNumber('id');

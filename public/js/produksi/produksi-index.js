@@ -527,15 +527,35 @@ function initHppTabTransitions() {
         hppProgressBarEl = document.getElementById('hppTopProgressBar');
     }
 
-    // 2. Buat overlay loading bersih & minimalis (hanya spinner + Memuat...)
+    // 2. Buat overlay loading modern universal (Frosted Glass Pill + Gyroscope Dual Orbit)
     if (!document.getElementById('hppTabTransitionOverlay')) {
         hppOverlayEl = document.createElement('div');
         hppOverlayEl.id = 'hppTabTransitionOverlay';
         hppOverlayEl.className = 'hpp-transition-overlay';
         hppOverlayEl.innerHTML = `
-            <div class="hpp-loading-box">
-                <div class="hpp-spinner"></div>
-                <span class="hpp-loading-text">Memuat...</span>
+            <div class="hpp-modern-pill-loader">
+                <div class="hpp-gyro-container">
+                    <svg class="hpp-gyro-svg" viewBox="0 0 40 40">
+                        <defs>
+                            <linearGradient id="hppGyroGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#059669" stop-opacity="1" />
+                                <stop offset="60%" stop-color="#10b981" stop-opacity="0.8" />
+                                <stop offset="100%" stop-color="#34d399" stop-opacity="0" />
+                            </linearGradient>
+                            <linearGradient id="hppInnerGrad" x1="100%" y1="100%" x2="0%" y2="0%">
+                                <stop offset="0%" stop-color="#0284c7" stop-opacity="0.9" />
+                                <stop offset="100%" stop-color="#38bdf8" stop-opacity="0.1" />
+                            </linearGradient>
+                        </defs>
+                        <circle cx="20" cy="20" r="16" fill="none" stroke="#f1f5f9" stroke-width="2.5" />
+                        <circle class="hpp-gyro-outer" cx="20" cy="20" r="16" fill="none" stroke="url(#hppGyroGrad)" stroke-width="2.75" stroke-linecap="round" />
+                        <circle class="hpp-gyro-inner" cx="20" cy="20" r="10.5" fill="none" stroke="url(#hppInnerGrad)" stroke-width="2.25" stroke-linecap="round" />
+                        <circle class="hpp-gyro-core" cx="20" cy="20" r="3" fill="#059669" />
+                    </svg>
+                </div>
+                <span class="hpp-modern-label">
+                    Memuat<span class="hpp-modern-dots"><span class="hpp-dot hpp-dot-1">.</span><span class="hpp-dot hpp-dot-2">.</span><span class="hpp-dot-3">.</span></span>
+                </span>
             </div>
         `;
         document.body.appendChild(hppOverlayEl);
@@ -554,7 +574,7 @@ function initHppTabTransitions() {
             const targetHref = this.getAttribute('href');
             if (!targetHref || targetHref === '#' || targetHref.startsWith('javascript:')) return;
 
-            triggerSimpleHppTransition(this);
+            triggerModernHppTransition(this);
         });
     });
 
@@ -568,14 +588,35 @@ function initHppTabTransitions() {
             const targetHref = this.getAttribute('href');
             if (!targetHref || targetHref === '#') return;
 
-            triggerSimpleHppTransition(this);
+            triggerModernHppTransition(this);
         });
     });
+
+    // 5. Pasang Event Delegation untuk Tombol & Link "Tarik & Finalisasi HPP", "+ Kalkulasi Lembar HPP", dll.
+    document.addEventListener('click', function (e) {
+        const target = e.target.closest('a, button');
+        if (!target) return;
+
+        const href = target.getAttribute('href') || '';
+        const text = (target.textContent || '').trim();
+
+        const isTarikHpp = 
+            (href && (href.includes('/produksi/hpp/create') || href.includes('/packaging/hpp/create'))) ||
+            text.includes('Tarik & Finalisasi HPP') ||
+            text.includes('Kalkulasi Lembar HPP') ||
+            target.classList.contains('btn-tarik-finalisasi-hpp') ||
+            target.classList.contains('btn-loading-trigger') ||
+            target.dataset.loading === 'true';
+
+        if (isTarikHpp) {
+            triggerModernHppTransition(target);
+        }
+    }, true);
 }
 
-function triggerSimpleHppTransition(clickedEl) {
+function triggerModernHppTransition(clickedEl) {
     isHppTransitionActive = true;
-    if (clickedEl) clickedEl.classList.add('is-switching');
+    if (clickedEl && clickedEl.classList) clickedEl.classList.add('is-switching');
 
     if (hppProgressBarEl) {
         hppProgressBarEl.style.width = '35%';
@@ -587,6 +628,10 @@ function triggerSimpleHppTransition(clickedEl) {
         hppOverlayEl.classList.add('is-visible');
     }
 }
+
+// Ekspos global agar bisa dipanggil langsung dari inline onclick atau skrip lain
+window.triggerModernHppTransition = triggerModernHppTransition;
+window.triggerPageLoading = triggerModernHppTransition;
 
 // Bersihkan overlay jika halaman dipulihkan dari cache peramban (misal tombol Back ditekan)
 window.addEventListener('pageshow', function () {

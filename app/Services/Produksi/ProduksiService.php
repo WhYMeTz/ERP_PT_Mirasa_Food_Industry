@@ -3599,5 +3599,231 @@ class ProduksiService
             return $produksi;
         });
     }
+
+    /**
+     * Mengambil struktur data HPP Terpadu End-to-End (Hulu ke Hilir)
+     * Mengaitkan Dokumen Dapur (SPK Fisik & WIP) dengan seluruh turunan Pengemasan (Finish Goods).
+     *
+     * @param int $produksiId
+     * @return array
+     */
+    public function getHppTerpaduData(int $produksiId): array
+    {
+        $produksi = DatProduksiHdr::with([
+            'pemakaianBahan.details.barang.satuanDasar',
+            'gudang',
+            'outputs.barang.satuanDasar',
+            'packagings' => function ($q) {
+                $q->where('deleted_st', false)
+                  ->where('status_cd', '!=', 'VOID')
+                  ->with([
+                      'barangJadi.satuanDasar',
+                      'gudang',
+                      'details.barang.satuanDasar'
+                  ])
+                  ->orderBy('pack_tgl', 'asc')
+                  ->orderBy('pack_id', 'asc');
+            }
+        ])
+        ->where('deleted_st', false)
+        ->findOrFail($produksiId);
+
+        // 1. Ekstraksi Bahan Baku Dapur (BPPB)
+        $bahanBakuItems = [];
+        $totalBahanNilai = 0;
+        if ($produksi->pemakaianBahan && $produksi->pemakaianBahan->details) {
+            foreach ($produksi->pemakaianBahan->details as $dtl) {
+                if ($dtl->deleted_st) continue;
+                $nm = $dtl->barang?->barang_nm ?? 'Bahan';
+                $qty = (float) $dtl->qty_keluar;
+                $harga = (float) $dtl->harga_satuan;
+                $subtotal = (float) ($dtl->total_harga ?: ($qty * $harga));
+                $totalBahanNilai += $subtotal;
+
+                // Kategori bahan: Singkong, Minyak, Bumbu, dll.
+                $kategori = 'Bumbu & Penolong';
+                $u = strtoupper($nm);
+                if (str_contains($u, 'SINGKONG') || str_contains($u, 'UBI')) {
+                    $kategori = 'Singkong Mentah';
+                } elseif (str_contains($u, 'MINYAK') || str_contains($u, 'SAWIT') || str_contains($u, 'GORENG')) {
+                    $kategori = 'Minyak Goreng';
+                }
+
+                $bahanBakuItems[] = [
+                    'barang_cd'   => $dtl->barang?->barang_cd ?? '-',
+                    'barang_nm'   => $nm,
+                    'kategori'    => $kategori,
+                    'batch_no'    => $dtl->batch_no ?? '-',
+                    'qty'         => $qty,
+                    'satuan'      => $dtl->barang?->satuanDasar?->satuan_nm ?? 'kg',
+                    'harga_satuan'=> $harga,
+                    'subtotal'    => $subtotal,
+                ];
+            }
+        }
+
+        // 2. Operasional Dapur (Gas CNG & Upah Tenaga Kerja Regu)
+        $cngNilai = (float) $produksi->cng_nilai;
+        $upahDapurNilai = (float) $produksi->tk_total_nilai;
+        $totalDapurNilai = (float) $produksi->total_biaya_produksi;
+        if ($totalDapurNilai <= 0) {
+            $totalDapurNilai = $totalBahanNilai + $cngNilai + $upahDapurNilai;
+        }
+
+        // 3. Output Curah Masak Dapur & Pelacakan Pemakaian di Kemasan
+        $outputsList = [];
+        $totalWipKgProduced = 0;
+
+        foreach ($produksi->outputs as $out) {
+            if ($out->deleted_st) continue;
+            $outId = $out->output_id;
+            $barangId = $out->barang_id;
+            $outKg = (float) $out->qty_kg;
+            $hppPerKg = (float) ($out->hpp_satuan ?: $produksi->hpp_per_kg);
+            $subtotalOut = (float) ($out->total_nilai ?: ($outKg * $hppPerKg));
+            $totalWipKgProduced += $outKg;
+
+            // Hitung berapa kg output ini yang sudah diambil oleh dokumen pengemasan
+            $consumedKg = 0;
+            $consumedInPackagings = [];
+
+            foreach ($produksi->packagings as $pkg) {
+                foreach ($pkg->details as $pDtl) {
+                    if ($pDtl->deleted_st) continue;
+                    if (strtoupper($pDtl->kategori_bahan) === 'WIP') {
+                        // Cocokkan berdasarkan barang_id atau jika hanya 1 output
+                        if ($pDtl->barang_id == $barangId || $produksi->outputs->count() === 1) {
+                            $taken = (float) $pDtl->qty_aktual;
+                            $consumedKg += $taken;
+                            $consumedInPackagings[] = [
+                                'pack_id'  => $pkg->pack_id,
+                                'pack_no'  => $pkg->pack_no,
+                                'fg_nm'    => $pkg->barangJadi?->barang_nm ?? 'Barang Jadi',
+                                'qty_kg'   => $taken,
+                            ];
+                        }
+                    }
+                }
+            }
+
+            $remainingKg = max(0, $outKg - $consumedKg);
+
+            $outputsList[] = [
+                'output_id'       => $outId,
+                'barang_id'       => $barangId,
+                'barang_nm'       => $out->barang?->barang_nm ?? ($out->kategori_output === 'berko' ? 'Keripik Berko' : 'Keripik Curah Utama'),
+                'kategori_output' => $out->kategori_output,
+                'batch_no'        => $out->batch_no ?? $produksi->batch_wip_no,
+                'qty_kg'          => $outKg,
+                'hpp_per_kg'      => $hppPerKg,
+                'subtotal_nilai'  => $subtotalOut,
+                'consumed_kg'     => $consumedKg,
+                'remaining_kg'    => $remainingKg,
+                'consumed_in'     => $consumedInPackagings,
+                'is_fully_packed' => $remainingKg <= 0.05,
+            ];
+        }
+
+        // 4. Detail Turunan Pengemasan (Packagings)
+        $packagingBranches = [];
+        $totalBiayaKemasKumulatif = 0;
+        $totalHasilKartonKumulatif = 0;
+        $totalHasilPcsKumulatif = 0;
+
+        foreach ($produksi->packagings as $pkg) {
+            $packTotalBiaya = (float) $pkg->total_biaya_produksi;
+            $totalBiayaKemasKumulatif += $packTotalBiaya;
+            $totalHasilKartonKumulatif += (float) $pkg->hasil_karton_qty;
+            $totalHasilPcsKumulatif += (float) $pkg->hasil_pcs_qty;
+
+            // Rincian WIP yang diambil
+            $wipTaken = [];
+            $kemasanMaterials = [];
+            foreach ($pkg->details as $pDtl) {
+                if ($pDtl->deleted_st) continue;
+                $isWip = strtoupper($pDtl->kategori_bahan) === 'WIP';
+                $itemData = [
+                    'barang_cd'      => $pDtl->barang?->barang_cd ?? '-',
+                    'barang_nm'      => $pDtl->barang?->barang_nm ?? ($isWip ? 'Curah WIP' : 'Bahan Kemas'),
+                    'qty'            => (float) $pDtl->qty_aktual,
+                    'satuan'         => $pDtl->satuan_cd ?: ($pDtl->barang?->satuanDasar?->satuan_nm ?? ($isWip ? 'kg' : 'pcs')),
+                    'harga_satuan'   => (float) $pDtl->harga_satuan,
+                    'subtotal_nilai' => (float) $pDtl->subtotal_nilai,
+                ];
+                if ($isWip) {
+                    $wipTaken[] = $itemData;
+                } else {
+                    $kemasanMaterials[] = $itemData;
+                }
+            }
+
+            $packagingBranches[] = [
+                'pack_id'                 => $pkg->pack_id,
+                'pack_no'                 => $pkg->pack_no,
+                'pack_tgl'                => $pkg->pack_tgl,
+                'shift'                   => $pkg->shift,
+                'operator_nama'           => $pkg->operator_nama,
+                'barang_jadi_cd'          => $pkg->barangJadi?->barang_cd ?? '-',
+                'barang_jadi_nm'          => $pkg->barangJadi?->barang_nm ?? 'Produk Jadi (FG)',
+                'batch_no'                => $pkg->batch_no,
+                'expired_tgl'             => $pkg->expired_tgl,
+                'target_karton_qty'       => (float) $pkg->target_karton_qty,
+                'hasil_karton_qty'        => (float) $pkg->hasil_karton_qty,
+                'hasil_pack_qty'          => (float) $pkg->hasil_pack_qty,
+                'hasil_pcs_qty'           => (float) $pkg->hasil_pcs_qty,
+                'total_biaya_wip'         => (float) $pkg->total_biaya_wip,
+                'total_biaya_kemasan'     => (float) $pkg->total_biaya_kemasan,
+                'total_biaya_tenaga_kerja'=> (float) $pkg->total_biaya_tenaga_kerja,
+                'total_biaya_lain'        => (float) $pkg->total_biaya_lain,
+                'total_biaya_produksi'    => $packTotalBiaya,
+                'hpp_per_karton'          => (float) $pkg->hpp_per_karton,
+                'hpp_per_pcs'             => (float) $pkg->hpp_per_pcs,
+                'is_hpp_final'            => (bool) $pkg->is_hpp_final,
+                'wip_taken'               => $wipTaken,
+                'kemasan_materials'       => $kemasanMaterials,
+                'jumlah_personil'         => (int) $pkg->jumlah_personil,
+            ];
+        }
+
+        // 5. Cek SPK Sibling (Lini/Shift lain di tanggal yang sama) untuk fitur Line Switcher
+        $siblingSpks = DatProduksiHdr::where('produksi_tgl', $produksi->produksi_tgl)
+            ->where('deleted_st', false)
+            ->where('status_cd', '!=', 'VOID')
+            ->orderBy('produksi_id', 'asc')
+            ->select(['produksi_id', 'produksi_no', 'shift_cd', 'lini_produksi', 'batch_wip_no', 'total_biaya_produksi', 'hpp_per_kg'])
+            ->get()
+            ->map(function ($s) use ($produksiId) {
+                return [
+                    'produksi_id'          => $s->produksi_id,
+                    'produksi_no'          => $s->produksi_no,
+                    'shift_cd'             => $s->shift_cd,
+                    'lini_produksi'        => $s->lini_produksi ?: 'REGULER',
+                    'batch_wip_no'         => $s->batch_wip_no,
+                    'total_biaya_produksi' => (float) $s->total_biaya_produksi,
+                    'hpp_per_kg'           => (float) $s->hpp_per_kg,
+                    'is_current'           => (int) $s->produksi_id === (int) $produksiId,
+                ];
+            })
+            ->toArray();
+
+        return [
+            'produksi'                    => $produksi,
+            'bahan_baku_items'            => $bahanBakuItems,
+            'total_bahan_nilai'           => $totalBahanNilai,
+            'cng_nilai'                   => $cngNilai,
+            'upah_dapur_nilai'            => $upahDapurNilai,
+            'total_dapur_nilai'           => $totalDapurNilai,
+            'total_wip_kg_produced'       => $totalWipKgProduced,
+            'rendemen_persen'             => (float) $produksi->rendemen_persen,
+            'outputs_list'                => $outputsList,
+            'packaging_branches'          => $packagingBranches,
+            'packagingBranches'           => $packagingBranches,
+            'sibling_spks'                => $siblingSpks,
+            'total_biaya_kemas_kumulatif' => $totalBiayaKemasKumulatif,
+            'total_hasil_karton_kumulatif'=> $totalHasilKartonKumulatif,
+            'total_hasil_pcs_kumulatif'   => $totalHasilPcsKumulatif,
+            'grand_total_biaya_pabrik'    => $totalDapurNilai + $totalBiayaKemasKumulatif,
+        ];
+    }
 }
 

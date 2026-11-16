@@ -62,18 +62,7 @@
     </div>
 </div>
 
-{{-- NOTIFIKASI SUKSES & ERROR --}}
-@if(session('success'))
-    <div style="background: #ecfdf5; border: 1.5px solid #a7f3d0; border-radius: 8px; padding: 0.85rem 1.25rem; color: #065f46; margin-bottom: 1.25rem; font-size: 0.875rem; font-weight: 600;">
-        <span>{{ session('success') }}</span>
-    </div>
-@endif
 
-@if(session('error'))
-    <div style="background: #fef2f2; border: 1.5px solid #fecaca; border-radius: 8px; padding: 0.85rem 1.25rem; color: #991b1b; margin-bottom: 1.25rem; font-size: 0.875rem; font-weight: 600;">
-        <span>{{ session('error') }}</span>
-    </div>
-@endif
 
 {{-- ═════════════════════════════════════════════════════════════
      MASTER SEGMENTED TABS: DUA PILAR BIAYA PABRIK (DAPUR & KEMAS)
@@ -155,6 +144,9 @@
     {{-- 4 KARTU METRIK EKSEKUTIF PACKAGING --}}
     @php
         $tot = $report['totals'];
+        $finalizedCount = $report['finalized_count'] ?? 0;
+        $pendingCount = $report['pending_count'] ?? 0;
+        $totalWorkDays = $report['count'] ?? 0;
     @endphp
     <div class="executive-stat-grid">
         {{-- METRIK 1: TOTAL BIAYA PENGEMASAN --}}
@@ -165,7 +157,11 @@
                         Total Biaya Pengemasan
                     </span>
                     <div class="executive-stat-value">
-                        Rp {{ number_format($tot['total_biaya_produksi'], 0, ',', '.') }}
+                        @if($finalizedCount > 0)
+                            Rp {{ number_format($tot['total_biaya_produksi'], 0, ',', '.') }}
+                        @else
+                            <span style="color: #64748b; font-size: 1.25rem;">Rp 0</span>
+                        @endif
                     </div>
                 </div>
                 <div class="executive-stat-icon-box" style="background: #e0f2fe; color: #0284c7;">
@@ -173,7 +169,13 @@
                 </div>
             </div>
             <div class="executive-stat-subtext">
-                WIP + Kemasan + Upah Kemas ({{ $report['count'] }} Hari)
+                @if($finalizedCount > 0 && $pendingCount > 0)
+                    <span style="color: #d97706; font-weight: 600;">Akumulasi {{ $finalizedCount }} Hari Final ({{ $pendingCount }} Hari Belum Final)</span>
+                @elseif($finalizedCount > 0)
+                    WIP + Kemasan + Upah Kemas ({{ $finalizedCount }} Hari)
+                @else
+                    <span style="color: #b45309; font-weight: 600;">Menunggu finalisasi HPP (0 dari {{ $totalWorkDays }} Dokumen)</span>
+                @endif
             </div>
         </div>
 
@@ -185,7 +187,11 @@
                         Hasil Kemas (Finish Good)
                     </span>
                     <div class="executive-stat-value">
-                        {{ number_format($tot['total_karton'], 0, ',', '.') }} <span style="font-size: 0.85rem; font-weight: 600; color: #64748b;">Karton</span>
+                        @if($finalizedCount > 0)
+                            {{ number_format($tot['total_karton'], 0, ',', '.') }} <span style="font-size: 0.85rem; font-weight: 600; color: #64748b;">Karton</span>
+                        @else
+                            <span style="color: #64748b; font-size: 1.25rem;">0 Karton</span>
+                        @endif
                     </div>
                 </div>
                 <div class="executive-stat-icon-box" style="background: #ecfdf5; color: #059669;">
@@ -193,7 +199,11 @@
                 </div>
             </div>
             <div class="executive-stat-subtext">
-                Setara {{ number_format($tot['total_pcs'], 0, ',', '.') }} Pcs siap didistribusikan
+                @if($finalizedCount > 0)
+                    Setara {{ number_format($tot['total_pcs'], 0, ',', '.') }} Pcs siap didistribusikan
+                @else
+                    <span style="color: #b45309; font-weight: 600;">Menunggu penarikan lembar HPP ({{ $totalWorkDays }} Dokumen Fisik)</span>
+                @endif
             </div>
         </div>
 
@@ -205,7 +215,11 @@
                         Beban Kemas / Karton
                     </span>
                     <div class="executive-stat-value" style="color: #d97706;">
-                        Rp {{ number_format($tot['biaya_kemas_per_karton'], 0, ',', '.') }}
+                        @if($finalizedCount > 0)
+                            Rp {{ number_format($tot['biaya_kemas_per_karton'], 0, ',', '.') }}
+                        @else
+                            <span style="color: #64748b; font-size: 1.25rem;">Rp 0</span>
+                        @endif
                     </div>
                 </div>
                 <div class="executive-stat-icon-box" style="background: #fef3c7; color: #d97706;">
@@ -213,7 +227,11 @@
                 </div>
             </div>
             <div class="executive-stat-subtext">
-                Rata-rata Dus Box, Plastik &amp; Lakban
+                @if($finalizedCount > 0)
+                    Rata-rata Dus Box, Plastik &amp; Lakban
+                @else
+                    <span style="color: #b45309; font-weight: 600;">Belum dihitung (menunggu HPP)</span>
+                @endif
             </div>
         </div>
 
@@ -225,7 +243,11 @@
                         HPP Riil Barang Jadi (FG)
                     </span>
                     <div class="executive-stat-value" style="font-family: monospace;">
-                        Rp {{ number_format($tot['rata_hpp_karton'], 0, ',', '.') }}
+                        @if($finalizedCount > 0)
+                            Rp {{ number_format($tot['rata_hpp_karton'], 0, ',', '.') }}
+                        @else
+                            <span style="color: #64748b; font-size: 1.15rem; font-weight: 700;">Belum Ditetapkan</span>
+                        @endif
                     </div>
                 </div>
                 <div class="executive-stat-icon-box" style="background: #d1fae5; color: #059669;">
@@ -233,7 +255,11 @@
                 </div>
             </div>
             <div class="executive-stat-subtext">
-                <span style="color: #059669; font-weight: 700;">Setara Rp {{ number_format($tot['rata_hpp_pcs'], 0, ',', '.') }} / Pcs</span>
+                @if($finalizedCount > 0)
+                    <span style="color: #059669; font-weight: 700;">Setara Rp {{ number_format($tot['rata_hpp_pcs'], 0, ',', '.') }} / Pcs</span>
+                @else
+                    <span style="color: #b45309; font-weight: 600;">Menunggu penarikan &amp; penetapan HPP</span>
+                @endif
             </div>
         </div>
     </div>

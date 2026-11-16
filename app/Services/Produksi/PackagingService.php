@@ -179,9 +179,25 @@ class PackagingService
             $hargaSatuan = 0;
             $batchNo = $activeBatch?->batch_no ?? null;
 
-            if ($kategori === 'WIP' && $linkedProduksi && (float) $linkedProduksi->hpp_per_kg > 0) {
-                // Prioritas Tertinggi untuk WIP: Sinkronisasi langsung dengan Dokumen HPP Produksi Hari Terkait
-                $hargaSatuan = (float) $linkedProduksi->hpp_per_kg;
+            if ($kategori === 'WIP' && $linkedProduksi) {
+                // Prioritas Tertinggi untuk WIP: Sinkronisasi langsung dengan HPP Satuan varian barang di SPK Produksi Terkait
+                $variantHpp = 0;
+                if ($linkedProduksi->details) {
+                    $matchedOutput = $linkedProduksi->details->first(function ($o) use ($b) {
+                        return (int) $o->barang_id === (int) $b->barang_id;
+                    });
+                    if ($matchedOutput && (float) $matchedOutput->hpp_satuan > 0) {
+                        $variantHpp = (float) $matchedOutput->hpp_satuan;
+                    }
+                }
+                if ($variantHpp <= 0 && (float) $linkedProduksi->hpp_per_kg > 0) {
+                    $variantHpp = (float) $linkedProduksi->hpp_per_kg;
+                }
+                if ($variantHpp <= 0 && $activeBatch && (float) $activeBatch->harga_satuan > 0) {
+                    $variantHpp = (float) $activeBatch->harga_satuan;
+                }
+
+                $hargaSatuan = $variantHpp;
                 $batchNo = $linkedProduksi->batch_wip_no 
                     ?: ($linkedProduksi->produksi_tgl ? $linkedProduksi->produksi_tgl->format('d m Y') : $batchNo);
             } elseif ($kategori === 'KEMASAN' || $kategori === 'BUMBU') {
@@ -322,8 +338,17 @@ class PackagingService
 
             $targetKarton = (float) ($data['target_karton_qty'] ?? 0);
             $hasilKarton = (float) ($data['hasil_karton_qty'] ?? $targetKarton);
-            $isiPerKarton = (float) ($data['isi_per_karton_pcs'] ?? 1);
-            if ($isiPerKarton <= 0) $isiPerKarton = 1;
+            $isiPerKarton = (float) ($data['isi_per_karton_pcs'] ?? 0);
+            if ($isiPerKarton <= 0) {
+                $brgJadi = MstBarang::find($barangJadiId);
+                if ($brgJadi && (float) $brgJadi->konversi_qty > 1) {
+                    $isiPerKarton = (float) $brgJadi->konversi_qty;
+                } elseif ($brgJadi && preg_match('/(?:JUMBO|MAKSI|PING-PING|EKSPOR).*?(\d+)/i', $brgJadi->barang_nm, $m) && in_array((int)$m[1], [10, 12, 16, 20, 24, 30, 40, 50])) {
+                    $isiPerKarton = (float) $m[1];
+                } else {
+                    $isiPerKarton = 20; // Default standar isi per karton snack PT Mirasa
+                }
+            }
             $hasilPcs = $hasilKarton * $isiPerKarton;
 
             // Generate Nomor Dokumen Standar Resmi PT Mirasa: {seq:3}/PCK/MFI/{month}/{year}
@@ -709,14 +734,39 @@ class PackagingService
                     throw new Exception("HPP Produksi Asal [{$prodNo}] belum dihitung/difinalkan. Harap selesaikan kalkulasi HPP Produksi terlebih dahulu sebelum menghitung HPP Packing.");
                 }
 
-                // Tarik Nilai HPP WIP Riil dari SPK Produksi
-                $hppPerKgWip = (float) $prod->hpp_per_kg;
+                // Tarik Nilai HPP WIP Riil dari SPK Produksi (Spesifik per varian barang WIP)
                 $newTotalWip = 0;
 
                 foreach ($header->details as $dtl) {
                     if (strtoupper($dtl->kategori_bahan) === 'WIP') {
-                        $dtl->harga_satuan = $hppPerKgWip;
-                        $dtl->subtotal_nilai = round((float) $dtl->qty_aktual * $hppPerKgWip, 2);
+                        $variantHpp = 0;
+                        if ($prod->details) {
+                            $matchedOutput = $prod->details->first(function ($o) use ($dtl) {
+                                return (int) $o->barang_id === (int) $dtl->barang_id 
+                                    && (!$dtl->batch_no || $o->batch_no === $dtl->batch_no);
+                            }) ?? $prod->details->first(function ($o) use ($dtl) {
+                                return (int) $o->barang_id === (int) $dtl->barang_id;
+                            });
+
+                            if ($matchedOutput && (float) $matchedOutput->hpp_satuan > 0) {
+                                $variantHpp = (float) $matchedOutput->hpp_satuan;
+                            }
+                        }
+
+                        if ($variantHpp <= 0 && (float) $dtl->harga_satuan > 0) {
+                            $variantHpp = (float) $dtl->harga_satuan;
+                        }
+
+                        if ($variantHpp <= 0 && (float) $prod->hpp_per_kg > 0) {
+                            $variantHpp = (float) $prod->hpp_per_kg;
+                        }
+
+                        if ($variantHpp <= 0) {
+                            $variantHpp = 25500;
+                        }
+
+                        $dtl->harga_satuan = $variantHpp;
+                        $dtl->subtotal_nilai = round((float) $dtl->qty_aktual * $variantHpp, 2);
                         $dtl->updated_by = $userName ?? auth()->user()?->name ?? 'System';
                         $dtl->save();
                         $newTotalWip += (float) $dtl->subtotal_nilai;
@@ -1067,6 +1117,7 @@ class PackagingService
                     'pack_records'            => $dayRecords,
                     'primary_pack_id'         => $dayRecords->first()->pack_id,
                     'primary_pack_no'         => $dayRecords->first()->pack_no,
+                    'primary_produksi_id'     => $dayRecords->first()->produksi_id,
                     'primary_produksi_no'     => $dayRecords->first()->produksi?->produksi_no,
                     'pack_no_list'            => $packNoList,
                     'product_names'           => $productNames,
@@ -1132,6 +1183,8 @@ class PackagingService
                     'pack_records'            => collect(),
                     'primary_pack_id'         => null,
                     'primary_pack_no'         => null,
+                    'primary_produksi_id'     => null,
+                    'primary_produksi_no'     => null,
                     'pack_no_list'            => [],
                     'product_names'           => [],
                     'primary_product_nm'      => '-',
@@ -1189,56 +1242,106 @@ class PackagingService
             }
         }
 
-        // Totals & Averages
+        // Totals & Averages - Hanya mengakumulasi hari yang TELAH difinalisasi HPP (Identik dengan HPP Produksi)
         $activeDays = collect($days)->where('has_data', true);
-        $totalWip = (float) $activeDays->sum('total_biaya_wip');
-        $totalKemasan = (float) $activeDays->sum('total_biaya_kemasan');
-        $totalTk = (float) $activeDays->sum('total_biaya_tenaga_kerja');
-        $totalLain = (float) $activeDays->sum('total_biaya_lain');
-        $totalBiaya = (float) $activeDays->sum('total_biaya_produksi');
-        $totalKarton = (float) $activeDays->sum('hasil_karton');
-        $totalPcs = (float) $activeDays->sum('hasil_pcs');
-        $totalWipKg = (float) $activeDays->sum('wip_kg_total');
+        $finalizedDays = $activeDays->where('is_hpp_final', true);
+        $finalizedDaysCount = $finalizedDays->count();
+        $pendingDaysCount = $activeDays->where('is_hpp_final', false)->count();
 
-        $rataHppKarton = $totalKarton > 0 ? round($totalBiaya / $totalKarton, 2) : 0;
-        $rataHppPcs = $totalPcs > 0 ? round($totalBiaya / $totalPcs, 2) : 0;
-        $biayaKemasPerKarton = $totalKarton > 0 ? round($totalKemasan / $totalKarton, 2) : 0;
+        if ($finalizedDaysCount > 0) {
+            $totalWip = (float) $finalizedDays->sum('total_biaya_wip');
+            $totalKemasan = (float) $finalizedDays->sum('total_biaya_kemasan');
+            $totalTk = (float) $finalizedDays->sum('total_biaya_tenaga_kerja');
+            $totalLain = (float) $finalizedDays->sum('total_biaya_lain');
+            $totalBiaya = (float) $finalizedDays->sum('total_biaya_produksi');
+            $totalKarton = (float) $finalizedDays->sum('hasil_karton');
+            $totalPcs = (float) $finalizedDays->sum('hasil_pcs');
+            $totalWipKg = (float) $finalizedDays->sum('wip_kg_total');
 
-        // Akumulasi Matriks Ping-Ping & Maksi
-        $totBerkoKg = (float) $activeDays->sum('berko_kg');
-        $totWipKg = (float) $activeDays->sum('wip_kg');
-        $totBahanKeripikNilai = (float) $activeDays->sum('bahan_keripik_nilai');
-        $totKartonKk = (float) $activeDays->sum('karton_kk_qty');
-        $totKartonMk = (float) $activeDays->sum('karton_mk_qty');
-        $totKartonNilai = (float) $activeDays->sum('karton_nilai');
-        $totBaladoKg = (float) $activeDays->sum('balado_kg');
-        $totBaladoNilai = (float) $activeDays->sum('balado_nilai');
-        $totRollKkKg = (float) $activeDays->sum('roll_kk_kg');
-        $totRollMkKg = (float) $activeDays->sum('roll_mk_kg');
-        $totRollNilai = (float) $activeDays->sum('roll_nilai');
-        $totLakbanAtas = (float) $activeDays->sum('lakban_atas_gr');
-        $totLakbanBawah = (float) $activeDays->sum('lakban_bawah_gr');
-        $totLakbanJumlah = (float) $activeDays->sum('lakban_jumlah_gr');
-        $totLakbanNilai = (float) $activeDays->sum('lakban_nilai');
-        $totKertasExpQty = (float) $activeDays->sum('kertas_exp_qty');
-        $totKertasExpNilai = (float) $activeDays->sum('kertas_exp_nilai');
-        $totKerusakanPlastikQty = (float) $activeDays->sum('kerusakan_plastik_qty');
-        $totKerusakanPlastikNilai = (float) $activeDays->sum('kerusakan_plastik_nilai');
-        $totKerusakanKartonQty = (float) $activeDays->sum('kerusakan_karton_qty');
-        $totKerusakanKartonNilai = (float) $activeDays->sum('kerusakan_karton_nilai');
-        $totHasilPingPing = (float) $activeDays->sum('hasil_ping_ping');
-        $totHasilMaksi = (float) $activeDays->sum('hasil_maksi');
-        $totHasilJumlah = (float) $activeDays->sum('hasil_jumlah');
-        $totGramasiKg = (float) $activeDays->sum('gramasi_kg');
+            $rataHppKarton = $totalKarton > 0 ? round($totalBiaya / $totalKarton, 2) : 0;
+            $rataHppPcs = $totalPcs > 0 ? round($totalBiaya / $totalPcs, 2) : 0;
+            $biayaKemasPerKarton = $totalKarton > 0 ? round($totalKemasan / $totalKarton, 2) : 0;
 
-        $activeCount = $activeDays->count();
-        $avgBerkoKg = $activeCount > 0 ? round($totBerkoKg / $activeCount, 2) : 0;
-        $avgBahanNilai = $activeCount > 0 ? round($totBahanKeripikNilai / $activeCount, 0) : 0;
-        $avgKartonNilai = $activeCount > 0 ? round($totKartonNilai / $activeCount, 0) : 0;
-        $avgTotalBiaya = $activeCount > 0 ? round($totalBiaya / $activeCount, 0) : 0;
-        $avgHasilJumlah = $activeCount > 0 ? round($totHasilJumlah / $activeCount, 0) : 0;
-        $avgGramasiKg = $activeCount > 0 ? round($totGramasiKg / $activeCount, 2) : 0;
-        $rataHppUnit = $totHasilJumlah > 0 ? round($totalBiaya / $totHasilJumlah, 2) : 0;
+            // Akumulasi Matriks Ping-Ping & Maksi
+            $totBerkoKg = (float) $finalizedDays->sum('berko_kg');
+            $totWipKg = (float) $finalizedDays->sum('wip_kg');
+            $totBahanKeripikNilai = (float) $finalizedDays->sum('bahan_keripik_nilai');
+            $totKartonKk = (float) $finalizedDays->sum('karton_kk_qty');
+            $totKartonMk = (float) $finalizedDays->sum('karton_mk_qty');
+            $totKartonNilai = (float) $finalizedDays->sum('karton_nilai');
+            $totBaladoKg = (float) $finalizedDays->sum('balado_kg');
+            $totBaladoNilai = (float) $finalizedDays->sum('balado_nilai');
+            $totRollKkKg = (float) $finalizedDays->sum('roll_kk_kg');
+            $totRollMkKg = (float) $finalizedDays->sum('roll_mk_kg');
+            $totRollNilai = (float) $finalizedDays->sum('roll_nilai');
+            $totLakbanAtas = (float) $finalizedDays->sum('lakban_atas_gr');
+            $totLakbanBawah = (float) $finalizedDays->sum('lakban_bawah_gr');
+            $totLakbanJumlah = (float) $finalizedDays->sum('lakban_jumlah_gr');
+            $totLakbanNilai = (float) $finalizedDays->sum('lakban_nilai');
+            $totKertasExpQty = (float) $finalizedDays->sum('kertas_exp_qty');
+            $totKertasExpNilai = (float) $finalizedDays->sum('kertas_exp_nilai');
+            $totKerusakanPlastikQty = (float) $finalizedDays->sum('kerusakan_plastik_qty');
+            $totKerusakanPlastikNilai = (float) $finalizedDays->sum('kerusakan_plastik_nilai');
+            $totKerusakanKartonQty = (float) $finalizedDays->sum('kerusakan_karton_qty');
+            $totKerusakanKartonNilai = (float) $finalizedDays->sum('kerusakan_karton_nilai');
+            $totHasilPingPing = (float) $finalizedDays->sum('hasil_ping_ping');
+            $totHasilMaksi = (float) $finalizedDays->sum('hasil_maksi');
+            $totHasilJumlah = (float) $finalizedDays->sum('hasil_jumlah');
+            $totGramasiKg = (float) $finalizedDays->sum('gramasi_kg');
+
+            $activeCount = $finalizedDaysCount;
+            $avgBerkoKg = $activeCount > 0 ? round($totBerkoKg / $activeCount, 2) : 0;
+            $avgBahanNilai = $activeCount > 0 ? round($totBahanKeripikNilai / $activeCount, 0) : 0;
+            $avgKartonNilai = $activeCount > 0 ? round($totKartonNilai / $activeCount, 0) : 0;
+            $avgTotalBiaya = $activeCount > 0 ? round($totalBiaya / $activeCount, 0) : 0;
+            $avgHasilJumlah = $activeCount > 0 ? round($totHasilJumlah / $activeCount, 0) : 0;
+            $avgGramasiKg = $activeCount > 0 ? round($totGramasiKg / $activeCount, 2) : 0;
+            $rataHppUnit = $totHasilJumlah > 0 ? round($totalBiaya / $totHasilJumlah, 2) : 0;
+        } else {
+            $totalWip = 0;
+            $totalKemasan = 0;
+            $totalTk = 0;
+            $totalLain = 0;
+            $totalBiaya = 0;
+            $totalKarton = 0;
+            $totalPcs = 0;
+            $totalWipKg = 0;
+            $rataHppKarton = 0;
+            $rataHppPcs = 0;
+            $biayaKemasPerKarton = 0;
+            $totBerkoKg = 0;
+            $totWipKg = 0;
+            $totBahanKeripikNilai = 0;
+            $totKartonKk = 0;
+            $totKartonMk = 0;
+            $totKartonNilai = 0;
+            $totBaladoKg = 0;
+            $totBaladoNilai = 0;
+            $totRollKkKg = 0;
+            $totRollMkKg = 0;
+            $totRollNilai = 0;
+            $totLakbanAtas = 0;
+            $totLakbanBawah = 0;
+            $totLakbanJumlah = 0;
+            $totLakbanNilai = 0;
+            $totKertasExpQty = 0;
+            $totKertasExpNilai = 0;
+            $totKerusakanPlastikQty = 0;
+            $totKerusakanPlastikNilai = 0;
+            $totKerusakanKartonQty = 0;
+            $totKerusakanKartonNilai = 0;
+            $totHasilPingPing = 0;
+            $totHasilMaksi = 0;
+            $totHasilJumlah = 0;
+            $totGramasiKg = 0;
+            $avgBerkoKg = 0;
+            $avgBahanNilai = 0;
+            $avgKartonNilai = 0;
+            $avgTotalBiaya = 0;
+            $avgHasilJumlah = 0;
+            $avgGramasiKg = 0;
+            $rataHppUnit = 0;
+        }
 
         // Parameter Standar Acuan Harga (Daftar Harga Atas Excel) diambil dinamis dari Master Standar Harga Kemasan
         $daftarHarga = $this->tarifKemasanService->getDaftarHargaPackaging();
@@ -1248,6 +1351,8 @@ class PackagingService
             'month'                  => $month,
             'month_name'             => $monthName,
             'count'                  => $activeDays->count(),
+            'finalized_count'        => $finalizedDaysCount,
+            'pending_count'          => $pendingDaysCount,
             'total_dokumen'          => $records->count(),
             'records'                => $records,
             'days'                   => $days,
@@ -1629,20 +1734,51 @@ class PackagingService
             'gudang',
             'details.barang.satuanDasar',
             'details.barang.jenisBarang',
-            'produksi'
+            'produksi.details.barang'
         ])
             ->where('deleted_st', false)
             ->findOrFail($id);
 
-        // 1. Ekstraksi Informasi Curah WIP & Nilai HPP Masak Dapur
+        // 1. Ekstraksi Informasi Curah WIP & Nilai HPP Produksi (Spesifik per varian barang WIP)
         $wipItems = [];
         $totalWipNilai = 0;
-        $hppPerKgWip = (float) ($header->produksi?->hpp_per_kg ?? 0);
+        $prod = $header->produksi;
 
         foreach ($header->details as $dtl) {
             if ($dtl->deleted_st) continue;
             if (strtoupper($dtl->kategori_bahan) === 'WIP') {
-                $hargaSatuan = $hppPerKgWip > 0 ? $hppPerKgWip : (float) ($dtl->harga_satuan > 0 ? $dtl->harga_satuan : 25500);
+                $variantHpp = 0;
+
+                // Prioritas 1: Ambil HPP Satuan spesifik dari varian barang di SPK Produksi (Output WIP)
+                if ($prod && $prod->details) {
+                    $matchedOutput = $prod->details->first(function ($o) use ($dtl) {
+                        return (int) $o->barang_id === (int) $dtl->barang_id 
+                            && (!$dtl->batch_no || $o->batch_no === $dtl->batch_no);
+                    }) ?? $prod->details->first(function ($o) use ($dtl) {
+                        return (int) $o->barang_id === (int) $dtl->barang_id;
+                    });
+
+                    if ($matchedOutput && (float) $matchedOutput->hpp_satuan > 0) {
+                        $variantHpp = (float) $matchedOutput->hpp_satuan;
+                    }
+                }
+
+                // Prioritas 2: Nilai harga_satuan yang sudah tersimpan di rincian fisik
+                if ($variantHpp <= 0 && (float) $dtl->harga_satuan > 0) {
+                    $variantHpp = (float) $dtl->harga_satuan;
+                }
+
+                // Prioritas 3: Rata-rata global SPK Produksi
+                if ($variantHpp <= 0 && $prod && (float) $prod->hpp_per_kg > 0) {
+                    $variantHpp = (float) $prod->hpp_per_kg;
+                }
+
+                // Prioritas 4: Fallback benchmark
+                if ($variantHpp <= 0) {
+                    $variantHpp = 25500;
+                }
+
+                $hargaSatuan = $variantHpp;
                 $subtotal = round((float) $dtl->qty_aktual * $hargaSatuan, 2);
                 $wipItems[] = [
                     'packdtl_id'   => $dtl->packdtl_id,
@@ -1666,6 +1802,18 @@ class PackagingService
             if ($dtl->deleted_st) continue;
             if (strtoupper($dtl->kategori_bahan) !== 'WIP') {
                 $hargaSatuan = (float) $dtl->harga_satuan;
+                
+                // Fallback harga cerdas jika di detail dokumen tercatat 0
+                if ($hargaSatuan <= 0) {
+                    $nm = strtoupper($dtl->barang?->barang_nm ?? '');
+                    $satuan = strtoupper($dtl->satuan_cd ?? $dtl->barang?->satuanDasar?->satuan_cd ?? '');
+                    if (str_contains($nm, 'LAKBAN')) {
+                        $hargaSatuan = in_array($satuan, ['GR', 'GRAM', 'G']) ? 36.70 : 45880.00;
+                    } elseif ((float)($dtl->barang?->harga_beli_standar ?? 0) > 0) {
+                        $hargaSatuan = (float) $dtl->barang->harga_beli_standar;
+                    }
+                }
+
                 $subtotal = (float) ($dtl->subtotal_nilai > 0 ? $dtl->subtotal_nilai : round((float)$dtl->qty_aktual * $hargaSatuan, 2));
                 $kemasanItems[] = [
                     'packdtl_id'     => $dtl->packdtl_id,
@@ -1721,12 +1869,12 @@ class PackagingService
             'isi_per_karton_pcs'        => (float) ($header->isi_per_karton_pcs ?: 20),
             'gramatur_gr'               => (float) $header->gramatur_gr,
             
-            // Info SPK Dapur asal
+            // Info SPK Produksi asal
             'produksi_id'               => $header->produksi_id,
             'produksi_no'               => $header->produksi?->produksi_no ?? '-',
             'produksi_tgl'              => $header->produksi?->produksi_tgl ? Carbon::parse($header->produksi->produksi_tgl)->format('d/m/Y') : '-',
-            'hpp_per_kg_wip'            => $hppPerKgWip,
-            'is_wip_hpp_ready'          => ($hppPerKgWip > 0),
+            'hpp_per_kg_wip'            => count($wipItems) > 0 ? (float) $wipItems[0]['harga_satuan'] : (float) ($header->produksi?->hpp_per_kg ?? 0),
+            'is_wip_hpp_ready'          => count($wipItems) > 0 ? ((float) $wipItems[0]['harga_satuan'] > 0) : ((float) ($header->produksi?->hpp_per_kg ?? 0) > 0),
 
             // Rincian WIP & Kemasan
             'wip_items'                 => $wipItems,

@@ -62,6 +62,7 @@
                 <span style="font-size: 0.75rem; color: #64748b; font-weight: 600;">Shift &amp; Lokasi Gudang FG</span>
             </div>
             <div class="card-web-body">
+                {{-- Baris 1: Tanggal, Shift & Mesin Aktif (3 Kolom Seimbang) --}}
                 <div class="grid-web-3" style="margin-bottom: 1rem;">
                     {{-- 1. Tanggal Pelaksanaan --}}
                     <div class="form-group" style="margin-bottom: 0;">
@@ -93,21 +94,15 @@
                         <small style="color: #64748b; font-size: 0.725rem; margin-top: 0.25rem; display: block;">Regu operasional shift.</small>
                     </div>
 
-                    {{-- 3. Gudang Tujuan Simpan FG --}}
+                    {{-- 3. Mesin Aktif --}}
                     <div class="form-group" style="margin-bottom: 0;">
-                        <label class="form-label" for="gudang_id">Gudang Tujuan Simpan FG <span class="req">*</span></label>
-                        <select id="gudang_id" name="gudang_id" required class="form-control">
-                            <option value="">-- Pilih Lokasi Gudang FG --</option>
-                            @foreach($gudangList as $g)
-                                <option value="{{ $g->gudang_id }}" {{ old('gudang_id') == $g->gudang_id ? 'selected' : '' }}>
-                                    {{ $g->gudang_nm }} ({{ $g->tipe_gudang_cd ?? 'Gudang' }})
-                                </option>
-                            @endforeach
-                        </select>
+                        <label class="form-label" for="jumlah_mesin">Mesin Aktif (Unit)</label>
+                        <input type="number" id="jumlah_mesin" name="jumlah_mesin" class="form-control" min="1" placeholder="0" value="{{ old('jumlah_mesin', $selectedLaporan?->jumlah_mesin ?? 2) }}">
                     </div>
                 </div>
 
-                <div class="grid-web-3">
+                {{-- Baris 2: Leader / Operator Kemas & Gudang Tujuan FG (2 Kolom Seimbang 50% : 50%) --}}
+                <div class="grid-web-2">
                     {{-- 4. Leader / Operator Kemas --}}
                     <div class="form-group" style="margin-bottom: 0;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
@@ -129,34 +124,22 @@
                         <input type="text" id="operator_nama" name="operator_nama" class="form-control" placeholder="Nama operator pengemasan..." value="{{ old('operator_nama', $selectedLaporan?->operator_nama ?? (Auth::user()->name ?? '')) }}" style="display: none; margin-top: 0.35rem;" required>
                     </div>
 
-                    {{-- 5. Regu / Personil Kemas (Sinkron otomatis dari Modul Karyawan) --}}
+                    {{-- 5. Gudang Tujuan Simpan FG --}}
                     <div class="form-group" style="margin-bottom: 0;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
-                            <label class="form-label" for="jumlah_personil" style="margin-bottom: 0;">Personil Kemas</label>
-                            <button type="button" class="btn-sync-tk-pack" onclick="syncLaborPackingFromKaryawan(true)" style="background: none; border: none; font-size: 0.725rem; color: #059669; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem; padding: 0;" title="Sinkronkan presensi kelompok Langsung Packing">
-                                <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                                <span>Sync Presensi</span>
-                            </button>
-                        </div>
-                        <div style="position: relative; display: flex; align-items: center;">
-                            <input type="number" id="jumlah_personil" name="jumlah_personil" class="form-control" min="0" placeholder="0" value="{{ old('jumlah_personil', $selectedLaporan?->jumlah_personil ?? ($initialLabor['tk_jumlah_org'] ?? 0)) }}" style="padding-right: 3.5rem;">
-                            <span style="position: absolute; right: 0.75rem; font-size: 0.75rem; font-weight: 700; color: #64748b; pointer-events: none;">Orang</span>
-                        </div>
-                        <input type="hidden" id="total_biaya_tenaga_kerja" name="total_biaya_tenaga_kerja" value="{{ old('total_biaya_tenaga_kerja', $initialLabor['tk_total_nilai'] ?? 0) }}">
-                        <small id="helpLaborPacking" class="helper-text" style="font-size: 0.725rem; color: #059669; font-weight: 600; display: block; margin-top: 0.25rem;">
-                            @if (!empty($initialLabor['is_synced']) && ($initialLabor['tk_jumlah_org'] > 0))
-                                ✓ Tersinkron dari Modul Absensi: <strong>{{ $initialLabor['tk_jumlah_org'] }} Orang</strong>
-                            @else
-                                Otomatis sinkron dari presensi kelompok Langsung Packing.
-                            @endif
-                        </small>
+                        <label class="form-label" for="gudang_id">Gudang Tujuan Simpan FG <span class="req">*</span></label>
+                        <select id="gudang_id" name="gudang_id" required class="form-control">
+                            <option value="">-- Pilih Lokasi Gudang FG --</option>
+                            @foreach($gudangList as $g)
+                                <option value="{{ $g->gudang_id }}" {{ old('gudang_id') == $g->gudang_id ? 'selected' : '' }}>
+                                    {{ $g->gudang_nm }} ({{ $g->tipe_gudang_cd ?? 'Gudang' }})
+                                </option>
+                            @endforeach
+                        </select>
                     </div>
 
-                    {{-- 6. Mesin Aktif --}}
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label class="form-label" for="jumlah_mesin">Mesin Aktif (Unit)</label>
-                        <input type="number" id="jumlah_mesin" name="jumlah_mesin" class="form-control" min="1" placeholder="0" value="{{ old('jumlah_mesin', $selectedLaporan?->jumlah_mesin) }}">
-                    </div>
+                    {{-- Hidden: Perhitungan personil & upah tenaga kerja kemas dilakukan di modul Lembar HPP Packing --}}
+                    <input type="hidden" id="jumlah_personil" name="jumlah_personil" value="{{ old('jumlah_personil', $selectedLaporan?->jumlah_personil ?? 0) }}">
+                    <input type="hidden" id="total_biaya_tenaga_kerja" name="total_biaya_tenaga_kerja" value="{{ old('total_biaya_tenaga_kerja', 0) }}">
                 </div>
             </div>
         </div>
@@ -178,7 +161,7 @@
                         <thead>
                             <tr>
                                 <th style="width: 40px; text-align: center;">No</th>
-                                <th style="min-width: 260px;">Bahan Keripik Curah (WIP Dapur)</th>
+                                <th style="min-width: 260px;">Bahan Keripik Curah (WIP)</th>
                                 <th style="width: 175px;">Qty Diambil</th>
                                 <th style="min-width: 250px;">Target Produk Jadi (FG)</th>
                                 <th style="width: 215px; white-space: nowrap;">Hasil Kemas Utama</th>
@@ -199,7 +182,7 @@
                                                 $prodNo = $wip->produksi?->produksi_no ?? 'PROD';
                                                 $batchStr = $wip->batch_no ?: ($wip->produksi?->batch_wip_no ?: ($wip->produksi?->produksi_tgl ? $wip->produksi->produksi_tgl->format('d m Y') : '-'));
                                                 $barangNm = $wip->barang?->barang_nm ?? 'Keripik Curah';
-                                                $qtyKg = (float) $wip->qty_kg;
+                                                $qtyKg = (float) ($wip->sisa_qty_kg ?? $wip->qty_kg);
                                                 $hppKg = (float) ($wip->hpp_satuan > 0 ? $wip->hpp_satuan : ($wip->produksi?->hpp_per_kg ?? $wip->barang?->harga_beli_standar ?? 0));
                                                 $isBerbumbu = (float) ($wip->produksi?->bumbu_qty ?? 0) > 0 || str_contains(strtoupper($barangNm), 'BUMBU') || str_contains(strtoupper($barangNm), 'BALADO');
                                             @endphp
@@ -212,7 +195,7 @@
                                                     data-hpp="{{ $hppKg }}"
                                                     data-is-berbumbu="{{ $isBerbumbu ? '1' : '0' }}"
                                                     {{ (old('output_id', $selectedLaporan?->output_id) == $wip->output_id) ? 'selected' : '' }}>
-                                                [{{ $prodNo }}] {{ $barangNm }} &bull; Batch: {{ $batchStr }} (Stok: {{ number_format($qtyKg, 0, ',', '.') }} Kg)
+                                                [{{ $prodNo }}] {{ $barangNm }} &bull; Batch: {{ $batchStr }} (Sisa Stok: {{ number_format($qtyKg, 0, ',', '.') }} Kg)
                                             </option>
                                         @endforeach
                                     </select>
@@ -222,11 +205,15 @@
                                 </td>
                                 <td>
                                     <div class="input-group-web">
-                                        <input type="number" step="any" min="0.01" id="wip_qty_kg" name="wip_qty_kg" class="form-control" placeholder="0" value="{{ old('wip_qty_kg', $selectedLaporan?->wip_qty_kg) }}" required style="font-weight: 700; font-size: 0.95rem;">
+                                        <input type="number" step="any" min="0.01" id="wip_qty_kg" name="wip_qty_kg" class="form-control" placeholder="0" value="{{ old('wip_qty_kg', $selectedLaporan?->wip_qty_kg) }}" required style="font-weight: 700; font-size: 0.95rem;" oninput="checkWipStock()">
                                         <select id="selectWipSatuan" class="form-control" style="max-width: 75px; font-weight: 700; background: #ffffff;" onchange="setWebWipSatuan(this.value)">
                                             <option value="KG" {{ old('wip_satuan', $selectedLaporan?->wip_satuan ?? 'KG') == 'KG' ? 'selected' : '' }}>Kg</option>
                                             <option value="KARTON" {{ old('wip_satuan', $selectedLaporan?->wip_satuan) == 'KARTON' ? 'selected' : '' }}>Dus</option>
                                         </select>
+                                    </div>
+                                    <div id="wipQtyWarning" style="display: none; font-size: 0.72rem; color: #dc2626; font-weight: 600; margin-top: 0.25rem;">
+                                        <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="vertical-align: -1px; margin-right: 2px;"><circle cx="12" cy="12" r="10" stroke-width="2"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01"/></svg>
+                                        <span id="wipQtyWarningText"></span>
                                     </div>
                                 </td>
                                 <td>
@@ -247,6 +234,11 @@
                                             <option value="BAL" {{ old('satuan_hasil', $selectedLaporan?->satuan_hasil) == 'BAL' ? 'selected' : '' }}>Bal</option>
                                             <option value="PACK" {{ old('satuan_hasil', $selectedLaporan?->satuan_hasil) == 'PACK' ? 'selected' : '' }}>Pack</option>
                                         </select>
+                                    </div>
+                                    <div style="font-size: 0.72rem; color: #64748b; margin-top: 0.25rem; display: flex; align-items: center; gap: 0.35rem;">
+                                        <span>Isi:</span>
+                                        <input type="number" step="1" min="1" id="isi_per_karton_pcs" name="isi_per_karton_pcs" value="{{ old('isi_per_karton_pcs', 20) }}" style="width: 50px; font-size: 0.75rem; padding: 2px 4px; border: 1px solid #cbd5e1; border-radius: 4px; text-align: center; font-weight: 700; background: #ffffff;" title="Isi bungkus (pcs) per karton/dus">
+                                        <span id="lblSatuanIsi">Pcs / Karton</span>
                                     </div>
                                 </td>
                                 <td>
@@ -338,7 +330,7 @@
                                 </td>
                                 <td>
                                     <div id="alertBumbuDapur" style="display: none; font-size: 0.725rem; color: #15803d; background: #f0fdf4; padding: 4px 8px; border-radius: 4px; border: 1px solid #86efac;">
-                                        Curah sudah dibumbui di dapur.
+                                        Curah sudah dibumbui saat produksi.
                                         <button type="button" onclick="toggleManualBumbuOverride()" style="background: none; border: none; padding: 0; color: #0284c7; font-size: 0.725rem; font-weight: 600; text-decoration: underline; cursor: pointer;">
                                             Tambah manual?
                                         </button>
@@ -765,8 +757,42 @@
                     infoText.innerHTML = `Batch Curah: <strong>${batch}</strong> &bull; Sisa Stok: <strong>${Number(opt.dataset.qty || 0).toLocaleString('id-ID')} Kg</strong>${hppTxt}`;
                     infoBox.style.display = 'block';
                 }
+                checkWipStock();
             } else {
                 if (infoBox) infoBox.style.display = 'none';
+                checkWipStock();
+            }
+        }
+
+        // Validasi Real-Time Sisa Stok Curah vs Qty Diambil
+        function checkWipStock() {
+            const sel = document.getElementById('output_id');
+            const inputQty = document.getElementById('wip_qty_kg');
+            const warnBox = document.getElementById('wipQtyWarning');
+            const warnText = document.getElementById('wipQtyWarningText');
+            if (!sel || !inputQty || !warnBox || !warnText) return;
+
+            const opt = sel.options[sel.selectedIndex];
+            if (!opt || !opt.value) {
+                warnBox.style.display = 'none';
+                inputQty.style.borderColor = '';
+                inputQty.style.backgroundColor = '';
+                return;
+            }
+
+            const stokQty = parseFloat(opt.dataset.qty) || 0;
+            const inputVal = parseFloat(inputQty.value) || 0;
+
+            if (inputVal > stokQty && stokQty > 0) {
+                const selisih = (inputVal - stokQty).toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+                warnText.innerText = `Melebihi sisa stok (${stokQty.toLocaleString('id-ID')} Kg). Selisih +${selisih} Kg.`;
+                warnBox.style.display = 'block';
+                inputQty.style.borderColor = '#dc2626';
+                inputQty.style.backgroundColor = '#fef2f2';
+            } else {
+                warnBox.style.display = 'none';
+                inputQty.style.borderColor = '';
+                inputQty.style.backgroundColor = '';
             }
         }
 
@@ -890,6 +916,9 @@
             updateRowBatchInfo('karton_barang_id', 'info_batch_karton_baru', 'txt_batch_karton_baru', 'txt_stok_karton_baru');
             updateRowBatchInfo('lakban_barang_id', 'info_batch_lakban', 'txt_batch_lakban', 'txt_stok_lakban');
             updateRowBatchInfo('expired_barang_id', 'info_batch_expired', 'txt_batch_expired', 'txt_stok_expired');
+
+            // Cek stok awal jika ada nilai preloaded/old
+            checkWipStock();
         });
     </script>
     <script src="{{ asset('js/produksi/packaging/packaging-create.js') }}?v={{ filemtime(public_path('js/produksi/packaging/packaging-create.js')) }}"></script>

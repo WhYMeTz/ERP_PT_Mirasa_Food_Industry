@@ -201,7 +201,9 @@ class PoService
 
                     $grossRowTotal = max(0, ($qty * $hargaNetto) - $potonganNominal);
 
-                    $pajakId = !empty($item['pajak_id']) ? (int) $item['pajak_id'] : $headerPajakId;
+                    $pajakId = array_key_exists('pajak_id', $item)
+                        ? ((!empty($item['pajak_id']) && (int) $item['pajak_id'] > 0) ? (int) $item['pajak_id'] : null)
+                        : $headerPajakId;
                     $pajak = $pajakId ? ($taxesById[$pajakId] ?? null) : null;
                     $tarifPersen = $pajak ? (float) $pajak->tarif_persen : (($item['ppn_tipe'] ?? '') === 'PPN_11' ? 11.00 : 0.0);
                     $ppnCode = $pajak ? $pajak->pajak_cd : ($tarifPersen > 0 ? 'PPN_11' : 'NON_PPN');
@@ -274,7 +276,9 @@ class PoService
 
                     $grossRowTotal = max(0, ($qty * $hargaNetto) - $potonganNominal);
 
-                    $pajakId = !empty($item['pajak_id']) ? (int) $item['pajak_id'] : $headerPajakId;
+                    $pajakId = array_key_exists('pajak_id', $item)
+                        ? ((!empty($item['pajak_id']) && (int) $item['pajak_id'] > 0) ? (int) $item['pajak_id'] : null)
+                        : $headerPajakId;
                     $pajak = $pajakId ? ($taxesById[$pajakId] ?? null) : null;
                     $tarifPersen = $pajak ? (float) $pajak->tarif_persen : (($item['ppn_tipe'] ?? '') === 'PPN_11' ? 11.00 : 0.0);
                     $ppnCode = $pajak ? $pajak->pajak_cd : ($tarifPersen > 0 ? 'PPN_11' : 'NON_PPN');
@@ -457,7 +461,9 @@ class PoService
 
                 $grossRowTotal = max(0, ($qty * $hargaNetto) - $potonganNominal);
 
-                $pajakId = !empty($item['pajak_id']) ? (int) $item['pajak_id'] : $headerPajakId;
+                $pajakId = array_key_exists('pajak_id', $item)
+                    ? ((!empty($item['pajak_id']) && (int) $item['pajak_id'] > 0) ? (int) $item['pajak_id'] : null)
+                    : $headerPajakId;
                 $pajak = $pajakId ? ($taxesById[$pajakId] ?? null) : null;
                 $tarifPersen = $pajak ? (float) $pajak->tarif_persen : (($item['ppn_tipe'] ?? '') === 'PPN_11' ? 11.00 : 0.0);
                 $ppnCode = $pajak ? $pajak->pajak_cd : ($tarifPersen > 0 ? 'PPN_11' : 'NON_PPN');

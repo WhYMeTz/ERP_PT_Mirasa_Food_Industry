@@ -50,20 +50,21 @@ function onHeaderTaxInclusiveToggle(headerCheckbox) {
             badge.style.color = '#475569';
         }
     }
+
+    // Sinkronisasi otomatis ke semua baris barang
+    document.querySelectorAll('.item-include-tax').forEach(cb => {
+        cb.checked = isInc;
+    });
+
     calculateAllTotals();
 }
 
+function onHeaderPajakChange(headerSelect) {
+    calculateAllTotals();
+}
+window.onHeaderPajakChange = onHeaderPajakChange;
+
 function calculateRow(element) {
-    const row = element.closest('tr');
-    const qty = parseFloat(row.querySelector('.input-qty')?.value) || 0;
-    const harga = parseFloat(row.querySelector('.input-harga')?.value) || 0;
-    const rowSubtotal = qty * harga;
-
-    const cellSubtotal = row.querySelector('.row-subtotal');
-    if (cellSubtotal) {
-        cellSubtotal.textContent = 'Rp ' + Math.round(rowSubtotal).toLocaleString('id-ID');
-    }
-
     calculateAllTotals();
 }
 
@@ -72,49 +73,85 @@ function calculateAllTotals() {
     let totalBruto = 0;
     let rowCount = 0;
 
-    document.querySelectorAll('#tbodyPoItems tr.po-item-row').forEach(row => {
-        rowCount++;
-        const qty = parseFloat(row.querySelector('.input-qty')?.value) || 0;
-        const harga = parseFloat(row.querySelector('.input-harga')?.value) || 0;
-        const rowSubtotal = qty * harga;
-
-        const cellSubtotal = row.querySelector('.row-subtotal');
-        if (cellSubtotal) {
-            cellSubtotal.textContent = 'Rp ' + Math.round(rowSubtotal).toLocaleString('id-ID');
-        }
-
-        totalQty += qty;
-        totalBruto += rowSubtotal;
-    });
-
     const diskonPersen = Math.min(100, Math.max(0, parseFloat(document.getElementById('global_diskon_persen')?.value) || 0));
     const potonganNominal = Math.max(0, parseFloat(document.getElementById('global_potongan_nominal')?.value) || 0);
 
-    const pajakSelect = document.getElementById('global_pajak_id');
-    const selectedOpt = pajakSelect ? pajakSelect.options[pajakSelect.selectedIndex] : null;
-    const tarif = selectedOpt ? (parseFloat(selectedOpt.dataset.tarif) || 0) : 0;
-    const sifat = selectedOpt ? (selectedOpt.dataset.sifat || 'TAMBAH') : 'TAMBAH';
-    const isInc = document.getElementById('is_harga_termasuk_pajak')?.checked || false;
+    const headerPajakSelect = document.getElementById('global_pajak_id');
+    const headerOpt = headerPajakSelect ? headerPajakSelect.options[headerPajakSelect.selectedIndex] : null;
+    const headerTarif = headerOpt ? (parseFloat(headerOpt.dataset.tarif) || 0) : 0;
+    const headerSifat = headerOpt ? (headerOpt.dataset.sifat || 'TAMBAH') : 'TAMBAH';
+    const headerIsInc = document.getElementById('is_harga_termasuk_pajak')?.checked || false;
+
+    const rows = document.querySelectorAll('#tbodyPoItems tr.po-item-row');
+
+    // Pass 1: Total kuantitas & bruto untuk prorata diskon & potongan
+    rows.forEach(row => {
+        const qty = parseFloat(row.querySelector('.input-qty')?.value) || 0;
+        const harga = parseFloat(row.querySelector('.input-harga')?.value) || 0;
+        totalQty += qty;
+        totalBruto += (qty * harga);
+    });
 
     const totalDiskon = totalBruto * (diskonPersen / 100);
     const totalPotongan = potonganNominal;
-    const subtotalNetto = Math.max(0, totalBruto - totalDiskon - totalPotongan);
+    const sumGrossAfterDiskon = Math.max(0, totalBruto - totalDiskon);
 
     let totalDpp = 0;
     let totalPpn = 0;
     let grandTotal = 0;
+    let hasIncTax = false;
+    let hasPotongTax = false;
 
-    if (isInc && tarif > 0 && sifat !== 'POTONG') {
-        totalDpp = Math.round((subtotalNetto / (1 + (tarif / 100))) * 10000) / 10000;
-        totalPpn = Math.round((subtotalNetto - totalDpp) * 10000) / 10000;
-        grandTotal = subtotalNetto;
-    } else {
-        totalDpp = subtotalNetto;
-        totalPpn = Math.round((totalDpp * (tarif / 100)) * 10000) / 10000;
-        grandTotal = (sifat === 'POTONG')
-            ? Math.max(0, totalDpp - totalPpn)
-            : (totalDpp + totalPpn);
-    }
+    // Pass 2: Per-row calculation
+    rows.forEach(row => {
+        rowCount++;
+        const qty = parseFloat(row.querySelector('.input-qty')?.value) || 0;
+        const harga = parseFloat(row.querySelector('.input-harga')?.value) || 0;
+        const rowDiskonUnit = harga * (diskonPersen / 100);
+        const rowHargaNetto = Math.max(0, harga - rowDiskonUnit);
+
+        let rowPotongan = 0;
+        if (totalPotongan > 0 && sumGrossAfterDiskon > 0) {
+            const rowGross = qty * rowHargaNetto;
+            rowPotongan = (rowGross / sumGrossAfterDiskon) * totalPotongan;
+        }
+
+        const grossRowTotal = Math.max(0, (qty * rowHargaNetto) - rowPotongan);
+
+        // Pajak PO diterapkan ke baris, dengan status inclusive/exclusive per baris
+        const rowTarif = headerTarif;
+        const rowSifat = headerSifat;
+
+        const rowIncCheck = row.querySelector('.item-include-tax');
+        const rowIsInc = rowIncCheck ? rowIncCheck.checked : headerIsInc;
+
+        let rowDpp = 0;
+        let rowPpn = 0;
+        let rowTagihan = 0;
+
+        if (rowIsInc && rowTarif > 0 && rowSifat !== 'POTONG') {
+            hasIncTax = true;
+            rowDpp = Math.round((grossRowTotal / (1 + (rowTarif / 100))) * 10000) / 10000;
+            rowPpn = Math.round((grossRowTotal - rowDpp) * 10000) / 10000;
+            rowTagihan = grossRowTotal;
+        } else {
+            rowDpp = grossRowTotal;
+            rowPpn = Math.round((rowDpp * (rowTarif / 100)) * 10000) / 10000;
+            rowTagihan = (rowSifat === 'POTONG')
+                ? Math.max(0, rowDpp - rowPpn)
+                : (rowDpp + rowPpn);
+            if (rowSifat === 'POTONG' && rowTarif > 0) hasPotongTax = true;
+        }
+
+        const cellSubtotal = row.querySelector('.row-subtotal');
+        if (cellSubtotal) {
+            cellSubtotal.textContent = 'Rp ' + Math.round(rowTagihan).toLocaleString('id-ID');
+        }
+
+        totalDpp += rowDpp;
+        totalPpn += rowPpn;
+        grandTotal += rowTagihan;
+    });
 
     const elTotalQty = document.getElementById('totalQtyDisplay');
     const elTotalSubtotalDisplay = document.getElementById('totalSubtotalDisplay');
@@ -135,13 +172,13 @@ function calculateAllTotals() {
     if (elDiskon) elDiskon.textContent = totalDiskon > 0 ? '- Rp ' + Math.round(totalDiskon).toLocaleString('id-ID') : 'Rp 0';
     if (elPotongan) elPotongan.textContent = totalPotongan > 0 ? '- Rp ' + Math.round(totalPotongan).toLocaleString('id-ID') : 'Rp 0';
     if (elDpp) {
-        elDpp.innerHTML = 'Rp ' + Math.round(totalDpp).toLocaleString('id-ID') + (isInc && tarif > 0 && sifat !== 'POTONG' ? ' <small style="color: #64748b; font-size: 0.7rem; font-weight: 500;">(DPP)</small>' : '');
+        elDpp.innerHTML = 'Rp ' + Math.round(totalDpp).toLocaleString('id-ID') + (hasIncTax ? ' <small style="color: #64748b; font-size: 0.7rem; font-weight: 500;">(DPP)</small>' : '');
     }
     if (elPpn) {
         if (totalPpn > 0) {
-            if (sifat === 'POTONG') {
+            if (hasPotongTax && !hasIncTax) {
                 elPpn.innerHTML = `<span style="color: #dc2626;">- Rp ${Math.round(totalPpn).toLocaleString('id-ID')}</span> <small style="color: #ef4444; font-size: 0.7rem; font-weight: 600;">(Potong)</small>`;
-            } else if (isInc) {
+            } else if (hasIncTax) {
                 elPpn.innerHTML = `<span style="color: #16a34a;">Rp ${Math.round(totalPpn).toLocaleString('id-ID')}</span> <small style="color: #15803d; font-size: 0.7rem; font-weight: 600;">(Termasuk)</small>`;
             } else {
                 elPpn.innerHTML = `<span style="color: #0284c7;">+ Rp ${Math.round(totalPpn).toLocaleString('id-ID')}</span>`;
@@ -174,6 +211,15 @@ function addNewItemRow() {
         .replace(/__NUM__/g, currentCount);
 
     tbody.insertAdjacentHTML('beforeend', html);
+
+    const newRow = tbody.lastElementChild;
+    if (newRow) {
+        const headerIncCheck = document.getElementById('is_harga_termasuk_pajak');
+        const rowIncCheck = newRow.querySelector('.item-include-tax');
+        if (rowIncCheck && headerIncCheck) {
+            rowIncCheck.checked = headerIncCheck.checked;
+        }
+    }
 
     renumberRows();
     calculateAllTotals();

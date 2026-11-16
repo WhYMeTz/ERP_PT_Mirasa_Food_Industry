@@ -56,11 +56,17 @@
                 </svg>
                 <span>1. Biaya Produksi &amp; HPP WIP</span>
             </button>
+            <button type="button" class="tab-btn" data-tab="tab-hpp-fg">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/>
+                </svg>
+                <span>2. HPP Pengemasan &amp; Barang Jadi (FG)</span>
+            </button>
             <button type="button" class="tab-btn" data-tab="tab-pembelian">
                 <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
                 </svg>
-                <span>2. Pembelian &amp; Hutang Usaha (AP)</span>
+                <span>3. Pembelian &amp; Hutang Usaha (AP)</span>
             </button>
         </div>
 
@@ -283,7 +289,227 @@
             </div>
         </div>
 
-        {{-- TAB 2: PEMBELIAN & HUTANG USAHA (AP) --}}
+        {{-- TAB 2: HPP PENGEMASAN & BARANG JADI (FG) --}}
+        @php
+            $fgSettings = $settingsGrouped->get('HPP_FG', collect())->keyBy('kunci');
+            $fgTemplateVal = old('settings.HPP_FG_TEMPLATE_KET', $fgSettings['HPP_FG_TEMPLATE_KET']->nilai_text ?? 'Biaya Pengemasan & HPP FG ({tgl}) - {barang_jadi} ({hasil_karton} karton / {hasil_pcs} pcs)');
+            
+            $fgPresetStandard = 'Biaya Pengemasan & HPP FG ({tgl}) - {barang_jadi} ({hasil_karton} karton / {hasil_pcs} pcs)';
+            $fgPresetSimple = 'Biaya Pengemasan & HPP FG ({tgl}) - {barang_jadi} [Batch: {batch_no}]';
+            $isFgCustom = ($fgTemplateVal !== $fgPresetStandard && $fgTemplateVal !== $fgPresetSimple);
+        @endphp
+        <div class="tab-content" id="tab-hpp-fg">
+            <div class="module-card">
+                <div class="module-card-header">
+                    <div>
+                        <h2 class="module-card-title">
+                            <span style="color: #0284c7;">●</span>
+                            <span>Pemetaan Akun Jurnal HPP Barang Jadi / Pengemasan (FG)</span>
+                        </h2>
+                        <div class="module-card-desc">Jurnal ini otomatis terbit saat Tim Keuangan memfinalisasi kalkulasi lembar HPP Pengemasan Barang Jadi.</div>
+                    </div>
+                </div>
+
+                {{-- TABEL PEMETAAN AKUN FULL WIDTH --}}
+                <div class="table-responsive">
+                    <table class="mapping-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 32%;">Komponen Biaya Pengemasan</th>
+                                <th style="width: 12%; text-align: center;">Posisi</th>
+                                <th style="width: 56%;">Rekening Akun Buku Besar (COA)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {{-- 1. FG DEBET --}}
+                            @php $sFg = $fgSettings['HPP_FG_AKUN_FG'] ?? null; @endphp
+                            <tr>
+                                <td>
+                                    <div class="pos-title">Persediaan Barang Jadi (FG) Siap Jual</div>
+                                    <div class="pos-sub">Total akumulasi HPP Pengemasan yang dikapitalisasi ke stok gudang barang jadi</div>
+                                </td>
+                                <td style="text-align: center;">
+                                    <span class="side-badge debet">DEBET</span>
+                                </td>
+                                <td>
+                                    @if($sFg)
+                                        <select name="settings[{{ $sFg->kunci }}]" class="coa-select">
+                                            @foreach($coaList as $coa)
+                                                <option value="{{ $coa->coa_id }}" {{ $sFg->nilai_coa_id == $coa->coa_id ? 'selected' : '' }}>
+                                                    {{ $coa->kode_akun }} - {{ $coa->nama_akun }} ({{ $coa->kategori_akun }})
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    @endif
+                                </td>
+                            </tr>
+
+                            {{-- 2. WIP KREDIT --}}
+                            @php $sWipFg = $fgSettings['HPP_FG_AKUN_WIP'] ?? null; @endphp
+                            <tr>
+                                <td>
+                                    <div class="pos-title">Persediaan WIP / Keripik Curah Terpakai</div>
+                                    <div class="pos-sub">Pengeluaran fisik keripik singkong curah / setengah jadi dari gudang WIP</div>
+                                </td>
+                                <td style="text-align: center;">
+                                    <span class="side-badge kredit">KREDIT</span>
+                                </td>
+                                <td>
+                                    @if($sWipFg)
+                                        <select name="settings[{{ $sWipFg->kunci }}]" class="coa-select">
+                                            @foreach($coaList as $coa)
+                                                <option value="{{ $coa->coa_id }}" {{ $sWipFg->nilai_coa_id == $coa->coa_id ? 'selected' : '' }}>
+                                                    {{ $coa->kode_akun }} - {{ $coa->nama_akun }} ({{ $coa->kategori_akun }})
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    @endif
+                                </td>
+                            </tr>
+
+                            {{-- 3. BAHAN KEMASAN KREDIT --}}
+                            @php $sKemas = $fgSettings['HPP_FG_AKUN_KEMASAN'] ?? null; @endphp
+                            <tr>
+                                <td>
+                                    <div class="pos-title">Persediaan Bahan Kemasan, Karton &amp; Lakban</div>
+                                    <div class="pos-sub">Pengeluaran plastik kemasan primer, karton box master, lakban, dan bumbu sachet</div>
+                                </td>
+                                <td style="text-align: center;">
+                                    <span class="side-badge kredit">KREDIT</span>
+                                </td>
+                                <td>
+                                    @if($sKemas)
+                                        <select name="settings[{{ $sKemas->kunci }}]" class="coa-select">
+                                            @foreach($coaList as $coa)
+                                                <option value="{{ $coa->coa_id }}" {{ $sKemas->nilai_coa_id == $coa->coa_id ? 'selected' : '' }}>
+                                                    {{ $coa->kode_akun }} - {{ $coa->nama_akun }} ({{ $coa->kategori_akun }})
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    @endif
+                                </td>
+                            </tr>
+
+                            {{-- 4. TENAGA KERJA KEMAS KREDIT --}}
+                            @php $sTkFg = $fgSettings['HPP_FG_AKUN_TENAGA_KERJA'] ?? null; @endphp
+                            <tr>
+                                <td>
+                                    <div class="pos-title">Upah Tenaga Kerja Kemas (BTKL Kemas)</div>
+                                    <div class="pos-sub">Akrual kewajiban upah borongan / harian personil regu pengemasan</div>
+                                </td>
+                                <td style="text-align: center;">
+                                    <span class="side-badge kredit">KREDIT</span>
+                                </td>
+                                <td>
+                                    @if($sTkFg)
+                                        <select name="settings[{{ $sTkFg->kunci }}]" class="coa-select">
+                                            @foreach($coaList as $coa)
+                                                <option value="{{ $coa->coa_id }}" {{ $sTkFg->nilai_coa_id == $coa->coa_id ? 'selected' : '' }}>
+                                                    {{ $coa->kode_akun }} - {{ $coa->nama_akun }} ({{ $coa->kategori_akun }})
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    @endif
+                                </td>
+                            </tr>
+
+                            {{-- 5. OVERHEAD KEMAS KREDIT --}}
+                            @php $sOhFg = $fgSettings['HPP_FG_AKUN_OVERHEAD'] ?? null; @endphp
+                            <tr>
+                                <td>
+                                    <div class="pos-title">Biaya Lain-Lain &amp; Overhead Pengemasan</div>
+                                    <div class="pos-sub">Alokasi biaya penunjang operasional pengemasan barang jadi jika ada</div>
+                                </td>
+                                <td style="text-align: center;">
+                                    <span class="side-badge kredit">KREDIT</span>
+                                </td>
+                                <td>
+                                    @if($sOhFg)
+                                        <select name="settings[{{ $sOhFg->kunci }}]" class="coa-select">
+                                            @foreach($coaList as $coa)
+                                                <option value="{{ $coa->coa_id }}" {{ $sOhFg->nilai_coa_id == $coa->coa_id ? 'selected' : '' }}>
+                                                    {{ $coa->kode_akun }} - {{ $coa->nama_akun }} ({{ $coa->kategori_akun }})
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    @endif
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                {{-- FORMAT KETERANGAN SIMPEL & FITUR CEPAT --}}
+                <div class="desc-section">
+                    <div class="desc-title">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/>
+                        </svg>
+                        <span>Format Tulisan Keterangan di Jurnal Umum</span>
+                    </div>
+                    <div class="desc-subtitle">Pilih gaya ringkasan yang ingin ditampilkan di buku jurnal umum:</div>
+
+                    <div class="preset-options">
+                        <label class="preset-item">
+                            <input type="radio" name="preset_fg" value="{{ $fgPresetStandard }}" {{ (!$isFgCustom && $fgTemplateVal === $fgPresetStandard) ? 'checked' : '' }}>
+                            <div>
+                                <span class="preset-label">Format Lengkap (Direkomendasikan)</span>
+                                <div class="preset-sample">Menampilkan tanggal kemas, nama barang jadi, hasil karton, dan total pcs.</div>
+                            </div>
+                        </label>
+
+                        <label class="preset-item">
+                            <input type="radio" name="preset_fg" value="{{ $fgPresetSimple }}" {{ (!$isFgCustom && $fgTemplateVal === $fgPresetSimple) ? 'checked' : '' }}>
+                            <div>
+                                <span class="preset-label">Format Nomor Batch</span>
+                                <div class="preset-sample">Menampilkan tanggal kemas, nama barang jadi, dan nomor batch produksi.</div>
+                            </div>
+                        </label>
+
+                        <label class="preset-item">
+                            <input type="radio" name="preset_fg" value="CUSTOM" {{ $isFgCustom ? 'checked' : '' }}>
+                            <div>
+                                <span class="preset-label">Kustom Manual</span>
+                                <div class="preset-sample">Ketik susunan kalimat sendiri dan gunakan tombol cepat di bawah.</div>
+                            </div>
+                        </label>
+                    </div>
+
+                    {{-- KOTAK KUSTOM MANUAL & TOMBOL CEPAT --}}
+                    <div class="custom-template-box" id="customBox_HPP_FG" style="{{ $isFgCustom ? '' : 'display: none;' }}">
+                        <div class="custom-box-header">
+                            <span class="custom-box-title">Susunan Kalimat Keterangan:</span>
+                            <div class="quick-tags-wrapper">
+                                <span class="quick-tag-label">⚡ Tombol Cepat:</span>
+                                <button type="button" class="quick-tag-btn" data-target="setting_HPP_FG_TEMPLATE_KET" data-tag="{tgl}">+ Tanggal</button>
+                                <button type="button" class="quick-tag-btn" data-target="setting_HPP_FG_TEMPLATE_KET" data-tag="{barang_jadi}">+ Nama Barang Jadi</button>
+                                <button type="button" class="quick-tag-btn" data-target="setting_HPP_FG_TEMPLATE_KET" data-tag="{hasil_karton}">+ Hasil Karton</button>
+                                <button type="button" class="quick-tag-btn" data-target="setting_HPP_FG_TEMPLATE_KET" data-tag="{hasil_pcs}">+ Hasil Pcs</button>
+                                <button type="button" class="quick-tag-btn" data-target="setting_HPP_FG_TEMPLATE_KET" data-tag="{batch_no}">+ No Batch</button>
+                            </div>
+                        </div>
+                        <input type="text" name="settings[HPP_FG_TEMPLATE_KET]" id="setting_HPP_FG_TEMPLATE_KET" class="template-input" value="{{ $fgTemplateVal }}" placeholder="Ketik format keterangan...">
+                    </div>
+
+                    {{-- PREVIEW NYATA (REALTIME LIVE UPDATE SAAT KETIK) --}}
+                    <div class="preview-badge-box">
+                        <div class="preview-badge-header">
+                            <div class="preview-badge-title">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                </svg>
+                                <span>Contoh Hasil di Jurnal Umum</span>
+                            </div>
+                            <span class="preview-live-indicator">● LIVE UPDATE LANGSUNG</span>
+                        </div>
+                        <div class="preview-badge-text" id="preview_HPP_FG_TEMPLATE_KET">-</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- TAB 3: PEMBELIAN & HUTANG USAHA (AP) --}}
         @php
             $apSettings = $settingsGrouped->get('PEMBELIAN', collect())->keyBy('kunci');
             $apTemplateVal = old('settings.PEMBELIAN_TEMPLATE_KET', $apSettings['PEMBELIAN_TEMPLATE_KET']->nilai_text ?? '{supplier} - {qty} {satuan} {nama_barang} @{harga}');

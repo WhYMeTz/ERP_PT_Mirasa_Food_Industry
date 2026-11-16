@@ -45,6 +45,11 @@
         </td>
         <td>
             <input type="number" step="0.01" min="0" name="items[__INDEX__][harga_nominal]" class="form-control item-harga" value="0" oninput="calculateSubtotal(this)" placeholder="0" style="text-align: right; font-weight: 600;">
+            <label style="display: flex; align-items: center; justify-content: flex-end; gap: 4px; font-size: 0.7rem; color: #475569; margin-top: 3px; cursor: pointer; user-select: none;" title="Centang jika harga satuan barang ini sudah termasuk PPN (Gross / Include)">
+                <input type="hidden" name="items[__INDEX__][is_harga_termasuk_pajak]" value="0">
+                <input type="checkbox" name="items[__INDEX__][is_harga_termasuk_pajak]" value="1" class="item-include-tax" onchange="calculateGrandTotal()" style="accent-color: #059669; width: 12px; height: 12px; cursor: pointer;">
+                <span style="font-weight: 600;">Termasuk (Inc)</span>
+            </label>
         </td>
         <td style="text-align: right; font-weight: 700; color: #0f172a; font-size: 0.9rem; font-family: monospace;" class="row-subtotal">
             Rp 0

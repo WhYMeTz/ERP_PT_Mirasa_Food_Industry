@@ -209,6 +209,8 @@
                                 'HUTANG_PEMBELIAN' => 'tipe-hutang',
                                 'BAYAR_HUTANG'     => 'tipe-bayar',
                                 'KAS_MASUK'        => 'tipe-masuk',
+                                'HPP_WIP'          => 'tipe-masuk',
+                                'HPP_FG'           => 'tipe-bayar',
                                 default            => 'tipe-umum',
                             };
                             $menuId = 'menu-action-jurnal-' . $j->jurnal_id;
@@ -292,6 +294,16 @@
                                         <a href="{{ route('keuangan.bayar.show', $j->ref_id) }}" class="action-dropdown-item">
                                             <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
                                             <span>Buka Dokumen BKK Pelunasan</span>
+                                        </a>
+                                    @elseif ($j->tipe_transaksi === 'HPP_WIP' && $j->ref_id)
+                                        <a href="{{ route('produksi.hpp.show', $j->ref_id) }}" class="action-dropdown-item">
+                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                                            <span>Buka Lembar HPP Produksi WIP</span>
+                                        </a>
+                                    @elseif ($j->tipe_transaksi === 'HPP_FG' && $j->ref_id)
+                                        <a href="{{ route('produksi.packaging.show-hpp', $j->ref_id) }}" class="action-dropdown-item">
+                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg>
+                                            <span>Buka Lembar HPP Pengemasan FG</span>
                                         </a>
                                     @endif
                                 </div>

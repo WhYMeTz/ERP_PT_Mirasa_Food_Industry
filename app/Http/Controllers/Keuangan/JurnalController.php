@@ -49,6 +49,8 @@ class JurnalController extends Controller
         $tipeTransaksiList = [
             'HUTANG_PEMBELIAN'    => 'Hutang Pembelian (GRN)',
             'BAYAR_HUTANG'        => 'Pelunasan Hutang (BKK)',
+            'HPP_WIP'             => 'Biaya Produksi & HPP WIP',
+            'HPP_FG'              => 'Biaya Pengemasan & HPP FG',
             'KAS_MASUK'           => 'Kas Masuk (BKM)',
             'PEMAKAIAN_PRODUKSI'  => 'Pemakaian Bahan (BPPB)',
             'JURNAL_UMUM'         => 'Jurnal Umum Manual',

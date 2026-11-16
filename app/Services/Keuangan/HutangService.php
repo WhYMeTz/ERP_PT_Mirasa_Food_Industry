@@ -170,7 +170,7 @@ class HutangService
 
         $query = DatTerimaHdr::with([
             'supplier',
-            'po',
+            'po.details.pajak',
             'details.barang.satuanDasar',
             'details.poDetail.po',
             'details.poDetail.pajak'
@@ -230,6 +230,9 @@ class HutangService
 
                     // PO Details inheritance (harga, diskon, ppn_tipe dari PO wajib mewarisi jika barang dari PO)
                     $poDtl = $dtl['po_detail'] ?? null;
+                    if (!$poDtl && $grn->po && $grn->po->details) {
+                        $poDtl = $grn->po->details->firstWhere('barang_id', $dtl['barang_id']);
+                    }
 
                     // 1. Harga Satuan (Utamakan kesepakatan komersial PO jika ada)
                     $harga = 0;
@@ -244,15 +247,17 @@ class HutangService
                     // 2. Diskon Komersial (Utamakan dari PO jika ada, atau dari GRN)
                     $diskonPersen = 0;
                     $diskonNominalUnit = 0;
-                    if (!empty($poDtl['diskon_persen']) && (float)$poDtl['diskon_persen'] > 0) {
+                    if (isset($poDtl['diskon_persen']) && (float)$poDtl['diskon_persen'] > 0) {
                         $diskonPersen = (float)$poDtl['diskon_persen'];
-                    } elseif (!empty($dtl['diskon_persen']) && (float)$dtl['diskon_persen'] > 0) {
+                    } elseif (isset($dtl['diskon_persen']) && (float)$dtl['diskon_persen'] > 0) {
                         $diskonPersen = (float)$dtl['diskon_persen'];
+                    } elseif ($grn->po && (float)$grn->po->subtotal_bruto > 0 && (float)$grn->po->diskon_total > 0) {
+                        $diskonPersen = round(((float)$grn->po->diskon_total / (float)$grn->po->subtotal_bruto) * 100, 2);
                     }
 
-                    if (!empty($poDtl['diskon_nominal']) && (float)$poDtl['diskon_nominal'] > 0) {
+                    if (isset($poDtl['diskon_nominal']) && (float)$poDtl['diskon_nominal'] > 0) {
                         $diskonNominalUnit = (float)$poDtl['diskon_nominal'];
-                    } elseif (!empty($dtl['diskon_nominal']) && (float)$dtl['diskon_nominal'] > 0) {
+                    } elseif (isset($dtl['diskon_nominal']) && (float)$dtl['diskon_nominal'] > 0) {
                         $diskonNominalUnit = (float)$dtl['diskon_nominal'];
                     }
 
@@ -266,17 +271,31 @@ class HutangService
                         } else {
                             $potonganItem = (float)$poDtl['potongan_nominal'];
                         }
+                    } elseif ($potonganItem <= 0 && $grn->po && (float)$grn->po->potongan_nominal > 0) {
+                        $poTotalBruto = (float)($grn->po->subtotal_bruto ?? 0);
+                        if ($poTotalBruto > 0) {
+                            $itemBruto = $nettoQty * $harga;
+                            $potonganItem = round(($itemBruto / $poTotalBruto) * (float)$grn->po->potongan_nominal, 2);
+                        }
                     }
 
                     // 4. Perlakuan Pajak PPN (Utamakan dari PO: normalisasi PPN-11 / PPN_11 / PPN INCLUDE / Master Pajak)
                     $pajakId = $poDtl['pajak_id'] ?? null;
-                    $pajakObj = $poDtl['pajak'] ?? null;
+                    if (!$pajakId && $grn->po && $grn->po->details) {
+                        $pajakId = $grn->po->details->pluck('pajak_id')->filter()->first();
+                    }
+                    $pajakObj = $poDtl['pajak'] ?? ($pajakId ? \App\Models\Master\MstPajak::find($pajakId) : null);
                     $taxTarif = (float)($poDtl['ppn_persen'] ?? ($pajakObj['tarif_persen'] ?? 0));
                     $taxSifat = $pajakObj['sifat_pajak'] ?? 'TAMBAH';
                     $taxCode = $pajakObj['pajak_cd'] ?? ($poDtl['ppn_tipe'] ?? null);
 
                     $rawPpn = !empty($poDtl['ppn_tipe']) ? $poDtl['ppn_tipe'] : ($dtl['ppn_tipe'] ?? 'NON_PPN');
-                    $isInclude = !empty($poDtl['is_harga_termasuk_pajak']) || !empty($grn->po?->is_harga_termasuk_pajak);
+                    $isInclude = false;
+                    if (isset($poDtl['is_harga_termasuk_pajak'])) {
+                        $isInclude = (bool)$poDtl['is_harga_termasuk_pajak'];
+                    } elseif (isset($grn->po?->is_harga_termasuk_pajak)) {
+                        $isInclude = (bool)$grn->po->is_harga_termasuk_pajak;
+                    }
                     $poPpnNominal = (float)($poDtl['ppn_nominal'] ?? ($grn->po?->ppn_nominal ?? 0));
 
                     $cleanPpn = strtoupper(trim(str_replace(['-', ' '], '_', (string)$rawPpn)));
@@ -344,6 +363,43 @@ class HutangService
                 }
                 $grnArr['details'] = $finalDetails;
             }
+            $firstPajakId = null;
+            $hasAnyPajak = false;
+            if (!empty($finalDetails)) {
+                foreach ($finalDetails as $fd) {
+                    if (!empty($fd['pajak_id'])) {
+                        $firstPajakId = $fd['pajak_id'];
+                        $hasAnyPajak = true;
+                        break;
+                    }
+                }
+            }
+            if (!$firstPajakId && $grn->po?->details) {
+                $firstPajakId = $grn->po->details->pluck('pajak_id')->filter()->first();
+                if ($firstPajakId) {
+                    $hasAnyPajak = true;
+                }
+            }
+
+            $poDiskonPersen = 0;
+            if ($grn->po && (float)$grn->po->subtotal_bruto > 0 && (float)$grn->po->diskon_total > 0) {
+                $poDiskonPersen = round(((float)$grn->po->diskon_total / (float)$grn->po->subtotal_bruto) * 100, 2);
+            } elseif (!empty($finalDetails)) {
+                foreach ($finalDetails as $fd) {
+                    if (!empty($fd['diskon_persen']) && (float)$fd['diskon_persen'] > 0) {
+                        $poDiskonPersen = (float)$fd['diskon_persen'];
+                        break;
+                    }
+                }
+            }
+
+            $grnArr['has_po'] = !empty($grn->po_id);
+            $grnArr['po_pajak_id'] = $firstPajakId ? (int)$firstPajakId : null;
+            $grnArr['po_has_tax'] = $hasAnyPajak;
+            $grnArr['po_is_harga_termasuk_pajak'] = (bool)($grn->po?->is_harga_termasuk_pajak ?? false);
+            $grnArr['po_diskon_persen'] = $poDiskonPersen;
+            $grnArr['po_potongan_nominal'] = (float)($grn->po?->potongan_nominal ?? 0);
+            $grnArr['po_top_hari'] = $grn->po?->term_of_payment ?? null;
             $grnArr['total_netto_kg'] = $totalNettoKg;
             $grnArr['is_harga_termasuk_pajak'] = (bool)($grn->po?->is_harga_termasuk_pajak ?? false);
             return $grnArr;
@@ -415,29 +471,48 @@ class HutangService
             $totalPpn = 0;
             $totalNetto = 0;
 
+            $globalDiskonPersen = (float)($payload['diskon_persen'] ?? 0);
+            $globalPotonganNominal = (float)($payload['total_potongan_item'] ?? ($payload['potongan_nominal'] ?? 0));
+
             // Normalisasi & kalkulasi seluruh baris item tagihan
             $processedItems = [];
             foreach ($items as $item) {
                 $qty = (float)($item['qty'] ?? 0);
                 $harga = (float)($item['harga_satuan'] ?? 0);
                 $subtotal = $qty * $harga;
-                $diskonPersen = (float)($item['diskon_persen'] ?? 0);
-                $diskon = (float)($item['diskon_nominal'] ?? 0);
+                $diskonPersen = (float)($item['diskon_persen'] ?? $globalDiskonPersen);
+                $diskon = isset($item['diskon_nominal']) && (float)$item['diskon_nominal'] > 0
+                    ? (float)$item['diskon_nominal']
+                    : ($subtotal * ($diskonPersen / 100));
                 $potongan = (float)($item['potongan_nominal'] ?? 0);
                 $ppnTipe = $item['ppn_tipe'] ?? 'NON_PPN';
                 
                 $nilaiBersih = max(0, $subtotal - $diskon - $potongan);
                 
                 $isHeaderInc = !empty($payload['is_harga_termasuk_pajak']);
+                $isRowInc = isset($item['is_harga_termasuk_pajak'])
+                    ? filter_var($item['is_harga_termasuk_pajak'], FILTER_VALIDATE_BOOLEAN)
+                    : $isHeaderInc;
+
+                $headerPajakId = !empty($payload['pajak_id']) ? $payload['pajak_id'] : null;
+                if ($headerPajakId === 'NON_PPN') {
+                    $ppnTipe = 'NON_PPN';
+                } elseif ($headerPajakId && (empty($ppnTipe) || $ppnTipe === 'NON_PPN')) {
+                    $ppnTipe = $headerPajakId;
+                }
+
                 $cleanPpn = strtoupper(trim(str_replace(['-', ' '], '_', (string)$ppnTipe)));
-                $isInc = ($isHeaderInc || $cleanPpn === 'PPN_INCLUDE' || $cleanPpn === 'INCLUDE');
+                $isInc = ($isRowInc || $cleanPpn === 'PPN_INCLUDE' || $cleanPpn === 'INCLUDE');
 
                 $pajakObj = null;
                 if (is_numeric($ppnTipe)) {
                     $pajakObj = MstPajak::find((int)$ppnTipe);
+                } elseif (!empty($ppnTipe) && $ppnTipe !== 'NON_PPN' && $ppnTipe !== 'PPN_11') {
+                    $pajakObj = MstPajak::where('pajak_cd', $ppnTipe)->first();
                 }
                 $sifatPajak = $pajakObj ? $pajakObj->sifat_pajak : (str_contains(strtoupper((string)$ppnTipe), 'PPH') ? 'POTONG' : 'TAMBAH');
                 $taxTarif = $pajakObj ? (float)$pajakObj->tarif_persen : (str_contains($cleanPpn, '11') ? 11.0 : 0.0);
+                $rate = $taxTarif > 0 ? ($taxTarif / 100) : 0.11;
 
                 if (isset($item['ppn_nominal']) && is_numeric($item['ppn_nominal'])) {
                     $ppn = max(0, (float)$item['ppn_nominal']);
@@ -450,12 +525,11 @@ class HutangService
                         $netto = $isInc ? $nilaiBersih : ($dpp + $ppn);
                     }
                 } elseif ($isInc && $cleanPpn !== 'NON_PPN' && $sifatPajak !== 'POTONG') {
-                    $dpp = round($nilaiBersih / 1.11, 2);
+                    $dpp = round($nilaiBersih / (1 + $rate), 2);
                     $ppn = round($nilaiBersih - $dpp, 2);
                     $netto = $nilaiBersih;
                 } elseif ($cleanPpn === 'PPN_11' || $cleanPpn === 'PPN11' || $sifatPajak === 'POTONG' || $taxTarif > 0) {
                     $dpp = $nilaiBersih;
-                    $rate = $taxTarif > 0 ? ($taxTarif / 100) : 0.11;
                     $ppn = round($dpp * $rate, 2);
                     $netto = ($sifatPajak === 'POTONG') ? max(0, $dpp - $ppn) : ($dpp + $ppn);
                 } else {
@@ -1078,7 +1152,7 @@ class HutangService
                 'updated_by'           => $userNm,
             ]);
 
-            // 6. Buat Detail Hutang AP
+                    // 6. Buat Detail Hutang AP
             foreach ($itemsToInvoice as $row) {
                 $dtl = $row['dtl'];
                 DatHutangDtl::create([

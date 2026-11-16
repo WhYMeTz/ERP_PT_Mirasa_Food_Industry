@@ -114,7 +114,55 @@ function initLivePresetsAndTyping() {
         renderHppPreview();
     }
 
-    // 2. MODUL PEMBELIAN / HUTANG USAHA (AP)
+    // 2. MODUL HPP PENGEMASAN / BARANG JADI (FG)
+    const fgInput = document.getElementById('setting_HPP_FG_TEMPLATE_KET');
+    const fgPreview = document.getElementById('preview_HPP_FG_TEMPLATE_KET');
+    const fgCustomBox = document.getElementById('customBox_HPP_FG');
+    const fgRadios = document.querySelectorAll('input[name="preset_fg"]');
+
+    const mockFg = {
+        tgl: '16/11/2026',
+        barang_jadi: 'Keripik Singkong Balado 250gr',
+        hasil_karton: '150',
+        hasil_pcs: '6.000',
+        batch_no: 'BCH-202611-01'
+    };
+
+    const renderFgPreview = () => {
+        if (!fgInput || !fgPreview) return;
+        let text = fgInput.value;
+        Object.entries(mockFg).forEach(([k, v]) => {
+            text = text.replaceAll(`{${k}}`, v);
+        });
+        fgPreview.textContent = text.trim() || '(Keterangan jurnal kosong)';
+    };
+
+    fgRadios.forEach(radio => {
+        radio.addEventListener('change', function () {
+            if (this.value === 'CUSTOM') {
+                if (fgCustomBox) fgCustomBox.style.display = 'block';
+                if (fgInput) {
+                    fgInput.focus();
+                    renderFgPreview();
+                }
+            } else {
+                if (fgCustomBox) fgCustomBox.style.display = 'none';
+                if (fgInput) {
+                    fgInput.value = this.value;
+                    renderFgPreview();
+                }
+            }
+        });
+    });
+
+    if (fgInput) {
+        fgInput.addEventListener('input', renderFgPreview);
+        fgInput.addEventListener('keyup', renderFgPreview);
+        fgInput.addEventListener('change', renderFgPreview);
+        renderFgPreview();
+    }
+
+    // 3. MODUL PEMBELIAN / HUTANG USAHA (AP)
     const apInput = document.getElementById('setting_PEMBELIAN_TEMPLATE_KET');
     const apPreview = document.getElementById('preview_PEMBELIAN_TEMPLATE_KET');
     const apCustomBox = document.getElementById('customBox_PEMBELIAN');

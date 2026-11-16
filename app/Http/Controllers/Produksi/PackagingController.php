@@ -964,6 +964,7 @@ class PackagingController extends Controller
             'pemakaian.details.barang',
             'adjustmentLogs',
             'laporanKemasOperator',
+            'jurnal',
         ])->findOrFail($id);
 
         // Ambil seluruh dokumen pengemasan pada tanggal yang sama untuk Tab Switcher Split View

@@ -375,7 +375,7 @@
                             <th style="width: 85px; text-align: center;">Satuan</th>
                             <th style="width: 130px; text-align: right;">Kuantitas <span style="color:#ef4444;">*</span>
                             </th>
-                            <th style="width: 160px; text-align: right;">Harga Satuan (Rp) <span
+                            <th style="width: 170px; text-align: right;">Harga Satuan (Rp) <span
                                     style="color:#ef4444;">*</span></th>
                             <th style="width: 160px; text-align: right;">Total (Rp)</th>
                             <th style="width: 45px; text-align: center;">Aksi</th>
@@ -448,6 +448,15 @@
                                 <input type="number" step="0.01" min="0" name="items[0][harga_nominal]"
                                     class="form-control item-harga" value="0" oninput="calculateSubtotal(this)"
                                     placeholder="0" style="text-align: right; font-weight: 600;">
+                                <label style="display: flex; align-items: center; justify-content: flex-end; gap: 4px; font-size: 0.7rem; color: #475569; margin-top: 3px; cursor: pointer; user-select: none;"
+                                    title="Centang jika harga satuan barang ini sudah termasuk PPN (Gross / Include)">
+                                    <input type="hidden" name="items[0][is_harga_termasuk_pajak]" value="0">
+                                    <input type="checkbox" name="items[0][is_harga_termasuk_pajak]" value="1"
+                                        class="item-include-tax" onchange="calculateGrandTotal()"
+                                        style="accent-color: #059669; width: 12px; height: 12px; cursor: pointer;"
+                                        {{ old('items.0.is_harga_termasuk_pajak', old('is_harga_termasuk_pajak')) ? 'checked' : '' }}>
+                                    <span style="font-weight: 600;">Termasuk (Inc)</span>
+                                </label>
                             </td>
                             <td style="text-align: right; font-weight: 700; color: #0f172a; font-size: 0.9rem; font-family: monospace;"
                                 class="row-subtotal">
@@ -606,7 +615,7 @@
                         <span style="color: #64748b; font-weight: 600;">Pajak (PPN):</span>
                         <select id="global_pajak_id" name="pajak_id" class="form-control"
                             style="width: 130px; height: 28px; padding: 2px 6px; font-size: 0.775rem; font-weight: 700;"
-                            onchange="calculateGrandTotal()">
+                            onchange="onHeaderPajakChange(this)">
                             <option value="" data-tarif="0" data-sifat="TAMBAH">Non-PPN (0%)</option>
                             @foreach ($pajakList as $pjk)
                                 <option value="{{ $pjk->pajak_id }}" data-tarif="{{ (float) $pjk->tarif_persen }}"

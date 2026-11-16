@@ -1837,7 +1837,9 @@
                     {{-- PILAR 5: KEUANGAN (OPERASIONAL & TRANSAKSI) --}}
                     @if (Auth::user()->canAccessKeuangan())
                         @php
-                            $isKeuanganActive = request()->routeIs('keuangan.*') && !request()->routeIs('keuangan.laporan.*');
+                            $isKeuanganActive = request()->routeIs('keuangan.*') &&
+                                !request()->routeIs('keuangan.laporan.*') &&
+                                !request()->routeIs('keuangan.pengaturan_jurnal.*');
                         @endphp
                         <div class="pill-dropdown" id="navDropdownKeuangan">
                             <button type="button" class="pill-dropdown-btn {{ $isKeuanganActive ? 'active' : '' }}"
@@ -2214,7 +2216,8 @@
                     @if (Auth::user()->canAccessMasterData() || Auth::user()->canManageUsers() || Auth::user()->isSuperAdmin())
                         @php
                             $isMasterSistemActive = (request()->routeIs('master.*') && !request()->routeIs('master.karyawan.*')) ||
-                                request()->routeIs('admin.*');
+                                request()->routeIs('admin.*') ||
+                                request()->routeIs('keuangan.pengaturan_jurnal.*');
                         @endphp
                         <div class="pill-dropdown" id="navDropdownMasterSistem">
                             <button type="button" class="pill-dropdown-btn {{ $isMasterSistemActive ? 'active' : '' }}"

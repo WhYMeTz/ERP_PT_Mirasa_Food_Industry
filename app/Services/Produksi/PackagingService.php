@@ -14,21 +14,25 @@ use App\Models\Produksi\DatProduksiHdr;
 use App\Models\Produksi\MstBomHdr;
 use App\Services\Common\CodeGeneratorService;
 use App\Services\Gudang\StokService;
+use App\Services\Keuangan\JurnalService;
+use App\Services\Keuangan\PengaturanJurnalService;
+use App\Services\Produksi\TarifKemasanService;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-
-use App\Services\Produksi\TarifKemasanService;
 
 class PackagingService
 {
     public function __construct(
         protected StokService $stokService,
         protected CodeGeneratorService $codeGenerator,
-        protected TarifKemasanService $tarifKemasanService
+        protected TarifKemasanService $tarifKemasanService,
+        protected JurnalService $jurnalService,
+        protected PengaturanJurnalService $pengaturanJurnalService
     ) {}
 
     /**
@@ -36,7 +40,7 @@ class PackagingService
      */
     public function getAllPaginated(int $perPage = 15, array $filters = []): LengthAwarePaginator
     {
-        $query = DatPackagingHdr::with(['barangJadi.satuanDasar', 'gudang', 'details.barang', 'produksi'])
+        $query = DatPackagingHdr::with(['barangJadi.satuanDasar', 'gudang', 'details.barang', 'produksi', 'jurnal'])
             ->where('deleted_st', false);
 
         if (!empty($filters['search'])) {
@@ -810,6 +814,9 @@ class PackagingService
                     ]);
             }
 
+            // Terbitkan Jurnal Umum Otomatis untuk Biaya Pengemasan & HPP Barang Jadi (FG)
+            $this->syncJournalHppFg($header, $userName);
+
             return $header;
         });
     }
@@ -828,6 +835,12 @@ class PackagingService
 
             if ($header->isHppFinal()) {
                 throw new Exception("Dokumen {$header->pack_no} tidak dapat dibatalkan (VOID) karena Harga Pokok Produksi (HPP) telah difinalisasi oleh Finance.");
+            }
+
+            // Batalkan Jurnal Umum jika dokumen HPP FG sudah pernah diterbitkan
+            if ($header->jurnal_id) {
+                $this->jurnalService->batalkanJurnal($header->pack_no, Auth::user());
+                $header->jurnal_id = null;
             }
 
             // 1. Tarik kembali stok Barang Jadi (FG) yang sebelumnya ditambah
@@ -1699,6 +1712,11 @@ class PackagingService
                     ]);
             }
 
+            // Sinkronkan Jurnal Umum jika dokumen HPP FG sudah pernah diterbitkan
+            if ($header->jurnal_id) {
+                $this->syncJournalHppFg($header, $userId);
+            }
+
             return $log;
         });
     }
@@ -1991,7 +2009,129 @@ class PackagingService
                     ]);
             }
 
+            // 7. Terbitkan Jurnal Umum Otomatis untuk Biaya Pengemasan & HPP FG
+            $this->syncJournalHppFg($header, $user);
+
             return $header;
         });
+    }
+
+    /**
+     * Terbitkan atau sinkronkan Jurnal Umum Otomatis saat HPP Pengemasan / FG difinalisasi / disesuaikan.
+     * Format Keterangan seragam:
+     * "Biaya Pengemasan & HPP FG ({tgl}) - {barang_jadi} ({hasil_karton} karton / {hasil_pcs} pcs)"
+     */
+    public function syncJournalHppFg(DatPackagingHdr $header, ?string $userId = null): ?\App\Models\Keuangan\DatJurnalHdr
+    {
+        $totalBiaya = (float) $header->total_biaya_produksi;
+        $biayaWip = (float) $header->total_biaya_wip;
+        $biayaKemasan = (float) $header->total_biaya_kemasan;
+        $biayaTk = (float) $header->total_biaya_tenaga_kerja;
+        $biayaLain = (float) ($header->total_biaya_lain ?? 0);
+
+        if ($totalBiaya <= 0) {
+            return null;
+        }
+
+        $userObj = Auth::user();
+
+        // Batalkan jurnal lama jika sebelumnya sudah pernah diterbitkan (koreksi/re-kalkulasi)
+        if ($header->jurnal_id) {
+            $this->jurnalService->batalkanJurnal($header->pack_no, $userObj);
+            $header->jurnal_id = null;
+        }
+
+        // Ambil konfigurasi akun dari Pengaturan Pemetaan Jurnal Otomatis
+        $akunFg = $this->pengaturanJurnalService->getCoaKode('HPP_FG_AKUN_FG', '1151');
+        $akunWip = $this->pengaturanJurnalService->getCoaKode('HPP_FG_AKUN_WIP', '1151');
+        $akunKemasan = $this->pengaturanJurnalService->getCoaKode('HPP_FG_AKUN_KEMASAN', '1150');
+        $akunTk = $this->pengaturanJurnalService->getCoaKode('HPP_FG_AKUN_TENAGA_KERJA', '2102');
+        $akunOverhead = $this->pengaturanJurnalService->getCoaKode('HPP_FG_AKUN_OVERHEAD', '2100');
+
+        $tglFormat = $header->pack_tgl ? Carbon::parse($header->pack_tgl)->format('d/m/Y') : date('d/m/Y');
+        $barangJadiNm = $header->barangJadi?->barang_nm ?? 'Barang Jadi (FG)';
+        $hasilKartonStr = number_format((float)($header->hasil_karton_qty ?? 0), 0, ',', '.');
+        $hasilPcsStr = number_format((float)($header->hasil_pcs_qty ?? 0), 0, ',', '.');
+        $batchNo = $header->batch_no ?? '-';
+
+        $keteranganJurnal = $this->pengaturanJurnalService->renderTemplate(
+            'HPP_FG_TEMPLATE_KET',
+            'Biaya Pengemasan & HPP FG ({tgl}) - {barang_jadi} ({hasil_karton} karton / {hasil_pcs} pcs)',
+            [
+                'tgl'          => $tglFormat,
+                'barang_jadi'  => $barangJadiNm,
+                'hasil_karton' => $hasilKartonStr,
+                'hasil_pcs'    => $hasilPcsStr,
+                'batch_no'     => $batchNo,
+            ]
+        );
+
+        $entries = [];
+
+        // 1. DEBET: Persediaan Barang Jadi (FG) (Konfigurasi: HPP_FG_AKUN_FG)
+        $entries[] = [
+            'kode_akun'  => $akunFg,
+            'debet'      => $totalBiaya,
+            'kredit'     => 0,
+            'keterangan' => $keteranganJurnal,
+        ];
+
+        // 2. KREDIT: Persediaan WIP / Keripik Curah Terpakai (Konfigurasi: HPP_FG_AKUN_WIP)
+        if ($biayaWip > 0) {
+            $entries[] = [
+                'kode_akun'  => $akunWip,
+                'debet'      => 0,
+                'kredit'     => $biayaWip,
+                'keterangan' => $keteranganJurnal,
+            ];
+        }
+
+        // 3. KREDIT: Persediaan Bahan Kemasan & Penolong (Konfigurasi: HPP_FG_AKUN_KEMASAN)
+        if ($biayaKemasan > 0) {
+            $entries[] = [
+                'kode_akun'  => $akunKemasan,
+                'debet'      => 0,
+                'kredit'     => $biayaKemasan,
+                'keterangan' => $keteranganJurnal,
+            ];
+        }
+
+        // 4. KREDIT: Hutang Gaji / BTKL Kemas (Konfigurasi: HPP_FG_AKUN_TENAGA_KERJA)
+        if ($biayaTk > 0) {
+            $entries[] = [
+                'kode_akun'  => $akunTk,
+                'debet'      => 0,
+                'kredit'     => $biayaTk,
+                'keterangan' => $keteranganJurnal,
+            ];
+        }
+
+        // 5. KREDIT: Biaya Lain / Overhead Kemas jika ada (Konfigurasi: HPP_FG_AKUN_OVERHEAD)
+        if ($biayaLain > 0) {
+            $entries[] = [
+                'kode_akun'  => $akunOverhead,
+                'debet'      => 0,
+                'kredit'     => $biayaLain,
+                'keterangan' => $keteranganJurnal,
+            ];
+        }
+
+        $tglJurnal = $header->pack_tgl ? Carbon::parse($header->pack_tgl)->format('Y-m-d') : date('Y-m-d');
+
+        $jurnal = $this->jurnalService->catatJurnal(
+            'HPP_FG',
+            $tglJurnal,
+            $header->pack_no,
+            $header->pack_id,
+            $keteranganJurnal,
+            $entries,
+            $userObj
+        );
+
+        $header->update([
+            'jurnal_id' => $jurnal->jurnal_id,
+        ]);
+
+        return $jurnal;
     }
 }

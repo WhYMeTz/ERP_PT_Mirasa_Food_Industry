@@ -86,18 +86,6 @@
                         <span class="badge" id="badgeTaxMode" style="background: #e2e8f0; color: #475569; font-size: 0.65rem; font-weight: 700; margin-left: 0.2rem; padding: 1px 5px; border-radius: 3px;">Net</span>
                     </label>
                 </div>
-
-                <div style="display: flex; align-items: center; gap: 0.35rem;">
-                    <span style="font-size: 0.725rem; color: #64748b; font-weight: 700; text-transform: uppercase;">Tarif Global:</span>
-                    <select id="global_pajak_id" class="form-control" style="width: 145px; height: 32px; padding: 2px 6px; font-size: 0.75rem; font-weight: 700;" onchange="applyGlobalTaxToAllRows(this)">
-                        <option value="NON_PPN" data-tarif="0" data-sifat="TAMBAH">Non-PPN (0%)</option>
-                        @foreach ($pajakList as $pjk)
-                            <option value="{{ $pjk->pajak_id }}" data-code="{{ $pjk->pajak_cd }}" data-tarif="{{ (float)$pjk->tarif_persen }}" data-sifat="{{ $pjk->sifat_pajak }}" {{ ($pjk->is_default || (float)$pjk->tarif_persen == 11) ? 'selected' : '' }}>
-                                {{ $pjk->pajak_cd }} ({{ (float)$pjk->tarif_persen }}%)
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
             </div>
         </div>
 
@@ -338,25 +326,20 @@
         </div>
 
         <div style="overflow-x: auto;">
-            <table class="po-workstation-table" style="width: 100%;">
+            <table class="excel-grid-table" id="hutangItemsTable" style="width: 100%;">
                 <thead>
                     <tr>
-                        <th style="padding: 0.6rem 0.75rem; text-align: left;">Deskripsi / Komoditas</th>
-                        <th style="padding: 0.6rem 0.5rem; text-align: right; width: 95px;">Kuantitas</th>
-                        <th style="padding: 0.6rem 0.5rem; text-align: center; width: 60px;">Satuan</th>
-                        <th style="padding: 0.6rem 0.5rem; text-align: right; width: 120px;">Harga Satuan (Rp)</th>
-                        <th style="padding: 0.6rem 0.5rem; text-align: right; width: 150px;">Diskon (% / Rp)</th>
-                        <th style="padding: 0.6rem 0.5rem; text-align: right; width: 110px;">Potongan Mutu (Rp)</th>
-                        <th style="padding: 0.6rem 0.5rem; text-align: left; width: 165px;">
-                            <span>Perlakuan Pajak</span>
-                            <span style="font-size: 0.65rem; color: #94a3b8; font-weight: 500; display: block; text-transform: none;">PPN / PPh 22</span>
-                        </th>
-                        <th style="padding: 0.6rem 0.75rem; text-align: right; width: 130px;">Netto (Rp)</th>
+                        <th style="width: 35px; text-align: center;">#</th>
+                        <th style="min-width: 320px; text-align: left;">Deskripsi / Komoditas <span style="color:#ef4444;">*</span></th>
+                        <th style="width: 85px; text-align: center;">Satuan</th>
+                        <th style="width: 130px; text-align: right;">Kuantitas Netto <span style="color:#ef4444;">*</span></th>
+                        <th style="width: 170px; text-align: right;">Harga Satuan (Rp) <span style="color:#ef4444;">*</span></th>
+                        <th style="width: 160px; text-align: right;">Total Netto (Rp)</th>
                     </tr>
                 </thead>
                 <tbody id="itemsTableBody">
                     <tr id="emptyItemsRow">
-                        <td colspan="8" style="padding: 2.25rem 1rem; text-align: center; color: #94a3b8; font-size: 0.825rem;">
+                        <td colspan="6" style="padding: 2.25rem 1rem; text-align: center; color: #94a3b8; font-size: 0.825rem;">
                             Centang salah satu atau beberapa Surat Jalan / GRN di atas untuk memuat rincian tagihan.
                         </td>
                     </tr>
@@ -522,37 +505,73 @@
                 Ringkasan Finansial Tagihan
             </div>
 
-            {{-- 1. Total Bruto --}}
+            {{-- 1. Total Kuantitas --}}
             <div class="po-financial-row">
-                <span style="color: #64748b; font-weight: 600;">Total Bruto:</span>
-                <strong id="summaryTotalBruto" style="font-family: monospace; font-size: 0.95rem; color: #1e293b;">Rp 0</strong>
+                <span style="color: #64748b; font-weight: 600;">Total Kuantitas:</span>
+                <strong style="color: #0284c7; font-family: monospace; font-size: 0.95rem;">
+                    <span id="summaryTotalQty">0.00</span> Unit
+                </strong>
             </div>
 
-            {{-- 2. Total Diskon --}}
+            {{-- 2. Subtotal Bruto --}}
             <div class="po-financial-row">
-                <span style="color: #64748b; font-weight: 600;">Total Diskon:</span>
-                <strong id="summaryTotalDiskon" style="font-family: monospace; font-size: 0.95rem; color: #16a34a;">Rp 0</strong>
+                <span style="color: #64748b; font-weight: 600;">Subtotal Bruto:</span>
+                <span id="summaryTotalBruto" style="font-weight: 700; font-family: monospace; font-size: 0.95rem; color: #1e293b;">Rp 0</span>
             </div>
 
-            {{-- 3. Total Potongan Mutu --}}
-            <div class="po-financial-row" id="rowSummaryPotonganItem" style="display: none; color: #b45309;">
-                <span style="font-weight: 600;">Total Potongan Mutu:</span>
-                <strong id="summaryTotalPotonganItem" style="font-family: monospace; font-size: 0.95rem; color: #b45309;">- Rp 0</strong>
+            {{-- 3. Diskon Global (-) % dan Nominal --}}
+            <div class="po-financial-row" style="align-items: center;">
+                <div style="display: flex; align-items: center; gap: 0.4rem;">
+                    <span style="color: #64748b; font-weight: 600;">Diskon Global (-):</span>
+                    <div style="display: inline-flex; align-items: center; gap: 2px;">
+                        <input type="number" step="0.1" min="0" max="100" id="global_diskon_persen" name="diskon_persen"
+                            value="{{ old('diskon_persen', 0) }}" oninput="recalculateTotals()" class="form-control"
+                            style="width: 58px; height: 28px; padding: 2px 6px; font-size: 0.8rem; text-align: right; font-weight: 700;"
+                            placeholder="0">
+                        <span style="font-size: 0.75rem; color: #64748b; font-weight: 700;">%</span>
+                    </div>
+                </div>
+                <span id="summaryTotalDiskon" style="font-weight: 700; font-family: monospace; color: #d97706;">Rp 0</span>
             </div>
 
-            {{-- 4. DPP (Dasar Pengenaan Pajak) --}}
-            <div class="po-financial-row" id="rowSummaryDpp" style="border-top: 1.5px dashed #cbd5e1; padding-top: 0.45rem; margin-top: 0.2rem;">
+            {{-- 4. Potongan Mutu (-) Nominal --}}
+            <div class="po-financial-row" style="align-items: center;">
+                <div style="display: flex; align-items: center; gap: 0.4rem;">
+                    <span style="color: #64748b; font-weight: 600;">Potongan Mutu (-):</span>
+                    <input type="number" step="any" min="0" id="global_potongan_nominal" name="total_potongan_item"
+                        value="{{ old('total_potongan_item', 0) }}" oninput="recalculateTotals()" class="form-control"
+                        style="width: 105px; height: 28px; padding: 2px 8px; font-size: 0.8rem; text-align: right; font-weight: 700; color: #b45309;"
+                        placeholder="Rp 0">
+                </div>
+                <span id="summaryTotalPotonganItem" style="font-weight: 700; font-family: monospace; color: #b45309;">- Rp 0</span>
+            </div>
+
+            {{-- 5. DPP (Netto) --}}
+            <div class="po-financial-row" style="border-top: 1.5px dashed #cbd5e1; padding-top: 0.45rem; margin-top: 0.2rem;">
                 <span style="color: #475569; font-weight: 700;">DPP (Netto):</span>
-                <strong id="summaryTotalDpp" style="font-family: monospace; color: #1e293b; font-size: 0.95rem;">Rp 0</strong>
+                <span id="summaryTotalDpp" style="font-weight: 700; font-family: monospace; color: #1e293b; font-size: 0.95rem;">Rp 0</span>
             </div>
 
-            {{-- 5. Pajak (PPN / PPh 22) --}}
-            <div class="po-financial-row">
-                <span style="color: #64748b; font-weight: 600;">Pajak (PPN / PPh):</span>
-                <strong id="summaryTotalPpn" style="font-family: monospace; font-size: 0.95rem; color: #0284c7;">Rp 0</strong>
+            {{-- 6. Pajak (PPN) Selector & Nilai --}}
+            <div class="po-financial-row" style="align-items: center;">
+                <div style="display: flex; align-items: center; gap: 0.4rem;">
+                    <span style="color: #64748b; font-weight: 600;">Pajak (PPN):</span>
+                    <select id="global_pajak_id" name="pajak_id" class="form-control"
+                        style="width: 130px; height: 28px; padding: 2px 6px; font-size: 0.775rem; font-weight: 700;"
+                        onchange="onHeaderPajakChange(this)">
+                        <option value="NON_PPN" data-tarif="0" data-sifat="TAMBAH">Non-PPN (0%)</option>
+                        @foreach ($pajakList as $pjk)
+                            <option value="{{ $pjk->pajak_id }}" data-code="{{ $pjk->pajak_cd }}" data-tarif="{{ (float)$pjk->tarif_persen }}"
+                                data-sifat="{{ $pjk->sifat_pajak }}" {{ (old('pajak_id') == $pjk->pajak_id || (empty(old('pajak_id')) && ($pjk->is_default || (float)$pjk->tarif_persen == 11))) ? 'selected' : '' }}>
+                                {{ $pjk->pajak_cd }} ({{ (float)$pjk->tarif_persen }}%)
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <span id="summaryTotalPpn" style="font-weight: 700; font-family: monospace; color: #0284c7;">+ Rp 0</span>
             </div>
 
-            {{-- 6. Ongkos Angkut --}}
+            {{-- 6a. Ongkos Angkut --}}
             <div class="po-financial-row" id="rowSummaryOngkir" style="display: none; color: #7e22ce;">
                 <span style="font-weight: 600;">+ Ongkos Angkut (6112):</span>
                 <strong id="summaryBiayaOngkir" style="font-family: monospace; font-size: 0.95rem; color: #7e22ce;">Rp 0</strong>
@@ -564,15 +583,13 @@
                 <strong id="summaryPotonganRetur" style="font-family: monospace; font-size: 0.95rem; color: #dc2626;">- Rp 0</strong>
             </div>
 
-            {{-- 7. Grand Total (Faktur Resmi) --}}
+            {{-- 7. Grand Total Emphasized Box --}}
             <div class="po-grand-total-box">
                 <div>
-                    <div style="font-size: 0.7rem; font-weight: 800; color: #047857; text-transform: uppercase;">
+                    <span style="font-size: 0.725rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; color: #065f46; display: block;">
                         TOTAL TAGIHAN RESMI (FAKTUR)
-                    </div>
-                    <div style="font-size: 0.65rem; color: #15803d;">
-                        Sudah termasuk kalkulasi diskon &amp; pajak
-                    </div>
+                    </span>
+                    <span style="font-size: 0.7rem; color: #059669;">Termasuk Pajak &amp; Diskon</span>
                 </div>
                 <div class="po-grand-total-val" id="summaryGrandTotal">Rp 0</div>
             </div>

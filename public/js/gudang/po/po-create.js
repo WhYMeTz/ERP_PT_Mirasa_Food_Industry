@@ -639,9 +639,6 @@ function addRow(focusNew = false) {
     if (typeof savePoCreateDraft === 'function') {
         savePoCreateDraft();
     }
-    if (typeof savePoCreateDraft === 'function') {
-        savePoCreateDraft();
-    }
     return tr;
 }
 
@@ -659,14 +656,25 @@ function onHeaderTaxInclusiveToggle(headerCheckbox) {
             badge.style.color = '#475569';
         }
     }
+
+    // Sinkronisasi otomatis ke semua baris barang
+    document.querySelectorAll('.item-include-tax').forEach(cb => {
+        cb.checked = isInc;
+    });
+
     calculateGrandTotal();
     if (typeof savePoCreateDraft === 'function') {
         savePoCreateDraft();
     }
+}
+
+function onHeaderPajakChange(headerSelect) {
+    calculateGrandTotal();
     if (typeof savePoCreateDraft === 'function') {
         savePoCreateDraft();
     }
 }
+window.onHeaderPajakChange = onHeaderPajakChange;
 
 function removeRow(btn) {
     const rows = document.querySelectorAll('.item-row');
@@ -743,19 +751,84 @@ function calculateGrandTotal() {
     const supplierItemCount = {};
     const supHiddenSelect = document.getElementById('supplier_id');
 
-    document.querySelectorAll('.item-row').forEach(row => {
+    // Kontrol Finansial Global Ringkasan
+    const diskonPersen = Math.min(100, Math.max(0, parseFloat(document.getElementById('global_diskon_persen')?.value) || 0));
+    const potonganNominal = Math.max(0, parseFloat(document.getElementById('global_potongan_nominal')?.value) || 0);
+
+    const headerPajakSelect = document.getElementById('global_pajak_id');
+    const headerOpt = headerPajakSelect ? headerPajakSelect.options[headerPajakSelect.selectedIndex] : null;
+    const headerTarif = headerOpt ? (parseFloat(headerOpt.dataset.tarif) || 0) : 0;
+    const headerSifat = headerOpt ? (headerOpt.dataset.sifat || 'TAMBAH') : 'TAMBAH';
+    const headerIsInc = document.getElementById('is_harga_termasuk_pajak')?.checked || false;
+
+    // Pass 1: Hitung total kuantitas & bruto untuk prorata diskon/potongan
+    const rows = document.querySelectorAll('.item-row');
+    rows.forEach(row => {
+        const qty = Math.max(0, parseFloat(row.querySelector('.item-qty')?.value) || 0);
+        const harga = Math.max(0, parseFloat(row.querySelector('.item-harga')?.value) || 0);
+        totalQty += qty;
+        totalBruto += (qty * harga);
+    });
+
+    const totalDiskon = totalBruto * (diskonPersen / 100);
+    const totalPotongan = potonganNominal;
+    const sumGrossAfterDiskon = Math.max(0, totalBruto - totalDiskon);
+
+    let totalDpp = 0;
+    let totalPpn = 0;
+    let grandTotal = 0;
+    let hasIncTax = false;
+    let hasPotongTax = false;
+
+    // Pass 2: Hitung kalkulasi pajak & tagihan per baris barang
+    rows.forEach(row => {
         rowCount++;
         const qty = Math.max(0, parseFloat(row.querySelector('.item-qty')?.value) || 0);
         const harga = Math.max(0, parseFloat(row.querySelector('.item-harga')?.value) || 0);
-        const rowSubtotal = qty * harga;
+        const rowDiskonUnit = harga * (diskonPersen / 100);
+        const rowHargaNetto = Math.max(0, harga - rowDiskonUnit);
+
+        let rowPotongan = 0;
+        if (totalPotongan > 0 && sumGrossAfterDiskon > 0) {
+            const rowGross = qty * rowHargaNetto;
+            rowPotongan = (rowGross / sumGrossAfterDiskon) * totalPotongan;
+        }
+
+        const grossRowTotal = Math.max(0, (qty * rowHargaNetto) - rowPotongan);
+
+        // Pajak PO diterapkan ke baris, dengan status inclusive/exclusive per baris
+        const rowTarif = headerTarif;
+        const rowSifat = headerSifat;
+
+        const rowIncCheck = row.querySelector('.item-include-tax');
+        const rowIsInc = rowIncCheck ? rowIncCheck.checked : headerIsInc;
+
+        let rowDpp = 0;
+        let rowPpn = 0;
+        let rowTagihan = 0;
+
+        if (rowIsInc && rowTarif > 0 && rowSifat !== 'POTONG') {
+            hasIncTax = true;
+            rowDpp = Math.round((grossRowTotal / (1 + (rowTarif / 100))) * 10000) / 10000;
+            rowPpn = Math.round((grossRowTotal - rowDpp) * 10000) / 10000;
+            rowTagihan = grossRowTotal;
+        } else {
+            rowDpp = grossRowTotal;
+            rowPpn = Math.round((rowDpp * (rowTarif / 100)) * 10000) / 10000;
+            rowTagihan = (rowSifat === 'POTONG')
+                ? Math.max(0, rowDpp - rowPpn)
+                : (rowDpp + rowPpn);
+            if (rowSifat === 'POTONG' && rowTarif > 0) hasPotongTax = true;
+        }
 
         const rowSubtotalCell = row.querySelector('.row-subtotal');
         if (rowSubtotalCell) {
-            rowSubtotalCell.innerText = 'Rp ' + Math.round(rowSubtotal).toLocaleString('id-ID');
+            rowSubtotalCell.innerText = 'Rp ' + Math.round(rowTagihan).toLocaleString('id-ID');
         }
 
-        totalQty += qty;
-        totalBruto += rowSubtotal;
+        totalDpp += rowDpp;
+        totalPpn += rowPpn;
+        grandTotal += rowTagihan;
 
         if (currentPoMode === 'multi') {
             const supSelect = row.querySelector('.item-supplier');
@@ -768,38 +841,6 @@ function calculateGrandTotal() {
             }
         }
     });
-
-    // Kontrol Finansial Global Ringkasan
-    const diskonPersen = Math.min(100, Math.max(0, parseFloat(document.getElementById('global_diskon_persen')?.value) || 0));
-    const potonganNominal = Math.max(0, parseFloat(document.getElementById('global_potongan_nominal')?.value) || 0);
-
-    const pajakSelect = document.getElementById('global_pajak_id');
-    const selectedOpt = pajakSelect ? pajakSelect.options[pajakSelect.selectedIndex] : null;
-    const tarif = selectedOpt ? (parseFloat(selectedOpt.dataset.tarif) || 0) : 0;
-    const sifat = selectedOpt ? (selectedOpt.dataset.sifat || 'TAMBAH') : 'TAMBAH';
-    const isInc = document.getElementById('is_harga_termasuk_pajak')?.checked || false;
-
-    const totalDiskon = totalBruto * (diskonPersen / 100);
-    const totalPotongan = potonganNominal;
-    const subtotalNetto = Math.max(0, totalBruto - totalDiskon - totalPotongan);
-
-    let totalDpp = 0;
-    let totalPpn = 0;
-    let grandTotal = 0;
-
-    if (isInc && tarif > 0 && sifat !== 'POTONG') {
-        // Harga Termasuk PPN (Inclusive): Total yang dibayar tetap, DPP dihitung mundur
-        totalDpp = Math.round((subtotalNetto / (1 + (tarif / 100))) * 10000) / 10000;
-        totalPpn = Math.round((subtotalNetto - totalDpp) * 10000) / 10000;
-        grandTotal = subtotalNetto;
-    } else {
-        // Harga Belum Termasuk PPN (Exclude) ATAU Pajak Sifat Potong (PPh 22, PPh 23)
-        totalDpp = subtotalNetto;
-        totalPpn = Math.round((totalDpp * (tarif / 100)) * 10000) / 10000;
-        grandTotal = (sifat === 'POTONG')
-            ? Math.max(0, totalDpp - totalPpn)
-            : (totalDpp + totalPpn);
-    }
 
     const elTotalQty = document.getElementById('totalQtyDisplay');
     const elTotalSubtotalDisplay = document.getElementById('totalSubtotalDisplay');
@@ -823,13 +864,13 @@ function calculateGrandTotal() {
     if (sideDiskon) sideDiskon.innerText = totalDiskon > 0 ? '-Rp ' + Math.round(totalDiskon).toLocaleString('id-ID') : 'Rp 0';
     if (sidePotongan) sidePotongan.innerText = totalPotongan > 0 ? '-Rp ' + Math.round(totalPotongan).toLocaleString('id-ID') : 'Rp 0';
     if (sideDpp) {
-        sideDpp.innerHTML = 'Rp ' + Math.round(totalDpp).toLocaleString('id-ID') + (isInc && tarif > 0 && sifat !== 'POTONG' ? ' <small style="color: #64748b; font-size: 0.7rem; font-weight: 500;">(DPP)</small>' : '');
+        sideDpp.innerHTML = 'Rp ' + Math.round(totalDpp).toLocaleString('id-ID') + (hasIncTax ? ' <small style="color: #64748b; font-size: 0.7rem; font-weight: 500;">(DPP)</small>' : '');
     }
     if (sidePpn) {
         if (totalPpn > 0) {
-            if (sifat === 'POTONG') {
+            if (hasPotongTax && !hasIncTax) {
                 sidePpn.innerHTML = `<span style="color: #dc2626;">-Rp ${Math.round(totalPpn).toLocaleString('id-ID')}</span> <small style="color: #ef4444; font-size: 0.7rem; font-weight: 600;">(Potong)</small>`;
-            } else if (isInc) {
+            } else if (hasIncTax) {
                 sidePpn.innerHTML = `<span style="color: #16a34a;">Rp ${Math.round(totalPpn).toLocaleString('id-ID')}</span> <small style="color: #15803d; font-size: 0.7rem; font-weight: 600;">(Termasuk)</small>`;
             } else {
                 sidePpn.innerHTML = `<span style="color: #0284c7;">+Rp ${Math.round(totalPpn).toLocaleString('id-ID')}</span>`;

@@ -53,6 +53,7 @@ class DatPackagingHdr extends Model
         'is_hpp_final',
         'hpp_finalized_at',
         'hpp_finalized_by',
+        'jurnal_id',
         'catatan_txt',
         'status_cd',
         'created_by',
@@ -88,6 +89,14 @@ class DatPackagingHdr extends Model
         'active_st'                => 'boolean',
         'version_no'               => 'integer',
     ];
+
+    /**
+     * Relasi ke Jurnal Umum Akuntansi (Saat HPP FG Diterbitkan)
+     */
+    public function jurnal(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Keuangan\DatJurnalHdr::class, 'jurnal_id', 'jurnal_id');
+    }
 
     /**
      * Relasi ke Gudang Penyimpanan Barang Jadi (FG)

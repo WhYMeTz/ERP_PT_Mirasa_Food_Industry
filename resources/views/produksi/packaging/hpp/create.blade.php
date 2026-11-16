@@ -3,6 +3,7 @@
 @section('title', 'Kalkulasi & Lembar HPP Pengemasan (Tahap 2) - PT Mirasa Food Industry')
 
 @push('styles')
+    <link rel="stylesheet" href="{{ asset('css/produksi/hpp/hpp-create.css') }}?v={{ filemtime(public_path('css/produksi/hpp/hpp-create.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/produksi/packaging/packaging-hpp-create.css') }}?v={{ filemtime(public_path('css/produksi/packaging/packaging-hpp-create.css')) }}">
 @endpush
 
@@ -27,6 +28,22 @@
                     Penetapan nilai HPP bahan keripik curah WIP, biaya kemasan pabrik, dan pembebanan upah tenaga kerja kemas (BTKL).
                 </p>
             </div>
+        </div>
+
+        {{-- Switcher Pilihan Input HPP: Dapur (WIP Curah) vs Pengemasan (FG) --}}
+        <div style="margin-top: 1rem; background: #f1f5f9; padding: 4px; border-radius: 8px; display: inline-flex; border: 1.5px solid #e2e8f0; gap: 4px;">
+            <a href="{{ route('produksi.hpp.create') }}" 
+               style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.8125rem; font-weight: 600; text-decoration: none; color: #64748b; background: transparent; transition: all 0.15s ease;"
+               onmouseover="this.style.color='#0284c7'; this.style.background='#f8fafc';"
+               onmouseout="this.style.color='#64748b'; this.style.background='transparent';">
+                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                <span>1. HPP Olahan Dapur (Curah WIP)</span>
+            </a>
+            <a href="{{ route('produksi.packaging.hpp.create') }}" 
+               style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.8125rem; font-weight: 700; text-decoration: none; background: #ffffff; color: #059669; box-shadow: 0 1px 3px rgba(0,0,0,0.08); border: 1px solid #a7f3d0;">
+                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                <span>2. HPP Pengemasan (Barang Jadi FG)</span>
+            </a>
         </div>
     </div>
 
@@ -72,12 +89,32 @@
                     @endif
                 </div>
 
-                {{-- Parameter Box Hasil Pengemasan Terpilih --}}
-                <div id="packParamBox" style="display: none; margin-top: 1rem;">
-                    <div class="spk-preview-box">
+                {{-- NOTIFIKASI LOADING SAAT TARIK DATA PENGEMASAN --}}
+                <div id="packLoadingNotice" class="spk-loading-box" style="display: none;">
+                    <div class="spk-loading-spinner">
+                        <svg class="spin-svg" width="22" height="22" viewBox="0 0 24 24" fill="none">
+                            <circle cx="12" cy="12" r="10" stroke="#cbd5e1" stroke-width="3"></circle>
+                            <path fill="#059669" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                    </div>
+                    <div class="spk-loading-content">
+                        <strong>Menarik Data Dokumen Pengemasan Fisik...</strong>
+                        <p>Menghubungkan catatan keripik curah WIP, konsumsi bahan kemasan, dan presensi tenaga kerja...</p>
+                    </div>
+                </div>
+
+                {{-- PLACEHOLDER SEBELUM DOKUMEN DIPILIH --}}
+                <div id="packPlaceholderNotice" class="spk-placeholder-box">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <span>Silakan pilih nomor dokumen pengemasan fisik pada pilihan di atas untuk memuat rincian keripik curah dan bahan kemasan.</span>
+                </div>
+
+                {{-- RINGKASAN PARAMETER DOKUMEN PENGEMASAN TERPILIH (STANDAR ERP MIRASA) --}}
+                <div id="packParamBox" class="spk-param-box" style="display: none;">
+                    <div class="spk-param-grid">
                         <div class="spk-param-item">
-                            <span class="spk-param-label">Nomor Dokumen</span>
-                            <span class="spk-param-value" id="pvPackNo" style="font-family: monospace; color: #0284c7;">-</span>
+                            <span class="spk-param-label">No. Dokumen Kemas</span>
+                            <span class="spk-param-value font-mono" id="pvPackNo" style="color: #0284c7;">-</span>
                         </div>
                         <div class="spk-param-item">
                             <span class="spk-param-label">Tanggal Pelaksanaan</span>
@@ -106,14 +143,14 @@
 
                 {{-- SUB-SECTION A: BAHAN KERIPIK CURAH WIP --}}
                 <div style="margin-bottom: 1.5rem;">
-                    {{-- Banner Dokumen SPK Dapur --}}
+                    {{-- Banner Dokumen SPK Produksi --}}
                     <div id="spkMasakBanner" class="pck-wip-callout" style="display: none;">
                         <div class="pck-wip-callout-title">
                             <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
-                            <span>Dokumen SPK Masak Dapur Terkait: <strong id="lblSpkNo" style="font-family: monospace;">-</strong></span>
+                            <span>Dokumen SPK Produksi Terkait: <strong id="lblSpkNo" style="font-family: monospace;">-</strong></span>
                         </div>
                         <div class="pck-wip-callout-meta">
-                            <span>Tanggal Masak: <strong id="lblSpkTgl">-</strong></span>
+                            <span>Tanggal Produksi: <strong id="lblSpkTgl">-</strong></span>
                             <span>&bull;</span>
                             <span>HPP Curah WIP: <strong id="lblHppWipStatus">-</strong></span>
                         </div>
@@ -122,7 +159,7 @@
                     <div class="table-bppb-toolbar">
                         <div class="table-bppb-title">
                             <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
-                            <span>1. Bahan Keripik Curah (WIP Olahan Dapur)</span>
+                            <span>1. Bahan Keripik Curah (WIP Hasil Produksi)</span>
                         </div>
                     </div>
 
@@ -130,12 +167,12 @@
                         <table class="table-pemakaian">
                             <thead>
                                 <tr>
-                                    <th style="width: 5%; text-align: center;">No</th>
-                                    <th style="width: 35%; text-align: left;">Varian Keripik Curah (WIP)</th>
-                                    <th style="width: 15%; text-align: right;">Qty Diambil</th>
-                                    <th style="width: 15%; text-align: right;">HPP Curah (Rp/kg)</th>
-                                    <th style="width: 15%; text-align: right;">Subtotal Nilai (Rp)</th>
-                                    <th style="width: 15%; text-align: center;">Status Biaya</th>
+                                    <th style="width: 4%; text-align: center;">No</th>
+                                    <th style="width: 32%; text-align: left;">Varian Keripik Curah (WIP)</th>
+                                    <th style="width: 14%; text-align: right;">Qty Diambil</th>
+                                    <th style="width: 18%; text-align: right;">HPP Curah (Rp/kg)</th>
+                                    <th style="width: 18%; text-align: right;">Subtotal Nilai (Rp)</th>
+                                    <th style="width: 14%; text-align: center;">Status Biaya</th>
                                 </tr>
                             </thead>
                             <tbody id="wipTableBody">
@@ -147,7 +184,7 @@
                                             </div>
                                             <strong style="font-size: 0.875rem; color: #1e293b;">Menunggu Pemilihan Dokumen Pengemasan</strong>
                                             <p style="font-size: 0.8rem; color: #64748b; margin: 0; line-height: 1.4;">
-                                                Pilih nomor dokumen fisik pada bagian atas untuk memuat rincian keripik curah dan kalkulasi HPP dapur secara otomatis.
+                                                Pilih nomor dokumen fisik pada bagian atas untuk memuat rincian keripik curah dan kalkulasi HPP produksi secara otomatis.
                                             </p>
                                         </div>
                                     </td>
@@ -180,12 +217,12 @@
                         <table class="table-pemakaian">
                             <thead>
                                 <tr>
-                                    <th style="width: 5%; text-align: center;">No</th>
-                                    <th style="width: 35%; text-align: left;">Nama Bahan Kemasan &amp; Spesifikasi</th>
-                                    <th style="width: 15%; text-align: right;">Qty Terpakai</th>
-                                    <th style="width: 15%; text-align: right;">Harga Satuan (Rp)</th>
-                                    <th style="width: 15%; text-align: right;">Subtotal Nilai (Rp)</th>
-                                    <th style="width: 15%; text-align: center;">Kategori</th>
+                                    <th style="width: 4%; text-align: center;">No</th>
+                                    <th style="width: 32%; text-align: left;">Nama Bahan Kemasan &amp; Spesifikasi</th>
+                                    <th style="width: 14%; text-align: right;">Qty Terpakai</th>
+                                    <th style="width: 18%; text-align: right;">Harga Satuan (Rp)</th>
+                                    <th style="width: 18%; text-align: right;">Subtotal Nilai (Rp)</th>
+                                    <th style="width: 14%; text-align: center;">Kategori</th>
                                 </tr>
                             </thead>
                             <tbody id="kemasanTableBody">
@@ -287,7 +324,7 @@
                                     <div class="btkl-input-item">
                                         <label for="tk_langsung_org" class="btkl-sublabel">Jumlah Karyawan <span class="required">*</span></label>
                                         <div class="input-suffix-wrap">
-                                            <input type="number" step="1" min="0" name="jumlah_personil" id="tk_langsung_org" class="hpp-input" value="0" required oninput="calcLaborPackaging()">
+                                            <input type="number" step="1" min="0" name="jumlah_personil" id="tk_langsung_org" class="hpp-input" value="0" required oninput="onLaborPersonilChange(this)">
                                             <span class="suffix-org">Orang</span>
                                         </div>
                                     </div>
@@ -295,7 +332,7 @@
                                         <label for="tk_langsung_nilai" class="btkl-sublabel">Total Upah Tenaga Kerja (Rp) <span class="required">*</span></label>
                                         <div class="input-rp-wrap">
                                             <span class="prefix-rp">Rp</span>
-                                            <input type="number" step="any" min="0" name="total_biaya_tenaga_kerja" id="tk_langsung_nilai" class="hpp-input" value="0" required oninput="calcLaborPackaging()">
+                                            <input type="number" step="any" min="0" name="total_biaya_tenaga_kerja" id="tk_langsung_nilai" class="hpp-input" value="0" required oninput="onLaborPriceChange(this)">
                                         </div>
                                     </div>
                                 </div>
@@ -320,7 +357,7 @@
 
                         <div class="labor-notes-box">
                             <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                            <span>Khusus tenaga kerja langsung pengemasan (packing meja sachet &amp; susun karton). Biaya upah olahan dapur dicatat terpisah.</span>
+                            <span>Khusus tenaga kerja langsung pengemasan (packing meja sachet &amp; susun karton). Biaya upah produksi keripik dicatat terpisah.</span>
                         </div>
                     </div>
                 </div>
@@ -344,19 +381,13 @@
                     <div class="hpp-stat-box">
                         <span class="stat-label">Total Biaya WIP Curah</span>
                         <span class="stat-value" id="statWipNilai">Rp 0</span>
-                        <span class="stat-meta">Konsumsi Bahan Keripik Dapur</span>
+                        <span class="stat-meta">Konsumsi Keripik Curah Hasil Produksi</span>
                     </div>
 
                     <div class="hpp-stat-box">
                         <span class="stat-label">Total Biaya Kemasan</span>
                         <span class="stat-value" id="statKemasanNilai">Rp 0</span>
                         <span class="stat-meta">Dus, Plastik, Lakban &amp; Label</span>
-                    </div>
-
-                    <div class="hpp-stat-box">
-                        <span class="stat-label">Total Upah Packing</span>
-                        <span class="stat-value" id="statTkNilai">Rp 0</span>
-                        <span class="stat-meta" id="statTkMeta">0 Orang Kemas</span>
                     </div>
 
                     <div class="hpp-stat-box">
@@ -373,8 +404,14 @@
 
                     <div class="hpp-stat-box pck-summary-highlight">
                         <span class="stat-label" style="color: #065f46; font-weight: 800;">HPP RIIL PER KARTON</span>
-                        <span class="stat-value" id="statHppKarton">Rp 0</span>
-                        <span class="stat-meta" id="statHppPcsMeta" style="color: #047857; font-weight: 700;">Setara Rp 0 / Pcs</span>
+                        <span class="stat-value" id="statHppKarton" style="color: #059669;">Rp 0</span>
+                        <span class="stat-meta" id="statHppKartonMeta" style="color: #047857; font-weight: 600;">Standar Dus Siap Distribusi</span>
+                    </div>
+
+                    <div class="hpp-stat-box pck-summary-highlight-pcs" style="background: #f0fdf4; border: 1.5px solid #10b981; border-radius: 8px; padding: 0.85rem 1rem; display: flex; flex-direction: column; gap: 0.25rem;">
+                        <span class="stat-label" style="color: #047857; font-weight: 800;">HPP RIIL PER PCS</span>
+                        <span class="stat-value" id="statHppPcs" style="color: #047857; font-size: 1.25rem; font-weight: 800;">Rp 0</span>
+                        <span class="stat-meta" id="statHppPcsMeta" style="color: #059669; font-weight: 600;">Kemasan Eceran / Bungkus</span>
                     </div>
                 </div>
 
@@ -400,7 +437,8 @@
     <script>
         window.appConfig = {
             urlPackagingData: "{{ route('produksi.packaging.hpp.packaging-data', ['id' => '__ID__']) }}",
-            urlSyncKaryawan: "{{ route('produksi.sync-karyawan') }}"
+            urlSyncKaryawan: "{{ route('produksi.sync-karyawan') }}",
+            tarifTkHarian: {{ (float) (App\Models\MasterData\MstTarifProduksi::where('kode_tarif', 'TARIF_TK_HARIAN')->value('nilai_tarif') ?? 91300) }}
         };
     </script>
     <script src="{{ asset('js/produksi/packaging/packaging-hpp-create.js') }}?v={{ filemtime(public_path('js/produksi/packaging/packaging-hpp-create.js')) }}"></script>

@@ -1573,10 +1573,10 @@
                                         @endif
                                     </div>
                                     <div class="mega-col">
-                                        <div class="mega-col-title">Rekapitulasi HPP Pabrik</div>
+                                        <div class="mega-col-title">Harga Pokok Produksi (HPP)</div>
                                         @if (Auth::user()->canAccessProduksi())
                                             <a href="{{ route('produksi.rekap') }}"
-                                                class="mega-item {{ request()->routeIs('produksi.rekap*') || request()->routeIs('produksi.packaging.rekap*') || request()->routeIs('produksi.hpp.create') ? 'active' : '' }}">
+                                                class="mega-item {{ request()->routeIs('produksi.rekap*') || request()->routeIs('produksi.packaging.rekap*') ? 'active' : '' }}">
                                                 <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"
                                                     style="color: #0284c7;">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -1585,6 +1585,20 @@
                                                 <div style="display: flex; flex-direction: column;">
                                                     <span style="font-weight: 600;">Buku Rekapitulasi HPP</span>
                                                     <span style="font-size: 0.6875rem; color: #64748b;">Tab Dapur (Curah) &amp; Kemas (FG)</span>
+                                                </div>
+                                            </a>
+                                        @endif
+                                        @if (Auth::user()->canCreateProduksi())
+                                            <a href="{{ route('produksi.hpp.create') }}"
+                                                class="mega-item {{ request()->routeIs('produksi.hpp.create') || request()->routeIs('produksi.packaging.hpp.create') ? 'active' : '' }}">
+                                                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                                    style="color: #059669;">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                                </svg>
+                                                <div style="display: flex; flex-direction: column;">
+                                                    <span style="font-weight: 600;">Kalkulasi &amp; Input HPP</span>
+                                                    <span style="font-size: 0.6875rem; color: #64748b;">Pilihan HPP Dapur atau HPP Kemasan</span>
                                                 </div>
                                             </a>
                                         @endif
@@ -2566,9 +2580,12 @@
     <main>
         @if (session('success'))
             <div class="alert alert-success">
-                <span>{{ session('success') }}</span>
-                <button onclick="this.parentElement.remove()"
-                    style="background:none;border:none;cursor:pointer;color:#065f46;font-size:1.1rem;">&times;</button>
+                <div style="display: flex; align-items: center; gap: 0.65rem;">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    <span>{{ session('success') }}</span>
+                </div>
+                <button onclick="this.closest('.alert').remove()"
+                    style="background:none;border:none;cursor:pointer;color:#065f46;font-size:1.1rem;line-height:1;">&times;</button>
             </div>
         @endif
 
@@ -2576,11 +2593,22 @@
             <div class="alert"
                 style="background: #fffbeb; border: 1.5px solid #fde68a; color: #92400e; padding: 0.85rem 1.25rem; border-radius: 8px; margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
                 <div style="display: flex; align-items: center; gap: 0.65rem; font-weight: 600; font-size: 0.875rem;">
-                    <span style="font-size: 1.25rem;">⚠️</span>
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
                     <span>{{ session('warning') }}</span>
                 </div>
                 <button onclick="this.closest('.alert').remove()"
                     style="background:none;border:none;cursor:pointer;color:#92400e;font-size:1.2rem;line-height:1;">&times;</button>
+            </div>
+        @endif
+
+        @if (session('error'))
+            <div class="alert alert-error">
+                <div style="display: flex; align-items: center; gap: 0.65rem;">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <span>{{ session('error') }}</span>
+                </div>
+                <button onclick="this.closest('.alert').remove()"
+                    style="background:none;border:none;cursor:pointer;color:#991b1b;font-size:1.1rem;line-height:1;">&times;</button>
             </div>
         @endif
 

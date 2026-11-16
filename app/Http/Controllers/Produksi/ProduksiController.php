@@ -530,11 +530,10 @@ class ProduksiController extends Controller
                 ->orderBy('shift_cd', 'asc')
                 ->first();
 
-            $msg = "✅ Lembar HPP Produksi {$produksi->produksi_no} (Shift {$produksi->shift_cd} • {$produksi->lini_produksi}) berhasil difinalisasi!";
-            $msg .= " Total Biaya: Rp " . number_format($produksi->total_biaya_produksi, 0, ',', '.') . " | HPP Riil: Rp " . number_format($produksi->hpp_per_kg, 2, ',', '.') . "/kg.";
+            $msg = "Kalkulasi HPP {$produksi->produksi_no} berhasil difinalisasi.";
 
             if ($otherPending) {
-                $warnMsg = $msg . " ⚠️ PENGINGAT PENTING: Pada tanggal yang sama masih terdapat dokumen SPK #{$otherPending->produksi_no} (Shift {$otherPending->shift_cd} • {$otherPending->lini_produksi}) yang BELUM ditarik & difinalisasi HPP. Silakan lanjutkan pengisian biaya untuk dokumen ini.";
+                $warnMsg = "HPP {$produksi->produksi_no} berhasil disimpan. SPK {$otherPending->produksi_no} (Shift {$otherPending->shift_cd}) pada tanggal ini belum difinalisasi.";
                 return redirect()->route('produksi.hpp.create', ['produksi_id' => $otherPending->produksi_id])
                     ->with('warning', $warnMsg);
             }
@@ -649,8 +648,7 @@ class ProduksiController extends Controller
         try {
             $produksi = $this->produksiService->store($validated);
 
-            $msg = "✅ Hasil Produksi {$produksi->produksi_no} tanggal " . Carbon::parse($produksi->produksi_tgl)->format('d/m/Y') . " berhasil disimpan! ";
-            $msg .= "Rendemen: " . number_format($produksi->rendemen_persen, 2, ',', '.') . "% | HPP: Rp " . number_format($produksi->hpp_per_kg, 2, ',', '.') . " / kg.";
+            $msg = "Hasil produksi {$produksi->produksi_no} berhasil disimpan.";
 
             $tglObj = Carbon::parse($produksi->produksi_tgl);
             return redirect()->route('produksi.index', ['tahun' => $tglObj->year, 'bulan' => $tglObj->month])
@@ -783,6 +781,20 @@ class ProduksiController extends Controller
             ->get();
 
         return view('produksi.hpp.show', compact('produksi', 'sameDateProductions'));
+    }
+
+    /**
+     * Tampilkan Lembar Rincian Lengkap HPP Terpadu End-to-End (Hulu ke Hilir).
+     * Menghubungkan Pemakaian Bahan Dapur -> Output WIP -> Realisasi Cabang Pengemasan Barang Jadi.
+     */
+    public function showHppTerpadu(int $id, Request $request): View
+    {
+        $data = $this->produksiService->getHppTerpaduData($id);
+        $highlightPackId = $request->query('pack_id');
+
+        return view('produksi.hpp.terpadu', array_merge($data, [
+            'highlightPackId' => $highlightPackId ? (int) $highlightPackId : null,
+        ]));
     }
 
     /**
@@ -965,8 +977,7 @@ class ProduksiController extends Controller
             $user = Auth::user()?->name ?? (Auth::user()?->username ?? 'SYSTEM');
             $log = $this->produksiService->adjustSingleProductionHpp($id, $request->all(), $user);
 
-            $msg = "✅ Berhasil melakukan adjustment HPP (No. BA: {$log->adj_no})! ";
-            $msg .= "HPP baru: Rp " . number_format($log->hpp_sesudah, 2, ',', '.') . " / kg. Saldo batch stok di gudang telah disinkronkan.";
+            $msg = "Adjustment HPP {$log->adj_no} berhasil disimpan.";
 
             return redirect()->route('produksi.hpp.show', $id)->with('success', $msg);
         } catch (Exception $e) {
@@ -1041,9 +1052,9 @@ class ProduksiController extends Controller
             $importer = new HasilProduksiImport($this->codeGenerator, $this->stokService);
             $importer->import($request->file('import_file'));
 
-            $msg = "✅ Berhasil mengimpor {$importer->successCount} item hasil produksi!";
+            $msg = "Berhasil mengimpor {$importer->successCount} item hasil produksi.";
             if ($importer->errorCount > 0) {
-                $msg .= " Catatan: terdapat {$importer->errorCount} grup data yang gagal atau dilewati.";
+                $msg .= " Catatan: {$importer->errorCount} grup data gagal atau dilewati.";
             }
 
             return redirect()->route('produksi.index', ['tab' => 'hasil'])
@@ -1128,7 +1139,7 @@ class ProduksiController extends Controller
             $importer = new RekapHppImport($this->codeGenerator);
             $importer->import($request->file('import_file'), (int) $request->input('gudang_id', 1));
 
-            $msg = "✅ Berhasil mengimpor data Rekap HPP ({$importer->successCount} hari produksi diperbarui)!";
+            $msg = "Berhasil mengimpor rekap HPP ({$importer->successCount} hari produksi diperbarui).";
             if ($importer->skipCount > 0) {
                 $msg .= " Catatan: {$importer->skipCount} baris tanggal kosong/libur dilewati.";
             }

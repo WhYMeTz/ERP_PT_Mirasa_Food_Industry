@@ -222,6 +222,7 @@
             <tbody>
                 @foreach ($report['days'] as $d)
                     @if ($d['has_data'])
+                        @if (!empty($d['is_hpp_final']))
                         <tr>
                             <td style="text-align: center; font-weight: 700; color: #0f172a;">{{ $d['hari_nm'] }}</td>
                             <td style="text-align: center; font-size: 0.775rem;">{{ date('d/m/y', strtotime($d['date'])) }}</td>
@@ -332,6 +333,67 @@
                                 @endif
                             </td>
                         </tr>
+                        @else
+                        {{-- NOTIFIKASI INFORMATIF SPREADSHEET: HASIL KEMAS FISIK TERCATAT TAPI BELUM DIFINALISASI FINANCE --}}
+                        <tr style="background: #fffdf5;">
+                            <td style="text-align: center; font-weight: 700; color: #0f172a;">{{ $d['hari_nm'] }}</td>
+                            <td style="text-align: center; font-size: 0.775rem;">{{ date('d/m/y', strtotime($d['date'])) }}</td>
+                            <td colspan="27" style="padding: 0.65rem 0.85rem; text-align: left; background: #fffdf5; border-bottom: 1px solid #fde68a;">
+                                <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap;">
+                                    <div style="display: flex; align-items: center; gap: 0.6rem;">
+                                        <span style="display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: #fef3c7; color: #b45309; font-size: 0.75rem; font-weight: 800; flex-shrink: 0; border: 1px solid #fde68a;">
+                                            <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                        </span>
+                                        <div>
+                                            <div style="font-size: 0.825rem; font-weight: 700; color: #92400e;">
+                                                Hasil pengemasan fisik tercatat (Dokumen #{{ $d['primary_pack_no'] }} &bull; {{ $d['primary_product_nm'] }}), belum dilakukan penarikan &amp; finalisasi HPP.
+                                            </div>
+                                            <div style="font-size: 0.725rem; color: #b45309; margin-top: 2px;">
+                                                Data biaya dan HPP akan muncul di spreadsheet ini setelah dilakukan penarikan data dan perhitungan HPP.
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                        <a href="{{ route('produksi.packaging.hpp.create', ['pack_id' => $d['primary_pack_id']]) }}" 
+                                           class="btn-loading-trigger"
+                                           style="font-size: 0.75rem; font-weight: 700; color: #0284c7; background: #f0f9ff; border: 1px solid #bae6fd; padding: 0.35rem 0.75rem; border-radius: 6px; text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem; white-space: nowrap;">
+                                            <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                                            <span>Tarik &amp; Finalisasi HPP</span>
+                                        </a>
+                                        <a href="{{ route('produksi.packaging.show', $d['primary_pack_id']) }}" 
+                                           style="font-size: 0.75rem; font-weight: 600; color: #475569; background: #fff; border: 1px solid #cbd5e1; padding: 0.35rem 0.65rem; border-radius: 6px; text-decoration: none; display: inline-flex; align-items: center; gap: 0.35rem;">
+                                            <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                            <span>Detail Fisik</span>
+                                        </a>
+                                    </div>
+                                </div>
+                            </td>
+                            <td style="text-align: center; position: relative;">
+                                @php
+                                    $spPckMenuId = 'menu-sp-pck-' . $d['primary_pack_id'];
+                                @endphp
+                                <button type="button" class="btn-action-trigger" onclick="toggleSmartActionDropdown(this, event, '{{ $spPckMenuId }}')">
+                                    <span>Aksi</span>
+                                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                </button>
+                                <div id="{{ $spPckMenuId }}" class="action-dropdown-menu">
+                                    <a href="{{ route('produksi.packaging.show', $d['primary_pack_id']) }}" class="action-dropdown-item">
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                        <span>Lihat Detail Fisik</span>
+                                    </a>
+                                    <a href="{{ route('produksi.packaging.hpp.create', ['pack_id' => $d['primary_pack_id']]) }}" class="action-dropdown-item">
+                                        <svg width="14" height="14" fill="none" stroke="#0284c7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                                        <span>Tarik &amp; Finalisasi HPP</span>
+                                    </a>
+                                    <div class="action-dropdown-divider"></div>
+                                    <button type="button" class="action-dropdown-item danger-item" onclick="openVoidPackagingModal({{ $d['primary_pack_id'] }}, '{{ $d['primary_pack_no'] }}', '{{ addslashes($d['primary_product_nm'] ?? '') }}')">
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                        <span>Batalkan (Void)</span>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        @endif
                     @else
                         {{-- HARI TANPA PRODUKSI --}}
                         <tr style="background: #fbfcfd; color: #cbd5e1;">

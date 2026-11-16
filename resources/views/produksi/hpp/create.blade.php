@@ -28,6 +28,22 @@
                 </p>
             </div>
         </div>
+
+        {{-- Switcher Pilihan Input HPP: Dapur (WIP Curah) vs Pengemasan (FG) --}}
+        <div style="margin-top: 1rem; background: #f1f5f9; padding: 4px; border-radius: 8px; display: inline-flex; border: 1.5px solid #e2e8f0; gap: 4px;">
+            <a href="{{ route('produksi.hpp.create') }}" 
+               style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.8125rem; font-weight: 700; text-decoration: none; background: #ffffff; color: #0284c7; box-shadow: 0 1px 3px rgba(0,0,0,0.08); border: 1px solid #bae6fd;">
+                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                <span>1. HPP Olahan Dapur (Curah WIP)</span>
+            </a>
+            <a href="{{ route('produksi.packaging.hpp.create') }}" 
+               style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.8125rem; font-weight: 600; text-decoration: none; color: #64748b; background: transparent; transition: all 0.15s ease;"
+               onmouseover="this.style.color='#059669'; this.style.background='#f8fafc';"
+               onmouseout="this.style.color='#64748b'; this.style.background='transparent';">
+                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                <span>2. HPP Pengemasan (Barang Jadi FG)</span>
+            </a>
+        </div>
     </div>
 
     @if(session('warning'))
@@ -566,20 +582,31 @@
         </div>
     </form>
 
-    {{-- OVERLAY LOADING MODAL INTERAKTIF --}}
+    {{-- OVERLAY LOADING MODAL UNIVERSAL "MEMUAT..." --}}
     <div id="hppLoadingOverlay" class="hpp-loading-backdrop" style="display: none;">
-        <div class="hpp-loading-card">
-            <div class="hpp-spinner-container">
-                <svg class="spin-svg-lg" width="40" height="40" viewBox="0 0 24 24" fill="none">
-                    <circle cx="12" cy="12" r="10" stroke="#e2e8f0" stroke-width="3"></circle>
-                    <path fill="#059669" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        <div class="hpp-modern-pill-loader">
+            <div class="hpp-gyro-container">
+                <svg class="hpp-gyro-svg" viewBox="0 0 40 40">
+                    <defs>
+                        <linearGradient id="hppGyroGradForm" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#059669" stop-opacity="1" />
+                            <stop offset="60%" stop-color="#10b981" stop-opacity="0.8" />
+                            <stop offset="100%" stop-color="#34d399" stop-opacity="0" />
+                        </linearGradient>
+                        <linearGradient id="hppInnerGradForm" x1="100%" y1="100%" x2="0%" y2="0%">
+                            <stop offset="0%" stop-color="#0284c7" stop-opacity="0.9" />
+                            <stop offset="100%" stop-color="#38bdf8" stop-opacity="0.1" />
+                        </linearGradient>
+                    </defs>
+                    <circle cx="20" cy="20" r="16" fill="none" stroke="#f1f5f9" stroke-width="2.5" />
+                    <circle class="hpp-gyro-outer" cx="20" cy="20" r="16" fill="none" stroke="url(#hppGyroGradForm)" stroke-width="2.75" stroke-linecap="round" />
+                    <circle class="hpp-gyro-inner" cx="20" cy="20" r="10.5" fill="none" stroke="url(#hppInnerGradForm)" stroke-width="2.25" stroke-linecap="round" />
+                    <circle class="hpp-gyro-core" cx="20" cy="20" r="3" fill="#059669" />
                 </svg>
             </div>
-            <h3 class="hpp-load-title" id="overlayLoadingTitle">Sinkronisasi Data Produksi</h3>
-            <p class="hpp-load-msg" id="overlayLoadingMsg">Sedang menarik rincian pemakaian bahan gudang (BPPB), hasil timbang olahan WIP, energi gas, dan absensi...</p>
-            <div class="hpp-load-progress-bar">
-                <div class="hpp-load-progress-fill"></div>
-            </div>
+            <span class="hpp-modern-label">
+                Memuat<span class="hpp-modern-dots"><span class="hpp-dot hpp-dot-1">.</span><span class="hpp-dot hpp-dot-2">.</span><span class="hpp-dot-3">.</span></span>
+            </span>
         </div>
     </div>
 </div>

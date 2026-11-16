@@ -193,6 +193,7 @@
                                         </div>
                                     </div>
                                     <a href="{{ route('produksi.hpp.create', ['produksi_id' => $d['produksi_id']]) }}" 
+                                       class="btn-tarik-finalisasi-hpp btn-loading-trigger"
                                        style="font-size: 0.725rem; font-weight: 700; color: #0284c7; background: #f0f9ff; border: 1px solid #bae6fd; padding: 0.3rem 0.7rem; border-radius: 5px; text-decoration: none; display: inline-flex; align-items: center; gap: 0.35rem; white-space: nowrap;">
                                         <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
                                         <span>Tarik &amp; Finalisasi HPP</span>
@@ -399,9 +400,13 @@
                                                 <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                                                 <span>Lihat HPP Shift {{ $fSpk['shift_cd'] }}</span>
                                             </a>
+                                            <a href="{{ route('produksi.hpp.terpadu', $fSpk['produksi_id']) }}" class="action-dropdown-item">
+                                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                                <span>HPP Terpadu Shift {{ $fSpk['shift_cd'] }}</span>
+                                            </a>
                                         @endforeach
                                     @elseif(empty($d['is_hpp_final']))
-                                        <a href="{{ route('produksi.hpp.create', ['produksi_id' => $d['produksi_id']]) }}" class="action-dropdown-item" style="color: #0284c7; font-weight: 700; background: #f0f9ff;">
+                                        <a href="{{ route('produksi.hpp.create', ['produksi_id' => $d['produksi_id']]) }}" class="action-dropdown-item btn-loading-trigger" style="color: #0284c7; font-weight: 700; background: #f0f9ff;">
                                             <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
                                             <span>Tarik &amp; Finalisasi HPP</span>
                                         </a>
@@ -409,10 +414,18 @@
                                             <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                                             <span>Lihat SPK Fisik</span>
                                         </a>
+                                        <a href="{{ route('produksi.hpp.terpadu', $d['produksi_id']) }}" class="action-dropdown-item">
+                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                            <span>Rincian HPP Terpadu</span>
+                                        </a>
                                     @else
                                         <a href="{{ route('produksi.hpp.show', $d['produksi_id']) }}" class="action-dropdown-item">
                                             <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                                             <span>Lihat Lembar HPP</span>
+                                        </a>
+                                        <a href="{{ route('produksi.hpp.terpadu', $d['produksi_id']) }}" class="action-dropdown-item">
+                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                            <span>Rincian HPP Terpadu</span>
                                         </a>
                                         @if(Auth::user()->canCreateProduksi())
                                             <a href="{{ route('produksi.adjust', $d['produksi_id']) }}" class="action-dropdown-item">

@@ -17,6 +17,8 @@
         $wipItems = $header->details->filter(fn($d) => strtoupper($d->kategori_bahan) === 'WIP');
         $kemasanItems = $header->details->filter(fn($d) => strtoupper($d->kategori_bahan) !== 'WIP');
 
+        $totalWipKg = (float) ($header->total_wip_kg ?: $wipItems->sum('qty_aktual'));
+
         $lko = $header->laporanKemasOperator;
         $dusAfkir = (float) ($lko?->karton_rusak_lembar ?? 0);
         $plastikAfkir = (float) ($lko?->plastik_rusak_pcs ?? 0);
@@ -70,9 +72,14 @@
             @if(Auth::user()->canCreatePackaging())
                 <a href="{{ route('produksi.packaging.create') }}" class="btn-adjust-hpp" style="color: #059669; border-color: #10b981;" title="Buat Lembar Pengemasan Baru">
                     <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                    <span>+ Kemas Baru</span>
+                    <span>Kemas Baru</span>
                 </a>
             @endif
+
+            <a href="{{ route('produksi.packaging.show-hpp', $header->pack_id) }}" class="btn-print-doc" style="background: #0284c7; color: #ffffff; text-decoration: none; border-color: #0369a1; font-weight: 600;" title="Buka Lembar Kalkulasi HPP Pengemasan">
+                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                <span>Lembar HPP Pengemasan</span>
+            </a>
 
             <button type="button" onclick="window.print()" class="btn-print-doc">
                 <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
@@ -88,20 +95,7 @@
         </div>
     </div>
 
-    {{-- ALERT NOTIFIKASI SUKSES / ERROR --}}
-    @if(session('success'))
-        <div class="no-print" style="background: #ecfdf5; border: 1.5px solid #a7f3d0; border-radius: 8px; padding: 0.85rem 1.25rem; color: #065f46; margin-bottom: 1.25rem; font-size: 0.875rem; font-weight: 600; display: flex; align-items: center; gap: 0.5rem;">
-            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            <span>{{ session('success') }}</span>
-        </div>
-    @endif
 
-    @if(session('error'))
-        <div class="no-print" style="background: #fef2f2; border: 1.5px solid #fecaca; border-radius: 8px; padding: 0.85rem 1.25rem; color: #991b1b; margin-bottom: 1.25rem; font-size: 0.875rem; font-weight: 600; display: flex; align-items: center; gap: 0.5rem;">
-            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            <span>{{ session('error') }}</span>
-        </div>
-    @endif
 
     {{-- TAB SWITCHER SPLIT DOKUMEN PENGEMASAN (JIKA PADA TANGGAL INI TERDAPAT LEBIH DARI 1 DOKUMEN KEMAS) --}}
     @if(isset($sameDatePackaging) && $sameDatePackaging->count() > 1)
@@ -193,7 +187,7 @@
                 <div>
                     <span class="executive-stat-label">Curah WIP Terpakai</span>
                     <div class="executive-stat-value" style="color: #d97706;">
-                        {{ number_format($header->total_wip_kg, 1, ',', '.') }} <span style="font-size: 0.85rem; font-weight: 600; color: #64748b;">kg</span>
+                        {{ number_format($totalWipKg, 1, ',', '.') }} <span style="font-size: 0.85rem; font-weight: 600; color: #64748b;">kg</span>
                     </div>
                 </div>
                 <div class="executive-stat-icon-box" style="background: #fffbeb; color: #d97706;">
@@ -263,7 +257,7 @@
                     </tr>
                     @if($header->produksi)
                     <tr>
-                        <td class="label-col">Tiket Asal Masak (SPK)</td>
+                        <td class="label-col">Tiket Asal Produksi (SPK)</td>
                         <td class="value-col">
                             <a href="{{ route('produksi.show', $header->produksi_id) }}" style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.35rem; color: #059669; font-weight: 700;" title="Buka Detail SPK Produksi">
                                 <span>{{ $header->produksi->produksi_no }}</span>
@@ -470,7 +464,7 @@
                 <span>Rincian Bahan Curah (WIP) Terpakai</span>
             </div>
             <span style="font-size: 0.775rem; color: #64748b; font-weight: 600;">
-                Keripik Matang Hasil Penggorengan Dapur
+                Keripik Matang Hasil Pengolahan Produksi
             </span>
         </div>
         <div style="overflow-x: auto;">
@@ -480,7 +474,7 @@
                         <th style="width: 45px; text-align: center;">No</th>
                         <th style="width: 140px;">Kode Barang</th>
                         <th>Nama Bahan Curah (WIP)</th>
-                        <th style="width: 180px;">Asal Tiket SPK / Lot Masak</th>
+                        <th style="width: 180px;">Asal Tiket SPK / Batch WIP</th>
                         <th style="width: 140px; text-align: right;">Standar BOM</th>
                         <th style="width: 150px; text-align: right;">Aktual Terpakai</th>
                         <th style="width: 90px; text-align: center;">Satuan</th>
@@ -527,7 +521,7 @@
                             TOTAL BAHAN CURAH TERKONSUMSI:
                         </td>
                         <td style="padding: 0.75rem 1rem; text-align: right; color: #d97706; font-size: 1rem; font-variant-numeric: tabular-nums;">
-                            {{ number_format($header->total_wip_kg, 2, ',', '.') }}
+                            {{ number_format($totalWipKg, 2, ',', '.') }}
                         </td>
                         <td style="text-align: center; color: #475569;">
                             kg
@@ -582,8 +576,9 @@
                             <td>
                                 <strong style="color: #0f172a;">{{ $kem->barang?->barang_nm }}</strong>
                                 @if($isLakban && ($header->lakban_atas_gr > 0 || $header->lakban_bawah_gr > 0 || $header->lakban_jumlah_gr > 0))
-                                    <div style="font-size: 0.725rem; color: #059669; font-weight: 700; margin-top: 2px;">
-                                        🏷️ Timbangan Segel: Atas {{ number_format($header->lakban_atas_gr, 0) }}g &bull; Bawah {{ number_format($header->lakban_bawah_gr, 0) }}g &bull; Total {{ number_format($header->lakban_jumlah_gr, 0) }}g
+                                    <div style="font-size: 0.725rem; color: #059669; font-weight: 700; margin-top: 2px; display: inline-flex; align-items: center; gap: 0.25rem;">
+                                        <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                                        <span>Timbangan Segel: Atas {{ number_format($header->lakban_atas_gr, 0) }}g &bull; Bawah {{ number_format($header->lakban_bawah_gr, 0) }}g &bull; Total {{ number_format($header->lakban_jumlah_gr, 0) }}g</span>
                                     </div>
                                 @endif
                                 @if($kem->batch_no)

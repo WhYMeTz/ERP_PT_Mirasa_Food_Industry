@@ -6,6 +6,111 @@
 
 @import url('../hpp/hpp-create.css');
 
+/* Parameter Box & Grid Dokumen Pengemasan Terpilih (Identik dengan HPP Produksi) */
+.spk-param-box {
+    margin-top: 1rem;
+    padding: 1.15rem 1.25rem;
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+}
+
+.spk-param-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1.15rem 1.25rem;
+    align-items: start;
+}
+
+.spk-param-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.spk-param-label {
+    font-size: 0.725rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #64748b;
+}
+
+.spk-param-value {
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.spk-param-value.font-mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+/* Modern Currency Input Group (Standar Enterprise Mirasa) */
+.input-rp-wrap {
+    display: inline-flex !important;
+    align-items: stretch !important;
+    width: 100% !important;
+    max-width: 155px !important;
+    background: #ffffff !important;
+    border: 1.5px solid #cbd5e1 !important;
+    border-radius: 6px !important;
+    overflow: hidden !important;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04) !important;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out !important;
+}
+
+.input-rp-wrap:focus-within {
+    border-color: #059669 !important;
+    box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15) !important;
+}
+
+.prefix-rp {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0.35rem 0.6rem !important;
+    background: #f1f5f9 !important;
+    border: none !important;
+    border-right: 1px solid #cbd5e1 !important;
+    font-size: 0.775rem !important;
+    font-weight: 700 !important;
+    color: #475569 !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+    line-height: 1 !important;
+    user-select: none !important;
+    letter-spacing: 0.02em !important;
+}
+
+.input-rp-wrap input.hpp-input {
+    width: 100% !important;
+    border: none !important;
+    outline: none !important;
+    background: transparent !important;
+    padding: 0.38rem 0.65rem !important;
+    font-size: 0.875rem !important;
+    font-weight: 700 !important;
+    color: #0f172a !important;
+    text-align: right !important;
+    font-variant-numeric: tabular-nums !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    -moz-appearance: textfield !important;
+}
+
+.input-rp-wrap input.hpp-input::-webkit-outer-spin-button,
+.input-rp-wrap input.hpp-input::-webkit-inner-spin-button {
+    -webkit-appearance: none !important;
+    margin: 0 !important;
+}
+
+.input-rp-wrap input.hpp-input:focus {
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
 /* Pastikan tabel pemakaian terkunci dengan lebar proporsional 100% dan fixed layout */
 .table-pemakaian {
     width: 100% !important;

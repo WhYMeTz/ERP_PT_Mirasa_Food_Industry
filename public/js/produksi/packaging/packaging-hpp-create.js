@@ -10,16 +10,24 @@ document.addEventListener('DOMContentLoaded', function () {
     const selectPack = document.getElementById('pack_id');
     if (selectPack && selectPack.value) {
         onPackagingSelectChange(selectPack.value);
+    } else {
+        const placeholder = document.getElementById('packPlaceholderNotice');
+        if (placeholder) placeholder.style.display = 'flex';
     }
 });
 
 function onPackagingSelectChange(packId) {
     const wipFoot = document.getElementById('wipTableFoot');
     const kemasanFoot = document.getElementById('kemasanTableFoot');
+    const paramBox = document.getElementById('packParamBox');
+    const placeholder = document.getElementById('packPlaceholderNotice');
+    const loadingNotice = document.getElementById('packLoadingNotice');
 
     if (!packId) {
         currentPackagingData = null;
-        document.getElementById('packParamBox').style.display = 'none';
+        if (paramBox) paramBox.style.display = 'none';
+        if (loadingNotice) loadingNotice.style.display = 'none';
+        if (placeholder) placeholder.style.display = 'flex';
         document.getElementById('wipTableBody').innerHTML = `
             <tr>
                 <td colspan="6" style="padding: 2.5rem 1.5rem; text-align: center; background: #ffffff;">
@@ -29,7 +37,7 @@ function onPackagingSelectChange(packId) {
                         </div>
                         <strong style="font-size: 0.875rem; color: #1e293b;">Menunggu Pemilihan Dokumen Pengemasan</strong>
                         <p style="font-size: 0.8rem; color: #64748b; margin: 0; line-height: 1.4;">
-                            Pilih nomor dokumen fisik pada <strong>Card 1</strong> di atas untuk memuat rincian keripik curah dan kalkulasi HPP dapur secara otomatis.
+                            Pilih nomor dokumen fisik pada <strong>Card 1</strong> di atas untuk memuat rincian keripik curah dan kalkulasi HPP produksi secara otomatis.
                         </p>
                     </div>
                 </td>
@@ -56,14 +64,18 @@ function onPackagingSelectChange(packId) {
         return;
     }
 
+    if (placeholder) placeholder.style.display = 'none';
+    if (paramBox) paramBox.style.display = 'none';
+    if (loadingNotice) loadingNotice.style.display = 'flex';
+
     const loadUrl = window.appConfig.urlPackagingData.replace('__ID__', packId);
 
-    // Show loading state
+    // Show loading state in tables
     document.getElementById('wipTableBody').innerHTML = `
         <tr>
             <td colspan="6" style="text-align: center; padding: 2rem; color: #0284c7;">
                 <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" class="animate-spin" style="display: inline-block; vertical-align: middle; margin-right: 0.5rem;"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" style="opacity: 0.25;"></circle><path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" style="opacity: 0.75;"></path></svg>
-                <span>Menarik data dokumen pengemasan &amp; HPP WIP dapur...</span>
+                <span>Menarik data dokumen pengemasan &amp; HPP WIP...</span>
             </td>
         </tr>
     `;
@@ -86,6 +98,8 @@ function onPackagingSelectChange(packId) {
         renderPackagingData(json.data);
     })
     .catch(err => {
+        if (loadingNotice) loadingNotice.style.display = 'none';
+        if (placeholder) placeholder.style.display = 'flex';
         alert('Terjadi kesalahan: ' + err.message);
         console.error(err);
     });
@@ -93,7 +107,13 @@ function onPackagingSelectChange(packId) {
 
 function renderPackagingData(data) {
     // 1. Parameter Grid (Card 1)
-    document.getElementById('packParamBox').style.display = 'block';
+    const loadingNotice = document.getElementById('packLoadingNotice');
+    if (loadingNotice) loadingNotice.style.display = 'none';
+    const placeholder = document.getElementById('packPlaceholderNotice');
+    if (placeholder) placeholder.style.display = 'none';
+    const paramBox = document.getElementById('packParamBox');
+    if (paramBox) paramBox.style.display = 'block';
+
     document.getElementById('pvPackNo').innerText = data.pack_no;
     document.getElementById('pvPackTgl').innerText = data.pack_tgl_formatted;
     document.getElementById('pvBarangJadi').innerText = data.barang_jadi_nm;
@@ -134,7 +154,7 @@ function renderPackagingData(data) {
                         ${Number(item.qty_aktual).toLocaleString('id-ID', {minimumFractionDigits: 1, maximumFractionDigits: 2})} kg
                     </td>
                     <td style="text-align: right;">
-                        <div class="input-rp-wrap" style="max-width: 140px; margin-left: auto;">
+                        <div class="input-rp-wrap" style="max-width: 155px; margin-left: auto;">
                             <span class="prefix-rp">Rp</span>
                             <input type="number" step="any" min="0" 
                                    name="wip_items[${item.packdtl_id}][harga_satuan]" 
@@ -151,7 +171,7 @@ function renderPackagingData(data) {
                     </td>
                     <td style="text-align: center;">
                         <span class="pck-hpp-badge">
-                            ✓ ${data.is_wip_hpp_ready ? 'Dapur Terverifikasi' : 'Acuan Standar'}
+                            ✓ ${data.is_wip_hpp_ready ? 'HPP Terverifikasi' : 'Acuan Standar'}
                         </span>
                     </td>
                 </tr>
@@ -185,7 +205,7 @@ function renderPackagingData(data) {
                         ${Number(item.qty_aktual).toLocaleString('id-ID', {minimumFractionDigits: 0, maximumFractionDigits: 2})} ${item.satuan_cd}
                     </td>
                     <td style="text-align: right;">
-                        <div class="input-rp-wrap" style="max-width: 140px; margin-left: auto;">
+                        <div class="input-rp-wrap" style="max-width: 155px; margin-left: auto;">
                             <span class="prefix-rp">Rp</span>
                             <input type="number" step="any" min="0" 
                                    name="kemasan_items[${item.packdtl_id}][harga_satuan]" 
@@ -222,9 +242,12 @@ function renderPackagingData(data) {
     document.getElementById('kemasanTableBody').innerHTML = kemasanHtml;
 
     // 4. Tenaga Kerja (BTKL Kemas - Card 4)
-    document.getElementById('tk_langsung_org').value = data.jumlah_personil || 0;
-    document.getElementById('tk_langsung_nilai').value = data.total_biaya_tenaga_kerja || 0;
-    document.getElementById('helpTkSync').innerText = `Ditarik dari: ${data.labor_source}. Kehadiran riil tanggal ${data.pack_tgl}.`;
+    const elTkOrg = document.getElementById('tk_langsung_org');
+    if (elTkOrg) elTkOrg.value = data.jumlah_personil || 0;
+    const elTkNilai = document.getElementById('tk_langsung_nilai');
+    if (elTkNilai) elTkNilai.value = data.total_biaya_tenaga_kerja || 0;
+    const elHelpTk = document.getElementById('helpTkSync');
+    if (elHelpTk) elHelpTk.innerText = `Ditarik dari: ${data.labor_source}. Kehadiran riil tanggal ${data.pack_tgl}.`;
 
     recalcAllPackagingHpp();
 }
@@ -251,6 +274,20 @@ function onKemasanPriceChange(input) {
     recalcAllPackagingHpp();
 }
 
+function onLaborPersonilChange(input) {
+    const jml = parseInt(input.value) || 0;
+    const rate = (window.appConfig && window.appConfig.tarifTkHarian) ? Number(window.appConfig.tarifTkHarian) : 91300;
+    const elUpah = document.getElementById('tk_langsung_nilai');
+    if (elUpah) {
+        elUpah.value = Math.round(jml * rate);
+    }
+    recalcAllPackagingHpp();
+}
+
+function onLaborPriceChange(input) {
+    recalcAllPackagingHpp();
+}
+
 function calcLaborPackaging() {
     recalcAllPackagingHpp();
 }
@@ -262,7 +299,7 @@ function syncLaborFromKaryawan() {
     }
 
     const tgl = currentPackagingData.pack_tgl;
-    const syncUrl = `${window.appConfig.urlSyncKaryawan}?tanggal=${tgl}&dept=Langsung%20Packing`;
+    const syncUrl = `${window.appConfig.urlSyncKaryawan}?tgl=${tgl}&lini=Langsung%20Packing`;
 
     fetch(syncUrl, {
         headers: {
@@ -272,16 +309,20 @@ function syncLaborFromKaryawan() {
     })
     .then(res => res.json())
     .then(res => {
-        if (res.status === 'success' || res.jumlah_karyawan !== undefined) {
-            const jml = res.jumlah_karyawan || 0;
-            const upah = res.total_upah || 0;
-            document.getElementById('tk_langsung_org').value = jml;
-            document.getElementById('tk_langsung_nilai').value = upah;
-            document.getElementById('helpTkSync').innerText = `✓ Berhasil disinkronkan dengan data absensi tanggal ${tgl} (${jml} Karyawan Hadir).`;
-            recalcAllPackagingHpp();
+        const data = res.data || res;
+        const jml = data.tk_langsung_org || data.tk_jumlah_org || data.jumlah_karyawan || 0;
+        const upah = data.tk_langsung_nilai || data.tk_total_nilai || data.total_upah || 0;
+        const elTkOrg = document.getElementById('tk_langsung_org');
+        if (elTkOrg) elTkOrg.value = jml;
+        const elTkNilai = document.getElementById('tk_langsung_nilai');
+        if (elTkNilai) elTkNilai.value = upah;
+        const elHelpTk = document.getElementById('helpTkSync');
+        if (data.is_synced && jml > 0) {
+            if (elHelpTk) elHelpTk.innerText = `✓ Berhasil disinkronkan dengan data absensi tanggal ${tgl} (${jml} Karyawan Hadir).`;
         } else {
-            alert('Gagal mengambil data absensi: ' + (res.message || 'Respon tidak valid'));
+            if (elHelpTk) elHelpTk.innerText = `ℹ ${data.message || 'Data absensi tidak ditemukan, Anda dapat mengisi jumlah orang & upah secara manual.'}`;
         }
+        recalcAllPackagingHpp();
     })
     .catch(err => {
         alert('Gagal sinkronisasi presensi: ' + err.message);
@@ -310,16 +351,21 @@ function recalcAllPackagingHpp() {
     document.getElementById('lblSubtotalKemasan').innerText = 'Rp ' + totalKemasan.toLocaleString('id-ID');
 
     // 3. Total BTKL Kemas
-    const jmlOrg = parseInt(document.getElementById('tk_langsung_org').value) || 0;
-    const upahTk = parseFloat(document.getElementById('tk_langsung_nilai').value) || 0;
-    document.getElementById('disp_tk_total_nilai').innerText = upahTk.toLocaleString('id-ID');
-    document.getElementById('lblTkFormula').innerText = `${jmlOrg} Orang Langsung Packing`;
-    document.getElementById('total_biaya_tenaga_kerja').value = upahTk;
-    document.getElementById('jumlah_personil').value = jmlOrg;
+    const elJmlOrg = document.getElementById('tk_langsung_org');
+    const elUpahTk = document.getElementById('tk_langsung_nilai');
+    const jmlOrg = elJmlOrg ? (parseInt(elJmlOrg.value) || 0) : 0;
+    const upahTk = elUpahTk ? (parseFloat(elUpahTk.value) || 0) : 0;
+
+    const elDispTkTotal = document.getElementById('disp_tk_total_nilai');
+    if (elDispTkTotal) elDispTkTotal.innerText = upahTk.toLocaleString('id-ID');
+
+    const elLblTkFormula = document.getElementById('lblTkFormula');
+    if (elLblTkFormula) elLblTkFormula.innerText = `${jmlOrg} Orang Langsung Packing`;
 
     // 4. Total Biaya Pengemasan (Murni: WIP + Kemasan + BTKL Kemas, Tanpa FOH)
     const totalBiaya = Math.round(totalWip + totalKemasan + upahTk);
-    document.getElementById('total_biaya_produksi').value = totalBiaya;
+    const elTotalBiaya = document.getElementById('total_biaya_produksi');
+    if (elTotalBiaya) elTotalBiaya.value = totalBiaya;
 
     // 6. Output & HPP
     const hasilKarton = currentPackagingData ? (parseFloat(currentPackagingData.hasil_karton_qty) || 0) : 0;
@@ -328,16 +374,31 @@ function recalcAllPackagingHpp() {
     const hppKarton = hasilKarton > 0 ? Math.round(totalBiaya / hasilKarton) : 0;
     const hppPcs = hasilPcs > 0 ? Math.round(totalBiaya / hasilPcs) : 0;
 
+    const wipPerKtn = hasilKarton > 0 ? Math.round(totalWip / hasilKarton) : 0;
+    const kemasPerKtn = hasilKarton > 0 ? Math.round(totalKemasan / hasilKarton) : 0;
+    const wipPerPcs = hasilPcs > 0 ? Math.round(totalWip / hasilPcs) : 0;
+    const kemasPerPcs = hasilPcs > 0 ? Math.round(totalKemasan / hasilPcs) : 0;
+
     // Update KPI Card Displays
     document.getElementById('statWipNilai').innerText = 'Rp ' + totalWip.toLocaleString('id-ID');
     document.getElementById('statKemasanNilai').innerText = 'Rp ' + totalKemasan.toLocaleString('id-ID');
-    document.getElementById('statTkNilai').innerText = 'Rp ' + upahTk.toLocaleString('id-ID');
-    document.getElementById('statTkMeta').innerText = `${jmlOrg} Orang Packing`;
+    if (document.getElementById('statTkNilai')) document.getElementById('statTkNilai').innerText = 'Rp ' + upahTk.toLocaleString('id-ID');
+    if (document.getElementById('statTkMeta')) document.getElementById('statTkMeta').innerText = `${jmlOrg} Orang Packing`;
     document.getElementById('statTotalBiaya').innerText = 'Rp ' + totalBiaya.toLocaleString('id-ID');
     document.getElementById('statTotalKarton').innerText = `${hasilKarton.toLocaleString('id-ID')} Karton`;
     document.getElementById('statTotalPcsMeta').innerText = `${hasilPcs.toLocaleString('id-ID')} Pcs Finish Good`;
     document.getElementById('statHppKarton').innerText = 'Rp ' + hppKarton.toLocaleString('id-ID');
-    document.getElementById('statHppPcsMeta').innerText = `Setara Rp ${hppPcs.toLocaleString('id-ID')} / Pcs`;
+    if (document.getElementById('statHppKartonMeta')) {
+        document.getElementById('statHppKartonMeta').innerText = hasilKarton > 0 
+            ? `WIP Rp ${wipPerKtn.toLocaleString('id-ID')} + Kemas Rp ${kemasPerKtn.toLocaleString('id-ID')}`
+            : 'Standar Dus Siap Distribusi';
+    }
+    if (document.getElementById('statHppPcs')) document.getElementById('statHppPcs').innerText = 'Rp ' + hppPcs.toLocaleString('id-ID');
+    if (document.getElementById('statHppPcsMeta')) {
+        document.getElementById('statHppPcsMeta').innerText = hasilPcs > 0 
+            ? `WIP Rp ${wipPerPcs.toLocaleString('id-ID')} + Kemas Rp ${kemasPerPcs.toLocaleString('id-ID')}`
+            : 'Kemasan Eceran / Bungkus';
+    }
 
     // Enable / disable submit button
     const btnSubmit = document.getElementById('btnSubmitHpp');
@@ -356,13 +417,15 @@ function resetHppDisplays() {
     document.getElementById('lblTkFormula').innerText = '0 Orang Langsung Packing';
     document.getElementById('statWipNilai').innerText = 'Rp 0';
     document.getElementById('statKemasanNilai').innerText = 'Rp 0';
-    document.getElementById('statTkNilai').innerText = 'Rp 0';
-    document.getElementById('statTkMeta').innerText = '0 Orang Packing';
+    if (document.getElementById('statTkNilai')) document.getElementById('statTkNilai').innerText = 'Rp 0';
+    if (document.getElementById('statTkMeta')) document.getElementById('statTkMeta').innerText = '0 Orang Packing';
     document.getElementById('statTotalBiaya').innerText = 'Rp 0';
     document.getElementById('statTotalKarton').innerText = '0 Karton';
     document.getElementById('statTotalPcsMeta').innerText = '0 Pcs Finish Good';
     document.getElementById('statHppKarton').innerText = 'Rp 0';
-    document.getElementById('statHppPcsMeta').innerText = 'Setara Rp 0 / Pcs';
+    if (document.getElementById('statHppKartonMeta')) document.getElementById('statHppKartonMeta').innerText = 'Standar Dus Siap Distribusi';
+    if (document.getElementById('statHppPcs')) document.getElementById('statHppPcs').innerText = 'Rp 0';
+    if (document.getElementById('statHppPcsMeta')) document.getElementById('statHppPcsMeta').innerText = 'Kemasan Eceran / Bungkus';
     const btnSubmit = document.getElementById('btnSubmitHpp');
     if (btnSubmit) btnSubmit.disabled = true;
 }

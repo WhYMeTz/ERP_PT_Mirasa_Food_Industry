@@ -40,18 +40,7 @@
         </div>
     </div>
 
-    {{-- Notifikasi Sukses & Error --}}
-    @if(session('success'))
-        <div style="background: #ecfdf5; border: 1.5px solid #a7f3d0; border-radius: 8px; padding: 0.85rem 1.25rem; color: #065f46; margin-bottom: 1.25rem; font-size: 0.875rem; font-weight: 600;">
-            <span>{{ session('success') }}</span>
-        </div>
-    @endif
 
-    @if(session('error'))
-        <div style="background: #fef2f2; border: 1.5px solid #fecaca; border-radius: 8px; padding: 0.85rem 1.25rem; color: #991b1b; margin-bottom: 1.25rem; font-size: 0.875rem; font-weight: 600;">
-            <span>{{ session('error') }}</span>
-        </div>
-    @endif
 
     {{-- 4 KARTU METRIK EKSEKUTIF (SERAGAM 100% DENGAN REKAP PRODUKSI & MODUL LAIN) --}}
     <div class="executive-stat-grid">

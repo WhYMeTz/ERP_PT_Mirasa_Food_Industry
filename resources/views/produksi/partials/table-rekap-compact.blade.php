@@ -85,7 +85,7 @@
                                 <a href="{{ route('produksi.hpp.create') }}" 
                                    class="btn btn-primary" 
                                    style="font-size: 0.85rem; font-weight: 700; padding: 0.6rem 1.25rem; border-radius: 8px; background: #059669; border-color: #059669; color: #ffffff; display: inline-flex; align-items: center; text-decoration: none;">
-                                    <span>+ Kalkulasi Lembar HPP</span>
+                                    <span>Kalkulasi Lembar HPP</span>
                                 </a>
                             </div>
                         </div>
@@ -94,11 +94,11 @@
             @else
                 @foreach ($report['days'] as $d)
                     @php
-                        // Filter Kebersihan Data:
-                        // Setiap data kosong yang tidak ada operasional produksi dan tanggalnya sudah terlewat (<= hari ini)
-                        // atau sebelum tanggal produksi terakhir dihilangkan agar tabel bersih dan rapi.
-                        $isPassedDate = $d['date'] <= date('Y-m-d');
-                        if (!$d['has_data'] && ($isPassedDate || ($lastDataDate && $d['date'] < $lastDataDate))) {
+                        // Filter Kalender Operasional:
+                        // 1. Hari sebelum hari ini (< hari ini) yang tidak memiliki operasional dihilangkan agar tabel bersih.
+                        // 2. Hari ini dan hari-hari setelahnya tetap dimunculkan sebagai placeholder kalender kerja.
+                        $isBeforeToday = $d['date'] < date('Y-m-d');
+                        if (empty($d['has_data']) && $isBeforeToday) {
                             continue;
                         }
                     @endphp
@@ -286,6 +286,10 @@
                                     <a href="{{ route('produksi.hpp.show', $d['produksi_id']) }}" class="action-dropdown-item">
                                         <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                                         <span>Lihat Lembar HPP</span>
+                                    </a>
+                                    <a href="{{ route('produksi.hpp.terpadu', $d['produksi_id']) }}" class="action-dropdown-item">
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                        <span>Rincian HPP Terpadu</span>
                                     </a>
                                     @if(Auth::user()->canCreateProduksi())
                                         <a href="{{ route('produksi.adjust', $d['produksi_id']) }}" class="action-dropdown-item">
@@ -723,6 +727,10 @@
                                                 <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                                                 <span>Lihat HPP Shift {{ $fSpk['shift_cd'] }}</span>
                                             </a>
+                                            <a href="{{ route('produksi.hpp.terpadu', $fSpk['produksi_id']) }}" class="action-dropdown-item">
+                                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                                <span>HPP Terpadu Shift {{ $fSpk['shift_cd'] }}</span>
+                                            </a>
                                         @endforeach
                                     </div>
                                 </td>
@@ -764,6 +772,7 @@
                                         </div>
                                     </div>
                                     <a href="{{ route('produksi.hpp.create', ['produksi_id' => $d['produksi_id']]) }}" 
+                                       class="btn-tarik-finalisasi-hpp btn-loading-trigger"
                                        style="font-size: 0.75rem; font-weight: 700; color: #0284c7; background: #f0f9ff; border: 1px solid #bae6fd; padding: 0.35rem 0.75rem; border-radius: 5px; text-decoration: none; display: inline-flex; align-items: center; gap: 0.35rem; white-space: nowrap; transition: all 0.15s ease;">
                                         <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
                                         <span>Tarik &amp; Finalisasi HPP</span>
@@ -782,13 +791,17 @@
                                     <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                                 </button>
                                 <div id="{{ $pendingMenuId }}" class="action-dropdown-menu">
-                                    <a href="{{ route('produksi.hpp.create', ['produksi_id' => $d['produksi_id']]) }}" class="action-dropdown-item" style="color: #0284c7; font-weight: 700; background: #f0f9ff;">
+                                    <a href="{{ route('produksi.hpp.create', ['produksi_id' => $d['produksi_id']]) }}" class="action-dropdown-item btn-loading-trigger" style="color: #0284c7; font-weight: 700; background: #f0f9ff;">
                                         <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
                                         <span>Tarik &amp; Finalisasi HPP</span>
                                     </a>
                                     <a href="{{ route('produksi.show', $d['produksi_id']) }}" class="action-dropdown-item">
                                         <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                                         <span>Lihat SPK Fisik</span>
+                                    </a>
+                                    <a href="{{ route('produksi.hpp.terpadu', $d['produksi_id']) }}" class="action-dropdown-item">
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                        <span>Rincian HPP Terpadu</span>
                                     </a>
                                     <div class="action-dropdown-divider"></div>
                                     <button type="button" class="action-dropdown-item danger-item" onclick="openDeleteProduksiModal({{ $d['produksi_id'] }}, '{{ $d['produksi_no'] }}', '{{ $formattedDate }}', '{{ $d['shift_cd'] }}', '{{ $d['batch_wip_no'] }}')">
@@ -804,13 +817,19 @@
                     {{-- 3. BARIS HARI LIBUR / TIDAK BEROPERASI --}}
                     @php
                         $isSunday = ($d['hari_nm'] ?? '') === 'Minggu';
+                        $isToday = $d['date'] === date('Y-m-d');
                     @endphp
-                    <tr style="border-bottom: 1px solid #f1f5f9; background: {{ $isSunday ? '#fafafa' : '#ffffff' }};">
-                        <td style="padding: 0.5rem 0.85rem; color: {{ $isSunday ? '#94a3b8' : '#94a3b8' }}; font-weight: 500; font-size: 0.8rem;">
-                            {{ $d['hari_nm'] }}, {{ date('d M Y', strtotime($d['date'])) }}
+                    <tr style="border-bottom: 1px solid #f1f5f9; background: {{ $isToday ? '#f0f9ff' : ($isSunday ? '#fafafa' : '#ffffff') }};">
+                        <td style="padding: 0.5rem 0.85rem; color: {{ $isToday ? '#0369a1' : '#94a3b8' }}; font-weight: {{ $isToday ? '700' : '500' }}; font-size: 0.8rem;">
+                            <div style="display: flex; align-items: center; gap: 0.35rem;">
+                                <span>{{ $d['hari_nm'] }}, {{ date('d M Y', strtotime($d['date'])) }}</span>
+                                @if($isToday)
+                                    <span style="font-size: 0.65rem; background: #e0f2fe; color: #0284c7; padding: 1px 5px; border-radius: 4px; font-weight: 700; border: 1px solid #bae6fd;">Hari Ini</span>
+                                @endif
+                            </div>
                         </td>
-                        <td colspan="8" style="padding: 0.5rem 0.85rem; color: #94a3b8; font-style: italic; font-size: 0.75rem;">
-                            {{ $isSunday ? 'Hari Minggu — Libur Rutin Manufaktur' : 'Tidak ada kegiatan operasional produksi.' }}
+                        <td colspan="8" style="padding: 0.5rem 0.85rem; color: {{ $isToday ? '#0284c7' : '#94a3b8' }}; font-style: italic; font-size: 0.75rem;">
+                            {{ $isToday ? 'Hari ini belum ada kegiatan operasional produksi.' : ($isSunday ? 'Hari Minggu — Libur Rutin Manufaktur' : 'Tidak ada kegiatan operasional produksi.') }}
                         </td>
                     </tr>
                 @endif

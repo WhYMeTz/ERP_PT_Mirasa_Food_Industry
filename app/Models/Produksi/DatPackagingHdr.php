@@ -190,6 +190,22 @@ class DatPackagingHdr extends Model
     }
 
     /**
+     * Total kuantitas bahan curah (WIP) terpakai (dalam Kg)
+     */
+    public function getTotalWipKgAttribute(): float
+    {
+        if ($this->relationLoaded('details')) {
+            return (float) $this->details
+                ->filter(fn($d) => strtoupper($d->kategori_bahan ?? '') === 'WIP')
+                ->sum('qty_aktual');
+        }
+
+        return (float) $this->details()
+            ->where('kategori_bahan', 'WIP')
+            ->sum('qty_aktual');
+    }
+
+    /**
      * Scope data aktif (belum dihapus secara soft-delete)
      */
     public function scopeActive($query)

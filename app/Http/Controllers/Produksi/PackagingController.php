@@ -526,10 +526,10 @@ class PackagingController extends Controller
             return response()->json(['success' => false, 'message' => 'Data dokumen pemakaian gudang tidak ditemukan.'], 404);
         }
 
-        if ($pakai->status_st !== 'POSTED') {
+        if (!in_array($pakai->status_st, ['POSTED', 'DRAFT'])) {
             return response()->json([
                 'success' => false,
-                'message' => "Dokumen BPPB [{$pakai->pakai_no}] masih berstatus DRAFT. Hanya dokumen yang sudah POSTED oleh Gudang yang dapat ditarik."
+                'message' => "Dokumen BPPB [{$pakai->pakai_no}] berstatus tidak valid (Status: {$pakai->status_st})."
             ], 422);
         }
 

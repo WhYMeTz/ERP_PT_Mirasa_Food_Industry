@@ -53,19 +53,19 @@
                             <span>Tarik Data Dokumen Pengeluaran Gudang (BPPB):</span>
                         </span>
                         <span style="font-size: 0.75rem; color: #64748b;">
-                            Hanya dokumen BPPB yang telah diverifikasi dan berstatus POSTED oleh Bagian Gudang yang dapat ditarik.
+                            Pilih dokumen BPPB pengeluaran bahan dari Bagian Gudang untuk ditarik ke laporan produksi.
                         </span>
                     </div>
 
                     <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
                         <select name="pakai_id" id="pakai_id" class="form-control" style="flex: 1; min-width: 280px; font-size: 0.85rem;" onchange="loadPakaiData(this.value)">
-                            <option value="">-- Pilih Dokumen Pengeluaran Bahan (BPPB Berstatus POSTED) --</option>
+                            <option value="">-- Pilih Dokumen Pengeluaran Bahan (BPPB) --</option>
                             @forelse ($pakaiList as $pk)
                                 <option value="{{ $pk->pakai_id }}" data-tujuan="{{ $pk->tujuan_pemakaian }}" data-tgl="{{ Carbon\Carbon::parse($pk->pakai_tgl)->format('Y-m-d') }}" {{ (string)old('pakai_id', request('pakai_id')) === (string)$pk->pakai_id ? 'selected' : '' }}>
-                                    [{{ $pk->pakai_no }}] {{ Carbon\Carbon::parse($pk->pakai_tgl)->format('d/m/Y') }} - {{ $pk->tujuan_pemakaian }} ({{ $pk->details->count() }} item bahan)
+                                    [{{ $pk->pakai_no }}] {{ Carbon\Carbon::parse($pk->pakai_tgl)->format('d/m/Y') }} - {{ $pk->tujuan_pemakaian }} ({{ $pk->details->count() }} item bahan) {{ $pk->status_st === 'DRAFT' ? '• DRAFT' : '' }}
                                 </option>
                             @empty
-                                <option value="" disabled>-- Tidak ada dokumen BPPB berstatus POSTED yang siap diproses --</option>
+                                <option value="" disabled>-- Tidak ada dokumen BPPB yang siap diproses --</option>
                             @endforelse
                         </select>
                         <button type="button" id="btnTarikPakai" class="btn btn-secondary btn-sm" onclick="loadPakaiData(document.getElementById('pakai_id').value)" style="padding: 0.45rem 0.95rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.4rem;">

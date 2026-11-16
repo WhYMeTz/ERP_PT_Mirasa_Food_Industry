@@ -133,10 +133,10 @@ class ProduksiController extends Controller
             ->get();
 
         // Ambil daftar dokumen pemakaian bahan yang belum pernah dipakai oleh produksi
-        // Khusus untuk lini produksi penggorengan / olahan curah (WIP), dan WAJIB sudah berstatus POSTED (terverifikasi gudang)
+        // Khusus untuk lini produksi penggorengan / olahan curah (WIP), mencakup status POSTED maupun DRAFT (tanpa kewajiban verifikasi)
         $pakaiList = DatPakaiHdr::with('details.barang')
             ->where('deleted_st', false)
-            ->where('status_st', 'POSTED')
+            ->whereIn('status_st', ['POSTED', 'DRAFT'])
             ->whereDoesntHave('produksi')
             ->where(function ($q) {
                 $q->where('tujuan_pemakaian', 'ILIKE', '%PRODUKSI%')

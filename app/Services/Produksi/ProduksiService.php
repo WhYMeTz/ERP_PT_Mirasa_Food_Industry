@@ -1035,8 +1035,8 @@ class ProduksiService
     {
         $pakai = DatPakaiHdr::with(['details.barang.jenisBarang', 'details.barang.satuanDasar', 'gudang'])->where('pakai_id', $pakaiId)->firstOrFail();
 
-        if ($pakai->status_st !== 'POSTED') {
-            throw new Exception("Dokumen BPPB [{$pakai->pakai_no}] masih berstatus DRAFT dan belum diverifikasi/diposting oleh Bagian Gudang. Harap minta bagian gudang untuk memverifikasi dan memposting pengeluaran bahan terlebih dahulu.");
+        if (!in_array($pakai->status_st, ['POSTED', 'DRAFT'])) {
+            throw new Exception("Dokumen BPPB [{$pakai->pakai_no}] tidak valid untuk diproses (Status: {$pakai->status_st}).");
         }
 
         $summary = [
@@ -1495,11 +1495,11 @@ class ProduksiService
                 $data['produksi_no'] = $prodNo;
             }
 
-            // Validasi status Dokumen BPPB (Pengeluaran Bahan Baku Gudang)
+            // Validasi keberadaan Dokumen BPPB (Pengeluaran Bahan Baku Gudang)
             if (!empty($data['pakai_id'])) {
                 $pakaiHdr = DatPakaiHdr::find($data['pakai_id']);
-                if (!$pakaiHdr || $pakaiHdr->status_st !== 'POSTED') {
-                    throw new Exception("Dokumen BPPB [{$pakaiHdr?->pakai_no}] masih berstatus DRAFT atau belum diverifikasi oleh Bagian Gudang. Hanya dokumen BPPB berstatus POSTED yang dapat diproses ke Laporan Produksi.");
+                if (!$pakaiHdr || !in_array($pakaiHdr->status_st, ['POSTED', 'DRAFT'])) {
+                    throw new Exception("Dokumen BPPB [{$pakaiHdr?->pakai_no}] tidak ditemukan atau status tidak valid untuk diproses.");
                 }
             }
 
@@ -1782,11 +1782,22 @@ class ProduksiService
                 }
             }
 
-            // Verifikasi integritas dokumen BPPB (harus sudah POSTED dari Gudang)
+            // Sinkronisasi integritas dokumen BPPB
             if (!empty($produksi->pakai_id)) {
                 $pakaiHdr = DatPakaiHdr::find($produksi->pakai_id);
-                if ($pakaiHdr && $pakaiHdr->status_st !== 'POSTED') {
-                    throw new Exception("Dokumen BPPB [{$pakaiHdr->pakai_no}] belum berstatus POSTED oleh Bagian Gudang.");
+                if ($pakaiHdr) {
+                    if (!in_array($pakaiHdr->status_st, ['POSTED', 'DRAFT'])) {
+                        throw new Exception("Dokumen BPPB [{$pakaiHdr->pakai_no}] berstatus tidak valid.");
+                    }
+                    // Jika BPPB sebelumnya masih DRAFT, saat produksi berhasil terbit maka status BPPB diaktifkan POSTED
+                    if ($pakaiHdr->status_st === 'DRAFT' && $produksi->status_cd === 'POSTED') {
+                        $pakaiHdr->update([
+                            'status_st'  => 'POSTED',
+                            'posted_at'  => now(),
+                            'posted_by'  => auth()->user()?->name ?? 'SYSTEM PRODUKSI',
+                            'updated_by' => auth()->user()?->name ?? 'SYSTEM PRODUKSI',
+                        ]);
+                    }
                 }
             }
 

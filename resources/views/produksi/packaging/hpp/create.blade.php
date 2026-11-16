@@ -29,6 +29,22 @@
                 </p>
             </div>
         </div>
+
+        {{-- Switcher Pilihan Input HPP: Dapur (WIP Curah) vs Pengemasan (FG) --}}
+        <div style="margin-top: 1rem; background: #f1f5f9; padding: 4px; border-radius: 8px; display: inline-flex; border: 1.5px solid #e2e8f0; gap: 4px;">
+            <a href="{{ route('produksi.hpp.create') }}" 
+               style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.8125rem; font-weight: 600; text-decoration: none; color: #64748b; background: transparent; transition: all 0.15s ease;"
+               onmouseover="this.style.color='#0284c7'; this.style.background='#f8fafc';"
+               onmouseout="this.style.color='#64748b'; this.style.background='transparent';">
+                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                <span>1. HPP Olahan Dapur (Curah WIP)</span>
+            </a>
+            <a href="{{ route('produksi.packaging.hpp.create') }}" 
+               style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.8125rem; font-weight: 700; text-decoration: none; background: #ffffff; color: #059669; box-shadow: 0 1px 3px rgba(0,0,0,0.08); border: 1px solid #a7f3d0;">
+                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                <span>2. HPP Pengemasan (Barang Jadi FG)</span>
+            </a>
+        </div>
     </div>
 
     @if(session('error'))

@@ -1573,10 +1573,10 @@
                                         @endif
                                     </div>
                                     <div class="mega-col">
-                                        <div class="mega-col-title">Rekapitulasi HPP Pabrik</div>
+                                        <div class="mega-col-title">Harga Pokok Produksi (HPP)</div>
                                         @if (Auth::user()->canAccessProduksi())
                                             <a href="{{ route('produksi.rekap') }}"
-                                                class="mega-item {{ request()->routeIs('produksi.rekap*') || request()->routeIs('produksi.packaging.rekap*') || request()->routeIs('produksi.hpp.create') ? 'active' : '' }}">
+                                                class="mega-item {{ request()->routeIs('produksi.rekap*') || request()->routeIs('produksi.packaging.rekap*') ? 'active' : '' }}">
                                                 <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"
                                                     style="color: #0284c7;">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -1585,6 +1585,20 @@
                                                 <div style="display: flex; flex-direction: column;">
                                                     <span style="font-weight: 600;">Buku Rekapitulasi HPP</span>
                                                     <span style="font-size: 0.6875rem; color: #64748b;">Tab Dapur (Curah) &amp; Kemas (FG)</span>
+                                                </div>
+                                            </a>
+                                        @endif
+                                        @if (Auth::user()->canCreateProduksi())
+                                            <a href="{{ route('produksi.hpp.create') }}"
+                                                class="mega-item {{ request()->routeIs('produksi.hpp.create') || request()->routeIs('produksi.packaging.hpp.create') ? 'active' : '' }}">
+                                                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                                    style="color: #059669;">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                                </svg>
+                                                <div style="display: flex; flex-direction: column;">
+                                                    <span style="font-weight: 600;">Kalkulasi &amp; Input HPP</span>
+                                                    <span style="font-size: 0.6875rem; color: #64748b;">Pilihan HPP Dapur atau HPP Kemasan</span>
                                                 </div>
                                             </a>
                                         @endif

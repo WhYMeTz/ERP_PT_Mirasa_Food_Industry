@@ -307,9 +307,15 @@
                                         <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
                                         <span>HPP FINAL</span>
                                     </span>
-                                    <div style="font-size: 0.65rem; color: #059669; font-weight: 600; margin-top: 3px;">
-                                        Tervalidasi
-                                    </div>
+                                    @if($row->jurnal_id && $row->jurnal)
+                                        <a href="{{ route('keuangan.jurnal.index', ['search' => $row->jurnal->jurnal_no]) }}" style="display: inline-block; margin-top: 3px; font-size: 0.7rem; color: #059669; font-weight: 700; text-decoration: none;" title="Lihat detail Jurnal Umum Akuntansi">
+                                            {{ $row->jurnal->jurnal_no }}
+                                        </a>
+                                    @else
+                                        <div style="font-size: 0.65rem; color: #059669; font-weight: 600; margin-top: 3px;">
+                                            Tervalidasi
+                                        </div>
+                                    @endif
                                 @elseif(!$canCalc && $row->produksi_id)
                                     <span style="font-size: 0.7rem; background: #fffbeb; color: #92400e; border: 1px solid #fde68a; padding: 0.2rem 0.55rem; border-radius: 9999px; font-weight: 700; display: inline-flex; align-items: center; gap: 0.25rem;" title="HPP Produksi Asal belum difinalkan">
                                         <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>

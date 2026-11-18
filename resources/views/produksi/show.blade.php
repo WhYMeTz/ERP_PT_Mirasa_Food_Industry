@@ -42,6 +42,12 @@
                 <span style="font-size: 0.75rem; font-weight: 700; color: #0369a1; background: #e0f2fe; border: 1px solid #bae6fd; padding: 0.2rem 0.6rem; border-radius: 4px;">
                     {{ $produksi->lini_produksi }}
                 </span>
+                @if($produksi->jurnal_id && $produksi->jurnal)
+                    <a href="{{ route('keuangan.jurnal.index', ['search' => $produksi->jurnal->jurnal_no]) }}" style="background: #ecfdf5; border: 1.5px solid #a7f3d0; color: #065f46; font-size: 0.775rem; font-weight: 700; padding: 4px 10px; border-radius: 6px; text-decoration: none; display: inline-flex; align-items: center; gap: 0.35rem;" title="Lihat detail Jurnal Umum Akuntansi">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                        <span>Jurnal: {{ $produksi->jurnal->jurnal_no }}</span>
+                    </a>
+                @endif
             </div>
         </div>
 

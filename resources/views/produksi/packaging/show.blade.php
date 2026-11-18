@@ -59,6 +59,17 @@
                         <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                         <span>Selesai Dikemas</span>
                     </span>
+                    @if($header->isHppFinal())
+                        <span class="badge" style="background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; font-weight: 700;">✓ HPP Final</span>
+                        @if($header->jurnal_id && $header->jurnal)
+                            <a href="{{ route('keuangan.jurnal.index', ['search' => $header->jurnal->jurnal_no]) }}" style="background: #ecfdf5; border: 1.5px solid #a7f3d0; color: #065f46; font-size: 0.775rem; font-weight: 700; padding: 4px 10px; border-radius: 6px; text-decoration: none; display: inline-flex; align-items: center; gap: 0.35rem;" title="Lihat detail Jurnal Umum Akuntansi">
+                                <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                <span>Jurnal: {{ $header->jurnal->jurnal_no }}</span>
+                            </a>
+                        @endif
+                    @else
+                        <span class="badge" style="background: #fffbeb; color: #92400e; border: 1px solid #fde68a; font-weight: 700;">⏳ Belum Final HPP</span>
+                    @endif
                 @else
                     <span class="badge" style="background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; font-weight: 700;">VOID (Dibatalkan)</span>
                 @endif
@@ -370,6 +381,24 @@
                     <tr>
                         <td class="label-col">Petugas Pencatat</td>
                         <td class="value-col" style="font-weight: 600;">{{ $header->created_by ?? 'Operator Packing' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="label-col">Status Jurnal HPP FG</td>
+                        <td class="value-col">
+                            @if($header->jurnal_id && $header->jurnal)
+                                <a href="{{ route('keuangan.jurnal.index', ['search' => $header->jurnal->jurnal_no]) }}" style="background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; font-size: 0.775rem; font-weight: 700; padding: 2px 8px; border-radius: 4px; text-decoration: none; display: inline-flex; align-items: center; gap: 0.35rem;" title="Lihat detail Jurnal Umum Akuntansi">
+                                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                    <span>Sudah Terbit ({{ $header->jurnal->jurnal_no }})</span>
+                                </a>
+                            @elseif($header->isHppFinal())
+                                <span style="color: #059669; font-weight: 700; font-size: 0.8125rem;">✓ HPP Final</span>
+                            @else
+                                <span style="color: #92400e; font-weight: 600; font-size: 0.8125rem; display: inline-flex; align-items: center; gap: 0.35rem;">
+                                    <span>⏳ Belum Terbit</span>
+                                    <a href="{{ route('produksi.packaging.show-hpp', $header->pack_id) }}" style="font-size: 0.725rem; color: #0284c7; text-decoration: underline; margin-left: 0.25rem;">(Tarik di Lembar HPP)</a>
+                                </span>
+                            @endif
+                        </td>
                     </tr>
                 </table>
             </div>

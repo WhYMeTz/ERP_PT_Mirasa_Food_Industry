@@ -1,0 +1,62 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   PENJUALAN LANGSUNG / TUNAI (DIRECT SALES) - SHOW VIEW STYLES
+   ERP PT Mirasa Food Industry
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.ds-show-container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.ds-show-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.ds-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+}
+
+.ds-info-card {
+    background: #ffffff;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    padding: 1.125rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+.ds-info-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #64748b;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.ds-info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.3rem 0;
+    font-size: 0.825rem;
+}
+
+.ds-info-label {
+    color: #64748b;
+}
+
+.ds-info-value {
+    font-weight: 600;
+    color: #0f172a;
+}

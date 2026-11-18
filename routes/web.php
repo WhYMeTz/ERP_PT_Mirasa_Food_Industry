@@ -40,6 +40,7 @@ use App\Http\Controllers\Penjualan\SoController;
 use App\Http\Controllers\Penjualan\PengeluaranBarangController;
 use App\Http\Controllers\Penjualan\FakturPenjualanController;
 use App\Http\Controllers\Penjualan\SoReturController;
+use App\Http\Controllers\Penjualan\DirectSalesController;
 use App\Http\Controllers\Produksi\BomController;
 use App\Http\Controllers\Produksi\PackagingController;
 use App\Http\Controllers\Produksi\PackagingOperatorController;
@@ -424,8 +425,11 @@ Route::middleware('auth')->group(function () {
         Route::get('/export-rekap-pdf', [ProduksiController::class, 'exportRekapPdf'])->name('export-rekap-pdf');
         Route::get('/download-rekap-template', [ProduksiController::class, 'downloadRekapTemplate'])->name('download-rekap-template');
         Route::post('/import-rekap-excel', [ProduksiController::class, 'importRekapExcel'])->name('import-rekap-excel')->middleware('role:produksi_create');
+        Route::get('/cng-monitoring', [ProduksiController::class, 'cngMonitoringPage'])->name('cng-monitoring');
         Route::get('/adjust-utilitas', [ProduksiController::class, 'adjustUtilitasPage'])->name('adjust-utilitas');
         Route::post('/adjust-utilitas', [ProduksiController::class, 'adjustUtilitas'])->name('adjust-utilitas.store')->middleware('role:produksi_create');
+        Route::get('/adjust-cng-harian', [ProduksiController::class, 'adjustCngHarianPage'])->name('adjust-cng-harian');
+        Route::post('/adjust-cng-harian', [ProduksiController::class, 'adjustCngHarianStore'])->name('adjust-cng-harian.store')->middleware('role:produksi_create');
 
         // Kalkulasi HPP Produksi (Tahap 3 - Khusus Bagian Keuangan / Costing)
         Route::get('/hpp/create', [ProduksiController::class, 'createHpp'])->name('hpp.create')->middleware('role:produksi_create');
@@ -502,6 +506,15 @@ Route::middleware('auth')->group(function () {
 
     // Modul Transaksi Penjualan (PO Penjualan / Sales Order)
     Route::prefix('penjualan')->name('penjualan.')->group(function () {
+        // Modul Penjualan Langsung / Tunai (Direct Sales - Kasir Pabrik & Potong Stok Instan)
+        Route::prefix('langsung')->name('langsung.')->group(function () {
+            Route::get('/', [DirectSalesController::class, 'index'])->name('index');
+            Route::get('/create', [DirectSalesController::class, 'create'])->name('create');
+            Route::post('/', [DirectSalesController::class, 'store'])->name('store');
+            Route::get('/{id}', [DirectSalesController::class, 'show'])->name('show')->whereNumber('id');
+            Route::get('/{id}/cetak-nota', [DirectSalesController::class, 'cetakNota'])->name('cetak-nota')->whereNumber('id');
+        });
+
         Route::get('so/{id}/export-faktur', [SoController::class, 'exportFakturPdf'])->name('so.export-faktur');
         Route::get('so/{id}/export-surat-jalan', [SoController::class, 'exportSuratJalanPdf'])->name('so.export-surat-jalan');
         Route::post('so/{id}/update-armada', [SoController::class, 'updateArmada'])->name('so.update-armada');

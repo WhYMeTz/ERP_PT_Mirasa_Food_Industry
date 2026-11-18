@@ -348,6 +348,7 @@ function addRow(data = {}) {
                 <span class="stock-badge ready item-stock-badge" style="display: none;">
                     Stok FG: <strong class="item-stock-val">0</strong>
                 </span>
+                <div class="item-batch-info" style="font-size: 0.72rem; color: #475569; margin-top: 2px; display: none;"></div>
             </div>
         </td>
         <td>
@@ -443,8 +444,29 @@ function addRow(data = {}) {
                 badge.className = 'stock-badge ready item-stock-badge';
                 stockVal.textContent = `${stok} ${satuan}`;
             }
+
+            const batchInfoEl = tr.querySelector('.item-batch-info');
+            if (batchInfoEl && opt.value) {
+                fetch(`/penjualan/so/ajax/stock-check?barang_id=${opt.value}`)
+                    .then(res => res.json())
+                    .then(res => {
+                        if (res.success && res.data && res.data.batches && res.data.batches.length > 0) {
+                            const b = res.data.batches[0];
+                            const expFmt = b.expired_tgl ? b.expired_tgl.substring(0, 10).split('-').reverse().join('/') : '-';
+                            batchInfoEl.innerHTML = `📦 <strong>Batch Siap:</strong> ${b.batch_no} &bull; <span style="color:#be123c;">Exp: ${expFmt}</span>`;
+                            batchInfoEl.style.display = 'block';
+                        } else {
+                            batchInfoEl.style.display = 'none';
+                        }
+                    })
+                    .catch(() => {
+                        if (batchInfoEl) batchInfoEl.style.display = 'none';
+                    });
+            }
         } else {
             badge.style.display = 'none';
+            const batchInfoEl = tr.querySelector('.item-batch-info');
+            if (batchInfoEl) batchInfoEl.style.display = 'none';
             if (priceSourceEl) priceSourceEl.style.display = 'none';
             inCode.value = '';
             inJenis.value = '';

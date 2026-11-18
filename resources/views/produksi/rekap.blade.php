@@ -61,6 +61,16 @@
                 <span>Rekonsiliasi Utilitas</span>
             </a>
 
+            <a href="{{ route('produksi.cng-monitoring', ['tahun' => $year, 'bulan' => $month]) }}" 
+               class="btn btn-secondary" 
+               style="background: #ffffff; border: 1.5px solid #d97706; color: #d97706; font-size: 0.85rem; font-weight: 700; padding: 0.5rem 0.95rem; border-radius: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.03); display: inline-flex; align-items: center; gap: 0.35rem; transition: all 0.15s ease-in-out; text-decoration: none;" 
+               onmouseover="this.style.background='#fffbeb'" 
+               onmouseout="this.style.background='#ffffff'" 
+               title="Pusat Monitoring Penggunaan Gas CNG Harian, Balancing MMBTU &amp; Rekonsiliasi Faktur Vendor">
+                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z"/></svg>
+                <span>Monitoring Gas CNG</span>
+            </a>
+
             <a href="{{ route('produksi.hpp.create') }}" 
                class="btn btn-primary" 
                style="background: #059669; border-color: #059669; font-weight: 700; padding: 0.5rem 1.15rem; font-size: 0.85rem; border-radius: 6px; text-decoration: none; display: inline-flex; align-items: center; gap: 0.35rem; box-shadow: 0 1px 2px rgba(5,150,105,0.2);">

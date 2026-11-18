@@ -26,6 +26,7 @@ class DatPackagingHdr extends Model
         'jumlah_personil',
         'jumlah_mesin',
         'gudang_id',
+        'gudang_asal_id',
         'barang_jadi_id',
         'bom_id',
         'produksi_id',
@@ -104,6 +105,14 @@ class DatPackagingHdr extends Model
     public function gudang(): BelongsTo
     {
         return $this->belongsTo(MstGudang::class, 'gudang_id', 'gudang_id');
+    }
+
+    /**
+     * Relasi ke Gudang Asal Pengambilan Bahan Kemasan
+     */
+    public function gudangAsal(): BelongsTo
+    {
+        return $this->belongsTo(MstGudang::class, 'gudang_asal_id', 'gudang_id');
     }
 
     /**

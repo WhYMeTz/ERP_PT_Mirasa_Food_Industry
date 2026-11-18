@@ -829,6 +829,30 @@ function renderAllocationTable(outputs, defaultHppPerKg) {
 }
 
 /**
+ * Konversi otomatis Nm3 fisik ke MMBTU energi
+ */
+function calcMmbtuFromNm3() {
+    const nm3 = parseFloat(document.getElementById('cng_nm3')?.value) || 0;
+    const mmbtuInput = document.getElementById('cng_mmbtu');
+    if (mmbtuInput && nm3 > 0) {
+        mmbtuInput.value = (nm3 / 27.921).toFixed(4);
+    }
+    calcCngFromMmbtu();
+}
+
+/**
+ * Konversi otomatis MMBTU energi ke Nm3 fisik
+ */
+function calcNm3FromMmbtu() {
+    const mmbtu = parseFloat(document.getElementById('cng_mmbtu')?.value) || 0;
+    const nm3Input = document.getElementById('cng_nm3');
+    if (nm3Input && mmbtu > 0) {
+        nm3Input.value = (mmbtu * 27.921).toFixed(3);
+    }
+    calcCngFromMmbtu();
+}
+
+/**
  * Kalkulasi CNG dari MMBTU
  */
 function calcCngFromMmbtu() {

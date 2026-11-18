@@ -1212,5 +1212,119 @@ class ProduksiController extends Controller
             return redirect()->back()->with('error', 'Gagal menyesuaikan utilitas: ' . $e->getMessage());
         }
     }
+
+    /**
+     * Dashboard Terpadu Monitoring & Rekonsiliasi Penggunaan Gas CNG.
+     * Menggabungkan Rangkuman Pemakaian Harian (Read-Only Ringkas),
+     * Penyesuaian Gas Harian (Balancing), dan Rekonsiliasi Bulanan Faktur Vendor.
+     */
+    public function cngMonitoringPage(Request $request): View
+    {
+        $year = (int) $request->input('tahun', date('Y'));
+        $month = (int) $request->input('bulan', date('n'));
+        $activeTab = $request->input('tab', 'rangkuman');
+
+        // Ambil data bulanan tanpa external HTTP call (Sangat Cepat & Ringan)
+        $report = $this->produksiService->getMonthlyReport($year, $month);
+        $energiRates = $this->tarifService->getEnergiLaborRates();
+        $defaultCngTarifUsd = (float) ($energiRates['cng_tarif_usd'] ?? 14.50);
+        $tarifCngDefault = $energiRates['cng_tarif'] ?? round($defaultCngTarifUsd * 18138, 2);
+        $fohRates = $this->tarifService->getFohRates();
+        $allTarif = $this->tarifService->getAllTarif();
+
+        $monthsList = [
+            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
+            5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
+            9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+        ];
+
+        // Hitung statistik performa & efisiensi CNG untuk Rangkuman Harian
+        $prodDays = collect($report['days'] ?? [])->filter(fn($d) => !empty($d['has_data']));
+        $totalMmbtu = (float) (($report['totals']['cng_mmbtu'] ?? 0));
+        $totalNm3 = (float) (($report['totals']['cng_nm3'] ?? 0));
+        if ($totalNm3 <= 0 && $totalMmbtu > 0) {
+            $totalNm3 = round($totalMmbtu * 27.921, 4);
+        }
+        $totalNilaiRp = (float) (($report['totals']['cng_nilai'] ?? 0));
+        $totalWipKg = (float) (($report['totals']['total_wip_qty'] ?? 0));
+        $workDaysCount = $prodDays->count();
+
+        // Rasio Efisiensi Konsumsi Gas (MMBTU / 1.000 Kg Keripik WIP)
+        $ratioMmbtuPerTonWip = $totalWipKg > 0 ? ($totalMmbtu / ($totalWipKg / 1000)) : 0;
+        // Rata-rata Pemakaian Gas per Hari Kerja
+        $avgMmbtuPerDay = $workDaysCount > 0 ? ($totalMmbtu / $workDaysCount) : 0;
+        $avgNm3PerDay = $workDaysCount > 0 ? ($totalNm3 / $workDaysCount) : 0;
+        $avgNilaiPerDay = $workDaysCount > 0 ? ($totalNilaiRp / $workDaysCount) : 0;
+
+        return view('produksi.cng.monitoring', compact(
+            'year', 'month', 'activeTab', 'report', 'prodDays', 'monthsList',
+            'totalMmbtu', 'totalNm3', 'totalNilaiRp', 'totalWipKg', 'workDaysCount',
+            'ratioMmbtuPerTonWip', 'avgMmbtuPerDay', 'avgNm3PerDay', 'avgNilaiPerDay',
+            'defaultCngTarifUsd', 'tarifCngDefault', 'energiRates', 'fohRates', 'allTarif'
+        ));
+    }
+
+    /**
+     * Halaman Khusus Penyesuaian Pemakaian Gas CNG Harian & Balancing Bulanan.
+     */
+    public function adjustCngHarianPage(Request $request): View
+    {
+        $year = (int) $request->input('tahun', date('Y'));
+        $month = (int) $request->input('bulan', date('n'));
+
+        $report = $this->produksiService->getMonthlyReport($year, $month);
+        $fohRates = $this->tarifService->getFohRates();
+        $energiRates = $this->tarifService->getEnergiLaborRates();
+        $allTarif = $this->tarifService->getAllTarif();
+        $defaultCngTarifUsd = (float) ($energiRates['cng_tarif_usd'] ?? 14.50);
+        $tarifCngDefault = $energiRates['cng_tarif'] ?? round(14.50 * 18138, 2);
+
+        $monthsList = [
+            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
+            5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
+            9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+        ];
+
+        return view('produksi.adjust-cng-harian', compact(
+            'year', 'month', 'report', 'fohRates', 'energiRates', 'tarifCngDefault', 'defaultCngTarifUsd', 'allTarif', 'monthsList'
+        ));
+    }
+
+    /**
+     * Simpan Penyesuaian Gas CNG Harian & Balancing ke Seluruh Lembar Produksi Terkait.
+     */
+    public function adjustCngHarianStore(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'tahun'      => 'required|integer|min:2020|max:2099',
+            'bulan'      => 'required|integer|min:1|max:12',
+            'days'       => 'required|array',
+            'alasan_txt' => 'nullable|string|max:500',
+        ]);
+
+        try {
+            $year = (int) $request->input('tahun');
+            $month = (int) $request->input('bulan');
+            $days = $request->input('days', []);
+            $alasan = $request->input('alasan_txt', '');
+            $userId = Auth::user()?->username ?? (Auth::user()?->name ?? 'SYSTEM');
+
+            $result = $this->produksiService->adjustDailyCng($year, $month, $days, $alasan, $userId);
+
+            $msg = "Berhasil menyesuaikan pemakaian Gas CNG untuk {$result['updated_days']} hari kerja ({$result['updated_records']} dokumen produksi).";
+            if ($result['selisih_mmbtu'] != 0) {
+                $sign = $result['selisih_mmbtu'] > 0 ? '+' : '';
+                $msg .= " Selisih MMBTU: {$sign}" . number_format($result['selisih_mmbtu'], 4, ',', '.') . " MMBTU.";
+            }
+
+            return redirect()->route('produksi.cng-monitoring', [
+                'tahun' => $year,
+                'bulan' => $month,
+                'tab'   => 'harian',
+            ])->with('success', $msg);
+        } catch (Exception $e) {
+            return redirect()->back()->withInput()->with('error', 'Gagal menyimpan penyesuaian gas harian: ' . $e->getMessage());
+        }
+    }
 }
 

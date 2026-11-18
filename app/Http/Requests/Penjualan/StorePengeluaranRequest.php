@@ -24,6 +24,7 @@ class StorePengeluaranRequest extends FormRequest
             'items'              => ['required', 'array', 'min:1'],
             'items.*.sodtl_id'   => ['required', 'integer', 'exists:dat_so_dtl,sodtl_id'],
             'items.*.kirim_qty'  => ['required', 'numeric', 'min:0'],
+            'items.*.batch_no'   => ['nullable', 'string', 'max:100'],
             'items.*.catatan_txt'=> ['nullable', 'string', 'max:255'],
         ];
     }

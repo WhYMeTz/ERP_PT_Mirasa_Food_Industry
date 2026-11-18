@@ -66,7 +66,7 @@ class TarifProduksiService
      * Menggunakan tabel historis dat_kurs_harian & master tarif sebagai Single Source of Truth,
      * serta otomatis melakukan auto-sync ke portal Bank Indonesia jika data belum ada atau sudah kedaluwarsa.
      */
-    public function getJisdorRate(?string $date = null, bool $allowAutoSync = true): float
+    public function getJisdorRate(?string $date = null, bool $allowAutoSync = false): float
     {
         $targetDate = $date ?: date('Y-m-d');
 

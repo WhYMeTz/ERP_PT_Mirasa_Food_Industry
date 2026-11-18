@@ -1,0 +1,343 @@
+/**
+ * ═════════════════════════════════════════════════════════════════
+ * STYLESHEET: PENYESUAIAN GAS CNG HARIAN & BALANCING BULANAN
+ * ERP PT Mirasa Food Industry - Modul Produksi
+ * ═════════════════════════════════════════════════════════════════
+ */
+
+/* ─── KARTU BALANCING & REKONSILIASI BULANAN ─── */
+.balancing-dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+}
+
+.balancing-card {
+    background: #ffffff;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 1.15rem 1.35rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.2s ease-in-out;
+}
+
+.balancing-card.card-target {
+    border-color: #fde68a;
+    background: linear-gradient(to bottom right, #ffffff, #fffdf5);
+}
+
+.balancing-card.card-actual {
+    border-color: #bfdbfe;
+    background: linear-gradient(to bottom right, #ffffff, #f8faff);
+}
+
+.balancing-card.card-status {
+    border-color: #cbd5e1;
+    background: #ffffff;
+}
+
+.balancing-card.card-status.status-balanced {
+    border-color: #86efac;
+    background: linear-gradient(to bottom right, #f0fdf4, #ffffff);
+}
+
+.balancing-card.card-status.status-unbalanced {
+    border-color: #fecaca;
+    background: linear-gradient(to bottom right, #fef2f2, #ffffff);
+}
+
+.balancing-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.65rem;
+}
+
+.balancing-card-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    display: block;
+}
+
+.balancing-card-sublabel {
+    font-size: 0.725rem;
+    color: #94a3b8;
+    margin-top: 0.15rem;
+}
+
+.balancing-icon-box {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.balancing-card-value {
+    font-size: 1.55rem;
+    font-weight: 800;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    color: #0f172a;
+    line-height: 1.2;
+}
+
+.balancing-card-subvalue {
+    font-size: 0.85rem;
+    font-weight: 700;
+    margin-top: 0.35rem;
+    color: #475569;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.balancing-card-footer {
+    border-top: 1px dashed #e2e8f0;
+    padding-top: 0.55rem;
+    margin-top: 0.75rem;
+    font-size: 0.725rem;
+    color: #64748b;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* ─── QUICK BULK ACTION TOOLBAR ─── */
+.quick-bulk-toolbar {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0.85rem 1.25rem;
+    margin-bottom: 1.25rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.bulk-toolbar-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.825rem;
+    font-weight: 800;
+    color: #1e293b;
+}
+
+.bulk-action-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.input-bulk-step {
+    width: 110px;
+    height: 34px;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.825rem;
+    font-weight: 700;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 6px;
+    text-align: right;
+    color: #0f172a;
+    outline: none;
+    transition: all 0.15s ease;
+}
+
+.input-bulk-step:focus {
+    border-color: #d97706;
+    box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.15);
+}
+
+.btn-bulk-apply {
+    background: #d97706;
+    color: #ffffff;
+    border: 1.5px solid #d97706;
+    padding: 0.35rem 0.85rem;
+    font-size: 0.775rem;
+    font-weight: 700;
+    border-radius: 6px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    transition: all 0.15s ease;
+}
+
+.btn-bulk-apply:hover {
+    background: #b45309;
+    border-color: #b45309;
+}
+
+.btn-bulk-reset {
+    background: #ffffff;
+    color: #475569;
+    border: 1.5px solid #cbd5e1;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.775rem;
+    font-weight: 600;
+    border-radius: 6px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    transition: all 0.15s ease;
+}
+
+.btn-bulk-reset:hover {
+    background: #f1f5f9;
+    color: #0f172a;
+}
+
+/* ─── TABEL REKONSILIASI HARIAN ─── */
+.table-cng-balancing {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+}
+
+.table-cng-balancing thead th {
+    background: #f8fafc;
+    color: #475569;
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.7rem;
+    letter-spacing: 0.04em;
+    padding: 0.65rem 0.75rem;
+    border-bottom: 2px solid #cbd5e1;
+    white-space: nowrap;
+}
+
+.table-cng-balancing tbody td {
+    padding: 0.55rem 0.75rem;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+}
+
+.table-cng-balancing tbody tr:hover {
+    background: #f8fafc;
+}
+
+.table-cng-balancing tbody tr.row-modified {
+    background: #fffbeb !important;
+}
+
+.table-cng-balancing tfoot td {
+    padding: 0.75rem;
+    background: #f8fafc;
+    border-top: 2px solid #cbd5e1;
+    font-weight: 700;
+}
+
+/* ─── INPUT CELL EDITING ─── */
+.input-cng-edit {
+    width: 100%;
+    max-width: 110px;
+    height: 32px;
+    padding: 0.2rem 0.5rem;
+    font-size: 0.825rem;
+    font-weight: 800;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 5px;
+    text-align: right;
+    color: #0f172a;
+    background: #ffffff;
+    transition: all 0.15s ease;
+}
+
+.input-cng-edit:focus {
+    border-color: #d97706;
+    background: #ffffff;
+    box-shadow: 0 0 0 2px rgba(217, 119, 6, 0.2);
+    outline: none;
+}
+
+.input-cng-edit.is-modified {
+    border-color: #d97706;
+    color: #b45309;
+    background: #fffdf5;
+}
+
+.input-catatan-inline {
+    width: 100%;
+    min-width: 130px;
+    height: 30px;
+    padding: 0.2rem 0.5rem;
+    font-size: 0.75rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    color: #334155;
+    background: #ffffff;
+}
+
+.input-catatan-inline:focus {
+    border-color: #0284c7;
+    outline: none;
+}
+
+/* ─── BADGES VARIANCE ─── */
+.badge-cng-variance {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.badge-cng-zero {
+    background: #f1f5f9;
+    color: #64748b;
+    border: 1px solid #e2e8f0;
+}
+
+.badge-cng-pos {
+    background: #ecfdf5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+}
+
+.badge-cng-neg {
+    background: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+}
+
+/* ─── STICKY BOTTOM ACTION BAR ─── */
+.bottom-submit-bar {
+    background: #ffffff;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 0.85rem 1.35rem;
+    margin-top: 1.25rem;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.bottom-summary-text {
+    font-size: 0.825rem;
+    color: #475569;
+}
+
+.bottom-summary-text strong {
+    color: #0f172a;
+}

@@ -1,0 +1,332 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   PENJUALAN LANGSUNG / TUNAI (DIRECT SALES) - CREATE CASHIER STYLES
+   ERP PT Mirasa Food Industry
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.ds-create-container {
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.ds-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.ds-back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    color: #64748b;
+    font-size: 0.825rem;
+    font-weight: 600;
+    text-decoration: none;
+    margin-bottom: 0.35rem;
+    transition: color 0.15s ease;
+}
+
+.ds-back-btn:hover {
+    color: #0f172a;
+}
+
+/* 2-Column Cashier Layout */
+.ds-cashier-grid {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 1.25rem;
+    align-items: start;
+}
+
+@media (max-width: 1024px) {
+    .ds-cashier-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Card Styling */
+.ds-card {
+    background: #ffffff;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    margin-bottom: 1.25rem;
+    overflow: hidden;
+}
+
+.ds-card-header {
+    padding: 0.85rem 1.25rem;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.ds-card-title {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #0f172a;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
+}
+
+.ds-card-body {
+    padding: 1.25rem;
+}
+
+/* Form Controls */
+.ds-form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.ds-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.ds-label {
+    font-size: 0.775rem;
+    font-weight: 600;
+    color: #475569;
+}
+
+.ds-label .req {
+    color: #dc2626;
+}
+
+.ds-ctrl {
+    height: 38px;
+    padding: 0.45rem 0.75rem;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    color: #1e293b;
+    background: #ffffff;
+    transition: all 0.15s ease;
+}
+
+.ds-ctrl:focus {
+    border-color: #059669;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.12);
+}
+
+.ds-ctrl[readonly] {
+    background: #f1f5f9;
+    color: #64748b;
+    cursor: not-allowed;
+}
+
+/* Items Table */
+.ds-items-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.825rem;
+}
+
+.ds-items-table th {
+    background: #f8fafc;
+    color: #475569;
+    font-weight: 700;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0.65rem 0.75rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.ds-items-table td {
+    padding: 0.65rem 0.75rem;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+}
+
+.ds-items-table tbody tr:hover {
+    background-color: #fafafa;
+}
+
+.stock-tag {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    margin-top: 3px;
+}
+
+.stock-tag.in-stock {
+    background: #ecfdf5;
+    color: #059669;
+}
+
+.stock-tag.out-stock {
+    background: #fef2f2;
+    color: #dc2626;
+}
+
+/* Right Sticky Billing Panel */
+.ds-billing-sticky {
+    position: sticky;
+    top: 80px;
+}
+
+.ds-billing-summary {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1.125rem;
+    margin-bottom: 1rem;
+}
+
+.ds-summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.4rem 0;
+    font-size: 0.825rem;
+    color: #475569;
+}
+
+.ds-summary-row.total-box {
+    margin-top: 0.65rem;
+    padding-top: 0.75rem;
+    border-top: 2px dashed #cbd5e1;
+}
+
+.ds-grand-total {
+    font-size: 1.65rem;
+    font-weight: 800;
+    color: #0f172a;
+    font-feature-settings: "tnum";
+}
+
+/* Cashier Tender Section */
+.ds-tender-card {
+    background: #ffffff;
+    border: 2px solid #059669;
+    border-radius: 8px;
+    padding: 1.125rem;
+    box-shadow: 0 4px 6px -1px rgba(5, 150, 105, 0.08);
+}
+
+.ds-pay-tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.ds-pay-tab-btn {
+    flex: 1;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #475569;
+    font-size: 0.825rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.ds-pay-tab-btn.active {
+    background: #059669;
+    border-color: #059669;
+    color: #ffffff;
+}
+
+.ds-quick-cash-row {
+    display: flex;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+    margin-top: 0.4rem;
+}
+
+.ds-quick-btn {
+    padding: 0.25rem 0.5rem;
+    background: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #334155;
+    cursor: pointer;
+    transition: all 0.12s ease;
+}
+
+.ds-quick-btn:hover {
+    background: #e2e8f0;
+    border-color: #94a3b8;
+}
+
+.ds-kembalian-box {
+    margin-top: 0.85rem;
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.ds-kembalian-box.kurang {
+    background: #fef2f2;
+    border-color: #fecaca;
+}
+
+.ds-kembalian-val {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #059669;
+    font-feature-settings: "tnum";
+}
+
+.ds-kembalian-box.kurang .ds-kembalian-val {
+    color: #dc2626;
+}
+
+.ds-submit-btn {
+    width: 100%;
+    margin-top: 1rem;
+    height: 46px;
+    background: #059669;
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    box-shadow: 0 4px 6px -1px rgba(5, 150, 105, 0.25);
+    transition: all 0.15s ease;
+}
+
+.ds-submit-btn:hover {
+    background: #047857;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 8px -1px rgba(5, 150, 105, 0.35);
+}
+
+.ds-submit-btn:disabled {
+    background: #94a3b8;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+}

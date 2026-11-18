@@ -298,10 +298,18 @@
                             <span>Utilitas Energi Gas Alam (CNG)</span>
                         </div>
 
-                        <div class="form-group-hpp">
-                            <label for="cng_mmbtu" class="hpp-label">Meteran Fisik Gas CNG (MMBTU) <span class="required">*</span></label>
-                            <input type="number" step="any" min="0" name="cng_mmbtu" id="cng_mmbtu" class="hpp-input" value="0" required oninput="calcCngFromMmbtu()">
-                            <small class="helper-text">Ditarik otomatis dari pencatatan meteran shift pabrik.</small>
+                        <div class="grid-2-sm">
+                            <div class="form-group-hpp">
+                                <label for="cng_nm3" class="hpp-label">Meteran Fisik Gas (Nm³) <span style="font-size: 0.7rem; color: #64748b; font-weight: normal;">(Meteran Pabrik)</span></label>
+                                <input type="number" step="any" min="0" name="cng_nm3" id="cng_nm3" class="hpp-input" value="{{ old('cng_nm3', 0) }}" placeholder="0.000" oninput="calcMmbtuFromNm3()">
+                                <small class="helper-text">Volume terbaca pada flow meter gas pabrik.</small>
+                            </div>
+
+                            <div class="form-group-hpp">
+                                <label for="cng_mmbtu" class="hpp-label">Nilai Energi Gas (MMBTU) <span class="required">*</span></label>
+                                <input type="number" step="any" min="0" name="cng_mmbtu" id="cng_mmbtu" class="hpp-input" value="{{ old('cng_mmbtu', 0) }}" required oninput="calcNm3FromMmbtu()">
+                                <small class="helper-text">Satuan energi panas (1 MMBTU &approx; 27,92 Nm³).</small>
+                            </div>
                         </div>
 
                         <div class="grid-2-sm">

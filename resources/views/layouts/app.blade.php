@@ -1601,6 +1601,18 @@
                                                     <span style="font-size: 0.6875rem; color: #64748b;">Pilihan HPP Dapur atau HPP Kemasan</span>
                                                 </div>
                                             </a>
+                                            <a href="{{ route('produksi.cng-monitoring') }}"
+                                                class="mega-item {{ request()->routeIs('produksi.cng-monitoring*', 'produksi.adjust-cng-harian*', 'produksi.adjust-utilitas*') ? 'active' : '' }}">
+                                                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                                    style="color: #d97706;">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
+                                                </svg>
+                                                <div style="display: flex; flex-direction: column;">
+                                                    <span style="font-weight: 600;">Monitoring &amp; Rekonsiliasi Gas CNG</span>
+                                                    <span style="font-size: 0.6875rem; color: #64748b;">Rangkuman Harian, Balancing &amp; Rekon Faktur</span>
+                                                </div>
+                                            </a>
                                         @endif
                                     </div>
                                 </div>
@@ -1784,6 +1796,18 @@
                                                 <span style="font-weight: 600;">PO Penjualan (Sales Order)</span>
                                                 <span style="font-size: 0.6875rem; color: #64748b;">Pesanan produk keripik dari
                                                     customer</span>
+                                            </div>
+                                        </a>
+                                        <a href="{{ route('penjualan.langsung.index') }}"
+                                            class="mega-item {{ request()->routeIs('penjualan.langsung.*') ? 'active' : '' }}">
+                                            <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                                style="color: #10b981;">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                            </svg>
+                                            <div style="display: flex; flex-direction: column;">
+                                                <span style="font-weight: 600;">Penjualan Langsung / Tunai</span>
+                                                <span style="font-size: 0.6875rem; color: #64748b;">Kasir cepat, retail pabrik &amp; potong stok instan</span>
                                             </div>
                                         </a>
                                         <a href="{{ route('penjualan.retur.index') }}"

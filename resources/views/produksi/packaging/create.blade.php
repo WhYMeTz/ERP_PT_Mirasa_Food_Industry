@@ -101,8 +101,8 @@
                     </div>
                 </div>
 
-                {{-- Baris 2: Leader / Operator Kemas & Gudang Tujuan FG (2 Kolom Seimbang 50% : 50%) --}}
-                <div class="grid-web-2">
+                {{-- Baris 2: Leader Kemas, Gudang Asal Pengambilan Bahan & Gudang Tujuan FG (3 Kolom Seimbang) --}}
+                <div class="grid-web-3">
                     {{-- 4. Leader / Operator Kemas --}}
                     <div class="form-group" style="margin-bottom: 0;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
@@ -124,17 +124,44 @@
                         <input type="text" id="operator_nama" name="operator_nama" class="form-control" placeholder="Nama operator pengemasan..." value="{{ old('operator_nama', $selectedLaporan?->operator_nama ?? (Auth::user()->name ?? '')) }}" style="display: none; margin-top: 0.35rem;" required>
                     </div>
 
-                    {{-- 5. Gudang Tujuan Simpan FG --}}
+                    {{-- 5. Gudang Asal Pengambilan Bahan Kemasan --}}
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label class="form-label" for="gudang_asal_id">Gudang Asal Bahan Kemasan <span class="req">*</span></label>
+                        <select id="gudang_asal_id" name="gudang_asal_id" required class="form-control" onchange="syncGudangAsalDisplay()">
+                            <option value="">-- Pilih Gudang Asal Kemasan --</option>
+                            @foreach($gudangList as $g)
+                                @php
+                                    $isDefaultAsal = (
+                                        str_contains(strtoupper($g->gudang_nm), 'KEMASAN') ||
+                                        str_contains(strtoupper($g->gudang_cd), 'BB') ||
+                                        $g->tipe_gudang_cd === 'BB'
+                                    );
+                                    $isSelectedAsal = old('gudang_asal_id') ? (old('gudang_asal_id') == $g->gudang_id) : $isDefaultAsal;
+                                @endphp
+                                <option value="{{ $g->gudang_id }}" {{ $isSelectedAsal ? 'selected' : '' }}>
+                                    {{ $g->gudang_nm }} ({{ $g->tipe_gudang_cd ?? 'Gudang' }})
+                                </option>
+                            @endforeach
+                        </select>
+                        <small style="color: #64748b; font-size: 0.725rem; margin-top: 0.25rem; display: block;">Asal potong stok BPPB bahan kemasan.</small>
+                    </div>
+
+                    {{-- 6. Gudang Tujuan Simpan FG --}}
                     <div class="form-group" style="margin-bottom: 0;">
                         <label class="form-label" for="gudang_id">Gudang Tujuan Simpan FG <span class="req">*</span></label>
                         <select id="gudang_id" name="gudang_id" required class="form-control">
                             <option value="">-- Pilih Lokasi Gudang FG --</option>
                             @foreach($gudangList as $g)
-                                <option value="{{ $g->gudang_id }}" {{ old('gudang_id') == $g->gudang_id ? 'selected' : '' }}>
+                                @php
+                                    $isDefaultFg = ($g->gudang_cd === 'GDG-FG' || $g->tipe_gudang_cd === 'FG');
+                                    $isSelected = old('gudang_id') ? (old('gudang_id') == $g->gudang_id) : $isDefaultFg;
+                                @endphp
+                                <option value="{{ $g->gudang_id }}" {{ $isSelected ? 'selected' : '' }}>
                                     {{ $g->gudang_nm }} ({{ $g->tipe_gudang_cd ?? 'Gudang' }})
                                 </option>
                             @endforeach
                         </select>
+                        <small style="color: #64748b; font-size: 0.725rem; margin-top: 0.25rem; display: block;">Tujuan mutasi simpan produk jadi.</small>
                     </div>
 
                     {{-- Hidden: Perhitungan personil & upah tenaga kerja kemas dilakukan di modul Lembar HPP Packing --}}
@@ -269,7 +296,17 @@
                     <span class="card-web-num">3</span>
                     <span>Tabel Pemakaian Bahan Kemasan, Dus, Lakban &amp; Afkir</span>
                 </h2>
-                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <div style="display: flex; align-items: center; gap: 0.65rem; flex-wrap: wrap;">
+                    {{-- Indikator & Shortcut Sinkronisasi Gudang Asal dengan Card 1 --}}
+                    <div style="display: inline-flex; align-items: center; gap: 0.35rem; background: #f0f9ff; border: 1.5px solid #bae6fd; border-radius: 6px; padding: 3px 8px; font-size: 0.75rem;">
+                        <span style="color: #0369a1; font-weight: 600;">Asal Bahan:</span>
+                        <strong id="badgeGudangAsalDisplay" style="color: #0284c7; font-weight: 700;">-</strong>
+                        <a href="javascript:void(0)" onclick="focusGudangAsal()" style="color: #0284c7; text-decoration: none; font-size: 0.7rem; font-weight: 700; margin-left: 2px; display: inline-flex; align-items: center; gap: 2px; padding: 1px 4px; background: #ffffff; border: 1px solid #7dd3fc; border-radius: 4px;" title="Ubah Lokasi Gudang Asal di Card 1">
+                            <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                            <span>Ubah</span>
+                        </a>
+                    </div>
+
                     <span id="badgeBumbuStatus" style="display: none; background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 9999px;">
                         Curah Sudah Berbumbu Dapur
                     </span>
@@ -285,11 +322,12 @@
                         <thead>
                             <tr>
                                 <th style="width: 35px; text-align: center;">No</th>
-                                <th style="width: 150px; white-space: nowrap;">Kategori Bahan</th>
-                                <th>Nama Barang / Material Kemasan</th>
-                                <th style="width: 180px;">Kuantitas Terpakai</th>
-                                <th style="width: 150px;">Rusak / Afkir</th>
-                                <th style="width: 280px;">Keterangan &amp; Kontrol Cepat</th>
+                                <th style="width: 130px; white-space: nowrap;">Kategori Bahan</th>
+                                <th style="min-width: 220px;">Nama Barang / Material Kemasan</th>
+                                <th style="width: 175px; text-align: center;">Sisa di Gudang</th>
+                                <th style="width: 175px;">Kuantitas Terpakai</th>
+                                <th style="width: 130px;">Rusak / Afkir</th>
+                                <th style="width: 240px;">Keterangan &amp; Kontrol Cepat</th>
                                 <th style="width: 45px; text-align: center;">Aksi</th>
                             </tr>
                         </thead>
@@ -301,19 +339,42 @@
                                     <span class="cat-badge-web cat-bumbu-web">Bumbu Tabur</span>
                                 </td>
                                 <td>
-                                    <select id="bumbu_barang_id" name="bumbu_barang_id" class="form-control" onchange="updateRowBatchInfo('bumbu_barang_id', 'info_batch_bumbu', 'txt_batch_bumbu', 'txt_stok_bumbu')">
+                                    <select id="bumbu_barang_id" name="bumbu_barang_id" class="form-control" onchange="updateRowBatchInfo('bumbu_barang_id', 'info_batch_bumbu', 'txt_batch_bumbu', 'txt_stok_bumbu', 'box_sisa_bumbu', 'empty_sisa_bumbu', 'txt_val_sisa_bumbu', 'txt_satuan_sisa_bumbu', 'txt_btn_sisa_bumbu', 'loc_bumbu')">
                                         <option value="">-- Tanpa Bumbu (Original / Tidak Pakai) --</option>
                                         @foreach ($bumbuList as $bm)
                                             <option value="{{ $bm->barang_id }}" 
                                                 data-batch="{{ $batchInfoMap[$bm->barang_id]['batch_no'] ?? '-' }}" 
-                                                data-stok="{{ number_format($batchInfoMap[$bm->barang_id]['sisa_qty'] ?? 0, 0, ',', '.') }} Kg"
+                                                data-stok="{{ number_format($batchInfoMap[$bm->barang_id]['sisa_qty'] ?? 0, 0, ',', '.') }} {{ $bm->satuanDasar?->satuan_nm ?? 'Kg' }}"
+                                                data-raw-stok="{{ (float)($batchInfoMap[$bm->barang_id]['sisa_qty'] ?? 0) }}"
+                                                data-satuan-nm="{{ $bm->satuanDasar?->satuan_nm ?? 'Kg' }}"
+                                                data-gudang-nm="{{ $batchInfoMap[$bm->barang_id]['gudang_nm'] ?? '' }}"
                                                 {{ old('bumbu_barang_id', $selectedLaporan?->bumbu_barang_id) == $bm->barang_id ? 'selected' : '' }}>
                                                 {{ $bm->barang_nm }}
                                             </option>
                                         @endforeach
                                     </select>
-                                    <div id="info_batch_bumbu" style="font-size: 0.7rem; color: #64748b; margin-top: 3px; display: none;">
-                                        Batch FIFO: <strong style="color: #0284c7;" id="txt_batch_bumbu">-</strong> &bull; Sisa Stok: <strong id="txt_stok_bumbu">-</strong>
+                                    <div id="info_batch_bumbu" class="batch-stock-card stock-available" style="display: none;">
+                                        <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                            <div style="display: flex; align-items: center; gap: 5px;">
+                                                <span class="stock-badge-pill pill-green">✓ STOK TERSEDIA</span>
+                                                <strong style="color: #047857; font-family: ui-monospace, monospace; font-size: 0.8rem;" id="txt_stok_bumbu">-</strong>
+                                            </div>
+                                            <span class="batch-tag-pill">🏷️ FIFO: <strong id="txt_batch_bumbu">-</strong></span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="box-sisa-gudang" id="box_sisa_bumbu" style="display: none;">
+                                        <div class="badge-stok-label">✓ STOK TERSEDIA</div>
+                                        <div class="val-stok-qty"><span id="txt_val_sisa_bumbu">0</span> <small id="txt_satuan_sisa_bumbu">Kg</small></div>
+                                        <div class="sub-stok-label">Siap Digunakan</div>
+                                        <button type="button" class="btn-ambil-semua" id="btn_ambil_bumbu" onclick="takeAllStock('bumbu_qty_kg', 'txt_val_sisa_bumbu')">
+                                            Ambil Semua (<span id="txt_btn_sisa_bumbu">0</span>)
+                                        </button>
+                                        <span class="gudang-loc-pill" id="loc_bumbu" style="display: none;"></span>
+                                    </div>
+                                    <div id="empty_sisa_bumbu" style="text-align: center; color: #94a3b8; font-size: 0.75rem;">
+                                        Pilih bumbu
                                     </div>
                                 </td>
                                 <td>
@@ -347,19 +408,42 @@
                                     <span class="cat-badge-web cat-plastik-web">Plastik Kemas</span>
                                 </td>
                                 <td>
-                                    <select id="plastik_barang_id" name="plastik_barang_id" class="form-control" onchange="updateRowBatchInfo('plastik_barang_id', 'info_batch_plastik', 'txt_batch_plastik', 'txt_stok_plastik')">
+                                    <select id="plastik_barang_id" name="plastik_barang_id" class="form-control" onchange="updateRowBatchInfo('plastik_barang_id', 'info_batch_plastik', 'txt_batch_plastik', 'txt_stok_plastik', 'box_sisa_plastik', 'empty_sisa_plastik', 'txt_val_sisa_plastik', 'txt_satuan_sisa_plastik', 'txt_btn_sisa_plastik', 'loc_plastik')">
                                         <option value="">-- Pilih Plastik Kemasan Utama --</option>
                                         @foreach ($plastikList as $pls)
                                             <option value="{{ $pls->barang_id }}" 
                                                 data-batch="{{ $batchInfoMap[$pls->barang_id]['batch_no'] ?? '-' }}" 
                                                 data-stok="{{ number_format($batchInfoMap[$pls->barang_id]['sisa_qty'] ?? 0, 0, ',', '.') }} {{ $pls->satuanDasar?->satuan_nm ?? 'Pcs' }}"
+                                                data-raw-stok="{{ (float)($batchInfoMap[$pls->barang_id]['sisa_qty'] ?? 0) }}"
+                                                data-satuan-nm="{{ $pls->satuanDasar?->satuan_nm ?? 'Pcs' }}"
+                                                data-gudang-nm="{{ $batchInfoMap[$pls->barang_id]['gudang_nm'] ?? '' }}"
                                                 {{ old('plastik_barang_id', $selectedLaporan?->plastik_barang_id) == $pls->barang_id ? 'selected' : '' }}>
                                                 {{ $pls->barang_nm }}
                                             </option>
                                         @endforeach
                                     </select>
-                                    <div id="info_batch_plastik" style="font-size: 0.7rem; color: #64748b; margin-top: 3px; display: none;">
-                                        Batch FIFO: <strong style="color: #0284c7;" id="txt_batch_plastik">-</strong> &bull; Sisa Stok: <strong id="txt_stok_plastik">-</strong>
+                                    <div id="info_batch_plastik" class="batch-stock-card stock-available" style="display: none;">
+                                        <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                            <div style="display: flex; align-items: center; gap: 5px;">
+                                                <span class="stock-badge-pill pill-green">✓ STOK TERSEDIA</span>
+                                                <strong style="color: #047857; font-family: ui-monospace, monospace; font-size: 0.8rem;" id="txt_stok_plastik">-</strong>
+                                            </div>
+                                            <span class="batch-tag-pill">🏷️ FIFO: <strong id="txt_batch_plastik">-</strong></span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="box-sisa-gudang" id="box_sisa_plastik" style="display: none;">
+                                        <div class="badge-stok-label">✓ STOK TERSEDIA</div>
+                                        <div class="val-stok-qty"><span id="txt_val_sisa_plastik">0</span> <small id="txt_satuan_sisa_plastik">Roll</small></div>
+                                        <div class="sub-stok-label">Siap Digunakan</div>
+                                        <button type="button" class="btn-ambil-semua" id="btn_ambil_plastik" onclick="takeAllStock('plastik_qty', 'txt_val_sisa_plastik')">
+                                            Ambil Semua (<span id="txt_btn_sisa_plastik">0</span>)
+                                        </button>
+                                        <span class="gudang-loc-pill" id="loc_plastik" style="display: none;"></span>
+                                    </div>
+                                    <div id="empty_sisa_plastik" style="text-align: center; color: #94a3b8; font-size: 0.75rem;">
+                                        Pilih plastik
                                     </div>
                                 </td>
                                 <td>
@@ -394,9 +478,34 @@
                                     <div style="font-weight: 600; color: #065f46; font-size: 0.85rem;">
                                         Karton Polos IFM (Puteran)
                                     </div>
-                                    <div style="font-size: 0.7rem; color: #64748b; margin-top: 2px;">
-                                        Batch FIFO: <strong style="color: #0284c7;">{{ $batchInfoMap[$kartonPuteran?->barang_id]['batch_no'] ?? 'PUT-FIFO' }}</strong> &bull; Sisa Stok: <strong style="color: #059669;">{{ number_format($stokKartonPuteran, 0, ',', '.') }} Lbr</strong>
+                                    <div class="batch-stock-card stock-available">
+                                        <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                            <div style="display: flex; align-items: center; gap: 5px;">
+                                                <span class="stock-badge-pill pill-green">✓ STOK TERSEDIA</span>
+                                                <strong style="color: #047857; font-family: ui-monospace, monospace; font-size: 0.8rem;">{{ number_format($stokKartonPuteran, 0, ',', '.') }} Lbr</strong>
+                                            </div>
+                                            <span class="batch-tag-pill">🏷️ FIFO: <strong>{{ $batchInfoMap[$kartonPuteran?->barang_id]['batch_no'] ?? 'PUT-FIFO' }}</strong></span>
+                                        </div>
                                     </div>
+                                </td>
+                                <td>
+                                    @if ($stokKartonPuteran > 0)
+                                        <div class="box-sisa-gudang stok-ada">
+                                            <div class="badge-stok-label">✓ STOK TERSEDIA</div>
+                                            <div class="val-stok-qty">{{ number_format($stokKartonPuteran, 0, ',', '.') }} <small>Lbr</small></div>
+                                            <div class="sub-stok-label">Siap Digunakan</div>
+                                            <button type="button" class="btn-ambil-semua" onclick="takeAllStockDirect('karton_puteran_qty', {{ (float)$stokKartonPuteran }})">
+                                                Ambil Semua ({{ number_format($stokKartonPuteran, 0, ',', '.') }})
+                                            </button>
+                                            <span class="gudang-loc-pill" id="loc_puteran"></span>
+                                        </div>
+                                    @else
+                                        <div class="box-sisa-gudang stok-habis">
+                                            <div class="badge-stok-label">⚠️ STOK HABIS</div>
+                                            <div class="val-stok-qty">0 <small>Lbr</small></div>
+                                            <div class="sub-stok-label">Puteran Habis</div>
+                                        </div>
+                                    @endif
                                 </td>
                                 <td>
                                     <div class="input-group-web">
@@ -429,19 +538,42 @@
                                     <span class="cat-badge-web cat-karton-web">Dus Baru</span>
                                 </td>
                                 <td>
-                                    <select id="karton_barang_id" name="karton_barang_id" class="form-control" onchange="updateRowBatchInfo('karton_barang_id', 'info_batch_karton_baru', 'txt_batch_karton_baru', 'txt_stok_karton_baru')">
+                                    <select id="karton_barang_id" name="karton_barang_id" class="form-control" onchange="updateRowBatchInfo('karton_barang_id', 'info_batch_karton_baru', 'txt_batch_karton_baru', 'txt_stok_karton_baru', 'box_sisa_karton_baru', 'empty_sisa_karton_baru', 'txt_val_sisa_karton_baru', 'txt_satuan_sisa_karton_baru', 'txt_btn_sisa_karton_baru', 'loc_karton_baru')">
                                         <option value="">-- Pilih Karton Dus Baru (Opsional) --</option>
                                         @foreach ($kartonList as $ktn)
                                             <option value="{{ $ktn->barang_id }}" 
                                                 data-batch="{{ $batchInfoMap[$ktn->barang_id]['batch_no'] ?? '-' }}" 
                                                 data-stok="{{ number_format($batchInfoMap[$ktn->barang_id]['sisa_qty'] ?? 0, 0, ',', '.') }} Lbr"
+                                                data-raw-stok="{{ (float)($batchInfoMap[$ktn->barang_id]['sisa_qty'] ?? 0) }}"
+                                                data-satuan-nm="Lbr"
+                                                data-gudang-nm="{{ $batchInfoMap[$ktn->barang_id]['gudang_nm'] ?? '' }}"
                                                 {{ old('karton_barang_id', $selectedLaporan?->karton_barang_id) == $ktn->barang_id ? 'selected' : '' }}>
                                                 {{ $ktn->barang_nm }} ({{ $ktn->barang_cd }})
                                             </option>
                                         @endforeach
                                     </select>
-                                    <div id="info_batch_karton_baru" style="font-size: 0.7rem; color: #64748b; margin-top: 2px; display: none;">
-                                        Batch FIFO: <strong style="color: #0284c7;" id="txt_batch_karton_baru">{{ $batchInfoMap[$kartonBaru?->barang_id]['batch_no'] ?? '-' }}</strong> &bull; Sisa Stok: <strong style="color: #0369a1;" id="txt_stok_karton_baru">{{ number_format($stokKartonBaru, 0, ',', '.') }} Lbr</strong>
+                                    <div id="info_batch_karton_baru" class="batch-stock-card stock-available" style="display: none;">
+                                        <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                            <div style="display: flex; align-items: center; gap: 5px;">
+                                                <span class="stock-badge-pill pill-green">✓ STOK TERSEDIA</span>
+                                                <strong style="color: #047857; font-family: ui-monospace, monospace; font-size: 0.8rem;" id="txt_stok_karton_baru">{{ number_format($stokKartonBaru, 0, ',', '.') }} Lbr</strong>
+                                            </div>
+                                            <span class="batch-tag-pill">🏷️ FIFO: <strong id="txt_batch_karton_baru">{{ $batchInfoMap[$kartonBaru?->barang_id]['batch_no'] ?? '-' }}</strong></span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="box-sisa-gudang" id="box_sisa_karton_baru" style="display: none;">
+                                        <div class="badge-stok-label">✓ STOK TERSEDIA</div>
+                                        <div class="val-stok-qty"><span id="txt_val_sisa_karton_baru">0</span> <small id="txt_satuan_sisa_karton_baru">Lbr</small></div>
+                                        <div class="sub-stok-label">Siap Digunakan</div>
+                                        <button type="button" class="btn-ambil-semua" id="btn_ambil_karton_baru" onclick="takeAllStock('karton_baru_qty', 'txt_val_sisa_karton_baru')">
+                                            Ambil Semua (<span id="txt_btn_sisa_karton_baru">0</span>)
+                                        </button>
+                                        <span class="gudang-loc-pill" id="loc_karton_baru" style="display: none;"></span>
+                                    </div>
+                                    <div id="empty_sisa_karton_baru" style="text-align: center; color: #94a3b8; font-size: 0.75rem;">
+                                        Pilih dus baru
                                     </div>
                                 </td>
                                 <td>
@@ -472,20 +604,43 @@
                                     <span class="cat-badge-web cat-lakban-web">Lakban Segel</span>
                                 </td>
                                 <td>
-                                    <select id="lakban_barang_id" name="lakban_barang_id" class="form-control" onchange="updateRowBatchInfo('lakban_barang_id', 'info_batch_lakban', 'txt_batch_lakban', 'txt_stok_lakban')">
+                                    <select id="lakban_barang_id" name="lakban_barang_id" class="form-control" onchange="updateRowBatchInfo('lakban_barang_id', 'info_batch_lakban', 'txt_batch_lakban', 'txt_stok_lakban', 'box_sisa_lakban', 'empty_sisa_lakban', 'txt_val_sisa_lakban', 'txt_satuan_sisa_lakban', 'txt_btn_sisa_lakban', 'loc_lakban')">
                                         <option value="">-- Pilih Lakban Segel --</option>
                                         @foreach ($lakbanList as $lkb)
                                             <option value="{{ $lkb->barang_id }}" 
                                                 data-satuan="{{ $lkb->satuanDasar?->satuan_nm ?? 'ROLL' }}"
                                                 data-batch="{{ $batchInfoMap[$lkb->barang_id]['batch_no'] ?? '-' }}" 
                                                 data-stok="{{ number_format($batchInfoMap[$lkb->barang_id]['sisa_qty'] ?? 0, 0, ',', '.') }} {{ $lkb->satuanDasar?->satuan_nm ?? 'Roll' }}"
+                                                data-raw-stok="{{ (float)($batchInfoMap[$lkb->barang_id]['sisa_qty'] ?? 0) }}"
+                                                data-satuan-nm="{{ $lkb->satuanDasar?->satuan_nm ?? 'Roll' }}"
+                                                data-gudang-nm="{{ $batchInfoMap[$lkb->barang_id]['gudang_nm'] ?? '' }}"
                                                 {{ old('lakban_barang_id', $selectedLaporan?->lakban_barang_id) == $lkb->barang_id ? 'selected' : '' }}>
                                                 {{ $lkb->barang_nm }} ({{ $lkb->satuanDasar?->satuan_nm ?? 'ROLL' }})
                                             </option>
                                         @endforeach
                                     </select>
-                                    <div id="info_batch_lakban" style="font-size: 0.7rem; color: #64748b; margin-top: 3px; display: none;">
-                                        Batch FIFO: <strong style="color: #0284c7;" id="txt_batch_lakban">-</strong> &bull; Sisa Stok: <strong id="txt_stok_lakban">-</strong>
+                                    <div id="info_batch_lakban" class="batch-stock-card stock-available" style="display: none;">
+                                        <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                            <div style="display: flex; align-items: center; gap: 5px;">
+                                                <span class="stock-badge-pill pill-green">✓ STOK TERSEDIA</span>
+                                                <strong style="color: #047857; font-family: ui-monospace, monospace; font-size: 0.8rem;" id="txt_stok_lakban">-</strong>
+                                            </div>
+                                            <span class="batch-tag-pill">🏷️ FIFO: <strong id="txt_batch_lakban">-</strong></span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="box-sisa-gudang" id="box_sisa_lakban" style="display: none;">
+                                        <div class="badge-stok-label">✓ STOK TERSEDIA</div>
+                                        <div class="val-stok-qty"><span id="txt_val_sisa_lakban">0</span> <small id="txt_satuan_sisa_lakban">Roll</small></div>
+                                        <div class="sub-stok-label">Siap Digunakan</div>
+                                        <button type="button" class="btn-ambil-semua" id="btn_ambil_lakban" onclick="takeAllStock('lakban_roll_qty', 'txt_val_sisa_lakban')">
+                                            Ambil Semua (<span id="txt_btn_sisa_lakban">0</span>)
+                                        </button>
+                                        <span class="gudang-loc-pill" id="loc_lakban" style="display: none;"></span>
+                                    </div>
+                                    <div id="empty_sisa_lakban" style="text-align: center; color: #94a3b8; font-size: 0.75rem;">
+                                        Pilih lakban
                                     </div>
                                 </td>
                                 <td>
@@ -523,19 +678,42 @@
                                     <span class="cat-badge-web cat-lain-web">Label Expired</span>
                                 </td>
                                 <td>
-                                    <select id="expired_barang_id" name="expired_barang_id" class="form-control" onchange="updateRowBatchInfo('expired_barang_id', 'info_batch_expired', 'txt_batch_expired', 'txt_stok_expired')">
+                                    <select id="expired_barang_id" name="expired_barang_id" class="form-control" onchange="updateRowBatchInfo('expired_barang_id', 'info_batch_expired', 'txt_batch_expired', 'txt_stok_expired', 'box_sisa_expired', 'empty_sisa_expired', 'txt_val_sisa_expired', 'txt_satuan_sisa_expired', 'txt_btn_sisa_expired', 'loc_expired')">
                                         <option value="">-- Pilih Kertas / Plastik Expired --</option>
                                         @foreach ($expiredList as $exp)
                                             <option value="{{ $exp->barang_id }}" 
                                                 data-batch="{{ $batchInfoMap[$exp->barang_id]['batch_no'] ?? '-' }}" 
                                                 data-stok="{{ number_format($batchInfoMap[$exp->barang_id]['sisa_qty'] ?? 0, 0, ',', '.') }} {{ $exp->satuanDasar?->satuan_nm ?? 'Lbr' }}"
+                                                data-raw-stok="{{ (float)($batchInfoMap[$exp->barang_id]['sisa_qty'] ?? 0) }}"
+                                                data-satuan-nm="{{ $exp->satuanDasar?->satuan_nm ?? 'Lbr' }}"
+                                                data-gudang-nm="{{ $batchInfoMap[$exp->barang_id]['gudang_nm'] ?? '' }}"
                                                 {{ old('expired_barang_id', $selectedLaporan?->expired_barang_id) == $exp->barang_id ? 'selected' : '' }}>
                                                 {{ $exp->barang_nm }} ({{ $exp->satuanDasar?->satuan_nm ?? 'LEMBAR' }})
                                             </option>
                                         @endforeach
                                     </select>
-                                    <div id="info_batch_expired" style="font-size: 0.7rem; color: #64748b; margin-top: 3px; display: none;">
-                                        Batch FIFO: <strong style="color: #0284c7;" id="txt_batch_expired">-</strong> &bull; Sisa Stok: <strong id="txt_stok_expired">-</strong>
+                                    <div id="info_batch_expired" class="batch-stock-card stock-available" style="display: none;">
+                                        <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                            <div style="display: flex; align-items: center; gap: 5px;">
+                                                <span class="stock-badge-pill pill-green">✓ STOK TERSEDIA</span>
+                                                <strong style="color: #047857; font-family: ui-monospace, monospace; font-size: 0.8rem;" id="txt_stok_expired">-</strong>
+                                            </div>
+                                            <span class="batch-tag-pill">🏷️ FIFO: <strong id="txt_batch_expired">-</strong></span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="box-sisa-gudang" id="box_sisa_expired" style="display: none;">
+                                        <div class="badge-stok-label">✓ STOK TERSEDIA</div>
+                                        <div class="val-stok-qty"><span id="txt_val_sisa_expired">0</span> <small id="txt_satuan_sisa_expired">Lbr</small></div>
+                                        <div class="sub-stok-label">Siap Digunakan</div>
+                                        <button type="button" class="btn-ambil-semua" id="btn_ambil_expired" onclick="takeAllStock('expired_qty', 'txt_val_sisa_expired')">
+                                            Ambil Semua (<span id="txt_btn_sisa_expired">0</span>)
+                                        </button>
+                                        <span class="gudang-loc-pill" id="loc_expired" style="display: none;"></span>
+                                    </div>
+                                    <div id="empty_sisa_expired" style="text-align: center; color: #94a3b8; font-size: 0.75rem;">
+                                        Pilih label expired
                                     </div>
                                 </td>
                                 <td>
@@ -614,33 +792,173 @@
                     barang_nm: @json($kml->barang_nm),
                     satuan_nm: @json($kml->satuanDasar?->satuan_nm ?? 'PCS'),
                     batch_no: @json($batchInfoMap[$kml->barang_id]['batch_no'] ?? '-'),
-                    sisa_qty: "{{ number_format($batchInfoMap[$kml->barang_id]['sisa_qty'] ?? 0, 0, ',', '.') }}"
+                    sisa_qty: "{{ number_format($batchInfoMap[$kml->barang_id]['sisa_qty'] ?? 0, 0, ',', '.') }}",
+                    raw_sisa_qty: {{ (float) ($batchInfoMap[$kml->barang_id]['sisa_qty'] ?? 0) }},
+                    gudang_nm: @json($batchInfoMap[$kml->barang_id]['gudang_nm'] ?? '')
                 },
             @endforeach
         ];
 
         window.preloadedOperatorLaporan = @json($selectedLaporan ?? null);
 
-        // Fungsi Update Info Batch FIFO & Stok di Bawah Dropdown Barang
-        function updateRowBatchInfo(selectId, infoBoxId, txtBatchId, txtStokId) {
+        // Fungsi Update Info Batch FIFO & Stok di Bawah Dropdown Barang serta Kolom Sisa di Gudang
+        function updateRowBatchInfo(selectId, infoBoxId, txtBatchId, txtStokId, boxSisaId, emptySisaId, valSisaId, satuanSisaId, btnSisaId, locSisaId) {
             const sel = document.getElementById(selectId);
             const box = document.getElementById(infoBoxId);
             const txtB = document.getElementById(txtBatchId);
             const txtS = document.getElementById(txtStokId);
-            if (!sel || !box || !txtB || !txtS) return;
+            
+            const boxSisa = boxSisaId ? document.getElementById(boxSisaId) : null;
+            const emptySisa = emptySisaId ? document.getElementById(emptySisaId) : null;
+            const valSisa = valSisaId ? document.getElementById(valSisaId) : null;
+            const satuanSisa = satuanSisaId ? document.getElementById(satuanSisaId) : null;
+            const btnSisa = btnSisaId ? document.getElementById(btnSisaId) : null;
+            const locSisa = locSisaId ? document.getElementById(locSisaId) : null;
+
+            if (!sel) return;
 
             const opt = sel.options[sel.selectedIndex];
             if (opt && opt.value) {
                 const b = opt.getAttribute('data-batch') || '-';
                 const s = opt.getAttribute('data-stok') || '0';
-                txtB.textContent = b;
-                txtS.textContent = s;
-                box.style.display = 'block';
+                const rawQty = opt.getAttribute('data-raw-stok') || s;
+                const satuan = opt.getAttribute('data-satuan-nm') || '';
+                const gudangNm = opt.getAttribute('data-gudang-nm') || '';
+
+                if (txtB) txtB.textContent = b;
+                if (txtS) txtS.textContent = s;
+
+                // Cek ketersediaan stok numerik
+                const numericStok = parseFloat(String(rawQty).replace(/[^\d.,]/g, '').replace(',', '.')) || 0;
+                const formattedStok = numericStok.toLocaleString('id-ID');
+
+                if (box) {
+                    const statusPill = box.querySelector('.stock-badge-pill');
+                    if (statusPill) {
+                        if (numericStok > 0) {
+                            statusPill.className = 'stock-badge-pill pill-green';
+                            statusPill.innerHTML = '✓ STOK TERSEDIA';
+                            box.className = 'batch-stock-card stock-available';
+                        } else {
+                            statusPill.className = 'stock-badge-pill pill-red';
+                            statusPill.innerHTML = '⚠️ STOK HABIS';
+                            box.className = 'batch-stock-card stock-empty';
+                        }
+                    }
+                    box.style.display = 'block';
+                }
+
+                if (boxSisa && emptySisa) {
+                    emptySisa.style.display = 'none';
+                    boxSisa.style.display = 'block';
+                    if (valSisa) valSisa.textContent = formattedStok;
+                    if (satuanSisa) satuanSisa.textContent = satuan;
+                    if (btnSisa) btnSisa.textContent = formattedStok;
+
+                    if (locSisa) {
+                        if (gudangNm) {
+                            locSisa.textContent = '📍 ' + gudangNm;
+                            locSisa.style.display = 'block';
+                        } else {
+                            locSisa.style.display = 'none';
+                        }
+                    }
+
+                    const badgeLabel = boxSisa.querySelector('.badge-stok-label');
+                    const subLabel = boxSisa.querySelector('.sub-stok-label');
+                    const btnAmbil = boxSisa.querySelector('.btn-ambil-semua');
+
+                    if (numericStok > 0) {
+                        boxSisa.className = 'box-sisa-gudang stok-ada';
+                        if (badgeLabel) badgeLabel.textContent = '✓ STOK TERSEDIA';
+                        if (subLabel) subLabel.textContent = 'Siap Digunakan';
+                        if (btnAmbil) btnAmbil.style.display = 'inline-block';
+                    } else {
+                        boxSisa.className = 'box-sisa-gudang stok-habis';
+                        if (badgeLabel) badgeLabel.textContent = '⚠️ STOK HABIS';
+                        if (subLabel) subLabel.textContent = 'Stok Kosong di Gudang';
+                        if (btnAmbil) btnAmbil.style.display = 'none';
+                    }
+                }
             } else {
-                box.style.display = 'none';
+                if (box) box.style.display = 'none';
+                if (boxSisa && emptySisa) {
+                    boxSisa.style.display = 'none';
+                    emptySisa.style.display = 'block';
+                }
             }
         }
         window.updateRowBatchInfo = updateRowBatchInfo;
+
+        function takeAllStock(inputId, valSpanId) {
+            const span = document.getElementById(valSpanId);
+            const input = document.getElementById(inputId);
+            if (!span || !input) return;
+            const cleanNum = parseFloat(span.textContent.replace(/\./g, '').replace(',', '.')) || 0;
+            input.value = cleanNum;
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        window.takeAllStock = takeAllStock;
+
+        function takeAllStockDirect(inputId, numVal) {
+            const input = document.getElementById(inputId);
+            if (!input) return;
+            input.value = numVal;
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        window.takeAllStockDirect = takeAllStockDirect;
+
+        function takeAllStockDynamic(btn) {
+            const td = btn.closest('td');
+            const tr = btn.closest('tr');
+            if (!td || !tr) return;
+            const span = td.querySelector('.txt-val-sisa-tambahan');
+            const input = tr.querySelector('.input-qty-tambahan');
+            if (!span || !input) return;
+            const cleanNum = parseFloat(span.textContent.replace(/\./g, '').replace(',', '.')) || 0;
+            input.value = cleanNum;
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        window.takeAllStockDynamic = takeAllStockDynamic;
+
+        // Sinkronisasi Indikator Gudang Asal Aktif di Card 3 dengan Dropdown di Card 1
+        function syncGudangAsalDisplay() {
+            const sel = document.getElementById('gudang_asal_id');
+            const badge = document.getElementById('badgeGudangAsalDisplay');
+            if (!sel || !badge) return;
+
+            const opt = sel.options[sel.selectedIndex];
+            const text = (opt && opt.value) ? opt.text.trim() : '-';
+            badge.textContent = text;
+
+            // Perbarui label lokasi pada kartu stok sisa di gudang jika ada
+            const locElements = document.querySelectorAll('.gudang-loc-pill');
+            locElements.forEach(el => {
+                if (opt && opt.value) {
+                    el.textContent = '📍 ' + text;
+                }
+            });
+        }
+        window.syncGudangAsalDisplay = syncGudangAsalDisplay;
+
+        // Shortcut Halus dari Card 3 untuk Mengarahkan Fokus ke Pilihan Gudang Asal di Card 1
+        function focusGudangAsal() {
+            const sel = document.getElementById('gudang_asal_id');
+            if (sel) {
+                sel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                sel.focus();
+                sel.style.borderColor = '#0284c7';
+                sel.style.boxShadow = '0 0 0 4px rgba(2, 132, 199, 0.25)';
+                setTimeout(() => {
+                    sel.style.borderColor = '';
+                    sel.style.boxShadow = '';
+                }, 1600);
+            }
+        }
+        window.focusGudangAsal = focusGudangAsal;
 
         // Helper fungsi UI Web Desktop
         function selectWebShift(shift) {
@@ -808,7 +1126,7 @@
             optionsData.forEach(item => {
                 const isSelected = selectedId && parseInt(selectedId) === parseInt(item.barang_id) ? 'selected' : '';
                 const satuan = item.satuan_nm ? ` (${item.satuan_nm})` : '';
-                optionsHtml += `<option value="${item.barang_id}" data-satuan="${item.satuan_nm || 'PCS'}" data-batch="${item.batch_no || '-'}" data-stok="${item.sisa_qty || '0'} ${item.satuan_nm || 'Pcs'}" ${isSelected}>${item.barang_nm}${satuan}</option>`;
+                optionsHtml += `<option value="${item.barang_id}" data-satuan="${item.satuan_nm || 'PCS'}" data-batch="${item.batch_no || '-'}" data-stok="${item.sisa_qty || '0'} ${item.satuan_nm || 'Pcs'}" data-raw-stok="${item.raw_sisa_qty || 0}" data-gudang-nm="${item.gudang_nm || ''}" ${isSelected}>${item.barang_nm}${satuan}</option>`;
             });
 
             const rowId = `kemasan_row_${kemasanTambahanIndex}`;
@@ -829,8 +1147,22 @@
                     </div>
                 </td>
                 <td>
+                    <div class="box-sisa-gudang box-sisa-tambahan" style="display: none;">
+                        <div class="badge-stok-label">✓ STOK TERSEDIA</div>
+                        <div class="val-stok-qty"><span class="txt-val-sisa-tambahan">0</span> <small class="txt-satuan-sisa-tambahan">Pcs</small></div>
+                        <div class="sub-stok-label">Siap Digunakan</div>
+                        <button type="button" class="btn-ambil-semua btn-ambil-tambahan" onclick="takeAllStockDynamic(this)">
+                            Ambil Semua (<span class="txt-btn-sisa-tambahan">0</span>)
+                        </button>
+                        <span class="gudang-loc-pill loc-tambahan" style="display: none;"></span>
+                    </div>
+                    <div class="empty-sisa-tambahan" style="text-align: center; color: #94a3b8; font-size: 0.75rem;">
+                        Pilih kemasan
+                    </div>
+                </td>
+                <td>
                     <div class="input-group-web">
-                        <input type="number" step="any" min="0" name="kemasan_tambahan[${kemasanTambahanIndex}][qty]" class="form-control" placeholder="Qty" value="${defaultQty}" style="font-weight: 700;">
+                        <input type="number" step="any" min="0" name="kemasan_tambahan[${kemasanTambahanIndex}][qty]" class="form-control input-qty-tambahan" placeholder="Qty" value="${defaultQty}" style="font-weight: 700;">
                         <select name="kemasan_tambahan[${kemasanTambahanIndex}][satuan]" class="form-control unit-select" style="max-width: 85px; font-weight: 700; background: #ffffff;">
                             <option value="PCS">Pcs</option>
                             <option value="PACK">Pack</option>
@@ -877,8 +1209,21 @@
             const txtBatch = row.querySelector('.txt-batch-tambahan');
             const txtStok = row.querySelector('.txt-stok-tambahan');
 
+            const boxSisa = row.querySelector('.box-sisa-tambahan');
+            const emptySisa = row.querySelector('.empty-sisa-tambahan');
+            const valSisa = row.querySelector('.txt-val-sisa-tambahan');
+            const satuanSisa = row.querySelector('.txt-satuan-sisa-tambahan');
+            const btnSisa = row.querySelector('.txt-btn-sisa-tambahan');
+            const locSisa = row.querySelector('.loc-tambahan');
+            const btnAmbil = row.querySelector('.btn-ambil-tambahan');
+
             if (selectedOpt && selectedOpt.value) {
                 const satuan = (selectedOpt.getAttribute('data-satuan') || 'PCS').toUpperCase();
+                const batch = selectedOpt.getAttribute('data-batch') || '-';
+                const stok = selectedOpt.getAttribute('data-stok') || '0';
+                const rawStok = parseFloat(selectedOpt.getAttribute('data-raw-stok')) || 0;
+                const gudangNm = selectedOpt.getAttribute('data-gudang-nm') || '';
+
                 if (unitSelect) {
                     for (let i = 0; i < unitSelect.options.length; i++) {
                         if (unitSelect.options[i].value === satuan || unitSelect.options[i].text.toUpperCase() === satuan) {
@@ -888,12 +1233,49 @@
                     }
                 }
                 if (infoBatch && txtBatch && txtStok) {
-                    txtBatch.textContent = selectedOpt.getAttribute('data-batch') || '-';
-                    txtStok.textContent = selectedOpt.getAttribute('data-stok') || '0';
+                    txtBatch.textContent = batch;
+                    txtStok.textContent = stok;
                     infoBatch.style.display = 'block';
+                }
+
+                if (boxSisa && emptySisa) {
+                    emptySisa.style.display = 'none';
+                    boxSisa.style.display = 'block';
+                    const formatted = rawStok.toLocaleString('id-ID');
+                    if (valSisa) valSisa.textContent = formatted;
+                    if (satuanSisa) satuanSisa.textContent = satuan;
+                    if (btnSisa) btnSisa.textContent = formatted;
+
+                    if (locSisa) {
+                        if (gudangNm) {
+                            locSisa.textContent = '📍 ' + gudangNm;
+                            locSisa.style.display = 'block';
+                        } else {
+                            locSisa.style.display = 'none';
+                        }
+                    }
+
+                    const badge = boxSisa.querySelector('.badge-stok-label');
+                    const sub = boxSisa.querySelector('.sub-stok-label');
+
+                    if (rawStok > 0) {
+                        boxSisa.className = 'box-sisa-gudang box-sisa-tambahan stok-ada';
+                        if (badge) badge.textContent = '✓ STOK TERSEDIA';
+                        if (sub) sub.textContent = 'Siap Digunakan';
+                        if (btnAmbil) btnAmbil.style.display = 'inline-block';
+                    } else {
+                        boxSisa.className = 'box-sisa-gudang box-sisa-tambahan stok-habis';
+                        if (badge) badge.textContent = '⚠️ STOK HABIS';
+                        if (sub) sub.textContent = 'Stok Kosong di Gudang';
+                        if (btnAmbil) btnAmbil.style.display = 'none';
+                    }
                 }
             } else {
                 if (infoBatch) infoBatch.style.display = 'none';
+                if (boxSisa && emptySisa) {
+                    boxSisa.style.display = 'none';
+                    emptySisa.style.display = 'block';
+                }
             }
         }
 
@@ -910,12 +1292,15 @@
                 syncWebKaryawanName(selKaryawan);
             }
 
-            // Inisialisasi tampilan nomor batch aktif FIFO bahan kemasan
-            updateRowBatchInfo('bumbu_barang_id', 'info_batch_bumbu', 'txt_batch_bumbu', 'txt_stok_bumbu');
-            updateRowBatchInfo('plastik_barang_id', 'info_batch_plastik', 'txt_batch_plastik', 'txt_stok_plastik');
-            updateRowBatchInfo('karton_barang_id', 'info_batch_karton_baru', 'txt_batch_karton_baru', 'txt_stok_karton_baru');
-            updateRowBatchInfo('lakban_barang_id', 'info_batch_lakban', 'txt_batch_lakban', 'txt_stok_lakban');
-            updateRowBatchInfo('expired_barang_id', 'info_batch_expired', 'txt_batch_expired', 'txt_stok_expired');
+            // Inisialisasi indikator gudang asal aktif Card 1 & Card 3
+            syncGudangAsalDisplay();
+
+            // Inisialisasi tampilan nomor batch aktif FIFO & Sisa di Gudang
+            updateRowBatchInfo('bumbu_barang_id', 'info_batch_bumbu', 'txt_batch_bumbu', 'txt_stok_bumbu', 'box_sisa_bumbu', 'empty_sisa_bumbu', 'txt_val_sisa_bumbu', 'txt_satuan_sisa_bumbu', 'txt_btn_sisa_bumbu', 'loc_bumbu');
+            updateRowBatchInfo('plastik_barang_id', 'info_batch_plastik', 'txt_batch_plastik', 'txt_stok_plastik', 'box_sisa_plastik', 'empty_sisa_plastik', 'txt_val_sisa_plastik', 'txt_satuan_sisa_plastik', 'txt_btn_sisa_plastik', 'loc_plastik');
+            updateRowBatchInfo('karton_barang_id', 'info_batch_karton_baru', 'txt_batch_karton_baru', 'txt_stok_karton_baru', 'box_sisa_karton_baru', 'empty_sisa_karton_baru', 'txt_val_sisa_karton_baru', 'txt_satuan_sisa_karton_baru', 'txt_btn_sisa_karton_baru', 'loc_karton_baru');
+            updateRowBatchInfo('lakban_barang_id', 'info_batch_lakban', 'txt_batch_lakban', 'txt_stok_lakban', 'box_sisa_lakban', 'empty_sisa_lakban', 'txt_val_sisa_lakban', 'txt_satuan_sisa_lakban', 'txt_btn_sisa_lakban', 'loc_lakban');
+            updateRowBatchInfo('expired_barang_id', 'info_batch_expired', 'txt_batch_expired', 'txt_stok_expired', 'box_sisa_expired', 'empty_sisa_expired', 'txt_val_sisa_expired', 'txt_satuan_sisa_expired', 'txt_btn_sisa_expired', 'loc_expired');
 
             // Cek stok awal jika ada nilai preloaded/old
             checkWipStock();

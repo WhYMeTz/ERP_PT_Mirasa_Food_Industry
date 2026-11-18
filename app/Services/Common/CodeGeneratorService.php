@@ -884,6 +884,15 @@ class CodeGeneratorService
     }
 
     /**
+     * Generate Nomor Dokumen Penjualan Langsung / Tunai (format: DIR-YYYYMM-0001)
+     */
+    public function generateDirectSaleNo(?string $date = null): string
+    {
+        $prefix = 'DIR-' . date('Ym', strtotime($date ?? date('Y-m-d'))) . '-';
+        return $this->generate('dat_so_hdr', 'so_no', $prefix, 4);
+    }
+
+    /**
      * Generate Nomor Faktur / Invoice Penjualan (format: INV-YYYYMM-0001)
      */
     public function generateFakturNo(?string $date = null): string

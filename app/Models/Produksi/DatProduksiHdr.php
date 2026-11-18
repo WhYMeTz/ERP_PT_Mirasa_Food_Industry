@@ -61,6 +61,7 @@ class DatProduksiHdr extends Model
         'total_bahan_nilai',
 
         // Energi & CNG
+        'cng_nm3',
         'cng_mmbtu',
         'cng_tarif_usd',
         'cng_kurs_jisdor',
@@ -161,6 +162,7 @@ class DatProduksiHdr extends Model
         'tali_rafia_qty'              => 'decimal:2',
         'tali_rafia_nilai'            => 'decimal:2',
         'total_bahan_nilai'           => 'decimal:2',
+        'cng_nm3'                     => 'decimal:4',
         'cng_mmbtu'                   => 'decimal:4',
         'cng_tarif_usd'               => 'decimal:4',
         'cng_kurs_jisdor'             => 'decimal:2',

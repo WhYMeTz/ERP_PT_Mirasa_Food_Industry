@@ -229,10 +229,10 @@
                         <tr>
                             <th style="width: 45px; text-align: center;">No.</th>
                             <th>Nama Produk Hasil Produksi</th>
-                            <th style="text-align: right; width: 120px;">Qty Pesan</th>
-                            <th style="text-align: right; width: 120px;">Sudah Kirim</th>
-                            <th style="text-align: right; width: 120px;">Sisa Pesan</th>
-                            <th style="text-align: center; width: 170px;">Stok Gudang FG</th>
+                            <th style="min-width: 260px;">Alokasi Batch Produksi (FEFO) <span class="req">*</span></th>
+                            <th style="text-align: right; width: 110px;">Qty Pesan</th>
+                            <th style="text-align: right; width: 110px;">Sisa Pesan</th>
+                            <th style="text-align: center; width: 140px;">Stok FG</th>
                             <th style="text-align: right; width: 140px;">Qty Kirim Hari Ini <span class="req">*</span></th>
                         </tr>
                     </thead>
@@ -243,6 +243,7 @@
                                     $sisa = $item['sisa_qty'];
                                     $stokFg = $item['stok_fg'];
                                     $isStockOk = $stokFg >= $sisa;
+                                    $batches = $item['batches'] ?? [];
                                 @endphp
                                 <tr>
                                     <td style="text-align: center; color: #94a3b8; font-weight: 600;">
@@ -253,11 +254,34 @@
                                         <div style="font-weight: 700; color: #0f172a;">{{ $item['barang_nm'] }}</div>
                                         <div style="font-size: 0.725rem; color: #64748b; font-family: monospace;">Kode: {{ $item['barang_cd'] }}</div>
                                     </td>
+                                    <td>
+                                        <div style="display: flex; flex-direction: column; gap: 4px;">
+                                            <select name="items[{{ $index }}][batch_no]" class="form-control select-batch" onchange="window.checkBatchFifoWarning(this)" style="font-size: 0.8125rem; font-weight: 600; padding: 0.35rem 0.5rem; height: 34px;">
+                                                @if (!empty($batches))
+                                                    @foreach ($batches as $b)
+                                                        @php
+                                                            $isTop = $b['is_fifo_top'];
+                                                            $optText = ($isTop ? '⭐ [Rekomendasi FIFO] ' : '') . 'Batch ' . $b['batch_no'] . ' (Exp: ' . $b['expired_fmt'] . ' | Sisa: ' . number_format($b['sisa_qty'], 0) . ')';
+                                                        @endphp
+                                                        <option value="{{ $b['batch_no'] }}"
+                                                            data-is-fifo="{{ $isTop ? '1' : '0' }}"
+                                                            data-exp="{{ $b['expired_fmt'] }}"
+                                                            data-sisa="{{ $b['sisa_qty'] }}"
+                                                            {{ $isTop ? 'selected' : '' }}>
+                                                            {{ $optText }}
+                                                        </option>
+                                                    @endforeach
+                                                @else
+                                                    <option value="AUTO_FIFO">⭐ [Auto-FEFO] Rekomendasi Terlama Sistem</option>
+                                                @endif
+                                            </select>
+                                            <div class="batch-warning-msg" style="display: none; font-size: 0.72rem; color: #b45309; background: #fef3c7; border: 1px solid #fde68a; border-radius: 4px; padding: 3px 6px;">
+                                                ⚠️ <strong>Perhatian:</strong> Anda memilih batch yang lebih baru. Batch lain memiliki tanggal expired lebih awal (FIFO).
+                                            </div>
+                                        </div>
+                                    </td>
                                     <td style="text-align: right; color: #475569; font-weight: 600;">
                                         {{ number_format($item['pesan_qty'], 0, ',', '.') }} {{ $item['satuan_nm'] }}
-                                    </td>
-                                    <td style="text-align: right; color: #0284c7; font-weight: 600;">
-                                        {{ number_format($item['kirim_qty_old'], 0, ',', '.') }}
                                     </td>
                                     <td style="text-align: right; font-weight: 700; color: #0f172a;">
                                         {{ number_format($sisa, 0, ',', '.') }}

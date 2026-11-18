@@ -272,13 +272,22 @@
                 $totalKarton += $qty;
             }
 
+            $batchInfo = '';
+            if (!empty($dtl->batch_no)) {
+                $batchInfo = "Batch: {$dtl->batch_no}";
+                if (!empty($dtl->expired_tgl)) {
+                    $batchInfo .= " | Exp: " . \Carbon\Carbon::parse($dtl->expired_tgl)->format('d/m/Y');
+                }
+            }
+
             $items[] = [
-                'nama'     => $barangNm,
-                'ikat'     => $ikat,
-                'bungkus'  => $bungkus,
-                'karton'   => $karton,
-                'ball'     => $ball,
-                'catatan'  => $dtl->catatan_txt ?? '',
+                'nama'       => $barangNm,
+                'batch_info' => $batchInfo,
+                'ikat'       => $ikat,
+                'bungkus'    => $bungkus,
+                'karton'     => $karton,
+                'ball'       => $ball,
+                'catatan'    => $dtl->catatan_txt ?? '',
             ];
         }
     @endphp
@@ -403,6 +412,11 @@
                     <td style="text-align: center; font-weight: bold;">{{ $idx + 1 }}</td>
                     <td style="text-align: left; padding-left: 6px; font-weight: bold;">
                         {{ $it['nama'] }}
+                        @if (!empty($it['batch_info']))
+                            <div style="font-size: 7.2pt; font-weight: normal; color: #333; margin-top: 1px;">
+                                [{{ $it['batch_info'] }}]
+                            </div>
+                        @endif
                     </td>
                     <td style="text-align: center; font-weight: bold;">
                         {{ $it['ikat'] > 0 ? (fmod($it['ikat'], 1) != 0 ? number_format($it['ikat'], 2, ',', '.') : number_format($it['ikat'], 0, ',', '.')) : '' }}

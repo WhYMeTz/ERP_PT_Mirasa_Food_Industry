@@ -80,6 +80,7 @@ class ProduksiService
             'minyak_sawit_qty'            => $hasFinalized ? (float) $finalizedRecords->sum('minyak_sawit_qty') : 0,
             'minyak_kelapa_qty'           => $hasFinalized ? (float) $finalizedRecords->sum('minyak_kelapa_qty') : 0,
             'minyak_nilai'                => $hasFinalized ? (float) $finalizedRecords->sum('minyak_nilai') : 0,
+            'cng_nm3'                     => $hasFinalized ? (float) $finalizedRecords->sum('cng_nm3') : 0,
             'cng_mmbtu'                   => $hasFinalized ? (float) $finalizedRecords->sum('cng_mmbtu') : 0,
             'cng_nilai'                   => $hasFinalized ? (float) $finalizedRecords->sum('cng_nilai') : 0,
             'tk_jumlah_org'               => $hasFinalized ? (int) $finalizedRecords->sum(function ($r) {
@@ -180,7 +181,24 @@ class ProduksiService
                 $dayMinyakRasio = $daySingkongQty > 0 ? (($daySawitQty + $dayKelapaQty) / $daySingkongQty) * 100 : 0;
 
                 $dayCngMmbtu = (float) $dayRecords->sum('cng_mmbtu');
+                $dayCngNm3 = (float) $dayRecords->sum('cng_nm3');
+                if ($dayCngNm3 <= 0 && $dayCngMmbtu > 0) {
+                    $dayCngNm3 = round($dayCngMmbtu * 27.921, 4);
+                }
                 $dayCngNilai = (float) $dayRecords->sum('cng_nilai');
+                $cngFirstRec = $dayRecords->first();
+                $dayCngKursJisdor = (float) ($cngFirstRec->cng_kurs_jisdor > 0 ? $cngFirstRec->cng_kurs_jisdor : 0);
+                $dayCngTarifUsd = (float) ($cngFirstRec->cng_tarif_usd > 0 ? $cngFirstRec->cng_tarif_usd : 14.50);
+                $dayCngTarif = (float) ($cngFirstRec->cng_tarif > 0 ? $cngFirstRec->cng_tarif : 0);
+                if ($dayCngKursJisdor <= 0) {
+                    $dayCngKursJisdor = (float) $this->tarifService->getJisdorRate($dateObj->format('Y-m-d'), false);
+                    if ($dayCngKursJisdor <= 0) {
+                        $dayCngKursJisdor = 18138.00;
+                    }
+                }
+                if ($dayCngTarif <= 0) {
+                    $dayCngTarif = round($dayCngTarifUsd * $dayCngKursJisdor, 2);
+                }
 
                 $dayTkJumlah = (int) $dayRecords->sum(function ($r) {
                     return $r->tk_jumlah_org ?: ($r->tk_langsung_org + $r->tk_tidak_langsung_org + $r->tk_training_org);
@@ -440,8 +458,12 @@ class ProduksiService
                     'minyak_kelapa_qty'           => $dayKelapaQty,
                     'minyak_nilai'                => $dayMinyakNilai,
                     'minyak_rasio_persen'         => $dayMinyakRasio,
+                    'cng_nm3'                     => $dayCngNm3,
                     'cng_mmbtu'                   => $dayCngMmbtu,
                     'cng_nilai'                   => $dayCngNilai,
+                    'cng_kurs_jisdor'             => $dayCngKursJisdor,
+                    'cng_tarif_usd'               => $dayCngTarifUsd,
+                    'cng_tarif'                   => $dayCngTarif,
                     'tk_jumlah_org'               => $dayTkJumlah,
                     'tk_langsung_org'             => $dayTkLangsung,
                     'tk_tidak_langsung_org'       => $dayTkTidakLangsung,
@@ -1250,6 +1272,12 @@ class ProduksiService
 
         // Gas CNG (Mendukung Kurs JISDOR & Tarif USD per MMBTU)
         $cngMmbtu = (float) ($data['cng_mmbtu'] ?? 0);
+        $cngNm3 = (float) ($data['cng_nm3'] ?? 0);
+        if ($cngNm3 <= 0 && $cngMmbtu > 0) {
+            $cngNm3 = round($cngMmbtu * 27.921, 4);
+        } elseif ($cngNm3 > 0 && $cngMmbtu <= 0) {
+            $cngMmbtu = round($cngNm3 / 27.921, 4);
+        }
         $cngTarifUsd = (float) ($data['cng_tarif_usd'] ?? 0);
         $cngKursJisdor = (float) ($data['cng_kurs_jisdor'] ?? 0);
         $cngTarif = (float) ($data['cng_tarif'] ?? 0);
@@ -1425,6 +1453,7 @@ class ProduksiService
             'tali_rafia_qty'              => (float) ($data['tali_rafia_qty'] ?? 0),
             'tali_rafia_nilai'            => $taliRafiaNilai,
             'total_bahan_nilai'           => $totalBahanNilai,
+            'cng_nm3'                     => $cngNm3,
             'cng_mmbtu'                   => $cngMmbtu,
             'cng_tarif_usd'               => $cngTarifUsd,
             'cng_kurs_jisdor'             => $cngKursJisdor,
@@ -2424,6 +2453,11 @@ class ProduksiService
                         if ($record->cng_mmbtu > 0) {
                             $record->cng_tarif = round($record->cng_nilai / $record->cng_mmbtu, 2);
                         }
+                    } elseif ($modeCng === 'bagi_rata') {
+                        $record->cng_nilai = round($totalCngTagihan / $count, 2);
+                        if ($record->cng_mmbtu > 0) {
+                            $record->cng_tarif = round($record->cng_nilai / $record->cng_mmbtu, 2);
+                        }
                     }
                 }
 
@@ -2491,6 +2525,220 @@ class ProduksiService
                 'total_listrik'       => $totalListrik,
                 'adjust_cng'          => $adjustCng,
                 'effective_cng_tarif' => $modeCng === 'total_tagihan' ? $effectiveCngTarif : $cngTarifBaru,
+            ];
+        });
+    }
+
+    /**
+     * Penyesuaian Pemakaian Gas CNG Harian & Balancing Bulanan.
+     * Mengoreksi MMBTU dan biaya gas per tanggal produksi spesifik
+     * dengan mengunci Kurs JISDOR masing-masing tanggal tersebut,
+     * lalu memperbarui HPP/kg dan audit trail akuntansi secara presisi.
+     */
+    public function adjustDailyCng(int $year, int $month, array $dailyAdjustments, string $alasan, string $userId): array
+    {
+        return DB::transaction(function () use ($year, $month, $dailyAdjustments, $alasan, $userId) {
+            $updatedDaysCount = 0;
+            $updatedRecordsCount = 0;
+            $totalSelisihBiaya = 0;
+            $totalSelisihMmbtu = 0;
+
+            if (empty($dailyAdjustments) || !is_array($dailyAdjustments)) {
+                throw new Exception("Tidak ada data penyesuaian gas harian yang dikirimkan.");
+            }
+
+            $alasanClean = trim($alasan);
+            if (empty($alasanClean)) {
+                $alasanClean = "Penyesuaian & rekonsiliasi gas CNG harian periode {$month}/{$year}";
+            }
+
+            $authUser = Auth::user();
+
+            foreach ($dailyAdjustments as $dateStr => $adj) {
+                if (!isset($adj['new_mmbtu'])) {
+                    continue;
+                }
+
+                $newMmbtu = round((float) $adj['new_mmbtu'], 4);
+                $oldMmbtu = isset($adj['old_mmbtu']) ? round((float) $adj['old_mmbtu'], 4) : null;
+                $diffMmbtu = $oldMmbtu !== null ? ($newMmbtu - $oldMmbtu) : 0;
+
+                // Ambil semua lembar produksi aktif pada tanggal ini
+                $records = DatProduksiHdr::whereDate('produksi_tgl', $dateStr)
+                    ->where('deleted_st', false)
+                    ->orderBy('shift_cd', 'asc')
+                    ->get();
+
+                if ($records->isEmpty()) {
+                    continue;
+                }
+
+                $dayOldMmbtu = (float) $records->sum('cng_mmbtu');
+                if ($oldMmbtu === null) {
+                    $diffMmbtu = $newMmbtu - $dayOldMmbtu;
+                }
+
+                // Jika tidak ada perubahan kuantitas MMBTU (selisih < 0.0001), lewati
+                if (abs($diffMmbtu) < 0.0001 && empty($adj['force_update'])) {
+                    continue;
+                }
+
+                $updatedDaysCount++;
+                $totalSelisihMmbtu += $diffMmbtu;
+
+                // Tentukan Kurs JISDOR & Tarif USD untuk tanggal ini
+                $firstRec = $records->first();
+                $cngKursJisdor = (float) ($firstRec->cng_kurs_jisdor > 0 ? $firstRec->cng_kurs_jisdor : 0);
+                if ($cngKursJisdor <= 0) {
+                    $cngKursJisdor = (float) $this->tarifService->getJisdorRate($dateStr, false);
+                    if ($cngKursJisdor <= 0) {
+                        $cngKursJisdor = 18138.00;
+                    }
+                }
+                $cngTarifUsd = (float) ($firstRec->cng_tarif_usd > 0 ? $firstRec->cng_tarif_usd : 14.50);
+                if (!empty($adj['cng_tarif_usd']) && (float) $adj['cng_tarif_usd'] > 0) {
+                    $cngTarifUsd = (float) $adj['cng_tarif_usd'];
+                }
+                if (!empty($adj['cng_kurs_jisdor']) && (float) $adj['cng_kurs_jisdor'] > 0) {
+                    $cngKursJisdor = (float) $adj['cng_kurs_jisdor'];
+                }
+
+                $cngTarifRp = round($cngTarifUsd * $cngKursJisdor, 2);
+
+                $dayTotalWip = (float) $records->sum('total_wip_qty');
+                $recordCount = $records->count();
+
+                // Alokasikan ke masing-masing dokumen produksi pada tanggal tersebut
+                foreach ($records as $record) {
+                    $recOldBiaya = (float) $record->total_biaya_produksi;
+                    $recOldHpp = (float) $record->hpp_per_kg;
+                    $recOldMmbtu = (float) $record->cng_mmbtu;
+                    $recOldCngNilai = (float) $record->cng_nilai;
+
+                    // Alokasi proporsional jika multiple records di hari yang sama
+                    if ($recordCount === 1) {
+                        $recNewMmbtu = $newMmbtu;
+                    } else {
+                        $recWip = (float) $record->total_wip_qty;
+                        $proportion = $dayTotalWip > 0 ? ($recWip / $dayTotalWip) : (1 / $recordCount);
+                        $recNewMmbtu = round($newMmbtu * $proportion, 4);
+                    }
+
+                    $recNewCngNilai = round($recNewMmbtu * $cngTarifRp, 2);
+                    $diffCngNilai = $recNewCngNilai - $recOldCngNilai;
+                    $totalSelisihBiaya += $diffCngNilai;
+
+                    // Update field Gas CNG di Header Produksi
+                    $record->cng_mmbtu = $recNewMmbtu;
+                    $record->cng_nm3 = round($recNewMmbtu * 27.921, 4);
+                    $record->cng_tarif_usd = $cngTarifUsd;
+                    $record->cng_kurs_jisdor = $cngKursJisdor;
+                    $record->cng_tarif = $cngTarifRp;
+                    $record->cng_nilai = $recNewCngNilai;
+
+                    // Rekalkulasi Total Biaya Produksi: Bahan + CNG + TK + FOH
+                    $recNewTotalBiaya = round(
+                        (float) $record->total_bahan_nilai +
+                        $recNewCngNilai +
+                        (float) $record->tk_total_nilai +
+                        (float) $record->total_overhead_nilai,
+                        2
+                    );
+                    $record->total_biaya_produksi = $recNewTotalBiaya;
+
+                    // Rekalkulasi HPP per Kg
+                    $effectiveWip = (float) $record->total_wip_qty;
+                    if ($effectiveWip <= 0 && $record->outputs && $record->outputs->isNotEmpty()) {
+                        $effectiveWip = (float) $record->outputs->sum('qty_kg');
+                    }
+                    $recNewHpp = $effectiveWip > 0 ? round($recNewTotalBiaya / $effectiveWip, 2) : 0;
+                    $record->hpp_per_kg = $recNewHpp;
+
+                    $record->version_no = ((int) $record->version_no) + 1;
+                    $record->updated_by = $userId;
+                    $record->save();
+
+                    // Sinkronisasi ke Output WIP (DatProduksiDtl)
+                    $outputDetails = DatProduksiDtl::where('produksi_id', $record->produksi_id)
+                        ->where('deleted_st', false)
+                        ->get();
+                    foreach ($outputDetails as $outDtl) {
+                        $outDtl->hpp_satuan = $recNewHpp;
+                        $outDtl->total_nilai = round($outDtl->qty_hasil * $recNewHpp, 2);
+                        $outDtl->version_no = ((int) $outDtl->version_no) + 1;
+                        $outDtl->updated_by = $userId;
+                        $outDtl->save();
+                    }
+
+                    // Sinkronisasi ke Saldo Batch Gudang
+                    if (!empty($record->batch_wip_no)) {
+                        $stokBatch = DatStokBatch::where('batch_no', $record->batch_wip_no)
+                            ->where('deleted_st', false)
+                            ->first();
+                        if ($stokBatch) {
+                            $stokBatch->harga_satuan = $recNewHpp;
+                            $stokBatch->total_nilai = round($stokBatch->sisa_qty * $recNewHpp, 2);
+                            $stokBatch->updated_by = $userId;
+                            $stokBatch->save();
+                        }
+                    }
+
+                    // Buat Log Audit Trail Penyesuaian
+                    $adjNo = $this->codeGenerator->generateBeritaAcaraHppNo();
+                    DatProduksiAdjustmentLog::create([
+                        'adj_no'               => $adjNo,
+                        'produksi_id'          => $record->produksi_id,
+                        'user_id'              => $authUser?->id,
+                        'adj_tgl'              => now()->format('Y-m-d'),
+                        'kategori_komponen'    => 'ENERGI',
+                        'role_cd'              => $authUser?->role_cd ?? 'SUPERADMIN',
+                        'total_biaya_sebelum'  => $recOldBiaya,
+                        'total_biaya_sesudah'  => $recNewTotalBiaya,
+                        'selisih_biaya'        => $diffCngNilai,
+                        'hpp_sebelum'          => $recOldHpp,
+                        'hpp_sesudah'          => $recNewHpp,
+                        'selisih_hpp'          => $recNewHpp - $recOldHpp,
+                        'alasan_txt'           => $alasanClean . (!empty($adj['catatan']) ? " (" . trim($adj['catatan']) . ")" : ""),
+                        'perubahan_field_json' => [
+                            'cng_mmbtu' => [
+                                'label' => 'Konsumsi Gas Alam (CNG)',
+                                'old'   => $recOldMmbtu,
+                                'new'   => $recNewMmbtu,
+                                'unit'  => 'MMBTU',
+                                'type'  => 'QUANTITY',
+                                'group' => 'ENERGI',
+                            ],
+                            'cng_nilai' => [
+                                'label' => 'Biaya Gas Alam (CNG)',
+                                'old'   => $recOldCngNilai,
+                                'new'   => $recNewCngNilai,
+                                'type'  => 'NOMINAL',
+                                'group' => 'ENERGI',
+                            ],
+                            'cng_kurs_jisdor' => [
+                                'label' => 'Kurs JISDOR BI Tanggal ' . date('d/m/Y', strtotime($dateStr)),
+                                'old'   => (float) $record->cng_kurs_jisdor,
+                                'new'   => $cngKursJisdor,
+                                'type'  => 'RATE',
+                                'group' => 'ENERGI',
+                            ],
+                        ],
+                        'created_by'           => $userId,
+                        'updated_by'           => $userId,
+                        'deleted_st'           => false,
+                        'active_st'            => true,
+                        'version_no'           => 1,
+                    ]);
+
+                    $updatedRecordsCount++;
+                }
+            }
+
+            return [
+                'updated_days'    => $updatedDaysCount,
+                'updated_records' => $updatedRecordsCount,
+                'selisih_mmbtu'   => round($totalSelisihMmbtu, 4),
+                'selisih_biaya'   => round($totalSelisihBiaya, 2),
             ];
         });
     }

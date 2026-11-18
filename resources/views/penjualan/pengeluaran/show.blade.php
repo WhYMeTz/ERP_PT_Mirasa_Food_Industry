@@ -237,7 +237,7 @@
                     <tr>
                         <th style="width: 45px; text-align: center;">No.</th>
                         <th>Kode &amp; Nama Produk</th>
-                        <th style="width: 200px;">Nomor Batch Produksi (FEFO)</th>
+                        <th style="width: 250px;">Nomor Batch &amp; Traceability (FEFO)</th>
                         <th style="text-align: right; width: 140px;">Kuantitas Keluar</th>
                         <th style="width: 100px;">Satuan</th>
                     </tr>
@@ -253,9 +253,19 @@
                                 <div style="font-size: 0.725rem; color: #64748b; font-family: monospace;">Kode: {{ $dtl->barang?->barang_cd ?? '-' }}</div>
                             </td>
                             <td>
-                                <span style="font-family: monospace; font-weight: 700; background: #f1f5f9; padding: 0.2rem 0.5rem; border-radius: 4px; color: #334155; font-size: 0.8125rem;">
-                                    {{ $dtl->batch_no ?: 'NON-BATCH' }}
-                                </span>
+                                <div style="display: flex; flex-direction: column; gap: 3px;">
+                                    <span style="font-family: monospace; font-weight: 700; background: #f1f5f9; padding: 0.2rem 0.5rem; border-radius: 4px; color: #334155; font-size: 0.8125rem; width: fit-content;">
+                                        Batch: {{ $dtl->batch_no ?: 'NON-BATCH' }}
+                                    </span>
+                                    <div style="font-size: 0.72rem; color: #64748b; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                                        @if ($dtl->pack_tgl)
+                                            <span>Prod: <strong>{{ \Carbon\Carbon::parse($dtl->pack_tgl)->format('d/m/Y') }}</strong></span>
+                                        @endif
+                                        @if ($dtl->expired_tgl)
+                                            <span style="color: #dc2626;">Exp: <strong>{{ \Carbon\Carbon::parse($dtl->expired_tgl)->format('d/m/Y') }}</strong></span>
+                                        @endif
+                                    </div>
+                                </div>
                             </td>
                             <td style="text-align: right; font-weight: 800; font-size: 0.95rem; color: #0f172a; font-feature-settings: 'tnum';">
                                 {{ number_format($dtl->kirim_qty, 0, ',', '.') }}

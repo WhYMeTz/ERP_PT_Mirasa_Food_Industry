@@ -417,6 +417,11 @@
 
                 <input type="hidden" name="total_biaya_produksi" id="total_biaya_produksi" value="0">
 
+                <div class="form-group-hpp" style="margin-top: 1.25rem;">
+                    <label for="catatan_txt" class="hpp-label" style="font-weight: 700; color: #1e293b; font-size: 0.8125rem; display: block; margin-bottom: 0.35rem;">Catatan Tambahan / Dasar Penetapan Biaya Kemas</label>
+                    <textarea name="catatan_txt" id="catatan_txt" rows="2" class="hpp-textarea" style="width: 100%; border: 1.5px solid #cbd5e1; border-radius: 6px; padding: 0.6rem 0.85rem; font-size: 0.825rem; resize: vertical;" placeholder="Contoh: Menggunakan standar upah borongan kemas meja sachet. Biaya bahan kemas sesuai stock ledger gudang."></textarea>
+                </div>
+
                 {{-- Action Bar --}}
                 <div style="margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; align-items: center; gap: 0.75rem;">
                     <a href="{{ route('produksi.packaging.rekap') }}" class="btn-hpp-secondary">

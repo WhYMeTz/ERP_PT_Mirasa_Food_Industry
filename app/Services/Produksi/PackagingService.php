@@ -519,6 +519,7 @@ class PackagingService
                 'jumlah_personil'          => $jmlPersonil,
                 'jumlah_mesin'             => (int) ($data['jumlah_mesin'] ?? 2),
                 'gudang_id'                => $gudangId,
+                'gudang_asal_id'           => !empty($data['gudang_asal_id']) ? (int) $data['gudang_asal_id'] : null,
                 'barang_jadi_id'           => $barangJadiId,
                 'bom_id'                   => $bomId,
                 'produksi_id'              => $prodId,
@@ -672,7 +673,7 @@ class PackagingService
                 $pakaiHdr = \App\Models\Gudang\DatPakaiHdr::create([
                     'pakai_no'         => $pakaiNo,
                     'pakai_tgl'        => $packTgl,
-                    'gudang_id'        => $gudangId,
+                    'gudang_id'        => !empty($data['gudang_asal_id']) ? (int) $data['gudang_asal_id'] : $gudangId,
                     'produksi_id'      => $prodId,
                     'tujuan_pemakaian' => 'PENGEMASAN ' . strtoupper($targetBarangNm),
                     'catatan_txt'      => "Otomatis terbentuk dari Pengemasan No. {$packNo} ({$hasilKarton} Karton)",
@@ -1852,8 +1853,8 @@ class PackagingService
         $packTglStr = Carbon::parse($header->pack_tgl)->toDateString();
         $laborData = app(\App\Services\Produksi\ProduksiService::class)->getLaborDataFromKaryawan($packTglStr, 'Langsung Packing');
         
-        $jmlPersonil = (int) ($header->jumlah_personil > 0 ? $header->jumlah_personil : ($laborData['jumlah_karyawan'] ?? 0));
-        $totalUpahTk = (float) ($header->total_biaya_tenaga_kerja > 0 ? $header->total_biaya_tenaga_kerja : ($laborData['total_upah'] ?? 0));
+        $jmlPersonil = (int) ($header->jumlah_personil > 0 ? $header->jumlah_personil : ($laborData['tk_langsung_org'] ?? $laborData['tk_jumlah_org'] ?? 0));
+        $totalUpahTk = (float) ($header->total_biaya_tenaga_kerja > 0 ? $header->total_biaya_tenaga_kerja : ($laborData['tk_langsung_nilai'] ?? $laborData['tk_total_nilai'] ?? 0));
 
         // 4. Kalkulasi Rekapitulasi Biaya & HPP
         $biayaLain = (float) ($header->total_biaya_lain ?? 0);
@@ -1901,8 +1902,9 @@ class PackagingService
             // BTKL
             'jumlah_personil'           => $jmlPersonil,
             'total_biaya_tenaga_kerja'  => $totalUpahTk,
-            'labor_source'              => !empty($laborData['jumlah_karyawan']) ? 'Modul Presensi Karyawan' : 'Input Standar Shift',
+            'labor_source'              => (!empty($laborData['tk_langsung_org']) || !empty($laborData['jumlah_karyawan'])) ? 'Modul Presensi Karyawan' : 'Input Standar Shift',
             'labor_karyawan_list'       => $laborData['karyawan_list'] ?? [],
+            'labor_sync'                => $laborData,
 
             // Biaya Lain & Ringkasan
             'total_biaya_wip'           => $totalWipNilai,
@@ -1994,6 +1996,9 @@ class PackagingService
             $header->is_hpp_final = true;
             $header->hpp_finalized_at = now();
             $header->hpp_finalized_by = $user;
+            if (isset($data['catatan_txt'])) {
+                $header->catatan_txt = $data['catatan_txt'];
+            }
             $header->updated_by = $user;
             $header->version_no = ($header->version_no ?? 1) + 1;
             $header->save();

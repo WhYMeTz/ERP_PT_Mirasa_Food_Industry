@@ -372,19 +372,21 @@ class PackagingController extends Controller
             ->unique()
             ->filter();
 
-        $activeBatches = \App\Models\Gudang\DatStokBatch::whereIn('barang_id', $allPkgBarangIds)
+        $activeBatches = \App\Models\Gudang\DatStokBatch::with('gudang')
+            ->whereIn('barang_id', $allPkgBarangIds)
             ->where('deleted_st', false)
             ->where('sisa_qty', '>', 0)
             ->orderBy('created_at', 'asc')
-            ->get(['barang_id', 'batch_no', 'sisa_qty'])
+            ->get(['barang_id', 'batch_no', 'sisa_qty', 'gudang_id'])
             ->groupBy('barang_id');
 
         $batchInfoMap = [];
         foreach ($activeBatches as $bId => $batchGroup) {
             $firstBatch = $batchGroup->first();
             $batchInfoMap[$bId] = [
-                'batch_no' => $firstBatch?->batch_no ?? '-',
-                'sisa_qty' => (float) $batchGroup->sum('sisa_qty'),
+                'batch_no'  => $firstBatch?->batch_no ?? '-',
+                'sisa_qty'  => (float) $batchGroup->sum('sisa_qty'),
+                'gudang_nm' => $firstBatch?->gudang?->gudang_nm ?? 'Gudang Bahan Kemasan',
             ];
         }
 

@@ -60,6 +60,22 @@
     </div>
 </div>
 
+{{-- SEGMENTED TAB SWITCHER: PILIHAN MODE REKONSILIASI BULANAN VS PENYESUAIAN HARIAN --}}
+<div style="display: flex; gap: 0.5rem; background: #e2e8f0; padding: 0.25rem; border-radius: 8px; width: fit-content; margin-bottom: 1.25rem;">
+    <a href="{{ route('produksi.adjust-utilitas', ['tahun' => $year, 'bulan' => $month]) }}" 
+       style="padding: 0.45rem 1rem; border-radius: 6px; font-size: 0.825rem; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem; background: #ffffff; color: #0284c7; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        <span>1. Rekonsiliasi Tagihan Bulanan (Faktur Total)</span>
+    </a>
+    <a href="{{ route('produksi.adjust-cng-harian', ['tahun' => $year, 'bulan' => $month]) }}" 
+       style="padding: 0.45rem 1rem; border-radius: 6px; font-size: 0.825rem; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem; background: transparent; color: #64748b; transition: all 0.15s ease;"
+       onmouseover="this.style.background='#ffffff'; this.style.color='#0f172a'"
+       onmouseout="this.style.background='transparent'; this.style.color='#64748b'">
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z"/></svg>
+        <span>2. Penyesuaian Gas Harian &amp; Balancing</span>
+    </a>
+</div>
+
 {{-- NOTIFIKASI SUKSES & ERROR --}}
 @if(session('success'))
     <div style="background: #ecfdf5; border: 1.5px solid #a7f3d0; border-radius: 8px; padding: 0.85rem 1.25rem; color: #065f46; margin-bottom: 1.25rem; font-size: 0.875rem; font-weight: 600; display: flex; align-items: center; gap: 0.5rem;">

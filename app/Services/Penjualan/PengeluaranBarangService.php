@@ -147,7 +147,16 @@ class PengeluaranBarangService
             ->where('deleted_st', false)
             ->findOrFail($soId);
 
-        $gudangFgId = MstGudang::where('gudang_cd', 'GDG-FG')->value('gudang_id') ?? 6;
+        $fgGudangIds = MstGudang::where('gudang_cd', 'GDG-FG')
+            ->orWhere('tipe_gudang_cd', 'FG')
+            ->orWhere('gudang_cd', 'MFI-PST')
+            ->pluck('gudang_id')
+            ->toArray();
+        if (empty($fgGudangIds)) {
+            $fgGudangIds = [6, 1];
+        }
+
+        $gudangFgId = $fgGudangIds[0] ?? 6;
 
         $items = [];
         foreach ($order->details as $dtl) {
@@ -155,10 +164,35 @@ class PengeluaranBarangService
             $kirimQty = (float) $dtl->kirim_qty;
             $sisaQty = max(0, $pesanQty - $kirimQty);
 
-            // Cek stok fisik aktual di Gudang FG
-            $stokTersedia = (float) \App\Models\Gudang\DatStokBatch::where('gudang_id', $gudangFgId)
+            // Cek stok fisik aktual di Gudang FG & Pusat
+            $rawBatches = \App\Models\Gudang\DatStokBatch::whereIn('gudang_id', $fgGudangIds)
                 ->where('barang_id', $dtl->barang_id)
-                ->sum('sisa_qty');
+                ->where('sisa_qty', '>', 0)
+                ->orderByRaw('expired_tgl ASC NULLS LAST')
+                ->orderBy('batch_id', 'asc')
+                ->get();
+
+            $stokTersedia = (float) $rawBatches->sum('sisa_qty');
+
+            $batchList = [];
+            $firstBatch = true;
+            foreach ($rawBatches as $rb) {
+                $packTgl = \App\Models\Produksi\DatPackagingHdr::where('batch_no', $rb->batch_no)
+                    ->where('barang_jadi_id', $dtl->barang_id)
+                    ->value('pack_tgl');
+
+                $batchList[] = [
+                    'batch_id'    => $rb->batch_id,
+                    'batch_no'    => $rb->batch_no,
+                    'sisa_qty'    => (float) $rb->sisa_qty,
+                    'expired_tgl' => $rb->expired_tgl ? \Carbon\Carbon::parse($rb->expired_tgl)->format('Y-m-d') : null,
+                    'expired_fmt' => $rb->expired_tgl ? \Carbon\Carbon::parse($rb->expired_tgl)->format('d/m/Y') : '-',
+                    'pack_tgl'    => $packTgl ? \Carbon\Carbon::parse($packTgl)->format('d/m/Y') : '-',
+                    'gudang_id'   => $rb->gudang_id,
+                    'is_fifo_top' => $firstBatch,
+                ];
+                $firstBatch = false;
+            }
 
             $items[] = [
                 'sodtl_id'      => $dtl->sodtl_id,
@@ -171,6 +205,7 @@ class PengeluaranBarangService
                 'sisa_qty'      => $sisaQty,
                 'stok_fg'       => $stokTersedia,
                 'is_sufficient' => $stokTersedia >= $sisaQty,
+                'batches'       => $batchList,
             ];
         }
 
@@ -243,15 +278,44 @@ class PengeluaranBarangService
                 $barangNm = $soDtl->barang?->barang_nm ?? "Barang ID {$soDtl->barang_id}";
                 $ketStok = "Pengeluaran Surat Jalan {$suratJalanNo} (PO: {$order->so_no}) ke " . ($order->customer?->customer_nm ?? 'Customer');
 
-                // Eksekusi pemotongan stok FEFO dari Gudang FG
+                $selectedBatchNo = !empty($itemRow['batch_no']) && $itemRow['batch_no'] !== 'AUTO_FIFO' ? trim($itemRow['batch_no']) : null;
+
                 try {
-                    $deductions = $this->stokService->deductStockFifo(
-                        gudangId: $gudangFgId,
-                        barangId: $soDtl->barang_id,
-                        totalQty: $qtyKirim,
-                        dokumenNo: $suratJalanNo,
-                        keterangan: $ketStok
-                    );
+                    if ($selectedBatchNo) {
+                        // User memilih batch tertentu secara manual (Override FIFO)
+                        $targetBatch = \App\Models\Gudang\DatStokBatch::whereIn('gudang_id', $fgGudangIds)
+                            ->where('barang_id', $soDtl->barang_id)
+                            ->where('batch_no', $selectedBatchNo)
+                            ->where('sisa_qty', '>', 0)
+                            ->first();
+
+                        $actualGudangId = $targetBatch ? $targetBatch->gudang_id : $gudangFgId;
+
+                        $this->stokService->deductStock(
+                            gudangId: $actualGudangId,
+                            barangId: $soDtl->barang_id,
+                            batchNo: $selectedBatchNo,
+                            qty: $qtyKirim,
+                            dokumenNo: $suratJalanNo,
+                            keterangan: $ketStok
+                        );
+
+                        $deductions = [
+                            [
+                                'batch_no'     => $selectedBatchNo,
+                                'qty_deducted' => $qtyKirim,
+                            ]
+                        ];
+                    } else {
+                        // Eksekusi pemotongan stok FEFO otomatis dari Gudang FG
+                        $deductions = $this->stokService->deductStockFifo(
+                            gudangId: $gudangFgId,
+                            barangId: $soDtl->barang_id,
+                            totalQty: $qtyKirim,
+                            dokumenNo: $suratJalanNo,
+                            keterangan: $ketStok
+                        );
+                    }
                 } catch (Exception $e) {
                     throw new Exception("Gagal memotong stok Gudang FG untuk '{$barangNm}': {$e->getMessage()}");
                 }

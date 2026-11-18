@@ -51,6 +51,19 @@ document.addEventListener('DOMContentLoaded', function () {
             const stokFg = parseFloat(item.stok_fg) || 0;
             const isStockOk = stokFg >= sisa;
 
+            let batchOptionsHtml = '';
+            if (item.batches && item.batches.length > 0) {
+                item.batches.forEach(b => {
+                    const isTop = b.is_fifo_top;
+                    const prefix = isTop ? '⭐ [Rekomendasi FIFO] ' : '';
+                    const optText = `${prefix}Batch ${b.batch_no} (Exp: ${b.expired_fmt} | Sisa: ${new Intl.NumberFormat('id-ID').format(b.sisa_qty)})`;
+                    const selected = isTop ? 'selected' : '';
+                    batchOptionsHtml += `<option value="${b.batch_no}" data-is-fifo="${isTop ? '1' : '0'}" data-exp="${b.expired_fmt}" data-sisa="${b.sisa_qty}" ${selected}>${optText}</option>`;
+                });
+            } else {
+                batchOptionsHtml = `<option value="AUTO_FIFO">⭐ [Auto-FEFO] Rekomendasi Terlama Sistem</option>`;
+            }
+
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td style="text-align: center; color: #94a3b8; font-weight: 600;">
@@ -61,11 +74,18 @@ document.addEventListener('DOMContentLoaded', function () {
                     <div style="font-weight: 700; color: #0f172a;">${item.barang_nm}</div>
                     <div style="font-size: 0.725rem; color: #64748b; font-family: monospace;">Kode: ${item.barang_cd}</div>
                 </td>
+                <td>
+                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                        <select name="items[${index}][batch_no]" class="form-control select-batch" onchange="window.checkBatchFifoWarning(this)" style="font-size: 0.8125rem; font-weight: 600; padding: 0.35rem 0.5rem; height: 34px;">
+                            ${batchOptionsHtml}
+                        </select>
+                        <div class="batch-warning-msg" style="display: none; font-size: 0.72rem; color: #b45309; background: #fef3c7; border: 1px solid #fde68a; border-radius: 4px; padding: 3px 6px;">
+                            ⚠️ <strong>Perhatian:</strong> Anda memilih batch yang lebih baru. Batch lain memiliki tanggal expired lebih awal (FIFO).
+                        </div>
+                    </div>
+                </td>
                 <td style="text-align: right; color: #475569; font-weight: 600;">
                     ${new Intl.NumberFormat('id-ID').format(item.pesan_qty)} ${item.satuan_nm}
-                </td>
-                <td style="text-align: right; color: #0284c7; font-weight: 600;">
-                    ${new Intl.NumberFormat('id-ID').format(item.kirim_qty_old)}
                 </td>
                 <td style="text-align: right; font-weight: 700; color: #0f172a;">
                     ${new Intl.NumberFormat('id-ID').format(sisa)}
@@ -247,3 +267,20 @@ document.addEventListener('DOMContentLoaded', function () {
     // Initial calculation if prefilled
     calculateTotalQty();
 });
+
+/**
+ * Pengecekan Peringatan Pemilihan Batch Non-FIFO
+ */
+window.checkBatchFifoWarning = function(selectEl) {
+    if (!selectEl) return;
+    const opt = selectEl.options[selectEl.selectedIndex];
+    const isFifo = opt ? opt.getAttribute('data-is-fifo') : '1';
+    const warningBox = selectEl.parentElement.querySelector('.batch-warning-msg');
+    if (warningBox) {
+        if (isFifo === '0') {
+            warningBox.style.display = 'block';
+        } else {
+            warningBox.style.display = 'none';
+        }
+    }
+};

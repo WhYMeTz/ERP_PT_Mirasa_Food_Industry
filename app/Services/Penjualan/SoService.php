@@ -303,9 +303,16 @@ class SoService
      */
     public function getStockAvailabilityMap(array $barangIds): array
     {
-        $gudangFgId = \App\Models\MasterData\MstGudang::where('gudang_cd', 'GDG-FG')->value('gudang_id') ?? 6;
+        $fgGudangIds = \App\Models\MasterData\MstGudang::where('gudang_cd', 'GDG-FG')
+            ->orWhere('tipe_gudang_cd', 'FG')
+            ->orWhere('gudang_cd', 'MFI-PST')
+            ->pluck('gudang_id')
+            ->toArray();
+        if (empty($fgGudangIds)) {
+            $fgGudangIds = [6, 1];
+        }
 
-        return \App\Models\Gudang\DatStokBatch::where('gudang_id', $gudangFgId)
+        return \App\Models\Gudang\DatStokBatch::whereIn('gudang_id', $fgGudangIds)
             ->whereIn('barang_id', $barangIds)
             ->selectRaw('barang_id, SUM(sisa_qty) as total_stok')
             ->groupBy('barang_id')
@@ -319,13 +326,20 @@ class SoService
      */
     public function checkStockItem(int $barangId): array
     {
-        $gudangFgId = \App\Models\MasterData\MstGudang::where('gudang_cd', 'GDG-FG')->value('gudang_id') ?? 6;
+        $fgGudangIds = \App\Models\MasterData\MstGudang::where('gudang_cd', 'GDG-FG')
+            ->orWhere('tipe_gudang_cd', 'FG')
+            ->orWhere('gudang_cd', 'MFI-PST')
+            ->pluck('gudang_id')
+            ->toArray();
+        if (empty($fgGudangIds)) {
+            $fgGudangIds = [6, 1];
+        }
 
-        $batches = \App\Models\Gudang\DatStokBatch::where('gudang_id', $gudangFgId)
+        $batches = \App\Models\Gudang\DatStokBatch::whereIn('gudang_id', $fgGudangIds)
             ->where('barang_id', $barangId)
             ->where('sisa_qty', '>', 0)
             ->orderByRaw('expired_tgl ASC NULLS LAST')
-            ->get(['batch_no', 'sisa_qty', 'expired_tgl', 'harga_satuan']);
+            ->get(['batch_no', 'sisa_qty', 'expired_tgl', 'harga_satuan', 'gudang_id']);
 
         $totalStok = (float) $batches->sum('sisa_qty');
 

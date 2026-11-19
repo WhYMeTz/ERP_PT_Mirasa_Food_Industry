@@ -176,10 +176,6 @@
                 </select>
             </div>
         </div>
-                    @endif
-                </select>
-            </div>
-        </div>
 
         {{-- BARIS 2: RESEP BOM & AUTO-FIFO + CATATAN SEJAJAR --}}
         <div style="display: flex; gap: 0.75rem; align-items: center; padding-top: 0.75rem; border-top: 1px dashed #cbd5e1; flex-wrap: wrap;">

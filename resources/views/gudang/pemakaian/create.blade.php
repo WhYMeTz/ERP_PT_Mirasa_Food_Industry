@@ -86,26 +86,31 @@
         </button>
     </div>
 
-    {{-- PANEL TOOLBAR TERPADU (1 KOTAK RAMPING 2 BARIS: INFO DOKUMEN & RESEP BOM) --}}
+    {{-- PANEL TOOLBAR TERPADU (INFO DOKUMEN & RESEP BOM) --}}
     <div style="background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 0.85rem 1rem; margin-bottom: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
-        {{-- BARIS 1: NO BPPB, TANGGAL, GUDANG ASAL, GUDANG TUJUAN (LOKASI PRODUKSI), LINI PRODUKSI --}}
-        <div style="display: grid; grid-template-columns: 1fr 0.95fr 1.35fr 1.35fr 1.35fr; gap: 0.85rem; align-items: flex-end; margin-bottom: 0.85rem;">
-            <div>
+        {{-- BARIS 1: NO BPPB, TANGGAL, GUDANG ASAL, LOKASI GUDANG / PABRIK, LINI PRODUKSI --}}
+        <div class="toolbar-form-grid">
+            {{-- KOLOM 1: NO BPPB --}}
+            <div class="toolbar-field-col">
                 <label for="pakai_no" class="toolbar-label">
-                    No. BPPB <span style="color:#ef4444;">*</span>
+                    <span>No. BPPB</span> <span style="color:#ef4444;">*</span>
                 </label>
                 <input type="text" id="pakai_no" name="pakai_no" value="{{ old('pakai_no', $autoNo) }}" class="toolbar-input" style="font-family: monospace; font-weight: 700;" required>
-                <small id="pakai_no_help" style="display: none; color: #64748b; font-size: 0.725rem; margin-top: 2px;">Nomor urut otomatis Bukti Permintaan &amp; Pengeluaran Barang (BPPB).</small>
+                <small id="pakai_no_help" class="toolbar-help-text" style="display: none;"></small>
             </div>
-            <div>
+
+            {{-- KOLOM 2: TANGGAL FISIK --}}
+            <div class="toolbar-field-col">
                 <label for="pakai_tgl" class="toolbar-label">
-                    Tanggal Fisik <span style="color:#ef4444;">*</span>
+                    <span>Tanggal Fisik</span> <span style="color:#ef4444;">*</span>
                 </label>
                 <input type="date" id="pakai_tgl" name="pakai_tgl" value="{{ old('pakai_tgl', date('Y-m-d')) }}" class="toolbar-input" required>
             </div>
-            <div>
+
+            {{-- KOLOM 3: GUDANG ASAL --}}
+            <div class="toolbar-field-col">
                 <label for="gudang_id" class="toolbar-label">
-                    Gudang Asal Barang <span style="color:#ef4444;">*</span>
+                    <span>Gudang Asal Barang</span> <span style="color:#ef4444;">*</span>
                 </label>
                 @if ($userGudangId)
                     @php $lockedGdg = $gudangList->firstWhere('gudang_id', $userGudangId); @endphp
@@ -122,9 +127,11 @@
                     </select>
                 @endif
             </div>
-            <div>
+
+            {{-- KOLOM 4: LOKASI GUDANG / PABRIK PRODUKSI --}}
+            <div class="toolbar-field-col">
                 <label for="gudang_tujuan_id" class="toolbar-label">
-                    Lokasi Gudang Produksi
+                    <span>Gudang / Pabrik Tujuan</span>
                 </label>
                 <select name="gudang_tujuan_id" id="gudang_tujuan_id" class="toolbar-select" onchange="onGudangTujuanChanged(this)">
                     <option value="">-- Pilih Gudang Produksi --</option>
@@ -134,10 +141,13 @@
                         </option>
                     @endforeach
                 </select>
+                <input type="hidden" name="lokasi_pabrik" id="lokasi_pabrik" value="{{ old('lokasi_pabrik', 'MFI') }}">
             </div>
-            <div>
+
+            {{-- KOLOM 5: LINI KERJA (WIP / FG) --}}
+            <div class="toolbar-field-col">
                 <label for="tujuan_pemakaian" class="toolbar-label">
-                    Tujuan Lini Produksi <span style="color:#ef4444;">*</span>
+                    <span>Tujuan Lini Produksi</span> <span style="color:#ef4444;">*</span>
                 </label>
                 <select name="tujuan_pemakaian" id="tujuan_pemakaian" class="toolbar-select" required onchange="updateSidebarInfo()">
                     <option value="">-- Pilih Lini Produksi --</option>
@@ -162,6 +172,10 @@
                                 </option>
                             @endforeach
                         </optgroup>
+                    @endif
+                </select>
+            </div>
+        </div>
                     @endif
                 </select>
             </div>

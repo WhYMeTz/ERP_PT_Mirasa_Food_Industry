@@ -126,13 +126,13 @@
      ═════════════════════════════════════════════════════════════ --}}
 <div class="hpp-sub-toolbar">
     <div class="hpp-view-segmented">
-        <a href="{{ route('produksi.rekap', ['mode' => 'harian', 'tahun' => $year, 'bulan' => $month]) }}" 
+        <a href="{{ route('produksi.rekap', ['mode' => 'harian', 'tahun' => $year, 'bulan' => $month, 'pabrik' => $pabrikFilter ?? 'ALL']) }}" 
            class="hpp-view-btn {{ $mode === 'harian' ? 'active' : '' }}">
             <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
             <span>Rekapitulasi Harian</span>
             <span style="font-size: 0.6875rem; opacity: 0.85; margin-left: 0.2rem;">({{ strtoupper($monthName) }} {{ $year }})</span>
         </a>
-        <a href="{{ route('produksi.rekap', ['mode' => 'bulanan', 'tahun' => $year]) }}" 
+        <a href="{{ route('produksi.rekap', ['mode' => 'bulanan', 'tahun' => $year, 'pabrik' => $pabrikFilter ?? 'ALL']) }}" 
            class="hpp-view-btn {{ $mode === 'bulanan' ? 'active' : '' }}">
             <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
             <span>Tren Bulanan (1 Tahun)</span>
@@ -143,6 +143,7 @@
     <div>
         <form action="{{ route('produksi.rekap') }}" method="GET" class="hpp-filter-form">
             <input type="hidden" name="mode" value="{{ $mode }}">
+            <input type="hidden" name="pabrik" value="{{ $pabrikFilter ?? 'ALL' }}">
             @if($mode === 'harian')
                 <select name="bulan" class="hpp-select-control" onchange="this.form.submit()">
                     @foreach ($monthsList as $num => $nm)

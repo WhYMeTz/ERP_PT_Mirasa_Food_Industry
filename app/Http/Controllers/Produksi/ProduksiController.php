@@ -55,6 +55,15 @@ class ProduksiController extends Controller
             ->orderBy('gudang_nm')
             ->get();
 
+        $pabrikFilter = strtoupper((string) $request->input('pabrik', 'ALL'));
+        if (in_array($pabrikFilter, ['BARAT', 'MFI'])) {
+            $pabrikFilter = 'MFI';
+        } elseif (in_array($pabrikFilter, ['TIMUR', 'BMB'])) {
+            $pabrikFilter = 'BMB';
+        } else {
+            $pabrikFilter = 'ALL';
+        }
+
         $filters = [
             'gudang_id'  => $request->input('gudang_id'),
             'search'     => $request->input('search'),
@@ -66,13 +75,30 @@ class ProduksiController extends Controller
             'kategori'   => $request->input('kategori'),
             'tgl_dari'   => $request->input('tgl_dari'),
             'tgl_sampai' => $request->input('tgl_sampai'),
+            'pabrik'     => $pabrikFilter,
         ];
         $produksiList = $this->produksiService->getDokumenProduksiList($filters, 20);
+
+        // Hitung total dokumen per lokasi produksi untuk counter tab
+        $countTotalAll = DatProduksiHdr::where('deleted_st', false)->count();
+        $countTotalMfi = DatProduksiHdr::where('deleted_st', false)->where(function($q) {
+            $q->whereIn('lokasi_pabrik', ['MFI', 'BARAT'])->orWhereNull('lokasi_pabrik');
+        })->count();
+        $countTotalBmb = DatProduksiHdr::where('deleted_st', false)->whereIn('lokasi_pabrik', ['BMB', 'TIMUR'])->count();
+
+        $countTotalBarat = $countTotalMfi;
+        $countTotalTimur = $countTotalBmb;
 
         return view('produksi.index', compact(
             'gudangList',
             'filters',
-            'produksiList'
+            'produksiList',
+            'pabrikFilter',
+            'countTotalAll',
+            'countTotalMfi',
+            'countTotalBmb',
+            'countTotalBarat',
+            'countTotalTimur'
         ));
     }
 
@@ -86,6 +112,15 @@ class ProduksiController extends Controller
         $mode = $request->input('mode') === 'bulanan' ? 'bulanan' : 'harian';
         $year = (int) $request->input('tahun', date('Y'));
         $month = (int) $request->input('bulan', date('n'));
+
+        $pabrikFilter = strtoupper((string) $request->input('pabrik', 'ALL'));
+        if (in_array($pabrikFilter, ['BARAT', 'MFI'])) {
+            $pabrikFilter = 'MFI';
+        } elseif (in_array($pabrikFilter, ['TIMUR', 'BMB'])) {
+            $pabrikFilter = 'BMB';
+        } else {
+            $pabrikFilter = 'ALL';
+        }
 
         $monthsList = [
             1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
@@ -101,7 +136,7 @@ class ProduksiController extends Controller
         if ($mode === 'bulanan') {
             $yearlyReport = $this->produksiService->getYearlyReport($year);
         } else {
-            $report = $this->produksiService->getMonthlyReport($year, $month);
+            $report = $this->produksiService->getMonthlyReport($year, $month, $pabrikFilter === 'ALL' ? null : $pabrikFilter);
         }
 
         $gudangList = MstGudang::where('deleted_st', false)
@@ -118,7 +153,8 @@ class ProduksiController extends Controller
             'yearsList',
             'report',
             'yearlyReport',
-            'gudangList'
+            'gudangList',
+            'pabrikFilter'
         ));
     }
 
@@ -183,8 +219,9 @@ class ProduksiController extends Controller
             'reject'  => (float) (MstBarang::where('barang_cd', 'KMS-KTN-REJ')->value('harga_beli_standar') ?? 0.00),
         ];
 
-        // Nomor Dokumen Hasil Produksi Resmi Otomatis (Format Korporat: {seq}/PRD/MFI/{mm}/{yy})
-        $autoProduksiNo = $this->codeGenerator->generateProduksiNo(old('produksi_tgl', date('Y-m-d')));
+        // Nomor Dokumen Hasil Produksi Resmi Otomatis (Format Korporat: {seq}/PRD/{MFI|BMB}/{mm}/{yy})
+        $lokasiPabrik = old('lokasi_pabrik', 'MFI');
+        $autoProduksiNo = $this->codeGenerator->generateProduksiNo(old('produksi_tgl', date('Y-m-d')), null, $lokasiPabrik);
 
         return view('produksi.create', compact(
             'autoProduksiNo',
@@ -387,10 +424,58 @@ class ProduksiController extends Controller
         $fohRates = $this->tarifService->getFohRates();
         $defaultCngTarifUsd = 14.50;
 
+        // Kelompokkan dokumen fisik siap kalkulasi HPP berdasarkan Tanggal Produksi DAN Entitas (MFI vs BMB)
+        // Agar HPP MFI dan BMB terpisah mandiri untuk perbandingan rendemen & efisiensi biaya
+        $harianGrouped = $produksiList->groupBy(function ($item) {
+            $tgl = Carbon::parse($item->produksi_tgl)->format('Y-m-d');
+            $isBmb = in_array(strtoupper($item->lokasi_pabrik ?? 'MFI'), ['BMB', 'CV-BMB', 'BAHTERA', 'TIMUR']);
+            $entitas = $isBmb ? 'BMB' : 'MFI';
+            return "{$tgl}_{$entitas}";
+        });
+
+        $harianList = [];
+        foreach ($harianGrouped as $key => $docs) {
+            $primaryDoc = $docs->first();
+            $tglStr = Carbon::parse($primaryDoc->produksi_tgl)->format('Y-m-d');
+            $tglFmt = Carbon::parse($primaryDoc->produksi_tgl)->format('d/m/Y');
+
+            $isBmb = in_array(strtoupper($primaryDoc->lokasi_pabrik ?? 'MFI'), ['BMB', 'CV-BMB', 'BAHTERA', 'TIMUR']);
+            $entitasNm = $isBmb ? 'CV Bahtera Mandiri Bersama' : 'PT Mirasa Food Industry';
+            $entitasCd = $isBmb ? 'BMB' : 'MFI';
+
+            $totalWip = (float) $docs->sum(function ($p) {
+                $outSum = $p->outputs ? (float) $p->outputs->sum('qty_kg') : 0;
+                return $outSum > 0 ? $outSum : (float) $p->total_wip_qty;
+            });
+
+            $docNumbers = $docs->pluck('produksi_no')->implode(', ');
+            $label = "[{$tglFmt}] {$entitasNm} ({$docNumbers}) — " . number_format($totalWip, 2, ',', '.') . " kg WIP";
+
+            $harianList[] = (object) [
+                'tanggal'         => $tglStr,
+                'tanggal_fmt'     => $tglFmt,
+                'primary_id'      => $primaryDoc->produksi_id,
+                'doc_ids'         => $docs->pluck('produksi_id')->toArray(),
+                'label'           => $label,
+                'entitas_cd'      => $entitasCd,
+                'entitas_nm'      => $entitasNm,
+                'pabrik_summary'  => $entitasCd,
+                'has_barat'       => !$isBmb,
+                'has_timur'       => $isBmb,
+                'has_mfi'         => !$isBmb,
+                'has_bmb'         => $isBmb,
+                'docs_count'      => $docs->count(),
+                'total_wip_qty'   => $totalWip,
+            ];
+        }
+
         // Ambil dokumen terpilih atau dokumen pertama untuk acuan tanggal produksi
         $selectedProduksi = null;
         if ($selectedProduksiId) {
             $selectedProduksi = DatProduksiHdr::find($selectedProduksiId);
+        }
+        if (!$selectedProduksi && count($harianList) > 0) {
+            $selectedProduksi = DatProduksiHdr::find($harianList[0]->primary_id);
         }
         if (!$selectedProduksi && $produksiList->isNotEmpty()) {
             $selectedProduksi = $produksiList->first();
@@ -425,6 +510,7 @@ class ProduksiController extends Controller
                     return [
                         'produksi_id'   => $other->produksi_id,
                         'produksi_no'   => $other->produksi_no,
+                        'lokasi_pabrik' => $other->lokasi_pabrik ?? 'BARAT',
                         'shift_cd'      => $other->shift_cd ?? 'A',
                         'lini_produksi' => $other->lini_produksi ?? 'Lini Manual',
                         'total_wip_qty' => (float) ($other->total_wip_qty ?: ($other->outputs ? $other->outputs->sum('qty_kg') : 0)),
@@ -436,6 +522,7 @@ class ProduksiController extends Controller
         }
 
         return view('produksi.hpp.create', compact(
+            'harianList',
             'produksiList',
             'selectedProduksiId',
             'prodDateStr',
@@ -491,6 +578,8 @@ class ProduksiController extends Controller
             'cng_kurs_jisdor'             => 'nullable|numeric|min:0',
             'cng_tarif'                   => 'nullable|numeric|min:0',
             'cng_nilai'                   => 'required|numeric|min:0',
+            'cng_split'                   => 'nullable|array',
+            'cng_split.*'                 => 'nullable|numeric|min:0',
 
             // Tenaga Kerja (Langsung & Tidak Langsung)
             'tk_langsung_org'             => 'nullable|integer|min:0',
@@ -510,33 +599,10 @@ class ProduksiController extends Controller
 
         try {
             $userId = Auth::user()?->username ?? 'FINANCE';
-            $produksi = $this->produksiService->saveHppCalculation((int) $validated['produksi_id'], $validated, $userId);
+            $produksi = $this->produksiService->saveHppCalculation((int) $validated['produksi_id'], $request->all(), $userId);
 
-            // Periksa apakah masih ada dokumen fisik SPK lain pada hari yang sama yang belum difinalisasi HPP
-            $otherPending = DatProduksiHdr::whereDate('produksi_tgl', $produksi->produksi_tgl)
-                ->where('deleted_st', false)
-                ->where('produksi_id', '!=', $produksi->produksi_id)
-                ->where(function ($sub) {
-                    $sub->whereNull('total_biaya_produksi')
-                        ->orWhere('total_biaya_produksi', '<=', 0)
-                        ->orWhere(function ($sub2) {
-                            $sub2->where(function ($s) {
-                                $s->whereNull('cng_nilai')->orWhere('cng_nilai', '<=', 0);
-                            })->where(function ($s) {
-                                $s->whereNull('tk_total_nilai')->orWhere('tk_total_nilai', '<=', 0);
-                            });
-                        });
-                })
-                ->orderBy('shift_cd', 'asc')
-                ->first();
-
-            $msg = "Kalkulasi HPP {$produksi->produksi_no} berhasil difinalisasi.";
-
-            if ($otherPending) {
-                $warnMsg = "HPP {$produksi->produksi_no} berhasil disimpan. SPK {$otherPending->produksi_no} (Shift {$otherPending->shift_cd}) pada tanggal ini belum difinalisasi.";
-                return redirect()->route('produksi.hpp.create', ['produksi_id' => $otherPending->produksi_id])
-                    ->with('warning', $warnMsg);
-            }
+            $tglFmt = Carbon::parse($produksi->produksi_tgl)->format('d/m/Y');
+            $msg = "Kalkulasi HPP Konsolidasi Harian ({$tglFmt}) berhasil difinalisasi dan 1 lembar Jurnal Keuangan telah diterbitkan.";
 
             return redirect()->route('produksi.hpp.show', $produksi->produksi_id)->with('success', $msg);
         } catch (Exception $e) {
@@ -553,6 +619,8 @@ class ProduksiController extends Controller
             'produksi_tgl'                => 'required|date',
             'gudang_id'                   => 'required|exists:mst_gudang,gudang_id',
             'lini_produksi'               => 'required|string|max:100',
+            'lokasi_pabrik'               => 'nullable|string|in:MFI,BMB,BARAT,TIMUR,mfi,bmb,barat,timur',
+            'bf_aktif_count'              => 'nullable|integer|min:0|max:100',
             'shift_cd'                    => 'nullable|string|in:A,B,a,b',
             'jam_produksi'                => 'nullable|string|max:10',
             'varietas_singkong'           => 'nullable|string|max:100',

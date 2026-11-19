@@ -35,7 +35,7 @@ class SoService
             'details.barang.satuanDasar',
             'details.barang.jenisBarang',
             'payments.header.kasBank',
-            'pengeluaran',
+            'pengeluaran.faktur',
         ])->active();
 
         if (!empty($status)) {

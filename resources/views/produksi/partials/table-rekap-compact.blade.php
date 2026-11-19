@@ -189,15 +189,21 @@
                                 @endforeach
                             </div>
 
-                            {{-- Nomor Dokumen Transaksi Sistem (Ringkas Bersih) --}}
-                            @if(!empty($d['primary_produksi_no'] ?? $d['produksi_no']))
-                                <div style="margin-top: 0.25rem; display: flex; align-items: center; gap: 0.25rem;">
+                            {{-- Nomor Dokumen Transaksi Sistem & Badge Entitas --}}
+                            <div style="margin-top: 0.25rem; display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;">
+                                @if(!empty($d['entity_summary']['has_mfi']))
+                                    <span style="font-size: 0.625rem; font-weight: 800; background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; padding: 1px 5px; border-radius: 3px;" title="PT Mirasa Food Industry">MFI</span>
+                                @endif
+                                @if(!empty($d['entity_summary']['has_bmb']))
+                                    <span style="font-size: 0.625rem; font-weight: 800; background: #faf5ff; color: #7e22ce; border: 1px solid #f3e8ff; padding: 1px 5px; border-radius: 3px;" title="CV Bahtera Mandiri Bersama">BMB</span>
+                                @endif
+                                @if(!empty($d['primary_produksi_no'] ?? $d['produksi_no']))
                                     <a href="{{ route('produksi.hpp.show', $d['produksi_id']) }}" style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.65rem; color: #64748b; text-decoration: none; display: inline-flex; align-items: center; gap: 0.2rem; white-space: nowrap;" title="Lihat Lembar HPP {{ $d['primary_produksi_no'] ?? $d['produksi_no'] }}">
                                         <span style="color: #94a3b8;">#</span>
                                         <span style="font-weight: 600; color: #475569;">{{ $d['primary_produksi_no'] ?? $d['produksi_no'] }}</span>
                                     </a>
-                                </div>
-                            @endif
+                                @endif
+                            </div>
                         </td>
 
                         {{-- Singkong Mentah (Kg & Nilai) --}}
@@ -283,10 +289,25 @@
                                             <span>Tetapkan Lembar HPP</span>
                                         </a>
                                     @endif
-                                    <a href="{{ route('produksi.hpp.show', $d['produksi_id']) }}" class="action-dropdown-item">
-                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                                        <span>Lihat Lembar HPP</span>
-                                    </a>
+                                    @if(!empty($d['entity_summary']['is_multi']))
+                                        @if(!empty($d['entity_summary']['mfi']['exists']))
+                                            <a href="{{ route('produksi.hpp.show', $d['entity_summary']['mfi']['produksi_id']) }}" class="action-dropdown-item">
+                                                <svg width="14" height="14" fill="none" stroke="#1d4ed8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                                <span>Lembar HPP MFI (#{{ $d['entity_summary']['mfi']['produksi_no'] }})</span>
+                                            </a>
+                                        @endif
+                                        @if(!empty($d['entity_summary']['bmb']['exists']))
+                                            <a href="{{ route('produksi.hpp.show', $d['entity_summary']['bmb']['produksi_id']) }}" class="action-dropdown-item">
+                                                <svg width="14" height="14" fill="none" stroke="#7e22ce" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                                <span>Lembar HPP BMB (#{{ $d['entity_summary']['bmb']['produksi_no'] }})</span>
+                                            </a>
+                                        @endif
+                                    @else
+                                        <a href="{{ route('produksi.hpp.show', $d['produksi_id']) }}" class="action-dropdown-item">
+                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                            <span>Lihat Lembar HPP</span>
+                                        </a>
+                                    @endif
                                     <a href="{{ route('produksi.hpp.terpadu', $d['produksi_id']) }}" class="action-dropdown-item">
                                         <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                                         <span>Rincian HPP Terpadu</span>

@@ -662,3 +662,66 @@
     overflow: hidden;
     text-overflow: ellipsis;
 }
+
+/* ══════════════════════════════════════════════════════════════ */
+/* TWO-TIER CONVERSION TABLE (WIP -> FG) STYLES                   */
+/* ══════════════════════════════════════════════════════════════ */
+.create-packaging-container .th-group-wip {
+    background: #f0f9ff !important;
+    color: #0369a1 !important;
+    border-bottom: 2px solid #38bdf8 !important;
+    text-align: center;
+    font-size: 0.775rem !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.04em;
+    padding: 0.55rem 0.75rem !important;
+}
+
+.create-packaging-container .th-group-fg {
+    background: #f0fdf4 !important;
+    color: #047857 !important;
+    border-bottom: 2px solid #34d399 !important;
+    text-align: center;
+    font-size: 0.775rem !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.04em;
+    padding: 0.55rem 0.75rem !important;
+}
+
+.create-packaging-container .th-sub-wip {
+    background: #f8fafc !important;
+    color: #0369a1 !important;
+    border-bottom: 1.5px solid #cbd5e1 !important;
+    font-size: 0.725rem !important;
+    font-weight: 700 !important;
+}
+
+.create-packaging-container .th-sub-fg {
+    background: #f8fafc !important;
+    color: #047857 !important;
+    border-bottom: 1.5px solid #cbd5e1 !important;
+    font-size: 0.725rem !important;
+    font-weight: 700 !important;
+}
+
+.create-packaging-container .cell-wip-bg {
+    background-color: #fafcfe;
+}
+
+.create-packaging-container .cell-fg-bg {
+    background-color: #fcfffd;
+}
+
+.create-packaging-container .isi-karton-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    padding: 3px 6px;
+    margin-top: 5px;
+    font-size: 0.7rem;
+    color: #475569;
+    font-weight: 600;
+}

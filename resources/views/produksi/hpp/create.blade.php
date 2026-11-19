@@ -74,28 +74,67 @@
             </div>
             <div class="hpp-card-body">
                 <div class="form-group-hpp">
-                    <label for="produksi_id" class="hpp-label">Nomor Dokumen SPK Produksi Tersedia <span class="required">*</span></label>
+                    <label for="produksi_id" class="hpp-label">Pilih Tanggal Produksi Harian (Konsolidasi Multi-Pabrik) <span class="required">*</span></label>
                     <select name="produksi_id" id="produksi_id" class="hpp-select" required onchange="onProduksiSelectChange(this.value)">
-                        <option value="">-- Pilih Dokumen Produksi Fisik --</option>
-                        @forelse($produksiList as $p)
-                            @php
-                                $totalKg = (float) $p->outputs->sum('qty_kg');
-                                if ($totalKg <= 0) $totalKg = (float) $p->total_wip_qty;
-                            @endphp
-                            <option value="{{ $p->produksi_id }}" 
-                                    data-no="{{ $p->produksi_no }}"
-                                    data-tgl="{{ \Carbon\Carbon::parse($p->produksi_tgl)->format('d/m/Y') }}"
-                                    data-shift="{{ $p->shift_cd }}"
-                                    data-lini="{{ $p->lini_produksi ?? 'Lini Manual' }}"
-                                    {{ (string) $p->produksi_id === (string) old('produksi_id', $selectedProduksiId) ? 'selected' : '' }}>
-                                [{{ $p->produksi_no }}] {{ \Carbon\Carbon::parse($p->produksi_tgl)->format('d/m/Y') }} &mdash; Shift {{ $p->shift_cd }} &bull; {{ $p->lini_produksi ?? 'Lini Manual' }} ({{ number_format($totalKg, 2, ',', '.') }} kg WIP)
+                        <option value="">-- Pilih Tanggal Produksi Harian --</option>
+                        @forelse($harianList ?? [] as $h)
+                            <option value="{{ $h->primary_id }}" 
+                                    data-tgl="{{ $h->tanggal_fmt }}"
+                                    data-count="{{ $h->docs_count }}"
+                                    data-summary="{{ $h->pabrik_summary }}"
+                                    {{ (string) $h->primary_id === (string) old('produksi_id', $selectedProduksiId) ? 'selected' : '' }}>
+                                {{ $h->label }}
                             </option>
                         @empty
-                            <option value="" disabled>(Tidak ada dokumen fisik baru yang belum dihitung HPP)</option>
+                            @forelse($produksiList as $p)
+                                @php
+                                    $totalKg = (float) $p->outputs->sum('qty_kg');
+                                    if ($totalKg <= 0) $totalKg = (float) $p->total_wip_qty;
+                                    $isBmbSingle = in_array(strtoupper($p->lokasi_pabrik ?? 'MFI'), ['BMB', 'CV-BMB', 'BAHTERA', 'TIMUR']);
+                                    $pabrikNm = $isBmbSingle ? 'CV Bahtera Mandiri Bersama' : 'PT Mirasa Food Industry';
+                                @endphp
+                                <option value="{{ $p->produksi_id }}" 
+                                        data-no="{{ $p->produksi_no }}"
+                                        data-tgl="{{ \Carbon\Carbon::parse($p->produksi_tgl)->format('d/m/Y') }}"
+                                        data-shift="{{ $p->shift_cd }}"
+                                        data-pabrik="{{ $isBmbSingle ? 'BMB' : 'MFI' }}"
+                                        data-lini="{{ $p->lini_produksi ?? 'Lini Manual' }}"
+                                        {{ (string) $p->produksi_id === (string) old('produksi_id', $selectedProduksiId) ? 'selected' : '' }}>
+                                    [{{ $p->produksi_no }}] {{ \Carbon\Carbon::parse($p->produksi_tgl)->format('d/m/Y') }} &mdash; {{ $pabrikNm }} &bull; Shift {{ $p->shift_cd }} &bull; {{ $p->lini_produksi ?? 'Lini Manual' }} ({{ number_format($totalKg, 2, ',', '.') }} kg WIP)
+                                </option>
+                            @empty
+                                <option value="" disabled>(Seluruh dokumen produksi harian telah difinalisasi HPP)</option>
+                            @endforelse
                         @endforelse
                     </select>
 
-                    {{-- KOTAK MONITORING DOKUMEN LAIN PADA TANGGAL YANG SAMA (MENCEGAH DATA TERLEWAT) --}}
+                    {{-- TABEL RINCIAN SUMBER DOKUMEN FISIK YANG DIGABUNG PADA TANGGAL INI --}}
+                    <div id="spkDokumenTableWrap" style="display: none; margin-top: 1rem;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span style="font-size: 0.8rem; font-weight: 700; color: #1e293b;">📋 Dokumen Fisik yang Digabung pada Tanggal Ini:</span>
+                            <span id="badgeDokumenCount" style="font-size: 0.7rem; font-weight: 700; background: #eff6ff; color: #1d4ed8; padding: 2px 8px; border-radius: 4px; border: 1px solid #bfdbfe;"></span>
+                        </div>
+                        <div style="overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 6px;">
+                            <table class="table-pemakaian" style="width: 100%; font-size: 0.775rem;">
+                                <thead>
+                                    <tr style="background: #f8fafc;">
+                                        <th style="padding: 0.5rem 0.6rem; text-align: left;">No. Dokumen SPK</th>
+                                        <th style="padding: 0.5rem 0.6rem; text-align: center;">Lokasi Pabrik</th>
+                                        <th style="padding: 0.5rem 0.6rem; text-align: left;">Dokumen BPPB</th>
+                                        <th style="padding: 0.5rem 0.6rem; text-align: right;">Bahan Baku (BPPB)</th>
+                                        <th style="padding: 0.5rem 0.6rem; text-align: right;">Hasil Keripik (WIP)</th>
+                                        <th style="padding: 0.5rem 0.6rem; text-align: center;">Proporsi Gas</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="spkDokumenTableBody">
+                                </tbody>
+                                <tfoot id="spkDokumenTableFoot" style="background: #f1f5f9; font-weight: 800;">
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+
+                    {{-- KOTAK MONITORING DOKUMEN LAIN PADA TANGGAL YANG SAMA (FALLBACK) --}}
                     <div id="sameDayNoticeBox" style="display: none; margin-top: 0.85rem; background: #fffdf5; border: 1.5px solid #fde68a; border-radius: 8px; padding: 0.75rem 1rem;">
                         <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.4rem;">
                             <div style="display: flex; align-items: center; gap: 0.4rem;">
@@ -111,7 +150,7 @@
                         </div>
                     </div>
 
-                    @if($produksiList->isEmpty())
+                    @if(empty($harianList) && $produksiList->isEmpty())
                         <div class="spk-empty-alert">
                             <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                             <span>Seluruh dokumen produksi fisik telah memiliki penetapan HPP. Untuk meninjau atau mencetak lembar HPP yang sudah tersimpan, silakan buka <a href="{{ route('produksi.rekap') }}" class="alert-link">Buku Rekap HPP</a>.</span>
@@ -145,6 +184,10 @@
                         <div class="spk-param-item">
                             <span class="spk-param-label">No. Dokumen SPK</span>
                             <span class="spk-param-value font-mono" id="pvProduksiNo">-</span>
+                        </div>
+                        <div class="spk-param-item">
+                            <span class="spk-param-label">Lokasi Pabrik</span>
+                            <span class="spk-param-value" id="pvLokasiPabrik">-</span>
                         </div>
                         <div class="spk-param-item">
                             <span class="spk-param-label">Tanggal Produksi</span>
@@ -309,6 +352,9 @@
                                 <label for="cng_mmbtu" class="hpp-label">Nilai Energi Gas (MMBTU) <span class="required">*</span></label>
                                 <input type="number" step="any" min="0" name="cng_mmbtu" id="cng_mmbtu" class="hpp-input" value="{{ old('cng_mmbtu', 0) }}" required oninput="calcNm3FromMmbtu()">
                                 <small class="helper-text">Satuan energi panas (1 MMBTU &approx; 27,92 Nm³).</small>
+                                <div id="cngEntityShareAlert" style="display: none; margin-top: 0.5rem; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 0.4rem 0.65rem; font-size: 0.725rem; color: #166534; line-height: 1.4;">
+                                    <span id="cngEntityShareText"></span>
+                                </div>
                             </div>
                         </div>
 
@@ -363,6 +409,23 @@
                                 <span class="banner-val-amount" id="disp_cng_nilai">0</span>
                                 <input type="hidden" name="cng_nilai" id="cng_nilai" value="0">
                             </div>
+                        </div>
+
+                        {{-- MODUL ALOKASI GAS PER PABRIK (OTOMATIS PROPORSI WIP + EDITABLE MANUAL) --}}
+                        <div id="cngSplitPlantSection" style="display: none; margin-top: 0.85rem; background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 0.75rem 0.9rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                                <div style="display: flex; align-items: center; gap: 0.35rem;">
+                                    <span style="font-size: 0.85rem;">⚡</span>
+                                    <strong style="font-size: 0.775rem; color: #1e293b;">Alokasi Gas per Pabrik (Proporsional WIP):</strong>
+                                </div>
+                                <button type="button" class="btn-sync-kurs" onclick="resetCngSplitToProportional()" style="font-size: 0.7rem; padding: 2px 7px;" title="Kembalikan pembagian MMBTU sesuai persentase hasil olahan WIP">
+                                    🔄 Reset Proporsional
+                                </button>
+                            </div>
+                            <div id="cngSplitPlantInputs" style="display: flex; flex-direction: column; gap: 0.45rem;">
+                                {{-- Diisi secara dinamis via JS saat data ditarik --}}
+                            </div>
+                            <div id="cngSplitValidationMsg" style="display: none; color: #dc2626; font-size: 0.7rem; font-weight: 700; margin-top: 0.35rem;"></div>
                         </div>
                     </div>
 

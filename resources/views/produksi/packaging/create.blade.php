@@ -187,13 +187,14 @@
                     <table class="table-web-form">
                         <thead>
                             <tr>
-                                <th style="width: 40px; text-align: center;">No</th>
-                                <th style="min-width: 260px;">Bahan Keripik Curah (WIP)</th>
-                                <th style="width: 175px;">Qty Diambil</th>
-                                <th style="min-width: 250px;">Target Produk Jadi (FG)</th>
-                                <th style="width: 215px; white-space: nowrap;">Hasil Kemas Utama</th>
-                                <th style="width: 130px;">Sisa Eceran</th>
-                                <th style="width: 180px;">Batch &amp; Expired FG</th>
+                                <th style="width: 35px; text-align: center;">No</th>
+                                <th style="min-width: 250px;">Bahan Keripik Curah (WIP)</th>
+                                <th style="width: 165px;">Qty Diambil</th>
+                                <th style="min-width: 240px;">Target Produk Jadi (FG)</th>
+                                <th style="width: 210px;">Hasil Kemas Utama</th>
+                                <th style="width: 120px;">Sisa Eceran</th>
+                                <th style="width: 150px;">No. Batch FG</th>
+                                <th style="width: 150px;">Tgl Expired FG</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -201,6 +202,8 @@
                                 <td style="text-align: center; font-weight: 700; color: #64748b; vertical-align: middle;">
                                     1
                                 </td>
+
+                                {{-- 1. WIP Varian --}}
                                 <td>
                                     <select id="output_id" name="output_id" class="form-control" required onchange="onWebWipChange(this)">
                                         <option value="">-- Pilih Varian Keripik Curah --</option>
@@ -222,14 +225,16 @@
                                                     data-hpp="{{ $hppKg }}"
                                                     data-is-berbumbu="{{ $isBerbumbu ? '1' : '0' }}"
                                                     {{ (old('output_id', $selectedLaporan?->output_id) == $wip->output_id) ? 'selected' : '' }}>
-                                                [{{ $prodNo }}] {{ $barangNm }} &bull; Batch: {{ $batchStr }} (Sisa Stok: {{ number_format($qtyKg, 0, ',', '.') }} Kg)
+                                                [{{ $prodNo }}] {{ $barangNm }} &bull; Batch: {{ $batchStr }} (Sisa: {{ number_format($qtyKg, 0, ',', '.') }} Kg)
                                             </option>
                                         @endforeach
                                     </select>
-                                    <div id="wipInfoBox" style="display: none; font-size: 0.725rem; color: #0284c7; font-weight: 600; margin-top: 0.35rem;">
+                                    <div id="wipInfoBox" style="display: none; font-size: 0.725rem; color: #0284c7; font-weight: 600; margin-top: 0.35rem; background: #e0f2fe; padding: 4px 8px; border-radius: 4px; border: 1px solid #bae6fd;">
                                         <span id="wipInfoText"></span>
                                     </div>
                                 </td>
+
+                                {{-- 2. Qty Diambil --}}
                                 <td>
                                     <div class="input-group-web">
                                         <input type="number" step="any" min="0.01" id="wip_qty_kg" name="wip_qty_kg" class="form-control" placeholder="0" value="{{ old('wip_qty_kg', $selectedLaporan?->wip_qty_kg) }}" required style="font-weight: 700; font-size: 0.95rem;" oninput="checkWipStock()">
@@ -243,6 +248,8 @@
                                         <span id="wipQtyWarningText"></span>
                                     </div>
                                 </td>
+
+                                {{-- 3. Target Produk Jadi --}}
                                 <td>
                                     <select id="barang_jadi_id" name="barang_jadi_id" class="form-control" required style="background: #ffffff;">
                                         <option value="">-- Pilih Produk Jadi (FG) --</option>
@@ -253,32 +260,40 @@
                                         @endforeach
                                     </select>
                                 </td>
+
+                                {{-- 4. Hasil Kemas Utama --}}
                                 <td>
                                     <div class="input-group-web">
-                                        <input type="number" step="any" min="0.0001" id="hasil_karton_qty" name="hasil_karton_qty" class="form-control" placeholder="0" value="{{ old('hasil_karton_qty', $selectedLaporan?->hasil_karton_qty) }}" required style="font-weight: 700; font-size: 0.95rem; color: #059669; background: #ffffff;">
-                                        <select id="selectSatuanHasil" class="form-control" style="width: 105px; max-width: 110px; font-weight: 700; background: #ffffff; padding: 0.45rem 0.5rem;" onchange="setWebSatuanHasil(this.value)">
+                                        <input type="number" step="any" min="0.0001" id="hasil_karton_qty" name="hasil_karton_qty" class="form-control" placeholder="0" value="{{ old('hasil_karton_qty', $selectedLaporan?->hasil_karton_qty) }}" required style="font-weight: 700; font-size: 0.95rem; color: #047857; background: #ffffff;">
+                                        <select id="selectSatuanHasil" class="form-control" style="width: 100px; max-width: 105px; font-weight: 700; background: #ffffff; padding: 0.45rem 0.5rem;" onchange="setWebSatuanHasil(this.value)">
                                             <option value="KARTON" {{ old('satuan_hasil', $selectedLaporan?->satuan_hasil ?? 'KARTON') == 'KARTON' ? 'selected' : '' }}>Karton</option>
                                             <option value="BAL" {{ old('satuan_hasil', $selectedLaporan?->satuan_hasil) == 'BAL' ? 'selected' : '' }}>Bal</option>
                                             <option value="PACK" {{ old('satuan_hasil', $selectedLaporan?->satuan_hasil) == 'PACK' ? 'selected' : '' }}>Pack</option>
                                         </select>
                                     </div>
-                                    <div style="font-size: 0.72rem; color: #64748b; margin-top: 0.25rem; display: flex; align-items: center; gap: 0.35rem;">
+                                    <div class="isi-karton-tag">
                                         <span>Isi:</span>
-                                        <input type="number" step="1" min="1" id="isi_per_karton_pcs" name="isi_per_karton_pcs" value="{{ old('isi_per_karton_pcs', 20) }}" style="width: 50px; font-size: 0.75rem; padding: 2px 4px; border: 1px solid #cbd5e1; border-radius: 4px; text-align: center; font-weight: 700; background: #ffffff;" title="Isi bungkus (pcs) per karton/dus">
+                                        <input type="number" step="1" min="1" id="isi_per_karton_pcs" name="isi_per_karton_pcs" value="{{ old('isi_per_karton_pcs', 20) }}" style="width: 48px; font-size: 0.75rem; padding: 1px 3px; border: 1px solid #cbd5e1; border-radius: 4px; text-align: center; font-weight: 700; background: #ffffff;" title="Isi bungkus (pcs) per karton/dus">
                                         <span id="lblSatuanIsi">Pcs / Karton</span>
                                     </div>
                                 </td>
+
+                                {{-- 5. Sisa Eceran --}}
                                 <td>
                                     <div class="input-group-web">
-                                        <input type="number" step="any" min="0" id="hasil_pack_qty" name="hasil_pack_qty" class="form-control" placeholder="0" value="{{ old('hasil_pack_qty', $selectedLaporan?->hasil_pack_qty) }}" style="background: #ffffff;">
-                                        <span class="input-group-addon" style="font-size: 0.75rem; padding: 0 0.4rem;">Pack</span>
+                                        <input type="number" step="any" min="0" id="hasil_pack_qty" name="hasil_pack_qty" class="form-control" placeholder="0" value="{{ old('hasil_pack_qty', $selectedLaporan?->hasil_pack_qty) }}" style="background: #ffffff; font-weight: 600;">
+                                        <span class="input-group-addon" style="font-size: 0.75rem; padding: 0 0.4rem; color: #475569; font-weight: 600;">Pack</span>
                                     </div>
                                 </td>
+
+                                {{-- 6. No. Batch FG --}}
                                 <td>
-                                    <div style="display: flex; flex-direction: column; gap: 4px;">
-                                        <input type="text" id="batch_no" name="batch_no" class="form-control" placeholder="No. Batch (15 10 2026)" value="{{ old('batch_no', $selectedLaporan?->wip_batch_no) }}" style="background: #ffffff; font-size: 0.8rem; padding: 0.35rem 0.5rem;" title="Nomor Batch FG">
-                                        <input type="date" id="expired_tgl" name="expired_tgl" class="form-control" value="{{ old('expired_tgl', date('Y-m-d', strtotime('+6 months'))) }}" style="background: #ffffff; font-size: 0.8rem; padding: 0.35rem 0.5rem;" title="Tanggal Kadaluarsa FG">
-                                    </div>
+                                    <input type="text" id="batch_no" name="batch_no" class="form-control" placeholder="No. Batch..." value="{{ old('batch_no', $selectedLaporan?->wip_batch_no) }}" style="background: #ffffff; font-family: ui-monospace, monospace; font-size: 0.825rem; font-weight: 600;" title="Nomor Batch FG">
+                                </td>
+
+                                {{-- 7. Tgl Expired FG --}}
+                                <td>
+                                    <input type="date" id="expired_tgl" name="expired_tgl" class="form-control" value="{{ old('expired_tgl', date('Y-m-d', strtotime('+6 months'))) }}" style="background: #ffffff; font-size: 0.825rem; font-weight: 600;" title="Tanggal Kadaluarsa FG">
                                 </td>
                             </tr>
                         </tbody>

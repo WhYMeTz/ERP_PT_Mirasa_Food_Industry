@@ -3,6 +3,24 @@
    PT Mirasa Food Industry
 */
 
+/* Navigasi Tab Entitas Pabrik (Semua, MFI, BMB) */
+.pabrik-tab-btn {
+    transition: all 0.2s ease;
+}
+.pabrik-tab-active {
+    background: #0284c7 !important;
+    color: #ffffff !important;
+    box-shadow: 0 1px 3px rgba(2, 132, 199, 0.25);
+}
+.pabrik-tab-inactive {
+    background: transparent !important;
+    color: #475569 !important;
+}
+.pabrik-tab-inactive:hover {
+    background: #e2e8f0 !important;
+    color: #0284c7 !important;
+}
+
 /* Badge Shift */
 .badge-shift-a {
     display: inline-flex;
@@ -2322,6 +2340,7 @@
         transform: translateY(0);
     }
 }
+
 
 
 

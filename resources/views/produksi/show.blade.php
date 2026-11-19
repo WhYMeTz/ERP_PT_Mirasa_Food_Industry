@@ -299,6 +299,22 @@
                         <td class="value-col">{{ Carbon\Carbon::parse($produksi->produksi_tgl)->locale('id')->isoFormat('dddd, D MMMM Y') }}</td>
                     </tr>
                     <tr>
+                        <td class="label-col">Lokasi Produksi</td>
+                        <td class="value-col">
+                            @php
+                                $isBmbDoc = in_array(strtoupper($produksi->lokasi_pabrik ?? 'MFI'), ['BMB', 'CV-BMB', 'BAHTERA', 'TIMUR']);
+                            @endphp
+                            <span style="display: inline-flex; align-items: center; gap: 0.35rem; background: {{ $isBmbDoc ? '#ede9fe; color: #6d28d9; border: 1px solid #c4b5fd' : '#e0f2fe; color: #0369a1; border: 1px solid #7dd3fc' }}; padding: 0.2rem 0.6rem; border-radius: 4px; font-weight: 700; font-size: 0.775rem;">
+                                <span>{{ $isBmbDoc ? 'CV Bahtera Mandiri Bersama' : 'PT Mirasa Food Industry' }}</span>
+                            </span>
+                            @if(!empty($produksi->bf_aktif_count))
+                                <span style="font-size: 0.775rem; color: #64748b; margin-left: 0.4rem; font-weight: 600;">
+                                    ({{ $produksi->bf_aktif_count }} BF Aktif)
+                                </span>
+                            @endif
+                        </td>
+                    </tr>
+                    <tr>
                         <td class="label-col">Lini Produksi Pabrik</td>
                         <td class="value-col">{{ $produksi->lini_produksi }}</td>
                     </tr>

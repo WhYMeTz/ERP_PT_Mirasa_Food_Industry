@@ -1760,6 +1760,11 @@
             const day = parseInt(parts[2], 10);
             return `${day} ${months[monthIdx] || ''} ${year}`;
         }
+        if (parts.length === 2) {
+            const year = parts[0];
+            const monthIdx = parseInt(parts[1], 10) - 1;
+            return `${months[monthIdx] || ''} ${year}`;
+        }
         return dateStr;
     }
 
@@ -1820,6 +1825,21 @@
             ? `${initialParts.year}-${initialParts.month}` 
             : (pakaiTglInput.value ? pakaiTglInput.value.slice(2, 4) + '-' + pakaiTglInput.value.slice(5, 7) : '');
 
+        window.resetPakaiNoToSuggested = function () {
+            if (lastSystemSuggestedPakaiNo && pakaiNoInput) {
+                pakaiNoInput.value = lastSystemSuggestedPakaiNo;
+                checkAndRenderPakaiNoWarning();
+            }
+        };
+
+        window.resetPakaiTglToToday = function () {
+            if (pakaiTglInput) {
+                const todayStr = window.originalPakaiTgl || (new Date().toISOString().slice(0, 10));
+                pakaiTglInput.value = todayStr;
+                pakaiTglInput.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        };
+
         function checkAndRenderPakaiNoWarning() {
             if (!pakaiNoHelp || !pakaiNoInput) return;
 
@@ -1832,25 +1852,43 @@
             // Jika kosong
             if (!currentVal) {
                 pakaiNoHelp.style.display = 'block';
-                pakaiNoHelp.innerHTML = `<span style="color:#dc2626; font-size:0.75rem; font-weight:600;">Nomor BPPB wajib diisi!</span>`;
+                pakaiNoHelp.innerHTML = `<span style="color:#dc2626; font-size:0.725rem; font-weight:600;">Nomor BPPB wajib diisi!</span>`;
                 pakaiNoInput.style.borderColor = '#ef4444';
                 pakaiNoInput.style.backgroundColor = '#fef2f2';
                 return;
             }
 
-            // 1. Cek apakah nomor urut depan diubah manual
+            // 1. Cek apakah nomor urut depan diubah manual ATAU bulan berbeda
             if (currentParts && suggestedParts) {
                 const isSeqChanged = (currentParts.seq !== suggestedParts.seq && (!originalParts || currentParts.seq !== originalParts.seq));
                 const isDifferentMonth = (currentParts.year !== currentServerYM.slice(2, 4) || currentParts.month !== currentServerYM.slice(5, 7));
+                const monthName = formatTanggalIndo(`20${currentParts.year}-${currentParts.month}`);
+                const activeMonthName = formatTanggalIndo(currentServerYM);
+
+                if (isSeqChanged && isDifferentMonth) {
+                    pakaiNoHelp.style.display = 'block';
+                    pakaiNoHelp.innerHTML = `
+                        <div style="margin-top: 3px; display: inline-flex; align-items: center; gap: 6px; font-size: 0.725rem; color: #b45309; line-height: 1.2;">
+                            <span style="display: inline-flex; align-items: center; justify-content: center; width: 15px; height: 15px; border-radius: 50%; background: #fef3c7; color: #b45309; font-size: 0.65rem; font-weight: 800; border: 1px solid #fcd34d;">!</span>
+                            <span style="font-weight: 600;">Manual: <span style="font-family: monospace; color: #92400e;">${currentParts.seq}</span> | Periode: <strong>${monthName}</strong></span>
+                            <button type="button" onclick="window.resetPakaiNoToSuggested()" style="background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; border-radius: 4px; padding: 1px 7px; font-size: 0.675rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 2px;" title="Kembalikan nomor urut ke rekomendasi sistem"><span>↺</span> No</button>
+                            <button type="button" onclick="window.resetPakaiTglToToday()" style="background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; border-radius: 4px; padding: 1px 7px; font-size: 0.675rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 2px;" title="Kembalikan tanggal ke hari ini (${activeMonthName})"><span>↺</span> Periode</button>
+                        </div>
+                    `;
+                    pakaiNoInput.style.borderColor = '#f59e0b';
+                    pakaiNoInput.style.backgroundColor = '#fffbeb';
+                    return;
+                }
 
                 if (isSeqChanged) {
                     pakaiNoHelp.style.display = 'block';
                     pakaiNoHelp.innerHTML = `
-                        <div style="background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 6px; padding: 0.4rem 0.65rem; margin-top: 4px; color: #92400e; font-size: 0.775rem; display: flex; align-items: flex-start; gap: 0.45rem; box-shadow: 0 1px 2px rgba(245, 158, 11, 0.1);">
-                            <span style="font-size: 1rem; line-height: 1.2;">⚠️</span>
-                            <div>
-                                <strong style="color: #b45309;">Peringatan Nomor Depan Diubah:</strong> Nomor urut depan diubah manual menjadi <strong style="font-family: monospace; font-size: 0.85rem; color: #92400e;">${currentParts.seq}</strong> (Saran sistem: <strong style="font-family: monospace; font-size: 0.85rem; color: #047857;">${suggestedParts.seq}</strong>). Perubahan manual berisiko nomor loncat atau duplikasi arsip BPPB.
-                            </div>
+                        <div style="margin-top: 3px; display: inline-flex; align-items: center; gap: 6px; font-size: 0.725rem; color: #b45309; line-height: 1.2;" title="Nomor urut depan diubah manual menjadi ${currentParts.seq} (Rekomendasi sistem: ${suggestedParts.seq}). Konfirmasi akan diminta saat menyimpan.">
+                            <span style="display: inline-flex; align-items: center; justify-content: center; width: 15px; height: 15px; border-radius: 50%; background: #fef3c7; color: #b45309; font-size: 0.65rem; font-weight: 800; border: 1px solid #fcd34d;">!</span>
+                            <span style="font-weight: 600;">Manual: <span style="font-family: monospace; color: #92400e;">${currentParts.seq}</span> <span style="color: #64748b; font-weight: normal;">(Saran: <span style="font-family: monospace; color: #047857; font-weight: 700;">${suggestedParts.seq}</span>)</span></span>
+                            <button type="button" onclick="window.resetPakaiNoToSuggested()" style="background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; border-radius: 4px; padding: 1px 7px; font-size: 0.675rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 3px;" title="Kembalikan nomor urut ke rekomendasi sistem">
+                                <span>↺</span> Reset
+                            </button>
                         </div>
                     `;
                     pakaiNoInput.style.borderColor = '#f59e0b';
@@ -1859,15 +1897,14 @@
                 }
 
                 if (isDifferentMonth) {
-                    const monthName = formatTanggalIndo(`20${currentParts.year}-${currentParts.month}`);
-                    const activeMonthName = formatTanggalIndo(currentServerYM);
                     pakaiNoHelp.style.display = 'block';
                     pakaiNoHelp.innerHTML = `
-                        <div style="background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 6px; padding: 0.4rem 0.65rem; margin-top: 4px; color: #92400e; font-size: 0.775rem; display: flex; align-items: flex-start; gap: 0.45rem;">
-                            <span style="font-size: 1rem; line-height: 1.2;">⚠️</span>
-                            <div>
-                                <strong style="color: #b45309;">Periode Bulan Berbeda:</strong> Nomor BPPB dialokasikan untuk periode <strong>${monthName}</strong> (Bulan berjalan saat ini: <strong>${activeMonthName}</strong>): <strong style="font-family: monospace; color: #047857;">${currentVal}</strong>.
-                            </div>
+                        <div style="margin-top: 3px; display: inline-flex; align-items: center; gap: 6px; font-size: 0.725rem; color: #b45309; line-height: 1.2;" title="Dokumen dialokasikan untuk periode ${monthName} (Bulan aktif saat ini: ${activeMonthName})">
+                            <span style="display: inline-flex; align-items: center; justify-content: center; width: 15px; height: 15px; border-radius: 50%; background: #fef3c7; color: #b45309; font-size: 0.65rem; font-weight: 800; border: 1px solid #fcd34d;">!</span>
+                            <span style="font-weight: 600;">Periode: <strong>${monthName}</strong></span>
+                            <button type="button" onclick="window.resetPakaiTglToToday()" style="background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; border-radius: 4px; padding: 1px 7px; font-size: 0.675rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 3px;" title="Kembalikan tanggal ke hari ini (${activeMonthName})">
+                                <span>↺</span> Reset Periode
+                            </button>
                         </div>
                     `;
                     pakaiNoInput.style.borderColor = '#f59e0b';
@@ -1878,11 +1915,12 @@
                 // Format manual non-standar
                 pakaiNoHelp.style.display = 'block';
                 pakaiNoHelp.innerHTML = `
-                    <div style="background: #fef2f2; border: 1.5px solid #fecaca; border-radius: 6px; padding: 0.4rem 0.65rem; margin-top: 4px; color: #991b1b; font-size: 0.775rem; display: flex; align-items: flex-start; gap: 0.45rem;">
-                        <span style="font-size: 1rem; line-height: 1.2;">⚠️</span>
-                        <div>
-                            <strong style="color: #b91c1c;">Format BPPB Manual:</strong> Anda memasukkan nomor di luar format standar (Saran sistem: <strong style="font-family: monospace;">${lastSystemSuggestedPakaiNo}</strong>).
-                        </div>
+                    <div style="margin-top: 3px; display: inline-flex; align-items: center; gap: 6px; font-size: 0.725rem; color: #dc2626; line-height: 1.2;" title="Format BPPB manual di luar standar sistem (Saran sistem: ${lastSystemSuggestedPakaiNo})">
+                        <span style="display: inline-flex; align-items: center; justify-content: center; width: 15px; height: 15px; border-radius: 50%; background: #fee2e2; color: #dc2626; font-size: 0.65rem; font-weight: 800; border: 1px solid #fca5a5;">!</span>
+                        <span style="font-weight: 600;">Format Manual (Saran: <span style="font-family: monospace;">${lastSystemSuggestedPakaiNo}</span>)</span>
+                        <button type="button" onclick="window.resetPakaiNoToSuggested()" style="background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; border-radius: 4px; padding: 1px 7px; font-size: 0.675rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 3px;">
+                            <span>↺</span> Reset
+                        </button>
                     </div>
                 `;
                 pakaiNoInput.style.borderColor = '#ef4444';
@@ -1897,7 +1935,12 @@
                 const parts = parsePakaiNoParts(lastSystemSuggestedPakaiNo);
                 const reason = parts ? `bulan ${parts.month} tahun 20${parts.year}` : 'otomatis';
                 pakaiNoHelp.style.display = 'block';
-                pakaiNoHelp.innerHTML = `<span style="color:#15803d; font-weight:600;">✓ Nomor BPPB disesuaikan otomatis (${reason}): <strong>${lastSystemSuggestedPakaiNo}</strong></span>`;
+                pakaiNoHelp.innerHTML = `
+                    <div style="margin-top: 3px; display: inline-flex; align-items: center; gap: 4px; font-size: 0.725rem; color: #15803d; line-height: 1.2;" title="Nomor BPPB disesuaikan otomatis (${reason}): ${lastSystemSuggestedPakaiNo}">
+                        <span style="font-weight: 800;">✓</span>
+                        <span style="font-weight: 600;">Otomatis sistem</span>
+                    </div>
+                `;
             }
         }
 

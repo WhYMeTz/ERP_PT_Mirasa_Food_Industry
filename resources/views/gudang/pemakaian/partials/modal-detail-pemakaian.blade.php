@@ -48,36 +48,6 @@
             {{-- CONTENT CONTAINER --}}
             <div id="pakaiDetailContentBody" style="display: none;">
                 
-                {{-- KOTAK INFORMASI AUDIT KOREKSI DARI VERIFIKASI KEUANGAN --}}
-                <div id="pakaiDetailKoreksiBox" style="display: none; background: #fffdf5; border: 1.5px solid #fde68a; border-radius: 8px; padding: 0.85rem 1.15rem; margin-bottom: 1.25rem;">
-                    <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap;">
-                        <div style="display: flex; align-items: flex-start; gap: 0.65rem;">
-                            <div style="width: 32px; height: 32px; border-radius: 50%; background: #fef3c7; color: #b45309; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0;">
-                                🔄
-                            </div>
-                            <div>
-                                <strong style="color: #92400e; font-size: 0.875rem; display: block;">
-                                    Dokumen Ini Telah Disesuaikan oleh Verifikator Keuangan
-                                </strong>
-                                <div style="font-size: 0.775rem; color: #b45309; margin-top: 2px;" id="pakaiDetailKoreksiSub">
-                                    Pembuat awal: <strong id="pakaiDetailKoreksiCreator">-</strong> &bull; Dikoreksi oleh: <strong id="pakaiDetailKoreksiVerifier">-</strong> (<span id="pakaiDetailKoreksiDate">-</span>)
-                                </div>
-                                <div style="margin-top: 0.4rem; font-size: 0.75rem; color: #78350f; background: #fef3c7; padding: 0.35rem 0.65rem; border-radius: 4px;" id="pakaiDetailKoreksiMemo">
-                                    Catatan Verifikator: -
-                                </div>
-                            </div>
-                        </div>
-                        <span id="pakaiDetailKoreksiBadge" class="badge" style="background: #fee2e2; color: #991b1b; font-weight: 700; font-size: 0.725rem; border: 1px solid #fecaca;">
-                            KOREKSI_FISIK
-                        </span>
-                    </div>
-                    <div id="pakaiDetailKoreksiDiffWrap" style="margin-top: 0.65rem; font-size: 0.75rem; border-top: 1px dashed #fde68a; padding-top: 0.5rem;">
-                        <span style="font-weight: 700; color: #475569; display: block; margin-bottom: 0.25rem;">Rincian Penyesuaian Data:</span>
-                        <ul id="pakaiDetailKoreksiList" style="margin: 0; padding-left: 1.25rem; color: #334155; line-height: 1.5;">
-                        </ul>
-                    </div>
-                </div>
-
                 {{-- 1. GRID INFORMASI UTAMA (macOS INSPECTOR 2x2 BALANCED GRID) --}}
                 <div class="mac-po-meta-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1.25rem;">
                     
@@ -101,7 +71,7 @@
                         </div>
                     </div>
 
-                    {{-- Box 2: Tujuan Pemakaian / Lini Kerja --}}
+                    {{-- Box 2: Tujuan Pemakaian / Lini Kerja & Gudang Tujuan --}}
                     <div class="mac-po-card">
                         <div class="mac-po-card-header">
                             <span class="mac-po-card-label">
@@ -114,7 +84,10 @@
                             <div class="mac-po-entity-title-row">
                                 <strong id="pakaiDetailTujuan" class="mac-po-entity-name" style="color: #991b1b;">-</strong>
                             </div>
-                            <div class="mac-po-entity-address" id="pakaiDetailCatatan">
+                            <div id="pakaiDetailGudangTujuan" style="display: none; font-size: 0.775rem; font-weight: 700; color: #0284c7; margin-top: 3px;">
+                                -
+                            </div>
+                            <div class="mac-po-entity-address" id="pakaiDetailCatatan" style="margin-top: 3px;">
                                 Catatan: -
                             </div>
                         </div>
@@ -127,7 +100,7 @@
                                 <svg width="14" height="14" fill="none" stroke="#0284c7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                                 <span>Jadwal Pengeluaran</span>
                             </span>
-                            <span class="mac-badge-pill" style="background: #f0f9ff; color: #0284c7; border-color: #bae6fd; font-size: 0.675rem;">Kronologi</span>
+                            <span class="mac-badge-pill" style="background: #f0f9ff; color: #0284c7; border-color: #bae6fd; font-size: 0.675rem;">Logistik</span>
                         </div>
                         <div class="mac-po-kv-list">
                             <div class="mac-po-kv-row">
@@ -139,20 +112,20 @@
                                 <span class="mac-po-kv-val" id="pakaiDetailWaktu" style="color: #475569;">-</span>
                             </div>
                             <div class="mac-po-kv-row">
-                                <span class="mac-po-kv-key">Dibuat Oleh:</span>
+                                <span class="mac-po-kv-key">Petugas Input:</span>
                                 <span class="mac-po-kv-val" id="pakaiDetailCreator" style="color: #0369a1; font-weight: 600;">-</span>
                             </div>
                         </div>
                     </div>
 
-                    {{-- Box 4: Status Audit & Pemotongan Stok --}}
+                    {{-- Box 4: Status Operasional & Stok Gudang (MURNI GUDANG & PABRIK) --}}
                     <div class="mac-po-card">
                         <div class="mac-po-card-header">
                             <span class="mac-po-card-label">
                                 <svg width="14" height="14" fill="none" stroke="#059669" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                <span>Status Pemotongan Stok</span>
+                                <span>Status Operasional &amp; Stok</span>
                             </span>
-                            <span class="mac-badge-pill" style="background: #ecfdf5; color: #065f46; border-color: #a7f3d0; font-size: 0.675rem;">Otorisasi</span>
+                            <span class="mac-badge-pill" style="background: #ecfdf5; color: #065f46; border-color: #a7f3d0; font-size: 0.675rem;">Real-Time</span>
                         </div>
                         <div class="mac-po-kv-list">
                             <div class="mac-po-kv-row">
@@ -160,12 +133,12 @@
                                 <span class="mac-po-kv-val" id="pakaiDetailStatusText" style="font-weight: 800;">-</span>
                             </div>
                             <div class="mac-po-kv-row">
-                                <span class="mac-po-kv-key">Efek Persediaan:</span>
-                                <span class="mac-po-kv-val" id="pakaiDetailStokEffect" style="color: #475569; font-size: 0.75rem;">-</span>
+                                <span class="mac-po-kv-key">Stok Gudang:</span>
+                                <span class="mac-po-kv-val" id="pakaiDetailStokEffect" style="color: #059669; font-weight: 700; font-size: 0.75rem;">✓ Fisik Terpotong</span>
                             </div>
                             <div class="mac-po-kv-row">
-                                <span class="mac-po-kv-key">Jurnal Akuntansi:</span>
-                                <span class="mac-po-kv-val" id="pakaiDetailJurnalStatus" style="color: #065f46; font-weight: 700;">-</span>
+                                <span class="mac-po-kv-key">Hasil Produksi:</span>
+                                <span class="mac-po-kv-val" id="pakaiDetailProduksiStatus" style="font-weight: 700; font-size: 0.75rem;">-</span>
                             </div>
                         </div>
                     </div>

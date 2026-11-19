@@ -1188,5 +1188,35 @@ class CodeGeneratorService
 
         return $generated;
     }
+
+    /**
+     * Generate Nomor Bukti Transfer Antar-Gudang (TRF-YYYYMM-XXXX)
+     * Contoh: TRF-202611-0001
+     */
+    public function generateTransferNo(?string $date = null): string
+    {
+        $timestamp = strtotime($date ?? date('Y-m-d'));
+        $prefix = 'TRF-' . date('Ym', $timestamp) . '-';
+
+        $lastNo = DB::table('dat_transfer_hdr')
+            ->where('transfer_no', 'LIKE', "{$prefix}%")
+            ->orderBy('transfer_no', 'desc')
+            ->value('transfer_no');
+
+        $nextNum = 1;
+        if ($lastNo && preg_match('/(\d{4})$/', $lastNo, $matches)) {
+            $nextNum = ((int) $matches[1]) + 1;
+        }
+
+        do {
+            $candidate = $prefix . str_pad((string) $nextNum, 4, '0', STR_PAD_LEFT);
+            $exists = DB::table('dat_transfer_hdr')->where('transfer_no', $candidate)->exists();
+            if ($exists) {
+                $nextNum++;
+            }
+        } while ($exists);
+
+        return $candidate;
+    }
 }
 

@@ -21,6 +21,7 @@ class DatPakaiHdr extends Model
         'pakai_no',
         'pakai_tgl',
         'gudang_id',
+        'gudang_tujuan_id',
         'produksi_id',
         'tujuan_pemakaian',
         'catatan_txt',
@@ -53,6 +54,46 @@ class DatPakaiHdr extends Model
     public function isPosted(): bool
     {
         return ($this->status_st ?? '') === 'POSTED';
+    }
+
+    /**
+     * Cek apakah pemakaian bahan sudah selesai diproses oleh bagian produksi / pengemasan
+     */
+    public function isSelesaiProduksi(): bool
+    {
+        return ($this->status_st ?? '') === 'POSTED' || !empty($this->produksi_id);
+    }
+
+    /**
+     * Label status operasional pabrik yang ramah operator (Opsi A)
+     */
+    public function getStatusLabelAttribute(): string
+    {
+        return $this->isSelesaiProduksi() ? 'SELESAI PRODUKSI' : 'PROSES PRODUKSI';
+    }
+
+    /**
+     * Metadata visual badge status operasional pabrik
+     */
+    public function getStatusBadgeAttribute(): array
+    {
+        if ($this->isSelesaiProduksi()) {
+            return [
+                'label'  => 'SELESAI PRODUKSI',
+                'bg'     => '#d1fae5',
+                'color'  => '#065f46',
+                'border' => '#a7f3d0',
+                'icon'   => '✓',
+            ];
+        }
+
+        return [
+            'label'  => 'PROSES PRODUKSI',
+            'bg'     => '#fef3c7',
+            'color'  => '#92400e',
+            'border' => '#fde68a',
+            'icon'   => '🏭',
+        ];
     }
 
     /**
@@ -105,6 +146,14 @@ class DatPakaiHdr extends Model
     public function gudang(): BelongsTo
     {
         return $this->belongsTo(MstGudang::class, 'gudang_id', 'gudang_id');
+    }
+
+    /**
+     * Relasi ke Gudang Tujuan / Area Pemakai (Jika ditujukan ke Gudang Tertentu)
+     */
+    public function gudangTujuan(): BelongsTo
+    {
+        return $this->belongsTo(MstGudang::class, 'gudang_tujuan_id', 'gudang_id');
     }
 
     /**

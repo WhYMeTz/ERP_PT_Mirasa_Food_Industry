@@ -38,8 +38,8 @@
             <h1 style="font-size: 1.45rem; font-weight: 800; color: #0f172a; margin: 0;">
                 Edit Pemakaian Bahan (BPPB): {{ $pakai->pakai_no }}
             </h1>
-            <span class="badge" style="background: #fef3c7; color: #92400e; border: 1px solid #fde68a; font-weight: 700; font-size: 0.75rem; padding: 0.25rem 0.6rem; border-radius: 6px;">
-                ⏳ DRAFT GUDANG
+            <span class="badge" style="background: #fef3c7; color: #92400e; border: 1px solid #fde68a; font-weight: 700; font-size: 0.75rem; padding: 0.25rem 0.6rem; border-radius: 6px;" title="Stok fisik gudang langsung dipotong">
+                🏭 PROSES PRODUKSI
             </span>
         </div>
     </div>
@@ -78,8 +78,8 @@
 
     {{-- PANEL TOOLBAR TERPADU (1 KOTAK RAMPING 2 BARIS: INFO DOKUMEN & RESEP BOM) --}}
     <div style="background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 0.85rem 1rem; margin-bottom: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
-        {{-- BARIS 1: NO BPPB, TANGGAL, GUDANG ASAL, TUJUAN --}}
-        <div style="display: grid; grid-template-columns: 1.1fr 1fr 1.6fr 1.8fr; gap: 0.85rem; align-items: flex-end; margin-bottom: 0.85rem;">
+        {{-- BARIS 1: NO BPPB, TANGGAL, GUDANG ASAL, GUDANG TUJUAN (LOKASI PRODUKSI), LINI PRODUKSI --}}
+        <div style="display: grid; grid-template-columns: 1fr 0.95fr 1.35fr 1.35fr 1.35fr; gap: 0.85rem; align-items: flex-end; margin-bottom: 0.85rem;">
             <div>
                 <label for="pakai_no" class="toolbar-label">
                     No. BPPB <span style="color:#ef4444;">*</span>
@@ -106,17 +106,48 @@
                 </select>
             </div>
             <div>
+                <label for="gudang_tujuan_id" class="toolbar-label">
+                    Lokasi Gudang Produksi
+                </label>
+                <select name="gudang_tujuan_id" id="gudang_tujuan_id" class="toolbar-select" onchange="onGudangTujuanChanged(this)">
+                    <option value="">-- Pilih Gudang Produksi --</option>
+                    @foreach ($allGudangs as $gdgTujuan)
+                        <option value="{{ $gdgTujuan->gudang_id }}" {{ old('gudang_tujuan_id', $pakai->gudang_tujuan_id) == $gdgTujuan->gudang_id ? 'selected' : '' }}>
+                            {{ $gdgTujuan->gudang_nm }} [{{ $gdgTujuan->gudang_cd }}]
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+            <div>
                 <label for="tujuan_pemakaian" class="toolbar-label">
-                    Tujuan Pemakaian / Lini Kerja (WIP) <span style="color:#ef4444;">*</span>
+                    Tujuan Lini Produksi <span style="color:#ef4444;">*</span>
                 </label>
                 <select name="tujuan_pemakaian" id="tujuan_pemakaian" class="toolbar-select" required onchange="updateSidebarInfo()">
-                    <option value="">-- Pilih Lini Produksi (WIP) --</option>
-                    @if(isset($liniList) && $liniList->isNotEmpty())
-                        @foreach($liniList as $lini)
-                            <option value="{{ $lini->lini_nm }}" {{ old('tujuan_pemakaian', $pakai->tujuan_pemakaian) === $lini->lini_nm ? 'selected' : '' }}>
-                                {{ $lini->lini_nm }} {{ $lini->keterangan ? '('.$lini->keterangan.')' : '' }}
-                            </option>
-                        @endforeach
+                    <option value="">-- Pilih Lini Produksi --</option>
+                    @php
+                        $wipLini = $liniList->filter(fn($l) => str_contains(strtoupper($l->kategori_lini ?? ''), 'WIP'));
+                        $fgLini = $liniList->filter(fn($l) => !str_contains(strtoupper($l->kategori_lini ?? ''), 'WIP'));
+                    @endphp
+                    @if($wipLini->isNotEmpty())
+                        <optgroup label="🏭 Lini Produksi WIP (Setengah Jadi)">
+                            @foreach($wipLini as $lini)
+                                <option value="{{ $lini->lini_nm }}" {{ old('tujuan_pemakaian', $pakai->tujuan_pemakaian) === $lini->lini_nm ? 'selected' : '' }}>
+                                    {{ $lini->lini_nm }} {{ $lini->keterangan ? '('.$lini->keterangan.')' : '' }}
+                                </option>
+                            @endforeach
+                        </optgroup>
+                    @endif
+                    @if($fgLini->isNotEmpty())
+                        <optgroup label="📦 Lini Pengemasan / FG">
+                            @foreach($fgLini as $lini)
+                                <option value="{{ $lini->lini_nm }}" {{ old('tujuan_pemakaian', $pakai->tujuan_pemakaian) === $lini->lini_nm ? 'selected' : '' }}>
+                                    {{ $lini->lini_nm }} {{ $lini->keterangan ? '('.$lini->keterangan.')' : '' }}
+                                </option>
+                            @endforeach
+                        </optgroup>
+                    @endif
+                    @if(!empty($pakai->tujuan_pemakaian) && !$liniList->contains('lini_nm', $pakai->tujuan_pemakaian))
+                        <option value="{{ $pakai->tujuan_pemakaian }}" selected>{{ $pakai->tujuan_pemakaian }} (Historis)</option>
                     @endif
                 </select>
             </div>
@@ -242,8 +273,8 @@
                 ✓
             </div>
             <div>
-                <strong style="color: #0f172a; font-size: 0.875rem; display: block;">Dokumen Disimpan Sebagai DRAFT Pengeluaran Fisik</strong>
-                <span style="font-size: 0.75rem; color: #64748b;">Stok dipotong &amp; Jurnal Umum terbit setelah diverifikasi Admin Produksi / Office.</span>
+                <strong style="color: #0f172a; font-size: 0.875rem; display: block;">Dokumen Pengeluaran Bahan Baku Produksi</strong>
+                <span style="font-size: 0.75rem; color: #64748b;">Stok fisik langsung terpotong saat disimpan &amp; status berubah otomatis setelah laporan produksi diinput.</span>
             </div>
         </div>
 

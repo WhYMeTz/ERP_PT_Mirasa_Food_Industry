@@ -393,6 +393,23 @@ Route::middleware('auth')->group(function () {
             ->middleware('role:pemakaian_view');
         Route::resource('pemakaian', PemakaianController::class)->only(['index', 'show'])->middleware('role:pemakaian_view');
 
+        // Transfer Antar-Gudang (Mutasi Stok Real-Time Antar Lokasi Simpan)
+        Route::get('transfer/batches', [\App\Http\Controllers\Gudang\TransferGudangController::class, 'getBatches'])
+            ->name('transfer.batches')
+            ->middleware('role:gudang,pemakaian_view');
+        Route::get('transfer/create', [\App\Http\Controllers\Gudang\TransferGudangController::class, 'create'])
+            ->name('transfer.create')
+            ->middleware('role:gudang,pemakaian_create');
+        Route::post('transfer', [\App\Http\Controllers\Gudang\TransferGudangController::class, 'store'])
+            ->name('transfer.store')
+            ->middleware('role:gudang,pemakaian_create');
+        Route::post('transfer/{id}/void', [\App\Http\Controllers\Gudang\TransferGudangController::class, 'void'])
+            ->name('transfer.void')
+            ->middleware('role:gudang,pemakaian_delete,SUPERADMIN');
+        Route::resource('transfer', \App\Http\Controllers\Gudang\TransferGudangController::class)
+            ->only(['index', 'show'])
+            ->middleware('role:gudang,pemakaian_view');
+
         // Monitoring Persediaan: Lacak Stok, Kartu Stok & Rekapitulasi Persediaan (Berdasarkan izin 'stok_view')
         Route::get('stok', [StokController::class, 'index'])->name('stok.index')->middleware('role:stok_view');
         Route::get('stok/rekap', [StokController::class, 'rekap'])->name('stok.rekap')->middleware('role:stok_view');

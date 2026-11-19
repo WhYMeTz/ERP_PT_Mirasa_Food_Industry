@@ -39,7 +39,7 @@
 
             {{-- Pesan Dampak Operasional Dinamis --}}
             <div class="alert" style="background: #fffbeb; border: 1px solid #fde68a; border-left: 4px solid #f59e0b; color: #92400e; padding: 0.85rem 1rem; font-size: 0.8125rem; border-radius: 6px; margin-bottom: 1.25rem; line-height: 1.5;">
-                <strong style="display: block; font-size: 0.85rem; margin-bottom: 0.35rem;">⚠️ Perhatian Operasional Gudang &amp; Akuntansi:</strong>
+                <strong style="display: block; font-size: 0.85rem; margin-bottom: 0.35rem;">⚠️ Perhatian Operasional Gudang &amp; Logistik:</strong>
                 <div id="mcpmAlertContent">
                     {{-- Diisi secara dinamis oleh JavaScript --}}
                 </div>

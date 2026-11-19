@@ -1637,6 +1637,7 @@
                     @if (Auth::user()->canAccessStok() || Auth::user()->canAccessAdjustment() || Auth::user()->canAccessStokProduksi())
                         @php
                             $isStokActive = request()->routeIs('gudang.stok.*') ||
+                                request()->routeIs('gudang.transfer.*') ||
                                 request()->routeIs('gudang.adjustment.*') ||
                                 request()->routeIs('produksi.stok.*');
                         @endphp
@@ -1716,6 +1717,18 @@
                                                 </div>
                                             </a>
                                         @endif
+                                        <a href="{{ route('gudang.transfer.index') }}"
+                                            class="mega-item {{ request()->routeIs('gudang.transfer.*') ? 'active' : '' }}">
+                                            <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                                style="color: #0d9488;">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                                            </svg>
+                                            <div style="display: flex; flex-direction: column;">
+                                                <span style="font-weight: 600;">Transfer Antar-Gudang</span>
+                                                <span style="font-size: 0.6875rem; color: #64748b;">Mutasi stok fisik Pusat &amp; Cabang</span>
+                                            </div>
+                                        </a>
                                     </div>
                                     <div class="mega-col">
                                         <div class="mega-col-title">Barang Jadi (FG) &amp; WIP</div>

@@ -32,7 +32,7 @@ class PemakaianService
         ?string $startDate = null,
         ?string $endDate = null
     ): LengthAwarePaginator {
-        $query = DatPakaiHdr::with(['gudang', 'details.barang.satuanDasar', 'details.barang.jenisBarang'])
+        $query = DatPakaiHdr::with(['gudang', 'gudangTujuan', 'details.barang.satuanDasar', 'details.barang.jenisBarang'])
             ->where('deleted_st', false);
 
         if (is_array($gudangId)) {
@@ -86,7 +86,7 @@ class PemakaianService
         ?string $endDate = null,
         ?string $kategori = null
     ): LengthAwarePaginator {
-        $query = DatPakaiDtl::with(['header.gudang', 'barang.jenisBarang', 'barang.satuanDasar'])
+        $query = DatPakaiDtl::with(['header.gudang', 'header.gudangTujuan', 'barang.jenisBarang', 'barang.satuanDasar'])
             ->whereHas('header', function ($q) use ($gudangId, $tujuan, $startDate, $endDate) {
                 $q->where('deleted_st', false);
                 if (is_array($gudangId)) {
@@ -215,7 +215,7 @@ class PemakaianService
      */
     public function getById(int $id): DatPakaiHdr
     {
-        $hdr = DatPakaiHdr::with(['gudang', 'details.barang.satuanDasar', 'details.barang.jenisBarang'])
+        $hdr = DatPakaiHdr::with(['gudang', 'gudangTujuan', 'details.barang.satuanDasar', 'details.barang.jenisBarang'])
             ->where('pakai_id', $id)
             ->firstOrFail();
 
@@ -353,6 +353,7 @@ class PemakaianService
             }
 
             $gudangId = (int) $data['gudang_id'];
+            $gudangTujuanId = !empty($data['gudang_tujuan_id']) ? (int) $data['gudang_tujuan_id'] : null;
             $tujuanPemakaian = !empty($data['tujuan_pemakaian']) ? trim($data['tujuan_pemakaian']) : 'PRODUKSI';
 
             // 1. Simpan Header Pengeluaran sebagai DRAFT
@@ -360,6 +361,7 @@ class PemakaianService
                 'pakai_no'         => $pakaiNo,
                 'pakai_tgl'        => $data['pakai_tgl'] ?? date('Y-m-d'),
                 'gudang_id'        => $gudangId,
+                'gudang_tujuan_id' => $gudangTujuanId,
                 'produksi_id'      => !empty($data['produksi_id']) ? (int) $data['produksi_id'] : null,
                 'tujuan_pemakaian' => $tujuanPemakaian,
                 'catatan_txt'      => $data['catatan_txt'] ?? null,
@@ -489,9 +491,14 @@ class PemakaianService
             })->values()->all();
 
             // 1. Update Header
+            $gudangTujuanId = array_key_exists('gudang_tujuan_id', $data)
+                ? (!empty($data['gudang_tujuan_id']) ? (int) $data['gudang_tujuan_id'] : null)
+                : $header->gudang_tujuan_id;
+
             $headerUpdateData = [
                 'pakai_tgl'          => $data['pakai_tgl'] ?? $header->pakai_tgl,
                 'gudang_id'          => $gudangId,
+                'gudang_tujuan_id'   => $gudangTujuanId,
                 'produksi_id'        => !empty($data['produksi_id']) ? (int) $data['produksi_id'] : null,
                 'tujuan_pemakaian'   => $tujuanPemakaian,
                 'catatan_txt'        => $data['catatan_txt'] ?? $header->catatan_txt,

@@ -100,23 +100,23 @@
         </div>
     </div>
 
-    {{-- 4. MENUNGGU VERIFIKASI (DRAFT) --}}
+    {{-- 4. STATUS OPERASIONAL PROSES PRODUKSI --}}
     <div style="background: #ffffff; border-radius: 8px; border: 1px solid #e2e8f0; padding: 1rem 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
         <div style="display: flex; justify-content: space-between; align-items: flex-start;">
             <div>
                 <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #d97706;">
-                    Menunggu Verifikasi (Draft)
+                    Proses Produksi
                 </span>
                 <div style="font-size: 1.5rem; font-weight: 800; color: #b45309; margin-top: 0.25rem; font-family: monospace;">
                     {{ number_format($kpiCounts['draft'] ?? 0) }} <span style="font-size: 0.85rem; font-weight: 600; color: #64748b;">Dokumen</span>
                 </div>
             </div>
             <div style="width: 32px; height: 32px; border-radius: 6px; background: #fef3c7; display: flex; align-items: center; justify-content: center; color: #d97706; flex-shrink: 0;">
-                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
             </div>
         </div>
         <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.4rem;">
-            {{ number_format($kpiCounts['posted'] ?? 0) }} dokumen telah diposting &amp; potong stok
+            {{ number_format($kpiCounts['posted'] ?? 0) }} dokumen telah selesai produksi
         </div>
     </div>
 </div>
@@ -294,7 +294,7 @@
                                     {{ $row->header?->pakai_no ?? '-' }}
                                 </a>
                                 @if(($row->header?->status_st ?? 'POSTED') === 'DRAFT')
-                                    <span class="badge" style="background: #fef3c7; color: #92400e; font-size: 0.675rem; padding: 0.1rem 0.35rem; font-weight: 700; border: 1px solid #fde68a; margin-left: 0.25rem;">DRAFT</span>
+                                    <span class="badge" style="background: #fef3c7; color: #92400e; font-size: 0.675rem; padding: 0.1rem 0.35rem; font-weight: 700; border: 1px solid #fde68a; margin-left: 0.25rem;">PROSES</span>
                                 @endif
                                 @if($row->header?->is_ada_koreksi)
                                     <span class="badge" style="background: #fffbeb; color: #b45309; font-size: 0.675rem; padding: 0.1rem 0.35rem; font-weight: 700; border: 1px solid #fde68a; margin-left: 0.25rem;" title="Data telah dikoreksi verifikator">🔄 Koreksi</span>
@@ -304,9 +304,16 @@
                                 <div style="font-weight: 600; color: #0f172a; font-size: 0.85rem;">
                                     {{ $row->header?->gudang?->gudang_nm ?? '-' }}
                                 </div>
-                                <span class="badge" style="background: #fee2e2; color: #991b1b; font-weight: 700; font-size: 0.725rem; margin-top: 0.2rem; display: inline-block;">
-                                    {{ $row->keterangan_txt ?? ($row->header?->tujuan_pemakaian ?? '-') }}
-                                </span>
+                                <div style="margin-top: 0.25rem; display: flex; flex-direction: column; gap: 0.2rem;">
+                                    <span class="badge" style="background: #fee2e2; color: #991b1b; font-weight: 700; font-size: 0.725rem; display: inline-block;">
+                                        {{ $row->keterangan_txt ?? ($row->header?->tujuan_pemakaian ?? '-') }}
+                                    </span>
+                                    @if($row->header?->gudangTujuan)
+                                        <span class="badge" style="background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; font-weight: 700; font-size: 0.7rem; display: inline-block;" title="Gudang Tujuan Produksi: {{ $row->header->gudangTujuan->gudang_nm }}">
+                                            🏬 {{ $row->header->gudangTujuan->gudang_nm }}
+                                        </span>
+                                    @endif
+                                </div>
                             </td>
                             <td>
                                 <strong style="color: #0f172a; font-size: 0.875rem;">
@@ -361,12 +368,12 @@
                             </td>
                             <td style="text-align: center;">
                                 @if(($row->header?->status_st ?? 'POSTED') === 'DRAFT')
-                                    <span class="badge" style="background: #fef3c7; color: #92400e; font-weight: 700; border: 1px solid #fde68a; font-size: 0.75rem; padding: 0.2rem 0.5rem;">
-                                        ⏳ DRAFT
+                                    <span class="badge" style="background: #fef3c7; color: #92400e; font-weight: 700; border: 1.5px solid #fde68a; font-size: 0.725rem; padding: 0.2rem 0.5rem; border-radius: 4px; display: inline-flex; align-items: center; gap: 0.25rem;">
+                                        <span>🏭</span> PROSES
                                     </span>
                                 @else
-                                    <span class="badge" style="background: #ecfdf5; color: #065f46; font-weight: 700; border: 1px solid #a7f3d0; font-size: 0.75rem; padding: 0.2rem 0.5rem;">
-                                        ✓ POSTED
+                                    <span class="badge" style="background: #ecfdf5; color: #065f46; font-weight: 700; border: 1.5px solid #a7f3d0; font-size: 0.725rem; padding: 0.2rem 0.5rem; border-radius: 4px; display: inline-flex; align-items: center; gap: 0.25rem;">
+                                        <span>✓</span> SELESAI
                                     </span>
                                 @endif
                             </td>
@@ -388,13 +395,7 @@
                                     @if(Auth::user()?->canEditPemakaian() && ($row->header?->status_st ?? 'POSTED') === 'DRAFT')
                                         <a href="{{ route('gudang.pemakaian.edit', $row->header?->pakai_id) }}" class="action-dropdown-item">
                                             <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                                            <span>Edit Dokumen (Draft)</span>
-                                        </a>
-                                    @endif
-                                    @if(Auth::user()?->canVerifyPemakaian() && ($row->header?->status_st ?? 'POSTED') === 'DRAFT')
-                                        <a href="{{ route('gudang.pemakaian.show', $row->header?->pakai_id) }}" class="action-dropdown-item" style="color: #059669;">
-                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                            <span style="font-weight: 700;">Verifikasi &amp; Potong Stok</span>
+                                            <span>Edit Dokumen</span>
                                         </a>
                                     @endif
                                     @if(Auth::user()?->canDeletePemakaian() && ($row->header?->status_st ?? 'POSTED') === 'DRAFT')
@@ -456,7 +457,7 @@
                                             {{ $hdr->pakai_no }}
                                         </a>
                                         @if($hdr->is_ada_koreksi)
-                                            <span class="badge" style="background: #fffbeb; color: #b45309; border: 1.5px solid #fde68a; font-size: 0.675rem; font-weight: 700; padding: 1px 5px; border-radius: 4px;" title="Dokumen ini telah disesuaikan oleh Verifikator Keuangan">
+                                            <span class="badge" style="background: #fffbeb; color: #b45309; border: 1.5px solid #fde68a; font-size: 0.675rem; font-weight: 700; padding: 1px 5px; border-radius: 4px;" title="Dokumen ini telah disesuaikan">
                                                 🔄 Ada Koreksi
                                             </span>
                                         @endif
@@ -481,9 +482,16 @@
                                 <small style="color: #64748b; font-size: 0.725rem;">{{ $hdr->gudang?->gudang_cd ?? '' }}</small>
                             </td>
                             <td>
-                                <span class="badge" style="background: #fee2e2; color: #991b1b; font-weight: 700; font-size: 0.75rem; padding: 0.2rem 0.5rem; border-radius: 4px;">
-                                    {{ $hdr->tujuan_pemakaian }}
-                                </span>
+                                <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+                                    <span class="badge" style="background: #fee2e2; color: #991b1b; font-weight: 700; font-size: 0.75rem; padding: 0.2rem 0.5rem; border-radius: 4px; display: inline-block;">
+                                        {{ $hdr->tujuan_pemakaian }}
+                                    </span>
+                                    @if($hdr->gudangTujuan)
+                                        <span class="badge" style="background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; font-weight: 700; font-size: 0.725rem; padding: 0.15rem 0.45rem; border-radius: 4px; display: inline-block;" title="Gudang Tujuan Produksi: {{ $hdr->gudangTujuan->gudang_nm }}">
+                                            🏬 {{ $hdr->gudangTujuan->gudang_nm }}
+                                        </span>
+                                    @endif
+                                </div>
                                 @if(!empty($hdr->catatan_txt))
                                     <small style="display: block; font-size: 0.725rem; color: #64748b; margin-top: 3px; max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{{ $hdr->catatan_txt }}">
                                         Memo: {{ $hdr->catatan_txt }}
@@ -493,14 +501,14 @@
                             <td style="text-align: center;">
                                 @if(($hdr->status_st ?? 'POSTED') === 'DRAFT')
                                     <span class="badge" style="background: #fef3c7; color: #92400e; font-weight: 700; border: 1.5px solid #fde68a; font-size: 0.75rem; padding: 0.2rem 0.55rem; border-radius: 6px; display: inline-flex; align-items: center; gap: 0.3rem;">
-                                        <span>⏳</span> DRAFT GUDANG
+                                        <span>🏭</span> PROSES PRODUKSI
                                     </span>
-                                    <small style="display: block; font-size: 0.7rem; color: #047857; margin-top: 2px;">Stok fisik terpotong</small>
+                                    <small style="display: block; font-size: 0.7rem; color: #b45309; margin-top: 2px;">Bahan di Lantai Kerja</small>
                                 @else
                                     <span class="badge" style="background: #ecfdf5; color: #065f46; font-weight: 700; border: 1.5px solid #a7f3d0; font-size: 0.75rem; padding: 0.2rem 0.55rem; border-radius: 6px; display: inline-flex; align-items: center; gap: 0.3rem;">
-                                        <span>✓</span> POSTED
+                                        <span>✓</span> SELESAI PRODUKSI
                                     </span>
-                                    <small style="display: block; font-size: 0.7rem; color: #047857; margin-top: 2px;">Stok &amp; Jurnal Tuntas</small>
+                                    <small style="display: block; font-size: 0.7rem; color: #047857; margin-top: 2px;">Output Tercatat</small>
                                 @endif
                             </td>
                             <td style="text-align: right;">
@@ -519,6 +527,10 @@
                                         <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                                         <span>Lihat Detail BPPB (Popup)</span>
                                     </button>
+                                    <a href="{{ route('gudang.pemakaian.show', $hdr->pakai_id) }}" class="action-dropdown-item">
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                                        <span>Buka Halaman Lengkap</span>
+                                    </a>
                                     <a href="{{ route('gudang.pemakaian.export-pdf', $hdr->pakai_id) }}" target="_blank" class="action-dropdown-item">
                                         <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
                                         <span>Cetak BPPB (PDF)</span>
@@ -526,19 +538,8 @@
                                     @if(Auth::user()?->canEditPemakaian() && ($hdr->status_st ?? 'POSTED') === 'DRAFT')
                                         <a href="{{ route('gudang.pemakaian.edit', $hdr->pakai_id) }}" class="action-dropdown-item">
                                             <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                                            <span>Edit Dokumen (Draft)</span>
+                                            <span>Edit Dokumen</span>
                                         </a>
-                                    @endif
-                                    @if(Auth::user()?->canVerifyPemakaian() && ($hdr->status_st ?? 'POSTED') === 'DRAFT')
-                                        <a href="{{ route('gudang.pemakaian.show', $hdr->pakai_id) }}" class="action-dropdown-item" style="color: #059669;">
-                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                            <span style="font-weight: 700;">Verifikasi &amp; Potong Stok</span>
-                                        </a>
-                                    @elseif(!empty($hdr->jurnal_id))
-                                        <button type="button" class="action-dropdown-item" onclick="openModalDetailJurnal({{ $hdr->jurnal_id }})" style="color: #065f46;">
-                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                                            <span>Lihat Jurnal Umum</span>
-                                        </button>
                                     @endif
                                     @if(Auth::user()?->canDeletePemakaian() && ($hdr->status_st ?? 'POSTED') === 'DRAFT')
                                         <div class="action-dropdown-divider"></div>
@@ -659,9 +660,6 @@
         if (btn) { btn.disabled = true; btn.textContent = 'Memproses...'; }
     });
 </script>
-
-{{-- MODAL PREVIEW DETAIL JURNAL UMUM --}}
-@include('keuangan.jurnal.partials.modal-detail-jurnal')
 
 {{-- MODAL DETAIL PEMAKAIAN BAHAN / BPPB (QUICK VIEW POPUP ALA PO PEMBELIAN) --}}
 @include('gudang.pemakaian.partials.modal-detail-pemakaian')

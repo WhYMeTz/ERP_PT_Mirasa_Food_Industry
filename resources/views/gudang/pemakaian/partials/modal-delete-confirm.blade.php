@@ -20,7 +20,7 @@
                 <div id="delete-pemakaian-tujuan" style="font-size:0.85rem; color:#475569; margin-top:0.25rem;">-</div>
             </div>
             <div style="background:#fffbeb; border:1px solid #fde68a; border-radius:6px; padding:0.65rem 0.85rem; margin-bottom:1.25rem; font-size:0.8rem; color:#92400e;">
-                ℹ️ <strong>Informasi:</strong> Dokumen yang berstatus <strong>DRAFT</strong> belum memotong saldo fisik gudang dan belum menerbitkan jurnal umum, sehingga pembatalan ini aman dilakukan.
+                ℹ️ <strong>Informasi:</strong> Pembatalan dokumen ini akan secara otomatis mengembalikan (reversal) saldo stok fisik bahan baku ke kartu stok gudang asal.
             </div>
             <form id="form-delete-pemakaian" method="POST" action="">
                 @csrf

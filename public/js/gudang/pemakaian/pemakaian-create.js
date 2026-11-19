@@ -35,6 +35,12 @@
             sideTujuan.innerText = tujuanInput.value ? tujuanInput.value : '- Belum Diisi -';
         }
     }
+    window.updateSidebarInfo = updateSidebarInfo;
+
+    function onGudangTujuanChanged(selectEl) {
+        updateSidebarInfo();
+    }
+    window.onGudangTujuanChanged = onGudangTujuanChanged;
 
     // Event Handler saat gudang asal diubah
     function onGudangChanged() {
@@ -370,6 +376,7 @@
             });
 
             const gdgVal = document.getElementById('gudang_id')?.value || '';
+            const gdgTujuanVal = document.getElementById('gudang_tujuan_id')?.value || '';
             const tglVal = document.getElementById('pakai_tgl')?.value || '';
             const tujuanVal = document.getElementById('tujuan_pemakaian')?.value || '';
             const catVal = document.getElementById('catatan_txt')?.value || '';
@@ -380,6 +387,7 @@
             const now = Date.now();
             const data = {
                 gudang_id: gdgVal,
+                gudang_tujuan_id: gdgTujuanVal,
                 pakai_tgl: tglVal,
                 tujuan_pemakaian: tujuanVal,
                 catatan_txt: catVal,
@@ -393,7 +401,7 @@
             };
 
             // Simpan hanya jika pengguna sudah mengisi data
-            if (rows.length > 0 || catVal || (tujuanVal && tujuanVal !== 'PRODUKSI BERKO')) {
+            if (rows.length > 0 || catVal || gdgTujuanVal || (tujuanVal && tujuanVal !== 'PRODUKSI BERKO')) {
                 localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(data));
                 updateDraftNoticeIndicator(true, false, data.saved_at);
             }
@@ -476,6 +484,10 @@
             if (data.gudang_id) {
                 const gdg = document.getElementById('gudang_id');
                 if (gdg) gdg.value = data.gudang_id;
+            }
+            if (data.gudang_tujuan_id) {
+                const gdgTujuan = document.getElementById('gudang_tujuan_id');
+                if (gdgTujuan) gdgTujuan.value = data.gudang_tujuan_id;
             }
             if (data.pakai_tgl) {
                 const tgl = document.getElementById('pakai_tgl');
@@ -2512,7 +2524,7 @@
             }
         }
 
-        // 3. Proteksi Periode Bulan Sebelumnya & Override Nomor Urut Manual
+        // 3. Proteksi Periode Bulan Berbeda & Perubahan Nomor Urut Depan BPPB Manual
         if (!previousMonthConfirmed) {
             const pakaiTglInput = document.getElementById('pakai_tgl');
             const pakaiNoInput = document.getElementById('pakai_no');
@@ -2521,40 +2533,49 @@
             const currentServerYM = window.currentServerYearMonth || (new Date().toISOString().slice(0, 7));
 
             const docYM = pakaiTglVal ? pakaiTglVal.slice(0, 7) : '';
-            const isPreviousMonth = Boolean(docYM && docYM < currentServerYM);
+            const isMonthChanged = Boolean(docYM && docYM !== currentServerYM);
 
             const currentParts = parsePakaiNoParts(pakaiNoVal);
             const suggestedParts = parsePakaiNoParts(lastSystemSuggestedPakaiNo);
-            const isManualSequence = Boolean(currentParts && suggestedParts && (currentParts.seq !== suggestedParts.seq));
+            const isManualSequence = Boolean(
+                !currentParts || !suggestedParts || 
+                (currentParts.seq !== suggestedParts.seq) || 
+                (pakaiNoVal !== lastSystemSuggestedPakaiNo)
+            );
 
-            if (isPreviousMonth || isManualSequence) {
+            if (isMonthChanged || isManualSequence) {
                 let title = '';
                 let subtitle = '';
                 let alerts = [];
 
-                if (isPreviousMonth && isManualSequence) {
-                    title = 'Peringatan: Periode Sebelumnya & Nomor Urut Manual';
-                    subtitle = 'Dua penyesuaian khusus terdeteksi pada dokumen pengeluaran ini';
-                } else if (isPreviousMonth) {
-                    title = 'Konfirmasi Penambahan Dokumen Periode Sebelumnya';
-                    subtitle = 'Dokumen pengeluaran ditujukan untuk periode bulan yang telah lewat';
+                if (isMonthChanged && isManualSequence) {
+                    title = 'Peringatan: Perubahan Bulan & Nomor Urut BPPB';
+                    subtitle = 'Dua penyesuaian khusus (nomor urut depan & periode bulan) terdeteksi pada dokumen pengeluaran ini';
+                } else if (isMonthChanged) {
+                    title = 'Peringatan: Periode Tanggal / Bulan Diubah';
+                    subtitle = 'Dokumen pengeluaran ditujukan untuk periode bulan yang berbeda dari bulan aktif saat ini';
                 } else {
-                    title = 'Peringatan: Nomor Urut BPPB Telah Diubah Manual';
-                    subtitle = 'Nomor urut berbeda dari rekomendasi otomatis sistem';
+                    title = 'Peringatan: Nomor Urut Depan BPPB Diubah Manual';
+                    subtitle = 'Nomor urut depan berbeda dari nomor urut standar rekomendasi sistem';
                 }
 
-                if (isPreviousMonth) {
+                let alertIdx = 1;
+                if (isMonthChanged) {
+                    const isPrevious = docYM < currentServerYM;
+                    const statusBulanText = isPrevious ? 'Bulan Sebelumnya' : 'Bulan Mendatang';
                     alerts.push(`
-                        <div style="margin-bottom: 0.45rem;">
-                            <strong>1. Periode Bulan Sebelumnya:</strong> Dokumen pengeluaran ini tercatat pada tanggal <strong>${formatTanggalIndo(pakaiTglVal)}</strong>, sedangkan periode operasional aktif saat ini adalah <strong>${formatTanggalIndo(new Date().toISOString().slice(0, 10))}</strong>. Menginput transaksi pengeluaran ke bulan sebelumnya dapat memengaruhi saldo akhir inventori dan laporan closing pembukuan.
+                        <div style="margin-bottom: ${isManualSequence ? '0.65rem; padding-bottom: 0.65rem; border-bottom: 1px dashed #fde68a;' : '0.35rem;'}">
+                            <strong>${alertIdx++}. Periode Bulan Diubah (${statusBulanText}):</strong> Dokumen pengeluaran ini dicatat pada tanggal <strong>${formatTanggalIndo(pakaiTglVal)}</strong> (Bulan ${formatTanggalIndo(docYM)}), sedangkan periode aktif saat ini adalah <strong>${formatTanggalIndo(currentServerYM)}</strong>. Pastikan mutasi fisik bahan baku memang sesuai untuk periode bulan tersebut.
                         </div>
                     `);
                 }
 
                 if (isManualSequence) {
+                    const userSeq = currentParts ? currentParts.seq : pakaiNoVal;
+                    const sysSeq = suggestedParts ? suggestedParts.seq : lastSystemSuggestedPakaiNo;
                     alerts.push(`
-                        <div style="margin-bottom: 0.45rem;">
-                            <strong>${isPreviousMonth ? '2. ' : ''}Nomor Urut Manual:</strong> Anda memasukkan nomor urut <strong>${currentParts.seq}</strong> (dokumen: <code>${pakaiNoVal}</code>), sedangkan nomor urut otomatis yang disarankan sistem untuk periode ini adalah <strong>${suggestedParts.seq}</strong> (dokumen: <code>${lastSystemSuggestedPakaiNo}</code>). Perubahan manual berisiko menyebabkan nomor loncat atau potensi duplikasi arsip di masa mendatang.
+                        <div style="margin-bottom: 0.35rem;">
+                            <strong>${alertIdx++}. Nomor Urut Depan Diubah Manual:</strong> Anda memasukkan nomor depan <strong>${userSeq}</strong> (dokumen: <code>${pakaiNoVal}</code>), sedangkan nomor urut otomatis yang disarankan sistem untuk periode ini adalah <strong>${sysSeq}</strong> (dokumen: <code>${lastSystemSuggestedPakaiNo}</code>). Perubahan manual berisiko menyebabkan nomor loncat atau potensi duplikasi arsip di masa mendatang.
                         </div>
                     `);
                 }
@@ -2652,6 +2673,86 @@
             ? `${initialParts.year}-${initialParts.month}` 
             : (pakaiTglInput.value ? pakaiTglInput.value.slice(2, 4) + '-' + pakaiTglInput.value.slice(5, 7) : '');
 
+        function checkAndRenderPakaiNoWarning() {
+            if (!pakaiNoHelp || !pakaiNoInput) return;
+
+            const currentVal = pakaiNoInput.value.trim();
+            const currentParts = parsePakaiNoParts(currentVal);
+            const suggestedParts = parsePakaiNoParts(lastSystemSuggestedPakaiNo);
+            const currentServerYM = window.currentServerYearMonth || (new Date().toISOString().slice(0, 7));
+
+            // Jika kosong
+            if (!currentVal) {
+                pakaiNoHelp.style.display = 'block';
+                pakaiNoHelp.innerHTML = `<span style="color:#dc2626; font-size:0.75rem; font-weight:600;">Nomor BPPB wajib diisi!</span>`;
+                pakaiNoInput.style.borderColor = '#ef4444';
+                pakaiNoInput.style.backgroundColor = '#fef2f2';
+                return;
+            }
+
+            // 1. Cek apakah nomor urut depan diubah manual
+            if (currentParts && suggestedParts) {
+                const isSeqChanged = (currentParts.seq !== suggestedParts.seq);
+                const isDifferentMonth = (currentParts.year !== currentServerYM.slice(2, 4) || currentParts.month !== currentServerYM.slice(5, 7));
+
+                if (isSeqChanged) {
+                    pakaiNoHelp.style.display = 'block';
+                    pakaiNoHelp.innerHTML = `
+                        <div style="background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 6px; padding: 0.4rem 0.65rem; margin-top: 4px; color: #92400e; font-size: 0.775rem; display: flex; align-items: flex-start; gap: 0.45rem; box-shadow: 0 1px 2px rgba(245, 158, 11, 0.1);">
+                            <span style="font-size: 1rem; line-height: 1.2;">⚠️</span>
+                            <div>
+                                <strong style="color: #b45309;">Peringatan Nomor Depan Diubah:</strong> Nomor urut depan diubah manual menjadi <strong style="font-family: monospace; font-size: 0.85rem; color: #92400e;">${currentParts.seq}</strong> (Saran sistem: <strong style="font-family: monospace; font-size: 0.85rem; color: #047857;">${suggestedParts.seq}</strong>). Perubahan manual berisiko nomor loncat atau duplikasi arsip BPPB.
+                            </div>
+                        </div>
+                    `;
+                    pakaiNoInput.style.borderColor = '#f59e0b';
+                    pakaiNoInput.style.backgroundColor = '#fffbeb';
+                    return;
+                }
+
+                if (isDifferentMonth) {
+                    const monthName = formatTanggalIndo(`20${currentParts.year}-${currentParts.month}`);
+                    const activeMonthName = formatTanggalIndo(currentServerYM);
+                    pakaiNoHelp.style.display = 'block';
+                    pakaiNoHelp.innerHTML = `
+                        <div style="background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 6px; padding: 0.4rem 0.65rem; margin-top: 4px; color: #92400e; font-size: 0.775rem; display: flex; align-items: flex-start; gap: 0.45rem;">
+                            <span style="font-size: 1rem; line-height: 1.2;">⚠️</span>
+                            <div>
+                                <strong style="color: #b45309;">Periode Bulan Berbeda:</strong> Nomor BPPB dialokasikan untuk periode <strong>${monthName}</strong> (Bulan berjalan saat ini: <strong>${activeMonthName}</strong>): <strong style="font-family: monospace; color: #047857;">${currentVal}</strong>.
+                            </div>
+                        </div>
+                    `;
+                    pakaiNoInput.style.borderColor = '#f59e0b';
+                    pakaiNoInput.style.backgroundColor = '#fffbeb';
+                    return;
+                }
+            } else if (currentVal !== lastSystemSuggestedPakaiNo) {
+                // Format manual non-standar
+                pakaiNoHelp.style.display = 'block';
+                pakaiNoHelp.innerHTML = `
+                    <div style="background: #fef2f2; border: 1.5px solid #fecaca; border-radius: 6px; padding: 0.4rem 0.65rem; margin-top: 4px; color: #991b1b; font-size: 0.775rem; display: flex; align-items: flex-start; gap: 0.45rem;">
+                        <span style="font-size: 1rem; line-height: 1.2;">⚠️</span>
+                        <div>
+                            <strong style="color: #b91c1c;">Format BPPB Manual:</strong> Anda memasukkan nomor di luar format standar (Saran sistem: <strong style="font-family: monospace;">${lastSystemSuggestedPakaiNo}</strong>).
+                        </div>
+                    </div>
+                `;
+                pakaiNoInput.style.borderColor = '#ef4444';
+                pakaiNoInput.style.backgroundColor = '#fef2f2';
+                return;
+            }
+
+            // Normal / Sesuai saran sistem
+            pakaiNoInput.style.borderColor = '';
+            pakaiNoInput.style.backgroundColor = '#ffffff';
+            if (lastSystemSuggestedPakaiNo) {
+                const parts = parsePakaiNoParts(lastSystemSuggestedPakaiNo);
+                const reason = parts ? `bulan ${parts.month} tahun 20${parts.year}` : 'otomatis';
+                pakaiNoHelp.style.display = 'block';
+                pakaiNoHelp.innerHTML = `<span style="color:#15803d; font-weight:600;">✓ Nomor BPPB disesuaikan otomatis (${reason}): <strong>${lastSystemSuggestedPakaiNo}</strong></span>`;
+            }
+        }
+
         function fetchAndApplyPakaiCode(targetDateStr, reasonText) {
             pakaiNoInput.style.opacity = '0.5';
             pakaiNoInput.style.pointerEvents = 'none';
@@ -2674,13 +2775,10 @@
                         // Visual highlight lembut
                         pakaiNoInput.style.background = '#f0fdf4';
                         setTimeout(() => {
-                            pakaiNoInput.style.background = '#ffffff';
-                        }, 1200);
+                            checkAndRenderPakaiNoWarning();
+                        }, 500);
 
-                        if (pakaiNoHelp) {
-                            pakaiNoHelp.style.display = 'block';
-                            pakaiNoHelp.innerHTML = `<span style="color:#15803d; font-weight:600;">✓ Nomor BPPB disesuaikan otomatis (${reasonText}): <strong>${data.code}</strong></span>`;
-                        }
+                        checkAndRenderPakaiNoWarning();
                     }
                 })
                 .catch(err => {
@@ -2699,54 +2797,66 @@
         // 1. KETIKA TANGGAL PEMAKAIAN DIUBAH PENGGUNA (LANGSUNG LIVE)
         ['change', 'input'].forEach(evtName => {
             pakaiTglInput.addEventListener(evtName, function () {
+                previousMonthConfirmed = false;
                 const newDate = this.value;
                 if (!newDate) return;
 
                 const newYM = newDate.slice(2, 4) + '-' + newDate.slice(5, 7);
                 if (newYM !== activeMonthYear) {
                     fetchAndApplyPakaiCode(newDate, `urutan bulan ${formatTanggalIndo(newDate)}`);
+                } else {
+                    checkAndRenderPakaiNoWarning();
                 }
             });
         });
 
-        // 2. KETIKA BULAN/TAHUN PADA INPUT NOMOR BPPB DIUBAH LANGSUNG
+        // 2. KETIKA BULAN/TAHUN ATAU NOMOR DEPAN PADA INPUT NOMOR BPPB DIUBAH LANGSUNG
         let pakaiNoDebounceTimer = null;
 
         function handlePakaiNoInputSync() {
             const parts = parsePakaiNoParts(pakaiNoInput.value);
-            if (!parts) return;
+            if (parts) {
+                const mNum = parseInt(parts.month, 10);
+                if (!isNaN(mNum) && mNum >= 1 && mNum <= 12) {
+                    const typedYM = `${parts.year}-${parts.month}`;
+                    if (typedYM !== activeMonthYear) {
+                        const targetDate = `20${parts.year}-${parts.month}-01`;
+                        
+                        if (pakaiTglInput.value) {
+                            const currentDay = pakaiTglInput.value.slice(8, 10);
+                            const safeDate = `20${parts.year}-${parts.month}-${currentDay}`;
+                            const testD = new Date(safeDate);
+                            pakaiTglInput.value = (!isNaN(testD.getTime())) ? safeDate : targetDate;
+                        } else {
+                            pakaiTglInput.value = targetDate;
+                        }
 
-            const mNum = parseInt(parts.month, 10);
-            if (isNaN(mNum) || mNum < 1 || mNum > 12) return;
-
-            const typedYM = `${parts.year}-${parts.month}`;
-            if (typedYM !== activeMonthYear) {
-                const targetDate = `20${parts.year}-${parts.month}-01`;
-                
-                if (pakaiTglInput.value) {
-                    const currentDay = pakaiTglInput.value.slice(8, 10);
-                    const safeDate = `20${parts.year}-${parts.month}-${currentDay}`;
-                    const testD = new Date(safeDate);
-                    pakaiTglInput.value = (!isNaN(testD.getTime())) ? safeDate : targetDate;
-                } else {
-                    pakaiTglInput.value = targetDate;
+                        fetchAndApplyPakaiCode(targetDate, `bulan ${parts.month} tahun 20${parts.year}`);
+                        return;
+                    }
                 }
-
-                fetchAndApplyPakaiCode(targetDate, `bulan ${parts.month} tahun 20${parts.year}`);
             }
+
+            checkAndRenderPakaiNoWarning();
         }
 
         pakaiNoInput.addEventListener('input', function () {
+            previousMonthConfirmed = false;
+            checkAndRenderPakaiNoWarning(); // Live render instan saat ngetik digit depan
             clearTimeout(pakaiNoDebounceTimer);
             pakaiNoDebounceTimer = setTimeout(handlePakaiNoInputSync, 300);
         });
 
         ['change', 'blur'].forEach(evtName => {
             pakaiNoInput.addEventListener(evtName, function () {
+                previousMonthConfirmed = false;
                 clearTimeout(pakaiNoDebounceTimer);
                 handlePakaiNoInputSync();
             });
         });
+
+        // Inisialisasi status warning nomor BPPB saat form pertama kali dimuat
+        checkAndRenderPakaiNoWarning();
     }
 
     /**
@@ -2855,6 +2965,10 @@
             triggerAutoSave();
         });
         document.getElementById('tujuan_pemakaian')?.addEventListener('input', () => {
+            updateSidebarInfo();
+            triggerAutoSave();
+        });
+        document.getElementById('gudang_tujuan_id')?.addEventListener('change', () => {
             updateSidebarInfo();
             triggerAutoSave();
         });

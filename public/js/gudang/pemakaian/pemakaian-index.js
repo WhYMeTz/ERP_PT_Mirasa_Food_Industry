@@ -179,17 +179,14 @@ function renderPakaiDetail(pakai) {
     if (spinner) spinner.style.display = 'none';
     if (content) content.style.display = 'block';
 
-    // Titlebar
-    const elNo = document.getElementById('pakaiDetailNo');
-    if (elNo) elNo.textContent = pakai.pakai_no || '-';
-
+    // Titlebar Badge
     const elBadge = document.getElementById('pakaiDetailStatusBadge');
-    const isDraft = (pakai.status_st === 'DRAFT');
+    const isSelesai = (pakai.is_selesai_produksi || pakai.status_st === 'POSTED');
     if (elBadge) {
-        elBadge.textContent = isDraft ? '⏳ DRAFT GUDANG' : '✓ POSTED';
-        elBadge.style.background = isDraft ? '#fef3c7' : '#ecfdf5';
-        elBadge.style.color = isDraft ? '#92400e' : '#065f46';
-        elBadge.style.borderColor = isDraft ? '#fde68a' : '#a7f3d0';
+        elBadge.textContent = isSelesai ? '✓ SELESAI PRODUKSI' : '🏭 PROSES PRODUKSI';
+        elBadge.style.background = isSelesai ? '#ecfdf5' : '#fef3c7';
+        elBadge.style.color = isSelesai ? '#065f46' : '#92400e';
+        elBadge.style.borderColor = isSelesai ? '#a7f3d0' : '#fde68a';
     }
 
     // Box 1: Gudang Asal
@@ -199,9 +196,19 @@ function renderPakaiDetail(pakai) {
     const elGdgCd = document.getElementById('pakaiDetailGudangCd');
     if (elGdgCd) elGdgCd.textContent = pakai.gudang?.gudang_cd || 'GUDANG';
 
-    // Box 2: Tujuan Pemakaian
+    // Box 2: Tujuan Pemakaian & Gudang Tujuan
     const elTujuan = document.getElementById('pakaiDetailTujuan');
     if (elTujuan) elTujuan.textContent = pakai.tujuan_pemakaian || '-';
+
+    const elGdgTujuan = document.getElementById('pakaiDetailGudangTujuan');
+    if (elGdgTujuan) {
+        if (pakai.gudang_tujuan) {
+            elGdgTujuan.style.display = 'block';
+            elGdgTujuan.textContent = `🏬 Gudang Tujuan: ${pakai.gudang_tujuan.gudang_nm} (${pakai.gudang_tujuan.gudang_cd})`;
+        } else {
+            elGdgTujuan.style.display = 'none';
+        }
+    }
 
     const elCatatan = document.getElementById('pakaiDetailCatatan');
     if (elCatatan) elCatatan.textContent = pakai.catatan_txt ? `Catatan: ${pakai.catatan_txt}` : 'Tidak ada memo / catatan tambahan.';
@@ -228,63 +235,25 @@ function renderPakaiDetail(pakai) {
     if (elWaktu) elWaktu.textContent = formatTime(pakai.created_dt || pakai.created_at);
 
     const elCreator = document.getElementById('pakaiDetailCreator');
-    if (elCreator) elCreator.textContent = pakai.creator?.nama_lengkap || pakai.creator?.username || pakai.created_by || 'Staff Gudang';
+    if (elCreator) elCreator.textContent = pakai.creator_name || pakai.created_by || 'Staff Gudang';
 
-    // Box 4: Status Audit
+    // Box 4: Status Operasional & Stok Gudang (Murni Fisik Logistik, Tanpa Unsur Keuangan)
     const elStatusText = document.getElementById('pakaiDetailStatusText');
     if (elStatusText) {
-        elStatusText.textContent = isDraft ? 'DRAFT (Belum Selesai)' : 'POSTED (Selesai)';
-        elStatusText.style.color = isDraft ? '#b45309' : '#059669';
+        elStatusText.textContent = isSelesai ? 'SELESAI PRODUKSI' : 'PROSES PRODUKSI';
+        elStatusText.style.color = isSelesai ? '#059669' : '#b45309';
     }
 
     const elStokEffect = document.getElementById('pakaiDetailStokEffect');
     if (elStokEffect) {
-        elStokEffect.textContent = isDraft ? '⚠️ Stok belum terpotong dari gudang' : '✓ Stok fisik batch sudah terpotong';
-        elStokEffect.style.color = isDraft ? '#b45309' : '#059669';
+        elStokEffect.textContent = '✓ Stok fisik gudang langsung terpotong';
+        elStokEffect.style.color = '#059669';
     }
 
-    const elJurnalStatus = document.getElementById('pakaiDetailJurnalStatus');
-    if (elJurnalStatus) {
-        elJurnalStatus.textContent = pakai.jurnal_id ? `✓ Terbit Jurnal (#${pakai.jurnal_id})` : (isDraft ? '- Menunggu Approval' : '- Tanpa Jurnal');
-    }
-
-    // Render Kotak Riwayat Koreksi jika is_ada_koreksi true
-    const koreksiBox = document.getElementById('pakaiDetailKoreksiBox');
-    if (koreksiBox) {
-        if (pakai.is_ada_koreksi && pakai.revisi_logs && pakai.revisi_logs.length > 0) {
-            koreksiBox.style.display = 'block';
-            const latestLog = pakai.revisi_logs[0];
-            const elKCreator = document.getElementById('pakaiDetailKoreksiCreator');
-            if (elKCreator) elKCreator.textContent = latestLog.pembuat_nama || pakai.creator_name || pakai.created_by || 'Staff Gudang';
-
-            const elKVerifier = document.getElementById('pakaiDetailKoreksiVerifier');
-            if (elKVerifier) elKVerifier.textContent = latestLog.verifikator_nama || 'Verifikator Keuangan';
-
-            const elKDate = document.getElementById('pakaiDetailKoreksiDate');
-            if (elKDate) elKDate.textContent = latestLog.revisi_tgl || '-';
-
-            const elKBadge = document.getElementById('pakaiDetailKoreksiBadge');
-            if (elKBadge) elKBadge.textContent = latestLog.kategori_kesalahan || 'KOREKSI_FISIK';
-
-            const elKMemo = document.getElementById('pakaiDetailKoreksiMemo');
-            if (elKMemo) {
-                elKMemo.textContent = latestLog.catatan_koreksi ? `Catatan Verifikator: ${latestLog.catatan_koreksi}` : 'Catatan Verifikator: Disesuaikan saat verifikasi fisik & akuntansi.';
-            }
-
-            const listEl = document.getElementById('pakaiDetailKoreksiList');
-            if (listEl) {
-                const diffs = latestLog.perubahan_json || [];
-                if (diffs.length > 0) {
-                    listEl.innerHTML = diffs.map(d => `
-                        <li><strong>${d.barang_nm || 'Item'}</strong> [${d.tipe || 'KOREKSI'}]: ${d.keterangan || '-'}</li>
-                    `).join('');
-                } else {
-                    listEl.innerHTML = '<li>Penyesuaian kuantitas atau alokasi batch bahan.</li>';
-                }
-            }
-        } else {
-            koreksiBox.style.display = 'none';
-        }
+    const elProduksiStatus = document.getElementById('pakaiDetailProduksiStatus');
+    if (elProduksiStatus) {
+        elProduksiStatus.textContent = isSelesai ? '✓ Output produksi tercatat' : '⏳ Sedang diolah di lantai produksi';
+        elProduksiStatus.style.color = isSelesai ? '#059669' : '#b45309';
     }
 
     // Hitung Total Akumulasi Fisik

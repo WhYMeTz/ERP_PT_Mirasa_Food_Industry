@@ -62,7 +62,7 @@
                             <option value="">-- Pilih Dokumen Pengeluaran Bahan (BPPB) --</option>
                             @forelse ($pakaiList as $pk)
                                 <option value="{{ $pk->pakai_id }}" data-tujuan="{{ $pk->tujuan_pemakaian }}" data-tgl="{{ Carbon\Carbon::parse($pk->pakai_tgl)->format('Y-m-d') }}" {{ (string)old('pakai_id', request('pakai_id')) === (string)$pk->pakai_id ? 'selected' : '' }}>
-                                    [{{ $pk->pakai_no }}] {{ Carbon\Carbon::parse($pk->pakai_tgl)->format('d/m/Y') }} - {{ $pk->tujuan_pemakaian }} ({{ $pk->details->count() }} item bahan) {{ $pk->status_st === 'DRAFT' ? '• DRAFT' : '' }}
+                                    [{{ $pk->pakai_no }}] {{ Carbon\Carbon::parse($pk->pakai_tgl)->format('d/m/Y') }} - {{ $pk->tujuan_pemakaian }} ({{ $pk->details->count() }} item bahan) {{ $pk->status_st === 'DRAFT' ? '• PROSES PRODUKSI' : '' }}
                                 </option>
                             @empty
                                 <option value="" disabled>-- Tidak ada dokumen BPPB yang siap diproses --</option>

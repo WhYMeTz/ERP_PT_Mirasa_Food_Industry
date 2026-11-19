@@ -168,11 +168,16 @@ class PemakaianController extends Controller
         $targetDate = $request->query('date', date('Y-m-d'));
         $autoNo = $this->codeGenerator->generatePakaiNo($targetDate);
 
-        // Ambil daftar master lini produksi aktif khusus peruntukan Work In Progress (WIP)
+        // Ambil daftar master lini produksi aktif (WIP dan FG)
         $liniList = MstLiniProduksi::where('deleted_st', false)
             ->where('active_st', true)
-            ->where('kategori_lini', 'ILIKE', '%WIP%')
+            ->orderBy('kategori_lini', 'desc')
             ->orderBy('lini_nm', 'asc')
+            ->get();
+
+        $allGudangs = MstGudang::where('deleted_st', false)
+            ->where('active_st', true)
+            ->orderBy('gudang_nm')
             ->get();
 
         $bomList = $this->bomService->getAllActive();
@@ -186,6 +191,7 @@ class PemakaianController extends Controller
 
         return view('gudang.pemakaian.create', compact(
             'gudangList',
+            'allGudangs',
             'barangList',
             'userGudangId',
             'autoNo',
@@ -268,11 +274,13 @@ class PemakaianController extends Controller
 
         $liniList = MstLiniProduksi::where('deleted_st', false)
             ->where('active_st', true)
-            ->where(function ($q) use ($pakai) {
-                $q->where('kategori_lini', 'ILIKE', '%WIP%')
-                  ->orWhere('lini_nm', $pakai->tujuan_pemakaian);
-            })
+            ->orderBy('kategori_lini', 'desc')
             ->orderBy('lini_nm', 'asc')
+            ->get();
+
+        $allGudangs = MstGudang::where('deleted_st', false)
+            ->where('active_st', true)
+            ->orderBy('gudang_nm')
             ->get();
 
         $bomList = $this->bomService->getAllActive();
@@ -286,6 +294,7 @@ class PemakaianController extends Controller
         return view('gudang.pemakaian.edit', compact(
             'pakai',
             'gudangList',
+            'allGudangs',
             'barangList',
             'userGudangId',
             'liniList',
@@ -303,6 +312,7 @@ class PemakaianController extends Controller
             'pakai_no'         => ['nullable', 'string', 'max:100', \Illuminate\Validation\Rule::unique('dat_pakai_hdr', 'pakai_no')->ignore($id, 'pakai_id')],
             'pakai_tgl'        => 'required|date',
             'gudang_id'        => 'required|exists:mst_gudang,gudang_id',
+            'gudang_tujuan_id' => 'nullable|exists:mst_gudang,gudang_id',
             'tujuan_pemakaian' => 'required|string|max:100',
             'catatan_txt'      => 'nullable|string',
             'items'            => 'required|array|min:1',
@@ -416,48 +426,40 @@ class PemakaianController extends Controller
         $pakai = $this->pemakaianService->getById($id);
 
         if (request()->wantsJson() || request()->ajax()) {
-            $pakai->load(['gudang', 'details.barang.satuanDasar', 'details.barang.jenisBarang', 'revisiLogs']);
+            $pakai->load(['gudang', 'gudangTujuan', 'details.barang.satuanDasar', 'details.barang.jenisBarang', 'produksi', 'packaging']);
             return response()->json([
                 'status' => 'success',
                 'data'   => [
-                    'pakai_id'         => $pakai->pakai_id,
-                    'pakai_no'         => $pakai->pakai_no,
-                    'pakai_tgl'        => $pakai->pakai_tgl,
-                    'gudang_id'        => $pakai->gudang_id,
-                    'tujuan_pemakaian' => $pakai->tujuan_pemakaian,
-                    'catatan_txt'      => $pakai->catatan_txt,
-                    'status_st'        => $pakai->status_st,
-                    'is_ada_koreksi'   => (bool) $pakai->is_ada_koreksi,
-                    'jurnal_id'        => $pakai->jurnal_id,
-                    'created_dt'       => $pakai->created_dt,
-                    'created_by'       => $pakai->creator_name,
-                    'creator_name'     => $pakai->creator_name,
-                    'revisi_logs'      => $pakai->revisiLogs->map(function ($log) {
-                        return [
-                            'revisi_no'          => $log->revisi_no,
-                            'revisi_tgl'         => $log->revisi_tgl ? $log->revisi_tgl->format('d/m/Y H:i') : '-',
-                            'pembuat_nama'       => $log->pembuat_nama ?? 'Admin Gudang',
-                            'verifikator_nama'   => $log->verifikator_nama ?? 'Verifikator Keuangan',
-                            'kategori_kesalahan' => $log->kategori_kesalahan,
-                            'catatan_koreksi'    => $log->catatan_koreksi,
-                            'perubahan_json'     => $log->perubahan_json ?? [],
-                        ];
-                    })->values(),
-                    'gudang'           => [
+                    'pakai_id'            => $pakai->pakai_id,
+                    'pakai_no'            => $pakai->pakai_no,
+                    'pakai_tgl'           => $pakai->pakai_tgl,
+                    'gudang_id'           => $pakai->gudang_id,
+                    'tujuan_pemakaian'    => $pakai->tujuan_pemakaian,
+                    'catatan_txt'         => $pakai->catatan_txt,
+                    'status_st'           => $pakai->status_st,
+                    'is_selesai_produksi' => $pakai->isSelesaiProduksi(),
+                    'status_label'        => $pakai->status_label,
+                    'created_dt'          => $pakai->created_dt,
+                    'created_by'          => $pakai->creator_name,
+                    'creator_name'        => $pakai->creator_name,
+                    'gudang'              => [
                         'gudang_id' => $pakai->gudang?->gudang_id,
                         'gudang_nm' => $pakai->gudang?->gudang_nm ?? '-',
                         'gudang_cd' => $pakai->gudang?->gudang_cd ?? 'GUDANG',
                         'lokasi'    => $pakai->gudang?->lokasi ?? '-',
                     ],
-                    'details'          => $pakai->details->map(function ($d) {
+                    'gudang_tujuan'       => $pakai->gudangTujuan ? [
+                        'gudang_id' => $pakai->gudangTujuan->gudang_id,
+                        'gudang_nm' => $pakai->gudangTujuan->gudang_nm,
+                        'gudang_cd' => $pakai->gudangTujuan->gudang_cd,
+                    ] : null,
+                    'details'             => $pakai->details->map(function ($d) {
                         return [
                             'pakaidtl_id'    => $d->pakaidtl_id,
                             'barang_id'      => $d->barang_id,
                             'batch_no'       => $d->batch_no,
                             'grade_cd'       => $d->grade_cd,
                             'qty_keluar'     => (float) $d->qty_keluar,
-                            'harga_satuan'   => (float) $d->harga_satuan,
-                            'subtotal'       => (float) $d->qty_keluar * (float) $d->harga_satuan,
                             'keterangan_txt' => $d->keterangan_txt,
                             'barang'         => [
                                 'barang_id'    => $d->barang?->barang_id,

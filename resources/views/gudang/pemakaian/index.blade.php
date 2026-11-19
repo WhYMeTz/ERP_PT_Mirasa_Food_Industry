@@ -304,9 +304,19 @@
                                 <div style="font-weight: 600; color: #0f172a; font-size: 0.85rem;">
                                     {{ $row->header?->gudang?->gudang_nm ?? '-' }}
                                 </div>
-                                <span class="badge" style="background: #fee2e2; color: #991b1b; font-weight: 700; font-size: 0.725rem; margin-top: 0.2rem; display: inline-block;">
-                                    {{ $row->keterangan_txt ?? ($row->header?->tujuan_pemakaian ?? '-') }}
-                                </span>
+                                @php
+                                    $rowPabrik = !empty($row->header?->lokasi_pabrik) ? strtoupper($row->header?->lokasi_pabrik) : (str_contains(strtoupper($row->header?->pakai_no ?? ''), 'BMB') ? 'BMB' : (str_contains(strtoupper($row->header?->pakai_no ?? ''), 'MFI') ? 'MFI' : null));
+                                @endphp
+                                <div style="display: flex; gap: 0.35rem; align-items: center; margin-top: 0.2rem;">
+                                    @if($rowPabrik === 'BMB')
+                                        <span style="font-size: 0.65rem; font-weight: 800; background: #faf5ff; color: #7e22ce; border: 1px solid #f3e8ff; padding: 1px 5px; border-radius: 3px;" title="CV Bahtera Mandiri Bersama">BMB</span>
+                                    @elseif($rowPabrik === 'MFI')
+                                        <span style="font-size: 0.65rem; font-weight: 800; background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; padding: 1px 5px; border-radius: 3px;" title="PT Mirasa Food Industry">MFI</span>
+                                    @endif
+                                    <span class="badge" style="background: #fee2e2; color: #991b1b; font-weight: 700; font-size: 0.725rem;">
+                                        {{ $row->keterangan_txt ?? ($row->header?->tujuan_pemakaian ?? '-') }}
+                                    </span>
+                                </div>
                             </td>
                             <td>
                                 <strong style="color: #0f172a; font-size: 0.875rem;">
@@ -481,9 +491,19 @@
                                 <small style="color: #64748b; font-size: 0.725rem;">{{ $hdr->gudang?->gudang_cd ?? '' }}</small>
                             </td>
                             <td>
-                                <span class="badge" style="background: #fee2e2; color: #991b1b; font-weight: 700; font-size: 0.75rem; padding: 0.2rem 0.5rem; border-radius: 4px;">
-                                    {{ $hdr->tujuan_pemakaian }}
-                                </span>
+                                @php
+                                    $hdrPabrik = !empty($hdr->lokasi_pabrik) ? strtoupper($hdr->lokasi_pabrik) : (str_contains(strtoupper($hdr->pakai_no), 'BMB') ? 'BMB' : (str_contains(strtoupper($hdr->pakai_no), 'MFI') ? 'MFI' : null));
+                                @endphp
+                                <div style="display: flex; gap: 0.35rem; align-items: center; margin-bottom: 2px;">
+                                    @if($hdrPabrik === 'BMB')
+                                        <span style="font-size: 0.65rem; font-weight: 800; background: #faf5ff; color: #7e22ce; border: 1px solid #f3e8ff; padding: 1px 5px; border-radius: 3px;" title="CV Bahtera Mandiri Bersama">BMB</span>
+                                    @elseif($hdrPabrik === 'MFI')
+                                        <span style="font-size: 0.65rem; font-weight: 800; background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; padding: 1px 5px; border-radius: 3px;" title="PT Mirasa Food Industry">MFI</span>
+                                    @endif
+                                    <span class="badge" style="background: #fee2e2; color: #991b1b; font-weight: 700; font-size: 0.75rem; padding: 0.2rem 0.5rem; border-radius: 4px;">
+                                        {{ $hdr->tujuan_pemakaian }}
+                                    </span>
+                                </div>
                                 @if(!empty($hdr->catatan_txt))
                                     <small style="display: block; font-size: 0.725rem; color: #64748b; margin-top: 3px; max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{{ $hdr->catatan_txt }}">
                                         Memo: {{ $hdr->catatan_txt }}

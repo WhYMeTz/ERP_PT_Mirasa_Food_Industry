@@ -2660,7 +2660,10 @@
                 pakaiNoHelp.innerHTML = `<span style="color:#0284c7;">⚡ Memeriksa urutan nomor BPPB untuk periode ${formatTanggalIndo(targetDateStr)}...</span>`;
             }
 
-            fetch(`/ajax/generate-code?type=bppb&date=${encodeURIComponent(targetDateStr)}`)
+            const elPabrik = document.getElementById('lokasi_pabrik');
+            const pabrikVal = elPabrik && elPabrik.value ? elPabrik.value : 'MFI';
+
+            fetch(`/ajax/generate-code?type=bppb&date=${encodeURIComponent(targetDateStr)}&pabrik=${encodeURIComponent(pabrikVal)}`)
                 .then(res => res.json())
                 .then(data => {
                     if (data.status === 'success' && data.code) {
@@ -2679,7 +2682,7 @@
 
                         if (pakaiNoHelp) {
                             pakaiNoHelp.style.display = 'block';
-                            pakaiNoHelp.innerHTML = `<span style="color:#15803d; font-weight:600;">✓ Nomor BPPB disesuaikan otomatis (${reasonText}): <strong>${data.code}</strong></span>`;
+                            pakaiNoHelp.innerHTML = `<span style="color:#15803d; font-weight:600;">✓ Nomor otomatis disesuaikan (${reasonText}): <strong>${data.code}</strong></span>`;
                         }
                     }
                 })
@@ -2747,6 +2750,13 @@
                 handlePakaiNoInputSync();
             });
         });
+
+        // 3. KETIKA TUJUAN PABRIK PRODUKSI DIPILIH (MFI vs BMB)
+        window.onLokasiPabrikChanged = function (pabrikVal) {
+            if (!pabrikVal) return;
+            const tglVal = pakaiTglInput ? pakaiTglInput.value : '';
+            fetchAndApplyPakaiCode(tglVal || new Date().toISOString().slice(0, 10), `tujuan ${pabrikVal}`);
+        };
     }
 
     /**

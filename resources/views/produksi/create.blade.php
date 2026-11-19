@@ -46,29 +46,58 @@
                 {{-- Status Dokumen otomatis POSTED (Pencatatan aktual pasca-produksi final) --}}
                 <input type="hidden" name="status_cd" id="status_cd" value="POSTED">
 
-                {{-- LANGKAH UTAMA: TARIK DATA DARI DOKUMEN BPPB GUDANG --}}
+                {{-- LANGKAH UTAMA: TARIK DATA DARI DOKUMEN BPPB GUDANG (DENGAN PILIHAN LOKASI PRODUKSI SEBELUM TARIK DATA) --}}
                 <div style="background: #f8fafc; padding: 0.95rem 1.15rem; border-radius: 8px; border: 1px solid #cbd5e1; margin-bottom: 1.25rem;">
                     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.5rem;">
                         <span style="font-size: 0.85rem; font-weight: 700; color: #0f172a; display: flex; align-items: center; gap: 0.35rem;">
                             <span>Tarik Data Dokumen Pengeluaran Gudang (BPPB):</span>
                         </span>
                         <span style="font-size: 0.75rem; color: #64748b;">
-                            Pilih dokumen BPPB pengeluaran bahan dari Bagian Gudang untuk ditarik ke laporan produksi.
+                            Pilih lokasi dan dokumen BPPB pengeluaran bahan dari Bagian Gudang untuk ditarik ke laporan produksi.
                         </span>
                     </div>
 
                     <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
-                        <select name="pakai_id" id="pakai_id" class="form-control" style="flex: 1; min-width: 280px; font-size: 0.85rem;" onchange="loadPakaiData(this.value)">
-                            <option value="">-- Pilih Dokumen Pengeluaran Bahan (BPPB) --</option>
-                            @forelse ($pakaiList as $pk)
-                                <option value="{{ $pk->pakai_id }}" data-tujuan="{{ $pk->tujuan_pemakaian }}" data-tgl="{{ Carbon\Carbon::parse($pk->pakai_tgl)->format('Y-m-d') }}" {{ (string)old('pakai_id', request('pakai_id')) === (string)$pk->pakai_id ? 'selected' : '' }}>
-                                    [{{ $pk->pakai_no }}] {{ Carbon\Carbon::parse($pk->pakai_tgl)->format('d/m/Y') }} - {{ $pk->tujuan_pemakaian }} ({{ $pk->details->count() }} item bahan) {{ $pk->status_st === 'DRAFT' ? '• DRAFT' : '' }}
-                                </option>
-                            @empty
-                                <option value="" disabled>-- Tidak ada dokumen BPPB yang siap diproses --</option>
-                            @endforelse
-                        </select>
-                        <button type="button" id="btnTarikPakai" class="btn btn-secondary btn-sm" onclick="loadPakaiData(document.getElementById('pakai_id').value)" style="padding: 0.45rem 0.95rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.4rem;">
+                        {{-- 1. Pilihan Lokasi Produksi SEBELUM Tarik Data --}}
+                        <div style="width: 250px; min-width: 220px;">
+                            <select name="lokasi_pabrik" id="lokasi_pabrik" class="form-control" required style="width: 100%; height: 38px; font-size: 0.85rem;" onchange="if(typeof window.onLokasiProduksiChange === 'function') { window.onLokasiProduksiChange(this.value); } else if(typeof window.fetchAndApplyProduksiNo === 'function') { window.fetchAndApplyProduksiNo(null, this.value); }">
+                                <option value="">-- Pilih Lokasi Produksi --</option>
+                                @foreach ($gudangList as $gdg)
+                                    @php
+                                        $pabrikCd = str_contains(strtoupper($gdg->gudang_cd), 'BMB') ? 'BMB' : 'MFI';
+                                    @endphp
+                                    <option value="{{ $pabrikCd }}" 
+                                            data-gudang-id="{{ $gdg->gudang_id }}"
+                                            {{ old('lokasi_pabrik') === $pabrikCd ? 'selected' : '' }}>
+                                        {{ $gdg->gudang_nm }} ({{ $gdg->gudang_cd }})
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        {{-- 2. Dropdown Tarik Data Dokumen BPPB --}}
+                        <div style="flex: 1; min-width: 280px;">
+                            <select name="pakai_id" id="pakai_id" class="form-control" style="width: 100%; height: 38px; font-size: 0.85rem;" onchange="loadPakaiData(this.value)">
+                                <option value="">-- Pilih Dokumen Pengeluaran Bahan (BPPB) --</option>
+                                @forelse ($pakaiList as $pk)
+                                    @php
+                                        $pkPabrik = !empty($pk->lokasi_pabrik) ? strtoupper($pk->lokasi_pabrik) : (str_contains(strtoupper($pk->pakai_no), 'BMB') ? 'BMB' : 'MFI');
+                                    @endphp
+                                    <option value="{{ $pk->pakai_id }}" 
+                                            data-pabrik="{{ $pkPabrik }}" 
+                                            data-tujuan="{{ $pk->tujuan_pemakaian }}" 
+                                            data-tgl="{{ Carbon\Carbon::parse($pk->pakai_tgl)->format('Y-m-d') }}" 
+                                            {{ (string)old('pakai_id', request('pakai_id')) === (string)$pk->pakai_id ? 'selected' : '' }}>
+                                        [{{ $pk->pakai_no }}] [{{ $pkPabrik }}] {{ Carbon\Carbon::parse($pk->pakai_tgl)->format('d/m/Y') }} - {{ $pk->tujuan_pemakaian }} ({{ $pk->details->count() }} item bahan) {{ $pk->status_st === 'DRAFT' ? '• DRAFT' : '' }}
+                                    </option>
+                                @empty
+                                    <option value="" disabled>-- Tidak ada dokumen BPPB yang siap diproses --</option>
+                                @endforelse
+                            </select>
+                        </div>
+
+                        {{-- 3. Tombol Tarik Ulang --}}
+                        <button type="button" id="btnTarikPakai" class="btn btn-secondary btn-sm" onclick="loadPakaiData(document.getElementById('pakai_id').value)" style="height: 38px; padding: 0 0.95rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.4rem; white-space: nowrap;">
                             <svg id="iconTarikPakai" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
                             <span id="btnTarikPakaiText">Tarik Ulang</span>
                         </button>
@@ -79,14 +108,14 @@
                     @include('produksi.partials.card-pemakaian-table')
                 </div>
 
-                {{-- PARAMETER OPERASIONAL PRODUKSI (NOMOR DOKUMEN, TANGGAL, SHIFT, LINI, GUDANG) --}}
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; align-items: start;">
+                {{-- PARAMETER OPERASIONAL PRODUKSI (NOMOR DOKUMEN, TANGGAL, SHIFT, LINI, BF, GUDANG) --}}
+                <div class="prod-param-grid">
                     {{-- 1. No. Dokumen Produksi Resmi (Standar Mirasa: {seq}/PRD/MFI/{mm}/{yy}) --}}
                     <div>
                         <label for="produksi_no" style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">
                             No. Dokumen Produksi <span style="color: #ef4444;">*</span>
                         </label>
-                        <input type="text" name="produksi_no" id="produksi_no" class="form-control" value="{{ old('produksi_no', $autoProduksiNo ?? '') }}" style="font-family: monospace; font-weight: 700; color: #0f172a; background: #ffffff;" required>
+                        <input type="text" name="produksi_no" id="produksi_no" class="form-control" value="{{ old('produksi_no', $autoProduksiNo ?? '') }}" style="font-family: monospace; font-weight: 700; color: #0f172a; background: #ffffff; height: 38px;" required>
                         <small id="produksi_no_help" style="display: none; color: #64748b; font-size: 0.725rem; margin-top: 0.25rem;">Nomor urut resmi dokumen hasil produksi.</small>
                     </div>
 
@@ -95,16 +124,15 @@
                         <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">
                             Tanggal Produksi <span style="color: #ef4444;">*</span>
                         </label>
-                        <input type="date" name="produksi_tgl" id="produksi_tgl" class="form-control" value="{{ old('produksi_tgl', date('Y-m-d')) }}" required onchange="updateHariLabel(); if(typeof window.fetchAndApplyProduksiNo === 'function') window.fetchAndApplyProduksiNo(this.value); fetchNextKarton(); syncLaborFromKaryawan(); fetchKursJisdor();">
+                        <input type="date" name="produksi_tgl" id="produksi_tgl" class="form-control" value="{{ old('produksi_tgl', date('Y-m-d')) }}" required style="height: 38px;" onchange="updateHariLabel(); if(typeof window.fetchAndApplyProduksiNo === 'function') window.fetchAndApplyProduksiNo(this.value); fetchNextKarton(); syncLaborFromKaryawan(); fetchKursJisdor();">
                         <div id="hariLabel" style="font-size: 0.75rem; color: #0284c7; font-weight: 600; margin-top: 0.25rem;"></div>
                     </div>
 
-                    {{-- 2. Shift Kerja Produksi --}}
+                    {{-- 3. Shift Kerja Produksi --}}
                     <div id="sectionShiftSelection">
                         <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">
                             Shift Kerja Produksi <span style="color: #ef4444;">*</span>
                         </label>
-                        {{-- Hidden Input Shift & Jam --}}
                         <input type="hidden" name="shift_cd" id="shift_cd" value="{{ old('shift_cd', 'A') }}">
                         <input type="hidden" name="jam_produksi" id="jam_produksi" value="{{ old('jam_produksi', date('H:i')) }}">
                         <div style="display: flex; background: #f1f5f9; padding: 3px; border-radius: 8px; border: 1px solid #cbd5e1; gap: 3px; height: 38px;">
@@ -122,12 +150,12 @@
                         <small style="color: #64748b; font-size: 0.725rem; margin-top: 0.25rem; display: block;">Regu operasional shift.</small>
                     </div>
 
-                    {{-- 3. Lini Produksi --}}
+                    {{-- 4. Lini Produksi --}}
                     <div>
                         <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">
                             Lini Produksi <span style="color: #ef4444;">*</span>
                         </label>
-                        <select name="lini_produksi" id="lini_produksi" class="form-control" required onchange="onLiniProduksiChange()">
+                        <select name="lini_produksi" id="lini_produksi" class="form-control" required style="height: 38px;" onchange="onLiniProduksiChange()">
                             <option value="">-- Pilih Lini Produksi --</option>
                             @if(isset($liniList) && $liniList->isNotEmpty())
                                 @foreach($liniList as $lini)
@@ -144,20 +172,29 @@
                         <small style="color: #64748b; font-size: 0.725rem; margin-top: 0.25rem; display: block;">Pilih lini mesin penggorengan.</small>
                     </div>
 
-                    {{-- 4. Gudang Penerima Hasil Produksi --}}
+                    {{-- 5. Jumlah BF Aktif --}}
+                    <div>
+                        <label for="bf_aktif_count" style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem; white-space: nowrap;">
+                            Jumlah BF Aktif
+                        </label>
+                        <input type="number" name="bf_aktif_count" id="bf_aktif_count" class="form-control" value="{{ old('bf_aktif_count', '') }}" min="0" max="100" style="font-weight: 700; color: #0f172a; height: 38px; text-align: center;" placeholder="0">
+                        <small style="color: #64748b; font-size: 0.725rem; margin-top: 0.25rem; display: block; white-space: nowrap;">BF beroperasi.</small>
+                    </div>
+
+                    {{-- 6. Gudang Penyimpanan Hasil Produksi --}}
                     <div>
                         <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">
-                            Gudang Penerima Hasil Produksi <span style="color: #ef4444;">*</span>
+                            Gudang Penyimpanan Hasil Produksi <span style="color: #ef4444;">*</span>
                         </label>
-                        <select name="gudang_id" id="gudang_id" class="form-control" required>
-                            <option value="">-- Pilih Gudang Penerima --</option>
+                        <select name="gudang_id" id="gudang_id" class="form-control" required style="height: 38px;">
+                            <option value="">-- Pilih Gudang Penyimpanan --</option>
                             @foreach ($gudangList as $gdg)
                                 <option value="{{ $gdg->gudang_id }}" {{ old('gudang_id') == $gdg->gudang_id ? 'selected' : '' }}>
                                     {{ $gdg->gudang_nm }} ({{ $gdg->gudang_cd }})
                                 </option>
                             @endforeach
                         </select>
-                        <small style="color: #64748b; font-size: 0.725rem; margin-top: 0.25rem; display: block;">Lokasi gudang fisik tempat penyetoran barang jadi/WIP.</small>
+                        <small style="color: #64748b; font-size: 0.725rem; margin-top: 0.25rem; display: block;">Lokasi gudang fisik tempat penyimpanan barang jadi/WIP.</small>
                     </div>
                 </div>
             </div>

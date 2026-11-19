@@ -77,6 +77,43 @@
     $statUnit = 'Dokumen';
 @endphp
 
+    {{-- ═════════════════════════════════════════════════════════════
+         NAVIGASI 3 TAB UTAMA: 1. SEMUA LOKASI PRODUKSI | 2. PT MIRASA FOOD INDUSTRY | 3. CV BAHTERA MANDIRI BERSAMA
+         ═════════════════════════════════════════════════════════════ --}}
+    <div style="margin-bottom: 1.25rem;">
+        <div style="display: flex; gap: 0.5rem; background: #f1f5f9; padding: 4px; border-radius: 10px; border: 1px solid #cbd5e1; width: fit-content; flex-wrap: wrap;">
+            <a href="{{ route('produksi.index', array_merge(request()->except('pabrik', 'page'), ['pabrik' => 'ALL'])) }}" 
+               class="pabrik-tab-btn {{ ($pabrikFilter ?? 'ALL') === 'ALL' ? 'pabrik-tab-active' : 'pabrik-tab-inactive' }}"
+               style="padding: 0.55rem 1.25rem; font-weight: 800; font-size: 0.85rem; border-radius: 7px; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; transition: all 0.2s ease;">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                <span>1. Semua Lokasi Produksi</span>
+                <span style="font-size: 0.725rem; background: {{ ($pabrikFilter ?? 'ALL') === 'ALL' ? 'rgba(255,255,255,0.25)' : '#e2e8f0' }}; padding: 0.15rem 0.5rem; border-radius: 4px; font-weight: 700;">
+                    {{ $countTotalAll ?? $totalCount }} Dokumen
+                </span>
+            </a>
+
+            <a href="{{ route('produksi.index', array_merge(request()->except('pabrik', 'page'), ['pabrik' => 'MFI'])) }}" 
+               class="pabrik-tab-btn {{ in_array(($pabrikFilter ?? 'ALL'), ['MFI', 'BARAT']) ? 'pabrik-tab-active' : 'pabrik-tab-inactive' }}"
+               style="padding: 0.55rem 1.25rem; font-weight: 800; font-size: 0.85rem; border-radius: 7px; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; transition: all 0.2s ease;">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                <span>2. PT Mirasa Food Industry</span>
+                <span style="font-size: 0.725rem; background: {{ in_array(($pabrikFilter ?? 'ALL'), ['MFI', 'BARAT']) ? 'rgba(255,255,255,0.25)' : '#e2e8f0' }}; padding: 0.15rem 0.5rem; border-radius: 4px; font-weight: 700;">
+                    {{ $countTotalMfi ?? $countTotalBarat ?? 0 }} Dokumen
+                </span>
+            </a>
+
+            <a href="{{ route('produksi.index', array_merge(request()->except('pabrik', 'page'), ['pabrik' => 'BMB'])) }}" 
+               class="pabrik-tab-btn {{ in_array(($pabrikFilter ?? 'ALL'), ['BMB', 'TIMUR']) ? 'pabrik-tab-active' : 'pabrik-tab-inactive' }}"
+               style="padding: 0.55rem 1.25rem; font-weight: 800; font-size: 0.85rem; border-radius: 7px; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; transition: all 0.2s ease;">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                <span>3. CV Bahtera Mandiri Bersama</span>
+                <span style="font-size: 0.725rem; background: {{ in_array(($pabrikFilter ?? 'ALL'), ['BMB', 'TIMUR']) ? 'rgba(255,255,255,0.25)' : '#e2e8f0' }}; padding: 0.15rem 0.5rem; border-radius: 4px; font-weight: 700;">
+                    {{ $countTotalBmb ?? $countTotalTimur ?? 0 }} Dokumen
+                </span>
+            </a>
+        </div>
+    </div>
+
     {{-- 3 KARTU METRIK EKSEKUTIF (SUBTOTAL & STOK PRODUKSI LANGSUNG TERBACA DI ATAS) --}}
     <div class="executive-stat-grid">
         {{-- METRIK 1: TOTAL DOKUMEN / RINCIAN --}}
@@ -137,6 +174,7 @@
     {{-- FILTER CARD ENTERPRISE (TERPUSAT & ERGONOMIS) --}}
     <div class="filter-card">
         <form method="GET" action="{{ route('produksi.index') }}">
+            <input type="hidden" name="pabrik" value="{{ $pabrikFilter ?? 'ALL' }}">
             <div class="filter-grid">
                 <div>
                     <label class="filter-label">Gudang Simpan</label>
@@ -252,6 +290,11 @@
                                         </a>
                                         @if($isReworkDoc)
                                             <span class="badge-rework-tag">REWORK</span>
+                                        @endif
+                                        @if(in_array(strtoupper($prod->lokasi_pabrik ?? 'MFI'), ['BMB', 'CV-BMB', 'BAHTERA', 'TIMUR']))
+                                            <span style="font-size: 0.65rem; background: #ede9fe; color: #6d28d9; border: 1px solid #c4b5fd; padding: 0.05rem 0.35rem; border-radius: 3px; font-weight: 800;">BMB</span>
+                                        @else
+                                            <span style="font-size: 0.65rem; background: #e0f2fe; color: #0369a1; border: 1px solid #7dd3fc; padding: 0.05rem 0.35rem; border-radius: 3px; font-weight: 800;">MFI</span>
                                         @endif
                                     </div>
                                     <div class="prod-doc-meta">

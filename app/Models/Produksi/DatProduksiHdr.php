@@ -29,6 +29,8 @@ class DatProduksiHdr extends Model
         'pakai_id',
         'gudang_id',
         'lini_produksi',
+        'lokasi_pabrik',
+        'bf_aktif_count',
         'shift_cd',
         'jam_produksi',
         'varietas_singkong',
@@ -39,6 +41,10 @@ class DatProduksiHdr extends Model
 
         // Biaya Bahan
         'singkong_qty',
+        'kulitan_qty',
+        'kupasan_qty',
+        'sisa_singkong_qty',
+        'reject_singkong_qty',
         'singkong_nilai',
         'minyak_sawit_qty',
         'minyak_kelapa_qty',
@@ -141,7 +147,12 @@ class DatProduksiHdr extends Model
         'qty_karton'                  => 'integer',
         'no_karton_awal'              => 'integer',
         'no_karton_akhir'             => 'integer',
+        'bf_aktif_count'              => 'integer',
         'singkong_qty'                => 'decimal:4',
+        'kulitan_qty'                 => 'decimal:4',
+        'kupasan_qty'                 => 'decimal:4',
+        'sisa_singkong_qty'           => 'decimal:4',
+        'reject_singkong_qty'         => 'decimal:4',
         'singkong_nilai'              => 'decimal:2',
         'minyak_sawit_qty'            => 'decimal:4',
         'minyak_kelapa_qty'           => 'decimal:4',
@@ -373,5 +384,34 @@ class DatProduksiHdr extends Model
     public function jurnal(): BelongsTo
     {
         return $this->belongsTo(\App\Models\Keuangan\DatJurnalHdr::class, 'jurnal_id', 'jurnal_id');
+    }
+
+    /**
+     * Scope query berdasarkan lokasi pabrik (BARAT / TIMUR)
+     */
+    public function scopePabrik($query, ?string $lokasi)
+    {
+        if (empty($lokasi)) {
+            return $query;
+        }
+        return $query->where('lokasi_pabrik', strtoupper($lokasi));
+    }
+
+    /**
+     * Scope query khusus Pabrik Barat
+     */
+    public function scopeBarat($query)
+    {
+        return $query->where(function ($q) {
+            $q->where('lokasi_pabrik', 'BARAT')->orWhereNull('lokasi_pabrik');
+        });
+    }
+
+    /**
+     * Scope query khusus Pabrik Timur
+     */
+    public function scopeTimur($query)
+    {
+        return $query->where('lokasi_pabrik', 'TIMUR');
     }
 }

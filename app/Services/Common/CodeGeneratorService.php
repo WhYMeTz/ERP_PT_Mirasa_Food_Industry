@@ -666,12 +666,13 @@ class CodeGeneratorService
      * @param int|null $excludePakaiId ID Pemakaian yang dikecualikan (berguna saat edit dokumen)
      * @return string
      */
-    public function generatePakaiNo(?string $date = null, ?int $excludePakaiId = null): string
+    public function generatePakaiNo(?string $date = null, ?int $excludePakaiId = null, ?string $lokasiPabrik = null): string
     {
         $timestamp = strtotime($date ?? date('Y-m-d'));
         $month = date('m', $timestamp);
         $year = date('y', $timestamp);
-        $suffix = "/BPPB/MFI/{$month}/{$year}";
+        $pabrikCd = in_array(strtoupper(trim((string)$lokasiPabrik)), ['BMB', 'CV-BMB', 'TIMUR', 'BAHTERA']) ? 'BMB' : 'MFI';
+        $suffix = "/BPPB/{$pabrikCd}/{$month}/{$year}";
 
         // Cari nomor BPPB yang berakhiran format resmi pada bulan & tahun ini
         $query = DB::table('dat_pakai_hdr')
@@ -684,7 +685,7 @@ class CodeGeneratorService
         $existing = $query->pluck('pakai_no');
 
         $maxNumber = 0;
-        $regex = '/^(\d+)\/BPPB\/MFI\/' . $month . '\/' . $year . '$/i';
+        $regex = '/^(\d+)\/BPPB\/' . $pabrikCd . '\/' . $month . '\/' . $year . '$/i';
 
         foreach ($existing as $pakaiNo) {
             if (preg_match($regex, trim((string) $pakaiNo), $matches)) {
@@ -719,18 +720,32 @@ class CodeGeneratorService
     }
 
     /**
-     * Generate Nomor Dokumen Hasil Produksi Standar (format: {seq:3}/PRD/MFI/{month}/{year})
-     * Contoh: 001/PRD/MFI/11/26
+     * Generate Nomor Dokumen Hasil Produksi Standar (format: {seq:3}/PRD-{B|T}/MFI/{month}/{year})
+     * Contoh: 001/PRD-B/MFI/11/26 (Pabrik Barat), 001/PRD-T/MFI/11/26 (Pabrik Timur)
      */
-    public function generateProduksiNo(?string $date = null, ?int $excludeProduksiId = null): string
+    public function generateProduksiNo(?string $date = null, ?int $excludeProduksiId = null, string $lokasiPabrik = 'MFI'): string
     {
         $timestamp = strtotime($date ?? date('Y-m-d'));
         $month = date('m', $timestamp);
         $year = date('y', $timestamp);
-        $suffix = "/PRD/MFI/{$month}/{$year}";
+
+        $lokasiNorm = strtoupper(trim((string)$lokasiPabrik));
+        $isBmb = in_array($lokasiNorm, ['BMB', 'CV-BMB', 'BAHTERA', 'TIMUR']);
+        $entitasCode = $isBmb ? 'BMB' : 'MFI';
+
+        // Format Standar Korporat: {seq:3}/PRD/{MFI|BMB}/{mm}/{yy}
+        $suffix = "/PRD/{$entitasCode}/{$month}/{$year}";
 
         $query = DB::table('dat_produksi_hdr')
-            ->where('produksi_no', 'LIKE', '%' . $suffix);
+            ->where(function ($q) use ($month, $year, $isBmb) {
+                if ($isBmb) {
+                    $q->where('produksi_no', 'LIKE', "%/PRD/BMB/{$month}/{$year}")
+                      ->orWhere('produksi_no', 'LIKE', "%/PRD-T/MFI/{$month}/{$year}");
+                } else {
+                    $q->where('produksi_no', 'LIKE', "%/PRD/MFI/{$month}/{$year}")
+                      ->orWhere('produksi_no', 'LIKE', "%/PRD-B/MFI/{$month}/{$year}");
+                }
+            });
 
         if ($excludeProduksiId) {
             $query->where('produksi_id', '!=', $excludeProduksiId);
@@ -739,10 +754,19 @@ class CodeGeneratorService
         $existing = $query->pluck('produksi_no');
 
         $maxNumber = 0;
-        $regex = '/^(\d+)\/PRD\/MFI\/' . $month . '\/' . $year . '$/i';
+        $regexPrimary = '/^(\d+)\/PRD\/' . preg_quote($entitasCode, '/') . '\/' . $month . '\/' . $year . '$/i';
+        $regexLegacy = $isBmb
+            ? '/^(\d+)\/PRD-T\/MFI\/' . $month . '\/' . $year . '$/i'
+            : '/^(\d+)\/PRD-B\/MFI\/' . $month . '\/' . $year . '$/i';
 
         foreach ($existing as $prodNo) {
-            if (preg_match($regex, trim((string) $prodNo), $matches)) {
+            $prodNoStr = trim((string) $prodNo);
+            if (preg_match($regexPrimary, $prodNoStr, $matches)) {
+                $num = (int) $matches[1];
+                if ($num > $maxNumber) {
+                    $maxNumber = $num;
+                }
+            } elseif (preg_match($regexLegacy, $prodNoStr, $matches)) {
                 $num = (int) $matches[1];
                 if ($num > $maxNumber) {
                     $maxNumber = $num;
@@ -812,9 +836,9 @@ class CodeGeneratorService
     /**
      * Alias untuk generateProduksiNo
      */
-    public function generateKodeProduksi(?string $date = null): string
+    public function generateKodeProduksi(?string $date = null, string $lokasiPabrik = 'BARAT'): string
     {
-        return $this->generateProduksiNo($date);
+        return $this->generateProduksiNo($date, null, $lokasiPabrik);
     }
 
     /**

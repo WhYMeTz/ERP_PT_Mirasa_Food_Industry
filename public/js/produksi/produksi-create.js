@@ -42,6 +42,30 @@
         }
     };
 
+    // 0. Pilih Lokasi Pabrik (BARAT / TIMUR)
+    window.selectPabrik = function (pabrik) {
+        const pUpper = (pabrik || 'BARAT').toUpperCase();
+        const inputPabrik = document.getElementById('lokasi_pabrik');
+        if (inputPabrik) inputPabrik.value = pUpper;
+
+        const btnBarat = document.getElementById('btnPabrikBarat');
+        const btnTimur = document.getElementById('btnPabrikTimur');
+
+        if (btnBarat && btnTimur) {
+            if (pUpper === 'BARAT') {
+                btnBarat.classList.add('shift-segmented-active', 'active-a');
+                btnBarat.classList.remove('shift-segmented-inactive');
+                btnTimur.classList.add('shift-segmented-inactive');
+                btnTimur.classList.remove('shift-segmented-active', 'active-b');
+            } else {
+                btnTimur.classList.add('shift-segmented-active', 'active-b');
+                btnTimur.classList.remove('shift-segmented-inactive');
+                btnBarat.classList.add('shift-segmented-inactive');
+                btnBarat.classList.remove('shift-segmented-active', 'active-a');
+            }
+        }
+    };
+
     // 1. Pilih Shift A / B
     window.selectShift = function (shift) {
         const shiftUpper = shift.toUpperCase();
@@ -952,10 +976,22 @@
         userHasManuallyEditedProduksiNo = true;
     });
 
-    window.fetchAndApplyProduksiNo = function (targetDateStr) {
+    window.fetchAndApplyProduksiNo = function (targetDateStr, targetPabrik) {
         const prodNoInput = document.getElementById('produksi_no');
         const prodNoHelp = document.getElementById('produksi_no_help');
-        if (!prodNoInput || !targetDateStr) return;
+        if (!prodNoInput) return;
+
+        if (!targetDateStr) {
+            targetDateStr = document.getElementById('produksi_tgl')?.value || '';
+        }
+        if (!targetPabrik) {
+            targetPabrik = document.getElementById('lokasi_pabrik')?.value || 'BARAT';
+        }
+
+        // Jika dipanggil karena ganti pabrik, reset status manual agar nomor ter-update sesuai pabriknya
+        if (arguments.length > 1 && targetPabrik) {
+            userHasManuallyEditedProduksiNo = false;
+        }
 
         // Jika pengguna sudah mengetik nomor manual sendiri, jangan ditimpa otomatis
         if (userHasManuallyEditedProduksiNo && prodNoInput.value.trim() !== '') {
@@ -965,10 +1001,10 @@
         prodNoInput.style.opacity = '0.6';
         if (prodNoHelp) {
             prodNoHelp.style.display = 'block';
-            prodNoHelp.innerHTML = `<span style="color:#0284c7;">⚡ Memeriksa urutan No. PRD...</span>`;
+            prodNoHelp.innerHTML = `<span style="color:#0284c7;">⚡ Memeriksa urutan No. PRD (${targetPabrik})...</span>`;
         }
 
-        fetch(`/ajax/generate-code?type=prd&date=${encodeURIComponent(targetDateStr)}`)
+        fetch(`/ajax/generate-code?type=prd&date=${encodeURIComponent(targetDateStr)}&pabrik=${encodeURIComponent(targetPabrik)}`)
             .then(res => res.json())
             .then(data => {
                 if (data.status === 'success' && data.code) {
@@ -982,6 +1018,49 @@
                 prodNoInput.style.opacity = '1';
                 if (prodNoHelp) prodNoHelp.style.display = 'none';
             });
+    };
+
+    /**
+     * Handler saat Lokasi Produksi (Perusahaan & Fasilitas) diganti:
+     * 1. Re-fetch Nomor Dokumen Produksi resmi sesuai entitas (MFI vs BMB)
+     * 2. Auto-set Default BF Aktif (MFI: 14 wajan, BMB: 2 wajan)
+     * 3. Auto-sync Gudang Penyimpanan default ke entitas terkait
+     */
+    window.onLokasiProduksiChange = function (pabrikVal) {
+        if (typeof window.fetchAndApplyProduksiNo === 'function') {
+            window.fetchAndApplyProduksiNo(null, pabrikVal);
+        }
+
+        const sel = document.getElementById('lokasi_pabrik');
+        const opt = sel ? sel.options[sel.selectedIndex] : null;
+        if (!opt) return;
+
+        // Auto-sync Gudang Penyimpanan
+        const targetGudangId = opt.getAttribute('data-gudang-id');
+        const gudangSelect = document.getElementById('gudang_id');
+        if (gudangSelect && targetGudangId) {
+            gudangSelect.value = targetGudangId;
+        }
+
+        // Smart Filter Dropdown BPPB: hanya tampilkan BPPB yang sesuai dengan pabrik yang dipilih
+        const pakaiSelect = document.getElementById('pakai_id');
+        if (pakaiSelect) {
+            Array.from(pakaiSelect.options).forEach((pkOpt, idx) => {
+                if (idx === 0) return; // Placeholder "-- Pilih Dokumen --"
+                const pkPabrik = pkOpt.getAttribute('data-pabrik');
+                if (!pabrikVal || !pkPabrik || pkPabrik === pabrikVal) {
+                    pkOpt.style.display = '';
+                } else {
+                    pkOpt.style.display = 'none';
+                    if (pkOpt.selected) {
+                        pakaiSelect.value = '';
+                        if (typeof window.loadPakaiData === 'function') {
+                            window.loadPakaiData('');
+                        }
+                    }
+                }
+            });
+        }
     };
 
     // 7. Hitung Biaya Gas CNG (Integrasi Otomatis Kurs JISDOR, Nominal Harian, & Fleksibel Edit/0)

@@ -1647,8 +1647,23 @@ input:checked + .switch-slider:before {
     border-color: #047857 !important;
 }
 
+/* Parameter Operasional Grid: Tata letak rapi parameter dokumen produksi */
+.prod-param-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+    align-items: start;
+}
 
+@media (max-width: 1024px) {
+    .prod-param-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
 
-
-
+@media (max-width: 640px) {
+    .prod-param-grid {
+        grid-template-columns: 1fr;
+    }
+}
 

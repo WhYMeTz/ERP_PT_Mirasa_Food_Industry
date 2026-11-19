@@ -61,6 +61,7 @@ function resetProduksiView() {
 
     // Reset data text
     setTxt('pvProduksiNo', '-');
+    setTxt('pvLokasiPabrik', '-');
     setTxt('pvTgl', '-');
     setTxt('pvShiftLini', '-');
     setTxt('pvBppb', '-');
@@ -223,10 +224,12 @@ function loadProduksiData(produksiId) {
 
         currentProduksiData = res.data;
         renderPreviewFisik(currentProduksiData);
+        renderDokumenSpkTable(currentProduksiData.dokumen_list);
+        renderCngSplitPlant(currentProduksiData.dokumen_list);
         renderPemakaianBahan(currentProduksiData.pemakaian_items, currentProduksiData.pemakaian_bppb);
         populateCostingForm(currentProduksiData);
         renderAllocationTable(currentProduksiData.outputs, currentProduksiData.hpp_per_kg);
-        renderSameDayNotice(currentProduksiData.same_day_spks, currentProduksiData.produksi_id, currentProduksiData.produksi_tgl_fmt);
+        renderSameDayNotice(currentProduksiData);
         calcAllHpp();
         fetchLiveJisdor(false);
         syncLaborFromKaryawan(false);
@@ -248,9 +251,9 @@ function loadProduksiData(produksiId) {
 
 /**
  * Render notifikasi monitoring seluruh dokumen produksi pada tanggal yang sama.
- * Memastikan tidak ada shift atau lini lain yang terlewat dari perhitungan HPP.
+ * Mencakup notifikasi multi-pabrik berbarengan (MFI & BMB) maupun operasional pabrik tunggal.
  */
-function renderSameDayNotice(sameDaySpks, currentId, tglStr) {
+function renderSameDayNotice(data) {
     const box = document.getElementById('sameDayNoticeBox');
     const container = document.getElementById('sameDayListContainer');
     const titleEl = document.getElementById('sameDayTitle');
@@ -258,31 +261,61 @@ function renderSameDayNotice(sameDaySpks, currentId, tglStr) {
 
     if (!box || !container) return;
 
-    if (!Array.isArray(sameDaySpks) || sameDaySpks.length <= 1) {
-        // Hanya ada 1 dokumen di hari tersebut, tidak perlu alert multi-shift
+    const sameDaySpks = (data && Array.isArray(data.same_day_spks)) ? data.same_day_spks : [];
+    const currentId = data?.produksi_id;
+    const tglStr = data?.produksi_tgl_fmt || '';
+    const hasBothEntities = Boolean(data?.has_both_entities);
+    const countMfi = data?.count_mfi_docs || 0;
+    const countBmb = data?.count_bmb_docs || 0;
+    const activeEntitasNm = data?.entitas_nm || 'Pabrik';
+    const activeEntitasCd = data?.entitas_cd || 'MFI';
+
+    if (sameDaySpks.length === 0) {
         box.style.display = 'none';
         return;
     }
 
     box.style.display = 'block';
-    if (titleEl) titleEl.textContent = `Daftar Seluruh Dokumen Produksi pada Tanggal ${tglStr || ''} (${sameDaySpks.length} Dokumen):`;
 
-    const pendingCount = sameDaySpks.filter(s => !s.is_hpp_final).length;
-    if (badgeEl) {
-        if (pendingCount > 0) {
-            badgeEl.textContent = `${pendingCount} Shift Belum Ditarik`;
-            badgeEl.style.background = '#fef2f2';
-            badgeEl.style.color = '#991b1b';
-            badgeEl.style.borderColor = '#fecaca';
-        } else {
-            badgeEl.textContent = 'Semua Shift Sudah Final';
-            badgeEl.style.background = '#f0fdf4';
-            badgeEl.style.color = '#166534';
-            badgeEl.style.borderColor = '#bbf7d0';
+    let alertSummaryHtml = '';
+    if (hasBothEntities) {
+        // KASUS 1: KEDUA PABRIK BEROPERASI BERBARENGAN PADA TANGGAL YANG SAMA
+        if (titleEl) {
+            titleEl.innerHTML = `⚠️ Operasional Bersama Multi-Pabrik pada Tanggal ${tglStr}: PT Mirasa Food Industry (MFI) &amp; CV Bahtera Mandiri Bersama (BMB)`;
+            titleEl.style.color = '#92400e';
         }
+        if (badgeEl) {
+            badgeEl.textContent = `Multi-Pabrik (MFI: ${countMfi} SPK, BMB: ${countBmb} SPK)`;
+            badgeEl.style.background = '#fef3c7';
+            badgeEl.style.color = '#92400e';
+            badgeEl.style.borderColor = '#fde68a';
+        }
+        alertSummaryHtml = `
+            <div style="font-size: 0.775rem; color: #78350f; margin-bottom: 0.5rem; line-height: 1.45; background: #fffbeb; padding: 0.5rem 0.75rem; border-radius: 6px; border: 1px solid #fef3c7;">
+                💡 <strong>Operasional Bersama:</strong> Hari ini kedua pabrik sama-sama beroperasi. Anda saat ini sedang menghitung HPP untuk <strong>${activeEntitasNm}</strong>. Dokumen pabrik lainnya tercatat terpisah dan dapat dihitung melalui Buku HPP terkait.
+            </div>
+        `;
+    } else {
+        // KASUS 2: HANYA SALAH SATU PABRIK YANG BEROPERASI
+        const otherPabrikNm = (activeEntitasCd === 'BMB') ? 'PT Mirasa Food Industry (MFI)' : 'CV Bahtera Mandiri Bersama (BMB)';
+        if (titleEl) {
+            titleEl.innerHTML = `ℹ️ Status Operasional Pabrik pada Tanggal ${tglStr}: Tunggal ${activeEntitasNm}`;
+            titleEl.style.color = '#1e3a8a';
+        }
+        if (badgeEl) {
+            badgeEl.textContent = `Pabrik Tunggal (${activeEntitasCd})`;
+            badgeEl.style.background = '#eff6ff';
+            badgeEl.style.color = '#1d4ed8';
+            badgeEl.style.borderColor = '#bfdbfe';
+        }
+        alertSummaryHtml = `
+            <div style="font-size: 0.775rem; color: #1e3a8a; margin-bottom: 0.5rem; line-height: 1.45; background: #f0f9ff; padding: 0.5rem 0.75rem; border-radius: 6px; border: 1px solid #e0f2fe;">
+                ✓ <strong>Operasional Tunggal:</strong> Pada tanggal ini hanya tercatat operasional manufaktur dari <strong>${activeEntitasNm}</strong> (${sameDaySpks.length} dokumen SPK). Tidak ada catatan produksi dari ${otherPabrikNm}.
+            </div>
+        `;
     }
 
-    let html = '';
+    let rowsHtml = '';
     sameDaySpks.forEach(item => {
         const isCurrent = (String(item.produksi_id) === String(currentId));
         let statusBadge = '';
@@ -292,15 +325,21 @@ function renderSameDayNotice(sameDaySpks, currentId, tglStr) {
             statusBadge = `<span style="background: #eff6ff; color: #1d4ed8; padding: 2px 7px; border-radius: 4px; font-size: 0.72rem; font-weight: 700; border: 1px solid #bfdbfe;">👉 Sedang Dipilih</span>`;
         } else if (item.is_hpp_final) {
             statusBadge = `<span style="background: #f0fdf4; color: #166534; padding: 2px 7px; border-radius: 4px; font-size: 0.72rem; font-weight: 700; border: 1px solid #bbf7d0;">✓ HPP Sudah Final (Rp ${Math.round(item.hpp_per_kg).toLocaleString('id-ID')}/kg)</span>`;
-            actionBtn = `<a href="/produksi/hpp/${item.produksi_id}" target="_blank" style="font-size: 0.72rem; color: #64748b; text-decoration: underline; margin-left: 0.5rem;">Lihat Lembar &rarr;</a>`;
+            actionBtn = `<a href="/produksi/hpp/${item.produksi_id}" target="_blank" style="font-size: 0.72rem; color: #0284c7; text-decoration: underline; margin-left: 0.5rem; font-weight: 600;">Lihat Lembar &rarr;</a>`;
         } else {
             statusBadge = `<span style="background: #fef2f2; color: #991b1b; padding: 2px 7px; border-radius: 4px; font-size: 0.72rem; font-weight: 700; border: 1px solid #fecaca;">⏳ Belum Ditarik HPP</span>`;
             actionBtn = `<button type="button" onclick="switchSelectedSpk(${item.produksi_id})" style="font-size: 0.72rem; font-weight: 700; color: #0284c7; background: #f0f9ff; border: 1px solid #bae6fd; padding: 2px 8px; border-radius: 4px; cursor: pointer; margin-left: 0.5rem;" title="Muat dokumen shift ini ke formulir kalkulasi">Tarik Dokumen Ini &rarr;</button>`;
         }
 
-        html += `
-            <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; background: ${isCurrent ? '#f0f9ff' : '#ffffff'}; padding: 0.35rem 0.65rem; border-radius: 5px; border: 1px solid ${isCurrent ? '#bae6fd' : '#e2e8f0'}; font-size: 0.775rem;">
+        const isBmbItem = ['BMB', 'CV-BMB', 'BAHTERA', 'TIMUR'].includes(String(item.lokasi_pabrik || '').toUpperCase());
+        const pabrikBadge = isBmbItem
+            ? `<span style="font-size: 0.65rem; background: #ede9fe; color: #6d28d9; border: 1px solid #c4b5fd; padding: 1px 5px; border-radius: 3px; font-weight: 800;">BMB</span>`
+            : `<span style="font-size: 0.65rem; background: #e0f2fe; color: #0369a1; border: 1px solid #7dd3fc; padding: 1px 5px; border-radius: 3px; font-weight: 800;">MFI</span>`;
+
+        rowsHtml += `
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; background: ${isCurrent ? '#f0f9ff' : '#ffffff'}; padding: 0.4rem 0.65rem; border-radius: 5px; border: 1px solid ${isCurrent ? '#bae6fd' : '#e2e8f0'}; font-size: 0.775rem;">
                 <div style="display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;">
+                    ${pabrikBadge}
                     <strong style="color: #0f172a;">Shift ${item.shift_cd || 'A'} &bull; ${item.lini_produksi || 'Lini Manual'}</strong>
                     <span style="color: #64748b;">(SPK #${item.produksi_no || '-'})</span>
                     <span style="color: #0284c7; font-weight: 600;">${(item.total_wip_qty || 0).toLocaleString('id-ID', { minimumFractionDigits: 1 })} kg WIP</span>
@@ -313,7 +352,7 @@ function renderSameDayNotice(sameDaySpks, currentId, tglStr) {
         `;
     });
 
-    container.innerHTML = html;
+    container.innerHTML = alertSummaryHtml + rowsHtml;
 }
 
 /**
@@ -386,17 +425,228 @@ function renderPreviewFisik(data) {
     if (preview) preview.style.display = 'block';
 
     const setTxt = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-    setTxt('pvProduksiNo', data.produksi_no || '-');
+
+    if (data.is_konsolidasi_harian && Array.isArray(data.dokumen_list)) {
+        const docNos = data.dokumen_list.map(d => d.produksi_no).join(', ');
+        setTxt('pvProduksiNo', docNos || data.produksi_no || '-');
+        setTxt('pvLokasiPabrik', `${data.entitas_nm || 'Pabrik'} (${data.dokumen_list.length} Shift/Dokumen)`);
+        setTxt('pvShiftLini', 'Konsolidasi Seluruh Shift Entitas');
+        setTxt('pvBppb', data.pemakaian_bppb?.pakai_no || '-');
+    } else {
+        setTxt('pvProduksiNo', data.produksi_no || '-');
+        setTxt('pvLokasiPabrik', data.entitas_nm || 'PT Mirasa Food Industry');
+        setTxt('pvShiftLini', `Shift ${data.shift_cd || 'A'} — ${data.lini_produksi || 'PRODUKSI MANUAL'}`);
+        setTxt('pvBppb', data.pakai_no || '-');
+    }
 
     const hariIndo = getIndonesianDayName(data.hari_nm);
     const tglFmt = data.produksi_tgl_fmt ? `${hariIndo}, ${data.produksi_tgl_fmt}` : '-';
     setTxt('pvTgl', tglFmt);
 
-    setTxt('pvShiftLini', `Shift ${data.shift_cd || 'A'} — ${data.lini_produksi || 'PRODUKSI MANUAL'}`);
-    setTxt('pvBppb', data.pakai_no || '-');
     setTxt('pvSingkongQty', `${formatNum(data.singkong_qty)} kg`);
     setTxt('pvWipQty', `${formatNum(data.total_wip_qty)} kg`);
     setTxt('pvRendemen', `${formatNum(data.rendemen_persen)} %`);
+
+    // Tampilkan bantuan kalkulator porsi gas jika pada tanggal ini ada produksi kedua entitas
+    const shareAlert = document.getElementById('cngEntityShareAlert');
+    const shareText = document.getElementById('cngEntityShareText');
+    if (shareAlert && shareText) {
+        if (data.has_other_entity && data.total_wip_plant_all > 0) {
+            shareAlert.style.display = 'block';
+            shareText.innerHTML = `💡 <strong>Rekomendasi Porsi Gas:</strong> Hari ini kedua entitas sama-sama beroperasi (Total gabungan pabrik: <strong>${(data.total_wip_plant_all || 0).toLocaleString('id-ID', { minimumFractionDigits: 1 })} kg WIP</strong>). Porsi hasil keripik <strong>${data.entitas_nm}</strong> adalah <strong>${data.entity_gas_ratio_pct}%</strong> (${(data.total_wip_qty || 0).toLocaleString('id-ID', { minimumFractionDigits: 1 })} kg WIP). Silakan kalikan persentase ini dengan angka pembacaan meteran induk bersama.`;
+        } else {
+            shareAlert.style.display = 'none';
+        }
+    }
+}
+
+/**
+ * Render Tabel Rincian Sumber Dokumen Fisik yang Digabung (Card 1)
+ */
+function renderDokumenSpkTable(dokumenList) {
+    const wrap = document.getElementById('spkDokumenTableWrap');
+    const tbody = document.getElementById('spkDokumenTableBody');
+    const tfoot = document.getElementById('spkDokumenTableFoot');
+    const badgeCount = document.getElementById('badgeDokumenCount');
+
+    if (!wrap || !tbody) return;
+
+    if (!Array.isArray(dokumenList) || dokumenList.length === 0) {
+        wrap.style.display = 'none';
+        return;
+    }
+
+    wrap.style.display = 'block';
+    if (badgeCount) badgeCount.textContent = `${dokumenList.length} Dokumen Fisik`;
+
+    let html = '';
+    let totalBppb = 0;
+    let totalWip = 0;
+
+    dokumenList.forEach(item => {
+        totalBppb += (item.bppb_nilai || 0);
+        totalWip += (item.wip_qty || 0);
+
+        const isBmb = ['BMB', 'CV-BMB', 'BAHTERA', 'TIMUR'].includes(String(item.lokasi_pabrik || '').toUpperCase());
+        const pabrikBadge = isBmb
+            ? `<span style="font-size: 0.65rem; background: #ede9fe; color: #6d28d9; border: 1px solid #c4b5fd; padding: 2px 6px; border-radius: 4px; font-weight: 800;">BMB</span>`
+            : `<span style="font-size: 0.65rem; background: #e0f2fe; color: #0369a1; border: 1px solid #7dd3fc; padding: 2px 6px; border-radius: 4px; font-weight: 800;">MFI</span>`;
+
+        html += `
+            <tr style="border-bottom: 1px solid #f1f5f9;">
+                <td style="padding: 0.55rem 0.6rem; font-weight: 700; font-family: monospace; color: #0284c7;">
+                    ${item.produksi_no || '-'}
+                    <div style="font-size: 0.7rem; color: #64748b; font-weight: normal; font-family: sans-serif;">Shift ${item.shift_cd || 'A'} &bull; ${item.lini_produksi || 'Lini Manual'}</div>
+                </td>
+                <td style="padding: 0.55rem 0.6rem; text-align: center;">
+                    ${pabrikBadge}
+                </td>
+                <td style="padding: 0.55rem 0.6rem; font-family: monospace; color: #334155;">
+                    ${item.pakai_no || '-'}
+                </td>
+                <td style="padding: 0.55rem 0.6rem; text-align: right; font-weight: 600; color: #0f172a;">
+                    Rp ${(item.bppb_nilai || 0).toLocaleString('id-ID')}
+                </td>
+                <td style="padding: 0.55rem 0.6rem; text-align: right; font-weight: 700; color: #059669;">
+                    ${(item.wip_qty || 0).toLocaleString('id-ID', { minimumFractionDigits: 1 })} kg
+                </td>
+                <td style="padding: 0.55rem 0.6rem; text-align: center; font-weight: 700; color: #0284c7;">
+                    ${item.proporsi_persen || 0}%
+                </td>
+            </tr>
+        `;
+    });
+
+    tbody.innerHTML = html;
+
+    if (tfoot) {
+        tfoot.innerHTML = `
+            <tr>
+                <td colspan="3" style="padding: 0.6rem; text-align: right; font-weight: 800; color: #1e293b;">TOTAL KONSOLIDASI HARIAN:</td>
+                <td style="padding: 0.6rem; text-align: right; font-weight: 800; color: #0f172a;">Rp ${totalBppb.toLocaleString('id-ID')}</td>
+                <td style="padding: 0.6rem; text-align: right; font-weight: 900; color: #059669;">${totalWip.toLocaleString('id-ID', { minimumFractionDigits: 1 })} kg</td>
+                <td style="padding: 0.6rem; text-align: center; font-weight: 800; color: #0284c7;">100%</td>
+            </tr>
+        `;
+    }
+}
+
+let userHasManuallyEditedCngSplit = false;
+
+/**
+ * Render Modul Alokasi Gas per Pabrik (Proporsional WIP & Editable Manual)
+ */
+function renderCngSplitPlant(dokumenList) {
+    const sec = document.getElementById('cngSplitPlantSection');
+    const container = document.getElementById('cngSplitPlantInputs');
+    if (!sec || !container) return;
+
+    if (!Array.isArray(dokumenList) || dokumenList.length <= 1) {
+        sec.style.display = 'none';
+        container.innerHTML = '';
+        return;
+    }
+
+    sec.style.display = 'block';
+    userHasManuallyEditedCngSplit = false;
+
+    updateCngSplitInputs(false);
+}
+
+function updateCngSplitInputs(forceProportional = false) {
+    const container = document.getElementById('cngSplitPlantInputs');
+    if (!container || !currentProduksiData || !Array.isArray(currentProduksiData.dokumen_list)) return;
+
+    const totalMmbtu = parseFloat(document.getElementById('cng_mmbtu')?.value) || 0;
+    const cngTarif = parseFloat(document.getElementById('cng_tarif')?.value) || 0;
+
+    let html = '';
+    currentProduksiData.dokumen_list.forEach(item => {
+        const isBmb = ['BMB', 'CV-BMB', 'BAHTERA', 'TIMUR'].includes(String(item.lokasi_pabrik || '').toUpperCase());
+        const ratio = parseFloat(item.ratio) || 0;
+
+        let existingInput = document.getElementById(`cng_split_${item.produksi_id}`);
+        let splitVal = 0;
+        if (!forceProportional && userHasManuallyEditedCngSplit && existingInput) {
+            splitVal = parseFloat(existingInput.value) || 0;
+        } else {
+            splitVal = Math.round(totalMmbtu * ratio * 10000) / 10000;
+        }
+
+        const estRp = Math.round(splitVal * cngTarif);
+
+        html += `
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; background: #ffffff; padding: 0.45rem 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0;">
+                <div style="display: flex; align-items: center; gap: 0.4rem; min-width: 170px;">
+                    <span style="font-size: 0.7rem; background: ${isBmb ? '#ede9fe; color: #6d28d9; border: 1px solid #c4b5fd;' : '#e0f2fe; color: #0369a1; border: 1px solid #7dd3fc;'} padding: 1px 5px; border-radius: 3px; font-weight: 800;">
+                        ${isBmb ? 'BMB' : 'MFI'}
+                    </span>
+                    <strong style="font-size: 0.775rem; color: #0f172a;">${item.pabrik_nm}</strong>
+                    <span style="font-size: 0.7rem; color: #64748b;">(${item.proporsi_persen}%)</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.35rem;">
+                    <input type="number" step="any" min="0" 
+                           name="cng_split[${item.produksi_id}]" 
+                           id="cng_split_${item.produksi_id}" 
+                           value="${splitVal}" 
+                           data-ratio="${ratio}" 
+                           data-doc-id="${item.produksi_id}"
+                           oninput="onCngSplitInputChanged(this)"
+                           style="width: 100px; height: 30px; font-family: monospace; font-size: 0.8rem; font-weight: 700; text-align: right; border: 1.5px solid #cbd5e1; border-radius: 4px; padding: 2px 6px;" 
+                           title="Ketik manual MMBTU jika ingin mengubah alokasi untuk pabrik ini">
+                    <span style="font-size: 0.75rem; font-weight: 600; color: #475569;">MMBTU</span>
+                    <span id="cng_split_rp_${item.produksi_id}" style="font-size: 0.75rem; font-weight: 700; color: #059669; min-width: 110px; text-align: right;">
+                        &approx; Rp ${estRp.toLocaleString('id-ID')}
+                    </span>
+                </div>
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+    validateCngSplitSum();
+}
+
+function resetCngSplitToProportional() {
+    userHasManuallyEditedCngSplit = false;
+    updateCngSplitInputs(true);
+}
+
+function onCngSplitInputChanged(inputEl) {
+    userHasManuallyEditedCngSplit = true;
+    const cngTarif = parseFloat(document.getElementById('cng_tarif')?.value) || 0;
+    const docId = inputEl.getAttribute('data-doc-id');
+    const val = parseFloat(inputEl.value) || 0;
+    const rpEl = document.getElementById(`cng_split_rp_${docId}`);
+    if (rpEl) {
+        rpEl.textContent = `≈ Rp ${Math.round(val * cngTarif).toLocaleString('id-ID')}`;
+    }
+    validateCngSplitSum();
+}
+
+function validateCngSplitSum() {
+    const msgEl = document.getElementById('cngSplitValidationMsg');
+    if (!msgEl || !currentProduksiData || !Array.isArray(currentProduksiData.dokumen_list)) return;
+
+    if (currentProduksiData.dokumen_list.length <= 1) {
+        msgEl.style.display = 'none';
+        return;
+    }
+
+    const totalMmbtu = parseFloat(document.getElementById('cng_mmbtu')?.value) || 0;
+    let sumSplit = 0;
+    currentProduksiData.dokumen_list.forEach(item => {
+        const inp = document.getElementById(`cng_split_${item.produksi_id}`);
+        if (inp) sumSplit += (parseFloat(inp.value) || 0);
+    });
+
+    const diff = Math.abs(sumSplit - totalMmbtu);
+    if (diff > 0.05 && totalMmbtu > 0) {
+        msgEl.style.display = 'block';
+        msgEl.innerHTML = `⚠️ Perhatian: Total alokasi pabrik (${sumSplit.toFixed(2)} MMBTU) selisih dengan meteran induk (${totalMmbtu.toFixed(2)} MMBTU). Silakan sesuaikan atau klik 'Reset Proporsional'.`;
+    } else {
+        msgEl.style.display = 'none';
+    }
 }
 
 /**
@@ -537,6 +787,14 @@ function renderPemakaianTableOnly() {
         const origVal = bppbOriginalItems[idx]?.subtotal_nilai || 0;
         const isModified = Math.abs(itemVal - origVal) > 1;
 
+        const isBmbRow = ['BMB', 'CV-BMB', 'BAHTERA', 'TIMUR'].includes(String(item.lokasi_pabrik || '').toUpperCase());
+        const pabrikBadge = item.lokasi_pabrik ? (
+            isBmbRow
+                ? `<span style="display: inline-block; font-size: 0.65rem; font-weight: 700; padding: 1px 5px; border-radius: 4px; background: #faf5ff; color: #7e22ce; border: 1px solid #d8b4fe; margin-right: 4px;">BMB</span>`
+                : `<span style="display: inline-block; font-size: 0.65rem; font-weight: 700; padding: 1px 5px; border-radius: 4px; background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; margin-right: 4px;">MFI</span>`
+        ) : '';
+        const spkRef = item.produksi_no ? `<span style="font-size: 0.675rem; color: #94a3b8; font-family: monospace;">(${item.produksi_no})</span>` : '';
+
         let colSubtotalHtml = '';
         if (isBppbUnlocked) {
             colSubtotalHtml = `
@@ -558,7 +816,7 @@ function renderPemakaianTableOnly() {
         tr.innerHTML = `
             <td>${idx + 1}</td>
             <td>
-                <strong>${item.barang_nm}</strong>
+                <div>${pabrikBadge}<strong>${item.barang_nm}</strong> ${spkRef}</div>
                 <div style="font-size: 0.725rem; color: #64748b; font-family: monospace;">${item.barang_cd}</div>
             </td>
             <td>
@@ -791,6 +1049,14 @@ function renderAllocationTable(outputs, defaultHppPerKg) {
                 ? `<span class="badge-grade" style="background: #fef2f2; color: #dc2626; border: 1px solid #fecaca;">AFKIR (Rp 0)</span>`
                 : `<span class="badge-grade ${isKw2 ? 'badge-kw2' : 'badge-kw1'}">${item.kategori_output || (isKw2 ? 'WIP-BRK' : 'WIP-ASB')}</span>`);
 
+        const isBmbRow = ['BMB', 'CV-BMB', 'BAHTERA', 'TIMUR'].includes(String(item.lokasi_pabrik || '').toUpperCase());
+        const pabrikBadge = item.lokasi_pabrik ? (
+            isBmbRow
+                ? `<span style="display: inline-block; font-size: 0.65rem; font-weight: 700; padding: 1px 5px; border-radius: 4px; background: #faf5ff; color: #7e22ce; border: 1px solid #d8b4fe; margin-right: 4px;">BMB</span>`
+                : `<span style="display: inline-block; font-size: 0.65rem; font-weight: 700; padding: 1px 5px; border-radius: 4px; background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; margin-right: 4px;">MFI</span>`
+        ) : '';
+        const spkRef = item.produksi_no ? `<span style="font-size: 0.675rem; color: #94a3b8; font-family: monospace;">(${item.produksi_no})</span>` : '';
+
         const tr = document.createElement('tr');
         tr.setAttribute('data-output-id', item.output_id);
         tr.setAttribute('data-qty-kg', item.qty_kg);
@@ -800,7 +1066,7 @@ function renderAllocationTable(outputs, defaultHppPerKg) {
         tr.innerHTML = `
             <td>${idx + 1}</td>
             <td>
-                <strong>${item.barang_nm}</strong>
+                <div>${pabrikBadge}<strong>${item.barang_nm}</strong> ${spkRef}</div>
                 <div style="font-size: 0.725rem; color: #64748b;">${item.barang_cd}</div>
             </td>
             <td>
@@ -865,6 +1131,7 @@ function calcCngFromMmbtu() {
     if (elDispCng) elDispCng.textContent = formatRp(total);
 
     updateCngFormulaLabel(mmbtu, tarif);
+    if (typeof updateCngSplitInputs === 'function') updateCngSplitInputs(false);
     calcAllHpp();
 }
 
@@ -885,6 +1152,7 @@ function calcCngFromTarif() {
     if (elDispCng) elDispCng.textContent = formatRp(total);
 
     updateCngFormulaLabel(mmbtu, tarifRp);
+    if (typeof updateCngSplitInputs === 'function') updateCngSplitInputs(false);
     calcAllHpp();
 }
 

@@ -43,13 +43,19 @@ class CodeGeneratorController extends Controller
             case 'pakai':
                 $date = $request->query('date', date('Y-m-d'));
                 $excludePakaiId = $request->query('exclude_id');
-                $code = $this->codeGeneratorService->generatePakaiNo($date, $excludePakaiId ? (int) $excludePakaiId : null);
+                $pabrik = $request->query('pabrik');
+                $code = $this->codeGeneratorService->generatePakaiNo($date, $excludePakaiId ? (int) $excludePakaiId : null, $pabrik);
                 break;
             case 'produksi':
             case 'prd':
                 $date = $request->query('date', date('Y-m-d'));
                 $excludeProduksiId = $request->query('exclude_id');
-                $code = $this->codeGeneratorService->generateProduksiNo($date, $excludeProduksiId ? (int) $excludeProduksiId : null);
+                $lokasiPabrik = $request->query('pabrik', 'BARAT');
+                $code = $this->codeGeneratorService->generateProduksiNo(
+                    $date,
+                    $excludeProduksiId ? (int) $excludeProduksiId : null,
+                    $lokasiPabrik
+                );
                 break;
             case 'qc':
                 $date = $request->query('date', date('Y-m-d'));

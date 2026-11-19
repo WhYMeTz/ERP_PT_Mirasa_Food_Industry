@@ -354,12 +354,17 @@ class PemakaianService
 
             $gudangId = (int) $data['gudang_id'];
             $tujuanPemakaian = !empty($data['tujuan_pemakaian']) ? trim($data['tujuan_pemakaian']) : 'PRODUKSI';
+            $lokasiPabrik = !empty($data['lokasi_pabrik']) ? strtoupper(trim($data['lokasi_pabrik'])) : null;
+            if ($lokasiPabrik && !in_array($lokasiPabrik, ['MFI', 'BMB'])) {
+                $lokasiPabrik = in_array($lokasiPabrik, ['TIMUR', 'CV-BMB', 'BAHTERA']) ? 'BMB' : 'MFI';
+            }
 
             // 1. Simpan Header Pengeluaran sebagai DRAFT
             $header = DatPakaiHdr::create([
                 'pakai_no'         => $pakaiNo,
                 'pakai_tgl'        => $data['pakai_tgl'] ?? date('Y-m-d'),
                 'gudang_id'        => $gudangId,
+                'lokasi_pabrik'    => $lokasiPabrik,
                 'produksi_id'      => !empty($data['produksi_id']) ? (int) $data['produksi_id'] : null,
                 'tujuan_pemakaian' => $tujuanPemakaian,
                 'catatan_txt'      => $data['catatan_txt'] ?? null,

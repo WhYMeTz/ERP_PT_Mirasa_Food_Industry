@@ -21,6 +21,7 @@ class DatPakaiHdr extends Model
         'pakai_no',
         'pakai_tgl',
         'gudang_id',
+        'lokasi_pabrik',
         'produksi_id',
         'tujuan_pemakaian',
         'catatan_txt',

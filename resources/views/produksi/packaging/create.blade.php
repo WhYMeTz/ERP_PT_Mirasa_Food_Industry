@@ -186,34 +186,15 @@
                 <div style="overflow-x: auto;">
                     <table class="table-web-form">
                         <thead>
-                            {{-- TIER 1: KELOMPOK PROSES KONVERSI --}}
                             <tr>
-                                <th rowspan="2" style="width: 35px; text-align: center; vertical-align: middle;">No</th>
-                                <th colspan="2" class="th-group-wip">
-                                    <div style="display: flex; align-items: center; justify-content: center; gap: 0.35rem;">
-                                        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
-                                        <span>Sumber Bahan Curah (Input WIP)</span>
-                                    </div>
-                                </th>
-                                <th colspan="5" class="th-group-fg">
-                                    <div style="display: flex; align-items: center; justify-content: center; gap: 0.35rem;">
-                                        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                                        <span>Target Hasil Kemasan Jadi (Output FG)</span>
-                                    </div>
-                                </th>
-                            </tr>
-                            {{-- TIER 2: DETAIL KOLOM --}}
-                            <tr>
-                                {{-- Sub Input WIP --}}
-                                <th style="min-width: 250px;" class="th-sub-wip">Varian Keripik Curah (WIP) <span class="req">*</span></th>
-                                <th style="width: 165px;" class="th-sub-wip">Qty Diambil <span class="req">*</span></th>
-
-                                {{-- Sub Output FG --}}
-                                <th style="min-width: 240px;" class="th-sub-fg">Target Produk Jadi (FG) <span class="req">*</span></th>
-                                <th style="width: 205px;" class="th-sub-fg">Hasil Kemas Utama <span class="req">*</span></th>
-                                <th style="width: 120px;" class="th-sub-fg">Sisa Eceran</th>
-                                <th style="width: 145px;" class="th-sub-fg">No. Batch FG <span class="req">*</span></th>
-                                <th style="width: 145px;" class="th-sub-fg">Tgl Expired FG <span class="req">*</span></th>
+                                <th style="width: 35px; text-align: center;">No</th>
+                                <th style="min-width: 250px;">Bahan Keripik Curah (WIP)</th>
+                                <th style="width: 165px;">Qty Diambil</th>
+                                <th style="min-width: 240px;">Target Produk Jadi (FG)</th>
+                                <th style="width: 210px;">Hasil Kemas Utama</th>
+                                <th style="width: 120px;">Sisa Eceran</th>
+                                <th style="width: 150px;">No. Batch FG</th>
+                                <th style="width: 150px;">Tgl Expired FG</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -223,7 +204,7 @@
                                 </td>
 
                                 {{-- 1. WIP Varian --}}
-                                <td class="cell-wip-bg">
+                                <td>
                                     <select id="output_id" name="output_id" class="form-control" required onchange="onWebWipChange(this)">
                                         <option value="">-- Pilih Varian Keripik Curah --</option>
                                         @foreach ($wipList as $wip)
@@ -254,7 +235,7 @@
                                 </td>
 
                                 {{-- 2. Qty Diambil --}}
-                                <td class="cell-wip-bg">
+                                <td>
                                     <div class="input-group-web">
                                         <input type="number" step="any" min="0.01" id="wip_qty_kg" name="wip_qty_kg" class="form-control" placeholder="0" value="{{ old('wip_qty_kg', $selectedLaporan?->wip_qty_kg) }}" required style="font-weight: 700; font-size: 0.95rem;" oninput="checkWipStock()">
                                         <select id="selectWipSatuan" class="form-control" style="max-width: 75px; font-weight: 700; background: #ffffff;" onchange="setWebWipSatuan(this.value)">
@@ -269,7 +250,7 @@
                                 </td>
 
                                 {{-- 3. Target Produk Jadi --}}
-                                <td class="cell-fg-bg">
+                                <td>
                                     <select id="barang_jadi_id" name="barang_jadi_id" class="form-control" required style="background: #ffffff;">
                                         <option value="">-- Pilih Produk Jadi (FG) --</option>
                                         @foreach ($barangJadiList as $b)
@@ -281,7 +262,7 @@
                                 </td>
 
                                 {{-- 4. Hasil Kemas Utama --}}
-                                <td class="cell-fg-bg">
+                                <td>
                                     <div class="input-group-web">
                                         <input type="number" step="any" min="0.0001" id="hasil_karton_qty" name="hasil_karton_qty" class="form-control" placeholder="0" value="{{ old('hasil_karton_qty', $selectedLaporan?->hasil_karton_qty) }}" required style="font-weight: 700; font-size: 0.95rem; color: #047857; background: #ffffff;">
                                         <select id="selectSatuanHasil" class="form-control" style="width: 100px; max-width: 105px; font-weight: 700; background: #ffffff; padding: 0.45rem 0.5rem;" onchange="setWebSatuanHasil(this.value)">
@@ -298,24 +279,21 @@
                                 </td>
 
                                 {{-- 5. Sisa Eceran --}}
-                                <td class="cell-fg-bg">
+                                <td>
                                     <div class="input-group-web">
                                         <input type="number" step="any" min="0" id="hasil_pack_qty" name="hasil_pack_qty" class="form-control" placeholder="0" value="{{ old('hasil_pack_qty', $selectedLaporan?->hasil_pack_qty) }}" style="background: #ffffff; font-weight: 600;">
                                         <span class="input-group-addon" style="font-size: 0.75rem; padding: 0 0.4rem; color: #475569; font-weight: 600;">Pack</span>
                                     </div>
-                                    <small style="color: #94a3b8; font-size: 0.675rem; display: block; margin-top: 3px;">Di luar dus utuh</small>
                                 </td>
 
                                 {{-- 6. No. Batch FG --}}
-                                <td class="cell-fg-bg">
+                                <td>
                                     <input type="text" id="batch_no" name="batch_no" class="form-control" placeholder="No. Batch..." value="{{ old('batch_no', $selectedLaporan?->wip_batch_no) }}" style="background: #ffffff; font-family: ui-monospace, monospace; font-size: 0.825rem; font-weight: 600;" title="Nomor Batch FG">
-                                    <small style="color: #94a3b8; font-size: 0.675rem; display: block; margin-top: 3px;">Kode produksi FG</small>
                                 </td>
 
                                 {{-- 7. Tgl Expired FG --}}
-                                <td class="cell-fg-bg">
+                                <td>
                                     <input type="date" id="expired_tgl" name="expired_tgl" class="form-control" value="{{ old('expired_tgl', date('Y-m-d', strtotime('+6 months'))) }}" style="background: #ffffff; font-size: 0.825rem; font-weight: 600;" title="Tanggal Kadaluarsa FG">
-                                    <small style="color: #94a3b8; font-size: 0.675rem; display: block; margin-top: 3px;">Kedaluwarsa (6 bln)</small>
                                 </td>
                             </tr>
                         </tbody>

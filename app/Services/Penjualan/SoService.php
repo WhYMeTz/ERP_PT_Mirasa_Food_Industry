@@ -2,12 +2,15 @@
 
 namespace App\Services\Penjualan;
 
+use App\Models\MasterData\MstCustomer;
+use App\Models\Penjualan\DatFakturHdr;
 use App\Models\Penjualan\DatSoDtl;
 use App\Models\Penjualan\DatSoHdr;
 use App\Models\Penjualan\DatSoReturDtl;
 use App\Models\Penjualan\DatSoReturHdr;
 use App\Services\Common\CodeGeneratorService;
 use App\Services\Gudang\StokService;
+use Carbon\Carbon;
 use Exception;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
@@ -214,6 +217,7 @@ class SoService
                     'barang_id'        => $item['barang_id'],
                     'pesan_qty'        => $item['pesan_qty'],
                     'kirim_qty'        => 0,
+                    'satuan'           => $item['satuan'] ?? null,
                     'harga_satuan'     => $item['harga_satuan'],
                     'diskon_persen'    => $item['diskon_persen'],
                     'diskon_nominal'   => $item['diskon_nominal'],
@@ -277,6 +281,7 @@ class SoService
                     'barang_id'        => $item['barang_id'],
                     'pesan_qty'        => $item['pesan_qty'],
                     'kirim_qty'        => 0,
+                    'satuan'           => $item['satuan'] ?? null,
                     'harga_satuan'     => $item['harga_satuan'],
                     'diskon_persen'    => $item['diskon_persen'],
                     'diskon_nominal'   => $item['diskon_nominal'],
@@ -944,6 +949,7 @@ class SoService
             $processedItems[] = [
                 'barang_id'        => (int) $item['barang_id'],
                 'pesan_qty'        => $qty,
+                'satuan'           => $item['satuan'] ?? null,
                 'harga_satuan'     => $harga,
                 'diskon_persen'    => $diskonPersen,
                 'diskon_nominal'   => $diskonBaris,
@@ -980,5 +986,335 @@ class SoService
             'ppn_nominal'      => $totalPpn,
             'total_tagihan'    => $grandTotal,
         ];
+    }
+
+    /**
+     * Mesin Pengawas & Peringatan Dini Syarat Pembayaran (TOP & Piutang Guard Engine).
+     * Mendeteksi status piutang, keterlambatan tempo hari, dan aturan batas 1 nota.
+     */
+    public function checkCustomerTopStatus(int $customerId): array
+    {
+        $customer = MstCustomer::find($customerId);
+        if (!$customer) {
+            return [
+                'status'      => 'SAFE',
+                'badge_class' => 'safe',
+                'badge_label' => 'Customer Tidak Ditemukan',
+                'title'       => 'Data Tidak Ditemukan',
+                'message'     => 'Customer ID tidak valid.',
+                'can_proceed' => true,
+                'invoices'    => [],
+            ];
+        }
+
+        $topRaw = trim((string)($customer->top_txt ?? ''));
+        $topLower = strtolower($topRaw);
+        $klasifikasi = strtoupper(trim((string)($customer->klasifikasi ?? '')));
+        $today = Carbon::today(config('app.timezone', 'Asia/Jakarta'));
+
+        // 1. Klasifikasi Jenis TOP
+        $topType = 'DAYS';
+        $topDays = 14;
+
+        if (str_contains($topLower, 'nota')) {
+            $topType = 'NOTA'; // Contoh: "Tinggal 1 Nota", "1 Nota"
+        } elseif (preg_match('/(\d+)\s*hari/i', $topLower, $m)) {
+            $topType = 'DAYS';
+            $topDays = (int) $m[1];
+        } elseif (str_contains($topLower, 'tunai') || str_contains($topLower, 'cash') || str_contains($topLower, 'cod')) {
+            $topType = 'TUNAI';
+        } elseif (in_array($klasifikasi, ['IDM', 'MIDI_ALFA', 'IFM']) || empty($topRaw) || str_contains($topLower, 'modern')) {
+            $topType = 'MODERN_TRADE';
+        }
+
+        // 2. Kumpulkan Seluruh Faktur Belum Lunas (dat_faktur_hdr)
+        $unpaidFakturs = DatFakturHdr::where('customer_id', $customerId)
+            ->where('deleted_st', false)
+            ->where('active_st', true)
+            ->where(function ($q) {
+                $q->where('status_pembayaran', '!=', 'LUNAS')
+                  ->orWhereNull('status_pembayaran');
+            })
+            ->where('sisa_piutang', '>', 0)
+            ->orderBy('tgl_jatuh_tempo', 'asc')
+            ->orderBy('faktur_tgl', 'asc')
+            ->get();
+
+        $existingFakturNos = $unpaidFakturs->pluck('faktur_no')->filter()->toArray();
+
+        // 3. Kumpulkan juga SO Aktif yang Belum Difakturkan tapi memiliki sisa tagihan
+        $unpaidSos = DatSoHdr::with(['payments.header', 'returns'])
+            ->where('customer_id', $customerId)
+            ->where('status_cd', '!=', 'CANCELLED')
+            ->where('deleted_st', false)
+            ->where('active_st', true)
+            ->get()
+            ->filter(function ($so) use ($existingFakturNos) {
+                $fakturNo = $so->faktur_no;
+                return $so->sisa_tagihan > 0 && (!$fakturNo || !in_array($fakturNo, $existingFakturNos));
+            });
+
+        // 4. Normalisasi Dokumen Piutang
+        $invoiceList = [];
+        $totalPiutang = 0;
+        $overdueCount = 0;
+        $overdueTotal = 0;
+        $dueSoonCount = 0;
+        $dueSoonTotal = 0;
+
+        foreach ($unpaidFakturs as $faktur) {
+            $sisa = (float) $faktur->sisa_piutang;
+            $totalPiutang += $sisa;
+
+            $tglFaktur = $faktur->faktur_tgl ? Carbon::parse($faktur->faktur_tgl)->timezone(config('app.timezone', 'Asia/Jakarta')) : $today;
+            $tglTempo = $faktur->tgl_jatuh_tempo ? Carbon::parse($faktur->tgl_jatuh_tempo)->timezone(config('app.timezone', 'Asia/Jakarta')) : $tglFaktur->copy()->addDays($topDays);
+
+            // Selisih hari (positif = sisa hari, negatif = lewat tempo)
+            $diffDays = $today->diffInDays($tglTempo, false);
+
+            $invStatus = 'ACTIVE';
+            $statusLabel = 'Sisa ' . $diffDays . ' Hari';
+            if ($diffDays < 0) {
+                $invStatus = 'OVERDUE';
+                $statusLabel = 'Lewat ' . abs($diffDays) . ' Hari';
+                $overdueCount++;
+                $overdueTotal += $sisa;
+            } elseif ($diffDays <= 3) {
+                $invStatus = 'DUE_SOON';
+                $statusLabel = ($diffDays === 0) ? 'Jatuh Tempo Hari Ini' : 'Sisa ' . $diffDays . ' Hari (H-' . $diffDays . ')';
+                $dueSoonCount++;
+                $dueSoonTotal += $sisa;
+            }
+
+            $invoiceList[] = [
+                'doc_no'          => $faktur->faktur_no ?: 'FAKTUR-DRAFT',
+                'doc_type'        => 'FAKTUR',
+                'doc_tgl'         => $tglFaktur->format('d/m/Y'),
+                'tgl_jatuh_tempo' => $tglTempo->format('d/m/Y'),
+                'sisa_nominal'    => $sisa,
+                'sisa_formatted'  => 'Rp ' . number_format($sisa, 0, ',', '.'),
+                'status'          => $invStatus,
+                'days_diff'       => $diffDays,
+                'status_label'    => $statusLabel,
+            ];
+        }
+
+        foreach ($unpaidSos as $so) {
+            $sisa = (float) $so->sisa_tagihan;
+            $totalPiutang += $sisa;
+
+            $tglSo = $so->so_tgl ? Carbon::parse($so->so_tgl)->timezone(config('app.timezone', 'Asia/Jakarta')) : $today;
+            $tglTempo = $tglSo->copy()->addDays($topDays);
+            $diffDays = $today->diffInDays($tglTempo, false);
+
+            $invStatus = 'ACTIVE';
+            $statusLabel = 'Sisa ' . $diffDays . ' Hari';
+            if ($diffDays < 0) {
+                $invStatus = 'OVERDUE';
+                $statusLabel = 'Lewat ' . abs($diffDays) . ' Hari';
+                $overdueCount++;
+                $overdueTotal += $sisa;
+            } elseif ($diffDays <= 3) {
+                $invStatus = 'DUE_SOON';
+                $statusLabel = ($diffDays === 0) ? 'Jatuh Tempo Hari Ini' : 'Sisa ' . $diffDays . ' Hari (H-' . $diffDays . ')';
+                $dueSoonCount++;
+                $dueSoonTotal += $sisa;
+            }
+
+            $invoiceList[] = [
+                'doc_no'          => $so->faktur_no ?: $so->so_no,
+                'doc_type'        => 'SO',
+                'doc_tgl'         => $tglSo->format('d/m/Y'),
+                'tgl_jatuh_tempo' => $tglTempo->format('d/m/Y'),
+                'sisa_nominal'    => $sisa,
+                'sisa_formatted'  => 'Rp ' . number_format($sisa, 0, ',', '.'),
+                'status'          => $invStatus,
+                'days_diff'       => $diffDays,
+                'status_label'    => $statusLabel,
+            ];
+        }
+
+        $unpaidCount = count($invoiceList);
+        $totalFormatted = 'Rp ' . number_format($totalPiutang, 0, ',', '.');
+        $overdueTotalFormatted = 'Rp ' . number_format($overdueTotal, 0, ',', '.');
+        $dueSoonTotalFormatted = 'Rp ' . number_format($dueSoonTotal, 0, ',', '.');
+
+        // 5. Analisis Berdasarkan Aturan Bisnis
+        if ($topType === 'NOTA') {
+            // ATURAN TINGGAL 1 NOTA
+            if ($unpaidCount === 0) {
+                return [
+                    'customer_id'    => $customerId,
+                    'customer_nm'    => $customer->customer_nm,
+                    'top_txt'        => $topRaw ?: 'Tinggal 1 Nota',
+                    'top_type'       => 'NOTA',
+                    'status'         => 'SAFE',
+                    'badge_class'    => 'safe',
+                    'badge_label'    => 'Lancar (0 Nota Tertunggak)',
+                    'title'          => 'Status Piutang Lancar',
+                    'message'        => 'Tidak ada nota tertunggak. Pelanggan memenuhi syarat "Tinggal 1 Nota".',
+                    'can_proceed'    => true,
+                    'needs_override' => false,
+                    'total_piutang'  => 0,
+                    'total_formatted'=> 'Rp 0',
+                    'unpaid_count'   => 0,
+                    'invoices'       => [],
+                ];
+            } elseif ($unpaidCount === 1) {
+                $inv = $invoiceList[0];
+                return [
+                    'customer_id'    => $customerId,
+                    'customer_nm'    => $customer->customer_nm,
+                    'top_txt'        => $topRaw ?: 'Tinggal 1 Nota',
+                    'top_type'       => 'NOTA',
+                    'status'         => 'WARNING',
+                    'badge_class'    => 'warning',
+                    'badge_label'    => 'Peringatan: Kuota 1 Nota Penuh',
+                    'title'          => 'Pengingat Syarat Tinggal 1 Nota',
+                    'message'        => "Pelanggan saat ini masih memiliki 1 nota gantung senilai {$inv['sisa_formatted']} (Faktur: {$inv['doc_no']} tgl {$inv['doc_tgl']}). Sesuai syarat 'Tinggal 1 Nota', nota lama ini wajib ditagih saat pengiriman pesanan baru.",
+                    'can_proceed'    => true,
+                    'needs_override' => false,
+                    'total_piutang'  => $totalPiutang,
+                    'total_formatted'=> $totalFormatted,
+                    'unpaid_count'   => 1,
+                    'invoices'       => $invoiceList,
+                ];
+            } else {
+                return [
+                    'customer_id'    => $customerId,
+                    'customer_nm'    => $customer->customer_nm,
+                    'top_txt'        => $topRaw ?: 'Tinggal 1 Nota',
+                    'top_type'       => 'NOTA',
+                    'status'         => 'DANGER',
+                    'badge_class'    => 'danger',
+                    'badge_label'    => "Pelanggaran Aturan: {$unpaidCount} Nota Gantung",
+                    'title'          => 'Peringatan Kritis: Batas Aturan 1 Nota Terlampaui!',
+                    'message'        => "Pelanggan memiliki {$unpaidCount} nota yang belum lunas senilai total {$totalFormatted}. Batas syarat 'Tinggal 1 Nota' telah terlampaui. Wajib ada pelunasan sebelum membuat nota baru.",
+                    'can_proceed'    => false,
+                    'needs_override' => true,
+                    'total_piutang'  => $totalPiutang,
+                    'total_formatted'=> $totalFormatted,
+                    'unpaid_count'   => $unpaidCount,
+                    'invoices'       => $invoiceList,
+                ];
+            }
+        } elseif ($topType === 'TUNAI') {
+            // ATURAN PEMBAYARAN TUNAI
+            if ($unpaidCount > 0) {
+                return [
+                    'customer_id'    => $customerId,
+                    'customer_nm'    => $customer->customer_nm,
+                    'top_txt'        => $topRaw ?: 'TUNAI',
+                    'top_type'       => 'TUNAI',
+                    'status'         => 'DANGER',
+                    'badge_class'    => 'danger',
+                    'badge_label'    => "Tunggakan Tunai ({$unpaidCount} Dokumen)",
+                    'title'          => 'Peringatan Pelanggan Tunai',
+                    'message'        => "Pelanggan berstatus TUNAI ini masih memiliki {$unpaidCount} tagihan sebelumnya senilai total {$totalFormatted} yang belum disetor.",
+                    'can_proceed'    => false,
+                    'needs_override' => true,
+                    'total_piutang'  => $totalPiutang,
+                    'total_formatted'=> $totalFormatted,
+                    'unpaid_count'   => $unpaidCount,
+                    'invoices'       => $invoiceList,
+                ];
+            } else {
+                return [
+                    'customer_id'    => $customerId,
+                    'customer_nm'    => $customer->customer_nm,
+                    'top_txt'        => $topRaw ?: 'TUNAI',
+                    'top_type'       => 'TUNAI',
+                    'status'         => 'SAFE',
+                    'badge_class'    => 'safe',
+                    'badge_label'    => 'Lancar (Pembayaran Tunai)',
+                    'title'          => 'Status Tunai Bersih',
+                    'message'        => 'Tidak ada tagihan tunai yang tertunggak.',
+                    'can_proceed'    => true,
+                    'needs_override' => false,
+                    'total_piutang'  => 0,
+                    'total_formatted'=> 'Rp 0',
+                    'unpaid_count'   => 0,
+                    'invoices'       => [],
+                ];
+            }
+        } else {
+            // ATURAN BERBASIS HARI / MODERN TRADE
+            if ($overdueCount > 0) {
+                return [
+                    'customer_id'    => $customerId,
+                    'customer_nm'    => $customer->customer_nm,
+                    'top_txt'        => $topRaw ?: "{$topDays} Hari",
+                    'top_type'       => 'DAYS',
+                    'status'         => 'DANGER',
+                    'badge_class'    => 'danger',
+                    'badge_label'    => "Overdue: {$overdueCount} Faktur Lewat Tempo",
+                    'title'          => 'Peringatan Kritis: Piutang Melewati Batas TOP!',
+                    'message'        => "Pelanggan ini memiliki {$overdueCount} faktur senilai {$overdueTotalFormatted} yang telah melewati batas tanggal jatuh tempo. Diperlukan konfirmasi / otorisasi keuangan sebelum melanjutkan pesanan baru.",
+                    'can_proceed'    => false,
+                    'needs_override' => true,
+                    'total_piutang'  => $totalPiutang,
+                    'total_formatted'=> $totalFormatted,
+                    'overdue_count'  => $overdueCount,
+                    'overdue_total'  => $overdueTotalFormatted,
+                    'unpaid_count'   => $unpaidCount,
+                    'invoices'       => $invoiceList,
+                ];
+            } elseif ($dueSoonCount > 0) {
+                return [
+                    'customer_id'    => $customerId,
+                    'customer_nm'    => $customer->customer_nm,
+                    'top_txt'        => $topRaw ?: "{$topDays} Hari",
+                    'top_type'       => 'DAYS',
+                    'status'         => 'WARNING',
+                    'badge_class'    => 'warning',
+                    'badge_label'    => "Peringatan: {$dueSoonCount} Faktur Mendekati Tempo (H-3)",
+                    'title'          => 'Pengingat Jatuh Tempo (H-3)',
+                    'message'        => "Terdapat {$dueSoonCount} faktur senilai {$dueSoonTotalFormatted} yang akan jatuh tempo dalam 1 s/d 3 hari ke depan. Pastikan jadwal penagihan telah dikoordinasikan.",
+                    'can_proceed'    => true,
+                    'needs_override' => false,
+                    'total_piutang'  => $totalPiutang,
+                    'total_formatted'=> $totalFormatted,
+                    'due_soon_count' => $dueSoonCount,
+                    'unpaid_count'   => $unpaidCount,
+                    'invoices'       => $invoiceList,
+                ];
+            } elseif ($unpaidCount > 0) {
+                return [
+                    'customer_id'    => $customerId,
+                    'customer_nm'    => $customer->customer_nm,
+                    'top_txt'        => $topRaw ?: "{$topDays} Hari",
+                    'top_type'       => 'DAYS',
+                    'status'         => 'SAFE_ACTIVE',
+                    'badge_class'    => 'info',
+                    'badge_label'    => "Piutang Berjalan ({$unpaidCount} Faktur)",
+                    'title'          => 'Piutang Masa Tempo Berjalan',
+                    'message'        => "Pelanggan memiliki {$unpaidCount} faktur aktif senilai {$totalFormatted} dalam masa tenggang yang masih aman.",
+                    'can_proceed'    => true,
+                    'needs_override' => false,
+                    'total_piutang'  => $totalPiutang,
+                    'total_formatted'=> $totalFormatted,
+                    'unpaid_count'   => $unpaidCount,
+                    'invoices'       => $invoiceList,
+                ];
+            } else {
+                return [
+                    'customer_id'    => $customerId,
+                    'customer_nm'    => $customer->customer_nm,
+                    'top_txt'        => $topRaw ?: "{$topDays} Hari",
+                    'top_type'       => 'DAYS',
+                    'status'         => 'SAFE',
+                    'badge_class'    => 'safe',
+                    'badge_label'    => 'Lancar (0 Tunggakan)',
+                    'title'          => 'Status Piutang Lancar',
+                    'message'        => 'Tidak ada tagihan tertunggak. Status pembayaran pelanggan sangat lancar.',
+                    'can_proceed'    => true,
+                    'needs_override' => false,
+                    'total_piutang'  => 0,
+                    'total_formatted'=> 'Rp 0',
+                    'unpaid_count'   => 0,
+                    'invoices'       => [],
+                ];
+            }
+        }
     }
 }

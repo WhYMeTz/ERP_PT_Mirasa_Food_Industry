@@ -85,7 +85,7 @@ class SoController extends Controller
     public function create(): View
     {
         $soNo = $this->codeGenerator->generateSoNo();
-        $fakturNo = $this->codeGenerator->generateFakturManualNo(null, true);
+        $fakturNo = ''; // Menunggu pemilihan status PPN & customer
         $suratJalanNo = $this->codeGenerator->generateSuratJalanNo();
 
         $customers = MstCustomer::active()->orderBy('customer_nm')->get();
@@ -314,6 +314,24 @@ class SoController extends Controller
         return response()->json([
             'success' => true,
             'data'    => $stockInfo,
+        ]);
+    }
+
+    /**
+     * AJAX endpoint untuk mengecek status TOP & piutang aktif customer secara real-time.
+     */
+    public function ajaxCustomerTopCheck(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $customerId = (int) $request->input('customer_id');
+        if (!$customerId) {
+            return response()->json(['success' => false, 'message' => 'Customer ID wajib diisi.'], 400);
+        }
+
+        $topInfo = $this->soService->checkCustomerTopStatus($customerId);
+
+        return response()->json([
+            'success' => true,
+            'data'    => $topInfo,
         ]);
     }
 

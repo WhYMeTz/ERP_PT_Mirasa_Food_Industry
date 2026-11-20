@@ -29,15 +29,56 @@ function formatMmbtu(number, decimals = 4) {
 }
 
 /**
+ * Event Handler: Saat User Mengubah MMBTU Baru
+ * Otomatis menghitung dan memperbarui nominal Biaya Gas Baru (Rp)
+ */
+function onCngMmbtuChange(dateStr) {
+    const row = document.getElementById('row_cng_' + dateStr);
+    if (!row) return;
+
+    const cngTarifRp = parseFloat(row.dataset.cngTarif || 0);
+    const inputMmbtu = row.querySelector('.input-cng-mmbtu') || row.querySelector('.input-cng-edit');
+    const inputNilai = row.querySelector('.input-cng-nilai');
+    const mmbtuVal = parseFloat(inputMmbtu?.value || 0);
+
+    if (inputNilai) {
+        const calculatedNilai = Math.round(mmbtuVal * cngTarifRp);
+        inputNilai.value = calculatedNilai;
+    }
+
+    recalculateCngBalancing();
+}
+
+/**
+ * Event Handler: Saat User Mengubah Biaya Gas Baru (Nominal Rp)
+ * Otomatis menghitung dan memperbarui kuantitas MMBTU Baru
+ */
+function onCngNilaiChange(dateStr) {
+    const row = document.getElementById('row_cng_' + dateStr);
+    if (!row) return;
+
+    const cngTarifRp = parseFloat(row.dataset.cngTarif || 0);
+    const inputMmbtu = row.querySelector('.input-cng-mmbtu') || row.querySelector('.input-cng-edit');
+    const inputNilai = row.querySelector('.input-cng-nilai');
+    const nilaiVal = parseFloat(inputNilai?.value || 0);
+
+    if (inputMmbtu && cngTarifRp > 0) {
+        const calculatedMmbtu = Math.round((nilaiVal / cngTarifRp) * 10000) / 10000;
+        inputMmbtu.value = calculatedMmbtu;
+    }
+
+    recalculateCngBalancing();
+}
+
+/**
  * Kalkulasi Interaktif Real-Time Rekonsiliasi & Balancing Gas CNG
  */
 function recalculateCngBalancing() {
     const rows = document.querySelectorAll('.cng-daily-row');
     if (!rows || rows.length === 0) return;
 
-    // Ambil Target Vendor dari Input
+    // Ambil Target Vendor dari Input jika ada
     const elTargetMmbtu = document.getElementById('target_vendor_mmbtu');
-    const elTargetRp = document.getElementById('target_vendor_rp');
     const targetMmbtu = parseFloat(elTargetMmbtu?.value || 0);
 
     let sumOldMmbtu = 0;
@@ -55,12 +96,14 @@ function recalculateCngBalancing() {
         const cngTarifRp = parseFloat(row.dataset.cngTarif || 0);
         const wipQty = parseFloat(row.dataset.wipQty || 0);
 
-        const inputMmbtu = row.querySelector('.input-cng-edit');
-        const newMmbtu = parseFloat(inputMmbtu?.value || 0);
+        const inputMmbtu = row.querySelector('.input-cng-mmbtu') || row.querySelector('.input-cng-edit');
+        const inputNilai = row.querySelector('.input-cng-nilai');
+
+        let newMmbtu = parseFloat(inputMmbtu?.value || 0);
+        let newCngNilai = inputNilai ? parseFloat(inputNilai.value || 0) : Math.round(newMmbtu * cngTarifRp);
 
         const deltaMmbtu = Math.round((newMmbtu - oldMmbtu) * 10000) / 10000;
-        const newCngNilai = Math.round(newMmbtu * cngTarifRp);
-        const deltaCngNilai = newCngNilai - oldCngNilai;
+        const deltaCngNilai = Math.round(newCngNilai - oldCngNilai);
 
         const newTotalBiaya = Math.round(oldTotalBiaya + deltaCngNilai);
         const newHpp = wipQty > 0 ? (newTotalBiaya / wipQty) : 0;
@@ -73,14 +116,16 @@ function recalculateCngBalancing() {
         sumNewTotalBiaya += newTotalBiaya;
 
         // Update Indikator Perubahan pada Baris Ini
-        const isModified = Math.abs(deltaMmbtu) > 0.0001;
+        const isModified = Math.abs(deltaMmbtu) > 0.0001 || Math.abs(deltaCngNilai) >= 1;
         if (isModified) {
             modifiedDaysCount++;
             row.classList.add('row-modified');
             inputMmbtu?.classList.add('is-modified');
+            inputNilai?.classList.add('is-modified');
         } else {
             row.classList.remove('row-modified');
             inputMmbtu?.classList.remove('is-modified');
+            inputNilai?.classList.remove('is-modified');
         }
 
         // Update Preview Nm3
@@ -93,53 +138,77 @@ function recalculateCngBalancing() {
         const badgeMmbtu = row.querySelector('.badge-delta-mmbtu');
         if (badgeMmbtu) {
             if (deltaMmbtu > 0) {
-                badgeMmbtu.className = 'badge-cng-variance badge-cng-pos';
+                badgeMmbtu.className = 'badge-cng-variance badge-cng-pos badge-delta-mmbtu';
                 badgeMmbtu.textContent = '+' + formatMmbtu(deltaMmbtu, 4);
             } else if (deltaMmbtu < 0) {
-                badgeMmbtu.className = 'badge-cng-variance badge-cng-neg';
+                badgeMmbtu.className = 'badge-cng-variance badge-cng-neg badge-delta-mmbtu';
                 badgeMmbtu.textContent = formatMmbtu(deltaMmbtu, 4);
             } else {
-                badgeMmbtu.className = 'badge-cng-variance badge-cng-zero';
+                badgeMmbtu.className = 'badge-cng-variance badge-cng-zero badge-delta-mmbtu';
                 badgeMmbtu.textContent = '0';
             }
         }
 
-        // 2. Update Nilai Biaya Gas Baru
+        // 2. Update Cell Nilai Biaya Gas Baru jika bukan input
         const cellBiayaBaru = row.querySelector('.cell-cng-nilai-baru');
         if (cellBiayaBaru) {
             cellBiayaBaru.textContent = formatRupiah(newCngNilai);
         }
 
         // 3. Update Badge Delta Biaya Gas
-        const badgeBiaya = row.querySelector('.badge-delta-biaya');
+        const badgeBiaya = row.querySelector('.badge-delta-rp') || row.querySelector('.badge-delta-biaya');
         if (badgeBiaya) {
             if (deltaCngNilai > 0) {
-                badgeBiaya.className = 'badge-cng-variance badge-cng-pos';
+                badgeBiaya.className = 'badge-cng-variance badge-cng-pos badge-delta-rp badge-delta-biaya';
                 badgeBiaya.textContent = '+' + formatRupiah(deltaCngNilai);
             } else if (deltaCngNilai < 0) {
-                badgeBiaya.className = 'badge-cng-variance badge-cng-neg';
+                badgeBiaya.className = 'badge-cng-variance badge-cng-neg badge-delta-rp badge-delta-biaya';
                 badgeBiaya.textContent = formatRupiah(deltaCngNilai);
             } else {
-                badgeBiaya.className = 'badge-cng-variance badge-cng-zero';
+                badgeBiaya.className = 'badge-cng-variance badge-cng-zero badge-delta-rp badge-delta-biaya';
                 badgeBiaya.textContent = 'Rp 0';
             }
         }
 
         // 4. Update Estimasi HPP/kg Baru
-        const cellHppBaru = row.querySelector('.cell-hpp-baru');
+        const cellHppBaru = row.querySelector('.cell-cng-hpp-baru') || row.querySelector('.cell-hpp-baru');
         if (cellHppBaru) {
             cellHppBaru.textContent = formatRupiah(newHpp) + '/kg';
         }
     });
 
     // ─── UPDATE TFOOT TABEL TOTAL ───
-    const footMmbtu = document.getElementById('foot_total_mmbtu_baru');
-    if (footMmbtu) footMmbtu.textContent = formatMmbtu(sumNewMmbtu, 4) + ' MMBTU';
+    const footMmbtu = document.getElementById('footNewMmbtu') || document.getElementById('foot_total_mmbtu_baru');
+    if (footMmbtu) footMmbtu.textContent = formatMmbtu(sumNewMmbtu, 4);
 
-    const footBiaya = document.getElementById('foot_total_cng_baru');
+    const footDeltaMmbtu = document.getElementById('footDeltaMmbtu');
+    const totalDeltaMmbtu = sumNewMmbtu - sumOldMmbtu;
+    if (footDeltaMmbtu) {
+        if (totalDeltaMmbtu > 0) {
+            footDeltaMmbtu.innerHTML = `<span class="badge-cng-variance badge-cng-pos">+${formatMmbtu(totalDeltaMmbtu, 4)}</span>`;
+        } else if (totalDeltaMmbtu < 0) {
+            footDeltaMmbtu.innerHTML = `<span class="badge-cng-variance badge-cng-neg">${formatMmbtu(totalDeltaMmbtu, 4)}</span>`;
+        } else {
+            footDeltaMmbtu.innerHTML = `<span class="badge-cng-variance badge-cng-zero">0</span>`;
+        }
+    }
+
+    const footBiaya = document.getElementById('footNewNilai') || document.getElementById('foot_total_cng_baru');
     if (footBiaya) footBiaya.textContent = formatRupiah(sumNewNilai);
 
-    const footHpp = document.getElementById('foot_avg_hpp_baru');
+    const footDeltaRp = document.getElementById('footDeltaRp');
+    const totalDeltaNilai = sumNewNilai - sumOldNilai;
+    if (footDeltaRp) {
+        if (totalDeltaNilai > 0) {
+            footDeltaRp.innerHTML = `<span class="badge-cng-variance badge-cng-pos">+${formatRupiah(totalDeltaNilai)}</span>`;
+        } else if (totalDeltaNilai < 0) {
+            footDeltaRp.innerHTML = `<span class="badge-cng-variance badge-cng-neg">${formatRupiah(totalDeltaNilai)}</span>`;
+        } else {
+            footDeltaRp.innerHTML = `<span class="badge-cng-variance badge-cng-zero">Rp 0</span>`;
+        }
+    }
+
+    const footHpp = document.getElementById('footAvgHpp') || document.getElementById('foot_avg_hpp_baru');
     const avgHpp = sumWip > 0 ? (sumNewTotalBiaya / sumWip) : 0;
     if (footHpp) footHpp.textContent = formatRupiah(avgHpp) + '/kg';
 
@@ -150,7 +219,7 @@ function recalculateCngBalancing() {
     const cardActualRp = document.getElementById('stat_actual_rp');
     if (cardActualRp) cardActualRp.textContent = formatRupiah(sumNewNilai);
 
-    // Hitung Selisih (Variance) Terhadap Target Vendor
+    // Hitung Selisih (Variance) Terhadap Target Vendor jika ada
     const diffMmbtu = Math.round((sumNewMmbtu - targetMmbtu) * 10000) / 10000;
     const cardStatus = document.getElementById('cardBalancingStatus');
     const badgeStatus = document.getElementById('badgeBalancingTitle');
@@ -159,7 +228,6 @@ function recalculateCngBalancing() {
 
     if (cardStatus && badgeStatus && textStatusVal && textStatusDesc) {
         if (targetMmbtu <= 0) {
-            // Jika belum mengisi target vendor
             cardStatus.className = 'balancing-card card-status';
             badgeStatus.style.background = '#f1f5f9';
             badgeStatus.style.color = '#475569';
@@ -168,7 +236,6 @@ function recalculateCngBalancing() {
             textStatusVal.textContent = 'Ketik Target MMBTU';
             textStatusDesc.textContent = 'Ketik kuantitas faktur vendor pada kolom Target di sebelah kiri.';
         } else if (Math.abs(diffMmbtu) < 0.0001) {
-            // SEIMBANG / 100% BALANCE
             cardStatus.className = 'balancing-card card-status status-balanced';
             badgeStatus.style.background = '#dcfce7';
             badgeStatus.style.color = '#15803d';
@@ -177,23 +244,21 @@ function recalculateCngBalancing() {
             textStatusVal.textContent = 'Selisih: 0.0000 MMBTU';
             textStatusDesc.textContent = 'Total pemakaian fisik harian sudah sama persis dengan faktur vendor!';
         } else if (diffMmbtu > 0) {
-            // LEBIH
             cardStatus.className = 'balancing-card card-status status-unbalanced';
             badgeStatus.style.background = '#fef3c7';
             badgeStatus.style.color = '#b45309';
             badgeStatus.textContent = 'SELISIH LEBIH DARI FAKTUR';
             textStatusVal.style.color = '#d97706';
             textStatusVal.textContent = '+' + formatMmbtu(diffMmbtu, 4) + ' MMBTU';
-            textStatusDesc.textContent = 'Total harian lebih besar dari faktur vendor. Kurangi MMBTU pada tanggal terkait.';
+            textStatusDesc.textContent = 'Total harian lebih besar dari faktur vendor. Kurangi pada tanggal terkait.';
         } else {
-            // KURANG
             cardStatus.className = 'balancing-card card-status status-unbalanced';
             badgeStatus.style.background = '#fef2f2';
             badgeStatus.style.color = '#dc2626';
             badgeStatus.textContent = 'SELISIH KURANG DARI FAKTUR';
             textStatusVal.style.color = '#dc2626';
             textStatusVal.textContent = formatMmbtu(diffMmbtu, 4) + ' MMBTU';
-            textStatusDesc.textContent = 'Total harian masih kurang dari faktur vendor. Tambahkan MMBTU pada tanggal terkait.';
+            textStatusDesc.textContent = 'Total harian masih kurang dari faktur vendor. Tambahkan pada tanggal terkait.';
         }
     }
 
@@ -220,11 +285,13 @@ function recalculateCngBalancing() {
 
 /**
  * Terapkan Selisih Seragam (Bulk Offset) ke Semua Hari Kerja
- * Contoh: Tambah +0.005 MMBTU ke setiap hari kerja
+ * Mendukung satuan MMBTU maupun Rupiah (Nominal)
  */
 function applyBulkOffset() {
     const inputOffset = document.getElementById('input_bulk_offset');
     const offsetVal = parseFloat(inputOffset?.value || 0);
+    const unitSelect = document.getElementById('select_bulk_unit');
+    const unitMode = unitSelect ? unitSelect.value : 'MMBTU';
 
     if (isNaN(offsetVal) || offsetVal === 0) {
         alert('Silakan masukkan angka selisih penyesuaian terlebih dahulu.');
@@ -235,11 +302,22 @@ function applyBulkOffset() {
     const rows = document.querySelectorAll('.cng-daily-row');
     rows.forEach(row => {
         const oldMmbtu = parseFloat(row.dataset.oldMmbtu || 0);
-        const newMmbtu = Math.max(0, Math.round((oldMmbtu + offsetVal) * 10000) / 10000);
+        const oldCngNilai = parseFloat(row.dataset.oldCngNilai || 0);
+        const cngTarifRp = parseFloat(row.dataset.cngTarif || 0);
 
-        const inputMmbtu = row.querySelector('.input-cng-edit');
-        if (inputMmbtu) {
-            inputMmbtu.value = newMmbtu.toFixed(4);
+        const inputMmbtu = row.querySelector('.input-cng-mmbtu') || row.querySelector('.input-cng-edit');
+        const inputNilai = row.querySelector('.input-cng-nilai');
+
+        if (unitMode === 'RP') {
+            const newNilai = Math.max(0, Math.round(oldCngNilai + offsetVal));
+            const newMmbtu = cngTarifRp > 0 ? (newNilai / cngTarifRp) : 0;
+            if (inputNilai) inputNilai.value = newNilai;
+            if (inputMmbtu) inputMmbtu.value = parseFloat(newMmbtu.toFixed(4));
+        } else {
+            const newMmbtu = Math.max(0, Math.round((oldMmbtu + offsetVal) * 10000) / 10000);
+            const newNilai = Math.round(newMmbtu * cngTarifRp);
+            if (inputMmbtu) inputMmbtu.value = newMmbtu.toFixed(4);
+            if (inputNilai) inputNilai.value = newNilai;
         }
     });
 
@@ -247,47 +325,19 @@ function applyBulkOffset() {
 }
 
 /**
- * Otomatis Bagi Rata Selisih dari Target Faktur Vendor ke Seluruh Hari Kerja
- */
-function autoDistributeVariance() {
-    const elTargetMmbtu = document.getElementById('target_vendor_mmbtu');
-    const targetMmbtu = parseFloat(elTargetMmbtu?.value || 0);
-    const rows = document.querySelectorAll('.cng-daily-row');
-
-    if (targetMmbtu <= 0 || rows.length === 0) {
-        alert('Silakan masukkan Target Faktur Vendor (MMBTU) terlebih dahulu.');
-        elTargetMmbtu?.focus();
-        return;
-    }
-
-    // Hitung total MMBTU awal
-    let sumOldMmbtu = 0;
-    rows.forEach(row => {
-        sumOldMmbtu += parseFloat(row.dataset.oldMmbtu || 0);
-    });
-
-    const totalDiff = targetMmbtu - sumOldMmbtu;
-    const diffPerDay = Math.round((totalDiff / rows.length) * 10000) / 10000;
-
-    const inputOffset = document.getElementById('input_bulk_offset');
-    if (inputOffset) {
-        inputOffset.value = diffPerDay;
-    }
-
-    applyBulkOffset();
-}
-
-/**
- * Kembalikan Semua Nilai MMBTU ke Catatan Awal
+ * Kembalikan Semua Nilai MMBTU & Nominal ke Catatan Awal
  */
 function resetAllDailyInputs() {
     const rows = document.querySelectorAll('.cng-daily-row');
     rows.forEach(row => {
         const oldMmbtu = parseFloat(row.dataset.oldMmbtu || 0);
-        const inputMmbtu = row.querySelector('.input-cng-edit');
-        if (inputMmbtu) {
-            inputMmbtu.value = oldMmbtu.toFixed(4);
-        }
+        const oldCngNilai = parseFloat(row.dataset.oldCngNilai || 0);
+
+        const inputMmbtu = row.querySelector('.input-cng-mmbtu') || row.querySelector('.input-cng-edit');
+        const inputNilai = row.querySelector('.input-cng-nilai');
+
+        if (inputMmbtu) inputMmbtu.value = oldMmbtu.toFixed(4);
+        if (inputNilai) inputNilai.value = Math.round(oldCngNilai);
     });
 
     const inputOffset = document.getElementById('input_bulk_offset');
@@ -310,14 +360,16 @@ function openModalConfirmAdjustCng() {
         const oldCngNilai = parseFloat(row.dataset.oldCngNilai || 0);
         const cngTarifRp = parseFloat(row.dataset.cngTarif || 0);
 
-        const inputMmbtu = row.querySelector('.input-cng-edit');
+        const inputMmbtu = row.querySelector('.input-cng-mmbtu') || row.querySelector('.input-cng-edit');
+        const inputNilai = row.querySelector('.input-cng-nilai');
+
         const newMmbtu = parseFloat(inputMmbtu?.value || 0);
+        const newCngNilai = inputNilai ? parseFloat(inputNilai.value || 0) : Math.round(newMmbtu * cngTarifRp);
 
         const deltaMmbtu = Math.round((newMmbtu - oldMmbtu) * 10000) / 10000;
-        const newCngNilai = Math.round(newMmbtu * cngTarifRp);
-        const deltaCngNilai = newCngNilai - oldCngNilai;
+        const deltaCngNilai = Math.round(newCngNilai - oldCngNilai);
 
-        if (Math.abs(deltaMmbtu) > 0.0001) {
+        if (Math.abs(deltaMmbtu) > 0.0001 || Math.abs(deltaCngNilai) >= 1) {
             modifiedDaysCount++;
             netDeltaMmbtu += deltaMmbtu;
             netDeltaBiaya += deltaCngNilai;
@@ -325,7 +377,7 @@ function openModalConfirmAdjustCng() {
     });
 
     if (modifiedDaysCount === 0) {
-        alert('Belum ada perubahan kuantitas MMBTU gas yang dilakukan.');
+        alert('Belum ada perubahan kuantitas MMBTU atau nominal gas yang dilakukan.');
         return;
     }
 
@@ -349,6 +401,13 @@ function openModalConfirmAdjustCng() {
     if (modal) {
         modal.style.display = 'flex';
     }
+}
+
+/**
+ * Alias untuk kompatibilitas trigger tombol modal
+ */
+function confirmOpenBalancingModal() {
+    openModalConfirmAdjustCng();
 }
 
 /**

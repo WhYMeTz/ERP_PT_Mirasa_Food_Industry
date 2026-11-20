@@ -37,11 +37,23 @@
         </div>
 
         <div style="display: flex; gap: 0.65rem; flex-wrap: wrap;">
-            {{-- Tombol Cetak PDF --}}
+            {{-- Tombol Cetak PDF Surat Jalan --}}
             <a href="{{ route('penjualan.pengeluaran.export-pdf', $pengeluaran->pengeluaran_id) }}" target="_blank" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.825rem; font-weight: 700;">
                 <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
                 <span>Cetak Lembar Surat Jalan (PDF)</span>
             </a>
+
+            {{-- Tombol Cetak Faktur Penjualan (Terbit Otomatis Bersama Surat Jalan) --}}
+            @if ($pengeluaran->faktur && $pengeluaran->status_cd !== 'BATAL')
+                <a href="{{ route('penjualan.faktur.export-pdf', $pengeluaran->faktur->faktur_id) }}" target="_blank" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.825rem; font-weight: 700; background: #059669; border-color: #047857;">
+                    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    <span>Cetak Faktur Penjualan (PDF)</span>
+                </a>
+                <a href="{{ route('penjualan.faktur.show', $pengeluaran->faktur->faktur_id) }}" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.825rem;">
+                    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                    <span>Rincian Faktur ({{ $pengeluaran->faktur->faktur_no }})</span>
+                </a>
+            @endif
 
             @if ($pengeluaran->order)
                 <a href="{{ route('penjualan.so.show', $pengeluaran->order->so_id) }}" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.825rem;">
@@ -50,24 +62,11 @@
                 </a>
             @endif
 
-            {{-- Tahap 3: Terbitkan / Lihat Penjualan --}}
-            @if ($pengeluaran->faktur)
-                <a href="{{ route('penjualan.faktur.show', $pengeluaran->faktur->faktur_id) }}" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.825rem; font-weight: 700; background: #059669; border-color: #047857;">
-                    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"/></svg>
-                    <span>Lihat Penjualan ({{ $pengeluaran->faktur->faktur_no }})</span>
-                </a>
-            @elseif ($pengeluaran->status_cd !== 'BATAL')
-                <a href="{{ route('penjualan.faktur.create', ['pengeluaran_id' => $pengeluaran->pengeluaran_id]) }}" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.825rem; font-weight: 700; background: #059669; border-color: #047857;">
-                    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                    <span>+ Catat Penjualan</span>
-                </a>
-            @endif
-
             @if ($pengeluaran->status_cd !== 'BATAL')
-                @if ($pengeluaran->faktur && $pengeluaran->faktur->status_pembayaran !== 'BATAL' && !$pengeluaran->faktur->deleted_st)
-                    <span style="background: #f1f5f9; color: #64748b; font-size: 0.8rem; font-weight: 600; padding: 0.45rem 0.85rem; border-radius: 6px; border: 1.5px solid #cbd5e1; display: inline-flex; align-items: center; gap: 0.35rem;" title="Dokumen ini terkunci karena Faktur Penjualan ({{ $pengeluaran->faktur->faktur_no }}) sudah terbit. Batalkan faktur terlebih dahulu jika ingin void SJ.">
+                @if ($pengeluaran->faktur && (float) $pengeluaran->faktur->total_dibayar > 0)
+                    <span style="background: #f1f5f9; color: #64748b; font-size: 0.8rem; font-weight: 600; padding: 0.45rem 0.85rem; border-radius: 6px; border: 1.5px solid #cbd5e1; display: inline-flex; align-items: center; gap: 0.35rem;" title="Dokumen ini terkunci karena Faktur Penjualan ({{ $pengeluaran->faktur->faktur_no }}) sudah memiliki pembayaran piutang. Batalkan pembayaran terlebih dahulu jika ingin void SJ.">
                         <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
-                        <span>Terkunci (Faktur Terbit)</span>
+                        <span>Terkunci (Ada Pembayaran)</span>
                     </span>
                 @else
                     <button type="button" class="btn btn-danger" onclick="openVoidModal('{{ $pengeluaran->pengeluaran_id }}', '{{ $pengeluaran->pengeluaran_no }}')"

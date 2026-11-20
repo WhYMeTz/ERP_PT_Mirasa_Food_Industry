@@ -129,13 +129,13 @@
                         </span>
                         <div>
                             <h3 class="sj-card-title">Parameter Surat Jalan &amp; Ekspedisi</h3>
-                            <div class="sj-card-subtitle">Diterbitkan resmi oleh Bagian Penjualan (PO)</div>
+                            <div class="sj-card-subtitle">Ditetapkan resmi oleh Kantor Penjualan (Terkunci)</div>
                         </div>
                     </div>
                     <div>
-                        <span class="badge" style="background: #ecfdf5; color: #047857; font-weight: 700; font-size: 0.725rem; padding: 4px 10px; border-radius: 6px; border: 1px solid #a7f3d0; display: inline-flex; align-items: center; gap: 0.35rem;">
-                            <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                            Terbit Resmi dari PO
+                        <span class="badge" style="background: #f1f5f9; color: #475569; font-weight: 700; font-size: 0.725rem; padding: 4px 10px; border-radius: 6px; border: 1px solid #cbd5e1; display: inline-flex; align-items: center; gap: 0.35rem;">
+                            <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                            Kewenangan Kantor
                         </span>
                     </div>
                 </div>
@@ -156,7 +156,7 @@
                            value="{{ old('catatan_txt', $prefilledData['order']->catatan_txt ?? '') }}">
 
                     {{-- Informasi Parameter Pengiriman (Read-Only Info Grid) --}}
-                    <div class="sj-info-box" style="margin-top: 0; background: #ffffff; border: 1px solid #e2e8f0;">
+                    <div class="sj-info-box" style="margin-top: 0; background: #f8fafc; border: 1px solid #e2e8f0;">
                         <div class="sj-info-item">
                             <div class="sj-info-label">No. Surat Jalan Resmi:</div>
                             <div id="infoSjNo" class="sj-info-value" style="font-family: monospace; font-size: 0.95rem; color: #0284c7; font-weight: 800;">
@@ -165,22 +165,22 @@
                         </div>
 
                         <div class="sj-info-item">
-                            <div class="sj-info-label">Tanggal Pengeluaran / Berangkat:</div>
-                            <div id="infoSjTgl" class="sj-info-value" style="font-size: 0.85rem; color: #0f172a;">
+                            <div class="sj-info-label">Tanggal Berangkat / Muat:</div>
+                            <div id="infoSjTgl" class="sj-info-value" style="font-size: 0.85rem; color: #0f172a; font-weight: 600;">
                                 {{ ($hasPrefill && !empty($prefilledData['order']->tgl_kirim_estimasi)) ? \Carbon\Carbon::parse($prefilledData['order']->tgl_kirim_estimasi)->translatedFormat('d F Y') : \Carbon\Carbon::now()->translatedFormat('d F Y') }}
                             </div>
                         </div>
 
                         <div class="sj-info-item">
-                            <div class="sj-info-label">Nama Supir / Pengemudi:</div>
-                            <div id="infoSupir" class="sj-info-value" style="font-size: 0.85rem; color: #0f172a;">
-                                {{ !empty($prefilledData['order']->supir_nm) ? $prefilledData['order']->supir_nm : '-' }}
+                            <div class="sj-info-label">Nama Supir / Pengemudi (Kantor):</div>
+                            <div id="infoSupir" class="sj-info-value" style="font-size: 0.9rem; color: #0f172a; font-weight: 700;">
+                                {{ !empty($prefilledData['order']->supir_nm) ? $prefilledData['order']->supir_nm : '(Belum Ditentukan Kantor)' }}
                             </div>
                         </div>
 
                         <div class="sj-info-item">
                             <div class="sj-info-label">No. Polisi Armada Truk:</div>
-                            <div id="infoNopol" class="sj-info-value" style="font-family: monospace; font-size: 0.85rem; color: #0f172a; text-transform: uppercase;">
+                            <div id="infoNopol" class="sj-info-value" style="font-family: monospace; font-size: 0.9rem; color: #0f172a; font-weight: 700; text-transform: uppercase;">
                                 {{ !empty($prefilledData['order']->nopol_kendaraan) ? $prefilledData['order']->nopol_kendaraan : '-' }}
                             </div>
                         </div>
@@ -198,11 +198,6 @@
                                 {{ !empty($prefilledData['order']->catatan_txt) ? $prefilledData['order']->catatan_txt : '(Tidak ada catatan)' }}
                             </div>
                         </div>
-                    </div>
-
-                    <div style="font-size: 0.725rem; color: #64748b; margin-top: 0.65rem; display: flex; align-items: center; gap: 0.4rem; padding: 0.5rem 0.75rem; background: #f8fafc; border-radius: 6px; border: 1px dashed #cbd5e1;">
-                        <svg width="15" height="15" fill="none" stroke="#0284c7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                        <span>Parameter Surat Jalan &amp; Armada ditetapkan resmi oleh <strong>Bagian Penjualan (PO)</strong>. Petugas Gudang hanya memverifikasi fisik muatan karton.</span>
                     </div>
                 </div>
             </div>

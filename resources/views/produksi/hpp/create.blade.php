@@ -360,17 +360,25 @@
 
                         <div class="grid-2-sm">
                             <div class="form-group-hpp">
-                                <label for="cng_tarif_usd" class="hpp-label-sm">Tarif Kontrak (USD / MMBTU)</label>
+                                <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.35rem; min-height: 24px; margin-bottom: 0.35rem;">
+                                    <label for="cng_tarif_usd" class="hpp-label-sm" style="margin-bottom: 0;">Tarif Kontrak (USD / MMBTU)</label>
+                                    <div style="display: flex; gap: 0.35rem; align-items: center;">
+                                        <button type="button" class="btn-edit-tarif" onclick="openModalEditTarifCng()" title="Ubah Standar Tarif Kontrak Gas (CNG) di Master Data">
+                                            <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                                            <span>Ubah Standar</span>
+                                        </button>
+                                    </div>
+                                </div>
                                 <div class="input-usd-wrap">
                                     <span class="prefix-usd">$</span>
                                     <input type="number" step="0.01" min="0" name="cng_tarif_usd" id="cng_tarif_usd" class="hpp-input-sm" value="{{ $defaultCngTarifUsd }}" oninput="calcCngFromTarif()">
                                 </div>
-                                <small class="helper-text">Standar vendor: $14.50</small>
+                                <small class="helper-text" id="helpStandarVendor">Standar vendor: <strong>$<span id="dispStandarVendor">{{ number_format($defaultCngTarifUsd, 2) }}</span></strong></small>
                             </div>
 
                             <div class="form-group-hpp">
-                                <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.35rem;">
-                                    <label for="cng_kurs_jisdor" class="hpp-label-sm">Kurs JISDOR BI (Rp)</label>
+                                <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.35rem; min-height: 24px; margin-bottom: 0.35rem;">
+                                    <label for="cng_kurs_jisdor" class="hpp-label-sm" style="margin-bottom: 0;">Kurs JISDOR BI (Rp)</label>
                                     <div style="display: flex; gap: 0.35rem; align-items: center;">
                                         <button type="button" class="btn-sync-kurs" onclick="fetchLiveJisdor(true)" title="Sinkronkan kurs JISDOR Bank Indonesia terkini">
                                             <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
@@ -386,7 +394,7 @@
                                     <span class="prefix-rp">Rp</span>
                                     <input type="number" step="any" min="0" name="cng_kurs_jisdor" id="cng_kurs_jisdor" class="hpp-input-sm" value="{{ $defaultCngKursJisdor }}" oninput="calcCngFromTarif()">
                                 </div>
-                                <small class="helper-text" id="helpKursJisdor">Referensi resmi BI: <strong>Rp {{ number_format($defaultCngKursJisdor, 0, ',', '.') }}</strong> ({{ $latestKursDate ?? date('d/m/Y') }} &bull; <span style="color: #059669; font-weight: 600;">Kurs tanggal produksi</span>)</small>
+                                <small class="helper-text" id="helpKursJisdor">Referensi resmi BI: <strong>Rp {{ number_format($defaultCngKursJisdor, 0, ',', '.') }}</strong> ({{ $latestKursDate ?? date('d/m/Y') }} &bull; <span style="color: {{ !empty($isKursExactDate) ? '#059669' : '#d97706' }}; font-weight: 600;">{{ $kursKeteranganAcuan ?? 'Kurs acuan BI' }}</span>)</small>
                             </div>
                         </div>
 
@@ -681,6 +689,8 @@
         </div>
     </div>
 </div>
+
+@include('produksi.hpp.partials.modal-edit-tarif-cng')
 @endsection
 
 @push('scripts')
@@ -689,6 +699,7 @@
             produksiDataUrl: "{{ url('/produksi/hpp/produksi-data') }}",
             jisdorUrl: "{{ route('produksi.kurs-jisdor') }}",
             syncKaryawanUrl: "{{ route('produksi.sync-karyawan') }}",
+            quickUpdateTarifUrl: "{{ route('master.tarif_produksi.quick-update') }}",
             selectedProduksiId: {{ $selectedProduksiId ? (int)$selectedProduksiId : 'null' }},
             selectedProduksiTgl: "{{ $prodDateStr ?? '' }}",
             defaultCngTarifUsd: {{ $defaultCngTarifUsd }},

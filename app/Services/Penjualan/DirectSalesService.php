@@ -44,7 +44,7 @@ class DirectSalesService
         $query = DatSoHdr::with(['customer', 'details.barang.satuanDasar', 'pengeluaran', 'faktur'])
             ->where('deleted_st', false)
             ->where(function ($q) {
-                $q->where('customer_po_no', 'PENJUALAN LANGSUNG')
+                $q->where('customer_po_no', 'like', 'PENJUALAN LANGSUNG%')
                   ->orWhere('so_no', 'like', 'DIR-%');
             });
 
@@ -84,7 +84,7 @@ class DirectSalesService
 
         $base = DatSoHdr::where('deleted_st', false)
             ->where(function ($q) {
-                $q->where('customer_po_no', 'PENJUALAN LANGSUNG')
+                $q->where('customer_po_no', 'like', 'PENJUALAN LANGSUNG%')
                   ->orWhere('so_no', 'like', 'DIR-%');
             });
 
@@ -186,8 +186,15 @@ class DirectSalesService
 
             $gudangFgId = MstGudang::where('gudang_cd', 'GDG-FG')->value('gudang_id') ?? 6;
 
-            // 1. Validasi Customer
-            $customerId = !empty($data['customer_id']) ? (int) $data['customer_id'] : null;
+            $kategori = strtoupper(trim($data['kategori_penjualan'] ?? 'UMUM'));
+
+            // 1. Validasi Customer & Parameter Berdasarkan Kategori
+            if ($kategori === 'SALES') {
+                $customerId = !empty($data['customer_id_sales']) ? (int) $data['customer_id_sales'] : (!empty($data['customer_id']) ? (int) $data['customer_id'] : null);
+            } else {
+                $customerId = !empty($data['customer_id']) ? (int) $data['customer_id'] : null;
+            }
+
             if (!$customerId) {
                 $defaultCust = $this->getOrCreateCashCustomer();
                 $customerId = $defaultCust->customer_id;
@@ -279,7 +286,30 @@ class DirectSalesService
             $metodeBayar = strtoupper(trim($data['metode_bayar'] ?? 'TUNAI'));
             $uangDiterima = (float) ($data['uang_diterima'] ?? $totalTagihan);
             $uangKembalian = max(0, $uangDiterima - $totalTagihan);
-            $namaPembeli = trim($data['nama_pembeli'] ?? ($customer->customer_nm));
+
+            if ($kategori === 'SALES') {
+                $salesNm = trim($data['sales_nm'] ?? 'Sales Kanvaser');
+                $rute = trim($data['rute_wilayah'] ?? '-');
+                $armada = trim($data['armada_sales'] ?? 'ARMADA SALES');
+                $tokoKanvas = trim($data['toko_kanvas_nm'] ?? '');
+                $notaManual = trim($data['nota_manual_no'] ?? '-');
+
+                $namaPembeli = $tokoKanvas ? "{$tokoKanvas} (Sales: {$salesNm})" : "Setoran Sales: {$salesNm}";
+                $nopolKendaraan = $armada ?: 'ARMADA SALES';
+                $customerPoNo = 'PENJUALAN LANGSUNG - SALES';
+                $catatanTransaksi = "[SALES KELILING] Sales: {$salesNm} | Rute: {$rute} | Nota: {$notaManual}";
+                if (!empty($data['catatan_txt'])) {
+                    $catatanTransaksi .= " | " . $data['catatan_txt'];
+                }
+            } else {
+                $namaPembeli = trim($data['nama_pembeli'] ?? '') ?: ($customer->customer_nm ?? 'Pelanggan Umum');
+                $nopolKendaraan = 'AMBIL SENDIRI';
+                $customerPoNo = 'PENJUALAN LANGSUNG - UMUM';
+                $catatanTransaksi = "[UMUM PABRIK] Pembeli: {$namaPembeli}";
+                if (!empty($data['catatan_txt'])) {
+                    $catatanTransaksi .= " | " . $data['catatan_txt'];
+                }
+            }
 
             // 3. TAHAP 1: Simpan Sales Order (Status Langsung COMPLETED)
             $order = DatSoHdr::create([
@@ -288,14 +318,14 @@ class DirectSalesService
                 'surat_jalan_no'     => $suratJalanNo,
                 'so_tgl'             => $soTgl,
                 'customer_id'        => $customerId,
-                'customer_po_no'     => 'PENJUALAN LANGSUNG',
+                'customer_po_no'     => $customerPoNo,
                 'top_txt'            => $metodeBayar,
                 'tgl_kirim_estimasi' => $soTgl,
                 'tgl_kirim_aktual'   => $soTgl,
                 'supir_nm'           => $namaPembeli,
-                'nopol_kendaraan'    => $data['nopol_kendaraan'] ?? 'AMBIL SENDIRI',
+                'nopol_kendaraan'    => $nopolKendaraan,
                 'status_cd'          => 'COMPLETED',
-                'catatan_txt'        => "Penjualan Langsung / Tunai. Pembeli: {$namaPembeli}. " . ($data['catatan_txt'] ?? ''),
+                'catatan_txt'        => $catatanTransaksi,
                 'subtotal_bruto'     => $subtotalBruto,
                 'diskon_total'       => $diskonTotal,
                 'potongan_nominal'   => $potonganHeader,
@@ -305,7 +335,7 @@ class DirectSalesService
                 'ppn_nominal'        => $ppnNominal,
                 'total_tagihan'      => $totalTagihan,
                 'total_terkirim_qty' => array_sum(array_column($calculatedItems, 'qty')),
-                'created_by'         => $userName ?? auth()->user()?->nama_lengkap ?? 'Kasir',
+                'created_by'         => $userName ?? auth()->user()?->nama_lengkap ?? 'Admin Penjualan',
                 'active_st'          => true,
                 'deleted_st'         => false,
             ]);

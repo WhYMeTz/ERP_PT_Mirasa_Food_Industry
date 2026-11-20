@@ -248,8 +248,8 @@
 
         foreach ($sourceDetails as $dtl) {
             $qty = (float) ($dtl->kirim_qty > 0 ? $dtl->kirim_qty : ($dtl->pesan_qty ?? 0));
-            $satuanCd = strtoupper($dtl->barang?->satuanBesar?->satuan_cd ?? ($dtl->barang?->satuanDasar?->satuan_cd ?? ''));
-            $satuanNm = strtoupper($dtl->barang?->satuanBesar?->satuan_nm ?? ($dtl->barang?->satuanDasar?->satuan_nm ?? ''));
+            $satuanCd = strtoupper($dtl->satuan ?: ($dtl->barang?->satuanBesar?->satuan_cd ?? ($dtl->barang?->satuanDasar?->satuan_cd ?? '')));
+            $satuanNm = strtoupper($dtl->satuan ?: ($dtl->barang?->satuanBesar?->satuan_nm ?? ($dtl->barang?->satuanDasar?->satuan_nm ?? '')));
             $barangNm = strtoupper($dtl->barang?->barang_nm ?? '-');
 
             $ikat = 0;

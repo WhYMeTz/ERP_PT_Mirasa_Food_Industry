@@ -19,7 +19,8 @@ class PengeluaranBarangService
 {
     public function __construct(
         protected StokService $stokService,
-        protected CodeGeneratorService $codeGenerator
+        protected CodeGeneratorService $codeGenerator,
+        protected FakturPenjualanService $fakturService
     ) {}
 
     /**
@@ -370,7 +371,11 @@ class PengeluaranBarangService
                 'version_no'         => $order->version_no + 1,
             ]);
 
-            Log::info("Surat Jalan {$suratJalanNo} (ID: {$header->pengeluaran_id}) berhasil diterbitkan untuk SO {$order->so_no} oleh " . ($userName ?? 'System'));
+            // Terbitkan Faktur Penjualan komersial secara otomatis berbarengan dengan terbitnya Surat Jalan
+            $header->load(['customer', 'order.details', 'details.orderDetail', 'details.barang.satuanDasar']);
+            $this->fakturService->autoCreateFromPengeluaran($header, $userName);
+
+            Log::info("Surat Jalan {$suratJalanNo} (ID: {$header->pengeluaran_id}) dan Faktur Penjualan otomatis berhasil diterbitkan untuk SO {$order->so_no} oleh " . ($userName ?? 'System'));
 
             return $header;
         });
@@ -388,9 +393,22 @@ class PengeluaranBarangService
                 throw new Exception("Surat Jalan {$header->pengeluaran_no} sudah dalam status Dibatalkan (BATAL).");
             }
 
-            // Kunci Keuangan: Surat Jalan tidak boleh dibatalkan jika Faktur Penjualan komersial sudah terbit
+            // Validasi Keuangan: Jika Faktur Penjualan sudah terbit
             if ($header->faktur && $header->faktur->status_pembayaran !== 'BATAL' && !$header->faktur->deleted_st) {
-                throw new Exception("Surat Jalan {$header->pengeluaran_no} tidak dapat dibatalkan karena Faktur Penjualan ({$header->faktur->faktur_no}) sudah terbit. Batalkan faktur terlebih dahulu oleh bagian Keuangan jika ingin merevisi.");
+                // Jika sudah ada pembayaran yang tercatat, cegah pembatalan untuk menjaga integritas kas
+                if ((float) $header->faktur->total_dibayar > 0) {
+                    throw new Exception("Surat Jalan {$header->pengeluaran_no} tidak dapat dibatalkan karena Faktur Penjualan ({$header->faktur->faktur_no}) sudah memiliki pembayaran piutang sebesar Rp " . number_format($header->faktur->total_dibayar, 0, ',', '.') . ". Harap batalkan/reversikan data pembayaran terlebih dahulu.");
+                }
+
+                // Jika belum ada pembayaran (total_dibayar == 0), batalkan faktur otomatis bersamaan dengan Surat Jalan
+                $header->faktur->update([
+                    'status_pembayaran' => 'BATAL',
+                    'catatan_txt'       => ($header->faktur->catatan_txt ? $header->faktur->catatan_txt . "\n" : '') . "[DIBATALKAN OTOMATIS BERSAMAAN SURAT JALAN]: " . $reason,
+                    'updated_by'        => $userName ?? auth()->user()?->nama_lengkap ?? 'System',
+                    'version_no'        => $header->faktur->version_no + 1,
+                ]);
+
+                Log::info("Faktur Penjualan {$header->faktur->faktur_no} otomatis dibatalkan bersamaan dengan pembatalan Surat Jalan {$header->pengeluaran_no}");
             }
 
             $gudangFgId = $header->gudang_id;

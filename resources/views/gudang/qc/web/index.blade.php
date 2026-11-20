@@ -131,10 +131,10 @@
             
             <select name="kategori_barang" class="form-control" style="padding: 0.45rem 0.75rem; max-width: 180px; font-size: 0.85rem;" onchange="this.form.submit()">
                 <option value="">-- Semua Komoditas --</option>
-                <optgroup label="🌾 Bahan Baku (2 Tahap)">
+                <optgroup label="Bahan Baku (2 Tahap)">
                     <option value="SINGKONG" {{ ($filters['kategori_barang'] ?? '') === 'SINGKONG' ? 'selected' : '' }}>Singkong</option>
                 </optgroup>
-                <optgroup label="📦 Bahan Penolong (1 Tahap)">
+                <optgroup label="Bahan Penolong (1 Tahap)">
                     <option value="MINYAK" {{ ($filters['kategori_barang'] ?? '') === 'MINYAK' ? 'selected' : '' }}>Minyak Goreng</option>
                     <option value="PLASTIK" {{ ($filters['kategori_barang'] ?? '') === 'PLASTIK' ? 'selected' : '' }}>Plastik Kemasan</option>
                     <option value="KARTON" {{ ($filters['kategori_barang'] ?? '') === 'KARTON' ? 'selected' : '' }}>Karton Box</option>

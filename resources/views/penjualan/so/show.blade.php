@@ -128,7 +128,7 @@
         @elseif (!in_array($order->status_cd, ['COMPLETED', 'CANCELLED']))
             <button type="button" class="btn btn-primary" onclick="openConfirmDeliveryModal({{ $order->so_id }}, '{{ $order->so_no }}', '{{ addslashes($order->customer?->customer_nm ?? '') }}', '{{ addslashes($order->supir_nm ?? '') }}', '{{ addslashes($order->nopol_kendaraan ?? '') }}')" style="padding: 0.45rem 0.95rem; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.4rem; background: #059669; border-color: #047857; font-weight: 700; box-shadow: 0 2px 4px rgba(5,150,105,0.25);" title="Keluarkan fisik barang dari Gudang FG secara FEFO & terbitkan Surat Jalan resmi">
                 <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                <span>🚀 Proses Pengiriman Barang (FEFO)</span>
+                <span>Proses Pengiriman Barang (FEFO)</span>
             </button>
 
             <a href="{{ route('penjualan.so.export-surat-jalan', $order->so_id) }}" target="_blank" class="btn btn-secondary" style="padding: 0.45rem 0.75rem; font-size: 0.825rem; display: inline-flex; align-items: center; gap: 0.35rem; color: #64748b;" title="Pratinjau Draf Surat Jalan Sebelum Kirim">
@@ -283,9 +283,8 @@
                     <thead>
                         <tr style="border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
                             <th style="width: 35px; text-align: center;">No</th>
-                            <th style="width: 110px; text-align: left;">Kategori</th>
+                            <th style="width: 120px; text-align: center;">Kode Barang</th>
                             <th style="min-width: 190px; text-align: left;">Nama Produk / Barang Jadi</th>
-                            <th style="width: 100px; text-align: left;">Kode Barang</th>
                             <th style="width: 90px; text-align: right;">Jumlah</th>
                             <th style="width: 70px; text-align: left;">Satuan</th>
                             <th style="width: 110px; text-align: right;">Harga Satuan</th>
@@ -305,9 +304,9 @@
                             @endphp
                             <tr style="border-bottom: 1px solid #f1f5f9;">
                                 <td style="text-align: center; color: #64748b; font-size: 0.85rem;">{{ $index + 1 }}</td>
-                                <td style="color: #475569; font-size: 0.85rem;">
-                                    <span class="badge" style="background:#f1f5f9; color:#334155; font-size:0.7rem;">
-                                        {{ $item->barang?->jenisBarang?->jenis_barang_nm ?? ($item->barang?->jenis_barang_cd ?? 'FG') }}
+                                <td style="text-align: center; vertical-align: middle;">
+                                    <span style="font-family: monospace; font-size: 0.775rem; color: #0284c7; font-weight: 700; background: #f0f9ff; border: 1px solid #bae6fd; padding: 2px 7px; border-radius: 4px;">
+                                        {{ $item->barang?->barang_cd ?: '-' }}
                                     </span>
                                 </td>
                                 <td>
@@ -332,7 +331,7 @@
                                     {{ number_format((float) $item->pesan_qty, 0) }}
                                 </td>
                                 <td style="color: #475569; font-size: 0.85rem;">
-                                    {{ $item->barang?->satuanDasar?->satuan_nm ?? ($item->barang?->satuanDasar?->satuan_cd ?? '-') }}
+                                    {{ $item->satuan ?: ($item->barang?->satuanDasar?->satuan_nm ?? ($item->barang?->satuanDasar?->satuan_cd ?? '-')) }}
                                 </td>
                                 <td style="text-align: right; font-size: 0.85rem; color: #475569; font-family: monospace;">
                                     Rp {{ number_format((float) $item->harga_satuan, 0, ',', '.') }}

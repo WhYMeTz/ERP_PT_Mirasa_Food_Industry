@@ -200,7 +200,7 @@ class FakturPenjualanService
                 'barang_nm'          => $dtl->barang?->barang_nm ?? "Barang #{$dtl->barang_id}",
                 'batch_no'           => $dtl->batch_no,
                 'qty'                => $qty,
-                'satuan'             => $dtl->barang?->satuanDasar?->satuan_nm ?? 'Karton',
+                'satuan'             => $soDtl?->satuan ?: ($dtl->barang?->satuanDasar?->satuan_nm ?? 'Karton'),
                 'harga_satuan'       => $hargaSatuan,
                 'diskon_nominal'     => $diskonNominal,
                 'subtotal_netto'     => $netto,
@@ -227,6 +227,155 @@ class FakturPenjualanService
             'total_tagihan'       => $totalTagihan,
             'items'               => $items,
         ];
+    }
+
+    /**
+     * Membuat dokumen Faktur Penjualan resmi secara otomatis dari Surat Jalan (Pengeluaran Barang).
+     * Mencegah double-entry dan memastikan faktur langsung terbit saat barang dikeluarkan.
+     */
+    public function autoCreateFromPengeluaran(DatPengeluaranHdr $pengeluaran, ?string $userName = null): DatFakturHdr
+    {
+        // Cek apakah faktur aktif sudah pernah dibuat untuk Surat Jalan ini
+        $existing = DatFakturHdr::where('pengeluaran_id', $pengeluaran->pengeluaran_id)
+            ->where('deleted_st', false)
+            ->where('status_pembayaran', '!=', 'BATAL')
+            ->first();
+
+        if ($existing) {
+            return $existing;
+        }
+
+        // Pastikan relasi penting sudah dimuat
+        $pengeluaran->loadMissing([
+            'customer',
+            'order.details.barang.satuanDasar',
+            'details.barang.satuanDasar',
+            'details.orderDetail'
+        ]);
+
+        $customer = $pengeluaran->customer;
+        $order = $pengeluaran->order;
+        $fakturTgl = $pengeluaran->pengeluaran_tgl ? Carbon::parse($pengeluaran->pengeluaran_tgl)->toDateString() : now()->toDateString();
+
+        // Hitung perkiraan jatuh tempo berdasarkan TOP
+        $topTxt = $order?->top_txt ?: ($customer?->top_txt ?? '7 Hari');
+        $jatuhTempo = $this->calculateDueDate($fakturTgl, $topTxt);
+
+        // Tentukan status PPN
+        $isPpn = ($order && ($order->ppn_nominal > 0 || $order->ppn_tipe === 'PPN_11'));
+        if (!$isPpn && $customer) {
+            $isPpn = ($customer->default_ppn === 'PPN_11');
+        }
+        $ppnTipe = $isPpn ? 'PPN_11' : 'NON_PPN';
+        $ppnPersen = $isPpn ? 11.00 : 0.00;
+
+        // Generate No Faktur resmi standar perusahaan
+        $klasifikasi = $customer?->klasifikasi ?? 'MANUAL';
+        $wilayah = $customer?->wilayah ?: ($customer?->alamat_txt ?: $customer?->customer_nm);
+        $fakturNo = !empty($order?->faktur_no)
+            ? $order->faktur_no
+            : $this->codeGenerator->generateFakturByKlasifikasi($klasifikasi, $wilayah, $isPpn, $fakturTgl);
+
+        // Agregasi item dari baris detail Surat Jalan
+        $itemsData = [];
+        $subtotalBruto = 0;
+        $totalDiskon = 0;
+        $totalDpp = 0;
+        $totalPpn = 0;
+        $totalTagihan = 0;
+
+        foreach ($pengeluaran->details as $dtl) {
+            $soDtl = $dtl->orderDetail;
+            $qty = (float) $dtl->kirim_qty;
+            $hargaSatuan = $soDtl ? (float) $soDtl->harga_satuan : 0;
+            $diskonPersen = $soDtl ? (float) $soDtl->diskon_persen : 0;
+
+            $bruto = $qty * $hargaSatuan;
+            $diskonNominal = ($diskonPersen > 0) ? ($bruto * ($diskonPersen / 100)) : ($soDtl ? (float) $soDtl->potongan_nominal : 0);
+            $netto = max(0, $bruto - $diskonNominal);
+            $ppnNominal = $isPpn ? ($netto * 0.11) : 0;
+            $itemTotal = $netto + $ppnNominal;
+
+            $subtotalBruto += $bruto;
+            $totalDiskon += $diskonNominal;
+            $totalDpp += $netto;
+            $totalPpn += $ppnNominal;
+            $totalTagihan += $itemTotal;
+
+            $itemsData[] = [
+                'pengeluaran_dtl_id' => $dtl->pengeluaran_dtl_id,
+                'sodtl_id'           => $dtl->sodtl_id,
+                'barang_id'          => $dtl->barang_id,
+                'barang_nm'          => $dtl->barang?->barang_nm ?? "Barang #{$dtl->barang_id}",
+                'qty'                => $qty,
+                'satuan'             => $soDtl?->satuan ?: ($dtl->barang?->satuanDasar?->satuan_nm ?? 'Karton'),
+                'harga_satuan'       => $hargaSatuan,
+                'diskon_nominal'     => $diskonNominal,
+                'subtotal_netto'     => $netto,
+                'ppn_nominal'        => $ppnNominal,
+                'total_nominal'      => $itemTotal,
+                'catatan_txt'        => $dtl->catatan_txt,
+            ];
+        }
+
+        // Buat Header Faktur Penjualan
+        $header = DatFakturHdr::create([
+            'faktur_no'         => $fakturNo,
+            'faktur_tgl'        => $fakturTgl,
+            'tgl_jatuh_tempo'   => $jatuhTempo,
+            'pengeluaran_id'    => $pengeluaran->pengeluaran_id,
+            'so_id'             => $order?->so_id ?? $pengeluaran->so_id,
+            'customer_id'       => $customer?->customer_id ?? $pengeluaran->customer_id,
+            'customer_po_no'    => $order?->customer_po_no,
+            'top_txt'           => $topTxt,
+            'ppn_tipe'          => $ppnTipe,
+            'ppn_persen'        => $ppnPersen,
+            'subtotal_bruto'    => $subtotalBruto,
+            'total_diskon'      => $totalDiskon,
+            'total_potongan'    => 0,
+            'dpp_nominal'       => $totalDpp,
+            'ppn_nominal'       => $totalPpn,
+            'total_tagihan'     => $totalTagihan,
+            'total_dibayar'     => 0,
+            'sisa_piutang'      => $totalTagihan,
+            'status_pembayaran' => 'BELUM_LUNAS',
+            'catatan_txt'       => "Otomatis diterbitkan dari Surat Jalan {$pengeluaran->pengeluaran_no}",
+            'created_by'        => $userName ?? auth()->user()?->nama_lengkap ?? 'System',
+            'active_st'         => true,
+            'deleted_st'        => false,
+            'version_no'        => 1,
+        ]);
+
+        // Buat baris detail faktur
+        foreach ($itemsData as $item) {
+            DatFakturDtl::create([
+                'faktur_id'          => $header->faktur_id,
+                'pengeluaran_dtl_id' => $item['pengeluaran_dtl_id'],
+                'sodtl_id'           => $item['sodtl_id'],
+                'barang_id'          => $item['barang_id'],
+                'barang_nm'          => $item['barang_nm'],
+                'qty'                => $item['qty'],
+                'satuan'             => $item['satuan'],
+                'harga_satuan'       => $item['harga_satuan'],
+                'diskon_nominal'     => $item['diskon_nominal'],
+                'subtotal_netto'     => $item['subtotal_netto'],
+                'ppn_nominal'        => $item['ppn_nominal'],
+                'total_nominal'      => $item['total_nominal'],
+                'catatan_txt'        => $item['catatan_txt'],
+            ]);
+        }
+
+        // Sinkronkan nomor faktur pada PO Penjualan jika belum tercatat
+        if ($order && empty($order->faktur_no)) {
+            $order->update([
+                'faktur_no'  => $fakturNo,
+                'updated_by' => $userName ?? auth()->user()?->nama_lengkap ?? 'System',
+            ]);
+        }
+
+        Log::info("Faktur Penjualan {$fakturNo} (ID: {$header->faktur_id}) otomatis diterbitkan untuk Surat Jalan {$pengeluaran->pengeluaran_no}");
+
+        return $header;
     }
 
     /**

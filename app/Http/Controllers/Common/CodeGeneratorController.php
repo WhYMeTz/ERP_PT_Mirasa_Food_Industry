@@ -69,8 +69,17 @@ class CodeGeneratorController extends Controller
                 $code = $this->codeGeneratorService->generatePackagingNo($date, $excludePackId ? (int) $excludePackId : null);
                 break;
             case 'so':
+            case 'direct_sale':
+            case 'direct':
                 $date = $request->query('date', date('Y-m-d'));
-                $code = $this->codeGeneratorService->generateSoNo($date);
+                $excludeSoId = $request->query('exclude_id');
+                $code = $this->codeGeneratorService->generateDirectSaleNo($date, $excludeSoId ? (int) $excludeSoId : null);
+                break;
+            case 'sj':
+            case 'surat_jalan':
+                $date = $request->query('date', date('Y-m-d'));
+                $excludeSjId = $request->query('exclude_id');
+                $code = $this->codeGeneratorService->generateSuratJalanNo($date, $excludeSjId ? (int) $excludeSjId : null);
                 break;
             case 'gudang':
                 $tipe = $request->query('tipe');

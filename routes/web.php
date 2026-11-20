@@ -41,6 +41,7 @@ use App\Http\Controllers\Penjualan\PengeluaranBarangController;
 use App\Http\Controllers\Penjualan\FakturPenjualanController;
 use App\Http\Controllers\Penjualan\SoReturController;
 use App\Http\Controllers\Penjualan\DirectSalesController;
+use App\Http\Controllers\Penjualan\LaporanPenjualanController;
 use App\Http\Controllers\Produksi\BomController;
 use App\Http\Controllers\Produksi\PackagingController;
 use App\Http\Controllers\Produksi\PackagingOperatorController;
@@ -537,7 +538,7 @@ Route::middleware('auth')->group(function () {
 
     // Modul Transaksi Penjualan (PO Penjualan / Sales Order)
     Route::prefix('penjualan')->name('penjualan.')->group(function () {
-        // Modul Penjualan Langsung / Tunai (Direct Sales - Kasir Pabrik & Potong Stok Instan)
+        // Modul Penjualan Langsung Pabrik (Direct Sales - Non-PO & Potong Stok Instan)
         Route::prefix('langsung')->name('langsung.')->group(function () {
             Route::get('/', [DirectSalesController::class, 'index'])->name('index');
             Route::get('/create', [DirectSalesController::class, 'create'])->name('create');
@@ -557,6 +558,7 @@ Route::middleware('auth')->group(function () {
         Route::post('so/{id}/cancel', [SoController::class, 'cancel'])->name('so.cancel');
         Route::get('so/ajax/stock-check', [SoController::class, 'ajaxStockCheck'])->name('so.ajax.stock-check');
         Route::get('so/ajax/generate-faktur-no', [SoController::class, 'ajaxGenerateFakturNo'])->name('so.ajax.generate-faktur-no');
+        Route::get('so/ajax/customer-top-check', [SoController::class, 'ajaxCustomerTopCheck'])->name('so.ajax.customer-top-check');
         Route::resource('so', SoController::class);
 
         // Modul Pengeluaran Barang / Surat Jalan (Gudang FG - Outbound Delivery)
@@ -578,6 +580,12 @@ Route::middleware('auth')->group(function () {
         Route::get('retur/{id}/export-pdf', [SoReturController::class, 'exportPdf'])->name('retur.export-pdf');
         Route::get('retur/{id}/export-pemusnahan-pdf', [SoReturController::class, 'exportPemusnahanPdf'])->name('retur.export-pemusnahan-pdf');
         Route::post('retur/{id}/void', [SoReturController::class, 'void'])->name('retur.void');
+
+        // Modul Rekapitulasi & Analisis Laporan Penjualan (PO & Non-PO)
+        Route::prefix('laporan')->name('laporan.')->group(function () {
+            Route::get('/', [LaporanPenjualanController::class, 'index'])->name('index');
+            Route::get('/export-pdf', [LaporanPenjualanController::class, 'exportPdf'])->name('export-pdf');
+        });
     });
 
     // Modul Keuangan: Hutang Usaha (AP), Pelunasan Kas Keluar & Rekening Bank

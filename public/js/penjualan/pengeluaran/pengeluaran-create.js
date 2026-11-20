@@ -140,6 +140,13 @@ document.addEventListener('DOMContentLoaded', function () {
             const soId = this.value;
             if (!soId) {
                 if (customerInfoBox) customerInfoBox.style.display = 'none';
+                const supirInput = document.getElementById('supir_nm');
+                const nopolInput = document.getElementById('nopol_kendaraan');
+                const catatanInput = document.getElementById('catatan_txt');
+                if (supirInput) supirInput.value = '';
+                if (nopolInput) nopolInput.value = '';
+                if (catatanInput) catatanInput.value = '';
+
                 const infoSjNo = document.getElementById('infoSjNo');
                 const infoSupir = document.getElementById('infoSupir');
                 const infoNopol = document.getElementById('infoNopol');
@@ -224,7 +231,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                             const supirVal = order.supir_nm || '';
                             if (supirInput) supirInput.value = supirVal;
-                            if (infoSupir) infoSupir.textContent = supirVal || '-';
+                            if (infoSupir) infoSupir.textContent = supirVal || '(Belum Ditentukan Kantor)';
 
                             const nopolVal = order.nopol_kendaraan || '';
                             if (nopolInput) nopolInput.value = nopolVal;

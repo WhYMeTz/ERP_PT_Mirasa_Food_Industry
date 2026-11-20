@@ -2720,13 +2720,17 @@ class ProduksiService
             $authUser = Auth::user();
 
             foreach ($dailyAdjustments as $dateStr => $adj) {
-                if (!isset($adj['new_mmbtu'])) {
+                if (!isset($adj['new_mmbtu']) && !isset($adj['new_nilai'])) {
                     continue;
                 }
 
-                $newMmbtu = round((float) $adj['new_mmbtu'], 4);
+                $newMmbtu = isset($adj['new_mmbtu']) ? round((float) $adj['new_mmbtu'], 4) : 0;
                 $oldMmbtu = isset($adj['old_mmbtu']) ? round((float) $adj['old_mmbtu'], 4) : null;
                 $diffMmbtu = $oldMmbtu !== null ? ($newMmbtu - $oldMmbtu) : 0;
+
+                $newNilai = isset($adj['new_nilai']) ? round((float) $adj['new_nilai'], 2) : null;
+                $oldNilai = isset($adj['old_nilai']) ? round((float) $adj['old_nilai'], 2) : null;
+                $diffNilai = ($newNilai !== null && $oldNilai !== null) ? ($newNilai - $oldNilai) : 0;
 
                 // Ambil semua lembar produksi aktif pada tanggal ini
                 $records = DatProduksiHdr::whereDate('produksi_tgl', $dateStr)
@@ -2743,8 +2747,13 @@ class ProduksiService
                     $diffMmbtu = $newMmbtu - $dayOldMmbtu;
                 }
 
-                // Jika tidak ada perubahan kuantitas MMBTU (selisih < 0.0001), lewati
-                if (abs($diffMmbtu) < 0.0001 && empty($adj['force_update'])) {
+                $dayOldNilai = (float) $records->sum('cng_nilai');
+                if ($oldNilai === null && $newNilai !== null) {
+                    $diffNilai = $newNilai - $dayOldNilai;
+                }
+
+                // Jika tidak ada perubahan kuantitas MMBTU maupun nilai Rupiah, lewati
+                if (abs($diffMmbtu) < 0.0001 && abs($diffNilai) < 1 && empty($adj['force_update'])) {
                     continue;
                 }
 
@@ -2781,15 +2790,17 @@ class ProduksiService
                     $recOldCngNilai = (float) $record->cng_nilai;
 
                     // Alokasi proporsional jika multiple records di hari yang sama
-                    if ($recordCount === 1) {
-                        $recNewMmbtu = $newMmbtu;
+                    $recWip = (float) $record->total_wip_qty;
+                    $proportion = ($recordCount === 1) ? 1.0 : ($dayTotalWip > 0 ? ($recWip / $dayTotalWip) : (1 / $recordCount));
+
+                    if ($newNilai !== null && abs($diffNilai) >= 1) {
+                        $recNewCngNilai = round($newNilai * $proportion, 2);
+                        $recNewMmbtu = $cngTarifRp > 0 ? round($recNewCngNilai / $cngTarifRp, 4) : round($newMmbtu * $proportion, 4);
                     } else {
-                        $recWip = (float) $record->total_wip_qty;
-                        $proportion = $dayTotalWip > 0 ? ($recWip / $dayTotalWip) : (1 / $recordCount);
-                        $recNewMmbtu = round($newMmbtu * $proportion, 4);
+                        $recNewMmbtu = ($recordCount === 1) ? $newMmbtu : round($newMmbtu * $proportion, 4);
+                        $recNewCngNilai = round($recNewMmbtu * $cngTarifRp, 2);
                     }
 
-                    $recNewCngNilai = round($recNewMmbtu * $cngTarifRp, 2);
                     $diffCngNilai = $recNewCngNilai - $recOldCngNilai;
                     $totalSelisihBiaya += $diffCngNilai;
 
@@ -3906,25 +3917,12 @@ class ProduksiService
         $prodCarbon = $primaryProd->produksi_tgl ? Carbon::parse($primaryProd->produksi_tgl)->timezone(config('app.timezone', 'Asia/Jakarta')) : Carbon::today(config('app.timezone', 'Asia/Jakarta'));
         $prodDateStr = $prodCarbon->format('Y-m-d');
         $tarifProdService = app(\App\Services\Produksi\TarifProduksiService::class);
-        $prodDateJisdor = $tarifProdService->getJisdorRate($prodDateStr, true);
+        $jisdorDetail = $tarifProdService->getJisdorRateDetail($prodDateStr, true);
+        $prodDateJisdor = (float) $jisdorDetail['rate'];
+        $kursEffectiveDateFmt = $jisdorDetail['date'];
+        $keteranganAcuan = $jisdorDetail['keterangan_acuan'];
 
-        $kursRecord = \App\Models\Produksi\DatKursHarian::active()
-            ->whereDate('tanggal', '<=', $prodDateStr)
-            ->orderByDesc('tanggal')
-            ->first();
-
-        $kursEffectiveCarbon = $kursRecord ? Carbon::parse($kursRecord->tanggal)->timezone(config('app.timezone', 'Asia/Jakarta')) : $prodCarbon;
-        $kursEffectiveDateFmt = $kursEffectiveCarbon->format('d/m/Y');
-
-        $keteranganAcuan = 'Kurs tanggal produksi';
-        if ($prodCarbon->isWeekend()) {
-            $dayName = $prodCarbon->dayOfWeek === 6 ? 'Sabtu' : ($prodCarbon->dayOfWeek === 0 ? 'Minggu' : 'Hari libur');
-            $keteranganAcuan = "Kurs hari bursa terakhir ({$dayName} libur)";
-        } elseif ($kursRecord && !$kursEffectiveCarbon->isSameDay($prodCarbon)) {
-            $keteranganAcuan = "Kurs hari bursa terakhir";
-        }
-
-        $cngKursJisdor = (float) ($primaryProd->cng_nilai > 0 && $primaryProd->cng_kurs_jisdor > 0 ? $primaryProd->cng_kurs_jisdor : ($prodDateJisdor ?: 16218.00));
+        $cngKursJisdor = (float) ($primaryProd->cng_nilai > 0 && $primaryProd->cng_kurs_jisdor > 0 ? $primaryProd->cng_kurs_jisdor : ($prodDateJisdor ?: 18252.00));
         $cngTarif = (float) ($primaryProd->cng_nilai > 0 && $primaryProd->cng_tarif > 0 ? $primaryProd->cng_tarif : round($cngTarifUsd * $cngKursJisdor, 2));
         $cngNilai = (float) ($allDocs->sum('cng_nilai') > 0 ? $allDocs->sum('cng_nilai') : round($cngMmbtu * $cngTarif));
 

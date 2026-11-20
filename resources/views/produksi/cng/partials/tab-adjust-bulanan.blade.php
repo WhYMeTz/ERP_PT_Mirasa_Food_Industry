@@ -18,6 +18,18 @@
         <input type="hidden" name="adjust_cng" value="1">
         <input type="hidden" name="adjust_listrik" value="0">
 
+        @if(($pabrikFilter ?? 'ALL') !== 'ALL')
+            <div style="background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1.25rem; font-size: 0.8rem; color: #1e40af; display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <span>Saat ini Anda memfilter tampilan ke <strong>{{ $pabrikFilter === 'BMB' ? 'CV Bahtera Mandiri Bersama' : 'PT Mirasa Food Industry' }}</strong>. Rekonsiliasi faktur vendor PGN/CNG umumnya mencakup totalitas konsolidasi seluruh pabrik.</span>
+                </div>
+                <a href="{{ route('produksi.cng-monitoring', ['tahun' => $year, 'bulan' => $month, 'tab' => 'bulanan', 'pabrik' => 'ALL']) }}" style="font-size: 0.75rem; font-weight: 700; color: #1d4ed8; text-decoration: underline; white-space: nowrap;">
+                    Beralih ke Konsolidasi &raquo;
+                </a>
+            </div>
+        @endif
+
         <div class="card" style="margin-bottom: 1.25rem; border: 1.5px solid #cbd5e1; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.03); background: #ffffff; overflow: hidden;">
             <div class="card-header" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0.95rem 1.35rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
                 <div style="display: flex; align-items: center; gap: 0.65rem;">

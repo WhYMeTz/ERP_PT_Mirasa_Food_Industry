@@ -950,9 +950,11 @@ function populateCostingForm(data) {
 
     const helpKurs = document.getElementById('helpKursJisdor');
     if (helpKurs && data.cng_kurs_date) {
-        const effectiveKurs = data.cng_kurs_jisdor || window.appConfig?.defaultCngKursJisdor || 18218;
-        const ket = data.cng_kurs_ket || 'Kurs tanggal produksi';
-        helpKurs.innerHTML = `Referensi resmi BI: <strong>Rp ${formatRp(effectiveKurs)}</strong> (${data.cng_kurs_date} &bull; <span style="color: #059669; font-weight: 600;">${ket}</span>)`;
+        const effectiveKurs = data.cng_kurs_jisdor || window.appConfig?.defaultCngKursJisdor || 18252;
+        const ket = data.cng_kurs_ket || 'Kurs acuan BI';
+        const isExact = !ket.includes('sebelumnya') && !ket.includes('terakhir') && !ket.includes('belum rilis');
+        const color = isExact ? '#059669' : '#d97706';
+        helpKurs.innerHTML = `Referensi resmi BI: <strong>Rp ${formatRp(effectiveKurs)}</strong> (${data.cng_kurs_date} &bull; <span style="color: ${color}; font-weight: 600;">${ket}</span>)`;
     }
 
     // Tenaga Kerja Langsung Produksi (BTKL) dari Manajemen Karyawan
@@ -1322,10 +1324,13 @@ function fetchLiveJisdor(isManualClick = false) {
     const btn = document.querySelector('.btn-sync-kurs');
     if (btn && isManualClick) btn.disabled = true;
 
-    // Utamakan kurs JISDOR sesuai tanggal produksi SPK terpilih
+    // Jika user menekan tombol Sync secara manual, prioritaskan kurs bursa terkini Bank Indonesia (latest=1)
+    // Jika auto-sync latar belakang, sesuaikan dengan tanggal produksi SPK terpilih
     const tglProd = currentProduksiData?.produksi_tgl || window.appConfig?.selectedProduksiTgl || '';
     const baseUrl = window.appConfig?.jisdorUrl || '/produksi/kurs-jisdor';
-    const url = tglProd ? `${baseUrl}?date=${encodeURIComponent(tglProd)}` : `${baseUrl}?latest=1`;
+    const url = isManualClick
+        ? `${baseUrl}?latest=1`
+        : (tglProd ? `${baseUrl}?date=${encodeURIComponent(tglProd)}` : `${baseUrl}?latest=1`);
 
     fetch(url, {
         headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
@@ -1341,10 +1346,12 @@ function fetchLiveJisdor(isManualClick = false) {
             calcCngFromTarif();
 
             const help = document.getElementById('helpKursJisdor');
+            const isExact = res.is_exact ?? res.data?.is_exact ?? true;
+            const color = isExact ? '#059669' : '#d97706';
             if (help) {
                 let text = `Referensi resmi BI: <strong>Rp ${formatRp(rate)}</strong> (${dateStr}`;
                 if (ketAcuan) {
-                    text += ` &bull; <span style="color: #059669; font-weight: 600;">${ketAcuan}</span>`;
+                    text += ` &bull; <span style="color: ${color}; font-weight: 600;">${ketAcuan}</span>`;
                 }
                 text += `)`;
                 help.innerHTML = text;
@@ -2154,4 +2161,152 @@ function formatRp(num) {
 function formatNum(num) {
     const n = parseFloat(num) || 0;
     return n.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+/**
+ * Modal Standar Acuan Tarif Kontrak Gas (CNG)
+ */
+function openModalEditTarifCng() {
+    const modal = document.getElementById('modalEditTarifCng');
+    const input = document.getElementById('modal_new_tarif_usd');
+    const alertBox = document.getElementById('modalTarifCngAlert');
+    if (!modal) return;
+
+    if (alertBox) {
+        alertBox.style.display = 'none';
+        alertBox.textContent = '';
+    }
+
+    const currentRate = parseFloat(document.getElementById('cng_tarif_usd')?.value) || window.appConfig?.defaultCngTarifUsd || 14.50;
+    if (input) {
+        input.value = currentRate;
+    }
+
+    modal.style.display = 'flex';
+    setTimeout(() => {
+        if (input) input.focus();
+    }, 100);
+}
+
+function closeModalEditTarifCng() {
+    const modal = document.getElementById('modalEditTarifCng');
+    if (modal) modal.style.display = 'none';
+}
+
+function saveNewTarifCngStandar() {
+    const input = document.getElementById('modal_new_tarif_usd');
+    const alertBox = document.getElementById('modalTarifCngAlert');
+    const btn = document.getElementById('btnSaveTarifCng');
+    if (!input) return;
+
+    const newRate = parseFloat(input.value);
+    if (isNaN(newRate) || newRate <= 0) {
+        if (alertBox) {
+            alertBox.style.display = 'block';
+            alertBox.style.background = '#fef2f2';
+            alertBox.style.color = '#991b1b';
+            alertBox.style.border = '1px solid #fecaca';
+            alertBox.textContent = 'Silakan masukkan nilai tarif kontrak USD yang valid (harus lebih besar dari 0).';
+        }
+        return;
+    }
+
+    const url = window.appConfig?.quickUpdateTarifUrl;
+    if (!url) {
+        if (alertBox) {
+            alertBox.style.display = 'block';
+            alertBox.style.background = '#fef2f2';
+            alertBox.style.color = '#991b1b';
+            alertBox.style.border = '1px solid #fecaca';
+            alertBox.textContent = 'URL endpoint update tarif tidak ditemukan.';
+        }
+        return;
+    }
+
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `
+            <svg class="animate-spin" width="14" height="14" fill="none" viewBox="0 0 24 24" style="animation: spin 1s linear infinite;"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            <span>Menyimpan...</span>
+        `;
+    }
+
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': csrfToken
+        },
+        body: JSON.stringify({
+            rates: {
+                TARIF_CNG_USD: newRate
+            }
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = `
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                <span>Simpan Standar Baru</span>
+            `;
+        }
+
+        if (data.success) {
+            // Update input form & helper display
+            const elTarif = document.getElementById('cng_tarif_usd');
+            if (elTarif) elTarif.value = newRate;
+
+            const elDispStandar = document.getElementById('dispStandarVendor');
+            if (elDispStandar) elDispStandar.textContent = newRate.toFixed(2);
+
+            if (window.appConfig) {
+                window.appConfig.defaultCngTarifUsd = newRate;
+            }
+
+            // Recalculate HPP CNG
+            calcCngFromTarif();
+
+            // Tampilkan feedback sukses di modal sesaat sebelum menutup
+            if (alertBox) {
+                alertBox.style.display = 'block';
+                alertBox.style.background = '#f0fdf4';
+                alertBox.style.color = '#166534';
+                alertBox.style.border = '1px solid #bbf7d0';
+                alertBox.innerHTML = `✓ Standar tarif kontrak vendor berhasil diperbarui menjadi <strong>$${newRate.toFixed(2)}</strong> / MMBTU di Master Data.`;
+            }
+
+            setTimeout(() => {
+                closeModalEditTarifCng();
+            }, 900);
+        } else {
+            if (alertBox) {
+                alertBox.style.display = 'block';
+                alertBox.style.background = '#fef2f2';
+                alertBox.style.color = '#991b1b';
+                alertBox.style.border = '1px solid #fecaca';
+                alertBox.textContent = data.message || 'Gagal menyimpan standar tarif.';
+            }
+        }
+    })
+    .catch(err => {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = `
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                <span>Simpan Standar Baru</span>
+            `;
+        }
+        if (alertBox) {
+            alertBox.style.display = 'block';
+            alertBox.style.background = '#fef2f2';
+            alertBox.style.color = '#991b1b';
+            alertBox.style.border = '1px solid #fecaca';
+            alertBox.textContent = 'Terjadi kesalahan sistem: ' + err.message;
+        }
+    });
 }

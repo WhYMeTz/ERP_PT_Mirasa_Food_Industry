@@ -1928,8 +1928,8 @@
                                                     d="M13 10V3L4 14h7v7l9-11h-7z" />
                                             </svg>
                                             <div style="display: flex; flex-direction: column;">
-                                                <span style="font-weight: 600;">Penjualan Langsung / Tunai</span>
-                                                <span style="font-size: 0.6875rem; color: #64748b;">Kasir cepat, retail pabrik &amp; potong stok instan</span>
+                                                <span style="font-weight: 600;">Penjualan Langsung Pabrik</span>
+                                                <span style="font-size: 0.6875rem; color: #64748b;">Penjualan non-PO, sales kanvaser &amp; spot order gudang</span>
                                             </div>
                                         </a>
                                         <a href="{{ route('penjualan.retur.index') }}"
@@ -1972,6 +1972,21 @@
                                                 <span style="font-weight: 600;">Faktur Penjualan &amp; Piutang</span>
                                                 <span style="font-size: 0.6875rem; color: #64748b;">Tagihan invoice piutang
                                                     &amp; monitoring tempo</span>
+                                            </div>
+                                        </a>
+                                    </div>
+                                    <div class="mega-col">
+                                        <div class="mega-col-title">Laporan &amp; Analisis</div>
+                                        <a href="{{ route('penjualan.laporan.index') }}"
+                                            class="mega-item {{ request()->routeIs('penjualan.laporan.*') ? 'active' : '' }}">
+                                            <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                                style="color: #4f46e5;">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                            </svg>
+                                            <div style="display: flex; flex-direction: column;">
+                                                <span style="font-weight: 600;">Rekapitulasi Penjualan</span>
+                                                <span style="font-size: 0.6875rem; color: #64748b;">Konsolidasi PO &amp; Non-PO, omzet, produk terlaris</span>
                                             </div>
                                         </a>
                                     </div>

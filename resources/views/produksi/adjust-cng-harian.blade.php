@@ -45,6 +45,7 @@
         <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
             {{-- Filter Periode Kalender Terpadu --}}
             <form action="{{ route('produksi.adjust-cng-harian') }}" method="GET" style="display: flex; gap: 0.35rem; align-items: center; background: #ffffff; padding: 0.2rem 0.5rem; border-radius: 6px; border: 1px solid #cbd5e1; box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+                <input type="hidden" name="pabrik" value="{{ $pabrikFilter }}">
                 <select name="bulan" class="form-control" style="font-size: 0.8rem; padding: 0.25rem 0.5rem; height: 30px; border: none; font-weight: 700; color: #1e293b;" onchange="this.form.submit()">
                     @foreach ($monthsList as $num => $nm)
                         <option value="{{ $num }}" {{ $num == $month ? 'selected' : '' }}>{{ $nm }}</option>
@@ -103,105 +104,41 @@
     </div>
 @else
 
-    {{-- KARTU REKONSILIASI & STATUS BALANCING BULANAN --}}
-    <div class="balancing-dashboard-grid">
-        
-        {{-- KARTU 1: TARGET TAGIHAN FAKTUR VENDOR (ACUAN BALANCING) --}}
-        <div class="balancing-card card-target">
-            <div>
-                <div class="balancing-card-header">
-                    <div>
-                        <span class="balancing-card-label" style="color: #b45309;">1. Target Faktur Vendor</span>
-                        <span class="balancing-card-sublabel">Input kuantitas invoice resmi</span>
-                    </div>
-                    <div class="balancing-icon-box" style="background: #fef3c7; color: #d97706;">
-                        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                    </div>
-                </div>
+    {{-- ═════════════════════════════════════════════════════════════
+         NAVIGASI 3 TAB ENTITAS PABRIK: 1. SEMUA LOKASI | 2. PT MIRASA FOOD INDUSTRY | 3. CV BAHTERA MANDIRI BERSAMA
+         ═════════════════════════════════════════════════════════════ --}}
+    <div style="margin-bottom: 1.25rem;">
+        <div style="display: flex; gap: 0.5rem; background: #f1f5f9; padding: 4px; border-radius: 10px; border: 1px solid #cbd5e1; width: fit-content; flex-wrap: wrap;">
+            <a href="{{ route('produksi.adjust-cng-harian', ['tahun' => $year, 'bulan' => $month, 'pabrik' => 'ALL']) }}" 
+               class="pabrik-tab-btn {{ $pabrikFilter === 'ALL' ? 'pabrik-tab-active' : 'pabrik-tab-inactive' }}"
+               style="padding: 0.5rem 1.15rem; font-weight: 800; font-size: 0.825rem; border-radius: 7px; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; transition: all 0.2s ease;">
+                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                <span>1. Semua Lokasi Produksi</span>
+                <span style="font-size: 0.725rem; background: {{ $pabrikFilter === 'ALL' ? 'rgba(255,255,255,0.25)' : '#e2e8f0' }}; padding: 0.15rem 0.5rem; border-radius: 4px; font-weight: 700;">
+                    {{ $report['count_total_hari'] ?? 0 }} Hari
+                </span>
+            </a>
 
-                <div style="margin-top: 0.35rem;">
-                    <label for="target_vendor_mmbtu" style="font-size: 0.725rem; font-weight: 700; color: #78350f; display: block; margin-bottom: 0.25rem;">
-                        Target Total MMBTU:
-                    </label>
-                    <div style="display: flex; align-items: center; gap: 0.35rem;">
-                        <input type="number" step="any" min="0" 
-                               id="target_vendor_mmbtu" 
-                               class="form-control" 
-                               style="font-size: 1.35rem; font-weight: 800; font-family: ui-monospace, monospace; height: 38px; color: #92400e; border: 1.5px solid #f59e0b; background: #ffffff;"
-                               value="{{ round((float) $modalTot['cng_mmbtu'], 4) }}" 
-                               oninput="recalculateCngBalancing()"
-                               placeholder="0.0000">
-                        <span style="font-weight: 800; font-size: 0.85rem; color: #92400e;">MMBTU</span>
-                    </div>
-                </div>
-            </div>
+            <a href="{{ route('produksi.adjust-cng-harian', ['tahun' => $year, 'bulan' => $month, 'pabrik' => 'MFI']) }}" 
+               class="pabrik-tab-btn {{ $pabrikFilter === 'MFI' ? 'pabrik-tab-active' : 'pabrik-tab-inactive' }}"
+               style="padding: 0.5rem 1.15rem; font-weight: 800; font-size: 0.825rem; border-radius: 7px; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; transition: all 0.2s ease;">
+                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                <span>2. PT Mirasa Food Industry</span>
+                <span style="font-size: 0.725rem; background: {{ $pabrikFilter === 'MFI' ? 'rgba(255,255,255,0.25)' : '#e2e8f0' }}; padding: 0.15rem 0.5rem; border-radius: 4px; font-weight: 700;">
+                    {{ $report['count_barat_hari'] ?? 0 }} Hari
+                </span>
+            </a>
 
-            <div class="balancing-card-footer">
-                <span>Acuan Rekonsiliasi Tagihan</span>
-                <button type="button" onclick="autoDistributeVariance()" style="background: none; border: none; font-size: 0.725rem; font-weight: 700; color: #d97706; cursor: pointer; text-decoration: underline;" title="Bagi rata selisih ke seluruh hari kerja">
-                    Bagi Rata Selisih Otomatis &raquo;
-                </button>
-            </div>
+            <a href="{{ route('produksi.adjust-cng-harian', ['tahun' => $year, 'bulan' => $month, 'pabrik' => 'BMB']) }}" 
+               class="pabrik-tab-btn {{ $pabrikFilter === 'BMB' ? 'pabrik-tab-active' : 'pabrik-tab-inactive' }}"
+               style="padding: 0.5rem 1.15rem; font-weight: 800; font-size: 0.825rem; border-radius: 7px; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; transition: all 0.2s ease;">
+                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                <span>3. CV Bahtera Mandiri Bersama</span>
+                <span style="font-size: 0.725rem; background: {{ $pabrikFilter === 'BMB' ? 'rgba(255,255,255,0.25)' : '#e2e8f0' }}; padding: 0.15rem 0.5rem; border-radius: 4px; font-weight: 700;">
+                    {{ $report['count_timur_hari'] ?? 0 }} Hari
+                </span>
+            </a>
         </div>
-
-        {{-- KARTU 2: TOTAL AKUMULASI HARIAN SAAT INI --}}
-        <div class="balancing-card card-actual">
-            <div>
-                <div class="balancing-card-header">
-                    <div>
-                        <span class="balancing-card-label" style="color: #0369a1;">2. Akumulasi Harian Terkini</span>
-                        <span class="balancing-card-sublabel">{{ $prodDays->count() }} Hari Kerja Produksi</span>
-                    </div>
-                    <div class="balancing-icon-box" style="background: #e0f2fe; color: #0284c7;">
-                        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z"/></svg>
-                    </div>
-                </div>
-
-                <div class="balancing-card-value" id="stat_actual_mmbtu" style="color: #0284c7;">
-                    {{ number_format((float) $modalTot['cng_mmbtu'], 4, ',', '.') }} MMBTU
-                </div>
-
-                <div class="balancing-card-subvalue" id="stat_actual_rp" style="color: #475569;">
-                    Rp {{ number_format((float) $modalTot['cng_nilai'], 0, ',', '.') }}
-                </div>
-            </div>
-
-            <div class="balancing-card-footer">
-                <span>Total Output WIP: <strong>{{ number_format((float) $modalTot['total_wip_qty'], 0, ',', '.') }} kg</strong></span>
-                <span style="color: #0284c7; font-weight: 600;">Data Real-Time</span>
-            </div>
-        </div>
-
-        {{-- KARTU 3: STATUS BALANCING REKONSILIASI --}}
-        <div class="balancing-card card-status status-balanced" id="cardBalancingStatus">
-            <div>
-                <div class="balancing-card-header">
-                    <div>
-                        <span class="balancing-card-label" id="labelBalancingStatus">3. Status Balancing</span>
-                        <span class="badge" id="badgeBalancingTitle" style="font-size: 0.7rem; font-weight: 800; padding: 0.2rem 0.5rem; border-radius: 4px; background: #dcfce7; color: #15803d; margin-top: 0.25rem; display: inline-block;">
-                            100% BALANCE / SEIMBANG
-                        </span>
-                    </div>
-                    <div class="balancing-icon-box" id="iconBalancingBox" style="background: #f0fdf4; color: #16a34a;">
-                        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 18h12l3-18H3zm16 4H5m7-4v4"/></svg>
-                    </div>
-                </div>
-
-                <div class="balancing-card-value" id="textBalancingVal" style="color: #16a34a; font-size: 1.45rem;">
-                    Selisih: 0.0000 MMBTU
-                </div>
-
-                <p id="textBalancingDesc" style="font-size: 0.75rem; color: #64748b; margin: 0.35rem 0 0 0; line-height: 1.4;">
-                    Total pencatatan fisik harian seimbang persis dengan target faktur vendor.
-                </p>
-            </div>
-
-            <div class="balancing-card-footer">
-                <span>Indikator Rekonsiliasi</span>
-                <span style="font-weight: 700;">Audit Standard</span>
-            </div>
-        </div>
-
     </div>
 
     {{-- TOOLBAR CEPAT (BULK OFFSET HELPER) --}}
@@ -219,8 +156,11 @@
                    id="input_bulk_offset" 
                    class="input-bulk-step" 
                    placeholder="0.0000" 
-                   title="Ketik angka selisih penyesuaian MMBTU">
-            <span style="font-size: 0.75rem; font-weight: 700; color: #475569;">MMBTU / hari</span>
+                   title="Ketik angka selisih penyesuaian">
+            <select id="select_bulk_unit" style="font-size: 0.75rem; font-weight: 700; color: #334155; border: 1.5px solid #cbd5e1; border-radius: 4px; padding: 0.15rem 0.35rem; height: 30px; background: #ffffff;">
+                <option value="MMBTU">MMBTU / hari</option>
+                <option value="RP">Rp (Nominal) / hari</option>
+            </select>
 
             <button type="button" onclick="applyBulkOffset()" class="btn-bulk-apply" title="Tambahkan angka di atas ke seluruh hari kerja secara serentak">
                 <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
@@ -239,6 +179,7 @@
         @csrf
         <input type="hidden" name="tahun" value="{{ $year }}">
         <input type="hidden" name="bulan" value="{{ $month }}">
+        <input type="hidden" name="pabrik" value="{{ $pabrikFilter }}">
         <input type="hidden" name="alasan_txt" id="input_hidden_alasan" value="Rekonsiliasi &amp; balancing pemakaian gas CNG periode {{ $monthsList[$month] }} {{ $year }}">
 
         <div class="card" style="border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); overflow: hidden; margin-bottom: 1.25rem;">
@@ -267,10 +208,11 @@
                             <th style="text-align: right; width: 110px;">Output WIP</th>
                             <th style="text-align: right; width: 130px; color: #0284c7;">Kurs JISDOR BI</th>
                             <th style="text-align: right; width: 110px;">MMBTU Awal</th>
-                            <th style="text-align: right; width: 140px; background: #fffdf5; color: #b45309;">MMBTU Baru (Edit)</th>
-                            <th style="text-align: center; width: 100px;">&Delta; MMBTU</th>
-                            <th style="text-align: right; width: 130px; color: #d97706;">Biaya Gas Baru</th>
-                            <th style="text-align: center; width: 110px;">&Delta; Biaya Rp</th>
+                            <th style="text-align: right; width: 135px; background: #fffdf5; color: #b45309;">MMBTU Baru (Edit)</th>
+                            <th style="text-align: center; width: 95px;">&Delta; MMBTU</th>
+                            <th style="text-align: right; width: 125px;">Biaya Awal</th>
+                            <th style="text-align: right; width: 145px; background: #fffdf5; color: #b45309;">Biaya Gas Baru (Edit Rp)</th>
+                            <th style="text-align: center; width: 105px;">&Delta; Biaya Rp</th>
                             <th style="text-align: right; width: 130px; color: #059669;">Estimasi HPP</th>
                             <th style="width: 160px;">Catatan Koreksi</th>
                         </tr>
@@ -310,7 +252,15 @@
                                 </td>
 
                                 <td>
-                                    <span style="font-size: 0.75rem; font-weight: 700; color: #334155;">{{ $d['primary_produksi_no'] }}</span>
+                                    <div style="display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;">
+                                        <span style="font-size: 0.75rem; font-weight: 700; color: #334155;">{{ $d['primary_produksi_no'] }}</span>
+                                        @if(!empty($d['entity_summary']['has_mfi']))
+                                            <span style="font-size: 0.625rem; font-weight: 800; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; padding: 1px 4px; border-radius: 3px;" title="PT Mirasa Food Industry">MFI</span>
+                                        @endif
+                                        @if(!empty($d['entity_summary']['has_bmb']))
+                                            <span style="font-size: 0.625rem; font-weight: 800; background: #faf5ff; color: #7e22ce; border: 1px solid #f3e8ff; padding: 1px 4px; border-radius: 3px;" title="CV Bahtera Mandiri Bersama">BMB</span>
+                                        @endif
+                                    </div>
                                     <div style="font-size: 0.675rem; color: #64748b;">Shift {{ $d['shift_cd'] }}</div>
                                 </td>
 
@@ -329,13 +279,14 @@
 
                                 <td style="text-align: right; background: #fffdf5;">
                                     <input type="hidden" name="days[{{ $dDate }}][old_mmbtu]" value="{{ $dOldMmbtu }}">
+                                    <input type="hidden" name="days[{{ $dDate }}][old_nilai]" value="{{ $dOldNilai }}">
                                     <input type="hidden" name="days[{{ $dDate }}][cng_kurs_jisdor]" value="{{ $dJisdor }}">
                                     <input type="hidden" name="days[{{ $dDate }}][cng_tarif_usd]" value="{{ $dUsd }}">
                                     <input type="number" step="any" min="0" 
                                            name="days[{{ $dDate }}][new_mmbtu]" 
-                                           class="input-cng-edit" 
+                                           class="input-cng-edit input-cng-mmbtu" 
                                            value="{{ round($dOldMmbtu, 4) }}" 
-                                           oninput="recalculateCngBalancing()"
+                                           oninput="onCngMmbtuChange('{{ $dDate }}')"
                                            title="Ketik kuantitas fisik MMBTU baru untuk tanggal ini">
                                 </td>
 
@@ -343,8 +294,17 @@
                                     <span class="badge-cng-variance badge-cng-zero badge-delta-mmbtu">0</span>
                                 </td>
 
-                                <td style="text-align: right; font-weight: 800; color: #d97706; font-family: ui-monospace, monospace;" class="cell-cng-nilai-baru">
+                                <td style="text-align: right; color: #475569; font-weight: 600; font-family: ui-monospace, monospace;">
                                     Rp {{ number_format($dOldNilai, 0, ',', '.') }}
+                                </td>
+
+                                <td style="text-align: right; background: #fffdf5;">
+                                    <input type="number" step="1" min="0" 
+                                           name="days[{{ $dDate }}][new_nilai]" 
+                                           class="input-cng-edit input-cng-nilai" 
+                                           value="{{ round($dOldNilai) }}" 
+                                           oninput="onCngNilaiChange('{{ $dDate }}')"
+                                           title="Ketik nominal rupiah biaya gas baru untuk tanggal ini">
                                 </td>
 
                                 <td style="text-align: center;">
@@ -384,6 +344,9 @@
                             </td>
                             <td style="text-align: center; color: #64748b; font-size: 0.75rem;">
                                 &Delta; Total
+                            </td>
+                            <td style="text-align: right; color: #475569; font-family: ui-monospace, monospace;" id="foot_total_cng_awal">
+                                Rp {{ number_format((float) $modalTot['cng_nilai'], 0, ',', '.') }}
                             </td>
                             <td style="text-align: right; color: #d97706; font-family: ui-monospace, monospace;" id="foot_total_cng_baru">
                                 Rp {{ number_format((float) $modalTot['cng_nilai'], 0, ',', '.') }}

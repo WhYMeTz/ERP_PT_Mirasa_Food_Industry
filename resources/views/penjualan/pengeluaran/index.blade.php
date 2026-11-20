@@ -304,26 +304,31 @@
                                         <span>Lihat Dokumen SJ</span>
                                     </a>
 
-                                    {{-- Cetak PDF --}}
+                                    {{-- Cetak PDF Surat Jalan --}}
                                     <a href="{{ route('penjualan.pengeluaran.export-pdf', $sj->pengeluaran_id) }}" target="_blank" class="action-dropdown-item">
                                         <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
                                         <span>Cetak Surat Jalan (PDF)</span>
                                     </a>
 
-                                    @if ($sj->faktur)
-                                        <div class="action-dropdown-divider"></div>
-                                        <a href="{{ route('penjualan.faktur.show', $sj->faktur->faktur_id) }}" class="action-dropdown-item" style="color: #059669; font-weight: 600;" title="Faktur Penjualan diterbitkan oleh Office: {{ $sj->faktur->faktur_no }}">
+                                    @if ($sj->faktur && $sj->status_cd !== 'BATAL')
+                                        {{-- Cetak PDF Faktur Penjualan --}}
+                                        <a href="{{ route('penjualan.faktur.export-pdf', $sj->faktur->faktur_id) }}" target="_blank" class="action-dropdown-item" style="color: #059669; font-weight: 600;">
                                             <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                            <span>Cetak Faktur Penjualan (PDF)</span>
+                                        </a>
+                                        <div class="action-dropdown-divider"></div>
+                                        <a href="{{ route('penjualan.faktur.show', $sj->faktur->faktur_id) }}" class="action-dropdown-item" style="color: #0f766e;" title="Faktur Penjualan: {{ $sj->faktur->faktur_no }}">
+                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                                             <span>Lihat Faktur (Office)</span>
                                         </a>
                                     @endif
 
                                     @if ($sj->status_cd !== 'BATAL')
                                         <div class="action-dropdown-divider"></div>
-                                        @if ($sj->faktur && $sj->faktur->status_pembayaran !== 'BATAL' && !$sj->faktur->deleted_st)
-                                            <div class="action-dropdown-item" style="color: #94a3b8; font-size: 0.75rem; cursor: not-allowed;" title="SJ terkunci karena Faktur Penjualan ({{ $sj->faktur->faktur_no }}) sudah terbit.">
+                                        @if ($sj->faktur && (float) $sj->faktur->total_dibayar > 0)
+                                            <div class="action-dropdown-item" style="color: #94a3b8; font-size: 0.75rem; cursor: not-allowed;" title="SJ terkunci karena Faktur Penjualan sudah ada pembayaran piutang.">
                                                 <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
-                                                <span>Terkunci (Faktur Terbit)</span>
+                                                <span>Terkunci (Ada Bayar)</span>
                                             </div>
                                         @else
                                             {{-- Batalkan Pengiriman (Void) --}}

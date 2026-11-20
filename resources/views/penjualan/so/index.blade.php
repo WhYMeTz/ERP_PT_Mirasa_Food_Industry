@@ -222,30 +222,26 @@
         <table style="width: 100%; border-collapse: collapse;">
             <thead>
                 <tr>
-                    <th style="width: 45px; text-align: center;">No</th>
-                    <th style="min-width: 180px;">Kode Pesanan</th>
-                    <th style="min-width: 110px;">Tanggal</th>
-                    <th style="min-width: 130px;">Kode Customer</th>
-                    <th style="min-width: 200px;">Nama Customer</th>
-                    <th style="min-width: 170px;">Status &amp; Realisasi</th>
-                    <th style="min-width: 140px; text-align: right;">Total Nilai Pesanan</th>
-                    <th style="min-width: 240px; text-align: right;">Aksi &amp; Export Dokumen</th>
+                    <th style="width: 40px; text-align: center;">No</th>
+                    <th style="min-width: 145px;">Kode Pesanan</th>
+                    <th style="min-width: 150px;">Dokumen Terkait</th>
+                    <th style="min-width: 95px;">Tanggal</th>
+                    <th style="min-width: 185px;">Pelanggan / Customer</th>
+                    <th style="min-width: 140px;" title="Realisasi pengeluaran fisik barang dari Gudang FG berdasarkan Surat Jalan">Status Pengiriman</th>
+                    <th style="min-width: 125px; text-align: right;">Total Tagihan</th>
+                    <th style="min-width: 135px; text-align: center;">Status Pembayaran</th>
+                    <th style="min-width: 85px; text-align: center;">Aksi</th>
                 </tr>
             </thead>
             <tbody>
                 @forelse ($orders as $index => $so)
                     @php
                         $itemCount = $so->details->count();
-                        $totalQty = (float) $so->details->sum('pesan_qty');
+                        $totalPesanQty = (float) $so->details->sum('pesan_qty');
+                        $totalKirimQty = (float) $so->details->sum('kirim_qty');
+                        $totalQty = $totalPesanQty;
+                        $kirimPct = $totalPesanQty > 0 ? min(100, round(($totalKirimQty / $totalPesanQty) * 100)) : 0;
                         $statusCd = $so->status_cd;
-                        
-                        $pct = match($statusCd) {
-                            'COMPLETED' => 100,
-                            'PARTIAL'   => 50,
-                            'PROCESSING'=> 25,
-                            'APPROVED'  => 10,
-                            default     => 0
-                        };
 
                         $activeSjItem = $so->pengeluaran ? $so->pengeluaran->where('status_cd', '!=', 'BATAL')->first() : null;
                         $activeFaktur = $activeSjItem?->faktur ?? \App\Models\Penjualan\DatFakturHdr::where('so_id', $so->so_id)->where('deleted_st', false)->where('status_pembayaran', '!=', 'BATAL')->first();
@@ -255,143 +251,159 @@
                             {{ $orders->firstItem() + $index }}
                         </td>
                         <td>
-                            <div style="display: flex; align-items: center; gap: 0.4rem;">
-                                {{-- Tombol expand preview item tanpa pindah halaman --}}
+                            <div style="display: flex; align-items: flex-start; gap: 0.5rem;">
                                 <button type="button" 
                                         onclick="toggleSoRow('row-items-{{ $so->so_id }}', this)" 
-                                        title="Intip rincian produk yang dipesan"
-                                        style="background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 4px; width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: #475569; padding: 0; flex-shrink: 0;">
+                                        title="Rincian produk"
+                                        style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 4px; width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: #64748b; padding: 0; flex-shrink: 0; margin-top: 2px;">
                                     <svg class="chevron-icon" width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="transition: transform 0.15s ease;">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
                                     </svg>
                                 </button>
                                 <div>
-                                    <a href="{{ route('penjualan.so.show', $so->so_id) }}" style="font-weight: 700; color: #0284c7; text-decoration: none; font-size: 0.9rem;">
+                                    <a href="{{ route('penjualan.so.show', $so->so_id) }}" style="font-weight: 700; color: #0284c7; text-decoration: none; font-size: 0.875rem;">
                                         {{ $so->so_no }}
                                     </a>
-                                    @if($activeFaktur)
-                                        <div style="font-family: monospace; font-size: 0.725rem; color: #15803d; font-weight: 700;">
-                                            Faktur: {{ $activeFaktur->faktur_no }}
-                                        </div>
-                                    @elseif($so->faktur_no)
-                                        <div style="font-family: monospace; font-size: 0.725rem; color: #15803d; font-weight: 700;">
-                                            Faktur: {{ $so->faktur_no }}
-                                        </div>
-                                    @endif
-                                    @if($activeSjItem)
-                                        <div style="font-family: monospace; font-size: 0.7rem; color: #475569;">
-                                            SJ: {{ $activeSjItem->pengeluaran_no }}
-                                        </div>
-                                    @endif
-                                    <small style="display: block; font-size: 0.725rem; color: #64748b;">
-                                        {{ $itemCount }} item produk &bull; {{ number_format($totalQty, 0) }} unit
-                                    </small>
+                                    <div style="font-size: 0.75rem; color: #64748b; margin-top: 2px;">
+                                        {{ $itemCount }} item &bull; {{ number_format($totalQty, 0) }} unit
+                                    </div>
                                 </div>
                             </div>
                         </td>
                         <td>
-                            <div style="font-weight: 600; color: #334155; font-size: 0.85rem;">
+                            <div style="font-size: 0.775rem; line-height: 1.5; color: #334155;">
+                                @if($activeFaktur)
+                                    <div><span style="color: #64748b; font-size: 0.7rem;">Faktur:</span> <strong style="color: #0f172a;">{{ $activeFaktur->faktur_no }}</strong></div>
+                                @elseif($so->faktur_no)
+                                    <div><span style="color: #64748b; font-size: 0.7rem;">Faktur:</span> <strong style="color: #0f172a;">{{ $so->faktur_no }}</strong></div>
+                                @endif
+
+                                @if($activeSjItem)
+                                    <div><span style="color: #64748b; font-size: 0.7rem;">SJ:</span> {{ $activeSjItem->pengeluaran_no }}</div>
+                                @elseif($so->surat_jalan_no)
+                                    <div style="color: #64748b;"><span style="color: #94a3b8; font-size: 0.7rem;">SJ PO:</span> {{ $so->surat_jalan_no }}</div>
+                                @endif
+
+                                @if($so->customer_po_no)
+                                    <div style="color: #64748b; font-size: 0.725rem;"><span style="color: #94a3b8;">Ref PO:</span> {{ $so->customer_po_no }}</div>
+                                @endif
+
+                                @if(!$activeFaktur && !$so->faktur_no && !$activeSjItem && !$so->surat_jalan_no && !$so->customer_po_no)
+                                    <span style="color: #94a3b8; font-style: italic;">-</span>
+                                @endif
+                            </div>
+                        </td>
+                        <td>
+                            <div style="font-weight: 600; color: #334155; font-size: 0.825rem;">
                                 {{ \Carbon\Carbon::parse($so->so_tgl)->format('d/m/Y') }}
                             </div>
                             @if ($so->tgl_kirim_estimasi)
-                                <small style="display: block; font-size: 0.725rem; color: #0369a1;">
+                                <div style="font-size: 0.725rem; color: #64748b; margin-top: 2px;">
                                     Kirim: {{ \Carbon\Carbon::parse($so->tgl_kirim_estimasi)->format('d/m/Y') }}
-                                </small>
+                                </div>
                             @endif
                         </td>
                         <td>
-                            <span style="font-family: monospace; font-size: 0.825rem; font-weight: 700; color: #0284c7; background: #f0f9ff; padding: 2px 6px; border-radius: 4px; border: 1px solid #e0f2fe;">
-                                {{ $so->customer?->customer_cd ?? '-' }}
-                            </span>
-                        </td>
-                        <td>
-                            <strong style="color: #0f172a; font-size: 0.875rem;">{{ $so->customer?->customer_nm ?? '-' }}</strong>
-                            <div style="display: flex; gap: 0.35rem; align-items: center; margin-top: 2px;">
+                            <div style="font-weight: 700; color: #0f172a; font-size: 0.875rem;">
+                                {{ $so->customer?->customer_nm ?? '-' }}
+                            </div>
+                            <div style="font-size: 0.725rem; color: #64748b; margin-top: 2px; display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;">
+                                @if($so->customer?->customer_cd)
+                                    <span style="color: #475569; font-weight: 600;">{{ $so->customer->customer_cd }}</span>
+                                    <span>&bull;</span>
+                                @endif
                                 @php
                                     $cKlas = $so->customer?->klasifikasi;
-                                    $cBg = match($cKlas) { 'IFM' => '#e0f2fe', 'IDM' => '#eff6ff', 'MIDI_ALFA', 'IDM_ALFA' => '#fef2f2', default => '#f0fdf4' };
-                                    $cClr = match($cKlas) { 'IFM' => '#0284c7', 'IDM' => '#1d4ed8', 'MIDI_ALFA', 'IDM_ALFA' => '#b91c1c', default => '#15803d' };
-                                    $cLbl = match($cKlas) { 'IFM' => 'IFM', 'IDM' => 'IDM', 'MIDI_ALFA' => 'Midi/Alfa', 'IDM_ALFA' => 'Midi/Alfa', default => 'MANUAL' };
+                                    $cLbl = match($cKlas) { 'IFM' => 'IFM', 'IDM' => 'IDM', 'MIDI_ALFA', 'IDM_ALFA' => 'Midi/Alfa', default => 'Manual' };
                                 @endphp
                                 @if($cKlas)
-                                    <span style="font-size: 0.65rem; font-weight: 700; background: {{ $cBg }}; color: {{ $cClr }}; padding: 1px 5px; border-radius: 3px;">
-                                        {{ $cLbl }}
-                                    </span>
+                                    <span>{{ $cLbl }}</span>
+                                    <span>&bull;</span>
                                 @endif
                                 @if($so->top_txt ?: $so->customer?->top_txt)
-                                    <span style="font-size: 0.675rem; color: #64748b;">
-                                        TOP: <strong>{{ $so->top_txt ?: $so->customer?->top_txt }}</strong>
-                                    </span>
+                                    <span>TOP: {{ $so->top_txt ?: $so->customer?->top_txt }}</span>
                                 @endif
                             </div>
-                            @if($so->customer_po_no)
-                                <small style="display: block; font-size: 0.725rem; color: #64748b;">Ref PO: {{ $so->customer_po_no }}</small>
-                            @endif
                         </td>
                         <td>
-                            {{-- BADGE STATUS & PROGRESS BAR --}}
                             <div style="display: flex; flex-direction: column; gap: 0.25rem;">
                                 <div>
-                                    @if ($statusCd == 'COMPLETED')
-                                        <span class="badge badge-success">Selesai (100%)</span>
-                                    @elseif ($statusCd == 'PARTIAL')
-                                        <span class="badge badge-info">Sebagian Kirim (50%)</span>
+                                    @if ($statusCd == 'COMPLETED' || $kirimPct >= 100)
+                                        <span class="badge" style="background: #ecfdf5; color: #047857; font-weight: 700; font-size: 0.75rem; padding: 2px 7px; border-radius: 4px; border: 1px solid #a7f3d0;">
+                                            Terkirim (100%)
+                                        </span>
+                                    @elseif ($statusCd == 'PARTIAL' || ($totalKirimQty > 0 && $kirimPct < 100))
+                                        <span class="badge" style="background: #fffbeb; color: #b45309; font-weight: 700; font-size: 0.75rem; padding: 2px 7px; border-radius: 4px; border: 1px solid #fde68a;">
+                                            Kirim {{ $kirimPct }}% ({{ number_format($totalKirimQty, 0) }}/{{ number_format($totalPesanQty, 0) }})
+                                        </span>
                                     @elseif ($statusCd == 'PROCESSING')
-                                        <span class="badge" style="background:#e0f2fe; color:#0369a1;">Diproses</span>
+                                        <span class="badge" style="background: #eff6ff; color: #1d4ed8; font-weight: 600; font-size: 0.75rem; padding: 2px 7px; border-radius: 4px; border: 1px solid #bfdbfe;">
+                                            Diproses (0%)
+                                        </span>
                                     @elseif ($statusCd == 'APPROVED')
-                                        <span class="badge" style="background:#dbeafe; color:#1d4ed8;">Disetujui</span>
+                                        <span class="badge" style="background: #f0fdf4; color: #15803d; font-weight: 600; font-size: 0.75rem; padding: 2px 7px; border-radius: 4px; border: 1px solid #bbf7d0;">
+                                            Menunggu Kirim (0%)
+                                        </span>
                                     @elseif ($statusCd == 'DRAFT')
-                                        <span class="badge" style="background:#f1f5f9; color:#475569;">Draft</span>
+                                        <span class="badge" style="background: #f8fafc; color: #64748b; font-weight: 500; font-size: 0.75rem; padding: 2px 7px; border-radius: 4px; border: 1px solid #e2e8f0;">
+                                            Draft
+                                        </span>
                                     @else
-                                        <span class="badge" style="background:#fee2e2; color:#b91c1c;">Dibatalkan</span>
+                                        <span class="badge" style="background: #fef2f2; color: #dc2626; font-weight: 600; font-size: 0.75rem; padding: 2px 7px; border-radius: 4px; border: 1px solid #fecaca;">
+                                            Dibatalkan
+                                        </span>
                                     @endif
                                 </div>
-
-                                {{-- Progress Bar Ramping --}}
                                 @php
                                     $barBg = '#e2e8f0';
-                                    $barFill = '#0284c7';
-                                    if ($statusCd == 'COMPLETED') {
-                                        $barFill = '#10b981';
-                                    } elseif ($statusCd == 'PARTIAL') {
-                                        $barFill = '#f59e0b';
-                                    } elseif ($statusCd == 'CANCELLED') {
-                                        $barFill = '#ef4444';
-                                    }
+                                    $barFill = $kirimPct >= 100 ? '#059669' : ($kirimPct > 0 ? '#d97706' : '#cbd5e1');
                                 @endphp
-                                <div style="width: 100%; max-width: 140px; height: 5px; background: {{ $barBg }}; border-radius: 9999px; overflow: hidden; margin-top: 2px;">
-                                    <div style="width: {{ $pct }}%; height: 100%; background: {{ $barFill }}; border-radius: 9999px;"></div>
+                                <div style="width: 100%; max-width: 120px; height: 5px; background: {{ $barBg }}; border-radius: 9999px; overflow: hidden; margin-top: 2px;" title="{{ $kirimPct }}% terkirim">
+                                    <div style="width: {{ $kirimPct }}%; height: 100%; background: {{ $barFill }}; border-radius: 9999px;"></div>
                                 </div>
                             </div>
                         </td>
-                        <td style="text-align: right; font-weight: 700; color: #0f172a; font-size: 0.875rem;">
-                            <div>Rp {{ number_format((float) $so->total_tagihan, 0, ',', '.') }}</div>
-                            <div style="margin-top: 3px;">
-                                @if ($activeFaktur)
-                                    <span class="badge" style="background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; font-size: 0.675rem; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;" title="Faktur Penjualan No: {{ $activeFaktur->faktur_no }}">
-                                        <svg width="8" height="8" fill="currentColor" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3"/></svg>
-                                        Faktur Terbit
-                                    </span>
-                                    @if ($activeFaktur->status_pembayaran === 'LUNAS')
-                                        <div style="font-size: 0.65rem; color: #059669; font-weight: 700; margin-top: 1px;">(Lunas 100%)</div>
-                                    @elseif ($activeFaktur->status_pembayaran === 'SEBAGIAN')
-                                        <div style="font-size: 0.65rem; color: #b45309; font-weight: 700; margin-top: 1px;">(Sebagian)</div>
-                                    @else
-                                        <div style="font-size: 0.65rem; color: #64748b; font-weight: 600; margin-top: 1px;">(Belum Lunas)</div>
-                                    @endif
-                                @elseif ($activeSjItem)
-                                    <span class="badge" style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a; font-size: 0.675rem; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;" title="Barang telah dikirim Gudang ({{ $activeSjItem->pengeluaran_no }}). Menunggu penerbitan Faktur Penjualan oleh Office.">
-                                        <svg width="8" height="8" fill="currentColor" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3"/></svg>
-                                        Menunggu Faktur
-                                    </span>
-                                @else
-                                    <span class="badge" style="background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; font-size: 0.675rem; font-weight: 600;">
-                                        Belum Dikirim
-                                    </span>
-                                @endif
+                        <td style="text-align: right; vertical-align: middle;">
+                            <div style="font-weight: 700; color: #0f172a; font-size: 0.875rem; white-space: nowrap;">
+                                Rp {{ number_format((float) $so->total_tagihan, 0, ',', '.') }}
                             </div>
                         </td>
-                        <td style="text-align: right;">
+                        <td style="text-align: center; vertical-align: middle;">
+                            @if ($activeFaktur)
+                                @php
+                                    $isLunas = $activeFaktur->status_pembayaran === 'LUNAS' || (float)$activeFaktur->sisa_piutang <= 0;
+                                    $todayCarbon = \Carbon\Carbon::today();
+                                    $tglTempo = $activeFaktur->tgl_jatuh_tempo ? \Carbon\Carbon::parse($activeFaktur->tgl_jatuh_tempo) : null;
+                                    $diffDays = $tglTempo ? $todayCarbon->diffInDays($tglTempo, false) : 0;
+                                @endphp
+                                @if ($isLunas)
+                                    <span class="badge" style="background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; font-weight: 700; font-size: 0.75rem; padding: 2px 7px; border-radius: 4px; display: inline-block;">
+                                        ✓ Lunas
+                                    </span>
+                                @elseif ($tglTempo && $diffDays < 0)
+                                    <span class="badge" style="background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; font-weight: 700; font-size: 0.75rem; padding: 2px 7px; border-radius: 4px; display: inline-block;">
+                                        Lewat {{ abs($diffDays) }} Hari
+                                    </span>
+                                @elseif ($tglTempo && $diffDays <= 3)
+                                    <span class="badge" style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a; font-weight: 700; font-size: 0.75rem; padding: 2px 7px; border-radius: 4px; display: inline-block;">
+                                        Tempo H-{{ $diffDays > 0 ? $diffDays : '0' }}
+                                    </span>
+                                @else
+                                    <span class="badge" style="background: #f0f9ff; color: #0369a1; border: 1px solid #bae6fd; font-weight: 600; font-size: 0.75rem; padding: 2px 7px; border-radius: 4px; display: inline-block;">
+                                        Tempo {{ $diffDays }} Hari
+                                    </span>
+                                @endif
+                            @elseif ($activeSjItem)
+                                <span class="badge" style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a; font-weight: 600; font-size: 0.75rem; padding: 2px 7px; border-radius: 4px; display: inline-block;">
+                                    Menunggu Faktur
+                                </span>
+                            @else
+                                <span class="badge" style="background: #f8fafc; color: #64748b; border: 1px solid #e2e8f0; font-weight: 500; font-size: 0.75rem; padding: 2px 7px; border-radius: 4px; display: inline-block;">
+                                    Belum Ditagih
+                                </span>
+                            @endif
+                        </td>
+                        <td style="text-align: center; vertical-align: middle;">
                             @php
                                 $soMenuId = 'soMenu_' . $so->so_id;
                             @endphp
@@ -468,7 +480,7 @@
 
                     {{-- EXPANDABLE SUB-ROW: RINCIAN ITEM BARANG HASIL PRODUKSI --}}
                     <tr id="row-items-{{ $so->so_id }}" style="display: none; background: #f8fafc;">
-                        <td colspan="8" style="padding: 0.75rem 1.25rem; border-bottom: 2px solid #e2e8f0;">
+                        <td colspan="9" style="padding: 0.75rem 1.25rem; border-bottom: 2px solid #e2e8f0;">
                             <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.75rem; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">
                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
                                     <strong style="font-size: 0.825rem; color: #334155;">
@@ -477,7 +489,7 @@
                                     <div style="display: flex; gap: 0.75rem; align-items: center;">
                                         @if ($activeFaktur)
                                             <a href="{{ route('penjualan.faktur.export-pdf', $activeFaktur->faktur_id) }}" target="_blank" style="font-size: 0.75rem; color: #059669; text-decoration: none; font-weight: 600;">
-                                                📄 Export Faktur (PDF)
+                                                Export Faktur (PDF)
                                             </a>
                                         @elseif ($activeSjItem)
                                             <a href="{{ route('penjualan.faktur.create', ['pengeluaran_id' => $activeSjItem->pengeluaran_id]) }}" style="font-size: 0.75rem; color: #d97706; text-decoration: none; font-weight: 700;">
@@ -490,7 +502,7 @@
                                                 : route('penjualan.so.export-surat-jalan', $so->so_id);
                                         @endphp
                                         <a href="{{ $subrowSjRoute }}" target="_blank" style="font-size: 0.75rem; color: #16a34a; text-decoration: none; font-weight: 600;">
-                                            🚚 Export Surat Jalan (PDF)
+                                            Export Surat Jalan (PDF)
                                         </a>
                                         <a href="{{ route('penjualan.so.show', $so->so_id) }}" style="font-size: 0.75rem; color: #64748b; text-decoration: none;">
                                             Buka detail penuh &rarr;
@@ -530,7 +542,7 @@
                                                     {{ number_format((float) $item->pesan_qty, 0) }}
                                                 </td>
                                                 <td style="padding: 0.4rem 0.5rem; color: #475569;">
-                                                    {{ $item->barang?->satuanDasar?->satuan_nm ?? ($item->barang?->satuanDasar?->satuan_cd ?? '-') }}
+                                                    {{ $item->satuan ?: ($item->barang?->satuanDasar?->satuan_nm ?? ($item->barang?->satuanDasar?->satuan_cd ?? '-')) }}
                                                 </td>
                                                 <td style="padding: 0.4rem 0.5rem; text-align: right; color: #475569; font-family: monospace;">
                                                     Rp {{ number_format((float) $item->harga_satuan, 0, ',', '.') }}
@@ -560,7 +572,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="8" style="text-align: center; padding: 3rem 1rem; color: #94a3b8;">
+                        <td colspan="9" style="text-align: center; padding: 3rem 1rem; color: #94a3b8;">
                             Belum ada dokumen PO Penjualan. Klik tombol <strong>"+ Buat PO Penjualan"</strong> di atas.
                         </td>
                     </tr>

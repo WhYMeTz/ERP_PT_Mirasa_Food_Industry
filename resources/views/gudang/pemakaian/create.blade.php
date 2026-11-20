@@ -156,7 +156,7 @@
                         $fgLini = $liniList->filter(fn($l) => !str_contains(strtoupper($l->kategori_lini ?? ''), 'WIP'));
                     @endphp
                     @if($wipLini->isNotEmpty())
-                        <optgroup label="🏭 Lini Produksi WIP (Setengah Jadi)">
+                        <optgroup label="Lini Produksi WIP (Setengah Jadi)">
                             @foreach($wipLini as $lini)
                                 <option value="{{ $lini->lini_nm }}" {{ old('tujuan_pemakaian', 'PRODUKSI BERKO') === $lini->lini_nm ? 'selected' : '' }}>
                                     {{ $lini->lini_nm }} {{ $lini->keterangan ? '('.$lini->keterangan.')' : '' }}
@@ -165,7 +165,7 @@
                         </optgroup>
                     @endif
                     @if($fgLini->isNotEmpty())
-                        <optgroup label="📦 Lini Pengemasan / FG">
+                        <optgroup label="Lini Pengemasan / FG">
                             @foreach($fgLini as $lini)
                                 <option value="{{ $lini->lini_nm }}" {{ old('tujuan_pemakaian') === $lini->lini_nm ? 'selected' : '' }}>
                                     {{ $lini->lini_nm }} {{ $lini->keterangan ? '('.$lini->keterangan.')' : '' }}

@@ -1,106 +1,8 @@
-{{-- WORKSHEET PENYESUAIAN GAS CNG HARIAN & BALANCING FAKTUR --}}
-<div class="balancing-dashboard-grid">
-    {{-- KARTU 1: TARGET TAGIHAN FAKTUR VENDOR (ACUAN BALANCING) --}}
-    <div class="balancing-card card-target">
-        <div>
-            <div class="balancing-card-header">
-                <div>
-                    <span class="balancing-card-label" style="color: #b45309;">1. Target Faktur Vendor</span>
-                    <span class="balancing-card-sublabel">Input kuantitas invoice resmi</span>
-                </div>
-                <div class="balancing-icon-box" style="background: #fef3c7; color: #d97706;">
-                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                </div>
-            </div>
-
-            <div style="margin-top: 0.35rem;">
-                <label for="target_vendor_mmbtu" style="font-size: 0.725rem; font-weight: 700; color: #78350f; display: block; margin-bottom: 0.25rem;">
-                    Target Total MMBTU:
-                </label>
-                <div style="display: flex; align-items: center; gap: 0.35rem;">
-                    <input type="number" step="any" min="0" 
-                           id="target_vendor_mmbtu" 
-                           class="form-control" 
-                           style="font-size: 1.35rem; font-weight: 800; font-family: ui-monospace, monospace; height: 38px; color: #92400e; border: 1.5px solid #f59e0b; background: #ffffff;"
-                           value="{{ round($totalMmbtu, 4) }}" 
-                           oninput="recalculateCngBalancing()"
-                           placeholder="0.0000">
-                    <span style="font-weight: 800; font-size: 0.85rem; color: #92400e;">MMBTU</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="balancing-card-footer">
-            <span>Acuan Rekonsiliasi Tagihan</span>
-            <button type="button" onclick="autoDistributeVariance()" style="background: none; border: none; font-size: 0.725rem; font-weight: 700; color: #d97706; cursor: pointer; text-decoration: underline;" title="Bagi rata selisih ke seluruh hari kerja">
-                Bagi Rata Selisih Otomatis &raquo;
-            </button>
-        </div>
-    </div>
-
-    {{-- KARTU 2: TOTAL AKUMULASI HARIAN SAAT INI --}}
-    <div class="balancing-card card-actual">
-        <div>
-            <div class="balancing-card-header">
-                <div>
-                    <span class="balancing-card-label" style="color: #0369a1;">2. Akumulasi Harian Terkini</span>
-                    <span class="balancing-card-sublabel">{{ $workDaysCount }} Hari Kerja Produksi</span>
-                </div>
-                <div class="balancing-icon-box" style="background: #e0f2fe; color: #0284c7;">
-                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z"/></svg>
-                </div>
-            </div>
-
-            <div class="balancing-card-value" id="stat_actual_mmbtu" style="color: #0284c7;">
-                {{ number_format($totalMmbtu, 4, ',', '.') }} MMBTU
-            </div>
-
-            <div class="balancing-card-subvalue" id="stat_actual_rp" style="color: #475569;">
-                Rp {{ number_format($totalNilaiRp, 0, ',', '.') }}
-            </div>
-        </div>
-
-        <div class="balancing-card-footer">
-            <span>Total Output WIP: <strong>{{ number_format($totalWipKg, 0, ',', '.') }} kg</strong></span>
-            <span style="color: #0284c7; font-weight: 600;">Data Real-Time</span>
-        </div>
-    </div>
-
-    {{-- KARTU 3: STATUS BALANCING REKONSILIASI --}}
-    <div class="balancing-card card-status status-balanced" id="cardBalancingStatus">
-        <div>
-            <div class="balancing-card-header">
-                <div>
-                    <span class="balancing-card-label" id="labelBalancingStatus">3. Status Balancing</span>
-                    <span class="badge" id="badgeBalancingTitle" style="font-size: 0.7rem; font-weight: 800; padding: 0.2rem 0.5rem; border-radius: 4px; background: #dcfce7; color: #15803d; margin-top: 0.25rem; display: inline-block;">
-                        100% BALANCE / SEIMBANG
-                    </span>
-                </div>
-                <div class="balancing-icon-box" id="iconBalancingBox" style="background: #f0fdf4; color: #16a34a;">
-                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 18h12l3-18H3zm16 4H5m7-4v4"/></svg>
-                </div>
-            </div>
-
-            <div class="balancing-card-value" id="textBalancingVal" style="color: #16a34a; font-size: 1.45rem;">
-                Selisih: 0.0000 MMBTU
-            </div>
-
-            <p id="textBalancingDesc" style="font-size: 0.75rem; color: #64748b; margin: 0.35rem 0 0 0; line-height: 1.4;">
-                Total pencatatan fisik harian seimbang persis dengan target faktur vendor.
-            </p>
-        </div>
-
-        <div class="balancing-card-footer">
-            <span>Indikator Rekonsiliasi</span>
-            <span style="font-weight: 700;">Audit Standard</span>
-        </div>
-    </div>
-</div>
-
+{{-- WORKSHEET PENYESUAIAN GAS CNG HARIAN --}}
 {{-- TOOLBAR CEPAT (BULK OFFSET HELPER) --}}
 <div class="quick-bulk-toolbar">
     <div class="bulk-toolbar-title">
-        <svg width="18" height="18" fill="none" stroke="#d97706" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
         <span>Alat Bantu Penyesuaian Serentak (Bulk Offset):</span>
     </div>
 
@@ -112,8 +14,11 @@
                id="input_bulk_offset" 
                class="input-bulk-step" 
                placeholder="0.0000" 
-               title="Ketik angka selisih penyesuaian MMBTU">
-        <span style="font-size: 0.75rem; font-weight: 700; color: #475569;">MMBTU / hari</span>
+               title="Ketik angka selisih penyesuaian">
+        <select id="select_bulk_unit" style="font-size: 0.75rem; font-weight: 700; color: #334155; border: 1.5px solid #cbd5e1; border-radius: 4px; padding: 0.15rem 0.35rem; height: 30px; background: #ffffff;">
+            <option value="MMBTU">MMBTU / hari</option>
+            <option value="RP">Rp (Nominal) / hari</option>
+        </select>
 
         <button type="button" onclick="applyBulkOffset()" class="btn-bulk-apply" title="Tambahkan angka di atas ke seluruh hari kerja secara serentak">
             <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
@@ -132,10 +37,11 @@
     @csrf
     <input type="hidden" name="tahun" value="{{ $year }}">
     <input type="hidden" name="bulan" value="{{ $month }}">
+    <input type="hidden" name="pabrik" value="{{ $pabrikFilter }}">
     <input type="hidden" name="alasan_txt" id="input_hidden_alasan" value="Rekonsiliasi &amp; balancing pemakaian gas CNG periode {{ $monthsList[$month] }} {{ $year }}">
 
-    <div class="card" style="border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); overflow: hidden; margin-bottom: 1.25rem;">
-        <div class="card-header" style="background: #ffffff; padding: 0.85rem 1.25rem; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+    <div class="card" style="border: 1px solid #cbd5e1; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); overflow: hidden; margin-bottom: 1.25rem; background: #ffffff;">
+        <div class="card-header" style="background: #f8fafc; padding: 0.85rem 1.25rem; border-bottom: 1px solid #cbd5e1; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
             <div>
                 <span style="font-size: 0.925rem; font-weight: 800; color: #0f172a;">
                     Lembar Kerja Penyesuaian Gas Harian ({{ $workDaysCount }} Hari Kerja &bull; {{ $monthsList[$month] }} {{ $year }})
@@ -149,7 +55,7 @@
                     <span style="width: 6px; height: 6px; border-radius: 50%; background: #059669;"></span>
                     <span>Kurs Terkunci Per Tanggal Produksi</span>
                 </div>
-                <button type="button" class="btn btn-sm btn-primary" onclick="confirmOpenBalancingModal()" style="font-size: 0.775rem; font-weight: 700; background: #d97706; border-color: #b45309; padding: 0.35rem 0.85rem; border-radius: 6px; display: inline-flex; align-items: center; gap: 0.35rem; box-shadow: 0 1px 2px rgba(217, 119, 6, 0.2);">
+                <button type="button" class="btn btn-sm btn-primary" onclick="confirmOpenBalancingModal()" style="font-size: 0.775rem; font-weight: 700; background: #059669; border-color: #047857; padding: 0.35rem 0.85rem; border-radius: 6px; display: inline-flex; align-items: center; gap: 0.35rem; box-shadow: 0 1px 2px rgba(5, 150, 105, 0.2);">
                     <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                     <span>Simpan Penyesuaian</span>
                 </button>
@@ -164,18 +70,19 @@
                         <th style="width: 130px;">Tanggal &amp; Hari</th>
                         <th style="width: 140px;">Dokumen SPK</th>
                         <th style="text-align: right; width: 110px;">Output WIP</th>
-                        <th style="text-align: right; width: 130px; color: #0284c7;">Kurs JISDOR BI</th>
+                        <th style="text-align: right; width: 130px;">Kurs JISDOR BI</th>
                         <th style="text-align: right; width: 110px;">MMBTU Awal</th>
-                        <th style="text-align: right; width: 140px; background: #fffdf5; color: #b45309;">MMBTU Baru (Edit)</th>
-                        <th style="text-align: center; width: 100px;">&Delta; MMBTU</th>
-                        <th style="text-align: right; width: 130px; color: #d97706;">Biaya Gas Baru</th>
-                        <th style="text-align: center; width: 110px;">&Delta; Biaya Rp</th>
-                        <th style="text-align: right; width: 130px; color: #059669;">Estimasi HPP</th>
+                        <th style="text-align: right; width: 130px; background: #fffbeb; color: #92400e;">MMBTU Baru (Edit)</th>
+                        <th style="text-align: center; width: 90px;">&Delta; MMBTU</th>
+                        <th style="text-align: right; width: 125px;">Biaya Awal</th>
+                        <th style="text-align: right; width: 140px; background: #fffbeb; color: #92400e;">Biaya Baru (Edit Rp)</th>
+                        <th style="text-align: center; width: 100px;">&Delta; Biaya Rp</th>
+                        <th style="text-align: right; width: 130px;">Estimasi HPP</th>
                         <th style="width: 160px;">Catatan Koreksi</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach($prodDays as $d)
+                    @forelse($prodDays as $d)
                         @php
                             $dDate = $d['date'];
                             $dOldMmbtu = (float) $d['cng_mmbtu'];
@@ -209,7 +116,15 @@
                             </td>
 
                             <td>
-                                <span style="font-size: 0.75rem; font-weight: 700; color: #334155;">{{ $d['primary_produksi_no'] }}</span>
+                                <div style="display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;">
+                                    <span style="font-size: 0.75rem; font-weight: 700; color: #334155;">{{ $d['primary_produksi_no'] }}</span>
+                                    @if(!empty($d['entity_summary']['has_mfi']))
+                                        <span style="font-size: 0.625rem; font-weight: 800; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; padding: 1px 4px; border-radius: 3px;" title="PT Mirasa Food Industry">MFI</span>
+                                    @endif
+                                    @if(!empty($d['entity_summary']['has_bmb']))
+                                        <span style="font-size: 0.625rem; font-weight: 800; background: #faf5ff; color: #7e22ce; border: 1px solid #f3e8ff; padding: 1px 4px; border-radius: 3px;" title="CV Bahtera Mandiri Bersama">BMB</span>
+                                    @endif
+                                </div>
                                 <div style="font-size: 0.675rem; color: #64748b;">Shift {{ $d['shift_cd'] }}</div>
                             </td>
 
@@ -229,13 +144,14 @@
 
                             <td style="text-align: right; background: #fffdf5;">
                                 <input type="hidden" name="days[{{ $dDate }}][old_mmbtu]" value="{{ $dOldMmbtu }}">
+                                <input type="hidden" name="days[{{ $dDate }}][old_nilai]" value="{{ $dOldNilai }}">
                                 <input type="hidden" name="days[{{ $dDate }}][cng_kurs_jisdor]" value="{{ $dJisdor }}">
                                 <input type="hidden" name="days[{{ $dDate }}][cng_tarif_usd]" value="{{ $dUsd }}">
                                 <input type="number" step="any" min="0" 
                                        name="days[{{ $dDate }}][new_mmbtu]" 
-                                       class="input-cng-edit" 
+                                       class="input-cng-edit input-cng-mmbtu" 
                                        value="{{ round($dOldMmbtu, 4) }}" 
-                                       oninput="recalculateCngBalancing()"
+                                       oninput="onCngMmbtuChange('{{ $dDate }}')"
                                        title="Ketik kuantitas fisik MMBTU baru untuk tanggal ini">
                                 <div style="font-size: 0.65rem; color: #0284c7; text-align: right; margin-top: 2px;" class="new-nm3-preview" data-date="{{ $dDate }}">
                                     &approx; {{ number_format($dOldMmbtu * 27.921, 2, ',', '.') }} Nm³
@@ -246,8 +162,17 @@
                                 <span class="badge-cng-variance badge-cng-zero badge-delta-mmbtu">0</span>
                             </td>
 
-                            <td style="text-align: right; font-weight: 800; color: #d97706; font-family: ui-monospace, monospace;" class="cell-cng-nilai-baru">
+                            <td style="text-align: right; color: #475569; font-weight: 600; font-family: ui-monospace, monospace;">
                                 Rp {{ number_format($dOldNilai, 0, ',', '.') }}
+                            </td>
+
+                            <td style="text-align: right; background: #fffdf5;">
+                                <input type="number" step="1" min="0" 
+                                       name="days[{{ $dDate }}][new_nilai]" 
+                                       class="input-cng-edit input-cng-nilai" 
+                                       value="{{ round($dOldNilai) }}" 
+                                       oninput="onCngNilaiChange('{{ $dDate }}')"
+                                       title="Ketik nominal rupiah biaya gas baru untuk tanggal ini">
                             </td>
 
                             <td style="text-align: center;">
@@ -266,7 +191,14 @@
                                        placeholder="Alasan selisih meter...">
                             </td>
                         </tr>
-                    @endforeach
+                    @empty
+                        <tr>
+                            <td colspan="13" style="text-align: center; padding: 2.5rem; color: #64748b;">
+                                <svg width="36" height="36" fill="none" stroke="#cbd5e1" viewBox="0 0 24 24" style="margin: 0 auto 0.5rem auto; display: block;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                <span>Belum ada lembar catatan produksi untuk <strong>{{ $pabrikFilter === 'ALL' ? 'Semua Lokasi Pabrik' : ($pabrikFilter === 'BMB' ? 'CV Bahtera Mandiri Bersama' : 'PT Mirasa Food Industry') }}</strong> pada periode <strong>{{ $monthsList[$month] }} {{ $year }}</strong>.</span>
+                            </td>
+                        </tr>
+                    @endforelse
                 </tbody>
                 <tfoot>
                     <tr class="cng-tfoot-row">
@@ -286,6 +218,9 @@
                         <td style="text-align: center;" id="footDeltaMmbtu">
                             <span class="badge-cng-variance badge-cng-zero">0</span>
                         </td>
+                        <td style="text-align: right; font-family: ui-monospace, monospace; color: #475569;" id="footOldNilai">
+                            Rp {{ number_format($totalNilaiRp, 0, ',', '.') }}
+                        </td>
                         <td style="text-align: right; font-family: ui-monospace, monospace; color: #d97706; font-size: 0.95rem;" id="footNewNilai">
                             Rp {{ number_format($totalNilaiRp, 0, ',', '.') }}
                         </td>
@@ -303,10 +238,10 @@
     </div>
 
     {{-- BAR AKSI SIMPAN PENYESUAIAN (BOTTOM ACTION BAR ELEGAN & BERSIH) --}}
-    <div class="bottom-submit-bar" style="background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 1rem 1.35rem; margin-top: 1.25rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.25rem;">
+    <div class="bottom-submit-bar" style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 1rem 1.35rem; margin-top: 1.25rem; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.25rem;">
         <div style="display: flex; align-items: center; gap: 0.75rem; max-width: 65%;">
-            <div style="width: 36px; height: 36px; border-radius: 8px; background: #fef3c7; color: #d97706; display: flex; align-items: center; justify-content: center; flex-shrink: 0; border: 1px solid #fde68a;">
-                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <div style="width: 36px; height: 36px; border-radius: 6px; background: #f1f5f9; color: #475569; display: flex; align-items: center; justify-content: center; flex-shrink: 0; border: 1px solid #cbd5e1;">
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
             </div>
             <div>
                 <strong style="color: #0f172a; font-size: 0.825rem; display: block; margin-bottom: 0.15rem;">Catatan Audit Balancing:</strong>
@@ -319,7 +254,7 @@
             <button type="button" class="btn btn-secondary" onclick="resetAllDailyInputs()" style="font-size: 0.8125rem; font-weight: 600; padding: 0.55rem 1.15rem; border-radius: 6px; background: #ffffff; border: 1.5px solid #cbd5e1; color: #475569;">
                 Batal / Reset
             </button>
-            <button type="button" class="btn btn-primary" onclick="confirmOpenBalancingModal()" style="font-size: 0.8125rem; font-weight: 700; background: #d97706; border-color: #b45309; padding: 0.55rem 1.35rem; border-radius: 6px; display: inline-flex; align-items: center; gap: 0.45rem; box-shadow: 0 1px 3px rgba(217, 119, 6, 0.25);">
+            <button type="button" class="btn btn-primary" onclick="confirmOpenBalancingModal()" style="font-size: 0.8125rem; font-weight: 700; background: #059669; border-color: #047857; padding: 0.55rem 1.35rem; border-radius: 6px; display: inline-flex; align-items: center; gap: 0.45rem; box-shadow: 0 1px 3px rgba(5, 150, 105, 0.2);">
                 <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                 <span>Simpan Penyesuaian Gas Harian</span>
             </button>

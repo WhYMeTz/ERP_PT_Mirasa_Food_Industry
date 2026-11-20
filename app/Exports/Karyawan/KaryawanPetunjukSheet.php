@@ -60,11 +60,12 @@ class KaryawanPetunjukSheet implements FromArray, WithTitle, WithColumnWidths, W
 
                 $steps = [
                     'Isi data di sheet "Template Import" mulai dari baris 2. Jangan mengubah, menghapus, atau menambah kolom pada baris judul (baris 1).',
-                    'Kolom dengan judul MERAH wajib diisi. Kolom dengan judul BIRU boleh dikosongkan.',
-                    'Satu baris mewakili satu karyawan. Baris yang ID Karyawan atau Namanya kosong akan dilewati.',
-                    'Jika ID Karyawan sudah terdaftar di sistem, datanya akan DIPERBARUI (tidak dobel).',
+                    'Kolom dengan judul MERAH wajib diisi untuk KARYAWAN BARU. Untuk karyawan yang sudah terdaftar, cukup ID Karyawan ditambah kolom yang ingin dilengkapi.',
+                    'Satu baris mewakili satu karyawan. Baris yang ID Karyawannya kosong akan dilewati.',
+                    'Jika ID Karyawan sudah terdaftar, HANYA kolom yang terisi yang diperbarui. Kolom yang dikosongkan, atau dihapus dari file, tidak diubah (tidak dobel, tidak menghapus data lama).',
                     'Untuk Kelompok, Shift, Status, dan Bagian/Divisi, pilih dari dropdown agar penulisannya sesuai.',
-                    'Tulis tanggal dengan format hari/bulan/tahun, misalnya 07/06/2023. Kolom ID Absensi, No. HP, dan No. Rekening sudah berformat teks agar angka nol di depan tidak hilang.',
+                    'Tulis tanggal dengan format hari/bulan/tahun, misalnya 07/06/2023. Kolom ID Absensi, No. HP, No. Rekening, dan NPWP/NIK sudah berformat teks agar angka nol di depan tidak hilang dan angka 16 digit tidak dibulatkan. Jika menempel data dari file lain, pastikan kolom NPWP/NIK tetap berformat Teks.',
+                    'Contoh melengkapi data: untuk mengisi No. HP beberapa karyawan saja, isi kolom ID Karyawan dan No. HP, kolom lain dibiarkan kosong. Cara yang sama berlaku untuk NPWP/NIK dan Status PTKP.',
                     'Simpan sebagai file .xlsx, lalu unggah lewat Kelola Data > Import dari Excel (maksimal 5 MB). Sebaiknya uji dengan beberapa baris dulu.',
                 ];
 
@@ -72,7 +73,7 @@ class KaryawanPetunjukSheet implements FromArray, WithTitle, WithColumnWidths, W
                     $s->mergeCells("A{$row}:D{$row}");
                     $s->setCellValueExplicit("A{$row}", ($i + 1) . '. ' . $text, DataType::TYPE_STRING);
                     $s->getStyle("A{$row}")->getAlignment()->setWrapText(true)->setVertical(Alignment::VERTICAL_TOP);
-                    $s->getRowDimension($row)->setRowHeight(32);
+                    $s->getRowDimension($row)->setRowHeight(max(32, ceil(mb_strlen($text) / 115) * 16 + 2));
                     $row++;
                 }
 
@@ -97,22 +98,25 @@ class KaryawanPetunjukSheet implements FromArray, WithTitle, WithColumnWidths, W
                 $kelompok = implode(', ', array_keys(MstKaryawan::KELOMPOK));
                 $kodeBagian = implode(', ', array_keys(KaryawanTemplateSheet::DEPARTEMEN));
                 $daftarDivisi = implode(', ', MstKaryawan::DIVISI);
+                $ptkp = implode(', ', MstKaryawan::PTKP);
 
                 $columns = [
-                    ['ID Karyawan', 'Ya', 'ID unik karyawan, maksimal 50 karakter. Ditulis huruf kapital. Jika sudah terdaftar, data karyawan tersebut diperbarui.', 'DRV1N19'],
+                    ['ID Karyawan', 'Ya', 'ID unik karyawan, maksimal 50 karakter. Ditulis huruf kapital. Dipakai untuk mencocokkan karyawan; jika sudah terdaftar, hanya kolom yang terisi yang diperbarui.', 'DRV1N19'],
                     ['ID Absensi', 'Tidak', 'ID di mesin absen. Ditulis apa adanya, angka nol di depan dipertahankan.', '000000019'],
-                    ['Nama Karyawan', 'Ya', 'Nama lengkap, maksimal 100 karakter.', 'JOKO WIGUNO'],
+                    ['Nama Karyawan', 'Karyawan baru', 'Nama lengkap, maksimal 100 karakter.', 'JOKO WIGUNO'],
                     ['Kelompok', 'Tidak', 'Pilih salah satu: ' . $kelompok . '.', 'LANGSUNG IFM'],
                     ['Shift', 'Tidak', 'Pilih salah satu: SHIFT A, SHIFT B, NON SHIFT. Penulisan "A" atau "B" saja juga diterima.', 'SHIFT A'],
-                    ['Status Karyawan', 'Tidak', 'Pilih salah satu: Tetap, Kontrak, Harian. Jika kosong, dianggap Tetap.', 'Tetap'],
-                    ['Departemen', 'Ya', 'Isi dengan KODE departemen (lihat daftar di bawah): ' . $kodeBagian . '.', 'PRODUKSI'],
-                    ['Bagian/Divisi', 'Tidak', 'Bagian/Devisi. Jika kosong, otomatis diisi kode devisi.' . $daftarDivisi . '.', 'OPERATOR PACKING'],
+                    ['Status Karyawan', 'Tidak', 'Pilih salah satu: Tetap, Kontrak, Harian, Borong. Karyawan baru yang kosong dianggap Tetap.', 'Tetap'],
+                    ['Departemen', 'Karyawan baru', 'Isi dengan KODE departemen (lihat daftar di bawah): ' . $kodeBagian . '.', 'PRODUKSI'],
+                    ['Bagian/Divisi', 'Karyawan baru', 'Pilih dari dropdown. Karyawan lama yang dikosongkan tetap memakai divisi sebelumnya. Pilihan: ' . $daftarDivisi . '.', 'PACKING'],
                     ['Tanggal Masuk Kerja', 'Tidak', 'Format hari/bulan/tahun (dd/mm/yyyy).', '07/06/2023'],
                     ['No. HP', 'Tidak', 'Nomor telepon/WhatsApp, hanya angka.', '081234567801'],
                     ['Email', 'Tidak', 'Alamat email yang valid.', 'joko@mirasa.co.id'],
-                    ['Bank', 'Tidak', 'Nama bank. Jika kosong, diisi BCA.', 'BCA'],
+                    ['Bank', 'Tidak', 'Nama bank. Karyawan baru yang kosong diisi BCA.', 'BCA'],
                     ['No. Rekening', 'Tidak', 'Angka tanpa spasi atau tanda baca.', '1040871639'],
                     ['Alamat', 'Tidak', 'Alamat domisili, bebas.', 'Ambartawang, Magelang'],
+                    ['NPWP/NIK', 'Tidak', 'Tepat 16 digit angka, tanpa spasi atau tanda baca. Dipakai untuk bukti potong PPh 21 (BP21). Kolom harus berformat Teks. Baris dengan jumlah digit selain 16 ditolak.', '3308094104690007'],
+                    ['Status PTKP', 'Tidak', 'Pilih dari dropdown: ' . $ptkp . '. Penulisan seperti TK0 atau tk-0 juga diterima.', 'TK/0'],
                 ];
 
                 $firstDataRow = $row;
@@ -121,7 +125,7 @@ class KaryawanPetunjukSheet implements FromArray, WithTitle, WithColumnWidths, W
                         $col = chr(65 + $i);
                         $s->setCellValueExplicit("{$col}{$row}", $value, DataType::TYPE_STRING);
                     }
-                    if ($item[1] === 'Ya') {
+                    if ($item[1] !== 'Tidak') {
                         $s->getStyle("B{$row}")->getFont()->setBold(true)->getColor()->setRGB('C00000');
                     }
                     $row++;

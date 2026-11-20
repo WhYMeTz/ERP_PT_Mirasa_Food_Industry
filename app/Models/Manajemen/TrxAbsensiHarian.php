@@ -11,6 +11,7 @@ class TrxAbsensiHarian extends Model
         'tanggal' => 'date',
         'masuk_asli' => 'datetime', 'pulang_asli' => 'datetime',
         'jam_masuk' => 'datetime',  'jam_pulang' => 'datetime',
+        'dikonfirmasi' => 'boolean',
     ];
 
     /** Total jam kerja (desimal) dari jam masuk & pulang yang sudah dibulatkan. */

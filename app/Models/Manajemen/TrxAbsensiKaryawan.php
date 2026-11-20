@@ -15,7 +15,8 @@ class TrxAbsensiKaryawan extends Model
         'pulang_finger' => 'datetime', 'pulang_bulat' => 'datetime',
         'istirahat' => 'float', 'standar_jam' => 'float', 'potongan_jam' => 'float',
         'total_jam' => 'float', 'lembur_jam' => 'float', 'kehadiran' => 'float',
-        'istirahat_bawaan' => 'boolean', 'is_manual' => 'boolean',
+        'lembur_ragu' => 'float', 'lembur_konfirmasi' => 'boolean',
+        'istirahat_bawaan' => 'boolean', 'is_manual' => 'boolean', 'dikonfirmasi' => 'boolean',
     ];
 
     /** Halaman tempat masalah ini sebaiknya diperbaiki: 'jadwal', 'fingerprint', atau null jika OK. */

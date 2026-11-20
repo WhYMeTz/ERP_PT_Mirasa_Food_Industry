@@ -6,6 +6,7 @@ use App\Models\Manajemen\MstKodeShift;
 use App\Models\Manajemen\TrxAbsensiKaryawan;
 use App\Models\Manajemen\TrxFingerprintLog;
 use App\Models\Manajemen\TrxJadwalKaryawan;
+use App\Models\Manajemen\TrxLemburKonfirmasi;
 use App\Models\MasterData\MstKaryawan;
 use App\Models\Manajemen\TrxAbsensiHarian;
 use Carbon\Carbon;
@@ -16,6 +17,7 @@ class AbsensiService
     const SEBELUM_MASUK_JAM  = 4;    // jendela scan: sekian jam sebelum jam masuk jadwal
     const SESUDAH_PULANG_JAM = 6;    // ... dan sekian jam sesudah jam pulang jadwal
     const MIN_SELISIH_MENIT  = 120;  // scan pertama-terakhir minimal agar dianggap lengkap
+    const MIN_LEMBUR_MENIT   = 30;   // scan pulang kurang dari ini setelah jadwal tapi jam bulat naik = "lembur ragu" (menunggu konfirmasi)
 
     private static function menit(Carbon $dari, Carbon $ke): float
     {
@@ -23,7 +25,7 @@ class AbsensiService
     }
 
     
-    public static function hitungShift(Carbon $jMasuk, Carbon $jPulang, float $istirahat, Carbon $scanMasuk, Carbon $scanPulang, ?float $standarShift = null): array
+    public static function hitungShift(Carbon $jMasuk, Carbon $jPulang, float $istirahat, Carbon $scanMasuk, Carbon $scanPulang, ?float $standarShift = null, ?bool $hitungLemburRagu = null): array
     {
         $bMasuk      = FingerprintService::bulatkan($scanMasuk);
         $masukBulat  = $bMasuk->lt($jMasuk) ? $jMasuk->copy() : $bMasuk;   // masuk lebih awal tidak dihitung
@@ -36,7 +38,12 @@ class AbsensiService
         $akhirHitung = $pulangBulat->gt($jPulang) ? $jPulang : $pulangBulat;
         $hadir       = max(0, self::menit($masukBulat, $akhirHitung) / 60);
 
-        $lembur    = max(0, self::menit($jPulang, $pulangBulat)) / 60;
+        // Lembur mengikuti jam bulat. Terlambat masuk TIDAK mengurangi lembur.
+        // Kasus ragu: jam bulat naik (mis. 15:21 -> 15:30) padahal scan asli < MIN_LEMBUR_MENIT setelah jadwal.
+        // Sistem tidak tahu apakah 21 menit itu bekerja, jadi lembur 0 sampai dikonfirmasi ($hitungLemburRagu = true).
+        $lemburBulat = max(0, self::menit($jPulang, $pulangBulat)) / 60;
+        $ragu        = $lemburBulat > 0 && self::menit($jPulang, $scanPulang) < self::MIN_LEMBUR_MENIT;
+        $lembur      = $ragu ? ($hitungLemburRagu === true ? $lemburBulat : 0) : $lemburBulat;
         $potongan  = max(0, $standar - $hadir);
         $kehadiran = $standar > 0 ? max(0, min(1, $hadir / $standar)) : 0;
 
@@ -47,6 +54,7 @@ class AbsensiService
             'potongan_jam' => round($potongan, 2),
             'total_jam'    => round($hadir, 2),
             'lembur_jam'   => round($lembur, 2),
+            'lembur_ragu'  => $ragu ? round($lemburBulat, 2) : 0,
             'kehadiran'    => round($kehadiran, 4),
         ];
     }
@@ -72,6 +80,10 @@ class AbsensiService
         $koreksi = TrxAbsensiHarian::where('is_manual', true)
             ->whereBetween('tanggal', [$dari, $sampai])
             ->get()
+            ->keyBy(fn ($m) => $m->tanggal->toDateString() . '|' . $m->id_absen);
+
+        // Konfirmasi lembur "ragu" (disimpan terpisah agar tidak hilang saat Hitung Ulang)
+        $konfLembur = TrxLemburKonfirmasi::whereBetween('tanggal', [$dari, $sampai])->get()
             ->keyBy(fn ($m) => $m->tanggal->toDateString() . '|' . $m->id_absen);
 
         $now = now();
@@ -111,6 +123,7 @@ class AbsensiService
             }
 
             $kor = $koreksi[$key] ?? null;
+            $dikonfirmasi = (bool) ($kor?->dikonfirmasi);
             if ($kor && ($kor->jam_masuk || $kor->jam_pulang)) {
                 $m = $kor->jam_masuk ?? $scans->first()?->scan_at;
                 $p = $kor->jam_pulang ?? ($scans->count() > 1 ? $scans->last()->scan_at : null);
@@ -134,12 +147,14 @@ class AbsensiService
                 'pulang_finger' => $scans->count() > 1 ? $scans->last()->scan_at : null, 'pulang_bulat' => null,
                 'istirahat' => $ist, 'istirahat_bawaan' => $j->istirahat_jam === null,
                 'standar_jam' => 0, 'potongan_jam' => 0, 'total_jam' => 0, 'lembur_jam' => 0, 'kehadiran' => 0,
-                'status' => 'OK', 'catatan' => null, 'is_manual' => false,
+                'status' => 'OK', 'catatan' => null, 'is_manual' => false, 'dikonfirmasi' => $dikonfirmasi,
+                'lembur_ragu' => 0, 'lembur_konfirmasi' => null,
                 'created_at' => $now, 'updated_at' => $now,
             ];
 
             $lengkap = $scans->count() > 1
-                && self::menit($scans->first()->scan_at, $scans->last()->scan_at) >= self::MIN_SELISIH_MENIT;
+                && ($dikonfirmasi
+                    || self::menit($scans->first()->scan_at, $scans->last()->scan_at) >= self::MIN_SELISIH_MENIT);
 
             if ($jenis === 'driver') {
                 if ($scans->isEmpty()) {
@@ -176,21 +191,28 @@ class AbsensiService
                     $row['status'] = 'Perlu dicek';
                     $row['catatan'] = 'Scan tidak lengkap (hanya 1x atau selisih terlalu pendek)';
                 } else {
-                    $h = self::hitungShift($jm, $jp, $ist, $scans->first()->scan_at, $scans->last()->scan_at, $std);
+                    $h = self::hitungShift($jm, $jp, $ist, $scans->first()->scan_at, $scans->last()->scan_at, $std, ($konfLembur[$key] ?? null)?->hitung);
                     if ($h['pulang_bulat']->lte($h['masuk_bulat'])) {
                         $row['status'] = 'Perlu dicek';
                         $row['catatan'] = 'Jam pulang tidak setelah jam masuk';
                     } else {
                         $row = array_merge($row, $h);
+                        if ($row['lembur_ragu'] > 0) {
+                            $kf = $konfLembur[$key] ?? null;
+                            $row['lembur_konfirmasi'] = $kf ? (bool) $kf->hitung : null;
+                        }
                     }
                 }
             }
 
+            if ($kor) {
+                $row['catatan'] = trim(($row['catatan'] ? $row['catatan'] . ' | ' : '')
+                    . 'Jam dikoreksi manual di Finger Print' . ($dikonfirmasi ? ' (dikonfirmasi)' : ''));
+            }
+
             $rows[$key] = $row;
 
-            if ($kor ?? null) {
-                $row['catatan'] = trim(($row['catatan'] ? $row['catatan'] . ' | ' : '') . 'Jam dikoreksi manual di Finger Print');
-            }
+
         }
 
         // Scan yang tidak masuk jadwal mana pun
@@ -210,7 +232,8 @@ class AbsensiService
                     'pulang_finger' => $g->count() > 1 ? $g->last()->scan_at : null, 'pulang_bulat' => null,
                     'istirahat' => 0, 'istirahat_bawaan' => false,
                     'standar_jam' => 0, 'potongan_jam' => 0, 'total_jam' => 0, 'lembur_jam' => 0, 'kehadiran' => 0,
-                    'status' => 'Tanpa jadwal', 'catatan' => 'Ada scan tetapi tidak ada jadwal', 'is_manual' => false,
+                    'status' => 'Tanpa jadwal', 'catatan' => 'Ada scan tetapi tidak ada jadwal', 'is_manual' => false, 'dikonfirmasi' => false,
+                    'lembur_ragu' => 0, 'lembur_konfirmasi' => null,
                     'created_at' => $now, 'updated_at' => $now,
                 ];
             }
@@ -232,6 +255,7 @@ class AbsensiService
             'perlu_dicek'  => $per['Perlu dicek'] ?? 0,
             'tidak_hadir'  => $per['Tidak hadir'] ?? 0,
             'tanpa_jadwal' => $per['Tanpa jadwal'] ?? 0,
+            'lembur_ragu'  => collect($rows)->filter(fn ($r) => $r['lembur_ragu'] > 0 && $r['lembur_konfirmasi'] === null)->count(),
         ];
     }
     private static function istirahatBawaan(MstKodeShift $s, Carbon $tgl): float

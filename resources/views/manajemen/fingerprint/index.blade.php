@@ -24,7 +24,12 @@
     </div>
 
     <div class="fp-head-actions">
-        
+        <a class="fp-btn fp-btn-soft"
+           href="{{ route('manajemen.fingerprint.export', ['q' => request('q'), 'dari' => $dari, 'sampai' => $sampai]) }}"
+           title="Unduh data yang sedang tampil (sesuai filter), semua halaman">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M8 12l4 4m0 0l4-4m-4 4V4"/></svg>
+            Export Excel</a>
+
         <button type="button" class="fp-btn fp-btn-emerald" onclick="fpOpenManual()">
             <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
             Tambah Manual</button>
@@ -81,7 +86,7 @@
 {{-- FILTER --}}
 <div class="fp-card">
     <form method="GET" class="fp-filter">
-        <input type="text" name="q" value="{{ request('q') }}" class="fp-input fp-input-search" placeholder="Cari ID Absen / Nama Karyawan">
+        <input type="text" name="q" value="{{ request('q') }}" class="fp-input fp-input-search" placeholder="Cari nama (awalan) / ID Absen / ID Karyawan">
         <input type="date" name="dari" value="{{ $dari }}" class="fp-input">
         <span class="fp-muted">s/d</span>
         <input type="date" name="sampai" value="{{ $sampai }}" class="fp-input">
@@ -122,6 +127,9 @@
                             {{ $r->nama }}
                             @if ($r->is_manual)
                                 <span class="fp-badge fp-badge-manual" title="{{ $r->catatan }}">Manual</span>
+                            @endif
+                            @if ($r->dikonfirmasi)
+                                <span class="fp-badge fp-badge-ok" title="Jam sudah dikonfirmasi benar">&#10003; Terkonfirmasi</span>
                             @endif
                         </td>
                         <td class="fp-mono fp-muted">{{ $r->masuk_asli?->format('H:i:s') }}</td>
@@ -220,6 +228,14 @@
                     <label class="fp-label">Catatan</label>
                     <input type="text" name="catatan" maxlength="255" class="fp-input" style="width:100%" placeholder="Contoh: lupa finger pulang, sesuai konfirmasi HRD">
                 </div>
+                <div class="fp-field">
+                    <label class="fp-label">Konfirmasi jam</label>
+                    <select name="konfirmasi" class="fp-input" style="width:100%">
+                        <option value="">Tidak diubah</option>
+                        <option value="ya">Sudah dikonfirmasi benar (pulang cepat / izin)</option>
+                        <option value="tidak">Cabut konfirmasi</option>
+                    </select>
+                </div>
             </div>
             <div class="fp-modal-foot">
                 <button type="button" class="fp-btn fp-btn-soft" onclick="fpCloseEdit()">Batal</button>
@@ -287,6 +303,9 @@
                 </div>
                 <label class="fp-check-line" style="margin-bottom:14px">
                     <input type="checkbox" name="pulang_besok" value="1" @checked(old('pulang_besok'))> Pulang di hari berikutnya (shift malam)
+                </label>
+                <label class="fp-check-line" style="margin-bottom:14px">
+                    <input type="checkbox" name="dikonfirmasi" value="1" @checked(old('dikonfirmasi'))> Jam sudah benar (pulang cepat / izin), jangan ditandai "Perlu dicek"
                 </label>
 
                 <div class="fp-field">

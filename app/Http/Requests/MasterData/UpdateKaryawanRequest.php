@@ -54,9 +54,9 @@ class UpdateKaryawanRequest extends FormRequest
                 'string',
             ],
             'id_absensi' => [
-                'nullable', 
-                'string', '
-                max:50'
+                'nullable',
+                'string',
+                'max:50',
             ],
             'kelompok' => [
                 'nullable', 
@@ -79,6 +79,14 @@ class UpdateKaryawanRequest extends FormRequest
                 'nullable',
                 'string', 
                 'max:50'],
+            'npwp_nik' => [
+                'nullable',
+                'digits:16',
+            ],
+            'status_ptkp' => [
+                'nullable',
+                Rule::in(MstKaryawan::PTKP),
+            ],
             'no_rekening' => [
                 'nullable', 
                 'string', 
@@ -105,6 +113,8 @@ class UpdateKaryawanRequest extends FormRequest
             'id_absensi.max'         => 'ID Absensi maksimal 50 karakter.',
             'bank_name.max'          => 'Nama bank maksimal 50 karakter.',
             'no_rekening.max'        => 'Nomor rekening maksimal 50 karakter.',
+            'npwp_nik.digits'        => 'NPWP / NIK harus 16 digit angka.',
+            'status_ptkp.in'         => 'Status PTKP tidak valid.',
         ];
     }
 }

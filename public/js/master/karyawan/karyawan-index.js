@@ -130,6 +130,8 @@ function editKaryawan(data) {
         edit_email: data.email,
         edit_bank_name: data.bank_name,
         edit_no_rekening: data.no_rekening,
+        edit_npwp_nik: data.npwp_nik,
+        edit_status_ptkp: data.status_ptkp,
         edit_alamat_txt: data.alamat_txt,
     };
 
@@ -175,3 +177,25 @@ function resetNikOtomatis() {
 window.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') closeAllActionDropdowns();
 });
+
+/**
+ * Hapus massal: nonaktifkan semua karyawan yang tercentang.
+ * Selector centang di bawah HARUS sama dengan yang dipakai Edit Massal.
+ */
+function hapusMassalKaryawan() {
+    const dipilih = [...document.querySelectorAll('table tbody input[type="checkbox"]:checked')];
+    if (!dipilih.length) return;
+
+    const jumlah = dipilih.length;
+    if (!confirm('Nonaktifkan ' + jumlah + ' karyawan terpilih?\n\n'
+        + 'Karyawan yang punya akun sistem akan dilewati. Riwayat absensi dan payroll tetap tersimpan.')) return;
+
+    const form = document.getElementById('formHapusMassal');
+    form.querySelectorAll('input[name="ids[]"]').forEach(i => i.remove());
+    dipilih.forEach(c => {
+        const i = document.createElement('input');
+        i.type = 'hidden'; i.name = 'ids[]'; i.value = c.value;
+        form.appendChild(i);
+    });
+    form.submit();
+}

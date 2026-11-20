@@ -25,6 +25,23 @@ class PayrollHarianService
     {
     }
 
+    /**
+     * Samakan penulisan kelompok kerja. Di data jadwal/absensi bisa tertulis "LANGSUNG PACKING" (kode master),
+     * "Langsung Packing" (label), atau dengan spasi berlebih. Selain tiga kelompok Langsung dianggap Tidak Langsung.
+     */
+    public static function kelompokBaku(?string $kelompok): string
+    {
+        $kunci = mb_strtoupper(trim(preg_replace('/\s+/', ' ', (string) $kelompok)));
+
+        foreach (self::LANGSUNG as $baku) {
+            if (mb_strtoupper($baku) === $kunci) {
+                return $baku;
+            }
+        }
+
+        return self::TIDAK;
+    }
+
     public function laporan(string $periode): array
     {
         [$awal, $akhir] = PayrollService::rentang($periode);
@@ -118,7 +135,7 @@ class PayrollHarianService
                     'id_absen'   => $r->id_absen,
                     'nik'        => $r->nik,
                     'nama'       => $r->nama,
-                    'kelompok'      => in_array($r->kelompok_kerja, self::LANGSUNG, true) ? $r->kelompok_kerja : self::TIDAK,
+                    'kelompok'      => self::kelompokBaku($r->kelompok_kerja),
                     'kelompok_asli' => $r->kelompok_kerja ?? '-',
                     'kode_shift' => $r->kode_shift,
                     'status'     => $r->status,

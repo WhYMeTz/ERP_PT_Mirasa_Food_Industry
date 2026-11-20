@@ -7,8 +7,11 @@ use App\Exports\Payroll\MultiPayrollBankSheet;
 use App\Exports\Payroll\MultiPayrollSheet;
 use App\Http\Controllers\Controller;
 use App\Models\Manajemen\TrxMultiPayroll;
+use App\Models\MasterData\MstKaryawan;
 use App\Services\Manajemen\MultiPayrollBca;
 use App\Services\Manajemen\MultiPayrollService;
+use App\Services\Pajak\Bp21Penyusun;
+use App\Services\Pajak\Bp21Xml;
 use Carbon\Carbon;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
@@ -188,6 +191,87 @@ class MultiPayrollController extends Controller
         return response()->streamDownload(function () use ($txt) {
             echo $txt;
         }, $namaFile, ['Content-Type' => 'text/plain; charset=US-ASCII']);
+    }
+
+    /**
+     * Berkas XML BP21 (PPh 21) untuk satu bagian: penghasilan = gaji bersih yang ditransfer,
+     * tarif = TER menurut status PTKP. Karyawan yang ikut sama dengan yang layak di file Multi Payroll.
+     */
+    public function xml(Request $request, MultiPayrollService $svc, Bp21Penyusun $penyusun)
+    {
+        $v = $request->validate([
+            'periode'            => ['required', 'regex:/^\d{4}-(0[1-9]|1[0-2])$/'],
+            'bagian'             => ['required', 'string'],
+            'nomor_dokumen'      => ['required', 'string', 'max:50'],
+            'tanggal_dokumen'    => ['required', 'date_format:Y-m-d'],
+            'tanggal_pemotongan' => ['required', 'date_format:Y-m-d'],
+            'pilih'              => ['nullable', 'boolean'],
+            'ikut'               => ['nullable', 'array'],
+            'ikut.*'             => ['string', 'max:50'],
+        ]);
+
+        $balik  = ['periode' => $v['periode'], 'bagian' => $v['bagian']];
+        $bagian = strtoupper($v['bagian']);
+        $cfg    = config('multipayroll.bagian')[$bagian] ?? null;
+
+        if (! $cfg) {
+            return redirect()->route('manajemen.payroll.multi.index', $balik)->with('error', 'Bagian tidak dikenali.');
+        }
+        if (! $svc->periodeSiap($v['periode'])) {
+            return redirect()->route('manajemen.payroll.multi.index', $balik)->with('error', 'Periode ini belum Final. Finalkan payroll dulu.');
+        }
+        if (substr($v['periode'], 5, 2) === '12') {
+            return redirect()->route('manajemen.payroll.multi.index', $balik)
+                ->with('error', 'Masa pajak Desember memakai perhitungan tahunan, bukan tarif TER. Bagian ini belum didukung.');
+        }
+
+        $layak = $svc->untukBagian($v['periode'], $bagian)['layak'];
+        if ($layak->isEmpty()) {
+            return redirect()->route('manajemen.payroll.multi.index', $balik)->with('error', 'Tidak ada karyawan layak pada bagian ini.');
+        }
+
+        // Hanya karyawan yang dicentang di pratinjau (sama seperti file TXT) yang masuk XML
+        if ($request->boolean('pilih')) {
+            $ikut  = array_map('strval', (array) $request->input('ikut', []));
+            $layak = $layak->filter(fn ($r) => in_array((string) $r['id_absen'], $ikut, true))->values();
+
+            if ($layak->isEmpty()) {
+                return redirect()->route('manajemen.payroll.multi.index', $balik)
+                    ->with('error', 'Tidak ada karyawan yang dicentang untuk XML BP21.');
+            }
+        }
+
+        $dataPajak = MstKaryawan::whereIn('nik', $layak->pluck('nik')->filter()->unique()->all())->get()
+            ->mapWithKeys(fn ($k) => [(string) $k->nik => ['npwp_nik' => $k->npwp_nik, 'status_ptkp' => $k->status_ptkp]])
+            ->all();
+
+        $hasil = $penyusun->susun($v['periode'], $layak, $dataPajak, [
+            'nomor_dokumen'      => $v['nomor_dokumen'],
+            'tanggal_dokumen'    => $v['tanggal_dokumen'],
+            'tanggal_pemotongan' => $v['tanggal_pemotongan'],
+            'kode_objek'         => config('pajak.kode_objek'),
+            'fasilitas'          => config('pajak.fasilitas'),
+            'dokumen'            => config('pajak.dokumen'),
+        ]);
+
+        if ($hasil['masalah']) {
+            $daftar = implode('; ', array_slice($hasil['masalah'], 0, 8)) . (count($hasil['masalah']) > 8 ? '; dan ' . (count($hasil['masalah']) - 8) . ' lainnya' : '');
+
+            return redirect()->route('manajemen.payroll.multi.index', $balik)
+                ->with('error', count($hasil['masalah']) . " karyawan belum lengkap data pajaknya, XML tidak dibuat. {$daftar}.");
+        }
+
+        try {
+            $xml = (new Bp21Xml)->buat(['tin' => config('pajak.npwp_pemotong')], $hasil['baris']);
+        } catch (InvalidArgumentException $e) {
+            return redirect()->route('manajemen.payroll.multi.index', $balik)->with('error', $e->getMessage());
+        }
+
+        $bersih = fn (string $t) => trim(preg_replace('/[^A-Za-z0-9]+/', '-', $t), '-');
+
+        return response()->streamDownload(function () use ($xml) {
+            echo $xml;
+        }, 'BP21-' . $v['periode'] . '-' . $bersih($cfg['remarks1']) . '.xml', ['Content-Type' => 'application/xml; charset=UTF-8']);
     }
 
     // ---------------------------------------------------------------------------------------------

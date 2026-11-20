@@ -730,11 +730,120 @@
             background: #f1f5f9;
             margin: 0.3rem 0;
         }
+
+        /* ============================================================
+           SIDEBAR KIRI (menu utama dipindah dari bar atas ke samping kiri)
+           ============================================================ */
+        :root { --sb-w: 268px; }
+        body { display: flex; flex-direction: column; padding-left: var(--sb-w); transition: padding-left .2s ease; }
+        header {
+            position: fixed; top: 0; left: 0; bottom: 0; width: var(--sb-w);
+            flex-direction: column; align-items: stretch; justify-content: flex-start;
+            flex-wrap: nowrap; gap: 0; padding: 0;
+            border-bottom: none; border-right: 1px solid #e2e8f0;
+            box-shadow: 1px 0 3px rgba(15, 23, 42, 0.03);
+            transition: left .2s ease; overflow: hidden;
+        }
+        header .header-left {
+            flex: 1 1 auto; min-height: 0; overflow: hidden;
+            flex-direction: column; align-items: stretch; gap: 0;
+        }
+        header .brand { padding: 0.85rem 3rem 0.85rem 1rem; border-bottom: 1px solid #f1f5f9; flex-shrink: 0; }
+        header .brand span:last-child { display: inline !important; }
+        header .brand img { width: 34px !important; height: 34px !important; }
+        header .pill-nav {
+            flex: 1 1 auto; min-height: 0; width: 100%;
+            display: flex; flex-direction: column; align-items: stretch; gap: 0.15rem;
+            background: transparent; border-radius: 0; padding: 0.6rem 0.65rem;
+            overflow-x: hidden; overflow-y: auto;
+            scrollbar-width: thin; scrollbar-color: #cbd5e1 transparent;
+        }
+        header .pill-nav::-webkit-scrollbar { display: block; width: 6px; }
+        header .pill-nav::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 6px; }
+        header .pill-item, header .pill-dropdown-btn {
+            width: 100%; justify-content: flex-start; gap: 0.6rem;
+            padding: 0.55rem 0.7rem; font-size: 0.845rem; border-radius: 8px;
+        }
+        header .pill-item svg, header .pill-dropdown-btn svg { width: 16px; height: 16px; }
+        header .nav-text-full { display: inline !important; }
+        header .nav-text-short { display: none !important; }
+        header .pill-dropdown-arrow { margin-left: auto; }
+        header .pill-item:hover, header .pill-dropdown-btn:hover { background: #f1f5f9; }
+        /* grup yang sedang terbuka */
+        header .pill-dropdown.active .pill-dropdown-btn { background: #f1f5f9; color: #0f172a; box-shadow: none; }
+        /* halaman yang sedang dibuka */
+        header .pill-dropdown .pill-dropdown-btn.active,
+        header .pill-item.active { background: #e0f2fe; color: #0369a1; box-shadow: none; font-weight: 700; }
+        header .pill-nav .pill-dropdown { display: block; width: 100%; position: static; }
+        /* dropdown di sidebar = accordion di tempat, bukan popup melayang */
+        header .pill-nav .dropdown-menu {
+            position: static !important; top: auto !important; left: auto !important; right: auto !important;
+            min-width: 0 !important; width: auto !important; max-height: none; overflow: visible;
+            margin: 0.2rem 0 0.35rem 0.85rem; padding: 0.3rem !important;
+            background: #f8fafc; border: none; border-left: 2px solid #e2e8f0; border-radius: 0 8px 8px 0;
+            box-shadow: none; animation: none;
+        }
+        header .pill-nav .dropdown-mega { min-width: 0 !important; padding: 0.3rem !important; }
+        header .pill-nav .mega-grid { grid-template-columns: 1fr; gap: 0.25rem; }
+        header .pill-nav .mega-header { padding-top: 0.45rem; }
+        /* bagian bawah: profil + keluar */
+        header .header-right {
+            flex: 0 0 auto; margin-left: 0; width: 100%;
+            padding: 0.65rem; border-top: 1px solid #e2e8f0; background: #f8fafc;
+        }
+        header .header-right .pill-dropdown { flex: 1 1 auto; min-width: 0; display: block; }
+        header .header-right .user-chip-btn { width: 100%; }
+        header .header-right .user-chip-details { max-width: none; flex: 1 1 auto; min-width: 0; }
+        /* tombol lipat sidebar + tombol buka (saat sidebar tertutup) */
+        .sb-btn {
+            width: 32px; height: 32px; border-radius: 8px; border: 1px solid #e2e8f0; background: #ffffff;
+            color: #475569; cursor: pointer; align-items: center; justify-content: center; padding: 0;
+        }
+        .sb-btn:hover { background: #f1f5f9; color: #0284c7; }
+        #sbCollapse { display: inline-flex; position: absolute; top: 0.9rem; right: 0.75rem; z-index: 2; }
+        #sbToggle { display: none; position: fixed; top: 0.7rem; left: 0.7rem; z-index: 90; box-shadow: 0 1px 4px rgba(15, 23, 42, 0.12); }
+        .sb-overlay { display: none; }
+        body.sb-closed { padding-left: 0; }
+        body.sb-closed header { left: calc(-1 * var(--sb-w) - 4px); box-shadow: none; }
+        body.sb-closed #sbToggle { display: inline-flex; }
+        body.sb-closed main { padding-top: 2.6rem; }
+        @media (max-width: 900px) {
+            body { padding-left: 0; }
+            header { left: calc(-1 * var(--sb-w) - 4px); box-shadow: none; }
+            body:not(.sb-closed) header { left: 0; box-shadow: 0 0 40px rgba(15, 23, 42, 0.3); }
+            #sbToggle { display: inline-flex; }
+            body:not(.sb-closed) #sbToggle { display: none; }
+            body.sb-closed main, main { padding-top: 2.6rem; }
+            body:not(.sb-closed) .sb-overlay { display: block; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.35); z-index: 99; }
+        }
+        @media print {
+            header, #sbToggle, .sb-overlay { display: none !important; }
+            body { padding-left: 0 !important; }
+        }
     </style>
     @stack('styles')
 </head>
 <body>
+    <script>
+        (function () {
+            try {
+                if (window.innerWidth <= 900 || localStorage.getItem('sbClosed') === '1') {
+                    document.body.classList.add('sb-closed');
+                }
+            } catch (e) {
+                if (window.innerWidth <= 900) document.body.classList.add('sb-closed');
+            }
+        })();
+    </script>
+    <button type="button" id="sbToggle" class="sb-btn" onclick="toggleSidebar()" title="Buka menu" aria-label="Buka menu">
+        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+    </button>
+    <div class="sb-overlay" id="sbOverlay" onclick="toggleSidebar()"></div>
+
     <header>
+        <button type="button" id="sbCollapse" class="sb-btn" onclick="toggleSidebar()" title="Sembunyikan menu" aria-label="Sembunyikan menu">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/></svg>
+        </button>
         <div class="header-left">
             <a href="{{ Auth::check() ? route(Auth::user()->getDashboardRoute()) : url('/') }}" class="brand">
                 <img src="{{ asset('images/logo.png') }}" 
@@ -1481,62 +1590,68 @@
             const target = document.getElementById(id);
             if (!target) return;
             const wasActive = target.classList.contains('active');
-            
-            // Tutup semua dropdown navigasi lain
+            const menu = target.querySelector('.dropdown-menu');
+            const inSidebar = !!target.closest('.pill-nav');
+
+            // Menu utama (sidebar) = accordion: hanya satu grup terbuka. Menu profil = popup terpisah.
             document.querySelectorAll('.pill-dropdown').forEach(d => {
-                if (d !== target) {
+                if (d !== target && !!d.closest('.pill-nav') === inSidebar) {
                     d.classList.remove('active');
                     const m = d.querySelector('.dropdown-menu');
                     if (m) m.style.display = 'none';
                 }
             });
-            
-            const menu = target.querySelector('.dropdown-menu');
-            const triggerBtn = target.querySelector('.pill-dropdown-btn, .user-chip-btn') || target;
 
             if (wasActive) {
                 target.classList.remove('active');
                 if (menu) menu.style.display = 'none';
+                if (!inSidebar) currentNavDropdown = null;
+                return;
+            }
+
+            target.classList.add('active');
+            if (!menu) return;
+            menu.style.display = 'block';
+
+            if (inSidebar) {
                 currentNavDropdown = null;
-            } else {
-                target.classList.add('active');
-                if (menu) {
-                    const rect = triggerBtn.getBoundingClientRect();
-                    const winWidth = window.innerWidth;
-                    const winHeight = window.innerHeight;
+                return;
+            }
 
-                    menu.style.display = 'block';
-                    menu.style.position = 'fixed';
-                    menu.style.top = (rect.bottom + 6) + 'px';
-                    menu.style.zIndex = '9999';
+            // Popup profil di dasar sidebar: muncul ke atas, rata kiri dengan tombolnya
+            const triggerBtn = target.querySelector('.user-chip-btn') || target;
+            const rect = triggerBtn.getBoundingClientRect();
+            menu.style.position = 'fixed';
+            menu.style.zIndex = '9999';
+            menu.style.left = Math.max(10, rect.left) + 'px';
+            menu.style.right = 'auto';
+            menu.style.top = 'auto';
+            menu.style.bottom = (window.innerHeight - rect.top + 6) + 'px';
+            menu.style.maxHeight = Math.max(160, rect.top - 20) + 'px';
+            currentNavDropdown = target;
+        }
 
-                    const isRight = menu.classList.contains('dropdown-right');
-                    const menuWidth = Math.min(menu.offsetWidth || 260, winWidth - 20);
-
-                    if (isRight) {
-                        let right = winWidth - rect.right;
-                        if (right < 10) right = 10;
-                        menu.style.right = right + 'px';
-                        menu.style.left = 'auto';
-                    } else {
-                        let left = rect.left;
-                        if (left + menuWidth > winWidth - 10) {
-                            left = winWidth - menuWidth - 10;
-                        }
-                        if (left < 10) left = 10;
-                        menu.style.left = left + 'px';
-                        menu.style.right = 'auto';
-                    }
-
-                    // Proteksi jika meluap dari batas bawah layar
-                    const menuHeight = menu.offsetHeight || 300;
-                    if (rect.bottom + 6 + menuHeight > winHeight - 10 && rect.top > menuHeight) {
-                        menu.style.top = (rect.top - menuHeight - 6) + 'px';
-                    }
-                }
-                currentNavDropdown = target;
+        // Buka / tutup sidebar (pilihan di layar lebar disimpan di browser)
+        function toggleSidebar() {
+            const tertutup = document.body.classList.toggle('sb-closed');
+            if (window.innerWidth > 900) {
+                try { localStorage.setItem('sbClosed', tertutup ? '1' : '0'); } catch (e) {}
             }
         }
+
+        // Grup menu yang berisi halaman aktif otomatis terbuka
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('.pill-nav .pill-dropdown-btn.active').forEach(btn => {
+                const grup = btn.closest('.pill-dropdown');
+                const m = grup ? grup.querySelector('.dropdown-menu') : null;
+                if (grup && m) {
+                    grup.classList.add('active');
+                    m.style.display = 'block';
+                }
+            });
+            const aktif = document.querySelector('.pill-nav .mega-item.active, .pill-nav .pill-item.active');
+            if (aktif && aktif.scrollIntoView) aktif.scrollIntoView({ block: 'nearest' });
+        });
 
         function openModal(modalId) {
             const modal = document.getElementById(modalId);
@@ -1557,6 +1672,7 @@
             // Tutup pill-dropdown jika klik di luar elemen dropdown
             if (!e.target.closest('.pill-dropdown')) {
                 document.querySelectorAll('.pill-dropdown').forEach(d => {
+                    if (d.closest('.pill-nav')) return;
                     d.classList.remove('active');
                     const m = d.querySelector('.dropdown-menu');
                     if (m) m.style.display = 'none';
@@ -1574,6 +1690,7 @@
         window.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
                 document.querySelectorAll('.pill-dropdown').forEach(d => {
+                    if (d.closest('.pill-nav')) return;
                     d.classList.remove('active');
                     const m = d.querySelector('.dropdown-menu');
                     if (m) m.style.display = 'none';

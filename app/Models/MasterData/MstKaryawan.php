@@ -29,6 +29,8 @@ class MstKaryawan extends Model
         'email',
         'bank_name',   // Tambahan baru
         'no_rekening', // Tambahan baru
+        'npwp_nik',    // NPWP / NIK 16 digit (untuk BP21)
+        'status_ptkp', // Status PTKP (TK/0, K/1, ...)
         'alamat_txt',  // Kolom alamat bawaan Anda
         'created_by',
         'updated_by',
@@ -63,8 +65,15 @@ class MstKaryawan extends Model
         'SECURITY'   => 'Security',
     ];
 
+    /** Status PTKP yang dikenal pada BP21 */
+    public const PTKP = [
+        'TK/0', 'TK/1', 'TK/2', 'TK/3',
+        'K/0', 'K/1', 'K/2', 'K/3',
+        'HB/0', 'HB/1', 'HB/2', 'HB/3',
+    ];
+
     public const DIVISI = [
-        'UMUM', 'POT.RENDEM', 'SORTIR AC', 'BATCH FRYER', 'PACKING',
+        'UMUM', 'POT.RENDAM', 'SORTIR AC', 'BATCH FRYER', 'PACKING',
         'MAKARONI', 'DRIVER', 'SECURITY', 'KEUANGAN', 'QUALITYCONTROL',
     ];
 

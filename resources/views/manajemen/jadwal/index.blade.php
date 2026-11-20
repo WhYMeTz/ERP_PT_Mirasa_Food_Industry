@@ -85,7 +85,7 @@
 
 <div class="fp-card">
     <form method="GET" class="fp-filter">
-        <input type="text" name="q" value="{{ request('q') }}" class="fp-input fp-input-search" placeholder="Cari ID Absen / Nama">
+        <input type="text" name="q" value="{{ request('q') }}" class="fp-input fp-input-search" placeholder="Cari nama (awalan) / ID Absen">
         <select name="kelompok" class="fp-input">
             <option value="">-- Semua Kelompok --</option>
             @foreach ($kelompoks as $k) <option value="{{ $k }}" @selected(request('kelompok') === $k)>{{ $k }}</option> @endforeach
@@ -182,7 +182,7 @@
                         <ol>
                             <li>Satu baris = satu karyawan pada satu tanggal. Isi hanya karyawan yang dijadwalkan pada tanggal itu.</li>
                             <li>Kelompok kerja, kode shift, dan istirahat ditentukan <b>per hari</b>, jadi boleh berbeda tiap hari untuk orang yang sama.</li>
-                            <li><b>Istirahat_Jam</b>: 0, 1, atau 1,5. Kosong = memakai bawaan shift (A-F = 1 jam, G-M = 0).</li>
+                            <li><b>Istirahat_Jam</b>: 0, 0,5, 1, 1,5, atau 2 (jam). Kosong = memakai bawaan shift (A-F = 1 jam, G-M = 0).</li>
                             <li><b>ID_Absen</b> harus sama dengan ID Absensi di Master Karyawan (9 digit, format teks).</li>
                             <li><b>Driver</b>: kelompok tetap "Tidak Langsung". Aturan driver (1x finger = 1 hari hadir) dikenali dari Bagian/Divisi = Driver di Master Karyawan.</li>
                             <li>Hapus baris contoh di template sebelum diimpor.</li>
@@ -252,8 +252,10 @@
                         <option value="">-- Tidak diubah --</option>
                         <option value="bawaan">Pakai bawaan shift</option>
                         <option value="0">0 jam</option>
+                        <option value="0.5">0,5 jam (30 menit)</option>
                         <option value="1">1 jam</option>
                         <option value="1.5">1,5 jam</option>
+                        <option value="2">2 jam</option>
                     </select>
                 </div>
             </div>
@@ -343,8 +345,10 @@
                         <select name="istirahat_jam" class="fp-input" style="width:100%">
                             <option value="bawaan">Pakai bawaan shift</option>
                             <option value="0" @selected(old('istirahat_jam') === '0')>0 jam</option>
+                            <option value="0.5" @selected(old('istirahat_jam') === '0.5')>0,5 jam (30 menit)</option>
                             <option value="1" @selected(old('istirahat_jam') === '1')>1 jam</option>
                             <option value="1.5" @selected(old('istirahat_jam') === '1.5')>1,5 jam</option>
+                            <option value="2" @selected(old('istirahat_jam') === '2')>2 jam</option>
                         </select>
                     </div>
                 </div>

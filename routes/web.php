@@ -48,6 +48,7 @@ use App\Http\Controllers\Manajemen\PayrollHarianController;
 use App\Http\Controllers\Manajemen\JadwalController;
 use App\Http\Controllers\Manajemen\KodeShiftController;
 use App\Http\Controllers\Manajemen\MultiPayrollController;
+use App\Http\Controllers\Manajemen\WhatsAppWebhookController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -162,7 +163,12 @@ Route::middleware('auth')->group(function () {
     Route::get('master-karyawan/cetak-pdf', [KaryawanController::class, 'cetakPdf'])->name('master.karyawan.cetak-pdf');
     Route::get('master-karyawan/template-import', [KaryawanController::class, 'downloadTemplate'])
         ->name('master.karyawan.template-import');
+    Route::post('master-karyawan/bulk-update', [KaryawanController::class, 'bulkUpdate'])->name('master.karyawan.bulk-update');
 
+    Route::post('master-karyawan/hapus-massal', [KaryawanController::class, 'hapusMassal'])
+    ->name('master.karyawan.hapus-massal')
+    ->middleware('role:SUPERADMIN,HRD,master_karyawan_manage');
+    
     Route::resource('master-karyawan', KaryawanController::class)
         ->names('master.karyawan')
         ->middleware('role:SUPERADMIN,HRD,master_karyawan_view,master_karyawan_manage');
@@ -172,6 +178,7 @@ Route::middleware('auth')->group(function () {
         ->middleware(['auth', 'role:SUPERADMIN,HRD,fingerprint_view,absensi_view,payroll_view'])
         ->group(function () {
             Route::get('/fingerprint',     [FingerprintController::class, 'index'])->name('fingerprint.index');
+            Route::get('/fingerprint/export', [FingerprintController::class, 'export'])->name('fingerprint.export');
             Route::post('/fingerprint/import', [FingerprintController::class, 'import'])->name('fingerprint.import');
             Route::post('/fingerprint/manual', [FingerprintController::class, 'store'])->name('fingerprint.store');
             Route::post('/fingerprint/bulk-update', [FingerprintController::class, 'bulkUpdate'])->name('fingerprint.bulk-update');
@@ -180,6 +187,10 @@ Route::middleware('auth')->group(function () {
             Route::post('/absensi/hitung', [AbsensiController::class, 'hitung'])->name('absensi.hitung');
             Route::get('/absensi/export', [AbsensiController::class, 'exportExcel'])->name('absensi.export');
             Route::get('/absensi/cetak-pdf', [AbsensiController::class, 'cetakPdf'])->name('absensi.cetak-pdf');
+            Route::get('/absensi/kartu',       [AbsensiController::class, 'kartu'])->name('absensi.kartu');
+            Route::get('/absensi/kartu-semua', [AbsensiController::class, 'kartuSemua'])->name('absensi.kartu-semua');
+            Route::post('absensi/konfirmasi-lembur', [AbsensiController::class, 'konfirmasiLembur'])->name('absensi.konfirmasi-lembur');
+            Route::post('absensi/konfirmasi-lembur-massal', [AbsensiController::class, 'konfirmasiLemburMassal'])->name('absensi.konfirmasi-lembur-massal');
             Route::get('/jadwal',         [JadwalController::class, 'index'])->name('jadwal.index');
             Route::post('/jadwal/import', [JadwalController::class, 'import'])->name('jadwal.import');
             Route::get('/jadwal/template', [JadwalController::class, 'template'])->name('jadwal.template');
@@ -196,6 +207,7 @@ Route::middleware('auth')->group(function () {
                 Route::get('/payroll',            [PayrollController::class, 'index'])->name('payroll.index');
                 Route::get('/payroll/slip',       [PayrollController::class, 'slip'])->name('payroll.slip');
                 Route::get('/payroll/slip-semua', [PayrollController::class, 'slipSemua'])->name('payroll.slip-semua');
+                Route::get('/payroll/slip-pdf', [PayrollController::class, 'slipPdf'])->name('payroll.slip-pdf');
                 Route::get('/payroll/export', [PayrollController::class, 'export'])->name('payroll.export');
                 Route::get('/payroll/template', [PayrollController::class, 'template'])->name('payroll.template');
                 Route::post('/payroll/import',  [PayrollController::class, 'import'])->name('payroll.import');
@@ -203,6 +215,7 @@ Route::middleware('auth')->group(function () {
                 Route::get('/payroll-harian/export',  [PayrollHarianController::class, 'export'])->name('payroll_harian.export');
                 Route::get('/payroll/multi-payroll',       [MultiPayrollController::class, 'index'])->name('payroll.multi.index');
                 Route::get('/payroll/multi-payroll/excel', [MultiPayrollController::class, 'excel'])->name('payroll.multi.excel');
+                Route::post('/payroll/kirim-wa', [PayrollController::class, 'kirimWa'])->name('payroll.kirim-wa');
             });
 
             Route::middleware('role:SUPERADMIN,HRD')->group(function () {
@@ -211,6 +224,7 @@ Route::middleware('auth')->group(function () {
                 Route::post('/payroll/buka-kunci', [PayrollController::class, 'bukaKunci'])->name('payroll.buka-kunci');
                 Route::post('/payroll/dibayar',    [PayrollController::class, 'dibayar'])->name('payroll.dibayar');
                 Route::post('/payroll/multi-payroll/unduh', [MultiPayrollController::class, 'unduh'])->name('payroll.multi.unduh');
+                Route::get('/payroll/multi-payroll/xml', [MultiPayrollController::class, 'xml'])->name('payroll.multi.xml');
             });
         });
 
@@ -517,3 +531,6 @@ Route::middleware('auth')->group(function () {
             ->middleware('role:jurnal_view,coa_view,hutang_view,kas_bank_view');
     });
 });
+
+Route::get('/webhook/whatsapp',  [WhatsAppWebhookController::class, 'verifikasi']);
+Route::post('/webhook/whatsapp', [WhatsAppWebhookController::class, 'terima']);

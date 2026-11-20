@@ -4,6 +4,21 @@
 
 @push('styles')
     <link rel="stylesheet" href="{{ asset('css/manajemen/fingerprint/fingerprint-index.css') }}">
+    <style>
+        .pr-grup { display:flex; align-items:center; gap:8px; }
+        .pr-grup + .pr-grup { padding-left:10px; margin-left:2px; border-left:1px solid #e2e8f0; }
+        .wm-box { max-width:1000px; width:94vw; }
+        .wm-wrap { max-height:480px; overflow:auto; border:1px solid #e2e8f0; border-radius:10px; }
+        .wm-wrap table { width:100%; border-collapse:collapse; font-size:13px; }
+        .wm-wrap th { position:sticky; top:0; background:#f8fafc; text-align:left; padding:10px 12px; font-size:12px; color:#64748b; border-bottom:1px solid #e2e8f0; white-space:nowrap; }
+        .wm-wrap td { padding:10px 12px; border-bottom:1px solid #f1f5f9; vertical-align:top; }
+        .wm-wrap tr:last-child td { border-bottom:0; }
+        .wm-nomor { font-family:ui-monospace,Consolas,monospace; white-space:nowrap; }
+        .wm-pesan { max-width:260px; word-break:break-word; }
+        .wm-kosong { text-align:center; padding:40px 12px; color:#64748b; }
+        .wm-bar { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:10px; }
+        .wm-bar .wm-cari { flex:1; min-width:220px; }
+    </style>
 @endpush
 
 @section('content')
@@ -53,24 +68,24 @@
     <div class="fp-stat">
         <div class="fp-stat-label" style="color:#dc2626">Total Potongan Karyawan</div>
         <div class="fp-stat-value" style="font-size:22px">{{ $rp($ringkasan['total_potongan']) }}</div>
-        <div class="fp-stat-note">BPJS dan kasbon</div>
+        <div class="fp-stat-note">BPJS dan Potongan Lainnya</div>
     </div>
     <div class="fp-stat">
         <div class="fp-stat-label" style="color:#7c3aed">Total Gaji Bersih Karyawan</div>
         <div class="fp-stat-value" style="font-size:22px">{{ $rp($ringkasan['total_bersih']) }}</div>
-        <div class="fp-stat-note">Yang dibayarkan</div>
+        <div class="fp-stat-note">Total Payment</div>
     </div>
 </div>
 
 {{-- STATUS PERIODE DAN AKSI --}}
 <div class="fp-card">
-    <div class="fp-filter">
+    <div class="fp-filter" style="flex-wrap:wrap; row-gap:10px">
         <b>Status periode:</b>
         <span class="fp-badge {{ $bClass }}">{{ $bText }}</span>
         @if ($status === 'draft')
             <span class="fp-muted" style="font-size:13px">Dihitung langsung dari absensi. Finalkan untuk mengunci angka.</span>
         @elseif ($status === 'final')
-            <span class="fp-muted" style="font-size:13px">Angka sudah dikunci dan tidak berubah walau absensi atau tarif berubah.</span>
+            <span class="fp-muted" style="font-size:13px">Angka sudah dikunci dan tidak berubah.</span>
         @else
             <span class="fp-muted" style="font-size:13px">Sudah ditandai dibayar.</span>
         @endif
@@ -78,12 +93,16 @@
         <span style="flex:1"></span>
 
         @if ($rows->isNotEmpty())
-            <a href="{{ route('manajemen.payroll.export', ['periode' => $periode]) }}" class="fp-btn fp-btn-soft">Export Excel</a>
-            <a href="{{ route('manajemen.payroll.slip-semua', ['periode' => $periode]) }}" target="_blank" class="fp-btn fp-btn-soft">Cetak Semua Slip</a>
+            <div class="pr-grup">
+                <a href="{{ route('manajemen.payroll.export', ['periode' => $periode]) }}" class="fp-btn fp-btn-soft">Export Excel</a>
+                <a href="{{ route('manajemen.payroll.slip-semua', ['periode' => $periode]) }}" target="_blank" class="fp-btn fp-btn-soft">Cetak Semua Slip</a>
+            </div>
         @endif
-        
+
         @if ($status !== 'draft')
-            <a href="{{ route('manajemen.payroll.multi.index', ['periode' => $periode]) }}" class="fp-btn fp-btn-soft">Multi Payroll BCA</a>
+            <div class="pr-grup">
+                <a href="{{ route('manajemen.payroll.multi.index', ['periode' => $periode]) }}" class="fp-btn fp-btn-soft">Multi Payroll BCA</a>
+            </div>
         @endif
 
         @if ($status === 'draft' && $rows->isNotEmpty())
@@ -138,7 +157,15 @@
         @if (request()->filled('q'))
             <a href="{{ route('manajemen.payroll.index', ['periode' => $periode]) }}" class="fp-btn fp-btn-soft">Reset</a>
         @endif
-        <span class="fp-total">Total data: <b>{{ number_format($rows->count()) }}</b> karyawan</span>
+        <span style="margin-left:auto; display:flex; align-items:center; gap:10px; flex-wrap:wrap">
+            @if ($rows->isNotEmpty() && $status !== 'draft')
+                <button type="button" class="fp-btn fp-btn-emerald" onclick="waBuka()">Kirim Slip via WhatsApp</button>
+            @endif
+            <button type="button" class="fp-btn fp-btn-soft" onclick="wmBuka()">
+                Pesan WA Masuk @if ($waMasuk->where('periode', $periode)->isNotEmpty()) <span class="fp-badge fp-badge-info">{{ $waMasuk->where('periode', $periode)->count() }}</span> @endif
+            </button>
+            <span class="fp-total" style="margin-left:6px">Total data: <b>{{ number_format($rows->count()) }}</b> karyawan</span>
+        </span>
     </form>
 </div>
 
@@ -206,6 +233,18 @@
                             @endif
                             @if ($r['siap'])
                                 <a href="{{ route('manajemen.payroll.slip', ['periode' => $periode, 'id_absen' => $r['id_absen']]) }}" target="_blank" class="fp-btn fp-btn-soft" style="padding:6px 12px; font-size:13px">Slip</a>
+                                <a href="{{ route('manajemen.payroll.slip-pdf', ['periode' => $periode, 'id_absen' => $r['id_absen']]) }}" class="fp-btn fp-btn-soft" style="padding:6px 12px; font-size:13px" title="Unduh slip sebagai PDF">PDF</a>
+                                @if ($status !== 'draft')
+                                    <button type="button" class="fp-btn fp-btn-emerald" style="padding:6px 12px; font-size:13px" onclick="waKirimSatu('{{ $r['id_absen'] }}', this)">Kirim WA</button>
+                                    @php
+                                        $sw = $statusWa[$r['nik']] ?? null;
+                                        $labelWa = ['terkirim_api' => ['fp-badge-info', 'Dikirim'], 'delivered' => ['fp-badge-ok', 'Sampai'], 'read' => ['fp-badge-ok', 'Dibaca'],
+                                                    'failed' => ['fp-badge-err', 'Gagal'], 'dilewati' => ['fp-badge-warn', 'Dilewati']];
+                                    @endphp
+                                    @if ($sw && isset($labelWa[$sw->status]))
+                                        <div><span class="fp-badge {{ $labelWa[$sw->status][0] }}" title="{{ $sw->detail }} ({{ $sw->updated_at->format('d/m H:i') }})">WA: {{ $labelWa[$sw->status][1] }}</span></div>
+                                    @endif
+                                @endif
                             @endif
                         </td>
                     </tr>
@@ -300,6 +339,119 @@
     </div>
 </div>
 
+{{-- MODAL KIRIM WHATSAPP --}}
+@php
+    $waDaftar = $rows->where('siap', true)->map(function ($r) use ($statusWa) {
+        $sw = $statusWa[$r['nik']] ?? null;
+
+        return [
+            'id_absen' => $r['id_absen'],
+            'nama'     => $r['nama'],
+            'terkirim' => $sw !== null && in_array($sw->status, \App\Models\Manajemen\TrxSlipWa::BERHASIL, true),
+        ];
+    })->values();
+@endphp
+@php
+    $wmStatus = [
+        'slip_terkirim'   => ['fp-badge-ok',   'Slip terkirim'],
+        'bantuan'         => ['fp-badge-info', 'Dibalas petunjuk'],
+        'tidak_ditemukan' => ['fp-badge-warn', 'Nomor tidak cocok'],
+        'ambigu'          => ['fp-badge-warn', 'Nomor ganda'],
+        'slip_belum_ada'  => ['fp-badge-warn', 'Slip belum ada'],
+        'gagal'           => ['fp-badge-warn', 'Gagal'],
+    ];
+@endphp
+<div id="wmModal" class="fp-modal" style="display:none" onclick="if(event.target===this) wmTutup()">
+    <div class="fp-modal-box fp-modal-lg wm-box">
+        <div class="fp-modal-head">
+            <h3>Pesan WhatsApp Masuk</h3>
+            <button type="button" class="fp-modal-x" onclick="wmTutup()">&times;</button>
+        </div>
+        <div class="fp-modal-body">
+            @if ($waMasuk->isEmpty())
+                <div class="wm-kosong">
+                    <b>Belum ada pesan masuk</b><br>
+                    <span style="font-size:13px">Pesan muncul di sini setelah karyawan mengirim "SLIP" ke nomor WhatsApp perusahaan.</span>
+                </div>
+            @else
+                <div class="wm-bar">
+                    <input type="search" id="wmCari" class="fp-input wm-cari" placeholder="Cari nomor, nama, atau NIK karyawan" oninput="wmSaring()" autocomplete="off">
+                    <select id="wmFilter" class="fp-input" onchange="wmSaring()">
+                        <option value="ini">Periode {{ $namaPeriode }}</option>
+                        <option value="tanpa">Tanpa periode</option>
+                        <option value="semua">Semua yang dimuat</option>
+                    </select>
+                </div>
+                <div class="fp-muted" id="wmHitung" style="font-size:13px;margin-bottom:8px"></div>
+                <div class="wm-wrap">
+                    <table>
+                        <thead>
+                            <tr><th>Waktu</th><th>Nomor</th><th>Karyawan</th><th>Periode</th><th>Pesan</th><th>Hasil</th><th>Keterangan</th></tr>
+                        </thead>
+                        <tbody id="wmBody">
+                            @foreach ($waMasuk as $m)
+                                @php
+                                    [$wmKelas, $wmTeks] = $wmStatus[$m->status_balasan] ?? ['fp-badge-info', $m->status_balasan ?: 'Diproses'];
+                                    $wmNo    = preg_replace('/^62/', '0', (string) $m->nomor);
+                                    $wmPer   = $m->periode ? \Carbon\Carbon::createFromFormat('!Y-m', $m->periode)->locale('id')->translatedFormat('M Y') : null;
+                                    $wmCari  = mb_strtolower(trim(($m->nama ?? '') . ' ' . ($m->nik ?? '') . ' ' . $wmNo . ' ' . $m->nomor));
+                                    $wmAngka = $wmNo . ' ' . $m->nomor;
+                                @endphp
+                                <tr data-per="{{ $m->periode ?? '' }}" data-cari="{{ $wmCari }}" data-angka="{{ $wmAngka }}">
+                                    <td style="white-space:nowrap">
+                                        {{ \Carbon\Carbon::parse($m->created_at)->format('d/m/Y') }}<br>
+                                        <span class="fp-muted" style="font-size:12px">{{ \Carbon\Carbon::parse($m->created_at)->format('H:i') }}</span>
+                                    </td>
+                                    <td class="wm-nomor">{{ $wmNo }}</td>
+                                    <td>
+                                        @if ($m->nama)
+                                            <b>{{ $m->nama }}</b><br><span class="fp-muted" style="font-size:12px">{{ $m->nik }}</span>
+                                        @else
+                                            <span class="fp-muted">-</span>
+                                        @endif
+                                    </td>
+                                    <td style="white-space:nowrap">{{ $wmPer ?? '-' }}</td>
+                                    <td class="wm-pesan">{{ $m->tipe === 'text' ? \Illuminate\Support\Str::limit($m->isi, 80) : '[' . ($m->tipe ?: 'lainnya') . ']' }}</td>
+                                    <td style="white-space:nowrap"><span class="fp-badge {{ $wmKelas }}">{{ $wmTeks }}</span></td>
+                                    <td class="fp-muted" style="font-size:12px">{{ $m->detail }}</td>
+                                </tr>
+                            @endforeach
+                            <tr id="wmNihil" style="display:none"><td colspan="7" class="wm-kosong">Tidak ada pesan yang cocok dengan pencarian.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            @endif
+        </div>
+        <div class="fp-modal-foot">
+            <button type="button" class="fp-btn fp-btn-soft" onclick="wmTutup()">Tutup</button>
+        </div>
+    </div>
+</div>
+
+<div id="waModal" class="fp-modal" style="display:none">
+    <div class="fp-modal-box fp-modal-lg">
+        <div class="fp-modal-head">
+            <h3>Kirim Slip via WhatsApp - {{ $namaPeriode }}</h3>
+            <button type="button" class="fp-modal-x" id="waTutup" onclick="waTutup()">&times;</button>
+        </div>
+        <div class="fp-modal-body">
+            <div class="fp-info" id="waInfo"></div>
+            <label style="display:flex;gap:8px;align-items:center;margin:10px 0">
+                <input type="checkbox" id="waUlang"> Kirim ulang juga yang sudah terkirim
+            </label>
+            <div style="background:#e2e8f0;border-radius:6px;height:10px;overflow:hidden;margin:8px 0">
+                <div id="waBar" style="height:10px;width:0;background:#10b981;transition:width .2s"></div>
+            </div>
+            <div id="waProgres" class="fp-muted" style="font-size:13px"></div>
+            <div id="waLog" style="max-height:240px;overflow:auto;margin-top:8px;font-size:13px"></div>
+        </div>
+        <div class="fp-modal-foot">
+            <button type="button" class="fp-btn fp-btn-soft" onclick="waTutup()" id="waBatal">Tutup</button>
+            <button type="button" class="fp-btn fp-btn-emerald" id="waMulai" onclick="waMulai()">Mulai Kirim</button>
+        </div>
+    </div>
+</div>
+
 <script>
     const prFmt = n => String(n ?? '').replace(/\D/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
     const prNum = id => parseFloat(String(document.getElementById(id).value).replace(/\D/g, '')) || 0;
@@ -309,8 +461,8 @@
     function prTarif() {
         const g = prNum('pr_gaji_harian'), t = g / 7;
         document.getElementById('pr_tarif').innerHTML = g > 0
-            ? 'Tarif per jam (standar 7 jam): <b>' + prRp(t) + '</b> &middot; Lembur I per jam: <b>' + prRp(t * 1.5) + '</b> &middot; Lembur II per jam: <b>' + prRp(t * 2) + '</b>'
-              + '<br><span class="fp-muted">Shift dengan standar lain (Sabtu 5,5 jam, Security 12 jam) memakai standar Kode Shift-nya.</span>'
+            ? 'Tarif lembur per jam (gaji harian / 7): <b>' + prRp(t) + '</b> &middot; Lembur I per jam: <b>' + prRp(t * 1.5) + '</b> &middot; Lembur II per jam: <b>' + prRp(t * 2) + '</b>'
+              + '<br><span class="fp-muted">Tarif lembur selalu memakai pembagi 7, termasuk hari Sabtu dan Security. Standar jam Kode Shift hanya dipakai untuk kehadiran dan potongan jam kerja.</span>'
             : 'Isi gaji harian untuk melihat tarif lembur otomatis.';
     }
 
@@ -329,8 +481,111 @@
     function prClose() { document.getElementById('prModal').style.display = 'none'; }
     function piOpen() { document.getElementById('piModal').style.display = 'flex'; }
     function piClose() { document.getElementById('piModal').style.display = 'none'; }
+    function wmBuka()  { document.getElementById('wmModal').style.display = 'flex'; wmSaring(); }
+    function wmTutup() { document.getElementById('wmModal').style.display = 'none'; }
+
+    // Saring daftar pesan masuk: periode + kata kunci (nama, NIK, atau nomor; nomor boleh 08xx atau 62xx)
+    function wmSaring() {
+        const body = document.getElementById('wmBody');
+        if (!body) return;
+        const kata  = (document.getElementById('wmCari').value || '').toLowerCase().trim().replace(/\s+/g, ' ');
+        const angka = kata.replace(/\D/g, '');
+        const f     = document.getElementById('wmFilter').value;
+        let tampil = 0, total = 0;
+
+        body.querySelectorAll('tr[data-per]').forEach(tr => {
+            total++;
+            const p = tr.dataset.per;
+            let ok = f === 'semua' || (f === 'ini' && p === waPeriode) || (f === 'tanpa' && p === '');
+            if (ok && kata) {
+                ok = tr.dataset.cari.includes(kata) || (angka.length >= 3 && tr.dataset.angka.includes(angka));
+            }
+            tr.style.display = ok ? '' : 'none';
+            if (ok) tampil++;
+        });
+
+        document.getElementById('wmNihil').style.display = tampil === 0 ? '' : 'none';
+        document.getElementById('wmHitung').textContent = 'Menampilkan ' + tampil + ' dari ' + total + ' pesan yang dimuat.';
+    }
 
     document.querySelectorAll('.pr-rupiah').forEach(i => i.addEventListener('input', () => { i.value = prFmt(i.value); prTarif(); }));
     document.addEventListener('keydown', e => { if (e.key === 'Escape') prClose(); });
+
+    // ===== KIRIM SLIP VIA WHATSAPP =====
+    const waUrl   = @json(route('manajemen.payroll.kirim-wa'));
+    const waCsrf  = @json(csrf_token());
+    const waPeriode = @json($periode);
+    const waDaftar = @json($waDaftar);
+    let waJalan = false;
+
+    async function waPanggil(idAbsen, ulang) {
+        const resp = await fetch(waUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': waCsrf },
+            body: JSON.stringify({ periode: waPeriode, id_absen: idAbsen, ulang: ulang ? 1 : 0 }),
+        });
+        if (!resp.ok) {
+            let pesan = 'HTTP ' + resp.status;
+            try { const j = await resp.json(); pesan = j.message || pesan; } catch (e) {}
+            return { ok: false, status: 'error', pesan };
+        }
+        return resp.json();
+    }
+
+    async function waKirimSatu(idAbsen, tombol) {
+        const sudah = waDaftar.find(d => d.id_absen === idAbsen)?.terkirim;
+        if (sudah && !confirm('Slip karyawan ini sudah pernah terkirim. Kirim ulang?')) return;
+        tombol.disabled = true; const awal = tombol.textContent; tombol.textContent = 'Mengirim...';
+        const h = await waPanggil(idAbsen, true);
+        alert((h.ok ? 'Berhasil: ' : 'Tidak terkirim: ') + h.pesan);
+        tombol.disabled = false; tombol.textContent = awal;
+        if (h.ok) location.reload();
+    }
+
+    function waBuka() {
+        const total = waDaftar.length, sudah = waDaftar.filter(d => d.terkirim).length;
+        document.getElementById('waInfo').innerHTML =
+            'Slip siap: <b>' + total + '</b> karyawan &middot; sudah terkirim: <b>' + sudah + '</b> &middot; belum: <b>' + (total - sudah) + '</b>.'
+            + '<br>Setiap slip dikirim ke nomor di Master Karyawan memakai template WhatsApp yang disetujui Meta. Jangan tutup halaman ini selama proses berjalan.';
+        document.getElementById('waBar').style.width = '0';
+        document.getElementById('waProgres').textContent = '';
+        document.getElementById('waLog').innerHTML = '';
+        document.getElementById('waMulai').disabled = false;
+        document.getElementById('waModal').style.display = 'flex';
+    }
+    function waTutup() {
+        if (waJalan && !confirm('Pengiriman sedang berjalan. Hentikan dan tutup?')) return;
+        document.getElementById('waModal').style.display = 'none';
+        if (waJalan) { waJalan = false; }
+        location.reload();
+    }
+
+    async function waMulai() {
+        const ulang = document.getElementById('waUlang').checked;
+        const antrean = waDaftar.filter(d => ulang || !d.terkirim);
+        if (antrean.length === 0) { alert('Tidak ada slip yang perlu dikirim.'); return; }
+        if (!confirm('Kirim ' + antrean.length + ' slip ke WhatsApp karyawan sekarang?')) return;
+
+        waJalan = true;
+        document.getElementById('waMulai').disabled = true;
+        const log = document.getElementById('waLog');
+        let ok = 0, gagal = 0, lewat = 0;
+
+        for (let i = 0; i < antrean.length && waJalan; i++) {
+            const d = antrean[i];
+            document.getElementById('waProgres').textContent = 'Mengirim ' + (i + 1) + ' dari ' + antrean.length + ': ' + d.nama + '...';
+            const h = await waPanggil(d.id_absen, ulang);
+            if (h.ok) ok++; else if (h.status === 'dilewati') lewat++; else gagal++;
+            const baris = document.createElement('div');
+            baris.style.color = h.ok ? '#047857' : (h.status === 'dilewati' ? '#b45309' : '#b91c1c');
+            baris.textContent = (h.ok ? 'OK  ' : (h.status === 'dilewati' ? 'LEWAT  ' : 'GAGAL  ')) + d.nama + ' - ' + h.pesan;
+            log.appendChild(baris); log.scrollTop = log.scrollHeight;
+            document.getElementById('waBar').style.width = Math.round(((i + 1) / antrean.length) * 100) + '%';
+            await new Promise(r => setTimeout(r, 300));
+        }
+
+        waJalan = false;
+        document.getElementById('waProgres').innerHTML = 'Selesai. Terkirim: <b>' + ok + '</b> &middot; dilewati: <b>' + lewat + '</b> &middot; gagal: <b>' + gagal + '</b>. Tutup jendela ini untuk melihat statusnya di tabel.';
+    }
 </script>
 @endsection

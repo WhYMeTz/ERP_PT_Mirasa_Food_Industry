@@ -18,7 +18,7 @@ return [
     'bagian' => [
         'SORTIR AC'   => ['kode' => 'AC', 'remarks1' => 'AC'],
         'BATCH FRYER' => ['kode' => 'GO', 'remarks1' => 'BATCH FRYER'],
-        'POT.RENDEM'  => ['kode' => 'PT', 'remarks1' => 'POT RENDEM'],
+        'POT.RENDAM'  => ['kode' => 'PT', 'remarks1' => 'POT RENDAM'],
         'UMUM'        => ['kode' => 'UM', 'remarks1' => 'UMUM', 'alias' => ['DRIVER', 'SECURITY', 'KEUANGAN', 'QUALITYCONTROL']],
         'PACKING'     => ['kode' => 'BU', 'remarks1' => 'PACKING'],
         'MAKARONI'    => ['kode' => 'MKR', 'remarks1' => 'MAKARONI'],

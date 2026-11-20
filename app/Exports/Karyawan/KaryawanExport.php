@@ -38,6 +38,7 @@ class KaryawanExport extends DefaultValueBinder implements
 {
     private const HEADER_ROW  = 5;
     private const LAST_COLUMN = 'O';
+    private const LAST_COLUMN_PAJAK = 'Q';   // bila kolom NPWP/NIK + PTKP ikut diekspor
 
     // Warna header tabel (hex tanpa #). Ubah di sini jika ingin warna lain.
     private const HEADER_COLOR = '1F4E78';
@@ -46,9 +47,17 @@ class KaryawanExport extends DefaultValueBinder implements
     protected $collectionData;
     protected int $no = 0;
 
-    public function __construct(Collection $collectionData)
+    /**
+     * @param bool $denganPajak  sertakan NPWP/NIK dan Status PTKP (hanya untuk yang berhak mengedit karyawan)
+     */
+    public function __construct(Collection $collectionData, protected bool $denganPajak = false)
     {
         $this->collectionData = $collectionData;
+    }
+
+    private function lastColumn(): string
+    {
+        return $this->denganPajak ? self::LAST_COLUMN_PAJAK : self::LAST_COLUMN;
     }
 
     public function collection(): Collection
@@ -68,11 +77,13 @@ class KaryawanExport extends DefaultValueBinder implements
 
     public function headings(): array
     {
-        return [
+        $kolom = [
             'No', 'ID Karyawan', 'ID Absensi', 'Nama Karyawan', 'Kelompok', 'Shift',
             'Status', 'Departemen', 'Divisi/Bagian', 'Tanggal Masuk Kerja',
             'Kontak/No. Telp', 'Email', 'Bank', 'No. Rekening', 'Alamat',
         ];
+
+        return $this->denganPajak ? array_merge($kolom, ['NPWP/NIK', 'Status PTKP']) : $kolom;
     }
 
     /**
@@ -82,7 +93,7 @@ class KaryawanExport extends DefaultValueBinder implements
     {
         $this->no++;
 
-        return [
+        $baris = [
             $this->no,
             $karyawan->nik,
             $karyawan->id_absensi,
@@ -99,6 +110,8 @@ class KaryawanExport extends DefaultValueBinder implements
             $karyawan->no_rekening,
             $karyawan->alamat_txt,
         ];
+
+        return $this->denganPajak ? array_merge($baris, [$karyawan->npwp_nik, $karyawan->status_ptkp]) : $baris;
     }
 
     public function columnWidths(): array
@@ -107,6 +120,7 @@ class KaryawanExport extends DefaultValueBinder implements
             'A' => 6,  'B' => 16, 'C' => 14, 'D' => 28, 'E' => 18,
             'F' => 13, 'G' => 12, 'H' => 18, 'I' => 24, 'J' => 16,
             'K' => 17, 'L' => 30, 'M' => 9,  'N' => 18, 'O' => 34,
+            'P' => 20, 'Q' => 13,
         ];
     }
 
@@ -124,7 +138,7 @@ class KaryawanExport extends DefaultValueBinder implements
     public function bindValue(Cell $cell, $value): bool
     {
         if (
-            in_array($cell->getColumn(), ['C', 'K', 'N'], true)
+            in_array($cell->getColumn(), ['C', 'K', 'N', 'P'], true)
             && $cell->getRow() > self::HEADER_ROW
             && $value !== null && $value !== ''
         ) {
@@ -141,7 +155,7 @@ class KaryawanExport extends DefaultValueBinder implements
         return [
             AfterSheet::class => function (AfterSheet $event) {
                 $sheet   = $event->sheet->getDelegate();
-                $last    = self::LAST_COLUMN;
+                $last    = $this->lastColumn();
                 $head    = self::HEADER_ROW;
                 $total   = $this->collectionData->count();
                 $lastRow = $head + $total;

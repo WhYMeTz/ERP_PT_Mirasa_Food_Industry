@@ -4,6 +4,27 @@
 
 @push('styles')
     <link rel="stylesheet" href="{{ asset('css/manajemen/fingerprint/fingerprint-index.css') }}">
+    <style>
+        /* Kartu bernomor (1, 2, 3), meniru tampilan form Penerimaan Gudang */
+        .mp-sec { padding:0; margin-bottom:18px; }
+        .mp-sec-head { padding:20px 24px 4px; }
+        .mp-sec-judul { margin:0; font-size:18px; font-weight:700; color:#0f172a; }
+        .mp-sec-sub { margin:4px 0 0; font-size:13px; color:#64748b; }
+        .mp-sec-body { padding:16px 24px 24px; }
+        .mp-sec-aksi { display:flex; gap:10px; align-items:center; flex-wrap:wrap; padding:16px 24px; border-top:1px solid #e2e8f0; background:#f8fafc; }
+        .mp-sec-aksi:last-child { border-radius:0 0 14px 14px; }
+        .mp-sec-sekat { border-top:1px solid #e2e8f0; }
+        .mp-sub-judul { padding:16px 24px 8px; font-weight:600; }
+        .mp-bagian { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+        .mp-dua { display:grid; grid-template-columns:repeat(auto-fit,minmax(360px,1fr)); gap:18px; }
+        .mp-kolom { border:1px solid #e2e8f0; border-radius:12px; padding:18px 20px; background:#fff; }
+        .mp-kolom-baca { background:#f8fafc; }
+        .mp-kolom-judul { margin:0 0 14px; font-size:14px; font-weight:700; color:#0f172a; }
+        .mp-kolom-judul small { display:block; margin-top:2px; font-size:12px; font-weight:400; color:#64748b; }
+        .mp-grid2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+        .mp-penuh { grid-column:1 / -1; }
+        @media (max-width:560px) { .mp-grid2 { grid-template-columns:1fr; } }
+    </style>
 @endpush
 
 @section('content')
@@ -37,28 +58,7 @@
     </div>
 @else
 
-{{-- PILIH BAGIAN --}}
-<div class="fp-card" style="padding:14px 16px; margin-bottom:14px">
-    <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:center">
-        <b>Bagian:</b>
-        @foreach ($daftarBagian as $b)
-            @php $s = $ringkasan[$b] ?? ['layak' => 0, 'total' => 0, 'dilewati' => 0]; @endphp
-            <a href="{{ route('manajemen.payroll.multi.index', ['periode' => $periode, 'bagian' => $b]) }}"
-               class="fp-btn {{ $b === $bagian ? 'fp-btn-primary' : 'fp-btn-soft' }}">
-                {{ $b }} &middot; {{ $s['layak'] }} orang
-                @if ($s['dilewati'] > 0) <span class="fp-badge fp-badge-warn">{{ $s['dilewati'] }} dilewati</span> @endif
-            </a>
-        @endforeach
-    </div>
-    @if ($tanpaBagian > 0)
-        <div class="fp-alert fp-alert-err" style="margin:12px 0 0">
-            <b>{{ $tanpaBagian }} karyawan</b> tidak masuk bagian mana pun karena isian Jabatan di Master Karyawan tidak dikenali
-            (yang dikenali: {{ implode(', ', $daftarBagian) }}). Karyawan itu tidak ikut file transfer sampai Jabatannya diperbaiki.
-        </div>
-    @endif
-</div>
-
-{{-- RINGKASAN --}}
+{{-- RINGKASAN (di atas) --}}
 <div class="fp-stats" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))">
     <div class="fp-stat">
         <div class="fp-stat-label" style="color:#0284c7">Siap Ditransfer</div>
@@ -77,83 +77,102 @@
     </div>
 </div>
 
-{{-- ISIAN FILE --}}
-<div class="fp-card" style="padding:16px; margin-bottom:14px">
-    <form method="POST" id="mp_form" action="{{ route('manajemen.payroll.multi.unduh') }}" onsubmit="return mpKonfirm()">
-        @csrf
-        <input type="hidden" name="periode" value="{{ $periode }}">
-        <input type="hidden" name="bagian" value="{{ $bagian }}">
-
-        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:14px">
-            <div class="fp-field">
-                <label class="fp-label">Rekening Sumber (Debited Account)</label>
-                <input type="text" class="fp-input fp-mono" style="width:100%" value="{{ $config['rekening_sumber'] }}" readonly>
-            </div>
-            <div class="fp-field">
-                <label class="fp-label">Corporate ID</label>
-                <input type="text" class="fp-input fp-mono" style="width:100%" value="{{ $config['corporate_id'] }}" readonly>
-            </div>
-            <div class="fp-field">
-                <label class="fp-label">Company Code</label>
-                <input type="text" class="fp-input fp-mono" style="width:100%" value="{{ $config['company_code'] }}" readonly>
-            </div>
-            <div class="fp-field">
-                <label class="fp-label">Header ID <span>*</span></label>
-                <input type="number" name="header_id" class="fp-input" style="width:100%" min="1" max="99999999" value="{{ old('header_id', $isian['header_id']) }}" required>
-            </div>
-            <div class="fp-field">
-                <label class="fp-label">Tanggal Transfer (Effective Date) <span>*</span></label>
-                <input type="date" name="tanggal_transfer" class="fp-input" style="width:100%" value="{{ old('tanggal_transfer', $isian['tanggal_transfer']) }}" required>
-            </div>
-            <div class="fp-field">
-                <label class="fp-label">Remarks 1 (nama kelompok) <span>*</span></label>
-                <input type="text" name="remarks1" class="fp-input" style="width:100%" maxlength="50" value="{{ old('remarks1', $isian['remarks1']) }}" required>
-            </div>
-            <div class="fp-field">
-                <label class="fp-label">Remarks 2 (bulan gaji) <span>*</span></label>
-                <input type="text" name="remarks2" class="fp-input" style="width:100%" maxlength="50" value="{{ old('remarks2', $isian['remarks2']) }}" required>
-            </div>
+{{-- 1. PILIH BAGIAN & CEK DATA --}}
+<div class="fp-card mp-sec">
+    <div class="mp-sec-head">
+        <h2 class="mp-sec-judul">1. Pilih Bagian &amp; Cek Data</h2>
+        <p class="mp-sec-sub">Satu file transfer dibuat untuk satu bagian. Ringkasan di atas ikut berubah sesuai bagian yang dipilih.</p>
+    </div>
+    <div class="mp-sec-body">
+        <div class="mp-bagian">
+            <b>Bagian:</b>
+            @foreach ($daftarBagian as $b)
+                @php $s = $ringkasan[$b] ?? ['layak' => 0, 'total' => 0, 'dilewati' => 0]; @endphp
+                <a href="{{ route('manajemen.payroll.multi.index', ['periode' => $periode, 'bagian' => $b]) }}"
+                   class="fp-btn {{ $b === $bagian ? 'fp-btn-primary' : 'fp-btn-soft' }}">
+                    {{ $b }} &middot; {{ $s['layak'] }} orang
+                    @if ($s['dilewati'] > 0) <span class="fp-badge fp-badge-warn">{{ $s['dilewati'] }} dilewati</span> @endif
+                </a>
+            @endforeach
         </div>
-
-        <div style="display:flex; gap:10px; align-items:center; margin-top:14px; flex-wrap:wrap">
-            <button type="submit" class="fp-btn fp-btn-primary" @disabled($layak->isEmpty())>Unduh TXT {{ $bagian }}</button>
-            <a href="{{ route('manajemen.payroll.multi.excel', ['periode' => $periode]) }}" class="fp-btn fp-btn-soft">Unduh Excel (semua bagian)</a>
-            <span class="fp-muted" style="font-size:13px">
-                Nomor header otomatis berikutnya. Setiap unduhan tercatat di riwayat, jadi nomor tidak bisa dobel.
-            </span>
-        </div>
-    </form>
-</div>
-
-{{-- DILEWATI --}}
-@if ($dilewati->isNotEmpty())
-<div class="fp-card" style="margin-bottom:14px">
-    <div style="padding:12px 16px; font-weight:600">Dilewati &mdash; tidak masuk file ({{ $dilewati->count() }})</div>
-    <div class="fp-table-wrap">
-        <table class="fp-table">
-            <thead><tr><th>No</th><th>NIK</th><th>Nama</th><th class="fp-num">Gaji Bersih</th><th>Alasan</th></tr></thead>
-            <tbody>
-                @foreach ($dilewati as $r)
-                    <tr>
-                        <td class="fp-muted">{{ $loop->iteration }}</td>
-                        <td class="fp-mono">{{ $r['nik'] ?? '-' }}</td>
-                        <td style="font-weight:600">{{ $r['nama'] }}</td>
-                        <td class="fp-num">{{ $rp($r['jumlah']) }}</td>
-                        <td><span class="fp-badge fp-badge-warn">{{ $r['alasan'] }}</span></td>
-                    </tr>
-                @endforeach
-            </tbody>
-        </table>
+        @if ($tanpaBagian > 0)
+            <div class="fp-alert fp-alert-err" style="margin:14px 0 0">
+                <b>{{ $tanpaBagian }} karyawan</b> tidak masuk bagian mana pun karena isian Jabatan di Master Karyawan tidak dikenali
+                (yang dikenali: {{ implode(', ', $daftarBagian) }}). Karyawan itu tidak ikut file transfer sampai Jabatannya diperbaiki.
+            </div>
+        @endif
     </div>
 </div>
-@endif
 
-{{-- PRATINJAU --}}
-<div class="fp-card" style="margin-bottom:14px">
-    <div style="padding:12px 16px; font-weight:600">Pratinjau isi file ({{ $layak->count() }} baris)
-        <span class="fp-muted" style="font-weight:400; font-size:13px">&mdash; hilangkan centang untuk menahan seseorang dari file ini</span>
+{{-- 2. PENGATURAN FILE TRANSFER --}}
+<div class="fp-card mp-sec">
+    <div class="mp-sec-head">
+        <h2 class="mp-sec-judul">2. Pengaturan File Transfer</h2>
+        <p class="mp-sec-sub">Kiri: data rekening dari sistem. Kanan: isian yang perlu Anda periksa sebelum mengunduh.</p>
     </div>
-    <div class="fp-table-wrap">
+    <div class="mp-sec-body">
+        <form method="POST" id="mp_form" action="{{ route('manajemen.payroll.multi.unduh') }}" onsubmit="return mpKonfirm()">
+            @csrf
+            <input type="hidden" name="periode" value="{{ $periode }}">
+            <input type="hidden" name="bagian" value="{{ $bagian }}">
+
+            <div class="mp-dua">
+                {{-- KIRI: data dari pengaturan sistem (hanya dibaca) --}}
+                <div class="mp-kolom mp-kolom-baca">
+                    <h3 class="mp-kolom-judul">Rekening &amp; Perusahaan <small>Diambil dari pengaturan sistem, tidak bisa diubah di sini.</small></h3>
+                    <div class="mp-grid2">
+                        <div class="fp-field mp-penuh">
+                            <label class="fp-label">Rekening Sumber (Debited Account)</label>
+                            <input type="text" class="fp-input fp-mono" style="width:100%" value="{{ $config['rekening_sumber'] }}" readonly>
+                        </div>
+                        <div class="fp-field">
+                            <label class="fp-label">Corporate ID</label>
+                            <input type="text" class="fp-input fp-mono" style="width:100%" value="{{ $config['corporate_id'] }}" readonly>
+                        </div>
+                        <div class="fp-field">
+                            <label class="fp-label">Company Code</label>
+                            <input type="text" class="fp-input fp-mono" style="width:100%" value="{{ $config['company_code'] }}" readonly>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- KANAN: isian transfer --}}
+                <div class="mp-kolom">
+                    <h3 class="mp-kolom-judul">Data Transfer <small>Isi atau periksa kolom bertanda <span style="color:#dc2626">*</span>.</small></h3>
+                    <div class="mp-grid2">
+                        <div class="fp-field">
+                            <label class="fp-label">Header ID <span>*</span></label>
+                            <input type="number" name="header_id" class="fp-input" style="width:100%" min="1" max="99999999" value="{{ old('header_id', $isian['header_id']) }}" required>
+                        </div>
+                        <div class="fp-field">
+                            <label class="fp-label">Tanggal Transfer (Effective Date) <span>*</span></label>
+                            <input type="date" name="tanggal_transfer" class="fp-input" style="width:100%" value="{{ old('tanggal_transfer', $isian['tanggal_transfer']) }}" required>
+                        </div>
+                        <div class="fp-field">
+                            <label class="fp-label">Remarks 1 (nama kelompok) <span>*</span></label>
+                            <input type="text" name="remarks1" class="fp-input" style="width:100%" maxlength="50" value="{{ old('remarks1', $isian['remarks1']) }}" required>
+                        </div>
+                        <div class="fp-field">
+                            <label class="fp-label">Remarks 2 (bulan gaji) <span>*</span></label>
+                            <input type="text" name="remarks2" class="fp-input" style="width:100%" maxlength="50" value="{{ old('remarks2', $isian['remarks2']) }}" required>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <p class="fp-muted" style="font-size:13px; margin:14px 0 0">
+                Nomor header terisi otomatis berikutnya. Setiap unduhan tercatat di riwayat, jadi nomor tidak bisa dobel.
+            </p>
+        </form>
+    </div>
+</div>
+
+{{-- 3. PRATINJAU & UNDUH --}}
+<div class="fp-card mp-sec">
+    <div class="mp-sec-head">
+        <h2 class="mp-sec-judul">3. Pratinjau Isi File &amp; Unduh</h2>
+        <p class="mp-sec-sub">{{ $layak->count() }} baris untuk bagian {{ $bagian }}. Hilangkan centang untuk menahan seseorang dari file ini.</p>
+    </div>
+    <div class="fp-table-wrap" style="margin-top:12px">
         <table class="fp-table">
             <thead>
                 <tr>
@@ -179,14 +198,48 @@
             </tbody>
         </table>
     </div>
+
+    <div class="mp-sec-aksi">
+        <button type="submit" form="mp_form" class="fp-btn fp-btn-primary" @disabled($layak->isEmpty())>Unduh TXT {{ $bagian }}</button>
+        <a href="{{ route('manajemen.payroll.multi.excel', ['periode' => $periode]) }}" class="fp-btn fp-btn-soft">Unduh Excel (semua bagian)</a>
+    </div>
+        
+    
+
+    @if ($dilewati->isNotEmpty())
+        <div class="mp-sec-sekat">
+            <div class="mp-sub-judul">Dilewati &mdash; tidak masuk file ({{ $dilewati->count() }})</div>
+            <div class="fp-table-wrap">
+                <table class="fp-table">
+                    <thead><tr><th>No</th><th>NIK</th><th>Nama</th><th class="fp-num">Gaji Bersih</th><th>Alasan</th></tr></thead>
+                    <tbody>
+                        @foreach ($dilewati as $r)
+                            <tr>
+                                <td class="fp-muted">{{ $loop->iteration }}</td>
+                                <td class="fp-mono">{{ $r['nik'] ?? '-' }}</td>
+                                <td style="font-weight:600">{{ $r['nama'] }}</td>
+                                <td class="fp-num">{{ $rp($r['jumlah']) }}</td>
+                                <td><span class="fp-badge fp-badge-warn">{{ $r['alasan'] }}</span></td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    @endif
 </div>
 
 @endif
 
+@include('manajemen.payroll.partials.xml-bp21', ['periode' => $periode, 'bagian' => $bagian, 'remarks1' => $isian['remarks1']])
+
 {{-- RIWAYAT --}}
-<div class="fp-card">
-    <div style="padding:12px 16px; font-weight:600">Riwayat unduhan {{ $namaPeriode }}</div>
-    <div class="fp-table-wrap">
+<div class="fp-card mp-sec">
+    <div class="mp-sec-head">
+        <h2 class="mp-sec-judul">4. Riwayat Unduhan {{ $namaPeriode }}</h2>
+        <p class="mp-sec-sub">Nomor Header ID yang sudah terpakai tidak bisa dipakai lagi.</p>
+    </div>
+    <div class="fp-table-wrap" style="margin-top:12px">
         <table class="fp-table">
             <thead>
                 <tr><th>Header ID</th><th>Bagian</th><th>Nama File</th><th class="fp-num">Baris</th><th class="fp-num">Total</th><th>Tgl Transfer</th><th>Diunduh Oleh</th><th>Waktu</th></tr>
@@ -213,6 +266,7 @@
 
 <script>
 (function () {
+    if (!document.getElementById('mp_n')) return; // periode belum siap: tidak ada tabel pratinjau
     const rp  = n => 'Rp ' + Math.round(n).toLocaleString('id-ID');
     const all = document.getElementById('mp_all');
     const box = () => Array.from(document.querySelectorAll('.mp-ikut'));

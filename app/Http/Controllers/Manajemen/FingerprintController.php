@@ -12,7 +12,9 @@ use App\Models\Manajemen\TrxFingerprintLog;
 use App\Models\MasterData\MstKaryawan;
 use Illuminate\Validation\ValidationException;
 use Carbon\Carbon;
+use App\Support\CariKaryawan;
 use Illuminate\Support\Facades\DB;
+use App\Exports\Manajemen\FingerprintExport;
 
 class FingerprintController extends Controller
 {
@@ -21,10 +23,9 @@ class FingerprintController extends Controller
         $dari   = $request->input('dari', TrxAbsensiHarian::min('tanggal') ?? now()->startOfMonth()->toDateString());
         $sampai = $request->input('sampai', TrxAbsensiHarian::max('tanggal') ?? now()->toDateString());
 
-        $query = TrxAbsensiHarian::query()
+       $query = TrxAbsensiHarian::query()
             ->whereBetween('tanggal', [$dari, $sampai])
-            ->when($request->q, fn ($q, $s) => $q->where(fn ($w) =>
-                $w->where('id_absen', 'like', "%$s%")->orWhere('nama', 'like', "%$s%")));
+            ->when($request->q, fn ($q, $s) => CariKaryawan::terapkan($q, $s, 'nama', 'id_absen'));
 
         $perHari = (clone $query)->whereNotNull('jam_pulang')
             ->get(['tanggal', 'jam_masuk', 'jam_pulang'])
@@ -54,6 +55,29 @@ class FingerprintController extends Controller
             ->orderBy('karyawan_nm')->get(['id_absensi', 'karyawan_nm', 'nik']));
     }
 
+    /** Export Excel: data sesuai filter (q, dari, sampai) yang sedang dipakai, semua halaman. */
+    public function export(Request $request)
+    {
+        $request->validate([
+            'dari'   => 'nullable|date',
+            'sampai' => 'nullable|date',
+            'q'      => 'nullable|string|max:100',
+        ]);
+
+        $dari   = $request->input('dari', TrxAbsensiHarian::min('tanggal') ?? now()->startOfMonth()->toDateString());
+        $sampai = $request->input('sampai', TrxAbsensiHarian::max('tanggal') ?? now()->toDateString());
+
+        $rows = TrxAbsensiHarian::query()
+            ->whereBetween('tanggal', [$dari, $sampai])
+            ->when($request->q, fn ($q, $s) => CariKaryawan::terapkan($q, $s, 'nama', 'id_absen'))
+            ->orderBy('tanggal')->orderBy('nama')
+            ->get();
+
+        $nama = 'fingerprint_' . Carbon::parse($dari)->format('Ymd') . '-' . Carbon::parse($sampai)->format('Ymd') . '.xlsx';
+
+        return Excel::download(new FingerprintExport($rows, (string) $dari, (string) $sampai, $request->q), $nama);
+    }
+
     public function import(Request $request, FingerprintService $service)
     {
         $request->validate(['file' => 'required|file|mimes:xlsx,xls,csv|max:10240']);
@@ -79,6 +103,7 @@ class FingerprintController extends Controller
             'jam_masuk'    => 'nullable|date_format:H:i',
             'jam_pulang'   => 'nullable|date_format:H:i',
             'pulang_besok' => 'nullable|boolean',
+            'dikonfirmasi' => 'nullable|boolean',
             'catatan'      => 'required|string|max:255',
         ], [
             'id_absen.required'      => 'ID Absen wajib diisi.',
@@ -118,6 +143,11 @@ class FingerprintController extends Controller
                 'Jam pulang harus setelah jam masuk. Untuk shift malam, centang "Pulang di hari berikutnya".']);
         }
 
+        if ($request->boolean('dikonfirmasi') && (!$masuk || !$pulang)) {
+            throw ValidationException::withMessages(['dikonfirmasi' =>
+                'Konfirmasi hanya bisa dipakai jika jam masuk dan jam pulang sama-sama diisi.']);
+        }
+
         TrxAbsensiHarian::create([
             'id_absen'    => $id,
             'nama'        => $k->karyawan_nm,
@@ -128,6 +158,7 @@ class FingerprintController extends Controller
             'jam_pulang'  => $pulang ? FingerprintService::bulatkan($pulang) : null,
             'jumlah_scan' => 0,
             'is_manual'   => true,
+            'dikonfirmasi' => $request->boolean('dikonfirmasi'),
             'catatan'     => $d['catatan'],
         ]);
 
@@ -145,18 +176,21 @@ class FingerprintController extends Controller
             'jam_pulang'   => 'nullable|date_format:H:i',
             'pulang_besok' => 'nullable|boolean',
             'catatan'      => 'nullable|string|max:255',
+            'konfirmasi'   => 'nullable|in:ya,tidak',
         ]);
 
         $jm = $data['jam_masuk'] ?? null;
         $jp = $data['jam_pulang'] ?? null;
         $ct = $data['catatan'] ?? null;
+        $kf = $data['konfirmasi'] ?? null;   // 'ya' | 'tidak' | null (tidak diubah)
 
-        if (!$jm && !$jp && !$ct) {
-            return back()->with('error', 'Isi minimal salah satu: jam masuk, jam pulang, atau catatan.');
+        if (!$jm && !$jp && !$ct && !$kf) {
+            return back()->with('error', 'Isi minimal salah satu: jam masuk, jam pulang, catatan, atau konfirmasi.');
         }
 
         $berhasil = 0;
         $gagal = [];
+        $tanpaJam = [];
 
         foreach (TrxAbsensiHarian::whereIn('id', $data['ids'])->get() as $r) {
             $tgl    = $r->tanggal->toDateString();
@@ -170,20 +204,29 @@ class FingerprintController extends Controller
                 continue;
             }
 
+            if ($kf === 'ya' && (!$masuk || !$pulang)) {
+                $tanpaJam[] = $r->nama;   // konfirmasi butuh jam masuk dan pulang
+                continue;
+            }
+
             $r->update([
-                'jam_masuk'  => $masuk,
-                'jam_pulang' => $pulang,
-                'is_manual'  => ($jm || $jp) ? true : $r->is_manual,
-                'catatan'    => $ct ?? $r->catatan,
+                'jam_masuk'    => $masuk,
+                'jam_pulang'   => $pulang,
+                // konfirmasi ikut menandai baris sebagai koreksi manual, supaya dipakai AbsensiService
+                'is_manual'    => ($jm || $jp || $kf === 'ya') ? true : $r->is_manual,
+                'dikonfirmasi' => $kf ? $kf === 'ya' : $r->dikonfirmasi,
+                'catatan'      => $ct ?? $r->catatan,
             ]);
             $berhasil++;
         }
 
-        $redirect = back()->with('success', "$berhasil data absensi diperbarui.");
+        $redirect = back()->with('success', "$berhasil data absensi diperbarui. Hitung ulang di Absensi Karyawan agar ikut terhitung.");
 
-        return $gagal
-            ? $redirect->with('error', 'Dilewati (jam pulang tidak valid): ' . implode(', ', $gagal))
-            : $redirect;
+        $pesan = [];
+        if ($gagal)    $pesan[] = 'Dilewati (jam pulang tidak valid): ' . implode(', ', $gagal);
+        if ($tanpaJam) $pesan[] = 'Dilewati (konfirmasi butuh jam masuk dan jam pulang terisi): ' . implode(', ', $tanpaJam);
+
+        return $pesan ? $redirect->with('error', implode(' | ', $pesan)) : $redirect;
     }
 
     public function bulkDelete(Request $request)

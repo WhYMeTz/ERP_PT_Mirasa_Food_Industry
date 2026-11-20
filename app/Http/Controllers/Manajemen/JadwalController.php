@@ -15,6 +15,7 @@ use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use App\Support\CariKaryawan;
 use Maatwebsite\Excel\Facades\Excel;
 
 class JadwalController extends Controller
@@ -26,8 +27,7 @@ class JadwalController extends Controller
 
         $query = TrxJadwalKaryawan::query()
             ->whereBetween('tanggal', [$dari, $sampai])
-            ->when($request->q, fn ($q, $s) => $q->where(fn ($w) =>
-                $w->where('id_absen', 'like', "%$s%")->orWhere('nama', 'like', "%$s%")))
+            ->when($request->q, fn ($q, $s) => CariKaryawan::terapkan($q, $s, 'nama', 'id_absen'))
             ->when($request->kelompok, fn ($q, $k) => $q->where('kelompok_kerja', $k))
             ->when($request->shift, fn ($q, $s) => $q->where('kode_shift', $s));
 
@@ -43,8 +43,9 @@ class JadwalController extends Controller
             ->count('trx_jadwal_karyawan.id_absen');
 
         $stat = [
-            'langsung'       => (clone $periode)->where('kelompok_kerja', 'like', 'Langsung%')->distinct()->count('id_absen'),
-            'tidak_langsung' => (clone $periode)->where('kelompok_kerja', 'Tidak Langsung')->distinct()->count('id_absen'),
+            // kelompok_kerja bisa tertulis "LANGSUNG IFM" atau "Langsung IFM": bandingkan tanpa peduli huruf besar/kecil
+            'langsung'       => (clone $periode)->whereRaw("UPPER(TRIM(kelompok_kerja)) LIKE 'LANGSUNG%'")->distinct()->count('id_absen'),
+            'tidak_langsung' => (clone $periode)->whereRaw("UPPER(TRIM(kelompok_kerja)) = 'TIDAK LANGSUNG'")->distinct()->count('id_absen'),
             'shift_a'        => $hitungShift('SHIFT A'),
             'shift_b'        => $hitungShift('SHIFT B'),
             'non_shift'      => $hitungShift('NON SHIFT'),
@@ -113,10 +114,10 @@ class JadwalController extends Controller
         $ist = $data['istirahat_jam'] ?? null;
         if (blank($ist) || $ist === 'bawaan') {
             $ist = null;
-        } elseif (is_numeric($ist) && in_array((float) $ist, [0.0, 1.0, 1.5], true)) {
+        } elseif (is_numeric($ist) && in_array((float) $ist, TrxJadwalKaryawan::ISTIRAHAT, true)) {
             $ist = (float) $ist;
         } else {
-            return back()->withInput()->with('error', 'Istirahat harus 0, 1, atau 1,5 jam.');
+            return back()->withInput()->with('error', 'Istirahat harus 0, 0,5, 1, 1,5, atau 2 jam.');
         }
 
         // ID absen -> data karyawan (sama cara dengan AbsensiService: 9 digit)
@@ -151,10 +152,11 @@ class JadwalController extends Controller
             ->flip();
         $menimpa = collect($rows)->filter(fn ($r) => $ada->has($r['tanggal'] . '|' . $r['id_absen']))->count();
 
-        $hasil = null;
-        DB::transaction(function () use ($service, $absensi, $rows, &$hasil) {
-            $hasil = $service->simpan($rows);
-            $absensi->hitung($hasil['dari'], $hasil['sampai']);
+        $hasil = DB::transaction(function () use ($service, $absensi, $rows) {
+            $h = $service->simpan($rows);
+            $absensi->hitung($h['dari'], $h['sampai']);
+
+            return $h;
         });
 
         return redirect()
@@ -205,7 +207,7 @@ class JadwalController extends Controller
             ['PETUNJUK PENGISIAN'],
             ['Satu baris = satu karyawan pada satu tanggal. Hanya isi karyawan yang dijadwalkan pada tanggal itu.'],
             ['Kelompok_Kerja, Kode_Shift, dan Istirahat_Jam ditentukan per hari, boleh berbeda tiap hari untuk orang yang sama.'],
-            ['Istirahat_Jam: 0, 1, atau 1,5. Kosong = memakai bawaan shift.'],
+            ['Istirahat_Jam: 0, 0,5, 1, 1,5, atau 2 (jam). Kosong = memakai bawaan shift.'],
             ['ID_Absen harus sama dengan ID Absensi di Master Karyawan (9 digit, format teks).'],
             ['Driver: kelompok tetap Tidak Langsung. Aturan driver dikenali dari Bagian/Divisi = Driver di Master Karyawan.'],
             ['Hapus baris contoh sebelum impor. Impor ulang pada Tanggal + ID_Absen yang sama akan menimpa baris lama.'],
@@ -254,8 +256,8 @@ class JadwalController extends Controller
         if ($ist === 'bawaan') {
             $update['istirahat_jam'] = null;
         } elseif (filled($ist)) {
-            if (!is_numeric($ist) || $ist < 0 || $ist > 8) {
-                return back()->with('error', 'Istirahat harus berupa angka 0 sampai 8 jam.');
+            if (!is_numeric($ist) || !in_array((float) $ist, TrxJadwalKaryawan::ISTIRAHAT, true)) {
+                return back()->with('error', 'Istirahat harus 0, 0,5, 1, 1,5, atau 2 jam.');
             }
             $update['istirahat_jam'] = (float) $ist;
         }

@@ -111,6 +111,30 @@ class KaryawanService
         });
     }
 
+    /**
+     * Ubah satu kolom yang sama untuk banyak karyawan sekaligus (semua-atau-tidak-sama-sekali).
+     * Diproses per model agar jejak audit (updated_by) tetap terisi.
+     *
+     * @param  array<int,int|string> $ids
+     * @return int jumlah karyawan yang diubah
+     */
+    public function bulkUpdate(array $ids, string $field, string $value): int
+    {
+        return DB::transaction(function () use ($ids, $field, $value) {
+            $jumlah = 0;
+
+            MstKaryawan::active()
+                ->whereIn('karyawan_id', $ids)
+                ->get()
+                ->each(function (MstKaryawan $karyawan) use ($field, $value, &$jumlah) {
+                    $karyawan->update([$field => $value]);
+                    $jumlah++;
+                });
+
+            return $jumlah;
+        });
+    }
+
     public function delete(int $karyawan_id): bool
     {
         return DB::transaction(function () use ($karyawan_id) {

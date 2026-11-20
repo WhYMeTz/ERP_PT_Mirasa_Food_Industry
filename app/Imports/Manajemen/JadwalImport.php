@@ -2,6 +2,7 @@
 
 namespace App\Imports\Manajemen;
 
+use App\Models\Manajemen\TrxJadwalKaryawan;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\ToCollection;
@@ -44,8 +45,8 @@ class JadwalImport implements ToCollection, WithStartRow
                 $ist = null;
             } else {
                 $ist = str_replace(',', '.', trim((string) $ist));
-                if (!is_numeric($ist) || !in_array((float) $ist, [0.0, 1.0, 1.5], true)) {
-                    $this->errors[] = "Baris $baris: istirahat harus 0, 1, atau 1,5.";
+                if (!is_numeric($ist) || !in_array((float) $ist, TrxJadwalKaryawan::ISTIRAHAT, true)) {
+                    $this->errors[] = "Baris $baris: istirahat harus 0, 0,5, 1, 1,5, atau 2 (terbaca '{$r[5]}').";
                     continue;
                 }
                 $ist = (float) $ist;

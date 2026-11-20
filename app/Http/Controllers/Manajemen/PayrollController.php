@@ -3,11 +3,15 @@
 namespace App\Http\Controllers\Manajemen;
 
 use App\Http\Controllers\Controller;
+use App\Models\Manajemen\TrxSlipWa;
 use App\Services\Manajemen\PayrollService;
+use App\Services\Manajemen\SlipWaService;
 use App\Exports\Payroll\PayrollExport;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\Payroll\PayrollTemplateExport;
 use App\Imports\Manajemen\PayrollKomponenImport;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 
 class PayrollController extends Controller
@@ -16,7 +20,14 @@ class PayrollController extends Controller
     {
         $periode = $this->periode($request);
 
-        return view('manajemen.payroll.index', $svc->daftar($periode, $request->query('q')) + ['periode' => $periode]);
+        $data = $svc->daftar($periode, $request->query('q'));
+        // status pengiriman WhatsApp terakhir per karyawan (kunci: NIK)
+        $data['statusWa'] = TrxSlipWa::where('periode', $periode)->orderBy('id')->get()->groupBy('nik')->map(fn ($g) => $g->last());
+
+        // 100 pesan WhatsApp masuk terakhir (dicatat oleh webhook)
+        $data['waMasuk'] = DB::table('trx_wa_masuk')->orderByDesc('id')->limit(100)->get();
+
+        return view('manajemen.payroll.index', $data + ['periode' => $periode]);
     }
 
     public function simpan(Request $request, PayrollService $svc)
@@ -112,6 +123,33 @@ class PayrollController extends Controller
         abort_if(!$row, 404, 'Data payroll karyawan tidak ditemukan pada periode ini.');
 
         return view('manajemen.payroll.slip', ['rows' => collect([$row]), 'periode' => $periode]);
+    }
+
+    /** Kirim slip satu karyawan ke WhatsApp. Dipanggil berulang oleh tombol "Kirim Semua" (satu karyawan per permintaan). */
+    public function kirimWa(Request $request, SlipWaService $svc)
+    {
+        $data = $request->validate([
+            'id_absen' => ['required', 'string', 'max:20'],
+            'ulang'    => ['nullable', 'boolean'],
+        ]);
+
+        return response()->json(
+            $svc->kirimSatu($this->periode($request), $data['id_absen'], (bool) ($data['ulang'] ?? false), $request->user()?->name)
+        );
+    }
+
+    /** Slip satu karyawan sebagai file PDF (untuk dilampirkan ke WhatsApp). */
+    public function slipPdf(Request $request, PayrollService $svc)
+    {
+        $periode = $this->periode($request);
+        $row = $svc->baris($periode, (string) $request->query('id_absen'));
+        abort_if(!$row, 404, 'Data payroll karyawan tidak ditemukan pada periode ini.');
+        abort_if(!($row['siap'] ?? false), 404, 'Slip karyawan ini belum siap dicetak.');
+
+        $nama = preg_replace('/[^A-Za-z0-9]+/', '_', (string) $row['nama']);
+        $pdf = Pdf::loadView('manajemen.payroll.slip_pdf', ['r' => $row, 'periode' => $periode])->setPaper('a4', 'portrait');
+
+        return $pdf->download("Slip_Gaji_{$periode}_{$nama}.pdf");
     }
 
     public function slipSemua(Request $request, PayrollService $svc)

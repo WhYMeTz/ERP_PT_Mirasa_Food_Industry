@@ -115,3 +115,7 @@
 .fp-btn-emerald { background: #10b981; border-color: #10b981; color: #fff; }
 .fp-btn-emerald:hover { background: #059669; border-color: #059669; color: #fff; }
 .fp-btn-emerald:disabled { opacity: .6; cursor: not-allowed; }
+
+.fp-kartu-link { font-size:11px; font-weight:600; color:#0284c7; text-decoration:none; border:1px solid #bae6fd;
+                 background:#f0f9ff; border-radius:4px; padding:1px 6px; margin-left:6px; }
+.fp-kartu-link:hover { background:#e0f2fe; }

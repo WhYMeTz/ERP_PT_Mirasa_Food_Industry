@@ -5,7 +5,8 @@ namespace App\Services\Manajemen;
 /**
  * Rumus payroll di SATU tempat, tanpa database.
  * - Gaji pokok hari itu = gaji harian x kehadiran. Kehadiran = (standar - potongan) / standar, maks 1, tidak dibulatkan.
- * - Tarif per jam = gaji harian / standar jam shift (7 bila shift tidak punya standar, mis. Minggu).
+ * - Tarif lembur per jam = gaji harian / 7, SELALU, apa pun shift-nya (Sabtu 5,5 jam, Security 12 jam, dst.).
+ *   Standar jam shift hanya dipakai untuk menghitung kehadiran / potongan jam kerja, bukan tarif lembur.
  * - Lembur 1 = jam lembur pertama (x1,5). Lembur 2 = sisanya (x2).
  * - Hari Minggu: seluruh jam jadi Lembur 2, gaji pokok hari itu tidak dihitung.
  * - Tunjangan masa kerja = tarif per hari menurut masa kerja x total kehadiran.
@@ -77,7 +78,7 @@ class PayrollHitung
             $k  = min(1.0, max(0.0, (float) ($r['kehadiran'] ?? 0)));
         } else {
             $standar = (float) ($r['standar_jam'] ?? 0);
-            $divisor = $standar > 0 ? $standar : self::STANDAR_DEFAULT;
+            $divisor = self::STANDAR_DEFAULT;   // tarif lembur selalu gaji / 7
             $potong  = max(0.0, (float) ($r['potongan_jam'] ?? 0));
             $k  = $standar > 0 ? min(1.0, max(0.0, ($standar - $potong) / $standar)) : 0.0;
             $l1 = min(1.0, $lembur);
@@ -132,7 +133,7 @@ class PayrollHitung
                 $k  = min(1.0, max(0.0, (float) ($r['kehadiran'] ?? 0)));
             } else {
                 $standar = (float) ($r['standar_jam'] ?? 0);
-                $divisor = $standar > 0 ? $standar : self::STANDAR_DEFAULT;
+                $divisor = self::STANDAR_DEFAULT;   // tarif lembur selalu gaji / 7
                 $potong  = max(0.0, (float) ($r['potongan_jam'] ?? 0));
                 $k  = $standar > 0 ? min(1.0, max(0.0, ($standar - $potong) / $standar)) : 0.0;
                 $l1 = min(1.0, $lembur);

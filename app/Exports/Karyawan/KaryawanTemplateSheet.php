@@ -48,7 +48,7 @@ class KaryawanTemplateSheet implements FromArray, WithHeadings, WithTitle, WithC
         return [
             'ID Karyawan', 'ID Absensi', 'Nama Karyawan', 'Kelompok', 'Shift',
             'Status Karyawan', 'Departemen', 'Divisi/Bagian', 'Tanggal Masuk Kerja',
-            'No. HP', 'Email', 'Bank', 'No. Rekening', 'Alamat',
+            'No. HP', 'Email', 'Bank', 'No. Rekening', 'Alamat', 'NPWP/NIK', 'Status PTKP',
         ];
     }
 
@@ -61,7 +61,7 @@ class KaryawanTemplateSheet implements FromArray, WithHeadings, WithTitle, WithC
     {
         return [
             'A' => 16, 'B' => 14, 'C' => 28, 'D' => 20, 'E' => 14, 'F' => 17, 'G' => 18,
-            'H' => 24, 'I' => 21, 'J' => 17, 'K' => 30, 'L' => 10, 'M' => 18, 'N' => 34,
+            'H' => 24, 'I' => 21, 'J' => 17, 'K' => 30, 'L' => 10, 'M' => 18, 'N' => 34, 'O' => 20, 'P' => 15,
         ];
     }
 
@@ -73,7 +73,7 @@ class KaryawanTemplateSheet implements FromArray, WithHeadings, WithTitle, WithC
                 $max   = self::MAX_ROW;
 
                 // Baris judul
-                $sheet->getStyle('A1:N1')->applyFromArray([
+                $sheet->getStyle('A1:P1')->applyFromArray([
                     'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
                     'fill' => [
                         'fillType'   => Fill::FILL_SOLID,
@@ -93,12 +93,13 @@ class KaryawanTemplateSheet implements FromArray, WithHeadings, WithTitle, WithC
                 $sheet->getRowDimension(1)->setRowHeight(32);
 
                 // Garis tabel seperti formulir
-                $sheet->getStyle("A1:N{$max}")->getBorders()->getAllBorders()
+                $sheet->getStyle("A1:P{$max}")->getBorders()->getAllBorders()
                     ->setBorderStyle(Border::BORDER_THIN)
                     ->getColor()->setRGB('C8D2DC');
 
-                // ID Absensi (B), Tanggal Masuk (I), No. HP (J), No. Rekening (M) berformat teks
-                foreach (['B', 'I', 'J', 'M'] as $col) {
+                // ID Absensi (B), Tanggal Masuk (I), No. HP (J), No. Rekening (M), NPWP/NIK (O) berformat teks
+                // (NPWP/NIK 16 digit harus teks, kalau tidak Excel membulatkan digit terakhir)
+                foreach (['B', 'I', 'J', 'M', 'O'] as $col) {
                     $sheet->getStyle("{$col}2:{$col}{$max}")
                         ->getNumberFormat()->setFormatCode(NumberFormat::FORMAT_TEXT);
                 }
@@ -107,9 +108,10 @@ class KaryawanTemplateSheet implements FromArray, WithHeadings, WithTitle, WithC
                 $lists = [
                     'D' => implode(',', array_keys(MstKaryawan::KELOMPOK)),
                     'E' => 'SHIFT A,SHIFT B,NON SHIFT',
-                    'F' => 'Tetap,Kontrak,Harian',
+                    'F' => 'Tetap,Kontrak,Harian,Borong',
                     'G' => implode(',', array_keys(self::DEPARTEMEN)),
                     'H' => implode(',', MstKaryawan::DIVISI),
+                    'P' => implode(',', MstKaryawan::PTKP),
                 ];
 
                 foreach ($lists as $col => $items) {

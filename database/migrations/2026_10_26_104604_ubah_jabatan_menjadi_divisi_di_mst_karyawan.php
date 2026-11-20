@@ -10,7 +10,7 @@ return new class extends Migration
     /** Teks lama (huruf besar) => kode Divisi / Bagian baru. Yang tidak dikenal menjadi UMUM. */
     private array $peta = [
         'UMUM' => 'UMUM', 'DRIVER' => 'DRIVER', 'SECURITY' => 'SECURITY', 'PACKING' => 'PACKING',
-        'POTONG RENDEM' => 'POT.RENDEM', 'POT RENDEM' => 'POT.RENDEM', 'POT.RENDEM' => 'POT.RENDEM',
+        'POTONG RENDAM' => 'POT.RENDAM', 'POT RENDAM' => 'POT.RENDAM', 'POT.RENDAM' => 'POT.RENDAM',
         'BATCH FRYER' => 'BATCH FRYER', 'SORTIR AC' => 'SORTIR AC', 'MAKARONI' => 'MAKARONI',
         'KEUANGAN' => 'KEUANGAN', 'QUALITYCONTROL' => 'QUALITYCONTROL', 'QUALITY CONTROL' => 'QUALITYCONTROL', 'QC' => 'QUALITYCONTROL',
     ];

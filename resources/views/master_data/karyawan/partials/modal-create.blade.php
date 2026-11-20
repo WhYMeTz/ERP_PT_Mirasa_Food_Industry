@@ -87,6 +87,7 @@
                             <option value="Tetap" {{ old('status_kerja', 'Tetap') === 'Tetap' ? 'selected' : '' }}>Tetap</option>
                             <option value="Kontrak" {{ old('status_kerja') === 'Kontrak' ? 'selected' : '' }}>Kontrak</option>
                             <option value="Harian" {{ old('status_kerja') === 'Harian' ? 'selected' : '' }}>Harian</option>
+                            <option value="Borong" {{ old('status_kerja') === 'Borong' ? 'selected' : '' }}>Borong</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -110,6 +111,20 @@
                     <div class="form-group">
                         <label for="create_no_rekening" class="form-label">No. Rekening</label>
                         <input type="text" id="create_no_rekening" name="no_rekening" value="{{ old('no_rekening') }}" class="form-control" placeholder="Nomor rekening">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="create_npwp_nik" class="form-label">NPWP / NIK (16 digit)</label>
+                        <input type="text" id="create_npwp_nik" name="npwp_nik" value="{{ old('npwp_nik') }}" class="form-control" maxlength="16" inputmode="numeric" pattern="\d{16}" title="16 digit angka" placeholder="Untuk bukti potong PPh 21" oninput="this.value = this.value.replace(/\D/g, '')">
+                    </div>
+                    <div class="form-group">
+                        <label for="create_status_ptkp" class="form-label">Status PTKP</label>
+                        <select id="create_status_ptkp" name="status_ptkp" class="form-control">
+                            <option value="">-- Pilih --</option>
+                            @foreach (\App\Models\MasterData\MstKaryawan::PTKP as $ptkp)
+                                <option value="{{ $ptkp }}" {{ old('status_ptkp') === $ptkp ? 'selected' : '' }}>{{ $ptkp }}</option>
+                            @endforeach
+                        </select>
                     </div>
 
                     <div class="form-group col-full">

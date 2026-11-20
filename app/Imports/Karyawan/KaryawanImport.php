@@ -9,14 +9,35 @@ use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use PhpOffice\PhpSpreadsheet\Shared\Date;
 
+/**
+ * Import data karyawan. Karyawan dicocokkan lewat ID Karyawan (NIK).
+ *
+ *  - Karyawan yang sudah ada : HANYA kolom yang ada di file dan terisi yang diubah.
+ *                              Kolom yang tidak ada di file, atau selnya kosong, tidak disentuh.
+ *  - Karyawan baru           : wajib Nama, Departemen, dan Divisi / Bagian.
+ *
+ * Jadi file boleh hanya berisi "ID Karyawan" + satu-dua kolom yang ingin dilengkapi (mis. No. HP atau NPWP/NIK).
+ */
 class KaryawanImport implements ToModel, WithHeadingRow
 {
+    /** Baris yang ditolak: ['nik' => ..., 'alasan' => ...] */
+    public array $ditolak = [];
+
+    public int $ditambah = 0;
+    public int $diperbarui = 0;
+    public int $tanpaPerubahan = 0;
+
+    /** Penulisan lain => kode divisi baku */
+    private const ALIAS_DIVISI = [
+        'POT RENDAM' => 'POT.RENDAM', 'POT. RENDAM' => 'POT.RENDAM', 'POTONG RENDAM' => 'POT.RENDAM',
+        'QUALITY CONTROL' => 'QUALITYCONTROL', 'QC' => 'QUALITYCONTROL',
+    ];
+
     /**
-     * @param int $headingRow Nomor baris tempat judul kolom berada.
-     *                        1 = file hasil Export sistem.
-     *                        Untuk Excel pabrik (judul di bawah baris judul laporan), isi sesuai barisnya.
+     * @param int  $headingRow  Nomor baris judul kolom. 1 = file hasil Export / Template sistem.
+     * @param bool $bolehPajak  Boleh mengubah NPWP/NIK dan Status PTKP (hanya yang berhak mengedit karyawan).
      */
-    public function __construct(protected int $headingRow = 1)
+    public function __construct(protected int $headingRow = 1, protected bool $bolehPajak = true)
     {
     }
 
@@ -27,58 +48,145 @@ class KaryawanImport implements ToModel, WithHeadingRow
 
     public function model(array $row): ?Model
     {
-        $nik  = $this->get($row, ['id_karyawan', 'nik']);
-        $nama = $this->get($row, ['nama_karyawan', 'nama']);
+        $nik = $this->text($this->get($row, ['id_karyawan', 'nik']));
 
-        // Lewati baris kosong / tanpa NIK atau nama
-        if (empty($nik) || empty($nama)) {
+        // Lewati baris kosong
+        if ($nik === null) {
             return null;
         }
 
-        $nikBersih = trim((string) $nik);
-        $departemen = $this->upper($this->get($row, ['departemen', 'bagian', 'bagian_divisi']));
+        $baca = $this->baca($row, $this->bolehPajak);
 
-        $divisiMentah = $this->get($row, ['divisi_bagian', 'divisi', 'jabatan', 'jabatan_kerja']);
-        $divisi = $this->normalizeDivisi($divisiMentah);
-
-        $karyawan = MstKaryawan::firstOrNew(['nik' => $nikBersih]);
-
-        if ($divisi === null) {
-            if ($this->text($divisiMentah) !== null) {
-                $this->ditolak[] = ['nik' => $nikBersih, 'alasan' => 'Divisi / Bagian "' . $this->text($divisiMentah) . '" tidak ada di daftar.'];
-                return null;
-            }
-            if (!$karyawan->exists) {
-                $this->ditolak[] = ['nik' => $nikBersih, 'alasan' => 'Divisi / Bagian wajib diisi untuk karyawan baru.'];
-                return null;
-            }
-            // kosong pada karyawan yang sudah ada: divisi lama dipertahankan
+        if ($baca['masalah']) {
+            $this->ditolak[] = ['nik' => $nik, 'alasan' => implode('; ', $baca['masalah'])];
+            return null;
         }
 
-        $karyawan->fill([
-            'id_absensi'    => $this->text($this->get($row, ['id_absensi', 'id_absen'])),
-            'karyawan_nm'   => trim((string) $nama),
-            'kelompok'      => $this->upper($this->get($row, ['kelompok'])),
-            'shift'         => $this->normalizeShift($this->get($row, ['shift'])),
-            'status_kerja'  => $this->normalizeStatus($this->get($row, ['status_karyawan', 'status'])),
-            'departemen_cd' => $departemen,
-            'jabatan_nm'    => $divisi ?? $karyawan->jabatan_nm,
-            'tgl_masuk'     => $this->parseDate($this->get($row, ['tanggal_masuk', 'tanggal_masuk_kerja', 'tgl_masuk'])),
-            'telepon_no'    => $this->text($this->get($row, ['no_hp', 'kontak_no_telp', 'telepon'])),
-            'email'         => $this->text($this->get($row, ['email'])),
-            'bank_name'     => $this->text($this->get($row, ['nama_bank', 'bank'])) ?? 'BCA',
-            'no_rekening'   => $this->text($this->get($row, ['no_rekening'])),
-            'alamat_txt'    => $this->text($this->get($row, ['alamat'])),
-        ]);
+        $data     = $baca['data'];
+        $karyawan = MstKaryawan::firstOrNew(['nik' => $nik]);
 
-        if (!$karyawan->exists) {
+        if (! $karyawan->exists) {
+            $kurang = [];
+            foreach (['karyawan_nm' => 'Nama', 'departemen_cd' => 'Departemen', 'jabatan_nm' => 'Divisi / Bagian'] as $kolom => $label) {
+                if (empty($data[$kolom])) {
+                    $kurang[] = $label;
+                }
+            }
+            if ($kurang) {
+                $this->ditolak[] = ['nik' => $nik, 'alasan' => 'ID tidak ditemukan di data karyawan. Untuk karyawan baru wajib diisi: ' . implode(', ', $kurang) . '.'];
+                return null;
+            }
+
+            $data += ['status_kerja' => 'Tetap', 'bank_name' => 'BCA'];
             $karyawan->active_st  = true;
             $karyawan->deleted_st = false;
         }
 
-        $karyawan->save();
+        $karyawan->fill($data);
+
+        if (! $karyawan->exists) {
+            $karyawan->save();
+            $this->ditambah++;
+        } elseif ($karyawan->isDirty()) {
+            $karyawan->save();
+            $this->diperbarui++;
+        } else {
+            $this->tanpaPerubahan++;
+        }
 
         return null;
+    }
+
+    /**
+     * Baca satu baris: hanya kolom yang ada dan terisi yang masuk ke 'data'.
+     *
+     * @return array{data: array<string,mixed>, masalah: array<int,string>}
+     */
+    public function baca(array $row, bool $bolehPajak = true): array
+    {
+        $data    = [];
+        $masalah = [];
+        $isi     = function (string $kolom, mixed $nilai) use (&$data) {
+            if ($nilai !== null) {
+                $data[$kolom] = $nilai;
+            }
+        };
+
+        $isi('id_absensi', $this->text($this->get($row, ['id_absensi', 'id_absen'])));
+        $isi('karyawan_nm', $this->text($this->get($row, ['nama_karyawan', 'nama'])));
+        $isi('kelompok', $this->upper($this->get($row, ['kelompok'])));
+        $isi('shift', $this->normalizeShift($this->get($row, ['shift'])));
+        $isi('departemen_cd', $this->upper($this->get($row, ['departemen', 'bagian'])));
+        $isi('telepon_no', $this->text($this->get($row, ['no_hp', 'kontak_no_telp', 'telepon'])));
+        $isi('email', $this->text($this->get($row, ['email'])));
+        $isi('bank_name', $this->text($this->get($row, ['nama_bank', 'bank'])));
+        $isi('no_rekening', $this->text($this->get($row, ['no_rekening'])));
+        $isi('alamat_txt', $this->text($this->get($row, ['alamat'])));
+
+        $status = $this->text($this->get($row, ['status_karyawan', 'status']));
+        if ($status !== null) {
+            $status = ucwords(strtolower($status));
+            in_array($status, ['Tetap', 'Kontrak', 'Harian', 'Borong'], true)
+                ? $data['status_kerja'] = $status
+                : $masalah[] = 'Status Karyawan "' . $status . '" tidak dikenal (Tetap, Kontrak, Harian, Borong).';
+        }
+
+        $divisiMentah = $this->text($this->get($row, ['divisi_bagian', 'divisi', 'jabatan', 'jabatan_kerja', 'bagian_divisi']));
+        if ($divisiMentah !== null) {
+            $divisi = $this->normalizeDivisi($divisiMentah);
+            $divisi === null
+                ? $masalah[] = 'Divisi / Bagian "' . $divisiMentah . '" tidak ada di daftar.'
+                : $data['jabatan_nm'] = $divisi;
+        }
+
+        $tglMentah = $this->get($row, ['tanggal_masuk', 'tanggal_masuk_kerja', 'tgl_masuk']);
+        if ($tglMentah !== null) {
+            $tgl = $this->parseDate($tglMentah);
+            $tgl === null
+                ? $masalah[] = 'Tanggal masuk "' . $tglMentah . '" tidak terbaca.'
+                : $data['tgl_masuk'] = $tgl;
+        }
+
+        if ($bolehPajak) {
+            $npwpMentah = $this->get($row, ['npwp_nik', 'npwp', 'nik_npwp', 'nomor_npwp']);
+            if ($npwpMentah !== null) {
+                $npwp = $this->angka($npwpMentah);
+                strlen($npwp) === 16
+                    ? $data['npwp_nik'] = $npwp
+                    : $masalah[] = 'NPWP/NIK harus 16 digit angka (terbaca "' . $npwp . '").';
+            }
+
+            $ptkpMentah = $this->text($this->get($row, ['status_ptkp', 'ptkp']));
+            if ($ptkpMentah !== null) {
+                $ptkp = $this->normalizePtkp($ptkpMentah);
+                $ptkp === null
+                    ? $masalah[] = 'Status PTKP "' . $ptkpMentah . '" tidak dikenal.'
+                    : $data['status_ptkp'] = $ptkp;
+            }
+        }
+
+        return ['data' => $data, 'masalah' => $masalah];
+    }
+
+    /** "tk0", "TK-0", "TK 0", "K / 1" => "TK/0", "K/1"; null bila tidak dikenal. */
+    private function normalizePtkp(string $teks): ?string
+    {
+        if (! preg_match('/^(TK|K|HB)\s*[\/\-]?\s*([0-3])$/i', trim($teks), $m)) {
+            return null;
+        }
+        $nilai = strtoupper($m[1]) . '/' . $m[2];
+
+        return in_array($nilai, MstKaryawan::PTKP, true) ? $nilai : null;
+    }
+
+    /** Hanya angka. Sel bertipe angka di Excel (mis. 3.3E+15) diubah tanpa notasi ilmiah. */
+    private function angka(mixed $nilai): string
+    {
+        if (is_float($nilai) || is_int($nilai)) {
+            return sprintf('%.0f', $nilai);
+        }
+
+        return preg_replace('/\D/', '', (string) $nilai);
     }
 
     /** Kode divisi baku, atau null bila kosong / tidak dikenal. */
@@ -95,7 +203,7 @@ class KaryawanImport implements ToModel, WithHeadingRow
 
     /**
      * Ambil nilai dari beberapa kemungkinan nama kolom (tidak peka huruf besar/kecil,
-     * garis bawah, atau tanda baca).
+     * garis bawah, atau tanda baca). Null bila kolomnya tidak ada atau selnya kosong.
      */
     private function get(array $row, array $names): mixed
     {
@@ -120,7 +228,9 @@ class KaryawanImport implements ToModel, WithHeadingRow
             return null;
         }
 
-        return trim((string) $value);
+        $teks = trim((string) $value);
+
+        return $teks === '' ? null : $teks;
     }
 
     private function upper(mixed $value): ?string
@@ -135,13 +245,6 @@ class KaryawanImport implements ToModel, WithHeadingRow
         $shift = $this->upper($value);
 
         return in_array($shift, ['A', 'B'], true) ? 'SHIFT ' . $shift : $shift;
-    }
-
-    private function normalizeStatus(mixed $value): string
-    {
-        $status = $this->text($value);
-
-        return $status === null ? 'Tetap' : ucwords(strtolower($status));
     }
 
     private function parseDate(mixed $value): ?string
@@ -164,13 +267,4 @@ class KaryawanImport implements ToModel, WithHeadingRow
             }
         }
     }
-
-    /** Baris yang ditolak: ['baris' => ..., 'nik' => ..., 'alasan' => ...] */
-    public array $ditolak = [];
-
-    /** Penulisan lain => kode divisi baku */
-    private const ALIAS_DIVISI = [
-        'POT RENDEM' => 'POT.RENDEM', 'POT. RENDEM' => 'POT.RENDEM', 'POTONG RENDEM' => 'POT.RENDEM',
-        'QUALITY CONTROL' => 'QUALITYCONTROL', 'QC' => 'QUALITYCONTROL',
-    ];
 }

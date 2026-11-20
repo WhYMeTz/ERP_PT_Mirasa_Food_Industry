@@ -7,7 +7,7 @@ use PHPUnit\Framework\TestCase;
 
 class MultiPayrollServiceTest extends TestCase
 {
-    private array $bagian = ['SORTIR AC' => ['kode' => 'AC'], 'POT.RENDEM' => ['kode' => 'PT'], 'UMUM' => ['kode' => 'UM', 'alias' => ['DRIVER', 'Security', 'QUALITYCONTROL']]];
+    private array $bagian = ['SORTIR AC' => ['kode' => 'AC'], 'POT.RENDAM' => ['kode' => 'PT'], 'UMUM' => ['kode' => 'UM', 'alias' => ['DRIVER', 'Security', 'QUALITYCONTROL']]];
 
     private function kar(array $o = []): array
     {

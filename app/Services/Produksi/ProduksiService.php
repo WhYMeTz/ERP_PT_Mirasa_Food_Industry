@@ -4196,50 +4196,50 @@ class ProduksiService
             $keteranganJurnal = "Biaya Produksi & HPP WIP Konsolidasi ({$tglFormat}) - ({$totalKgStr} kg WIP) [{$spkListStr}]";
 
             $akunWip = $this->pengaturanJurnalService->getCoaKode('HPP_WIP_AKUN_WIP', '1151');
-            $akunBahan = $this->pengaturanJurnalService->getCoaKode('HPP_WIP_AKUN_BAHAN', '1150');
+            $akunBahanBaku = $this->pengaturanJurnalService->getCoaKode('HPP_WIP_AKUN_BAHAN', '1150');
+            $akunBahanPenolong = $this->pengaturanJurnalService->getCoaKode('HPP_WIP_AKUN_PENOLONG', '1153');
             $akunGas = $this->pengaturanJurnalService->getCoaKode('HPP_WIP_AKUN_GAS', '2100');
             $akunTk = $this->pengaturanJurnalService->getCoaKode('HPP_WIP_AKUN_TENAGA_KERJA', '2102');
-            $akunOverhead = $this->pengaturanJurnalService->getCoaKode('HPP_WIP_AKUN_OVERHEAD', '2100');
+
+            $grandTotalSingkong = (float) $allDocs->sum('singkong_nilai');
+            $grandTotalPenolong = max(0, $grandTotalBahanAll - $grandTotalSingkong);
+            $grandTotalBiayaKonsolidasi = $grandTotalSingkong + $grandTotalPenolong + $grandTotalCngNilaiAll + $grandTotalTkNilaiAll;
 
             $entries = [];
-            $entries[] = [
-                'kode_akun'  => $akunWip,
-                'debet'      => $grandTotalBiayaAll,
-                'kredit'     => 0,
-                'keterangan' => $keteranganJurnal,
-            ];
-            if ($grandTotalBahanAll > 0) {
-                $entries[] = [
-                    'kode_akun'  => $akunBahan,
-                    'debet'      => 0,
-                    'kredit'     => $grandTotalBahanAll,
+            $entriesMap = [
+                'HPP_WIP_AKUN_WIP'          => [
+                    'kode_akun'  => $akunWip,
+                    'debet'      => $grandTotalBiayaKonsolidasi,
+                    'kredit'     => 0,
                     'keterangan' => $keteranganJurnal,
-                ];
-            }
-            if ($grandTotalCngNilaiAll > 0) {
-                $entries[] = [
+                ],
+                'HPP_WIP_AKUN_BAHAN'        => ($grandTotalSingkong > 0) ? [
+                    'kode_akun'  => $akunBahanBaku,
+                    'debet'      => 0,
+                    'kredit'     => $grandTotalSingkong,
+                    'keterangan' => $keteranganJurnal,
+                ] : null,
+                'HPP_WIP_AKUN_PENOLONG'     => ($grandTotalPenolong > 0) ? [
+                    'kode_akun'  => $akunBahanPenolong,
+                    'debet'      => 0,
+                    'kredit'     => $grandTotalPenolong,
+                    'keterangan' => $keteranganJurnal,
+                ] : null,
+                'HPP_WIP_AKUN_GAS'          => ($grandTotalCngNilaiAll > 0) ? [
                     'kode_akun'  => $akunGas,
                     'debet'      => 0,
                     'kredit'     => $grandTotalCngNilaiAll,
                     'keterangan' => $keteranganJurnal,
-                ];
-            }
-            if ($grandTotalTkNilaiAll > 0) {
-                $entries[] = [
+                ] : null,
+                'HPP_WIP_AKUN_TENAGA_KERJA' => ($grandTotalTkNilaiAll > 0) ? [
                     'kode_akun'  => $akunTk,
                     'debet'      => 0,
                     'kredit'     => $grandTotalTkNilaiAll,
                     'keterangan' => $keteranganJurnal,
-                ];
-            }
-            if ($grandTotalOverheadAll > 0) {
-                $entries[] = [
-                    'kode_akun'  => $akunOverhead,
-                    'debet'      => 0,
-                    'kredit'     => $grandTotalOverheadAll,
-                    'keterangan' => $keteranganJurnal,
-                ];
-            }
+                ] : null,
+            ];
+
+            $entries = $this->pengaturanJurnalService->orderEntries('HPP_WIP', $entriesMap);
 
             $jurnal = $this->jurnalService->catatJurnal(
                 'HPP_WIP',
@@ -4271,13 +4271,15 @@ class ProduksiService
      */
     public function syncJournalHppWip(DatProduksiHdr $produksi, ?string $userId = null): ?\App\Models\Keuangan\DatJurnalHdr
     {
-        $totalBiaya = (float) $produksi->total_biaya_produksi;
+        $singkongNilai = (float) ($produksi->singkong_nilai ?? 0);
         $totalBahan = (float) $produksi->total_bahan_nilai;
+        $penolongNilai = max(0, $totalBahan - $singkongNilai);
         $cngNilai = (float) $produksi->cng_nilai;
         $tkNilai = (float) $produksi->tk_total_nilai;
-        $overhead = (float) ($produksi->total_overhead_nilai ?? 0);
 
-        if ($totalBiaya <= 0) {
+        $totalBiayaWip = $singkongNilai + $penolongNilai + $cngNilai + $tkNilai;
+
+        if ($totalBiayaWip <= 0) {
             return null;
         }
 
@@ -4291,10 +4293,10 @@ class ProduksiService
 
         // Ambil konfigurasi akun dari Pengaturan Pemetaan Jurnal Otomatis
         $akunWip = $this->pengaturanJurnalService->getCoaKode('HPP_WIP_AKUN_WIP', '1151');
-        $akunBahan = $this->pengaturanJurnalService->getCoaKode('HPP_WIP_AKUN_BAHAN', '1150');
+        $akunBahanBaku = $this->pengaturanJurnalService->getCoaKode('HPP_WIP_AKUN_BAHAN', '1150');
+        $akunBahanPenolong = $this->pengaturanJurnalService->getCoaKode('HPP_WIP_AKUN_PENOLONG', '1153');
         $akunGas = $this->pengaturanJurnalService->getCoaKode('HPP_WIP_AKUN_GAS', '2100');
         $akunTk = $this->pengaturanJurnalService->getCoaKode('HPP_WIP_AKUN_TENAGA_KERJA', '2102');
-        $akunOverhead = $this->pengaturanJurnalService->getCoaKode('HPP_WIP_AKUN_OVERHEAD', '2100');
 
         // Format keterangan seragam sesuai template dinamis (tanpa kode dokumen):
         $tglFormat = $produksi->produksi_tgl ? Carbon::parse($produksi->produksi_tgl)->format('d/m/Y') : date('d/m/Y');
@@ -4315,53 +4317,41 @@ class ProduksiService
 
         $entries = [];
 
-        // 1. DEBET: Persediaan WIP & FG (Konfigurasi: HPP_WIP_AKUN_WIP)
-        $entries[] = [
-            'kode_akun'  => $akunWip,
-            'debet'      => $totalBiaya,
-            'kredit'     => 0,
-            'keterangan' => $keteranganJurnal,
-        ];
-
-        // 2. KREDIT: Persediaan Bahan Baku & Penolong (Konfigurasi: HPP_WIP_AKUN_BAHAN)
-        if ($totalBahan > 0) {
-            $entries[] = [
-                'kode_akun'  => $akunBahan,
-                'debet'      => 0,
-                'kredit'     => $totalBahan,
+        // 1. DEBET: Persediaan WIP (Konfigurasi: HPP_WIP_AKUN_WIP)
+        $entriesMap = [
+            'HPP_WIP_AKUN_WIP'          => [
+                'kode_akun'  => $akunWip,
+                'debet'      => $totalBiayaWip,
+                'kredit'     => 0,
                 'keterangan' => $keteranganJurnal,
-            ];
-        }
-
-        // 3. KREDIT: Hutang Usaha - Akrual Gas CNG (Konfigurasi: HPP_WIP_AKUN_GAS)
-        if ($cngNilai > 0) {
-            $entries[] = [
+            ],
+            'HPP_WIP_AKUN_BAHAN'        => ($singkongNilai > 0) ? [
+                'kode_akun'  => $akunBahanBaku,
+                'debet'      => 0,
+                'kredit'     => $singkongNilai,
+                'keterangan' => $keteranganJurnal,
+            ] : null,
+            'HPP_WIP_AKUN_PENOLONG'     => ($penolongNilai > 0) ? [
+                'kode_akun'  => $akunBahanPenolong,
+                'debet'      => 0,
+                'kredit'     => $penolongNilai,
+                'keterangan' => $keteranganJurnal,
+            ] : null,
+            'HPP_WIP_AKUN_GAS'          => ($cngNilai > 0) ? [
                 'kode_akun'  => $akunGas,
                 'debet'      => 0,
                 'kredit'     => $cngNilai,
                 'keterangan' => $keteranganJurnal,
-            ];
-        }
-
-        // 4. KREDIT: Hutang Gaji - BTKL (Konfigurasi: HPP_WIP_AKUN_TENAGA_KERJA)
-        if ($tkNilai > 0) {
-            $entries[] = [
+            ] : null,
+            'HPP_WIP_AKUN_TENAGA_KERJA' => ($tkNilai > 0) ? [
                 'kode_akun'  => $akunTk,
                 'debet'      => 0,
                 'kredit'     => $tkNilai,
                 'keterangan' => $keteranganJurnal,
-            ];
-        }
+            ] : null,
+        ];
 
-        // 5. KREDIT: Overhead Pabrik jika ada (Konfigurasi: HPP_WIP_AKUN_OVERHEAD)
-        if ($overhead > 0) {
-            $entries[] = [
-                'kode_akun'  => $akunOverhead,
-                'debet'      => 0,
-                'kredit'     => $overhead,
-                'keterangan' => $keteranganJurnal,
-            ];
-        }
+        $entries = $this->pengaturanJurnalService->orderEntries('HPP_WIP', $entriesMap);
 
         $tglJurnal = $produksi->produksi_tgl ? Carbon::parse($produksi->produksi_tgl)->format('Y-m-d') : date('Y-m-d');
 

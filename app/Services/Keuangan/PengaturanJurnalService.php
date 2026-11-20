@@ -80,11 +80,11 @@ class PengaturanJurnalService
     }
 
     /**
-     * Simpan pembaruan pengaturan jurnal secara massal.
+     * Simpan pembaruan pengaturan jurnal secara massal termasuk urutan template baris.
      */
-    public function updateBatch(array $payload, ?User $user = null): void
+    public function updateBatch(array $payload, array $urutan = [], ?User $user = null): void
     {
-        DB::transaction(function () use ($payload, $user) {
+        DB::transaction(function () use ($payload, $urutan, $user) {
             $actor = $user?->name ?? 'SYSTEM';
 
             foreach ($payload as $kunci => $val) {
@@ -102,13 +102,61 @@ class PengaturanJurnalService
                     $setting->nilai_text = !empty(trim($val)) ? trim($val) : null;
                 }
 
+                if (isset($urutan[$kunci])) {
+                    $setting->urutan = (int) $urutan[$kunci];
+                }
+
                 $setting->updated_by = $actor;
                 $setting->version_no = ((int) ($setting->version_no ?? 1)) + 1;
                 $setting->save();
             }
 
+            // Perbarui urutan untuk kunci yang tidak ada di payload (misal hanya urutan diubah)
+            foreach ($urutan as $kunci => $seq) {
+                if (!isset($payload[$kunci])) {
+                    MstPengaturanJurnal::where('kunci', $kunci)
+                        ->where('deleted_st', false)
+                        ->update([
+                            'urutan'     => (int) $seq,
+                            'updated_by' => $actor,
+                            'updated_at' => now(),
+                        ]);
+                }
+            }
+
             Cache::forget(self::CACHE_KEY);
         });
+    }
+
+    /**
+     * Urutkan array baris jurnal (keyed by setting kunci) sesuai urutan konfigurasi di database.
+     */
+    public function orderEntries(string $grup, array $keyedEntries): array
+    {
+        $records = MstPengaturanJurnal::active()
+            ->where('grup', $grup)
+            ->where('tipe_nilai', 'COA')
+            ->orderBy('urutan')
+            ->get();
+
+        $ordered = [];
+        $usedKeys = [];
+
+        foreach ($records as $r) {
+            if (isset($keyedEntries[$r->kunci]) && $keyedEntries[$r->kunci] !== null) {
+                $ordered[] = $keyedEntries[$r->kunci];
+                $usedKeys[$r->kunci] = true;
+            }
+        }
+
+        // Masukkan entri lain yang tidak memiliki kunci setting langsung
+        foreach ($keyedEntries as $k => $entry) {
+            if (!isset($usedKeys[$k]) && $entry !== null) {
+                $ordered[] = $entry;
+            }
+        }
+
+        return $ordered;
     }
 
     /**
@@ -119,6 +167,7 @@ class PengaturanJurnalService
         return Cache::remember(self::CACHE_KEY, self::CACHE_TTL, function () {
             $records = MstPengaturanJurnal::active()
                 ->with('coa')
+                ->orderBy('urutan')
                 ->get();
 
             $map = [];
@@ -129,6 +178,7 @@ class PengaturanJurnalService
                     'coa_kode' => $r->coa?->kode_akun,
                     'coa_nama' => $r->coa?->nama_akun,
                     'text'     => $r->nilai_text,
+                    'urutan'   => $r->urutan,
                 ];
             }
             return $map;

@@ -37,11 +37,13 @@ class PengaturanJurnalController extends Controller
     {
         $request->validate([
             'settings' => 'required|array',
+            'urutan'   => 'nullable|array',
         ]);
 
         try {
             $payload = $request->input('settings', []);
-            $this->pengaturanService->updateBatch($payload, Auth::user());
+            $urutan = $request->input('urutan', []);
+            $this->pengaturanService->updateBatch($payload, $urutan, Auth::user());
 
             return redirect()->route('keuangan.pengaturan_jurnal.index')
                 ->with('success', 'Pengaturan pemetaan akun jurnal otomatis berhasil diperbarui.');

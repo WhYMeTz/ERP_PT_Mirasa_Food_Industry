@@ -154,18 +154,50 @@
                             <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
                             <span>Rincian Barang &amp; Batch yang Dipindahkan</span>
                         </span>
-                        <span style="font-size: 0.725rem; font-weight: 700; color: #0d9488;">Langkah 2</span>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <button type="button" class="btn-open-catalog" onclick="openStokPickerModal()">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+                                <span>Buka Katalog Stok</span>
+                            </button>
+                            <span style="font-size: 0.725rem; font-weight: 700; color: #0d9488;">Langkah 2</span>
+                        </div>
+                    </div>
+
+                    {{-- FILTER KATEGORI BARANG --}}
+                    <div class="transfer-category-bar">
+                        <div class="category-chips-list" id="categoryChipsContainer">
+                            <button type="button" class="btn-chip-filter active" data-category="ALL" onclick="onCategoryFilterClick('ALL')">
+                                Semua (<span id="countAll">0</span>)
+                            </button>
+                            <button type="button" class="btn-chip-filter" data-category="BAHAN_BAKU" onclick="onCategoryFilterClick('BAHAN_BAKU')">
+                                🌾 Bahan Baku (<span id="countBB">0</span>)
+                            </button>
+                            <button type="button" class="btn-chip-filter" data-category="BAHAN_PENOLONG" onclick="onCategoryFilterClick('BAHAN_PENOLONG')">
+                                🧪 Bahan Penolong (<span id="countBP">0</span>)
+                            </button>
+                            <button type="button" class="btn-chip-filter" data-category="WIP" onclick="onCategoryFilterClick('WIP')">
+                                🏭 Stok WIP (<span id="countWIP">0</span>)
+                            </button>
+                            <button type="button" class="btn-chip-filter" data-category="FG" onclick="onCategoryFilterClick('FG')">
+                                📦 Barang Jadi / FG (<span id="countFG">0</span>)
+                            </button>
+                        </div>
+                        <div class="category-search-inline">
+                            <svg width="14" height="14" fill="none" stroke="#64748b" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                            <input type="text" id="inlineSearchFilter" placeholder="Filter cepat barang / batch..." oninput="onInlineSearchChange(this.value)">
+                        </div>
                     </div>
 
                     <div style="overflow-x: auto;">
                         <table class="table-item-input">
                             <thead>
                                 <tr>
-                                    <th style="width: 45%;">Barang &amp; Batch Asal <span style="color: #dc2626;">*</span></th>
-                                    <th style="width: 15%; text-align: center;">Sisa Stok Asal</th>
-                                    <th style="width: 18%; text-align: right;">Qty Ditransfer <span style="color: #dc2626;">*</span></th>
-                                    <th style="width: 18%;">Keterangan</th>
-                                    <th style="width: 4%;"></th>
+                                    <th style="width: 32%;">Barang Asal <span style="color: #dc2626;">*</span></th>
+                                    <th style="width: 25%;">Nomor Batch &amp; Grade <span style="color: #dc2626;">*</span></th>
+                                    <th style="width: 13%; text-align: right;">Sisa Stok</th>
+                                    <th style="width: 16%; text-align: right;">Qty Ditransfer <span style="color: #dc2626;">*</span></th>
+                                    <th style="width: 10%;">Catatan</th>
+                                    <th style="width: 4%; text-align: center;"></th>
                                 </tr>
                             </thead>
                             <tbody id="itemsBody">
@@ -174,10 +206,14 @@
                         </table>
                     </div>
 
-                    <div style="padding: 1rem 1.25rem; border-top: 1px dashed #cbd5e1;">
+                    <div class="transfer-table-actions">
                         <button type="button" class="btn-add-item" onclick="addItemRow()">
                             <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                            <span>+ Tambah Baris Barang</span>
+                            <span>+ Tambah Baris Manual</span>
+                        </button>
+                        <button type="button" class="btn-catalog-secondary" onclick="openStokPickerModal()">
+                            <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+                            <span>Pilih dari Katalog Stok Gudang</span>
                         </button>
                     </div>
 
@@ -208,6 +244,8 @@
         </div>
     </form>
 </div>
+
+@include('gudang.transfer.partials.modal-stok-picker')
 @endsection
 
 @push('scripts')

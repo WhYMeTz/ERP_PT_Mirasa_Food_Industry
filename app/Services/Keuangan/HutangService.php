@@ -723,16 +723,33 @@ class HutangService
                     ]
                 ) . $ppnSuffix;
 
-                $akunPersediaan = $this->pengaturanJurnalService->getCoaKode('PEMBELIAN_AKUN_PERSEDIAAN', '1150');
+                $akunPersediaanBaku = $this->pengaturanJurnalService->getCoaKode('PEMBELIAN_AKUN_PERSEDIAAN', '1150');
+                $akunPersediaanPenolong = $this->pengaturanJurnalService->getCoaKode('PEMBELIAN_AKUN_PENOLONG', '1153');
                 $akunHutang = $this->pengaturanJurnalService->getCoaKode('PEMBELIAN_AKUN_HUTANG', '2100');
                 $akunPpnMasukan = $this->pengaturanJurnalService->getCoaKode('PEMBELIAN_AKUN_PPN_MASUKAN', '1130');
-                $akunPph22 = $this->pengaturanJurnalService->getCoaKode('PEMBELIAN_AKUN_PPH_22', '2106');
+                $akunPph22 = $this->pengaturanJurnalService->getCoaKode('PEMBELIAN_AKUN_PPH_22', '2107');
                 $akunPph23 = $this->pengaturanJurnalService->getCoaKode('PEMBELIAN_AKUN_PPH_23', '2105');
+                $akunOngkir = $this->pengaturanJurnalService->getCoaKode('PEMBELIAN_AKUN_ONGKIR', '6112');
+                $akunUangMuka = $this->pengaturanJurnalService->getCoaKode('PEMBELIAN_AKUN_UANG_MUKA', '1122');
 
-                // 1. (Debet) Persediaan Bahan Baku & Penolong (Konfigurasi: PEMBELIAN_AKUN_PERSEDIAAN)
+                // Deteksi apakah item ini Bahan Penolong & Kemasan (1153) atau Bahan Baku Singkong (1150)
+                $barangId = $item['barang_id'] ?? null;
+                $barangObj = $barangId ? MstBarang::with('jenisBarang')->find($barangId) : null;
+                $isPenolong = false;
+                if ($barangObj && $barangObj->jenisBarang) {
+                    $jenisCd = strtoupper($barangObj->jenisBarang->jenis_barang_cd ?? '');
+                    $isPenolong = in_array($jenisCd, ['BP', 'PACK', 'SUPP']);
+                } else {
+                    $descLower = strtolower($namaBarang);
+                    $isPenolong = str_contains($descLower, 'karton') || str_contains($descLower, 'plastik') || str_contains($descLower, 'bumbu') || str_contains($descLower, 'minyak') || str_contains($descLower, 'dus') || str_contains($descLower, 'lakban');
+                }
+
+                $akunPersediaanItem = $isPenolong ? $akunPersediaanPenolong : $akunPersediaanBaku;
+
+                // 1. (Debet) Persediaan Bahan Baku (1150) atau Persediaan Bahan Penolong & Kemasan (1153)
                 if ($dppItem > 0) {
                     $jurnalEntries[] = [
-                        'kode_akun'  => $akunPersediaan,
+                        'kode_akun'  => $akunPersediaanItem,
                         'debet'      => $dppItem,
                         'kredit'     => 0,
                         'keterangan' => $keteranganItem,
@@ -807,13 +824,13 @@ class HutangService
             // 5. Penyesuaian Ongkos Angkut / Ekspedisi Pembelian (jika ada)
             if ($biayaOngkir > 0) {
                 $jurnalEntries[] = [
-                    'kode_akun'  => '6112',
+                    'kode_akun'  => $akunOngkir,
                     'debet'      => $biayaOngkir,
                     'kredit'     => 0,
                     'keterangan' => "Ongkos Angkut Pembelian - {$suppName} - {$hdr->hutang_no}",
                 ];
                 $jurnalEntries[] = [
-                    'kode_akun'  => '2100',
+                    'kode_akun'  => $akunHutang,
                     'debet'      => 0,
                     'kredit'     => $biayaOngkir,
                     'keterangan' => "Ongkos Angkut Pembelian - {$suppName} - {$hdr->hutang_no}",
@@ -821,17 +838,17 @@ class HutangService
             }
 
             // 6. Penyesuaian Uang Muka / Down Payment (DP) yang telah dibayarkan
-            // Memindahkan saldo kewajiban dari Hutang Usaha (2100) ke akun Downpayment (2104)
+            // Memindahkan saldo kewajiban dari Hutang Usaha (2100) ke akun Uang Muka Pembelian (1122)
             if ($uangMukaNominal > 0 && $totalDibayar > 0) {
                 $ketDp = "Penyelesaian Uang Muka (Downpayment) - {$suppName} - {$hdr->hutang_no}";
                 $jurnalEntries[] = [
-                    'kode_akun'  => '2100', // Hutang Usaha didebet (berkurang)
+                    'kode_akun'  => $akunHutang, // Hutang Usaha didebet (berkurang)
                     'debet'      => $totalDibayar,
                     'kredit'     => 0,
                     'keterangan' => $ketDp,
                 ];
                 $jurnalEntries[] = [
-                    'kode_akun'  => '2104', // Downpayment dikredit (realisasi pengurang DP)
+                    'kode_akun'  => $akunUangMuka, // Uang Muka Pembelian (1122) dikredit (realisasi pengurang DP)
                     'debet'      => 0,
                     'kredit'     => $totalDibayar,
                     'keterangan' => $ketDp,

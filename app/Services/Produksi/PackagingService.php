@@ -2073,53 +2073,40 @@ class PackagingService
 
         $entries = [];
 
-        // 1. DEBET: Persediaan Barang Jadi (FG) (Konfigurasi: HPP_FG_AKUN_FG)
-        $entries[] = [
-            'kode_akun'  => $akunFg,
-            'debet'      => $totalBiaya,
-            'kredit'     => 0,
-            'keterangan' => $keteranganJurnal,
-        ];
-
-        // 2. KREDIT: Persediaan WIP / Keripik Curah Terpakai (Konfigurasi: HPP_FG_AKUN_WIP)
-        if ($biayaWip > 0) {
-            $entries[] = [
+        $entriesMap = [
+            'HPP_FG_AKUN_FG'            => [
+                'kode_akun'  => $akunFg,
+                'debet'      => $totalBiaya,
+                'kredit'     => 0,
+                'keterangan' => $keteranganJurnal,
+            ],
+            'HPP_FG_AKUN_WIP'           => ($biayaWip > 0) ? [
                 'kode_akun'  => $akunWip,
                 'debet'      => 0,
                 'kredit'     => $biayaWip,
                 'keterangan' => $keteranganJurnal,
-            ];
-        }
-
-        // 3. KREDIT: Persediaan Bahan Kemasan & Penolong (Konfigurasi: HPP_FG_AKUN_KEMASAN)
-        if ($biayaKemasan > 0) {
-            $entries[] = [
+            ] : null,
+            'HPP_FG_AKUN_KEMASAN'       => ($biayaKemasan > 0) ? [
                 'kode_akun'  => $akunKemasan,
                 'debet'      => 0,
                 'kredit'     => $biayaKemasan,
                 'keterangan' => $keteranganJurnal,
-            ];
-        }
-
-        // 4. KREDIT: Hutang Gaji / BTKL Kemas (Konfigurasi: HPP_FG_AKUN_TENAGA_KERJA)
-        if ($biayaTk > 0) {
-            $entries[] = [
+            ] : null,
+            'HPP_FG_AKUN_TENAGA_KERJA'  => ($biayaTk > 0) ? [
                 'kode_akun'  => $akunTk,
                 'debet'      => 0,
                 'kredit'     => $biayaTk,
                 'keterangan' => $keteranganJurnal,
-            ];
-        }
-
-        // 5. KREDIT: Biaya Lain / Overhead Kemas jika ada (Konfigurasi: HPP_FG_AKUN_OVERHEAD)
-        if ($biayaLain > 0) {
-            $entries[] = [
+            ] : null,
+            'HPP_FG_AKUN_OVERHEAD'      => ($biayaLain > 0) ? [
                 'kode_akun'  => $akunOverhead,
                 'debet'      => 0,
                 'kredit'     => $biayaLain,
                 'keterangan' => $keteranganJurnal,
-            ];
-        }
+            ] : null,
+        ];
+
+        $entries = $this->pengaturanJurnalService->orderEntries('HPP_FG', $entriesMap);
 
         $tglJurnal = $header->pack_tgl ? Carbon::parse($header->pack_tgl)->format('Y-m-d') : date('Y-m-d');
 
